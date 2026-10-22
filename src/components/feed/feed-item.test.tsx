@@ -9,7 +9,7 @@ import type { FeedView } from "../../lib/feed/home";
 
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (o: Partial<FeedView>): FeedView => ({
-  key: "k", kind: "new-set", at: "2026-10-22T07:00:00Z", unseen: true, card: { oracleId: "c", name: "Sai, Master Thopterist", image: "sai.jpg", art: null },
+  key: "k", kind: "new-set", at: "2026-10-22T07:00:00Z", unseen: true, card: { oracleId: "c", name: "Sai, Master Thopterist", image: "sai.jpg", art: null, colorIdentity: ["U"] },
   friend: null, href: null, opens: null, name: null, setSize: null, owned: null, drop: null, combo: null, ...o,
 });
 const list = (node: React.ReactNode) => render(<ul>{node}</ul>);
@@ -48,7 +48,7 @@ describe("FeedItemRow", () => {
   it("puts the friend's face on a trade match's card and links to their spares", () => {
     const { container } = list(
       <FeedItemRow
-        item={view({ kind: "trade-match", card: { oracleId: "g", name: "Ghalta, Primal Hunger", image: "g.jpg", art: null }, friend: { publicId: "p1", displayName: "Colin" }, href: "/friends/p1" })}
+        item={view({ kind: "trade-match", card: { oracleId: "g", name: "Ghalta, Primal Hunger", image: "g.jpg", art: null, colorIdentity: ["G"] }, friend: { publicId: "p1", displayName: "Colin" }, href: "/friends/p1" })}
         now={NOW}
         face={{ artCropUri: "colin.jpg" }}
       />,
@@ -113,5 +113,21 @@ describe("FeedItemRow", () => {
     list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: /Open the card/ }));
     expect(open.mock.lastCall?.[3]).not.toHaveProperty("combo");
+  });
+
+  it("reads 'just now' for an item under an hour old", () => {
+    list(<FeedItemRow item={view({ at: "2026-10-22T11:30:00Z", href: "/x" })} now={NOW} />);
+    expect(screen.getByText("just now")).toBeInTheDocument();
+    expect(screen.queryByText(/0h ago/)).toBeNull();
+  });
+
+  it("draws the card's identity gradient at card shape when it has no art, and the stripes only when its identity is unknown", () => {
+    const { container, unmount } = list(<FeedItemRow item={view({ href: "/x", card: { oracleId: "c", name: "Sai", image: null, art: null, colorIdentity: ["R"] } })} now={NOW} />);
+    const thumb = () => container.querySelector<HTMLElement>('[data-commander-thumb="feed"]')!;
+    const identity = thumb().style.background;
+    expect(identity).toContain("gradient");
+    unmount();
+    const { container: c2 } = list(<FeedItemRow item={view({ href: "/x", card: { oracleId: "c", name: "Sai", image: null, art: null, colorIdentity: null } })} now={NOW} />);
+    expect(c2.querySelector<HTMLElement>('[data-commander-thumb="feed"]')!.style.background).not.toBe(identity);
   });
 });

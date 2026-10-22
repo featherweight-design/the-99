@@ -6,8 +6,7 @@
 // `--fg-locked`, which reads about 3.1:1 on `--surface-inset` (PR 7b review): the diamond alone marks what is new.
 import Link from "next/link";
 import type { WaitingRow } from "../../lib/social/waiting";
-import { elapsed } from "../../lib/decks/touched";
-import { refreshCopy } from "../../lib/copy/refresh";
+import { feedAge } from "../../lib/feed/age";
 import { socialCopy } from "../../lib/copy/social";
 import { FadingImg } from "../ui/hydrated-art";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -15,15 +14,7 @@ import { faceInitials } from "./face";
 
 const w = socialCopy.waiting;
 
-function ago(at: Date, now: Date): string {
-  const e = elapsed(at, now);
-  const c = refreshCopy.home.elapsed;
-  return e.unit === "yesterday" ? c.yesterday
-    : e.unit === "hours" ? c.hours(e.value)
-    : e.unit === "days" ? c.days(e.value)
-    : e.unit === "weeks" ? c.weeks(e.value)
-    : c.months(e.value);
-}
+const ago = (at: Date, now: Date): string => feedAge(at.toISOString(), now.toISOString());
 
 export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: Date }) {
   if (rows.length === 0) return null;
