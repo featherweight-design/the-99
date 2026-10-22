@@ -1,0 +1,18 @@
+{
+  "feature": "Menu and Home, PR 4: /settings with What's new on Home above Spares (handoff design_handoff_the99_menu_home, R1 Settings; plan 2026-10-22-menu-home.md)",
+  "note": "Run on a scratch Neon branch migrated to this PR, with HOME_FEED_ENABLED, SOCIAL_FRIENDS_ENABLED and SOCIAL_WISHLIST_ENABLED on. The first row is the account's first visit in each width, which the About sheet covers on a branch with unseen entries; the page is photographed from the second row on.",
+  "rows": [
+    {
+      "id": "settings-first-visit",
+      "label": "/settings, first visit in this width: the About sheet over it",
+      "view": "src/components/settings/news-section.tsx",
+      "steps": [{ "goto": "/settings", "settle": 2000 }]
+    },
+    {
+      "id": "settings-news",
+      "label": "/settings: What's new on Home (one box per available kind, the foot) first, then Spares",
+      "view": "src/components/settings/news-section.tsx",
+      "steps": [{ "goto": "/settings", "wait": "#settings-news", "settle": 1000 }]
+    }
+  ]
+}

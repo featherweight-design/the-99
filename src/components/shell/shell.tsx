@@ -18,6 +18,7 @@ import { requestSwitchEnv } from "../../lib/switches/request";
 import { PlacePathsProvider } from "../commanders/place-paths";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { commandersPlaceEnabled } from "../../lib/commanders/place-flag";
+import { homeFeedEnabled } from "../../lib/feed/flag";
 import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
@@ -95,6 +96,8 @@ export default async function Shell({
     tour: firstRunTourEnabled(env),
     // The Commanders place: Discover leaves the bar, and with `friends` Friends takes its slot and Settings its row.
     commandersPlace: commandersPlaceEnabled(env),
+    // Settings' news section: with the Commanders place, the menu's Settings row is drawn for it even with Friends off.
+    homeFeed: homeFeedEnabled(env),
   };
   // Card search (plan `2026-10-16-card-search.md`, PR C): the header icon and the sheet, or neither.
   const cardSearch = cardSearchEnabled(env);
