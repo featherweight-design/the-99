@@ -114,12 +114,16 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  *
  * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config. It held
  * `COMMANDERS_PLACE_ENABLED` and `HOME_FEED_ENABLED` on 2026-10-22 while their surfaces landed (menu and Home), and
- * is empty again now that Home draws the feed.
+ * is empty again now that Home draws the feed. It holds `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests' UI
+ * PR draws the asks and answers.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
-export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {};
+export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
+  SPARE_REQUESTS_ENABLED:
+    "the Friends badge counts spare requests waiting on the reader, and no surface answers one until the UI PR (plan 2026-10-22-spare-requests.md)",
+};
 
 /**
  * What All features raises: every `feature` and `model` switch not excluded, and every parent those

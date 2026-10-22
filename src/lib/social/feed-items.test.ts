@@ -12,8 +12,8 @@ describe("storedFeedBranch", () => {
     expect(params).toEqual(["viewer_1", ["trade-match", "combo", "spare-request"], "2026-10-08T12:00:00.000Z"]);
   });
 
-  it("keeps a spare request only while its ask is open and inside its fourteen days, by the request id it was keyed on", () => {
-    expect(q).toContain(`and (fi.kind <> 'spare-request' or exists ( select 1 from "spare_requests" fsr where fsr.id::text = fi.dedupe_key and fsr.status = 'open' and fsr.created_at > $3::timestamptz))`);
+  it("keeps a spare request only while its ask is open and inside its fourteen days, by the request id it was keyed on (a uuid, so the primary key is used) and the reader as holder", () => {
+    expect(q).toContain(`and (fi.kind <> 'spare-request' or exists ( select 1 from "spare_requests" fsr where fsr.id = (case when fi.kind = 'spare-request' then fi.dedupe_key::uuid end) and fsr.holder_user_id = fi.user_id and fsr.status = 'open' and fsr.created_at > $3::timestamptz))`);
   });
 
   it("re-joins the live spare grant for a trade match: the friendship, the friend's share, both in that pod", () => {
