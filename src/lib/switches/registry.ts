@@ -36,6 +36,7 @@ export const SWITCHES = [
   { name: "CHANGE_COMMANDER_ENABLED", kind: "feature" },
   { name: "COLLECTION_EDIT_ENABLED", kind: "feature" },
   { name: "COLLECTION_SYNC_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
+  { name: "COMMANDERS_PLACE_ENABLED", kind: "feature" },
   { name: "DECK_BENCHMARKS_ENABLED", kind: "feature" },
   { name: "DECK_NOTES_ENABLED", kind: "feature" },
   { name: "DECK_PRINTINGS_ENABLED", kind: "feature" },

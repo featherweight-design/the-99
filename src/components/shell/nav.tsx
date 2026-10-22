@@ -19,6 +19,7 @@ import { OfflinePill } from "../pwa/offline-pill";
 import { InstallSlot } from "../pwa/install-slot";
 import { Crowned99 } from "../marks";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { shellCopy } from "../../lib/copy/shell";
 import { nameList } from "../../lib/copy/deck-analysis";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { reveal } from "../../lib/ui/reveal";
@@ -53,27 +54,43 @@ type NavItem = {
 // two commander lanes read as one shelf, and Decks stays last because it is the
 // destination the app is for. It locks with the rest — a lane of 3,301
 // commanders you cannot yet score against is a catalogue, not a tool.
-const ITEMS: NavItem[] = [
-  { href: "/",           label: "Home",       lockable: false },
-  { href: "/collection", label: "Collection", lockable: true  },
-  { href: "/commanders", label: "Commanders", lockable: true  },
-  { href: "/discover",   label: "Discover",   lockable: true  },
-  { href: "/decks",      label: "Decks",      lockable: true  },
-];
+const HOME: NavItem = { href: "/", label: "Home", lockable: false };
+const COLLECTION: NavItem = { href: "/collection", label: "Collection", lockable: true };
+const COMMANDERS: NavItem = { href: "/commanders", label: "Commanders", lockable: true };
+const DISCOVER: NavItem = { href: "/discover", label: "Discover", lockable: true };
+const DECKS: NavItem = { href: "/decks", label: "Decks", lockable: true };
+// Friends never locks: it needs no cards ("Any time, cards or not", menu and Home handoff, R1 Menu 2).
+const FRIENDS: NavItem = { href: "/friends", label: shellCopy.nav.friends, lockable: false };
 
-/** The live slots: every item, or while locked those the lock does not hold (Home, and Collection when open). */
-function liveItems(locked: boolean, openLock: OpenLock): NavItem[] {
-  if (!locked) return ITEMS;
-  const held = new Set(lockedItems(openLock).map((i) => i.href));
-  return ITEMS.filter((i) => !held.has(i.href));
+/**
+ * Which switches shape the bar, resolved per reader by the shell. With the Commanders place on, Discover leaves the bar
+ * for Commanders' strip, and with Friends on as well, Friends takes the fifth slot, last (menu and Home handoff, R1
+ * Menu 1). Off, the bar is as shipped.
+ */
+type BarShape = { commandersPlace: boolean; friends: boolean };
+
+/** The bar's slots, in order: as shipped, or Home, Collection, Commanders, Decks and Friends where it is in the bar. */
+function barItems({ commandersPlace, friends }: BarShape): NavItem[] {
+  if (!commandersPlace) return [HOME, COLLECTION, COMMANDERS, DISCOVER, DECKS];
+  return friends ? [HOME, COLLECTION, COMMANDERS, DECKS, FRIENDS] : [HOME, COLLECTION, COMMANDERS, DECKS];
+}
+
+/** Friends sits in the bar, so the account menu draws Settings in its row and M11 anchors on the slot. */
+function friendsInBar({ commandersPlace, friends }: BarShape): boolean {
+  return commandersPlace && friends;
+}
+
+/** The live slots: every item, or while locked those the lock does not hold (Home, Friends, and Collection when open). */
+function liveItems(items: NavItem[], locked: boolean, openLock: OpenLock): NavItem[] {
+  if (!locked) return items;
+  const held = new Set(lockedItems(items, openLock).map((i) => i.href));
+  return items.filter((i) => !held.has(i.href));
 }
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(href + "/");
 }
-
-const LOCKABLE = ITEMS.filter((i) => i.lockable);
 
 /**
  * The lock at zero cards with NO_COLLECTION_ENTRY_ENABLED (no-collection entry, call 6), or null for the shipped
@@ -83,9 +100,24 @@ const LOCKABLE = ITEMS.filter((i) => i.lockable);
  */
 export type OpenLock = { hasDecks: boolean } | null;
 
-/** The slots the lock holds: all four as shipped, or the three after Collection with the lock open. */
-function lockedItems(openLock: OpenLock): NavItem[] {
-  return openLock ? LOCKABLE.filter((i) => i.href !== "/collection") : LOCKABLE;
+/**
+ * The slots the lock holds: every lockable slot (Collection on, through Decks), or those after Collection with the lock
+ * open. They are one run in the bar, since Home leads it and Friends, never locked, ends it.
+ */
+function lockedItems(items: NavItem[], openLock: OpenLock): NavItem[] {
+  return items.filter((i) => i.lockable && !(openLock && i.href === "/collection"));
+}
+
+/**
+ * Where the phone's bracket sits over the bar: its left edge and width as shares of the bar's content width, which the
+ * slots divide equally. It spans exactly the locked run, whether the bar holds four slots or five and whether a live
+ * slot (Friends) sits right of it (menu and Home audit, erratum 1).
+ */
+function bracketSpan(items: NavItem[], openLock: OpenLock): { left: string; width: string } {
+  const held = lockedItems(items, openLock);
+  const start = items.indexOf(held[0]);
+  const pct = (slots: number) => `${(slots * 100) / items.length}%`;
+  return { left: pct(start), width: pct(held.length) };
 }
 
 // ---------------------------------------------------------------------------
@@ -234,8 +266,8 @@ function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
  * The note's sentence, with the slot's own label drawn in `--fg`. It names the other slots the lock holds, and with
  * the lock open and a deck it adds where the decks are.
  */
-function NoteSentence({ id, label, className, openLock }: { id: string; label: string; className: string; openLock: OpenLock }) {
-  const others = nameList(lockedItems(openLock).filter((i) => i.label !== label).map((i) => i.label));
+function NoteSentence({ id, label, className, openLock, items }: { id: string; label: string; className: string; openLock: OpenLock; items: NavItem[] }) {
+  const others = nameList(lockedItems(items, openLock).filter((i) => i.label !== label).map((i) => i.label));
   const sentence = openLock?.hasDecks ? `${lockCopy.note(label, others)} ${lockCopy.withDecks}` : lockCopy.note(label, others);
   const rest = sentence.startsWith(label) ? sentence.slice(label.length) : null;
   return (
@@ -289,7 +321,7 @@ function tabPlace(slot: HTMLElement) {
 const tourSlot = (href: string): TargetId | null =>
   href === "/collection" ? "tour:collection" : href === "/commanders" ? "tour:commanders" : href === "/decks" ? "tour:decks" : null;
 
-function RailLock({ pathname, openLock }: { pathname: string; openLock: OpenLock }) {
+function RailLock({ pathname, openLock, items }: { pathname: string; openLock: OpenLock; items: NavItem[] }) {
   const { open, show, close, slots, notes, inLock, setOpen } = useLockNotes(railPlace);
   const action = useNoteAction(openLock);
   const baseId = useId();
@@ -305,7 +337,7 @@ function RailLock({ pathname, openLock }: { pathname: string; openLock: OpenLock
       data-lock-well
       className="flex w-[48px] shrink-0 flex-col items-center gap-1 rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] pt-[4px] pb-[9px] touch:w-[80px] touch:rounded-[14px] touch:px-[3px] touch-short:pb-[5px]"
     >
-      {lockedItems(openLock).map(({ href, label }) => {
+      {lockedItems(items, openLock).map(({ href, label }) => {
         const isOpen = open?.href === href;
         const noteId = `${baseId}-note-${label}`;
         const sentenceId = `${noteId}-sentence`;
@@ -364,6 +396,7 @@ function RailLock({ pathname, openLock }: { pathname: string; openLock: OpenLock
                 id={sentenceId}
                 label={label}
                 openLock={openLock}
+                items={items}
                 className="m-0 text-[13px] leading-[1.5] [text-wrap:pretty] text-[color:var(--fg-body)]"
               />
               {isOpen && (
@@ -410,7 +443,19 @@ function LockedSlotAndNote({ children }: { children: React.ReactNode }) {
  * a TAP only; it closes on a press outside, a second tap on the slot, Go to step
  * 1, or Escape. Focus stays on the slot, and the note's button is next.
  */
-function TabLockSlots({ pathname, liveHome, openLock }: { pathname: string; liveHome: React.ReactNode; openLock: OpenLock }) {
+function TabLockSlots({
+  pathname,
+  liveBefore,
+  liveAfter,
+  openLock,
+  items,
+}: {
+  pathname: string;
+  liveBefore: React.ReactNode;
+  liveAfter: React.ReactNode;
+  openLock: OpenLock;
+  items: NavItem[];
+}) {
   const { open, show, close, slots, notes } = useLockNotes(tabPlace);
   // The About sheet holds this slot while it is up (H1): a tapped note stays
   // open in state and is drawn once the sheet closes.
@@ -420,8 +465,8 @@ function TabLockSlots({ pathname, liveHome, openLock }: { pathname: string; live
 
   return (
     <div className="flex w-full items-center">
-      {liveHome}
-      {lockedItems(openLock).map(({ href, label }) => {
+      {liveBefore}
+      {lockedItems(items, openLock).map(({ href, label }) => {
         // Open in STATE (`waiting`) and drawn (`isOpen`) differ only while the About sheet
         // is up. The toggle reads the state, so a second tap cancels a waiting note rather
         // than asking for it again.
@@ -474,6 +519,7 @@ function TabLockSlots({ pathname, liveHome, openLock }: { pathname: string; live
                 id={sentenceId}
                 label={label}
                 openLock={openLock}
+                items={items}
                 className="m-0 text-[14px] leading-[1.5] [text-wrap:pretty] text-[color:var(--fg-body)]"
               />
               {isOpen && (
@@ -492,19 +538,26 @@ function TabLockSlots({ pathname, liveHome, openLock }: { pathname: string; live
           </LockedSlotAndNote>
         );
       })}
+      {liveAfter}
     </div>
   );
 }
 
 /**
  * The phone's bracket over the locked tabs, carrying the reason in words (4.4-4.11): tabs 2 to 5 as shipped, tabs 3
- * to 5 with the lock open (no-collection entry, call 6), where Collection is live beside Home.
+ * to 5 with the lock open (no-collection entry, call 6), where Collection is live beside Home. With the Commanders
+ * place it spans the locked run alone (3 to 4 of five with the lock open, Friends live at the right).
  */
-function TabBracket({ openLock }: { openLock: OpenLock }) {
+function TabBracket({ openLock, items }: { openLock: OpenLock; items: NavItem[] }) {
+  const span = bracketSpan(items, openLock);
   return (
-    // `ml-[20%]`: one slot of the bar's content width (374 at 390 = 5 x 74.8),
-    // so the row spans slots 2 to 5 at any phone width; `ml-[40%]`, two slots, spans 3 to 5.
-    <div data-lock-bracket className={`relative h-[14px] flex-none ${openLock ? "ml-[40%]" : "ml-[20%]"}`}>
+    // Shares of the bar's content width, which the slots divide equally (374 at 390 = 5 x 74.8), so the
+    // row spans exactly the locked slots at any phone width.
+    <div
+      data-lock-bracket
+      className="relative h-[14px] flex-none"
+      style={{ marginLeft: span.left, width: span.width }}
+    >
       <span
         aria-hidden="true"
         data-lock-bracket-box
@@ -595,34 +648,67 @@ type NavSlotProps = {
   className: string;
   // The pointer rail's name tag listens on its slots (useRailTag). The tab bar passes none.
   handlers?: ReturnType<ReturnType<typeof useRailTag>["bind"]>;
-  /** The slot is a moment's fallback anchor (M12 on Discover, behind /commanders' banner door). */
+  /** The slot is a moment's anchor: M12's fallback on Discover (behind /commanders' banner door), or M11 on Friends. */
   moment?: boolean;
+  /** An unseen count at the glyph's top-right (menu and Home handoff, R1 Menu 8): drawn above 0, `9+` above 9. */
+  badge?: number;
   children: React.ReactNode;
 };
 
+/** The badge's words for a screen reader, by slot: only Home and Friends carry a count. */
+function badgeWords(href: NavHref, count: number): string {
+  return href === "/friends" ? shellCopy.nav.badge.friends(count) : shellCopy.nav.badge.home(count);
+}
+
+/**
+ * The slot's count: an accent pill at the glyph's top-right, clear of the pending pip at the slot's foot (menu and Home
+ * handoff, `.bdg`). Its ink is `--bg`, as every shipped accent pill's, not the board's literal (audit erratum 7). Drawn,
+ * not read: the slot's name carries the count in words.
+ */
+function NavBadge({ count }: { count: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      data-nav-badge=""
+      className="pointer-events-none absolute top-[3px] left-[calc(50%+4px)] h-[16px] min-w-[16px] rounded-full bg-[color:var(--accent)] px-[4px] text-center font-mono text-[9.5px] leading-[16px] font-semibold tracking-normal text-[color:var(--bg)] shadow-[0_0_0_2px_var(--surface-rail)]"
+    >
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
 // No `title`: the pointer rail draws its own tag (desktop nav labels R2, audit E3), and a native
 // tooltip would show beside it.
-function NavSlot({ href, name, active, pip, className, handlers, moment = false, children }: NavSlotProps) {
+function NavSlot({ href, name, active, pip, className, handlers, moment = false, badge = 0, children }: NavSlotProps) {
   // M12 (discovery R1): Discover carries Help me choose, beside the rail's slot and above the tab bar's. From R3 on
   // its own anchor is the door in /commanders' guided banner (E2), so this slot is a FALLBACK: it counts only while
   // that door is not drawn (a reader with cards and no deck whose collection leads no commander, so no banner).
-  const helpMoment = useMomentAnchor("help-me-choose", {
+  // M11 (Friends after a game) sits on the Friends slot once Friends is in the bar, as its own anchor (menu and Home
+  // audit, erratum 5). A slot's href never changes, so each slot asks for one moment for its whole life.
+  const friendsSlot = href === "/friends";
+  const slotMoment = useMomentAnchor(friendsSlot ? "friends-after-game" : "help-me-choose", {
     eligible: moment,
-    copy: momentsCopy.helpMeChoose,
+    copy: friendsSlot ? momentsCopy.friendsAfterGameBar : momentsCopy.helpMeChoose,
     place: pip === "rail" ? "right" : "below",
-    fallback: true,
+    fallback: !friendsSlot,
   });
+  const counted = badge > 0;
+  // The rail names its slot by `aria-label`, which hides any text inside, so the count joins the name there; the tab
+  // bar's name is its visible label, which the sr-only words follow.
+  const label = name !== undefined && counted ? `${name}, ${badgeWords(href, badge)}` : name;
   return (
     <Link
       href={href}
-      aria-label={name}
+      aria-label={label}
       {...handlers}
-      {...helpMoment}
+      {...slotMoment}
       aria-current={active ? "page" : undefined}
       className={`relative ${className}`}
     >
       <TargetBox id={tourSlot(href)} />
       {children}
+      {counted && <NavBadge count={badge} />}
+      {counted && name === undefined && <span className="sr-only">{`, ${badgeWords(href, badge)}`}</span>}
       <PendingPip href={href} placement={pip} />
     </Link>
   );
@@ -640,7 +726,21 @@ export type AdminDoorProps = {
   friendsMoment?: boolean;
   /** `FIRST_RUN_TOUR_ENABLED` for this reader (discovery R3·2): the account menu's `Take the tour` row. */
   tour?: boolean;
+  /** `COMMANDERS_PLACE_ENABLED` for this reader: Discover leaves the bar, and with `friends` Friends takes its slot. */
+  commandersPlace?: boolean;
 };
+
+/** The bar's unseen counts (menu and Home handoff, R1 Menu 8), filled by the feed and Friends PRs; absent draws none. */
+export type NavBadges = { home?: number; friends?: number };
+
+function slotBadge(badges: NavBadges | undefined, href: NavHref): number {
+  return href === "/" ? (badges?.home ?? 0) : href === "/friends" ? (badges?.friends ?? 0) : 0;
+}
+
+/** The slot that carries a moment: M12 on Discover on the `/commanders` list, or M11 on Friends once it is in the bar. */
+function momentOnSlot(helpMoment: boolean, friendsMoment: boolean, pathname: string, href: string): boolean {
+  return href === "/friends" ? friendsMoment : helpOnSlot(helpMoment, pathname, href);
+}
 
 /** M12 (discovery R1): the reader has no deck, so on the `/commanders` list Discover carries Help me choose. */
 function helpOnSlot(helpMoment: boolean, pathname: string, href: string): boolean {
@@ -658,9 +758,14 @@ export function NavRail({
   credits,
   friendsMoment,
   tour,
+  commandersPlace = false,
   helpMoment = false,
-}: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; helpMoment?: boolean } & AdminDoorProps) {
+  badges,
+}: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; helpMoment?: boolean; badges?: NavBadges } & AdminDoorProps) {
   const pathname = usePathname();
+  const shape: BarShape = { commandersPlace, friends: friends ?? false };
+  const items = barItems(shape);
+  const inBar = friendsInBar(shape);
   // Live slots only: a locked slot's note already names it, and two popovers from one slot is
   // the collision the handoff's D1 warned of. Home, live in first run, gets the tag.
   const { bind, tag } = useRailTag(pathname);
@@ -719,7 +824,7 @@ export function NavRail({
         aria-label="Primary"
       >
         <RailSearchSlot bind={bind} />
-        {liveItems(locked, openLock).map(({ href, label }) => {
+        {liveItems(items, locked, openLock).map(({ href, label }) => {
           const active = isActive(pathname, href);
           return (
             <NavSlot
@@ -729,7 +834,8 @@ export function NavRail({
               active={active}
               pip="rail"
               handlers={bind(href, label)}
-              moment={helpOnSlot(helpMoment, pathname, href)}
+              moment={momentOnSlot(helpMoment, inBar && !!friendsMoment, pathname, href)}
+              badge={slotBadge(badges, href)}
               // No `transition-colors`: the pending fill below must clear the frame the new page
               // lands, not fade out over it (audit correction 4).
               className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
@@ -745,8 +851,9 @@ export function NavRail({
         })}
 
         {/* Home stays outside the well, above it (1.1); the well replaces the
-            divider and lone padlock the rail drew before (1.2). */}
-        {locked && <RailLock pathname={pathname} openLock={openLock} />}
+            divider and lone padlock the rail drew before (1.2). Friends, live, sits above it
+            with Home (menu and Home handoff, "Rail · first run"). */}
+        {locked && <RailLock pathname={pathname} openLock={openLock} items={items} />}
       </nav>
 
       {/* ------------------------------------------------------------------ */}
@@ -758,7 +865,7 @@ export function NavRail({
         <HelpButton place="rail" />
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
-        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} credits={credits} friendsMoment={friendsMoment} tour={tour} />
+        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsInBar={inBar} credits={credits} friendsMoment={friendsMoment} tour={tour} />
       </div>
       {tag}
       {/* The search's desktop field and dropdown, and ⌘K (card search PR D). */}
@@ -772,10 +879,31 @@ export function NavRail({
 // §Tab bar container / §Tab item Active / §Tab item Idle
 // ---------------------------------------------------------------------------
 
-export function TabBar({ locked, openLock = null, helpMoment = false }: { locked: boolean; openLock?: OpenLock; helpMoment?: boolean }) {
+export function TabBar({
+  locked,
+  openLock = null,
+  helpMoment = false,
+  friendsMoment = false,
+  friends = false,
+  commandersPlace = false,
+  badges,
+}: {
+  locked: boolean;
+  openLock?: OpenLock;
+  helpMoment?: boolean;
+  /** M11's condition, resolved by the shell; drawn on the Friends slot only while Friends is in the bar. */
+  friendsMoment?: boolean;
+  /** `SOCIAL_FRIENDS_ENABLED` and `COMMANDERS_PLACE_ENABLED` for this reader: the bar's shape, as the rail's. */
+  friends?: boolean;
+  commandersPlace?: boolean;
+  badges?: NavBadges;
+}) {
   const pathname = usePathname();
+  const shape: BarShape = { commandersPlace, friends };
+  const items = barItems(shape);
+  const inBar = friendsInBar(shape);
 
-  const live = liveItems(locked, openLock).map(({ href, label }) => {
+  const slot = ({ href, label }: NavItem) => {
     const active = isActive(pathname, href);
     return (
       <NavSlot
@@ -787,7 +915,8 @@ export function TabBar({ locked, openLock = null, helpMoment = false }: { locked
         // 13 reserves colour for status. One `color` on the slot serves both
         // the icon (currentColor) and the label.
         pip="tab"
-        moment={helpOnSlot(helpMoment, pathname, href)}
+        moment={momentOnSlot(helpMoment, inBar && friendsMoment, pathname, href)}
+        badge={slotBadge(badges, href)}
         className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
           active
             ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"
@@ -806,7 +935,12 @@ export function TabBar({ locked, openLock = null, helpMoment = false }: { locked
         </span>
       </NavSlot>
     );
-  });
+  };
+  const live = liveItems(items, locked, openLock);
+  // While locked, the live slots either side of the locked run: Home (and Collection when open) before it, Friends after.
+  const lockStart = items.indexOf(lockedItems(items, openLock)[0]);
+  const liveBefore = live.filter((i) => items.indexOf(i) < lockStart).map(slot);
+  const liveAfter = live.filter((i) => items.indexOf(i) > lockStart).map(slot);
 
   return (
     <nav
@@ -833,11 +967,11 @@ export function TabBar({ locked, openLock = null, helpMoment = false }: { locked
     >
       {locked ? (
         <>
-          <TabBracket openLock={openLock} />
-          <TabLockSlots pathname={pathname} liveHome={live} openLock={openLock} />
+          <TabBracket openLock={openLock} items={items} />
+          <TabLockSlots pathname={pathname} liveBefore={liveBefore} liveAfter={liveAfter} openLock={openLock} items={items} />
         </>
       ) : (
-        live
+        live.map(slot)
       )}
     </nav>
   );
@@ -849,7 +983,8 @@ export function TabBar({ locked, openLock = null, helpMoment = false }: { locked
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, friendsMoment, tour }: { theme: ThemeKey } & AdminDoorProps) {
+export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, friendsMoment, tour, commandersPlace = false }: { theme: ThemeKey } & AdminDoorProps) {
+  const inBar = friendsInBar({ commandersPlace, friends: friends ?? false });
   const ref = useRef<HTMLElement>(null);
   const { mode, slides, under } = useQuickReturn(ref);
   return (
@@ -891,7 +1026,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, fri
         <div className="flex items-center gap-[6px]">
           <HelpButton place="header" />
           {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} credits={credits} friendsMoment={friendsMoment} tour={tour} />
+          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsInBar={inBar} credits={credits} friendsMoment={friendsMoment} tour={tour} />
         </div>
       </div>
     </header>

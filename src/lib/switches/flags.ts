@@ -4,6 +4,7 @@ import { listCacheEnabled } from "../cache/list-cache-flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
 import { changeCommanderEnabled } from "../commander-change/flag";
+import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
@@ -54,6 +55,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
   COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
+  COMMANDERS_PLACE_ENABLED: commandersPlaceEnabled,
   DECK_BENCHMARKS_ENABLED: deckBenchmarksEnabled,
   DECK_NOTES_ENABLED: deckNotesEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,

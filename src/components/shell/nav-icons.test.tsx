@@ -2,7 +2,7 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { NavIcon } from "./nav-icons";
 
-const HREFS = ["/", "/collection", "/commanders", "/decks"] as const;
+const HREFS = ["/", "/collection", "/commanders", "/discover", "/decks", "/friends"] as const;
 
 describe("NavIcon", () => {
   it("draws every slot at the handoff's geometry", () => {

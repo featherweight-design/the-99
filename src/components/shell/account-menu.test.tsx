@@ -634,6 +634,47 @@ describe("AccountMenu Friends row (Social R1 placement)", () => {
 });
 
 
+// Menu and Home handoff, R1 Menu 3: once Friends is in the bar, Settings takes its row in the same place.
+describe("AccountMenu Settings row (menu and Home)", () => {
+  it.each(["popover", "sheet"] as const)("draws Settings where Friends was, and no Friends row, in the %s", (panel) => {
+    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" friends friendsInBar />);
+    fireEvent.click(trigger());
+    const items = screen.getAllByRole("menuitem");
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/settings", "/admin", "Manage account", "Sign out"]);
+    expect(screen.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/settings");
+    expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
+  });
+
+  it("keeps the shipped Friends row while Friends is not in the bar, and draws no Settings", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" friends />);
+    fireEvent.click(trigger());
+    expect(screen.getByRole("menuitem", { name: "Friends" })).toHaveAttribute("href", "/friends");
+    expect(screen.queryByRole("menuitem", { name: "Settings" })).toBeNull();
+  });
+
+  it("draws neither row with Friends off, whatever the bar", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" friendsInBar />);
+    fireEvent.click(trigger());
+    expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Settings" })).toBeNull();
+  });
+
+  it("hands the Settings navigation to the provider and closes the menu", () => {
+    window.history.replaceState(null, "", "/");
+    const providerPush = vi.fn();
+    render(
+      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush, registerContentScope: () => {} }}>
+        <AccountMenu panel="sheet" theme="amonkhet" friends friendsInBar />
+      </Report.Provider>,
+    );
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
+    expect(providerPush).toHaveBeenCalledWith("/settings");
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+});
+
+
 describe("AccountMenu credit chip (M1b)", () => {
   const chip = (over: Partial<ChipState> = {}): ChipState => ({ kind: "credits", label: "117 credits", line: null, hollow: false, ...over });
 

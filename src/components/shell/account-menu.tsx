@@ -35,7 +35,7 @@ import { heldPaidAction } from "../../app/account/delete-warning-actions";
 import { warnsBeforeDelete, type HeldPaid } from "../../lib/payments/held-rule";
 import { DeleteWarning } from "../credits/delete-warning";
 
-const { manageAccount, signOut: signOutLabel, triggerLabel } = shellCopy.accountMenu;
+const { manageAccount, signOut: signOutLabel, triggerLabel, settings: settingsLabel } = shellCopy.accountMenu;
 
 // About sits first and carries no badge, at any width, ever: the sheet is the
 // notification (the redirect, while ABOUT_SHEET_ENABLED is off), so a dot here
@@ -75,6 +75,10 @@ type MenuItemsProps = {
   friends: boolean;
   /** Leaves for /friends, as `onAbout` leaves for /about. */
   onFriends: () => void;
+  /** Friends is in the bar (`COMMANDERS_PLACE_ENABLED` with `friends`): Settings takes the Friends row's place. */
+  settings: boolean;
+  /** Leaves for /settings, as `onAbout` leaves for /about. */
+  onSettings: () => void;
   /** The credit chip (M1b), or null: absent for a reader who does not see credits. */
   chip: ChipState | null;
   /** Leaves for /credits, as `onAbout` leaves for /about. */
@@ -92,7 +96,7 @@ type MenuItemsProps = {
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, friends, onFriends, tour, onTour }: MenuItemsProps) {
+function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, friends, onFriends, settings, onSettings, tour, onTour }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
   // About first, Friends under it (Social R1 placement), Admin after them; each drawn only where it applies.
@@ -100,7 +104,13 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
     { href: "/about", label: aboutLabel, trailing: null, go: onAbout },
     // The tour taken again sits directly under About, drawn as that row is (plan decision 6).
     ...(tour ? [{ href: TOUR_HREF, label: tourAgainCopy.menu, trailing: null, go: onTour }] : []),
-    ...(friends ? [{ href: "/friends", label: socialCopy.menu.friends, trailing: null, go: onFriends }] : []),
+    // Once Friends is in the bar, Settings takes its row, in the same place, so the menu keeps its count of rows
+    // (menu and Home handoff, R1 Menu 3).
+    ...(settings
+      ? [{ href: "/settings", label: settingsLabel, trailing: null, go: onSettings }]
+      : friends
+        ? [{ href: "/friends", label: socialCopy.menu.friends, trailing: null, go: onFriends }]
+        : []),
     ...(admin ? [{ href: "/admin", label: adminCopy.door.label, trailing: admin, go: onAdmin }] : []),
   ];
   const buttons = [
@@ -403,6 +413,7 @@ export function AccountMenu({
   adminDoor = false,
   adminEnv,
   friends = false,
+  friendsInBar = false,
   credits = null,
   friendsMoment = false,
   tour = false,
@@ -415,6 +426,9 @@ export function AccountMenu({
   adminEnv?: string;
   /** `SOCIAL_FRIENDS_ENABLED` for this reader, resolved by the shell; only the boolean reaches the client. */
   friends?: boolean;
+  /** Friends is in the bar (with `friends` and `COMMANDERS_PLACE_ENABLED`): the Settings row in place of Friends, and
+   *  M11 on the bar's slot rather than this button. */
+  friendsInBar?: boolean;
   /** The credit chip, read per request by the shell (plan E10) and re-read on every open. */
   credits?: ChipState | null;
   /** M11, Friends after a game: resolved by the shell (a game logged, no friend yet) and drawn only beside the Friends row. */
@@ -464,6 +478,8 @@ export function AccountMenu({
   const onAbout = () => go("/about");
   const onAdmin = () => go("/admin");
   const onFriends = () => go("/friends");
+  const onSettings = () => go("/settings");
+  const settings = friends && friendsInBar;
   const onCredits = () => go("/credits");
   // The chip is re-read each time the menu opens (plan E10): the layout does not re-render on navigation, so the
   // shell's value is only the first paint. A failed read keeps what is drawn.
@@ -544,8 +560,9 @@ export function AccountMenu({
   const label = triggerLabel(identity.name);
   const isPopover = panel === "popover";
   // Below the phone header's avatar; above the rail's, which sits at the rail's foot, so the bubble flips (README, M11).
+  // Once Friends is in the bar the moment sits on its slot instead (menu and Home audit, erratum 5).
   const afterGame = useMomentAnchor("friends-after-game", {
-    eligible: friends && friendsMoment,
+    eligible: friends && friendsMoment && !settings,
     copy: momentsCopy.friendsAfterGame,
   });
   // The trigger carries the moment's anchor and is where the deletion warning hands focus back.
@@ -663,6 +680,8 @@ export function AccountMenu({
             admin={admin}
             friends={friends}
             onFriends={onFriends}
+            settings={settings}
+            onSettings={onSettings}
             tour={tour}
             onTour={onTour}
             onAdmin={onAdmin}
@@ -684,6 +703,8 @@ export function AccountMenu({
             admin={admin}
             friends={friends}
             onFriends={onFriends}
+            settings={settings}
+            onSettings={onSettings}
             tour={tour}
             onTour={onTour}
             onAdmin={onAdmin}
