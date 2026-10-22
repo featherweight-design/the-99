@@ -19,10 +19,11 @@ vi.mock("../decks/price-query", () => ({
   cheapestNow: (read: { cents: Map<string, number> }, id: string) => read.cents.get(id) ?? null,
 }));
 
-const { loadNearCombos, rankNearCombos, shapeNearCombos, whereIs } = await import("./near-combos");
+const { cardComboQuery, loadCardCombos, loadNearCombos, pieceState, rankNearCombos, shapeCardCombos, shapeNearCombos, whereIs } = await import("./near-combos");
 const { shapeComboFacts } = await import("../synopsis/combo-facts");
 type ComboPieceRow = import("../synopsis/combo-facts").ComboPieceRow;
 type NearCombo = import("./near-combos").NearCombo;
+type CardComboRow = import("./near-combos").CardComboRow;
 
 const ON: NodeJS.ProcessEnv = { ...process.env, NEAR_COMBOS_ENABLED: "true" };
 const piece = (v: string, name: string, o: Partial<ComboPieceRow> = {}): ComboPieceRow => ({
@@ -80,20 +81,50 @@ describe("whereIs", () => {
 
   it("every owned copy claimed is elsewhere, naming the decks", () => {
     expect(whereIs(avail({ owned: 1, free: 0, claims: [claim("d2", "Elves"), claim("d3", "Brago")] }), 500))
-      .toEqual({ kind: "elsewhere", decks: [{ id: "d2", name: "Elves" }, { id: "d3", name: "Brago" }] });
+      .toEqual({ kind: "elsewhere", decks: [{ id: "d2", name: "Elves", committed: true }, { id: "d3", name: "Brago", committed: true }] });
   });
 
-  it("names only the decks holding a copy: an unreserved draft's ask is not a location, a reserved brew is", () => {
+  it("names only the decks holding a copy, committed first: a draft's ask is not a location, a reserved brew is", () => {
     const committed = claim("d1", "Committed");
     const draft = { ...claim("d2", "Draft"), mature: false, granted: 0 };
     const brew = { ...claim("d3", "Brew"), mature: false, granted: 1 };
-    expect(whereIs(avail({ owned: 1, free: 0, claims: [committed, draft, brew] }), null))
-      .toEqual({ kind: "elsewhere", decks: [{ id: "d1", name: "Committed" }, { id: "d3", name: "Brew" }] });
+    expect(whereIs(avail({ owned: 1, free: 0, claims: [brew, draft, committed] }), null))
+      .toEqual({ kind: "elsewhere", decks: [{ id: "d1", name: "Committed", committed: true }, { id: "d3", name: "Brew", committed: false }] });
   });
 
   it("not owned is a buy at the tag's figure, or null when nothing is stocked", () => {
     expect(whereIs(undefined, 1299)).toEqual({ kind: "buy", cents: 1299 });
     expect(whereIs(avail({ owned: 0 }), null)).toEqual({ kind: "buy", cents: null });
+  });
+});
+
+describe("owned basic lands", () => {
+  beforeEach(() => {
+    selects.length = 0;
+    execute.mockReset();
+    loadAvailability.mockReset();
+    loadPrices.mockReset();
+  });
+
+  it("a basic the availability read leaves out but the collection holds reads as held, in both reads", async () => {
+    // Read B: the availability read reports nothing for the basic; the collection holds one.
+    execute
+      .mockResolvedValueOnce({ rows: [{ variant_id: "v", produces: ["Infinite mana"], card_count: 2, mana_value_needed: 0, mana_needed: null, steps: null, notable_prerequisites: null, oracle_id: "id-Card", name: "Card", must_be_commander: false, total: 1 }, { variant_id: "v", produces: ["Infinite mana"], card_count: 2, mana_value_needed: 0, mana_needed: null, steps: null, notable_prerequisites: null, oracle_id: "id-Forest", name: "Forest", must_be_commander: false, total: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ oracle_id: "id-Forest" }] });
+    // A fresh map per call: the fill writes into the map it is handed, so a shared one would let
+    // read A pass on read B's fill.
+    loadAvailability.mockImplementation(() => Promise.resolve(new Map()));
+    const b = await loadCardCombos({ userId: "u", oracleId: "id-Card", env: ON });
+    expect(b.combos[0].others.map((p) => [p.name, p.state])).toEqual([["Forest", "spare"]]);
+
+    // Read A: the missing piece is that basic.
+    selects.push([{ commander: "id-Cmdr", partner: null }], [{ oracleId: "id-Held" }], [{ oracleId: "id-Cmdr", identity: ["G"] }]);
+    execute
+      .mockResolvedValueOnce({ rows: [piece("p", "Held", { color_identity: [] }), piece("p", "Forest", { held: false, color_identity: [] })] })
+      .mockResolvedValueOnce({ rows: [{ oracle_id: "id-Forest" }] });
+    loadPrices.mockResolvedValue({ cents: new Map() });
+    const a = await loadNearCombos({ userId: "u", deckId: "d", env: ON });
+    expect(a.combos[0].missing.where).toEqual({ kind: "spare" });
   });
 });
 
@@ -162,12 +193,15 @@ describe("loadNearCombos", () => {
 
   it("places each missing piece from the deck's own vantage and ranks the result", async () => {
     selects.push([{ commander: "id-Cmdr", partner: null }], [{ oracleId: "id-Held" }], [{ oracleId: "id-Cmdr", identity: ["U"] }]);
-    execute.mockResolvedValue({
-      rows: [
-        piece("buy", "Held"), piece("buy", "Bought", { held: false }),
-        piece("spare", "Cmdr"), piece("spare", "Spare", { held: false }),
-      ],
-    });
+    execute
+      .mockResolvedValueOnce({
+        rows: [
+          piece("buy", "Held"), piece("buy", "Bought", { held: false }),
+          piece("spare", "Cmdr"), piece("spare", "Spare", { held: false }),
+        ],
+      })
+      // The collection's own read for pieces the availability read does not report: none held.
+      .mockResolvedValueOnce({ rows: [] });
     loadAvailability.mockResolvedValue(new Map([["id-Spare", avail({ owned: 1, free: 1 })]]));
     loadPrices.mockResolvedValue({ cents: new Map([["id-Bought", 350]]) });
 
@@ -178,5 +212,151 @@ describe("loadNearCombos", () => {
     ]);
     expect(out.combos[0].usesCommander).toBe(true);
     expect(loadAvailability).toHaveBeenCalledWith("u", expect.objectContaining({ excludeDeckId: "d", oracleIds: ["id-Bought", "id-Spare"] }));
+  });
+
+  it("maxPieces keeps only combos of that many pieces or fewer", async () => {
+    selects.push([{ commander: "id-Cmdr", partner: null }], [{ oracleId: "id-Held" }, { oracleId: "id-Held2" }], [{ oracleId: "id-Cmdr", identity: ["U"] }]);
+    execute.mockResolvedValueOnce({
+      rows: [
+        piece("pair", "Held"), piece("pair", "Buy", { held: false }),
+        ...["Held", "Held2", "Buy3"].map((n) => piece("triple", n, { card_count: 3, held: n !== "Buy3" })),
+      ],
+    }).mockResolvedValueOnce({ rows: [] });
+    loadAvailability.mockResolvedValue(new Map());
+    loadPrices.mockResolvedValue({ cents: new Map() });
+    const out = await loadNearCombos({ userId: "u", deckId: "d", env: ON, maxPieces: 2 });
+    expect(out.combos.map((c) => c.variantId)).toEqual(["pair"]);
+    expect(out.total).toBe(1);
+  });
+});
+
+describe("read B: a card's combos", () => {
+  const CARD = "id-Card";
+  const row = (v: string, name: string, o: Partial<CardComboRow> = {}): CardComboRow => ({
+    variant_id: v, produces: [`Infinite ${v}`], card_count: 2, mana_value_needed: 0, mana_needed: null, steps: "1. Go.",
+    notable_prerequisites: null, oracle_id: `id-${name}`, name, must_be_commander: false, total: 3, ...o,
+  });
+  const scope = { deck: new Set(["id-InDeck", "id-Cmdr"]), commanders: new Set(["id-Cmdr"]) };
+
+  it("pieceState: in the deck, else spare, elsewhere or not owned", () => {
+    expect(pieceState({ oracleId: "id-InDeck", mustBeCommander: false }, scope, undefined)).toBe("inDeck");
+    expect(pieceState({ oracleId: "id-X", mustBeCommander: false }, scope, avail({ owned: 2, free: 1 }))).toBe("spare");
+    expect(pieceState({ oracleId: "id-X", mustBeCommander: false }, scope, avail({ owned: 1, free: 0 }))).toBe("elsewhere");
+    expect(pieceState({ oracleId: "id-X", mustBeCommander: false }, scope, undefined)).toBe("notOwned");
+  });
+
+  it("a command-zone-only piece is in the deck only as one of its commanders", () => {
+    const zoneOnly = (oracleId: string) => pieceState({ oracleId, mustBeCommander: true }, scope, undefined);
+    expect(zoneOnly("id-Cmdr")).toBe("inDeck");
+    expect(zoneOnly("id-InDeck")).toBe("notOwned");
+  });
+
+  it("never lists the card itself, and drops a variant missing a row", () => {
+    const rows = [row("v1", "Card"), row("v1", "Partner"), row("short", "Card", { card_count: 3 }), row("short", "Other", { card_count: 3 })];
+    const out = shapeCardCombos(rows, CARD, () => "notOwned", 10);
+    expect(out.combos.map((c) => [c.variantId, c.others.map((p) => p.name)])).toEqual([["v1", ["Partner"]]]);
+    expect(out.combos[0].steps).toBe("1. Go.");
+  });
+
+  it("ranks fewest unowned pieces first, and reports the total from the query", () => {
+    const rows = [
+      row("none", "Card", { card_count: 3 }), row("none", "A", { card_count: 3 }), row("none", "B", { card_count: 3 }),
+      row("held", "Card", { card_count: 3 }), row("held", "Owned", { card_count: 3 }), row("held", "Spare", { card_count: 3 }),
+      row("one", "Card"), row("one", "C"),
+    ];
+    const owned = new Set(["id-Owned", "id-Spare"]);
+    const out = shapeCardCombos(rows, CARD, (p) => (owned.has(p.oracleId) ? "spare" : "notOwned"), 10);
+    expect(out.combos.map((c) => c.variantId)).toEqual(["held", "one", "none"]);
+    expect(out.total).toBe(3);
+  });
+
+  it("leads each count of unowned pieces with one combo per outcome, never lifting one the reader cannot finish", () => {
+    const rows = [
+      row("held-1", "Card", { produces: ["Infinite mana"] }), row("held-1", "H1", { produces: ["Infinite mana"] }),
+      row("held-2", "Card", { produces: ["Infinite mana"] }), row("held-2", "H2", { produces: ["Infinite mana"] }),
+      row("buy", "Card", { produces: ["Infinite turns"] }), row("buy", "B", { produces: ["Infinite turns"] }),
+    ];
+    const out = shapeCardCombos(rows, CARD, (p) => (p.oracleId === "id-B" ? "notOwned" : "spare"), 10);
+    expect(out.combos.map((c) => c.variantId)).toEqual(["held-1", "held-2", "buy"]);
+  });
+
+  it("prefers a combo using the deck's commander, the card itself included, over a cheaper one that does not", () => {
+    const rows = [
+      row("cheap", "Card", { mana_value_needed: 1 }), row("cheap", "Other", { mana_value_needed: 1 }),
+      row("cmdr", "Card", { mana_value_needed: 2 }), row("cmdr", "Cmdr", { mana_value_needed: 2 }),
+    ];
+    const held = () => "spare" as const;
+    expect(shapeCardCombos(rows, CARD, held, 10, undefined, new Set(["id-Cmdr"])).combos.map((c) => c.variantId)).toEqual(["cmdr", "cheap"]);
+    // Opened on the commander itself: every combo uses it, and the cheaper leads again.
+    const onCommander = shapeCardCombos(rows, CARD, held, 10, undefined, new Set([CARD])).combos;
+    expect(onCommander.every((c) => c.usesCommander)).toBe(true);
+    expect(onCommander.map((c) => c.variantId)).toEqual(["cheap", "cmdr"]);
+  });
+
+  it("caps the list", () => {
+    const rows = Array.from({ length: 50 }, (_, i) => [row(`v${i}`, "Card"), row(`v${i}`, `P${i}`)]).flat();
+    expect(shapeCardCombos(rows, CARD, () => "notOwned", 12).combos).toHaveLength(12);
+  });
+
+  it("the query names the card and the reader, with every correlated column qualified", async () => {
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const q = new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD));
+    expect(q.params).toEqual(expect.arrayContaining([CARD, "user_1"]));
+    expect(q.sql).toContain("ci.oracle_id = vc.oracle_id");
+    expect(q.sql).toContain("vc0.variant_id = v.variant_id");
+    expect(q.sql).toMatch(/limit \$\d+/);
+  });
+
+  it("the shortlist counts a piece the deck in scope lists as held, as the ranking does", async () => {
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const q = new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD, 200, 6, { deck: ["id-InDeck", "id-Cmdr"], commanders: ["id-Cmdr"] }));
+    // A command-zone-only piece is held only as a commander, a 99 piece by the deck's list: pieceState's rule.
+    expect(q.sql).toMatch(/case when vc\.must_be_commander then vc\.oracle_id = any\(\$\d+::uuid\[\]\)\s+else vc\.oracle_id = any\(\$\d+::uuid\[\]\) end/);
+    expect(q.params).toContainEqual(["id-InDeck", "id-Cmdr"]);
+    expect(q.params).toContainEqual(["id-Cmdr"]);
+  });
+
+  it("the shortlist and its total count only variants with every other piece stored", async () => {
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const q = new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD));
+    expect(q.sql.replace(/\s+/g, " ")).toContain("having count(*) = cand.card_count - 1");
+    // The total is a window over the groups that survive the having, so it is counted after it.
+    expect(q.sql.indexOf("having count(*)")).toBeGreaterThan(q.sql.indexOf("count(*) over ()"));
+  });
+
+  it("the loader hands the shortlist the deck in scope, commanders included", async () => {
+    execute.mockReset();
+    execute.mockResolvedValue({ rows: [] });
+    await loadCardCombos({ userId: "u", oracleId: CARD, deck: { oracleIds: ["id-A"], commanderOracleIds: ["id-Cmdr"] }, env: ON });
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const params = new PgDialect().sqlToQuery(execute.mock.calls[0][0]).params;
+    expect(params).toContainEqual(["id-A", "id-Cmdr"]);
+    expect(params).toContainEqual(["id-Cmdr"]);
+  });
+
+  it("maxPieces bounds the query's piece count", async () => {
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const q = new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD, 200, 2));
+    expect(q.sql).toMatch(/card_count between 2 and \$\d+/);
+    expect(q.params).toContain(2);
+    expect(new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD)).params).toContain(6);
+  });
+
+  it("reads nothing while the switch is off", async () => {
+    execute.mockReset();
+    expect(await loadCardCombos({ userId: "u", oracleId: CARD, env: {} as NodeJS.ProcessEnv })).toEqual({ combos: [], total: 0 });
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("states each other piece from the deck in scope and the reader's availability", async () => {
+    execute.mockReset();
+    loadAvailability.mockReset();
+    execute
+      .mockResolvedValueOnce({ rows: [row("v", "Card", { card_count: 4 }), row("v", "InDeck", { card_count: 4 }), row("v", "Away", { card_count: 4 }), row("v", "Gone", { card_count: 4 })] })
+      .mockResolvedValueOnce({ rows: [] });
+    loadAvailability.mockResolvedValue(new Map([["id-Away", avail({ owned: 1, free: 0, claims: [claim("d2", "Elves")] })]]));
+    const out = await loadCardCombos({ userId: "u", oracleId: CARD, deck: { oracleIds: ["id-InDeck"], commanderOracleIds: [] }, env: ON });
+    expect(out.combos[0].others.map((p) => [p.name, p.state, p.decks.map((d) => d.name)])).toEqual([["Away", "elsewhere", ["Elves"]], ["Gone", "notOwned", []], ["InDeck", "inDeck", []]]);
+    expect(loadAvailability).toHaveBeenCalledWith("u", expect.objectContaining({ oracleIds: ["id-InDeck", "id-Away", "id-Gone"] }));
   });
 });

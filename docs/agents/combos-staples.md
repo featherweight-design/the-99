@@ -104,3 +104,11 @@ switch is unset in production and listed in `ALL_FEATURES_EXCLUDED`.
   median 9 (p90 66, max 182). Hence the cap (20) and `total`.
 - Steps (`steps`, Spellbook's `description`) and mana (`mana_needed`, `mana_value_needed`) were stored for every
   variant by #820; this line changed no ingest.
+- **A card's combos** (`loadCardCombos`, PR 2). Every template-free, counted combo naming the card, its other pieces
+  each `inDeck` (a command-zone-only piece only as the deck's commander), `spare`, `elsewhere` or `notOwned`. A card
+  can be in thousands (Ashnod's Altar 5,768 on local-dev), so the query shortlists 200 in SQL by pieces the reader
+  owns none of, then size, then popularity, and the ranking runs on those: fewest unowned first, one per outcome
+  leading inside each count (across counts it lifted a combo needing a purchase above one held). The press took
+  ~330ms for Ashnod's Altar on local-dev.
+- **`maxPieces`** on both reads bounds the combo size; the combos-close handoff's surfaces ask for 2 (its G2). The
+  `elsewhere` decks carry `committed` and list committed decks first, for G4's "the first committed".

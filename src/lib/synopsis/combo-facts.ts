@@ -30,6 +30,15 @@ export type ComboPieceRow = {
 export type ComboFacts = { combos: ComboFact[]; nearCombos: NearComboFact[] };
 
 /**
+ * The SQL test for "produces a counted outcome" on a variant aliased `v`: an infinite, a game-ending
+ * feature, or a mandatory loop ("Draw the game"). The Overview's facts and both near-combos reads filter with this one.
+ */
+export function countedOutcomeSql() {
+  const gameEnding = sql.param([...GAME_ENDING_FEATURES]);
+  return sql`exists (select 1 from unnest(v.produces) f where f ~* '^infinite ' or f = any(${gameEnding}::text[]) or f = ${DRAW_THE_GAME})`;
+}
+
+/**
  * Every infinite, game-ending or mandatory-loop ("Draw the game"), template-free variant of 2 to 6 pieces the deck assembles
  * (gap 0) or is exactly one piece short of (gap 1). The commander counts as a piece, and a piece
  * that must be a commander counts only when it is one. Card count is never the test: what the
@@ -39,14 +48,13 @@ export type ComboFacts = { combos: ComboFact[]; nearCombos: NearComboFact[] };
 export function anySizeComboQuery(present: readonly string[], commanders: readonly string[]) {
   const presentP = sql.param([...present]);
   const commandersP = sql.param([...commanders]);
-  const gameEnding = sql.param([...GAME_ENDING_FEATURES]);
   return sql`
     with cand as (
       select v.variant_id
       from ${spellbookVariants} v
       where v.card_count between 2 and ${MAX_COMBO_PIECES}
         and cardinality(v.requires_template_ids) = 0
-        and exists (select 1 from unnest(v.produces) f where f ~* '^infinite ' or f = any(${gameEnding}::text[]) or f = ${DRAW_THE_GAME})
+        and ${countedOutcomeSql()}
         and exists (select 1 from ${spellbookVariantCards} vc0
                     where vc0.variant_id = v.variant_id and vc0.oracle_id = any(${presentP}::uuid[]))
     ), pieces as (
