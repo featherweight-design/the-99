@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, deckCards, decks } from "../../db/schema";
-import type { Availability } from "../decks/availability";
+import { hardDecks, type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { deckIdentity } from "../decks/format";
 import { cheapestNow, loadPrices } from "../decks/price-query";
@@ -93,12 +93,14 @@ export function shapeNearCombos(
 /**
  * Pure: where one card is for this reader, from its availability (read from the deck's own
  * vantage, so the deck's draft never claims it) and its buy tag's figure. A copy no deck claims is
- * a spare however many other copies are claimed; owning every copy claimed is `elsewhere`.
+ * a spare however many other copies are claimed; owning every copy claimed is `elsewhere`, naming
+ * the decks that hold one.
  */
 export function whereIs(availability: Availability | undefined, cents: number | null): MissingPieceWhere {
   if (!availability || availability.owned <= 0) return { kind: "buy", cents };
   if (availability.free > 0) return { kind: "spare" };
-  return { kind: "elsewhere", decks: availability.claims.map(({ id, name }) => ({ id, name })) };
+  // The decks HOLDING a copy (`hardDecks`): a draft that only asks for it holds nothing.
+  return { kind: "elsewhere", decks: hardDecks(availability) };
 }
 
 /** The bucket a missing piece ranks in: spare, elsewhere, a priced buy, an unpriced buy. */

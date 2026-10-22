@@ -83,6 +83,14 @@ describe("whereIs", () => {
       .toEqual({ kind: "elsewhere", decks: [{ id: "d2", name: "Elves" }, { id: "d3", name: "Brago" }] });
   });
 
+  it("names only the decks holding a copy: an unreserved draft's ask is not a location, a reserved brew is", () => {
+    const committed = claim("d1", "Committed");
+    const draft = { ...claim("d2", "Draft"), mature: false, granted: 0 };
+    const brew = { ...claim("d3", "Brew"), mature: false, granted: 1 };
+    expect(whereIs(avail({ owned: 1, free: 0, claims: [committed, draft, brew] }), null))
+      .toEqual({ kind: "elsewhere", decks: [{ id: "d1", name: "Committed" }, { id: "d3", name: "Brew" }] });
+  });
+
   it("not owned is a buy at the tag's figure, or null when nothing is stocked", () => {
     expect(whereIs(undefined, 1299)).toEqual({ kind: "buy", cents: 1299 });
     expect(whereIs(avail({ owned: 0 }), null)).toEqual({ kind: "buy", cents: null });
