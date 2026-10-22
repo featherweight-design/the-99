@@ -238,6 +238,8 @@ describe("the first run's to-do card", () => {
     );
     // Once, in the card's head: the retired banner drew the same step a second time.
     expect(screen.getAllByText(guidedBannerCopy.head)).toHaveLength(1);
+    // The retired banner split its step and title over two elements, so match the step on its own too.
+    expect(screen.getAllByText(/Step 3 of 3/)).toHaveLength(1);
     expect(screen.getByText(topOffCopy.strip.open(n))).toBeInTheDocument();
     expect(screen.getByRole("button", { name: topOffCopy.strip.openAria(n) })).toBeInTheDocument();
     expect(screen.queryByText(recommendationsCopy.fill.failedHeading)).toBeNull();

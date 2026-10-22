@@ -109,7 +109,7 @@ function arguesAgainstItself(c: SynergyCard): boolean {
 /**
  * Whether an empty pool is empty BECAUSE of the negative cut.
  *
- * `synergyCopy.lastSlots.short` explains an empty pool as the collection having
+ * `synergyCopy.lastSlots.exhaustedTitle` explains an empty pool as the collection having
  * run out with nothing left that EDHREC ranks. Since the tail is cut that is no
  * longer the only way to empty it: a deck holding every positively-ranked card
  * leaves a ranking that is entirely negative — reachable late in a build, and

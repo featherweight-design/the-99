@@ -289,8 +289,8 @@ function LastSlotsStripInner({
     if (!moveFocus.current) return;
     moveFocus.current = false;
     const target = pressRef.current;
-    // The strip is the last thing on the builder page, so its head sits near the
-    // bottom of the viewport and the list opens below the fold — at 390px the
+    // The row sits in the to-do card, under the header and the receipts, so on a
+    // phone the list it opens can start below the fold — at 390px the
     // player is handed a commit bar reading `Add 31 cards` with not one card on
     // screen, which is the blind add the whole feature exists to end. The head
     // is brought to the top of the viewport so the rows are what fills it.

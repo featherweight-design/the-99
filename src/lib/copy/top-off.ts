@@ -514,7 +514,12 @@ export const topOffCopy = {
 //   addPanelCopy.tile.* and every buy tag ...... the row's atoms
 //   manaCopy.costAria .......................... the cost, spoken uncapped
 //   the count-only availability strings ........ the marker in the slot
-//   synergyCopy.lastSlots.heading .............. the heading
+//
+// The to-do card (deck messages PR 1b) retired the strip's head and door: lastSlots.heading, lastSlots.short,
+// strip.heading, the captions and every door note are DELETED. The row says the same facts as
+// strip.open (title), strip.rowBody (body) and, for an empty pool, lastSlots.exhaustedTitle and
+// lastSlots.exhaustedBody, which keeps lastSlots.short's clause verbatim. The notes above that name
+// those keys describe R2 and R3.
 
 /**
  * `CompositionTargets`' ten keys, pluralised for a count — the nouns the gap strings take.
