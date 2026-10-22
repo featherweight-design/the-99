@@ -46,10 +46,22 @@ export function CartLine({
   line,
   deckNames,
   newestAsOf,
+  end,
+  inPanel = false,
+  data,
 }: {
   line: SelectedLine;
   deckNames: Map<string, string>;
   newestAsOf: Date | null;
+  /**
+   * What sits before the buy tag in place of the spare press: By friend's Ask or one-word status (spare requests PR
+   * 3c), where the glyph would say nothing. Absent, the line draws the shipped press.
+   */
+  end?: React.ReactNode;
+  /** Inside a By friend panel (`.fg .cl`): inset 14px, ruled between lines, the right side centred on the line. */
+  inPanel?: boolean;
+  /** Data attributes for the line's `<li>`: By friend marks its friend and state, for the focus landing and probes. */
+  data?: Record<`data-${string}`, string>;
 }) {
   const names = line.selectedRows.map((r) => deckNames.get(r.deckId) ?? "");
   const fact = lineFact(line, newestAsOf);
@@ -70,7 +82,9 @@ export function CartLine({
       }
     : undefined;
   return (
-    <li className="flex items-start gap-[12px] border-t border-[color:var(--border)] py-[11px]">
+    <li {...data} className={inPanel
+      ? "flex items-center gap-[12px] border-t border-[color:var(--border)] px-[14px] py-[11px] first:border-t-0"
+      : "flex items-start gap-[12px] border-t border-[color:var(--border)] py-[11px]"}>
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <div className="flex flex-wrap items-baseline gap-x-[8px] gap-y-[2px]">
           <CardDetailTrigger
@@ -110,8 +124,10 @@ export function CartLine({
       </div>
       {/* S5: the spare glyph before the tag while a friend holds a spare, opening the spares-only modal. The cart has
           no stand-ins, so the press never holds ⇄. */}
-      <span className="mt-[3px] flex flex-none items-center gap-[8px]">
-        <OtherWaysPress card={spareCard} standIn={false} standInAria="" limitFigure="" className="-my-[9px] md:my-0" />
+      <span className={inPanel ? "mt-[1px] flex flex-none items-center gap-[10px]" : "mt-[3px] flex flex-none items-center gap-[8px]"}>
+        {end !== undefined ? end : (
+          <OtherWaysPress card={spareCard} standIn={false} standInAria="" limitFigure="" className="-my-[9px] md:my-0" />
+        )}
         <BuyTag variant="row" reserveSlot price={fact} newestAsOf={newestAsOf} press={press} />
       </span>
     </li>
