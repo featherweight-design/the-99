@@ -1,0 +1,74 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-22T15:20:00Z"
+ },
+ "title": "The 99 \u00b7 Friend decks and hide switch R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1610,
+   "h": 1389,
+   "title": "R1 \u00b7 the round: calls and gaps"
+  },
+  "Friend-Deck.dc.html": {
+   "x": 1690,
+   "y": 0,
+   "w": 2760,
+   "h": 2348,
+   "title": "1 \u00b7 A friend\u2019s deck, opened"
+  },
+  "Tiles.dc.html": {
+   "x": 4530,
+   "y": 0,
+   "w": 2290,
+   "h": 2019,
+   "title": "5 \u00b7 The friend\u2019s deck tile"
+  },
+  "Hide-Switch.dc.html": {
+   "x": 0,
+   "y": 2468,
+   "w": 2760,
+   "h": 3041,
+   "title": "2 \u00b7 Hidden from friends"
+  },
+  "Privacy.dc.html": {
+   "x": 2840,
+   "y": 2468,
+   "w": 1850,
+   "h": 3337,
+   "title": "3 \u00b7 The privacy line, and absence"
+  },
+  "Carry-Overs.dc.html": {
+   "x": 4770,
+   "y": 2468,
+   "w": 1840,
+   "h": 2118,
+   "title": "Carried over from prompt 13"
+  },
+  "States.dc.html": {
+   "x": 0,
+   "y": 5925,
+   "w": 2840,
+   "h": 4802,
+   "title": "4 \u00b7 Long lists, empty, gone"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Friend-Deck.dc.html",
+  "Tiles.dc.html",
+  "Hide-Switch.dc.html",
+  "Privacy.dc.html",
+  "Carry-Overs.dc.html",
+  "States.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
