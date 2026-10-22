@@ -20,8 +20,8 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
       if (!card || !view.friend) return null;
       return { ...base, kind: "spare-request", friend: view.friend.displayName, card: card.name, image: card.image };
     case "combo":
-      if (!view.combo || !view.opens) return null;
-      return { ...base, kind: "combo", oracleId: view.opens, a: view.combo.pieces[0], b: view.combo.pieces[1], added: view.combo.added, image: card?.image ?? null };
+      if (!card || !view.combo || !view.opens) return null;
+      return { ...base, kind: "combo", oracleId: view.opens, a: view.combo.pieces[0], b: view.combo.pieces[1], added: view.combo.added, image: card.image };
     default:
       return null;
   }

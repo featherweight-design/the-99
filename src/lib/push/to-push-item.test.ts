@@ -32,6 +32,8 @@ describe("a feed view as a push item", () => {
     expect(toPushItem(view({ drop: null }), "b")).toBeNull(); // no price pair
     expect(toPushItem(view({ kind: "trade-match", friend: null }), "b")).toBeNull(); // the friend is gone
     expect(toPushItem(view({ kind: "combo", combo: null }), "b")).toBeNull();
+    // Valid combo data and `opens`, but the piece's card is gone from the catalog: dropped like every other stored kind.
+    expect(toPushItem(view({ kind: "combo", card: null, opens: "o9", combo: { pieces: ["A", "B"], added: "B" } }), "b")).toBeNull();
   });
   it("is null for a kind this PR does not push", () => {
     expect(toPushItem(view({ kind: "new-set", name: "Set" }), "b")).toBeNull();
