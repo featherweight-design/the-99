@@ -739,18 +739,22 @@ export type NavBadges = { home?: number; friends?: number };
 /**
  * The Friends badge as the reader should see it. The shell sits in the root layout, which a client navigation does not
  * render again, so the count it drew would outlive the /friends visit that cleared it (`markFriendsSeen`, after that
- * page's response). The board draws the badge ON /friends, so it stays there and clears once the reader leaves; a new
+ * page's response). The board draws the badge ON /friends, so it stays through that first visit and clears once the
+ * reader leaves, staying cleared on a later return; a new
  * count from the server (any later render of the layout, a new `badges` object) starts over, so a match noticed after
  * the visit still shows.
  */
 export function useSeenBadges(badges: NavBadges | undefined, pathname: string): NavBadges | undefined {
-  const [seen, setSeen] = useState<{ from: NavBadges | undefined; friends: boolean }>({ from: badges, friends: false });
+  // `fresh`: not visited since this count arrived; `visiting`: on the first visit; `cleared`: left it, for good.
+  const [seen, setSeen] = useState<{ from: NavBadges | undefined; friends: "fresh" | "visiting" | "cleared" }>({ from: badges, friends: "fresh" });
   let state = seen;
-  if (state.from !== badges) state = { from: badges, friends: false };
-  if (pathname === "/friends" && !state.friends && (badges?.friends ?? 0) > 0) state = { ...state, friends: true };
+  if (state.from !== badges) state = { from: badges, friends: "fresh" };
+  const onFriends = pathname === "/friends";
+  if (state.friends === "fresh" && onFriends && (badges?.friends ?? 0) > 0) state = { ...state, friends: "visiting" };
+  else if (state.friends === "visiting" && !onFriends) state = { ...state, friends: "cleared" };
   // Adjusted during render (react.dev's pattern for state that follows a prop), never in an effect.
   if (state !== seen) setSeen(state);
-  return state.friends && pathname !== "/friends" ? { ...badges, friends: 0 } : badges;
+  return state.friends === "cleared" ? { ...badges, friends: 0 } : badges;
 }
 
 function slotBadge(badges: NavBadges | undefined, href: NavHref): number {

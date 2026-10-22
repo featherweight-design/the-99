@@ -20,6 +20,14 @@ describe("useSeenBadges", () => {
     expect(result.current?.friends).toBe(0);
   });
 
+  it("stays cleared on a return to /friends while the server has sent no new count", () => {
+    const badges = { friends: 2 };
+    const { result, rerender } = hook(badges, "/friends");
+    rerender({ badges, pathname: "/decks" });
+    rerender({ badges, pathname: "/friends" });
+    expect(result.current?.friends).toBe(0);
+  });
+
   it("keeps the count on every other page while /friends has not been visited", () => {
     const badges = { friends: 1 };
     const { result, rerender } = hook(badges, "/collection");
