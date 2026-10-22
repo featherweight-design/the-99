@@ -642,3 +642,31 @@ describe("an entry drawn in another's place (`replaces`, the launch-end batch)",
     expect(unseenEntries(paid, seen(ABOUT_VERSION, switchedIds(paid))).map((e) => e.id)).toEqual([]);
   });
 });
+
+describe("whats-new's line switches, in every state of the four switches they name", () => {
+  const entry = aboutEntries.find((e) => e.id === "whats-new")!;
+  const flags = ["COMMANDERS_PLACE_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SOCIAL_FRIENDS_ENABLED", "SOCIAL_WISHLIST_ENABLED", "PRECONS_ENABLED"] as const;
+  // The renderer's own reading: a blank line starts a paragraph, an empty block is dropped (`EntryCaption`).
+  const blocks = (caption: string) => caption.split(/\n\s*\n/).map((b) => b.trim()).filter((b) => b.length > 0);
+
+  it("draws clean text in all 32 combinations: no gated line left behind, no orphaned heading, no empty paragraph", () => {
+    for (let mask = 0; mask < 1 << flags.length; mask++) {
+      const env = { HOME_FEED_ENABLED: "true", ...Object.fromEntries(flags.map((f, i) => [f, mask & (1 << i) ? "true" : "false"])) } as unknown as NodeJS.ProcessEnv;
+      const on = (f: (typeof flags)[number]) => env[f] === "true";
+      const { caption } = resolveEntry(entry, env);
+      const paras = blocks(caption);
+      expect(paras.every((b) => b.length > 0), `mask ${mask}`).toBe(true);
+      // A heading that introduces a list never stands without it.
+      const hasHeading = caption.includes("Commanders is one place now");
+      const hasTabs = /- For you:|- Discover:|- Help me choose:/.test(caption);
+      expect(hasHeading, `mask ${mask}: the tabs heading follows the place`).toBe(on("COMMANDERS_PLACE_ENABLED"));
+      expect(hasTabs, `mask ${mask}: tab lines only with the heading`).toBe(on("COMMANDERS_PLACE_ENABLED"));
+      expect(caption.includes("- Help me choose:"), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED") && on("HELP_ME_CHOOSE_ENABLED"));
+      expect(caption.includes("- A precon"), `mask ${mask}`).toBe(on("PRECONS_ENABLED"));
+      expect(caption.includes("- A price drop"), `mask ${mask}`).toBe(on("SOCIAL_WISHLIST_ENABLED"));
+      expect(caption.includes("- A friend with a spare"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED") && on("SOCIAL_WISHLIST_ENABLED"));
+      expect(caption.includes("Friends has its own spot"), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED") && on("SOCIAL_FRIENDS_ENABLED"));
+      expect(caption.includes("In Settings, you choose"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED"));
+    }
+  });
+});
