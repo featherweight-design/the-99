@@ -95,4 +95,12 @@ describe("FeedItemRow", () => {
     expect(picture.getAttribute("tabindex")).toBe("-1");
     expect(picture.getAttribute("aria-hidden")).toBe("true");
   });
+
+  it("lets a long friend name wrap inside the press instead of overflowing the row", () => {
+    list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: "W".repeat(30) }, href: "/friends/p1" })} now={NOW} />);
+    const press = screen.getByRole("link", { name: /spares/ });
+    expect(press.className).toContain("[overflow-wrap:anywhere]");
+    expect(press.className).toContain("min-w-0");
+    expect(press.className).not.toContain("whitespace-nowrap");
+  });
 });

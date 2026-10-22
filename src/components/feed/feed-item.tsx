@@ -189,13 +189,13 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
         {text.line && <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{text.line}</p>}
       </div>
       {text.press && (
-        <div className="col-start-2 mt-[6px] flex flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end">
+        <div className="col-start-2 mt-[6px] flex min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end">
           <FeedPress
             item={item}
             label={`${text.press} ›`}
             describedBy={titleId}
             stretch="after:absolute after:inset-0 after:content-['']"
-            className="flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--accent-text)]"
+            className="flex min-h-[32px] min-w-0 items-center font-sans text-[13px] font-medium [overflow-wrap:anywhere] text-[color:var(--accent-text)]"
           />
         </div>
       )}
