@@ -34,7 +34,7 @@ export function FriendSparesTab({ name, spares }: { name: string; spares: Friend
                   ariaLabel={`${cardDetailCopy.triggerAria(line.name)}, ${count}${line.onWishlist ? `, ${p.spares.onWishlist}` : ""}`}
                   className="relative block w-full cursor-pointer overflow-hidden p-0 [aspect-ratio:63/88] [border-radius:4.5%/3.2%] [border:1px_solid_var(--border)] bg-[color:var(--surface-sunken)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
                 >
-                  {line.imageUri && (
+                  {line.imageUri ? (
                     <HydratedImg
                       eager={i < EAGER_TILES}
                       src={line.imageUri}
@@ -42,6 +42,11 @@ export function FriendSparesTab({ name, spares }: { name: string; spares: Friend
                       decoding="async"
                       className="absolute inset-0 block h-full w-full object-cover object-center"
                     />
+                  ) : (
+                    // No art: the name in the card's place, so the spare can be told apart without opening it.
+                    <span aria-hidden data-testid="spare-name" className="absolute inset-0 flex items-center justify-center p-[10px] text-center text-[12px] font-semibold leading-[1.3] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">
+                      {line.name}
+                    </span>
                   )}
                 </CardDetailTrigger>
                 <span className="flex flex-col gap-[3px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">

@@ -92,6 +92,26 @@ describe("a friend's page group", () => {
     expect(m.loadFriendDecks).not.toHaveBeenCalled();
   });
 
+  // A tab press reuses the mounted layout, which does not run again: each tab answers the switch and the friend itself.
+  it.each([
+    ["Spares", () => FriendSparesPage({ params: params() })],
+    ["Wishlist", () => FriendWishlistPage({ params: params() })],
+    ["Decks", () => FriendDecksPage({ params: params() })],
+  ])("the %s tab is not found on its own with the friends switch off, reading nothing", async (_tab, page) => {
+    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_WISHLIST_ENABLED: "true" });
+    await expect(page()).rejects.toThrow("NOT_FOUND");
+    expect(m.loadFriend).not.toHaveBeenCalled();
+    expect(m.loadFriendSpareList).not.toHaveBeenCalled();
+    expect(m.loadFriendWishlist).not.toHaveBeenCalled();
+    expect(m.loadFriendDecks).not.toHaveBeenCalled();
+  });
+
+  it("the Spares tab is not found on its own for a former friend, never the not-sharing state", async () => {
+    m.loadFriend.mockResolvedValue(null);
+    m.loadFriendSpareList.mockResolvedValue(null);
+    await expect(FriendSparesPage({ params: params() })).rejects.toThrow("NOT_FOUND");
+  });
+
   it("is not found for anyone who is not the reader's friend (decision 10)", async () => {
     m.loadFriend.mockResolvedValue(null);
     await expect(FriendPageLayout({ children: null, params: params() })).rejects.toThrow("NOT_FOUND");
@@ -143,6 +163,8 @@ describe("a friend's page group", () => {
     expect(html).toContain("2 spares");
     expect(html).toContain("1 spare");
     expect(html.match(/data-testid="spare-on-wishlist"/g)).toHaveLength(1);
+    // Neither fixture card has art, so each names itself in the card's place.
+    expect(html.match(/data-testid="spare-name"[^>]*>Ghalta, Primal Hunger</g)).toHaveLength(1);
   });
 
   it("says a friend who shares nothing with the reader is not sharing, and an empty share is empty", async () => {

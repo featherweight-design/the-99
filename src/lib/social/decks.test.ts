@@ -6,7 +6,9 @@ const m = vi.hoisted(() => ({
   resolveFriend: vi.fn(),
   listDecksWithStats: vi.fn(),
   resolveSwitchEnv: vi.fn(),
+  loadDeckBuyRows: vi.fn(),
 }));
+vi.mock("../decks/availability-query", () => ({ loadDeckBuyRows: m.loadDeckBuyRows }));
 vi.mock("./access", () => ({ resolveFriend: m.resolveFriend }));
 vi.mock("../decks/read", () => ({ listDecksWithStats: m.listDecksWithStats }));
 vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: m.resolveSwitchEnv }));
@@ -23,6 +25,11 @@ beforeEach(() => {
   m.resolveFriend.mockReset().mockResolvedValue("user_friend");
   m.listDecksWithStats.mockReset().mockResolvedValue([ROW]);
   m.resolveSwitchEnv.mockReset().mockResolvedValue({ FRIEND: "env" });
+  m.loadDeckBuyRows.mockReset().mockResolvedValue([
+    { deckId: "deck-secret-id", oracleId: "a", quantity: 5 },
+    { deckId: "deck-secret-id", oracleId: "b", quantity: 3 },
+    { deckId: "another-deck", oracleId: "a", quantity: 4 },
+  ]);
 });
 
 describe("loadFriendDecks", () => {
@@ -47,9 +54,23 @@ describe("loadFriendDecks", () => {
     expect(JSON.stringify(deck)).not.toMatch(/deck-secret-id|private note|Shelf/);
   });
 
-  it("counts a pair against 98, and never reads a negative to-buy", async () => {
-    m.listDecksWithStats.mockResolvedValue([{ ...ROW, partnerName: "Tymna", toBuyCount: -2 }]);
+  it("counts a pair against 98", async () => {
+    m.listDecksWithStats.mockResolvedValue([{ ...ROW, partnerName: "Tymna" }]);
     const [deck] = (await loadFriendDecks("user_viewer", "x"))!;
-    expect([deck.bodySize, deck.partnerName, deck.toBuy]).toEqual([98, "Tymna", 0]);
+    expect([deck.bodySize, deck.partnerName]).toEqual([98, "Tymna"]);
+  });
+
+  // A fully owned junior deck whose copies senior decks hold reads To buy with toBuyCount 0: the figure is what the
+  // friend's Shopping buys for it, under the friend's switches, as their own tile draws it.
+  it("counts To buy from the friend's Shopping rows, not toBuyCount (seniority, no basics)", async () => {
+    m.listDecksWithStats.mockResolvedValue([{ ...ROW, toBuyCount: 0 }, { ...ROW, id: "owned-deck", statusPill: "Complete", toBuyCount: 0 }]);
+    const decks = (await loadFriendDecks("user_viewer", "x"))!;
+    expect(decks.map((d) => d.toBuy)).toEqual([8, 0]);
+    expect(m.loadDeckBuyRows).toHaveBeenCalledWith("user_friend", undefined, undefined, { FRIEND: "env" });
+  });
+
+  it("returns nothing when the friendship ends while the decks are read", async () => {
+    m.resolveFriend.mockResolvedValueOnce("user_friend").mockResolvedValueOnce(null);
+    expect(await loadFriendDecks("user_viewer", "x")).toBeNull();
   });
 });
