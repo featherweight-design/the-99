@@ -89,10 +89,10 @@ function WaitingLink({ row, className }: { row: WaitingRow; className: string })
     <span className={className}>
       <Link
         href={`/friends/${row.friend.publicId}`}
-        className="flex min-h-[32px] items-center whitespace-nowrap text-[13px] font-medium text-[color:var(--accent-text)] no-underline"
+        className="flex min-h-[32px] items-center gap-[4px] whitespace-nowrap text-[13px] font-medium text-[color:var(--accent-text)] no-underline"
       >
         {w.seeSpares(row.friend.displayName)}
-        <span aria-hidden>{" ›"}</span>
+        <span aria-hidden>›</span>
         <PendingReporter href={`/friends/${row.friend.publicId}`} />
       </Link>
     </span>

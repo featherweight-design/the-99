@@ -62,8 +62,9 @@ export function FriendDecksTab({ name, decks }: { name: string; decks: FriendDec
 
 /**
  * The board's pill on a friend's deck tile (`Friends` 1e), on this surface only: no hairline edge, and Building in
- * `--fg-body` on its own 18% plate. Every other value is the app's own (`statusPillStyle`), so To buy keeps its
- * readable label ink; the app-wide pills are unchanged (d9, 2026-10-22).
+ * `--fg-body` on its own 18% plate. Every other value is the app's own (`statusPillStyle`), which already draws what
+ * the board draws (Complete in `--success`, To buy in `--accent`, each on its 18% plate); the app-wide pills are
+ * unchanged (d9, 2026-10-22).
  */
 export function friendPillStyle(status: StatusPill): CSSProperties {
   const base = statusPillStyle(status);
