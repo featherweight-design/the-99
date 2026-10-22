@@ -1,3 +1,4 @@
+import { refreshCopy } from "../../lib/copy/refresh";
 // The bar with the Commanders place (menu and Home handoff, R1 Menu; plan `2026-10-22-menu-home.md`, PR 2): Discover
 // leaves it, Friends takes the fifth slot with `SOCIAL_FRIENDS_ENABLED`, Friends never locks, and the phone bracket
 // spans the locked run alone. Off, the shipped bar stands; nav.test.tsx pins that whole.
@@ -122,6 +123,17 @@ describe("the phone bracket spans the locked slots alone", () => {
     const open = render(<TabBar locked friends openLock={FIRST_RUN} />);
     expect(bracket(open.container).style.marginLeft).toBe("40%");
     expect(bracket(open.container).style.width).toBe("60%");
+  });
+  it("says less over a two-slot run, where the full line would hide the bracket", () => {
+    const label = (c: HTMLElement) => c.querySelector("[data-lock-bracket-label]")!;
+    const two = render(<TabBar locked commandersPlace friends openLock={FIRST_RUN} />);
+    expect(label(two.container)).toHaveTextContent(refreshCopy.firstRun.lock.tabBracketShort);
+    two.unmount();
+    const three = render(<TabBar locked commandersPlace friends openLock={null} />);
+    expect(label(three.container)).toHaveTextContent(refreshCopy.firstRun.lock.tabBracket);
+    three.unmount();
+    const shipped = render(<TabBar locked friends openLock={FIRST_RUN} />);
+    expect(label(shipped.container)).toHaveTextContent(refreshCopy.firstRun.lock.tabBracket);
   });
 });
 

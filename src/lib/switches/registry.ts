@@ -110,12 +110,18 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * breaks on a deployment lacking config it needs. A plumbing switch is never raised (it is not a
  * feature a reader tries), so it needs no entry here.
  *
- * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config.
+ * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config. One entry since
+ * 2026-10-22, for a switch whose surfaces are still landing rather than missing config.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
-export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {};
+export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
+  // Its destinations ship across the menu and Home line (plan 2026-10-22-menu-home.md): until the Commanders tabs
+  // (PR 1) and /settings (PR 3) are on main, raising it takes Discover out of the bar with nowhere to reach it and
+  // draws a Settings row to a page that is not there. The line's close-out (PR 8) removes this entry.
+  COMMANDERS_PLACE_ENABLED: "Its destinations are still landing: the Commanders tabs and /settings.",
+};
 
 /**
  * What All features raises: every `feature` and `model` switch not excluded, and every parent those

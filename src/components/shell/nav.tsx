@@ -114,11 +114,11 @@ function lockedItems(items: NavItem[], openLock: OpenLock): NavItem[] {
  * slots divide equally. It spans exactly the locked run, whether the bar holds four slots or five and whether a live
  * slot (Friends) sits right of it (menu and Home audit, erratum 1).
  */
-function bracketSpan(items: NavItem[], openLock: OpenLock): { left: string; width: string } {
+function bracketSpan(items: NavItem[], openLock: OpenLock): { left: string; width: string; slots: number } {
   const held = lockedItems(items, openLock);
   const start = items.indexOf(held[0]);
   const pct = (slots: number) => `${(slots * 100) / items.length}%`;
-  return { left: pct(start), width: pct(held.length) };
+  return { left: pct(start), width: pct(held.length), slots: held.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -569,7 +569,7 @@ function TabBracket({ openLock, items }: { openLock: OpenLock; items: NavItem[] 
         className="absolute top-0 left-1/2 inline-flex -translate-x-1/2 items-center gap-[5px] whitespace-nowrap bg-[color:var(--surface-rail)] px-[7px] font-mono text-[9px] leading-[14px] tracking-[0.08em] text-[color:var(--fg-locked)] uppercase"
       >
         <Lock size="sm" ink="var(--fg-locked)" />
-        {lockCopy.tabBracket}
+        {span.slots > 2 ? lockCopy.tabBracket : lockCopy.tabBracketShort}
       </span>
     </div>
   );

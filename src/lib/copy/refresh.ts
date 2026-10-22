@@ -274,6 +274,9 @@ export const refreshCopy = {
       note: (label: string, others: string) =>
         `${label} opens once your cards are in. So do ${others}.`,
       tabBracket: 'Open once your cards are in',
+      // Over a run of two slots (Commanders and Decks, with Friends live beside them) the full line is wider than
+      // the bracket and would hide it, so the bracket says less (menu and Home PR 2, review round 1).
+      tabBracketShort: 'Open with cards',
       railLabel: 'Locked',
       goToStep1: 'Go to step 1',
       // With Collection open at zero cards (no-collection entry, call 6; NO_COLLECTION_ENTRY_ENABLED): the page

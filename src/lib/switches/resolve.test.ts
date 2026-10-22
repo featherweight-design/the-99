@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { tuningEnabled } from "../tuning/flag";
 import { decide, resolveEnv, switchBits, type OverrideRow, type SwitchSnapshot } from "./resolve";
-import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, SWITCH_NAMES } from "./registry";
+import { ALL_FEATURES, ALL_FEATURES_EXCLUDED, ALL_FEATURES_RAISES, SWITCHES, SWITCH_NAMES } from "./registry";
 
 const e = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "DECK_NOTES_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
@@ -85,7 +85,7 @@ describe("All features", () => {
     const mine = resolveEnv(e({}), s, "u1");
     const theirs = resolveEnv(e({}), s, "u2");
     for (const { name, kind } of SWITCHES) {
-      expect(mine[name], name).toBe(kind === "plumbing" ? undefined : "true");
+      expect(mine[name], name).toBe(kind === "plumbing" || name in ALL_FEATURES_EXCLUDED ? undefined : "true");
       expect(theirs[name], name).toBeUndefined();
     }
     // A child's flag function asks its parent, so the parent being raised is what turns it on.
@@ -93,7 +93,9 @@ describe("All features", () => {
   });
 
   it("raises a switch added later: the set is the registry's, not a list kept with the row", () => {
-    expect([...ALL_FEATURES_RAISES].sort()).toEqual(SWITCHES.filter((s) => s.kind !== "plumbing").map((s) => s.name).sort());
+    expect([...ALL_FEATURES_RAISES].sort()).toEqual(
+      SWITCHES.filter((s) => s.kind !== "plumbing" && !(s.name in ALL_FEATURES_EXCLUDED)).map((s) => s.name).sort(),
+    );
   });
 
   it("loses to the env kill and to the account's own Off, and beats group and app-wide", () => {
