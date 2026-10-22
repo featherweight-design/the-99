@@ -93,8 +93,9 @@ function CountField({
     setDraft(null);
   };
   const shownText = draft ?? String(count);
+  // The label's padding is part of the figure's hit: a press on it focuses the input and must not reach the row's own press.
   return (
-    <label className={`flex justify-center ${band ? "" : ROW_FIGURE_SLOT}`}>
+    <label className={`flex justify-center ${band ? "" : ROW_FIGURE_SLOT}`} onClick={(e) => e.stopPropagation()}>
     <input
       inputMode="numeric"
       aria-label={label}

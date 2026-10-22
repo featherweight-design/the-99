@@ -1034,6 +1034,7 @@ export function DecksView({
                   />
                   <ColourPips
                     form="wide"
+                    touchSlots
                     value={state.filters.colours}
                     onToggle={(code) =>
                       onFilters({

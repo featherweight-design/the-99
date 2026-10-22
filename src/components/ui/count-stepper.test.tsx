@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { CountStepper } from "./count-stepper";
 
 const props = { count: 3, fewerLabel: "Fewer", moreLabel: "More", countLabel: "Count", onStep: vi.fn(), onType: vi.fn() };
@@ -16,5 +16,16 @@ describe("CountStepper on a coarse pointer", () => {
   it("leaves the band's figure as drawn", () => {
     render(<CountStepper layout="band" {...props} />);
     expect(screen.getByRole("textbox", { name: "Count" }).className).not.toContain("pointer-coarse");
+  });
+
+  it("keeps a press on the figure's padding from reaching the row", () => {
+    const onRow = vi.fn();
+    render(
+      <div onClick={onRow}>
+        <CountStepper layout="row" {...props} />
+      </div>,
+    );
+    fireEvent.click(screen.getByRole("textbox", { name: "Count" }).closest("label")!);
+    expect(onRow).not.toHaveBeenCalled();
   });
 });

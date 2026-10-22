@@ -258,7 +258,7 @@ export function PreconPickView({ rows, entry, initial, hasCollection = false, ad
           <div ref={searchWrap} className="min-w-0 flex-1">
             <DeckSearchField value={q} onChange={onSearch} size="sheet" placeholder={preconsCopy.list.search} />
           </div>
-          <ColourPips form="wide" value={colours} onToggle={onColour} />
+          <ColourPips form="wide" value={colours} onToggle={onColour} touchSlots />
         </div>
         <p className="m-[10px_0_0] font-mono text-[10.5px] text-[color:var(--fg-faint)] md:text-[11px]">
           {preconsCopy.list.result(shown.length, rows.length, "newest")}
