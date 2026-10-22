@@ -1,0 +1,66 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-22T19:30:00Z"
+ },
+ "title": "Combos one piece away",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1910,
+   "h": 2366,
+   "title": "Main · where it sits, the calls, gaps"
+  },
+  "Deck-Page.dc.html": {
+   "x": 1990,
+   "y": 0,
+   "w": 1804,
+   "h": 2368,
+   "title": "The deck page · many, with a to-do, one, empty"
+  },
+  "The-List.dc.html": {
+   "x": 3874,
+   "y": 0,
+   "w": 1846,
+   "h": 2248,
+   "title": "The list · many, another deck, to buy, one"
+  },
+  "How-It-Works.dc.html": {
+   "x": 0,
+   "y": 2488,
+   "w": 1412,
+   "h": 2228,
+   "title": "How it works · steps and mana"
+  },
+  "Card-Details.dc.html": {
+   "x": 1492,
+   "y": 2488,
+   "w": 1412,
+   "h": 2208,
+   "title": "Card details · combo pieces held"
+  },
+  "About.dc.html": {
+   "x": 2984,
+   "y": 2488,
+   "w": 1846,
+   "h": 2153,
+   "title": "About · the entry, in the Reference"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Deck-Page.dc.html",
+  "The-List.dc.html",
+  "How-It-Works.dc.html",
+  "Card-Details.dc.html",
+  "About.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
