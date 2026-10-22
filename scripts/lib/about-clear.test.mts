@@ -26,7 +26,9 @@ describe("gateReturn", () => {
   it("leaves every other page where it is", () => {
     expect(gateReturn(`${origin}/decks/abc`)).toBeNull();
     expect(gateReturn(`${origin}/about?tab=reference`)).toBeNull();
-    expect(gateReturn(`${origin}/about?tab=reference&next=${encodeURIComponent("//evil.example/x")}`)).toBeNull();
+    for (const away of ["//evil.example/x", "/\\evil.example/x", "/\t/evil.example/x", "https://evil.example/x"]) {
+      expect(gateReturn(`${origin}/about?tab=reference&next=${encodeURIComponent(away)}`)).toBeNull();
+    }
   });
 });
 

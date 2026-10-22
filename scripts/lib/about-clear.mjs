@@ -120,8 +120,15 @@ export function gateReturn(url) {
   const at = new URL(url);
   if (at.pathname !== "/about") return null;
   const next = at.searchParams.get("next");
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
-  return new URL(next, at.origin).href;
+  if (!next || !next.startsWith("/")) return null;
+  // Judged on the resolved URL, not the prefix: `/\host` and a tab between two slashes both
+  // pass a prefix check and resolve to another host.
+  try {
+    const back = new URL(next, at.origin);
+    return back.origin === at.origin ? back.href : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
