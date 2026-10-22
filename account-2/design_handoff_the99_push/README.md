@@ -3,7 +3,7 @@
 Account 2, 2026-10-22. Brief: Hugh's prompt in the project chat. States: `STATES-push.md`. About entry: `about · push.ts`.
 Canvas: https://claude.ai/artifact/G8WTrx3aMQmUCYqpD2aaxo
 
-**Status: R1 drawn, waiting on Hugh.** Builds on Settings' "What's new on Home" and the feed
+**Status: R1 approved by Hugh 2026-10-22** ("Agreed with A. This LGTM"), delivery **A** by his ruling. Readiness: `READINESS.md`. Builds on Settings' "What's new on Home" and the feed
 (`design/design_handoff_the99_menu_home/`, shipped in `src/components/settings/news-section.tsx`), the spare request
 (`design/design_handoff_the99_spare_requests/`) and the combo kind. Every string is a placeholder for `/copy-review`.
 Orange dashed outlines mark what is new against the shipped page. System UI (browser and OS prompts, lock screen,
@@ -36,7 +36,7 @@ Android shade, macOS banner) is drawn approximately and labelled so.
    alone (price drop spells was/now, combo names its kind, spare request says where to answer). App icon; the feed
    item's card at card shape where the system shows an image (Android, desktop), never an art crop. No action buttons.
    A tap lands where the feed press lands and marks that item seen.
-6. **Delivery (open for Design), recommended A:** send each as it happens; several of one kind from one job are one push
+6. **Delivery: A (Hugh’s ruling, 2026-10-22):** send each as it happens; several of one kind from one job are one push
    landing on Home's What's new; **nothing 9pm to 9am** in the device's time zone, what waited goes at 9am one per kind.
    No quiet-hours setting (the OS's Focus / Do Not Disturb cover the rest). B (one digest a day) drawn on Delivery.
 7. **Quiet when you're looking.** No push while The 99 is open and focused. Installed apps carry the Home slot's count on

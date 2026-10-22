@@ -1,4 +1,4 @@
-// about · push.ts. Account 2, 2026-10-22, R1 (waiting on Hugh). The push line's one About entry, as it goes into
+// about · push.ts. Account 2, 2026-10-22, R1, approved by Hugh. The push line's one About entry, as it goes into
 // `aboutEntries` in src/lib/copy/about-entries.ts, with Design's picture call: `screen`, and the halo as a `locator`.
 //
 // WORDS: placeholders, for /copy-review.
@@ -6,7 +6,8 @@
 // SCREEN (README A1): a NEW screen, 'settings'. /settings has no About screen today (screenForPath returns null for it).
 // Add 'settings' to AboutScreen, screenForPath('/settings') = 'settings', a SCREEN_WHERE line ('/settings'), a capture.
 //
-// VERSION (A5): since = the next ABOUT_VERSION at the push PR.
+// VERSION (A5): a switched entry bumps nothing; since = the ABOUT_VERSION current when it ships (16 on main at 147669b),
+// announced by its id when PUSH_ENABLED flips.
 
 export const push = {
   id: 'push',
@@ -31,6 +32,7 @@ export const push = {
   keySwitches: {
     'Only a friend asking for your spare starts ticked. Nothing is sent until you allow it on a device.': 'SOCIAL_FRIENDS_ENABLED',
   },
+  since: 16,
 } as const;
 
 // EDIT to a shipped entry (A4), no bump of its own:

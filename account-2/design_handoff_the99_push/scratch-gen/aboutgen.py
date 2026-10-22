@@ -55,7 +55,7 @@ GAPS = [
     "A2 · <b>Capture.</b> <code>settings</code> at 390×844 in six themes with <code>PUSH_ENABLED</code> and <code>HOME_FEED_ENABLED</code> on, the default ticks, and the device row reading Not on yet (headless Chromium reports “default” permission, which is that state). The pictures here stand in.",
     "A3 · <b>Locator.</b> The device row, e.g. <code>[data-push-device]</code>, scope main.",
     "A4 · <b>Stale key.</b> <code>whats-new</code>’s key “News stays in the app: a count on Home in the bar, and the list. No email, ever.” is no longer true with push on: with <code>PUSH_ENABLED</code> it reads “News shows on Home, and as push where you turn it on. No email, ever.”",
-    "A5 · <b>Version.</b> <code>since</code> = the next <code>ABOUT_VERSION</code> at the push PR; Home’s banner line names it when the switch is on.",
+    "A5 · <b>Version.</b> A switched entry bumps nothing: <code>since</code> is the <code>ABOUT_VERSION</code> current when it ships (16 today), and it is announced by its id when <code>PUSH_ENABLED</code> flips.",
 ]
 
 
