@@ -45,8 +45,9 @@ export const deckVersioningCopy = {
     /** The to-do card row's press (handoff `deck_messages`); `reviewCta(n)` is its spoken name. */
     reviewShort: "Review",
     /** The row's body: where Commit and Discard went. The next-step form names the version a commit makes. */
-    rowBody: "Commit or discard them in Review.",
-    rowBodyNext: (version: number) => `Commit them as v${version} in Review.`,
+    rowBody: (n: number) => (n === 1 ? "Commit or discard it in Review." : "Commit or discard them in Review."),
+    rowBodyNext: (n: number, version: number) =>
+      n === 1 ? `Commit it as v${version} in Review.` : `Commit them as v${version} in Review.`,
     commitCta: (version: number) => `Commit as v${version}`,
     discardCta: "Discard",
 

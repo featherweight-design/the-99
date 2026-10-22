@@ -148,8 +148,13 @@ describe("PendingRow", () => {
 
   it("names the version a commit makes when it is the next step, and both acts otherwise", () => {
     const { rerender } = render(<PendingRow state={draft} deckId="deck-1" next />);
-    expect(screen.getByText(pending.rowBodyNext(2))).toBeInTheDocument();
+    expect(screen.getByText(pending.rowBodyNext(3, 2))).toBeInTheDocument();
     rerender(<PendingRow state={draft} deckId="deck-1" next={false} />);
-    expect(screen.getByText(pending.rowBody)).toBeInTheDocument();
+    expect(screen.getByText(pending.rowBody(3))).toBeInTheDocument();
+  });
+
+  it("says it, not them, for one change", () => {
+    expect(pending.rowBody(1)).toBe("Commit or discard it in Review.");
+    expect(pending.rowBodyNext(1, 4)).toBe("Commit it as v4 in Review.");
   });
 });

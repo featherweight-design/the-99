@@ -251,7 +251,7 @@ export function PendingRow({ state, deckId, next }: { state: DraftState; deckId:
           </span>
         </>
       }
-      body={next ? p.rowBodyNext(version + 1) : p.rowBody}
+      body={next ? p.rowBodyNext(n, version + 1) : p.rowBody(n)}
       next={next}
       titleRef={titleRef}
       press={{ label: p.reviewShort, name: p.reviewCta(n), href: `/decks/${deckId}/changes` }}
