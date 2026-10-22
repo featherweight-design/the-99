@@ -17,7 +17,8 @@ const copy = helpMeChooseCopy.intake;
 const PANEL_COPY: FilterPanelCopy = {
   ...printedInPanelCopy,
   triggerLabel: copy.sets,
-  triggerCount: collectionFilterCopy.set.triggerCount,
+  // Nothing chosen reads as "Any set" (`collectionFilterCopy.set.triggerNone`), not `Set 0`.
+  triggerCount: (n: number) => (n === 0 ? collectionFilterCopy.set.triggerNone : collectionFilterCopy.set.triggerCount(n)),
   // The phone's sheet is titled as the field is, not as the lanes' control.
   sheetTitle: copy.sets,
   // No counts here (`showCounts={false}`), so none is spoken: the lanes' own reads "0 commanders".
