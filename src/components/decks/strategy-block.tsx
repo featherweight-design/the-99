@@ -19,7 +19,7 @@ const GROWTH_INK = "color-mix(in oklab, var(--accent) 55%, var(--fg))";
 
 type Row = { key: StrategyKey; copies: number; outside: boolean };
 
-const HEAD = "m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)] md:text-[10px] md:tracking-[0.16em]";
+const HEAD = "m-0 font-mono font-medium uppercase text-[10.5px] tracking-[0.16em] text-[color:var(--fg-faint)]";
 
 export function StrategyBlock({
   read,
@@ -36,14 +36,12 @@ export function StrategyBlock({
   const { strategy, pending } = read;
   return (
     <section data-strategy-block className="flex flex-col gap-[12px]">
-      <div className="flex flex-col gap-[4px] md:flex-row md:flex-wrap md:items-baseline md:gap-[14px]">
+      <div className="flex flex-wrap items-baseline gap-[12px]">
         <h3 className={HEAD}>{copy.heading}</h3>
-        {strategy.state === "ok" ? (
-          <span className="font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-faint)] [text-wrap:pretty] md:text-[10.5px] md:leading-normal">
-            {copy.sub}
-          </span>
-        ) : null}
       </div>
+      {strategy.state === "ok" ? (
+        <p className="m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] [text-wrap:pretty]">{copy.sub}</p>
+      ) : null}
       {strategy.state === "ok" ? (
         <Reading read={read} focus={focus} refused={refused} onPick={onPick} pending={pending} />
       ) : (
@@ -211,16 +209,16 @@ function Legend({
               data-strategy={r.key}
               onClick={() => onPick(r.key)}
               onKeyDown={(e) => onKeyDown(e, i)}
-              className={`flex min-h-[44px] items-center gap-[10px] px-[6px] text-left text-[13px] text-[color:var(--fg)] md:min-h-[40px] ${
-                i > 0 && !picked && !after ? "border-t border-[color:var(--border)]" : "border-t border-transparent"
-              } ${picked ? "rounded-[7px] bg-[color:color-mix(in_oklab,var(--accent)_9%,transparent)]" : ""}`}
+              className={`flex min-h-[44px] items-center gap-[10px] px-[6px] text-left text-[13px] md:min-h-[40px] ${
+                i === 0 ? "" : !picked && !after ? "border-t border-[color:var(--border)]" : "border-t border-transparent"
+              } ${picked ? "rounded-[7px] bg-[color:color-mix(in_oklab,var(--accent)_9%,transparent)] font-semibold text-[color:var(--accent)]" : "text-[color:var(--fg)]"}`}
             >
               <StrategyIcon strategy={r.key} size={16} className={picked ? "shrink-0 text-[color:var(--accent)]" : "shrink-0 text-[color:var(--fg-muted)]"} />
               <span className="min-w-0 truncate">
                 {strategyName(r.key)}
                 {r.outside ? <span className="ml-[6px] font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.outsideTop}</span> : null}
               </span>
-              <span className="ml-auto shrink-0 font-mono text-[11px] text-[color:var(--fg-muted)]">
+              <span className="ml-auto shrink-0 font-mono text-[11px] font-normal text-[color:var(--fg-muted)]">
                 {n.base}
                 {n.added ? <em className="not-italic text-[color:var(--accent)]"> +{n.added}</em> : null}
                 {n.removed ? <em className="not-italic text-[color:var(--accent)]"> −{n.removed}</em> : null} {copy.cards(r.copies)}
