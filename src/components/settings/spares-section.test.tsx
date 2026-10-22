@@ -1,3 +1,4 @@
+import { cardMarkCopy } from "../../lib/copy/card-mark";
 // Settings' Spares (menu and Home PR 3): the stepper saves as it changes and puts a failed value back with the shared
 // toast; who sees them names the shared pods and points to Friends; a kept card is the shipped collection row with a
 // ✕ that releases it (and comes back on a failure); Keep a card back keeps a searched card.
@@ -132,6 +133,14 @@ describe("kept back", () => {
     expect(screen.getByText(C.keptHead(1))).toBeTruthy();
     expect(screen.getByText("Sol Ring")).toBeTruthy();
     expect(screen.getByText("×3")).toBeTruthy();
+  });
+
+  it("carries the collection's mark key with the kept rows, and none without them", () => {
+    const { unmount } = render(<SparesSection spareMin={1} pods={[]} kept={[card()]} />);
+    expect(screen.getByRole("group", { name: cardMarkCopy.keyRegionAria })).toBeTruthy();
+    unmount();
+    render(<SparesSection spareMin={1} pods={[]} kept={[]} />);
+    expect(screen.queryByRole("group", { name: cardMarkCopy.keyRegionAria })).toBeNull();
   });
 
   it("speaks the facts the shared cells draw silently: cost, rarity and bracket marks", () => {

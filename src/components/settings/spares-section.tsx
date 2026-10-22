@@ -17,6 +17,7 @@ import { SPARE_MIN_HIGH, SPARE_MIN_LOW } from "../../lib/social/spare-rules";
 import type { SpareSearchHit } from "../../lib/social/spare-settings";
 import { keepCardAction, releaseCardAction, searchSpareCardsAction, setSpareMinAction } from "../../app/settings/actions";
 import { CollectionRowCells, collectionRowSpoken } from "../collection/rows-view";
+import { CollectionMarkKey } from "../collection/collection-mark-key";
 import { SECTION_HEAD } from "../social/friends-list";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { SearchField } from "../ui/text-field";
@@ -117,6 +118,10 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
       <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.keptExplain}</p>
       <KeepSearch keptKey={keptKey} onFail={fail} />
       {shown.length > 0 && (
+        <>
+        {/* The kept rows draw /collection's wordless fact marks, so the key that decodes them travels with them
+            (collection-mark-key.tsx's surface-local rule). */}
+        <CollectionMarkKey className="mt-[10px]" />
         <ul className="m-0 mt-[10px] flex list-none flex-col gap-[6px] p-0">
           {shown.map((card) => (
             <li key={card.oracleId}>
@@ -124,6 +129,7 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
             </li>
           ))}
         </ul>
+        </>
       )}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </section>
