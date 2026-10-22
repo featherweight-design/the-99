@@ -20,6 +20,14 @@ export type CatalogKind = (typeof CATALOG_KINDS)[number];
 export const STORED_KINDS = ["price-drop", "trade-match", "spare-request", "combo"] as const satisfies readonly FeedKind[];
 export type StoredKind = (typeof STORED_KINDS)[number];
 
+/**
+ * The kinds ON for a reader who never chose (spare requests G4): "a friend wants your spare" waits on the reader's
+ * answer, so it is heard of by default. A default-on kind is on while it is stamped in `feed_kinds` or absent from both
+ * `feed_kinds` and `feed_kinds_declined`; turned off, it moves to `feed_kinds_declined`. Every other kind starts off.
+ */
+export const DEFAULT_ON_KINDS = ["spare-request"] as const satisfies readonly StoredKind[];
+export const isDefaultOn = (k: FeedKind): boolean => (DEFAULT_ON_KINDS as readonly FeedKind[]).includes(k);
+
 const KIND_SET = new Set<string>(FEED_KINDS);
 const STORED_SET = new Set<string>(STORED_KINDS);
 

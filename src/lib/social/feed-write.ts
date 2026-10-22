@@ -3,8 +3,10 @@
  * collection write for combos, the trade-match notice), each inside or after its own transaction.
  *
  * - A kind that is OFF for the reader is not written (handoff: "Kinds off in Settings are not written for you at all,
- *   no backfill when turned on"). The test is in the INSERT itself, against the reader's `feed_kinds`, so a reader
- *   turning the kind off while the job runs never gets a row the next statement would have refused.
+ *   no backfill when turned on"). The test is in the INSERT itself, against the reader's effective state
+ *   (`kindEnabledAt`: `feed_kinds`, or a default-on kind not declined), so a reader turning the kind off while the
+ *   job runs never gets a row the next statement would have refused. A reader with no prefs row still gets a
+ *   default-on kind (spare requests G4).
  * - The same event twice writes once: `(user_id, kind, dedupe_key)` is unique, and a repeat does nothing.
  * - Catalog kinds are never written here: they are read from `catalog_first_seen` (`lib/feed/read.ts`).
  *
@@ -16,6 +18,7 @@ import { sql, type SQL } from "drizzle-orm";
 
 import type { db } from "../../db";
 import { feedItems, friendLinks, userPrefs } from "../../db/schema";
+import { kindEnabledAt } from "../feed/kind-gate";
 import { isStoredKind, type StoredKind } from "../feed/kinds";
 
 export type FeedItemInput = {
@@ -67,23 +70,26 @@ function friendHeld(input: FeedItemInput): SQL {
 /**
  * The insert, apart so a test can render it: one row, only while the kind is on for the reader AND the item is newer
  * than the kind's `enabledAt` (the reader shows only those, so a hidden item must not be written), nothing on a repeat.
+ * Selected from one constant row LEFT JOINED to the reader's prefs, so a reader with no row reads as every column
+ * null: off for every kind but a default-on one.
  */
 export function recordFeedItemQuery(input: FeedItemInput): SQL {
   const now = (input.now ?? new Date()).toISOString();
+  const enabledAt = kindEnabledAt(sql`wup`, sql`${input.kind}::text`);
   return sql`insert into ${feedItems} (user_id, kind, dedupe_key, oracle_id, variant_id, friend_user_id, data, created_at)
     select ${input.userId}, ${input.kind}, ${input.dedupeKey}, ${input.oracleId ?? null}::uuid, ${input.variantId ?? null}::text,
       ${input.friendUserId ?? null}::text, ${JSON.stringify(input.data ?? {})}::jsonb, ${now}::timestamptz
-    from ${userPrefs} wup
-    where wup.user_id = ${input.userId} and (wup.feed_kinds ->> ${input.kind}) is not null
-      and ${now}::timestamptz > (wup.feed_kinds ->> ${input.kind})::timestamptz${friendHeld(input)}
+    from (select 1) wone
+    left join ${userPrefs} wup on wup.user_id = ${input.userId}
+    where ${now}::timestamptz > ${enabledAt}${friendHeld(input)}
     on conflict (user_id, kind, dedupe_key) do nothing
     returning id`;
 }
 
 /**
  * Records one event for one reader through `tx` (a transaction, or `db`). Returns whether a row was written: false
- * for a kind that is off, an item not newer than the kind's `enabledAt`, a reader with no prefs row (every kind off)
- * and a repeat. Throws on a malformed input.
+ * for a kind that is off, an item not newer than the kind's `enabledAt`, a reader with no prefs row (every kind
+ * off but a default-on one) and a repeat. Throws on a malformed input.
  */
 export async function recordFeedItem(tx: Executor, input: FeedItemInput): Promise<boolean> {
   const problem = feedItemProblem(input);

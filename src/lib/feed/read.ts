@@ -36,8 +36,9 @@ const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 export type FeedCursor = "feed_seen_at" | "friends_seen_at";
 
 /**
- * The union of every branch for these kinds, or null when none is left. Each branch joins the reader's own prefs row,
- * so a reader with no row reads nothing.
+ * The union of every branch for these kinds, or null when none is left. Each catalog branch joins the reader's own
+ * prefs row, so a reader with no row reads nothing of those; the stored branch LEFT JOINS it, so a default-on kind
+ * reaches a reader with no row (`kindEnabledAt`, spare requests G4).
  */
 export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Date): SQL | null {
   const today = utcDay(now);
@@ -91,7 +92,7 @@ export function feedQuery(viewerId: string, kinds: readonly FeedKind[], now: Dat
       f.friend_public_id, f.friend_name, f.data,
       f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz) as unseen
     from (${union}) f
-    join ${userPrefs} up on up.user_id = ${viewerId}
+    left join ${userPrefs} up on up.user_id = ${viewerId}
     where ${inWindow(now)}
     order by f.created_at desc, f.key`;
 }
@@ -102,7 +103,7 @@ export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], n
   if (!union) return null;
   return sql`select count(*)::int as n
     from (${union}) f
-    join ${userPrefs} up on up.user_id = ${viewerId}
+    left join ${userPrefs} up on up.user_id = ${viewerId}
     where ${inWindow(now)} and f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz)`;
 }
 
@@ -110,17 +111,21 @@ export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], n
  * Moves the cursor to `now`, ONLY while an unseen item exists under it, and never backwards. `user_prefs` carries
  * the stamp trigger, which moves on any UPDATE, so an unconditional write would retire the reader's cached Home and
  * `/decks` on every visit (the `markUpcomingSeen` rule). One statement: the test and the write cannot disagree.
+ * An UPSERT, because a reader with no prefs row can still have an unseen item (a default-on kind, G4); the shape of
+ * `markAnswersSeenQuery`.
  */
 export function markSeenQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor): SQL | null {
   const union = feedUnion(viewerId, kinds, now);
   if (!union) return null;
   const column = cursor === "feed_seen_at" ? sql`feed_seen_at` : sql`friends_seen_at`;
-  return sql`update ${userPrefs} up set ${column} = ${now.toISOString()}::timestamptz
-    where up.user_id = ${viewerId}
-      and (${cursorOf(cursor)} is null or ${cursorOf(cursor)} < ${now.toISOString()}::timestamptz)
-      and exists (
-        select 1 from (${union}) f
-        where ${inWindow(now)} and f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz))`;
+  const stored = sql`(select cup.${column} from ${userPrefs} cup where cup.user_id = ${viewerId})`;
+  return sql`insert into ${userPrefs} as up (user_id, ${column})
+    select ${viewerId}, ${now.toISOString()}::timestamptz
+    where exists (
+      select 1 from (${union}) f
+      where ${inWindow(now)} and f.created_at > coalesce(${stored}, '-infinity'::timestamptz))
+    on conflict (user_id) do update set ${column} = excluded.${column}
+      where ${cursorOf(cursor)} is null or ${cursorOf(cursor)} < excluded.${column}`;
 }
 
 type FeedBase = { key: string; createdAt: Date; unseen: boolean };

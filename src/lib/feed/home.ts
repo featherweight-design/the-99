@@ -20,7 +20,7 @@ import { chainArt } from "../cards/chain-art";
 import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds, homeFeedEnabled } from "./flag";
 import { leadStory, type FeedKind } from "./kinds";
-import { markFeedSeen, readFeedKinds } from "./prefs";
+import { effectiveKinds, markFeedSeen, readFeedPrefs } from "./prefs";
 import { loadFeed, type FeedItem } from "./read";
 
 type Executor = Pick<typeof db, "execute">;
@@ -221,8 +221,8 @@ async function lookups(userId: string, items: readonly FeedItem[], q: Executor, 
 export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: Date, q: Executor & Pick<typeof db, "select"> = db): Promise<HomeFeed | null> {
   if (!homeFeedEnabled(env)) return null;
   const available = availableFeedKinds(env);
-  const map = await readFeedKinds(userId, q);
-  const on = available.filter((k) => map[k] !== undefined);
+  const effective = effectiveKinds(await readFeedPrefs(userId, q));
+  const on = available.filter((k) => effective.includes(k));
   if (on.length === 0) return { chosen: false, offer: available };
   const items = await loadFeed(userId, env, now, q);
   const views = toViews(items, await lookups(userId, items, q, env));

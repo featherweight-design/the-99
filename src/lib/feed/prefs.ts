@@ -4,6 +4,11 @@
  * shows a kind only what arrived after its stamp (`read.ts`), so turning one on never backfills, and turning it off
  * and on again does not bring back what it held before.
  *
+ * A DEFAULT-ON kind (`DEFAULT_ON_KINDS`, spare requests G4) is also on while it is absent from the map and not in
+ * `user_prefs.feed_kinds_declined`, since always. Turning it OFF removes it from the map and adds it to the declined
+ * list; turning it back ON takes it off that list and stamps it now (no backfill of what arrived while it was off);
+ * a save that leaves it alone writes nothing for it. The SQL form of the same rule is `kindEnabledAt`.
+ *
  * Written only when the map changes. `user_prefs` carries the stamp trigger, which moves on any UPDATE, so a save
  * that changes nothing must write nothing or it retires the reader's cached Home and `/decks` (the
  * `markUpcomingSeen` rule).
@@ -13,7 +18,7 @@ import { and, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { userPrefs } from "../../db/schema";
 import { availableFeedKinds } from "./flag";
-import { FEED_KINDS, isFeedKind, type FeedKind } from "./kinds";
+import { FEED_KINDS, isDefaultOn, isFeedKind, type FeedKind } from "./kinds";
 import { markSeenQuery } from "./read";
 import { markAnswersSeen } from "../social/spare-requests";
 
@@ -29,29 +34,52 @@ export function parseFeedKinds(raw: unknown): FeedKindsMap {
   return out;
 }
 
+/** The stored declined list, keeping only known kinds, once each, in `FEED_KINDS` order. */
+export function parseDeclined(raw: unknown): FeedKind[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set(raw.filter(isFeedKind));
+  return FEED_KINDS.filter((k) => seen.has(k));
+}
+
+/** A reader's stored news choice: the stamps, and the default-on kinds they turned off. */
+export type FeedPrefs = { map: FeedKindsMap; declined: readonly FeedKind[] };
+
+/** Whether a kind is on for this reader: stamped, or default-on and not declined. */
+export const isKindOn = (p: FeedPrefs, kind: FeedKind): boolean =>
+  p.map[kind] !== undefined || (isDefaultOn(kind) && !p.declined.includes(kind));
+
+/** The kinds on for this reader, in `FEED_KINDS` order: what Settings checks and Home reads. */
+export const effectiveKinds = (p: FeedPrefs): FeedKind[] => FEED_KINDS.filter((k) => isKindOn(p, k));
+
 /**
- * The map after a save, or null when nothing changes. `on` is what the reader chose among `scope` (the kinds the
- * form offered them); a kind outside `scope` keeps whatever it had, so a kind hidden from this reader (its switch
+ * The stored choice after a save, or null when nothing changes. `on` is what the reader chose among `scope` (the kinds
+ * the form offered them); a kind outside `scope` keeps whatever it had, so a kind hidden from this reader (its switch
  * off) is neither turned off nor on by a save that could not show it. In `FEED_KINDS` order.
  */
-export function nextFeedKinds(prev: FeedKindsMap, on: readonly FeedKind[], now: Date, scope: readonly FeedKind[] = FEED_KINDS): FeedKindsMap | null {
+export function nextFeedPrefs(prev: FeedPrefs, on: readonly FeedKind[], now: Date, scope: readonly FeedKind[] = FEED_KINDS): FeedPrefs | null {
   const chosen = new Set(on.filter((k) => scope.includes(k)));
-  const next: FeedKindsMap = {};
+  const map: FeedKindsMap = {};
+  const declined: FeedKind[] = [];
   let changed = false;
   for (const kind of FEED_KINDS) {
-    const had = prev[kind];
-    if (!scope.includes(kind)) {
-      if (had) next[kind] = had;
+    const had = prev.map[kind];
+    const wasDeclined = prev.declined.includes(kind);
+    if (!scope.includes(kind) || chosen.has(kind) === isKindOn(prev, kind)) {
+      // Untouched: as it was.
+      if (had) map[kind] = had;
+      if (wasDeclined) declined.push(kind);
       continue;
     }
+    changed = true;
     if (chosen.has(kind)) {
-      next[kind] = had ?? now.toISOString();
-      if (!had) changed = true;
-    } else if (had) {
-      changed = true;
+      // Turned on: stamped now, and off the declined list.
+      map[kind] = now.toISOString();
+    } else if (isDefaultOn(kind)) {
+      // A default-on kind turned off: remembered as declined, or it would read on again.
+      declined.push(kind);
     }
   }
-  return changed ? next : null;
+  return changed ? { map, declined } : null;
 }
 
 /**
@@ -75,10 +103,12 @@ type Q = Pick<typeof db, "select" | "insert" | "update">;
 
 const ATTEMPTS = 3;
 
+const prefsColumns = { feedKinds: userPrefs.feedKinds, declined: userPrefs.feedKindsDeclined };
+
 /**
- * Saves the reader's choice. Read, decide (`nextFeedKinds`), then write only if the row still holds what was read, so
- * two saves racing each other never lose a kept `enabledAt`; the loser re-reads and decides again. Returns whether it
- * wrote.
+ * Saves the reader's choice. Read, decide (`nextFeedPrefs`), then write only if the row still holds BOTH columns as
+ * read, so two saves racing each other never lose a kept `enabledAt` or a declined kind; the loser re-reads and
+ * decides again. Returns whether it wrote.
  */
 export async function setFeedKinds(
   userId: string,
@@ -88,29 +118,45 @@ export async function setFeedKinds(
   q: Q = db,
 ): Promise<boolean> {
   for (let i = 0; i < ATTEMPTS; i++) {
-    const [row] = await q.select({ feedKinds: userPrefs.feedKinds }).from(userPrefs).where(eq(userPrefs.userId, userId));
-    const next = nextFeedKinds(parseFeedKinds(row?.feedKinds), on, now, scope);
+    const [row] = await q.select(prefsColumns).from(userPrefs).where(eq(userPrefs.userId, userId));
+    const next = nextFeedPrefs({ map: parseFeedKinds(row?.feedKinds), declined: parseDeclined(row?.declined) }, on, now, scope);
     if (!next) return false;
+    const values = { feedKinds: next.map, feedKindsDeclined: [...next.declined] };
     const done = row
-      ? await feedKindsUpdate(userId, row.feedKinds, next, q).returning({ userId: userPrefs.userId })
-      : await q.insert(userPrefs).values({ userId, feedKinds: next }).onConflictDoNothing().returning({ userId: userPrefs.userId });
+      ? await feedKindsUpdate(userId, row, next, q).returning({ userId: userPrefs.userId })
+      : await q.insert(userPrefs).values({ userId, ...values }).onConflictDoNothing().returning({ userId: userPrefs.userId });
     if (done.length > 0) return true;
   }
   throw new Error("setFeedKinds: the reader's news choices kept changing under the save");
 }
 
-/** The guarded write, apart so a test can render it: only while the row still holds `seen` (jsonb equality). */
-export function feedKindsUpdate(userId: string, seen: unknown, next: FeedKindsMap, q: Pick<typeof db, "update"> = db) {
+/**
+ * The guarded write, apart so a test can render it: only while the row still holds `seen` in both columns (jsonb
+ * equality for the map, array equality for the declined list, both exactly as read).
+ */
+export function feedKindsUpdate(
+  userId: string, seen: { feedKinds: unknown; declined: readonly string[] | null | undefined }, next: FeedPrefs,
+  q: Pick<typeof db, "update"> = db,
+) {
   return q
     .update(userPrefs)
-    .set({ feedKinds: next })
-    .where(and(eq(userPrefs.userId, userId), sql`${userPrefs.feedKinds} = ${JSON.stringify(seen ?? {})}::jsonb`));
+    .set({ feedKinds: next.map, feedKindsDeclined: [...next.declined] })
+    .where(and(
+      eq(userPrefs.userId, userId),
+      sql`${userPrefs.feedKinds} = ${JSON.stringify(seen.feedKinds ?? {})}::jsonb`,
+      sql`${userPrefs.feedKindsDeclined} = ${sql.param([...(seen.declined ?? [])])}::text[]`,
+    ));
 }
 
-/** The reader's map as stored, for Settings. Absent row: every kind off. */
+/** The reader's stored choice. Absent row: no stamps and nothing declined (every default-on kind on). */
+export async function readFeedPrefs(userId: string, q: Pick<typeof db, "select"> = db): Promise<FeedPrefs> {
+  const [row] = await q.select(prefsColumns).from(userPrefs).where(eq(userPrefs.userId, userId));
+  return { map: parseFeedKinds(row?.feedKinds), declined: parseDeclined(row?.declined) };
+}
+
+/** The reader's map as stored. Absent row: no stamps. */
 export async function readFeedKinds(userId: string, q: Pick<typeof db, "select"> = db): Promise<FeedKindsMap> {
-  const [row] = await q.select({ feedKinds: userPrefs.feedKinds }).from(userPrefs).where(eq(userPrefs.userId, userId));
-  return parseFeedKinds(row?.feedKinds);
+  return (await readFeedPrefs(userId, q)).map;
 }
 
 /** One row of Settings' news section: a kind this reader can be offered, and whether they have it on. */
@@ -118,14 +164,14 @@ export type NewsSetting = { kind: FeedKind; on: boolean };
 
 /**
  * Settings' "What's new on Home" section: the kinds AVAILABLE to this reader (`availableFeedKinds`, in `FEED_KINDS`
- * order), each with whether it is on. A kind that is not available is absent, never drawn disabled; its stored choice
+ * order), each with whether it is on (`effectiveKinds`: a default-on kind never touched reads on). A kind that is not available is absent, never drawn disabled; its stored choice
  * is kept by the save's scope. Empty while `HOME_FEED_ENABLED` is off, and then nothing is read.
  */
 export async function loadNewsSettings(userId: string, env: NodeJS.ProcessEnv, q: Pick<typeof db, "select"> = db): Promise<NewsSetting[]> {
   const available = availableFeedKinds(env);
   if (available.length === 0) return [];
-  const map = await readFeedKinds(userId, q);
-  return available.map((kind) => ({ kind, on: map[kind] !== undefined }));
+  const on = effectiveKinds(await readFeedPrefs(userId, q));
+  return available.map((kind) => ({ kind, on: on.includes(kind) }));
 }
 
 type Executor = Pick<typeof db, "execute">;
