@@ -3,6 +3,7 @@
  * story, the badges, Settings' news section. Unset on production until the line closes. Exactly `'true'` turns it
  * on. Every caller passes the reader's resolved env (`requestSwitchEnv`).
  */
+import { preconsEnabled } from "../precons/flag";
 import { socialFriendsEnabled } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { FEED_KINDS, type FeedKind } from "./kinds";
@@ -12,17 +13,18 @@ export function homeFeedEnabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
- * Whether a kind can be offered and read for this reader, the feed itself aside: a price drop is about the
- * wishlist; a trade match needs friends and the wishlist; a spare request ships with its own flow (G5, a later
+ * Whether a kind can be offered and read for this reader, the feed itself aside: a new precon links to
+ * `/decks/precons/[fileName]`, which 404s with Precons off; a price drop is about the wishlist; a trade match needs friends and the wishlist; a spare request ships with its own flow (G5, a later
  * round) and is never available yet. A kind that is not available is neither offered in Settings nor read,
  * though a reader's choice for it is kept.
  */
 export function feedKindAvailable(kind: FeedKind, env: NodeJS.ProcessEnv): boolean {
   switch (kind) {
     case "new-set":
-    case "new-precon":
     case "combo":
       return true;
+    case "new-precon":
+      return preconsEnabled(env);
     case "price-drop":
       return wishlistEnabled(env);
     case "trade-match":

@@ -13,7 +13,11 @@ describe("storedFeedBranch", () => {
   });
 
   it("re-joins the live spare grant for a trade match: the friendship, the friend's share, both in that pod", () => {
-    expect(q).toContain(`(fi.kind = 'trade-match' and exists ( select 1 from "friend_links" gl join "pod_spare_shares" gs on gs.user_id = gl.friend_user_id join "pod_members" gf on gf.pod_id = gs.pod_id and gf.user_id = gl.friend_user_id join "pod_members" gv on gv.pod_id = gs.pod_id and gv.user_id = gl.user_id where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id))`);
+    expect(q).toContain(`(fi.kind = 'trade-match' and exists ( select 1 from "friend_links" gl join "pod_spare_shares" gs on gs.user_id = gl.friend_user_id join "pod_members" gf on gf.pod_id = gs.pod_id and gf.user_id = gl.friend_user_id join "pod_members" gv on gv.pod_id = gs.pod_id and gv.user_id = gl.user_id where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id)`);
+  });
+
+  it("drops a trade match once the friend keeps that card back: a not-exists on spare_keep, aliased and qualified", () => {
+    expect(q).toContain(`where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id) and not exists ( select 1 from "spare_keep" sk where sk.user_id = fi.friend_user_id and sk.oracle_id = fi.oracle_id))`);
   });
 
   it("holds any other friend-naming row to the friendship, and a row naming no friend to nothing", () => {

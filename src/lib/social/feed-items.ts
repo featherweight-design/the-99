@@ -7,14 +7,18 @@
  * - a TRADE MATCH ("Colin has a spare") stands only while Colin's spares are still shared with the viewer: the
  *   `spares.ts` grant (the friendship, a pod Colin shares spares with and is still in, the viewer in that pod);
  * - any other item naming a friend stands only while the two are still friends.
- * An unfriend, a pod left or a share turned off drops the row from the feed and from both badges at once, with no
+ * - and a trade match stands only while Colin has NOT kept that card back (`spare_keep`, his `friend_user_id` and the
+ *   row's `oracle_id`). Keeping a card back is his withdrawal of the offer, so it retracts the match. A later change
+ *   to his threshold or to how many spare copies he holds does NOT: the row is a dated notice, like a price drop that
+ *   later rises again (lead's ruling, PR #2184 review round 1).
+ * An unfriend, a pod left, a share turned off or a card kept back drops the row from the feed and from both badges at once, with no
  * write. What comes back names the friend by `social_profiles.public_id` and display name, never a Clerk id.
  *
  * A fragment, not a query: `lib/feed/read.ts` unions it with the catalog kinds, so the feed, Home's count and the
  * Friends count are each one statement.
  */
 import { sql, type SQL } from "drizzle-orm";
-import { feedItems, friendLinks, podMembers, podSpareShares, socialProfiles, userPrefs } from "../../db/schema";
+import { feedItems, friendLinks, podMembers, podSpareShares, socialProfiles, spareKeep, userPrefs } from "../../db/schema";
 import type { StoredKind } from "../feed/kinds";
 
 /**
@@ -44,7 +48,10 @@ export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[])
           join ${podSpareShares} gs on gs.user_id = gl.friend_user_id
           join ${podMembers} gf on gf.pod_id = gs.pod_id and gf.user_id = gl.friend_user_id
           join ${podMembers} gv on gv.pod_id = gs.pod_id and gv.user_id = gl.user_id
-          where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id))
+          where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id)
+          and not exists (
+            select 1 from ${spareKeep} sk
+            where sk.user_id = fi.friend_user_id and sk.oracle_id = fi.oracle_id))
         or (fi.kind <> 'trade-match' and exists (
           select 1 from ${friendLinks} gl
           where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id)))))`;

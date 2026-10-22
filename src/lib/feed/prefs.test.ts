@@ -160,7 +160,7 @@ describe("loadNewsSettings (Settings' news section)", () => {
 
   it("gives the available kinds in FEED_KINDS order, each with whether it is on; an unavailable kind is absent", async () => {
     const { q } = reader({ combo: EARLIER, "price-drop": EARLIER, "trade-match": EARLIER });
-    const rows = await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
+    const rows = await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
     expect(rows).toEqual([
       { kind: "new-set", on: false },
       { kind: "new-precon", on: false },
@@ -171,8 +171,21 @@ describe("loadNewsSettings (Settings' news section)", () => {
 
   it("offers trade matches only with friends and the wishlist both on, and never a spare request yet", async () => {
     const { q } = reader({});
-    const rows = await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
+    const rows = await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
     expect(rows.map((r) => r.kind)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "combo"]);
+  });
+
+  it("leaves out New precon while Precons is off, and keeps its stored choice: it comes back on when Precons does", async () => {
+    const { q } = reader({ "new-precon": EARLIER, combo: EARLIER });
+    expect(await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true" }), q)).toEqual([
+      { kind: "new-set", on: false },
+      { kind: "combo", on: true },
+    ]);
+    expect(await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true" }), q)).toEqual([
+      { kind: "new-set", on: false },
+      { kind: "new-precon", on: true },
+      { kind: "combo", on: true },
+    ]);
   });
 
   it("is empty, and reads nothing, while the feed is off", async () => {

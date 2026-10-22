@@ -46,6 +46,7 @@ async function main() {
   const friends = await import("../src/lib/social/friends");
   const pods = await import("../src/lib/social/pods");
   const { shareSparesWith } = await import("../src/lib/social/spares");
+  const { keepCardBack, releaseCard } = await import("../src/lib/social/spare-settings");
   const { purgeAccount } = await import("../src/lib/account/purge");
 
   const stamp = async (u: string) => {
@@ -142,14 +143,16 @@ async function main() {
       where s.digital = false and s.set_type in ('expansion', 'commander') and s.released_at <= current_date
         and not exists (select 1 from catalog_first_seen c where c.kind = 'set' and c.key = s.code)
       order by s.released_at desc limit 2`);
-    const [ARRIVED, BASELINE] = unstamped.map((r) => r.code);
+    // Both identifiers are set only when two candidates exist: with one, ARRIVED alone would make later checks expect
+    // an arrival that was never inserted.
+    const [ARRIVED, BASELINE] = unstamped.length === 2 ? unstamped.map((r) => r.code) : [undefined, undefined];
     if (ARRIVED && BASELINE) {
       await db.execute(sql`insert into catalog_first_seen (kind, key, first_seen_at, baseline) values
         ('set', ${ARRIVED}, ${ago(6).toISOString()}::timestamptz at time zone 'UTC', false),
         ('set', ${BASELINE}, ${ago(6).toISOString()}::timestamptz at time zone 'UTC', true)`);
       stampedKeys.push(ARRIVED, BASELINE);
     } else {
-      console.log("note: no two unstamped released sets on this branch; the set-arrival checks are skipped");
+      console.log(`note: ${unstamped.length} unstamped released set(s) on this branch, two needed; nothing stamped, the set-arrival checks are skipped`);
     }
 
     // ---- 3. loadFeed
@@ -183,6 +186,14 @@ async function main() {
     check("... and the Friends badge", (await read.unseenFriendsCount(U, ENV, now)) === 0);
     await shareSparesWith(F, pod.id, true);
     check("sharing again brings it back, with no write to feed_items",
+      (await read.loadFeed(U, ENV, now)).some((i) => i.kind === "trade-match"));
+
+    if (!(await keepCardBack(F, CARD))) throw new Error("keepCardBack refused");
+    check("F keeps that card back: the trade match leaves the feed",
+      !(await read.loadFeed(U, ENV, now)).some((i) => i.kind === "trade-match"));
+    check("... and the Friends badge", (await read.unseenFriendsCount(U, ENV, now)) === 0);
+    await releaseCard(F, CARD);
+    check("F releases it: the match is back, with no write to feed_items",
       (await read.loadFeed(U, ENV, now)).some((i) => i.kind === "trade-match"));
 
     // ---- 4. counts and the seen cursors
@@ -272,6 +283,7 @@ async function main() {
         + (select count(*) from friend_links where user_id in (${U}, ${F}) or friend_user_id in (${U}, ${F}))
         + (select count(*) from pods where owner_user_id in (${U}, ${F}))
         + (select count(*) from friend_invites where inviter_user_id in (${U}, ${F}))
+        + (select count(*) from spare_keep where user_id in (${U}, ${F}))
         + (select count(*) from catalog_first_seen where kind = 'set' and key = any(${sql.param(stampedKeys)}::text[]))
         as n`);
     console.log(`\ncleanup: ${Number(left[0]?.n ?? -1) === 0 ? "every row this run wrote is gone" : `${left[0]?.n} rows remain`}`);
