@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { aboutEntries } from "../copy/about-entries";
 import { showcaseCopy, writtenForYouCopy } from "../copy/discovery";
-import { resolveEntry } from "../about/visible";
+import { creditsEntryOf, resolveEntry, visibleEntries } from "../about/visible";
 import type { SwitchName } from "../switches/registry";
 import { showcaseGroups, tryHref, writtenForYou, type ShowcaseInput } from "./showcase";
 import { TOOLS } from "./tools";
@@ -144,6 +144,17 @@ describe("writtenForYou", () => {
     expect(w.rows.map((r) => r.id)).not.toContain("overview");
     expect(w.rows.map((r) => r.id)).not.toContain("help-me-choose");
     expect(w.free).toBe(writtenForYouCopy.freeBracket);
+  });
+
+  it("reads the same rows from buying-credits, the form a reader with payments is drawn (launch-end batch)", () => {
+    const buying = aboutEntries.find((e) => e.id === "buying-credits")!;
+    for (const r of writtenForYouCopy.rows) expect(buying.caption).toContain(r.line);
+    const paid = { ...env(), PAYMENTS_ENABLED: "true" } as NodeJS.ProcessEnv;
+    const drawn = creditsEntryOf(visibleEntries(paid))!;
+    expect(drawn.id).toBe("buying-credits");
+    const w = writtenForYou(drawn.caption)!;
+    expect(w.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
+    expect(w.free).toBe(writtenForYouCopy.free);
   });
 
   it("is absent when the credits entry is not visible or no spender survives", () => {

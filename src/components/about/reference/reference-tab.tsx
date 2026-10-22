@@ -134,6 +134,9 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
   const all = useMemo(() => screens.flatMap((s) => s.entries), [screens]);
   const screenOf = useMemo(() => new Map(screens.flatMap((s) => s.entries.map((e) => [e.id, s.key]))), [screens]);
 
+  /** The entry an id names on this page: itself, or the one drawn in its place (`replaces`), so `#credits` still lands. */
+  const drawnId = (asked: string) => (screenOf.has(asked) ? asked : (all.find((e) => e.replaces === asked)?.id ?? asked));
+
   /** Opens an entry where it stands: its screen too on the phone. */
   const reveal = (id: string) => {
     const screen = screenOf.get(id);
@@ -144,7 +147,8 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
   };
 
   /** A press on a link to an entry on this page: clear any search, open it, and bring it into view. */
-  const go = (id: string) => (e: MouseEvent) => {
+  const go = (asked: string) => (e: MouseEvent) => {
+    const id = drawnId(asked);
     if (!reveal(id)) return;
     e.preventDefault();
     setQuery("");
@@ -163,7 +167,7 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
     const follow = () => {
       let id: string;
       try {
-        id = decodeURIComponent(window.location.hash.slice(1));
+        id = drawnId(decodeURIComponent(window.location.hash.slice(1)));
       } catch {
         return; // a malformed fragment (`#%E0`) names no entry
       }
@@ -188,7 +192,8 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
     // back. A task later first, so the sheet's release is queued ahead.
     let unscroll = () => {};
     const revealed = (e: Event) => {
-      const id = (e as CustomEvent<string | null>).detail;
+      const asked = (e as CustomEvent<string | null>).detail;
+      const id = typeof asked === "string" ? drawnId(asked) : asked;
       if (id !== null && (typeof id !== "string" || !reveal(id))) return;
       setQuery("");
       unscroll();

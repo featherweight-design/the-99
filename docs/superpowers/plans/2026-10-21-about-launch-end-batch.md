@@ -19,9 +19,11 @@ Six new entries, with every id `since: 16`:
 
 Alongside them:
 
-- **`credits`, rewritten as #2144 draws it.** It moves to a new `credits` screen (`/credits`), and its frame is the
-  balance strip. It is marked new (`since: 16`) because buying credits is new. Its two `OVERVIEW_V2_ENABLED` keys are
-  dropped (Hugh, 2026-10-21: option b).
+- **`buying-credits`, the credits redraw as #2144 draws it.** It is a new entry on a new `credits` screen (`/credits`),
+  with the balance strip as its frame, behind `PAYMENTS_ENABLED` and `since: 16`. The shipped `credits` entry stays, via
+  a new `replaces` on `buying-credits`, for readers without payments, whose `/credits` is a 404 (orchestrator, option b). The two
+  `OVERVIEW_V2_ENABLED` keys are dropped (Hugh, 2026-10-21, option b). The redraw's "Running a deck’s Analysis" line is
+  false and left out, a Design erratum.
 - **The `friends` caption edit.** The clause ` pick “They’re on The 99”,` is gated on the reader's `SOCIAL_INVITES_ENABLED`.
 - **The Home first-run line.** `aboutFirstRunRest` in `arrivals.ts` says About is "on one page". The fix goes through
   `/copy-review`.

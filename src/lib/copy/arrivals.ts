@@ -43,8 +43,8 @@ export const arrivalsCopy = {
   },
   /** About first run (A3): the lead, the sheet's first-run heading with its colon. */
   aboutFirstRunLead: `${aboutSheetCopy.firstRunHeading}:`,
-  /** After the first-run lead. */
-  aboutFirstRunRest: " every mark and figure in the app, and where to find it, on one page.",
+  /** After the first-run lead. Launch-end batch (copy-review, 2026-10-21): About is no longer one page, so it is not said. */
+  aboutFirstRunRest: " every tool, mark and figure in the app, and where to find it.",
   /** About's link, to `/about`. The sheet's own. */
   aboutShow: aboutSheetCopy.show,
 } as const;

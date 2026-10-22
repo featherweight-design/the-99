@@ -82,7 +82,7 @@ describe("ToolsTab", () => {
   );
 
   it("draws each group with its cards, and Written for you with its rows and the credits entry", () => {
-    const { container } = render(<ToolsTab groups={showcaseGroups(input())} written={written} allowance="five" theme="amonkhet" />);
+    const { container } = render(<ToolsTab groups={showcaseGroups(input())} written={written} creditsEntry="credits" allowance="five" theme="amonkhet" />);
     expect([...container.querySelectorAll("[data-tool-group]")].map((s) => s.getAttribute("data-tool-group"))).toEqual([
       "start", "tune", "buy", "own", "play",
     ]);
@@ -95,9 +95,9 @@ describe("ToolsTab", () => {
   });
 
   it("each picture is the reader's theme's capture, and an unknown theme reads the default's", () => {
-    const { container, rerender } = render(<ToolsTab groups={showcaseGroups(input())} written={null} allowance="five" theme="kaldheim" />);
+    const { container, rerender } = render(<ToolsTab groups={showcaseGroups(input())} written={null} creditsEntry="credits" allowance="five" theme="kaldheim" />);
     expect(container.querySelector('[data-tool-card="top-off"] img')!.getAttribute("src")).toBe("/about/shots/kaldheim/tool-top-off.webp");
-    rerender(<ToolsTab groups={showcaseGroups(input())} written={null} allowance="five" theme="nonsense" />);
+    rerender(<ToolsTab groups={showcaseGroups(input())} written={null} creditsEntry="credits" allowance="five" theme="nonsense" />);
     expect(container.querySelector('[data-tool-card="top-off"] img')!.getAttribute("src")).toBe("/about/shots/amonkhet/tool-top-off.webp");
   });
 
@@ -106,7 +106,7 @@ describe("ToolsTab", () => {
   it("with a group's switches off, draws no section for it, and no Written for you when handed none", () => {
     const off = new Set(["SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED"]);
     const { container } = render(
-      <ToolsTab groups={showcaseGroups(input({ isOn: (n) => !off.has(n) }))} written={null} allowance="five" theme={undefined} />,
+      <ToolsTab groups={showcaseGroups(input({ isOn: (n) => !off.has(n) }))} written={null} creditsEntry="credits" allowance="five" theme={undefined} />,
     );
     expect(container.querySelector('[data-tool-group="buy"]')).toBeNull();
     expect(container.querySelector("[data-written-for-you]")).toBeNull();

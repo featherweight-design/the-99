@@ -19,6 +19,7 @@ const PATHS: Record<Exclude<AboutScreen, "account">, [string, string?]> = {
   decks: ["/decks"],
   deck: ["/decks/0b6c2f4e-1111-4222-8333-444455556666"],
   friends: ["/friends"],
+  credits: ["/credits"],
 };
 
 describe("screenForPath: a Rule 0 table", () => {

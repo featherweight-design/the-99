@@ -261,7 +261,7 @@ describe("ArrivalsBanner, About's line", () => {
 
   it("introduces a first-run reader to the page in one line, Show me opening Tools (A3, E14)", () => {
     render(<ArrivalsBanner data={null} about={FIRST} />);
-    expect(region()).toHaveTextContent(/What The\s99 does: every mark and figure in the app, and where to find it, on one page\./);
+    expect(region()).toHaveTextContent(/What The\s99 does: every tool, mark and figure in the app, and where to find it\./);
     expect(screen.getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
   });
 

@@ -69,6 +69,14 @@ describe("ReferenceTab, the list", () => {
     expect(within(section).getAllByRole("button")[0].getAttribute("aria-expanded")).toBe("true");
   });
 
+  it("opens buying-credits for #credits, the entry it is drawn in place of (launch-end batch)", () => {
+    // A reader with payments: `buying-credits` is drawn and `credits` is not, but every credit line still links #credits.
+    const paid = referenceScreens(aboutEntries.filter((e) => e.id !== "credits"), [], undefined);
+    window.location.hash = "#credits";
+    const { container } = draw({ screens: paid });
+    expect(openEntry(container)).toBe("buying-credits");
+  });
+
   it("follows a later hashchange to another entry", () => {
     const { container } = draw();
     const target = screens[1].entries[0];

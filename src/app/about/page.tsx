@@ -9,7 +9,7 @@ import { aboutSheetEnabled } from "../../lib/about/flag";
 import { safeNext } from "../../lib/about/gate";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { referenceScreens } from "../../lib/about/reference";
-import { displayedId, switchedIds, unseenEntries, visibleEntries } from "../../lib/about/visible";
+import { creditsEntryOf, displayedId, switchedIds, unseenEntries, visibleEntries } from "../../lib/about/visible";
 import { hasSyncAnchor } from "../../lib/collection/sync-base";
 import { ABOUT_VERSION, ALLOWANCE_SLOT, fillAllowance } from "../../lib/copy/about";
 import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
@@ -111,7 +111,7 @@ export default async function AboutRoute({
   // The gate sends a reader because something is new, and what's new is drawn in the Reference.
   const initial = offerDismiss ? "reference" : aboutTabOf(params.tab);
 
-  const credits = visible.find((e) => e.id === "credits");
+  const credits = creditsEntryOf(visible);
   const written = writtenForYou(credits ? credits.caption : null);
 
   // The boards' `main` (ShowcasePhone, ReferencePhone `24px 0 104px`; the Desk boards `40px 56px 64px`). The phone's
@@ -124,7 +124,7 @@ export default async function AboutRoute({
         helpHint={isOn("HELP_PANEL_ENABLED")}
         tour={firstRunTourEnabled(env)}
         panels={{
-          tools: <ToolsTab groups={groups} written={written} allowance={fillAllowance(ALLOWANCE_SLOT, creditLimit)} theme={theme} />,
+          tools: <ToolsTab groups={groups} written={written} creditsEntry={credits?.id ?? "credits"} allowance={fillAllowance(ALLOWANCE_SLOT, creditLimit)} theme={theme} />,
           reference: (
             <ReferenceTab
               screens={screens}

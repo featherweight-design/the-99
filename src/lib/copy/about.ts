@@ -78,9 +78,10 @@ export function fillAllowance(text: string, limit: number, spell: (n: number) =>
  * Moves only for an entry with NO switch: a switched entry is announced by its own id when its switch flips, so its
  * `since` is the version current when it ships and it bumps nothing (as `deck-tokens` did at 14). 15 was spent once
  * (#1840 bumped it for the switched `start-without-a-collection`, then went back): a reader who loaded a page while
- * it was live may have 15 written as their seen version, so the next bump is 16, never 15.
+ * it was live may have 15 written as their seen version, so the next bump is 16, never 15. 16 is the launch-end batch
+ * (2026-10-21), for its one unswitched entry, `about-rebuilt`.
  */
-export const ABOUT_VERSION = 14;
+export const ABOUT_VERSION = 16;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -92,7 +93,7 @@ export type AboutWidth = 'inset' | 'plate';
  */
 export const ABOUT_SCREENS = [
   'home', 'collection', 'card-details', 'sets', 'proxies', 'history', 'wishlist', 'upload', 'commanders', 'discover',
-  'new-deck', 'decks', 'deck', 'friends', 'account',
+  'new-deck', 'decks', 'deck', 'friends', 'account', 'credits',
 ] as const;
 export type AboutScreen = (typeof ABOUT_SCREENS)[number];
 
@@ -144,7 +145,10 @@ export type AboutSwitch =
   | 'RULE_ZERO_ENABLED'
   | 'SOCIAL_INVITES_ENABLED'
   | 'CARD_SEARCH_ENABLED'
-  | 'CARD_SCAN_ENABLED';
+  | 'CARD_SCAN_ENABLED'
+  // Buying credits (#2144): the redrawn credits entry follows the payments line, and its welcome lines their own.
+  | 'PAYMENTS_ENABLED'
+  | 'WELCOME_CREDITS_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -157,6 +161,12 @@ export interface AboutEntry {
   id: string;
   /** The feature switch this entry follows. None: always drawn, seen by `since`. */
   switch?: AboutSwitch;
+  /**
+   * The entry this one is drawn IN PLACE OF while it draws (launch-end batch, 2026-10-21): `buying-credits` replaces
+   * `credits` for a reader with payments. The replaced entry keeps its own id, switch and seen rule, and draws again the
+   * moment this one does not; a link to the replaced id (`#credits`) reaches this one (`drawnEntry`).
+   */
+  replaces?: string;
   chapter: AboutChapter;
   title: string;
   /** The screen the entry is about (E8). Every entry has exactly one. */

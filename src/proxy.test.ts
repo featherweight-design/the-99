@@ -64,30 +64,36 @@ beforeEach(() => {
   session.mockResolvedValue({ userId: "user_1" });
 });
 
-describe("a bump with nothing new to draw (legacy gate)", () => {
-  // Every switch is off here, and versions 12, 13 and 14 added only switched entries.
-  it("does not redirect a reader one version behind, and remembers it", async () => {
-    aboutVersionSeen.mockResolvedValue(13);
+describe("a reader current at the version (legacy gate)", () => {
+  // Every switch is off here. 16 (the launch-end batch) added one unswitched entry, `about-rebuilt`, so a reader below
+  // it has something to meet; a reader at 16 has nothing.
+  it("does not redirect a current reader, and remembers it", async () => {
+    aboutVersionSeen.mockResolvedValue(16);
     const res = await proxy(auth, request("/decks"));
     expect(res?.status).not.toBe(307);
     expect(res?.headers.get("location")).toBeNull();
-    expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.14;");
+    expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.16;");
   });
 
   it("skips the database read on the next navigation", async () => {
-    aboutVersionSeen.mockResolvedValue(13);
-    await proxy(auth, request("/decks", {}, "user_1.14"));
+    aboutVersionSeen.mockResolvedValue(16);
+    await proxy(auth, request("/decks", {}, "user_1.16"));
     expect(aboutVersionSeen).not.toHaveBeenCalled();
   });
 
-  it("sends a reader once a switch draws an entry they have not met, though their version is current", async () => {
-    // Seen version 14 with no ids; the switch turns an entry on afterwards.
+  it("sends a reader at 14 to meet about-rebuilt, the bump's one unswitched entry", async () => {
     aboutVersionSeen.mockResolvedValue(14);
+    expect((await proxy(auth, request("/decks")))?.status).toBe(307);
+  });
+
+  it("sends a reader once a switch draws an entry they have not met, though their version is current", async () => {
+    // Seen version 16 with no ids; the switch turns an entry on afterwards.
+    aboutVersionSeen.mockResolvedValue(16);
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
     try {
-      const res = await proxy(auth, request("/decks", {}, "user_1.14"));
+      const res = await proxy(auth, request("/decks", {}, "user_1.16"));
       expect(res?.status).toBe(307);
-      expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.14%2Bcollection-add");
+      expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.16%2Bcollection-add");
     } finally {
       vi.unstubAllEnvs();
     }
