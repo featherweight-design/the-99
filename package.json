@@ -24,6 +24,7 @@
     "db:seed:precons": "tsx scripts/seed-precons.ts",
     "db:seed:scan-index": "tsx scripts/seed-scan-index.ts",
     "db:seed:games": "tsx scripts/seed-games.ts",
+    "build:creature-types": "tsx scripts/build-creature-types.mts",
     "build:tag-kinds": "tsx scripts/build-tag-kinds.mts",
     "check:scryfall": "tsx scripts/check-scryfall-contract.ts",
     "check:manapool": "tsx scripts/check-manapool-contract.ts",

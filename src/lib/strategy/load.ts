@@ -7,6 +7,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardLabels, cards, deckCards, decks } from "../../db/schema";
 import { catalogGeneration } from "../cache/catalog-generation";
+import { labelGeneration } from "../labels/generation";
 import { isLandFace } from "../cards/facet";
 import { isGameCard } from "../cards/game-card";
 import type { LabelTheme } from "../labels/types";
@@ -59,8 +60,9 @@ export function baselineFromRows(rows: readonly CardRow[]): StrategyBaseline {
   return catalogBaseline(rows.map(toStrategyCard).filter((c): c is StrategyCard => c !== null));
 }
 
-// Memoised per catalog generation, the way `precons/link-read.ts` memoises the precon catalog: the catalog and its
-// labels move only with a refresh, and every reader shares one copy. Only the counts are kept, not the rows.
+// Memoised per catalog generation AND label generation, the way `precons/link-read.ts` memoises the precon catalog. The
+// labels publish on their own schedule without moving the catalog generation (`labels/generation.ts`), so a key on the
+// catalog alone would score fresh deck themes against stale baseline ones. Only the counts are kept, not the rows.
 const MEMO_MS = 10 * 60 * 1000;
 let memo: { generation: string; at: number; ticket: number; value: Promise<StrategyBaseline> } | null = null;
 let tickets = 0;
@@ -70,7 +72,10 @@ export async function loadStrategyBaseline(
   read: () => PromiseLike<readonly CardRow[]> = () => catalogQuery(db),
 ): Promise<StrategyBaseline> {
   const ticket = ++tickets;
-  const generation = await catalogGeneration();
+  const [catalog, labels] = await Promise.all([catalogGeneration(), labelGeneration()]);
+  // An unreadable label generation has no key: read uncached, which is the answer with no key.
+  if (labels === undefined) return Promise.resolve().then(read).then(baselineFromRows);
+  const generation = `${catalog}|${labels}`;
   if (memo && memo.generation === generation && now - memo.at < MEMO_MS) return memo.value;
   // Settled once: a Drizzle builder is a lazy thenable that would run its query on every `then`.
   const entry = { generation, at: now, ticket, value: Promise.resolve().then(read).then(baselineFromRows) };

@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../cache/catalog-generation", () => ({ catalogGeneration: vi.fn(async () => "g1") }));
+vi.mock("../labels/generation", () => ({ labelGeneration: vi.fn(async (): Promise<string | undefined> => "l1") }));
 
 import { db } from "../../db";
 import { catalogGeneration } from "../cache/catalog-generation";
+import { labelGeneration } from "../labels/generation";
 import { baselineFromRows, catalogQuery, deckCardsQuery, loadDeckStrategy, loadStrategyBaseline, toStrategyCard } from "./load";
 
 const row = (typeLine: string, extra: Partial<Parameters<typeof toStrategyCard>[0]> = {}) =>
@@ -44,7 +46,10 @@ describe("toStrategyCard", () => {
 });
 
 describe("loadStrategyBaseline", () => {
-  beforeEach(() => vi.mocked(catalogGeneration).mockResolvedValue("g1"));
+  beforeEach(() => {
+    vi.mocked(catalogGeneration).mockResolvedValue("g1");
+    vi.mocked(labelGeneration).mockResolvedValue("l1");
+  });
 
   it("reads the catalog once per generation, and again when it moves", async () => {
     const read = vi.fn(async () => [row("Artifact"), row("Sorcery"), row("Land")]);
@@ -55,6 +60,21 @@ describe("loadStrategyBaseline", () => {
     vi.mocked(catalogGeneration).mockResolvedValue("g2");
     await loadStrategyBaseline(3, read);
     expect(read).toHaveBeenCalledTimes(2);
+  });
+
+  it("reads again when only the labels move, and uncached when their generation is unreadable", async () => {
+    const read = vi.fn(async () => [row("Artifact")]);
+    vi.mocked(catalogGeneration).mockResolvedValue("g9");
+    await loadStrategyBaseline(10, read);
+    await loadStrategyBaseline(11, read);
+    expect(read).toHaveBeenCalledTimes(1);
+    vi.mocked(labelGeneration).mockResolvedValue("l2");
+    await loadStrategyBaseline(12, read);
+    expect(read).toHaveBeenCalledTimes(2);
+    vi.mocked(labelGeneration).mockResolvedValue(undefined);
+    await loadStrategyBaseline(13, read);
+    await loadStrategyBaseline(14, read);
+    expect(read).toHaveBeenCalledTimes(4);
   });
 
   it("builds the counts from the same rule the deck read uses", () => {

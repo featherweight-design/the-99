@@ -24,7 +24,7 @@ const pool = new Pool({ connectionString: THE_99_NEON_STAGING_DIRECT });
 const AVERAGE_SIZE = 64;
 
 type CardRow = { oracle_id: string; type_line: string; cmc: number; keywords: string[] | null; layout: string; themes: LabelTheme[] | null };
-type ListRow = { grp: string; name: string; commander: string | null; partner: boolean; oracle_id: string; quantity: number };
+type ListRow = { grp: string; key: string; name: string; commander: string | null; partner: boolean; oracle_id: string; quantity: number };
 
 type Card = StrategyCard;
 
@@ -79,13 +79,13 @@ async function main() {
       newest as (select distinct release_date from precons order by release_date desc limit 2),
       top as (select commander_oracle_id from commander_support where deck_count is not null order by deck_count desc limit 10),
       deck_lists as (
-        select 'deck' grp, d.name, d.commander_oracle_id::text commander, d.partner_oracle_id is not null partner, dc.oracle_id::text oracle_id, dc.quantity
+        select 'deck' grp, d.id::text key, d.name, d.commander_oracle_id::text commander, d.partner_oracle_id is not null partner, dc.oracle_id::text oracle_id, dc.quantity
           from decks d join deck_cards dc on dc.deck_id = d.id
          where d.user_id = (select user_id from busiest)
            and (select sum(quantity) from deck_cards x where x.deck_id = d.id) >= 60),
       precon_lists as (
         select case when p.release_date in (select release_date from newest) then 'precon' else 'control' end grp,
-               p.name || ' (' || p.set_code || ')' as name,
+               p.file_name key, p.name || ' (' || p.set_code || ')' as name,
                (select pc2.oracle_id::text from precon_cards pc2 where pc2.file_name = p.file_name and pc2.is_commander order by pc2.position limit 1) commander,
                (select count(*) from precon_cards pc3 where pc3.file_name = p.file_name and pc3.is_commander) > 1 partner,
                pc.oracle_id::text, pc.quantity
@@ -95,7 +95,7 @@ async function main() {
              or p.release_date between (select max(release_date) from precons) - interval '24 months'
                                    and (select max(release_date) from precons) - interval '12 months')),
       average_lists as (
-        select 'average' grp, c.name, s.commander_oracle_id::text commander, false partner, s.oracle_id::text, 1 quantity
+        select 'average' grp, s.commander_oracle_id::text key, c.name, s.commander_oracle_id::text commander, false partner, s.oracle_id::text, 1 quantity
           from (select csc.commander_oracle_id, csc.oracle_id,
                        row_number() over (partition by csc.commander_oracle_id order by csc.inclusion desc nulls last, csc.oracle_id) rn
                   from commander_support_cards csc join cards k on k.oracle_id = csc.oracle_id
@@ -103,11 +103,12 @@ async function main() {
           join cards c on c.oracle_id = s.commander_oracle_id
          where s.rn <= ${AVERAGE_SIZE})
       select * from deck_lists union all select * from precon_lists union all select * from average_lists
-      order by grp, name, oracle_id`);
+      order by grp, name, key, oracle_id`);
 
     const lists = new Map<string, { grp: string; name: string; commander: string | null; partner: boolean; cards: Card[] }>();
     for (const r of listRows) {
-      const key = `${r.grp}\u0000${r.name}`;
+      // By id, not name: two decks may share a name, and merging them would score one artificial list.
+      const key = `${r.grp}\u0000${r.key}`;
       const l = lists.get(key) ?? { grp: r.grp, name: r.name, commander: r.commander, partner: r.partner, cards: [] };
       const c = card(r.oracle_id, r.quantity);
       if (c) l.cards.push(c);

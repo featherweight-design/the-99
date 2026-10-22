@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AXIS_FLOOR, BASELINE_FLOOR, axisCounts, axisScore, baselineShare, deckAxes, fixedAxesOf, type AxisCard } from "./axes";
+import { AXIS_FLOOR, BASELINE_FLOOR, axisCounts, axisScore, baselineShare, creatureTypesIn, deckAxes, fixedAxesOf, type AxisCard } from "./axes";
 
 const card = (typeLine: string, manaValue = 3, quantity = 1, keywords: string[] = []): AxisCard => ({ typeLine, manaValue, keywords, quantity });
 const many = (n: number, c: AxisCard) => Array.from({ length: n }, () => c);
@@ -39,6 +39,16 @@ describe("axisCounts and deckAxes", () => {
     expect(axisCounts([card("Tribal Enchantment — Faerie Aura")]).types.get("Faerie")).toBe(1);
   });
 
+  it("reads only creature types as typal, and a two-word type as one", () => {
+    const aura = axisCounts([card("Tribal Enchantment — Faerie Aura")]);
+    expect([...aura.types.keys()]).toEqual(["Faerie"]);
+    const equipCat = axisCounts([card("Artifact Creature — Equipment Cat")]);
+    expect([...equipCat.types.keys()]).toEqual(["Cat"]);
+    const doctor = axisCounts([card("Legendary Creature — Time Lord Doctor")]);
+    expect([...doctor.types.keys()].sort()).toEqual(["Doctor", "Time Lord"]);
+    expect(deckAxes(axisCounts(many(5, card("Legendary Creature — Time Lord Doctor")))).has("typal:Time Lord")).toBe(true);
+  });
+
   it("does not read a noncreature's subtypes as creature types", () => {
     expect(axisCounts([card("Artifact — Equipment")]).types.size).toBe(0);
   });
@@ -73,5 +83,13 @@ describe("baselineShare and axisScore", () => {
     expect(axisScore(AXIS_FLOOR - 1, 10, 0.01)).toBe(0);
     expect(axisScore(10, 100, 0.1)).toBe(0);
     expect(axisScore(10, 100, 0)).toBeCloseTo(10 * Math.log(0.1 / BASELINE_FLOOR));
+  });
+});
+
+describe("creatureTypesIn", () => {
+  it("matches the longest type first and skips non-creature subtypes", () => {
+    expect(creatureTypesIn(["Time", "Lord", "Doctor"])).toEqual(["Time Lord", "Doctor"]);
+    expect(creatureTypesIn(["Equipment", "Cat"])).toEqual(["Cat"]);
+    expect(creatureTypesIn(["Lord"])).toEqual([]);
   });
 });

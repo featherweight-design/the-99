@@ -6,6 +6,7 @@
 // A deck's score on an axis is the research's `copies × ln(lift)`, where lift is the deck's share of the axis over a
 // baseline's share of it. The baseline is a parameter: the whole catalog, or one commander's EDHREC average deck.
 import { frontFaceTypeLine } from "@/lib/recs/faces";
+import { CREATURE_TYPES } from "./creature-types.generated";
 
 /** Copies on an axis below this score 0: a splash, not a plan (research §2). */
 export const AXIS_FLOOR = 5;
@@ -30,6 +31,30 @@ type Parsed = { types: string; subtypes: string[] };
 function parse(typeLine: string): Parsed {
   const [types, subs] = frontFaceTypeLine(typeLine).split("—");
   return { types: types.toLowerCase(), subtypes: subs ? subs.trim().split(/\s+/).filter(Boolean) : [] };
+}
+
+/** Scryfall's creature types, by their lower-cased spelling, and the most words any one of them has (`Time Lord`: 2). */
+const CREATURE_TYPE_BY_LOWER = new Map(CREATURE_TYPES.map((t) => [t.toLowerCase(), t]));
+const LONGEST_TYPE = Math.max(...CREATURE_TYPES.map((t) => t.split(" ").length));
+
+/**
+ * The creature types among a card's subtypes, longest match first, so `Time Lord Doctor` reads `Time Lord` and `Doctor`.
+ * A subtype that is not a creature type (`Equipment`, `Aura`) is skipped: a creature or Kindred card can carry both.
+ */
+export function creatureTypesIn(subtypes: readonly string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < subtypes.length;) {
+    let matched = 0;
+    for (let n = Math.min(LONGEST_TYPE, subtypes.length - i); n >= 1 && matched === 0; n--) {
+      const type = CREATURE_TYPE_BY_LOWER.get(subtypes.slice(i, i + n).join(" ").toLowerCase());
+      if (type) {
+        out.push(type);
+        matched = n;
+      }
+    }
+    i += matched || 1;
+  }
+  return out;
 }
 
 const isCreature = (p: Parsed) => /\bcreature\b/.test(p.types);
@@ -64,7 +89,7 @@ export function axisCounts(cards: readonly AxisCard[]): { fixed: Map<FixedAxis, 
     const p = parse(card.typeLine);
     if (!bearsCreatureTypes(p)) continue;
     if (isChangeling(card)) changelings += card.quantity;
-    else for (const t of new Set(p.subtypes)) types.set(t, (types.get(t) ?? 0) + card.quantity);
+    else for (const t of new Set(creatureTypesIn(p.subtypes))) types.set(t, (types.get(t) ?? 0) + card.quantity);
   }
   return { fixed, types, changelings, total };
 }
