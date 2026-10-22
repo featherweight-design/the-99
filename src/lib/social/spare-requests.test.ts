@@ -214,21 +214,25 @@ describe("Ask instead (G1: one transaction)", () => {
   });
 
   it("lands the new ask after the withdraw, with the copies capped at the friend's spare count", async () => {
-    // askLock, deck, friendship, withdraw; then askIn: askLock, deck (re-entrant), friendship, expire.
+    // askLock, friendship, deck, withdraw; then askIn: askLock, friendship, deck (re-entrant), expire.
     const DECK = { rows: [{ id: CARD }] };
-    const ran = await scripted([{ rows: [] }, DECK, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, DECK, FRIENDS, { rows: [] }]);
+    const ran = await scripted([{ rows: [] }, FRIENDS, DECK, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, DECK, { rows: [] }]);
     expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 7, deckId: CARD })).toEqual({ ok: true, id: "new" });
     expect(ran.seen.rolledBack).toBe(false);
     expect(ran.seen.inserted[0]).toMatchObject({ copies: 2, deckId: CARD });
-    // The deck is locked before the withdraw writes a request row: deck before request, a deck delete's order.
+    // One lock order: friendship (the purge's order), then the deck, then request rows (a deck delete's order).
     const qs = ran.map((q) => render(q).q);
-    expect(qs[1]).toBe(`select odk.id from "decks" odk where odk.id = $1 and odk.user_id = $2 for key share`);
+    expect(qs[2]).toBe(`select odk.id from "decks" odk where odk.id = $1 and odk.user_id = $2 for key share`);
+    const friendLock = (q: string) => q.includes("friend_links") && / for share$/.test(q.trim());
+    expect(qs.findIndex(friendLock)).toBeGreaterThan(-1);
+    expect(qs.findIndex(friendLock)).toBeLessThan(qs.findIndex((q) => q.includes("for key share")));
+    expect(qs.findLastIndex(friendLock)).toBeLessThan(qs.findLastIndex((q) => q.includes("for key share")));
     expect(qs.findIndex((q) => q.includes("for key share"))).toBeLessThan(qs.findIndex((q) => q.includes("'withdrawn'")));
     expect(qs.findLastIndex((q) => q.includes("for key share"))).toBeLessThan(qs.findIndex((q) => q.includes("'expired'")));
   });
 
   it("stores no deck the asker does not own (or one a delete took first)", async () => {
-    const ran = await scripted([{ rows: [] }, { rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, { rows: [] }, FRIENDS, { rows: [] }]);
+    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [] }, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [] }]);
     expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: CARD })).toEqual({ ok: true, id: "new" });
     expect(ran.seen.inserted[0]).toMatchObject({ copies: 1, deckId: null });
   });

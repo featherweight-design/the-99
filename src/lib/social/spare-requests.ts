@@ -84,9 +84,10 @@ export function expireStaleQuery(askerId: string, oracleId: string, now: Date): 
 
 /**
  * The asker's own deck, read and KEY SHARE locked in the ask's transaction: one row back means `deck_id` may be
- * stored (G2). It is taken before any request row is written, so every ask path locks deck before request, the
- * order a deck delete takes them (the deck, then its `on delete set null`): a delete in progress is waited out and
- * then reads as no deck, and one that comes later waits for the ask.
+ * stored (G2). Every ask path takes its locks in ONE order: the advisory lock, the friendship rows, this deck, then
+ * request rows. Friendship before deck is the purge's order (`purgeSocialIn` locks friend_links before it deletes
+ * decks); deck before request is a deck delete's (the deck, then its `on delete set null`), so a delete in progress
+ * is waited out and then reads as no deck, and one that comes later waits for the ask.
  */
 export function ownDeckQuery(askerId: string, deckId: string): SQL {
   return sql`select odk.id from ${decks} odk where odk.id = ${deckId} and odk.user_id = ${askerId} for key share`;
@@ -109,9 +110,9 @@ export type Asking = { askerId: string; holderId: string; oracleId: string; copi
  */
 export async function askIn(tx: Tx, a: Asking): Promise<AskOutcome> {
   await tx.execute(askLockQuery(a.askerId, a.oracleId));
-  const deckId = await lockOwnDeck(tx, a);
   const links = await tx.execute(lockFriendshipQuery(a.askerId, a.holderId));
   if (links.rows.length !== 2) return { ok: false, reason: "not-friend" };
+  const deckId = await lockOwnDeck(tx, a);
   await tx.execute(expireStaleQuery(a.askerId, a.oracleId, a.now));
   const prior = await tx
     .select({
@@ -208,10 +209,11 @@ export async function askInsteadForSpare(
   if (!isUuid(fromRequestId)) return { ok: false, reason: "gone" };
   return inAskTransaction(async (tx) => {
     await tx.execute(askLockQuery(askerId, asking.oracleId));
-    // The deck before the withdraw writes a request row (`ownDeckQuery`'s order); `askIn` takes it again, re-entrantly.
-    await lockOwnDeck(tx, asking);
     const links = await tx.execute(lockFriendshipQuery(askerId, asking.holderId));
     if (links.rows.length !== 2) return { ok: false, reason: "not-friend" };
+    // The deck after the friendship and before the withdraw writes a request row (`ownDeckQuery`'s order); `askIn`
+    // takes it again, re-entrantly.
+    await lockOwnDeck(tx, asking);
     const gone = await tx.execute(withdrawForInsteadQuery(askerId, fromRequestId, asking.oracleId, asking.holderId, now));
     if ((gone.rowCount ?? gone.rows.length) === 0) return { ok: false, reason: "gone" };
     return askIn(tx, asking);
