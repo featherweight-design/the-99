@@ -12,7 +12,6 @@ import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { CommandersPlaceHead } from "../../../components/commanders/commanders-place-head";
 import { CollectionContentScope } from "../../../components/collection/collection-content-scope";
-import { commandersPlaceFromPathname } from "../../../components/commanders/commanders-place-head";
 
 export default async function CommandersListLayout({ children }: { children: React.ReactNode }) {
   const userId = await requireUserId();
@@ -24,7 +23,7 @@ export default async function CommandersListLayout({ children }: { children: Rea
   return (
     <>
       <CommandersPlaceHead helpMeChoose={helpMeChooseEnabled(env)} counts={counts} />
-      <CollectionContentScope inPlace={(pathname) => commandersPlaceFromPathname(pathname) !== null}>{children}</CollectionContentScope>
+      <CollectionContentScope place="commanders">{children}</CollectionContentScope>
     </>
   );
 }

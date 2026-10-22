@@ -1,0 +1,42 @@
+{
+  "feature": "Commanders place: For you, Discover and Help me choose on one strip (menu and Home line, plan 2026-10-22-menu-home.md, PR 1)",
+  "note": "Photographed over the audit account on a server with COMMANDERS_PLACE_ENABLED, HELP_ME_CHOOSE_ENABLED and NO_COLLECTION_ENTRY_ENABLED on. Each tab is its own row at both widths; the two retired addresses are rows too, because a redirect that never lands leaves the cell empty. The strip is the Collection place's, extracted (`shares`).",
+  "clearAbout": true,
+  "shares": {
+    "module": "src/components/place/place-strip.tsx",
+    "binding": "PlaceStrip",
+    "note": "Collection and Commanders draw one strip; each place's head owns its title and trailing controls."
+  },
+  "rows": [
+    {
+      "id": "for-you",
+      "label": "/commanders, For you: title and count line (desktop), the strip, then today's ranked page",
+      "view": "src/components/commanders/commanders-place-head.tsx",
+      "steps": [{ "goto": "/commanders", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+    },
+    {
+      "id": "discover",
+      "label": "/commanders/discover, Discover: the same strip with Discover lit; no Help me choose door on the rack",
+      "view": "src/components/commanders/commanders-place-head.tsx",
+      "steps": [{ "goto": "/commanders/discover", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+    },
+    {
+      "id": "choose",
+      "label": "/commanders/choose, Help me choose: the intake form under the strip, with no back-to-New-deck link",
+      "view": "src/components/commanders/commanders-place-head.tsx",
+      "steps": [{ "goto": "/commanders/choose", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+    },
+    {
+      "id": "legacy-discover",
+      "label": "/discover with a query: lands on the Discover tab, query kept",
+      "view": "src/components/commanders/commanders-place-head.tsx",
+      "steps": [{ "goto": "/discover?c=g", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+    },
+    {
+      "id": "legacy-choose",
+      "label": "/decks/new/choose with a query: lands on the Help me choose tab, query kept",
+      "view": "src/components/commanders/commanders-place-head.tsx",
+      "steps": [{ "goto": "/decks/new/choose?t=dinosaurs", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+    }
+  ]
+}
