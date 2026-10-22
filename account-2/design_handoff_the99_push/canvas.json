@@ -1,0 +1,82 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-22T17:45:00Z"
+ },
+ "title": "The 99 · Push notifications",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 1498,
+   "title": "R1 · the flow, calls, gaps"
+  },
+  "Settings.dc.html": {
+   "x": 1692,
+   "y": 0,
+   "w": 2290,
+   "h": 2004,
+   "title": "Settings · the push column"
+  },
+  "Device-States.dc.html": {
+   "x": 4062,
+   "y": 0,
+   "w": 1430,
+   "h": 2148,
+   "title": "Settings · the device row’s states"
+  },
+  "The-Ask.dc.html": {
+   "x": 0,
+   "y": 2268,
+   "w": 2160,
+   "h": 2185,
+   "title": "The ask · tick, prompt, allow or block"
+  },
+  "iPhone.dc.html": {
+   "x": 2240,
+   "y": 2268,
+   "w": 1960,
+   "h": 1234,
+   "title": "iPhone · Add to Home Screen first"
+  },
+  "Delivery.dc.html": {
+   "x": 4280,
+   "y": 2268,
+   "w": 1612,
+   "h": 763,
+   "title": "Delivery · each event or a digest, quiet hours"
+  },
+  "Notifications.dc.html": {
+   "x": 0,
+   "y": 4573,
+   "w": 1430,
+   "h": 2755,
+   "title": "The notification · per kind, and where a tap lands"
+  },
+  "About.dc.html": {
+   "x": 1510,
+   "y": 4573,
+   "w": 1846,
+   "h": 2217,
+   "title": "About · the push entry in the Reference"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Settings.dc.html",
+  "Device-States.dc.html",
+  "The-Ask.dc.html",
+  "iPhone.dc.html",
+  "Delivery.dc.html",
+  "Notifications.dc.html",
+  "About.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
