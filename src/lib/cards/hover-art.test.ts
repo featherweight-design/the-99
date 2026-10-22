@@ -52,6 +52,8 @@ const FEEDERS: Record<string, string> = {
   "components/decks/upgrade-path.tsx": "lib/decks/read.ts",
   "components/decks/mana-sections.tsx": "lib/decks/read.ts",
   "components/intake/read-as-bar.tsx": "lib/intake/rows.ts",
+  // The hand-off's Bracket row names its cards from `loadCardChip`, read-as-bar's own chip (bracket reach PR 3b).
+  "components/intake/hand-off-answers.tsx": "lib/intake/rows.ts",
   // The deck's own printing for a matched card or a half it holds, the reader's copy for the rest (`resolveDeckOwnedPrintings`).
   "components/decks/change-commander-sheet.tsx": "lib/commander-change/candidates.ts",
   // The combo's other piece previews the printing card details open outside a deck's own page: the reader's owned copy, else the catalog's (`withPartnerArt`).

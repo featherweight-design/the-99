@@ -56,6 +56,7 @@ import {
 } from "../../lib/decks/fill";
 import { buildFillPlan } from "../../lib/decks/fill-plan";
 import { type DeckAnswers } from "../../lib/intake/fill-facts";
+import { bracketReachEnabled } from "../../lib/intake/bracket-reach-flag";
 import { answerColumnsFor, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
@@ -105,7 +106,12 @@ export async function createDeck(
 ): Promise<void> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  const asked = answers === null ? null : validateCreateAnswers(answers);
+  const validated = answers === null ? null : validateCreateAnswers(answers);
+  // *Hit bracket N* is the bracket reach's choice: with the switch off for this reader there was no
+  // choice to make, so the ask is dropped and the deck is built as it shipped.
+  const asked = validated && validated.bracketBuys && !bracketReachEnabled(env)
+    ? { ...validated, bracketBuys: false }
+    : validated;
   // Shape first: a crafted request can put any string here, and a malformed uuid
   // reaching `inArray` is rejected by Postgres rather than by this action — the
   // player would see a 500 where the refusal below reads as one.
@@ -245,7 +251,10 @@ export async function createDeck(
             layout: c.layout, manaCost: c.manaCost,
           })),
         ...(asked === null ? {} : {
-          answers: { budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null },
+          answers: {
+            budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket,
+            cardOracleId: card?.oracleId ?? null, bracketBuys: asked.bracketBuys,
+          },
           // Only cards I own (three answers §3): the 99 from what the collection can supply.
           // Nothing is bought for it, so the budget has only the placed card to charge.
           ...(asked.pool === "own" ? { pool: "sleeveable" as const, failClosed: true } : {}),
@@ -253,10 +262,19 @@ export async function createDeck(
         env,
       },
     );
+    // What the filled deck stores of *Hit bracket N*: true only when the plan placed the set to
+    // buy (its own reach still short with one), and the budget it raised to pay for it (G1), so a
+    // retry or a reader of the deck sees what was built.
+    const filledColumns: AnswerColumns = asked === null ? answerColumns : {
+      ...answerColumns,
+      answerBracketBuys: asked.bracketBuys && plan.bracketBought === true,
+      ...(asked.bracketBuys && plan.raisedBudgetCents !== undefined ? { answerBudgetCents: plan.raisedBudgetCents } : {}),
+      answerBudgetRaised: asked.bracketBuys && plan.budgetRaised === true,
+    };
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
         .values({
-          userId, name: deckName, commanderOracleId, partnerOracleId, filled: true, ...answerColumns,
+          userId, name: deckName, commanderOracleId, partnerOracleId, filled: true, ...filledColumns,
         })
         .returning({ id: decks.id });
       // The selection first, then as much of the fill as fits under the body
@@ -539,7 +557,11 @@ export async function fillDeck(deckId: string): Promise<void> {
   const bracket = bracketOf(deck.answerBracket ?? null);
   const answers: DeckAnswers | null = budgetCents === null && bracket === null && buildAround === null
     ? null
-    : { budgetCents, bracket, cardOracleId: buildAround };
+    // *Hit bracket N*, as the create stored it, so the retry places the same set to buy.
+    : {
+      budgetCents, bracket, cardOracleId: buildAround, bracketBuys: deck.answerBracketBuys === true,
+      budgetRaised: deck.answerBudgetRaised === true,
+    };
   const plan = await buildFillPlan(
     userId,
     partner ? [commander, partner] : [commander],
@@ -609,7 +631,14 @@ export async function fillDeck(deckId: string): Promise<void> {
       // written (`intent` null, `intent_seeded` false). Seeding over that would bring back the
       // app's words after the player's first edit, which the chip promises never happens.
     }
-    await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
+    await tx.update(decks).set({
+      filled: true,
+      // *Hit bracket N* re-placed on a deck whose create failed: the budget it raised (G1), and
+      // false when this retry's reach no longer had a set to buy, as a create would have stored.
+      ...(deck.answerBracketBuys ? { answerBracketBuys: plan.bracketBought === true } : {}),
+      ...(deck.answerBracketBuys && plan.raisedBudgetCents !== undefined ? { answerBudgetCents: plan.raisedBudgetCents } : {}),
+      ...(deck.answerBracketBuys ? { answerBudgetRaised: plan.budgetRaised === true } : {}),
+    }).where(eq(decks.id, deckId));
   });
   revalidateClaims(deckId, userId);
 }

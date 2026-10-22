@@ -3,7 +3,7 @@
 // §Create — Pre-filled (/decks/new?commander=…)
 // Full-card display (desktop) / thumb (mobile) + name input + Create/Change buttons.
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { commanderGradient } from "../../lib/cards/gradients";
@@ -14,7 +14,11 @@ import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 import { CommanderThumb, CARD_ART_RING } from "../ui/commander-thumb";
-import { HandOffAnswersBlock } from "../intake/hand-off-answers";
+import {
+  HandOffAnswersBlock, needsBracketChoice, type BracketChoice, type BracketReachState,
+} from "../intake/hand-off-answers";
+import { handOffBracketReach } from "../../app/decks/new/hand-off-actions";
+import { fromMineBracket } from "../../lib/intake/hand-off-reach";
 import { addPanelCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import type { CreateAnswers } from "../../lib/intake/answers";
@@ -50,6 +54,9 @@ interface CreatePreFilledProps {
     changeHref: string;
     /** False when nothing but colors or words was asked: the block has no row to draw. */
     drawBlock: boolean;
+    /** Read the bracket reach for the Bracket row (bracket reach PR 3b): a bracket of 3 or more was
+     *  asked and the reader's `BRACKET_REACH_ENABLED` is on. False draws today's ceiling line. */
+    readReach?: boolean;
   };
 }
 
@@ -73,6 +80,42 @@ export function CreatePreFilled({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const readReach = handOff?.readReach === true && handOff.drawBlock;
+  // The Bracket row's reach, read for the inputs the create is handed. A failed read falls back to
+  // today's ceiling line and leaves *Create deck* live: the create still builds to the answers.
+  //
+  // THE RESULT AND THE PICK ARE KEYED ON THOSE INPUTS (the commander, the answers, the picks). A
+  // same-route change of any of them makes the stored pair someone else's, so it is read as pending
+  // with no pick DURING RENDER, never corrected in an effect: a stale "Hit" must not submit even once.
+  const create = handOff?.create;
+  const readKey = readReach && create ? JSON.stringify([oracleId, create, selectedOracleIds ?? []]) : null;
+  const [stored, setStored] = useState<{ key: string | null; reach: BracketReachState | undefined; choice: BracketChoice }>(
+    { key: readKey, reach: readKey ? { status: "pending" } : undefined, choice: null },
+  );
+  const current = stored.key === readKey
+    ? stored
+    : { key: readKey, reach: readKey ? { status: "pending" as const } : undefined, choice: null };
+  const reach = current.reach;
+  const choice = current.choice;
+  const setChoice = (c: BracketChoice) => setStored({ ...current, choice: c });
+  useEffect(() => {
+    if (readKey === null) return;
+    let live = true;
+    // The inputs come back out of the key, so the read is exactly the one the key names.
+    const [id, asked, picks] = JSON.parse(readKey) as [string, CreateAnswers, string[]];
+    const land = (r: BracketReachState) => {
+      if (!live) return;
+      // The pick stays only when it was made for these same inputs.
+      setStored((prev) => ({ key: readKey, reach: r, choice: prev.key === readKey ? prev.choice : null }));
+    };
+    // The picks the create places too: the read must see the deck the create builds.
+    handOffBracketReach(id, asked, picks)
+      .then((r) => land({ status: "done", reach: r }))
+      .catch(() => land({ status: "failed" }));
+    return () => { live = false; };
+  }, [readKey]);
+  const mustChoose = needsBracketChoice(reach);
+  const waiting = reach?.status === "pending" || (mustChoose && choice === null);
 
   const gradient = commanderGradient(colorIdentity);
 
@@ -83,10 +126,18 @@ export function CreatePreFilled({
       setError(renameCopy.errorLength);
       return;
     }
+    if (waiting) return;
     setError(null);
+    // *From my collection* builds to the highest bracket the deck permits; *Hit* to the target, buying.
+    const done = reach?.status === "done" ? reach.reach : null;
+    const asked = handOff?.create && mustChoose && done
+      ? choice === "mine"
+        ? { ...handOff.create, bracket: fromMineBracket(done), bracketBuys: false }
+        : { ...handOff.create, bracketBuys: true }
+      : handOff?.create ?? null;
     startTransition(async () => {
       try {
-        await createDeck(oracleId, trimmed, selectedOracleIds, null, handOff?.create ?? null);
+        await createDeck(oracleId, trimmed, selectedOracleIds, null, asked);
       } catch (err) {
         // See create-picker.tsx: the action's closing `redirect()` throws, and
         // without this the success path paints a failure on its way out.
@@ -282,7 +333,12 @@ export function CreatePreFilled({
             </div>
           </div>
 
-          {handOff?.drawBlock && <HandOffAnswersBlock answers={handOff.answers} changeHref={handOff.changeHref} />}
+          {handOff?.drawBlock && (
+            <HandOffAnswersBlock
+              answers={handOff.answers} changeHref={handOff.changeHref}
+              reach={reach} choice={choice} onChoose={setChoice}
+            />
+          )}
 
           {/* Deck name form */}
           <form onSubmit={handleSubmit}>
@@ -306,18 +362,24 @@ export function CreatePreFilled({
               placeholder="My awesome deck"
               disabled={isPending}
               className={`block w-full rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px] text-[16px] border-[color:var(--accent)] ${
-                error ? "mb-[8px]" : "mb-[24px]"
+                error || (mustChoose && choice === null) ? "mb-[8px]" : "mb-[24px]"
               }`}
             />
 
-            {error && (
+            {/* The error slot. A name error wins; otherwise, while the choice waits, the line that
+                says why *Create deck* is not live yet, in muted ink (board C). */}
+            {error ? (
               <p
                 className="font-mono text-[11px] mb-[16px]"
                 style={{ color: "var(--danger)" }}
               >
                 {error}
               </p>
-            )}
+            ) : mustChoose && choice === null ? (
+              <p data-testid="bracket-choice-waiting" className="font-mono text-[11px] mb-[16px]" style={{ color: "var(--fg-muted)" }}>
+                {handOffCopy.reach.waiting}
+              </p>
+            ) : null}
 
             {/* The two CTAs are a flex row (column on mobile) with an explicit
                 gap. They used to be a margin plus the whitespace between two
@@ -326,7 +388,7 @@ export function CreatePreFilled({
               {/* §"Create deck →" primary button */}
               <PrimaryButton
                 type="submit"
-                disabled={isPending || deckName.trim().length === 0}
+                disabled={isPending || deckName.trim().length === 0 || waiting}
                 className="w-full md:w-auto text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-[26px]"
               >
                 {isPending ? "Creating…" : "Create deck →"}

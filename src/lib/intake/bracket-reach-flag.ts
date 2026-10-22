@@ -2,8 +2,9 @@ import { helpMeChooseEnabled } from "./flag";
 
 /**
  * `BRACKET_REACH_ENABLED`: a Help me choose fill places the owned cards that reach the deck's
- * bracket answer (`bracket-reach.ts`, plan `2026-10-21-bracket-reach.md`). It never places a card to
- * buy. Off, the answer is a ceiling alone, as it shipped. Needs `HELP_ME_CHOOSE_ENABLED`; exactly
+ * bracket answer (`bracket-reach.ts`, plan `2026-10-21-bracket-reach.md`). It places a card to buy
+ * only when the player picked *Hit bracket N* on the hand-off (`decks.answer_bracket_buys`). Off, the
+ * answer is a ceiling alone, as it shipped, and the hand-off draws no choice. Needs `HELP_ME_CHOOSE_ENABLED`; exactly
  * `'true'` turns it on.
  */
 export function bracketReachEnabled(env: NodeJS.ProcessEnv): boolean {

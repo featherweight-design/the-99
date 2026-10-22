@@ -315,6 +315,55 @@ export const helpMeChooseCopy = {
     bracketValue: (n: 1 | 2 | 3 | 4 | 5) => `${n} · ${BRACKET_NAMES[n]}`, // canvas
     bracket: (n: number) => `The fill keeps every card it chooses inside bracket ${n}’s limits.`,
     backToResults: "Back to results",
+    /**
+     * The Bracket row's reach (bracket reach R1b, board C), from bracket 3 up with the switch on.
+     * Transcribed from `bracket-reach · copy strings.ts`, with the /copy-review fixes: `reached`
+     * names a combo or several cards without calling them a Game Changer, `none` gives each target
+     * its own reason, and every card list takes `nameList`.
+     */
+    reach: {
+      /** While the fill is read. Eng: the row's pending line. */
+      pending: "Reading the bracket this deck lands in…",
+      /** One Game Changer the player owns gets the deck there. */
+      reachedOne: (card: string, n: number) => `The fill places ${card}, a Game Changer you own, so the deck is bracket ${n}.`,
+      /** A combo, or several cards: named, never called a Game Changer. */
+      reachedMany: (cards: readonly string[], n: number) => `The fill places ${nameList(cards)} from your cards, so the deck is bracket ${n}.`,
+      shortLead: (lands: string) => `From your cards this deck is bracket ${lands}. Choose how to build it:`,
+      fromMine: "From my collection",
+      fromMineLine: (lands: string) => `Builds from your cards: bracket ${lands}.`,
+      fromMineLineOwn: (lands: string) => `Builds from your cards only: bracket ${lands}.`,
+      hit: (n: number) => `Hit bracket ${n}`,
+      hitLine: (cards: readonly string[], price: string) =>
+        `Adds ${nameList(cards)}, about ${price}, to buy. ${cards.length === 1 ? "It joins" : "They join"} the deck’s Shopping list.`,
+      /** `left` is set when a placed card already took part of the budget: "over" is past what is left. */
+      hitLineOver: (cards: readonly string[], price: string, over: string, budget: string, raised: string, left: string | null = null) =>
+        left === null
+          ? `Adds ${nameList(cards)}, about ${price}, to buy: ${over} over your ${budget} budget. Picking it raises the budget to ${raised}.`
+          : `Adds ${nameList(cards)}, about ${price}, to buy: ${over} more than the ${left} left of your ${budget} budget. Picking it raises the budget to ${raised}.`,
+      hitLineOwn: (cards: readonly string[], price: string) =>
+        `Adds ${nameList(cards)}, about ${price}, to buy: ${cards.length === 1 ? "the one card" : `the ${spelled(cards.length)} cards`} from outside your collection.`,
+      overTag: "over budget",
+      /** Nothing the fill can place reaches the target: the reason is the target's own. */
+      none: (n: number, lands: string) =>
+        n === 3
+          ? `No Game Changer or two-card combo the fill can place fits this commander, so the deck is bracket ${lands}.`
+          : n === 4
+            ? `The fill can’t place four Game Changers, or a combo with tutors that find both halves, for this commander, so the deck is bracket ${lands}.`
+            : `The fill can’t place four Game Changers for this commander, so the deck is bracket ${lands}.`,
+      /** The error slot while neither row is picked. */
+      waiting: "Choose how to build it under Bracket to create the deck.",
+      /** The Budget row once *Hit* is picked: the cards it pays for first (`budgetFirst`'s shape). */
+      /** Led into the Hit budget line when the build-around card must be bought and has no live price:
+       *  the purchase is still said, and the total leaves it out (`budgetUnknown`'s words). */
+      budgetHitUnknown: (cards: readonly string[]) => cards.length === 1
+        ? `${cards[0]} has no price on record, so the budget can’t count it, and it is left out of the total.`
+        : `${nameList(cards)} have no price on record, so the budget can’t count them, and they are left out of the total.`,
+      budgetHit: (cards: readonly string[], price: string) =>
+        `${nameList(cards)} ${cards.length === 1 ? "takes" : "take"} ${price} of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.`,
+      /** Own-only, or over the budget, with *Hit* picked: those cards are the whole of what is bought. */
+      budgetHitOnly: (cards: readonly string[], price: string) =>
+        `${nameList(cards)} ${cards.length === 1 ? "takes" : "take"} ${price} of it. The fill buys nothing else for the 99.`,
+    },
   },
   searchFailed: {
     head: "We couldn’t find commanders just now",

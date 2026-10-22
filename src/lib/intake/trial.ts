@@ -10,6 +10,7 @@ import { sql } from "drizzle-orm";
 import { buysCopy } from "./buys-card";
 import type { DeckAnswers } from "./fill-facts";
 import type { Bracket } from "./rank";
+import type { BracketReach } from "./bracket-reach";
 
 /**
  * One result row's ownership figures (brief §2 ruling 7, §6): the deck this commander would be
@@ -131,4 +132,45 @@ async function bracketFigure(
     : plan;
   if (!deck.bracketReach || !deck.bracketAfter) return null;
   return { target: deck.bracketReach.target, ...deck.bracketAfter };
+}
+
+/**
+ * The hand-off's trial (bracket reach PR 3b): the ONE deck `createDeck` would build from these
+ * answers, filled the way the create fills it (under own-only the sleeveable pool, failing closed),
+ * so the choice the Bracket row draws is the create's own. It reads the plan, never re-deriving it:
+ * `bracketAfter` for what that finished deck lands in, `bracketReach` for the set *Hit bracket N*
+ * places (the create places it before the fill buys anything, so no part of it is bought twice), and
+ * the rows the fill placed to reach a bracket.
+ */
+export async function handOffTrial(
+  userId: string,
+  commander: { oracleId: string; name: string; colorIdentity: string[]; manaCost: string | null },
+  answers: DeckAnswers,
+  env: NodeJS.ProcessEnv,
+  ownedOnly: boolean,
+  /** Every card the create places beside the fill: the build-around card and the `?select=` picks.
+   *  Defaults to the card alone. They are fixed in the reach, charged to the budget and take slots. */
+  placedIds: readonly string[] = answers.cardOracleId ? [answers.cardOracleId] : [],
+): Promise<{
+  /** Null when no reach ran: under bracket 3, or the switch off. */
+  permits: Bracket[] | null;
+  /** The rows the fill placed to reach a bracket (`source: "bracket"`), in plan order. */
+  placedRaisers: string[];
+  reach: BracketReach | null;
+  budgetLeftCents: number | null;
+}> {
+  const placed = [...new Set([...(answers.cardOracleId ? [answers.cardOracleId] : []), ...placedIds])];
+  const plan = await buildFillPlan(userId, [commander], new Set(placed), {
+    answers, selected: await placedCardsOf(placed), env,
+    ...(ownedOnly ? { pool: "sleeveable" as const, failClosed: true } : {}),
+  });
+  if (answers.bracket === null || answers.bracket < 3 || !plan.bracketReach || !plan.bracketAfter) {
+    return { permits: null, placedRaisers: [], reach: null, budgetLeftCents: null };
+  }
+  return {
+    permits: plan.bracketAfter.permits,
+    placedRaisers: plan.rows.filter((r) => r.source === "bracket").map((r) => r.oracleId),
+    reach: plan.bracketReach,
+    budgetLeftCents: plan.budgetLeftCents ?? null,
+  };
 }

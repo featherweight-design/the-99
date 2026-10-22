@@ -16,8 +16,9 @@ import { labelRoleCountsEnabled } from "./label-counts-flag";
 import { readLabelRoleSets } from "../labels/read";
 import { dedupeSelectionFromPool, reachCandidates, planFill, type FillCandidate, type FillPlan, type HeldCard, type PlanFillArgs } from "./fill";
 import { gatherFillStaples } from "../staples/fill-staples";
-import { loadBracketGateFacts, loadFillGate, type DeckAnswers } from "../intake/fill-facts";
-import { bracketReach, reachOverRows, type BracketReach, type ReachFacts } from "../intake/bracket-reach";
+import { loadBracketGateFacts, loadBudgetLeftCents, loadFillGate, type DeckAnswers } from "../intake/fill-facts";
+import { permitsOf } from "../intake/fill-gate";
+import { bracketReach, bringsForbidden, reachOverRows, type BracketReach, type ReachFacts } from "../intake/bracket-reach";
 import type { Bracket } from "../intake/rank";
 import { buysCopy } from "../intake/buys-card";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
@@ -100,12 +101,7 @@ export async function buildFillPlan(
      *  input: this module is not `"use server"`, so only server code that resolved them can pass it. */
     env: NodeJS.ProcessEnv;
   },
-): Promise<FillPlan & {
-  bracketReach?: BracketReach;
-  /** The bracket the finished rows permit, and the cheapest buy over them that reaches the target
-   *  (null when they reach it, or nothing buyable does). Set whenever `bracketReach` is. */
-  bracketAfter?: { permits: Bracket[]; buyCents: number | null };
-}> {
+): Promise<FillPlan & BracketReachOnPlan> {
   const commander = commanders[0];
   const hasPartner = commanders.length > 1;
   let pool = dedupeSelectionFromPool(
@@ -243,6 +239,18 @@ export async function buildFillPlan(
       : [],
     excludeOracleIds,
   );
+  // THE REACH'S BUYING HALF UNDER OWN-ONLY (Design R1b): *Hit bracket N* is offered there too, so the
+  // reach weighs the unowned top cards the pool leaves out. They are NEVER pool candidates: only the
+  // player's explicit Hit places one (`boughtRaisers`). Read only with a bracket answer and the
+  // switch on, and degraded rather than fatal, since an own-only fill does not need them.
+  const reachOn = options.answers?.bracket != null && bracketReachEnabled(options.env);
+  const reachOnlyTop = sleeveableOnly && reachOn && data?.topCards
+    ? dedupeSelectionFromPool(
+        await unownedTopCards(commanders, data.topCards, ownedIds, new Set(commanders.map((c) => c.oracleId)))
+          .catch((err) => { console.warn("buildFillPlan: no top cards for the reach's buying half", err); return []; }),
+        excludeOracleIds,
+      ).filter((c) => !onlyOracleIdsMiss(options.onlyOracleIds, c.oracleId))
+    : [];
 
   const { answers, selected, onlyOracleIds, ...fillOptions } = options;
   const ownedCandidate = (c: (typeof pool)[number]): FillCandidate => ({
@@ -298,12 +306,30 @@ export async function buildFillPlan(
   let reach: BracketReach | undefined;
   let raisers: FillCandidate[] = [];
   let reachInputs: { fixedIds: string[]; offered: string[]; facts: ReachFacts } | undefined;
-  if (answers?.bracket != null && bracketReachEnabled(fillOptions.env)) {
+  let boughtRaisers: FillCandidate[] = [];
+  let budgetLeftCents: number | null = null;
+  let raisedBudgetCents: number | undefined;
+  if (answers?.bracket != null && reachOn) {
     const fixedIds = [...new Set([...commanderIds, ...excludeOracleIds])];
     const claimedCandidates = claimed.map(ownedCandidate).filter((c) => !onlyOracleIds || onlyOracleIds.has(c.oracleId));
-    const offered = reachCandidates([...gateCandidates, ...claimedCandidates]);
-    const facts = await loadBracketGateFacts([...new Set([...fixedIds, ...offered.map((c) => c.oracleId), ...gateCandidates.map((c) => c.oracleId)])]);
+    const topCandidates: FillCandidate[] = reachOnlyTop.map((c) => ({
+      oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
+      oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
+      layout: c.layout, owned: false, ownedQuantity: 0,
+      inclusionPct: inclusionOf(c.name),
+    }));
+    const offered = reachCandidates(dedupeById([...gateCandidates, ...claimedCandidates, ...topCandidates]));
+    const [facts, left] = await Promise.all([
+      loadBracketGateFacts([...new Set([...fixedIds, ...offered.map((c) => c.oracleId), ...gateCandidates.map((c) => c.oracleId)])]),
+      // What the build-around card leaves of the budget (audit item 10): a set to buy is over
+      // budget against that, never against the whole budget.
+      loadBudgetLeftCents({
+        userId, commanderIds, answers, placedIds: [...excludeOracleIds],
+        excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
+      }),
+    ]);
     bracketFacts = facts;
+    budgetLeftCents = left;
     // FREE, the Shopping list's rule: owned, and not every copy claimed by a committed deck. An
     // unowned top card is never free, whatever availability says of it (it has no row there). Read
     // only for the cards that could raise a bracket, which are few, and priced for the same few: the
@@ -321,26 +347,57 @@ export async function buildFillPlan(
     reach = bracketReach({
       target: answers.bracket, commanderIds, fixedIds, cards: offered.map((c) => c.oracleId),
       facts: reachFacts,
-      budgetCents: answers.budgetCents,
+      budgetCents: budgetLeftCents,
       // The buying half is computed for the choice to offer (Design R1b), from the unowned top cards
-      // and staples among the candidates. Under own-only the pool holds owned cards alone, so there
-      // it can name only a card whose copies are all claimed. This fill still places only owned raisers.
+      // and staples among the candidates; under own-only from the claimed copies and the top cards
+      // read for it alone (`reachOnlyTop`). A bought raiser is placed only behind the player's Hit.
       ownedOnly: false,
       // The slots the plan will fill: the caller's count, or the body less what is placed beside
       // it, the same figure `slots` below is built from. A set that cannot fit is never chosen.
       capacity: fillOptions.slots
         ?? Math.max(0, deckBodySize(hasPartner) - selected.reduce((n, c) => n + (c.quantity ?? 1), 0)),
     });
-    const ids = reach.kind === "collection" ? reach.raisers : reach.kind === "short" ? reach.collectionRaisers : [];
+    let ids = reach.kind === "collection" ? reach.raisers : reach.kind === "short" ? reach.collectionRaisers : [];
     const byId = new Map(offered.map((c) => [c.oracleId, c]));
+    // *HIT BRACKET N* (bracket reach PR 3b): the player chose to buy the set that reaches the target.
+    // Only when the reach is still short with a set to buy: a collection that has since reached it
+    // needs nothing bought, and one with nothing buyable has nothing to place.
+    if (answers.bracketBuys && reach.kind === "short" && reach.buy) {
+      const buy = reach.buy;
+      boughtRaisers = buy.raisers.flatMap((id) => byId.get(id) ?? []);
+      // The collection's own raisers ride along only while the whole set still reaches the target
+      // and brings no loop or mass land denial: the buying set is proved on its own, and an owned
+      // piece beside it can complete a turn loop neither set holds (at 4 and 5 a loop still permits).
+      const together = [...new Set([...buy.raisers, ...ids])];
+      ids = permitsOf(commanderIds, [...fixedIds, ...together], facts).includes(reach.target)
+        && !bringsForbidden({ commanderIds, fixedIds, raisers: together, facts })
+        ? ids.filter((id) => !buy.raisers.includes(id))
+        : [];
+      // G1: the set is charged to the budget first, and when it costs more than the budget leaves,
+      // the budget is raised to what the placed cards and the set cost, so the rest buys nothing.
+      if (answers.budgetCents !== null && budgetLeftCents !== null && buy.buyCents > budgetLeftCents) {
+        // Whole dollars, up: `decks_answer_budget_check` stores no cents, and the cap below rounds
+        // the same way, so the stored budget always covers the set.
+        raisedBudgetCents = raisedBudget(answers.budgetCents, buy.buyCents - budgetLeftCents);
+      }
+    }
     raisers = ids.flatMap((id) => byId.get(id) ?? []);
   }
+  // THE BUDGET WAS RAISED FOR HIT (G1): raised by this create, or stored raised by the create a retry
+  // replays (`decks.answer_budget_raised`). Recorded, never inferred from what is left: a within-budget
+  // Hit leaving under a dollar keeps that remainder to spend.
+  const budgetRaised = boughtRaisers.length > 0
+    && (raisedBudgetCents !== undefined || answers?.budgetRaised === true);
   const gate = answers
     ? await loadFillGate({
       userId, commanderIds, answers,
-      candidates: gateCandidates,
+      // A bought raiser the pool does not carry is priced and counted like any candidate.
+      candidates: [...gateCandidates, ...boughtRaisers.filter((c) => !gateCandidates.includes(c))],
       placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
       bracketFacts,
+      // Raised for Hit: the cap is the set alone, so the raised budget's whole-dollar remainder is
+      // never spent, on the create or its retry.
+      capCents: budgetRaised ? reachBuyCents(reach) : undefined,
     })
     : undefined;
   // CENSUS ONLY. The commanders are deliberately absent from `held` — role floors come from
@@ -366,7 +423,8 @@ export async function buildFillPlan(
   // Only with a skeleton: with none, the plan builds to the asserted CLASSIFIER bars, and a label count
   // against those is the mismatch this guards. No skeleton means the classifier on both sides.
   const labelRoles = labelsOn && skeleton
-    ? await readLabelRoleSets([...scoped, ...staples, ...held].flatMap((c) => (c.oracleId ? [c.oracleId] : [])))
+    // A bought raiser may be in no pool (an unowned top card under own-only): its label is read too.
+    ? await readLabelRoleSets([...scoped, ...staples, ...held, ...boughtRaisers].flatMap((c) => (c.oracleId ? [c.oracleId] : [])))
         .catch((err) => { console.warn("buildFillPlan: no labels — filling by the classifier", err); return undefined; })
     : undefined;
   if (labelsOn && !labelRoles && skeleton) {
@@ -382,7 +440,7 @@ export async function buildFillPlan(
   }
   const plan = planFill(scoped, {
     hasPartner, skeleton, synergyRank, ...fillOptions, held, slots, gate, identity, commanderCosts,
-    staples, labelRoles, raisers,
+    staples, labelRoles, raisers, boughtRaisers,
     // Every identity colour gets a basic even with no collection row behind it (`planFill`'s
     // `basics`). Loaded here, beside the pool, so no other pass sees them.
     //
@@ -404,5 +462,46 @@ export async function buildFillPlan(
   // above ran before the fill, which can buy part of its set, a cheaper route, or a tutor.
   const after = reachOverRows({ target: reach.target, commanderIds, rowIds: [...reachInputs.fixedIds, ...plan.rows.map((r) => r.oracleId)],
     cards: reachInputs.offered, facts: reachInputs.facts });
-  return { ...plan, bracketReach: reach, bracketAfter: after };
+  return {
+    ...plan, bracketReach: reach, bracketAfter: after, budgetLeftCents,
+    ...(raisedBudgetCents !== undefined ? { raisedBudgetCents } : {}),
+    ...(boughtRaisers.length > 0 ? { bracketBought: true } : {}),
+    ...(budgetRaised ? { budgetRaised: true } : {}),
+  };
+}
+
+/** What `buildFillPlan` adds to a plan when a bracket reach ran. */
+export type BracketReachOnPlan = {
+  bracketReach?: BracketReach;
+  /** The bracket the finished rows permit, and the cheapest buy over them that reaches the target
+   *  (null when they reach it, or nothing buyable does). Set whenever `bracketReach` is. */
+  bracketAfter?: { permits: Bracket[]; buyCents: number | null };
+  /** The budget left once the placed cards are charged; null with no budget. */
+  budgetLeftCents?: number | null;
+  /** Set when *Hit bracket N* cost more than the budget left: the budget the deck now stores (G1). */
+  raisedBudgetCents?: number;
+  /** True when the plan placed the reach's buying set (the player's *Hit*, honored). */
+  bracketBought?: boolean;
+  /** True when that set took the whole budget, raised for it (`decks.answer_budget_raised`). */
+  budgetRaised?: boolean;
+};
+
+/** The budget raised by `overCents`, in whole dollars rounded up (`decks_answer_budget_check`). */
+export function raisedBudget(budgetCents: number, overCents: number): number {
+  return Math.ceil((budgetCents + overCents) / 100) * 100;
+}
+
+function reachBuyCents(reach: BracketReach | undefined): number | undefined {
+  return reach?.kind === "short" && reach.buy ? reach.buy.buyCents : undefined;
+}
+
+/** Whether an allow-list leaves this card out. */
+function onlyOracleIdsMiss(only: ReadonlySet<string> | undefined, id: string): boolean {
+  return only !== undefined && !only.has(id);
+}
+
+/** One candidate per id, the first kept. */
+function dedupeById(list: readonly FillCandidate[]): FillCandidate[] {
+  const seen = new Set<string>();
+  return list.filter((c) => !seen.has(c.oracleId) && (seen.add(c.oracleId), true));
 }

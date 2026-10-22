@@ -41,6 +41,8 @@ async function main() {
   const { loadPrices } = await import("../src/lib/discovery/price");
   const { loadAvailability } = await import("../src/lib/decks/availability-query");
   const { isInfiniteOrGameEnding } = await import("../src/lib/spellbook/combo-features");
+  const { loadBracketGateFacts } = await import("../src/lib/intake/fill-facts");
+  const { permitsOf } = await import("../src/lib/intake/fill-gate");
   const rows = async <T>(q: ReturnType<typeof sql>) => (await db.execute(q)).rows as T[];
 
   const [cmd] = await rows<{ oracle_id: string; name: string; color_identity: string[]; mana_cost: string | null }>(sql`
@@ -190,6 +192,16 @@ async function main() {
         && reach.buy.buyCents === toBuy.reduce((n, id) => n + (buyPrices.get(id)?.liveCents ?? 0), 0),
       `${toBuy.length} to buy of ${ids.length}, $${(reach.buy.buyCents / 100).toFixed(2)}`);
     check("the fill places no card the buying half would buy", !raised.some((id) => toBuy.includes(id)), `${raised.length} placed`);
+    // HIT BRACKET N (plan PR 3b): the player's pick places the buying set, every card of it, filed
+    // `source: "bracket"`, and the deck then reaches the target by the analysis's own arithmetic.
+    const hit = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { ...ask3, bracketBuys: true }, env: on });
+    const hitPlaced = hit.rows.filter((r) => r.source === "bracket").map((r) => r.oracleId);
+    const hitFacts = await loadBracketGateFacts([...commanders.map((c) => c.oracleId), ...hit.rows.map((r) => r.oracleId)]);
+    const hitPermits = permitsOf(commanders.map((c) => c.oracleId), [...commanders.map((c) => c.oracleId), ...hit.rows.map((r) => r.oracleId)], hitFacts);
+    check("Hit places every card of the buying set and the deck reaches the target",
+      hit.bracketBought === true && ids.every((id) => hitPlaced.includes(id)) && hitPermits.includes(3),
+      `placed ${hitPlaced.length} of ${ids.length}, permits ${hitPermits.join("-")}`);
+    check("Hit still fills the whole body", hit.filled === plain.filled, `${hit.filled} against ${plain.filled}`);
   }
   // THE ROW FIGURE: the trial reads the bracket its own rows land in.
   const trialed = await trialFill(USER, commanders[0], ask3, on);

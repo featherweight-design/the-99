@@ -1271,6 +1271,37 @@ describe("the raisers step (bracket reach)", () => {
     expect(planFill([...poolOf(200), ...lands], { ...FLAT, raisers: [tomb] }).rows.some((r) => r.source === "bracket")).toBe(false);
     expect(planFill([...poolOf(200), ...lands], { ...FLAT, slots: 0, raisers: [agent] }).rows).toEqual([]);
   });
+
+  it("places a bought raiser only through boughtRaisers, under sleeveable too, charged to the gate first", () => {
+    const rhystic = c({ oracleId: "rhystic", name: "rhystic", inclusionPct: 50, owned: false, ownedQuantity: 0,
+      typeLine: "Enchantment", manaCost: "{2}{U}" });
+    const told: string[] = [];
+    const gate = { admits: () => true, place: (x: { oracleId: string }) => { told.push(x.oracleId); } };
+    // Not in the pool at all (an own-only fill never sees an unowned top card), and the pool is
+    // sleeveable: the player's explicit Hit is the only way in.
+    const plan = planFill([...poolOf(200), ...lands], {
+      ...FLAT, pool: "sleeveable", gate, raisers: [agent], boughtRaisers: [rhystic],
+    });
+    expect(plan.rows[0]).toMatchObject({ oracleId: "rhystic", quantity: 1, source: "bracket" });
+    expect(plan.rows[1]).toMatchObject({ oracleId: "agent", source: "bracket" });
+    // Told to the gate before anything else, so the budget charges it first (G1).
+    expect(told[0]).toBe("rhystic");
+    // Counted as a buy, and its cost reaches the pip census through byOracleId (plan review 1).
+    expect(plan.bought).toBe(1);
+    // The same card as an ordinary raiser is still never placed: it is not owned.
+    const auto = planFill([...poolOf(200), ...lands], { ...FLAT, pool: "sleeveable", raisers: [rhystic] });
+    expect(auto.rows.some((r) => r.oracleId === "rhystic")).toBe(false);
+  });
+
+  it("reads a bought raiser's cost through byOracleId: its pips steer the basics", () => {
+    // Blue pips from the raiser alone: no other card in the deck asks for blue.
+    const blue = c({ oracleId: "blue", name: "blue", owned: false, ownedQuantity: 0, typeLine: "Sorcery", manaCost: "{U}{U}{U}{U}" });
+    const islands = Array.from({ length: 40 }, (_, i) => basic(`i${i}`, 4, "Island"));
+    const without = planFill([...poolOf(60), ...lands, ...islands], { ...FLAT, identity: ["G", "U"] });
+    const withIt = planFill([...poolOf(60), ...lands, ...islands], { ...FLAT, identity: ["G", "U"], boughtRaisers: [blue] });
+    const islandCount = (p: typeof without) => p.rows.filter((r) => r.oracleId.startsWith("i")).reduce((n, r) => n + r.quantity, 0);
+    expect(islandCount(withIt)).toBeGreaterThan(islandCount(without));
+  });
 });
 
 describe("reachCandidates", () => {

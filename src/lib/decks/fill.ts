@@ -192,6 +192,17 @@ export type PlanFillArgs = {
    * `FILL_STAPLE_CAP`; under the slot limit and `pool: "sleeveable"` like every placed card.
    */
   raisers?: readonly FillCandidate[];
+  /**
+   * THE CARDS THE PLAYER CHOSE TO BUY to hit the bracket asked for (*Hit bracket N*, bracket reach
+   * PR 3b): the reach's buying set, placed in the raisers step BEFORE the owned raisers and whatever
+   * `owned` says and whatever `pool` is. The player's explicit pick is what lets a bought card into a
+   * `sleeveable` deck; nothing else does, and the automatic fill never buys.
+   *
+   * Each is told to the gate as it is placed, so the budget charges it first (G1) and the rest of
+   * the fill is capped by what is left. Filed `source: "bracket"`. Under the slot limit like every
+   * placed card; a land is never one (the reach offers none).
+   */
+  boughtRaisers?: readonly FillCandidate[];
 };
 
 /** The most nonland staples one fill seeds (Hugh, 2026-10-03), so a two-color condition's ~59
@@ -511,6 +522,11 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   for (const staple of staples ?? []) {
     if (!byOracleId.has(staple.oracleId)) byOracleId.set(staple.oracleId, staple);
   }
+  // A bought raiser may be in no pool at all (an unowned top card under `sleeveable`), and its cost
+  // and modal back are read through this map like a staple's (plan review 1).
+  for (const raiser of args.boughtRaisers ?? []) {
+    if (!byOracleId.has(raiser.oracleId)) byOracleId.set(raiser.oracleId, raiser);
+  }
   const spent = new Set<string>();
   /** CARDS, not rows — a stacked basic is nine cards in one row, and a limit counted in rows
    *  would let a `slots: 5` build arrive with forty. One definition, read by every pass. */
@@ -540,9 +556,13 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   let scanned = TIE_BREAK_WINDOW;
 
   // THE RAISERS STEP, before the staples: the cards that reach the bracket the player asked for.
-  // Placed as the staples step places a card; filed `source: "bracket"`.
-  for (const raiser of args.raisers ?? []) {
-    if (spent.has(raiser.oracleId) || !raiser.owned || filledSoFar() >= limit) continue;
+  // Placed as the staples step places a card; filed `source: "bracket"`. The bought ones first, the
+  // player's explicit pick, so the budget charges them before anything else (G1).
+  for (const [raiser, bought] of [
+    ...(args.boughtRaisers ?? []).map((c) => [c, true] as const),
+    ...(args.raisers ?? []).map((c) => [c, false] as const),
+  ]) {
+    if (spent.has(raiser.oracleId) || (!bought && !raiser.owned) || filledSoFar() >= limit) continue;
     const roles = rolesOfCandidate(raiser);
     // A land belongs to the land sweep, whose caps decide it; the reach never offers one.
     if (roles.includes("land")) continue;
@@ -991,7 +1011,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
 
   const haveTypes = tallyTypes(placed);
   const boughtIds = new Set(
-    [...candidates, ...(staples ?? [])].filter((c) => !c.owned).map((c) => c.oracleId),
+    [...candidates, ...(staples ?? []), ...(args.boughtRaisers ?? [])].filter((c) => !c.owned).map((c) => c.oracleId),
   );
   return {
     rows,

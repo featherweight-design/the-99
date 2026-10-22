@@ -7,6 +7,7 @@ import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
+import { bracketReachEnabled } from "../../../lib/intake/bracket-reach-flag";
 import { hasListableRun } from "../../../lib/intake/history-read";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
@@ -53,10 +54,14 @@ export default async function NewDeckPage({
           cardOracleId: answers.card?.oracleId ?? (answers.cardUnread ? asked.card : null),
           budgetDollars: answers.budgetDollars,
           bracket: answers.bracket,
+          // *From my collection* or no choice drawn; the hand-off sets it on *Hit bracket N*.
+          bracketBuys: false,
         },
         resultsHref: resultsHref(asked, pastFrom(searchParamsOf(raw))),
         changeHref: `${CHOOSE_PATH}${serializeChooseParams({ ...asked, notUsed: [], readId: null, results: false })}`,
         drawBlock: hasAnswerRows(answers),
+        // The Bracket row reads what the deck reaches (bracket reach PR 3b) from 3 up, switch on.
+        readReach: answers.bracket !== null && answers.bracket >= 3 && bracketReachEnabled(env),
       } : undefined;
       return (
         <CreatePreFilled

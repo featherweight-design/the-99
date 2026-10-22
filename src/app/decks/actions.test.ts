@@ -2794,7 +2794,7 @@ describe("chooseBulkFill", () => {
 describe("createDeck — Help me choose's answers (F1, F2)", () => {
   // Bracket 4 states no limits and no budget is asked, so no gate reads the database: what is
   // proved here is what the create WRITES, and the gates themselves are `fill-gate.test.ts`'s.
-  const answers = { themes: ["Superfriends"], cardOracleId: null, budgetDollars: null, bracket: 4 };
+  const answers = { themes: ["Superfriends"], cardOracleId: null, budgetDollars: null, bracket: 4, bracketBuys: false };
   const runAsked = async (a: Parameters<typeof createDeck>[4]) => {
     try {
       await createDeck(COMMANDER_ORACLE, "My Deck", [], null, a);
