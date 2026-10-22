@@ -41,10 +41,18 @@ describe("useSeenBadges", () => {
     expect(result.current?.friends).toBe(1);
   });
 
-  it("leaves Home's count alone", () => {
+  it("leaves Home's count alone off Home, and drops it once the reader has been on Home", () => {
     const badges = { home: 4, friends: 1 };
     const { result, rerender } = hook(badges, "/friends");
-    rerender({ badges, pathname: "/" });
+    rerender({ badges, pathname: "/decks" });
     expect(result.current).toEqual({ home: 4, friends: 0 });
+    rerender({ badges, pathname: "/" });
+    expect(result.current).toEqual({ home: 0, friends: 0 });
+    rerender({ badges, pathname: "/decks" });
+    expect(result.current).toEqual({ home: 0, friends: 0 });
+    // A new count from the server starts Home over.
+    const next = { home: 2 };
+    rerender({ badges: next, pathname: "/decks" });
+    expect(result.current).toEqual({ home: 2 });
   });
 });
