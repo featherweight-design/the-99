@@ -22,12 +22,15 @@
 import { sql, type SQL } from "drizzle-orm";
 import { feedItems, friendLinks, podMembers, podSpareShares, socialProfiles, spareKeep, spareRequests, userPrefs } from "../../db/schema";
 import { openFloor } from "./spare-request-rules";
+import { kindEnabledAt } from "../feed/kind-gate";
 import type { StoredKind } from "../feed/kinds";
 
 /**
  * The stored branch of the feed union, for `viewerId`, of `kinds` (non-empty; already the kinds available to the
- * reader). Each row is newer than its kind's own `enabledAt` in `user_prefs.feed_kinds`, so a kind turned off and on
- * again never brings back what it held before; a kind that is off has no `enabledAt` and reads nothing.
+ * reader). Each row is newer than its kind's own `enabledAt` (`kindEnabledAt`: its `user_prefs.feed_kinds` stamp, or
+ * always for a default-on kind the reader has not declined), so a kind turned off and on again never brings back what
+ * it held before; a kind that is off has no `enabledAt` and reads nothing. The prefs row is LEFT JOINED: a reader
+ * with none still reads a default-on kind (G4).
  *
  * Columns, in the union's order: kind, key, created_at, code, name, file_name, oracle_id, variant_id,
  * friend_public_id, friend_name, data. Every column is written out by alias (AGENTS.md, alias and qualify), and typed
@@ -40,11 +43,11 @@ export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[],
       fi.oracle_id as oracle_id, fi.variant_id as variant_id,
       sp.public_id::text as friend_public_id, sp.display_name as friend_name, fi.data as data
     from ${feedItems} fi
-    join ${userPrefs} fup on fup.user_id = fi.user_id
+    left join ${userPrefs} fup on fup.user_id = fi.user_id
     left join ${socialProfiles} sp on sp.user_id = fi.friend_user_id
     where fi.user_id = ${viewerId}
       and fi.kind = any(${sql.param([...kinds])}::text[])
-      and fi.created_at > (fup.feed_kinds ->> fi.kind)::timestamptz
+      and fi.created_at > ${kindEnabledAt(sql`fup`, sql`fi.kind`)}
       and (fi.kind <> 'spare-request' or exists (
         select 1 from ${spareRequests} fsr
         where fsr.id = (case when fi.kind = 'spare-request' then fi.dedupe_key::uuid end)

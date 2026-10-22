@@ -12,7 +12,7 @@ export type SaveFeedKindsResult = { ok: true; changed: boolean } | { ok: false; 
  * Settings' news section and Home's inline opt-in (handoff call 7): saves which kinds the reader hears about. `on`
  * is the kinds checked and `offered` the kinds the form drew; both must be known kinds AVAILABLE to this reader, and
  * every checked kind must be offered, or nothing is written. A kind the form did not offer (its switch was off when
- * the page loaded, even if it has come on since) keeps whatever it had (`nextFeedKinds`' scope).
+ * the page loaded, even if it has come on since) keeps whatever it had (`nextFeedPrefs`' scope).
  *
  * Refused while `HOME_FEED_ENABLED` is off. Writes only when the choice changes, and revalidates `/settings` only
  * then, as the Spares actions do: the data stamp moves Home's cache, not the router's, so a Back to a cached Settings

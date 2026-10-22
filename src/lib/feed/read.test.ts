@@ -39,7 +39,13 @@ describe("feedUnion", () => {
     const flatQ = q.replace(/\s+/g, " ");
     expect(flatQ).toContain(`and greatest(sf.first_seen_at at time zone 'UTC', s.released_at::timestamp at time zone 'UTC') > (sup.feed_kinds ->> 'new-set')::timestamptz`);
     expect(flatQ).toContain(`and greatest(pf.first_seen_at at time zone 'UTC', p.release_date::timestamp at time zone 'UTC') > (pup.feed_kinds ->> 'new-precon')::timestamptz`);
-    expect(q).toContain("fi.created_at > (fup.feed_kinds ->> fi.kind)::timestamptz");
+    // Stored kinds go through `kindEnabledAt`: the stamp, else always for a default-on kind not declined (G4).
+    expect(flatQ).toMatch(/fi\.created_at > coalesce\(\(fup\.feed_kinds ->> fi\.kind\)::timestamptz, case when fi\.kind = any\(\$\d+::text\[\]\) and not \(fi\.kind = any\(coalesce\(fup\.feed_kinds_declined, '\{\}'::text\[\]\)\)\) then '-infinity'::timestamptz end\)/);
+    expect(params).toContainEqual(["spare-request"]);
+  });
+
+  it("left joins the reader's prefs in the stored branch, so a reader with no row still reads a default-on kind", () => {
+    expect(q.replace(/\s+/g, " ")).toContain(`from "feed_items" fi left join "user_prefs" fup on fup.user_id = fi.user_id`);
   });
 
   it("joins only the READER's prefs row in every branch", () => {
@@ -106,11 +112,12 @@ describe("markSeenQuery", () => {
   const q = flat(sql);
 
   it("writes ONLY while an unseen item exists in the window (the stamp trigger moves on any UPDATE)", () => {
-    expect(q).toMatch(/and exists \( select 1 from \(.*\) f where f\.created_at > \$\d+::timestamptz and f\.created_at <= \$\d+::timestamptz and f\.created_at > coalesce\(up\.feed_seen_at, '-infinity'::timestamptz\)\)$/);
+    expect(q).toMatch(/^insert into "user_prefs" as up \(user_id, feed_seen_at\) select \$1, \$2::timestamptz where exists \( select 1 from \(/);
+    expect(q).toMatch(/\) f where f\.created_at > \$\d+::timestamptz and f\.created_at <= \$\d+::timestamptz and f\.created_at > coalesce\(\(select cup\.feed_seen_at from "user_prefs" cup where cup\.user_id = \$\d+\), '-infinity'::timestamptz\)\) on conflict/);
   });
 
-  it("never moves the cursor backwards", () => {
-    expect(q).toMatch(/where up\.user_id = \$\d+ and \(up\.feed_seen_at is null or up\.feed_seen_at < \$\d+::timestamptz\)/);
+  it("an upsert, so a reader with no prefs row (a default-on kind) is marked too, and never moves the cursor backwards", () => {
+    expect(q).toMatch(/on conflict \(user_id\) do update set feed_seen_at = excluded\.feed_seen_at where up\.feed_seen_at is null or up\.feed_seen_at < excluded\.feed_seen_at$/);
   });
 
   it("writes nothing at all with no kind to read", () => {

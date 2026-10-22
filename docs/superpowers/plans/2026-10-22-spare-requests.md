@@ -36,10 +36,51 @@ visit marks answers seen, and before PR 3 no surface answers an ask or shows an 
    cleared by a `/friends` visit, which now also marks answers seen) and WAITING (the reader's incoming open asks,
    cleared only by answering). The ask and answer ACTIONS and the Waiting on you rows move to PR 3: their only callers
    are the Ask press and the Yes / No row, so shipping them first would ship code with no caller.
-3. **UI, after the handoff.** The ask and answer server actions (reader from the session, switch per reader,
+3. **UI, after the handoff** (`design/design_handoff_the99_spare_requests/`, Green, R2), split in five (below).
+   The original scope, kept for the record: The ask and answer server actions (reader from the session, switch per reader,
    `/friends` revalidated, never Home or `/decks`) and Waiting on you's spare-request rows (`loadIncomingAsks`), with: Shopping (the row mark and the all-spares view, with Ask), the deck list (the mark on a
    card not owned, with Ask), the asker's states and open-asks list, the request row in Waiting on you with Yes and No,
    phone and desktop. A note on an ask, if Design draws one, is player-typed text: capped and collapsed through
    `playerText`'s rules, though it reaches no model.
 4. **Close-out.** About entry, copy review, contact sheet, `feature-acceptance` walk; the switch stays off in
    production until Hugh turns it on.
+
+## PR 3 rulings (handoff R2; orchestrator, 2026-10-22)
+
+The readiness audit's errata (approved):
+
+- **E1 · Key order.** The shipped key order stays (⇄, spare, buy, over); `requested` and `accepted` are appended after
+  spare, each only while a row draws it.
+- **E2 · Stale gaps list.** `Main.dc.html`'s gaps list is stale; the README governs.
+- **E3 · The badge** counts incoming asks whatever the reader's feed choice.
+- **E4 · No asker Home item.** The asker gets no "Your request" Home item (no new feed kind).
+- **E5 · R1 labels** on the boards are cosmetic.
+- **E6 · Deck-list Ask** is retired; Ask lives in the spares modal and the cart's By friend view.
+
+The gaps:
+
+- **G1 · Withdraw.** A `withdrawn` status: the asker's ✕ on an OPEN ask, or Ask instead. Nobody is told; the holder's
+  row, feed item and waiting badge drop; it holds no card and no cooldown and is never shown. ✕ on an ANSWERED or
+  EXPIRED ask sets `asker_cleared_at`, never a delete: a cleared No still holds the cooldown. ASK INSTEAD is one
+  transaction under the asker-and-card lock: withdraw the asker's open, unexpired ask for the card (else `gone`), then
+  the ask body to the new friend; any refusal rolls back and leaves the first ask open.
+- **G2 · Copies and deck.** `copies` (1 to 99, capped at the friend's spare count) and a nullable `deck_id` (set null
+  on delete), stored only when the deck is the asker's own; both display only, never a refusal.
+- **G3 · No longer spare.** Derived at read. Holder side: an open ask for a card the holder no longer offers (their own
+  `spare_min`, keeps and claims, `isOffered`) leaves Waiting on you and the waiting badge; the dated feed item may stay.
+  Asker side: an open ask reads `unavailable` when the holder no longer offers it to the asker, `unneeded` against an
+  optional `stillNeeded` set. No cross-user read of the asker's decks from the holder's side.
+- **G4 · Feed default.** `spare-request` is ON for an account with no stored choice (`DEFAULT_ON_KINDS`);
+  `user_prefs.feed_kinds_declined` holds a default-on kind turned off. Nothing is written on read; turning it back on
+  stamps it now (no backfill). Catalog kinds stay default-off.
+
+The split:
+
+- **3a · Backend for the UI.** The migration, the rules above, the actions (`src/app/friends/spare-actions.ts`), the
+  asker's per-card read (`GET /api/spare-requests`), the default-on kind, `probe:spare-requests` extended. No UI.
+- **3b · Shopping.** The modal's friend rows (Ask, Ask instead, Ask again, status), the row's requested and accepted
+  marks, the key, with the shared toast.
+- **3c · The cart.** By friend.
+- **3d · /friends, Home and Settings.** Waiting on you's request rows (Yes and No), Your requests (states, ✕), the
+  lead story's Yes and No, the Settings caption.
+- **4 · Close-out**, as above. `SPARE_REQUESTS_ENABLED` stays in `ALL_FEATURES_EXCLUDED` until it.

@@ -2145,6 +2145,12 @@ export const userPrefs = pgTable(
      */
     feedKinds: jsonb("feed_kinds").$type<Record<string, string>>().notNull().default({}),
     /**
+     * The DEFAULT-ON news kinds (`DEFAULT_ON_KINDS`, spare requests G4) this reader turned OFF. A default-on kind is on
+     * while it is in `feed_kinds` (since its stamp) or absent from both (since always); listed here, it is off. Written
+     * only by a save that changes it (`setFeedKinds`), never on read, because of the stamp trigger above.
+     */
+    feedKindsDeclined: text("feed_kinds_declined").array().notNull().default(sql`'{}'::text[]`),
+    /**
      * When this reader last saw Home's feed: an item created after it is unseen. Null is a feed never seen, every item
      * unseen. Written only when an unseen item exists (`markFeedSeen`), because of the stamp trigger above.
      */
@@ -3688,11 +3694,25 @@ export const spareRequests = pgTable("spare_requests", {
   status: text("status").notNull().default("open"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   answeredAt: timestamp("answered_at", { withTimezone: true }),
+  /** How many copies the asker wants (G2), capped at the friend's spare count when asked. Display only. */
+  copies: integer("copies").notNull().default(1),
+  /**
+   * The asker's deck the card is for (G2), or null (asked from the cart, or the deck since deleted). Stored only when
+   * it is the asker's own deck at the ask; display only, never a reason to refuse.
+   */
+  deckId: uuid("deck_id").references(() => decks.id, { onDelete: "set null" }),
+  /**
+   * When the asker pressed ✕ on an answered or expired ask (G1): it leaves their list. NEVER a delete, because a
+   * cleared No still holds the holder back for the cooldown (`askRefusal`).
+   */
+  askerClearedAt: timestamp("asker_cleared_at", { withTimezone: true }),
 }, (t) => [
   uniqueIndex("spare_requests_one_open").on(t.askerUserId, t.oracleId).where(sql`${t.status} = 'open'`),
   index("spare_requests_holder_idx").on(t.holderUserId, t.status),
   index("spare_requests_asker_idx").on(t.askerUserId, t.createdAt),
-  check("spare_requests_status_check", sql`${t.status} in ('open', 'yes', 'no', 'expired')`),
+  // `withdrawn`: the asker withdrew an OPEN ask (✕, or Ask instead). Nobody is told and it holds nothing (G1).
+  check("spare_requests_status_check", sql`${t.status} in ('open', 'yes', 'no', 'expired', 'withdrawn')`),
+  check("spare_requests_copies_check", sql`${t.copies} between 1 and 99`),
   check("spare_requests_answered_check", sql`(${t.status} in ('yes', 'no')) = (${t.answeredAt} is not null)`),
   check("spare_requests_not_self_check", sql`${t.askerUserId} <> ${t.holderUserId}`),
 ]);

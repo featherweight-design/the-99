@@ -29,13 +29,14 @@ describe("recordFeedItemQuery", () => {
   const { sql, params } = new PgDialect().sqlToQuery(recordFeedItemQuery({ userId: "u", kind: "combo", dedupeKey: "v:1-2", variantId: "1-2", now: NOW }));
   const q = flat(sql);
 
-  it("inserts only while the kind is ON in the reader's own prefs row: a kind that is off is not written", () => {
-    expect(q).toMatch(/from "user_prefs" wup where wup\.user_id = \$\d+ and \(wup\.feed_kinds ->> \$\d+\) is not null/);
-    expect(params.filter((p) => p === "combo")).toHaveLength(3);
+  it("selects from one constant row LEFT JOINED to the reader's prefs, so a reader with no row is still decided", () => {
+    expect(q).toMatch(/from \(select 1\) wone left join "user_prefs" wup on wup\.user_id = \$\d+ where /);
   });
 
-  it("writes only an item newer than the kind's enabledAt, the bound the reader shows items by", () => {
-    expect(q).toMatch(/and \$\d+::timestamptz > \(wup\.feed_kinds ->> \$\d+\)::timestamptz/);
+  it("writes only while the kind is ON and the item is newer than its enabledAt (`kindEnabledAt`): a kind that is off is not written", () => {
+    expect(q).toMatch(/where \$\d+::timestamptz > coalesce\(\(wup\.feed_kinds ->> \$\d+::text\)::timestamptz, case when \$\d+::text = any\(\$\d+::text\[\]\) and not \(\$\d+::text = any\(coalesce\(wup\.feed_kinds_declined, '\{\}'::text\[\]\)\)\) then '-infinity'::timestamptz end\)/);
+    expect(params.filter((p) => p === "combo")).toHaveLength(4);
+    expect(params).toContainEqual(["spare-request"]);
   });
 
   it("names no friendship when the item names no friend", () => {

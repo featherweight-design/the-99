@@ -175,6 +175,28 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
 }
 
 /**
+ * Which of `oracleIds` the reader THEMSELVES offers to friends, with each one's spare count: the rule
+ * `loadFriendSpares` applies to a friend (`spareCount`, then `isOffered` with their own `spare_min` and keeps), on
+ * the reader's own collection and claims, in one repeatable-read snapshot. Spare requests read it on the holder's
+ * side (G3): an ask for a card the holder no longer offers leaves Waiting on you and the badge. `env` is the reader's
+ * own resolved switches. Reads only the reader's rows, so it needs no grant.
+ */
+export async function loadOwnOffered(userId: string, oracleIds: readonly string[], env: NodeJS.ProcessEnv): Promise<Map<string, number>> {
+  const asked = [...new Set(oracleIds.filter(isUuid))];
+  const out = new Map<string, number>();
+  if (asked.length === 0) return out;
+  const read = await db.transaction(async (tx) => ({
+    model: await loadAvailability(userId, { oracleIds: asked, env }, tx),
+    settings: await spareSettingsIn(tx, userId, asked),
+  }), { isolationLevel: "repeatable read" });
+  for (const [oracleId, a] of read.model) {
+    const spare = spareCount(a);
+    if (isOffered(spare, read.settings.min, read.settings.kept.has(oracleId))) out.set(oracleId, spare);
+  }
+  return out;
+}
+
+/**
  * Share spares with one of the viewer's pods, or stop. The viewer must be a member of the pod, checked
  * in the statement that writes; a pod id they do not belong to shares with nobody.
  */

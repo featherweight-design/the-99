@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  askRefusal, askShown, declineFloor, expiresAt, isAnswer, openFloor, requestState, shownFloor,
+  askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, expiresAt, isAnswer, openFloor, requestState, shownFloor,
   type PriorAsk,
 } from "./spare-request-rules";
 
@@ -82,5 +82,66 @@ describe("isAnswer", () => {
     expect(isAnswer("yes")).toBe(true);
     expect(isAnswer("no")).toBe(true);
     for (const v of ["Yes", "maybe", "", null, undefined, 1]) expect(isAnswer(v)).toBe(false);
+  });
+});
+
+describe("a withdrawn ask (G1)", () => {
+  const ask = (over: Partial<PriorAsk>): PriorAsk => ({ holderUserId: "h1", status: "open", createdAt: ago(1), answeredAt: null, ...over });
+  it("holds nothing: no open ask, no cooldown, so the card may be asked of anyone at once", () => {
+    expect(askRefusal([ask({ status: "withdrawn" })], "h1", NOW)).toBeNull();
+    expect(askRefusal([ask({ status: "withdrawn" })], "h2", NOW)).toBeNull();
+  });
+  it("is never shown to the asker", () => {
+    expect(askShown({ status: "withdrawn", createdAt: ago(1), answeredAt: null }, NOW)).toBe(false);
+  });
+});
+
+describe("a cleared ask (G1)", () => {
+  it("leaves the asker's list", () => {
+    expect(askShown({ status: "no", createdAt: ago(3), answeredAt: ago(2), askerClearedAt: ago(1) }, NOW)).toBe(false);
+    expect(askShown({ status: "no", createdAt: ago(3), answeredAt: ago(2), askerClearedAt: null }, NOW)).toBe(true);
+  });
+  it("still holds that holder back when it was a No (the row stays; only its display goes)", () => {
+    expect(askRefusal([{ holderUserId: "h1", status: "no", createdAt: ago(3), answeredAt: ago(2) }], "h1", NOW)).toBe("declined");
+  });
+});
+
+describe("askerState (G3)", () => {
+  const live = { offered: true, needed: true };
+  it("an open ask the holder no longer offers is unavailable; one no longer needed is unneeded; offered first", () => {
+    expect(askerState({ status: "open", createdAt: ago(1) }, NOW, live)).toBe("open");
+    expect(askerState({ status: "open", createdAt: ago(1) }, NOW, { offered: false, needed: true })).toBe("unavailable");
+    expect(askerState({ status: "open", createdAt: ago(1) }, NOW, { offered: true, needed: false })).toBe("unneeded");
+    expect(askerState({ status: "open", createdAt: ago(1) }, NOW, { offered: false, needed: false })).toBe("unavailable");
+  });
+  it("an answer or an expiry reads as itself, whatever the live facts", () => {
+    expect(askerState({ status: "yes", createdAt: ago(1) }, NOW, { offered: false, needed: false })).toBe("yes");
+    expect(askerState({ status: "no", createdAt: ago(1) }, NOW, { offered: false, needed: false })).toBe("no");
+    expect(askerState({ status: "open", createdAt: ago(14) }, NOW, { offered: false, needed: false })).toBe("expired");
+  });
+});
+
+describe("daysLeft", () => {
+  it("counts whole days up to the expiry, 0 after", () => {
+    expect(daysLeft(NOW, NOW)).toBe(14);
+    expect(daysLeft(ago(13, 1), NOW)).toBe(1);
+    expect(daysLeft(ago(14), NOW)).toBe(0);
+    expect(daysLeft(ago(20), NOW)).toBe(0);
+  });
+});
+
+describe("capCopies (G2)", () => {
+  it("is a whole number from 1 to the friend's spare count", () => {
+    expect(capCopies(2, 3)).toBe(2);
+    expect(capCopies(5, 3)).toBe(3);
+    expect(capCopies(0, 3)).toBe(1);
+    expect(capCopies(-4, 3)).toBe(1);
+    expect(capCopies(2.7, 3)).toBe(2);
+  });
+  it("mends what is not a number to 1, and never exceeds 99", () => {
+    expect(capCopies("3", 3)).toBe(1);
+    expect(capCopies(undefined, 3)).toBe(1);
+    expect(capCopies(Number.NaN, 3)).toBe(1);
+    expect(capCopies(500, 500)).toBe(99);
   });
 });
