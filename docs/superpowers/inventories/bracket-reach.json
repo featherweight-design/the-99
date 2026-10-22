@@ -1,0 +1,296 @@
+{
+  "feature": "Help me choose bracket reach (R1b): the form heads-up (A), the rows' BRACKET segment (B), the hand-off choice (C)",
+  "note": "Needs a server with HELP_ME_CHOOSE_ENABLED=true and BRACKET_REACH_ENABLED=true. Every row is reached by URL or by the row's hand-off link; nothing presses Find commanders or Create deck. States depend on the account's collection (local-dev fixture: White exactly at bracket 4 is short with a buy).",
+  "rows": [
+    {
+      "id": "form-k3",
+      "label": "A: form, bracket 3 (reached)",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=3",
+          "wait": "textarea",
+          "settle": 3000
+        },
+        {
+          "scrollTo": "button[role=radio]:text-is('5')",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "form-k4-w",
+      "label": "A: form, bracket 4, White exactly (short, buy)",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact",
+          "wait": "textarea",
+          "settle": 3000
+        },
+        {
+          "scrollTo": "button[role=radio]:text-is('5')",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "form-k4-w-b20",
+      "label": "A: form, bracket 4, White exactly, $20 (over budget?)",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact&b=20",
+          "wait": "textarea",
+          "settle": 3000
+        },
+        {
+          "scrollTo": "button[role=radio]:text-is('5')",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "form-k4-w-own",
+      "label": "A: form, bracket 4, White exactly, only cards I own",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact&pool=own",
+          "wait": "textarea",
+          "settle": 3000
+        },
+        {
+          "scrollTo": "button[role=radio]:text-is('5')",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "form-k5-g",
+      "label": "A: form, bracket 5, Green exactly",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=5&c=g&m=exact",
+          "wait": "textarea",
+          "settle": 3000
+        },
+        {
+          "scrollTo": "button[role=radio]:text-is('5')",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "results-k3",
+      "label": "B: results, bracket 3",
+      "view": "src/components/intake/choose-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=3&v=results",
+          "wait": "[data-testid='row-bracket']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "results-k4-w",
+      "label": "B: results, bracket 4, White exactly (short + adds)",
+      "view": "src/components/intake/choose-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact&v=results",
+          "wait": "[data-testid='row-bracket']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "results-k5-g",
+      "label": "B: results, bracket 5, Green exactly",
+      "view": "src/components/intake/choose-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=5&c=g&m=exact&v=results",
+          "wait": "[data-testid='row-bracket']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "results-k4-w-more",
+      "label": "B: results, bracket 4, White exactly, scrolled to More commanders",
+      "view": "src/components/intake/choose-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact&v=results",
+          "wait": "[data-testid='row-bracket']",
+          "settle": 6000
+        },
+        {
+          "scrollTo": "[data-testid='row-bracket'] >> nth=4",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "hand-off-k3",
+      "label": "C: hand-off, bracket 3 (reached)",
+      "view": "src/components/intake/hand-off-answers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=3&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-reach']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "hand-off-k4-w",
+      "label": "C: hand-off, bracket 4, White exactly (short, no pick, Create disabled)",
+      "view": "src/components/intake/hand-off-answers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-reach']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "hand-off-k4-w-hit",
+      "label": "C: hand-off, bracket 4, White exactly, Hit picked",
+      "view": "src/components/intake/hand-off-answers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-reach']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='bracket-choice-hit'] > span[aria-hidden]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "hand-off-k4-w-hit-named",
+      "label": "C: hand-off, Hit picked and a name typed (Create live; not pressed)",
+      "view": "src/components/intake/hand-off-answers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-reach']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='bracket-choice-hit'] > span[aria-hidden]",
+          "settle": 1500
+        },
+        {
+          "fill": "input[placeholder='My awesome deck']",
+          "text": "Probe name",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-testid='hand-off-reach']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "hand-off-k4-w-b20-hit",
+      "label": "C: hand-off, bracket 4, White, $20, Hit picked (over budget)",
+      "view": "src/components/intake/hand-off-answers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact&b=20&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-reach']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='bracket-choice-hit'] > span[aria-hidden]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "hand-off-k4-w-own-hit",
+      "label": "C: hand-off, bracket 4, White, only cards I own, Hit picked",
+      "view": "src/components/intake/hand-off-answers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=4&c=w&m=exact&pool=own&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-reach']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='bracket-choice-hit'] > span[aria-hidden]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "hand-off-k5-g",
+      "label": "C: hand-off, bracket 5, Green exactly (nothing reaches)",
+      "view": "src/components/intake/hand-off-answers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?k=5&c=g&m=exact&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-reach']",
+          "settle": 3000
+        }
+      ]
+    }
+  ]
+}
