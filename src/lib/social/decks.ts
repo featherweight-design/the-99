@@ -25,7 +25,7 @@ import type { StatusPill } from "../decks/status";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { collectionItems, decks } from "../../db/schema";
+import { collectionItems, decks, printings } from "../../db/schema";
 import { getDeckDetail, listDecksWithStats, type DeckListItem } from "../decks/read";
 import { cardTypeGroup, type DeckDetailCard } from "../decks/grouping";
 import { resolveFriend } from "./access";
@@ -105,7 +105,12 @@ export type FriendDeckCard = Pick<
   DeckDetailCard,
   | "oracleId" | "name" | "typeLine" | "cardTypeGroup" | "role" | "cmc" | "quantity" | "manaCost" | "imageUri"
   | "printedName" | "printedSetCode" | "printedCollectorNumber" | "printedFoil" | "foil" | "layout" | "catalogLayout" | "commander"
-> & { owned: boolean };
+> & {
+  owned: boolean;
+  /** The owner's printing's own Scryfall id and back face, so card details view exactly that printing. Null without one. */
+  printedScryfallId?: string | null;
+  printedBackImageUri?: string | null;
+};
 
 export type FriendDeckPage = {
   id: string;
@@ -173,6 +178,7 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     })
     .sort((a, b) => b.shared - a.shared || a.deckName.localeCompare(b.deckName));
   const owned = new Set(ownedRows.map((r) => r.oracleId));
+  const printed = await printingFaces([detail.commander, ...(detail.partner ? [detail.partner] : []), ...detail.cards]);
   const commanders = [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
     oracleId: c.oracleId,
     name: c.name,
@@ -189,12 +195,13 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     layout: c.layout ?? null,
     commander: true as const,
     owned: owned.has(c.oracleId),
+    ...printed(c),
   }));
   return {
     id: detail.id,
     name: detail.name,
     commanders,
-    cards: detail.cards.map((c) => friendCard(c, owned)),
+    cards: detail.cards.map((c) => ({ ...friendCard(c, owned), ...printed(c) })),
     colorIdentity: deckIdentity(detail.commander.colorIdentity, detail.partner?.colorIdentity ?? null),
     // The resolved printing's crop, as the commander's own image is: the tab's list reads the catalog's.
     artCropUri: detail.commander.artCropUri,
@@ -236,4 +243,25 @@ async function stillVisible(ownerId: string, deckId: string, statusPill: DeckLis
     loadFriendDeckPrefs(ownerId),
   ]);
   return deck !== undefined && friendCanSeeDeck({ hiddenFromFriends: deck.hiddenFromFriends, statusPill }, prefs);
+}
+
+type Printed = { oracleId: string; printedSetCode?: string | null; printedCollectorNumber?: string | null };
+
+/**
+ * The Scryfall id and back face of each card's owner's printing, from the catalog, in one read: the deck read names a
+ * printing by set and number only, and card details need the exact printing to show its own back (a reversible card's
+ * Turn) and to select it among siblings that share a number.
+ */
+async function printingFaces(cards: readonly Printed[]) {
+  const named = cards.filter((c) => c.printedSetCode && c.printedCollectorNumber);
+  const rows = named.length === 0 ? [] : await db
+    .select({ oracleId: printings.oracleId, setCode: printings.setCode, collectorNumber: printings.collectorNumber, scryfallId: printings.scryfallId, backImageUri: printings.backImageUri })
+    .from(printings)
+    .where(and(inArray(printings.oracleId, named.map((c) => c.oracleId)), inArray(printings.setCode, [...new Set(named.map((c) => c.printedSetCode!.toLowerCase()))])));
+  const key = (o: string, s: string, n: string) => `${o}|${s.toLowerCase()}|${n}`;
+  const byKey = new Map(rows.map((r) => [key(r.oracleId, r.setCode, r.collectorNumber), r]));
+  return (c: Printed) => {
+    const r = c.printedSetCode && c.printedCollectorNumber ? byKey.get(key(c.oracleId, c.printedSetCode, c.printedCollectorNumber)) : undefined;
+    return r ? { printedScryfallId: r.scryfallId, printedBackImageUri: r.backImageUri } : {};
+  };
 }

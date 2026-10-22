@@ -12,13 +12,15 @@ const m = vi.hoisted(() => ({
   loadFriendDeckPrefs: vi.fn(),
   owned: vi.fn(),
   deckFlag: vi.fn(),
+  printingRows: vi.fn(),
   readReaderDecks: vi.fn(),
 }));
 vi.mock("../precons/list-read", () => ({ readReaderDecks: m.readReaderDecks }));
 vi.mock("../../db", () => ({
   db: {
     selectDistinct: () => ({ from: () => ({ where: () => m.owned() }) }),
-    select: () => ({ from: () => ({ where: () => m.deckFlag() }) }),
+    // The visibility re-read selects the flag; the printing lookup selects a Scryfall id.
+    select: (shape: Record<string, unknown>) => ({ from: () => ({ where: () => ("scryfallId" in shape ? m.printingRows() : m.deckFlag()) }) }),
   },
 }));
 vi.mock("./deck-visibility", async (orig) => ({
@@ -153,6 +155,7 @@ describe("loadFriendDeck", () => {
     m.owned.mockReset().mockResolvedValue([{ oracleId: "b" }, { oracleId: "c0" }]);
     m.readReaderDecks.mockReset().mockResolvedValue([]);
     m.deckFlag.mockReset().mockResolvedValue([{ hiddenFromFriends: false }]);
+    m.printingRows.mockReset().mockResolvedValue([]);
   });
 
   it("returns nothing when the owner hides the deck, or turns decks off, while it is read", async () => {
@@ -170,6 +173,16 @@ describe("loadFriendDeck", () => {
     expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
     m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: true, seeUnfinished: true });
     expect((await loadFriendDeck("user_viewer", "x", DECK))!.built).toBe(98);
+  });
+
+  it("carries the owner's printing's Scryfall id and back face, for card details to view exactly it", async () => {
+    m.printingRows.mockResolvedValue([
+      { oracleId: "a", setCode: "cmm", collectorNumber: "1", scryfallId: "sf-sol", backImageUri: null },
+      { oracleId: "a", setCode: "cmm", collectorNumber: "999", scryfallId: "sf-other", backImageUri: "https://back/x.jpg" },
+    ]);
+    const page = (await loadFriendDeck("user_viewer", "x", DECK))!;
+    expect(page.cards[0]).toEqual(expect.objectContaining({ printedScryfallId: "sf-sol", printedBackImageUri: null }));
+    expect(page.cards[1]).not.toHaveProperty("printedScryfallId");
   });
 
   it("keeps a commander's mana value", async () => {

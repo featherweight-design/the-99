@@ -5,10 +5,11 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FriendDeckCard, FriendDeckPage } from "../../lib/social/decks";
 
-const providerProps = vi.hoisted(() => ({ views: null as unknown }));
+const providerProps = vi.hoisted(() => ({ views: null as unknown, picks: null as unknown }));
 vi.mock("../cards/card-detail-provider", () => ({
-  CardDetailProvider: ({ children, viewPrintings }: { children: React.ReactNode; viewPrintings?: unknown }) => {
+  CardDetailProvider: ({ children, viewPrintings, deckPrintingPicks }: { children: React.ReactNode; viewPrintings?: unknown; deckPrintingPicks?: unknown }) => {
     providerProps.views = viewPrintings;
+    providerProps.picks = deckPrintingPicks;
     return children;
   },
 }));
@@ -34,7 +35,7 @@ const SAI = card("sai", "Sai, Master Thopterist", "Legendary Creature — Human 
 const DECK: FriendDeckPage = {
   id: "d1", name: "Thopter Factory", commanders: [SAI],
   cards: [
-    card("sol", "Sol Ring", "Artifact", true, { printedSetCode: "cmm", printedCollectorNumber: "1" }),
+    card("sol", "Sol Ring", "Artifact", true, { printedSetCode: "cmm", printedCollectorNumber: "1", printedScryfallId: "sf-sol", printedBackImageUri: null }),
     card("ws", "Whirler Rogue", "Creature — Human Rogue", false),
     card("isl", "Island", "Basic Land — Island", false, { quantity: 27 }),
   ],
@@ -91,8 +92,10 @@ describe("FriendDeckView", () => {
     draw();
     expect(providerProps.views).toEqual({
       sai: { setCode: "m19", collectorNumber: "69", imageUri: "https://img/sai.jpg" },
-      sol: { setCode: "cmm", collectorNumber: "1", imageUri: "https://img/sol.jpg" },
+      sol: { setCode: "cmm", collectorNumber: "1", imageUri: "https://img/sol.jpg", backImageUri: null, scryfallId: "sf-sol" },
     });
+    // The same picks as deck printings with no deck: card details offer the viewer no picker over the owner's printing.
+    expect(providerProps.picks).toEqual({ sai: { setCode: "m19", collectorNumber: "69" }, sol: { setCode: "cmm", collectorNumber: "1" } });
     expect(document.body.textContent).not.toMatch(/\$|To buy|Complete|Draft|buy/);
   });
 

@@ -67,12 +67,15 @@ export function FriendDeckView({
     ...(hasLands ? [] : basicIds),
   ];
   // Card details view the owner's printing on every open, paging included, and offer no pick: the precon page's rule.
+  // The same picks go in as deck printings with no deck, which is what keeps the viewer's own picker (and its save) away.
+  const named = [...deck.commanders, ...deck.cards].filter((c) => c.printedSetCode && c.printedCollectorNumber);
+  const printingPicks = Object.fromEntries(named.map((c) => [c.oracleId, { setCode: c.printedSetCode!, collectorNumber: c.printedCollectorNumber! }]));
   const viewPrintings = Object.fromEntries(
-    [...deck.commanders, ...deck.cards].flatMap((c) =>
-      c.printedSetCode && c.printedCollectorNumber
-        ? [[c.oracleId, { setCode: c.printedSetCode, collectorNumber: c.printedCollectorNumber, imageUri: c.imageUri ?? null }]]
-        : [],
-    ),
+    named.map((c) => [c.oracleId, {
+      setCode: c.printedSetCode!, collectorNumber: c.printedCollectorNumber!, imageUri: c.imageUri ?? null,
+      ...(c.printedBackImageUri !== undefined ? { backImageUri: c.printedBackImageUri } : {}),
+      ...(c.printedScryfallId ? { scryfallId: c.printedScryfallId } : {}),
+    }]),
   );
   const head = deck.commanders[0];
   // The commander line is left out when the deck's name already says it (whole, or the part before the comma).
@@ -80,7 +83,7 @@ export function FriendDeckView({
   const repeats = deck.commanders.length === 1 && head && (deck.name === head.name || deck.name === head.name.split(",")[0]);
 
   return (
-    <CardDetailProvider viewPrintings={viewPrintings}>
+    <CardDetailProvider deckPrintingPicks={printingPicks} viewPrintings={viewPrintings}>
       <div className="pb-[96px]">
         <header className="flex flex-col gap-[12px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] p-[12px_16px_14px] md:p-[16px_26px_18px]">
           <Link href={decksHref} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
