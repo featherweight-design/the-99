@@ -17,6 +17,7 @@
  * `wishlist_items` carries the `user_data_touch` trigger, so a baseline or a notice moves the reader's stamp once:
  * Home's cache misses that one visit, which also draws the new item.
  */
+import { feedOrPushWanted } from "../push/kind-gate";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { collectionItems, userPrefs, wishlistItems } from "../../db/schema";
@@ -39,13 +40,13 @@ export function backfillQuery(ids: readonly string[], cents: readonly number[]) 
     where wi.oracle_id = v.oracle_id and wi.price_at_add_cents is null`;
 }
 
-/** Every unmet, baselined line of every reader whose price-drop kind is on. */
+/** Every unmet, baselined line of every reader who wants price-drop news: the feed kind on, or a device with its push on. */
 export function priceDropCandidatesQuery() {
   return sql`select wi.user_id as user_id, wi.oracle_id as oracle_id, wi.price_at_add_cents as at_add_cents,
       wi.price_noticed_at as noticed_at
     from ${wishlistItems} wi
     join ${userPrefs} up on up.user_id = wi.user_id
-    where (up.feed_kinds ->> 'price-drop') is not null
+    where ${feedOrPushWanted(sql`up`, sql`wi.user_id`, "price-drop")}
       and wi.price_at_add_cents is not null
       and coalesce((select sum(ci.quantity) from ${collectionItems} ci
                     where ci.user_id = wi.user_id and ci.oracle_id = wi.oracle_id), 0) < wi.quantity

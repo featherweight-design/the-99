@@ -12,6 +12,7 @@
  * `friendGeneration`, which moves on any granting friend's data stamp, name or grant) costs two and reads no spares.
  * The fingerprint is held per server instance, so a cold instance pays one full read, which writes nothing new.
  */
+import { feedOrPushWanted } from "../push/kind-gate";
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
@@ -21,13 +22,13 @@ import { recordFeedItem } from "./feed-write";
 import { MAX_SPARES_BATCH } from "./client-rules";
 import { friendGeneration, loadFriendSpares, spareGrantorsQuery } from "./spares";
 
-/** The viewer's unmet wishlist cards, read only while their trade-match kind is on, with the kind's `enabledAt`. */
+/** The viewer's unmet wishlist cards, read only while they want trade-match news (the feed kind on, or a device with its push on), with the earlier stamp of the two. */
 export function wishedForMatchQuery(viewerId: string) {
-  return sql`select twi.oracle_id as oracle_id, tup.feed_kinds ->> 'trade-match' as enabled_at
+  return sql`select twi.oracle_id as oracle_id, coalesce(tup.feed_kinds ->> 'trade-match', tup.push_kinds ->> 'trade-match') as enabled_at
     from ${wishlistItems} twi
     join ${userPrefs} tup on tup.user_id = twi.user_id
     where twi.user_id = ${viewerId}
-      and (tup.feed_kinds ->> 'trade-match') is not null
+      and ${feedOrPushWanted(sql`tup`, sql`twi.user_id`, "trade-match")}
       and coalesce((select sum(tci.quantity) from ${collectionItems} tci
                     where tci.user_id = twi.user_id and tci.oracle_id = twi.oracle_id), 0) < twi.quantity
     order by twi.oracle_id`;

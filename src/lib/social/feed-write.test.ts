@@ -35,7 +35,7 @@ describe("recordFeedItemQuery", () => {
 
   it("writes only while the kind is ON and the item is newer than its enabledAt (`kindEnabledAt`): a kind that is off is not written", () => {
     expect(q).toMatch(/where \(\$\d+::timestamptz > coalesce\(\(wup\.feed_kinds ->> \$\d+::text\)::timestamptz, case when \$\d+::text = any\(\$\d+::text\[\]\) and not \(\$\d+::text = any\(coalesce\(wup\.feed_kinds_declined, '\{\}'::text\[\]\)\)\) then '-infinity'::timestamptz end\)/);
-    expect(params.filter((p) => p === "combo")).toHaveLength(7); // the dedupe-key kind column, the feed stamp (x3), the push stamp (x3)
+    expect(params.filter((p) => p === "combo")).toHaveLength(11); // the row's kind, the feed stamp (x3), the push stamp (x3), and the outbox row's kind and its push stamp (x4)
     expect(params).toContainEqual(["spare-request"]);
   });
 

@@ -1,32 +1,41 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PgDialect } from "drizzle-orm/pg-core";
+import { describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ enqueue: vi.fn() }));
-vi.mock("../push/enqueue", () => ({ enqueuePush: m.enqueue }));
-
-import { recordFeedItem } from "./feed-write";
+import { recordFeedItem, recordFeedItemQuery } from "./feed-write";
 
 const NOW = new Date("2026-10-22T12:00:00.000Z");
 const input = { userId: "u1", kind: "price-drop" as const, dedupeKey: "k1", oracleId: "9a1412db-45ad-46ea-8f12-a85d203113d8", now: NOW };
+const render = (i: typeof input & { batchKey?: string; friendUserId?: string }) => new PgDialect().sqlToQuery(recordFeedItemQuery(i as never));
 
-beforeEach(() => vi.clearAllMocks());
+describe("recordFeedItem queues its push in the SAME statement", () => {
+  const r = render(input);
 
-describe("recordFeedItem queues a push", () => {
-  it("through the same executor, only when it wrote a NEW item", async () => {
-    const tx = { execute: vi.fn(async () => ({ rowCount: 1, rows: [{ id: "x" }] })) };
-    expect(await recordFeedItem(tx as never, input)).toBe(true);
-    expect(m.enqueue).toHaveBeenCalledWith(tx, { userId: "u1", kind: "price-drop", itemKey: "k1", batchKey: undefined, now: NOW });
+  it("is one statement: the feed insert and the outbox insert are CTEs of one query, so a committed item always has its push", () => {
+    expect(r.sql.startsWith("with wrote as (")).toBe(true);
+    expect(r.sql).toContain('insert into "feed_items"');
+    expect(r.sql).toContain('pushed as (insert into "push_outbox"');
+    expect(r.sql).toMatch(/returning id\),\s+pushed as/);
+    expect(r.sql.trimEnd().endsWith("select id from wrote")).toBe(true);
   });
 
-  it("passes the writer's own batch key on", async () => {
-    const tx = { execute: vi.fn(async () => ({ rowCount: 1, rows: [{ id: "x" }] })) };
-    await recordFeedItem(tx as never, { ...input, batchKey: "run-7" });
-    expect(m.enqueue).toHaveBeenCalledWith(tx, expect.objectContaining({ batchKey: "run-7" }));
+  it("queues only when the feed insert wrote a row, under the opaque item key and never the writer's dedupe key", () => {
+    expect(r.sql).toContain("where exists (select 1 from wrote)");
+    expect(r.sql).toContain("'item:' || (select wrote.id::text from wrote limit 1)");
+    const outbox = r.sql.slice(r.sql.indexOf('pushed as (insert into "push_outbox"'));
+    expect(outbox).not.toContain("dedupe_key");
   });
 
-  it("queues nothing for a repeat, an item the reader's kind is off for, or a malformed input", async () => {
+  it("passes the writer's own batch key on", () => {
+    expect(render({ ...input, batchKey: "run-7" }).params).toContain("run-7");
+  });
+
+  it("is ONE call through whatever executor it is given, true only when the feed row was written", async () => {
+    const wrote = { execute: vi.fn(async () => ({ rowCount: 1, rows: [{ id: "x" }] })) };
+    expect(await recordFeedItem(wrote as never, input)).toBe(true);
+    expect(wrote.execute).toHaveBeenCalledOnce();
     const none = { execute: vi.fn(async () => ({ rowCount: 0, rows: [] })) };
     expect(await recordFeedItem(none as never, input)).toBe(false);
     await expect(recordFeedItem(none as never, { ...input, oracleId: "nope" })).rejects.toThrow();
-    expect(m.enqueue).not.toHaveBeenCalled();
+    expect(none.execute).toHaveBeenCalledOnce();
   });
 });

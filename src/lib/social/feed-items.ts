@@ -80,14 +80,15 @@ export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[],
 }
 
 /**
- * Stored items by their writers' keys, for one reader, regardless of the reader's FEED toggles (push can be on with the
- * feed kind off) but only while each item still STANDS (`standing`). `refs` are (kind, dedupe key) pairs, the outbox's
- * own. Columns match the union's, with `key` the dedupe key and `unseen` false: the push never reads the cursor.
+ * Stored items by their opaque feed keys (`item:<id>`, the outbox's own `item_key` and Home's own key), for one reader,
+ * regardless of the reader's FEED toggles (push can be on with the feed kind off) but only while each item still STANDS
+ * (`standing`). Never by a writer's dedupe key: a trade match's names another account. Columns match the union's, with
+ * `unseen` false: the push never reads the cursor.
  */
 export function storedItemsByKeyQuery(viewerId: string, refs: readonly { kind: StoredKind; key: string }[], now: Date): SQL | null {
   if (refs.length === 0) return null;
   const pairs = sql.join(refs.map((r) => sql`(${r.kind}::text, ${r.key}::text)`), sql`, `);
-  return sql`select fi.kind as kind, fi.dedupe_key as key, fi.created_at as created_at,
+  return sql`select fi.kind as kind, 'item:' || fi.id::text as key, fi.created_at as created_at,
       null::text as code, null::text as name, null::text as file_name,
       fi.oracle_id as oracle_id, fi.variant_id as variant_id,
       sp.public_id::text as friend_public_id, sp.display_name as friend_name, fi.data as data,
@@ -95,6 +96,6 @@ export function storedItemsByKeyQuery(viewerId: string, refs: readonly { kind: S
     from ${feedItems} fi
     left join ${socialProfiles} sp on sp.user_id = fi.friend_user_id
     where fi.user_id = ${viewerId}
-      and (fi.kind, fi.dedupe_key) in (${pairs})
+      and (fi.kind, 'item:' || fi.id::text) in (${pairs})
       ${standing(now)}`;
 }

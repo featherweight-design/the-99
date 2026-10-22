@@ -1,7 +1,7 @@
 import { PgDialect } from "drizzle-orm/pg-core";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { BATCH_WINDOW_MS, defaultBatchKey, enqueuePush, enqueuePushQuery } from "./enqueue";
+import { BATCH_WINDOW_MS, defaultBatchKey, enqueuePushQuery } from "./enqueue";
 import { pushKindEnabledAt } from "./kind-gate";
 import { sql } from "drizzle-orm";
 
@@ -40,10 +40,10 @@ describe("the outbox insert", () => {
     expect(render(enqueuePushQuery({ userId: "u1", kind: "combo", itemKey: "k", batchKey: "run-7", now: NOW })).params).toContain("run-7");
   });
 
-  it("is one statement through the executor it is given", async () => {
-    const execute = vi.fn(async () => undefined);
-    await enqueuePush({ execute } as never, { userId: "u1", kind: "combo", itemKey: "k", now: NOW });
-    expect(execute).toHaveBeenCalledOnce();
+  it("takes the item's key as SQL, and an extra condition, so it can ride on the feed insert's own row", () => {
+    const r = render(enqueuePushQuery({ userId: "u1", kind: "combo", itemKey: sql`'item:' || (select w.id::text from wrote w)`, when: sql`exists (select 1 from wrote)`, now: NOW }));
+    expect(r.sql).toContain("'item:' || (select w.id::text from wrote w)");
+    expect(r.sql.replace(/\s+/g, " ")).toContain("where exists (select 1 from wrote) and exists (select 1 from \"push_subscriptions\" pps");
   });
 });
 

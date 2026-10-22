@@ -21,10 +21,14 @@ describe("the price-drop job's SQL", () => {
     expect(params).toEqual([["a", "b"], [100, 250]]);
   });
 
-  it("reads only readers whose price-drop kind is on, only baselined lines, only lines the collection has not reached", () => {
-    const { q } = render(priceDropCandidatesQuery());
+  it("reads only readers who want price-drop news (the feed kind on, or a device with its push on), only baselined lines, only lines the collection has not reached", () => {
+    const { q, params } = render(priceDropCandidatesQuery());
     expect(q).toContain(`join "user_prefs" up on up.user_id = wi.user_id`);
-    expect(q).toContain("where (up.feed_kinds ->> 'price-drop') is not null and wi.price_at_add_cents is not null");
+    expect(q).toContain("(up.feed_kinds ->> $1::text) is not null");
+    expect(q).toContain("(up.push_kinds ->> $2::text) is not null");
+    expect(q).toContain(`exists (select 1 from "push_subscriptions" wnt where wnt.user_id = wi.user_id)`);
+    expect(params).toEqual(["price-drop", "price-drop"]);
+    expect(q).toContain("and wi.price_at_add_cents is not null");
     // Qualified on both sides (AGENTS.md, alias and qualify): an unqualified oracle_id would compare a row to itself.
     expect(q).toContain(`coalesce((select sum(ci.quantity) from "collection_items" ci where ci.user_id = wi.user_id and ci.oracle_id = wi.oracle_id), 0) < wi.quantity`);
   });

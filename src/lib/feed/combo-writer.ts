@@ -18,6 +18,7 @@ import { sql } from "drizzle-orm";
 import type { db } from "../../db";
 import { cards, collectionItems, spellbookVariantCards, spellbookVariants, userPrefs } from "../../db/schema";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
+import { feedOrPushWanted } from "../push/kind-gate";
 import { recordFeedItem } from "../social/feed-write";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { availableFeedKinds } from "./flag";
@@ -74,9 +75,9 @@ export function addedCards(before: ReadonlySet<string>, after: ReadonlySet<strin
   return [...after].filter((id) => !before.has(id)).sort();
 }
 
-/** Whether the reader's combo kind is on. Apart so a test can render it. */
+/** Whether the reader wants combo news: the feed kind on, or a device with the combo push on. Apart so a test can render it. */
 export function comboOnQuery(userId: string) {
-  return sql`select 1 as yes from ${userPrefs} cup where cup.user_id = ${userId} and (cup.feed_kinds ->> 'combo') is not null`;
+  return sql`select 1 as yes from ${userPrefs} cup where cup.user_id = ${userId} and ${feedOrPushWanted(sql`cup`, sql`cup.user_id`, "combo")}`;
 }
 
 /** Every card the reader holds, by oracle id (the collection read's own `owned`). */

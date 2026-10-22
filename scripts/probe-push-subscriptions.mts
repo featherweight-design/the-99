@@ -104,11 +104,27 @@ async function main() {
     check("a device with the kind's push off queues nothing", (await queued(R)) === 0);
 
     const [outboxRow] = await db.select().from(pushOutbox).where(eq(pushOutbox.userId, P));
-    const resolved = await resolvePushItems(P, [{ kind: "price-drop", key: "k1", batch: outboxRow!.batchKey }], process.env, now);
+    check("the outbox row's key is the feed item's OPAQUE key, never the writer's dedupe key", /^item:[0-9a-f-]{36}$/.test(outboxRow!.itemKey) && !outboxRow!.itemKey.includes("k1"), outboxRow!.itemKey);
+    const resolved = await resolvePushItems(P, [{ kind: "price-drop", key: outboxRow!.itemKey, batch: outboxRow!.batchKey }], process.env, now);
     const item = resolved.items[0];
     check("the push resolves to the card, the two prices and the batch", item?.kind === "price-drop" && item.card === card!.name && item.wasCents === 840 && item.nowCents === 510 && item.batch === outboxRow!.batchKey, JSON.stringify(item));
-    const gone = await resolvePushItems(P, [{ kind: "price-drop", key: "no-such-key", batch: "b" }], process.env, now);
+    const gone = await resolvePushItems(P, [{ kind: "price-drop", key: "item:00000000-0000-0000-0000-000000000000", batch: "b" }], process.env, now);
     check("a key that is not there is dropped, never sent", gone.items.length === 0 && gone.dropped.length === 1);
+
+    // The producers' own eligibility reads include a push-only reader (a device and the kind's push on, the feed kind off).
+    const { wishlistItems } = await import("../src/db/schema");
+    const { priceDropCandidatesQuery } = await import("../src/lib/feed/price-drop");
+    const { comboOnQuery } = await import("../src/lib/feed/combo-writer");
+    const { wishedForMatchQuery } = await import("../src/lib/social/trade-match");
+    await db.insert(userPrefs).values({ userId: P, pushKinds: { "price-drop": old, combo: old, "trade-match": old } }).onConflictDoUpdate({ target: userPrefs.userId, set: { pushKinds: { "price-drop": old, combo: old, "trade-match": old } } });
+    const T = `probe_push_t_${run}`; // no device, no feed kind: wanted by nobody
+    await db.insert(userPrefs).values({ userId: T, pushKinds: { "price-drop": old, combo: old, "trade-match": old } });
+    for (const u of [P, T]) await db.insert(wishlistItems).values({ userId: u, oracleId: card!.oracleId, quantity: 1, priceAtAddCents: 500 });
+    const ids = async (q: ReturnType<typeof priceDropCandidatesQuery>) => (await db.execute<{ user_id: string }>(q)).rows.map((r) => r.user_id);
+    const candidates = await ids(priceDropCandidatesQuery());
+    check("the price-drop job reads a push-only reader with a device, and not one with no device", candidates.includes(P) && !candidates.includes(T));
+    check("the combo writer sees the push-only reader's kind on", (await db.execute(comboOnQuery(P))).rows.length === 1 && (await db.execute(comboOnQuery(T))).rows.length === 0);
+    check("the trade-match read keeps a push-only reader's wished cards", (await db.execute(wishedForMatchQuery(P))).rows.length === 1 && (await db.execute(wishedForMatchQuery(T))).rows.length === 0);
 
     const { purgeAccount } = await import("../src/lib/account/purge");
     await purgeAccount(A);
@@ -116,6 +132,7 @@ async function main() {
   } finally {
     await db.delete(pushSubscriptions).where(like(pushSubscriptions.endpoint, `%${run}-%`));
     await db.execute(sql`delete from push_outbox where user_id like ${`probe_push_%_${run}`}`);
+    await db.execute(sql`delete from wishlist_items where user_id like ${`probe_push_%_${run}`}`);
     await db.execute(sql`delete from feed_items where user_id like ${`probe_push_%_${run}`}`);
     await db.delete(userPrefs).where(like(userPrefs.userId, `probe_push_%_${run}`));
     // The user_prefs trigger fires on DELETE too, so a failed run leaves stamp rows behind unless they go as well.

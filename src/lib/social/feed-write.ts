@@ -19,7 +19,7 @@ import { sql, type SQL } from "drizzle-orm";
 import type { db } from "../../db";
 import { feedItems, friendLinks, pushSubscriptions, userPrefs } from "../../db/schema";
 import { kindEnabledAt } from "../feed/kind-gate";
-import { enqueuePush } from "../push/enqueue";
+import { enqueuePushQuery } from "../push/enqueue";
 import { pushKindEnabledAt } from "../push/kind-gate";
 import { isStoredKind, type StoredKind } from "../feed/kinds";
 
@@ -82,20 +82,28 @@ export function recordFeedItemQuery(input: FeedItemInput): SQL {
   const now = (input.now ?? new Date()).toISOString();
   const enabledAt = kindEnabledAt(sql`wup`, sql`${input.kind}::text`);
   const pushEnabledAt = pushKindEnabledAt(sql`wup`, sql`${input.kind}::text`);
-  return sql`insert into ${feedItems} (user_id, kind, dedupe_key, oracle_id, variant_id, friend_user_id, data, created_at)
-    select ${input.userId}, ${input.kind}, ${input.dedupeKey}, ${input.oracleId ?? null}::uuid, ${input.variantId ?? null}::text,
-      ${input.friendUserId ?? null}::text, ${JSON.stringify(input.data ?? {})}::jsonb, ${now}::timestamptz
-    from (select 1) wone
-    left join ${userPrefs} wup on wup.user_id = ${input.userId}
-    where (${now}::timestamptz > ${enabledAt}
-      or (exists (select 1 from ${pushSubscriptions} wps where wps.user_id = ${input.userId})
-        and ${now}::timestamptz > ${pushEnabledAt})) ${friendHeld(input)}
-    on conflict (user_id, kind, dedupe_key) do nothing
-    returning id`;
+  // ONE statement: the feed insert and the push it announces, so they commit or fail together whatever the executor is.
+  const push = enqueuePushQuery({
+    userId: input.userId, kind: input.kind, itemKey: sql`'item:' || (select wrote.id::text from wrote limit 1)`,
+    batchKey: input.batchKey, now: input.now, when: sql`exists (select 1 from wrote)`,
+  });
+  return sql`with wrote as (
+      insert into ${feedItems} (user_id, kind, dedupe_key, oracle_id, variant_id, friend_user_id, data, created_at)
+      select ${input.userId}, ${input.kind}, ${input.dedupeKey}, ${input.oracleId ?? null}::uuid, ${input.variantId ?? null}::text,
+        ${input.friendUserId ?? null}::text, ${JSON.stringify(input.data ?? {})}::jsonb, ${now}::timestamptz
+      from (select 1) wone
+      left join ${userPrefs} wup on wup.user_id = ${input.userId}
+      where (${now}::timestamptz > ${enabledAt}
+        or (exists (select 1 from ${pushSubscriptions} wps where wps.user_id = ${input.userId})
+          and ${now}::timestamptz > ${pushEnabledAt})) ${friendHeld(input)}
+      on conflict (user_id, kind, dedupe_key) do nothing
+      returning id),
+    pushed as (${push})
+    select id from wrote`;
 }
 
 /**
- * Records one event for one reader through `tx` (a transaction, or `db`). Returns whether a row was written: false
+ * Records one event for one reader through `tx` (a transaction, or `db`); a new item also queues its push in the same statement. Returns whether a row was written: false
  * for a kind that is off, an item not newer than the kind's `enabledAt`, a reader with no prefs row (every kind
  * off but a default-on one) and a repeat. Throws on a malformed input.
  */
@@ -103,10 +111,7 @@ export async function recordFeedItem(tx: Executor, input: FeedItemInput): Promis
   const problem = feedItemProblem(input);
   if (problem) throw new Error(`recordFeedItem: ${problem}`);
   const done = await tx.execute(recordFeedItemQuery(input));
-  const wrote = (done.rowCount ?? done.rows.length) > 0;
-  // A NEW item announces itself to the reader's devices through the outbox, in this same executor (plan D1).
-  if (wrote) await enqueuePush(tx, { userId: input.userId, kind: input.kind, itemKey: input.dedupeKey, batchKey: input.batchKey, now: input.now });
-  return wrote;
+  return (done.rowCount ?? done.rows.length) > 0;
 }
 
 /** When this reader was last given an item of `kind` about this card, or null: a rule that spaces notices reads it. */

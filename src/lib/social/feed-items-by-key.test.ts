@@ -11,11 +11,11 @@ describe("storedItemsByKeyQuery", () => {
     expect(storedItemsByKeyQuery("u1", [], NOW)).toBeNull();
   });
 
-  const q = dialect.sqlToQuery(storedItemsByKeyQuery("u1", [{ kind: "price-drop", key: "k1" }, { kind: "combo", key: "v9" }], NOW)!);
+  const q = dialect.sqlToQuery(storedItemsByKeyQuery("u1", [{ kind: "price-drop", key: "item:id-1" }, { kind: "combo", key: "item:id-9" }], NOW)!);
 
-  it("matches the writers' own (kind, key) pairs for the one reader", () => {
-    expect(q.sql).toContain("(fi.kind, fi.dedupe_key) in ((");
-    expect(q.params).toEqual(expect.arrayContaining(["u1", "price-drop", "k1", "combo", "v9"]));
+  it("matches the outbox's own (kind, opaque key) pairs for the one reader", () => {
+    expect(q.sql).toContain("(fi.kind, 'item:' || fi.id::text) in ((");
+    expect(q.params).toEqual(expect.arrayContaining(["u1", "price-drop", "item:id-1", "combo", "item:id-9"]));
   });
 
   it("does not depend on the reader's FEED toggles", () => {
@@ -31,8 +31,9 @@ describe("storedItemsByKeyQuery", () => {
     }
   });
 
-  it("answers the key as the dedupe key and never unseen", () => {
-    expect(q.sql).toContain("fi.dedupe_key as key");
+  it("answers the opaque feed key, never a writer's dedupe key (a trade match's names another account), and never unseen", () => {
+    expect(q.sql).toContain("'item:' || fi.id::text as key");
+    expect(q.sql).not.toContain("fi.dedupe_key as key");
     expect(q.sql).toContain("false as unseen");
   });
 });
