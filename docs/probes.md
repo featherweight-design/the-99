@@ -3152,7 +3152,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   are, and checks that each listed combo misses exactly its named piece, that piece is inside the deck's identity, the
   list runs bucket by bucket (spare, in another deck, priced buy, unpriced buy), the cap holds with `total` covering
   it, and the switch off reads nothing. `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports; production is
-  refused. On local-dev's headless account, 19 of 20 decks are one piece from a combo.
+  refused. On local-dev's headless account, 19 of 20 decks are one piece from a combo. For `loadCardCombos` it
+  reads the card in the most variants and the first deck's commander with that deck in scope, timed, and checks the
+  cap, that the card is never its own piece, fewest unowned pieces first, and in-deck pieces when a deck is in scope.
 - `pnpm probe:arrivals-banner` presses the upcoming-precons banner on Home (plan `2026-10-14-upcoming-precons.md`, PR 3)
   at 390x844 and 1300x900: several arrivals draw the count heading, one line each (soonest first), one link and one ✕
   (44 at 390, 32 at 1300), the link on the heading line at 1300 and last at 390; one arrival draws a sentence and its

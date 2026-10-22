@@ -1,7 +1,7 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, deckCards, decks } from "../../db/schema";
-import { hardDecks, type Availability } from "../decks/availability";
+import { cards, deckCards, decks, spellbookVariantCards, spellbookVariants } from "../../db/schema";
+import { holdsCopy, type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { deckIdentity } from "../decks/format";
 import { cheapestNow, loadPrices } from "../decks/price-query";
@@ -10,6 +10,8 @@ import {
   addableMissingPiece,
   anySizeComboQuery,
   byVariantId,
+  countedOutcomeSql,
+  MAX_COMBO_PIECES,
   pickTop,
   type ComboPieceRow,
 } from "../synopsis/combo-facts";
@@ -29,10 +31,23 @@ import { nearCombosEnabled } from "./flag";
 export type MissingPieceWhere =
   /** The reader owns a copy no deck claims. */
   | { kind: "spare" }
-  /** Every owned copy is claimed: these are the decks holding it. */
-  | { kind: "elsewhere"; decks: { id: string; name: string }[] }
+  /** Every owned copy is claimed: these are the decks holding it, committed ones first. */
+  | { kind: "elsewhere"; decks: HoldingDeck[] }
   /** Not owned. `cents` is the buy tag's figure, null when no printing is stocked. */
   | { kind: "buy"; cents: number | null };
+
+/** A deck holding a copy. `committed` is a sleeved version; otherwise a brew given a copy. */
+export type HoldingDeck = { id: string; name: string; committed: boolean };
+
+/**
+ * The decks HOLDING a copy (`holdsCopy`: committed decks and brews given one, never a draft that
+ * only asks), committed first and otherwise in the query's order, so a surface naming one deck
+ * names the first committed one (combos-close G4).
+ */
+export function holdingDecks(availability: Pick<Availability, "claims">): HoldingDeck[] {
+  const held = availability.claims.filter(holdsCopy).map((c) => ({ id: c.id, name: c.name, committed: c.mature }));
+  return [...held.filter((d) => d.committed), ...held.filter((d) => !d.committed)];
+}
 
 export type NearComboPiece = { oracleId: string; name: string; held: boolean };
 
@@ -99,8 +114,29 @@ export function shapeNearCombos(
 export function whereIs(availability: Availability | undefined, cents: number | null): MissingPieceWhere {
   if (!availability || availability.owned <= 0) return { kind: "buy", cents };
   if (availability.free > 0) return { kind: "spare" };
-  // The decks HOLDING a copy (`hardDecks`): a draft that only asks for it holds nothing.
-  return { kind: "elsewhere", decks: hardDecks(availability) };
+  return { kind: "elsewhere", decks: holdingDecks(availability) };
+}
+
+/**
+ * `loadAvailability` for combo pieces. That read leaves basic lands out ENTIRELY (every sleeved deck
+ * holds dozens and no collection row matches them), so a basic the reader owns would read as not
+ * owned. A piece it does not report but the collection holds is filled in as one unclaimed copy:
+ * nothing claims a basic.
+ */
+export async function loadPieceAvailability(
+  userId: string,
+  oracleIds: string[],
+  opts: { excludeDeckId?: string; env: NodeJS.ProcessEnv },
+): Promise<Map<string, Availability>> {
+  const availability = await loadAvailability(userId, { oracleIds, excludeDeckId: opts.excludeDeckId, env: opts.env });
+  const untracked = oracleIds.filter((id) => !availability.has(id));
+  if (untracked.length === 0) return availability;
+  const held = (await db.execute(sql`
+    select distinct ci.oracle_id from collection_items ci
+    where ci.user_id = ${sql.param(userId)} and ci.oracle_id = any(${sql.param(untracked)}::uuid[])
+  `)).rows as { oracle_id: string }[];
+  for (const { oracle_id } of held) availability.set(oracle_id, { owned: 1, hard: 0, soft: 0, free: 1, claims: [] });
+  return availability;
 }
 
 /** The bucket a missing piece ranks in: spare, elsewhere, a priced buy, an unpriced buy. */
@@ -136,6 +172,8 @@ export async function loadNearCombos(args: {
   deckId: string;
   env: NodeJS.ProcessEnv;
   cap?: number;
+  /** The largest combo to list, in pieces. The deck page's list asks for 2 (combos-close G2). */
+  maxPieces?: number;
 }): Promise<NearCombos> {
   if (!nearCombosEnabled(args.env)) return EMPTY;
   const [deck] = await db
@@ -153,12 +191,12 @@ export async function loadNearCombos(args: {
   const present = [...new Set([...list.map((c) => c.oracleId), ...commanders])];
 
   const rows = (await db.execute(anySizeComboQuery(present, commanders))).rows as ComboPieceRow[];
-  const candidates = shapeNearCombos(rows, identity, commanders);
+  const candidates = shapeNearCombos(rows, identity, commanders).filter((c) => c.pieces.length <= (args.maxPieces ?? MAX_COMBO_PIECES));
   if (candidates.length === 0) return EMPTY;
 
   const missingIds = [...new Set(candidates.map((c) => c.missing.oracleId))];
   const [availability, prices] = await Promise.all([
-    loadAvailability(args.userId, { oracleIds: missingIds, excludeDeckId: args.deckId, env: args.env }),
+    loadPieceAvailability(args.userId, missingIds, { excludeDeckId: args.deckId, env: args.env }),
     loadPrices(missingIds),
   ]);
   const placed: NearCombo[] = candidates.map((c) => ({
@@ -166,4 +204,217 @@ export async function loadNearCombos(args: {
     missing: { ...c.missing, where: whereIs(availability.get(c.missing.oracleId), cheapestNow(prices, c.missing.oracleId)) },
   }));
   return rankNearCombos(placed, args.cap ?? NEAR_COMBOS_CAP);
+}
+
+/**
+ * Read B (plan, PR 2): the combos a card is in, and which of the other pieces the reader holds.
+ * Every template-free, counted combo of 2 to `MAX_COMBO_PIECES` pieces naming the card, the same
+ * definition read A and the Overview use.
+ */
+
+/** One of the other pieces, for this reader. */
+export type CardComboPieceState =
+  /** In the deck the card was opened from (a command-zone-only piece counts only as its commander). */
+  | "inDeck"
+  /** Owned, with a copy no deck claims. */
+  | "spare"
+  /** Owned, every copy claimed by a deck. */
+  | "elsewhere"
+  | "notOwned";
+
+export type CardComboOther = {
+  oracleId: string;
+  name: string;
+  state: CardComboPieceState;
+  mustBeCommander: boolean;
+  /** For `elsewhere`, the decks holding it, committed first. Empty otherwise. */
+  decks: HoldingDeck[];
+};
+
+export type CardCombo = {
+  variantId: string;
+  /** The other pieces, by name. The card itself is never listed. */
+  others: CardComboOther[];
+  produces: string[];
+  steps: string | null;
+  manaNeeded: string | null;
+  manaValueNeeded: number | null;
+  notablePrerequisites: string | null;
+  /** A piece, the card itself included, is one of the scoped deck's commanders. */
+  usesCommander: boolean;
+};
+
+export type CardCombos = { combos: CardCombo[]; total: number };
+
+/** The read's default cap. A card's combos run to a median 9 and Ashnod's Altar's to 6,089 on staging. */
+export const CARD_COMBOS_CAP = 12;
+
+/**
+ * How many variants the query hands to the ranking, best first by what the reader owns. A card in
+ * thousands of combos must not ship thousands of rows to a card-details press; the cap is far
+ * smaller than this, which leaves the one-per-outcome lead room to choose.
+ */
+export const CARD_COMBOS_SHORTLIST = 200;
+
+/** One row of `cardComboQuery`: a piece of a variant naming the card. */
+export type CardComboRow = {
+  variant_id: string;
+  produces: string[];
+  card_count: number;
+  mana_value_needed: number | null;
+  mana_needed: string | null;
+  steps: string | null;
+  notable_prerequisites: string | null;
+  oracle_id: string;
+  name: string;
+  must_be_commander: boolean;
+  /** The variant's count before the shortlist, the same on every row. */
+  total: number;
+};
+
+/**
+ * The variants naming `oracleId`, shortlisted in SQL: fewest pieces the reader owns none of and the
+ * deck in scope does not list first (the count the ranking uses), then fewest pieces, then
+ * Spellbook's popularity. Pruned card-first through
+ * `spellbook_variant_cards_oracle_idx`, as `near-miss.ts`'s reads are.
+ */
+export function cardComboQuery(
+  userId: string,
+  oracleId: string,
+  limit = CARD_COMBOS_SHORTLIST,
+  maxPieces = MAX_COMBO_PIECES,
+  /** The deck in scope: a piece there is held, by `pieceState`'s rule (a command-zone-only piece only as a commander). */
+  scope: { deck: readonly string[]; commanders: readonly string[] } = { deck: [], commanders: [] },
+) {
+  const card = sql.param(oracleId);
+  const deckP = sql.param([...scope.deck]);
+  const commandersP = sql.param([...scope.commanders]);
+  return sql`
+    with cand as (
+      select v.variant_id, v.card_count, v.popularity
+      from ${spellbookVariants} v
+      where v.card_count between 2 and ${Math.min(maxPieces, MAX_COMBO_PIECES)}
+        and cardinality(v.requires_template_ids) = 0
+        and ${countedOutcomeSql()}
+        and exists (select 1 from ${spellbookVariantCards} vc0
+                    where vc0.variant_id = v.variant_id and vc0.oracle_id = ${card}::uuid)
+    ), scored as (
+      select cand.variant_id, cand.card_count, cand.popularity,
+             count(*) filter (where not (
+               case when vc.must_be_commander then vc.oracle_id = any(${commandersP}::uuid[])
+                    else vc.oracle_id = any(${deckP}::uuid[]) end)
+               and not exists (
+               select 1 from collection_items ci
+               where ci.user_id = ${sql.param(userId)} and ci.oracle_id = vc.oracle_id)) as unowned,
+             count(*) over () as total
+      from cand
+      join ${spellbookVariantCards} vc on vc.variant_id = cand.variant_id and vc.oracle_id <> ${card}::uuid
+      group by cand.variant_id, cand.card_count, cand.popularity
+      -- Every other piece stored: a variant naming one card twice keeps fewer rows than its count
+      -- (the ingest dedupes), and must not be counted in the total or take a shortlist slot.
+      having count(*) = cand.card_count - 1
+      order by unowned, cand.card_count, cand.popularity desc nulls last, cand.variant_id
+      limit ${limit}
+    )
+    select s.variant_id, v.produces, v.card_count, v.mana_value_needed, v.mana_needed, v.steps,
+           v.notable_prerequisites, vc.oracle_id, c.name, vc.must_be_commander, s.total::int as total
+    from scored s
+    join ${spellbookVariants} v on v.variant_id = s.variant_id
+    join ${spellbookVariantCards} vc on vc.variant_id = s.variant_id
+    join cards c on c.oracle_id = vc.oracle_id
+  `;
+}
+
+/**
+ * Pure: a piece's state. In the deck first (a command-zone-only piece only as one of the deck's
+ * commanders), else from its availability: an unclaimed copy, every copy claimed, or none owned.
+ */
+export function pieceState(
+  piece: { oracleId: string; mustBeCommander: boolean },
+  scope: { deck: ReadonlySet<string>; commanders: ReadonlySet<string> },
+  availability: Availability | undefined,
+): CardComboPieceState {
+  if (piece.mustBeCommander ? scope.commanders.has(piece.oracleId) : scope.deck.has(piece.oracleId)) return "inDeck";
+  if (!availability || availability.owned <= 0) return "notOwned";
+  return availability.free > 0 ? "spare" : "elsewhere";
+}
+
+/**
+ * Pure: the rows grouped into combos, the card left out of each, ranked fewest pieces NOT owned
+ * first (a piece in the deck, spare or in another deck is held); inside each count, one per distinct
+ * outcome leading, then the Overview's combo order. A variant missing any of its rows is dropped.
+ */
+export function shapeCardCombos(
+  rows: readonly CardComboRow[],
+  oracleId: string,
+  stateOf: (piece: { oracleId: string; mustBeCommander: boolean }) => CardComboPieceState,
+  cap: number,
+  decksOf: (oracleId: string) => HoldingDeck[] = () => [],
+  /** The scoped deck's commanders, for `byRank`'s commander preference. */
+  commanderIds: ReadonlySet<string> = new Set(),
+): CardCombos {
+  const byVariant = new Map<string, CardComboRow[]>();
+  for (const r of rows) byVariant.set(r.variant_id, [...(byVariant.get(r.variant_id) ?? []), r]);
+  const list: CardCombo[] = [];
+  for (const [variantId, pieces] of byVariant) {
+    const first = pieces[0];
+    if (pieces.length !== first.card_count) continue;
+    list.push({
+      variantId,
+      others: pieces
+        .filter((p) => p.oracle_id !== oracleId)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((p) => {
+          const state = stateOf({ oracleId: p.oracle_id, mustBeCommander: p.must_be_commander });
+          return { oracleId: p.oracle_id, name: p.name, mustBeCommander: p.must_be_commander, state, decks: state === "elsewhere" ? decksOf(p.oracle_id) : [] };
+        }),
+      produces: first.produces,
+      steps: first.steps,
+      manaNeeded: first.mana_needed,
+      manaValueNeeded: first.mana_value_needed,
+      notablePrerequisites: first.notable_prerequisites,
+      usesCommander: pieces.some((p) => commanderIds.has(p.oracle_id)),
+    });
+  }
+  const unowned = (c: CardCombo) => c.others.filter((p) => p.state === "notOwned").length;
+  const sig = (produces: readonly string[]) => [...produces].sort().join("|");
+  const rank = (c: CardCombo) => ({ pieces: c.others.length + 1, mana: c.manaValueNeeded, commander: c.usesCommander, id: c.variantId, sig: sig(c.produces), mandatory: isMandatoryLoop(c.produces) });
+  // The one-per-outcome lead runs inside each count of unowned pieces, never across them: across the
+  // whole list it lifted a combo needing a purchase above one the reader already holds (the probe).
+  const counts = [...new Set(list.map(unowned))].sort((a, b) => a - b);
+  const top = counts.flatMap((n) => pickTop(list.filter((c) => unowned(c) === n), rank, Infinity)).slice(0, cap);
+  return { combos: top, total: rows[0]?.total ?? 0 };
+}
+
+const NO_CARD_COMBOS: CardCombos = { combos: [], total: 0 };
+
+/** Read B. Empty while the switch is off, without a query. */
+export async function loadCardCombos(args: {
+  userId: string;
+  oracleId: string;
+  /** The deck the card was opened from, if any: its list, and its commanders apart. */
+  deck?: { oracleIds: readonly string[]; commanderOracleIds: readonly string[] };
+  env: NodeJS.ProcessEnv;
+  cap?: number;
+  /** The largest combo to list, in pieces. The card details block asks for 2 (combos-close G2). */
+  maxPieces?: number;
+}): Promise<CardCombos> {
+  if (!nearCombosEnabled(args.env)) return NO_CARD_COMBOS;
+  const scope = {
+    deck: new Set([...(args.deck?.oracleIds ?? []), ...(args.deck?.commanderOracleIds ?? [])]),
+    commanders: new Set(args.deck?.commanderOracleIds ?? []),
+  };
+  const query = cardComboQuery(args.userId, args.oracleId, CARD_COMBOS_SHORTLIST, args.maxPieces, { deck: [...scope.deck], commanders: [...scope.commanders] });
+  const rows = (await db.execute(query)).rows as CardComboRow[];
+  if (rows.length === 0) return NO_CARD_COMBOS;
+  const ids = [...new Set(rows.map((r) => r.oracle_id).filter((id) => id !== args.oracleId))];
+  const availability = await loadPieceAvailability(args.userId, ids, { env: args.env });
+  return shapeCardCombos(
+    rows,
+    args.oracleId,
+    (p) => pieceState(p, scope, availability.get(p.oracleId)),
+    args.cap ?? CARD_COMBOS_CAP,
+    (id) => holdingDecks(availability.get(id) ?? { claims: [] }),
+    scope.commanders,
+  );
 }

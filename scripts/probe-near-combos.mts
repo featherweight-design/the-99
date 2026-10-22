@@ -3,7 +3,9 @@
 // piece away from, where the top ones' missing pieces are, and checks the invariants: every listed
 // combo misses exactly its named piece and holds the rest, the missing piece is inside the deck's
 // identity, the list runs bucket by bucket (spare, elsewhere, priced buy, unpriced buy), the cap holds and `total`
-// covers it, and the switch off reads nothing.
+// covers it, and the switch off reads nothing. Read B, `loadCardCombos`: the card in the most variants
+// and the first deck's commander (that deck in scope), timed, checking the cap, that the card is never
+// its own piece, that fewest unowned pieces rank first, and that a piece reads in-deck exactly when the deck in scope holds it.
 //
 // READ-ONLY: it calls the loaders and nothing else. Production is refused by id, and
 // `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports.
@@ -79,6 +81,44 @@ async function main() {
     }
   }
   check("at least one deck is one piece from a combo", withAny > 0, `${withAny} of ${decks.length}`);
+
+  // Read B: a card's combos, on the card in the most variants (the shortlist's hard case), the
+  // first deck's commander with that deck in scope, and a card the account owns.
+  const { loadCardCombos, CARD_COMBOS_CAP } = await import("../src/lib/combos/near-combos");
+  const busiest = (await db.execute<{ oracle_id: string; name: string }>(sql`
+    select vc.oracle_id, c.name from spellbook_variant_cards vc join cards c using (oracle_id)
+    group by vc.oracle_id, c.name order by count(*) desc limit 1`)).rows[0];
+  const scoped = decks[0]
+    ? (await db.execute<{ commander: string; partner: string | null; cards: string[] }>(sql`
+        select d.commander_oracle_id as commander, d.partner_oracle_id as partner,
+               array(select oracle_id from deck_cards where deck_id = d.id) as cards
+        from decks d where d.id = ${decks[0].id}`)).rows[0]
+    : null;
+  const cases = [
+    { label: busiest ? `${busiest.name} (most variants)` : "", oracleId: busiest?.oracle_id, deck: undefined },
+    { label: `${decks[0]?.name}'s commander, deck in scope`, oracleId: scoped?.commander, deck: scoped ? { oracleIds: scoped.cards, commanderOracleIds: [scoped.commander, ...(scoped.partner ? [scoped.partner] : [])] } : undefined },
+  ].filter((c): c is { label: string; oracleId: string; deck: { oracleIds: string[]; commanderOracleIds: string[] } | undefined } => !!c.oracleId);
+  check("read B: switch off, empty", (await loadCardCombos({ userId, oracleId: cases[0].oracleId, env: OFF })).total === 0);
+  for (const c of cases) {
+    const started = Date.now();
+    const out = await loadCardCombos({ userId, oracleId: c.oracleId, deck: c.deck, env: ON });
+    const ms = Date.now() - started;
+    console.log(`\n${c.label}: ${out.total} combos, top ${out.combos.length} in ${ms}ms`);
+    for (const k of out.combos.slice(0, 3)) {
+      console.log(`     with ${k.others.map((p) => `${p.name} [${p.state}]`).join(" + ")}: ${k.produces.slice(0, 2).join(", ")}`);
+    }
+    check(`${c.label}: cap ${CARD_COMBOS_CAP} holds and total covers it`, out.combos.length <= CARD_COMBOS_CAP && out.total >= out.combos.length);
+    check(`${c.label}: the card is never one of its own pieces`, out.combos.every((k) => k.others.every((p) => p.oracleId !== c.oracleId)));
+    const unowned = out.combos.map((k) => k.others.filter((p) => p.state === "notOwned").length);
+    check(`${c.label}: fewest unowned pieces first`, unowned.every((n, i) => i === 0 || n >= unowned[i - 1]), unowned.join(","));
+    if (c.deck) {
+      const deck = c.deck;
+      const inScope = (p: { oracleId: string; mustBeCommander: boolean }) =>
+        p.mustBeCommander ? deck.commanderOracleIds.includes(p.oracleId) : deck.oracleIds.includes(p.oracleId) || deck.commanderOracleIds.includes(p.oracleId);
+      const wrong = out.combos.flatMap((k) => k.others).filter((p) => (p.state === "inDeck") !== inScope(p));
+      check(`${c.label}: a piece reads in the deck exactly when the deck in scope holds it`, wrong.length === 0, wrong.map((p) => p.name).join(", "));
+    }
+  }
 
   console.log(failed === 0 ? "\nall checks passed" : `\n${failed} check(s) failed`);
   process.exit(failed === 0 ? 0 : 1);

@@ -97,6 +97,11 @@ second read.
 3. Rank: fewest pieces the reader is MISSING first, then `byRank`, with the one-per-outcome lead.
    Default `cap` 12, plus `total`.
 
+As built (PR 2): the query shortlists 200 variants in SQL (fewest pieces the reader owns none of, then
+size, then popularity), and the one-per-outcome lead runs inside each count of unowned pieces, for the
+reason read A's runs per bucket. After the combos-close audit (`design_handoff_the99_combos_close/READINESS.md`,
+E3, E4) both reads take `maxPieces`, and `elsewhere` decks carry `committed`, committed first.
+
 `loadCardComboPartners` and its two-card marker stay as shipped. Read B is the richer read that
 Design prompt 17's card-details block will move to; replacing the old one is that UI PR's call.
 
