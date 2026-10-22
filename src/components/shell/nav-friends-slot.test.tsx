@@ -154,6 +154,21 @@ describe("the slot badge", () => {
     expect(friends).toHaveAccessibleName("Friends, 1 waiting on you");
   });
 
+  // Both bars clear the Friends count once the reader has been to /friends and left (useSeenBadges).
+  it.each([
+    ["the tab bar", (b: { home: number; friends: number }) => <TabBar locked={false} commandersPlace friends badges={b} />],
+    ["the rail", (b: { home: number; friends: number }) => <NavRail locked={false} theme="amonkhet" commandersPlace friends badges={b} />],
+  ])("clears the Friends count in %s after a /friends visit, and keeps Home's", (_bar, bar) => {
+    const badges = { home: 2, friends: 1 };
+    pathname = "/friends";
+    const { rerender } = render(bar(badges));
+    expect(within(primary()).getByRole("link", { name: "Friends, 1 waiting on you" })).toBeInTheDocument();
+    pathname = "/decks";
+    rerender(bar(badges));
+    expect(within(primary()).getByRole("link", { name: "Friends" })).toBeInTheDocument();
+    expect(within(primary()).getByRole("link", { name: "Home, 2 new" })).toBeInTheDocument();
+  });
+
   it("caps the drawn count at 9+, and keeps the exact count in words", () => {
     render(<NavRail locked={false} theme="amonkhet" commandersPlace friends badges={{ home: 9, friends: 12 }} />);
     expect(badgeOn(within(primary()).getByRole("link", { name: "Home, 9 new" }))).toHaveTextContent(/^9$/);

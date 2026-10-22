@@ -82,13 +82,13 @@ const inWindow = (now: Date) => sql`f.created_at > ${windowFloor(now).toISOStrin
 /** The cursor column on the reader's prefs row `up`. A closed pair, never a caller's string. */
 const cursorOf = (cursor: FeedCursor) => (cursor === "feed_seen_at" ? sql`up.feed_seen_at` : sql`up.friends_seen_at`);
 
-/** The feed read, apart so a test can render it. */
-export function feedQuery(viewerId: string, kinds: readonly FeedKind[], now: Date): SQL | null {
+/** The feed read, apart so a test can render it. `unseen` is measured against `cursor`: Home's, or the Friends badge's. */
+export function feedQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor = "feed_seen_at"): SQL | null {
   const union = feedUnion(viewerId, kinds, now);
   if (!union) return null;
   return sql`select f.kind, f.key, f.created_at, f.code, f.name, f.file_name, f.oracle_id, f.variant_id,
       f.friend_public_id, f.friend_name, f.data,
-      f.created_at > coalesce(up.feed_seen_at, '-infinity'::timestamptz) as unseen
+      f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz) as unseen
     from (${union}) f
     join ${userPrefs} up on up.user_id = ${viewerId}
     where ${inWindow(now)}

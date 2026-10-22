@@ -1,0 +1,31 @@
+{
+  "feature": "/friends: Waiting on you and the Friends badge (menu and Home plan 2026-10-22, PR 7b)",
+  "clearAbout": true,
+  "note": "Needs SOCIAL_FRIENDS_ENABLED, SOCIAL_WISHLIST_ENABLED, HOME_FEED_ENABLED and COMMANDERS_PLACE_ENABLED on, and a SCRATCH branch seeded as friend-page-tabs.json says, with the reader's trade-match kind on (user_prefs.feed_kinds). A first /friends visit notices the matches after its response; the next render draws them. The Friends slot's badge counts the unseen ones.",
+  "rows": [
+    {
+      "id": "friends-waiting",
+      "label": "/friends: Waiting on you, a trade match per wishlist card a friend has spare, with the Friends badge",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "[data-testid=waiting-on-you]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "friend-decks-pill",
+      "label": "/friends/Colin/decks: the board's status pill, no edge, Building in fg-body",
+      "view": "src/components/social/friend-decks-tab.tsx",
+      "steps": [
+        {
+          "goto": "/friends/${COLIN_PUBLIC_ID}/decks",
+          "wait": "[data-testid=friend-tab-decks]",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

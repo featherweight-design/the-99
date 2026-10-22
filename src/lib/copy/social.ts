@@ -115,6 +115,19 @@ export const socialCopy = {
     },
   },
 
+  // `/friends`' Waiting on you (menu and Home PR 7, board `Friends` 2a to 2c). Placeholder words, for /copy-review.
+  waiting: {
+    /** The mono section head, drawn uppercase by CSS; `n` is every row the section shows. */
+    head: (n: number) => `Waiting on you · ${n}`,
+    kind: { "trade-match": "Trade match" },
+    /** For a screen reader, beside the unseen diamond. */
+    unseen: "new",
+    tradeTitle: (friend: string, card: string) => `${friend} has a spare ${card}`,
+    tradeDetail: (friend: string, pods: readonly string[]) => `It’s on your wishlist. ${friend} shares spares with ${pods.join(", ")}.`,
+    /** The link to the friend's Spares tab; the board's trailing `›` is drawn apart, hidden from a screen reader. */
+    seeSpares: (friend: string) => `See ${friend}’s spares`,
+  },
+
   invites: {
     head: (n: number) => `Open friend links · ${n}`,
     row: "Friend link",

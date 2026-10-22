@@ -7,6 +7,7 @@
 // forged or stale id draws nothing.
 
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
@@ -26,6 +27,10 @@ import { pageLanding } from "../../lib/discovery/page-landing";
 import { TOOL_PARAM } from "../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../components/discovery/tool-landing-mount";
 import { openTablesFor } from "../../lib/social/rule-zero";
+import { loadWaitingOnYou } from "../../lib/social/waiting";
+import { noticeTradeMatches } from "../../lib/social/trade-match";
+import { markFriendsSeen } from "../../lib/feed/prefs";
+import { WaitingOnYou } from "../../components/social/waiting-on-you";
 
 export default async function FriendsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const perf = perfRoute("/friends");
@@ -62,13 +67,21 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   // Rule 0's pod rows (plan decision 6): read fresh beside the pods, since this page caches nothing.
   const ruleZero = ruleZeroEnabled(env);
-  const [profile, { friends, links }, pods, shared, tables] = await Promise.all([
+  const [profile, { friends, links }, pods, shared, tables, waiting] = await Promise.all([
     perf.timed("ensureProfile", () => ensureProfile(userId, user?.firstName)),
     perf.timed("friendsAndLinks", () => loadFriendsAndLinks(userId, now)),
     perf.timed("pods", () => listPods(userId)),
     perf.timed("sharedPods", () => listSharedPods(userId)),
     ruleZero ? perf.timed("openTables", () => openTablesFor(userId)) : Promise.resolve(null),
+    perf.timed("waitingOnYou", () => loadWaitingOnYou(userId, env, now)),
   ]);
+  // After the response, never during the render: record any trade match this reader has not been told about (the next
+  // render draws it), then clear the Friends badge up to the instant this page drew. Each writes only when it has
+  // something to write (`user_data_touch`: an unconditional write would retire the reader's cached pages).
+  after(async () => {
+    await noticeTradeMatches(userId, env);
+    await markFriendsSeen(userId, env, now);
+  });
   // The inviter is resolved first and the receipt marked shown LAST, once every read the page needs has succeeded: a
   // read that throws shows the error boundary, and a receipt already marked would never be drawn on the retry.
   const pendingInviter = await perf.timed("pendingReceipt", () => pendingReceipt(userId));
@@ -81,6 +94,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     <ToolLandingMount landing={landing} request={request} />
     <FriendsView
       profile={profile}
+      waiting={<WaitingOnYou rows={waiting} now={now} />}
       pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} ruleZero={tables ? { tables, now } : null} />}
       friends={friends}
       links={links}

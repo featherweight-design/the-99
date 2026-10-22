@@ -5,6 +5,7 @@
 // Colour is not written here. `statusPillStyle` owns it, so a theme change is a
 // token change in one file.
 
+import type { CSSProperties } from "react";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { StatusPill as Status } from "../../lib/decks/status";
 import { statusPillStyle } from "../../lib/decks/status-style";
@@ -35,12 +36,15 @@ const TILE_CLASS =
 export function StatusPillBadge({
   status,
   className = TILE_CLASS,
+  style,
 }: {
   status: Status;
   className?: string;
+  /** A surface's own drawing of the pill, in place of `statusPillStyle` (a friend's deck tile). */
+  style?: CSSProperties;
 }) {
   return (
-    <span className={className} style={statusPillStyle(status)}>
+    <span className={className} style={style ?? statusPillStyle(status)}>
       {refreshCopy.status[COPY_KEY[status]]}
     </span>
   );

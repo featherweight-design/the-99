@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
 import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
@@ -19,6 +20,8 @@ import { PlacePathsProvider } from "../commanders/place-paths";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { commandersPlaceEnabled } from "../../lib/commanders/place-flag";
 import { homeFeedEnabled } from "../../lib/feed/flag";
+import { unseenFriendsCount } from "../../lib/feed/read";
+import { noticeTradeMatches } from "../../lib/social/trade-match";
 import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
@@ -119,9 +122,15 @@ export default async function Shell({
     moments.includes("help-me-choose") && !spentMoments.includes("help-me-choose")
       ? !(await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)))
       : false;
-  // The bar's unseen counts (menu and Home handoff, R1 Menu 8): Home's from the feed, Friends' from what waits on the
-  // reader. None is read yet; the feed and Friends PRs fill them here, and an absent count draws no badge.
+  // The bar's unseen counts (menu and Home handoff, R1 Menu 8): Home's from the feed (PR 6), Friends' from what waits on
+  // the reader. An absent count draws no badge. Friends' is the unseen trade matches (product call 2), cleared by a
+  // /friends visit, and read only while Friends has its slot in the bar. A trade match is noticed after the response
+  // (`noticeTradeMatches`, after() only), so one that appears is counted on the next render.
   const badges: NavBadges = {};
+  if (door.friends && door.commandersPlace) {
+    badges.friends = await perfRead("shell.friendsBadge", () => unseenFriendsCount(userId, env));
+    after(() => noticeTradeMatches(userId, env));
+  }
   const stall = navStallLogEnabled(env)
     ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
     : null;

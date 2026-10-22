@@ -25,6 +25,10 @@ const m = vi.hoisted(() => ({
   pendingReceipt: vi.fn(),
   spendInviteOnSignUp: vi.fn(),
   friendPublicId: vi.fn(),
+  after: vi.fn((_fn: () => unknown) => {}),
+  loadWaitingOnYou: vi.fn(async (..._args: unknown[]) => []),
+  noticeTradeMatches: vi.fn(async (..._args: unknown[]) => 0),
+  markFriendsSeen: vi.fn(async (..._args: unknown[]) => false),
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
@@ -51,6 +55,11 @@ vi.mock("../../lib/invites/spend", async (orig) => ({
 }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));
+// Waiting on you and its after() work have their own tests (`waiting.test.ts`, `waiting-on-you.test.tsx`).
+vi.mock("../../lib/social/waiting", () => ({ loadWaitingOnYou: m.loadWaitingOnYou }));
+vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: m.noticeTradeMatches }));
+vi.mock("../../lib/feed/prefs", () => ({ markFriendsSeen: m.markFriendsSeen }));
+vi.mock("next/server", () => ({ after: m.after }));
 vi.mock("./actions", () => ({
   spendFriendLinkAction: m.spendFriendLinkAction,
   redeemInviteAction: m.redeemInviteAction,
@@ -106,6 +115,22 @@ describe("/friends", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.page.title);
     expect(m.ensureProfile).toHaveBeenCalledWith("user_1", "Hugh");
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  // The Friends badge clears on a visit, AFTER the response, up to the instant the page drew: a trade match noticed
+  // in the same after() is newer than that instant and stays unseen for the next render.
+  it("reads Waiting on you, then after the response notices trade matches and marks Friends seen at the render's instant", async () => {
+    m.after.mockClear();
+    m.noticeTradeMatches.mockClear();
+    m.markFriendsSeen.mockClear();
+    render(await FriendsPage({ searchParams: query() }));
+    const [, env, now] = m.loadWaitingOnYou.mock.calls.at(-1)!;
+    expect(m.markFriendsSeen).not.toHaveBeenCalled();
+    expect(m.after).toHaveBeenCalledTimes(1);
+    await m.after.mock.calls[0][0]();
+    expect(m.noticeTradeMatches).toHaveBeenCalledWith("user_1", env);
+    expect(m.markFriendsSeen).toHaveBeenCalledWith("user_1", env, now);
+    expect(m.noticeTradeMatches.mock.invocationCallOrder[0]).toBeLessThan(m.markFriendsSeen.mock.invocationCallOrder[0]);
   });
 
   it("draws the receipt after Accept for a friend the reader has, by public id (E10)", async () => {
