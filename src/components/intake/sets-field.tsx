@@ -1,7 +1,7 @@
 "use client";
 
 // The Sets answer's control (three-answers addendum §2): the Set trigger's count treatment (#1050),
-// `Set 0` / `Set 1` / `Sets 2`, width reserved for `Sets 9`, over the shipped searchable
+// `Any set` / `Set 1` / `Sets 2`, width reserved for `Sets 9`, over the shipped searchable
 // `FilterPanel` of every set that printed a commander. The chosen sets are chips beside it, each a
 // mono code then the name, with a ✕. Several sets are always "or", so there is no join control.
 
@@ -13,12 +13,16 @@ import { FilterPanel } from "../ui/filter-panel";
 
 const copy = helpMeChooseCopy.intake;
 
+/** The Set trigger's count. Nothing chosen reads as "Any set" (`collectionFilterCopy.set.triggerNone`),
+ *  not `Set 0`; both callers (Help me choose, Deck Tuning's "Kept for this deck") draw it. */
+export const setsTriggerCount = (n: number) =>
+  n === 0 ? collectionFilterCopy.set.triggerNone : collectionFilterCopy.set.triggerCount(n);
+
 /** The lanes' Printed in panel, under the Set trigger's count. */
 const PANEL_COPY: FilterPanelCopy = {
   ...printedInPanelCopy,
   triggerLabel: copy.sets,
-  // Nothing chosen reads as "Any set" (`collectionFilterCopy.set.triggerNone`), not `Set 0`.
-  triggerCount: (n: number) => (n === 0 ? collectionFilterCopy.set.triggerNone : collectionFilterCopy.set.triggerCount(n)),
+  triggerCount: setsTriggerCount,
   // The phone's sheet is titled as the field is, not as the lanes' control.
   sheetTitle: copy.sets,
   // No counts here (`showCounts={false}`), so none is spoken: the lanes' own reads "0 commanders".
@@ -40,8 +44,7 @@ export function SetsField({
   wide: boolean;
   /**
    * Overrides the trigger's label/count/sheet-title and the chip's remove aria, for a caller
-   * whose box names itself differently (H35 PR 2's "Kept for this deck": "Set: Any" rather than
-   * "Set 0"). Everything else — search, groups, the panel's own aria strings — stays the shared
+   * whose box names itself differently (H35 PR 2's "Kept for this deck"). Everything else — search, groups, the panel's own aria strings — stays the shared
    * `printedInPanelCopy`/intake copy, so the two callers' panels behave identically past the
    * trigger.
    */

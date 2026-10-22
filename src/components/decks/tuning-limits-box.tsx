@@ -8,7 +8,7 @@ import { useId, useRef, useState } from "react";
 import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
-import { SetsField } from "../intake/sets-field";
+import { SetsField, setsTriggerCount } from "../intake/sets-field";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 
@@ -38,11 +38,9 @@ export function cleanCapInput(raw: string): string | null {
 
 const SETS_PANEL_COPY = {
   triggerLabel: "Set",
-  // Same `Set 0 / Set 1 / Sets n` shape as `collectionFilterCopy.set.triggerCount`
-  // (sets-field.tsx's own default): `FilterPanel`'s trigger sizer is fixed to this
-  // function's own widest digit form (`Sets 9`), so a differently-worded zero case
-  // would be wider than the sizer and visibly narrow the moment a set is picked.
-  triggerCount: (n: number) => (n <= 1 ? `Set ${n}` : `Sets ${n}`),
+  // `Any set` / `Set 1` / `Sets n`, as Help me choose's trigger reads: `FilterPanel`'s hidden
+  // sizers reserve both `Sets 9` and the zero form, so the trigger keeps its width either way.
+  triggerCount: setsTriggerCount,
   sheetTitle: "Set",
   removeSet: copy.removeSet,
 };
@@ -134,7 +132,7 @@ export function TuningLimitsBox({
         </div>
       </div>
 
-      {/* No label row of its own — SetsField's trigger already reads "Set: Any" / "Set n". */}
+      {/* No label row of its own — SetsField's trigger already reads "Any set" / "Set n". */}
       <SetsField sets={sets} value={selectedSets} onChange={onSetsChange} wide={wide} copy={SETS_PANEL_COPY} />
 
       <div className="flex flex-col gap-[6px]">

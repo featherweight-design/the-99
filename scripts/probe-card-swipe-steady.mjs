@@ -149,8 +149,6 @@ try {
   const page = await phone.newPage();
   await page.goto(`${BASE}/decks/${deck}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await clearAboutSheet(page, userId);
-  // The About sheet's redirect may already have fired on the first load: come back to the deck.
-  if (!new URL(page.url()).pathname.startsWith("/decks/")) await page.goto(`${BASE}/decks/${deck}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await onPage(page, "[data-decklist-row]").first().waitFor({ timeout: 60_000 });
   if (process.env.PROBE_SHOPPING === "1") {
     await onPageRole(page, "tab", /^Shopping \d+/).first().click();
@@ -216,7 +214,6 @@ try {
   const dpage = await desk.newPage();
   await dpage.goto(`${BASE}/decks/${deck}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await clearAboutSheet(dpage, userId);
-  if (!new URL(dpage.url()).pathname.startsWith("/decks/")) await dpage.goto(`${BASE}/decks/${deck}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await onPage(dpage, "[data-decklist-row]").first().waitFor({ timeout: 60_000 });
   await onPage(dpage, "[data-decklist-row]").filter({ visible: true }).nth(1).click();
   await dpage.locator("#card-modal-title").waitFor({ timeout: 30_000 });

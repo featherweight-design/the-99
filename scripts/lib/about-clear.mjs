@@ -92,13 +92,42 @@ export async function markEveryEntrySeen(
 /**
  * Marks every entry seen, marks this browser as having shown the sheet, and dismisses a card
  * already drawn.
+ *
+ * A probe usually calls this after its first `goto`, and by then the About gate may already have
+ * redirected that load to `/about?tab=reference&next=<path>`. Marking the entries seen does not
+ * bring the page back, so the probe would wait on its own route's content and time out. When the
+ * page sits on the gate's redirect, this follows its `next` back to the route the probe asked for.
  */
 export async function clearAboutSheet(page, userId) {
   await markEveryEntrySeen(userId);
   await page.context().addCookies([sheetCookie(userId, page.url())]);
+  const back = gateReturn(page.url());
+  if (back) {
+    await page.goto(back, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    return;
+  }
   const card = page.getByRole("region", { name: /^(New in About|About The\s99)$/ });
   if (await card.isVisible().catch(() => false)) {
     await card.getByRole("button", { name: "Later" }).click();
+  }
+}
+
+/**
+ * Where the About gate's redirect was taking the reader: the same-origin `next` path of a
+ * `/about` URL, or null for any other URL. A reader who opened `/about` by hand carries no `next`.
+ */
+export function gateReturn(url) {
+  const at = new URL(url);
+  if (at.pathname !== "/about") return null;
+  const next = at.searchParams.get("next");
+  if (!next || !next.startsWith("/")) return null;
+  // Judged on the resolved URL, not the prefix: `/\host` and a tab between two slashes both
+  // pass a prefix check and resolve to another host.
+  try {
+    const back = new URL(next, at.origin);
+    return back.origin === at.origin ? back.href : null;
+  } catch {
+    return null;
   }
 }
 

@@ -80,6 +80,9 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
     // Two adds of one card at one printing fold into one line of two copies, and nothing asks for a printing.
     await waitFor(() => expect(screen.getByText(copy.summary(1, 2))).toBeTruthy());
+    // No scan scores, so nothing is matched: the line takes the first printing loaded.
+    expect(screen.getByText("C21 · #263")).toBeTruthy();
+    expect(screen.queryByText("SLD · #1512")).toBeNull();
   });
 
   // Auto is optimistic (Hugh, 2026-10-16): on the list before its printings are read, then kept or taken back.
@@ -100,6 +103,8 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
     await waitFor(() => expect(screen.getByText(copy.summary(1, 1))).toBeTruthy());
     expect(screen.queryByText(copy.needsPrinting("Sol Ring"))).toBeNull();
+    expect(screen.getByText("C21 · #263")).toBeTruthy();
+    expect(screen.queryByText("SLD · #1512")).toBeNull();
   });
 
   // Auto skips the printing step, not the scan's match: a recognized Secret Lair copy lands as that printing, never
