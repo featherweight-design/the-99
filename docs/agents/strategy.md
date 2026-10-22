@@ -53,3 +53,7 @@ same in the average as in the deck it is compared with.
 - `setStrategyFocus` (`src/app/decks/strategy-actions.ts`) is the one writer: free, switch-checked, any named strategy
   (not only the top five), and it writes ONLY ON A CHANGE, because the update moves the reader's data stamp.
 - Names: `strategyName` (`src/lib/copy/strategy-focus.ts`), a creature type in the plural (`creatureTypePlural`).
+- Icons: `StrategyIcon` (`src/components/decks/strategy-icon.tsx`), one line glyph per theme and type-line axis plus
+  the spears every creature type shares (`tribal` too) and a dashed fallback for a theme added later. Five are the
+  handoff's drawings; the rest are drawn to match (24 grid, 1.6 stroke, round caps). A new theme owes a glyph:
+  `strategy-icon.test.tsx` fails until it has one.
