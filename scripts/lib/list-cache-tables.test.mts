@@ -401,6 +401,8 @@ describe("perRequestProblems", () => {
     expect(check(page_(""), { perRequest: { [listedModule]: " " } })).toEqual([`PER-REQUEST ${listedModule} is listed with no reason`]);
   });
 
+  // Reads and parses the whole source tree synchronously; vitest's 5s default is too short on a loaded machine
+  // (it timed out at 8-20s under load), so this gets 30s. A false red, not a slow test.
   it("does not follow a page's own import of a listed module, and still follows it from a loader", () => {
     const full = loaderFiles(["src/app/page.tsx"], {});
     // A listedModule Home imports directly that no other file on its path imports: skipping the page's edge must drop it.
@@ -409,7 +411,7 @@ describe("perRequestProblems", () => {
     // A listedModule also imported by a loader stays on the path even when listed, which is what rule 4 then reports.
     const shared = full.find((f) => f.startsWith("src/lib/") && loaderFiles(["src/app/page.tsx"], { [f]: "test" }).includes(f));
     expect(shared).toBeDefined();
-  });
+  }, 30_000);
 });
 
 describe("the shipped tree's per-request reads", () => {

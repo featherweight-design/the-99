@@ -12,7 +12,11 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Every test here but the guard's own failure paths reads and parses the whole source tree synchronously; vitest's 5s
+// default is too short on a loaded machine (6s and more under load), so the file gets 30s. A false red, not a slow test.
+vi.setConfig({ testTimeout: 30_000 });
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -81,7 +85,7 @@ const FEEDERS: Record<string, string> = {
 };
 
 function walk(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
+  return readdirSync(dir).filter((name) => !name.startsWith(".")).flatMap((name) => {
     const path = join(dir, name);
     return statSync(path).isDirectory() ? walk(path) : [path];
   });
