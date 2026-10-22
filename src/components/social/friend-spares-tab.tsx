@@ -23,7 +23,7 @@ export function FriendSparesTab({ name, spares }: { name: string; spares: Friend
   const siblings: SiblingCard[] = lines.map((l) => ({ oracleId: l.oracleId, name: l.name, imageUri: l.imageUri }));
   return (
     <>
-      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.spares.line(spares.pods)}</p>
+      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.spares.line(spares.pods, spares.wishlist)}</p>
       <CardDetailProvider onWishlistWrite={onWishlistWrite}>
         {/* The board's grid: two columns on a phone, six from desktop. */}
         <ul className="m-0 mt-[12px] grid list-none grid-cols-2 gap-x-[8px] gap-y-[12px] p-0 md:grid-cols-6 md:gap-[20px]">

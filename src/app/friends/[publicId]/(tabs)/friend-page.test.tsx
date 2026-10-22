@@ -78,7 +78,7 @@ const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Ghalta,
 
 describe("a friend's page group", () => {
   beforeEach(() => {
-    m.loadFriendSpareList.mockResolvedValue({ pods: ["Thursday pod"], lines: [SPARE, { ...SPARE, oracleId: "00000000-0000-4000-8000-0000000000c2", name: "Sol Ring", spare: 1, onWishlist: false }] });
+    m.loadFriendSpareList.mockResolvedValue({ pods: ["Thursday pod"], lines: [SPARE, { ...SPARE, oracleId: "00000000-0000-4000-8000-0000000000c2", name: "Sol Ring", spare: 1, onWishlist: false }], wishlist: true });
     m.loadFriendDecks.mockResolvedValue([DECK]);
   });
 
@@ -158,13 +158,26 @@ describe("a friend's page group", () => {
 
   it("draws the spares tab: wishlist cards marked and first, each with its count", async () => {
     const html = renderToString(await FriendSparesPage({ params: params() }));
-    expect(html).toContain(p.spares.line(["Thursday pod"]));
+    expect(html).toContain(p.spares.line(["Thursday pod"], true));
+    expect(m.loadFriendSpareList).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
     expect(html.indexOf("Ghalta, Primal Hunger")).toBeLessThan(html.indexOf("Sol Ring"));
     expect(html).toContain("2 spares");
     expect(html).toContain("1 spare");
     expect(html.match(/data-testid="spare-on-wishlist"/g)).toHaveLength(1);
     // Neither fixture card has art, so each names itself in the card's place.
     expect(html.match(/data-testid="spare-name"[^>]*>Ghalta, Primal Hunger</g)).toHaveLength(1);
+  });
+
+  // The reader's own wishlist switch, never the friend's: off, the loader reads no wishlist and the line says nothing of it.
+  it("reads the spares without the reader's wishlist, and says nothing of it, while the reader's wishlist switch is off", async () => {
+    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
+    m.loadFriendSpareList.mockClear().mockResolvedValue({ pods: ["Thursday pod"], lines: [{ ...SPARE, onWishlist: false }], wishlist: false });
+    const html = renderToString(await FriendSparesPage({ params: params() }));
+    expect(m.loadFriendSpareList).toHaveBeenCalledWith("user_viewer", COLIN.publicId, false);
+    expect(html).toContain(p.spares.line(["Thursday pod"], false));
+    expect(html).not.toContain("on your wishlist");
+    renderToString(await FriendPageLayout({ children: null, params: params() }));
+    expect(m.loadFriendSpareList).not.toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
   });
 
   it("says a friend who shares nothing with the reader is not sharing, and an empty share is empty", async () => {

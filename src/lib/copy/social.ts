@@ -96,7 +96,9 @@ export const socialCopy = {
     tabs: { spares: "Spares", wishlist: "Wishlist", decks: "Decks" },
     spares: {
       /** The line under the strip: where the share reaches the viewer, and the order. */
-      line: (pods: readonly string[]) => `Shared with ${pods.join(", ")}. Cards on your wishlist first.`,
+      /** `wishlist`: the reader's wishlist is on, so their cards come first and are marked. */
+      line: (pods: readonly string[], wishlist: boolean) =>
+        `Shared with ${pods.join(", ")}.${wishlist ? " Cards on your wishlist first." : ""}`,
       count: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
       onWishlist: "on your wishlist",
       emptyTitle: (name: string) => `${name} has no spares to show`,

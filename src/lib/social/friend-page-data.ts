@@ -8,6 +8,6 @@ import { loadFriendDecks } from "./decks";
 import { loadFriendSpareList } from "./spares";
 import { loadFriendWishlist } from "./wishlist";
 
-export const friendSpareList = cache((viewerId: string, publicId: string) => loadFriendSpareList(viewerId, publicId));
+export const friendSpareList = cache((viewerId: string, publicId: string, wishlist: boolean) => loadFriendSpareList(viewerId, publicId, wishlist));
 export const friendWishlist = cache((viewerId: string, publicId: string) => loadFriendWishlist(viewerId, publicId));
 export const friendDecks = cache((viewerId: string, publicId: string) => loadFriendDecks(viewerId, publicId));

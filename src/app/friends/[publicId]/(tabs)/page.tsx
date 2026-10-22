@@ -5,15 +5,17 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { socialFriendsEnabled } from "../../../../lib/social/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { wishlistEnabled } from "../../../../lib/wishlist/flag";
 import { loadFriend } from "../../../../lib/social/access";
 import { friendSpareList } from "../../../../lib/social/friend-page-data";
 import { FriendSparesTab } from "../../../../components/social/friend-spares-tab";
 
 export default async function FriendSparesPage({ params }: { params: Promise<{ publicId: string }> }) {
   const userId = await requireUserId();
-  if (!socialFriendsEnabled(await requestSwitchEnv(userId))) notFound();
+  const env = await requestSwitchEnv(userId);
+  if (!socialFriendsEnabled(env)) notFound();
   const { publicId } = await params;
-  const [friend, spares] = await Promise.all([loadFriend(userId, publicId), friendSpareList(userId, publicId)]);
+  const [friend, spares] = await Promise.all([loadFriend(userId, publicId), friendSpareList(userId, publicId, wishlistEnabled(env))]);
   if (!friend) notFound();
   return <FriendSparesTab name={friend.displayName} spares={spares} />;
 }

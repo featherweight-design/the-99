@@ -32,7 +32,7 @@ export default async function FriendPageLayout({
   const wishlistOn = wishlistEnabled(env);
   const [friend, spares, wishlist, decks] = await Promise.all([
     loadFriend(userId, publicId),
-    friendSpareList(userId, publicId),
+    friendSpareList(userId, publicId, wishlistOn),
     wishlistOn ? friendWishlist(userId, publicId) : Promise.resolve(null),
     friendDecks(userId, publicId),
   ]);

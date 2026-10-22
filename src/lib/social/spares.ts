@@ -268,8 +268,10 @@ export function spareLineOrder(a: FriendSpareLine, b: FriendSpareLine): number {
 export type FriendSpareList = {
   /** The pods the share reaches the viewer through, in name order: `shared with {pod}`. */
   pods: string[];
-  /** Cards on the viewer's wishlist first, then by name. */
+  /** Cards on the viewer's wishlist first, then by name; by name alone while the viewer's wishlist is off. */
   lines: FriendSpareLine[];
+  /** `SOCIAL_WISHLIST_ENABLED` for the VIEWER: off, no card is marked or ordered by their wishlist, and the line says nothing of it. */
+  wishlist: boolean;
 };
 
 /**
@@ -280,9 +282,9 @@ export type FriendSpareList = {
  * The grant is read INSIDE the repeatable-read transaction that reads the friend's claim model, as `claimModelsFor`
  * does, so the authorization and the rows are one snapshot, and the friend's own threshold and keeps filter the
  * result through `isOffered`, the one place a spare is decided offered (Settings' Spares, G3). Run under the
- * FRIEND's resolved switches.
+ * FRIEND's resolved switches; `wishlist` is the VIEWER's `SOCIAL_WISHLIST_ENABLED`, and off, their wishlist is not read.
  */
-export async function loadFriendSpareList(viewerId: string, publicId: unknown): Promise<FriendSpareList | null> {
+export async function loadFriendSpareList(viewerId: string, publicId: unknown, wishlist: boolean): Promise<FriendSpareList | null> {
   const friend = await resolveFriend(viewerId, publicId);
   if (friend === null) return null;
   const env = await resolveSwitchEnv(friend);
@@ -304,10 +306,12 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown): 
   }, { isolationLevel: "repeatable read" });
   if (read === null) return null;
   const ids = read.offered.map((o) => o.oracleId);
-  if (ids.length === 0) return { pods: read.grant.pods, lines: [] };
+  if (ids.length === 0) return { pods: read.grant.pods, lines: [], wishlist };
   const [info, wanted] = await Promise.all([
     db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, ids)),
-    db.select({ oracleId: wishlistItems.oracleId }).from(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), inArray(wishlistItems.oracleId, ids))),
+    wishlist
+      ? db.select({ oracleId: wishlistItems.oracleId }).from(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), inArray(wishlistItems.oracleId, ids)))
+      : Promise.resolve([]),
   ]);
   const byId = new Map(info.map((c) => [c.oracleId, c]));
   const onList = new Set(wanted.map((w) => w.oracleId));
@@ -316,5 +320,5 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown): 
     return c ? [{ oracleId: o.oracleId, name: c.name, imageUri: c.imageUri, spare: o.spare, onWishlist: onList.has(o.oracleId) }] : [];
   });
   lines.sort(spareLineOrder);
-  return { pods: read.grant.pods, lines };
+  return { pods: read.grant.pods, lines, wishlist };
 }
