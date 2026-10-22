@@ -1,5 +1,6 @@
 // `/friends`' Waiting on you reads the feed's trade matches against the Friends badge's cursor, draws each with the
-// friend's face and the pods their share reaches the reader through, and drops a row whose grant or card is gone.
+// friend's face and the pods their share reaches the reader through, and drops a row whose grant or card is gone. A
+// spare request waiting on the reader's answer comes from `loadIncomingAsks`, not the feed, and leads the section.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -8,7 +9,9 @@ const m = vi.hoisted(() => ({
   grants: vi.fn(),
   feedQuery: vi.fn(),
   kinds: vi.fn(),
+  asks: vi.fn(),
 }));
+vi.mock("./spare-requests", () => ({ loadIncomingAsks: m.asks }));
 vi.mock("../../db", () => ({
   db: { execute: m.execute, select: () => ({ from: () => ({ where: m.where }) }) },
 }));
@@ -27,6 +30,7 @@ const row = (key: string, oracle: string, friend: string, hoursAgo: number, unse
 });
 
 beforeEach(() => {
+  m.asks.mockReset().mockResolvedValue([]);
   m.kinds.mockReset().mockReturnValue(["new-set", "trade-match", "price-drop"]);
   m.feedQuery.mockReset().mockReturnValue("QUERY");
   m.execute.mockReset().mockResolvedValue({ rows: [row("item:1", "ghalta", "pub-colin", 5), row("item:2", "sol", "pub-gone", 2)] });
@@ -69,5 +73,29 @@ describe("loadWaitingOnYou", () => {
     expect(await loadWaitingOnYou("user_viewer", ENV, NOW)).toEqual([]);
     expect(m.grants).not.toHaveBeenCalled();
     expect(m.where).not.toHaveBeenCalled();
+  });
+
+  describe("spare requests (PR 3d)", () => {
+    const ask = (id: string, hoursAgo: number) => ({
+      id, oracleId: "lathliss", card: { name: "Lathliss, Dragon Queen", imageUri: null }, copies: 1, deckName: "Dragons of Tarkir",
+      spare: 2, asker: { publicId: "pub-peter", displayName: "Peter", commander: null },
+      createdAt: new Date(NOW.getTime() - hoursAgo * 3_600_000), daysLeft: 13,
+    });
+
+    it("reads the asks waiting on the reader with their own switches, whatever the feed offers", async () => {
+      m.kinds.mockReturnValue([]);
+      m.feedQuery.mockReturnValue(null);
+      m.asks.mockResolvedValue([ask("req-1", 2)]);
+      const rows = await loadWaitingOnYou("user_viewer", ENV, NOW);
+      expect(m.asks).toHaveBeenCalledWith("user_viewer", ENV, NOW);
+      expect(rows).toEqual([{ key: "req-1", kind: "spare-request", createdAt: ask("req-1", 2).createdAt, unseen: true, ask: ask("req-1", 2) }]);
+    });
+
+    it("puts every request ahead of a NEWER trade match, newest first within", async () => {
+      m.asks.mockResolvedValue([ask("req-new", 6), ask("req-old", 30)]);
+      // The trade match (item:1) is 5 hours old: newer than both asks, and still after them.
+      const rows = await loadWaitingOnYou("user_viewer", ENV, NOW);
+      expect(rows.map((r) => r.key)).toEqual(["req-new", "req-old", "item:1"]);
+    });
   });
 });

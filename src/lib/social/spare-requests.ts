@@ -342,7 +342,10 @@ export async function loadIncomingAsks(holderId: string, env: NodeJS.ProcessEnv,
 }
 
 export type MyAsk = {
-  id: string; oracleId: string; card: AskCard; copies: number; deckName: string | null; holder: OtherSide;
+  id: string; oracleId: string; card: AskCard; copies: number; deckName: string | null;
+  /** The asker's own deck the ask was for (their own id, so Ask again can carry it), or null. */
+  deckId: string | null;
+  holder: OtherSide;
   state: AskerState;
   /** Days left on an open (or unavailable, or unneeded) ask; null once answered or expired. */
   daysLeft: number | null;
@@ -362,6 +365,7 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
     : sql`msr.asker_cleared_at is null`;
   return sql`select msr.id, msr.oracle_id, msr.status, msr.created_at, msr.answered_at, msr.copies,
       msp.public_id::text as public_id, msp.display_name, mc.name as card_name, mc.image_uri as card_image, mdk.name as deck_name,
+      mdk.id as deck_id,
       mcc.oracle_id as commander_oracle_id, mcc.name as commander_name, mcc.art_crop_uri as commander_art
     from ${spareRequests} msr
     join ${friendLinks} mfl on mfl.user_id = msr.asker_user_id and mfl.friend_user_id = msr.holder_user_id
@@ -377,6 +381,7 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
 type MyRow = Face & {
   id: string; oracle_id: string; status: StoredStatus; created_at: Date | string; answered_at: Date | string | null;
   copies: number; public_id: string; display_name: string; card_name: string; card_image: string | null; deck_name: string | null;
+  deck_id: string | null;
 };
 
 export type MyAsksOptions = {
@@ -419,7 +424,7 @@ export async function loadMyAsks(
     const open = state === "open" || state === "unavailable" || state === "unneeded";
     return {
       id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies),
-      deckName: r.deck_name, holder: { publicId: r.public_id, displayName: r.display_name, commander: faceOf(r) },
+      deckName: r.deck_name, deckId: r.deck_id, holder: { publicId: r.public_id, displayName: r.display_name, commander: faceOf(r) },
       state, daysLeft: open ? daysLeft(a.createdAt, now) : null, createdAt: a.createdAt, answeredAt: a.answeredAt,
     };
   });

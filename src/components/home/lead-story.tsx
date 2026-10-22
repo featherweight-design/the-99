@@ -3,8 +3,16 @@
 // UNSEEN item by the lead priority, drawn big at the top of the main column. The card at card shape, tilted -4deg, the
 // friend's face on its corner when a friend is the news, its art crop blurred behind the band. It is never repeated in
 // the list below (`splitLead`), and once seen it drops back into it.
+//
+// A spare request that leads while its ask is still answerable (`item.ask`; spare requests PR 3d, board `Friend-Side`)
+// carries Yes and No and the days left on the story, the same answer as Waiting on you's row (`spare-answer.tsx`); an
+// answer turns the story into that row's receipt for the visit. The action revalidates `/friends`, never Home.
 
+import { useRef, useState } from "react";
 import type { FeedView } from "../../lib/feed/home";
+import { spareCopy } from "../../lib/copy/social";
+import { shortName } from "../../lib/cards/short-name";
+import { refreshCopy } from "../../lib/copy/refresh";
 import { feedCopy } from "../../lib/copy/feed";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { FeedPress, feedText } from "../feed/feed-item";
@@ -12,6 +20,7 @@ import { feedAge } from "../../lib/feed/age";
 import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
 import { CommanderThumb } from "../ui/commander-thumb";
+import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "../social/spare-answer";
 
 export function LeadStory({
   item,
@@ -24,12 +33,32 @@ export function LeadStory({
   face?: Pick<ProfileCommander, "artCropUri"> | null;
   className?: string;
 }) {
-  const text = feedText(item);
+  const feed = feedText(item);
+  const ask = item.ask ?? null;
+  const [answered, setAnswered] = useState<Answer | null>(null);
+  const root = useRef<HTMLElement | null>(null);
+  const land = useLandFocus(root);
+  const { busy, answer, toast } = useSpareAnswer();
+  const friend = item.friend?.displayName ?? "";
+  const cardName = item.card?.name ?? "";
+  const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend) : null;
+  const text = receipt
+    ? { title: receipt.title, line: receipt.detail, press: null }
+    : ask
+      ? { title: feed.title, line: spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName), press: null }
+      : feed;
+  async function press(a: Answer) {
+    if (!ask || !(await answer(ask.id, a))) return;
+    setAnswered(a);
+    land('[data-testid="spare-receipt-status"]');
+  }
   const art = item.card?.art ?? null;
   const image = item.card?.image ?? null;
   return (
     <section
+      ref={root}
       data-lead-story={item.kind}
+      data-answered={answered ?? undefined}
       data-feed-lead
       aria-labelledby="home-lead-title"
       className={`relative flex gap-[16px] overflow-hidden rounded-[14px] [border:1px_solid_var(--accent)] bg-[color:var(--surface-rail)] p-[16px_16px_16px_14px] md:items-center md:gap-[28px] md:p-[20px_24px_20px_26px] ${className}`}
@@ -52,10 +81,10 @@ export function LeadStory({
           </span>
         )}
       </div>
-      <div className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
-        <p className="m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] text-[color:var(--accent-text)] uppercase">
-          {feedCopy.home.kicker[item.kind]}
-          <small className="ml-auto text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">{feedAge(item.at, now)}</small>
+      <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
+        <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
+          {receipt ? receipt.kind : feedCopy.home.kicker[item.kind]}
+          <small className="ml-auto text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
         </p>
         <h3 id="home-lead-title" className="m-0 font-display [overflow-wrap:anywhere] text-[18px] leading-[1.25] font-bold text-[color:var(--fg)] md:text-[22px]">
           {text.title}
@@ -71,7 +100,14 @@ export function LeadStory({
             />
           </div>
         )}
+        {ask && !receipt && (
+          <div className="mt-[6px] min-w-0">
+            <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null}
+              onAnswer={(a) => void press(a)} size="lead" />
+          </div>
+        )}
       </div>
+      {toast}
     </section>
   );
 }

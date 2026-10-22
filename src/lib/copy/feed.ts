@@ -15,6 +15,8 @@ export const feedCopy = {
       "spare-request": { name: "Friends asking for your spares", line: "A friend asks for a card you have spare." },
       combo: { name: "Combos you can make", line: "You now own both halves of a two-card combo." },
     } satisfies Record<FeedKind, { name: string; line: string }>,
+    /** After a default-on kind's line (spare requests, board `Friend-Side`): it starts checked and stays so. */
+    defaultOn: "On until you turn it off.",
     /** The mono foot under the checkboxes. */
     foot: "In the app only: a count on Home and the list. No email, ever.",
     failed: "We couldn’t save that. Try again.", // toast, role alert

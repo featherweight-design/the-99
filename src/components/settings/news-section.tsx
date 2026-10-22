@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveFeedKinds } from "../../app/settings/feed-actions";
 import { feedCopy } from "../../lib/copy/feed";
-import type { FeedKind } from "../../lib/feed/kinds";
+import { DEFAULT_ON_KINDS, type FeedKind } from "../../lib/feed/kinds";
 import type { NewsSetting } from "../../lib/feed/prefs";
 import { SECTION_HEAD } from "../social/friends-list";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
@@ -83,7 +83,9 @@ export function NewsSection({ kinds }: { kinds: NewsSetting[] }) {
                 <Checkbox checked={on.includes(kind)} disabled={saving} onChange={(v) => toggle(kind, v)} className="mt-[1px]" />
                 <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
                   <b className="font-sans text-[14px] font-medium text-[color:var(--fg)]">{k.name}</b>
-                  <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{k.line}</span>
+                  <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">
+                    {(DEFAULT_ON_KINDS as readonly FeedKind[]).includes(kind) ? `${k.line} ${c.defaultOn}` : k.line}
+                  </span>
                 </span>
               </label>
             </li>

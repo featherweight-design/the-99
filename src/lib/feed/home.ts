@@ -17,6 +17,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
+import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
 import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds, homeFeedEnabled } from "./flag";
 import { leadStory, type FeedKind } from "./kinds";
@@ -53,7 +54,16 @@ export type FeedView = {
   drop: { fromCents: number; toCents: number } | null;
   /** A combo's two pieces by name, and the piece the reader's write added. */
   combo: { pieces: [string, string]; added: string } | null;
+  /**
+   * A spare request LEADING Home, while its ask is still open and the holder still offers the card (`loadIncomingAsks`):
+   * the request to answer with Yes and No on the story itself (spare requests PR 3d, board `Friend-Side`). Absent on
+   * every other item, and on a request no longer answerable, which stays a line.
+   */
+  ask?: LeadAsk;
 };
+
+/** What the lead story's Yes and No need: the request, the holder's spare count, the copies and deck the ask names. */
+export type LeadAsk = { id: string; spare: number; copies: number; deckName: string | null; daysLeft: number };
 
 export type HomeFeed =
   | { chosen: false; offer: FeedKind[] }
@@ -233,7 +243,20 @@ export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: 
   const offer = available.filter((k) => !on.includes(k));
   if (choseNothing && items.length === 0 && offer.length > 0) return { chosen: false, offer };
   const views = toViews(items, await lookups(userId, items, q, env));
-  return splitLead(views, on);
+  const feed = splitLead(views, on);
+  // Only a spare request that leads is answered on Home; its ask is read only then. The ask waits on the friend's
+  // side whatever the feed shows, so the match is by card and asker: one open ask per asker and card (the index).
+  if (feed.chosen && feed.lead?.kind === "spare-request") return withLeadAsk(feed, await loadIncomingAsks(userId, env, now, q));
+  return feed;
+}
+
+/** The lead with its ask attached, when one of `asks` is the lead's (its card and its asker). Pure, for the tests. */
+export function withLeadAsk(feed: HomeFeed, asks: readonly IncomingAsk[]): HomeFeed {
+  if (!feed.chosen || feed.lead?.kind !== "spare-request" || !feed.lead.card || !feed.lead.friend) return feed;
+  const { card, friend } = feed.lead;
+  const ask = asks.find((a) => a.oracleId === card.oracleId && a.asker.publicId === friend.publicId);
+  if (!ask) return feed;
+  return { ...feed, lead: { ...feed.lead, ask: { id: ask.id, spare: ask.spare, copies: ask.copies, deckName: ask.deckName, daysLeft: ask.daysLeft } } };
 }
 
 /** The lead out of the list, by the shared rule; the head's count is every unseen item, the lead's included. */

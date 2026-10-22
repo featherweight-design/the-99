@@ -1,0 +1,163 @@
+"use client";
+// `/friends`' Your requests (spare requests PR 3d; handoff `design_handoff_the99_spare_requests` call 7, board
+// `Asker-States`): the reader's own asks under Waiting on you, newest first, in the shipped feed rows. The kicker names
+// the state (Requested, Accepted, Declined, No answer, No longer spare, No longer needed), an answer the reader has not
+// seen carries the diamond, and a bare ✕ withdraws an open ask or clears the rest (`closeSpareAction`). An ask that
+// went unanswered offers Ask again to the same friend (`askSpareAction`), unless the card already has an open ask.
+// Empty, the section is absent.
+//
+// Both writes answer with the shared toast on a failure and leave the row as it was (G5). ✕ revalidates `/friends`, so
+// its row leaves with the action's redraw; Ask again revalidates nothing (it is Shopping's write), so the list refreshes
+// itself. Focus follows the press (`useLandFocus`): to the next row's ✕ after a ✕, to the new Requested after Ask again.
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+import { askSpareAction, closeSpareAction } from "../../app/friends/spare-actions";
+import { feedAge } from "../../lib/feed/age";
+import { socialCopy, spareCopy } from "../../lib/copy/social";
+import { expiresAt, SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
+import type { YourRequest } from "../../lib/social/your-requests";
+import { FadingImg } from "../ui/hydrated-art";
+import { faceInitials } from "./face";
+import { RowEnd } from "./friend-spares";
+import { useLandFocus, useSpareToast } from "./spare-answer";
+
+const r = spareCopy.request;
+const m = r.mine;
+
+const isOpen = (a: YourRequest) => a.state === "open" || a.state === "unavailable" || a.state === "unneeded";
+
+/** What one row says: its kicker and ink, its time, its title and its line. Pure, for the tests. */
+export function requestText(a: YourRequest, now: Date): { kind: string; ink: string; at: Date; title: string; detail: string } {
+  const friend = a.holder.displayName;
+  const card = a.card.name;
+  const days = r.daysLeft(a.daysLeft ?? 0);
+  switch (a.state) {
+    case "open":
+      return { kind: m.kind.open, ink: "text-[color:var(--accent-text)]", at: a.createdAt, title: m.asked(friend, card), detail: m.openDetail(a.deckName, days) };
+    case "yes":
+      return { kind: m.kind.yes, ink: "text-[color:var(--success)]", at: a.answeredAt ?? a.createdAt, title: m.canSpare(friend, card), detail: m.acceptedDetail };
+    case "no":
+      return {
+        kind: m.kind.no, ink: "text-[color:var(--fg-faint)]", at: a.answeredAt ?? a.createdAt, title: m.keeping(friend, card),
+        detail: a.othersWithSpare.length === 0 ? m.nobodyElse : m.othersHave(a.othersWithSpare[0], a.othersWithSpare.length - 1),
+      };
+    case "expired": {
+      const at = expiresAt(a.createdAt);
+      return { kind: m.kind.expired, ink: "text-[color:var(--fg-faint)]", at: at < now ? at : now, title: m.noAnswer(friend, card), detail: m.noAnswerDetail(SPARE_REQUEST_DAYS, a.deckName) };
+    }
+    case "unavailable":
+      return { kind: m.kind.unavailable, ink: "text-[color:var(--fg-faint)]", at: a.createdAt, title: m.noLongerSpare(friend, card), detail: m.noLongerSpareDetail };
+    case "unneeded":
+      return { kind: m.kind.unneeded, ink: "text-[color:var(--fg-faint)]", at: a.createdAt, title: m.asked(friend, card), detail: m.noLongerNeededDetail };
+  }
+}
+
+export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now: Date }) {
+  const router = useRouter();
+  const root = useRef<HTMLElement | null>(null);
+  const land = useLandFocus(root);
+  const toast = useSpareToast();
+  const [busy, setBusy] = useState<string | null>(null);
+  if (rows.length === 0) return null;
+  const openCards = new Set(rows.filter(isOpen).map((a) => a.oracleId));
+
+  async function close(a: YourRequest, index: number) {
+    if (busy) return;
+    setBusy(a.id);
+    const ok = await closeSpareAction(a.id).then((o) => o.ok, () => false);
+    setBusy(null);
+    if (!ok) return toast.fail();
+    const next = rows[index + 1] ?? rows[index - 1];
+    land(next ? `[data-request="${next.id}"] [data-testid="your-request-close"]` : "#your-requests");
+  }
+
+  async function askAgain(a: YourRequest) {
+    if (busy) return;
+    setBusy(a.id);
+    const ok = await askSpareAction({ friendPublicId: a.holder.publicId, oracleId: a.oracleId, copies: a.copies, deckId: a.deckId })
+      .then((o) => o.ok, () => false);
+    setBusy(null);
+    if (!ok) return toast.fail();
+    land(`[data-oracle="${a.oracleId}"][data-state="open"] [data-testid="your-request-status"]`);
+    router.refresh();
+  }
+
+  return (
+    <section ref={root} aria-labelledby="your-requests" data-testid="your-requests" className="mt-[26px] md:mt-[34px]">
+      <h2
+        id="your-requests"
+        tabIndex={-1}
+        className="m-0 flex min-h-[44px] items-center justify-between gap-[12px] font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]"
+      >
+        {m.head(rows.length)}
+        <span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span>
+      </h2>
+      <ul className="m-0 mt-[12px] flex list-none flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-0 [border:1px_solid_var(--border)]">
+        {rows.map((a, index) => {
+          const text = requestText(a, now);
+          const again = a.state === "expired" && !openCards.has(a.oracleId);
+          return (
+            <li
+              key={a.id}
+              data-testid="your-request"
+              data-request={a.id}
+              data-oracle={a.oracleId}
+              data-state={a.state}
+              data-unseen={a.unseen ? "" : undefined}
+              className="relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] [&+&]:[border-top:1px_solid_var(--border)] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px]"
+            >
+              <span aria-hidden className="relative row-span-2 h-[64px] w-[46px] self-start md:row-span-1 md:self-center">
+                {a.card.imageUri ? (
+                  <FadingImg src={a.card.imageUri} alt="" className="block h-[64px] w-[46px] rounded-[3px] object-cover shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
+                ) : (
+                  <span className="block h-[64px] w-[46px] rounded-[3px] bg-[color:var(--surface-sunken)]" />
+                )}
+                <span className="absolute -bottom-[5px] -right-[6px] flex h-[24px] w-[24px] items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[9px] font-semibold text-[color:var(--fg-muted)] [border:1.5px_solid_var(--surface-inset)]">
+                  {a.holder.commander?.artCropUri
+                    ? <FadingImg src={a.holder.commander.artCropUri} alt="" className="block h-full w-full object-cover" />
+                    : faceInitials(a.holder.displayName)}
+                </span>
+              </span>
+              <div className="flex min-w-0 flex-col gap-[3px]">
+                <p className="m-0 flex min-w-0 items-center gap-[7px]">
+                  {a.unseen && (
+                    <>
+                      <span aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />
+                      <span className="sr-only">{socialCopy.waiting.unseen}</span>
+                    </>
+                  )}
+                  <span data-testid="your-request-status" tabIndex={-1} className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] ${text.ink}`}>
+                    {text.kind}
+                  </span>
+                  <small className="ml-auto mr-[30px] flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                    {feedAge(text.at.toISOString(), now.toISOString())}
+                  </small>
+                </p>
+                <p className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]">{text.title}</p>
+                <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{text.detail}</p>
+              </div>
+              {again && (
+                <div className="col-start-2 mt-[9px] flex min-w-0 md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:pr-[34px]">
+                  <RowEnd ask={{ kind: "askAgain" }} friend={a.holder.displayName} card={a.card.name} busy={busy === a.id}
+                    locked={busy !== null} onAsk={() => void askAgain(a)} size="row" />
+                </div>
+              )}
+              <button
+                type="button"
+                data-testid="your-request-close"
+                aria-label={isOpen(a) ? m.withdrawAria(a.holder.displayName, a.card.name) : m.clearAria(a.holder.displayName, a.card.name)}
+                aria-busy={busy === a.id || undefined}
+                disabled={busy !== null}
+                onClick={() => void close(a, index)}
+                className="absolute right-[4px] top-[6px] flex h-[36px] w-[36px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg-muted)] disabled:cursor-default"
+              >
+                <span aria-hidden>✕</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {toast.node}
+    </section>
+  );
+}
