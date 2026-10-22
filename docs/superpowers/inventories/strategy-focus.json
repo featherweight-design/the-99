@@ -1,0 +1,40 @@
+{
+  "feature": "Strategy focus, PR 3: the strategy block on Analysis (ring, legend with the focus pick, focus line)",
+  "note": "Needs ANALYSIS_TAB_ENABLED and STRATEGY_FOCUS_ENABLED 'true' (and TUNING_ENABLED for the tools below it), on a scratch branch off local-dev migrated past 0172, as the audit account. The block draws only over a reading, so each deck must have been analyzed. SF_NOFOCUS_DECK: an analyzed deck with no focus (HD - Brago). SF_FOCUS_DECK: an analyzed deck with a focus set in its top five (HD - Elves, strategy_focus 'typal:Elf'). SF_PENDING_DECK: an analyzed, committed deck with a focus and cards toward it added since the commit (HD Tune - Blood Rites). The empty states (none, tooSmall) and a focus outside the top five are held by strategy-block.test.tsx: a deck under 30 nonland cannot hold a reading.",
+  "out": "/tmp/contact-sheet/strategy-focus",
+  "rows": [
+    {
+      "id": "S1-no-focus",
+      "label": "/decks/[id] Analysis: the ring with an empty dashed centre, the legend's radios empty, No focus yet",
+      "view": "src/components/decks/strategy-block.tsx",
+      "steps": [
+        { "goto": "/decks/${SF_NOFOCUS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 700 },
+        { "wait": "[data-strategy-block]", "settle": 900 },
+        { "scrollTo": "[data-strategy-block]", "settle": 400 }
+      ]
+    },
+    {
+      "id": "S2-focus",
+      "label": "/decks/[id] Analysis: a focus picked, its arc pulled out in accent, its icon on the medallion, the row tinted, Keep it balanced",
+      "view": "src/components/decks/strategy-block.tsx",
+      "steps": [
+        { "goto": "/decks/${SF_FOCUS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 700 },
+        { "wait": "[data-strategy-block]", "settle": 900 },
+        { "scrollTo": "[data-strategy-block]", "settle": 400 }
+      ]
+    },
+    {
+      "id": "S3-pending",
+      "label": "/decks/[id] Analysis: cards added toward the focus since the last commit, the lighter growth arc and +N in the legend",
+      "view": "src/components/decks/strategy-block.tsx",
+      "steps": [
+        { "goto": "/decks/${SF_PENDING_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 700 },
+        { "wait": "[data-strategy-block]", "settle": 900 },
+        { "scrollTo": "[data-strategy-block]", "settle": 400 }
+      ]
+    }
+  ]
+}
