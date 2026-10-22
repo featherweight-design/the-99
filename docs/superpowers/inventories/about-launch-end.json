@@ -1,0 +1,103 @@
+{
+  "feature": "About launch-end batch (#2163, #2167): seven entries and ABOUT_VERSION 16",
+  "note": "Close-out walk. Needs `next start` with the capture switch set (docs/probes.md capture:about: every reader-facing switch on, PAYMENTS_ENABLED and SOCIAL_INVITES_ENABLED on, MOMENTS_ENABLED and ABOUT_SHEET_ENABLED off), on a scratch branch holding `pnpm fixtures:about`. Each Reference row opens one new entry by its hash and shows its haloed frame; `#credits` must land on buying-credits (payments on). The last row is Home. The ? panel is not a row: it is shell, outside the `<main>` every step is scoped to.",
+  "rows": [
+    {
+      "id": "ref-getting-help",
+      "label": "/about Reference, #getting-help opened: Getting help on any screen (Home)",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#getting-help",
+          "wait": "[data-entry-open='getting-help']",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ref-about-rebuilt",
+      "label": "/about Reference, #about-rebuilt opened: About, rebuilt (Account menu)",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#about-rebuilt",
+          "wait": "[data-entry-open='about-rebuilt']",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ref-rule-zero",
+      "label": "/about Reference, #rule-zero opened: Checking tonight's table (Friends)",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#rule-zero",
+          "wait": "[data-entry-open='rule-zero']",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ref-invites",
+      "label": "/about Reference, #invites opened: Inviting someone new (Friends)",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#invites",
+          "wait": "[data-entry-open='invites']",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ref-card-search",
+      "label": "/about Reference, #card-search opened: Looking up any card (Collection)",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#card-search",
+          "wait": "[data-entry-open='card-search']",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ref-card-scan",
+      "label": "/about Reference, #card-scan opened: Scanning your cards (Collection)",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#card-scan",
+          "wait": "[data-entry-open='card-scan']",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ref-credits",
+      "label": "/about Reference, #credits opened: How credits work, #credits resolving to buying-credits (Credits)",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#credits",
+          "wait": "[data-entry-open='buying-credits']",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "label": "/ Home (no About banner line: ABOUT_SHEET_ENABLED is off in this switch set)",
+      "view": "src/components/home/arrivals-banner.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "#home-heading",
+          "settle": 1500
+        }
+      ]
+    }
+  ],
+  "out": "contact-sheets/about-launch-end"
+}
