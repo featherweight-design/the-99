@@ -158,6 +158,13 @@ describe("the slot badge", () => {
     expect(friends).toHaveAccessibleName("Friends, 1 waiting on you");
   });
 
+  it("adds the spare requests waiting on the reader to the Friends count", () => {
+    render(<TabBar locked={false} commandersPlace friends badges={{ friends: 1, friendsWaiting: 2 }} />);
+    const friends = within(primary()).getByRole("link", { name: /^Friends/ });
+    expect(badgeOn(friends)).toHaveTextContent(/^3$/);
+    expect(friends).toHaveAccessibleName("Friends, 3 waiting on you");
+  });
+
   // Both bars clear the Friends count once the reader has been to /friends and left (useSeenBadges).
   it.each([
     ["the tab bar", (b: { home: number; friends: number }) => <TabBar locked={false} commandersPlace friends badges={b} />],

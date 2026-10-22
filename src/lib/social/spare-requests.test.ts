@@ -6,7 +6,8 @@ vi.mock("../../db", () => ({ db: { execute: vi.fn(), transaction: vi.fn(), selec
 
 import {
   answerQuery, answerSpareRequest, askForSpare, askLockQuery, expireStaleQuery, incomingAsksQuery, loadIncomingAsks, loadMyAsks,
-  lockFriendshipQuery, myAsksQuery,
+  lockFriendshipQuery, markAnswersSeen, markAnswersSeenQuery, myAsksQuery, unseenAnswersCount, unseenAnswersCountQuery,
+  waitingAsksCount, waitingAsksCountQuery,
 } from "./spare-requests";
 import { openFloor, shownFloor } from "./spare-request-rules";
 
@@ -111,5 +112,37 @@ describe("loadMyAsks", () => {
     const asks = await loadMyAsks("a", ON, NOW);
     expect(asks.map((x) => [x.id, x.state])).toEqual([["r1", "open"], ["r2", "expired"]]);
     expect(asks[0].holder).toEqual({ publicId: "p1", displayName: "Fay" });
+  });
+});
+
+describe("the Friends badge's spare-request queries", () => {
+  it("waiting: the holder's open, unexpired asks from current friends", () => {
+    const { q, params } = render(waitingAsksCountQuery("h", NOW));
+    expect(q).toMatch(/join "friend_links" wfl on wfl\.user_id = wsr\.holder_user_id and wfl\.friend_user_id = wsr\.asker_user_id/);
+    expect(q).toMatch(/where wsr\.holder_user_id = \$1 and wsr\.status = 'open' and wsr\.created_at > \$2::timestamptz$/);
+    expect(params).toEqual(["h", openFloor(NOW).toISOString()]);
+  });
+
+  it("unseen answers: answered after the reader's Friends cursor, inside the shown window, to current friends", () => {
+    const { q, params } = render(unseenAnswersCountQuery("a", NOW));
+    expect(q).toMatch(/join "friend_links" ufl on ufl\.user_id = usr\.asker_user_id and ufl\.friend_user_id = usr\.holder_user_id/);
+    expect(q).toMatch(/usr\.status in \('yes', 'no'\) and usr\.answered_at > \$2::timestamptz/);
+    expect(q).toMatch(/and usr\.answered_at > coalesce\( \(select uup\.friends_seen_at from "user_prefs" uup where uup\.user_id = \$3\), '-infinity'::timestamptz\)/);
+    expect(params).toEqual(["a", openFloor(NOW).toISOString(), "a"]);
+  });
+
+  it("seen: an upsert that writes only while an unseen answer exists and never moves the cursor back", () => {
+    const { q } = render(markAnswersSeenQuery("a", NOW));
+    expect(q).toMatch(/^insert into "user_prefs" as mup \(user_id, friends_seen_at\) select \$1, \$2::timestamptz where exists \(select 1 from "spare_requests" usr/);
+    expect(q).toMatch(/on conflict \(user_id\) do update set friends_seen_at = excluded\.friends_seen_at where mup\.friends_seen_at is null or mup\.friends_seen_at < excluded\.friends_seen_at$/);
+  });
+
+  it("off, nothing is read or written", async () => {
+    const { db } = await import("../../db");
+    vi.mocked(db.execute).mockClear();
+    expect(await waitingAsksCount("h", {} as NodeJS.ProcessEnv, NOW)).toBe(0);
+    expect(await unseenAnswersCount("a", {} as NodeJS.ProcessEnv, NOW)).toBe(0);
+    expect(await markAnswersSeen("a", {} as NodeJS.ProcessEnv, NOW)).toBe(false);
+    expect(db.execute).not.toHaveBeenCalled();
   });
 });

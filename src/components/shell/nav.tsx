@@ -734,7 +734,13 @@ export type AdminDoorProps = {
 };
 
 /** The bar's unseen counts (menu and Home handoff, R1 Menu 8), filled by the feed and Friends PRs; absent draws none. */
-export type NavBadges = { home?: number; friends?: number };
+export type NavBadges = {
+  home?: number;
+  /** Friends' SEEN half: cleared by a /friends visit. */
+  friends?: number;
+  /** Friends' WAITING half: spare requests waiting on the reader's answer, cleared only by answering (never by a visit). */
+  friendsWaiting?: number;
+};
 
 /**
  * The bar's counts as the reader should see them. The shell sits in the root layout, which a client navigation does not
@@ -764,7 +770,7 @@ export function useSeenBadges(badges: NavBadges | undefined, pathname: string): 
 }
 
 function slotBadge(badges: NavBadges | undefined, href: NavHref): number {
-  return href === "/" ? (badges?.home ?? 0) : href === "/friends" ? (badges?.friends ?? 0) : 0;
+  return href === "/" ? (badges?.home ?? 0) : href === "/friends" ? (badges?.friends ?? 0) + (badges?.friendsWaiting ?? 0) : 0;
 }
 
 /** The slot that carries a moment: M12 on Discover on the `/commanders` list, or M11 on Friends once it is in the bar. */

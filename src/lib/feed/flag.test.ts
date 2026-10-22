@@ -37,9 +37,13 @@ describe("the kinds available to a reader", () => {
     expect(feedKindAvailable("trade-match", env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }))).toBe(true);
   });
 
-  it("never offers a spare request: its flow ships with a later round (G5)", () => {
+  it("offers a spare request only with SPARE_REQUESTS_ENABLED and friends (G5)", () => {
     const all = env({ ...feed, PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
     expect(feedKindAvailable("spare-request", all)).toBe(false);
     expect(availableFeedKinds(all)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "combo"]);
+    expect(feedKindAvailable("spare-request", env({ SPARE_REQUESTS_ENABLED: "true" }))).toBe(false);
+    const on = env({ ...feed, PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+    expect(feedKindAvailable("spare-request", on)).toBe(true);
+    expect(availableFeedKinds(on)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"]);
   });
 });

@@ -15,6 +15,7 @@ import { userPrefs } from "../../db/schema";
 import { availableFeedKinds } from "./flag";
 import { FEED_KINDS, isFeedKind, type FeedKind } from "./kinds";
 import { markSeenQuery } from "./read";
+import { markAnswersSeen } from "../social/spare-requests";
 
 export type FeedKindsMap = Partial<Record<FeedKind, string>>;
 
@@ -138,9 +139,15 @@ export async function markFeedSeen(userId: string, env: NodeJS.ProcessEnv, now =
   return wrote(markSeenQuery(userId, availableFeedKinds(env), now, "feed_seen_at"), q);
 }
 
-/** A /friends visit: moves `friends_seen_at` only when an unseen trade match exists. Never touches `feed_seen_at`. */
+/**
+ * A /friends visit: moves `friends_seen_at` only when an unseen trade match or an unseen answer to the reader's spare
+ * request exists. Never touches `feed_seen_at`.
+ */
 export async function markFriendsSeen(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
-  return wrote(markSeenQuery(userId, availableFeedKinds(env).filter((k) => k === "trade-match"), now, "friends_seen_at"), q);
+  // In turn, never together: the second finds nothing newer than the cursor the first moved, so a visit writes once.
+  const matches = await wrote(markSeenQuery(userId, availableFeedKinds(env).filter((k) => k === "trade-match"), now, "friends_seen_at"), q);
+  const answers = await markAnswersSeen(userId, env, now, q);
+  return matches || answers;
 }
 
 async function wrote(query: SQL | null, q: Executor): Promise<boolean> {

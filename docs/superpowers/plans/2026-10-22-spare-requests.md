@@ -20,7 +20,9 @@ the orchestrator on 2026-10-22. Starting point: `2026-10-22-menu-home.md` (G5 ou
 
 ## Switch
 
-`SPARE_REQUESTS_ENABLED`, feature, needs `SOCIAL_FRIENDS_ENABLED`. Unset in production until the line closes.
+`SPARE_REQUESTS_ENABLED`, feature, needs `SOCIAL_FRIENDS_ENABLED`. Unset in production until the line closes. It stays unset on STAGING as well, and
+takes no override, until PR 3 ships: after PR 2 the Friends badge counts asks waiting on the reader and a `/friends`
+visit marks answers seen, and before PR 3 no surface answers an ask or shows an answer.
 
 ## PRs
 
@@ -28,12 +30,14 @@ the orchestrator on 2026-10-22. Starting point: `2026-10-22-menu-home.md` (G5 ou
    (`spare-request-rules.ts`: derived expiry, one open ask per card, the No cooldown, what the asker's list shows);
    `askForSpare`, `answerSpareRequest`, `loadIncomingAsks`, `loadMyAsks` in `src/lib/social/spare-requests.ts`; the
    holder's feed item written with the ask; purge of both sides; `check:social-reads`; `probe:spare-requests`.
-2. **Feed, badge, Waiting on you, actions.** `feedKindAvailable("spare-request")` follows the switch; the stored feed
-   branch keeps a spare-request item only while its ask is open; the Friends badge counts unseen trade matches, the
-   reader's incoming open asks, and answers to the reader's asks newer than `friends_seen_at`; Waiting on you returns
-   the incoming asks; server actions to ask and answer (reader from the session, switch per reader, `/friends`
-   revalidated, never Home or `/decks`).
-3. **UI, after the handoff.** Shopping (the row mark and the all-spares view, with Ask), the deck list (the mark on a
+2. **Feed and badge.** `feedKindAvailable("spare-request")` follows the switch, so Settings offers the kind and Home
+   reads it; the stored feed branch keeps a spare-request item only while its ask is open and unexpired; the Friends
+   badge is two halves: SEEN (unseen trade matches and answers to the reader's asks newer than `friends_seen_at`,
+   cleared by a `/friends` visit, which now also marks answers seen) and WAITING (the reader's incoming open asks,
+   cleared only by answering). The ask and answer ACTIONS and the Waiting on you rows move to PR 3: their only callers
+   are the Ask press and the Yes / No row, so shipping them first would ship code with no caller.
+3. **UI, after the handoff.** The ask and answer server actions (reader from the session, switch per reader,
+   `/friends` revalidated, never Home or `/decks`) and Waiting on you's spare-request rows (`loadIncomingAsks`), with: Shopping (the row mark and the all-spares view, with Ask), the deck list (the mark on a
    card not owned, with Ask), the asker's states and open-asks list, the request row in Waiting on you with Yes and No,
    phone and desktop. A note on an ask, if Design draws one, is player-typed text: capped and collapsed through
    `playerText`'s rules, though it reaches no model.

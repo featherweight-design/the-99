@@ -46,6 +46,7 @@ async function main() {
   const pods = await import("../src/lib/social/pods");
   const { shareSparesWith } = await import("../src/lib/social/spares");
   const prefs = await import("../src/lib/feed/prefs");
+  const read = await import("../src/lib/feed/read");
   const { applyCollectionChange } = await import("../src/lib/collection/write");
   const { purgeAccount } = await import("../src/lib/account/purge");
 
@@ -70,12 +71,12 @@ async function main() {
   };
 
   try {
-    // Four ordinary cards with a printing: X, Z and W are held by both holders, Y by nobody.
+    // Five ordinary cards with a printing: X, Z and W are held by both holders, V by Hope alone, Y by nobody.
     const { rows: picked } = await db.execute<{ oracle_id: string }>(sql`
       select c.oracle_id from cards c where exists (select 1 from printings p where p.oracle_id = c.oracle_id)
-      order by c.oracle_id limit 4 offset 1000`);
-    if (picked.length < 4) throw new Error("fewer than four cards with a printing on this branch");
-    const [X, Y, Z, W] = picked.map((r) => r.oracle_id);
+      order by c.oracle_id limit 5 offset 1000`);
+    if (picked.length < 5) throw new Error("fewer than five cards with a printing on this branch");
+    const [X, Y, Z, W, V] = picked.map((r) => r.oracle_id);
 
     const a = await friends.ensureProfile(A, "Ann");
     const h1 = await friends.ensureProfile(H1, "Hal");
@@ -91,7 +92,7 @@ async function main() {
     for (const p of [h1.publicId, h2.publicId]) if (!(await pods.addMember(A, pod.id, p))) throw new Error("addMember refused");
     for (const h of [H1, H2]) if (!(await shareSparesWith(h, pod.id, true))) throw new Error("shareSparesWith refused");
     await add(H1, [X, Z, W]);
-    await add(H2, [X, Z, W]);
+    await add(H2, [X, Z, W, V]);
     await prefs.setFeedKinds(H1, ["spare-request"]);
 
     console.log("\n1. who may ask");
@@ -171,7 +172,34 @@ async function main() {
     await holder;
     check("... and is decided once it goes (W already has its open ask)", ((r) => !r.ok && r.reason === "asked")(await waiting));
 
-    console.log("\n6. unfriend");
+    console.log("\n6. the feed and the Friends badge (plan PR 2)");
+    const FEED = { ...ENV, HOME_FEED_ENABLED: "true" } as NodeJS.ProcessEnv;
+    await prefs.setFeedKinds(H2, ["spare-request"]);
+    check("the kind is offered with the switch on", (await import("../src/lib/feed/flag")).availableFeedKinds(FEED).includes("spare-request"));
+    const waitingBefore = await sr.waitingAsksCount(H2, FEED);
+    check("Hope's waiting count is her incoming list", waitingBefore === (await sr.loadIncomingAsks(H2, FEED)).length, `${waitingBefore}`);
+    const v = await sr.askForSpare(A, h2.publicId, V, FEED);
+    check("asking Hope for V lands", v.ok);
+    let hopeFeed = await read.loadFeed(H2, FEED);
+    check("Hope's feed carries it, naming Ann by public id", hopeFeed.some((i) => i.kind === "spare-request" && "friend" in i && i.friend?.publicId === a.publicId && !JSON.stringify(i).includes(A)));
+    check("... and Home's badge counts it", (await read.unseenCount(H2, FEED)) >= 1);
+    check("Hope's waiting count rises by one", (await sr.waitingAsksCount(H2, FEED)) === waitingBefore + 1);
+    check("... and is not cleared by a /friends visit", (await prefs.markFriendsSeen(H2, FEED), (await sr.waitingAsksCount(H2, FEED)) === waitingBefore + 1));
+    check("Hope answers Yes", v.ok && (await sr.answerSpareRequest(H2, v.id, "yes", FEED)).ok);
+    hopeFeed = await read.loadFeed(H2, FEED);
+    // Her only spare-request item is V's: every earlier ask of her was made while her kind was off.
+    check("the answered ask leaves Hope's feed with no write", !hopeFeed.some((i) => i.kind === "spare-request"));
+    check("... and her waiting count", (await sr.waitingAsksCount(H2, FEED)) === waitingBefore);
+    const prefsRow = (await db.execute<{ n: number }>(sql`select count(*)::int as n from user_prefs where user_id = ${A}`)).rows[0].n;
+    check("Ann has no prefs row (the upsert path)", prefsRow === 0, `${prefsRow}`);
+    const answered = (await sr.loadMyAsks(A, FEED)).filter((m) => m.state === "yes" || m.state === "no").length;
+    check("Ann's unseen answers are every answer she can see", (await sr.unseenAnswersCount(A, FEED)) === answered && answered >= 2, `${answered}`);
+    check("... and the Friends badge counts them", (await read.unseenFriendsCount(A, FEED)) >= answered);
+    check("a /friends visit marks them seen", await prefs.markFriendsSeen(A, FEED));
+    check("... the count is zero", (await sr.unseenAnswersCount(A, FEED)) === 0);
+    check("... and a second visit writes nothing", !(await prefs.markFriendsSeen(A, FEED)));
+
+    console.log("\n7. unfriend");
     const open = (await sr.loadIncomingAsks(H1, ENV)).map((i) => i.id);
     check("Hal holds open asks before the unfriend", open.length >= 1);
     await friends.unfriend(A, h1.publicId);
@@ -181,7 +209,7 @@ async function main() {
     check("... and Ann cannot ask Hal", ((r) => !r.ok && r.reason === "not-friend")(await sr.askForSpare(A, h1.publicId, Y, ENV)));
     check("an open ask to Hal no longer holds Z: Ann may ask Hope for it", (await sr.askForSpare(A, h2.publicId, Z, ENV)).ok);
 
-    console.log("\n7. purge");
+    console.log("\n8. purge");
     const onHal = (await db.execute<{ n: number }>(sql`select count(*)::int as n from spare_requests where holder_user_id = ${H1}`)).rows[0].n;
     check("Hal holds asks before his purge", onHal > 0, `${onHal}`);
     await purgeAccount(H1, { stripe: () => null });
