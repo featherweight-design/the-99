@@ -77,10 +77,22 @@ describe("PassSheet (one pass)", () => {
     expect(view.container.textContent).toContain("1 now yours");
   });
 
-  it("offers Done only on the seed, whose reversal is Clear all auto", () => {
+  it("offers Done only on the seed, and says how it IS reversed in a line that is not a press", () => {
     draw(pass("seed", 3));
     expect(screen.getByRole("button", { name: ledger.sheetDone })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Undo/ })).toBeNull();
+    const note = screen.getByText(ledger.seedReversal);
+    expect(note.tagName).toBe("P");
+    expect(note.closest("button")).toBeNull();
+    // Centred above Done at 390, at the left from md (the board's `.sfp .rv`).
+    expect(note.className).toContain("text-center");
+    expect(note.className).toContain("md:text-left");
+    expect(note.parentElement!.className).toContain("flex-col");
+  });
+
+  it("draws no such line on a top-off, which has its Undo", () => {
+    draw(pass("top_off", 3));
+    expect(screen.queryByText(ledger.seedReversal)).toBeNull();
   });
 });
 

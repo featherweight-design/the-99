@@ -104,7 +104,9 @@ function OnePassSheet({
       lead={lineSentence(shown, passBuyCount(shown, cards))}
       closeLabel={ledger.sheetCloseAria(label)}
       onClose={onClose}
-      // The seed has no Undo in the ledger either ("Clear all auto" reverses it), so its sheet offers Done only.
+      // The seed has no Undo in the ledger either, so its sheet offers Done only, and says how it IS reversed in
+      // Undo's place (the ledger's own words; a line, never a press).
+      note={pass.kind === "seed" ? ledger.seedReversal : undefined}
       undo={pass.kind === "seed" ? undefined : (
         <>
           {error && <div className="w-full"><MutationError message={error} /></div>}
@@ -170,8 +172,9 @@ function DraftsSheet({ deckId, cards, newestAsOf, onClose }: Common) {
 }
 
 // `.sf`: two even presses on the phone at the 44px floor; at 1300 Undo left, Done right, 38px tall.
-const FOOT_BUTTON =
-  "flex-1 md:flex-none inline-flex items-center justify-center h-[44px] md:h-[38px] rounded-[9px] px-[18px] font-sans text-[13.5px] font-semibold whitespace-nowrap";
+const FOOT_BUTTON_BASE =
+  "inline-flex items-center justify-center h-[44px] md:h-[38px] rounded-[9px] px-[18px] font-sans text-[13.5px] font-semibold whitespace-nowrap";
+const FOOT_BUTTON = `flex-1 md:flex-none ${FOOT_BUTTON_BASE}`;
 
 function SheetFrame({
   eyebrow,
@@ -180,6 +183,7 @@ function SheetFrame({
   closeLabel,
   onClose,
   undo,
+  note,
   children,
 }: {
   eyebrow: string;
@@ -188,6 +192,9 @@ function SheetFrame({
   closeLabel: string;
   onClose: () => void;
   undo?: React.ReactNode;
+  /** A line of words in Undo's place when the sheet has no Undo: centred above Done at 390, at the left where Undo
+   *  stands from md. Not a press. */
+  note?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -203,9 +210,14 @@ function SheetFrame({
       width={600}
       ground="var(--surface)"
       foot={
-        <div className="flex flex-wrap items-center gap-[8px] px-[14px] pt-[12px] pb-[26px] md:px-[16px] md:pb-[14px] [border-top:1px_solid_var(--border)]">
+        <div
+          className={`flex items-center gap-[8px] px-[14px] pt-[12px] pb-[26px] md:px-[16px] md:pb-[14px] [border-top:1px_solid_var(--border)] ${
+            note ? "flex-col md:flex-row" : "flex-wrap"
+          }`}
+        >
           {undo}
-          <PrimaryButton onClick={onClose} className={`${FOOT_BUTTON} md:ml-auto`}>
+          {note ? <p className="m-0 text-center font-mono text-[11px] text-[color:var(--fg-faint)] md:text-left">{note}</p> : null}
+          <PrimaryButton onClick={onClose} className={`${note ? "w-full md:w-auto" : "flex-1 md:flex-none"} ${FOOT_BUTTON_BASE} md:ml-auto`}>
             {ledger.sheetDone}
           </PrimaryButton>
         </div>

@@ -1,0 +1,17 @@
+{
+  "feature": "Deck messages follow-up: the seed's pass sheet says how it is reversed (About addendum call 4; handoff design_handoff_the99_about/addendum-menu-home-line/Deck-Calls.dc.html)",
+  "note": "A scratch branch of local-dev, migrated to 0165: HD -Thorin carries a seed pass of 12 auto cards. The top-off sheet is the comparison: it keeps its Undo and has no such line.",
+  "rows": [
+    {
+      "id": "sheet-seed",
+      "label": "/decks/[id], Show these N on the seed: Done only, with Clear all auto reverses it in Undo's place",
+      "view": "src/components/decks/pass-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/bc4f48f5-af6b-424a-9f1f-6cd9b44f9809", "wait": "section[aria-label^='Before'], h1", "settle": 3000 },
+        { "clickRole": "button", "name": "^Where these" },
+        { "clickRole": "button", "name": "^Show the 12 cards" },
+        { "wait": "[role=dialog]", "settle": 1500 }
+      ]
+    }
+  ]
+}
