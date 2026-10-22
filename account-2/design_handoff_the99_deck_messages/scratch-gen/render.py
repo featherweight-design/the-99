@@ -1,6 +1,6 @@
 import asyncio, json, sys
 from playwright.async_api import async_playwright
-import boards as B, alts as A; B.BOARDS = B.BOARDS + A.BOARDS
+import boards as B, alts as A, a2; B.BOARDS = B.BOARDS + A.BOARDS + a2.BOARDS
 names = sys.argv[1:] or [n for n, _, _ in B.BOARDS]
 async def main():
     async with async_playwright() as p:

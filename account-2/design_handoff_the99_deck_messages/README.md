@@ -99,6 +99,7 @@ block; the gain is one voice); Stack 3 1,611 → 1,196 px; first run 878 → 777
 - `Elements-1.dc.html`, `Elements-2.dc.html` — every element in its level, 390 and the 1236 main column.
 - `Alt-A.dc.html` — alternative A: one to-do card under the header (warnings are red rows, actions rows with their press, status in the foot, receipts become toasts).
 - `Alt-B.dc.html` — alternative B: no stack; each message where it belongs (count line under the bar, spoken-for chip + red rows, save dock for pending, Versions tab for provenance, row marks, toasts).
+- `Alt-A2.dc.html` — Hugh picked A (2026-10-22). Round 2: receipt band back on top; one press per row in one column; one "Next step" row (first of fill failed › unresolved › over › last N › pending; spoken for twice never) with the only filled press; Commit/Discard move into Review. Variant: next step as the card's head.
 - `STATES-deck-messages.md` — element by element: level, what changes, code.
 - `art/`, `support.js`; `scratch-gen/` (generator: `python3 build.py local|blob`, `render.py` renders and measures with
   Playwright; `blobs.json` maps art to the canvas's asset ids).
