@@ -61,7 +61,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   detector and embedder and one lookup (`usePhotoReader`), and nothing is added until the player presses. A photo
   row names the card and never a printing: the index matches the card, and the printing added is the sheet's (Auto
   takes the first, Normal asks), drawn on the list line.
-  In the camera (Hugh, 2026-10-16), Auto adds a sure card with no press, at its first printing, and Normal opens that
+  In the camera (Hugh, 2026-10-16), Auto adds a sure card with no press, at the printing the scan matched (#2146), and Normal opens that
   card's printings on the panel (the shipped `PrintingRegion`) and adds the one picked; a card added and never out of
   the frame is not taken again (R1), and a second copy needs the frame to empty first (R2). Below the gate the panel
   still asks Not sure, and nothing reaches the collection before the review's Save.
