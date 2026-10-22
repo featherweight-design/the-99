@@ -124,8 +124,6 @@ try {
   const page = await phone.newPage();
   await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await clearAboutSheet(page, userId);
-  // The About redirect can fire on that first load, before the sheet is cleared: come back to the deck.
-  if (!new URL(page.url()).pathname.startsWith("/decks/")) await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await onPage(page, "[data-decklist-row]").first().waitFor({ timeout: 60_000 });
   await onPage(page, "[data-decklist-row]").filter({ visible: true }).first().click();
   await page.locator("#card-modal-title").waitFor({ timeout: 30_000 });
@@ -214,7 +212,6 @@ try {
   const dpage = await desk.newPage();
   await dpage.goto(`${BASE}/decks/${DECK}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await clearAboutSheet(dpage, userId);
-  if (!new URL(dpage.url()).pathname.startsWith("/decks/")) await dpage.goto(`${BASE}/decks/${DECK}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await onPage(dpage, "[data-decklist-row]").first().waitFor({ timeout: 60_000 });
   await onPage(dpage, "[data-decklist-row]").filter({ visible: true }).first().click();
   await dpage.locator("#card-modal-title").waitFor({ timeout: 30_000 });
