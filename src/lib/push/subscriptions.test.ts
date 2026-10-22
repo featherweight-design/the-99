@@ -65,6 +65,14 @@ describe("saveDevice", () => {
     expect(m).toBe(3);
   });
 
+  it("sees a deadlock the driver's error carries on its cause, as Drizzle wraps it", async () => {
+    const f = fake();
+    let n = 0;
+    const wrapped = { transaction: async (fn: never) => { if (++n === 1) throw new Error("Failed query", { cause: Object.assign(new Error("deadlock detected"), { code: "40P01" }) }); return f.q.transaction(fn); } };
+    await saveDevice("u1", device, wrapped as never);
+    expect(n).toBe(2);
+  });
+
   it("does not retry an error that is not a deadlock", async () => {
     let n = 0;
     const broken = { transaction: async () => { n++; throw new Error("boom"); } };

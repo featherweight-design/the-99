@@ -7,6 +7,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { sqlstate } from "../db-error";
 import { pushSubscriptions } from "../../db/schema";
 import type { DeviceInput } from "./endpoint";
 
@@ -27,7 +28,7 @@ export async function saveDevice(userId: string, device: DeviceInput, q: Q = db)
     } catch (e) {
       // Two accounts taking over each other's oldest endpoint at once can each wait on the other's row: Postgres aborts
       // one with a deadlock, and the whole transaction is safe to run again.
-      if (attempt >= DEADLOCK_ATTEMPTS || (e as { code?: string })?.code !== "40P01") throw e;
+      if (attempt >= DEADLOCK_ATTEMPTS || sqlstate(e) !== "40P01") throw e;
     }
   }
 }
