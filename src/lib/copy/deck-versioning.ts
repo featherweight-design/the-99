@@ -554,6 +554,19 @@ export const deckVersioningCopy = {
     // Null is the accurate value; a backfill would be a fabricated claim.
     absent: "—",
   },
+
+  /* ---- The deck page's to-do card (handoff `deck_messages`) ---- */
+  todoCard: {
+    /** The head's eyebrow. The word is what the next step is fixing (`deckTodo`'s `word`). */
+    head: (deck: string, word: "complete" | "legal" | "ready" | "built") => `Before ${deck} is ${word}`,
+    count: (n: number) => `${n} to do`,
+    /** The one label that marks the filled press. */
+    nextStep: "Next step",
+    /** Each press's trailing glyph. */
+    chevron: "›",
+    /** Fill failed's mark tile. */
+    fillFailedMark: "!",
+  },
 } as const;
 
 /**

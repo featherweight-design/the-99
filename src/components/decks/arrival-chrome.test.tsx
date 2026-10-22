@@ -35,14 +35,6 @@ const { BuilderShell } = await import("./builder-shell");
 
 const copy = deckImportCopy;
 
-// The desktop banner sentence is split around a bolded `Complete`, so no single
-// text node holds it. Match on the wrapping span's whole text instead.
-function desktopSentence(text: string) {
-  return screen.getByText(
-    (_content, el) => el?.tagName === "SPAN" && el.textContent === text,
-  );
-}
-
 function makeCards(n: number) {
   return Array.from({ length: n }, (_, i) => ({
     oracleId: `card-${i}`,
@@ -250,18 +242,18 @@ describe("Arrival strip (state 13)", () => {
     vi.restoreAllMocks();
   });
 
-  // The strip says "nothing needs your attention". The banner says the opposite.
+  // The strip says "nothing needs your attention". The unresolved row says the opposite.
   it("is suppressed when the import came up short", async () => {
     await act(async () => {
       renderBuilder(shortDeck(), true);
     });
     expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
-    expect(desktopSentence(copy.unresolved.banner(2))).toBeInTheDocument();
+    expect(screen.getByText(copy.unresolved.rowTitle(2))).toBeInTheDocument();
   });
 });
 
 // No-collection entry S10: a ticked import's strip states the add, and over unresolved lines it still does,
-// beside the banner, without calling the import clean.
+// beside the unresolved row, without calling the import clean.
 describe("The ticked import's strip", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -275,12 +267,12 @@ describe("The ticked import's strip", () => {
     expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
   });
 
-  it("draws beside the unresolved banner, saying only what was added", async () => {
+  it("draws beside the unresolved row, saying only what was added", async () => {
     await act(async () => {
       renderBuilder(shortDeck(), true, { entryId: "e1", copies: 97 });
     });
     expect(screen.getByText(copy.arrival.own.headUnresolved(97))).toBeInTheDocument();
-    expect(screen.getByText(copy.unresolved.bannerMobile(2))).toBeInTheDocument();
+    expect(screen.getByText(copy.unresolved.rowTitle(2))).toBeInTheDocument();
     expect(screen.queryByText(/came over clean/)).not.toBeInTheDocument();
   });
 
@@ -292,40 +284,30 @@ describe("The ticked import's strip", () => {
   });
 });
 
-describe("Unresolved banner (state 14)", () => {
+describe("The to-do card's unresolved row (state 14)", () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
-  it("renders both viewports' sentences with the line count", async () => {
+  it("draws the row with the line count", async () => {
     await act(async () => {
       renderBuilder(shortDeck());
     });
-    expect(screen.getByText(copy.unresolved.bannerMobile(2))).toBeInTheDocument();
-    expect(desktopSentence(copy.unresolved.banner(2))).toBeInTheDocument();
+    expect(screen.getByText(copy.unresolved.rowTitle(2))).toBeInTheDocument();
+    expect(screen.getByText(copy.unresolved.rowBody(2))).toBeInTheDocument();
   });
 
-  // The handoff's mobile line said the rows were "not in any count below" while
-  // the group's mobile footnote said they "count toward the 99". Both shipped
-  // verbatim, and a phone shows them on the same journey.
-  it.each([1, 2])("does not tell mobile the rows are in no count at all (%i)", (n) => {
-    expect(copy.unresolved.bannerMobile(n)).not.toContain("any count");
-    expect(copy.unresolved.footnoteMobile).toContain("count toward the 99");
-  });
-
-  // Desktop warns that unresolved rows hold the deck off Complete; mobile is
-  // where a player is most likely to stop, so it cannot be the viewport that
-  // omits the consequence.
-  it.each([1, 2])("keeps the Complete consequence on mobile too (%i)", (n) => {
-    expect(copy.unresolved.bannerMobile(n)).toContain("off Complete");
-    expect(copy.unresolved.banner(n)).toContain("off Complete");
+  // Unresolved rows hold the deck off Complete, and the row is the one place above the list
+  // that says so.
+  it.each([1, 2])("keeps the Complete consequence (%i)", (n) => {
+    expect(copy.unresolved.rowBody(n)).toContain("off Complete");
   });
 
   it("does not depend on arrival — it is still there on a later visit", async () => {
     await act(async () => {
       renderBuilder(shortDeck(), false);
     });
-    expect(desktopSentence(copy.unresolved.banner(2))).toBeInTheDocument();
+    expect(screen.getByText(copy.unresolved.rowTitle(2))).toBeInTheDocument();
   });
 
   it("disappears at zero unresolved rows", async () => {
@@ -333,7 +315,7 @@ describe("Unresolved banner (state 14)", () => {
       renderBuilder(makeDeck(), true);
     });
     expect(
-      screen.queryByRole("button", { name: copy.unresolved.bannerAction }),
+      screen.queryByRole("button", { name: copy.unresolved.bannerActionAria }),
     ).not.toBeInTheDocument();
   });
 
@@ -346,16 +328,16 @@ describe("Unresolved banner (state 14)", () => {
     expect(screen.queryByText(copy.unresolved.footnoteMobileResolve)).not.toBeInTheDocument();
   });
 
-  it("offers the jump at both viewports", async () => {
+  it("offers the jump once, for both widths", async () => {
     await act(async () => {
       renderBuilder(shortDeck());
     });
-    // Two mounts, one per viewport: the mobile text link and the desktop ghost.
-    expect(screen.getAllByRole("button", { name: copy.unresolved.bannerAction })).toHaveLength(2);
+    // One mount: the press is the row's one control at 390 and at 1300.
+    expect(screen.getAllByRole("button", { name: copy.unresolved.bannerActionAria })).toHaveLength(1);
   });
 });
 
-describe("The banner's jump to the unresolved group", () => {
+describe("The unresolved row's jump to the unresolved group", () => {
   beforeEach(() => {
     localStorage.clear();
   });
@@ -373,8 +355,8 @@ describe("The banner's jump to the unresolved group", () => {
     };
   }
 
-  function clickJump(index = 0) {
-    fireEvent.click(screen.getAllByRole("button", { name: copy.unresolved.bannerAction })[index]);
+  function clickJump() {
+    fireEvent.click(screen.getByRole("button", { name: copy.unresolved.bannerActionAria }));
   }
 
   it("scrolls to the group when the player is already looking at it", async () => {

@@ -47,7 +47,8 @@ import { PreconSuggestion } from "./precons/precon-suggestion";
 import { LinkPreconRow } from "./precons/precon-link-dialogs";
 import { UpdateStrip } from "./update-strip";
 import type { ArrivalPrintings, UpdateArrivalState } from "../../lib/decks/arrival";
-import { UnresolvedBanner } from "./unresolved-banner";
+import { FillFailedRow, TodoCard, UnresolvedRow } from "./todo-card";
+import { deckTodo } from "../../lib/decks/todo";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crown } from "../ui/crown";
@@ -91,7 +92,7 @@ import { BasicCountsProvider, createBasicCounts, type BasicCounts } from "./basi
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
-import { ProvenanceLedger, FillFailedBannerConnected } from "./provenance-line";
+import { ProvenanceLedger } from "./provenance-line";
 import { PassMarkProvider, passMarkFor, fillPassLabel } from "./pass-mark";
 import { topOffCopy } from "../../lib/copy/top-off";
 // Type only, for the same reason `games.ts` is imported as one: the module
@@ -1459,7 +1460,7 @@ export function BuilderShell({
     pendingShelf.current = null;
   }, [view]);
 
-  // The banner's `Take a look →`, and the same two-step move as seeShelf above
+  // The to-do card's unresolved `Look`, and the same two-step move as seeShelf above
   // for the same reason — the group is not in the DOM until the view and the
   // filter have both changed and rendered. It has two switches to make rather
   // than one: Consider does not draw the group, and Shopping hides it, because
@@ -1751,33 +1752,6 @@ export function BuilderShell({
             />
 
 
-            {/* Fill-failed banner — shown when the fill never landed (State
-                15). Offers a retry. A swept deck is filled=true and must not
-                see this banner — that is the entire reason the column exists.
-
-                `!firstRun` costs one real case: a player whose only deck is a
-                failed fill gets the guided banner instead of the retry. Nothing
-                persisted distinguishes "the fill was attempted and failed" from
-                "no fill was ever attempted" — both are filled=false with zero
-                cards — so the alternative is telling every player who has just
-                made their first deck by hand that a fill they never ran broke.
-                That player still reaches the fill from the commander page's
-                Build button; the second deck onwards sees the banner. Closing
-                the gap properly needs a persisted attempt marker.
-
-                An import whose every line went unresolved is also filled=false
-                with zero cards, and it is not a failed fill — the player asked
-                for a decklist, not a baseline. The unresolved group already
-                explains what happened, so the banner would only add a second,
-                wrong account of it. */}
-            {!firstRun && unresolvedRows.length === 0 && (
-              <FillFailedBannerConnected
-                deckId={deck.id}
-                filled={deck.filled}
-                hasCards={cards.length > 0}
-              />
-            )}
-
             {/* Arrival chrome. Mutually exclusive by construction: a clean
                 import gets the strip, an import that came up short gets the
                 banner instead, whose warning would be contradicted by a line
@@ -1816,18 +1790,41 @@ export function BuilderShell({
                 unresolved lines do not contradict. */}
             {updateArrival && <UpdateStrip arrival={updateArrival} />}
 
-            {/* Surface 1 (#389). Above the unresolved banner: what it says is
-                that this list is not the deck's committed one yet, which every
-                count below it is then read against. */}
+            {/* The to-do card (handoff `deck_messages`): what the deck is waiting on, one row each,
+                under the receipts. `deckTodo` holds every element's shipped gate and the order; in this
+                PR only fill failed and unresolved feed it, and the last N, the pending card and the
+                guided banner still draw as their own blocks.
+
+                Fill failed's gate is the old banner's, now the rule's: never on a first run (nothing
+                persisted tells a failed fill from one never asked for, so a player who made their
+                first deck by hand would be told a fill they never ran broke), and never over
+                unresolved lines (an import whose every line went unresolved is not a failed fill —
+                the player asked for a decklist, not a baseline). Unresolved is not gated on arrival:
+                the lines stay unresolved across visits, and so does the explanation of why the
+                counts do not add up. */}
+            <TodoCard
+              todo={deckTodo({
+                firstRun,
+                filled: deck.filled,
+                cards: cards.length,
+                unresolved: unresolvedRows.length,
+              })}
+              deckName={deck.name}
+              renderRow={(row) =>
+                row.kind === "fillFailed" ? (
+                  <FillFailedRow deckId={deck.id} next={row.next} />
+                ) : row.kind === "unresolved" ? (
+                  <UnresolvedRow count={unresolvedRows.length} next={row.next} onLook={seeUnresolved} />
+                ) : null
+              }
+            />
+
+            {/* Surface 1 (#389), under the to-do card until the card takes it as a
+                row: what it says is that this list is not the deck's committed one
+                yet, which every count below it is then read against. */}
             {draft && (
               <PendingBanner state={draft} deckId={deck.id} versionCards={versionCards} />
             )}
-
-            {/* Above the coverage strip and the tabs, because what it says is
-                that both of them are short by this many lines. Not gated on
-                arrival: the lines stay unresolved across visits, and so does
-                the explanation of why the counts do not add up. */}
-            <UnresolvedBanner count={unresolvedRows.length} onTakeALook={seeUnresolved} />
 
             {/* Role Counter Strip. One mount, at "Your deck", whether or not Analysis is on:
                 its "consider →" cells switch this shell to Consider, so the strip has to

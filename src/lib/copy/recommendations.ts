@@ -226,8 +226,9 @@ export const recommendationsCopy = {
     failedHeading: 'The deck is here, the cards aren’t.',
     // "the slots are empty" was the heading's second clause said again, plainly.
     failedBody: 'We made the deck but couldn’t fill it. Nothing is lost.',
-    failedRetry: 'Try filling again',
-    failedRetryAria: 'Try filling this deck again',
+    // The to-do card's press; its accessible name is `failedRetryAria`.
+    failedRetryShort: 'Try again',
+    failedRetryAria: 'Try again to fill this deck',
   },
 
   // ── Surface B · Shopping filled by the fill ───────────────────────────

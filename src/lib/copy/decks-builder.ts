@@ -559,6 +559,9 @@ export const ownedStateCopy = { owned: "Owned", notOwned: "Not owned" } as const
 /** The deck's role strip: what its header calls the mix the deck is measured against. */
 export const roleStripCopy = { mixLabel: "Recommended mix" } as const;
 
+/** The guided first run (A17). Its step and crumbs head the to-do card on a first run. */
+export const guidedBannerCopy = { head: "Step 3 of 3 · Build your first deck" } as const;
+
 /** The export dialog's own words; the tab and link-out strings are the siblings below. */
 export const exportDialogCopy = {
   title: "Export deck",

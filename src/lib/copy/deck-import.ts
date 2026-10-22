@@ -376,23 +376,15 @@ export const deckImportCopy = {
 
   // ---- Unresolved rows -----------------------------------------------------
   unresolved: {
-    // Banner under the spine. Disappears at zero.
-    //
-    // The handoff's mobile line read "it's not in any count below", which the
-    // footnote a screen down flatly contradicts — "These count toward the 99 but
-    // not toward what's built" — and it dropped the Complete consequence the
-    // desktop line carries. Both are the same compression: "any count" is the
-    // desktop string's "the mix or either tab" with the qualifier lost. Restored
-    // from desktop rather than invented. Design asked to ratify.
-    bannerMobile: (n: number) =>
+    // The to-do card's row (handoff `deck_messages`). The title says "unresolved", so the body does
+    // not repeat it, and keeps the consequence: the lines hold the deck off Complete.
+    rowTitle: (n: number) => (n === 1 ? "1 line unresolved" : `${n} lines unresolved`),
+    rowBody: (n: number) =>
       n === 1
-        ? "1 line came over that we couldn’t put a card to. It’s at the bottom, it’s not in the mix or either tab below, and it’ll keep the deck off Complete until you sort it out."
-        : `${n} lines came over that we couldn’t put a card to. They’re at the bottom, they’re not in the mix or either tab below, and they’ll keep the deck off Complete until you sort them out.`,
-    banner: (n: number) =>
-      n === 1
-        ? "1 line came over that we couldn’t put a card to. It’s sitting at the bottom of the list, it isn’t counted in the mix or in either tab below, and it’ll keep the deck off Complete until you sort it out."
-        : `${n} lines came over that we couldn’t put a card to. They’re sitting at the bottom of the list, they aren’t counted in the mix or in either tab below, and they’ll keep the deck off Complete until you sort them out.`,
-    bannerAction: "Take a look →",
+        ? "It’s at the bottom of the list and keeps the deck off Complete."
+        : "They’re at the bottom of the list and keep the deck off Complete.",
+    bannerActionShort: "Look",
+    bannerActionAria: "Take a look at the unresolved lines",
 
     groupLabel: "Couldn’t identify",
     groupNote: "counted in the 99, not in what’s built",
