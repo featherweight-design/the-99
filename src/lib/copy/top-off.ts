@@ -358,10 +358,6 @@ export const topOffCopy = {
       `${plural(placed, 'card', 'cards')} · ${kept} now yours`,
     passRecountedBoth: (placed: string, kept: string, removed: string) =>
       `${plural(placed, 'card', 'cards')} · ${kept} now yours, ${removed} removed since`,
-    /** Every card kept, none removed — its own string because 'all' is the
-     *  sentence a player wants confirmed just before the line disappears. */
-    passRecountedAllKept: (placed: string) => `all ${placed} now yours`,
-
     /** A deck that predates the ledger. NO seed line is synthesised: keeping has
      *  already eaten some of its auto rows, and decks.filled stays true forever,
      *  so a count inferred from either would be a lie in a table whose whole job
@@ -371,21 +367,23 @@ export const topOffCopy = {
       'This deck was built before we started keeping this record. ' +
       'Anything we place from here on is listed below.',
 
-    /** #359's 'before deciding'. A toggle, not a filter — it MARKS the pass's
-     *  rows and hides nothing, so the word is 'show', not 'only'. */
+    /** #359's 'before deciding'. Opens the pass sheet (deck messages PR 3): the pass's live cards as
+     *  the list's own rows. It hides nothing in the list, so the word is 'show', not 'only'. */
     mark: (n: string) => `Show these ${n}`,
     /** ENG-ADDED, mirroring Design's own `undoOne` one line down: the same
      *  demonstrative has to agree at a count of one, and the toggle beside the
      *  undo would otherwise read 'Show these 1'. */
     markOne: 'Show this 1',
-    markAria: (n: string, pass: string) =>
-      `Mark the ${plural(n, 'card', 'cards')} from ${pass} in the deck below`,
-    unmarkAria: (pass: string) => `Clear the mark on ${pass}`,
-    /** ENG-ADDED. §14 says a marked row's accessible name gains 'from 1st top-off',
-     *  and the row has no aria-label to extend — its name is the card's own
-     *  button. So this ships as visually-hidden text inside the row, additive to
-     *  that button's name rather than a replacement for it. */
-    markedRow: (pass: string) => `from ${pass}`,
+    markAria: (n: string, pass: string) => `Show the ${plural(n, 'card', 'cards')} from ${pass}`,
+
+    /** The pass sheet (deck messages PR 3, copy-review rows 28 to 30). Its eyebrow, and the way back
+     *  from a card stacked on it (`← 1st top-off`): the seed's label capitalized, because the shipped
+     *  `seedLabel` is lowercase for mid-sentence use and `← the seed` would be wrong as a head. */
+    sheetLabel: (pass: { kind: 'seed' | 'top_off'; ordinal: number }) =>
+      pass.kind === 'seed' ? 'The seed' : `${ordinal(pass.ordinal)} top-off`,
+    sheetTitle: (n: number) => (n === 1 ? '1 card' : `${n} cards`),
+    sheetDone: 'Done',
+    sheetCloseAria: (label: string) => `Close ${label}`,
 
     /** 'these' because the line is the antecedent; the aria name says which
      *  pass, because three ledger lines mean three of these buttons. */
@@ -438,11 +436,6 @@ export const topOffCopy = {
       `${plural(declined, 'candidate', 'candidates')} back on the list. ${ticked} of ${n} selected.`,
     undone: (added: string, total: string, bodySize: number) =>
       `${plural(added, 'card', 'cards')} put back. ${total} of ${bodySize}.`,
-    /** The mark is a visual grouping, so it is the one thing on this surface a
-     *  reader would otherwise get nothing from. */
-    marked: (n: string, pass: string) =>
-      `${plural(n, 'card', 'cards')} from ${pass} marked in the deck.`,
-    markCleared: 'Mark cleared.',
   },
 } as const;
 

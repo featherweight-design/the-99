@@ -307,24 +307,19 @@ async function reverse(page, w) {
   const scope = `${w}·reverse`;
   await openDeck(page);
   check(scope, "step 6: the ledger opens from the foot", await openLedger(page));
-  const mark = page.getByRole("button", { name: /^Mark the .* from 1st top-off in the deck below$/ });
-  const scrollBefore = await page.evaluate(() => window.scrollY);
+  // `Show these N` opens the pass sheet (deck messages PR 3): the pass's live cards as the list's rows.
+  const show = page.getByRole("button", { name: /^Show the .* from 1st top-off$/ });
   const rowsBefore = await decklistRows(page).count();
-  await mark.click();
-  await page.waitForTimeout(400);
-  const markedRows = await page.locator("text=/^from 1st top-off$/").count();
-  const rowsAfter = await decklistRows(page).count();
-  const scrollAfter = await page.evaluate(() => window.scrollY);
-  check(scope, "step 6: the mark lands on the pass's rows", markedRows > 0, `${markedRows} rows`);
-  check(scope, "step 6: nothing filters", rowsBefore === rowsAfter, `${rowsBefore} → ${rowsAfter}`);
-  check(scope, "step 6: nothing scrolls", scrollBefore === scrollAfter);
-  check(scope, "step 6: the mark is announced", /marked in the deck\./.test(await announcement(page)));
+  await show.click();
+  const sheet = page.getByRole("dialog", { name: /cards?$/ });
+  await sheet.waitFor({ timeout: 10_000 });
+  const sheetRows = await sheet.getByRole("button", { name: /^Remove / }).count();
+  check(scope, "step 6: the sheet lists the pass's rows", sheetRows > 0, `${sheetRows} rows`);
   await shot(page, `${w}-07-marked`);
-
-  await page.getByRole("button", { name: /^Clear the mark on 1st top-off$/ }).click();
-  await page.waitForTimeout(400);
-  check(scope, "step 7: the same control clears the mark", (await page.locator("text=/^from 1st top-off$/").count()) === 0);
-  check(scope, "step 7: clearing is announced", /Mark cleared\./.test(await announcement(page)));
+  await sheet.getByRole("button", { name: "Done" }).click();
+  const rowsAfter = await decklistRows(page).count();
+  check(scope, "step 6: nothing filters", rowsBefore === rowsAfter, `${rowsBefore} → ${rowsAfter}`);
+  check(scope, "step 7: Done closes the sheet", (await sheet.count()) === 0);
 
   const before = await deckSize();
   const undo = page.getByRole("button", { name: /Undo the .* from 1st top-off/ });

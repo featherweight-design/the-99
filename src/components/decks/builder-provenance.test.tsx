@@ -1,11 +1,14 @@
 // The ledger's wiring, exercised through BuilderShell because the shell owns
-// it: the header's figure, the mark that reaches the decklist rows, and the
-// reconcile that drops a mark whose pass is no longer in the summaries.
-import { act, fireEvent, render, screen } from "@testing-library/react";
+// it: the header's figure, and the pass sheet its `Show these N` and the foot's
+// other drafts open, with the list's own rows inside the deck page's providers.
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { topOffCopy } from "../../lib/copy/top-off";
+import { availabilityCopy } from "../../lib/copy/availability";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { cardSheetCopy } from "../../lib/copy/card-carousel";
 import { recommendedMix } from "../../lib/decks/mix";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
@@ -23,7 +26,18 @@ vi.mock("../../app/decks/actions", () => ({
   undoFillPass: vi.fn(),
 }));
 
+// A row's press opens the card detail, which reads the card from here.
+vi.mock("../../app/card-detail-action", () => ({
+  getCardDetail: vi.fn(async (oracleId: string) => ({
+    oracleId, name: "Card 0", typeLine: "Artifact", manaCost: "{2}", cmc: 2, oracleText: null, keywords: [],
+    rarity: "common", colorIdentity: [], imageUri: null, printedName: null, quantity: 0, printings: [],
+    setCodes: [], primarySetCode: "", preferredPrinting: null,
+  })),
+}));
+
 const { BuilderShell } = await import("./builder-shell");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 const ledger = topOffCopy.ledger;
 
@@ -116,65 +130,81 @@ describe("BuilderShell — the ledger's header", () => {
   });
 });
 
-describe("BuilderShell — the mark", () => {
-  it("names only the marked pass's rows in the decklist below", async () => {
-    await mount(makeDeck(2, 0), [makePass("p1", 1, ["card-0"])]);
-    await openLedger("2");
-    expect(screen.queryByText(ledger.markedRow(ledger.passLabel("1")))).not.toBeInTheDocument();
+/** Opens the pass sheet from the ledger line's `Show these N`. */
+async function show(n: string, ordinal: string, total: string) {
+  await openLedger(total);
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: ledger.markAria(n, ledger.passLabel(ordinal)) }));
+  });
+}
 
-    await act(async () => {
-      fireEvent.click(
-        screen.getByRole("button", { name: ledger.markAria("1", ledger.passLabel("1")) }),
-      );
-    });
+const sheet = () => screen.getByRole("dialog", { name: /cards?$/ });
 
-    // One card in the pass, so exactly one row gains the marker — the other
-    // auto card is in the deck but not in this pass.
-    expect(screen.getAllByText(ledger.markedRow(ledger.passLabel("1")))).toHaveLength(1);
+describe("BuilderShell — the pass sheet (deck messages PR 3)", () => {
+  it("draws the pass, its count, its sentence and only its live cards, as the list's own rows", async () => {
+    await mount(makeDeck(3, 0), [makePass("p1", 1, ["card-0", "card-1"])]);
+    await show("2", "1", "3");
+    const dialog = sheet();
+    expect(dialog).toHaveAccessibleName(ledger.sheetTitle(2));
+    expect(within(dialog).getByText(ledger.sheetLabel({ kind: "top_off", ordinal: 1 }))).toBeInTheDocument();
+    expect(within(dialog).getByText(/you chose from the last 5/)).toBeInTheDocument();
+    // `DecklistRow` itself: the row's own remove press, named as in the list.
+    expect(within(dialog).getByRole("button", { name: addPanelCopy.row.removeAria("Card 0") })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: addPanelCopy.row.removeAria("Card 1") })).toBeInTheDocument();
+    // Card 2 is in the deck but not in this pass.
+    expect(within(dialog).queryByText("Card 2")).toBeNull();
+    expect(within(dialog).getByRole("button", { name: ledger.undoAria("2", ledger.passLabel("1")) })).toBeInTheDocument();
   });
 
-  // Visually-hidden text beside the name button is browse-mode only, and a
-  // reader moving through the decklist by Tab never leaves focus mode. The
-  // button has to point at it for the mark to be spoken to the reader it is for.
-  it("reads the mark after the card's own name when the name is focused", async () => {
-    await mount(makeDeck(2, 0), [makePass("p1", 1, ["card-0"])]);
-    await openLedger("2");
+  it("takes a row out and drops the count when its ✕ removes the card", async () => {
+    // Held in flight, as a real removal is until the page's next read: the optimistic list is what
+    // the sheet draws.
+    const { removeCardFromDeck } = await import("../../app/decks/actions");
+    vi.mocked(removeCardFromDeck).mockReturnValue(new Promise(() => {}));
+    await mount(makeDeck(2, 0), [makePass("p1", 1, ["card-0", "card-1"])]);
+    await show("2", "1", "2");
     await act(async () => {
-      fireEvent.click(
-        screen.getByRole("button", { name: ledger.markAria("1", ledger.passLabel("1")) }),
-      );
+      fireEvent.click(within(sheet()).getByRole("button", { name: addPanelCopy.row.removeAria("Card 0") }));
     });
-
-    const marker = screen.getByText(ledger.markedRow(ledger.passLabel("1")));
-    // A containment selector, not an equality one: every row now describes its
-    // name with the availability word as well (§Errata), so the mark's id shares
-    // the attribute rather than owning it.
-    const described = document.querySelectorAll(`[aria-describedby~="${marker.id}"]`);
-    expect(marker.id).not.toBe("");
-    expect(described).toHaveLength(1);
-
-    // And it is the marked card's own name that points at it. The other auto
-    // card is in the deck but not in this pass, so its name describes only its
-    // own availability rather than borrowing a neighbour's mark.
-    expect(described[0].textContent).toBe("Card 0");
-    expect(
-      screen.getByText("Card 1").closest("button")?.getAttribute("aria-describedby"),
-    ).not.toContain(marker.id);
+    expect(sheet()).toHaveAccessibleName(ledger.sheetTitle(1));
+    expect(within(sheet()).queryByText("Card 0")).toBeNull();
   });
 
-  it("drops a mark whose pass is gone from the incoming summaries", async () => {
+  it("opens a row's card stacked on the sheet, whose way back names the pass", async () => {
+    await mount(makeDeck(2, 0), [makePass("p1", 1, ["card-0"])]);
+    await show("1", "1", "2");
+    await act(async () => {
+      fireEvent.click(within(sheet()).getByText("Card 0").closest("button")!);
+    });
+    const label = ledger.sheetLabel({ kind: "top_off", ordinal: 1 });
+    expect(await screen.findByTestId("card-modal-back-mobile")).toHaveAccessibleName(cardSheetCopy.back.a11y(label));
+  });
+
+  it("runs the shipped undo from its foot", async () => {
+    const { undoFillPass } = await import("../../app/decks/actions");
+    vi.mocked(undoFillPass).mockResolvedValue({ removed: 1, built: 1 } as never);
+    await mount(makeDeck(2, 0), [makePass("p1", 1, ["card-0"])]);
+    await show("1", "1", "2");
+    await act(async () => {
+      fireEvent.click(within(sheet()).getByRole("button", { name: ledger.undoAria("1", ledger.passLabel("1")) }));
+    });
+    expect(undoFillPass).toHaveBeenCalledWith("deck-1", "p1");
+  });
+
+  it("closes on Done, and when its pass is gone from the incoming summaries", async () => {
     const deck = makeDeck(2, 0);
     const view = await mount(deck, [makePass("p1", 1, ["card-0"])]);
-    await openLedger("2");
+    await show("1", "1", "2");
     await act(async () => {
-      fireEvent.click(
-        screen.getByRole("button", { name: ledger.markAria("1", ledger.passLabel("1")) }),
-      );
+      fireEvent.click(within(sheet()).getByRole("button", { name: ledger.sheetDone }));
     });
-    expect(screen.getAllByText(ledger.markedRow(ledger.passLabel("1")))).toHaveLength(1);
+    expect(screen.queryByRole("dialog", { name: /cards?$/ })).toBeNull();
 
-    // The undo landed on the server and the pass came back gone. The mark it
-    // held has to go with it, or the decklist keeps an edge nothing can clear.
+    // The ledger is still open under the foot: Show these again.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: ledger.markAria("1", ledger.passLabel("1")) }));
+    });
+    expect(sheet()).toBeInTheDocument();
     await act(async () => {
       view.rerender(
         <BuilderShell mix={TEST_MIX}
@@ -188,6 +218,29 @@ describe("BuilderShell — the mark", () => {
          newestAsOf={null}/>,
       );
     });
-    expect(screen.queryByText(ledger.markedRow(ledger.passLabel("1")))).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /cards?$/ })).toBeNull();
+  });
+
+  it("groups the cards other drafts want under each draft, with no undo", async () => {
+    const deck = makeDeck(3, 0);
+    const claim = (id: string, name: string) => ({ id, name, quantity: 1, mature: false, pending: false, commander: false });
+    const soft = (...claims: ReturnType<typeof claim>[]) => ({ owned: 1, hard: 0, soft: claims.length, free: 1, claims });
+    const cards = deck.cards as unknown as { availability?: unknown }[];
+    cards[0].availability = soft(claim("d1", "Elf Tribal"), claim("d2", "Mono-G Stompy"));
+    cards[1].availability = soft(claim("d1", "Elf Tribal"));
+    await mount(deck);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: availabilityCopy.deckRollup.softFoot(2) }));
+    });
+    const dialog = sheet();
+    expect(dialog).toHaveAccessibleName(ledger.sheetTitle(2));
+    expect(within(dialog).getByText(availabilityCopy.deckRollup.sheetEyebrow)).toBeInTheDocument();
+    expect(within(dialog).getByText("Elf Tribal")).toBeInTheDocument();
+    expect(within(dialog).getByText("Mono-G Stompy")).toBeInTheDocument();
+    // Card 0 is under both drafts; Card 2 is wanted by none.
+    expect(within(dialog).getAllByRole("button", { name: addPanelCopy.row.removeAria("Card 0") })).toHaveLength(2);
+    expect(within(dialog).queryByText("Card 2")).toBeNull();
+    expect(within(dialog).queryByRole("button", { name: /^Undo/ })).toBeNull();
+    expect(within(dialog).getByRole("button", { name: ledger.sheetDone })).toBeInTheDocument();
   });
 });

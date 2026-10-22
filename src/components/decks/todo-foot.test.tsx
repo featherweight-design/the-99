@@ -21,7 +21,7 @@ const FULL: TodoFootFacts = {
   version: { number: 2, committedAt: new Date("2026-09-01T00:00:00Z") },
   proxies: 1,
   provenance: { count: 31, panel: <p>the ledger lines</p> },
-  otherDrafts: { count: 4 },
+  otherDrafts: { count: 4, onOpen: vi.fn() },
 };
 const NONE: TodoFootFacts = { version: null, proxies: 0, provenance: null, otherDrafts: null };
 
@@ -49,7 +49,7 @@ describe("the to-do card's foot", () => {
   });
 
   it("leaves an absent segment out with no stray separator, and plain facts are not presses", () => {
-    draw({ ...NONE, proxies: 2, otherDrafts: { count: 1 } }, { ...QUIET, unresolved: 2 });
+    draw({ ...NONE, proxies: 2, otherDrafts: { count: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
     expect(foot().textContent).toBe(`${proxyCopy.deckHeader.line(2)}${copy.footSeparator}${availabilityCopy.deckRollup.softFoot(1)}${copy.disclosureClosed}`);
     expect(screen.queryByRole("button", { name: proxyCopy.deckHeader.line(2) })).toBeNull();
   });
@@ -73,28 +73,31 @@ describe("the to-do card's foot", () => {
     expect(drafts().parentElement).toBe(line);
   });
 
-  it("opens one disclosure at a time, inside the card under the line", () => {
+  it("opens the provenance disclosure inside the card under the line", () => {
     draw(FULL, { ...QUIET, unresolved: 2 });
     // Closed panels are mounted and hidden, and `aria-controls` names them all the while.
     const panel = screen.getByText("the ledger lines").parentElement!;
     expect(panel.id).toBe(provenance().getAttribute("aria-controls"));
     expect(screen.getByText("the ledger lines")).not.toBeVisible();
-    expect(screen.getByText(availabilityCopy.deckRollup.softBody)).not.toBeVisible();
     fireEvent.click(provenance());
     expect(provenance()).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("the ledger lines")).toBeVisible();
     expect(screen.getByRole("region", { name: copy.head("Big Stompy", "complete") })).toContainElement(panel);
     expect(provenance()).toHaveTextContent(copy.disclosureOpen);
 
-    fireEvent.click(drafts());
+    fireEvent.click(provenance());
     expect(provenance()).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByText("the ledger lines")).not.toBeVisible();
-    expect(screen.getByText(availabilityCopy.deckRollup.softBody)).toBeVisible();
-    // `.sldp`: the count leads in bold, before the shipped sentence.
-    expect(screen.getByText(availabilityCopy.deckRollup.softLead(4)).tagName).toBe("B");
+  });
 
+  it("opens the pass sheet from other drafts rather than a panel inside the card (PR 3)", () => {
+    const onOpen = vi.fn();
+    draw({ ...FULL, otherDrafts: { count: 4, onOpen } }, { ...QUIET, unresolved: 2 });
+    expect(drafts()).not.toHaveAttribute("aria-expanded");
+    expect(drafts()).toHaveAttribute("aria-haspopup", "dialog");
     fireEvent.click(drafts());
-    expect(screen.getByText(availabilityCopy.deckRollup.softBody)).not.toBeVisible();
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(availabilityCopy.deckRollup.softBody)).toBeNull();
   });
 
   // A toggle must not tear the ledger down: its lines hold the undo in flight and the refusal.
@@ -103,7 +106,7 @@ describe("the to-do card's foot", () => {
     vi.mocked(undoFillPass).mockImplementation(() => new Promise((_, r) => { reject = r; }));
     const cards = [{ oracleId: "a", name: "Card a", typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp", owned: true, quantity: 1, auto: true, availability: null } as DeckDetailCard];
     const pass = { id: "p1", kind: "top_off" as const, ordinal: 1, createdAt: new Date("2026-01-01"), live: 1, kept: 0, removed: 0, openSlots: 5, liveCards: [{ oracleId: "a", quantity: 1 }] };
-    const ledgerPanel = <ProvenanceLedger deckId="d" bodySize={99} cards={cards} total={1} passes={[pass]} markedPassId={null} onMarkChange={vi.fn()} onAnnounce={vi.fn()} />;
+    const ledgerPanel = <ProvenanceLedger deckId="d" bodySize={99} cards={cards} total={1} passes={[pass]} onShow={vi.fn()} onAnnounce={vi.fn()} />;
     draw({ ...NONE, provenance: { count: 1, panel: ledgerPanel } }, { ...QUIET, unresolved: 2 });
     const toggle = () => screen.getByRole("button", { name: topOffCopy.ledger.header("1") });
     const undo = () => screen.getByRole("button", { name: topOffCopy.ledger.undoAria("1", topOffCopy.ledger.passLabel("1")) });

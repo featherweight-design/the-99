@@ -48,10 +48,8 @@ import {
   useRemoveOptimisticCard,
   useReportRemoveFailure,
 } from "./optimistic-deck";
-import { usePassMark } from "./pass-mark";
 import { usePendingChange } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
 import { useSpentSlotUndo } from "./spent-slot-undo";
 import { ProxyTag } from "./proxy-tag";
@@ -467,18 +465,7 @@ export function DecklistRow({
   });
   const pressable = gotIt !== null && inShopping && tag === "buy";
   const confirmOpen = pressable && gotIt.openFor === card.oracleId;
-  const passMark = usePassMark();
-  const markLabel = passMark?.oracleIds.has(card.oracleId) ? passMark.label : null;
-  const marked = markLabel !== null;
-  // Referenced by both name triggers rather than being left to sit beside them.
-  // Visually-hidden text alone is browse-mode only, and a reader moving through
-  // the decklist by Tab never leaves focus mode — so the pass that placed the
-  // card would go unspoken to exactly the reader the mark is drawn for.
-  const markDescriptionId = useId();
-  // The draft's own id rather than a share of the pass mark's (#389, surface 1):
-  // a row can be both a pending add and the marked pass's card, and
-  // `aria-describedby` takes both ids in reading order where one string could
-  // only replace the other.
+  // The draft's own id (#389, surface 1): `aria-describedby` takes every fact's id in reading order.
   const pendingDescriptionId = useId();
   // §Errata: the dot is decorative and the word it used to carry belongs to the
   // row. Said through the name's description rather than as the dot's own label
@@ -523,19 +510,14 @@ export function DecklistRow({
       // Right after the availability word (handoff copy, `mark.a11y`): which card, whether it is
       // owned, that it is locked, then what the deck has done with it.
       locked ? lockDescriptionId : null,
-      marked ? markDescriptionId : null,
       isPendingChange && !stepperSpeaks ? pendingDescriptionId : null,
       fromSpoken ? fromDescriptionId : null,
     ]
       .filter(Boolean)
       .join(" ") || undefined;
-  // The mark is an inset edge for the same reason the over tint is an inset
-  // ring: 3px of real border would shunt one row's contents sideways.
+  // Inset edges, as the over tint is an inset ring: real border would shunt the row's contents sideways.
   const rowEdges: string[] = [];
-  if (marked) rowEdges.push("inset 3px 0 0 0 var(--accent)");
-  // 2px, the Component notes table's width, and behind the pass mark's 3px when
-  // a row carries both — the first shadow listed paints on top, and the wider
-  // rule is the one that would otherwise show a seam under the narrower.
+  // 2px, the Component notes table's width.
   if (isPendingChange || fromMarker !== null) rowEdges.push("inset 2px 0 0 0 var(--accent)");
   if (availState === "over") rowEdges.push("inset 0 0 0 1px var(--avail-over-border)");
 
@@ -898,18 +880,6 @@ export function DecklistRow({
           // name's own order, after it in the DOM, so it sits between the name and the ✕ as it always did.
           <span className="contents">
             <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />
-          </span>
-        )}
-
-        {/* The ledger is marking this pass. Additive to the card's own button
-            name rather than a replacement for it: the row has no aria-label to
-            extend. It follows the name and the auto tag rather than leading the
-            row, so a reader hears which card before hearing which pass placed
-            it — the same order the eye takes, and the order aria-describedby
-            reads it in too. */}
-        {markLabel && (
-          <span id={markDescriptionId} className="sr-only">
-            {topOffCopy.ledger.markedRow(markLabel)}
           </span>
         )}
 

@@ -2,9 +2,9 @@
 
 // The to-do card's foot (handoff `deck_messages`, `To-do Card.dc.html`'s `.ft` and the left column of
 // `Next Steps.dc.html`, whose last panel opens it): the deck's status as one mono line, segments in a
-// fixed order, version · proxies · provenance ▾ · other drafts ▾. Plain facts are text; the two ▾
-// segments are disclosures that open INSIDE the card, under the line, one at a time and for the
-// visit only (state, never stored). With nothing to do the foot stands alone as the quiet strip
+// fixed order, version · proxies · provenance ▾ · other drafts ▾. Plain facts are text. Provenance
+// is a disclosure that opens INSIDE the card, under the line, for the visit only (state, never
+// stored); other drafts opens the pass sheet's other-drafts form (deck messages PR 3). With nothing to do the foot stands alone as the quiet strip
 // (R1's "v3 · committed 2 Oct 2026"), drawn by `TodoCard` around it.
 //
 // The version segment is where a commit or a discard lands focus, which `PendingBanner` did before
@@ -12,7 +12,6 @@
 
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { AvailabilityGlyph } from "../ui/availability-marker";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -29,40 +28,41 @@ export interface TodoFootFacts {
   proxies: number;
   /** The deck's live auto copies and the ledger they open. Null when there are none. */
   provenance: { count: number; panel: ReactNode } | null;
-  /** Cards here some other draft also wants (the soft count). Null when there are none. */
-  otherDrafts: { count: number } | null;
+  /** Cards here some other draft also wants (the soft count), and the press that opens the pass
+   *  sheet on them. Null when there are none. */
+  otherDrafts: { count: number; onOpen: () => void } | null;
 }
 
 export function footHasSegments(f: TodoFootFacts): boolean {
   return f.version !== null || f.proxies > 0 || f.provenance !== null || f.otherDrafts !== null;
 }
 
-type Disclosure = "provenance" | "drafts";
-
 export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolean }) {
-  const [open, setOpen] = useState<Disclosure | null>(null);
+  const [open, setOpen] = useState(false);
   const ids = useId();
   // A segment that leaves while open (the last auto card kept) takes its disclosure with it, so it
   // does not come back open. Adjusted during render, so the stale panel never paints.
-  if ((open === "provenance" && !facts.provenance) || (open === "drafts" && !facts.otherDrafts)) setOpen(null);
+  if (open && !facts.provenance) setOpen(false);
   if (!footHasSegments(facts)) return null;
 
-  const toggle = (d: Disclosure) => setOpen((o) => (o === d ? null : d));
   // Every item of the line carries the foot's vertical padding itself (the line has none), so a press
   // is as tall as the foot, and a wrapped row is a whole item tall: no two items' boxes overlap,
   // wrapped or not, and no negative margin hands one item's padding to its neighbour's line. One
   // row reads exactly as the board's `.ft` / `.sl` line: the same padding around one 1.7 line.
   const cell = quiet ? "py-[10px] md:py-[12px]" : "py-[9px]";
-  const disclosure = (d: Disclosure, label: string) => (
+  // `d` is the provenance disclosure; without it, the other-drafts press, which opens a dialog (the
+  // pass sheet). Both take the same item and padding rules.
+  const segmentPress = (label: string, d: boolean, onPress: () => void) => (
     <button
       type="button"
-      aria-expanded={open === d}
-      aria-controls={`${ids}-${d}`}
-      onClick={() => toggle(d)}
+      aria-expanded={d ? open : undefined}
+      aria-controls={d ? `${ids}-provenance` : undefined}
+      aria-haspopup={d ? undefined : "dialog"}
+      onClick={onPress}
       // `.ds`: body ink and a dotted rule. Its hit area is its row's full height (`cell`), inside the
       // foot: the board's `.tap` (12px either way) would overflow the card foot's 9px.
       className={`${cell} bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] ${
-        open === d ? "text-[color:var(--fg)]" : "text-[color:var(--fg-body)]"
+        d && open ? "text-[color:var(--fg)]" : "text-[color:var(--fg-body)]"
       }`}
     >
       <span className="[border-bottom:1px_dotted_var(--fg-faint)]">
@@ -70,7 +70,7 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
         {/* The card's foot sets the glyph in the label's ink (`.ft`); the quiet strip in R1's smaller,
             fainter caret (`.sl .ds .car`). */}
         <span aria-hidden className={quiet ? "ml-[4px] text-[9px] text-[color:var(--fg-faint)]" : "ml-[0.5ch]"}>
-          {open === d ? copy.disclosureOpen : copy.disclosureClosed}
+          {d && open ? copy.disclosureOpen : copy.disclosureClosed}
         </span>
       </span>
     </button>
@@ -85,10 +85,16 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
   }
   if (facts.proxies > 0) segments.push({ key: "proxies", node: <span className={cell}>{proxyCopy.deckHeader.line(facts.proxies)}</span> });
   if (facts.provenance) {
-    segments.push({ key: "provenance", node: disclosure("provenance", topOffCopy.ledger.header(String(facts.provenance.count))) });
+    segments.push({
+      key: "provenance",
+      node: segmentPress(topOffCopy.ledger.header(String(facts.provenance.count)), true, () => setOpen((o) => !o)),
+    });
   }
   if (facts.otherDrafts) {
-    segments.push({ key: "drafts", node: disclosure("drafts", availabilityCopy.deckRollup.softFoot(facts.otherDrafts.count)) });
+    segments.push({
+      key: "drafts",
+      node: segmentPress(availabilityCopy.deckRollup.softFoot(facts.otherDrafts.count), false, facts.otherDrafts.onOpen),
+    });
   }
 
   // The card's foot sits on its own ground under a rule; the quiet strip is that ground already.
@@ -114,31 +120,13 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
           </Fragment>
         ))}
       </div>
-      {/* Both panels stay MOUNTED while closed, `hidden` (out of the accessibility tree and the tab
+      {/* The ledger panel stays MOUNTED while closed, `hidden` (out of the accessibility tree and the tab
           order): the ledger holds each line's undo in flight and the refusal it reports, and a
           toggle that unmounted it would re-enable an Undo whose request is still running and drop
           that request's error. `aria-controls` always points at a mounted panel. */}
       {facts.provenance && (
-        <div id={`${ids}-provenance`} hidden={open !== "provenance"} className={panel}>
+        <div id={`${ids}-provenance`} hidden={!open} className={panel}>
           {facts.provenance.panel}
-        </div>
-      )}
-      {facts.otherDrafts && (
-        <div id={`${ids}-drafts`} hidden={open !== "drafts"} className={panel}>
-          {/* `.sldp`: the soft glyph, then the count as a bold lead and the soft band's shipped
-              sentence, until the pass sheet groups these by draft (PR 3). 12px under the rule, as
-              the ledger sits: the panel's 4px (`.fo`) and this 8px. */}
-          <div className="mt-[8px] flex items-start gap-[9px] font-sans text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
-            <span className="mt-[6px] flex-none">
-              <AvailabilityGlyph state="soft" seam="var(--surface-rail)" />
-            </span>
-            <p className="m-0">
-              <b className="font-semibold text-[color:var(--fg-body)]">
-                {availabilityCopy.deckRollup.softLead(facts.otherDrafts.count)}
-              </b>{" "}
-              {availabilityCopy.deckRollup.softBody}
-            </p>
-          </div>
         </div>
       )}
     </>

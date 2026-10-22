@@ -122,21 +122,13 @@ async function walk(page, width) {
   const passLine = await page.locator("text=/you chose from the last/").count();
   console.log(`[${w}] top-off line drawn: ${passLine > 0}`);
 
-  // The mark: press it, count the marked rows in the decklist below.
-  const mark = page.getByRole("button", { name: /^Mark the .* from 1st top-off in the deck below$/ });
-  await mark.click();
-  await page.waitForTimeout(300);
-  // The control renames itself once pressed, so the pressed state is read off
-  // the clear-label locator rather than the one that was clicked.
-  const pressed = page.getByRole("button", { name: /^Clear the mark on 1st top-off$/ });
-  const markedRows = await page.locator("text=/^from 1st top-off$/").count();
-  console.log(`[${w}] mark pressed: ${await pressed.getAttribute("aria-pressed")} · marked rows: ${markedRows}`);
+  // Show these N: the pass sheet, its rows the list's own (deck messages PR 3).
+  await page.getByRole("button", { name: /^Show the .* from 1st top-off$/ }).click();
+  const sheet = page.getByRole("dialog", { name: /cards?$/ });
+  await sheet.waitFor({ timeout: 10_000 });
+  console.log(`[${w}] pass sheet rows: ${await sheet.getByRole("button", { name: /^Remove / }).count()}`);
   await shot(page, `${w}-3-marked`);
-
-  // And clears, by the same control.
-  await page.getByRole("button", { name: /^Clear the mark on 1st top-off$/ }).click();
-  await page.waitForTimeout(300);
-  console.log(`[${w}] mark cleared: ${(await page.locator("text=/^from 1st top-off$/").count()) === 0}`);
+  await sheet.getByRole("button", { name: "Done" }).click();
 
   // The recount. A keep clears the auto flag, so the pass's line stops claiming
   // that card and states what became of it instead. Forced in the database so

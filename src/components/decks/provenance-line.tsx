@@ -10,7 +10,7 @@
 // line and its desktop meta stay as the board draws them; the card shell and
 // its accent rule went, because the to-do card is the shell now.
 
-import { useState, useTransition } from "react";
+import { useSyncExternalStore } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
@@ -18,9 +18,89 @@ import { undoFillPass } from "../../app/decks/actions";
 import { GhostButton } from "../ui/button";
 import { ProvenanceDisc } from "../ui/provenance-disc";
 import { MutationError } from "./mutation-error";
-import { fillPassLabel } from "./pass-mark";
 
 const ledger = topOffCopy.ledger;
+
+/** The pass's name in the ledger and in an undo's accessible name. Lives here rather than in
+ *  `fill-passes.ts` because that module reaches for the database, and every consumer of this label is
+ *  a client component. */
+export function fillPassLabel(pass: Pick<FillPassSummary, "kind" | "ordinal">): string {
+  return pass.kind === "seed"
+    ? ledger.seedLabel
+    : ledger.passLabel(String(pass.ordinal));
+}
+
+/** Copies this pass still holds that the player does not own. Every `buy` figure in this ledger is a
+ *  count of cards; none of them is money. */
+export function passBuyCount(pass: FillPassSummary, cards: readonly DeckDetailCard[]): number {
+  const owned = new Map(cards.map((c) => [c.oracleId, c.owned]));
+  return pass.liveCards.reduce((n, c) => (owned.get(c.oracleId) === false ? n + c.quantity : n), 0);
+}
+
+// One pass's undo state, held outside any component so the ledger line and the pass sheet read the
+// same figure, and so it survives the sheet being dismissed while the request runs. Keyed per deck
+// and pass: rule (g) wants an undo in flight to leave its neighbours enabled.
+type UndoState = { pending: boolean; error: string | null };
+const IDLE: UndoState = { pending: false, error: null };
+const undoStates = new Map<string, UndoState>();
+const undoListeners = new Set<() => void>();
+const setUndoState = (key: string, next: UndoState) => {
+  if (next.pending || next.error) undoStates.set(key, next);
+  else undoStates.delete(key);
+  undoListeners.forEach((l) => l());
+};
+const subscribeUndo = (l: () => void) => {
+  undoListeners.add(l);
+  return () => void undoListeners.delete(l);
+};
+
+/** The first refusal any of these passes' undos holds, whichever control ran it, so the ledger reports
+ *  a failure from the sheet and drops it when a retry from either control starts. */
+function usePassUndoError(deckId: string, passes: readonly FillPassSummary[]): string | null {
+  return useSyncExternalStore(
+    subscribeUndo,
+    () => passes.map((p) => undoStates.get(`${deckId}:${p.id}`)?.error).find((e) => e) ?? null,
+    () => null,
+  );
+}
+
+/**
+ * A pass's undo, shared by its ledger line and the pass sheet's foot, so both run one write, say one
+ * thing and disable together. The state is per pass (see above), not per ledger, so one undo in flight
+ * leaves its neighbours enabled.
+ */
+export function usePassUndo({
+  deckId,
+  pass,
+  bodySize,
+  onAnnounce,
+  onDone,
+}: {
+  deckId: string;
+  pass: FillPassSummary;
+  bodySize: number;
+  onAnnounce: (message: string) => void;
+  onDone?: () => void;
+}) {
+  const key = `${deckId}:${pass.id}`;
+  const state = useSyncExternalStore(subscribeUndo, () => undoStates.get(key) ?? IDLE, () => IDLE);
+  const undo = async () => {
+    if (undoStates.get(key)?.pending) return;
+    setUndoState(key, { pending: true, error: null });
+    try {
+      // Both figures come back from the write's own transaction. Rule (g)
+      // keeps every other control live during an undo, so subtracting from
+      // the size this click started from could state one that was never true.
+      const { removed, built: settled } = await undoFillPass(deckId, pass.id);
+      setUndoState(key, IDLE);
+      onDone?.();
+      onAnnounce(topOffCopy.announce.undone(String(removed), String(settled), bodySize));
+    } catch {
+      setUndoState(key, { pending: false, error: ledger.undoFailed });
+    }
+  };
+  return { pending: state.pending, error: state.error, undo };
+}
 
 interface ProvenanceLedgerProps {
   deckId: string;
@@ -36,8 +116,8 @@ interface ProvenanceLedgerProps {
   /** The deck's body size — 99, or 98 for a pair. An undo announces the size
       the deck settled back to, which is stated against this. */
   bodySize: number;
-  markedPassId: string | null;
-  onMarkChange: (passId: string | null) => void;
+  /** `Show these N`: opens the pass sheet on this pass (deck messages PR 3). */
+  onShow: (passId: string) => void;
   onAnnounce: (message: string) => void;
 }
 
@@ -47,25 +127,20 @@ export function ProvenanceLedger({
   total,
   passes,
   bodySize,
-  markedPassId,
-  onMarkChange,
+  onShow,
   onAnnounce,
 }: ProvenanceLedgerProps) {
   // A refused undo is reported beneath the ledger rather than inside the line:
   // the line keeps its control enabled so the player can try again, and a
   // message wedged into a 34px row would shunt every line below it.
-  const [undoError, setUndoError] = useState<string | null>(null);
+  const undoError = usePassUndoError(deckId, passes);
 
   // The sweep's own test, unchanged, and it is read FIRST. Reading the empty
   // pass list first would take a swept deck down the legacy branch and print a
   // sentence about a record we keep on a deck with nothing to record.
   if (!cards.some((c) => c.auto)) return null;
 
-  const owned = new Map(cards.map((c) => [c.oracleId, c.owned]));
-  /** Copies this pass still holds that the player does not own. Every `buy`
-      figure in this ledger is a count of cards; none of them is money. */
-  const buyCount = (pass: FillPassSummary) =>
-    pass.liveCards.reduce((n, c) => (owned.get(c.oracleId) === false ? n + c.quantity : n), 0);
+  const buyCount = (pass: FillPassSummary) => passBuyCount(pass, cards);
 
   const totalBuy = passes.reduce((n, p) => n + buyCount(p), 0);
 
@@ -110,10 +185,8 @@ export function ProvenanceLedger({
               bodySize={bodySize}
               // The last line is the newest, because the list is oldest first.
               newest={i === passes.length - 1}
-              marked={markedPassId === pass.id}
-              onMarkChange={onMarkChange}
+              onShow={onShow}
               onAnnounce={onAnnounce}
-              onUndoError={setUndoError}
             />
           ))
         )}
@@ -151,54 +224,28 @@ interface LedgerLineProps {
   buy: number;
   bodySize: number;
   newest: boolean;
-  marked: boolean;
-  onMarkChange: (passId: string | null) => void;
+  onShow: (passId: string) => void;
   onAnnounce: (message: string) => void;
-  onUndoError: (message: string | null) => void;
 }
 
 /** One pass. Its own component rather than a loop body because the undo's
- *  transition is per line: rule (g) requires an undo in flight to leave its
- *  neighbours enabled, and a single pending flag in the ledger would disable
- *  all of them. */
+ *  transition is per line (`usePassUndo`). */
 function LedgerLine({
   deckId,
   pass,
   buy,
   bodySize,
   newest,
-  marked,
-  onMarkChange,
+  onShow,
   onAnnounce,
-  onUndoError,
 }: LedgerLineProps) {
-  const [pending, startTransition] = useTransition();
+  const { pending, undo: handleUndo } = usePassUndo({ deckId, pass, bodySize, onAnnounce });
   const label = fillPassLabel(pass);
   const isSeed = pass.kind === "seed";
   const n = String(pass.live);
   const sentence = lineSentence(pass, buy);
-  // The newest line's control carries the accent whether or not it is pressed,
-  // as the line above it does; pressing any other line's borrows it back.
-  const lit = newest || marked;
-
-  const handleUndo = () => {
-    onUndoError(null);
-    startTransition(async () => {
-      try {
-        // Both figures come back from the write's own transaction. Rule (g)
-        // keeps every other control live during an undo, so subtracting from
-        // the size this click started from could state one that was never true.
-        const { removed, built: settled } = await undoFillPass(deckId, pass.id);
-        // The mark points at cards that are no longer there. Cleared here as
-        // well as by the render-time reconcile, because a pass whose undo
-        // removed only some of its cards survives in the fresh summaries.
-        if (marked) onMarkChange(null);
-        onAnnounce(topOffCopy.announce.undone(String(removed), String(settled), bodySize));
-      } catch {
-        onUndoError(ledger.undoFailed);
-      }
-    });
-  };
+  // The newest line's control carries the accent, as the line above it does.
+  const lit = newest;
 
   return (
     <div
@@ -248,9 +295,9 @@ function LedgerLine({
       >
         <button
           type="button"
-          aria-pressed={marked}
-          aria-label={marked ? ledger.unmarkAria(label) : ledger.markAria(n, label)}
-          onClick={() => onMarkChange(marked ? null : pass.id)}
+          aria-haspopup="dialog"
+          aria-label={ledger.markAria(n, label)}
+          onClick={() => onShow(pass.id)}
           className={`flex-none flex items-center bg-transparent border-0 p-0 cursor-pointer
             font-mono text-[10.5px] whitespace-nowrap min-h-[44px] md:min-h-0
             hover:text-[color:var(--accent-text)] transition-colors ${
@@ -314,7 +361,7 @@ function LedgerLine({
  * mind about the fill. The undo beside it still counts survivors, because that
  * is the number it would remove.
  */
-function lineSentence(pass: FillPassSummary, buy: number) {
+export function lineSentence(pass: FillPassSummary, buy: number) {
   const live = String(pass.live);
   const placed = String(pass.live + pass.kept + pass.removed);
   const recount = recountText(pass, placed);
