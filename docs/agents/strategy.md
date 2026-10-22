@@ -64,5 +64,5 @@ same in the average as in the deck it is compared with.
 reading (`AnalysisPanel`'s `strategy` slot); the page reads `loadDeckStrategy` per request, uncached. The ring's geometry
 is pure in `strategy-ring.ts` (arcs from 12 o'clock by live count, the focus pulled out, its pending growth split off;
 other strategies' changes are said by the legend alone). The shell holds the focus (`useStrategyFocus`, over
-`useHeldPick`, the declaration's ordering rules), so Suggested changes reads the same pick. Rank colours derive per
+`useHeldPick`, the declaration's ordering rules), so Suggested changes can read the same pick (PR 4). Rank colours derive per
 theme from `--fg-muted` over `--surface-rail`. Proof: `pnpm probe:strategy-focus`; inventory `strategy-focus.json`.

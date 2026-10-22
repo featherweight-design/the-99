@@ -73,6 +73,8 @@ await clerkSetup();
 const browser = await chromium.launch();
 let original;
 let page;
+/** Set once a press may have written, so the finally restores even a deck that started with no focus. */
+let touched = false;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   page = await context.newPage();
@@ -81,9 +83,10 @@ try {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await openBlock(page);
     const rows = await legend(page);
-    original ??= rows.find((r) => r.checked)?.key ?? null;
+    if (original === undefined) original = rows.find((r) => r.checked)?.key ?? null;
     const target = rows.find((r) => !r.checked);
     if (!target) throw new Error("every row is checked: the deck has one strategy");
+    touched = true;
     await onPage(page, `[data-strategy-block] [role=radio][data-strategy="${target.key}"]`).first().click();
     const drawn = await legend(page);
     report(`press picks ${target.key} at ${width}`, drawn.filter((r) => r.checked).map((r) => r.key).join() === target.key, JSON.stringify(drawn.filter((r) => r.checked)));
@@ -99,9 +102,13 @@ try {
   }
 } finally {
   // Put the deck's focus back as found.
-  if (page && original) {
+  if (page && touched) {
     await openBlock(page).catch(() => {});
-    await onPage(page, `[data-strategy-block] [role=radio][data-strategy="${original}"]`).first().click().catch(() => {});
+    const restore = original
+      ? onPage(page, `[data-strategy-block] [role=radio][data-strategy="${original}"]`).first()
+      : onPage(page, "[data-strategy-block] button").filter({ hasText: "Keep it balanced" }).first();
+    // With no focus to restore and none drawn, Keep it balanced is absent and there is nothing to do.
+    if (await restore.count().catch(() => 0)) await restore.click().catch(() => {});
     await page.waitForTimeout(1500);
   }
   await browser.close();

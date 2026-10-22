@@ -12,10 +12,14 @@ import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { StrategyIcon } from "./strategy-icon";
 import { RING, arcPath, legendCount, ringArcs, type RingRow, type RingSize } from "./strategy-ring";
 
-/** The neutral arcs by rank: the muted ink thinned toward the box, so every theme derives its own ramp. */
-const RANK_MIX = [58, 46, 35, 25, 18];
+/**
+ * The neutral arcs by rank: the muted ink thinned toward the box, so every theme derives its own ramp. The shares are fitted
+ * in oklab to the boards' Low Sun hex (#6E6352 to #332E28; each within 6 of 255 per channel).
+ */
+const RANK_MIX = [61, 48, 37, 28, 21];
 const rankInk = (rank: number) => `color-mix(in oklab, var(--fg-muted) ${RANK_MIX[Math.min(rank, RANK_MIX.length - 1)]}%, var(--surface-rail))`;
-const GROWTH_INK = "color-mix(in oklab, var(--accent) 55%, var(--fg))";
+/** The pending growth: the boards' #F0C08E in Low Sun, fitted from the hover accent lifted toward white (#EBBB92). */
+const GROWTH_INK = "color-mix(in oklab, var(--accent-hover) 66%, white)";
 
 type Row = { key: StrategyKey; copies: number; outside: boolean };
 
@@ -223,7 +227,7 @@ function Legend({
               <span className="ml-auto shrink-0 font-mono text-[11px] font-normal text-[color:var(--fg-muted)]">
                 {n.base}
                 {n.added ? <em className="not-italic text-[color:var(--accent-text)]"> +{n.added}</em> : null}
-                {n.removed ? <em className="not-italic text-[color:var(--accent-text)]"> −{n.removed}</em> : null} {copy.cards(r.copies)}
+                {n.removed ? <em className="not-italic text-[color:var(--accent-text)]"> −{n.removed}</em> : null} {copy.cards(n.base)}
               </span>
               <span
                 aria-hidden

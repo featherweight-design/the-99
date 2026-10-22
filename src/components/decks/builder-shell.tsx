@@ -443,7 +443,7 @@ export function BuilderShell({
   // The deck's declaration for the whole shell: the verdict draws and takes it, and the card
   // note on Consider and the top-off list reads it — one owner, so they cannot disagree.
   const declaration = useDeclaration(deck.id, deck.declaredBracket);
-  // One owner for the focus, as for the declaration: Suggested changes reads the same pick.
+  // One owner for the focus, as for the declaration, so Suggested changes can read the same pick (strategy focus PR 4).
   const strategyFocus = useStrategyFocus(deck.id, strategy?.focus?.key ?? null);
   // The version this deck IS — committed, and the draft holding no change since — and the one
   // committed before it. A draft with edits is neither, and a brew has neither.

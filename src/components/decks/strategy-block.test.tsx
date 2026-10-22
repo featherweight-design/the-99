@@ -54,9 +54,23 @@ describe("StrategyBlock", () => {
     expect(sixth.getAttribute("aria-checked")).toBe("true");
   });
 
-  it("draws one box, and no pick, when nothing stands out or the deck is too small", () => {
+  it("draws one box, and no pick, when the deck is too small", () => {
     draw({ strategy: { state: "tooSmall", nonland: 18 }, focus: null, pending: null });
     expect(screen.getByText(/This one has 18\./)).toBeTruthy();
+    expect(document.querySelector('[data-strategy-empty="tooSmall"]')).toBeTruthy();
     expect(screen.queryByRole("radiogroup")).toBeNull();
+  });
+
+  it("draws one box, and no pick, when nothing stands out", () => {
+    draw({ strategy: { state: "none" }, focus: null, pending: null });
+    expect(screen.getByText("No strategy stands out yet.")).toBeTruthy();
+    expect(document.querySelector('[data-strategy-empty="none"]')).toBeTruthy();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByText(/No focus yet/)).toBeNull();
+  });
+
+  it("names the count's noun by the figure drawn first", () => {
+    const { group } = draw(ok({ strategy: { state: "ok", axes: [axis("tokens", 1)] }, pending: { tokens: { added: 0, removed: 1 } } }));
+    expect(within(group()).getByRole("radio").textContent).toBe("Tokens2 −1 cards");
   });
 });
