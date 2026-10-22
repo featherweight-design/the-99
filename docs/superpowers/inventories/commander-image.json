@@ -77,7 +77,7 @@
     {
       "id": "decks",
       "label": "/decks — the deck tiles",
-      "view": "src/components/decks/deck-card.tsx",
+      "view": "src/components/decks/deck-tile-art.tsx",
       "steps": [
         {
           "goto": "/decks",
