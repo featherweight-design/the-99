@@ -14,7 +14,6 @@ const searchTag = vi.hoisted(() => vi.fn(async (surface: string, query: string) 
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: searchTag }));
 const formReachData = vi.hoisted(() => vi.fn(async () => ({
   cards: [{ id: "rift", name: "Cyclonic Rift", identity: ["U"], gameChanger: true, massLandDenial: false, extraTurn: false, free: true, combos: [], searches: false, reaches: [] }],
-  buyable: [{ id: "study", name: "Rhystic Study", identity: ["U"], priceCents: 3_200 }, { id: "tutor", name: "Demonic Tutor", identity: ["B"], priceCents: 4_100 }],
 })));
 vi.mock("../../app/decks/new/choose/form-reach-actions", () => ({ formReachData }));
 
@@ -301,22 +300,15 @@ describe("the Bracket field's heads-up (bracket reach R1b, board A)", () => {
     formReachData.mockClear();
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["u"], match: "exactly" }} bracketReach />);
     expect(await screen.findByText("3 · Upgraded. Your cards in these colors would reach it.")).toBeTruthy();
-    // Bracket 4 in blue: one free Game Changer and one stocked, short of four, so nothing reaches it.
+    // Bracket 4 in blue: one free Game Changer, short of four, so the commander decides the rest.
     fireEvent.click(screen.getByRole("radio", { name: "4" }));
-    expect(screen.getByText(/a deck would be bracket 3, and no Game Changer to buy gets one to 4 here\./)).toBeTruthy();
+    expect(screen.getByText(/a deck would be bracket 3\. What reaching 4 takes depends on the commander/)).toBeTruthy();
     expect(formReachData).toHaveBeenCalledTimes(1);
-  });
-
-  it("reads the budget the submit sends: a typed \"$20\" is twenty dollars, not none", async () => {
-    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"], match: "exactly" }} bracketReach />);
-    expect(await screen.findByText(/Hitting 3 means buying Demonic Tutor, about \$41\./)).toBeTruthy();
-    fireEvent.change(screen.getByRole("textbox", { name: /budget/i }), { target: { value: "$20" } });
-    expect(screen.getByText(/over your \$20 budget/)).toBeTruthy();
   });
 
   it("reruns when the color match changes: under Any a blue-black commander can play the blue card", async () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"], match: "exactly" }} bracketReach />);
-    expect(await screen.findByText(/Hitting 3 means buying Demonic Tutor/)).toBeTruthy();
+    expect(await screen.findByText(/a deck would be bracket 1-2\. What reaching 3 takes depends on the commander/)).toBeTruthy();
     const group = screen.getByRole("radiogroup", { name: "Color match" });
     fireEvent.click(within(group).getAllByRole("radio")[0]);
     expect(screen.getByText("3 · Upgraded. Your cards would reach it.")).toBeTruthy();
