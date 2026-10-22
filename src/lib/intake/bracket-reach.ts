@@ -132,6 +132,25 @@ export function bracketReach(args: {
   };
 }
 
+/**
+ * Whether these raisers bring mass land denial or a turn loop into a deck holding the fixed cards:
+ * any raiser flagged for mass land denial, or a loop edge from a raiser to a partner in the deck (a
+ * partner that must be the commander counts only from the command zone, the rule `completesWith`
+ * counts by). The one test, for a set proposed here and for a union assembled elsewhere.
+ */
+export function bringsForbidden(args: {
+  commanderIds: readonly string[];
+  fixedIds: readonly string[];
+  raisers: readonly string[];
+  facts: GateFacts;
+}): boolean {
+  const inCommandZone = new Set(args.commanderIds);
+  const all = new Set([...args.commanderIds, ...args.fixedIds, ...args.raisers]);
+  return args.raisers.some((id) => args.facts.flagsOf(id).massLandDenial
+    || args.facts.combosOf(id).some((e) => e.loop && all.has(e.partner)
+      && (!e.partnerMustBeCommander || inCommandZone.has(e.partner))));
+}
+
 /** The best set from one source that reaches `target`: fewest cards bought, then cheapest, then
  *  fewest cards, then the caller's order. Null when no set does. */
 function cheapestRaiser(
@@ -155,12 +174,7 @@ function cheapestRaiser(
    *  it: a Game Changer can carry the flag, and two pieces can share a loop variant as well as the
    *  non-loop one that proposed them. A loop whose partner must be the commander completes only
    *  when it is, the rule `completesWith` counts by. */
-  const forbidden = (raisers: readonly string[]) => {
-    const all = new Set([...fixed, ...raisers]);
-    return raisers.some((id) => facts.flagsOf(id).massLandDenial
-      || facts.combosOf(id).some((e) => e.loop && all.has(e.partner)
-        && (!e.partnerMustBeCommander || inCommandZone.has(e.partner))));
-  };
+  const forbidden = (raisers: readonly string[]) => bringsForbidden({ commanderIds: args.commanderIds, fixedIds: fixed, raisers, facts });
   // A Game Changer that is forbidden on its own is never offered, so the four-card route takes the
   // next one rather than failing on it.
   const gameChangers = pool.filter((id) => facts.flagsOf(id).gameChanger && !forbidden([id]));

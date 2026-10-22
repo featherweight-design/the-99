@@ -81,20 +81,39 @@ export function CreatePreFilled({
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const readReach = handOff?.readReach === true && handOff.drawBlock;
-  // The Bracket row's reach, read once when the page opens. A failed read falls back to today's
-  // ceiling line and leaves *Create deck* live: the create still builds to the answers.
-  const [reach, setReach] = useState<BracketReachState | undefined>(readReach ? { status: "pending" } : undefined);
-  const [choice, setChoice] = useState<BracketChoice>(null);
+  // The Bracket row's reach, read for the inputs the create is handed. A failed read falls back to
+  // today's ceiling line and leaves *Create deck* live: the create still builds to the answers.
+  //
+  // THE RESULT AND THE PICK ARE KEYED ON THOSE INPUTS (the commander, the answers, the picks). A
+  // same-route change of any of them makes the stored pair someone else's, so it is read as pending
+  // with no pick DURING RENDER, never corrected in an effect: a stale "Hit" must not submit even once.
   const create = handOff?.create;
+  const readKey = readReach && create ? JSON.stringify([oracleId, create, selectedOracleIds ?? []]) : null;
+  const [stored, setStored] = useState<{ key: string | null; reach: BracketReachState | undefined; choice: BracketChoice }>(
+    { key: readKey, reach: readKey ? { status: "pending" } : undefined, choice: null },
+  );
+  const current = stored.key === readKey
+    ? stored
+    : { key: readKey, reach: readKey ? { status: "pending" as const } : undefined, choice: null };
+  const reach = current.reach;
+  const choice = current.choice;
+  const setChoice = (c: BracketChoice) => setStored({ ...current, choice: c });
   useEffect(() => {
-    if (!readReach || !create) return;
+    if (readKey === null) return;
     let live = true;
+    // The inputs come back out of the key, so the read is exactly the one the key names.
+    const [id, asked, picks] = JSON.parse(readKey) as [string, CreateAnswers, string[]];
+    const land = (r: BracketReachState) => {
+      if (!live) return;
+      // The pick stays only when it was made for these same inputs.
+      setStored((prev) => ({ key: readKey, reach: r, choice: prev.key === readKey ? prev.choice : null }));
+    };
     // The picks the create places too: the read must see the deck the create builds.
-    handOffBracketReach(oracleId, create, selectedOracleIds ?? [])
-      .then((r) => { if (live) setReach({ status: "done", reach: r }); })
-      .catch(() => { if (live) setReach({ status: "failed" }); });
+    handOffBracketReach(id, asked, picks)
+      .then((r) => land({ status: "done", reach: r }))
+      .catch(() => land({ status: "failed" }));
     return () => { live = false; };
-  }, [readReach, oracleId, create, selectedOracleIds]);
+  }, [readKey]);
   const mustChoose = needsBracketChoice(reach);
   const waiting = reach?.status === "pending" || (mustChoose && choice === null);
 

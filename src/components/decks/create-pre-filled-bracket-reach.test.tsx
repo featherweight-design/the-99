@@ -235,4 +235,32 @@ describe("the hand-off's Bracket row, read", () => {
     await submit();
     expect(screen.queryByTestId("bracket-choice-waiting")).toBeNull();
   });
+
+  it("a same-route change of the inputs drops the result and the pick at once, until a new read and pick (round 7)", async () => {
+    readReach.mockResolvedValueOnce(SHORT);
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(<CreatePreFilled {...base} handOff={handOff()} />); });
+    nameIt();
+    fireEvent.click(screen.getByTestId("bracket-choice-hit"));
+    expect(createButton().hasAttribute("disabled")).toBe(false);
+    // New answers on the same route: the next read hangs until we let it land.
+    let land!: (r: HandOffReach) => void;
+    readReach.mockReturnValueOnce(new Promise((resolve) => { land = resolve; }));
+    const next = handOff({ budgetDollars: 50 });
+    view.rerender(<CreatePreFilled {...base} handOff={next} />);
+    // In that same render: pending, no rows, Create held. The old Hit cannot submit.
+    expect(screen.getByTestId("hand-off-reach-pending")).toBeTruthy();
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(createButton().hasAttribute("disabled")).toBe(true);
+    await submit();
+    expect(createDeck).not.toHaveBeenCalled();
+    // The new read lands: the choice is fresh, nothing picked, still held.
+    await act(async () => { land(SHORT); });
+    expect(screen.getAllByRole("radio").map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
+    expect(createButton().hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByTestId("bracket-choice-mine"));
+    await submit();
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...next.create, bracket: 2, bracketBuys: false });
+    expect(readReach).toHaveBeenLastCalledWith(COMMANDER, next.create, []);
+  });
 });

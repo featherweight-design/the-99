@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
   topCards: vi.fn(),
   skeleton: vi.fn(),
   readLabels: vi.fn(),
+  loops: {} as Record<string, { variantId: string; partner: string; loop: boolean; partnerMustBeCommander: boolean }[]>,
 }));
 
 vi.mock("../../db", () => ({ db: {} }));
@@ -35,7 +36,7 @@ vi.mock("../intake/fill-facts", () => ({
   loadBudgetLeftCents: m.budgetLeft,
   loadBracketGateFacts: vi.fn(async () => ({
     flagsOf: (id: string) => ({ gameChanger: id === "rhystic", massLandDenial: false, extraTurn: false }),
-    combosOf: () => [], searches: () => false, reaches: () => false,
+    combosOf: (id: string) => m.loops[id] ?? [], searches: () => false, reaches: () => false,
   })),
 }));
 vi.mock("../intake/bracket-reach", async (importActual) => ({
@@ -78,6 +79,7 @@ beforeEach(() => {
   m.bracketReach.mockReturnValue(short(3200));
   m.skeleton.mockResolvedValue({ skeleton: null });
   m.readLabels.mockResolvedValue(new Map());
+  m.loops = {};
 });
 
 describe("buildFillPlan's Hit bracket N", () => {
@@ -181,5 +183,21 @@ describe("buildFillPlan's Hit bracket N", () => {
     });
     expect(m.topCards).not.toHaveBeenCalled();
     expect(m.bracketReach).not.toHaveBeenCalled();
+  });
+
+  it("drops the collection's raisers when they complete a turn loop with the bought set (round 7)", async () => {
+    // Each set is safe alone; together an owned piece and the bought card are a turn loop, which at
+    // bracket 5 still permits [4,5]. The bought set is placed; the owned piece is not.
+    const edge = (partner: string) => [{ variantId: "loop", partner, loop: true, partnerMustBeCommander: false }];
+    m.loops = { "owned-1": edge("rhystic"), rhystic: edge("owned-1") };
+    m.bracketReach.mockReturnValue({
+      target: 5, kind: "short", collectionPermits: [1, 2], collectionRaisers: ["owned-1"],
+      buy: { raisers: ["rhystic"], buyCents: 3200, overBudget: false },
+    });
+    await buildFillPlan("u", commanders, new Set(), {
+      selected: [], env: ON, answers: { budgetCents: 5000, bracket: 5, cardOracleId: null, bracketBuys: true },
+    });
+    expect(planArgs().boughtRaisers.map((c: { oracleId: string }) => c.oracleId)).toEqual(["rhystic"]);
+    expect(planArgs().raisers).toEqual([]);
   });
 });

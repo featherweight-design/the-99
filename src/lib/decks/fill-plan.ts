@@ -18,7 +18,7 @@ import { dedupeSelectionFromPool, reachCandidates, planFill, type FillCandidate,
 import { gatherFillStaples } from "../staples/fill-staples";
 import { loadBracketGateFacts, loadBudgetLeftCents, loadFillGate, type DeckAnswers } from "../intake/fill-facts";
 import { permitsOf } from "../intake/fill-gate";
-import { bracketReach, reachOverRows, type BracketReach, type ReachFacts } from "../intake/bracket-reach";
+import { bracketReach, bringsForbidden, reachOverRows, type BracketReach, type ReachFacts } from "../intake/bracket-reach";
 import type { Bracket } from "../intake/rank";
 import { buysCopy } from "../intake/buys-card";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
@@ -365,10 +365,12 @@ export async function buildFillPlan(
     if (answers.bracketBuys && reach.kind === "short" && reach.buy) {
       const buy = reach.buy;
       boughtRaisers = buy.raisers.flatMap((id) => byId.get(id) ?? []);
-      // The collection's own raisers ride along only while the whole set still reaches the target:
-      // the buying set is proved on its own, and nothing placed beside it may carry it past.
+      // The collection's own raisers ride along only while the whole set still reaches the target
+      // and brings no loop or mass land denial: the buying set is proved on its own, and an owned
+      // piece beside it can complete a turn loop neither set holds (at 4 and 5 a loop still permits).
       const together = [...new Set([...buy.raisers, ...ids])];
       ids = permitsOf(commanderIds, [...fixedIds, ...together], facts).includes(reach.target)
+        && !bringsForbidden({ commanderIds, fixedIds, raisers: together, facts })
         ? ids.filter((id) => !buy.raisers.includes(id))
         : [];
       // G1: the set is charged to the budget first, and when it costs more than the budget leaves,
