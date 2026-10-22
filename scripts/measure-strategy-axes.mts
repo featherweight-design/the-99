@@ -168,11 +168,11 @@ async function main() {
     const tune = results.filter((r) => r.grp === "deck" && r.name.startsWith("HD Tune"));
     console.log(`HD Tune decks | ${tune.length} | ${median(tune.map((r) => r.cat)).toFixed(1)} | ${median(tune.map((r) => r.cmd).filter((x): x is number => x !== null)).toFixed(1)}`);
 
-    // The radar as the app will draw it: the top axes against the catalog, a broad theme marked.
-    console.log(`\ntop ${TOP_AXES} against the catalog (the radar; * = broad theme, not offered for lean-in)`);
+    // The ring as the app draws it: the top axes against the catalog.
+    console.log(`\ntop ${TOP_AXES} against the catalog (the ring)`);
     for (const l of [...lists.values()].filter((x) => x.grp === "deck").sort((a, b) => a.name.localeCompare(b.name))) {
       const top = scoredAxes(l.cards, catalogBase).slice(0, TOP_AXES);
-      console.log(`${l.name} | ${top.map((a) => `${a.key}${a.leanable ? "" : "*"} ${a.copies}×${a.score.toFixed(0)}`).join(" · ") || "none"}`);
+      console.log(`${l.name} | ${top.map((a) => `${a.key} ${a.copies}×${a.score.toFixed(0)}`).join(" · ") || "none"}`);
     }
 
     // How small a list can be and still read like itself. Each list of 60+ nonland copies is cut, 40 times per size, to

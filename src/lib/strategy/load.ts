@@ -5,7 +5,8 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { cardLabels, cards, deckCards, decks } from "../../db/schema";
+import { cardLabels, cards, deckCards, decks, deckVersionCards } from "../../db/schema";
+import { newestVersion } from "../decks/versions";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { labelGeneration } from "../labels/generation";
 import { isLandFace } from "../cards/facet";
@@ -13,7 +14,11 @@ import { isGameCard } from "../cards/game-card";
 import { freshJobsOf } from "../labels/read";
 import type { LabelTheme } from "../labels/types";
 import { strategyFocusEnabled } from "./flag";
-import { catalogBaseline, deckStrategy, type DeckStrategy, type StrategyBaseline, type StrategyCard } from "./score";
+import { parseStrategyKey } from "./focus";
+import {
+  catalogBaseline, deckStrategy, pendingChanges, strategyAxis,
+  type DeckStrategy, type KeyedStrategyCard, type PendingChange, type StrategyAxis, type StrategyBaseline, type StrategyCard, type StrategyKey,
+} from "./score";
 
 type Reader = Pick<typeof db, "select">;
 
@@ -55,10 +60,12 @@ export function freshThemes(r: CardRow): LabelTheme[] {
 }
 
 /** A commander-legal game card that is not a land, as the strategy reads count it. */
-export function toStrategyCard(r: CardRow): StrategyCard | null {
+export function toStrategyCard(r: CardRow): KeyedStrategyCard | null {
   if (!isGameCard({ layout: r.layout, typeLine: r.typeLine }) || isLandFace(r.typeLine)) return null;
-  return { typeLine: r.typeLine, manaValue: r.manaValue, keywords: r.keywords, themes: freshThemes(r), quantity: r.quantity };
+  return { oracleId: r.oracleId, typeLine: r.typeLine, manaValue: r.manaValue, keywords: r.keywords, themes: freshThemes(r), quantity: r.quantity };
 }
+
+const strategyCards = (rows: readonly CardRow[]) => rows.map(toStrategyCard).filter((c): c is KeyedStrategyCard => c !== null);
 
 /** Every commander-legal card with its themes; apart so a test can render its SQL. */
 export function catalogQuery(q: Reader) {
@@ -80,9 +87,19 @@ export function deckCardsQuery(q: Reader, userId: string, deckId: string) {
     .where(and(eq(deckCards.deckId, deckId), eq(decks.userId, userId)));
 }
 
+/** One committed version's cards with their themes; apart so a test can render its SQL. The version is the reader's own. */
+export function versionCardsQuery(q: Reader, versionId: string) {
+  return q
+    .select({ ...cardColumns, quantity: deckVersionCards.quantity })
+    .from(deckVersionCards)
+    .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
+    .leftJoin(cardLabels, eq(cardLabels.oracleId, cards.oracleId))
+    .where(eq(deckVersionCards.versionId, versionId));
+}
+
 /** The baseline from the catalog's rows, one copy each. */
 export function baselineFromRows(rows: readonly CardRow[]): StrategyBaseline {
-  return catalogBaseline(rows.map(toStrategyCard).filter((c): c is StrategyCard => c !== null));
+  return catalogBaseline(strategyCards(rows));
 }
 
 // Memoised per catalog generation AND label generation, the way `precons/link-read.ts` memoises the precon catalog. The
@@ -113,14 +130,53 @@ export async function loadStrategyBaseline(
   return entry.value;
 }
 
-/** A deck's top strategies, or null with the switch off or for a deck that is not the reader's. */
-export async function loadDeckStrategy(userId: string, deckId: string, env: NodeJS.ProcessEnv): Promise<DeckStrategy | null> {
+/** The deck's focus, with its axis on the working list and whether the top five hold it. */
+export type StrategyFocus = { key: StrategyKey; axis: StrategyAxis; inTop: boolean };
+
+/** What the strategy block draws. */
+export type StrategyRead = {
+  strategy: DeckStrategy;
+  focus: StrategyFocus | null;
+  /**
+   * Each drawn strategy's change since the newest committed version, a key with no change left out. Null for a deck
+   * with no version yet: there is nothing to compare with (a precon start's v0 is a version, and is compared with).
+   */
+  pending: Partial<Record<StrategyKey, PendingChange>> | null;
+};
+
+/** The pure half of `loadDeckStrategy`, over rows already read. */
+export function strategyRead(
+  live: readonly CardRow[],
+  committed: readonly CardRow[] | null,
+  baseline: StrategyBaseline,
+  storedFocus: string | null,
+): StrategyRead {
+  const cards: StrategyCard[] = strategyCards(live);
+  const strategy = deckStrategy(cards, baseline);
+  // A stored key the vocabulary no longer names (a theme retired since) reads as no focus.
+  const key = parseStrategyKey(storedFocus);
+  const top = strategy.state === "ok" ? strategy.axes : [];
+  const focus = key === null ? null : {
+    key,
+    axis: top.find((a) => a.key === key) ?? strategyAxis(cards, baseline, key),
+    inTop: top.some((a) => a.key === key),
+  };
+  const keys = [...top.map((a) => a.key), ...(focus && !focus.inTop ? [focus.key] : [])];
+  const pending = committed === null ? null : pendingChanges(strategyCards(committed), strategyCards(live), keys);
+  return { strategy, focus, pending };
+}
+
+/** A deck's top strategies, its focus and its pending changes, or null with the switch off or for a deck that is not the reader's. */
+export async function loadDeckStrategy(userId: string, deckId: string, env: NodeJS.ProcessEnv): Promise<StrategyRead | null> {
   if (!strategyFocusEnabled(env)) return null;
-  const [rows, baseline] = await Promise.all([deckCardsQuery(db, userId, deckId), loadStrategyBaseline()]);
-  if (rows.length === 0) {
-    // An empty list and a deck the reader does not own both come back empty; tell them apart.
-    const [own] = await db.select({ id: decks.id }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-    if (!own) return null;
-  }
-  return deckStrategy(rows.map(toStrategyCard).filter((c): c is StrategyCard => c !== null), baseline);
+  const [[deck], rows, baseline, version] = await Promise.all([
+    db.select({ focus: decks.strategyFocus }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId))),
+    deckCardsQuery(db, userId, deckId),
+    loadStrategyBaseline(),
+    newestVersion(deckId),
+  ]);
+  if (!deck) return null;
+  // The version read is not scoped by owner on its own; the deck row above is, and it is checked first.
+  const committed = version ? await versionCardsQuery(db, version.id) : null;
+  return strategyRead(rows, committed, baseline, deck.focus);
 }

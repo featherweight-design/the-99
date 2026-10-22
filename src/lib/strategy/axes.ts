@@ -75,6 +75,17 @@ export function fixedAxesOf(card: AxisCard): FixedAxis[] {
 }
 
 /**
+ * Whether one card counts toward an axis: a fixed axis it is on, or a creature type it carries. A changeling carries every
+ * type, as it joins every type a deck picks (`deckAxes`).
+ */
+export function onAxis(card: AxisCard, axis: AxisKey): boolean {
+  if (!axis.startsWith("typal:")) return fixedAxesOf(card).includes(axis as FixedAxis);
+  const p = parse(card.typeLine);
+  if (!bearsCreatureTypes(p)) return false;
+  return isChangeling(card) || creatureTypesIn(p.subtypes).includes(axis.slice("typal:".length));
+}
+
+/**
  * Copies per fixed axis, and copies per EVERY creature type the list carries (so a baseline can be looked up for any
  * type a deck picks). Changelings are held apart: they join a type only once a deck has picked it (`deckAxes`).
  */

@@ -199,6 +199,8 @@ async function commitVersionIn(
       snapshot && permitsDeclaration(snapshot.permits, snapshot.declared)
         ? snapshot.declared
         : null,
+    // A focus is the player's own pick and has no range to fall outside, so it is carried as it stands.
+    strategyFocus: deck.strategyFocus,
     // Sorted, so two versions' ranges compare as arrays without either reader sorting first.
     permits: snapshot ? [...snapshot.permits].sort((a, b) => a - b) : null,
     // `clock_timestamp()` rather than the column's `now()` default, and for the

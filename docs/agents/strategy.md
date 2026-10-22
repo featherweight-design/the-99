@@ -1,8 +1,9 @@
 # Strategy focus
 
-A deck's top strategies, and (PR B) leaning into one. Brief: `docs/superpowers/design-briefs/2026-10-22-strategy-focus.md`.
-Research: `boards/strategy-focus-research-2026-10-18.md` (lane 9b), re-test section. Backend only until Design's handoff
-lands. Behind `STRATEGY_FOCUS_ENABLED` (needs `ANALYSIS_TAB_ENABLED`), unset in production and held out of All features.
+A deck's top strategies, and the FOCUS a player picks among them for Suggested changes to aim at. Brief:
+`docs/superpowers/design-briefs/2026-10-22-strategy-focus.md`, reshaped by the handoff
+`design/design_handoff_the99_strategy_focus/` (one swap engine: no lean-in tool and no paid read). Research:
+`boards/strategy-focus-research-2026-10-18.md` (lane 9b), re-test section. Behind `STRATEGY_FOCUS_ENABLED` (needs `ANALYSIS_TAB_ENABLED`), unset in production and held out of All features.
 
 ## The score
 
@@ -13,8 +14,8 @@ lands. Behind `STRATEGY_FOCUS_ENABLED` (needs `ANALYSIS_TAB_ENABLED`), unset in 
   game card, one copy each). Under 5 copies (`AXIS_FLOOR`) an axis scores 0, and so does one the deck holds no more of than
   the catalog. Lands and the commanders are never counted.
 - **`deckStrategy`** (`score.ts`, pure) returns the top 5 (`TOP_AXES`), never padded; `none` when nothing clears the floor;
-  `tooSmall` under `MIN_NONLAND` (30) nonland copies. The `tribal` theme is dropped whenever a creature type scores. A broad
-  theme (`BROAD_THEMES`: evasion, protection, pump, haste, draw, etbDraw) is drawn but `leanable: false`.
+  `tooSmall` under `MIN_NONLAND` (30) nonland copies. The `tribal` theme is dropped whenever a creature type scores. Any
+  strategy can be the focus, broad ones included: the lean-in tool that withheld them was dropped with the handoff.
 - **Never a verdict.** Validated on staging, the score does not tell precons from tuned decks and has no tested
   focused-vs-spread threshold. Nothing returns a grade, a target or a comparison; a figure means something only against
   the same deck's other axes.
@@ -26,7 +27,10 @@ lands. Behind `STRATEGY_FOCUS_ENABLED` (needs `ANALYSIS_TAB_ENABLED`), unset in 
 - `loadStrategyBaseline` (`load.ts`) reads the catalog with its themes once per catalog generation and keeps only the
   counts, memoised the way `precons/link-read.ts` memoises the precon catalog.
 - `loadDeckStrategy(userId, deckId, env)` returns null with the switch off or for a deck that is not the reader's, and reads
-  nothing in either switch-off case. `toStrategyCard` is the one land and game-card filter, shared by the deck read, the
+  nothing with the switch off. Otherwise a `StrategyRead`: the strategy, the focus (its axis on the working list, scored
+  or not, and whether the top five hold it: one that does not is drawn as a sixth row) and `pending`, each drawn
+  strategy's `+added` / `−removed` copies since the newest committed version (`pendingChanges`: a card's quantity change,
+  toward every strategy it is on). `pending` is null for a deck with no version yet; a precon start's v0 is a version. `toStrategyCard` is the one land and game-card filter, shared by the deck read, the
   catalog baseline and the measure's lists (the commander-average SQL applies the same front-face land test).
 
 ## The floor, measured
@@ -40,3 +44,12 @@ reads its own plan.
 
 The commander-average baseline drops lands by the FRONT face, as `isLandFace` does, so a spell-front MDFC counts the
 same in the average as in the deck it is compared with.
+
+## The focus
+
+- Stored on `decks.strategy_focus` (null is no focus, "Keep it balanced") and copied to `deck_versions.strategy_focus` at
+  commit, as the bracket declaration is. Values are a label theme, a fixed axis or `typal:<Type>`; `parseStrategyKey`
+  (`focus.ts`) is the one check, and a stored key it no longer names reads as no focus.
+- `setStrategyFocus` (`src/app/decks/strategy-actions.ts`) is the one writer: free, switch-checked, any named strategy
+  (not only the top five), and it writes ONLY ON A CHANGE, because the update moves the reader's data stamp.
+- Names: `strategyName` (`src/lib/copy/strategy-focus.ts`), a creature type in the plural (`creatureTypePlural`).
