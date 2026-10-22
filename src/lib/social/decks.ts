@@ -73,7 +73,8 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown): Prom
     name: d.name,
     commanderName: d.commanderName,
     partnerName: d.partnerName,
-    colorIdentity: d.commanderColorIdentity,
+    // The pair's whole identity, as the owner's tile and the deck page draw it.
+    colorIdentity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity),
     artCropUri: d.commanderArtCropUri,
     status: d.statusPill,
     built: d.built,

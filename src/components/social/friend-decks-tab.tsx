@@ -41,7 +41,7 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
         <ul className="m-0 mt-[12px] grid list-none grid-cols-1 gap-[12px] p-0 md:grid-cols-3 md:gap-[14px]">
           {decks.map((d, i) => (
             <li key={d.id ?? i} data-testid="friend-deck" className="sm:h-full">
-              <FriendDeckTile deck={d} href={d.id && publicId ? `/friends/${publicId}/decks/${d.id}` : null} />
+              <FriendDeckTile deck={d} href={d.id && publicId ? `/friends/${publicId}/decks/${d.id}` : null} deferArt={i >= 4} />
             </li>
           ))}
         </ul>
@@ -92,11 +92,12 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
  * draws the commander gradient there, never the full card image: G5), the card count alone below, and the whole tile a
  * press to the deck's page. The identity block is presentation; the press names the same things in order.
  */
-function FriendDeckTile({ deck, href }: { deck: FriendDeck; href: string | null }) {
+function FriendDeckTile({ deck, href, deferArt }: { deck: FriendDeck; href: string | null; deferArt: boolean }) {
   const colour = colorLabel(deck.colorIdentity);
   const hidden = commanderRepeats(deck.name, deck.commanderName, deck.partnerName);
   const commanderLine = deck.partnerName ? `${deck.commanderName} + ${deck.partnerName}` : deck.commanderName;
   const cards = socialCopy.friendDeck.cards(deck.built);
+  const label = p.decks.tileAria(deck.name, hidden ? null : commanderLine, colour, cards);
   return (
     <article
       className="art-lift-host @container relative flex min-w-0 flex-col overflow-hidden rounded-[14px] sm:h-full"
@@ -110,6 +111,7 @@ function FriendDeckTile({ deck, href }: { deck: FriendDeck; href: string | null 
         partnerName={deck.partnerName}
         colour={colour}
         commanderHidden={hidden}
+        deferArt={deferArt}
       />
       <div
         aria-hidden="true"
@@ -119,10 +121,14 @@ function FriendDeckTile({ deck, href }: { deck: FriendDeck; href: string | null 
       >
         {cards}
       </div>
-      {href && (
-        <Link href={href} className="absolute inset-0" aria-label={p.decks.tileAria(deck.name, hidden ? null : commanderLine, colour, cards)}>
+      {/* The band and the count are presentation: the press names them, and with no press a line a screen reader reads
+          does. The ring is drawn inside the tile, whose `overflow-hidden` would clip the app's outset one. */}
+      {href ? (
+        <Link href={href} className="absolute inset-0 rounded-[14px] focus-visible:outline-offset-[-2px]" aria-label={label}>
           <PendingReporter href={href} />
         </Link>
+      ) : (
+        <span className="sr-only">{label}</span>
       )}
     </article>
   );

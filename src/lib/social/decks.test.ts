@@ -77,10 +77,10 @@ describe("loadFriendDecks", () => {
     expect(JSON.stringify(deck)).not.toMatch(/deck-secret-id|private note|Shelf/);
   });
 
-  it("counts a pair against 98", async () => {
-    m.listDecksWithStats.mockResolvedValue([{ ...ROW, partnerName: "Tymna" }]);
+  it("counts a pair against 98, with the pair's whole identity", async () => {
+    m.listDecksWithStats.mockResolvedValue([{ ...ROW, partnerName: "Tymna", commanderColorIdentity: ["U"], partnerColorIdentity: ["W", "B"] }]);
     const [deck] = (await loadFriendDecks("user_viewer", "x"))!;
-    expect([deck.bodySize, deck.partnerName]).toEqual([98, "Tymna"]);
+    expect([deck.bodySize, deck.partnerName, deck.colorIdentity]).toEqual([98, "Tymna", ["W", "U", "B"]]);
   });
 
   // A fully owned junior deck whose copies senior decks hold reads To buy with toBuyCount 0: the figure is what the

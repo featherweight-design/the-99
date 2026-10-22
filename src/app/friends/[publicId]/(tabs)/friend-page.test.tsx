@@ -242,11 +242,21 @@ describe("a friend's page group", () => {
       expect(within(tile).getByRole("link").getAttribute("aria-label")).toBe("Sai, Blue, 99 cards");
     });
 
-    it("draws no press for a deck the owner's read carried no id for", async () => {
+    it("draws no press for a deck the owner's read carried no id for, and still names it to a screen reader", async () => {
       m.requestSwitchEnv.mockResolvedValue(OPEN);
       m.loadFriendDecks.mockResolvedValue([DECK]);
       render(await FriendDecksPage({ params: params() }));
-      expect(within(screen.getByTestId("friend-deck")).queryByRole("link")).toBeNull();
+      const tile = screen.getByTestId("friend-deck");
+      expect(within(tile).queryByRole("link")).toBeNull();
+      expect(within(tile).getByText("Thopter Factory, Sai, Master Thopterist, Blue, 99 cards").className).toContain("sr-only");
+    });
+
+    it("defers the art of every tile after the first four", async () => {
+      m.requestSwitchEnv.mockResolvedValue(OPEN);
+      m.loadFriendDecks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => ({ ...DECK, id: `${ID.slice(0, -1)}${i}`, name: `Deck ${i}`, artCropUri: `https://crop/${i}.jpg` })));
+      const html = renderToString(await FriendDecksPage({ params: params() }));
+      for (let i = 0; i < 4; i++) expect(html).toContain(`https://crop/${i}.jpg`);
+      for (let i = 4; i < 6; i++) expect(html).not.toContain(`https://crop/${i}.jpg`);
     });
 
     it("rewords the empty tab's body: a deck shared shows with its whole list", async () => {
