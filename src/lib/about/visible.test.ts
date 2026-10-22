@@ -667,6 +667,9 @@ describe("whats-new's line switches, in every state of the four switches they na
       expect(caption.includes("- A friend with a spare"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED") && on("SOCIAL_WISHLIST_ENABLED"));
       expect(caption.includes("Friends has its own spot"), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED") && on("SOCIAL_FRIENDS_ENABLED"));
       expect(caption.includes("In Settings, you choose"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED"));
+      // Settings' account-menu row exists with the place on only; off, Settings is reached from Home's Choose what shows.
+      expect(caption.includes("then in Settings, in the account menu."), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED"));
+      expect(caption.includes("then in Settings."), `mask ${mask}`).toBe(!on("COMMANDERS_PLACE_ENABLED"));
     }
   });
 });
