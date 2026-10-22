@@ -1,47 +1,41 @@
-# The 99 · Strategy focus · R1 (account 2, 2026-10-22)
+# The 99 · Strategy focus · R2 (account 2, 2026-10-22)
 
 Canvas: https://claude.ai/artifact/5DXdxuVHyRhgFAEV83mirP
 
-Brief: `docs/superpowers/design-briefs/2026-10-22-strategy-focus.md` (#2207), with Hugh's same-day ruling that replaces its
-center of gravity: the feature leads with a **strategy read** (1 credit, one model call, kept per deck version) that says how
-the deck wins, whether its strategies pull together or apart, its weak links (off-plan cards and holes), and 5 to 10 swaps
-built only from candidates the app finds. The strategies list (the brief's "radar") stays free and is the read's summary,
-before and after. The lean-in list is now the read's swap list, applied through the shipped add-and-cut flow.
+Brief: `docs/superpowers/design-briefs/2026-10-22-strategy-focus.md` (#2207), reshaped by Hugh on 2026-10-22 after R1:
+**one swap engine.** The free graph on Analysis shows what a deck is built around and lets the player pick a **focus**;
+Suggested changes (shipped, 1 credit) reads the focus, its additions lean toward it, and each says how far it moves it.
+Less on screen than R1: R1's separate paid read (how it wins, coherence, weak links, its own swaps) is dropped.
 
 Extends `design_handoff_the99_deck_analysis/`, `_analysis_tab/`, `_tuning_hub/`, `_deck_tuning/`. Drawn over the shipped
-Analysis tab on Hugh's HD - Avatar Aang, in Low Sun. Card thumbs are cut from Hugh's captures (`art/`).
+Analysis tab and Suggested changes (two lists) on Hugh's HD - Avatar Aang, in Low Sun. Cards are cut from Hugh's captures.
 
 ## Boards
 
 | Board | What |
 |---|---|
-| Main | The calls, and state 3 (read) on the whole Analysis tab, 390 and 1300 |
-| Read-States | States 1 not read, 2 reading, 4 stale with Read again, 5 out of credits, 6 failed with no charge |
-| Placement | Call A (list inside the read, picked; above it, not picked) and call B (phone: one scroll with two folds, picked; a Read/Swaps switch, not picked; a fold opened) |
-| Apply | Call C: one at a time, several (reject, then Apply the rest), all (Apply all), and checkboxes (not picked) |
-| Strategies | The free list's own states: one to four rows, nothing over the floor, too small (read waits too), typal replaces tribal, landfall as-is |
-| Form | Bars, not a spider; axis names |
-| History-And-About | A read's History row (new chip Read, new mark) and the About entry |
+| Main | The calls; the whole Analysis tab with a focus picked, 390 and 1300 |
+| Graph-Options | Four forms with Tokens as focus: A card piles (picked), B ring around the commander, C one strip, D bars (R1); names |
+| Focus-Flow | No focus; Suggested changes ready with the focus row; its swaps with the focus chip; two applied; the graph after (new cards on the pile, `11 +2`) |
+| Graph-States | One to four strategies, nothing over the floor, too small, typal replaces tribal, landfall as-is |
+| About | New entry "Giving a deck a focus" (chapter 04) |
 
-## Design's picks
+## Calls
 
-- **A · list inside the read.** One block, *What it's built around*: the list is the read's head (left on desktop, top on the
-  phone). Before a read, the read's side holds *Read my strategy* and the shipped credit line.
-- **B · phone.** One scroll. How it wins open; How its strategies fit and Weak links fold to a line that states the gist; then
-  the swaps.
-- **C · applying.** The shipped suggestion card and answered rows. One: Apply. Several: Reject the unwanted, then
-  *Apply the rest · N*. All: *Apply all N*. Shipped `lists` strings (`applyAll`, `applyRest`, `tally`). No checkboxes.
-- Kept per version: no Read again while the deck is unchanged (foot line *Kept for version 2*). Stale keeps the read under
-  the shipped dashed note with Read again; swaps are re-checked (shipped *no longer applies*).
-- Press, reading manifest, credit lines (L1, L4, again) and failure classes are the shipped Suggested changes shapes.
-- The read sits last in the reading on Analysis, above Tuning. Tuning keeps its four shipped tools.
+1. **Focus is a free pick on Analysis.** Press a strategy; *Keep it balanced* clears it. Saved on the deck. One line under the graph.
+2. **Suggested changes aims at it.** No new tool, no second credit. One manifest row (*This deck's focus · Tokens*), one lead
+   sentence. A focus change counts as new input for the unchanged-state rule.
+3. **Swaps show the shift.** An addition toward the focus carries a citation chip in the shipped pattern, kind `focus`,
+   value `Tokens 11 → 12` (dashed accent). Applying lands the card face up on its pile, outlined, count `11 +2` until the next commit.
+4. **Graph: card piles.** A stack per strategy, height by count, a real card from the deck face up on top; the focus pile lit.
+5. **Tuning keeps its four tools.** Analysis gets one block, last in the reading, above Tuning.
 
 ## Gaps and owed
 
-- All read text, strategy counts, holes and prices are fixtures until eng runs the read on staging.
-- Copy is placeholder for /copy-review (lead, fold summaries, Weak links labels, About caption and keys).
-- History row's chip and mark are a proposal; About switch name is eng's; a recapture with the switch on is owed.
-- The first R1 pass (a free "Double down" tool) was set aside after the ruling; its generator is not kept here.
+- Counts and the top card per strategy are fixtures until eng runs the read on staging (top card rule for eng: e.g. the deck's
+  highest-EDHREC card in that strategy).
+- Copy is placeholder for /copy-review. About switch name is eng's; recapture owed.
+- A card can count toward two strategies; piles show counts, not shares, so they don't overstate.
 
 `scratch-gen/` builds every board: `python3 build.py` (local, `out/`), `python3 build.py blob` (canvas, `/_blob` urls from
-`blobs.json`), `python3 render.py` (screenshots, broken-image and overflow check).
+`blobs.json`), `python3 render.py` (screenshots, broken-image and overflow check). R1's generator is in git history (3c8db5b).
