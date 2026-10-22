@@ -23,11 +23,11 @@ Readiness: `docs/superpowers/readiness/about-launch-end-r1.md` (Green, with its 
 | `/about` Reference, `#card-search` | ✓ | ✓ | Under Collection · Cards; the header search icon haloed |
 | `/about` Reference, `#card-scan` | ✓ | ✓ | Under Collection · Cards; the + haloed as a 36 square (G7) |
 | `/about` Reference, `#credits` with payments on | ✓ | ✓ | Opens `buying-credits` under the new Credits screen; the balance strip haloed; the welcome line is gone with its switch off |
-| What's new | ✓ | ✓ | In the `#getting-help` cells: the Reference's head lists the batch's titles for the fixture reader, who is behind 16 |
+| What's new (`#new`) | ✓ | ✓ | Its own row, walked first: "9 new since your last visit" lists the batch's titles for the fixture reader, who is behind 16 |
 | `/` Home | ✓ | ✓ | Drawn. Home's banner line is NOT walked: with `ABOUT_SHEET_ENABLED` off it never draws (`src/app/page.tsx` passes no About notice), so this walk's switch set cannot show it. Its titles and order are `arrivals-banner.test.tsx`'s |
-| The ? panel | n/a | n/a | Not walked: it is shell, outside the `<main>` the sheet's steps are scoped to. It reads the same `visibleEntries`, and `screenForPath` is unit-tested for `/credits` |
+| The ? panel on Home, Friends, Collection, `/credits` | ✓ | ✓ | `openHelp`, both widths. Home offers Getting help; Friends offers Inviting someone new and Checking tonight's table; Collection · Cards offers Scanning your cards and Looking up any card; Credits offers How credits work (`buying-credits`) |
 
-The 8 rows' 16 cells were photographed by `scripts/contact-sheet.mjs` over `docs/superpowers/inventories/about-launch-end.json`.
+The 13 rows' 26 cells were photographed by `scripts/contact-sheet.mjs` over `docs/superpowers/inventories/about-launch-end.json`.
 Desktop shows the phone picture at both widths, as Hugh ruled (G8).
 
 ## Against the brief
@@ -43,6 +43,13 @@ Desktop shows the phone picture at both widths, as Hugh ruled (G8).
   - With payments off, the shipped `credits` entry is unchanged and is still seen by version.
 - **Words.** The entries carry the handoffs' drafts after prose-pass, with the readiness errata applied, plus round 1's
   correction: Auto keeps the printing the scan matched. Titles and `opens` strings are as the handoff quotes them.
+
+## Fixed at close-out
+
+- **Getting help's teaser read "Every screen has a ?".** `sentenceOf` (`src/lib/about/caption.ts`) ended a sentence at any
+  `.`, `?` or `!` before a space, so the ? button standing alone cut the first sentence short in the ? panel and in the
+  Reference's closed row. A stop now has to close a word. The test in `help-panel.test.ts` fails without the fix
+  (mutation-checked).
 
 ## Not built, reported
 

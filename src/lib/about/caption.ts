@@ -18,7 +18,8 @@ function firstParagraph(caption: string): { text: string; items: string[] | null
 }
 
 function sentenceOf(text: string): string {
-  const m = /^.*?[.?!](?=\s|$)/.exec(text);
+  // The stop must close a word: "Every screen has a ? with…" names the ? button, and a ? standing alone ends nothing.
+  const m = /^.*?\S[.?!](?=\s|$)/.exec(text);
   return m ? m[0] : text;
 }
 

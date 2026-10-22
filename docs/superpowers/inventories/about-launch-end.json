@@ -1,7 +1,19 @@
 {
   "feature": "About launch-end batch (#2163, #2167): seven entries and ABOUT_VERSION 16",
-  "note": "Close-out walk. Needs `next start` with the capture switch set (docs/probes.md capture:about: every reader-facing switch on, PAYMENTS_ENABLED and SOCIAL_INVITES_ENABLED on, MOMENTS_ENABLED and ABOUT_SHEET_ENABLED off), on a scratch branch holding `pnpm fixtures:about`. Each Reference row opens one new entry by its hash and shows its haloed frame; `#credits` must land on buying-credits (payments on). The last row is Home. The ? panel is not a row: it is shell, outside the `<main>` every step is scoped to.",
+  "note": "Close-out walk. Needs `next start` with the capture switch set (docs/probes.md capture:about: every reader-facing switch on, PAYMENTS_ENABLED and SOCIAL_INVITES_ENABLED on, MOMENTS_ENABLED and ABOUT_SHEET_ENABLED off), on a scratch branch holding `pnpm fixtures:about`. Each Reference row opens one new entry by its hash and shows its haloed frame; `#credits` must land on buying-credits (payments on). What's new runs FIRST, before any /about visit can mark the batch seen. After the Reference rows come the ? panel on Home, Friends, Collection and `/credits` (`openHelp`), then Home, whose banner line never draws with `ABOUT_SHEET_ENABLED` off.",
   "rows": [
+    {
+      "id": "whats-new",
+      "label": "/about Reference, What's new (#new) for a reader behind 16",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#new",
+          "wait": "#new",
+          "settle": 1200
+        }
+      ]
+    },
     {
       "id": "ref-getting-help",
       "label": "/about Reference, #getting-help opened: Getting help on any screen (Home)",
@@ -83,6 +95,66 @@
           "goto": "/about?tab=reference#credits",
           "wait": "[data-entry-open='buying-credits']",
           "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "help-home",
+      "label": "/ Home, the ? panel offering this screen's entries",
+      "view": "src/components/help/help-panel.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "settle": 1500
+        },
+        {
+          "openHelp": true,
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "help-friends",
+      "label": "/friends Friends, the ? panel offering this screen's entries",
+      "view": "src/components/help/help-panel.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "settle": 1500
+        },
+        {
+          "openHelp": true,
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "help-collection",
+      "label": "/collection Collection, the ? panel offering this screen's entries",
+      "view": "src/components/help/help-panel.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "settle": 1500
+        },
+        {
+          "openHelp": true,
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "help-credits",
+      "label": "/credits Credits, the ? panel offering this screen's entries",
+      "view": "src/components/help/help-panel.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "settle": 1500
+        },
+        {
+          "openHelp": true,
+          "settle": 800
         }
       ]
     },
