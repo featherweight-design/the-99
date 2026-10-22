@@ -9,15 +9,15 @@
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { arrivalDismissKey, type ArrivalPrintings } from "../../lib/decks/arrival";
-import { useLocalFlag } from "./use-local-flag";
+import type { ArrivalPrintings } from "../../lib/decks/arrival";
 import { preconsCopy } from "../../lib/copy/precons";
 import type { PreconArrival } from "../../lib/precons/arrival-read";
 
 const copy = deckImportCopy.arrival;
 
 interface ArrivalStripProps {
-  deckId: string;
+  /** ✕: hides the receipt for the visit. The shell holds it; nothing is stored. */
+  onDismiss: () => void;
   /** Lines that came over, not cards — the sentence below says "lines", and a
    *  single line can carry many copies. */
   importedLineCount: number;
@@ -33,7 +33,7 @@ interface ArrivalStripProps {
   unresolved?: boolean;
 }
 
-export function ArrivalStrip({ deckId, importedLineCount, printings = null, added = null, unresolved = false }: ArrivalStripProps) {
+export function ArrivalStrip({ onDismiss, importedLineCount, printings = null, added = null, unresolved = false }: ArrivalStripProps) {
   // The locale is pinned for the same reason src/lib/copy/commanders.ts pins
   // it: an unpinned toLocaleString renders "1.418" under a European locale.
   const n = importedLineCount.toLocaleString("en-US");
@@ -41,7 +41,7 @@ export function ArrivalStrip({ deckId, importedLineCount, printings = null, adde
     const own = copy.own;
     return (
       <ArrivalBand
-        deckId={deckId}
+        onDismiss={onDismiss}
         lines={{
           head: unresolved
             ? printings
@@ -56,10 +56,10 @@ export function ArrivalStrip({ deckId, importedLineCount, printings = null, adde
     );
   }
   return (
+    // The phone takes the desktop sentence (deck messages A12): one line wherever it wraps.
     <ArrivalBand
-      deckId={deckId}
-      phone={printings ? copy.cleanWithPrintingsMobile(n, printings.kept, printings.notOwned) : copy.cleanMobile(n)}
-      desktop={printings ? copy.cleanWithPrintings(n, printings.kept, printings.notOwned) : copy.clean(n)}
+      onDismiss={onDismiss}
+      text={printings ? copy.cleanWithPrintings(n, printings.kept, printings.notOwned) : copy.clean(n)}
     />
   );
 }
@@ -67,15 +67,12 @@ export function ArrivalStrip({ deckId, importedLineCount, printings = null, adde
 /**
  * The strip's shell, for any arrival that says where a deck came from: an import, in one line per
  * width, or a precon start, in three lines at both (its handoff's S2: a head, a body, a meta line).
- * One dismissal per deck, kept in the browser, so a refresh does not bring it back.
+ * It lasts the visit it arrived with: ✕ hides it for the visit and nothing is stored.
  */
-export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
-  | { phone: string; desktop: string }
-  | { lines: { head: string; body: string; meta: string; /** A small link at the end of the body line (the precon start's History entry). */ link?: { href: string; label: string } } }
+export function ArrivalBand({ onDismiss, ...text }: { onDismiss: () => void } & (
+  | { text: string }
+  | { lines: { head: string; body: string; /** The import's own receipt keeps its meta line; the precon's does not. */ meta?: string; /** A small link at the end of the body line (the precon start's History entry). */ link?: { href: string; label: string } } }
 )) {
-  const [dismissed, dismiss] = useLocalFlag(arrivalDismissKey(deckId));
-  if (dismissed) return null;
-
   return (
     <ArrivalBandShell align={"lines" in text ? "start" : "center"}>
       {/* The mark sits at the band's top-left, level with the head, when the band has several lines. */}
@@ -101,15 +98,14 @@ export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
               </>
             ) : null}
           </p>
-          <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{text.lines.meta}</p>
+          {text.lines.meta ? <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{text.lines.meta}</p> : null}
         </div>
       ) : (
-        <p className="flex-1 m-0" style={{ color: "var(--fg-body)" }}>
-          <span className="md:hidden font-mono text-[10.5px]">{text.phone}</span>
-          <span className="hidden md:inline text-[13.5px]">{text.desktop}</span>
+        <p className="flex-1 m-0 text-[13.5px]" style={{ color: "var(--fg-body)" }}>
+          {text.text}
         </p>
       )}
-      <ArrivalDismiss onDismiss={dismiss} />
+      <ArrivalDismiss onDismiss={onDismiss} />
     </ArrivalBandShell>
   );
 }
@@ -145,10 +141,10 @@ export function ArrivalBandShell({ children, align = "center" }: { children: Rea
   );
 }
 
-/** The strip after a precon start (precons S2, S2b): where the deck came from, what the cards are, and, when the
+/** The strip after a precon start (precons S2, S2b): where the deck came from, what you own of it, and, when the
  *  start also added the box to the collection, that it did and where History keeps it. One band, not two. */
-export function PreconArrivalBand({ deckId, arrival, added = null }: {
-  deckId: string;
+export function PreconArrivalBand({ onDismiss, arrival, added = null }: {
+  onDismiss: () => void;
   arrival: PreconArrival;
   /** The start's collection add, read from the ledger for this reader; null when it added nothing. */
   added?: { entryId: string } | null;
@@ -156,15 +152,15 @@ export function PreconArrivalBand({ deckId, arrival, added = null }: {
   const c = preconsCopy.arrival;
   return (
     <ArrivalBand
-      deckId={deckId}
+      onDismiss={onDismiss}
       lines={{
         head: c.head(arrival.name),
+        // The shorter receipt: what you own, and no line about Shopping or the set's printings.
         body: added
           ? c.added(arrival.cards, arrival.unmapped)
           : arrival.owned === arrival.of
             ? c.bodyAll(arrival.unmapped)
-            : c.body(arrival.unmapped, arrival.owned, arrival.of, arrival.of - arrival.owned),
-        meta: c.meta(arrival.setCode),
+            : c.bodyShort(arrival.unmapped, arrival.owned, arrival.of),
         ...(added ? { link: { href: `/collection/history?entry=${added.entryId}`, label: c.history } } : {}),
       }}
     />

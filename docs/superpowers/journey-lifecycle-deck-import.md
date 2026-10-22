@@ -58,8 +58,10 @@ a new costume.
 
 1. **The celebration one-shot** — `celebrationKey(deckId)` =
    `the99:celebrated:<deckId>`.
-2. **The arrival dismissal** — `arrivalDismissKey(deckId)` =
-   `the99:import-arrival-dismissed:<deckId>`.
+2. **The arrival dismissal** — retired by deck messages PR 4a (2026-10-22). It was
+   `arrivalDismissKey(deckId)` = `the99:import-arrival-dismissed:<deckId>`; a receipt now lasts the
+   visit it arrived with (`useVisitReceipts`), its ✕ hides it for the visit and nothing is stored, so
+   there is no key left to collide. The reasoning below is kept for the record.
 
 **The verification.** Deck ids are `uuid("id").primaryKey().defaultRandom()` in
 `src/db/schema.ts` §decks. `defaultRandom()` is Postgres `gen_random_uuid()`,

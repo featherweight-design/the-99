@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  arrivalDismissKey,
   arrivedFromImport,
   IMPORTED_PARAM,
   arrivalPrintingsParam,
@@ -74,15 +73,6 @@ describe("readUpdateArrival", () => {
 
   it("names the param the apply appends", () => {
     expect(UPDATED_PARAM).toBe("updated");
-  });
-});
-
-describe("arrivalDismissKey", () => {
-  // Deck ids are defaultRandom() uuids, so re-importing the same list after a
-  // delete produces a different key and the strip shows again.
-  it("is per deck", () => {
-    expect(arrivalDismissKey("a")).not.toBe(arrivalDismissKey("b"));
-    expect(arrivalDismissKey("a")).toContain("a");
   });
 });
 

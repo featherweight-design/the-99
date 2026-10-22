@@ -342,16 +342,13 @@ export const deckImportCopy = {
   // One dismissible strip. There is no "import complete" screen — the deck is
   // the confirmation.
   arrival: {
-    cleanMobile: (n: string) => `All ${n} came over · from your list, just now`,
     clean: (n: string) =>
       `All ${n} lines came over clean. Imported from your list a moment ago.`,
     // Deck printings: the clean strip with the import's printing clauses (R3 canvas, part C; Hugh's
     // ruling a adds the not-owned clause). `kept` and `notOwned` are card counts, either 0 to omit
-    // its clause; the caller uses `clean` when both are. The phone keeps the canvas's short form.
+    // its clause; the caller uses `clean` when both are.
     cleanWithPrintings: (n: string, kept: number, notOwned: number) =>
       `All ${n} lines came over clean, ${printingClauses(kept, notOwned, "with the printing you own")}. Imported from your list a moment ago.`,
-    cleanWithPrintingsMobile: (n: string, kept: number, notOwned: number) =>
-      `All ${n} came over · ${printingClauses(kept, notOwned, kept === 1 ? "printing kept" : "printings kept")}`,
     dismiss: "Dismiss",
     // No-collection entry R2 (S10): the ticked import's strip, in the precon start's three-line form
     // at both widths. `lines` is the deck's line count, `copies` the copies the add wrote.

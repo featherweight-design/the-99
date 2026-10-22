@@ -102,30 +102,27 @@ export function RoleCounterStrip({
           {roleStripCopy.mixLabel}
         </span>
 
-        {/* §Strip header — source copy (desktop). The phone had its own
-            "a guide, not a gate" gloss here; both said the same thing and
-            neither said what the numbers are, which is what StripRationale
-            below is for. */}
-        <span
-          className="hidden md:inline font-mono text-[10.5px]"
-          style={{ color: "var(--fg-faint)" }}
-        >
-          {mixSourceLine(mix)}
-        </span>
-
-        {/* §Strip header — the draft sub-run (#389, surface 1). `wasCounts` is
-            the draft's own presence: absent on a brew and on a committed deck
-            with nothing pending, which is exactly when the figures below have
-            only one list to have come from. It rides the source line's size and
-            breakpoint so the two read as one sentence. */}
-        {wasCounts && (
-          <span
-            className="hidden md:inline font-mono text-[10.5px] tracking-[0.06em]"
-            style={{ color: "var(--accent-text)" }}
-          >
-            {deckVersioningCopy.pending.mixStripDraftNote}
+        {/* §Strip header — the source line and the draft sub-run. The phone takes both (deck messages A16,
+            R1's phone parity): they sit on the label row's right, and from md they flatten into the row
+            as before. The source line says what the numbers are, StripRationale below says why. */}
+        <div className="flex items-baseline gap-[8px] md:contents">
+          <span className="font-mono text-[9.5px] md:text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
+            {mixSourceLine(mix)}
           </span>
-        )}
+
+          {/* §Strip header — the draft sub-run (#389, surface 1). `wasCounts` is the draft's own presence:
+              absent on a brew and on a committed deck with nothing pending, which is exactly when the figures
+              below have only one list to have come from. It rides the source line's size, so the two read as
+              one sentence. */}
+          {wasCounts && (
+            <span
+              className="font-mono text-[9.5px] md:text-[10.5px] tracking-[0.06em]"
+              style={{ color: "var(--accent-text)" }}
+            >
+              {deckVersioningCopy.pending.mixStripDraftNote}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Role cells row */}

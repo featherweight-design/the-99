@@ -3,6 +3,7 @@ import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 import { LABEL_ROLE_TARGETS } from "../recs/roles";
 import type { RoleBasis } from "../profile/build";
 import { FLAT_LAND, landTarget } from "./deck-size";
+import { roleStripCopy } from "../copy/decks-builder";
 
 // ---------------------------------------------------------------------------
 // Recommended mix constants + role-cell state helper
@@ -167,7 +168,7 @@ export function recommendedMix(
  * it would be this surface saying it in the most prominent place the app has for it.
  */
 export function mixSourceLine(mix: RecommendedMix): string {
-  return mix.measured ? "EDHREC averages" : "A common starting point";
+  return mix.measured ? roleStripCopy.sourceMeasured : roleStripCopy.sourceStarting;
 }
 
 // Colour and control now answer to the same number. An advisory role used to be

@@ -6,7 +6,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
-import { arrivalDismissKey } from "../../lib/decks/arrival";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { recommendedMix } from "../../lib/decks/mix";
 import { reveal } from "../../lib/ui/reveal";
@@ -120,7 +119,6 @@ describe("Arrival strip (state 13)", () => {
       renderBuilder(makeDeck(), true);
     });
     expect(screen.getByText(copy.arrival.clean("99"))).toBeInTheDocument();
-    expect(screen.getByText(copy.arrival.cleanMobile("99"))).toBeInTheDocument();
   });
 
   // The ticked strip's head is a claim about what the import brought over: resolving its lines while the strip is up
@@ -165,7 +163,7 @@ describe("Arrival strip (state 13)", () => {
           degraded={false}
           firstRun={false}
           commanderIdentity={["B", "R", "G"]}
-          arrivedFromImport
+          arrivedFromImport={false}
           importAddReceipt={null}
          newestAsOf={null}/>,
       );
@@ -207,39 +205,27 @@ describe("Arrival strip (state 13)", () => {
     expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
   });
 
-  it("dismisses, and the dismissal is keyed to the deck id", async () => {
+  // A receipt lasts the visit (deck messages A12): the ✕ hides it for the visit and nothing is stored.
+  it("dismisses for the visit and stores nothing", async () => {
     await act(async () => {
       renderBuilder(makeDeck(), true);
     });
     fireEvent.click(screen.getByRole("button", { name: copy.arrival.dismiss }));
     expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
-    expect(localStorage.getItem(arrivalDismissKey("deck-1"))).toBe("1");
+    expect(localStorage.length).toBe(0);
   });
 
-  // The repeat pass of the journey lifecycle, in a test: import, delete, import
-  // the same list again. A dismissal keyed to anything the two imports share —
-  // the list, the commander, the name — would silence the second one.
-  it("returns for a new deck built from the same list", async () => {
-    localStorage.setItem(arrivalDismissKey("deck-1"), "1");
+  it("comes back on the next arrival, whatever was dismissed before", async () => {
+    let view!: ReturnType<typeof renderBuilder>;
     await act(async () => {
-      renderBuilder(makeDeck({ id: "deck-2" }), true);
-    });
-    expect(screen.getByText(copy.arrival.clean("99"))).toBeInTheDocument();
-  });
-
-  it("stays dismissable when storage throws", async () => {
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
-    await act(async () => {
-      renderBuilder(makeDeck({ id: "deck-nostorage" }), true);
+      view = renderBuilder(makeDeck(), true);
     });
     fireEvent.click(screen.getByRole("button", { name: copy.arrival.dismiss }));
-    expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
-    vi.restoreAllMocks();
+    view.unmount();
+    await act(async () => {
+      renderBuilder(makeDeck(), true);
+    });
+    expect(screen.getByText(copy.arrival.clean("99"))).toBeInTheDocument();
   });
 
   // The strip says "nothing needs your attention". The unresolved row says the opposite.

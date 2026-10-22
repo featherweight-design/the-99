@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DECK_TOAST_CLAIM, TOAST_MS } from "../collection/edit-toast";
-import { TokenRefusalToast } from "./token-refusal-toast";
+import { DeckRefusalToast, TokenRefusalToast } from "./token-refusal-toast";
 
 afterEach(() => {
   cleanup();
@@ -88,5 +88,15 @@ describe("TokenRefusalToast", () => {
       receipt.remove();
       globalThis.ResizeObserver = original;
     }
+  });
+});
+
+describe("DeckRefusalToast (a card's failed removal, deck messages A1)", () => {
+  it("is a deck-slot alert: the title, the card's name as the detail, no press", () => {
+    render(<DeckRefusalToast title="We couldn’t remove that." detail="Sol Ring" onDone={() => {}} />);
+    const alert = screen.getByRole("alert");
+    expect(alert.getAttribute("data-toast")).toBe("deck");
+    expect(alert.textContent).toBe("We couldn’t remove that.Sol Ring");
+    expect(alert.querySelector("button, a")).toBeNull();
   });
 });
