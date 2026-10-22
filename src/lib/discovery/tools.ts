@@ -39,7 +39,7 @@ const hub = tuningHubCopy.tools;
 
 export const TOOLS = [
   // Start a deck
-  { id: "help-me-choose", group: "start", switch: "HELP_ME_CHOOSE_ENABLED", entry: "help-me-choose", target: "help-me-choose", lands: { kind: "route", href: "/commanders/choose" }, credit: null, needsDeck: false },
+  { id: "help-me-choose", group: "start", switch: "HELP_ME_CHOOSE_ENABLED", entry: "help-me-choose", target: "help-me-choose", lands: { kind: "route", href: "/decks/new/choose" }, credit: null, needsDeck: false },
   { id: "precons", group: "start", switch: "PRECONS_ENABLED", entry: "precons", target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
   // Tune it
   { id: "top-off", group: "tune", switch: null, entry: "auto-fill", target: "top-off", lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },

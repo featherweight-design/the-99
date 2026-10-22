@@ -182,15 +182,23 @@ describe("the choose page", () => {
     expect(plain.props.standing).toBeNull();
   });
 
-  it("sends an old GET submit to the form with its answers, never starting a read", async () => {
-    await expect(ChoosePage({ searchParams: Promise.resolve({ v: "submit", w: "scary", t: "horrors" }) }))
-      .rejects.toThrow(/NEXT_REDIRECT/);
+  it.each([
+    ["off", undefined, "/decks/new/choose?"],
+    ["on", "true", "/commanders/choose?"],
+  ])("sends an old GET submit to the form with its answers at the address the switch gives (%s), never starting a read", async (_name, placeOn, address) => {
+    if (placeOn) vi.stubEnv("COMMANDERS_PLACE_ENABLED", placeOn);
     try {
-      await ChoosePage({ searchParams: Promise.resolve({ v: "submit", w: "scary", t: "horrors" }) });
-    } catch (e) {
-      const digest = String((e as { digest?: string }).digest);
-      expect(digest).toContain("/commanders/choose?");
+      let digest = "";
+      try {
+        await ChoosePage({ searchParams: Promise.resolve({ v: "submit", w: "scary", t: "horrors" }) });
+      } catch (e) {
+        digest = String((e as { digest?: string }).digest);
+      }
+      expect(digest).toContain("NEXT_REDIRECT");
+      expect(digest).toContain(address);
       expect(digest).not.toContain("v=results");
+    } finally {
+      vi.unstubAllEnvs();
     }
   });
 
@@ -241,7 +249,7 @@ describe("the choose page", () => {
     it("says the run will not open when it is gone, another player's, failed or unreadable", async () => {
       for (const past of [null, { state: { kind: "none" }, at: "x" }, { state: { kind: "failed" }, at: "x" }, { state: { kind: "stopped" }, at: "x" }]) {
         stub.past.mockResolvedValue(past);
-        expect(find(await open(), PastWontOpen)!.props).toMatchObject({ historyHref: "/commanders/choose?v=history" });
+        expect(find(await open(), PastWontOpen)!.props).toMatchObject({ historyHref: "/decks/new/choose?v=history" });
       }
       stub.past.mockRejectedValue(new Error("db down"));
       expect(find(await open(), PastWontOpen)).toBeTruthy();

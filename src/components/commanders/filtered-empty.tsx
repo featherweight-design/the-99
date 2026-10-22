@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { laneHref } from "./list-nav";
+import { usePlace } from "./place-paths";
 
 /** Three hairline diamonds, the same rotated square the end-of-ranking rule
     draws, so every full-stop on this page is furniture of one family.
@@ -170,6 +171,7 @@ export function OwnedSearchEmpty({
   total: number;
   onClearSearch: () => void;
 }) {
+  const place = usePlace();
   return (
     <ZeroState
       heading={commandersCopy.emptySearch.heading}
@@ -180,7 +182,7 @@ export function OwnedSearchEmpty({
         </PrimaryButton>
       }
       secondary={
-        <GhostButton href={laneHref("discover", query)} className={ZERO_SECONDARY}>
+        <GhostButton href={laneHref("discover", query, place)} className={ZERO_SECONDARY}>
           {commandersCopy.emptySearch.otherLane}
         </GhostButton>
       }

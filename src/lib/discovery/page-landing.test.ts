@@ -5,7 +5,7 @@ import { TOOLS, pageToolLanding, type ToolId } from "./tools";
 
 // Every page a Try it lands on (discovery R2·3), with the tool it reads `?tool=` for and the target it haloes.
 const PAGES: { tool: ToolId; route: string; target: string }[] = [
-  { tool: "help-me-choose", route: "/commanders/choose", target: "help-me-choose" },
+  { tool: "help-me-choose", route: "/decks/new/choose", target: "help-me-choose" },
   { tool: "precons", route: "/decks/precons", target: "precons" },
   { tool: "find-a-deck", route: "/collection?avail=free", target: "find-a-deck" },
   { tool: "wishlist", route: "/collection/wishlist", target: "wishlist" },

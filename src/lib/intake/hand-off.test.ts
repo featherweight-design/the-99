@@ -3,6 +3,8 @@ import { handOffFrom, resultsHref } from "./hand-off";
 import { handOffHref } from "../../components/intake/choose-row";
 import { emptyParams, parseChooseParams } from "./params";
 
+const AT = "/commanders/choose";
+
 const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
 
@@ -12,9 +14,9 @@ describe("the hand-off's params", () => {
     const press = new URL(handOffHref(COMMANDER, p), "http://x");
     expect(press.searchParams.get("commander")).toBe(COMMANDER);
     const asked = handOffFrom(press.searchParams)!;
-    expect(asked).toEqual(parseChooseParams(new URLSearchParams(new URL(resultsHref(asked), "http://x").search)));
+    expect(asked).toEqual(parseChooseParams(new URLSearchParams(new URL(resultsHref(AT, asked), "http://x").search)));
     expect(asked).toMatchObject({ words: "big lizards", colors: ["r", "g"], themes: ["dinosaurs"], card: CARD, budgetDollars: 150, bracket: 2 });
-    expect(new URL(resultsHref(asked), "http://x").pathname).toBe("/commanders/choose");
+    expect(new URL(resultsHref(AT, asked), "http://x").pathname).toBe("/commanders/choose");
   });
 
   it("is no hand-off without the results marker: a picker press or a commander page's link draws today's page", () => {

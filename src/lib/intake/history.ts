@@ -51,7 +51,8 @@ export type RawRun = {
   result: unknown;
 };
 
-export function shapeRun(raw: RawRun): ChooseHistoryRow | null {
+/** `path` is where Help me choose lives for the reader (`choosePath`). */
+export function shapeRun(raw: RawRun, path: string): ChooseHistoryRow | null {
   const state = raw.status === "pending" ? "reading" : raw.status === "ok" ? "ok" : raw.errorClass === "nothing_valid" ? "nothing" : null;
   if (state === null) return null;
   const p = parseChooseParams(new URLSearchParams(raw.ask));
@@ -69,7 +70,7 @@ export function shapeRun(raw: RawRun): ChooseHistoryRow | null {
     thumbArt: [],
     picks: state === "ok" ? picks.length : 0,
     pool: typeof result?.pool === "number" ? result.pool : null,
-    href: pastRunHref(raw.ask, raw.id),
+    href: pastRunHref(path, raw.ask, raw.id),
   };
 }
 

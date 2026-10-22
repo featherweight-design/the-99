@@ -27,6 +27,7 @@ import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseHistoryCopy as historyCopy } from "../../../../lib/copy/help-me-choose-history";
 import { loadChooseHistory, loadPastRead } from "../../../../lib/intake/history-read";
+import { choosePath } from "../../../../lib/commanders/place-paths";
 import { commandersPlaceEnabled } from "../../../../lib/commanders/place-flag";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
@@ -37,7 +38,7 @@ import { buysCard } from "../../../../lib/intake/buys-card";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
-import { BUSY_PARAM, CHOOSE_PATH, formTarget, FORM_PARAM, PAST_PARAM, REPEAT_PARAM } from "../../../../lib/intake/submit";
+import { BUSY_PARAM, formTarget, FORM_PARAM, PAST_PARAM, REPEAT_PARAM } from "../../../../lib/intake/submit";
 import { GonePicks, PastRunMeta, PastRunNote, PastWontOpen } from "../../../../components/intake/past-run";
 import { completePastDeckNames, loadGonePicks } from "../../../../lib/intake/past-run";
 import { withPayments } from "../../../../lib/payments/flag";
@@ -78,12 +79,13 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   if (!helpMeChooseEnabled(env)) notFound();
   // On the Commanders place the strip is the way out, so the form draws no "back to New deck" link.
   const placeOn = commandersPlaceEnabled(env);
+  const chooseAt = choosePath(placeOn);
   const rawQuery = await searchParams;
   const sp = toSearchParams(rawQuery);
   const p = parseLiveParams(sp);
 
   // Outside any try: `redirect` throws, and a catch would swallow it.
-  if (sp.get("v") === "submit") redirect(formTarget(p));
+  if (sp.get("v") === "submit") redirect(formTarget(chooseAt, p));
 
   // The labels only: nothing on this route builds the card-name index any more.
   // The form needs the vocabulary to draw its picker, and fails without it. The results only name
@@ -119,7 +121,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               sub={copy.intake.sub}
               subPhone={copy.intake.subPhone}
               centered
-              trailing={<HistoryLink href={`${CHOOSE_PATH}?v=history`} label={historyCopy.link} />}
+              trailing={<HistoryLink href={`${chooseAt}?v=history`} label={historyCopy.link} />}
             />
             <IntakeForm themes={themes} sets={sets} initial={p} standing={allowance && toStanding(allowance, now)} bracketReach={bracketReachEnabled(env)} />
           </div>
@@ -128,7 +130,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           </aside>
           {historyView ? (
             <div className="lg:hidden">
-              <HistoryLink href={CHOOSE_PATH} label={historyCopy.back} back />
+              <HistoryLink href={chooseAt} label={historyCopy.back} back />
               <ChooseHistory initial={history} layout="view" />
             </div>
           ) : null}
@@ -171,13 +173,13 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
       <div className="flex flex-col">
         <ToolLandingMount landing={null} request={request} />
         <ChooseHeader
-          back={{ href: `${CHOOSE_PATH}?v=history`, label: historyCopy.past.back }}
+          back={{ href: `${chooseAt}?v=history`, label: historyCopy.past.back }}
           title={copy.results.title}
           sub={copy.results.sub}
           subPhone={copy.results.subPhone}
         />
         <div className={RESULTS_COLUMN}>
-          <PastWontOpen historyHref={`${CHOOSE_PATH}?v=history`} />
+          <PastWontOpen historyHref={`${chooseAt}?v=history`} />
         </div>
       </div>
     );
@@ -196,7 +198,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     set: (code: string) => setNames.get(code) ?? code.toUpperCase(),
   };
   // A change of answers is a new ask: it carries neither the read nor its marks.
-  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, results: false })}`;
+  const changeHref = `${chooseAt}${serializeChooseParams({ ...p, notUsed: [], readId: null, results: false })}`;
   const panel = words && !isPast ? (
     <ReadPanel
       key={served?.kind ?? "unread"}
@@ -234,7 +236,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
       <div className="flex flex-col">
         <ToolLandingMount landing={null} request={request} />
         <ChooseHeader
-          back={isPast ? { href: `${CHOOSE_PATH}?v=history`, label: historyCopy.past.back } : { href: changeHref, label: copy.results.back }}
+          back={isPast ? { href: `${chooseAt}?v=history`, label: historyCopy.past.back } : { href: changeHref, label: copy.results.back }}
           title={copy.results.title}
           sub={copy.results.sub}
           subPhone={copy.results.subPhone}
@@ -255,7 +257,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
             offer={isPast && served?.kind === "nothing" ? nothingPanel : panel}
             card={card ?? null}
             changeHref={changeHref}
-            startOverHref={CHOOSE_PATH}
+            startOverHref={chooseAt}
           />
           <DimWhileReading hold={holdList}>
           <Suspense

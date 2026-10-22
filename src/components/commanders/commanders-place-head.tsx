@@ -8,8 +8,10 @@
 // and the strip comes first, as Collection's does.
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { PlaceStrip, type PlaceTab } from "../place/place-strip";
+import { refreshCommanderCounts } from "../../app/commanders/actions";
 import { commandersPlaceCopy } from "../../lib/copy/commanders-place";
 
 export type CommandersPlace = "foryou" | "discover" | "choose";
@@ -33,17 +35,54 @@ export function commandersPlaceFromPathname(pathname: string): CommandersPlace |
   return null;
 }
 
-export function CommandersPlaceHead({ helpMeChoose }: { helpMeChoose: boolean }) {
+type Counts = { owned: number; discover: number } | null;
+
+export function CommandersPlaceHead({ helpMeChoose, counts: initialCounts }: { helpMeChoose: boolean; counts: Counts }) {
   const pathname = usePathname();
   const current = commandersPlaceFromPathname(pathname);
   if (current === null) {
     throw new Error(`CommandersPlaceHead rendered on an unrecognised path: ${pathname}`);
   }
+  // The layout that mounts this does not re-run on a sibling navigation, so the figures are re-read here on every
+  // tab switch and on window focus, and only the latest of several in-flight reads may apply. A failed read leaves
+  // the line as it was. The first pass is skipped: the layout's props are already fresh.
+  const [counts, setCounts] = useState<Counts>(initialCounts);
+  const latest = useRef(0);
+  const isFirstRun = useRef(true);
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    const ticket = ++latest.current;
+    void refreshCommanderCounts()
+      .then((next) => {
+        if (ticket === latest.current) setCounts(next);
+      })
+      .catch(() => {});
+  }, [pathname]);
+  useEffect(() => {
+    const onFocus = () => {
+      const ticket = ++latest.current;
+      void refreshCommanderCounts()
+        .then((next) => {
+          if (ticket === latest.current) setCounts(next);
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+  const line = counts ? commandersPlaceCopy.count(counts.owned, counts.discover) : "";
   return (
     <div style={{ background: "var(--bg)" }}>
       <div className="hidden md:block md:p-[28px_34px_0]">
         <p className="font-display font-bold m-0 md:text-[30px] md:leading-[45px]" style={{ color: "var(--fg)" }}>
           {commandersPlaceCopy.title}
+        </p>
+        {/* A line is always reserved, so the strip's top does not move when the figures arrive or leave. */}
+        <p className="font-mono text-[12px] leading-[18px] mt-[4px] mb-0 min-h-[18px]" style={{ color: "var(--fg-faint)" }}>
+          {line}
         </p>
       </div>
       <PlaceStrip

@@ -1,6 +1,9 @@
 import { and, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
+import { choosePath } from "../commanders/place-paths";
+import { commandersPlaceEnabled } from "../commanders/place-flag";
+import { requestSwitchEnv } from "../switches/request";
 import { cards, intakeReads } from "../../db/schema";
 import {
   CHOOSE_HISTORY_PAGE, decodeKey, encodeKey, shapeRun,
@@ -54,11 +57,12 @@ export async function loadChooseHistory(
   const limit = opts.limit ?? CHOOSE_HISTORY_PAGE;
   const key = decodeKey(opts.cursor);
   await reapAbandonedReads(userId, opts.now);
+  const path = choosePath(commandersPlaceEnabled(await requestSwitchEnv(userId)));
   const found = await runsPageQuery(userId, key, limit);
   const more = found.length > limit;
   const page = found.slice(0, limit);
   const rows = page.flatMap((r) => {
-    const row = r.ask === null ? null : shapeRun({ ...r, ask: r.ask });
+    const row = r.ask === null ? null : shapeRun({ ...r, ask: r.ask }, path);
     return row ? [row] : [];
   });
   const last = page[page.length - 1];

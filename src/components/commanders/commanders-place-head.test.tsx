@@ -4,6 +4,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 const path = vi.hoisted(() => ({ value: "/commanders" }));
 vi.mock("next/navigation", () => ({ usePathname: () => path.value }));
 vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
+const refresh = vi.hoisted(() => vi.fn(async () => ({ owned: 1, discover: 2 })));
+vi.mock("../../app/commanders/actions", () => ({ refreshCommanderCounts: refresh }));
 
 const { CommandersPlaceHead, commandersPlaceFromPathname, visibleCommandersTabs } = await import("./commanders-place-head");
 
@@ -32,17 +34,25 @@ describe("visibleCommandersTabs", () => {
 describe("CommandersPlaceHead", () => {
   it("draws the strip as links with the current tab marked", () => {
     path.value = "/commanders/discover";
-    render(<CommandersPlaceHead helpMeChoose />);
+    render(<CommandersPlaceHead helpMeChoose counts={null} />);
     const links = screen.getAllByRole("link");
     expect(links.map((l) => l.getAttribute("href"))).toEqual(["/commanders", "/commanders/discover", "/commanders/choose"]);
     expect(links.map((l) => l.getAttribute("aria-current"))).toEqual([null, "page", null]);
     // The page below draws the route's one h1; the place's title is not a heading.
     expect(screen.queryByRole("heading")).toBeNull();
   });
+  it("states the two figures on the title line, and leaves out a half with nothing to say", () => {
+    path.value = "/commanders";
+    render(<CommandersPlaceHead helpMeChoose counts={{ owned: 228, discover: 3068 }} />);
+    expect(screen.getByText("228 yours, not yet built · 3,068 to discover")).toBeTruthy();
+    cleanup();
+    render(<CommandersPlaceHead helpMeChoose counts={{ owned: 0, discover: 3068 }} />);
+    expect(screen.getByText("3,068 to discover")).toBeTruthy();
+  });
   it("refuses a path outside the place", () => {
     path.value = "/collection";
     const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(() => render(<CommandersPlaceHead helpMeChoose />)).toThrow(/unrecognised path/);
+    expect(() => render(<CommandersPlaceHead helpMeChoose counts={null} />)).toThrow(/unrecognised path/);
     quiet.mockRestore();
   });
 });

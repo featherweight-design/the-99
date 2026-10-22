@@ -4,6 +4,14 @@ export const commandersPlaceCopy = {
   /** The nav landmark's name. */
   regionAria: "Commanders sections",
   title: "Commanders",
+  /** The title line's figures; a half with nothing to say is left out. Pinned to en-US as the other count lines are. */
+  count: (owned: number, discover: number) =>
+    [
+      owned > 0 ? `${owned.toLocaleString("en-US")} yours, not yet built` : null,
+      discover > 0 ? `${discover.toLocaleString("en-US")} to discover` : null,
+    ]
+      .filter((part) => part !== null)
+      .join(" · "),
   tabs: {
     foryou: "For you",
     discover: "Discover",

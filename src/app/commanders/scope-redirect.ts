@@ -1,3 +1,4 @@
+import { discoverPath } from "../../lib/commanders/place-paths";
 import { parseLaneParams, serializeLaneParams } from "../../lib/commanders/lane-params";
 
 // The legacy `scope` toggle became two routes. A bookmark keeps its colours,
@@ -7,7 +8,7 @@ import { parseLaneParams, serializeLaneParams } from "../../lib/commanders/lane-
 // The legacy keys need no handling here: `parseLaneParams` reads `join`,
 // `avail` and `sort` as fallbacks, and `serializeLaneParams` writes only the
 // new ones, so the redirect emits a clean URL from a legacy one.
-export function scopeRedirectTarget(sp: URLSearchParams): string | null {
+export function scopeRedirectTarget(sp: URLSearchParams, place: boolean): string | null {
   const scope = sp.get("scope");
   if (scope === null) return null;
   // Any value that is not `play` is the owned lane, which is what the parameter
@@ -23,5 +24,5 @@ export function scopeRedirectTarget(sp: URLSearchParams): string | null {
   // mode is `free` would land in Free under a link that asked for All.
   if (lane === "owned" && (sp.get("a") ?? sp.get("avail")) === "all") qs.set("a", "all");
   const query = qs.toString();
-  return `${lane === "discover" ? "/discover" : "/commanders"}${query ? `?${query}` : ""}`;
+  return `${lane === "discover" ? discoverPath(place) : "/commanders"}${query ? `?${query}` : ""}`;
 }

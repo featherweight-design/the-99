@@ -34,7 +34,7 @@ describe("GuidedBanner", () => {
     render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} helpMeChoose />);
     const links = screen.getAllByRole("link", { name: "Help me choose →" });
     expect(links).toHaveLength(2);
-    for (const a of links) expect(a).toHaveAttribute("href", "/commanders/choose");
+    for (const a of links) expect(a).toHaveAttribute("href", "/decks/new/choose");
     expect(screen.getByTestId("guided-choose-phone")).toHaveTextContent("Not sure which? Help me choose →");
     expect(links[0].className.split(/\s+/)).toEqual(expect.arrayContaining(["inline-flex", "min-h-[32px]"]));
     expect(links[1].className).not.toContain("min-h-[32px]");

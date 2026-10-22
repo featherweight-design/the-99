@@ -16,6 +16,7 @@ function input(over: Partial<ShowcaseInput> = {}): ShowcaseInput {
     fits: {},
     deckCount: 3,
     hasSyncBase: true,
+    place: false,
     ...over,
   };
 }
@@ -85,7 +86,7 @@ describe("showcaseGroups", () => {
 
   it("names where a tool with a page of its own goes, with the landing's parameter", () => {
     const groups = showcaseGroups(input());
-    expect(card(groups, "help-me-choose")!.state).toEqual({ kind: "page", href: "/commanders/choose?tool=help-me-choose", label: "Open Help me choose" });
+    expect(card(groups, "help-me-choose")!.state).toEqual({ kind: "page", href: "/decks/new/choose?tool=help-me-choose", label: "Open Help me choose" });
     expect(card(groups, "find-a-deck")!.state).toEqual({ kind: "page", href: "/collection?avail=free&tool=find-a-deck", label: "Try it on a card you own" });
   });
 

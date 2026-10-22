@@ -5,6 +5,8 @@
 //
 // Behind `COMMANDERS_PLACE_ENABLED`: off, the layout is a pass-through and every route renders as shipped.
 import { requireUserId } from "../../../lib/auth";
+import { loadCommanderCounts } from "../../../lib/commanders/counts";
+import { getCollectionStats } from "../../../lib/home/summary";
 import { commandersPlaceEnabled } from "../../../lib/commanders/place-flag";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
@@ -13,11 +15,15 @@ import { CollectionContentScope } from "../../../components/collection/collectio
 import { commandersPlaceFromPathname } from "../../../components/commanders/commanders-place-head";
 
 export default async function CommandersListLayout({ children }: { children: React.ReactNode }) {
-  const env = await requestSwitchEnv(await requireUserId());
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   if (!commandersPlaceEnabled(env)) return <>{children}</>;
+  // No cards, no figures: the tabs under the strip draw their own empty state.
+  const stats = await getCollectionStats(userId);
+  const counts = stats.uniqueCards === 0 ? null : await loadCommanderCounts(userId);
   return (
     <>
-      <CommandersPlaceHead helpMeChoose={helpMeChooseEnabled(env)} />
+      <CommandersPlaceHead helpMeChoose={helpMeChooseEnabled(env)} counts={counts} />
       <CollectionContentScope inPlace={(pathname) => commandersPlaceFromPathname(pathname) !== null}>{children}</CollectionContentScope>
     </>
   );

@@ -8,7 +8,9 @@ import { loadBuiltCommanderIds } from "../../lib/decks/built";
 import { loadNameMatches } from "../../lib/discovery/candidates";
 import { classifyMatches, type ExcludedMatch } from "../../lib/discovery/excluded-match";
 import { loadDiscoveryPool } from "../../lib/discovery/list";
+import { loadCommanderCounts } from "../../lib/commanders/counts";
 import { deleteAllScores } from "../../lib/recs/store";
+import { getCollectionStats } from "../../lib/home/summary";
 import { requestSwitchEnv } from "../../lib/switches/request";
 
 /**
@@ -87,4 +89,14 @@ export async function rememberCommandersAvail(avail: unknown): Promise<void> {
   if (!isAvail(avail)) return;
   const userId = await requireUserId();
   await writeCommandersAvail(userId, avail);
+}
+
+/**
+ * The Commanders place head's two figures, re-read on a tab switch and on window focus: the place's layout does not
+ * re-run on a sibling navigation, so a deck built or a collection changed since its first render would leave them stale.
+ */
+export async function refreshCommanderCounts(): Promise<{ owned: number; discover: number } | null> {
+  const userId = await requireUserId();
+  const stats = await getCollectionStats(userId);
+  return stats.uniqueCards === 0 ? null : loadCommanderCounts(userId);
 }
