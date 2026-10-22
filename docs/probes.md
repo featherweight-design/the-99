@@ -2599,6 +2599,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   scratch branch) must equal the branch the database reports, and staging, production and local-dev are refused by id.
   Two per-run accounts, purged in a finally, plus two `catalog_first_seen` set stamps it deletes by key. Its first run
   found the union refusing `uuid` against `text` (`friend_public_id`), which every unit test had rendered and passed.
+- `pnpm probe:feed-writers` proves the news feed's three writers (menu and Home PR 5) against a real schema and the real
+  catalog. PRICE DROP: the real wishlist write records `price_at_add_cents` as today's cheapest (the buy tag's figure) and
+  a quantity change keeps it; `noticePriceDrops` backfills a line with no baseline (and does not tell it that run), tells a
+  fallen line once under the card and ISO week with `price_noticed_at` set, tells nothing on a second run that week, tells
+  it again a week on, and never tells a line whose kind is off, whose reader has the wishlist switched off, or which the
+  collection reached. COMBO: a real counted two-card variant, card A then card B through `applyCollectionChange`, is told
+  once, keyed on the variant and naming the card added; another copy tells nothing; combo off tells nothing; a
+  `replaceCollection` that adds a pair tells it and not a pair it kept; a first fill of an empty collection tells nothing.
+  TRADE MATCH: `noticeTradeMatches` tells a friend's spare of a wished card once (card and friend), writes nothing on a
+  repeat or a cold instance's full read, and the feed names the friend by public id. Same target rules as
+  `probe:feed-store` (`FEED_PROBE_URL`, `FEED_PROBE_BRANCH`, protected branches refused by id); two per-run accounts purged
+  in a finally. The price job it runs reads every reader on the branch whose price-drop kind is on.
 - `pnpm probe:invites` proves the sender's invite writes (plan `2026-10-16-invites.md` PR 2) against a real database,
   with Clerk STUBBED (no real invitation): every count, the invariant after every write, a press made while another
   write holds the sender's lock waiting and then finding none left (mutation-checked: drop the lock and it over-holds),
