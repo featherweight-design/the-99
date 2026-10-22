@@ -38,6 +38,7 @@ vi.mock("../../db", () => {
 });
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => true }));
+vi.mock("next/server", () => ({ after: (fn: () => void) => fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => state.revalidated.push(a) }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
@@ -113,12 +114,19 @@ describe("unlinkPrecon", () => {
 
 describe("dismissPreconSuggestions (deck messages A11)", () => {
   const DECK = "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11";
-  beforeEach(() => { state.inserted = []; state.selects = []; });
+  beforeEach(() => { state.inserted = []; state.selects = []; state.revalidated = []; });
 
   it("records one key per deck and precon on the reader's account", async () => {
     state.selects = [[{ id: DECK }]];
     await dismissPreconSuggestions(DECK, ["A", "B"]);
     expect(state.inserted).toEqual([{ userId: "user_1", preconSuggestionsDismissed: [`${DECK}:A`, `${DECK}:B`] }]);
+  });
+
+  it("revalidates the deck's own surfaces once the key is saved, so Back does not bring the strip back", async () => {
+    state.selects = [[{ id: DECK }]];
+    state.revalidated = [];
+    await dismissPreconSuggestions(DECK, ["A"]);
+    expect(state.revalidated).toEqual(expect.arrayContaining([[`/decks/${DECK}`]]));
   });
 
   it("writes nothing for a deck the reader does not own", async () => {
