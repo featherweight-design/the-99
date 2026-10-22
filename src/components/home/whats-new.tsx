@@ -66,7 +66,7 @@ export function WhatsNew({ feed, now, faces, className = "" }: { feed: HomeFeed;
       </h2>
       <div className="flex flex-col overflow-hidden rounded-[14px] [border:1px_solid_var(--border)] bg-[color:var(--surface-inset)]">
         {!chosen ? (
-          <OptIn offer={feed.offer} />
+          <OptIn key={feed.offer.join(",")} offer={feed.offer} />
         ) : feed.items.length === 0 ? (
           <Quiet on={feed.on} />
         ) : (
@@ -155,6 +155,7 @@ function OptIn({ offer }: { offer: FeedKind[] }) {
               <label className="flex min-h-[44px] cursor-pointer items-start gap-[12px] py-[8px]">
                 <Checkbox
                   checked={on.includes(kind)}
+                  disabled={busy}
                   onChange={(v) => setOn((prev) => (v ? [...prev.filter((x) => x !== kind), kind] : prev.filter((x) => x !== kind)))}
                   className="mt-[1px]"
                 />

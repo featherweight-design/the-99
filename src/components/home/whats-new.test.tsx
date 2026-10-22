@@ -99,4 +99,24 @@ describe("WhatsNew, nothing chosen: the inline opt-in", () => {
     // A refusal redraws the page, so the boxes offered are the current ones.
     expect(nav.refresh).toHaveBeenCalled();
   });
+
+  it("holds the boxes while a save is in flight, so the visible choice is the saved one", async () => {
+    let finish!: (v: unknown) => void;
+    save.mockReturnValue(new Promise((r) => (finish = r)));
+    render(<WhatsNew feed={offer} now={NOW} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /New sets/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Show these" }));
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: /Combos you can make/ })).toBeDisabled());
+    finish({ ok: true, changed: true });
+  });
+
+  it("drops a selection the page no longer offers when the offer shrinks", () => {
+    const { rerender } = render(<WhatsNew feed={offer} now={NOW} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Combos you can make/ }));
+    rerender(<WhatsNew feed={{ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match"] }} now={NOW} />);
+    expect(screen.queryByRole("checkbox", { name: /Combos you can make/ })).toBeNull();
+    // Back to the full offer: the box the reader had ticked is not ticked behind their back.
+    rerender(<WhatsNew feed={offer} now={NOW} />);
+    expect(screen.getByRole("checkbox", { name: /Combos you can make/ })).not.toBeChecked();
+  });
 });

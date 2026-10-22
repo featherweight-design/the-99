@@ -29,6 +29,7 @@ export function LeadStory({
   return (
     <section
       data-lead-story={item.kind}
+      data-feed-lead
       aria-labelledby="home-lead-title"
       className={`relative flex gap-[16px] overflow-hidden rounded-[14px] [border:1px_solid_var(--accent)] bg-[color:var(--surface-rail)] p-[16px_16px_16px_14px] md:items-center md:gap-[28px] md:p-[20px_24px_20px_26px] ${className}`}
     >
@@ -60,12 +61,12 @@ export function LeadStory({
         </h3>
         {text.line && <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:max-w-[640px] md:text-[13.5px]">{text.line}</p>}
         {text.press && (
-          <div className="mt-[6px] flex flex-wrap gap-[8px]">
+          <div className="mt-[6px] flex min-w-0 flex-wrap gap-[8px]">
             <FeedPress
               item={item}
               label={text.press}
               stretch=""
-              className="inline-flex h-[40px] items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] font-sans text-[13.5px] font-semibold whitespace-nowrap text-[color:var(--bg)] md:h-[36px] md:text-[13px]"
+              className="inline-flex min-h-[40px] max-w-full min-w-0 items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] py-[6px] text-center font-sans text-[13.5px] font-semibold [overflow-wrap:anywhere] text-[color:var(--bg)] md:min-h-[36px] md:text-[13px]"
             />
           </div>
         )}

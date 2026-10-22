@@ -13,7 +13,12 @@ const stub = vi.hoisted(() => ({
   homeFriends: vi.fn(),
   inviteCount: vi.fn(),
   tourSeen: null as Date | null,
+  loadFeed: vi.fn(),
+  feedAfter: vi.fn(() => async () => {}),
+  after: vi.fn(),
 }));
+vi.mock("next/server", async (orig) => ({ ...(await orig<object>()), after: stub.after }));
+vi.mock("../lib/feed/home", async (orig) => ({ ...(await orig<object>()), loadHomeFeed: stub.loadFeed, homeFeedAfter: stub.feedAfter }));
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: "user_1" }) }));
 vi.mock("@clerk/nextjs", () => ({ SignInButton: () => null }));
@@ -63,6 +68,9 @@ beforeEach(() => {
   stub.receipt.mockReset();
   stub.homeFriends.mockReset();
   stub.inviteCount.mockReset();
+  stub.loadFeed.mockReset();
+  stub.feedAfter.mockClear();
+  stub.after.mockReset();
 });
 
 describe("Home's arrivals banner", () => {
@@ -279,5 +287,28 @@ describe("The tour taken again (Discovery R3·2)", () => {
     expect(on.props.tourAgain).toBe(true);
     stub.env = {};
     expect((await visit()).props.tourAgain).toBe(false);
+  });
+});
+
+describe("Home's feed visit writes (menu and Home PR 6)", () => {
+  it("schedules the seen write after a feed that loaded", async () => {
+    stub.env = { ...ON, HOME_FEED_ENABLED: "true" };
+    stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, total: 0 });
+    await HomePage();
+    expect(stub.after).toHaveBeenCalledTimes(1);
+  });
+
+  it("schedules none when the feed could not be read: the cursor must not clear what was never drawn", async () => {
+    stub.env = { ...ON, HOME_FEED_ENABLED: "true" };
+    stub.loadFeed.mockRejectedValue(new Error("catalog lookup failed"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    await HomePage();
+    err.mockRestore();
+    expect(stub.after).not.toHaveBeenCalled();
+  });
+
+  it("schedules none with the feed off", async () => {
+    await HomePage();
+    expect(stub.after).not.toHaveBeenCalled();
   });
 });

@@ -348,15 +348,18 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // Home is still a Home visit and its badge clears there.
   const feedOn = homeFeedEnabled(env);
   let feed: HomeFeed | null = null;
+  let feedFailed = false;
   if (feedOn && !data.firstRun) {
     try {
       feed = await loadHomeFeed(userId, env, now);
     } catch (error) {
+      feedFailed = true;
       // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
       console.error("home: the feed could not be read", error instanceof Error ? error.message : "");
     }
   }
-  if (feedOn) after(homeFeedAfter(userId, env, now));
+  // Not after a failed read: the cursor would clear items that were never drawn.
+  if (feedOn && !feedFailed) after(homeFeedAfter(userId, env, now));
 
   if (data.firstRun) {
     return (

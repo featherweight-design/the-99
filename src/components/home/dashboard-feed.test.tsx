@@ -72,6 +72,8 @@ describe("Home, direction B", () => {
     const { container } = render(<Dashboard {...BASE} feed={chosen([view(1, { unseen: true }), view(2)], { lead: LEAD, unseen: 2 })} />);
     expect(readyToBuild()).toBeNull();
     const lead = container.querySelector("[data-lead-story=trade-match]")!;
+    // The About capture finds the lead by this attribute (about-locators.mjs).
+    expect(lead).toHaveAttribute("data-feed-lead");
     expect(lead).toHaveTextContent("Colin has a spare Ghalta, Primal Hunger");
     expect(lead.querySelector("[data-lead-face] [data-face=art]")).not.toBeNull();
     expect(lead.querySelector('[data-commander-thumb="lead"]')).not.toBeNull();
