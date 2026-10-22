@@ -1,4 +1,5 @@
 // The push actions' gates: what they refuse before anything is written (plan 2026-10-22-push.md, PR 2).
+import { createECDH } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ available: true, kinds: [] as string[], set: vi.fn(), save: vi.fn(), remove: vi.fn(), revalidatePath: vi.fn() }));
@@ -12,7 +13,9 @@ vi.mock("../../lib/push/subscriptions", () => ({ saveDevice: m.save, removeDevic
 
 import { savePushKinds, subscribeDevice, unsubscribeDevice } from "./push-actions";
 
-const point = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 7)]).toString("base64url");
+const ecdh = createECDH("prime256v1");
+ecdh.generateKeys();
+const point = ecdh.getPublicKey().toString("base64url");
 const device = { endpoint: "https://fcm.googleapis.com/fcm/send/abc", p256dh: point, auth: Buffer.alloc(16, 9).toString("base64url"), userAgent: "Chrome", timeZone: "UTC" };
 
 beforeEach(() => {
@@ -53,6 +56,8 @@ describe("subscribeDevice", () => {
     expect(await subscribeDevice(device)).toEqual({ ok: false, reason: "off" });
     m.available = true;
     expect(await subscribeDevice({ ...device, endpoint: "https://evil.example.com/x" })).toEqual({ ok: false, reason: "invalid" });
+    const offCurve = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 7)]).toString("base64url");
+    expect(await subscribeDevice({ ...device, p256dh: offCurve })).toEqual({ ok: false, reason: "invalid" });
     expect(m.save).not.toHaveBeenCalled();
   });
 });

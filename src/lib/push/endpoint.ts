@@ -4,6 +4,8 @@
  * (or anyone with a session) cannot make the sender call an arbitrary address. A browser's endpoint is always one of
  * these, over https.
  */
+import { createECDH } from "node:crypto";
+
 import { validTimeZone } from "./hold";
 
 /** Exact hosts and host suffixes of the push services the supported browsers use: Chrome and Edge, Firefox, Safari, Windows. */
@@ -29,10 +31,22 @@ export function isPushEndpoint(value: unknown): value is string {
 const B64URL = /^[A-Za-z0-9_-]+$/;
 const decoded = (v: unknown): Buffer | null => (typeof v === "string" && B64URL.test(v) ? Buffer.from(v, "base64url") : null);
 
-/** The browser's public key: an uncompressed P-256 point. */
+/**
+ * The browser's public key: an uncompressed P-256 point that lies ON the curve. A length and prefix check passes any 64
+ * bytes after `0x04`; only the curve itself says whether the sender could encrypt to it, so Node's own point validation
+ * decides (`computeSecret` refuses an off-curve public key). A bad value is false, never a throw.
+ */
 export const isP256dh = (v: unknown): v is string => {
   const b = decoded(v);
-  return b !== null && b.length === 65 && b[0] === 0x04;
+  if (b === null || b.length !== 65 || b[0] !== 0x04) return false;
+  try {
+    const ecdh = createECDH("prime256v1");
+    ecdh.generateKeys();
+    ecdh.computeSecret(b);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 /** The browser's auth secret: 16 random bytes. */

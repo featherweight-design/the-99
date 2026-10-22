@@ -1,8 +1,15 @@
+import { createECDH } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import { isAuthSecret, isP256dh, isPushEndpoint, parseDevice } from "./endpoint";
 
-const point = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 7)]).toString("base64url");
+function validPoint(): string {
+  const ecdh = createECDH("prime256v1");
+  ecdh.generateKeys();
+  return ecdh.getPublicKey().toString("base64url");
+}
+const point = validPoint();
+const offCurve = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 7)]).toString("base64url");
 const auth = Buffer.alloc(16, 9).toString("base64url");
 const good = { endpoint: "https://fcm.googleapis.com/fcm/send/abc123", p256dh: point, auth, userAgent: "Chrome 140 on Android", timeZone: "America/Denver" };
 
@@ -37,6 +44,8 @@ describe("a push endpoint is one of the push services' own hosts", () => {
 describe("the browser's keys", () => {
   it("wants a 65-byte uncompressed point and a 16-byte secret", () => {
     expect(isP256dh(point)).toBe(true);
+    expect(isP256dh(offCurve)).toBe(false); // right length and prefix, not a point on P-256
+    expect(isP256dh(Buffer.concat([Buffer.from([4]), Buffer.alloc(64)]).toString("base64url"))).toBe(false);
     expect(isP256dh(Buffer.alloc(65, 1).toString("base64url"))).toBe(false); // no 0x04 prefix
     expect(isP256dh(auth)).toBe(false);
     expect(isAuthSecret(auth)).toBe(true);
@@ -53,6 +62,7 @@ describe("parseDevice", () => {
   it("refuses a bad endpoint or key, and anything that is not an object", () => {
     expect(parseDevice({ ...good, endpoint: "https://evil.example.com/x" })).toBeNull();
     expect(parseDevice({ ...good, p256dh: auth })).toBeNull();
+    expect(parseDevice({ ...good, p256dh: offCurve })).toBeNull();
     expect(parseDevice({ ...good, auth: point })).toBeNull();
     for (const v of [null, "x", 3, [good]]) expect(parseDevice(v)).toBeNull();
   });

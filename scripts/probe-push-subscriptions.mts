@@ -8,6 +8,7 @@
 // never staging, production or local-dev. Its accounts are made-up ids and it removes every row it wrote, in a finally.
 //
 //   PROBE_DB_BRANCH=br-… pnpm probe:push-subscriptions
+import { createECDH } from "node:crypto";
 import "./lib/env.mjs";
 
 const PROTECTED = new Set(["br-polished-pond-a6e63y0b", "br-noisy-violet-a6vw4ess", "br-patient-hall-a6nbonvo"]);
@@ -21,7 +22,9 @@ const check = (label: string, ok: boolean, detail = "") => {
   if (!ok) failed++;
 };
 
-const point = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 7)]).toString("base64url");
+const ecdh = createECDH("prime256v1");
+ecdh.generateKeys();
+const point = ecdh.getPublicKey().toString("base64url");
 const authKey = Buffer.alloc(16, 9).toString("base64url");
 const device = (n: number, tz = "UTC") => ({ endpoint: `https://fcm.googleapis.com/fcm/send/${run}-${n}`, p256dh: point, auth: authKey, userAgent: `probe ${n}`, timeZone: tz });
 
@@ -76,6 +79,8 @@ async function main() {
   } finally {
     await db.delete(pushSubscriptions).where(like(pushSubscriptions.endpoint, `%${run}-%`));
     await db.delete(userPrefs).where(like(userPrefs.userId, `probe_push_%_${run}`));
+    // The user_prefs trigger fires on DELETE too, so a failed run leaves stamp rows behind unless they go as well.
+    await db.execute(sql`delete from user_data_stamps where user_id like ${`probe_push_%_${run}`}`);
   }
   if (failed) throw new Error(`${failed} check(s) failed`);
   console.log("\nall checks passed");
