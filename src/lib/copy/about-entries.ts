@@ -478,10 +478,14 @@ export const aboutEntries: readonly AboutEntry[] = [
       'A story stays 14 days. Opening Home marks it seen.',
       'Old links to Discover and Help me choose land on their tabs.',
       'Friends see your deck names, commanders and statuses, never the lists.',
+      'Friends can see your decks and their lists, except drafts and decks you’re building.',
     ],
     keySwitches: {
       'Old links to Discover and Help me choose land on their tabs.': 'COMMANDERS_PLACE_ENABLED',
-      'Friends see your deck names, commanders and statuses, never the lists.': 'SOCIAL_FRIENDS_ENABLED',
+      // Friend decks (close-out, READINESS 7): with the switch on, friends see the lists, so the key takes the privacy
+      // line's default sentence instead.
+      'Friends see your deck names, commanders and statuses, never the lists.': ['SOCIAL_FRIENDS_ENABLED', '!FRIEND_DECKS_ENABLED'],
+      'Friends can see your decks and their lists, except drafts and decks you’re building.': 'FRIEND_DECKS_ENABLED',
     },
     // A switched entry is announced by its id, with no version bump (`about.ts`, above `ABOUT_VERSION`): its `since` is the
     // version current when it ships.

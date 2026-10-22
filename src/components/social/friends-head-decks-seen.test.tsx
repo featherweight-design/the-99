@@ -22,18 +22,21 @@ describe("the privacy line", () => {
     expect(el.querySelector("a")).toBeNull();
   });
 
-  it("says friends open your full decks under the default rules", () => {
+  it("says what friends see under the default rules", () => {
     const el = line({ seeDecks: true, seeUnfinished: false });
-    expect(el.textContent).toBe("Friends can open your full decks and see their lists. Change this in Settings.");
+    expect(el.textContent).toBe("Friends can see your decks and their lists, except drafts and decks you’re building. Change this in Settings.");
     const link = el.querySelector("a")!;
     expect(link.getAttribute("href")).toBe("/settings");
     expect(link.textContent).toBe("Settings");
-    expect(link.className).toContain("text-[color:var(--accent-text)]");
+    // The board's bare underline in the line's own faint ink, never the name line's accent.
+    expect(link.className).toContain("underline");
+    expect(link.className).not.toContain("accent-text");
+    expect(el.className).toContain("mt-[6px]");
   });
 
   it("says all your decks with drafts included", () => {
     expect(line({ seeDecks: true, seeUnfinished: true }).textContent).toBe(
-      "Friends can open all your decks and see their lists. Change this in Settings.",
+      "Friends can see all your decks and their lists. Change this in Settings.",
     );
   });
 

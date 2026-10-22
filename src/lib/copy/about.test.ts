@@ -143,8 +143,11 @@ describe("about content", () => {
     for (const e of aboutEntries) {
       expect(e.route, `${e.id} has no route`).toBeTruthy();
       // Rule 3 of the copy file: zero keys is a finished answer, four is the
-      // ceiling the annotation grammar can draw.
-      expect(e.keys.length, `${e.id} has ${e.keys.length} keys`).toBeLessThanOrEqual(4);
+      // ceiling the annotation grammar can draw. A key kept only while a switch is OFF (`!S`) and one kept only while
+      // it is ON (`S`) are never drawn together, so such a pair counts once (friend decks: the friends key's privacy
+      // sentence swaps on FRIEND_DECKS_ENABLED).
+      const drawn = e.keys.length - swappedPairs(e.keySwitches ?? {});
+      expect(drawn, `${e.id} draws up to ${drawn} keys`).toBeLessThanOrEqual(4);
     }
   });
 });
@@ -193,3 +196,8 @@ describe("every entry's place (discovery R2, E8)", () => {
   });
 });
 
+/** How many keys of an entry are the OFF half of an exclusive pair: one key needs `!S`, another needs `S`. */
+function swappedPairs(switches: Partial<Record<string, string | readonly string[]>>): number {
+  const sets = Object.values(switches).map((sw) => new Set(typeof sw === "string" ? [sw] : (sw ?? [])));
+  return sets.filter((off) => [...off].some((one) => one.startsWith("!") && sets.some((on) => on.has(one.slice(1))))).length;
+}

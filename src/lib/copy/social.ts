@@ -50,10 +50,10 @@ export const socialCopy = {
     // The privacy line (menu and Home PR 7, G4): what a friend's Decks tab shows of yours. Undrawn; words through /copy-review.
     decksSeen: "Friends see your deck names, commanders and statuses, never the lists.",
     // With friend decks on (`FRIEND_DECKS_ENABLED`), the line follows the reader's own two Settings rules, and
-    // `settings` is drawn as a link to /settings. Placeholder words, for /copy-review.
+    // `settings` is drawn as a link to /settings. Passed /copy-review.
     decksSeenBy: {
-      finished: "Friends can open your full decks and see their lists.",
-      all: "Friends can open all your decks and see their lists.",
+      finished: "Friends can see your decks and their lists, except drafts and decks you’re building.",
+      all: "Friends can see all your decks and their lists.",
       none: "Friends can’t see your decks.",
       change: "Change this in",
       settings: "Settings",
@@ -122,8 +122,8 @@ export const socialCopy = {
       emptyTitle: (name: string) => `${name} has no decks yet`,
       emptyBody: (name: string) => `A deck ${name} builds shows here, as a name, a commander and a status.`,
       // Friend decks (handoff call 6, States): every tile opens the deck, and the tile shows a count, never a status.
-      // Placeholder words, for /copy-review.
-      lineOpen: (name: string) => `${name}’s decks, newest first. Open one to see its list.`,
+      // Passed /copy-review: the head names the friend and the strip names the tab, so the line says only the order and the press.
+      lineOpen: "Newest first. Open one to see its list.",
       emptyBodyOpen: (name: string) => `A deck ${name} shares shows here, with its whole list.`,
       /** The tile's press, named with what the tile shows, in its order. */
       tileAria: (deck: string, commander: string | null, colour: string, cards: string) =>
@@ -132,7 +132,7 @@ export const socialCopy = {
   },
 
   // Hidden from friends (friend decks handoff, README 4 and 4b): the deck ⋯ menu's row, the header's mark, the /decks
-  // tile's glyph and its key. Placeholder words, for /copy-review.
+  // tile's glyph and its key. Passed /copy-review.
   hideDeck: {
     row: "Hidden from friends",
     /** Under a row the owner's Settings rules already tick; the `›` is drawn apart, hidden from a screen reader. */
@@ -145,7 +145,7 @@ export const socialCopy = {
   },
 
   // A friend's deck, opened read-only (friend decks handoff, board 1 and States). The own band, the shared-deck lines,
-  // the group notes and the basics line are the precon page's own words (`preconsCopy`). Placeholder words, for /copy-review.
+  // the group notes and the basics line are the precon page's own words (`preconsCopy`). Passed /copy-review.
   friendDeck: {
     back: (name: string) => `‹ ${name}’s decks`,
     eyebrow: (name: string) => `${name}’s deck · read-only`,

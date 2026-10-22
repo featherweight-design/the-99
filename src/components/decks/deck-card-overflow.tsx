@@ -273,7 +273,9 @@ export function DeckCardOverflow({
   const [hideToast, setHideToast] = useState<SocialToastState | null>(null);
   const hideToastSeq = useRef(0);
   // The owner's Settings rules already hide this deck: the row draws ticked and locked, and its press opens Settings.
-  const hideLocked = friends ? settingsHideDeck(friends.statusPill, friends.prefs) : false;
+  // Never for a deck hidden on its own: its flag must stay clearable, or a deck hidden while Settings also hid it could
+  // not be unhidden until Settings changed (close-out).
+  const hideLocked = friends ? !friends.hidden && settingsHideDeck(friends.statusPill, friends.prefs) : false;
 
   async function handleHide(e: React.MouseEvent) {
     e.preventDefault();

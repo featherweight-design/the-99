@@ -128,7 +128,8 @@ describe("a friend's page group", () => {
     expect(html).toMatch(/data-testid="friend-tab-wishlist-count"[^>]*>1</);
     expect(html).toMatch(/data-testid="friend-tab-decks-count"[^>]*>1</);
     expect(html).toContain("<p>tab</p>");
-    expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId);
+    // The reader's own FRIEND_DECKS_ENABLED (off here) rides the read, so the layout and the tab share one cached read.
+    expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId, false);
   });
 
   it("leaves the Wishlist tab out, and never reads it, while its switch is off", async () => {
@@ -230,7 +231,7 @@ describe("a friend's page group", () => {
       expect(press.getAttribute("aria-label")).toBe("Thopter Factory, Sai, Master Thopterist, Blue, 99 cards");
       expect(tile.textContent).toContain("99 cards");
       expect(tile.textContent).not.toMatch(/To buy|99 \/ 99/);
-      expect(screen.getByText(p.decks.lineOpen("Colin"))).toBeTruthy();
+      expect(screen.getByText(p.decks.lineOpen)).toBeTruthy();
     });
 
     it("keeps the colour alone when the deck is named for its commander", async () => {
@@ -242,13 +243,18 @@ describe("a friend's page group", () => {
       expect(within(tile).getByRole("link").getAttribute("aria-label")).toBe("Sai, Blue, 99 cards");
     });
 
-    it("draws no press for a deck the owner's read carried no id for, and still names it to a screen reader", async () => {
+    // Close-out: the owner's switch off leaves the read with no ids. The tab is then as it shipped, rather than open tiles
+    // with no press under a line that says to open one.
+    it("draws the tab as it shipped when the owner's read carried no ids: the status, no press, no Open one", async () => {
       m.requestSwitchEnv.mockResolvedValue(OPEN);
       m.loadFriendDecks.mockResolvedValue([DECK]);
       render(await FriendDecksPage({ params: params() }));
+      expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
       const tile = screen.getByTestId("friend-deck");
       expect(within(tile).queryByRole("link")).toBeNull();
-      expect(within(tile).getByText("Thopter Factory, Sai, Master Thopterist, Blue, 99 cards").className).toContain("sr-only");
+      expect(tile.textContent).toContain("To buy");
+      expect(screen.queryByText(p.decks.lineOpen)).toBeNull();
+      expect(screen.getByText(p.decks.line("Colin"))).toBeTruthy();
     });
 
     it("defers the art of every tile after the first four", async () => {

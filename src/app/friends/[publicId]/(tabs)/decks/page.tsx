@@ -14,7 +14,7 @@ export default async function FriendDecksPage({ params }: { params: Promise<{ pu
   const env = await requestSwitchEnv(userId);
   if (!socialFriendsEnabled(env)) notFound();
   const { publicId } = await params;
-  const [friend, decks] = await Promise.all([loadFriend(userId, publicId), friendDecks(userId, publicId)]);
+  const [friend, decks] = await Promise.all([loadFriend(userId, publicId), friendDecks(userId, publicId, friendDecksEnabled(env))]);
   if (!friend || decks === null) notFound();
   return <FriendDecksTab name={friend.displayName} decks={decks} publicId={friend.publicId} open={friendDecksEnabled(env)} />;
 }

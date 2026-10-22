@@ -61,8 +61,8 @@ export const gameSeatsCopy = {
     justFriendSub: "no deck or commander",
     /**
      * Not drawn in the handoff (friend decks PR 5, Hugh's ruling 2026-10-22): offered when the friend's own rules keep
-     * some deck, or all of them, out of the picker. Seats the friend with no deck, as Just <name> does. Placeholder for
-     * /copy-review.
+     * some deck, or all of them, out of the picker. Seats the friend with no deck, as Just <name> does. Passed
+     * /copy-review; "A deck not listed" is Hugh's wording, locked.
      */
     notListed: "A deck not listed",
     notListedSub: "no deck is named",

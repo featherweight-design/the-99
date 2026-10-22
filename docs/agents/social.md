@@ -132,8 +132,15 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
   `Complete`.
 - **Whose switch.** The filter is decided under the owner's resolved switches (their privacy); the page route and the
   tile's link under the viewer's. Off for the owner, `loadFriendDecks` returns every deck as it shipped and carries no
-  id, and `loadFriendDeck` is null. Filtering before the owner can see the Settings defaults would take drafts off a
-  friend's tab unannounced, which is why the switch stays in `ALL_FEATURES_EXCLUDED` until the owner controls land.
+  id, and `loadFriendDeck` is null. The open tile (`OpenFriendDeck`: an id, and no status or to-buy figure, so
+  nothing of the owner's money is sent; the stats read still reads Shopping for the status) needs BOTH switches:
+  `loadFriendDecks(viewer, publicId, viewerOpen)` returns it only then, and the tab draws open tiles only when the read carried ids, so a mixed pair draws the tab as it shipped rather
+  than tiles under "Open one" with nothing to open. With the viewer's off and the owner's on, that shipped tab is
+  already filtered by the owner's rules (the owner's privacy wins) while its line still names drafts: a state only
+  per-account overrides can reach.
+- **All features.** `FRIEND_DECKS_ENABLED` stays in `ALL_FEATURES_EXCLUDED` after the line closes, until its About entry
+  ships (READINESS G6): no account, an All features one included, gets the feature in production before that. The
+  friends About key already swaps its privacy sentence on the switch (`keySwitches`, `!FRIEND_DECKS_ENABLED`).
 - **The page's read.** The owner's own `getDeckDetail`, run as its owner with `Promise.resolve(null)` in place of the
   shared availability read, so the owner's claim model never runs for a friend; then cut field by field to
   `FriendDeckCard` (catalog facts and the owner's printing; no price, availability, proxy, lock, auto tag or combo

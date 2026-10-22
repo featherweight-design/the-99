@@ -126,7 +126,7 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  */
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
   FRIEND_DECKS_ENABLED:
-    "its read filters a friend's Decks tab by the owner's new Settings defaults, which hide drafts, before any surface lets the owner see or change them (friend decks handoff, PR 4)",
+    "the line's surfaces have all shipped (PRs 1 to 5) but its About entry has not: the feature does not go on in production, an All features account included, until Design draws the entry and it ships (friend decks close-out)",
   NEAR_COMBOS_ENABLED:
     "backend only until Design prompt 17's surface ships: no surface draws the near-combos reads yet (plan 2026-10-22-near-combos-backend.md)",
   PUSH_ENABLED:

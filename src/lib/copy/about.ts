@@ -151,7 +151,9 @@ export type AboutSwitch =
   | 'WELCOME_CREDITS_ENABLED'
   // The menu and Home line (plan 2026-10-22-menu-home.md): Home's news feed, and Commanders as one place with its tabs.
   | 'HOME_FEED_ENABLED'
-  | 'COMMANDERS_PLACE_ENABLED';
+  | 'COMMANDERS_PLACE_ENABLED'
+  // Friend decks (close-out): the friends key's privacy sentence follows it. Its own entry is deferred (READINESS G6).
+  | 'FRIEND_DECKS_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is

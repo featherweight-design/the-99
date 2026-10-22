@@ -1,3 +1,4 @@
+import { socialCopy } from "../copy/social";
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
@@ -387,6 +388,28 @@ describe("a negated line switch, and `import`'s two warnings (collection edit)",
     const e: AboutEntry = { ...aboutEntries[0], id: "neg", since: 3, keys: ["Old", "New"], keySwitches: { Old: "!COLLECTION_EDIT_ENABLED", New: "COLLECTION_EDIT_ENABLED" } };
     expect(resolveEntry(e, env()).keys).toEqual(["Old"]);
     expect(resolveEntry(e, env("true")).keys).toEqual(["New"]);
+  });
+});
+
+// Friend decks close-out (READINESS 7): the friends key says "never the lists" only while friend decks are off, and the
+// privacy line's default sentence once they are on.
+describe("the friends key follows FRIEND_DECKS_ENABLED", () => {
+  const OLD = "Friends see your deck names, commanders and statuses, never the lists.";
+  const NEW = "Friends can see your decks and their lists, except drafts and decks you’re building.";
+  const entry = aboutEntries.find((e) => e.keys.includes(OLD))!;
+  const keys = (on: Record<string, string>) => resolveEntry(entry, on as unknown as NodeJS.ProcessEnv).keys;
+
+  it("keeps the old sentence with the switch off and swaps it with the switch on", () => {
+    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true" })).toContain(OLD);
+    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true" })).not.toContain(NEW);
+    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" })).toContain(NEW);
+    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" })).not.toContain(OLD);
+    // FRIEND_DECKS_ENABLED needs its parent: alone it draws neither.
+    expect(keys({ FRIEND_DECKS_ENABLED: "true" })).not.toContain(NEW);
+  });
+
+  it("matches the privacy line's default sentence word for word", () => {
+    expect(NEW).toBe(socialCopy.page.decksSeenBy.finished);
   });
 });
 
