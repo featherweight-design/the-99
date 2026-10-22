@@ -3,7 +3,7 @@ import type { SQL } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { db } from "../../db";
-import { feedKindsUpdate, kindsOn, markFeedSeen, markFriendsSeen, nextFeedKinds, parseChosenKinds, parseFeedKinds, setFeedKinds } from "./prefs";
+import { feedKindsUpdate, kindsOn, loadNewsSettings, markFeedSeen, markFriendsSeen, nextFeedKinds, parseChosenKinds, parseFeedKinds, setFeedKinds } from "./prefs";
 
 /** A resolved env for a test. */
 const env = (e: Record<string, string> = {}): NodeJS.ProcessEnv => e as unknown as NodeJS.ProcessEnv;
@@ -148,5 +148,36 @@ describe("the two seen cursors", () => {
     expect(await markFeedSeen("u", env(), NOW, q)).toBe(false);
     expect(await markFriendsSeen("u", env({ HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" }), NOW, q)).toBe(false);
     expect(ran).toEqual([]);
+  });
+});
+
+describe("loadNewsSettings (Settings' news section)", () => {
+  function reader(feedKinds: unknown) {
+    let reads = 0;
+    const q = { select: () => ({ from: () => ({ where: async () => { reads++; return [{ feedKinds }]; } }) }) } as never;
+    return { q, reads: () => reads };
+  }
+
+  it("gives the available kinds in FEED_KINDS order, each with whether it is on; an unavailable kind is absent", async () => {
+    const { q } = reader({ combo: EARLIER, "price-drop": EARLIER, "trade-match": EARLIER });
+    const rows = await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
+    expect(rows).toEqual([
+      { kind: "new-set", on: false },
+      { kind: "new-precon", on: false },
+      { kind: "price-drop", on: true },
+      { kind: "combo", on: true },
+    ]);
+  });
+
+  it("offers trade matches only with friends and the wishlist both on, and never a spare request yet", async () => {
+    const { q } = reader({});
+    const rows = await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
+    expect(rows.map((r) => r.kind)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "combo"]);
+  });
+
+  it("is empty, and reads nothing, while the feed is off", async () => {
+    const { q, reads } = reader({ combo: EARLIER });
+    expect(await loadNewsSettings("u", env({ SOCIAL_WISHLIST_ENABLED: "true" }), q)).toEqual([]);
+    expect(reads()).toBe(0);
   });
 });

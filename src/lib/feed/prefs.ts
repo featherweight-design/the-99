@@ -112,6 +112,21 @@ export async function readFeedKinds(userId: string, q: Pick<typeof db, "select">
   return parseFeedKinds(row?.feedKinds);
 }
 
+/** One row of Settings' news section: a kind this reader can be offered, and whether they have it on. */
+export type NewsSetting = { kind: FeedKind; on: boolean };
+
+/**
+ * Settings' "What's new on Home" section: the kinds AVAILABLE to this reader (`availableFeedKinds`, in `FEED_KINDS`
+ * order), each with whether it is on. A kind that is not available is absent, never drawn disabled; its stored choice
+ * is kept by the save's scope. Empty while `HOME_FEED_ENABLED` is off, and then nothing is read.
+ */
+export async function loadNewsSettings(userId: string, env: NodeJS.ProcessEnv, q: Pick<typeof db, "select"> = db): Promise<NewsSetting[]> {
+  const available = availableFeedKinds(env);
+  if (available.length === 0) return [];
+  const map = await readFeedKinds(userId, q);
+  return available.map((kind) => ({ kind, on: map[kind] !== undefined }));
+}
+
 type Executor = Pick<typeof db, "execute">;
 
 /**
