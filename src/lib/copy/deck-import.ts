@@ -672,7 +672,6 @@ export const deckImportCopy = {
         kept === "1"
           ? `Updated from your list: ${inN} in, ${outN} out, 1 you kept.`
           : `Updated from your list: ${inN} in, ${outN} out, ${kept} you kept.`,
-      updatedMobile: (inN: string, outN: string) => `Updated: ${inN} in, ${outN} out`,
       // State 20. A `?updated=` value that is not ours still says an update
       // brought the player here, so the strip states the fact and drops the
       // figures rather than printing NaN.

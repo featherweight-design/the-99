@@ -116,7 +116,7 @@ export function RoleCounterStrip({
               one sentence. */}
           {wasCounts && (
             <span
-              className="font-mono text-[9.5px] md:text-[10.5px] tracking-[0.06em]"
+              className="font-mono text-[9.5px] md:text-[10.5px] md:tracking-[0.06em]"
               style={{ color: "var(--accent-text)" }}
             >
               {deckVersioningCopy.pending.mixStripDraftNote}

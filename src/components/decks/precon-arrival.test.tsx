@@ -14,6 +14,10 @@ describe("PreconArrivalBand (precons S2, S2b)", () => {
     expect(screen.getByText("You own 74 of its 85.")).toBeInTheDocument();
     expect(screen.queryByText(/Shopping/)).toBeNull();
     expect(screen.queryByText(/printings/)).toBeNull();
+    // The board's `.mt` line: mono and faint, and one row with the head from md.
+    const body = screen.getByText("You own 74 of its 85.");
+    expect(body.className).toContain("font-mono");
+    expect(body.parentElement!.className).toContain("md:flex-row");
     expect(screen.queryByText(/draft/i)).toBeNull();
     expect(screen.queryByRole("link", { name: "History" })).toBeNull();
   });

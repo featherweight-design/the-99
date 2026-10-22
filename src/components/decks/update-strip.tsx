@@ -17,24 +17,19 @@ export function UpdateStrip({ arrival, onDismiss }: { arrival: UpdateArrivalStat
   const counted = arrival === "countless" ? null : arrival;
   const inN = counted ? String(counted.in) : "";
   const outN = counted ? String(counted.out) : "";
-  const desktop = !counted
+  const text = !counted
     ? copy.updatedNoCounts
     : counted.kept > 0
       ? copy.updatedWithKept(inN, outN, String(counted.kept))
       : copy.updated(inN, outN);
-  const mobile = counted ? copy.updatedMobile(inN, outN) : copy.updatedNoCounts;
 
   return (
     <ArrivalBandShell>
       <span aria-hidden className="text-[12px] md:text-[14px] leading-none text-[color:var(--success)]">
         ✓
       </span>
-      <p className="flex-1 m-0 text-[color:var(--fg-body)]">
-        {/* The kept count is dropped below md for room, which is why the mobile
-            string takes only two figures. */}
-        <span className="md:hidden font-mono text-[10.5px]">{mobile}</span>
-        <span className="hidden md:inline text-[13.5px]">{desktop}</span>
-      </p>
+      {/* The phone takes the desktop sentence, kept count and all: the board draws one at both widths. */}
+      <p className="flex-1 m-0 text-[13.5px] text-[color:var(--fg-body)]">{text}</p>
       <ArrivalDismiss onDismiss={onDismiss} label={copy.dismiss} />
     </ArrivalBandShell>
   );

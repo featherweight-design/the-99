@@ -84,9 +84,17 @@ export function ArrivalBand({ onDismiss, ...text }: { onDismiss: () => void } & 
         ✓
       </span>
       {"lines" in text ? (
-        <div className="flex flex-1 flex-col gap-[3px]">
+        // The import's own receipt keeps three lines (head, body, meta). The precon's has no meta line: its body is the
+        // board's `.mt` line, mono and faint with History beside it, one line from md and two on the phone.
+        <div className={`flex flex-1 flex-col gap-[3px] ${text.lines.meta ? "" : "md:flex-row md:flex-wrap md:items-baseline md:gap-x-[12px]"}`}>
           <p className="m-0 text-[13.5px] font-semibold text-[color:var(--fg)]">{text.lines.head}</p>
-          <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+          <p
+            className={
+              text.lines.meta
+                ? "m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]"
+                : "m-0 font-mono text-[11px] leading-[1.55] text-[color:var(--fg-faint)]"
+            }
+          >
             {text.lines.body}
             {text.lines.link ? (
               <>

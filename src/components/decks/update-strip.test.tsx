@@ -11,10 +11,9 @@ import { UpdateStrip } from "./update-strip";
 const copy = deckImportCopy.update.arrival;
 
 describe("UpdateStrip", () => {
-  it("says what went in and what came out, at both widths", () => {
+  it("says what went in and what came out, in one sentence at every width", () => {
     render(<UpdateStrip arrival={{ in: 19, out: 6, kept: 0 }} onDismiss={() => {}} />);
     expect(screen.getByText(copy.updated("19", "6"))).toBeInTheDocument();
-    expect(screen.getByText(copy.updatedMobile("19", "6"))).toBeInTheDocument();
   });
 
   // The out figure is what actually left, so a kept removal is a third fact
@@ -29,13 +28,6 @@ describe("UpdateStrip", () => {
     expect(screen.queryByText(/you kept/)).not.toBeInTheDocument();
   });
 
-  // The kept count is dropped below md for room, so the mobile sentence carries
-  // only two figures however many the desktop one has.
-  it("keeps the mobile sentence to two figures", () => {
-    render(<UpdateStrip arrival={{ in: 19, out: 6, kept: 3 }} onDismiss={() => {}} />);
-    expect(screen.getByText(copy.updatedMobile("19", "6"))).toBeInTheDocument();
-  });
-
   it("hands its ✕ to the shell", () => {
     const onDismiss = vi.fn();
     render(<UpdateStrip arrival={{ in: 19, out: 6, kept: 0 }} onDismiss={onDismiss} />);
@@ -48,7 +40,7 @@ describe("UpdateStrip", () => {
   // the strip states the fact rather than rendering NaN.
   it("drops the figures when the arrival is countless", () => {
     render(<UpdateStrip arrival="countless" onDismiss={() => {}} />);
-    expect(screen.getAllByText(copy.updatedNoCounts)).toHaveLength(2);
+    expect(screen.getByText(copy.updatedNoCounts)).toBeInTheDocument();
     expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
   });
 });
