@@ -2628,7 +2628,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   new ask and drop it once answered, the waiting count rises, survives a `/friends` visit and falls on the answer, and the
   asker's unseen answers equal what her list shows, clear on a visit (through the upsert, with no prefs row) and stay
   clear; an unfriend empties both lists and refuses every answer; the
-  asker's purge deletes every ask on either side and the feed items naming them. It WRITES: `SPARE_PROBE_URL` and
+  asker's purge deletes every ask on either side and the feed items naming them. PR 3a: a withdraw drops the ask from
+  the holder's list, badge and feed and lets the asker ask again at once, a cleared No leaves the asker's list and still
+  answers `declined`; Ask instead refused (no spare, a stranger, the same friend, the new friend's No inside the
+  transaction) leaves the first ask open, and landed withdraws it; copies cap at the spare count and a deck that is not
+  the asker's is stored null; a card kept back leaves the holder's list and badge together and reads `unavailable` to
+  the asker, `stillNeeded` reads `unneeded`; a holder with no prefs row is told, marks Home seen through the upsert,
+  turning the kind off writes `feed_kinds_declined` and stops new items, and turning it on again backfills nothing;
+  `loadAskStates` serves exactly the payload's fields and never a Clerk id. It WRITES: `SPARE_PROBE_URL` and
   `SPARE_PROBE_BRANCH` are never defaulted, the branch must match `neon.branch_id`, and staging, production and
   local-dev are refused by id. Run it on a scratch branch off local-dev. Three per-run accounts, purged in a finally.
 - `pnpm probe:invites` proves the sender's invite writes (plan `2026-10-16-invites.md` PR 2) against a real database,

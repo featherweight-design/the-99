@@ -100,7 +100,23 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`storedFeedBranch`), and the Friends badge has two halves (`NavBadges.friends`, cleared by a `/friends` visit: unseen
   trade matches plus unseen answers to the reader's asks, `unseenAnswersCount` / `markAnswersSeen`, an upsert so a
   reader with no prefs row can still be marked; `NavBadges.friendsWaiting`: the incoming open asks, `waitingAsksCount`,
-  cleared only by answering, whatever the reader's feed opt-in). Proof: `pnpm probe:spare-requests`.
+  cleared only by answering, whatever the reader's feed opt-in). PR 3a (backend for the UI, handoff
+  `design_handoff_the99_spare_requests` G1 to G4): the asker's ✕ WITHDRAWS an open ask (`withdrawn`: nobody is told, it
+  holds no card and no cooldown, and it leaves the holder's list, badge and feed) or CLEARS an answered or expired one
+  (`asker_cleared_at`, never a delete, so a cleared No still holds the cooldown); ASK INSTEAD is one transaction under the
+  asker-and-card lock, the new friendship rows locked before the withdraw, and any refusal of the new ask rolls the
+  withdraw back (`askInsteadForSpare`, `askIn` is the shared body). An ask carries `copies` (capped at the friend's spare
+  count, `capCopies`) and `deck_id` (stored only when the deck is the asker's own, else null; display only, never a
+  refusal); the holder reads the deck's NAME only through the live friendship. NO LONGER SPARE is derived at read: an
+  open ask for a card the holder no longer offers (`loadOwnOffered`, the `isOffered` rule on their own collection) leaves
+  Waiting on you and `waitingAsksCount` (which runs the SQL count first and filters only past zero, so the two agree);
+  the asker reads it `unavailable` (`loadFriendSpares`), or `unneeded` against an optional `stillNeeded` set. The
+  `spare-request` feed kind is ON BY DEFAULT (`DEFAULT_ON_KINDS`): `user_prefs.feed_kinds_declined` holds a default-on
+  kind the reader turned off, `kindEnabledAt` renders the effective `enabledAt` for the writer and the stored branch
+  (both left joining the prefs, so a reader with no row is told), nothing is written on read, and turning it back on
+  stamps it now. The actions are `src/app/friends/spare-actions.ts` (`/friends` revalidated only for ✕ and an answer);
+  the asker's per-card states for Shopping are `GET /api/spare-requests?ids=` (`loadAskStates`, 404 off, `private,
+  no-store`). Proof: `pnpm probe:spare-requests`.
 
 ## Friend decks (`FRIEND_DECKS_ENABLED`)
 
