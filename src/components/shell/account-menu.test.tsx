@@ -7,9 +7,11 @@ import type { ChipState } from "../../lib/payments/chip-rule";
 const redirectToUserProfile = vi.fn();
 // Clerk's signOut is thenable — the component releases `busy` on rejection.
 const signOut = vi.fn(() => Promise.resolve());
+const forgetThisDevice = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 
 const chipAction = vi.hoisted(() => vi.fn());
 vi.mock("../../app/credits/actions", () => ({ chipAction }));
+vi.mock("../../lib/push/forget-device", () => ({ forgetThisDevice }));
 const heldPaidAction = vi.hoisted(() => vi.fn());
 vi.mock("../../app/account/delete-warning-actions", () => ({ heldPaidAction }));
 
@@ -499,11 +501,11 @@ describe("AccountMenu items", () => {
     }
   });
 
-  it("disables both buttons once sign-out is in flight", () => {
+  it("disables both buttons once sign-out is in flight", async () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
-    expect(signOut).toHaveBeenCalledOnce();
+    await waitFor(() => expect(signOut).toHaveBeenCalledOnce());
     // About is a link and carries no disabled state — leaving the menu for a
     // reference page cannot double-fire a sign-out, and a link that pretended
     // to be disabled would still navigate.
@@ -512,6 +514,17 @@ describe("AccountMenu items", () => {
     // A second press cannot double-fire.
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
     expect(signOut).toHaveBeenCalledOnce();
+  });
+
+  it("takes this browser's push subscription out BEFORE the session ends", async () => {
+    const order: string[] = [];
+    forgetThisDevice.mockImplementationOnce(async () => { order.push("forget"); });
+    signOut.mockImplementationOnce(async () => { order.push("signOut"); });
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    await waitFor(() => expect(signOut).toHaveBeenCalledOnce());
+    expect(order).toEqual(["forget", "signOut"]);
   });
 
   // A successful sign-out navigates away, so the disabled state is only ever

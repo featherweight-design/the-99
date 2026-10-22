@@ -20,6 +20,19 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   `message.ts` (an item becomes a message; `collapse` is one per (kind, batch) live and one per kind on release; a spare
   request is never collapsed), words in `src/lib/copy/push.ts` over `feedCopy.home`.
 
+## Added by PR 2 (subscribe, prefs, sign-out)
+
+- `src/lib/push/endpoint.ts` (pure): a stored endpoint must be https on a push service's own host (`fcm.googleapis.com`,
+  `*.push.services.mozilla.com`, `*.push.apple.com`, `*.notify.windows.com`, no port, no credentials) because the SERVER
+  later POSTs to it; the keys must be a 65-byte point and a 16-byte secret. `parseDevice` cleans the label and falls back to UTC.
+- `subscriptions.ts`: `saveDevice` upserts by endpoint (a browser signing in as another account takes the row over) and trims
+  the reader to 10; `removeDevice` deletes only the reader's own row. `prefs.ts`: `setPushKinds` is `setFeedKinds` over the push
+  columns (`nextFeedPrefs` decides).
+- Actions in `src/app/settings/push-actions.ts`: `savePushKinds`, `subscribeDevice` (both refused unless `pushAvailable`) and
+  `unsubscribeDevice` (never refused by a switch). Sign-out (`forget-device.ts`, called by the account menu) deletes this
+  browser's subscription BEFORE the session ends, bounded at 3 seconds, never throwing. The actions have no UI caller until
+  the Settings PR; `probe:push-subscriptions` proves them against a real database in the meantime.
+
 ## Decisions the plan fixed (D1 to D5)
 
 1. Outbox, not a direct send: `recordFeedItem` runs inside transactions, so a send from it could announce a rolled-back event.

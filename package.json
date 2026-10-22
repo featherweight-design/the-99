@@ -69,6 +69,7 @@
     "probe:purge": "tsx scripts/probe-purge.mts",
     "probe:invites": "tsx scripts/probe-invites.mts",
     "probe:invites-join": "tsx scripts/probe-invites-join.mts",
+    "probe:push-subscriptions": "tsx scripts/probe-push-subscriptions.mts",
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
     "probe:feed-store": "tsx scripts/probe-feed-store.mts",
     "probe:feed-writers": "tsx scripts/probe-feed-writers.mts",
