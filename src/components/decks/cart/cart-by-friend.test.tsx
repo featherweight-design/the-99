@@ -210,7 +210,10 @@ describe("a line bought in By friend", () => {
     await act(async () => { fireEvent.click(add); });
     const after = cart();
     after.lines = after.lines.filter((l) => l.oracleId !== JACE);
+    // The next spares read asks for the lines left, so it serves nothing for Jace.
+    served = { spares: [], asks: [] };
     await act(async () => { view.rerender(<CartView cart={after} {...props} />); });
+    expect(fetchMock.mock.calls.map((c) => String(c[0])).filter((u) => u.startsWith("/api/friend-spares")).length).toBeGreaterThan(1);
     expect(panels().map((p) => p.getAttribute("data-friend"))).toEqual(["p-Colin", "p-Max"]);
     for (const name of ["Colin", "Max"]) {
       const slot = panel(name).getAllByRole("listitem").find((li) => li.hasAttribute("data-held-slot"))!;
