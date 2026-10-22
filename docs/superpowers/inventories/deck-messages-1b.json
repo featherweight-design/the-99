@@ -1,0 +1,22 @@
+{
+  "feature": "Deck page messages, PR 1b: the last N row and its list inside the card (handoff design_handoff_the99_deck_messages; plan 2026-10-21-deck-messages.md)",
+  "note": "Fixture deck on a scratch branch of local-dev for the headless account: 14 of 99 with two unresolved lines, so the card holds unresolved (next step) and the last N. Ran out and first run are held by unit tests (no fixture reaches them on this account).",
+  "rows": [
+    {
+      "id": "last-n",
+      "label": "/decks/[id]: unresolved as the next step, Choose the last N below it",
+      "view": "src/components/decks/last-slots-strip.tsx",
+      "steps": [{ "goto": "/decks/0d0e0000-0000-4000-8000-000000000001", "wait": "section[aria-label^='Before']", "scrollTo": "section[aria-label^='Before']", "settle": 2500 }]
+    },
+    {
+      "id": "last-n-open",
+      "label": "/decks/[id]: Choose pressed, the list open inside the card under the row",
+      "view": "src/components/decks/last-slots-strip.tsx",
+      "steps": [
+        { "goto": "/decks/0d0e0000-0000-4000-8000-000000000001", "wait": "section[aria-label^='Before']", "settle": 2500 },
+        { "clickRole": "button", "name": "^Choose the cards for the last" },
+        { "wait": "section[aria-label^='Before'] button[aria-expanded=true]", "scrollTo": "section[aria-label^='Before']", "settle": 2000 }
+      ]
+    }
+  ]
+}

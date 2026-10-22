@@ -214,7 +214,7 @@ export const recommendationsCopy = {
   // The six provenance* sentences that stood here stated one deck-wide total
   // for the whole fill. #359 needs each pass named and reversible on its own,
   // so `topOffCopy.ledger` replaced them; the shortfall wording they carried
-  // lives on in `synergyCopy.lastSlots.short`. That includes the full-fill pair
+  // lives on in `synergyCopy.lastSlots.exhaustedBody`. That includes the full-fill pair
   // added by #462, whose "The other 0 are yours" defect the ledger cannot have:
   // it states per-pass counts and never hands back a remainder.
   fill: {

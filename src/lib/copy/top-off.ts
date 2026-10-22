@@ -29,24 +29,6 @@ const plural = (n: string, one: string, many: string) =>
 export const topOffCopy = {
   // ── The strip, closed ─────────────────────────────────────────────────
   strip: {
-    /** UNCHANGED — synergyCopy.lastSlots.heading. Named for the open slots,
-     *  never for 31, because a partly filled deck has a different number. */
-    heading: (n: string) => `The last ${n}`,
-
-    /** Gains the candidate count. The player is about to be shown a list, and
-     *  its length is the first thing they are owed about it. */
-    caption: (n: string, cand: string) =>
-      `${plural(n, 'slot', 'slots')} open · ${plural(cand, 'candidate', 'candidates')} ranked by synergy for this commander`,
-    captionMobile: (n: string, cand: string) =>
-      `${plural(n, 'slot', 'slots')} open · ${plural(cand, 'candidate', 'candidates')} ranked`,
-    /** ENG-ADDED, from the canvas's open phone strip. Once the list is open the
-     *  open-slot figure is stated by the commit bar's ticked count, which
-     *  carries it as its denominator; this line drops it and picks up the
-     *  ordering instead, which is the one thing desktop says that phone has
-     *  nowhere else to put. */
-    captionMobileOpen: (cand: string) =>
-      `${plural(cand, 'candidate', 'candidates')} · ranked by synergy`,
-
     /** The door. A verb that opens something, not a verb that does something —
      *  the whole of #360 scope 1 is in the difference. `Choose` also names the
      *  player as the one choosing, which the two shipped CTAs did not. */
@@ -58,65 +40,30 @@ export const topOffCopy = {
      *  the strip head has a single line to give. A visual truncation, not a
      *  second control: strip.close is still the spoken name. */
     closeShort: 'Close',
+    /** The to-do card row's press (handoff `deck_messages`); `openAria` is its spoken name and
+     *  `open(n)` the row's title. */
+    openShort: 'Choose',
 
-    /** REPLACES lastSlots.ownedNote. That string existed to explain a number on
-     *  a button face; there is no such number now. This one explains a default
-     *  and makes the safety promise the review step is for.
-     *
-     *  The figure is the SEEDED TICK COUNT, which is the owned candidates WITH A
-     *  FREE COPY, clamped to the open slots — so the sentence says what arrives
-     *  ticked and claims nothing about how many the player owns in total. A deck
-     *  with 58 owned candidates for 31 slots seeds 31, and 'you own 31' would be
-     *  false.
-     *
-     *  The ZERO branch is the one place that distinction bites, which is why
-     *  `doorNoteNoneFree` exists beside it: a seed of 0 used to mean the player
-     *  owned none of the candidates, and now it also happens when they own every
-     *  one and every copy is sleeved in another deck. Those are opposite facts,
-     *  and the caller picks between them on the owned count, never on the seed.
-     *
-     *  IT NAMES THE POOL, NEVER THE TICKS. It used to promise `3 candidates arrive
-     *  ticked`, which was true while the seed WAS the first N of this list. The seed
-     *  asks the real fill now, and a fill spends slots on cards the player does not
-     *  own, so the door promised three and the list opened with two. What is still
-     *  true when the door is drawn is how many of these they can sleeve; the
-     *  pre-tick is something the list does rather than something the door promises.
-     *  `top-off-list.tsx` made the same concession for the button: offering is not
-     *  promising. */
-    doorNote: (seeded: string) =>
-      seeded === '0'
-        ? 'You own none of these, so the list arrives untouched. Nothing is added until you say so.'
-        : seeded === '1'
-        ? '1 you can sleeve. Nothing is added until you say so.'
-        : `${seeded} you can sleeve. Nothing is added until you say so.`,
-    /** Reopening after a partial accept. Says what is left and that the
-     *  selection survived, so closing the list is never a loss. */
-    doorNoteAgain: (cand: string) =>
-      `You own none of the ${cand} left. The list reopens where you left it, declines and all.`,
-    /** The variant when some of what is left is owned. Two strings rather than
-     *  one interpolation, because 'you own none of' and 'you own N of' are
-     *  different sentences and the first is the common one. */
-    doorNoteAgainOwned: (owned: string, cand: string) =>
-      `You own ${owned} of the ${cand} left. The list reopens where you left it, declines and all.`,
+    /** The row's body: the pool, and how many of it the player can sleeve. It states the SEEDED
+     *  figure (owned candidates with a free copy, clamped to the open slots), never the owned one,
+     *  and it names the pool rather than promising ticks: the seed asks the real fill, which can
+     *  spend slots on cards the player does not own. A seed of zero is two opposite facts, owned
+     *  none or every copy sleeved elsewhere, and the caller picks between them on the OWNED count. */
+    rowBody: (cand: string, seeded: string) =>
+      `${plural(cand, 'candidate', 'candidates')} ranked by synergy. ${seeded} you can sleeve.`,
+    rowBodyNoneOwned: (cand: string) =>
+      `${plural(cand, 'candidate', 'candidates')} ranked by synergy. You own none of them.`,
+    rowBodyNoneFree: (cand: string) =>
+      `${plural(cand, 'candidate', 'candidates')} ranked by synergy. Every copy you own is in another deck.`,
 
-    /** The 390px forms. The desktop sentence runs three mono lines there, and a
-     *  shorter one that is still two lines buys nothing, so the test is which
-     *  clause survives alone. The promise does: it is the reason the review step
-     *  exists and is carried nowhere else on the surface. The provenance does
-     *  not, because 31 filled dots, the head and every buy tag carry it the
-     *  moment the list opens. */
-    doorNoteMobile: (seeded: string) =>
-      seeded === '0'
-        ? 'You own none of these. Nothing is added until you say so.'
-        // ONE SENTENCE AT BOTH WIDTHS for the seeded case. The desktop form existed
-        // because it ran three mono lines at 390px; it named the tick count and the
-        // provenance, and naming neither leaves a sentence short enough for the phone.
-        // The zero branch keeps its own form, which still differs.
-        : topOffCopy.strip.doorNote(seeded),
+    /** The ran-out row's press. Its name carries the why, so the body does not have to. */
+    exhaustedPress: 'Consider',
+    exhaustedPressAria: 'Find cards to buy in Consider',
+
     /** The pool is empty because every ranked card ARGUES AGAINST itself.
      *
-     *  `synergyCopy.lastSlots.short` says the collection ran out and that there
-     *  was nothing left that EDHREC ranks for this commander. That is one reason
+     *  `synergyCopy.lastSlots.exhaustedBody` says there was nothing left that
+     *  EDHREC ranks for this commander. That is one reason
      *  a pool can be empty, and since the negative tail is cut it is no longer
      *  the only one: a deck holding every positively-ranked card leaves a
      *  ranking that is entirely negative, which is reachable late in a build and
@@ -129,26 +76,6 @@ export const topOffCopy = {
      *  a decision on the cards with the weakest case in the list. */
     exhaustedAllNegative:
       'Everything left that EDHREC ranks for this commander is played less here than in decks generally, so there is nothing worth suggesting.',
-    /** A seed of zero that is NOT a statement about ownership.
-     *
-     *  The player owns candidates; every copy of every one of them is sleeved in
-     *  another deck. Saying `You own none of these` there is false, and false to
-     *  the player best placed to notice. The list still offers the cards, since a
-     *  copy can be reclaimed, so the sentence says where the copies ARE rather
-     *  than that there is nothing to do.
-     *
-     *  No figure. The count of owned-but-spoken-for candidates is a number the
-     *  player cannot act on from this door, and the caption above it already
-     *  carries the one they can. */
-    doorNoteNoneFree:
-      'Every copy you own is in another deck, so the list arrives untouched. Nothing is added until you say so.',
-    /** The phone form, dropping the provenance exactly as `doorNoteMobile` does. */
-    doorNoteNoneFreeMobile:
-      'Every copy you own is in another deck. Nothing is added until you say so.',
-    /** One string for both reopen cases. The two desktop variants differ only in
-     *  an ownership figure, and the closed caption directly above already states
-     *  the candidate count, so phone keeps only the clause that matters. */
-    doorNoteAgainMobile: 'Reopens where you left it, declines and all.',
   },
 
   // ── The list, open ────────────────────────────────────────────────────
@@ -587,7 +514,12 @@ export const topOffCopy = {
 //   addPanelCopy.tile.* and every buy tag ...... the row's atoms
 //   manaCopy.costAria .......................... the cost, spoken uncapped
 //   the count-only availability strings ........ the marker in the slot
-//   synergyCopy.lastSlots.heading .............. the heading
+//
+// The to-do card (deck messages PR 1b) retired the strip's head and door: lastSlots.heading, lastSlots.short,
+// strip.heading, the captions and every door note are DELETED. The row says the same facts as
+// strip.open (title), strip.rowBody (body) and, for an empty pool, lastSlots.exhaustedTitle and
+// lastSlots.exhaustedBody, which keeps lastSlots.short's clause verbatim. The notes above that name
+// those keys describe R2 and R3.
 
 /**
  * `CompositionTargets`' ten keys, pluralised for a count — the nouns the gap strings take.

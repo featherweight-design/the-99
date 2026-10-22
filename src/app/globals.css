@@ -639,28 +639,6 @@ html { scroll-padding-top: var(--header-offset, 0px); }
    colour contract, and this is a geometry all six themes share. */
 html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 
-/* ------------------------------------------------------------------
- * Guided Banner — responsive border/background split
- * mobile:  solid surface, hairline border, accent left border 3px
- * desktop: gradient bg, stronger hairline border, no accent left border
- * (design table §Banner container)
- *
- * The literals these replace were drawn against the old brass accent, so once
- * the accent moved the left border no longer matched the thing it accents.
- * ------------------------------------------------------------------ */
-.guided-banner {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-}
-@media (min-width: 768px) {
-  .guided-banner {
-    background: linear-gradient(120deg, var(--surface-raised), var(--surface-rail) 60%);
-    border: 1px solid var(--border-strong);
-    border-left: 1px solid var(--border-strong);
-  }
-}
-
 /* The bracket mark's box, at one size below 768px and another above it.
  * ------------------------------------------------------------------
  * A MEDIA QUERY CANNOT BE WRITTEN INLINE, and the alternative is to mount the

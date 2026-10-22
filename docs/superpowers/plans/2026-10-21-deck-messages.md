@@ -27,8 +27,9 @@ dead), so it ships as three, approved by d9 2026-10-22:
 - **1a:** `deckTodo` with every kind and its pair tests, the copy module, `TodoCard` and its row, and the fill failed
   and unresolved rows (their banners retire). Those two lead the precedence, so the next step is right in between.
 - **1b:** the last N and ran out (`LastSlotsStrip` becomes the A8 row, its list opening inside the card under the row;
-  `Consider` on ran out) and first run (the guided banner's step and crumbs head the card; the deck page's
-  `GuidedBanner` retires, its strings into `src/lib/copy`, `0/{bodySize}`).
+  `Consider` on ran out) and first run (`guidedBannerCopy.head` heads the card; the deck page's `GuidedBanner`
+  retires). The left column of Next Steps draws the first-run head as text alone, with no crumbs and no `0/99`, so
+  neither is built; the README's "step and crumbs" describes the rejected right column.
 - **1c:** pending as a row, Review only; `PendingBanner` keeps only its version strip until PR 2's foot.
 
 

@@ -210,3 +210,38 @@ describe("fill-failed row on an empty deck", () => {
     expect(screen.queryByText(recommendationsCopy.fill.failedHeading)).toBeNull();
   });
 });
+
+// A17: on a first run the guided step heads the to-do card and the last N is its one row, counted
+// from the deck's own body size (a partner deck says 98). The deck page's guided banner retired into
+// the card.
+describe("the first run's to-do card", () => {
+  it.each([
+    [null, "99"],
+    [{ oracleId: "partner", name: "Partner" }, "98"],
+  ])("heads the card with the guided step and offers the last of the body size (partner %o)", async (partner, n) => {
+    const { guidedBannerCopy } = await import("../../lib/copy/decks-builder");
+    const { topOffCopy } = await import("../../lib/copy/top-off");
+    render(
+      <BuilderShell mix={TEST_MIX}
+        deck={{ ...emptyDeck, partner } as unknown as DeckDetail}
+        suggestions={[]}
+        degraded={false}
+        firstRun
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+        candidates={[{
+          oracleId: "cand-1", name: "Candidate 1", typeLine: "Instant", facet: "spell", inclusionPct: 40,
+          synergyPts: 20, imageUri: null, owned: false, committedTo: null, manaCost: null, price: null,
+          availability: null, facts: null, comboPartner: null,
+        }]}
+       newestAsOf={null}/>,
+    );
+    // Once, in the card's head: the retired banner drew the same step a second time.
+    expect(screen.getAllByText(guidedBannerCopy.head)).toHaveLength(1);
+    // The retired banner split its step and title over two elements, so match the step on its own too.
+    expect(screen.getAllByText(/Step 3 of 3/)).toHaveLength(1);
+    expect(screen.getByText(topOffCopy.strip.open(n))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: topOffCopy.strip.openAria(n) })).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.fill.failedHeading)).toBeNull();
+  });
+});

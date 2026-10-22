@@ -133,7 +133,7 @@ async function openDeck(page) {
   // are no slots — so the wait is on the ledger too, which outlives it.
   await page
     .locator(
-      "button[aria-label^='Choose the cards for the last'], [data-testid='last-slots-exhausted'], [data-testid='quick-add-dock']",
+      "button[aria-label^='Choose the cards for the last'], button[aria-label='Find cards to buy in Consider'], [data-testid='quick-add-dock']",
     )
     .first()
     .waitFor({ timeout: 30_000 });
