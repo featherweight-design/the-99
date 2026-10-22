@@ -15,6 +15,8 @@ import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
 import { readDeckOriginAndStart } from "../../../lib/precons/start-version";
 import { preconsEnabled } from "../../../lib/precons/flag";
+import { strategyFocusEnabled } from "../../../lib/strategy/flag";
+import { loadDeckStrategy } from "../../../lib/strategy/load";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { listFolders } from "../../../lib/decks/folders";
@@ -254,6 +256,11 @@ export default async function DeckBuilderPage({
   // `FRIEND_DECKS_ENABLED`. A failed read costs the menu that row and the header its mark, nothing else.
   const friendPrefsRead = friendDecksEnabled(env)
     ? early(perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)).catch(() => null))
+    : null;
+  // The deck's strategy and its focus (`STRATEGY_FOCUS_ENABLED`), uncached: a card edit revalidates this page, and the
+  // block's +N / −N counts the list as it stands. A failed read costs the block, nothing else.
+  const strategyRead = strategyFocusEnabled(env)
+    ? early(perf.timed("strategy", () => loadDeckStrategy(userId, id, env)).catch(() => null))
     : null;
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
   // Who sat across the table, and the matchups drawn from it (Social R3), behind `SOCIAL_GAMES_ENABLED`. Never
@@ -674,6 +681,7 @@ export default async function DeckBuilderPage({
   const thisDeck = allDecks.find((d) => d.id === id);
   const folders = await foldersRead;
   const friendPrefs = friendPrefsRead ? await friendPrefsRead : null;
+  const strategy = strategyRead ? await strategyRead : null;
   const friendHide = friendPrefs && thisDeck ? { hidden: thisDeck.hiddenFromFriends === true, prefs: friendPrefs } : undefined;
   const shelf = folders && thisDeck
     ? {
@@ -760,6 +768,7 @@ export default async function DeckBuilderPage({
           }
         : null}
       tuningEnabled={tuned}
+      strategy={strategy}
       socialGames={socialGamesEnabled(env)}
       gamePrefill={prefillRead ? await prefillRead : null}
       proposedCutsEnabled={proposedCutsEnabled(env)}

@@ -48,3 +48,31 @@ export function strategyName(key: StrategyKey): string {
   if (key.startsWith("typal:")) return creatureTypePlural(key.slice("typal:".length));
   return key in AXIS_NAMES ? AXIS_NAMES[key as FixedAxis] : THEME_NAMES[key as LabelTheme];
 }
+
+/**
+ * The strategy block on Analysis. The heading and sub are Hugh's (README, Copy); the rest are the handoff's placeholders,
+ * through /copy-review.
+ */
+export const strategyFocusCopy = {
+  heading: "The deck’s strategy",
+  sub: "The themes your deck is built around and how many cards support each strategy.",
+  kicker: "Pick a focus",
+  /** A legend row's count: the committed count, then what changed since the last commit. */
+  cards: (n: number) => (n === 1 ? "card" : "cards"),
+  /** Marks the focus's own row when its strategy is outside the top five. */
+  outsideTop: "your focus",
+  focusLine: { lead: "Focus", tail: ": Suggested changes builds toward it." },
+  keepBalanced: "Keep it balanced",
+  noFocus: "No focus yet. Pick one and Suggested changes will build toward it.",
+  /** Read aloud for the ring, which is drawn for the eye alone. */
+  ringLabel: (names: string[]) => `Strategies by card count: ${names.join(", ")}.`,
+  refused: "That didn’t save. Try again.",
+  none: {
+    lead: "No strategy stands out yet.",
+    body: "One shows here once five or more cards share a theme, a type or a creature type more often than Commander cards do overall. Until then Suggested changes keeps the deck balanced.",
+  },
+  tooSmall: {
+    lead: "Too early to read.",
+    body: (nonland: number) => `The deck’s strategy shows once it has 30 cards besides lands. This one has ${nonland}.`,
+  },
+};

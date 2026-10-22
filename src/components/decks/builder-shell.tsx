@@ -36,6 +36,9 @@ import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
 import type { Bracket } from "../../lib/bracket/types";
 import { useDeclaration } from "./use-declaration";
+import { useStrategyFocus } from "./use-strategy-focus";
+import { StrategyBlock } from "./strategy-block";
+import type { StrategyRead } from "@/lib/strategy/load";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
 import { receiptDrawn, useVisitReceipts } from "./use-visit-receipts";
@@ -295,6 +298,8 @@ interface BuilderShellProps {
    *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
    *  credit lines' mention of it are withheld, same as `analysisEnabled` withholds the whole tab. */
   tuningEnabled?: boolean;
+  /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null with `STRATEGY_FOCUS_ENABLED` off. */
+  strategy?: StrategyRead | null;
   /** `socialGamesEnabled(env)` for this reader: the game log draws its "Across the table" row. */
   socialGames?: boolean;
   /** A Rule 0 table's seats for the game log to open with (plan §PR 8), read per request by the page. */
@@ -376,6 +381,7 @@ export function BuilderShell({
   storedPermitsUnknown = false,
   neverCut = false,
   tuningEnabled = false,
+  strategy = null,
   socialGames = false,
   gamePrefill = null,
   proposedCutsEnabled = false,
@@ -437,6 +443,8 @@ export function BuilderShell({
   // The deck's declaration for the whole shell: the verdict draws and takes it, and the card
   // note on Consider and the top-off list reads it — one owner, so they cannot disagree.
   const declaration = useDeclaration(deck.id, deck.declaredBracket);
+  // One owner for the focus, as for the declaration: Suggested changes reads the same pick.
+  const strategyFocus = useStrategyFocus(deck.id, strategy?.focus?.key ?? null);
   // The version this deck IS — committed, and the draft holding no change since — and the one
   // committed before it. A draft with edits is neither, and a brew has neither.
   const committedClean = draft?.version && !hasChanges(draft) ? draft.version : null;
@@ -1915,6 +1923,9 @@ export function BuilderShell({
                   description={deck.intent ?? null}
                   onSaveDescription={saveDescription}
                   tuningEnabled={tuningEnabled}
+                  strategy={strategy ? (
+                    <StrategyBlock read={strategy} focus={strategyFocus.focus} refused={strategyFocus.refused} onPick={strategyFocus.setFocus} />
+                  ) : undefined}
                   legality={{ built, size: bodySize }}
                   declaration={{
                     declared: declaration.declared,
