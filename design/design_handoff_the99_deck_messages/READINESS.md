@@ -37,3 +37,10 @@ below", the guided banner and `mixSourceLine` into `src/lib/copy`).
 
 Thopter Works (Sai), Big Stompy (Ghalta) and Quandrix Lab (Zimone, so the opened card is a real card image) stand in
 for Hugh's decks. Prices, counts and draft names are invented.
+
+## Errata (engineering audit, 2026-10-22)
+
+1. **Commit as v1 can co-occur with a to-do row.** The README says it never does, but a full deck with no version can
+   hold contested copies, so the spoken-for-twice row (A6) can show beside it. Build: the header's primary button and
+   the red A6 row together. A6 is never the next step, so the card carries no filled press in that state. Ruled by
+   d9 for Hugh, 2026-10-22.
