@@ -7,6 +7,9 @@ describe("commanderRepeats", () => {
     expect(commanderRepeats("Giada", "Giada, Font of Hope", null)).toBe(true);
     expect(commanderRepeats("ghalta primal hunger!", "Ghalta, Primal Hunger", null)).toBe(true);
     expect(commanderRepeats("Éowyn", "Eowyn, Fearless Knight", null)).toBe(true);
+    // A two-faced commander is its front face, as every short name in the app is.
+    expect(commanderRepeats("Esika, God of the Tree", "Esika, God of the Tree // The Prismatic Bridge", null)).toBe(true);
+    expect(commanderRepeats("Esika", "Esika, God of the Tree // The Prismatic Bridge", null)).toBe(true);
   });
 
   it("is not a deck named for something else, nor any pair", () => {
