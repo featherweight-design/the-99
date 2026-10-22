@@ -29,7 +29,7 @@ import { collectionItems, decks } from "../../db/schema";
 import { getDeckDetail, listDecksWithStats, type DeckListItem } from "../decks/read";
 import { cardTypeGroup, type DeckDetailCard } from "../decks/grouping";
 import { resolveFriend } from "./access";
-import { friendCanSeeDeck, loadFriendDeckPrefs } from "./deck-visibility";
+import { friendCanSeeDeck, loadFriendDeckPrefs, unfinishedPill } from "./deck-visibility";
 import { friendDecksEnabled } from "./flag";
 import { isUuid } from "./rules";
 
@@ -144,9 +144,11 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     .from(collectionItems)
     .where(and(eq(collectionItems.userId, viewerId), inArray(collectionItems.oracleId, ids)));
   // The owner's rules are read AGAIN after the list was, as the grant is: a deck hidden, or decks turned off, while the
-  // reads ran returns nothing rather than what was read past that. The status is the first read's (a list edit cannot
-  // hide a deck by itself); the flag and the prefs are fresh. The grant is still read last.
-  if (!(await stillVisible(friendId, deckId, row.statusPill))) return null;
+  // reads ran returns nothing rather than what was read past that. The flag and the prefs are fresh, and the phase is
+  // the snapshot's own: a committed deck whose snapshot is short of its body size is `Building` (`status.ts`), so a cut
+  // made mid-read is judged as the cards returned are. A deck cannot leave the committed phase. The grant is read last.
+  const snapshotPill = !unfinishedPill(row.statusPill) && detail.built < deckBodySize(detail.partner !== null) ? "Building" : row.statusPill;
+  if (!(await stillVisible(friendId, deckId, snapshotPill))) return null;
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
   const owned = new Set(ownedRows.map((r) => r.oracleId));
   const commanders = [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({

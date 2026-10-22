@@ -162,6 +162,13 @@ describe("loadFriendDeck", () => {
     expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
   });
 
+  it("judges the phase the returned cards are in: a deck cut below its size mid-read is Building", async () => {
+    m.getDeckDetail.mockResolvedValue({ ...DETAIL, built: 98 });
+    expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
+    m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: true, seeUnfinished: true });
+    expect((await loadFriendDeck("user_viewer", "x", DECK))!.built).toBe(98);
+  });
+
   it("keeps a commander's mana value", async () => {
     m.getDeckDetail.mockResolvedValue({ ...DETAIL, commander: { ...COMMANDER, cmc: 3 } });
     expect((await loadFriendDeck("user_viewer", "x", DECK))!.commanders[0].cmc).toBe(3);
