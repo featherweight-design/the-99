@@ -19,7 +19,13 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
 
-export type PlaceTab = { place: string; href: string; label: string };
+export type PlaceTab = {
+  place: string;
+  href: string;
+  label: string;
+  /** A figure drawn small after the label (a friend page's Spares, Wishlist and Decks). Absent draws none. */
+  count?: number;
+};
 
 export function PlaceStrip({
   tabs,
@@ -73,6 +79,14 @@ export function PlaceStrip({
             ].join(" ")}
           >
             {tab.label}
+            {tab.count !== undefined && (
+              <em
+                data-testid={`${testIdPrefix}-${tab.place}-count`}
+                className={`ml-[6px] font-mono text-[11px] font-normal not-italic ${on ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}
+              >
+                {tab.count}
+              </em>
+            )}
             <PendingReporter href={tab.href} />
           </Link>
         );

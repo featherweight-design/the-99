@@ -10,21 +10,28 @@ const m = vi.hoisted(() => ({
   requestSwitchEnv: vi.fn(),
   loadFriend: vi.fn(),
   loadFriendWishlist: vi.fn(),
+  loadFriendSpareList: vi.fn(),
+  loadFriendDecks: vi.fn(),
+  pathname: "/friends/00000000-0000-4000-8000-000000000002",
   unfriendAction: vi.fn(),
   replace: vi.fn(),
   openCard: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
+  usePathname: () => m.pathname,
   notFound: () => { throw new Error("NOT_FOUND"); },
   useRouter: () => ({ replace: m.replace, push: vi.fn(), refresh: vi.fn() }),
 }));
-vi.mock("../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
-vi.mock("../../../lib/social/access", () => ({ loadFriend: m.loadFriend }));
-vi.mock("../../../lib/social/wishlist", () => ({ loadFriendWishlist: m.loadFriendWishlist }));
-vi.mock("../actions", () => ({ unfriendAction: m.unfriendAction }));
+vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
+vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
+vi.mock("../../../../lib/social/access", () => ({ loadFriend: m.loadFriend }));
+vi.mock("../../../../lib/social/wishlist", () => ({ loadFriendWishlist: m.loadFriendWishlist }));
+vi.mock("../../../../lib/social/spares", () => ({ loadFriendSpareList: m.loadFriendSpareList }));
+vi.mock("../../../../lib/social/decks", () => ({ loadFriendDecks: m.loadFriendDecks }));
+vi.mock("../../../../components/shell/pending-reporter", () => ({ PendingReporter: () => null }));
+vi.mock("../../actions", () => ({ unfriendAction: m.unfriendAction }));
 // Card details is its own surface, tested on its own: here a tile only has to be the press that opens it, for its card.
-vi.mock("../../../components/cards/card-detail-provider", () => ({
+vi.mock("../../../../components/cards/card-detail-provider", () => ({
   CardDetailProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
   CardDetailTrigger: ({ oracleId, name, ariaLabel, siblings, children }: { oracleId: string; name: string; ariaLabel?: string; siblings: unknown; children: React.ReactNode }) => (
@@ -34,9 +41,13 @@ vi.mock("../../../components/cards/card-detail-provider", () => ({
   ),
 }));
 
-import FriendWishlistPage from "./page";
-import { FriendPage } from "../../../components/social/friend-page";
-import { socialCopy } from "../../../lib/copy/social";
+import FriendPageLayout from "./layout";
+import FriendSparesPage from "./page";
+import FriendWishlistPage from "./wishlist/page";
+import FriendDecksPage from "./decks/page";
+import { FriendHead } from "../../../../components/social/friend-head";
+import { FriendWishlist } from "../../../../components/social/friend-wishlist";
+import { socialCopy } from "../../../../lib/copy/social";
 
 const p = socialCopy.friendPage;
 const BOTH = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" };
@@ -53,6 +64,7 @@ const params = (publicId = COLIN.publicId) => Promise.resolve({ publicId });
 beforeEach(() => {
   m.requireUserId.mockResolvedValue("user_viewer");
   m.requestSwitchEnv.mockResolvedValue(BOTH);
+  m.pathname = `/friends/${COLIN.publicId}`;
   m.loadFriend.mockResolvedValue(COLIN);
   m.loadFriendWishlist.mockResolvedValue([LINE]);
   m.unfriendAction.mockReset();
@@ -60,32 +72,108 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe("/friends/[publicId]", () => {
+const DECK = { name: "Thopter Factory", commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"], artCropUri: null, status: "To buy", built: 99, bodySize: 99, toBuy: 8 };
+const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Ghalta, Primal Hunger", imageUri: null, spare: 2, onWishlist: true };
+
+describe("a friend's page group", () => {
+  beforeEach(() => {
+    m.loadFriendSpareList.mockResolvedValue({ pods: ["Thursday pod"], lines: [SPARE, { ...SPARE, oracleId: "00000000-0000-4000-8000-0000000000c2", name: "Sol Ring", spare: 1, onWishlist: false }] });
+    m.loadFriendDecks.mockResolvedValue([DECK]);
+  });
+
   it.each([
     ["the friends switch is off", { SOCIAL_WISHLIST_ENABLED: "true" }],
-    ["the wishlist switch is off", { SOCIAL_FRIENDS_ENABLED: "true" }],
   ])("is not found when %s, reading nothing", async (_label, env) => {
     m.requestSwitchEnv.mockResolvedValue(env);
-    await expect(FriendWishlistPage({ params: params() })).rejects.toThrow("NOT_FOUND");
+    await expect(FriendPageLayout({ children: null, params: params() })).rejects.toThrow("NOT_FOUND");
     expect(m.loadFriend).not.toHaveBeenCalled();
-    expect(m.loadFriendWishlist).not.toHaveBeenCalled();
+    expect(m.loadFriendSpareList).not.toHaveBeenCalled();
+    expect(m.loadFriendDecks).not.toHaveBeenCalled();
   });
 
   it("is not found for anyone who is not the reader's friend (decision 10)", async () => {
     m.loadFriend.mockResolvedValue(null);
-    await expect(FriendWishlistPage({ params: params() })).rejects.toThrow("NOT_FOUND");
+    await expect(FriendPageLayout({ children: null, params: params() })).rejects.toThrow("NOT_FOUND");
     expect(m.loadFriend).toHaveBeenCalledWith("user_viewer", COLIN.publicId);
   });
 
-  it("reads the friend and their wishlist through the reader's own id", async () => {
+  it("draws the head and the strip with each tab's figure, through the reader's own id", async () => {
+    const html = renderToString(await FriendPageLayout({ children: <p>tab</p>, params: params() }));
+    expect(html).toContain("Colin");
+    expect(html).toContain(`href="/friends/${COLIN.publicId}"`);
+    expect(html).toContain(`href="/friends/${COLIN.publicId}/wishlist"`);
+    expect(html).toContain(`href="/friends/${COLIN.publicId}/decks"`);
+    expect(html).toMatch(/data-testid="friend-tab-spares-count"[^>]*>2</);
+    expect(html).toMatch(/data-testid="friend-tab-wishlist-count"[^>]*>1</);
+    expect(html).toMatch(/data-testid="friend-tab-decks-count"[^>]*>1</);
+    expect(html).toContain("<p>tab</p>");
+    expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId);
+  });
+
+  it("leaves the Wishlist tab out, and never reads it, while its switch is off", async () => {
+    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
+    m.loadFriendWishlist.mockClear();
+    const html = renderToString(await FriendPageLayout({ children: null, params: params() }));
+    expect(html).not.toContain("/wishlist");
+    expect(m.loadFriendWishlist).not.toHaveBeenCalled();
+    await expect(FriendWishlistPage({ params: params() })).rejects.toThrow("NOT_FOUND");
+  });
+
+  it("marks the tab the path names", async () => {
+    m.pathname = `/friends/${COLIN.publicId}/decks`;
+    try {
+      const html = renderToString(await FriendPageLayout({ children: null, params: params() }));
+      expect(html).toMatch(/aria-current="page"[^>]*data-testid="friend-tab-decks"/);
+    } finally {
+      m.pathname = `/friends/${COLIN.publicId}`;
+    }
+  });
+
+  it("draws the wishlist tab through the friend's wishlist", async () => {
     const page = await FriendWishlistPage({ params: params() });
     expect(renderToString(page)).toContain("Rhystic Study");
     expect(m.loadFriendWishlist).toHaveBeenCalledWith("user_viewer", COLIN.publicId);
   });
+
+  it("draws the spares tab: wishlist cards marked and first, each with its count", async () => {
+    const html = renderToString(await FriendSparesPage({ params: params() }));
+    expect(html).toContain(p.spares.line(["Thursday pod"]));
+    expect(html.indexOf("Ghalta, Primal Hunger")).toBeLessThan(html.indexOf("Sol Ring"));
+    expect(html).toContain("2 spares");
+    expect(html).toContain("1 spare");
+    expect(html.match(/data-testid="spare-on-wishlist"/g)).toHaveLength(1);
+  });
+
+  it("says a friend who shares nothing with the reader is not sharing, and an empty share is empty", async () => {
+    m.loadFriendSpareList.mockResolvedValue(null);
+    expect(renderToString(await FriendSparesPage({ params: params() }))).toContain(p.spares.noneTitle("Colin"));
+    m.loadFriendSpareList.mockResolvedValue({ pods: ["Thursday pod"], lines: [] });
+    expect(renderToString(await FriendSparesPage({ params: params() }))).toContain(p.spares.emptyTitle("Colin"));
+  });
+
+  it("draws a deck as a name, a commander, a status and a count, with no link and no card list", async () => {
+    const html = renderToString(await FriendDecksPage({ params: params() }));
+    expect(html).toContain("Thopter Factory");
+    expect(html).toContain("Sai, Master Thopterist");
+    expect(html).toContain("To buy");
+    expect(html).toContain("99 / 99 · 8 cards");
+    expect(html).not.toContain("<a ");
+    expect(html).not.toContain("href=");
+  });
+
+  it("is not found for a friend whose decks cannot be read for the reader", async () => {
+    m.loadFriendDecks.mockResolvedValue(null);
+    await expect(FriendDecksPage({ params: params() })).rejects.toThrow("NOT_FOUND");
+  });
 });
 
-describe("FriendPage", () => {
-  const draw = (lines = [LINE]) => render(<FriendPage friend={COLIN} lines={lines} nowMs={Date.parse("2026-10-15T12:00:00Z")} />);
+describe("FriendHead and the wishlist tab", () => {
+  const draw = (lines = [LINE]) => render(
+    <>
+      <FriendHead friend={COLIN} nowMs={Date.parse("2026-10-15T12:00:00Z")} />
+      <FriendWishlist name={COLIN.displayName} lines={lines} />
+    </>,
+  );
 
   it("draws Round 1's head: back link, name, since and their commander", () => {
     draw();

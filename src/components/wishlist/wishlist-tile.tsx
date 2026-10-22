@@ -10,13 +10,21 @@ import { HydratedImg } from "../ui/hydrated-art";
 
 /** What a tile draws. The tab's `WishlistViewTile` carries this and more. `have` is null on a friend's tile, which
  * reads `wants N` and never an owned count. */
-export type WishlistTileCard = { name: string; imageUri: string | null; want: number; have: number | null };
+export type WishlistTileCard = {
+  name: string;
+  imageUri: string | null;
+  want: number;
+  have: number | null;
+  /** Words of the caller's own in the caption's place (a friend's spares, `1 spare · on your wishlist`). */
+  caption?: readonly CopyPart[];
+};
 
 /** The tile's outer box: the press on the tab and on a friend's page, a plain box in the specimen. */
 export const WISHLIST_TILE_SHELL = `${TILE_SHELL} w-full text-left bg-[color:var(--surface)] border border-solid border-[color:var(--border)]`;
 
 /** The caption's parts: `have M of N`, or `wants N` on a friend's tile (`have: null`). */
-function captionParts(tile: WishlistTileCard): CopyPart[] {
+function captionParts(tile: WishlistTileCard): readonly CopyPart[] {
+  if (tile.caption) return tile.caption;
   return tile.have === null ? wishlistCopy.tile.wants(tile.want) : wishlistCopy.tile.caption(tile.want, tile.have);
 }
 

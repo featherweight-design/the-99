@@ -16,15 +16,15 @@
  * Nothing here moves a card or asks for one (no borrowing, no cart change). It is served by
  * `GET /api/friend-spares`, uncached, so no cached key carries a friend's data.
  */
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { friendLinks, podMembers, podSpareShares, pods, socialProfiles, userDataStamps } from "../../db/schema";
+import { cards, collectionItems, friendLinks, podMembers, podSpareShares, pods, socialProfiles, userDataStamps, wishlistItems } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 // Each FRIEND's switches, not the viewer's. `check:list-cache` refuses this import on a cached page's path: a
 // friend's override flip moves no key there, so such a page must first key on the friends' resolved switches.
 import { resolveSwitchEnv } from "../switches/snapshot";
-import type { Reader } from "./access";
+import { resolveFriend, type Reader } from "./access";
 import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
 import { isUuid } from "./rules";
 import { isOffered, spareCount } from "./spare-rules";
@@ -247,4 +247,68 @@ export async function friendGeneration(viewerId: string): Promise<string> {
     .from(grantors)
     .leftJoin(userDataStamps, eq(userDataStamps.userId, grantors.userId));
   return row?.g ?? "";
+}
+
+export type FriendSpareLine = {
+  oracleId: string;
+  name: string;
+  imageUri: string | null;
+  spare: number;
+  /** The viewer wants this card (a line on their own wishlist). */
+  onWishlist: boolean;
+};
+
+/** What one friend offers the viewer, for the friend page's Spares tab. */
+export type FriendSpareList = {
+  /** The pods the share reaches the viewer through, in name order: `shared with {pod}`. */
+  pods: string[];
+  /** Cards on the viewer's wishlist first, then by name. */
+  lines: FriendSpareLine[];
+};
+
+/**
+ * Every spare ONE friend offers the viewer (menu and Home plan, PR 7; erratum 9): `loadFriendSpares` answers only
+ * for cards the viewer asks about, and this tab asks about everything the friend owns. Null when the friend is not
+ * the viewer's, or shares no spares with a pod the viewer is in: the tab says so, and nothing of the friend's is read.
+ *
+ * The grant is read INSIDE the repeatable-read transaction that reads the friend's claim model, as `claimModelsFor`
+ * does, so the authorization and the rows are one snapshot, and the friend's own threshold and keeps filter the
+ * result through `isOffered`, the one place a spare is decided offered (Settings' Spares, G3). Run under the
+ * FRIEND's resolved switches.
+ */
+export async function loadFriendSpareList(viewerId: string, publicId: unknown): Promise<FriendSpareList | null> {
+  const friend = await resolveFriend(viewerId, publicId);
+  if (friend === null) return null;
+  const env = await resolveSwitchEnv(friend);
+  const read = await db.transaction(async (tx) => {
+    const grant = (await spareGrantDetailsQuery(viewerId, tx)).find((g) => g.userId === friend);
+    if (!grant) return null;
+    const owned = (await tx
+      .selectDistinct({ oracleId: collectionItems.oracleId })
+      .from(collectionItems)
+      .where(eq(collectionItems.userId, friend))).map((r) => r.oracleId);
+    const model = await loadAvailability(friend, { oracleIds: owned, env }, tx);
+    const settings = await spareSettingsIn(tx, friend, owned);
+    const offered: { oracleId: string; spare: number }[] = [];
+    for (const [oracleId, a] of model) {
+      const spare = spareCount(a);
+      if (isOffered(spare, settings.min, settings.kept.has(oracleId))) offered.push({ oracleId, spare });
+    }
+    return { grant, offered };
+  }, { isolationLevel: "repeatable read" });
+  if (read === null) return null;
+  const ids = read.offered.map((o) => o.oracleId);
+  if (ids.length === 0) return { pods: read.grant.pods, lines: [] };
+  const [info, wanted] = await Promise.all([
+    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, ids)),
+    db.select({ oracleId: wishlistItems.oracleId }).from(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), inArray(wishlistItems.oracleId, ids))),
+  ]);
+  const byId = new Map(info.map((c) => [c.oracleId, c]));
+  const onList = new Set(wanted.map((w) => w.oracleId));
+  const lines = read.offered.flatMap((o) => {
+    const c = byId.get(o.oracleId);
+    return c ? [{ oracleId: o.oracleId, name: c.name, imageUri: c.imageUri, spare: o.spare, onWishlist: onList.has(o.oracleId) }] : [];
+  });
+  lines.sort((a, b) => Number(b.onWishlist) - Number(a.onWishlist) || a.name.localeCompare(b.name, "en-US", { sensitivity: "base" }) || (a.oracleId < b.oracleId ? -1 : 1));
+  return { pods: read.grant.pods, lines };
 }
