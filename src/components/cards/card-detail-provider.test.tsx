@@ -161,6 +161,27 @@ describe("CardDetailProvider", () => {
       expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
     });
 
+    it("spends the intent on its card: paging away and back does not reopen the block", async () => {
+      const fetchCard = vi.fn(async (id: string) => (id === "o-sol" ? { ...SOL, comboPartners: withPartner.comboPartners } : withPartner));
+      function PagedOpener() {
+        const { open } = useCardDetail();
+        return <button type="button" onClick={() => open("o-signet", ["o-signet", "o-sol"], undefined, { combo: true })}>see the combo</button>;
+      }
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <PagedOpener />
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("see the combo"));
+      expect(block()).toHaveAttribute("aria-expanded", "true");
+      await click(footer("Next card"));
+      expect(document.getElementById("card-modal-title")).toHaveTextContent("Sol Ring");
+      await click(footer("Previous card"));
+      expect(document.getElementById("card-modal-title")).toHaveTextContent("Arcane Signet");
+      expect(block()).toHaveAttribute("aria-expanded", "false");
+      expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
+    });
+
     it("drops the intent for a partner reached from the block", async () => {
       mountCombo();
       await click(screen.getByText("see the combo"));

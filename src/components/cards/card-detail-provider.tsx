@@ -908,6 +908,9 @@ export function CardDetailProvider({
   const show = useCallback((next: BrowseCard | null) => {
     openRef.current = next?.oracleId ?? null;
     shownRef.current = openRef.current;
+    // A combo open is spent on its card: a DIFFERENT card landing (a page, a partner) consumes it, so paging away and
+    // back does not reopen the block. A same-card refresh keeps it.
+    setComboFor((prev) => (prev === next?.oracleId ? prev : null));
     // The opened-at printing dies when a DIFFERENT card actually lands, not when one is
     // asked for. Clearing it at the paging callback instead would strip the art off the
     // card still on screen the moment Prev was pressed — and `load` deliberately leaves
