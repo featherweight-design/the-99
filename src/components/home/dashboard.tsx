@@ -26,12 +26,27 @@ import { ResumeDecks, resumeDecks } from "./resume-decks";
 import { FriendsSection, type FriendsSectionProps } from "./friends-section";
 import { HomeTableCard } from "../rule-zero/home-table-card";
 import type { OpenTable } from "../../lib/social/rule-zero";
+import { Fragment } from "react";
+import type { HomeFeed } from "../../lib/feed/home";
+import { lockPageLine } from "../../lib/copy/refresh";
+import { CardDetailProvider } from "../cards/card-detail-provider";
+import { LeadStory } from "./lead-story";
+import { WhatsNew } from "./whats-new";
 
 export type DashboardProps = {
   stats: { totalCards: number; uniqueCards: number };
   /** Null until a collection has been read — `formatWhen` names that state. */
   lastUpdated: Date | null;
-  ready: ReadySlice<CommanderListItem>;
+  /** Null with the Home feed on: Ready to build leaves Home in direction B ("its job is For you's"), unread. */
+  ready: ReadySlice<CommanderListItem> | null;
+  /**
+   * The Home feed (menu and Home PR 6), read per request outside the cached payload, or null/absent with
+   * `HOME_FEED_ENABLED` off, which draws Home exactly as shipped. Present, Home is direction B: the lead story heads
+   * the main column, What's new follows the resume block, and Ready to build is gone.
+   */
+  feed?: HomeFeed | null;
+  /** `COMMANDERS_PLACE_ENABLED` for this reader: the lock's page line names only the slots the bar locks. */
+  commandersPlace?: boolean;
   /** Keyed by commander oracleId, and only for the commanders shown. */
   inUse: Map<string, ReceiptCounts>;
   decks: DeckListItem[];
@@ -110,6 +125,14 @@ export function Dashboard(props: DashboardProps) {
   const when = formatWhen(props.lastUpdated, new Date(props.now));
   const kicker = refreshCopy.home.kicker(props.stats.totalCards.toLocaleString("en-US"), when);
   const noCards = props.noCards === true;
+  // Direction B, or null for Home as shipped. The lead leaves the list it heads (`splitLead`).
+  const feed = props.feed ?? null;
+  const lead = feed?.chosen ? feed.lead : null;
+  // A friend's face for the feed, from the Friends section's own read: no second read of anyone's profile.
+  const faces = new Map((props.friends?.friends ?? []).map((f) => [f.publicId, f.commander]));
+  // Direction B's rows open the shipped card detail (a price drop's card, a combo's first piece): one provider over
+  // the body, so the lead and the list share one modal. As shipped, none.
+  const Frame = feed ? CardDetailProvider : Fragment;
 
   return (
     <div className="flex min-h-0 min-w-0 flex-auto flex-col bg-[color:var(--bg)] font-sans text-[color:var(--fg)]">
@@ -186,7 +209,7 @@ export function Dashboard(props: DashboardProps) {
           className="m-0 mt-[12px] hidden items-center gap-[8px] px-[26px] text-[12.5px] text-[color:var(--fg-muted)] md:flex"
         >
           <Lock size="lg" ink="var(--fg-locked)" className="flex-none" />
-          {refreshCopy.firstRun.lock.pageLineOpen}
+          {lockPageLine(props.commandersPlace === true, true)}
         </p>
       )}
 
@@ -212,6 +235,7 @@ export function Dashboard(props: DashboardProps) {
           from a reader at either width the handoff draws. The PADDING moves with
           the split rather than staying at `sm`: left behind, it gave 640–1179 a
           third layout, one column wide with desktop padding. */}
+      <Frame>
       <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         {/* Below 1180 both columns are `display: contents`, so their blocks are one list and `order` places them: Ready to
             build, Friends, the resume block, Commitments (Friends on Home, R2b; readiness gap 3). Friends is drawn ONCE,
@@ -219,8 +243,13 @@ export function Dashboard(props: DashboardProps) {
             every width, which this layout already accepts for Commitments. */}
         <div className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
           {props.welcome}
-          {/* At zero cards it ranks nothing and leaves on its own (S12: absent, not empty). */}
-          <ReadyToBuild ready={props.ready} inUse={props.inUse} />
+          {/* Direction B: the lead story where Ready to build stood, which leaves Home. */}
+          {feed ? (
+            lead && <LeadStory item={lead} now={props.now} face={lead.friend ? faces.get(lead.friend.publicId) ?? null : null} />
+          ) : (
+            // At zero cards it ranks nothing and leaves on its own (S12: absent, not empty).
+            props.ready && <ReadyToBuild ready={props.ready} inUse={props.inUse} />
+          )}
           {/* Sliced here rather than inside the section, so the section draws
               what it is handed and the ordering stays testable without a DOM.
               `decks.length` rides alongside as the footer's total — the figure
@@ -239,6 +268,8 @@ export function Dashboard(props: DashboardProps) {
               />
             )}
           </div>
+          {/* Direction B: What's new under the resume block, before Friends and Commitments on a phone. */}
+          {feed && <WhatsNew feed={feed} now={props.now} faces={faces} className="order-3 min-[1180px]:order-none" />}
         </div>
 
         {/* The column exists only when the card does. Null when the availability
@@ -251,7 +282,7 @@ export function Dashboard(props: DashboardProps) {
         {(props.commitments !== null || props.friends || tableCards) && (
           <div className="contents min-[1180px]:flex min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:flex-col min-[1180px]:gap-[11px]">
             {props.commitments !== null && (
-              <div className="order-3 flex flex-col min-[1180px]:order-none">
+              <div className={`${feed ? "order-5" : "order-3"} flex flex-col min-[1180px]:order-none`}>
                 <CommitmentsCard
                   commitments={props.commitments}
                   shopping={props.shopping}
@@ -265,17 +296,18 @@ export function Dashboard(props: DashboardProps) {
                 {...props.friends}
                 now={props.now}
                 head={tableCards}
-                className={`order-1 mt-[6px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}
+                className={`${feed ? "order-4" : "order-1"} mt-[6px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}
               />
             ) : tableCards ? (
               // A failed friends read still draws the card, alone at the section's place, with no heading.
-              <div className={`order-1 mt-[6px] flex flex-col gap-[12px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}>
+              <div className={`${feed ? "order-4" : "order-1"} mt-[6px] flex flex-col gap-[12px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}>
                 {tableCards}
               </div>
             ) : null}
           </div>
         )}
       </div>
+      </Frame>
     </div>
   );
 }

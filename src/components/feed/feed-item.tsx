@@ -185,11 +185,11 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
           <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{c.kicker[item.kind]}</span>
           <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)]">{feedAge(item.at, now)}</small>
         </div>
-        <p id={titleId} className="m-0 font-sans text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]">{text.title}</p>
+        <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]">{text.title}</p>
         {text.line && <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{text.line}</p>}
       </div>
       {text.press && (
-        <div className="col-start-2 mt-[6px] flex min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end">
+        <div className="col-start-2 mt-[9px] flex min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end">
           <FeedPress
             item={item}
             label={`${text.press} ›`}

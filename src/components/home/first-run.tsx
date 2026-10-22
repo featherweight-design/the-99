@@ -14,7 +14,10 @@ import { ArrivalsBanner, HOME_HEADING_ID } from "./arrivals-banner";
 import type { AboutLine } from "../../lib/about/notice";
 import { FirstRunStepOne } from "./first-run-step-one";
 import { HomeTour } from "../discovery/home-tour";
-import { refreshCopy } from "../../lib/copy/refresh";
+import Link from "next/link";
+import { feedCopy } from "../../lib/copy/feed";
+import { lockPageLine, refreshCopy } from "../../lib/copy/refresh";
+import { PendingReporter } from "../shell/pending-reporter";
 import { Lock } from "../ui/lock";
 import { FirstRunFriendsRow, type FirstRunFriendsProps } from "./first-run-friends";
 
@@ -95,6 +98,32 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
   );
 }
 
+/**
+ * "Choose your news" (menu and Home handoff, `.frw.new`): last in the checklist, to Settings' What's new on Home. No feed
+ * before cards, since nothing in it would be about the reader yet; this row is where its choices start. Behind
+ * `HOME_FEED_ENABLED`.
+ */
+function FirstRunNewsRow() {
+  const n = feedCopy.firstRun;
+  return (
+    <Link
+      href="/settings"
+      data-first-run-news
+      className="flex min-h-[56px] items-center gap-[12px] rounded-[14px] [border:1px_solid_var(--border-strong)] bg-[color:var(--surface-rail)] p-[12px_15px] font-sans no-underline"
+    >
+      <span aria-hidden className="flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[6px] [border:1.5px_solid_var(--accent-shadow)]">
+        <span className="h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <b className="font-display text-[15px] font-semibold text-[color:var(--fg)]">{n.title}</b>
+        <span className="text-[12px] text-[color:var(--fg-muted)]">{n.line}</span>
+      </span>
+      <span aria-hidden className="text-[color:var(--fg-faint)]">›</span>
+      <PendingReporter href="/settings" />
+    </Link>
+  );
+}
+
 export function FirstRunChecklist({
   addByHand = false,
   about = null,
@@ -105,7 +134,13 @@ export function FirstRunChecklist({
   tables = null,
   tour = false,
   tourAgain = false,
+  news = false,
+  commandersPlace = false,
 }: {
+  /** `HOME_FEED_ENABLED` for the reader: the Choose your news row, last. */
+  news?: boolean;
+  /** `COMMANDERS_PLACE_ENABLED` for the reader: the lock's page line names only the slots the bar locks. */
+  commandersPlace?: boolean;
   addByHand?: boolean;
   /** `tourDue`: the first-run tour runs over this page once (discovery R3·1b). */
   tour?: boolean;
@@ -159,7 +194,7 @@ export function FirstRunChecklist({
         >
           <Lock size="lg" ink="var(--fg-locked)" className="flex-none" />
           {/* Three names while Collection is open at zero cards (no-collection entry, call 6). */}
-          {ways ? c.lock.pageLineOpen : c.lock.pageLine}
+          {lockPageLine(commandersPlace, ways !== null)}
         </p>
       </div>
 
@@ -179,6 +214,7 @@ export function FirstRunChecklist({
         {/* Friends (Discovery R3·3, addendum-friends-home §3): last, under step 3, and never numbered, so the kicker
             stays Step 1 of 3. Live from the first visit while the steps above it are locked, and it stays once done. */}
         {friends && <FirstRunFriendsRow {...friends} />}
+        {news && <FirstRunNewsRow />}
         {/* The tour's precon line follows the ways group: off with it, and with PRECONS_ENABLED. */}
         {(tour || tourAgain) && <HomeTour due={tour} mode="first-run" precons={ways?.precons ?? false} />}
         {/* No foot. Step 1 is the collection alone (first-run ruling 1, 2026-09-28): the

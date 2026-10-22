@@ -252,3 +252,28 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     window.history.replaceState(null, "", "/");
   });
 });
+
+describe("FirstRunChecklist · Choose your news (menu and Home PR 6)", () => {
+  it("draws the row last, to Settings, only with the Home feed on", () => {
+    const { unmount } = render(<FirstRunChecklist />);
+    expect(document.querySelector("[data-first-run-news]")).toBeNull();
+    unmount();
+    render(<FirstRunChecklist news />);
+    const row = screen.getByRole("link", { name: /Choose your news/ });
+    expect(row).toHaveAttribute("href", "/settings");
+    expect(row.parentElement?.lastElementChild).toBe(row);
+  });
+
+  it("names only the slots the bar locks once the Commanders place takes Discover out of it", () => {
+    const line = (props: Parameters<typeof FirstRunChecklist>[0]) => {
+      const { container, unmount } = render(<FirstRunChecklist {...props} />);
+      const text = container.querySelector("[data-lock-page-line]")!.textContent;
+      unmount();
+      return text;
+    };
+    expect(line({})).toBe("Collection, Commanders, Discover and Decks open once your cards are in.");
+    expect(line({ commandersPlace: true })).toBe("Collection, Commanders and Decks open once your cards are in.");
+    expect(line({ commandersPlace: true, ways: { precons: false } })).toBe("Commanders and Decks open once your cards are in.");
+    expect(line({ ways: { precons: false } })).toBe("Commanders, Discover and Decks open once your cards are in.");
+  });
+});
