@@ -21,3 +21,26 @@
 6. A new switch, `COMBOS_CLOSE_ENABLED`, in `src/lib/switches/registry.ts`.
 
 Every new string is a placeholder for `/copy-review`.
+
+## Engineering audit against main (2026-10-22)
+
+Audited against `origin/main` at 9817bdc1c and the backend PR in review (#2215, plan
+`docs/superpowers/plans/2026-10-22-near-combos-backend.md`). **Verdict stands: Green.** The
+drawings need no change; the rows below are errata for the next design round, not a round of
+their own.
+
+Verified as written: `ComboBody` (`src/components/decks/receipt-modal.tsx`), `registerSheet`
+(`card-detail-provider.tsx`), the `combo-awareness` and `deck-your-deck` About keys
+(`scripts/lib/about-locators.mjs`), §4.3b rule 2 (G5: a command-zone-only piece is never offered,
+`addableMissingPiece`), G3's spare rule (availability's `free > 0`, spare wins), and G1's premise:
+steps and mana ARE stored, for every variant, by #820.
+
+### Errata
+
+| # | Handoff says | Main / the backend says | Effect on the build |
+|---|---|---|---|
+| E1 | G1: `pairsWithOnePiece` must select steps and mana | The deck's read is `loadNearCombos` (`src/lib/combos/near-combos.ts`, #2215), which already carries `steps`, `manaNeeded`, `manaValueNeeded` and `notablePrerequisites`. `pairsWithOnePiece` is unchanged. | None: the UI reads `loadNearCombos`. |
+| E2 | For engineering 6 and G8: a new switch `COMBOS_CLOSE_ENABLED` | The switch is `NEAR_COMBOS_ENABLED` (#2215), unset in production and in `ALL_FEATURES_EXCLUDED` until this line's close-out. | G8's recapture runs with `NEAR_COMBOS_ENABLED` on. |
+| E3 | G2: two-card only; the foot reads "Two-card combos legal in this deck's colors" | The backend read covers 2 to 6 pieces (the Overview's definition, approved through d9). | The UI asks for two-piece combos only, so G2 and the foot hold as drawn; widening is a later call. |
+| E4 | G4: the row names "the first committed" deck | `elsewhere` names the decks holding a copy (`hardDecks`: committed decks and reserved brews, never a draft that only asks), in the availability query's order. | The UI build adds which of those is committed, so the row can name the first committed one. |
+| E5 | About: `ABOUT_VERSION` 18 "if the menu and Home line ships 17 first" | Main is at 16 today. | The close-out bumps to whatever is next at that time. |
