@@ -166,11 +166,11 @@ async function main() {
 
     // How small a list can be and still read like itself. Each list of 60+ nonland copies is cut, 40 times per size, to
     // a random N copies; the cut's top axis is compared with the whole list's, and its top five with the whole list's
-    // top five. The floor (\`MIN_NONLAND\`, now ${MIN_NONLAND}) is the smallest size that reads the same plan.
+    // top five. The floor (`MIN_NONLAND`) is the smallest size that reads the same plan.
     const TRIALS = 40;
     const sizes = [20, 30, 40];
     const pool = [...lists.values()].filter((l) => l.grp !== "average" && l.cards.reduce((n, c) => n + c.quantity, 0) >= 60);
-    console.log(`\nstability: ${pool.length} lists of 60+ nonland copies (decks and precons), ${TRIALS} random cuts per size`);
+    console.log(`\nstability (MIN_NONLAND is ${MIN_NONLAND}): ${pool.length} lists of 60+ nonland copies (decks and precons), ${TRIALS} random cuts per size`);
     console.log("size | top axis matches the whole list (median list, p25 list) | top-5 overlap (mean) | cuts reading none");
     for (const n of sizes) {
       const agree: number[] = [];
