@@ -1,7 +1,7 @@
 import { generateKeyPairSync } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
-import { isVapidPrivateKey, isVapidPublicKey, isVapidSubject, pushConfig, pushConfigured } from "./config";
+import { isVapidKeypair, isVapidPrivateKey, isVapidPublicKey, isVapidSubject, pushConfig, pushConfigured } from "./config";
 
 function pair() {
   const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
@@ -32,6 +32,19 @@ describe("push config fails closed", () => {
     expect(isVapidPrivateKey(pub)).toBe(false);
     expect(isVapidPublicKey("not base64 !")).toBe(false);
     expect(pushConfig({ ...good, VAPID_PUBLIC_KEY: priv })).toBeNull();
+  });
+
+  it("refuses halves that are not one usable keypair", () => {
+    const other = pair();
+    const zeroPoint = Buffer.concat([Buffer.from([4]), Buffer.alloc(64)]).toString("base64url");
+    const zeroScalar = Buffer.alloc(32).toString("base64url");
+    expect(isVapidKeypair(pub, priv)).toBe(true); // the control
+    expect(isVapidKeypair(pub, other.priv)).toBe(false); // halves of different pairs
+    expect(isVapidKeypair(zeroPoint, priv)).toBe(false); // right length, not a point on the curve
+    expect(isVapidKeypair(pub, zeroScalar)).toBe(false); // right length, not a valid scalar
+    expect(pushConfig({ ...good, VAPID_PRIVATE_KEY: other.priv })).toBeNull();
+    expect(pushConfig({ ...good, VAPID_PUBLIC_KEY: zeroPoint })).toBeNull();
+    expect(pushConfig({ ...good, VAPID_PRIVATE_KEY: zeroScalar })).toBeNull();
   });
 
   it("wants a contact the push services can use", () => {

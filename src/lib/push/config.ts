@@ -6,6 +6,7 @@
  * `dormant`. Nothing here throws and nothing logs a key. The switch alone never turns push on; the keys alone never
  * do either. Reads members of the env it is handed and never passes the object on (`check:switch-reads`).
  */
+import { createECDH } from "node:crypto";
 
 export type PushConfig = { publicKey: string; privateKey: string; subject: string };
 
@@ -28,11 +29,30 @@ export const isVapidPrivateKey = (v: string): boolean => bytes(v)?.length === 32
 /** The push services need a way to reach the sender: a `mailto:` address or an `https:` URL. */
 export const isVapidSubject = (v: string): boolean => /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || /^https:\/\/[^\s/]+\S*$/.test(v);
 
+/**
+ * Whether the two halves are ONE usable P-256 keypair: the private scalar must be valid and must derive exactly the
+ * public point. Length checks alone pass a zero scalar, a point off the curve and halves from different pairs, none of
+ * which can sign a push.
+ */
+export function isVapidKeypair(publicKey: string, privateKey: string): boolean {
+  const pub = bytes(publicKey);
+  const priv = bytes(privateKey);
+  if (!pub || !priv) return false;
+  try {
+    const ecdh = createECDH("prime256v1");
+    ecdh.setPrivateKey(priv);
+    return ecdh.getPublicKey().equals(pub);
+  } catch {
+    return false;
+  }
+}
+
 export function pushConfig(env: NodeJS.ProcessEnv): PushConfig | null {
   const publicKey = env.VAPID_PUBLIC_KEY?.trim() ?? "";
   const privateKey = env.VAPID_PRIVATE_KEY?.trim() ?? "";
   const subject = env.VAPID_SUBJECT?.trim() ?? "";
   if (!isVapidPublicKey(publicKey) || !isVapidPrivateKey(privateKey) || !isVapidSubject(subject)) return null;
+  if (!isVapidKeypair(publicKey, privateKey)) return null;
   return { publicKey, privateKey, subject };
 }
 
