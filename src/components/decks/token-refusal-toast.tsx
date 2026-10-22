@@ -15,7 +15,12 @@ export function TokenRefusalToast({ name, onDone }: { name: string; onDone: () =
   return <DeckRefusalToast kind="token-refusal" title={tokensCopy.row.refused} detail={tokensCopy.row.refusedDetail(name)} onDone={onDone} />;
 }
 
-/** The refusal toast: one at a time per deck (its owner holds it, and a newer replaces it). */
+/** A refusal toast announces itself with this when it mounts, and any other refusal toast leaves: one refusal at a time
+ *  per deck whoever owns it (a removal's, in the builder, or a token's, in the provider), the newer replacing the older.
+ *  The detail is the announcer's own token, so a toast does not answer its own claim. */
+const REFUSAL_CLAIM = "the99:deck-refusal-claim";
+
+/** The refusal toast: one at a time per deck, whoever owns it, and a newer replaces an older. */
 export function DeckRefusalToast({ title, detail, kind = "refusal", onDone }: { title: string; detail: string; kind?: string; onDone: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState(false);
@@ -37,6 +42,15 @@ export function DeckRefusalToast({ title, detail, kind = "refusal", onDone }: { 
     window.addEventListener(DECK_TOAST_CLAIM, onDone);
     return () => window.removeEventListener(DECK_TOAST_CLAIM, onDone);
   }, [onDone]);
+  const self = useRef({});
+  useEffect(() => {
+    const leave = (e: Event) => { if ((e as CustomEvent).detail !== self.current) onDone(); };
+    window.addEventListener(REFUSAL_CLAIM, leave);
+    window.dispatchEvent(new CustomEvent(REFUSAL_CLAIM, { detail: self.current }));
+    return () => window.removeEventListener(REFUSAL_CLAIM, leave);
+    // Mount only: a re-render (a new `onDone`) must not announce a second claim.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <ToastFrame
       frameRef={ref}

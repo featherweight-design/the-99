@@ -180,7 +180,7 @@ try {
 
     // A reload: the address was stripped, so the receipt is gone with it (it lasts the visit; History keeps the record).
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.locator("h1").first().waitFor({ timeout: 30_000 });
+    await onPage(page, "h1:visible").first().waitFor({ timeout: 30_000 });
     check((await page.getByText("Started from the").count()) === 0 && (await page.getByText("added to your collection").count()) === 0, `${w.name}: a reload brings no receipt`, "gone");
 
     // A claim no receipt can be drawn for (an id that is nobody's) is still spent: stripped from the address, nothing drawn.

@@ -100,3 +100,23 @@ describe("DeckRefusalToast (a card's failed removal, deck messages A1)", () => {
     expect(alert.querySelector("button, a")).toBeNull();
   });
 });
+
+describe("one refusal at a time, whoever owns it", () => {
+  it("a newer refusal replaces an older one, in either order", () => {
+    const tokenDone = vi.fn();
+    const removeDone = vi.fn();
+    // A token refusal first, then a removal's: the token's leaves.
+    render(<TokenRefusalToast name="Spirit" onDone={tokenDone} />);
+    render(<DeckRefusalToast title="We couldn’t remove that." detail="Sol Ring" onDone={removeDone} />);
+    expect(tokenDone).toHaveBeenCalledTimes(1);
+    expect(removeDone).not.toHaveBeenCalled();
+    cleanup();
+    // And the other way round.
+    const tokenDone2 = vi.fn();
+    const removeDone2 = vi.fn();
+    render(<DeckRefusalToast title="We couldn’t remove that." detail="Sol Ring" onDone={removeDone2} />);
+    render(<TokenRefusalToast name="Spirit" onDone={tokenDone2} />);
+    expect(removeDone2).toHaveBeenCalledTimes(1);
+    expect(tokenDone2).not.toHaveBeenCalled();
+  });
+});
