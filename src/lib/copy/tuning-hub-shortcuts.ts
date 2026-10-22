@@ -1,6 +1,6 @@
 // The Tuning hub's shortcuts: the labels on the to-do card's Proposed cuts and the mix's Balance mana presses.
-// Their own module so the spine, which draws on every Home and deck page, does not carry the rest of the
-// hub's strings; `tuning-hub.ts` includes them as `tuningHubCopy.shortcuts`, unchanged for everyone else.
+// Their own module so the to-do card and the mix, which draw on every deck page, do not carry the rest of
+// the hub's strings; `tuning-hub.ts` includes them as `tuningHubCopy.shortcuts`.
 
 export const tuningHubShortcutsCopy = {
   /** The over row's press on the to-do card (deck messages A4), named in full. */

@@ -62,12 +62,12 @@ describe("BuilderSpine over 99", () => {
     expect(screen.queryByText(/62/)).not.toBeInTheDocument();
   });
 
-  // The trim line and its Proposed cuts left the header for the to-do card's over row.
-  it("draws no trim line and no cuts shortcut of its own", () => {
+  // The trim line left the header for the to-do card's over row. Its Proposed cuts press went with
+  // it: the spine takes no `onProposedCuts` any more, so the type system holds that half.
+  it("draws no trim line of its own", () => {
     mount(104);
     expect(screen.queryByText(/over the ninety-nine/)).not.toBeInTheDocument();
     expect(screen.queryByText(/and it is legal/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /cuts/i })).not.toBeInTheDocument();
   });
 
   it("draws no delta at 99", () => {
