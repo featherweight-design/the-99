@@ -34,8 +34,11 @@ describe("feedUnion", () => {
   });
 
   it("shows each kind only what arrived after ITS OWN enabledAt (absent when off, so nothing)", () => {
-    expect(q).toContain(`(sf.first_seen_at at time zone 'UTC') > (sup.feed_kinds ->> 'new-set')::timestamptz`);
-    expect(q).toContain(`(pf.first_seen_at at time zone 'UTC') > (pup.feed_kinds ->> 'new-precon')::timestamptz`);
+    // Against the item's own moment (the later of the stamp and the release), so a set first seen before the
+    // reader opted in but released after still arrives, and one released before still does not.
+    const flatQ = q.replace(/\s+/g, " ");
+    expect(flatQ).toContain(`and greatest(sf.first_seen_at at time zone 'UTC', s.released_at::timestamp at time zone 'UTC') > (sup.feed_kinds ->> 'new-set')::timestamptz`);
+    expect(flatQ).toContain(`and greatest(pf.first_seen_at at time zone 'UTC', p.release_date::timestamp at time zone 'UTC') > (pup.feed_kinds ->> 'new-precon')::timestamptz`);
     expect(q).toContain("fi.created_at > (fup.feed_kinds ->> fi.kind)::timestamptz");
   });
 

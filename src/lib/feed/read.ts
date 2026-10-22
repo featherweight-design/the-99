@@ -8,7 +8,8 @@
  * turning one on never backfills):
  * - New set: a `catalog_first_seen` set stamp that is not the BASELINE, of a release type (`RELEASE_SET_TYPES`),
  *   not digital, released by today. Its moment is the later of the stamp and the release day: a set the catalog
- *   showed before it released is news when it is out.
+ *   showed before it released is news when it is out, and that same moment is what the kind's `enabledAt` is
+  compared with (a reader who opts in while a set is upcoming still hears of its release).
  * - New precon: the same for a `precons` row (the stamp's key is its `file_name`), released by today, no twin. A
  *   precon is listed by MTGJSON only at release, so this is the released one; announced sets stay on /decks/precons.
  * - The stored kinds, from the stored items, with the live friend grant re-joined (`lib/social/feed-items.ts`).
@@ -52,7 +53,8 @@ export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Dat
       where sf.baseline = false and s.digital = false
         and s.set_type = any(${sql.param([...RELEASE_SET_TYPES])}::text[])
         and s.released_at <= ${today}::date
-        and (sf.first_seen_at at time zone 'UTC') > (sup.feed_kinds ->> 'new-set')::timestamptz`);
+        and greatest(sf.first_seen_at at time zone 'UTC', s.released_at::timestamp at time zone 'UTC')
+          > (sup.feed_kinds ->> 'new-set')::timestamptz`);
   }
   if (kinds.includes("new-precon")) {
     branches.push(sql`select 'new-precon'::text as kind, 'precon:' || p.file_name as key,
@@ -65,7 +67,8 @@ export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Dat
       join ${userPrefs} pup on pup.user_id = ${viewerId}
       where pf.baseline = false and p.twin_of is null
         and p.release_date <= ${today}::date
-        and (pf.first_seen_at at time zone 'UTC') > (pup.feed_kinds ->> 'new-precon')::timestamptz`);
+        and greatest(pf.first_seen_at at time zone 'UTC', p.release_date::timestamp at time zone 'UTC')
+          > (pup.feed_kinds ->> 'new-precon')::timestamptz`);
   }
   const stored = kinds.filter(isStoredKind);
   if (stored.length > 0) branches.push(storedFeedBranch(viewerId, stored));

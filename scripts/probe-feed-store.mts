@@ -140,7 +140,7 @@ async function main() {
     // and another stamped as a BASELINE. Read-only on the catalog otherwise.
     const { rows: unstamped } = await db.execute<{ code: string }>(sql`
       select s.code from sets s
-      where s.digital = false and s.set_type in ('expansion', 'commander') and s.released_at <= current_date
+      where s.digital = false and s.set_type in ('expansion', 'commander') and s.released_at <= current_date - 6
         and not exists (select 1 from catalog_first_seen c where c.kind = 'set' and c.key = s.code)
       order by s.released_at desc limit 2`);
     // Both identifiers are set only when two candidates exist: with one, ARRIVED alone would make later checks expect
