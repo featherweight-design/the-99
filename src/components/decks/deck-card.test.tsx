@@ -853,6 +853,24 @@ describe("DeckCard — Hidden from friends", () => {
     expect(overflowProps.at(-1)!.friends).toBeUndefined();
   });
 
+  // Round 1 of #2223: the glyph is 24px of row, so a range beside it yields, and beside a notice as well the window
+  // widens to hold all four (356.1px), or the notice is clipped by the tile at a 340px column.
+  it("yields a range beside the glyph, and widens the window when a notice is there too", () => {
+    const faces = (c: HTMLElement) => c.querySelectorAll("[data-testid='bracket-chip']").length;
+    const range: DeckListItem["bracket"] = { permits: [1, 2], answered: null };
+    const both = tile({ hiddenFromFriends: true, bracket: range, notice: { kind: "unread", count: 99 } }, prefs);
+    expect(faces(both.container)).toBe(2);
+    expect(both.container.innerHTML).toContain("@min-[330px]:@max-[360px]:hidden");
+    expect(both.container.innerHTML).not.toContain("@max-[336px]");
+    both.unmount();
+    const glyph = tile({ hiddenFromFriends: true, bracket: range, notice: null }, prefs);
+    expect(faces(glyph.container)).toBe(2);
+    expect(glyph.container.innerHTML).toContain("@min-[330px]:@max-[336px]:hidden");
+    glyph.unmount();
+    const off = tile({ hiddenFromFriends: true, bracket: range, notice: null }, null);
+    expect(faces(off.container)).toBe(1);
+  });
+
   it("hands the menu the deck's flag, its status and the reader's rules", () => {
     overflowProps.length = 0;
     tile({ hiddenFromFriends: true, statusPill: "Complete" }, prefs);
