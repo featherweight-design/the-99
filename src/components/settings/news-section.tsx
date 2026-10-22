@@ -59,7 +59,11 @@ export function NewsSection({ kinds }: { kinds: NewsSetting[] }) {
         setOn(next);
       }
       else if (r.reason === "off") router.refresh();
-      else fail();
+      else {
+        // Refused: the kinds this page offered may have changed under it (a switch went off), so draw the current ones.
+        fail();
+        router.refresh();
+      }
     } catch {
       fail();
     } finally {

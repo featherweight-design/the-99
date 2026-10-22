@@ -80,6 +80,7 @@ describe("the news section", () => {
     expect(box("price-drop").checked).toBe(true);
     expect(box("new-set").checked).toBe(true);
     expect(screen.getByRole("alert").textContent).toContain(C.failed);
+    expect(m.refresh).toHaveBeenCalled();
   });
 
   it("puts the set back when the save throws", async () => {
