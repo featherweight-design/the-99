@@ -1,12 +1,12 @@
 /**
  * The news feed's kinds (menu and Home, handoff calls 6 to 8, G1; plan `2026-10-22-menu-home.md`, "The feed model").
- * A CLOSED set: `user_prefs.feed_kinds` keys, `feed_items.kind` (by constraint) and Settings' checkboxes are all
+ * A CLOSED set: `user_prefs.feed_kinds` keys, a stored item's kind (by constraint) and Settings' checkboxes are all
  * checked against it.
  *
  * Two families:
  * - CATALOG kinds (`new-set`, `new-precon`) are READ, never written: they come from `catalog_first_seen` at read
  *   time (`read.ts`), so no ingest fans out per account under the `catalog-ingest` lock.
- * - STORED kinds persist in `feed_items`, written by the job that knows the event (`recordFeedItem`, `write.ts`).
+ * - STORED kinds persist as stored items, written by the job that knows the event (`recordFeedItem`, `lib/social/feed-write.ts`).
  *
  * Client-safe: no imports.
  */

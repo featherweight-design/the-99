@@ -2,7 +2,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
-import { feedItemProblem, recordFeedItem, recordFeedItemQuery, type FeedItemInput } from "./write";
+import { feedItemProblem, recordFeedItem, recordFeedItemQuery, type FeedItemInput } from "./feed-write";
 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const CARD = "0b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";

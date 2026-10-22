@@ -6,15 +6,17 @@
  *   no backfill when turned on"). The test is in the INSERT itself, against the reader's `feed_kinds`, so a reader
  *   turning the kind off while the job runs never gets a row the next statement would have refused.
  * - The same event twice writes once: `(user_id, kind, dedupe_key)` is unique, and a repeat does nothing.
- * - Catalog kinds are never written here: they are read from `catalog_first_seen` (`read.ts`).
+ * - Catalog kinds are never written here: they are read from `catalog_first_seen` (`lib/feed/read.ts`).
  *
  * Writing a row moves no data stamp (`feed_items` has no trigger): the feed is read per request.
+ * It lives in `src/lib/social/` because a row can name a friend: `check:social-reads` binds `feed_items` to this
+ * directory, so every read and write of it is one a reviewer checks against the grant rule.
  */
 import { sql, type SQL } from "drizzle-orm";
 
 import type { db } from "../../db";
 import { feedItems, userPrefs } from "../../db/schema";
-import { isStoredKind, type StoredKind } from "./kinds";
+import { isStoredKind, type StoredKind } from "../feed/kinds";
 
 export type FeedItemInput = {
   userId: string;

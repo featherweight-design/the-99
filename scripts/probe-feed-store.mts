@@ -40,7 +40,7 @@ async function main() {
   console.log(`target ${BRANCH}, reader ${U}, friend ${F}`);
 
   const prefs = await import("../src/lib/feed/prefs");
-  const { recordFeedItem } = await import("../src/lib/feed/write");
+  const { recordFeedItem } = await import("../src/lib/social/feed-write");
   const read = await import("../src/lib/feed/read");
   const { availableFeedKinds } = await import("../src/lib/feed/flag");
   const friends = await import("../src/lib/social/friends");

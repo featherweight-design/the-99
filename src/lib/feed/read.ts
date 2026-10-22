@@ -11,7 +11,7 @@
  *   showed before it released is news when it is out.
  * - New precon: the same for a `precons` row (the stamp's key is its `file_name`), released by today, no twin. A
  *   precon is listed by MTGJSON only at release, so this is the released one; announced sets stay on /decks/precons.
- * - The stored kinds, from `feed_items`, with the live friend grant re-joined (`lib/social/feed-items.ts`).
+ * - The stored kinds, from the stored items, with the live friend grant re-joined (`lib/social/feed-items.ts`).
  *
  * Every item is inside the window (`FEED_WINDOW_DAYS`) and at or before `now`. Unseen is created after the cursor:
  * `feed_seen_at` for Home, `friends_seen_at` for the Friends badge (trade matches only). Null is never seen.
