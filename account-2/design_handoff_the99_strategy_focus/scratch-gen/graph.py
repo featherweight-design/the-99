@@ -39,7 +39,7 @@ CSS = r"""
 .ph .ring{grid-template-columns:1fr;gap:14px;justify-items:center}
 .rg{position:relative}
 .rg .art{position:absolute;border-radius:50%;object-fit:cover;object-position:30% 30%;border:2px solid var(--border-strong);box-sizing:border-box}
-.leg{display:flex;flex-direction:column;width:100%}
+.leg{display:flex;flex-direction:column;width:100%;max-width:440px}
 .leg div{display:flex;align-items:center;gap:10px;min-height:40px;border-top:1px solid var(--border);padding:0 6px;font-size:13px;color:var(--fg)}
 .leg div:first-child{border-top:0}
 .leg i{width:10px;height:10px;border-radius:3px;flex:none}
@@ -173,26 +173,40 @@ def ring(rows, focus, ph, added=0):
     cx = cy = size / 2
     R = size / 2 - 14
     thick = 20
-    total = sum(n for _, n, _ in rows)
+    total = sum(n for _, n, _ in rows) + added
     gap = 2.2
     a0 = -90
-    segs = []
-    for i, (name, n, _) in enumerate(rows):
-        sweep = 360 * n / total
-        s, e = a0 + gap / 2, a0 + sweep - gap / 2
-        on = name == focus
-        r = R + (4 if on else 0)
+
+    def arc(s, e, r, col, w, dash=""):
         large = 1 if (e - s) > 180 else 0
         p1 = (cx + r * math.cos(math.radians(s)), cy + r * math.sin(math.radians(s)))
         p2 = (cx + r * math.cos(math.radians(e)), cy + r * math.sin(math.radians(e)))
+        return (f'<path d="M{p1[0]:.1f},{p1[1]:.1f} A{r:.1f},{r:.1f} 0 {large} 1 {p2[0]:.1f},{p2[1]:.1f}" fill="none" '
+                f'stroke="{col}" stroke-width="{w}"{dash}/>')
+
+    segs = []
+    for i, (name, n, _) in enumerate(rows):
+        on = name == focus
+        extra = added if on else 0
+        sweep = 360 * (n + extra) / total
+        r = R + (4 if on else 0)
+        w = thick + (4 if on else 0)
         col = "#CF8745" if on else TONES[i]
-        segs.append(f'<path d="M{p1[0]:.1f},{p1[1]:.1f} A{r:.1f},{r:.1f} 0 {large} 1 {p2[0]:.1f},{p2[1]:.1f}" fill="none" stroke="{col}" stroke-width="{thick + (4 if on else 0)}"/>')
+        if extra:
+            mid = a0 + 360 * n / total
+            segs.append(arc(a0 + gap / 2, mid - .6, r, col, w))
+            segs.append(arc(mid + .6, a0 + sweep - gap / 2, r, "#F0C08E", w))
+        else:
+            segs.append(arc(a0 + gap / 2, a0 + sweep - gap / 2, r, col, w))
         a0 += sweep
     art = size - 2 * (thick + 26)
     svg = (f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" aria-hidden="true">{"".join(segs)}</svg>'
            f'<img class="art" src="{img("hero")}" alt="" style="width:{art}px;height:{art}px;left:{(size-art)/2}px;top:{(size-art)/2}px">')
-    leg = "".join(f'<div class="{"on" if name == focus else ""}"><i style="background:{"#CF8745" if name == focus else TONES[i]}"></i>{name}<span>{n} cards</span></div>'
-                  for i, (name, n, _) in enumerate(rows))
+    leg = ""
+    for i, (name, n, _) in enumerate(rows):
+        on = name == focus
+        cnt = f'{n} <em style="font-style:normal;color:var(--accent)">+{added}</em> cards' if (on and added) else f'{n} cards'
+        leg += f'<div class="{"on" if on else ""}"><i style="background:{"#CF8745" if on else TONES[i]}"></i>{name}<span>{cnt}</span></div>'
     return f'<div class="ring"><div class="rg" style="width:{size}px;height:{size}px">{svg}</div><div class="leg">{leg}</div></div>'
 
 

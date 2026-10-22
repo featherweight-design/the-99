@@ -1,4 +1,4 @@
-# The 99 · Strategy focus · R2 (account 2, 2026-10-22)
+# The 99 · Strategy focus · R2c (account 2, 2026-10-22)
 
 Canvas: https://claude.ai/artifact/5DXdxuVHyRhgFAEV83mirP
 
@@ -14,9 +14,9 @@ Analysis tab and Suggested changes (two lists) on Hugh's HD - Avatar Aang, in Lo
 
 | Board | What |
 |---|---|
-| Main | The calls; the whole Analysis tab with a focus picked, 390 and 1300 |
+| Main | The calls; the whole Analysis tab with a focus picked (ring), 390 and 1300 |
 | Graph-Options | Four forms with Tokens as focus: A card piles (picked), B ring around the commander, C one strip, D bars (R1); A on the phone: A1 piles on their side (picked), A2 swipe row, A3 five standing (R2, cramped); names |
-| Focus-Flow | No focus; Suggested changes ready with the focus row; its swaps with the focus chip; two applied; the graph after (new cards on the pile, `11 +2`) |
+| Focus-Flow | No focus; Suggested changes ready with the focus row; its swaps with the focus chip; two applied; the ring after (focus arc grows, `11 +2`) |
 | Graph-States | One to four strategies, nothing over the floor, too small, typal replaces tribal, landfall as-is |
 | About | New entry "Giving a deck a focus" (chapter 04) |
 
@@ -27,7 +27,9 @@ Analysis tab and Suggested changes (two lists) on Hugh's HD - Avatar Aang, in Lo
    sentence. A focus change counts as new input for the unchanged-state rule.
 3. **Swaps show the shift.** An addition toward the focus carries a citation chip in the shipped pattern, kind `focus`,
    value `Tokens 11 → 12` (dashed accent). Applying lands the card face up on its pile, outlined, count `11 +2` until the next commit.
-4. **Graph: card piles.** A stack per strategy, height by count, a real card from the deck face up on top; the focus pile lit.
+4. **Graph: the ring around the commander** (R2c, Hugh found the piles busy). Commander art at the centre, one arc per strategy,
+   focus arc pulled out in accent; the legend carries names and counts and is the press. An applied addition grows the focus arc
+   in a lighter accent, legend `11 +2`. Piles (with the phone's on-their-side form), strip and bars stay on Graph-Options.
 5. **Tuning keeps its four tools.** Analysis gets one block, last in the reading, above Tuning.
 
 ## Gaps and owed
