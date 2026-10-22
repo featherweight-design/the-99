@@ -256,8 +256,8 @@ export default async function DeckBuilderPage({
   // a lie about deck state.
   const fillPassesRead = early(perf.timed("fillPasses", () => readFillPasses(id, userId)));
   // Not swallowed either, and for the stronger version of the same reason: a failed read would
-  // take the banner away, and a deck with pending changes and no banner offers no route to a
-  // commit at all.
+  // take the to-do card's pending row away, and a deck with pending changes and no row offers no
+  // route to Review, where a commit is made, at all.
   const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId, env)));
   // v0 (precons PR 6b): a linked deck's precon list, read from `precon_cards` and never a version.
   // Started here with no test of the link first, because the read IS the test: owner-scoped, and an

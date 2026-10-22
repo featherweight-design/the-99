@@ -138,6 +138,7 @@ export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleR
         <p
           ref={titleRef}
           tabIndex={titleRef ? -1 : undefined}
+          data-focus-title={titleRef ? "" : undefined}
           className={`m-0 outline-none text-[13.5px] font-semibold leading-[1.4] ${
             warning ? "text-[color:var(--avail-over-fg)]" : "text-[color:var(--fg)]"
           }`}
@@ -225,12 +226,15 @@ export function PendingRow({ state, deckId, next }: { state: DraftState; deckId:
   const p = deckVersioningCopy.pending;
   const door = useChangeCommander();
   const titleRef = useRef<HTMLParagraphElement>(null);
+  // Only while the draft holds a commander change, as the banner's line was: a flag left raised by a
+  // change undone in the same visit must not pull focus when a later card edit draws the row.
+  const commanderMoved = state.commander !== null;
   useEffect(() => {
-    if (door?.focusPending && titleRef.current) {
+    if (commanderMoved && door?.focusPending && titleRef.current) {
       titleRef.current.focus();
       door.focusTaken();
     }
-  }, [door]);
+  }, [door, commanderMoved]);
   const version = state.version?.number ?? 0;
   const n = changeCount(state);
   const adds = state.addChanges.length;
@@ -244,7 +248,7 @@ export function PendingRow({ state, deckId, next }: { state: DraftState; deckId:
           {p.since(n, version)}{" "}
           {/* Per side, so each reads as its own direction; `counts` owns the sign, the U+2212 and
               the rule that a zero side is not drawn. */}
-          <span className="font-normal text-[12px]">
+          <span className="font-mono font-normal text-[12px]">
             {adds > 0 && <span className="text-[color:var(--success)]">{p.counts(adds, 0)}</span>}
             {adds > 0 && removes > 0 && " / "}
             {removes > 0 && <span className="text-[color:var(--warning)]">{p.counts(0, removes)}</span>}

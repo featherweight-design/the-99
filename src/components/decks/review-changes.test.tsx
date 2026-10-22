@@ -683,7 +683,7 @@ describe("ReviewChanges", () => {
     ).toBeNull();
   });
 
-  // The two deck-page CTAs that mean "commit this" link here with `?commit=1`,
+  // The deck page's one CTA that means "commit this", the spine's `Commit as v1`, links here with `?commit=1`,
   // and the page is the commit surface — arriving that way and being shown a
   // button that opens what you asked for is one click too many.
   it("mounts the commit sheet at the foot, open when the reader asked for it", () => {

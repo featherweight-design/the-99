@@ -265,8 +265,8 @@ export function Column({
       <div className="flex flex-col gap-[4px]">
         {groupRows.map((row) => {
           // The claim the row's control is drawn against, guards and all —
-          // one selector, shared with the banner's own pull hints, so the
-          // two surfaces can never disagree about which deck holds a copy.
+          // one selector, the one every availability surface reads, so no two
+          // surfaces can disagree about which deck holds a copy.
           // `claimed` only, because that is the bucket the pull answers:
           // `bucketAdds` calls an add free as soon as the collection has a
           // spare copy for it, claims or none, and an offer to raid somebody
@@ -319,7 +319,7 @@ export function Column({
             manaCost: row.manaCost ?? null,
             // Dropped outright when the claim read failed: the buy tag still says
             // `buy` on an unowned row, and it says it without a figure, which is
-            // the same degrade the pending banner makes.
+            // the degrade every unpriced buy tag makes.
             price: claimsKnown ? row.price ?? null : null,
             newestAsOf,
             // An owned card whose free copies are all sleeved somewhere else.
@@ -635,8 +635,8 @@ export function ReviewChanges({
     [setWrite],
   );
   const writeBusy = writeState !== "idle";
-  // The same hook the banner's control uses, so the question asked from either
-  // door is one construct with one set of answers.
+  // The discard question's one hook. The deck page no longer asks it (Commit and
+  // Discard live in Review alone), so this is its only door.
   const discard = useDiscardConfirm(state);
 
   // The version's own size, for the consequence sentence — and `before` IS that
@@ -1084,9 +1084,8 @@ export function ReviewChanges({
             // element, ordered twice.
             <div className="flex flex-col items-stretch md:flex-row md:items-center md:flex-wrap gap-[8px] md:gap-[12px] mt-[13px] md:mt-[24px] px-[14px] pt-[11px] pb-[16px] md:p-0 md:pt-[18px] bg-[color:var(--bg)] md:bg-transparent [border-top:1px_solid_var(--border-strong)]">
               {discard.confirming ? (
-                // The question takes the bar's own body, exactly as it takes the
-                // banner's on the deck page — the same two lines and the same two
-                // answers, with no second wording authored for this door.
+                // The question takes the bar's own body: the same two lines and the
+                // same two answers `DiscardConfirm` has always drawn.
                 <DiscardConfirm
                   deckId={deckId}
                   state={state}

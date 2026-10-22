@@ -378,11 +378,12 @@ async function main() {
     const [v] = await sql`select commander_oracle_id as c from deck_versions where deck_id = ${fixture.deckId}`;
     report("write is a draft change", v.c === fixture.lead, "the version still holds the old commander");
 
-    // PR 4: the pending banner names the swap on its own line, and focus lands there.
-    const line = onPage(page, '[data-testid="banner-commander-line"]').filter({ visible: true });
+    // The to-do card's pending row counts the swap as a change, and focus lands on its title
+    // (deck messages 1c; Review spells the swap out).
+    const line = onPage(page, '[data-focus-title]').filter({ visible: true });
     await line.first().waitFor({ state: "visible", timeout: 30_000 });
-    report("banner line", (await line.count()) === 1, (await line.first().textContent()) ?? "");
-    report("focus lands on the banner line", await line.first().evaluate((el) => el === document.activeElement), "document.activeElement");
+    report("pending row", (await line.count()) === 1, (await line.first().textContent()) ?? "");
+    report("focus lands on the pending row", await line.first().evaluate((el) => el === document.activeElement), "document.activeElement");
 
     // The review page draws the Commander section first, at both widths.
     for (const width of WIDTHS) {

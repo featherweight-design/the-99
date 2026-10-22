@@ -51,6 +51,14 @@ describe("focus after a change lands", () => {
     rerender(mount(swapped()));
     expect(document.activeElement).toBe(title());
   });
+
+  it("leaves focus alone when the draft holds no commander change", () => {
+    // A change undone in the same visit leaves the flag raised; a later card edit must not take it.
+    const { container } = render(mount(swapped({ commander: null })));
+    const rowTitle = container.querySelector("[data-focus-title]");
+    expect(rowTitle).not.toBeNull();
+    expect(document.activeElement).not.toBe(rowTitle);
+  });
 });
 
 describe("commanderZoneHint", () => {
