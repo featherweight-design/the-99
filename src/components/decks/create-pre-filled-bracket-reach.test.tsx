@@ -113,6 +113,14 @@ describe("the hand-off's Bracket row, read", () => {
     expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...handOff().create, bracket: 3, bracketBuys: true });
   });
 
+  it("keeps the comma after a card name on the name's line (phone wrap)", async () => {
+    await settle(SHORT);
+    const name = within(screen.getByTestId("bracket-choice-hit")).getByTestId("hand-off-reach-card");
+    const box = name.parentElement!;
+    expect(box.className).toContain("whitespace-nowrap");
+    expect(box.textContent).toBe("Rhystic Study,");
+  });
+
   it("a press on a card name opens the card and picks nothing", async () => {
     await settle(SHORT);
     fireEvent.click(within(screen.getByTestId("bracket-choice-hit")).getByTestId("hand-off-reach-card"));

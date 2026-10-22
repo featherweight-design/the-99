@@ -327,9 +327,11 @@ function WithCards({ text, cards }: { text: string; cards: readonly CardChip[] }
     }
     if (!hit) { parts.push(rest); break; }
     if (at > 0) parts.push(rest.slice(0, at));
+    // The punctuation right after a name rides with it, so a line never starts with ", about $2".
+    const tail = /^[,.;:]/.exec(rest.slice(at + hit.name.length))?.[0] ?? "";
     parts.push(
+      <span key={`c${key++}`} className="whitespace-nowrap">
       <CardDetailTrigger
-        key={`c${key++}`}
         oracleId={hit.oracleId}
         name={hit.name}
         imageUri={hit.imageUri}
@@ -338,9 +340,10 @@ function WithCards({ text, cards }: { text: string; cards: readonly CardChip[] }
         className="cursor-pointer font-semibold text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px]"
       >
         {hit.name}
-      </CardDetailTrigger>,
+      </CardDetailTrigger>{tail}
+      </span>,
     );
-    rest = rest.slice(at + hit.name.length);
+    rest = rest.slice(at + hit.name.length + tail.length);
   }
   return <>{parts}</>;
 }
