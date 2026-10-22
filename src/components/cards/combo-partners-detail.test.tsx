@@ -273,4 +273,37 @@ describe("the card modal's combo block", () => {
     const block = container.querySelector("[data-testid='combo-partners-block']")!;
     expect(block.textContent).not.toMatch(/\$|×\d/);
   });
+
+  // OPENED FOR THE COMBO: the block brings itself on screen once it is DRAWN, which a cached card without its partners
+  // only is after revalidation, so the reveal waits for the partners rather than running at mount.
+  describe("revealed when opened for the combo", () => {
+    it("scrolls in once, when the partners arrive on a card that first had none", () => {
+      const scroll = vi.fn();
+      const real = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = scroll;
+      try {
+        const { rerender } = render(<ComboPartnersDetail card={card([])} initiallyExpanded />);
+        expect(scroll).not.toHaveBeenCalled();
+        rerender(<ComboPartnersDetail card={card([partner()])} initiallyExpanded />);
+        expect(scroll).toHaveBeenCalledTimes(1);
+        expect(screen.getByRole("button", { name: /Two-card combos/ }).getAttribute("aria-expanded")).toBe("true");
+        rerender(<ComboPartnersDetail card={card([partner(), partner({ oracleId: "p-2", name: "Basalt Monolith" })])} initiallyExpanded />);
+        expect(scroll).toHaveBeenCalledTimes(1);
+      } finally {
+        Element.prototype.scrollIntoView = real;
+      }
+    });
+
+    it("does not scroll for a plain open", () => {
+      const scroll = vi.fn();
+      const real = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = scroll;
+      try {
+        render(<ComboPartnersDetail card={card([partner()])} />);
+        expect(scroll).not.toHaveBeenCalled();
+      } finally {
+        Element.prototype.scrollIntoView = real;
+      }
+    });
+  });
 });

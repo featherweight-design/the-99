@@ -106,4 +106,15 @@ describe("CardModal — the combo block's wiring", () => {
     expect(screen.queryByRole("button", { name: "Power Artifact" })).toBeNull();
     expect(screen.getByText("Power Artifact")).toBeInTheDocument();
   });
+
+  // OPENED FOR THE COMBO (a feed item's See the combo): the block starts open, and a plain open leaves it closed.
+  it("starts the block open when the card was opened for its combo, closed otherwise", () => {
+    mount({ openCombo: true });
+    expect(screen.getByRole("button", { name: /Two-card combos/ })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("leaves the block closed on a plain open", () => {
+    mount();
+    expect(screen.getByRole("button", { name: /Two-card combos/ })).toHaveAttribute("aria-expanded", "false");
+  });
 });

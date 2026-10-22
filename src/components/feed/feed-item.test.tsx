@@ -103,4 +103,15 @@ describe("FeedItemRow", () => {
     expect(press.className).toContain("min-w-0");
     expect(press.className).not.toContain("whitespace-nowrap");
   });
+
+  it("opens a combo item for its combo, and no other kind", () => {
+    open.mockClear();
+    const { unmount } = list(<FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation" } })} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: /See the combo/ }));
+    expect(open).toHaveBeenLastCalledWith("a", undefined, undefined, expect.objectContaining({ combo: true }));
+    unmount();
+    list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: /Open the card/ }));
+    expect(open.mock.lastCall?.[3]).not.toHaveProperty("combo");
+  });
 });

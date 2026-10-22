@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { orderModalPartners, summariseByState } from "../../lib/combos/modal-block";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { ComboGlyph } from "./combo-glyph";
 import { Chevron } from "../ui/chevron";
 
@@ -51,6 +52,18 @@ export function ComboPartnersDetail({
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [boundOpen, setBoundOpen] = useState(false);
   const partners = card.comboPartners ?? [];
+  const hasPartners = partners.length > 0;
+  // Opened FOR the combo (a feed item): bring the block on screen once, in a modal whose column may scroll. Run when
+  // the block is DRAWN, not at mount: a cached card can arrive without its partners and get them on revalidation.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const revealed = useRef(false);
+  useEffect(() => {
+    if (!initiallyExpanded || !hasPartners || revealed.current) return;
+    revealed.current = true;
+    // The app's scroll, not the reader's (quick return).
+    noteAppScroll();
+    rootRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [initiallyExpanded, hasPartners]);
   if (partners.length === 0) return null;
 
   const summary = summariseByState(partners);
@@ -64,6 +77,7 @@ export function ComboPartnersDetail({
 
   return (
     <div
+      ref={rootRef}
       data-testid="combo-partners-block"
       className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
       style={{ background: "var(--bg)", border: "1px solid var(--border)" }}

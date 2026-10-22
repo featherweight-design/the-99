@@ -128,6 +128,72 @@ describe("CardDetailProvider", () => {
     expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined);
   });
 
+  // OPENED FOR THE COMBO (a feed item's See the combo, menu and Home PR 6c): the card's combo block starts open and the
+  // phone's sheet full, for THAT card alone. A partner reached from the block, a page and a close all drop it.
+  describe("a combo open", () => {
+    const withPartner = {
+      ...SIGNET,
+      comboPartners: [{ oracleId: "o-sol", name: "Sol Ring", state: "owned" as const, popularity: 9 }],
+    };
+    function ComboOpener() {
+      const { open } = useCardDetail();
+      return <button type="button" onClick={() => open("o-signet", undefined, undefined, { combo: true })}>see the combo</button>;
+    }
+    const mountCombo = (fetchCard = vi.fn(async (id: string) => (id === "o-sol" ? { ...SOL, comboPartners: withPartner.comboPartners } : withPartner))) =>
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <ComboOpener />
+        </CardDetailProvider>,
+      );
+    const block = () => screen.getByRole("button", { name: /Two-card combos/ });
+
+    it("opens the card with its combo block open and the sheet full", async () => {
+      mountCombo();
+      await click(screen.getByText("see the combo"));
+      expect(block()).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "full");
+    });
+
+    it("leaves the block closed for a plain open", async () => {
+      renderTriggers(vi.fn(async () => withPartner));
+      await click(screen.getByText("Arcane Signet"));
+      expect(block()).toHaveAttribute("aria-expanded", "false");
+      expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
+    });
+
+    it("spends the intent on its card: paging away and back does not reopen the block", async () => {
+      const fetchCard = vi.fn(async (id: string) => (id === "o-sol" ? { ...SOL, comboPartners: withPartner.comboPartners } : withPartner));
+      function PagedOpener() {
+        const { open } = useCardDetail();
+        return <button type="button" onClick={() => open("o-signet", ["o-signet", "o-sol"], undefined, { combo: true })}>see the combo</button>;
+      }
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <PagedOpener />
+        </CardDetailProvider>,
+      );
+      await click(screen.getByText("see the combo"));
+      expect(block()).toHaveAttribute("aria-expanded", "true");
+      await click(footer("Next card"));
+      expect(document.getElementById("card-modal-title")).toHaveTextContent("Sol Ring");
+      await click(footer("Previous card"));
+      expect(document.getElementById("card-modal-title")).toHaveTextContent("Arcane Signet");
+      expect(block()).toHaveAttribute("aria-expanded", "false");
+      expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
+    });
+
+    it("drops the intent for a partner reached from the block", async () => {
+      mountCombo();
+      await click(screen.getByText("see the combo"));
+      await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
+      expect(document.getElementById("card-modal-title")).toHaveTextContent("Sol Ring");
+      expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      expect(document.getElementById("card-modal-title")).toBeNull();
+    });
+  });
+
   // A COMBO PARTNER HAS A WAY BACK (Hugh's test: Ghoulcaller Gisa → its combo → Intruder Alarm drew
   // only an ×). The partner names the card it came from, on the phone's pill and the desktop's, and
   // every way out of it puts that card back rather than closing both.
