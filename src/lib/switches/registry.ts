@@ -46,6 +46,7 @@ export const SWITCHES = [
   { name: "FIRST_RUN_TOUR_ENABLED", kind: "feature" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "HELP_PANEL_ENABLED", kind: "feature" },
+  { name: "HOME_FEED_ENABLED", kind: "feature" },
   { name: "HOW_IT_WORKS_ENABLED", kind: "plumbing" },
   { name: "LABEL_ROLE_COUNTS_ENABLED", kind: "plumbing" },
   { name: "LABEL_SURFACES_ENABLED", kind: "feature" },
@@ -117,10 +118,9 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * every table a switch reads ships in a migration production applies on deploy.
  */
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
-  // Its destinations ship across the menu and Home line (plan 2026-10-22-menu-home.md): until the Commanders tabs
-  // (PR 1) and /settings (PR 3) are on main, raising it takes Discover out of the bar with nowhere to reach it and
-  // draws a Settings row to a page that is not there. The line's close-out (PR 8) removes this entry.
-  COMMANDERS_PLACE_ENABLED: "Its destinations are still landing: the Commanders tabs and /settings.",
+  // The feed's store and its Settings section land before Home draws it (plan 2026-10-22-menu-home.md, PR 4 then
+  // PR 6): raised now, a reader could tick kinds that show nowhere. The PR that draws Home's feed removes this entry.
+  HOME_FEED_ENABLED: "Home does not draw the feed yet: its Settings section would change nothing a reader sees.",
 };
 
 /**
