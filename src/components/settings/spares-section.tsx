@@ -39,11 +39,12 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
   // Stable, so the search's effect does not re-run (and re-ask) on every redraw of the section.
   const fail = useCallback(() => setToast({ id: ++toastSeq.current, text: c.failed }), []);
 
-  // The stepper's value, held from the press until the redraw carries it; a fresh server value always wins.
+  // The stepper's value, held from the press until the redraw carries it; a fresh server value always wins. One save
+  // at a time: both buttons wait while a save is in flight, so no older answer can land over a newer press.
   const [min, setMin] = useState(spareMin);
   const [servedMin, setServedMin] = useState(spareMin);
-  // The last value known to be STORED: the server's, or a save that succeeded. A failure rolls back to this, never to
-  // the value on screen before the press, which can itself be an unsaved press still in flight.
+  const [saving, setSaving] = useState(false);
+  // The last value known to be STORED (the server's, or a save that succeeded): a failure rolls back to this.
   const confirmedMin = useRef(spareMin);
   if (servedMin !== spareMin) {
     setServedMin(spareMin);
@@ -52,38 +53,23 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
   useEffect(() => {
     confirmedMin.current = spareMin;
   }, [spareMin]);
-  // Only the latest press may put the value back: an older failure must not undo a newer choice still being saved.
-  const minSeq = useRef(0);
-  const confirmedSeq = useRef(0);
-  const latestFailed = useRef(false);
   async function step(next: number) {
-    if (next < SPARE_MIN_LOW || next > SPARE_MIN_HIGH) return;
-    const seq = ++minSeq.current;
-    latestFailed.current = false;
+    if (saving || next < SPARE_MIN_LOW || next > SPARE_MIN_HIGH) return;
+    setSaving(true);
     setMin(next);
     try {
       const r = await setSpareMinAction(next);
-      // A success newer than the last one confirmed becomes the stored value; if the latest press has already failed
-      // back to the older confirmed value, the screen follows it here.
-      if (r.ok && seq > confirmedSeq.current) {
-        confirmedSeq.current = seq;
-        confirmedMin.current = next;
-        if (latestFailed.current) setMin(next);
-      }
-      if (off(r)) router.refresh();
-      else if (!r.ok) {
-        if (seq === minSeq.current) {
-          latestFailed.current = true;
-          setMin(confirmedMin.current);
-        }
+      if (r.ok) confirmedMin.current = next;
+      else if (off(r)) router.refresh();
+      else {
+        setMin(confirmedMin.current);
         fail();
       }
     } catch {
-      if (seq === minSeq.current) {
-        latestFailed.current = true;
-        setMin(confirmedMin.current);
-      }
+      setMin(confirmedMin.current);
       fail();
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -114,6 +100,8 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
     }
   }
   const shown = kept.filter((k) => !released.has(k.oracleId));
+  // The search re-asks when the server's kept set changes (a release or a keep lands), so a card let go shows up in it.
+  const keptKey = kept.map((k) => k.oracleId).join(",");
 
   return (
     <section aria-labelledby="settings-spares" className="mt-[26px] md:mt-[34px]">
@@ -121,13 +109,13 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
       <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
       <div className="mt-[12px] flex flex-wrap items-center gap-[10px] text-[14px] leading-[1.5] text-[color:var(--fg)]">
         <span>{c.before}</span>
-        <Stepper value={min} onStep={step} />
+        <Stepper value={min} saving={saving} onStep={step} />
         <span>{c.after}</span>
       </div>
       <WhoSees pods={pods} />
       <h3 className="m-0 mt-[22px] font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{c.keptHead(shown.length)}</h3>
       <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.keptExplain}</p>
-      <KeepSearch onFail={fail} />
+      <KeepSearch keptKey={keptKey} onFail={fail} />
       {shown.length > 0 && (
         <ul className="m-0 mt-[10px] flex list-none flex-col gap-[6px] p-0">
           {shown.map((card) => (
@@ -142,8 +130,8 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
   );
 }
 
-/** The board's `.stepper`: − value +, 44px tall on the phone, 36px from `md`. Saves as it changes. */
-function Stepper({ value, onStep }: { value: number; onStep: (next: number) => void }) {
+/** The board's `.stepper`: − value +, 44px tall on the phone, 36px from `md`. Saves as it changes, one save at a time. */
+function Stepper({ value, saving, onStep }: { value: number; saving: boolean; onStep: (next: number) => void }) {
   const button =
     "flex h-full w-[44px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 font-sans text-[18px] text-[color:var(--fg-body)] disabled:cursor-default disabled:text-[color:var(--fg-locked)]";
   return (
@@ -152,7 +140,7 @@ function Stepper({ value, onStep }: { value: number; onStep: (next: number) => v
       aria-label={c.stepperLabel}
       className="inline-flex h-[44px] items-center overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] md:h-[36px]"
     >
-      <button type="button" aria-label={c.fewer} disabled={value <= SPARE_MIN_LOW} onClick={() => onStep(value - 1)} className={button}>
+      <button type="button" aria-label={c.fewer} disabled={saving || value <= SPARE_MIN_LOW} onClick={() => onStep(value - 1)} className={button}>
         −
       </button>
       <output
@@ -161,7 +149,7 @@ function Stepper({ value, onStep }: { value: number; onStep: (next: number) => v
       >
         {value}
       </output>
-      <button type="button" aria-label={c.more} disabled={value >= SPARE_MIN_HIGH} onClick={() => onStep(value + 1)} className={button}>
+      <button type="button" aria-label={c.more} disabled={saving || value >= SPARE_MIN_HIGH} onClick={() => onStep(value + 1)} className={button}>
         +
       </button>
     </span>
@@ -196,7 +184,7 @@ function WhoSees({ pods }: { pods: string[] }) {
 }
 
 /** Keep a card back (`.kpf`): a search over the reader's own spare cards; a press keeps the card back. */
-function KeepSearch({ onFail }: { onFail: () => void }) {
+function KeepSearch({ keptKey, onFail }: { keptKey: string; onFail: () => void }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<{ for: string; items: SpareSearchHit[] } | null>(null);
@@ -220,7 +208,7 @@ function KeepSearch({ onFail }: { onFail: () => void }) {
       live = false;
       clearTimeout(timer);
     };
-  }, [trimmed, active, router, onFail]);
+  }, [trimmed, active, keptKey, router, onFail]);
 
   async function keep(hit: SpareSearchHit) {
     if (keeping) return;

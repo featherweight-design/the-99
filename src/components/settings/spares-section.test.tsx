@@ -11,7 +11,9 @@ const m = vi.hoisted(() => ({
   release: vi.fn(),
   search: vi.fn(),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh, push: vi.fn() }), usePathname: () => "/settings" }));
+// One router for every render, as Next's is: a fresh object each render would re-run every effect that depends on it.
+const router = { refresh: m.refresh, push: vi.fn() };
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/settings" }));
 vi.mock("../../app/settings/actions", () => ({
   setSpareMinAction: m.setMin,
   keepCardAction: m.keep,
@@ -59,37 +61,54 @@ describe("the threshold stepper", () => {
     expect(screen.getByRole("alert").textContent).toContain(C.failed);
   });
 
-  // Two presses before either save answers: a failure goes back to the last value STORED, never to an unsaved press.
-  const twoPresses = async (answers: ((settle: { ok: (v: unknown) => void; no: (e: unknown) => void }) => void)[], order: number[]) => {
-    m.setMin.mockClear();
-    const settles: { ok: (v: unknown) => void; no: (e: unknown) => void }[] = [];
-    m.setMin.mockImplementation(() => new Promise((ok, no) => { settles.push({ ok, no }); }));
-    render(<SparesSection spareMin={1} pods={[]} kept={[]} />);
-    const more = screen.getByRole("button", { name: C.more });
-    await act(async () => fireEvent.click(more));
-    await act(async () => fireEvent.click(more));
-    expect(m.setMin.mock.calls).toEqual([[2], [3]]);
-    for (const i of order) await act(async () => answers[i](settles[i]));
-    return screen.getByRole("group", { name: C.stepperLabel }).textContent;
+  // One save at a time: while a save is in flight both buttons wait, and the value shows the pending choice.
+  const deferred = () => {
+    const settle: { ok: (v: unknown) => void; no: (e: unknown) => void } = { ok: () => {}, no: () => {} };
+    m.setMin.mockImplementation(() => new Promise((ok, no) => Object.assign(settle, { ok, no })));
+    return settle;
   };
-  const refused = (s: { ok: (v: unknown) => void }) => s.ok({ ok: false, reason: "invalid" });
-  const thrown = (s: { no: (e: unknown) => void }) => s.no(new Error("network"));
-  const saved = (s: { ok: (v: unknown) => void }) => s.ok({ ok: true });
+  const value = () => screen.getByRole("group", { name: C.stepperLabel }).textContent;
+  const button = (name: string) => screen.getByRole("button", { name }) as HTMLButtonElement;
 
-  it("returns to the stored value when both deferred saves are refused", async () => {
-    expect(await twoPresses([refused, refused], [0, 1])).toContain("1");
+  it("holds both buttons while a save is pending, and frees them when it answers", async () => {
+    const settle = deferred();
+    render(<SparesSection spareMin={2} pods={[]} kept={[]} />);
+    await act(async () => fireEvent.click(button(C.more)));
+    expect(value()).toContain("3");
+    expect(button(C.more).disabled).toBe(true);
+    expect(button(C.fewer).disabled).toBe(true);
+    await act(async () => fireEvent.click(button(C.more)));
+    expect(m.setMin.mock.calls).toEqual([[3]]);
+    await act(async () => settle.ok({ ok: true }));
+    expect(button(C.more).disabled).toBe(false);
+    expect(value()).toContain("3");
   });
 
-  it("returns to the stored value when one save is refused and the other throws, in either order", async () => {
-    expect(await twoPresses([refused, thrown], [0, 1])).toContain("1");
-    cleanup();
-    expect(await twoPresses([thrown, refused], [1, 0])).toContain("1");
+  it("rolls a refused or thrown save back to the last stored value", async () => {
+    for (const answer of [(s: ReturnType<typeof deferred>) => s.ok({ ok: false, reason: "invalid" }), (s: ReturnType<typeof deferred>) => s.no(new Error("network"))]) {
+      m.setMin.mockReset();
+      m.setMin.mockResolvedValueOnce({ ok: true });
+      render(<SparesSection spareMin={2} pods={[]} kept={[]} />);
+      await act(async () => fireEvent.click(button(C.more)));
+      const settle = deferred();
+      await act(async () => fireEvent.click(button(C.more)));
+      expect(value()).toContain("4");
+      await act(async () => answer(settle));
+      expect(value()).toContain("3");
+      expect(screen.getByRole("alert").textContent).toContain(C.failed);
+      cleanup();
+    }
   });
 
-  it("returns to the first press's value when it saved and the second failed", async () => {
-    expect(await twoPresses([saved, refused], [0, 1])).toContain("2");
-    cleanup();
-    expect(await twoPresses([saved, thrown], [1, 0])).toContain("2");
+  it("shows the server's value when a redraw lands during or after the save", async () => {
+    const settle = deferred();
+    const { rerender } = render(<SparesSection spareMin={2} pods={[]} kept={[]} />);
+    await act(async () => fireEvent.click(button(C.more)));
+    rerender(<SparesSection spareMin={5} pods={[]} kept={[]} />);
+    expect(value()).toContain("5");
+    await act(async () => settle.ok({ ok: true }));
+    rerender(<SparesSection spareMin={3} pods={[]} kept={[]} />);
+    expect(value()).toContain("3");
   });
 });
 
@@ -135,6 +154,27 @@ describe("kept back", () => {
     await act(async () => answer({ ok: false, reason: "invalid" }));
     expect(screen.getByText("Sol Ring")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toContain(C.failed);
+  });
+
+  it("re-asks an open search when a release lands, so the card let go appears", async () => {
+    vi.useFakeTimers();
+    try {
+      m.search.mockResolvedValueOnce({ ok: true, hits: [] });
+      m.release.mockResolvedValue({ ok: true });
+      const { rerender } = render(<SparesSection spareMin={1} pods={[]} kept={[card()]} />);
+      fireEvent.change(screen.getByRole("searchbox", { name: C.searchLabel }), { target: { value: "sol" } });
+      await act(async () => { await vi.advanceTimersByTimeAsync(200); });
+      expect(screen.getByText(C.noMatch)).toBeTruthy();
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: C.releaseAria("Sol Ring") })));
+      m.search.mockResolvedValueOnce({ ok: true, hits: [{ oracleId: SOL, name: "Sol Ring", spare: 2 }] });
+      rerender(<SparesSection spareMin={1} pods={[]} kept={[]} />);
+      await act(async () => { await vi.advanceTimersByTimeAsync(200); });
+      expect(m.search).toHaveBeenCalledTimes(2);
+      expect(screen.getByRole("button", { name: C.keepAria("Sol Ring", 2) })).toBeTruthy();
+      expect((screen.getByRole("searchbox", { name: C.searchLabel }) as HTMLInputElement).value).toBe("sol");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("searches the reader's spares and keeps the card pressed", async () => {
