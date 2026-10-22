@@ -545,6 +545,8 @@ export function ComboBody({
   stats?: React.ReactNode;
   siblings?: readonly Sibling[];
   oneAway?: {
+    /** The plates take no press (an Add is in flight): no card may stack on the combo while it lands. */
+    platesInert?: boolean;
     /** The plate's where-line for each piece. */
     where: (oracleId: string) => React.ReactNode;
     missingOracleId: string;
@@ -557,7 +559,7 @@ export function ComboBody({
   return (
     <section className="border-b border-b-[color:var(--border)] border-[color:var(--border)] last:border-b-0" data-testid="receipt-combo">
       <div className={"flex flex-col md:flex-row gap-[14px] px-[16px] py-[14px] md:px-[18px] md:py-[16px] " + (oneAway ? "md:gap-[18px]" : "md:gap-[16px]")}>
-        <div className={"flex flex-none gap-[7px]" + (oneAway ? " md:self-start" : "")}>
+        <div className={"flex flex-none gap-[7px]" + (oneAway ? " md:self-start" : "")} inert={oneAway?.platesInert || undefined} data-plates>
           {combo.cards.map((card) => (
             <ReceiptTile
               key={card.oracleId}

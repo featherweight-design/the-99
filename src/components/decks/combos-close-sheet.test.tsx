@@ -9,11 +9,9 @@ import type { MissingPieceWhere, NearCombo, NearComboCard, NearCombos } from "..
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
 // What a card stacked on the sheet calls it: `registerSheet`'s first argument.
-// The card details the provider is showing, if any: a card stacked on the combo from a plate.
-const cardState: { openOracleId: string | null } = { openOracleId: null };
 const registerSheet = vi.fn<(label: string, ...rest: unknown[]) => () => void>(() => () => {});
 vi.mock("../cards/card-detail-provider", () => ({
-  useCardDetail: () => ({ registerSheet, openOracleId: cardState.openOracleId, revealing: false }),
+  useCardDetail: () => ({ registerSheet, openOracleId: null, revealing: false }),
   // A plate is a press that opens the card: drawn as a button, as the real trigger is.
   CardDetailTrigger: ({ children, testId, describedBy }: { children?: React.ReactNode; testId?: string; describedBy?: string }) => (
     <button type="button" data-testid={testId} aria-describedby={describedBy}>{children}</button>
@@ -217,7 +215,6 @@ const SEARING: NearCombo = {
 
 describe("a row opens its combo inside the sheet", () => {
   beforeEach(() => {
-    cardState.openOracleId = null;
     registerSheet.mockClear();
     addCardToDeck.mockReset();
     optimisticAdd.mockReset();
@@ -422,22 +419,17 @@ describe("a row opens its combo inside the sheet", () => {
     expect(shownDetail()?.getAttribute("data-combo-detail")).toBe(LIST[0].variantId);
   });
 
-  it("waits for a card stacked on the combo to close before a late Add returns to the list", async () => {
+  it("takes no plate press while an Add is in flight, so no card can stack on the combo as it lands", async () => {
     let finish: (r: DeckMutationResult) => void = () => {};
     addCardToDeck.mockReturnValue(new Promise<DeckMutationResult>((r) => (finish = r)));
-    const view = draw([SEARING, LIST[0]]);
+    draw([SEARING, LIST[0]]);
     fireEvent.click(press("Searing Touch"));
+    const plates = () => shownDetail()!.querySelector<HTMLElement>("[data-plates]")!;
+    expect(plates().hasAttribute("inert")).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: detail.add("Searing Touch") }));
-    // A plate opened its card over the combo while the add was in flight.
-    cardState.openOracleId = "Avatar Aang-id";
-    view.rerender(sheet([SEARING, LIST[0]], 2));
-    await act(async () => finish({ ok: true }));
-    // Still on the combo: its plate (the card's opener) stays, and no list row takes focus under the card.
-    expect(shownDetail()).not.toBeNull();
-    // The card closes: now the sheet goes back to the list.
-    cardState.openOracleId = null;
-    view.rerender(sheet([SEARING, LIST[0]], 2));
-    expect(shownDetail()).toBeNull();
+    expect(plates().hasAttribute("inert")).toBe(true);
+    await act(async () => finish({ ok: false, message: "That deck is full." }));
+    expect(plates().hasAttribute("inert")).toBe(false);
   });
 
   it("stays on the combo and says why when the add is refused", async () => {

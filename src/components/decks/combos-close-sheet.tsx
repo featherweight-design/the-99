@@ -16,7 +16,6 @@
 // sheet as they always did (the dialog owns one history entry, and a second for the combo would have
 // to be unwound by every way out). `← N combos` is the way back to the list, at its scroll position.
 
-import { useCardDetail } from "../cards/card-detail-provider";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 
@@ -100,29 +99,9 @@ export function CombosCloseSheet({
   };
   const pop = () => setOpenId(null);
   // An Add answers for ITS combo only: if the reader has gone back and opened another meanwhile, a
-  // late success must not dismiss that one. And while a card is stacked on the combo (a plate was
-  // pressed), the return waits for it to close: leaving now would unmount the plate that opened it and
-  // put focus on a list row under the card's dialog, where Tab and Escape would act on this sheet.
-  const { openOracleId } = useCardDetail();
-  const cardOpen = openOracleId !== null;
-  const cardOpenRef = useRef(cardOpen);
-  useLayoutEffect(() => {
-    cardOpenRef.current = cardOpen;
-  }, [cardOpen]);
-  const addedWhileCardOpen = useRef<string | null>(null);
-  const added = (variantId: string) => {
-    if (cardOpenRef.current) {
-      addedWhileCardOpen.current = variantId;
-      return;
-    }
-    setOpenId((current) => (current === variantId ? null : current));
-  };
-  useEffect(() => {
-    const id = addedWhileCardOpen.current;
-    if (cardOpen || id === null) return;
-    addedWhileCardOpen.current = null;
-    setOpenId((current) => (current === id ? null : current));
-  }, [cardOpen]);
+  // late success must not dismiss that one. No card can be stacked on the combo when it lands: the
+  // plates take no press while an Add is in flight (`platesInert`), the scope ruled at review round 3.
+  const added = (variantId: string) => setOpenId((current) => (current === variantId ? null : current));
 
   // The list stays mounted (hidden) under the combo, so going back restores its scroll and puts focus
   // on the row's press. Layout, so neither the combo nor the list paints at the other's position first.
@@ -239,6 +218,7 @@ function ComboDetail({ combo, deckId, art, onAdded }: { combo: NearCombo; deckId
         combo={nearComboModal({ ...combo, pieces: heldFirst(combo.pieces) })}
         art={plates}
         oneAway={{
+          platesInert: isPending,
           missingOracleId: missing.oracleId,
           where: (oracleId) =>
             oracleId === missing.oracleId ? (
