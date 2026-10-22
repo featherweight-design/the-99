@@ -83,8 +83,14 @@ def options():
                        "All four with Tokens as the focus, at both widths. Every one is pressable per strategy (44px on the phone) and reads the same five "
                        "counts. A card can count toward two strategies, so a form that adds up to a whole (ring, strip) slightly overstates a share.")
             + both("A · Card piles (picked)", "A stack per strategy, height by count, the top card a real card from the deck in that strategy. The focus pile "
-                   "is lit. It reads like a deck on the table, needs no scale, and an applied swap lands on its pile (Focus-Flow board).",
+                   "is lit. It reads like a deck on the table, needs no scale, and an applied swap lands on its pile (Focus-Flow board). "
+                   "On the phone the piles lie on their side, one row each (below).",
                    G.block("piles", True), G.block("piles"), hub=False)
+            + sec("A on the phone · after Hugh’s note", "Five standing piles at 390 shrink the cards to stamps and wrap the names. Three ways out, drawn side "
+                  "by side.",
+                  f'<div class="frames">{frame("<b>A1 · picked</b> · piles on their side", bph(G.block("piles", True), hub=False), "One row per strategy: the face card at left, the rest of the pile fanned out behind it, length by count. Names on one line, 60px rows, the card stays readable.")}'
+                  f'{frame("<b>A2</b> · a row of bigger piles you swipe", bph(G.block("scroll", True), hub=False), "Keeps them standing at a size you can see, but two strategies sit off screen.")}'
+                  f'{frame("<b>A3 · R2 as drawn</b> · five standing piles", bph(G.block("piles5", True), hub=False), "Hugh’s concern: stamp-sized cards, wrapped names, uneven floors.")}</div>')
             + both("B · Ring around the commander", "The commander’s art at the centre, each strategy an arc sized by its count, the focus pulled out in "
                    "accent; a legend beside it carries names and counts. The most decorative, and the hardest to compare two close counts.",
                    G.block("ring", True), G.block("ring"), hub=False)

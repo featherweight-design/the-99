@@ -15,7 +15,7 @@ Analysis tab and Suggested changes (two lists) on Hugh's HD - Avatar Aang, in Lo
 | Board | What |
 |---|---|
 | Main | The calls; the whole Analysis tab with a focus picked, 390 and 1300 |
-| Graph-Options | Four forms with Tokens as focus: A card piles (picked), B ring around the commander, C one strip, D bars (R1); names |
+| Graph-Options | Four forms with Tokens as focus: A card piles (picked), B ring around the commander, C one strip, D bars (R1); A on the phone: A1 piles on their side (picked), A2 swipe row, A3 five standing (R2, cramped); names |
 | Focus-Flow | No focus; Suggested changes ready with the focus row; its swaps with the focus chip; two applied; the graph after (new cards on the pile, `11 +2`) |
 | Graph-States | One to four strategies, nothing over the floor, too small, typal replaces tribal, landfall as-is |
 | About | New entry "Giving a deck a focus" (chapter 04) |

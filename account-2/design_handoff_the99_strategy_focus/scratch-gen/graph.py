@@ -23,7 +23,7 @@ CSS = r"""
 .pile .tp{position:absolute;left:0;border-radius:5px;object-fit:cover;display:block;border:1px solid var(--border-strong);box-sizing:border-box;box-shadow:0 6px 14px rgba(0,0,0,.35)}
 .pile .nw{position:absolute;left:0;border-radius:5px;border:1.5px dashed var(--accent);background:color-mix(in oklab,var(--accent) 14%,var(--surface));box-sizing:border-box}
 .pile .tp.nwi{border:1.5px dashed var(--accent);box-shadow:0 6px 14px rgba(0,0,0,.35)}
-.pile .pn{font-size:13px;font-weight:600;color:var(--fg);text-align:center;line-height:1.25}
+.pile .pn{font-size:13px;font-weight:600;color:var(--fg);text-align:center;line-height:1.25;min-height:16px}
 .pile .pc{font:11px 'IBM Plex Mono';color:var(--fg-muted)}
 .pile .pc em{font-style:normal;color:var(--accent)}
 .pile.on{background:color-mix(in oklab,var(--accent) 9%,transparent);box-shadow:inset 0 0 0 1px var(--accent-shadow)}
@@ -115,7 +115,7 @@ CSS = r"""
 kit.CSS += CSS
 
 # name, count, top card in the deck (a real card of that strategy)
-AANG = [("Allies", 22, "aang-swift-savior"), ("Spells matter", 17, "swords"), ("Tokens", 11, "jasmine-tea-shop"),
+AANG = [("Allies", 22, "aang-swift-savior"), ("Spells matter", 17, "counterspell"), ("Tokens", 11, "jasmine-tea-shop"),
         ("Evasion", 9, "appa-loyal"), ("+1/+1 counters", 6, "all-will-be-one")]
 NEW_KEYS = ["avenger-of-zendikar", "bloodline-keeper"]
 TONES = ["#6E6352", "#5A5144", "#4A4238", "#3D372F", "#332E28"]
@@ -134,7 +134,9 @@ def block(form="piles", ph=False, focus="Tokens", rows=AANG, added=0, state=None
     s = f'<div class="bas">{SUB}</div>' if sub else ""
     if state:
         return f'<div class="fb new">{head}{s}<div class="fbx">{state}</div></div>'
-    g = {"piles": piles, "ring": ring, "strip": strip, "bars": bars}[form](rows, focus, ph, added)
+    if form == "piles" and ph:
+        form = "side"
+    g = {"piles": piles, "ring": ring, "strip": strip, "bars": bars, "side": side, "piles5": piles, "scroll": scroll}[form](rows, focus, ph, added)
     return f'<div class="fb new">{head}{s}<div class="fbx">{g}</div>{focus_line(focus)}</div>'
 
 
@@ -278,3 +280,48 @@ def results(ph, applied=0):
             + (f'<span class="t">{tally}</span><span class="ab">{ab}</span>' if left else "") + '</div>')
     return (f'<div class="scp"><h3>Suggested changes</h3><span class="scl" style="text-align:left">read from 1 game · 1 game note · 99 cards · your collection · focus Tokens</span>'
             f'{head}<div class="lst"><h4>Additions<span>3</span></h4>{adds}</div><div class="lst"><h4>Cuts<span>3</span></h4>{cuts}</div></div>')
+
+
+# ---------------------------------------------------------------- phone: the piles on their side, one row each
+kit.CSS += r"""
+.side{display:flex;flex-direction:column}
+.sd2{display:grid;grid-template-columns:150px minmax(0,1fr);align-items:center;gap:12px;min-height:66px;padding:6px 8px;border-top:1px solid var(--border);border-radius:8px}
+.sd2:first-child{border-top:0}
+.sd2 .lay{position:relative;height:56px}
+.sd2 .lay .bk{position:absolute;top:0;width:40px;height:56px;border-radius:4px;background:#2E2822;border:1px solid #5C5246;box-sizing:border-box}
+.sd2 .lay img{position:absolute;top:0;left:0;width:40px;height:56px;border-radius:4px;object-fit:cover;border:1px solid var(--border-strong);box-sizing:border-box;box-shadow:3px 0 8px rgba(0,0,0,.4)}
+.sd2 .lay img.nwi{border:1.5px dashed var(--accent)}
+.sd2 .n{font-size:13.5px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sd2 .c{font:11px 'IBM Plex Mono';color:var(--fg-muted);white-space:nowrap}
+.sd2 .c em{font-style:normal;color:var(--accent)}
+.sd2.on{background:color-mix(in oklab,var(--accent) 9%,transparent);box-shadow:inset 0 0 0 1px var(--accent-shadow);border-top-color:transparent}
+.sd2.on .n{color:var(--accent)}
+.sd2.on .lay img:not(.nwi){border:2px solid var(--accent)}
+.scr{display:flex;gap:6px;overflow:hidden;margin-right:-12px;padding-right:12px}
+.scr .pile{flex:0 0 104px}
+.scrnote{font:10px 'IBM Plex Mono';color:var(--fg-faint);text-align:right;margin-top:6px}
+"""
+
+
+def side(rows, focus, ph, added=0):
+    top = max(n for _, n, _ in rows) + added
+    step = 104 / max(top - 1, 1)
+    out = []
+    for name, n, key in rows:
+        extra = added if name == focus else 0
+        backs = "".join(f'<span class="bk" style="left:{(n - 1 - i) * step:.1f}px"></span>' for i in range(n - 1))
+        news = "".join(f'<img class="nwi" src="{P.card(k)}" alt="" style="left:0">' for k in NEW_KEYS[:extra])
+        shift = extra * step * 2.2
+        face = f'<img src="{P.card(key)}" alt="" style="left:{shift:.1f}px">' if extra else f'<img src="{P.card(key)}" alt="">'
+        if extra:
+            backs = "".join(f'<span class="bk" style="left:{shift + (n - 1 - i) * step:.1f}px"></span>' for i in range(n - 1))
+            news = "".join(f'<img class="nwi" src="{P.card(k)}" alt="" style="left:{(extra - 1 - j) * step * 2.2:.1f}px">' for j, k in enumerate(NEW_KEYS[:extra]))
+        cnt = f'{n} <em>+{extra}</em> cards' if extra else f'{n} cards'
+        out.append(f'<div class="sd2{" on" if name == focus else ""}"><span class="lay">{backs}{face}{news}</span>'
+                   f'<span style="display:flex;flex-direction:column;gap:3px;min-width:0"><span class="n">{name}</span><span class="c">{cnt}</span></span></div>')
+    return f'<div class="side">{"".join(out)}</div>'
+
+
+def scroll(rows, focus, ph, added=0):
+    g = piles(rows, focus, False, added).replace('class="piles"', 'class="piles scr"')
+    return g + '<div class="scrnote">swipe for 2 more ›</div>'
