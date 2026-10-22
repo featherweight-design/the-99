@@ -46,6 +46,14 @@ CSS = r"""
 .leg div.on+div{border-top-color:transparent}
 .ph .ring{grid-template-columns:1fr;gap:14px;justify-items:center;justify-content:stretch}
 .rg{position:relative}
+.rc{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px}
+.rcn{font:600 46px/1 'Cinzel',serif;color:var(--accent)}
+.ph .rcn{font-size:40px}
+.rcn em{font:600 15px 'IBM Plex Mono';color:#F0C08E;font-style:normal;margin-left:2px;vertical-align:top}
+.rcl{font:10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-muted)}
+.rck{font:10px/1.5 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.rcc{position:absolute;border-radius:5px;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.rcc.nwi{outline:1.5px dashed var(--accent);outline-offset:2px}
 .rg .art{position:absolute;border-radius:50%;object-fit:cover;object-position:30% 30%;border:2px solid var(--border-strong);box-sizing:border-box}
 .leg{display:flex;flex-direction:column;width:100%;max-width:440px}
 .leg div{display:flex;align-items:center;gap:10px;min-height:40px;border-top:1px solid var(--border);padding:0 6px;font-size:13px;color:var(--fg)}
@@ -177,6 +185,31 @@ def piles(rows, focus, ph, added=0):
 
 
 # ---------------------------------------------------------------- ring: the commander at the centre, the strategies around it
+RING_CENTRE = ["hero"]
+
+
+def centre(rows, focus, size, art, added):
+    kind = RING_CENTRE[0]
+    top = dict((n, k) for n, _, k in rows)
+    cnt = dict((n, c) for n, c, _ in rows)
+    box = f'left:{(size-art)/2}px;top:{(size-art)/2}px;width:{art}px;height:{art}px'
+    if kind == "hero":
+        return f'<img class="art" src="{img("hero")}" alt="" style="{box}">'
+    if kind == "none":
+        return ""
+    if not focus:
+        return f'<div class="rc" style="{box}"><span class="rck">Pick a<br>focus</span></div>'
+    if kind == "count":
+        plus = f'<em>+{added}</em>' if added else ""
+        return f'<div class="rc" style="{box}"><span class="rcn">{cnt[focus]}{plus}</span><span class="rcl">{focus}</span></div>'
+    # card: the focus's top card, at card shape, inside the ring
+    h = art * .78
+    w = h * 63 / 88
+    key = NEW_KEYS[added - 1] if added else top[focus]
+    return (f'<img class="rcc{" nwi" if added else ""}" src="{P.card(key)}" alt="" '
+            f'style="left:{(size-w)/2:.1f}px;top:{(size-h)/2:.1f}px;width:{w:.1f}px;height:{h:.1f}px">')
+
+
 def ring(rows, focus, ph, added=0):
     size = 200 if ph else 230
     cx = cy = size / 2
@@ -210,7 +243,7 @@ def ring(rows, focus, ph, added=0):
         a0 += sweep
     art = size - 2 * (thick + 26)
     svg = (f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" aria-hidden="true">{"".join(segs)}</svg>'
-           f'<img class="art" src="{img("hero")}" alt="" style="width:{art}px;height:{art}px;left:{(size-art)/2}px;top:{(size-art)/2}px">')
+           + centre(rows, focus, size, art, added))
     leg = ""
     for i, (name, n, _) in enumerate(rows):
         on = name == focus

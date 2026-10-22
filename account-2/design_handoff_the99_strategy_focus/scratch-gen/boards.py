@@ -102,6 +102,40 @@ def options():
     return doc("Graph-Options", body, 1900)
 
 
+def with_centre(kind, fn):
+    G.RING_CENTRE[0] = kind
+    try:
+        return fn()
+    finally:
+        G.RING_CENTRE[0] = "hero"
+
+
+def centre_states(kind):
+    s = lambda **k: with_centre(kind, lambda: bph(G.block("ring", True, **k), hub=False))
+    return (f'<div class="frames">{frame("No focus", s(focus=None))}{frame("Tokens picked", s())}'
+            f'{frame("After two applied", s(added=2))}</div>')
+
+
+def ring_centre():
+    opt = lambda kind, title, sp: both(title, sp, with_centre(kind, lambda: G.block("ring", True)),
+                                       with_centre(kind, lambda: G.block("ring")), hub=False)
+    body = (board_head("Strategy focus · R2e", "What goes in the middle of the ring",
+                       "Hugh’s question: the commander already heads the page, so its art in the ring repeats it. Four answers, each with Tokens as the "
+                       "focus at both widths; B and C, the two that change with the pick, are drawn through no focus, picked and after two applied. "
+                       "<b>Recommendation: B.</b>")
+            + opt("hero", "A · The commander (R2d, as drawn)", "Decorative, and the page head already shows it.")
+            + opt("count", "B · The focus, as a number (recommended)", "The focus’s count large, its name under it. It answers “how much "
+                  "of the deck is Tokens” where the eye already is, makes the pick obvious from the ring itself, and after changes reads "
+                  "<i>11 +2</i> in the middle. With no focus it says <i>Pick a focus</i>.")
+            + sec("B through the flow", "", centre_states("count"))
+            + opt("card", "C · The focus’s top card", "The deck’s best card in the focus stands in the middle at card shape, and turns over to the "
+                  "new one when the pick changes. After changes, the newest card on the focus, outlined. More personality than B, says less: "
+                  "the count lives only in the legend.")
+            + sec("C through the flow", "", centre_states("card"))
+            + opt("none", "D · Nothing", "An open ring. Quiet, and the legend does all the work. Reads as a plain donut chart."))
+    return doc("Ring-Centre", body, 1900)
+
+
 def focus_flow():
     body = (board_head("Strategy focus · R2", "The focus, end to end",
                        "Five steps: no focus, Suggested changes ready, its swaps, two applied, and the graph after. Suggested changes is the shipped panel "
@@ -174,4 +208,5 @@ BOARDS = [
     ("Focus-Flow", focus_flow, "No focus to two swaps applied"),
     ("Graph-States", states, "The graph’s own states"),
     ("About", about, "The About entry"),
+    ("Ring-Centre", ring_centre, "What goes in the middle of the ring"),
 ]
