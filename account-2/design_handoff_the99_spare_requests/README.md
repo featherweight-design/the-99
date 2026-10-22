@@ -47,7 +47,7 @@ Settings' spares (#2180) and Social R2's spare marker and modal (#1858, #1875).
 | --- | --- |
 | `Main.dc.html` | The flow, calls, gaps |
 | `Shopping.dc.html` | A deck's Shopping rows with every mark; the modal at Ask and Asked (390, 1300) |
-| `Deck-List.dc.html` | The All view's spare mark on cards you don't own; the same sheet |
+| ~~`Deck-List.dc.html`~~ (retired R2) | The All view's spare mark on cards you don't own; the same sheet |
 | `Cart-By-Friend.dc.html` | Shopping for all decks, third view By friend, with Ask |
 | `Asker-States.dc.html` | The friend row's five states; the row marks; Your requests on /friends; the answer on Home; the failed-write toast |
 | `Friend-Side.dc.html` | Waiting on you with Yes and No; the receipt; Home's lead story; the badge; Settings' notice line |
@@ -60,8 +60,9 @@ Settings' spares (#2180) and Social R2's spare marker and modal (#1858, #1875).
 
 - **Friend rows fixed at every width.** The R1 row borrowed a class name the shell already used (boxed rows) and packed a chip and a two-line status into a phone row. Now: face, name, one sub line (“2 spares · Thursday pod”, or days left), and ONE thing on the right: Ask, or a one-line status (Requested, Accepted, Declined; “after Colin” for a friend waiting their turn). No stacked timestamp.
 - **The foot copy is a tooltip.** An ⓘ beside “Friends with a spare · N” opens: “Copies none of their decks use. Ask, and they answer yes or no. The trade (or the goat) is between you.” Only a state line stays under the rows, one sentence.
-- **Key.** Buy marks first, then the three friend marks together on their own line (phone) or after a divider (desktop): friend has a spare, requested, accepted.
+- **Key.** The shipped Shopping key grid, unchanged (two columns on the phone, a wrapping row from lg). The three friend marks sit next to each other at the end: friend has a spare, requested, accepted. No divider.
 - **Vocabulary.** Marks and statuses: Requested / Accepted / Declined. The feed speaks in people: “Colin can spare Jace”, “Chris is keeping Dina”; the friend’s receipt: “You’re sparing Lathliss for Peter” / “You’re keeping Lathliss”. “Rejected” is not used anywhere.
 - **By friend.** Each friend is its own panel with a header band (face, name, pods, spare count); line statuses are one word.
 - **No note:** agreed; the Note board is gone.
 - **Ask instead** (Hugh asked how to cancel and move on): while one request is open, other friends’ rows read **Ask instead**, which withdraws the open request and sends a new one in one press. The withdrawn friend is not told: their Waiting on you row and badge simply drop. ✕ in Your requests still withdraws without asking anyone else. Same press on the By friend cart line.
+- **All draws no request marks** (Hugh): the one-line All row has no room for them, so the Deck-List board is retired. A request is made and read in Shopping and the By friend cart only.

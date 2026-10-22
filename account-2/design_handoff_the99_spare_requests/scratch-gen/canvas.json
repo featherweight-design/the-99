@@ -1,67 +1,59 @@
 {
- "v": 3,
- "createdOnFiles": {
-  "v": 1,
-  "at": "2026-10-22T15:30:00Z"
- },
- "title": "The 99 \u00b7 Spare requests",
- "launch": {
-  "view": "canvas"
- },
- "pages": [],
- "boards": {
-  "Main.dc.html": {
-   "x": 0,
-   "y": 0,
-   "w": 1612,
-   "h": 1435,
-   "title": "R2 \u00b7 the flow, calls, gaps"
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Asker-States.dc.html": {
+      "h": 2696,
+      "title": "The asker · states and Your requests",
+      "w": 2380,
+      "x": 0,
+      "y": 5500
+    },
+    "Cart-By-Friend.dc.html": {
+      "h": 1582,
+      "title": "Shopping for all decks · By friend",
+      "w": 1960,
+      "x": 0,
+      "y": 2416
+    },
+    "Friend-Side.dc.html": {
+      "h": 2983,
+      "title": "The friend · Yes or No, badge, Home, Settings",
+      "w": 1950,
+      "x": 2040,
+      "y": 2416
+    },
+    "Main.dc.html": {
+      "h": 1435,
+      "title": "R2 · the flow, calls, gaps",
+      "w": 1612,
+      "x": 0,
+      "y": 0
+    },
+    "Shopping.dc.html": {
+      "h": 2116,
+      "title": "Shopping · the row and the modal’s Ask",
+      "w": 2780,
+      "x": 1692,
+      "y": 0
+    }
   },
-  "Shopping.dc.html": {
-   "x": 1692,
-   "y": 0,
-   "w": 2780,
-   "h": 2123,
-   "title": "Shopping \u00b7 the row and the modal\u2019s Ask"
+  "createdOnFiles": {
+    "at": "2026-10-22T15:30:00Z",
+    "v": 1
   },
-  "Deck-List.dc.html": {
-   "x": 0,
-   "y": 2416,
-   "w": 2620,
-   "h": 1229,
-   "title": "Deck list \u00b7 the All view\u2019s mark"
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
   },
-  "Cart-By-Friend.dc.html": {
-   "x": 2700,
-   "y": 2416,
-   "w": 1960,
-   "h": 1582,
-   "title": "Shopping for all decks \u00b7 By friend"
-  },
-  "Asker-States.dc.html": {
-   "x": 0,
-   "y": 3780,
-   "w": 2380,
-   "h": 2696,
-   "title": "The asker \u00b7 states and Your requests"
-  },
-  "Friend-Side.dc.html": {
-   "x": 2460,
-   "y": 4024,
-   "w": 1950,
-   "h": 2983,
-   "title": "The friend \u00b7 Yes or No, badge, Home, Settings"
-  }
- },
- "order": [
-  "Main.dc.html",
-  "Shopping.dc.html",
-  "Deck-List.dc.html",
-  "Cart-By-Friend.dc.html",
-  "Asker-States.dc.html",
-  "Friend-Side.dc.html",
-  "Note.dc.html"
- ],
- "notes": {},
- "designSystems": []
+  "notes": {},
+  "order": [
+    "Main.dc.html",
+    "Shopping.dc.html",
+    "Cart-By-Friend.dc.html",
+    "Asker-States.dc.html",
+    "Friend-Side.dc.html"
+  ],
+  "pages": [],
+  "title": "The 99 · Spare requests"
 }

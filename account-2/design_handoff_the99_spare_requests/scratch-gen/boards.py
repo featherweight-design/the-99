@@ -23,13 +23,13 @@ def note(t, b):
 # ================================================================ Main
 CALLS = [
     ("1", "Ask lives where the spares already show",
-     "No new surface. The shipped row press (⇄ and the spare glyph) opens the shipped modal, <b>Before you buy</b> or <b>Friends with a spare</b>, and each friend row in its <b>Friends with a spare</b> section gains one <b>Ask</b> press where “view only” sat. Same in Shopping, in the deck list and in the all-decks cart."),
+     "No new surface. The shipped row press (⇄ and the spare glyph) opens the shipped modal, <b>Before you buy</b> or <b>Friends with a spare</b>, and each friend row in its <b>Friends with a spare</b> section gains one <b>Ask</b> press where “view only” sat. Same in the all-decks cart. <b>All</b> draws no request marks: its one-line row has no room for them (Hugh, R2), so a request is made and read in Shopping."),
     ("2", "Several friends, one row, one ask",
      "The row keeps <b>one</b> marker however many friends hold the card. The modal lists them most spares first (shipped order), each with its own Ask. <b>One open request per card</b>, so nobody hands over a card you no longer need. Once you ask Colin, Max’s row reads <b>Ask instead</b>: one press withdraws Colin’s request and sends Max one, so nobody waits out 14 days. The withdrawn friend isn’t told; the row leaves their Waiting on you and the badge drops. ✕ in Your requests withdraws without asking anyone else."),
     ("3", "One press, no note (agreed)",
      "Ask is one deliberate press. The request already says the card, how many (what the deck needs, up to their spare count) and which deck it is for, so the friend reads <i>“Peter wants 1 for Dragons of Tarkir.”</i>"),
     ("4", "The row says where the ask is",
-     "The spare glyph takes two marks, each in the key only while a row draws it: <b>requested</b> (an accent dot) and <b>accepted</b> (green, with a tick). The key keeps the three friend marks together, after the buy marks. A decline, an expiry or a withdrawn request puts the plain glyph back. No new press, no chip, no column."),
+     "The spare glyph takes two marks, each in the key only while a row draws it: <b>requested</b> (an accent dot) and <b>accepted</b> (green, with a tick). In the key the three friend marks sit next to each other, in the shipped grid. A decline, an expiry or a withdrawn request puts the plain glyph back. No new press, no chip, no column."),
     ("5", "A yes changes nothing else",
      "Yes tells you; the row keeps its buy tag. The handover happens between you, and the card joins your collection the way it always does: <b>press buy on the row</b> (I got it) or update your collection. When the card stops being one you need, any open ask closes by itself."),
     ("6", "Your requests, on /friends",
@@ -53,7 +53,7 @@ GAPS = [
 
 def main_board():
     flow = ('<div class="flow">'
-            '<div class="st"><em>1 · See</em><b>A friend holds a spare</b><span>The spare glyph on the Shopping row, the deck list row and the cart line. Shown, never notified.</span></div><span class="ar">›</span>'
+            '<div class="st"><em>1 · See</em><b>A friend holds a spare</b><span>The spare glyph on the Shopping row and the cart line. Shown, never notified.</span></div><span class="ar">›</span>'
             '<div class="st"><em>2 · Ask</em><b>Press Ask on their row</b><span>In the modal the row press opens. One open ask per card.</span></div><span class="ar">›</span>'
             '<div class="st"><em>3 · Wait</em><b>Their Waiting on you</b><span>Yes or No, 14 days to answer. Home’s lead story and the Friends badge if their notice is on.</span></div><span class="ar">›</span>'
             '<div class="st"><em>4 · Told</em><b>Yes, No, or no answer</b><span>The row’s mark and Your requests change; a Home item for an answer. Expired: Ask again.</span></div><span class="ar">›</span>'
@@ -62,7 +62,6 @@ def main_board():
     calls = "".join(note(f"{n} · {t}", b) for n, t, b in CALLS)
     gaps = "".join(f'<tr><td><b>{g}</b></td><td><b>{t}</b></td><td>{b}</td></tr>' for g, t, b in GAPS)
     idx = ("<ul><li><b>Shopping</b>: the deck’s Shopping rows with every mark, the modal at Ask and at Asked, 390 and 1300.</li>"
-           "<li><b>Deck-List</b>: the All view’s rows carry the spare glyph on cards you don’t own, and open the same modal.</li>"
            "<li><b>Cart-By-Friend</b>: Shopping for all decks gains a third view, By friend: every friend’s spares of what you’d buy, with Ask.</li>"
            "<li><b>Asker-States</b>: the friend row’s five states, Your requests on /friends, the answer on Home, the failed-write toast.</li>"
            "<li><b>Friend-Side</b>: the request in Waiting on you with Yes and No, the receipt, Home’s lead story, the badge, Settings’ notice line.</li>"
@@ -202,7 +201,6 @@ def note_board():
 
 BOARDS = [("Main", main_board, "R2 · the flow, calls, gaps"),
           ("Shopping", shopping_board, "Shopping · the row and the modal’s Ask"),
-          ("Deck-List", all_board, "Deck list · the All view’s mark"),
           ("Cart-By-Friend", cart_board, "Shopping for all decks · By friend"),
           ("Asker-States", asker_board, "The asker · states and Your requests"),
           ("Friend-Side", friend_board, "The friend · Yes or No, badge, Home, Settings")]

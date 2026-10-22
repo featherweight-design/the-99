@@ -45,9 +45,6 @@ kit.CSS += r"""
 .key>span{display:flex;align-items:center;gap:7px;font:10.5px/1.5 'IBM Plex Mono';color:var(--fg-faint);white-space:nowrap}
 .key .kg{width:18px;display:flex;justify-content:center;flex:none}
 .key .new{outline-offset:2px;border-radius:4px}
-.key .kf{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px;padding-top:6px;border-top:1px solid var(--border)}
-.dk .key .kf{padding:0 0 0 18px;border-top:0;border-left:1px solid var(--border)}
-.key .kf>span{display:flex;align-items:center;gap:6px}
 .lead{font-size:13.5px;line-height:1.5;color:var(--fg-body);border-top:1px solid var(--border);padding-top:12px}
 .dk .lead{border:0;padding:0}
 .grp h4{margin:4px 0 8px;font:600 14.5px 'IBM Plex Sans';color:var(--fg);display:flex;gap:7px;align-items:baseline}
@@ -294,9 +291,7 @@ FRIEND_MARKS = ("spare", "asked", "yes")
 
 
 def key(items):
-    rest = "".join(key_item(*i) for i in items if i[0] not in FRIEND_MARKS)
-    fr = "".join(key_item(*i) for i in items if i[0] in FRIEND_MARKS)
-    return f'<div class="key">{rest}<span class="kf">{fr}</span></div>'
+    return '<div class="key">' + "".join(key_item(*i) for i in items) + "</div>"
 
 
 
