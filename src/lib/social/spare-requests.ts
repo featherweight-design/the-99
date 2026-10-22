@@ -36,7 +36,7 @@ import { recordFeedItem } from "./feed-write";
 import { spareRequestsEnabled } from "./flag";
 import { isUuid } from "./rules";
 import {
-  askRefusal, askShown, askerState, capCopies, daysLeft, isAnswer, openFloor, requestState, shownFloor,
+  askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, isAnswer, openFloor, requestState, shownFloor,
   type AskRefusal, type AskerState, type StoredStatus,
 } from "./spare-request-rules";
 import { loadFriendSpares, loadOwnOffered } from "./spares";
@@ -353,8 +353,13 @@ export type MyAsk = {
  * The asker's asks to current friends that the list may still show (`askShown`), newest first: never a withdrawn one
  * nor one the asker cleared. `oracleIds` narrows it to those cards (the Shopping read). Apart for a test.
  */
-export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly string[]): SQL {
+export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly string[], keepClearedDeclines = false): SQL {
   const only = oracleIds ? sql` and msr.oracle_id = any(${sql.param([...oracleIds])}::uuid[])` : sql``;
+  // Shopping's read keeps a No the asker cleared while it still holds that friend back, so the modal draws Declined
+  // rather than an Ask the write would refuse; Your requests (the list the ✕ clears) never does.
+  const cleared = keepClearedDeclines
+    ? sql`(msr.asker_cleared_at is null or (msr.status = 'no' and msr.answered_at > ${declineFloor(now).toISOString()}::timestamptz))`
+    : sql`msr.asker_cleared_at is null`;
   return sql`select msr.id, msr.oracle_id, msr.status, msr.created_at, msr.answered_at, msr.copies,
       msp.public_id::text as public_id, msp.display_name, mc.name as card_name, mc.image_uri as card_image, mdk.name as deck_name,
       mcc.oracle_id as commander_oracle_id, mcc.name as commander_name, mcc.art_crop_uri as commander_art
@@ -365,7 +370,7 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
     left join ${decks} mdk on mdk.id = msr.deck_id and mdk.user_id = msr.asker_user_id
     left join ${cards} mcc on mcc.oracle_id = msp.commander_oracle_id
     where msr.asker_user_id = ${askerId} and msr.created_at > ${shownFloor(now).toISOString()}::timestamptz
-      and msr.status <> 'withdrawn' and msr.asker_cleared_at is null${only}
+      and msr.status <> 'withdrawn' and ${cleared}${only}
     order by msr.created_at desc, msr.id`;
 }
 
@@ -382,6 +387,8 @@ export type MyAsksOptions = {
   stillNeeded?: ReadonlySet<string>;
   /** Only these cards. */
   oracleIds?: readonly string[];
+  /** Keep a cleared No inside its cooldown (`myAsksQuery`): the per-card read, never the list. */
+  keepClearedDeclines?: boolean;
 };
 
 /**
@@ -394,7 +401,7 @@ export async function loadMyAsks(
 ): Promise<MyAsk[]> {
   if (!spareRequestsEnabled(env)) return [];
   if (opts.oracleIds && opts.oracleIds.length === 0) return [];
-  const { rows } = await q.execute<MyRow>(myAsksQuery(askerId, now, opts.oracleIds));
+  const { rows } = await q.execute<MyRow>(myAsksQuery(askerId, now, opts.oracleIds, opts.keepClearedDeclines));
   const shown = (rows as MyRow[]).flatMap((r) => {
     if (r.status === "withdrawn") return [];
     const a = { status: r.status, createdAt: new Date(r.created_at), answeredAt: r.answered_at == null ? null : new Date(r.answered_at) };
@@ -432,7 +439,7 @@ export async function loadAskStates(
   askerId: string, oracleIds: readonly unknown[], env: NodeJS.ProcessEnv, now = new Date(),
 ): Promise<AskStateLine[] | null> {
   if (oracleIds.length === 0 || oracleIds.length > MAX_SPARES_BATCH || !oracleIds.every(isUuid)) return null;
-  const asks = await loadMyAsks(askerId, env, now, { oracleIds: oracleIds as string[] });
+  const asks = await loadMyAsks(askerId, env, now, { oracleIds: oracleIds as string[], keepClearedDeclines: true });
   return asks.map((m) => ({
     id: m.id, oracleId: m.oracleId, holder: { publicId: m.holder.publicId, displayName: m.holder.displayName }, state: m.state,
     daysLeft: m.daysLeft, createdAt: m.createdAt.toISOString(), answeredAt: m.answeredAt ? m.answeredAt.toISOString() : null,
