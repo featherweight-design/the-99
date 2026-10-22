@@ -12,7 +12,9 @@ const m = vi.hoisted(() => ({
   loadFriendDeckPrefs: vi.fn(),
   owned: vi.fn(),
   deckFlag: vi.fn(),
+  readReaderDecks: vi.fn(),
 }));
+vi.mock("../precons/list-read", () => ({ readReaderDecks: m.readReaderDecks }));
 vi.mock("../../db", () => ({
   db: {
     selectDistinct: () => ({ from: () => ({ where: () => m.owned() }) }),
@@ -149,6 +151,7 @@ describe("loadFriendDeck", () => {
     m.listDecksWithStats.mockResolvedValue([{ ...ROW, id: DECK, statusPill: "Complete" }]);
     m.getDeckDetail.mockReset().mockResolvedValue(DETAIL);
     m.owned.mockReset().mockResolvedValue([{ oracleId: "b" }, { oracleId: "c0" }]);
+    m.readReaderDecks.mockReset().mockResolvedValue([]);
     m.deckFlag.mockReset().mockResolvedValue([{ hiddenFromFriends: false }]);
   });
 
@@ -172,6 +175,22 @@ describe("loadFriendDeck", () => {
   it("keeps a commander's mana value", async () => {
     m.getDeckDetail.mockResolvedValue({ ...DETAIL, commander: { ...COMMANDER, cmc: 3 } });
     expect((await loadFriendDeck("user_viewer", "x", DECK))!.commanders[0].cmc).toBe(3);
+  });
+
+  it("names the VIEWER's decks that share it, by the precon page's rule, most shared first", async () => {
+    m.readReaderDecks.mockResolvedValue([
+      { id: "v1", name: "Thopter Works", commanders: ["c0"], cards: new Set(["c0", "a"]) },
+      { id: "v2", name: "Unrelated", commanders: ["zz"], cards: new Set(["zz"]) },
+      { id: "v3", name: "Artifacts Galore", commanders: ["zz"], cards: new Set(["zz", "a", "c0"]) },
+    ]);
+    const page = (await loadFriendDeck("user_viewer", "x", DECK))!;
+    // The list is c0, a and b (the commander and two non-basics): v1 shares 2 with the same commander (>= 40%), v3
+    // shares 2 with another (>= 60% of 3), v2 none.
+    expect(page.shares).toEqual([
+      { deckName: "Artifacts Galore", shared: 2, sameCommanders: false },
+      { deckName: "Thopter Works", shared: 2, sameCommanders: true },
+    ]);
+    expect(m.readReaderDecks).toHaveBeenCalledWith("user_viewer");
   });
 
   it("reads nothing for a deck id that is not a uuid, or a public id that is not the viewer's friend", async () => {

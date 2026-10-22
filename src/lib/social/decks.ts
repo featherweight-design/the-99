@@ -32,6 +32,8 @@ import { resolveFriend } from "./access";
 import { friendCanSeeDeck, loadFriendDeckPrefs, unfinishedPill } from "./deck-visibility";
 import { friendDecksEnabled } from "./flag";
 import { isUuid } from "./rules";
+import { readReaderDecks } from "../precons/list-read";
+import { sharedWith } from "../precons/shared";
 
 export type FriendDeck = {
   /** The deck's id, for the press to its page; null with `FRIEND_DECKS_ENABLED` off for the owner, as it shipped. */
@@ -116,7 +118,15 @@ export type FriendDeckPage = {
   /** Cards matched to the catalog, and the body size they read against. */
   built: number;
   bodySize: number;
+  /**
+   * The VIEWER's own decks that share this one, most shared first, by the precon page's rule (`sharedWith`: the same
+   * commanders and 40% of its cards, or 60% with any): what the own band names under the figure, as a precon's does.
+   */
+  shares: { deckName: string; shared: number; sameCommanders: boolean }[];
 };
+
+/** A basic land, by its type line: listed at the foot of Lands and never counted in what the viewer owns, as on a precon. */
+export const isBasicType = (typeLine: string) => /^Basic\b/.test(typeLine);
 
 /**
  * One friend's deck, read-only (G1), or null: a public id that is not the viewer's current friend, a deck that is not
@@ -139,10 +149,13 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   const detail = await getDeckDetail(deckId, friendId, Promise.resolve(null), env);
   if (!detail) return null;
   const ids = [...new Set([detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : []), ...detail.cards.map((c) => c.oracleId)])];
-  const ownedRows = await db
-    .selectDistinct({ oracleId: collectionItems.oracleId })
-    .from(collectionItems)
-    .where(and(eq(collectionItems.userId, viewerId), inArray(collectionItems.oracleId, ids)));
+  const [ownedRows, viewerDecks] = await Promise.all([
+    db
+      .selectDistinct({ oracleId: collectionItems.oracleId })
+      .from(collectionItems)
+      .where(and(eq(collectionItems.userId, viewerId), inArray(collectionItems.oracleId, ids))),
+    readReaderDecks(viewerId),
+  ]);
   // The owner's rules are read AGAIN after the list was, as the grant is: a deck hidden, or decks turned off, while the
   // reads ran returns nothing rather than what was read past that. The flag and the prefs are fresh, and the phase is
   // the snapshot's own: a committed deck whose snapshot is short of its body size is `Building` (`status.ts`), so a cut
@@ -150,6 +163,17 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   const snapshotPill = !unfinishedPill(row.statusPill) && detail.built < deckBodySize(detail.partner !== null) ? "Building" : row.statusPill;
   if (!(await stillVisible(friendId, deckId, snapshotPill))) return null;
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
+  const commanderIds = [detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : [])];
+  const list = {
+    cards: new Set([...commanderIds, ...detail.cards.filter((c) => !isBasicType(c.typeLine)).map((c) => c.oracleId)]),
+    commanders: commanderIds,
+  };
+  const shares = viewerDecks
+    .flatMap((d) => {
+      const match = sharedWith(list, d);
+      return match ? [{ deckName: d.name, shared: match.shared, sameCommanders: match.sameCommanders }] : [];
+    })
+    .sort((a, b) => b.shared - a.shared || a.deckName.localeCompare(b.deckName));
   const owned = new Set(ownedRows.map((r) => r.oracleId));
   const commanders = [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
     oracleId: c.oracleId,
@@ -178,6 +202,7 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     artCropUri: detail.commander.artCropUri,
     built: detail.built,
     bodySize: deckBodySize(detail.partner !== null),
+    shares,
   };
 }
 

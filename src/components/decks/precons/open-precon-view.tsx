@@ -21,6 +21,7 @@ import { StartPrecon } from "./start-precon";
 import { LinkDeckButton, UnlinkPrecon } from "./precon-link-dialogs";
 import { DECK_VIEWS, isDeckView } from "../group-toggle";
 import { ReadOnlyCardTile } from "../read-only-card-tile";
+import { BasicsLine, commanderNote, groupOwned } from "../read-only-list";
 import { FoilMark } from "../../cards/foil-mark";
 import { MarkKey } from "../mark-key";
 import { cardMarkCopy } from "../../../lib/copy/card-mark";
@@ -78,21 +79,6 @@ export function byCard(cards: OpenPreconCard[]): ByCard[] {
     merged.set(c.oracleId, seen ? { ...seen, quantity: seen.quantity + c.quantity, foil: seen.foil + c.foil, arts: seen.arts + 1 } : { ...c, arts: 1 });
   }
   return [...merged.values()];
-}
-
-/** A group's note: how many of its distinct non-basic cards the reader owns. */
-function groupOwned(cards: OpenPreconCard[]) {
-  // By oracle id: the feed lists a card once per printing, and two printings are one card.
-  const counted = new Map(cards.filter((c) => !c.basic).map((c) => [c.oracleId, c.owned]));
-  return { owned: [...counted.values()].filter(Boolean).length, of: counted.size };
-}
-
-function commanderNote(cards: OpenPreconCard[]) {
-  const owned = cards.filter((c) => c.owned).length;
-  if (cards.length === 1) return owned === 1 ? copy.group.own1 : copy.group.own0of1;
-  if (cards.length === 2 && owned === 2) return copy.group.ownBoth;
-  if (cards.length === 2 && owned === 0) return copy.group.ownNeither;
-  return copy.group.own(owned, cards.length);
 }
 
 export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initialEdition = "regular" }: {
@@ -339,15 +325,5 @@ function BasicTiles({ basics, siblings }: { basics: ByCard[]; siblings: string[]
     <>
       {basics.map((b) => <ReadOnlyCardTile key={b.oracleId} card={toDetail(b)} siblings={siblings} basic={{ arts: b.arts }} />)}
     </>
-  );
-}
-
-/** The precon's basic lands, at the foot of Lands: in Lands' figure, never in what you own (Q4). */
-function BasicsLine({ basics }: { basics: OpenPreconCard[] }) {
-  return (
-    <p className="m-0 mt-[4px] flex flex-wrap items-baseline gap-x-[8px] rounded-[7px] border border-dashed border-[color:var(--border-dashed)] p-[8px_9px]">
-      <span className="text-[13px] text-[color:var(--fg-muted)]">{basics.map((b) => `${b.name} ×${b.quantity}`).join(" · ")}</span>
-      <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.group.basicTag}</span>
-    </p>
   );
 }

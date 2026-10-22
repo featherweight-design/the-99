@@ -1,14 +1,14 @@
 // A person's face (Social R1, README decision 22): their signature commander's art, or their initials while
 // they have chosen none. ONE component at every size a person is drawn: 64 in the head of /friends, 40 on a
 // friend row, 30 in the stand-ins modal's spares, 26 on a pod chip, and R3's game-log picker; Rule 0's 36 on Home's table card
-// and 24 in a pod row's overlapped strip. It draws the face and nothing else: a press, a
+// and 24 in a pod row's overlapped strip; 16 in a friend's deck page's eyebrow. It draws the face and nothing else: a press, a
 // pencil badge or a ring belongs to whoever wraps it.
 
 import type { ProfileCommander } from "../../lib/social/commander";
 import { faceInitials } from "../../lib/social/initials";
 import { FadingImg } from "../ui/hydrated-art";
 
-export type FaceSize = 64 | 40 | 36 | 30 | 26 | 24;
+export type FaceSize = 64 | 40 | 36 | 30 | 26 | 24 | 16;
 
 export { faceInitials };
 
@@ -22,6 +22,7 @@ const BOX: Record<FaceSize, string> = {
   30: "h-[30px] w-[30px] rounded-[8px] text-[10px]",
   26: "h-[26px] w-[26px] rounded-full text-[9.5px]",
   24: "h-[24px] w-[24px] rounded-full text-[10px] font-semibold",
+  16: "h-[16px] w-[16px] rounded-[5px] text-[7px]",
 };
 
 export function Face({
