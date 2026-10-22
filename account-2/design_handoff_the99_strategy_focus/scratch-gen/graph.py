@@ -199,7 +199,7 @@ def piles(rows, focus, ph, added=0):
 
 
 # ---------------------------------------------------------------- ring: the commander at the centre, the strategies around it
-RING_CENTRE = ["hero"]
+RING_CENTRE = ["icon"]
 
 
 # icon per strategy (R2f): line glyphs on a 24 grid, drawn in the mana symbols' weight

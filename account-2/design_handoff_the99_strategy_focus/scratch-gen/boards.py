@@ -45,9 +45,9 @@ CALLS = [
      "new to read, so <i>Suggest again</i> is offered."),
     ("3", "Swaps show the shift", "Each addition toward the focus carries one more citation chip in the shipped pattern: <i>focus · Tokens 11 → 12</i>. "
      "Applying moves the graph for real: the Tokens arc grows in a lighter accent and the legend reads <i>11 +2</i>."),
-    ("4", "The graph", "<b>The ring around the commander</b> (Hugh, R2c: the card piles read busy). The commander’s art at the centre, one arc per "
+    ("4", "The graph", "<b>The ring</b> (Hugh, R2c: the card piles read busy). At the centre, the focus’s icon on a medallion (R2g); the same icons mark the legend. One arc per "
      "strategy, the focus pulled out in accent; the legend carries names and counts, which do the exact comparing, and each legend row is the "
-     "press. An applied addition grows the focus arc in a lighter accent. Piles, strip and bars stay on the Graph-Options board."),
+     "press. An applied addition grows the focus arc in a lighter accent. 35 icons owed (Ring-Centre board). Piles, strip and bars stay on Graph-Options."),
     ("5", "Less on screen", "R1’s separate read (how it wins, how the strategies fit, weak links, its own swaps) is dropped. Analysis gets one block; "
      "Tuning keeps its four tools."),
 ]
@@ -63,7 +63,7 @@ def main():
     dk_body = ('<div class="at"><div class="grid"><div style="grid-column:1;grid-row:1">' + P.overview() + '</div>'
                '<div style="grid-column:2;grid-row:1/3">' + P.vbox() + '</div><div style="grid-column:1;grid-row:2">' + P.climb() + '</div></div>'
                + P.findings() + P.howplays() + G.block("ring") + P.hub_landing() + '</div>')
-    body = (board_head("Strategy focus · R2d · 2026-10-22 · account 2", "Pick a focus, and Suggested changes aims at it",
+    body = (board_head("Strategy focus · R2g · approved 2026-10-22 · account 2", "Pick a focus, and Suggested changes aims at it",
                        "Hugh’s ruling after R1: one swap engine. The free graph on Analysis, The deck’s strategy, lets the player pick a "
                        "focus; Suggested changes (shipped, 1 credit) reads the focus and its swaps show how far they move it. Less information on screen "
                        "than R1. Drawn over the shipped Analysis tab on Hugh’s <b>HD - Avatar Aang</b>, in Low Sun; every card is cut from Hugh’s captures. "
@@ -92,7 +92,7 @@ def options():
                   f'<div class="frames">{frame("<b>A1</b> · piles on their side", bph(G.block("piles", True), hub=False), "One row per strategy: the face card at left, the rest of the pile fanned out behind it, length by count. Names on one line, 60px rows, the card stays readable.")}'
                   f'{frame("<b>A2</b> · a row of bigger piles you swipe", bph(G.block("scroll", True), hub=False), "Keeps them standing at a size you can see, but two strategies sit off screen.")}'
                   f'{frame("<b>A3 · R2 as drawn</b> · five standing piles", bph(G.block("piles5", True), hub=False), "Hugh’s concern: stamp-sized cards, wrapped names, uneven floors.")}</div>')
-            + both("B · Ring around the commander (in the flow)", "Hugh’s pick to see through the flow (R2c). The commander’s art at the centre, each strategy an arc sized by its count, the focus pulled out in "
+            + both("B · The ring (picked)", "Picked (R2c, centre ruled R2g). The focus’s icon on a medallion at the centre (Ring-Centre board), each strategy an arc sized by its count, the focus pulled out in "
                    "accent; a legend beside it carries names and counts. The most decorative, and the hardest to compare two close counts.",
                    G.block("ring", True), G.block("ring"), hub=False)
             + both("C · One strip", "One ribbon split by count, names inside on desktop, a legend under it on the phone. Compact, but small strategies "
@@ -107,7 +107,7 @@ def with_centre(kind, fn):
     try:
         return fn()
     finally:
-        G.RING_CENTRE[0] = "hero"
+        G.RING_CENTRE[0] = "icon"
 
 
 def centre_states(kind):
@@ -191,8 +191,8 @@ def states():
 
 
 def about():
-    cap = ("What is this deck about? Under Analysis, <i>The deck’s strategy</i> circles the commander with the five things the deck runs most, counted from "
-           "the list against every Commander card: a creature type, a theme like Tokens, or a card type. Pick one as the deck’s focus.</p>"
+    cap = ("What is this deck about? Under Analysis, <i>The deck’s strategy</i> rings up to five themes the deck is built around, counted from "
+           "the list against every Commander card: a creature type, a theme like Tokens, or a card type. Pick one as the deck’s focus, and its icon takes the middle of the ring.</p>"
            "<p>With a focus picked, Suggested changes aims at it: its additions lean toward the focus, and each says how far it moves it. "
            "Apply one and its arc grows.")
     keys = ["The graph and the focus are free. Suggested changes uses a credit, as it always has.",
