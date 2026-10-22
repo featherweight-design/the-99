@@ -69,4 +69,13 @@ describe("FeedItemRow", () => {
     expect(screen.queryByRole("link")).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
   });
+
+  it("lifts the picture above the stretched press so it can be hovered, and passes a press on it to the row's press", () => {
+    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
+    open.mockClear();
+    const picture = container.querySelector<HTMLElement>("[data-feed-picture]")!;
+    expect(picture.className).toContain("z-[1]");
+    fireEvent.click(picture);
+    expect(open).toHaveBeenCalledTimes(1);
+  });
 });

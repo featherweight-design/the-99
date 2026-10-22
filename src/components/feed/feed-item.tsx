@@ -91,7 +91,7 @@ export function FeedPress({
   const detail = useCardDetailIfAny();
   if (item.href) {
     return (
-      <Link href={item.href} className={`${className} ${stretch}`} aria-describedby={describedBy}>
+      <Link href={item.href} data-feed-press className={`${className} ${stretch}`} aria-describedby={describedBy}>
         {label}
         <PendingReporter href={item.href} />
       </Link>
@@ -102,6 +102,7 @@ export function FeedPress({
   return (
     <button
       type="button"
+      data-feed-press
       onClick={(e) => detail.open(opens, undefined, undefined, { art: item.card?.image ?? null, opener: e.currentTarget })}
       className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
       aria-describedby={describedBy}
@@ -114,7 +115,9 @@ export function FeedPress({
 /** The 46x64 picture: the card at card shape with the friend's face on its corner, or the combo mark. */
 function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, "artCropUri"> | null | undefined }) {
   // Every card row previews its card on hover (Hugh, 2026-10-12), on the picture, since the row carries prose; from
-  // What's new's provider. A combo's picture is the mark, and previews nothing.
+  // What's new's provider. A combo's picture is the mark, and previews nothing. The press is stretched over the whole
+  // row (an `::after` later in the DOM), so the picture sits ABOVE it (`z-[1]`) to be hovered at all, and a press on
+  // it is passed on to the row's press.
   const hover = usePreviewRow(item.kind === "combo" ? null : item.card?.image ?? null);
   if (item.kind === "combo") {
     return (
@@ -128,7 +131,13 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
     );
   }
   return (
-    <span aria-hidden {...hover} className="relative row-span-2 h-[64px] w-[46px] self-start md:row-span-1 md:self-center">
+    <span
+      aria-hidden
+      data-feed-picture
+      {...hover}
+      onClick={(e) => e.currentTarget.closest("li")?.querySelector<HTMLElement>("[data-feed-press]")?.click()}
+      className="relative z-[1] row-span-2 h-[64px] w-[46px] cursor-pointer self-start md:row-span-1 md:self-center"
+    >
       <span className="block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)]">
         <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={null} size="feed" />
       </span>
