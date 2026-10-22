@@ -12,11 +12,14 @@
 
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { formatDeckDate } from "../../lib/decks/format";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { ComboGlyph } from "../cards/combo-glyph";
+import { TOUCH_HIT } from "../ui/touch-hit";
 import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
 
 const copy = deckVersioningCopy.todoCard;
@@ -34,10 +37,24 @@ export interface TodoFootFacts {
   /** Cards here some other draft also wants (the soft count), and the press that opens the pass
    *  sheet on them. Null when there are none. */
   otherDrafts: { count: number; onOpen: () => void } | null;
+  /** The combos this deck is one piece away from (combos close, `Deck-Page.dc.html` `.cbs`), and the
+   *  press that opens their list. Null or absent when there are none: no segment at zero. */
+  nearCombos?: { count: number; onOpen: () => void } | null;
 }
 
 export function footHasSegments(f: TodoFootFacts, quiet: boolean): boolean {
-  return f.version !== null || (!quiet && f.noVersion === true) || f.proxies > 0 || f.provenance !== null || f.otherDrafts !== null;
+  return (
+    f.version !== null
+    || (!quiet && f.noVersion === true)
+    || hasNearCombos(f)
+    || f.proxies > 0
+    || f.provenance !== null
+    || f.otherDrafts !== null
+  );
+}
+
+function hasNearCombos(f: TodoFootFacts): f is TodoFootFacts & { nearCombos: { count: number; onOpen: () => void } } {
+  return f.nearCombos != null && f.nearCombos.count > 0;
 }
 
 export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolean }) {
@@ -87,6 +104,9 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
     });
   }
   else if (facts.noVersion && !quiet) segments.push({ key: "version", node: <span className={cell}>{copy.noVersion}</span> });
+  if (hasNearCombos(facts)) {
+    segments.push({ key: "combos", node: <NearCombosSegment className={cell} count={facts.nearCombos.count} onOpen={facts.nearCombos.onOpen} /> });
+  }
   if (facts.proxies > 0) segments.push({ key: "proxies", node: <span className={cell}>{proxyCopy.deckHeader.line(facts.proxies)}</span> });
   if (facts.provenance) {
     segments.push({
@@ -134,6 +154,31 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * `∞ 5 combos one piece away ›` (combos close, call 1; `Deck-Page.dc.html` `.sl .cbs`): the glyph at
+ * 13px in `--fact` with its glow, the words in body ink, a faint caret, one dotted rule under all
+ * three. Its own drawing, not `segmentPress`'s: the board sets it apart from the shipped segments,
+ * which keep theirs. The press opens a dialog (the list sheet). On a coarse pointer the hit reaches
+ * 44px tall past the line (`TOUCH_HIT`) without growing the strip.
+ */
+function NearCombosSegment({ count, onOpen, className }: { count: number; onOpen: () => void; className: string }) {
+  return (
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      onClick={onOpen}
+      data-combos-close
+      className={`${className} ${TOUCH_HIT} inline-flex items-center bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] text-[color:var(--fg-body)]`}
+    >
+      <span className="inline-flex items-center gap-[6px] whitespace-nowrap [border-bottom:1px_dotted_var(--fg-faint)]">
+        <ComboGlyph size={13} />
+        <span>{combosCloseCopy.segment(count)}</span>
+        <span aria-hidden className="ml-[2px] text-[color:var(--fg-faint)]">{combosCloseCopy.caret}</span>
+      </span>
+    </button>
   );
 }
 

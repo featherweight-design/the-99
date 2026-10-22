@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -196,5 +197,43 @@ describe("the version segment", () => {
     history.replaceState(null, "", "/decks/d");
     draw({ ...NONE, version: FULL.version });
     expect(document.activeElement).toBe(document.body);
+  });
+});
+
+// Combos one piece away (combos close, call 1; `Deck-Page.dc.html`): the segment after the version.
+describe("the combos-one-piece-away segment", () => {
+  const segment = () => document.querySelector("[data-combos-close]") as HTMLElement | null;
+
+  it("draws nothing at zero or with no read", () => {
+    const zero = draw({ ...FULL, nearCombos: { count: 0, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(segment()).toBeNull();
+    zero.unmount();
+    draw({ ...FULL, nearCombos: null }, { ...QUIET, unresolved: 2 });
+    expect(segment()).toBeNull();
+  });
+
+  it("says 1 combo or N combos, after the version and before proxies", () => {
+    const one = draw({ ...FULL, nearCombos: { count: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(segment()).toHaveTextContent(`${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`);
+    expect(combosCloseCopy.segment(1)).toBe("1 combo one piece away");
+    expect(foot().textContent!.startsWith([VERSION, `${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`, proxyCopy.deckHeader.line(1)].join(copy.footSeparator))).toBe(true);
+    one.unmount();
+    draw({ ...FULL, nearCombos: { count: 5, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(screen.getByRole("button", { name: "5 combos one piece away" })).toBe(segment());
+  });
+
+  it("counts toward the quiet strip: a brew with nothing to do but combos still draws it", () => {
+    draw({ ...NONE, noVersion: true, nearCombos: { count: 3, onOpen: vi.fn() } });
+    expect(foot()).not.toBeNull();
+    expect(foot().textContent).toBe(`${combosCloseCopy.segment(3)}${combosCloseCopy.caret}`);
+  });
+
+  it("opens the list as a dialog on a press", () => {
+    const onOpen = vi.fn();
+    draw({ ...NONE, nearCombos: { count: 2, onOpen } });
+    expect(segment()!.tagName).toBe("BUTTON");
+    expect(segment()).toHaveAttribute("aria-haspopup", "dialog");
+    fireEvent.click(segment()!);
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });

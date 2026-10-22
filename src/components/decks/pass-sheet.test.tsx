@@ -137,3 +137,16 @@ describe("PassSheet undo state", () => {
     await waitFor(() => expect(screen.getByText(ledger.undoFailed)).toBeTruthy());
   });
 });
+
+// The frame is shared with the combos list (`SheetFrame`, combos close); the pass sheet keeps its own form.
+describe("PassSheet's frame", () => {
+  it("stays the full-height 600 sheet the combos list's options leave unset", () => {
+    draw(pass("top_off", 3));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toContain("h-[calc(100%-52px)]");
+    expect(dialog.className).toContain("rounded-t-[14px]");
+    expect(dialog.className).toContain("md:w-[600px]");
+    expect(dialog.className).not.toContain("max-h-[calc(100%-52px)]");
+    expect(screen.getByRole("button", { name: ledger.sheetDone })).toBeTruthy();
+  });
+});

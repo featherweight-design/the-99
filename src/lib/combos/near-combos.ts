@@ -4,6 +4,7 @@ import { cards, deckCards, decks, spellbookVariantCards, spellbookVariants } fro
 import { holdsCopy, type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { deckIdentity } from "../decks/format";
+import { priceState } from "../decks/price";
 import { cheapestNow, loadPrices } from "../decks/price-query";
 import { isMandatoryLoop } from "../spellbook/combo-features";
 import {
@@ -33,8 +34,12 @@ export type MissingPieceWhere =
   | { kind: "spare" }
   /** Every owned copy is claimed: these are the decks holding it, committed ones first. */
   | { kind: "elsewhere"; decks: HoldingDeck[] }
-  /** Not owned. `cents` is the buy tag's figure, null when no printing is stocked. */
-  | { kind: "buy"; cents: number | null };
+  /**
+   * Not owned. `cents` is the buy tag's figure, null when no printing is stocked now. `soldOut` tells
+   * the two nulls apart as the buy tag does (`priceState`): stocked before and not now, against a
+   * card the feed has never stocked, which the tag leaves silent.
+   */
+  | { kind: "buy"; cents: number | null; soldOut: boolean };
 
 /** A deck holding a copy. `committed` is a sleeved version; otherwise a brew given a copy. */
 export type HoldingDeck = { id: string; name: string; committed: boolean };
@@ -111,8 +116,8 @@ export function shapeNearCombos(
  * a spare however many other copies are claimed; owning every copy claimed is `elsewhere`, naming
  * the decks that hold one.
  */
-export function whereIs(availability: Availability | undefined, cents: number | null): MissingPieceWhere {
-  if (!availability || availability.owned <= 0) return { kind: "buy", cents };
+export function whereIs(availability: Availability | undefined, cents: number | null, soldOut = false): MissingPieceWhere {
+  if (!availability || availability.owned <= 0) return { kind: "buy", cents, soldOut: cents === null && soldOut };
   if (availability.free > 0) return { kind: "spare" };
   return { kind: "elsewhere", decks: holdingDecks(availability) };
 }
@@ -201,7 +206,14 @@ export async function loadNearCombos(args: {
   ]);
   const placed: NearCombo[] = candidates.map((c) => ({
     ...c,
-    missing: { ...c.missing, where: whereIs(availability.get(c.missing.oracleId), cheapestNow(prices, c.missing.oracleId)) },
+    missing: {
+      ...c.missing,
+      where: whereIs(
+        availability.get(c.missing.oracleId),
+        cheapestNow(prices, c.missing.oracleId),
+        priceState(prices.prices.get(c.missing.oracleId), prices.newestAsOf) === "soldOut",
+      ),
+    },
   }));
   return rankNearCombos(placed, args.cap ?? NEAR_COMBOS_CAP);
 }

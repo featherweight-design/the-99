@@ -93,8 +93,9 @@ describe("whereIs", () => {
   });
 
   it("not owned is a buy at the tag's figure, or null when nothing is stocked", () => {
-    expect(whereIs(undefined, 1299)).toEqual({ kind: "buy", cents: 1299 });
-    expect(whereIs(avail({ owned: 0 }), null)).toEqual({ kind: "buy", cents: null });
+    expect(whereIs(undefined, 1299)).toEqual({ kind: "buy", cents: 1299, soldOut: false });
+    expect(whereIs(avail({ owned: 0 }), null)).toEqual({ kind: "buy", cents: null, soldOut: false });
+    expect(whereIs(undefined, null, true)).toEqual({ kind: "buy", cents: null, soldOut: true });
   });
 });
 
@@ -122,7 +123,7 @@ describe("owned basic lands", () => {
     execute
       .mockResolvedValueOnce({ rows: [piece("p", "Held", { color_identity: [] }), piece("p", "Forest", { held: false, color_identity: [] })] })
       .mockResolvedValueOnce({ rows: [{ oracle_id: "id-Forest" }] });
-    loadPrices.mockResolvedValue({ cents: new Map() });
+    loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map() });
     const a = await loadNearCombos({ userId: "u", deckId: "d", env: ON });
     expect(a.combos[0].missing.where).toEqual({ kind: "spare" });
   });
@@ -137,9 +138,9 @@ describe("rankNearCombos", () => {
 
   it("leads with a spare, then a piece in another deck, then the cheapest buy, an unpriced buy last", () => {
     const list = [
-      combo("unpriced", { kind: "buy", cents: null }),
-      combo("dear", { kind: "buy", cents: 2000 }),
-      combo("cheap", { kind: "buy", cents: 25 }),
+      combo("unpriced", { kind: "buy", cents: null, soldOut: false }),
+      combo("dear", { kind: "buy", cents: 2000, soldOut: false }),
+      combo("cheap", { kind: "buy", cents: 25, soldOut: false }),
       combo("elsewhere", { kind: "elsewhere", decks: [] }),
       combo("spare", { kind: "spare" }),
     ];
@@ -157,13 +158,13 @@ describe("rankNearCombos", () => {
       loopA("spare-dup-1", { kind: "spare" }),
       loopA("spare-dup-2", { kind: "spare" }),
       combo("spare-other", { kind: "spare" }, { manaValueNeeded: 5 }),
-      combo("buy-other", { kind: "buy", cents: 10 }),
+      combo("buy-other", { kind: "buy", cents: 10, soldOut: false }),
     ];
     expect(rankNearCombos(list, 10).combos.map((c) => c.variantId)).toEqual(["spare-dup-1", "spare-other", "spare-dup-2", "buy-other"]);
   });
 
   it("caps the list and reports the total before the cap", () => {
-    const list = Array.from({ length: 30 }, (_, i) => combo(`v${i}`, { kind: "buy", cents: i }));
+    const list = Array.from({ length: 30 }, (_, i) => combo(`v${i}`, { kind: "buy", cents: i, soldOut: false }));
     const out = rankNearCombos(list, 20);
     expect(out.combos).toHaveLength(20);
     expect(out.total).toBe(30);
@@ -203,12 +204,12 @@ describe("loadNearCombos", () => {
       // The collection's own read for pieces the availability read does not report: none held.
       .mockResolvedValueOnce({ rows: [] });
     loadAvailability.mockResolvedValue(new Map([["id-Spare", avail({ owned: 1, free: 1 })]]));
-    loadPrices.mockResolvedValue({ cents: new Map([["id-Bought", 350]]) });
+    loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map([["id-Bought", 350]]) });
 
     const out = await loadNearCombos({ userId: "u", deckId: "d", env: ON });
     expect(out.combos.map((c) => [c.variantId, c.missing.where])).toEqual([
       ["spare", { kind: "spare" }],
-      ["buy", { kind: "buy", cents: 350 }],
+      ["buy", { kind: "buy", cents: 350, soldOut: false }],
     ]);
     expect(out.combos[0].usesCommander).toBe(true);
     expect(loadAvailability).toHaveBeenCalledWith("u", expect.objectContaining({ excludeDeckId: "d", oracleIds: ["id-Bought", "id-Spare"] }));
@@ -223,7 +224,7 @@ describe("loadNearCombos", () => {
       ],
     }).mockResolvedValueOnce({ rows: [] });
     loadAvailability.mockResolvedValue(new Map());
-    loadPrices.mockResolvedValue({ cents: new Map() });
+    loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map() });
     const out = await loadNearCombos({ userId: "u", deckId: "d", env: ON, maxPieces: 2 });
     expect(out.combos.map((c) => c.variantId)).toEqual(["pair"]);
     expect(out.total).toBe(1);

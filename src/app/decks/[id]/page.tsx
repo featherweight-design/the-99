@@ -26,6 +26,7 @@ import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { chainArt, withChainArt } from "../../../lib/cards/chain-art";
 import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadInDeckPartnersCached } from "../../../lib/combos/in-deck-cache";
+import { loadNearCombos } from "../../../lib/combos/near-combos";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { applyConsiderLabels, considerLabelDeps, considerLabels } from "../../../lib/decks/consider-labels";
 import { BuilderShell } from "../../../components/decks/builder-shell";
@@ -222,6 +223,15 @@ export default async function DeckBuilderPage({
           })).catch(() => null)
         : null,
     ),
+  );
+  // COMBOS ONE PIECE AWAY (combos close, G7): the status line's segment and its list, two-card combos
+  // only (G2). Started with the request beside the row's combo marks; it needs only the deck id. NOT
+  // cached: where each missing piece is moves with availability and prices. Empty while
+  // `NEAR_COMBOS_ENABLED` is off; a read that fails answers null, and the page draws no segment.
+  const nearCombosRead = early(
+    // The sheet lists every combo its count names: the cap is set far past staging's most (54 two-card
+    // near combos on one deck), so the segment's count and the sheet's rows agree.
+    perf.timed("nearCombos", () => loadNearCombos({ userId, deckId: id, env, maxPieces: 2, cap: 200 })).catch(() => null),
   );
   const suggestionsRead = early(indexGenRead.then((indexGen) =>
     // The reader's switches are in the key: the payload's mix follows LABEL_ROLE_COUNTS_ENABLED, and
@@ -482,7 +492,7 @@ export default async function DeckBuilderPage({
   // Swallowed like its neighbours. A failed facts read degrades to rows with no
   // note, which is the state the round draws for a card that has no facts
   // anyway — never the builder going down.
-  const [priced, availability, candidateFacts, completions, considerRead, inDeckCombos] = await Promise.all([
+  const [priced, availability, candidateFacts, completions, considerRead, inDeckCombos, nearCombos] = await Promise.all([
     // The deck's held printing picks ride in the same price statement (deck printings), so a
     // picked card is priced as the buy tag rules: its pick when in stock, else today's figure.
     perf.timed("prices", async () => loadPrices([
@@ -536,6 +546,8 @@ export default async function DeckBuilderPage({
     // THE ROW'S COMBO MARK: each card's two-card combo partner already in this deck, the commanders counted (rule 3). Started with the
     // detail (above), cached by its inputs; swallowed like its neighbours: a failed read draws no mark.
     inDeckCombosRead,
+    // Combos one piece away (above); null when it failed.
+    nearCombosRead,
   ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no
@@ -758,6 +770,7 @@ export default async function DeckBuilderPage({
       // row above an empty panel — the same rule `versions` already has for a brew.
       landing={landing}
       landingRequest={landingRequest}
+      nearCombos={nearCombos}
       initialView={initialBuilderView(
         landing?.lands.tab ?? readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.

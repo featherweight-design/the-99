@@ -124,6 +124,7 @@ export function ModalChrome({
   eyebrow,
   lead,
   foot,
+  fit = false,
   children,
 }: {
   mark?: React.ReactNode;
@@ -133,7 +134,13 @@ export function ModalChrome({
   aside?: React.ReactNode;
   closeLabel: string;
   onClose: () => void;
-  width: 560 | 600 | 640 | 700 | 760;
+  width: 560 | 600 | 640 | 700 | 760 | 900;
+  /**
+   * The phone sheet sizes to its rows, up to the usual 52px from the top, with the 18px top radius
+   * (combos close, `The-List.dc.html` `.bs`), rather than standing at that full height. Unset, the
+   * sheet is as shipped.
+   */
+  fit?: boolean;
   /** A mono kicker over the title, and a sentence under it (the pass sheet's head, `Pass Sheet.dc.html`
    *  `.hd2`): the header then grows with them rather than holding the 43px line. */
   eyebrow?: string;
@@ -227,7 +234,8 @@ export function ModalChrome({
         className={
           // Phone: a sheet from 52px down, over a card too (stacked sheets R1, call 7: the card under
           // it no longer steps down to 52, so neither does this sheet to 96). Desktop: centered.
-          "flex flex-col w-full rounded-t-[14px] border-t h-[calc(100%-52px)] "
+          "flex flex-col w-full border-t "
+          + (fit ? "rounded-t-[18px] max-h-[calc(100%-52px)] " : "rounded-t-[14px] h-[calc(100%-52px)] ")
           + "md:h-auto md:rounded-[14px] md:border overflow-hidden "
           // Over a card its top is pushed down, so its height is capped to end 20px above the fold.
           + (onCard ? "md:max-h-[calc((100dvh+min(620px,85dvh))/2-60px)] " : "md:max-h-[85dvh] ")
@@ -394,6 +402,7 @@ const WIDTH_CLASS = {
   640: "md:w-[640px] ",
   700: "md:w-[700px] ",
   760: "md:w-[760px] ",
+  900: "md:w-[900px] ",
 } as const;
 
 /** A card: its art, its name under it, and a press that opens the card modal on top. A tile draws no hover preview (Hugh, 2026-10-16 UTC). */
