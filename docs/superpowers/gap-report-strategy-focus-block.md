@@ -19,6 +19,8 @@ confirm pass found 0 remaining.
 - **A focus outside the top five** is a sixth legend row marked "your focus" (READINESS eng 2 left it to eng). The
   ring stays the top five.
 - **Keep it balanced** is a button, not a span.
+- **The focus arc is not clipped.** Its outer edge reaches 2px past the ring's box, which the boards' SVG clips flat;
+  the block lets it draw (`overflow="visible"`).
 
 ## State reachability
 

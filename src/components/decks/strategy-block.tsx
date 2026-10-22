@@ -111,7 +111,9 @@ function Ring({ size, rows, focus }: { size: RingSize; rows: readonly RingRow[];
   const inset = (size.box - size.centre) / 2;
   return (
     <div className="relative" style={{ width: size.box, height: size.box }}>
-      <svg width={size.box} height={size.box} viewBox={`0 0 ${size.box} ${size.box}`} aria-hidden fill="none">
+      {/* The pulled-out focus arc reaches 2px past the box (radius + half its stroke), which the boards clip flat; let
+          it draw. */}
+      <svg width={size.box} height={size.box} viewBox={`0 0 ${size.box} ${size.box}`} aria-hidden fill="none" overflow="visible">
         {arcs.map((a) => {
           const pulled = a.kind !== "rank";
           return (
