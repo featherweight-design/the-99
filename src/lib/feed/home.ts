@@ -1,7 +1,7 @@
 /**
  * Home's news feed, as the page draws it (menu and Home PR 6; plan `2026-10-22-menu-home.md`, "The feed model").
  * Read PER REQUEST, after `cachePageForUser` and never inside it: listed in `check:list-cache`'s `PER_REQUEST_READS`,
- * so Home's cached payload carries none of it. `feed_items` moves no data stamp, so a cached feed would go stale.
+ * so Home's cached payload carries none of it. The feed's item table moves no data stamp, so a cached feed would go stale.
  *
  * `loadHomeFeed` answers three ways:
  * - null: `HOME_FEED_ENABLED` is off for the reader (Home as shipped), and nothing is read;

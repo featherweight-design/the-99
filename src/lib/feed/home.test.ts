@@ -12,7 +12,7 @@ vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sa
 import { comboPieces, homeFeedAfter, loadHomeFeed, setCardsQuery, splitLead, toViews, type FeedView } from "./home";
 import type { FeedItem } from "./read";
 
-const ON = { HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const NOW = new Date("2026-10-22T12:00:00Z");
 const text = (q: SQL) => new PgDialect().sqlToQuery(q).sql;
 
