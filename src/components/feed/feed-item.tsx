@@ -189,7 +189,7 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
         {text.line && <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{text.line}</p>}
       </div>
       {text.press && (
-        <div className="col-start-2 mt-[6px] flex min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end">
+        <div className="col-start-2 mt-[9px] flex min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end">
           <FeedPress
             item={item}
             label={`${text.press} ›`}
