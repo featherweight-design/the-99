@@ -197,8 +197,13 @@ describe("pressing Ask", () => {
     expect(within(rowOf(d, "Gus")).getByTestId("friend-spare-ask").textContent).toBe(r.askInstead);
   });
 
-  it("still serves a card's asks after the card leaves the list (a stand-in taken, its sheet left open)", async () => {
-    served = { spares: [spare("Colin", 2)], asks: [ask("Colin", "open")] };
+  it("still serves a card's asks after the card leaves the list, even before its first read lands (a stand-in taken)", async () => {
+    const B = "22222222-2222-4222-8222-222222222222";
+    let land: (v: unknown) => void = () => {};
+    fetchMock.mockImplementation((url: string) =>
+      url.startsWith("/api/spare-requests")
+        ? new Promise((res) => { land = res; })
+        : Promise.resolve({ ok: true, json: async () => ({ spares: [] }) }));
     const seen = vi.fn<(asks: readonly AskStateLine[]) => void>();
     function Probe() {
       seen(useContext(SpareRequestsContext)?.asksFor(JACE.oracleId) ?? []);
@@ -209,16 +214,13 @@ describe("pressing Ask", () => {
       <FriendSparesProvider oracleIds={ids} newestAsOf={asOf} requests deckId="deck-1"><Probe /></FriendSparesProvider>
     );
     let view!: ReturnType<typeof render>;
-    const B = "22222222-2222-4222-8222-222222222222";
     await act(async () => { view = render(ui([JACE.oracleId, B])); });
-    expect(last()).toEqual(["open"]);
-    // Jace leaves; the read for B alone lands (it serves nothing for Jace) and Jace keeps its ask.
-    served = { spares: [], asks: [] };
+    // Jace leaves the list while the first read is still out; that read then lands with Jace's open ask.
     await act(async () => { view.rerender(ui([B])); });
-    const askReads = fetchMock.mock.calls.map((c) => String(c[0])).filter((u) => u.startsWith("/api/spare-requests"));
-    expect(askReads.at(-1)).toContain(B);
-    expect(askReads.at(-1)).not.toContain(JACE.oracleId);
+    await act(async () => { land({ ok: true, json: async () => ({ asks: [ask("Colin", "open")] }) }); });
     expect(last()).toEqual(["open"]);
+    // A card is read once per visit: Jace leaving starts no second read.
+    expect(fetchMock.mock.calls.filter((c) => String(c[0]).startsWith("/api/spare-requests"))).toHaveLength(1);
     await act(async () => { view.rerender(ui([])); });
     expect(last()).toEqual(["open"]);
   });

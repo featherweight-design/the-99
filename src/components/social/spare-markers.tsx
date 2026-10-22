@@ -163,23 +163,31 @@ export function FriendSparesProvider({
       live = false;
     };
   }, [key]);
-  // The asks land after the page, as the spares do. A press that answers before a read lands wins for that card: its
-  // open ask (and the one an Ask instead withdrew) is the press's, and the read adds only that card's ANSWERED and
-  // expired asks the press did not know about (a No still holding a friend back must still read Declined).
-  const pressed = useRef(new Set<string>());
+  // The asks land after the page, as the spares do. Each card is read ONCE per visit, when it first joins the list, and
+  // no read is ever thrown away: a card leaving the list (a stand-in taken, its sheet left open) neither cancels its
+  // read nor drops what it held, so its sheet keeps Requested or Declined. After that read, a card's state is moved by
+  // this visit's own presses. A press that answers before its card's read lands wins for that card (`mergeRead`): each
+  // press bumps its card's count, and a read takes as pressed every card whose count moved since it was sent.
+  const read = useRef(new Set<string>());
+  const presses = useRef(new Map<string, number>());
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   useEffect(() => {
     if (!requests || !key) return;
-    let live = true;
-    const sent = new Set<string>();
-    pressed.current = sent;
-    const queried = new Set(key.split(","));
-    void fetchAsks([...queried]).then((rows) => {
-      if (!live) return;
-      setAsks((now) => mergeRead(now, rows, sent, queried));
+    const ids = key.split(",").filter((id) => !read.current.has(id));
+    if (ids.length === 0) return;
+    for (const id of ids) read.current.add(id);
+    const sentAt = new Map(ids.map((id) => [id, presses.current.get(id) ?? 0]));
+    void fetchAsks(ids).then((rows) => {
+      if (!mounted.current) return;
+      const pressed = new Set(ids.filter((id) => (presses.current.get(id) ?? 0) !== sentAt.get(id)));
+      setAsks((now) => mergeRead(now, rows, pressed, new Set(ids)));
     });
-    return () => {
-      live = false;
-    };
   }, [key, requests]);
   const ask = useCallback(
     async (press: AskPress): Promise<boolean> => {
@@ -191,7 +199,7 @@ export function FriendSparesProvider({
         return false;
       }
       if (!out.ok) return false;
-      pressed.current.add(press.oracleId);
+      presses.current.set(press.oracleId, (presses.current.get(press.oracleId) ?? 0) + 1);
       const now = new Date();
       setAsks((prev) => [...afterAsk(prev.filter((a) => a.oracleId === press.oracleId), press, out.id, now), ...prev.filter((a) => a.oracleId !== press.oracleId)]);
       return true;
