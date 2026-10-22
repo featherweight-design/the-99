@@ -23,13 +23,15 @@ import type { StoredKind } from "../feed/kinds";
  * again never brings back what it held before; a kind that is off has no `enabledAt` and reads nothing.
  *
  * Columns, in the union's order: kind, key, created_at, code, name, file_name, oracle_id, variant_id,
- * friend_public_id, friend_name, data. Every column is written out by alias (AGENTS.md, alias and qualify).
+ * friend_public_id, friend_name, data. Every column is written out by alias (AGENTS.md, alias and qualify), and typed
+ * as the catalog branches type it: `public_id` is a uuid and the union's other branches give `null::text`, which
+ * Postgres refuses to match ("UNION types text and uuid cannot be matched"), so it is cast to text.
  */
 export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[]): SQL {
   return sql`select fi.kind as kind, 'item:' || fi.id::text as key, fi.created_at as created_at,
       null::text as code, null::text as name, null::text as file_name,
       fi.oracle_id as oracle_id, fi.variant_id as variant_id,
-      sp.public_id as friend_public_id, sp.display_name as friend_name, fi.data as data
+      sp.public_id::text as friend_public_id, sp.display_name as friend_name, fi.data as data
     from ${feedItems} fi
     join ${userPrefs} fup on fup.user_id = fi.user_id
     left join ${socialProfiles} sp on sp.user_id = fi.friend_user_id

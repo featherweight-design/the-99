@@ -22,7 +22,12 @@ describe("storedFeedBranch", () => {
   });
 
   it("names the friend by public id and display name, never the Clerk id", () => {
-    expect(q).toContain("sp.public_id as friend_public_id, sp.display_name as friend_name");
+    expect(q).toContain("sp.public_id::text as friend_public_id, sp.display_name as friend_name");
     expect(q).not.toMatch(/fi\.friend_user_id as/);
+  });
+
+  it("types every column as the catalog branches do, so the union matches (a uuid against null::text is refused)", () => {
+    expect(q).toContain("sp.public_id::text as friend_public_id");
+    expect(q).not.toMatch(/sp\.public_id as/);
   });
 });
