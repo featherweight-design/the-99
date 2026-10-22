@@ -44,11 +44,13 @@ describe("PreconSuggestion", () => {
     expect(linkActions.linkPrecon).not.toHaveBeenCalled();
   });
 
-  it("stays hidden when the write fails: the next visit offers it again", async () => {
+  it("stays hidden once the write has failed: it does not roll back", async () => {
     linkActions.dismissPreconSuggestions.mockRejectedValueOnce(new Error("offline"));
     render(<PreconSuggestion deckId="d1" deckName="HD - Eldrazi" suggestions={[eldrazi]} />);
     fireEvent.click(screen.getByRole("button", { name: /^Dismiss/ }));
-    await Promise.resolve();
+    // Let the rejection land before looking.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(linkActions.dismissPreconSuggestions).toHaveBeenCalledTimes(1);
     expect(screen.queryByText(/Looks like/)).toBeNull();
   });
 
