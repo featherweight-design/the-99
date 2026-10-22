@@ -37,7 +37,7 @@ import type { Bracket } from "../../lib/bracket/types";
 import { useDeclaration } from "./use-declaration";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
-import { hasReceipt, useVisitReceipts } from "./use-visit-receipts";
+import { receiptDrawn, useVisitReceipts } from "./use-visit-receipts";
 import type { PreconAddReceipt } from "../../lib/precons/add-receipt-read";
 import type { ImportAddReceipt } from "../../lib/decks/import-add-receipt";
 import type { PreconArrival } from "../../lib/precons/arrival-read";
@@ -1659,8 +1659,8 @@ export function BuilderShell({
                 added={receipts.held.preconAdd ? { entryId: receipts.held.preconAdd.entryId } : null}
               />
             )}
-            {/* The suggestion only when no receipt came with this visit (deck messages A11). */}
-            {!hasReceipt(receipts.held) && preconLink && preconLink.suggestions.length > 0 && (
+            {/* The suggestion only when no receipt is on the page (deck messages A11). */}
+            {!receiptDrawn(receipts.held, receipts.shown, unresolvedRows.length) && preconLink && preconLink.suggestions.length > 0 && (
               <PreconSuggestion deckId={deck.id} deckName={deck.name} suggestions={preconLink.suggestions} />
             )}
             {/* A ticked import (no-collection entry) also draws its strip over unresolved lines: what it
@@ -1736,6 +1736,7 @@ export function BuilderShell({
                 version: draft?.version && !draftHasChanges
                   ? { number: draft.version.number, committedAt: draft.version.committedAt }
                   : null,
+                noVersion: draft !== null && draft.version === null,
                 proxies: proxiedCount,
                 provenance: autoCount > 0 && !firstRun
                   ? {

@@ -1,0 +1,302 @@
+{
+  "feature": "Deck page messages, close-out: every surface of the brief (A1 to A18) at 390 and 1300, from the merged main (handoff design_handoff_the99_deck_messages; plan 2026-10-21-deck-messages.md)",
+  "note": "Fixture decks of the headless account on a scratch branch of local-dev migrated to 0165, ANALYSIS_TAB_ENABLED, PROPOSED_CUTS_ENABLED and PRECONS_ENABLED on. Rows are the six PR inventories' rows, so one sheet shows the whole line; the precon receipt is added by the close-out's own start. PR 2b's other-drafts-open row is dropped: PR 3 turned that press into the pass sheet, which `3-sheet-other-drafts` shows. The `DecklistRow` sameness check is run on `pass-sheet.json`, which names only the two views that render card rows.",
+  "rows": [
+    {
+      "id": "1a-unresolved",
+      "label": "/decks/[id], unresolved lines: the card under the receipts, the row as the next step",
+      "view": "src/components/decks/todo-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000001",
+          "wait": "section[aria-label^='Before']",
+          "settle": 2500,
+          "scrollTo": "section[aria-label^='Before']"
+        }
+      ]
+    },
+    {
+      "id": "1a-fill-failed",
+      "label": "/decks/[id], fill failed: Try again as the next step",
+      "view": "src/components/decks/todo-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000002",
+          "wait": "section[aria-label^='Before']",
+          "settle": 2500,
+          "scrollTo": "section[aria-label^='Before']"
+        }
+      ]
+    },
+    {
+      "id": "1b-last-n",
+      "label": "/decks/[id]: unresolved as the next step, Choose the last N below it",
+      "view": "src/components/decks/last-slots-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000001",
+          "wait": "section[aria-label^='Before']",
+          "scrollTo": "section[aria-label^='Before']",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "1b-last-n-open",
+      "label": "/decks/[id]: Choose pressed, the list open inside the card under the row",
+      "view": "src/components/decks/last-slots-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000001",
+          "wait": "section[aria-label^='Before']",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Choose the cards for the last"
+        },
+        {
+          "wait": "section[aria-label^='Before'] button[aria-expanded=true]",
+          "scrollTo": "section[aria-label^='Before']",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "1c-deck-a",
+      "label": "/decks/[id], one change since v2: the last 1 leads, the pending row follows with an outlined Review",
+      "view": "src/components/decks/todo-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks/363e88ff-d289-462f-9028-ebe22628c326",
+          "wait": "section[aria-label^='Before']",
+          "settle": 3000,
+          "scrollTo": "section[aria-label^='Before']"
+        }
+      ]
+    },
+    {
+      "id": "1c-deck-b",
+      "label": "/decks/[id], matches its version: no card, the version line alone",
+      "view": "src/components/decks/todo-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289",
+          "wait": "h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "2a-over",
+      "label": "/decks/[id], over by two: the over row leads (title in --fg), spoken for twice follows in red, no trim line in the header",
+      "view": "src/components/decks/todo-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000003",
+          "wait": "section[aria-label^='Before']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "2a-spoken-for-twice",
+      "label": "/decks/[id], the last 1 leads, spoken for twice right after it, then pending",
+      "view": "src/components/decks/todo-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks/363e88ff-d289-462f-9028-ebe22628c326",
+          "wait": "section[aria-label^='Before']",
+          "scrollTo": "section[aria-label^='Before']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "2b-foot",
+      "label": "/decks/[id], the card with its foot: proxies, provenance and other drafts as segments",
+      "view": "src/components/decks/todo-foot.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000003",
+          "wait": "section[aria-label^='Before']",
+          "scrollTo": "section[aria-label^='Before']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "2b-provenance-open",
+      "label": "/decks/[id], Where these cards came from opened inside the card under the foot",
+      "view": "src/components/decks/todo-foot.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000003",
+          "wait": "section[aria-label^='Before']",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Where these"
+        },
+        {
+          "wait": "section[aria-label^='Before'] button[aria-expanded=true]",
+          "scrollTo": "section[aria-label^='Before']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "2b-quiet",
+      "label": "/decks/[id], nothing to do: the foot alone as the quiet strip, the version line",
+      "view": "src/components/decks/todo-foot.tsx",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289",
+          "wait": "h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "4a-import-receipt",
+      "label": "/decks/[id]?imported=1&printings=12-3, the import's receipt: one sentence at both widths",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289?imported=1&printings=12-3",
+          "wait": "button[aria-label='Dismiss']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "4a-update-receipt",
+      "label": "/decks/[id]?updated=19-6-1, the update's receipt on the shared band",
+      "view": "src/components/decks/update-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289?updated=19-6-1",
+          "wait": "button[aria-label='Dismiss']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "4a-receipt-dismissed",
+      "label": "/decks/[id]?imported=1, after the \u2715: gone for the visit, and the address is clean",
+      "view": "src/components/decks/use-visit-receipts.ts",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289?imported=1",
+          "wait": "button[aria-label='Dismiss']",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Dismiss$"
+        },
+        {
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "4a-mix-phone",
+      "label": "/decks/[id], the recommended mix: the source line and the draft note on the phone's label row",
+      "view": "src/components/decks/role-counter-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289",
+          "wait": "section[aria-label='Recommended mix']",
+          "settle": 3000
+        },
+        {
+          "scrollTo": "section[aria-label='Recommended mix']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "3-deck-list",
+      "label": "/decks/[id], the deck list's All rows the sheet must match",
+      "view": "src/components/decks/decklist-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000003",
+          "wait": "section[aria-label^='Before']",
+          "scrollTo": "[data-todo-foot]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "3-sheet-top-off",
+      "label": "/decks/[id], Show these N on the 1st top-off: the pass sheet with Undo these N and Done",
+      "view": "src/components/decks/pass-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000003",
+          "wait": "section[aria-label^='Before']",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Where these"
+        },
+        {
+          "clickRole": "button",
+          "name": "from 1st top-off$"
+        },
+        {
+          "wait": "[role=dialog][aria-modal=true]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "3-sheet-seed",
+      "label": "/decks/[id], Show these N on the seed: eyebrow The seed",
+      "view": "src/components/decks/pass-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/0d0e0000-0000-4000-8000-000000000003",
+          "wait": "section[aria-label^='Before']",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Where these"
+        },
+        {
+          "clickRole": "button",
+          "name": "from the seed$"
+        },
+        {
+          "wait": "[role=dialog][aria-modal=true]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "3-sheet-other-drafts",
+      "label": "/decks/[id], N in other drafts too: the sheet grouped under each draft, Done only",
+      "view": "src/components/decks/pass-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/363e88ff-d289-462f-9028-ebe22628c326",
+          "wait": "section[aria-label^='Before']",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "in (other drafts|another draft) too"
+        },
+        {
+          "wait": "[role=dialog][aria-modal=true]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

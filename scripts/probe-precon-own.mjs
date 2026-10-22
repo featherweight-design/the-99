@@ -140,9 +140,10 @@ try {
     check(!(await box.isChecked()), `${w.name}: the box is unticked by default`, "unticked");
     check(await dialog.getByText("this precon’s copies").isVisible(), `${w.name}: the Printings fact says this precon's copies`, "precon's copies");
     check((await dialog.getByText(/draft/i).count()) === 0, `${w.name}: the dialog says nothing about a draft`, "none");
-    const bb = await box.boundingBox();
+    // The checkbox is a visually hidden input under its label: the label is the target a reader presses.
+    const bb = await box.locator("xpath=ancestor::label").boundingBox();
     check(bb && bb.width >= 16 && bb.height >= 16, `${w.name}: the box is a real target`, `${bb?.width}x${bb?.height}`);
-    await box.check();
+    await box.check({ force: true });
     check(await dialog.getByText("this precon’s copies").isVisible(), `${w.name}: ticking leaves the Printings fact the same`, "same");
     const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     check(over <= 0, `${w.name}: the dialog causes no horizontal overflow`, `${over}px`);
@@ -177,6 +178,8 @@ try {
     check(geo.markLeft >= 0 && geo.markLeft <= 32 && geo.markTopGap <= 8, `${w.name}: the ✓ sits at the band's top-left, level with the head`, `${geo.markLeft.toFixed(0)}px in, ${geo.markTopGap.toFixed(0)}px off the head`);
     check(geo.textRight <= geo.dismissLeft + 0.5, `${w.name}: the band text stops before the dismiss`, `text ends ${geo.textRight.toFixed(0)}, dismiss starts ${geo.dismissLeft.toFixed(0)}`);
     console.log(`${w.name}: band height ${geo.height.toFixed(1)}px`);
+    // The close-out photographs the receipt where the start landed it (deck messages A10), when asked.
+    if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/precon-receipt-${w.name}.png` });
 
     // A reload: the address was stripped, so the receipt is gone with it (it lasts the visit; History keeps the record).
     await page.reload({ waitUntil: "domcontentloaded" });

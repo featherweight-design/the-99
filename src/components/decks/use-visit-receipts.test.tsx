@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mirror = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/url/mirror", () => ({ mirrorUrl: mirror }));
-import { useVisitReceipts, type VisitReceipts } from "./use-visit-receipts";
+import { receiptDrawn, useVisitReceipts, type VisitReceipts } from "./use-visit-receipts";
 
 const NONE: VisitReceipts = { fromImport: false, printings: null, importAdd: null, precon: null, preconAdd: null, update: null };
 const UPDATE_A = { in: 3, out: 1, kept: 0 };
@@ -64,5 +64,21 @@ describe("useVisitReceipts", () => {
     act(() => rerender(<Probe incoming={{ ...NONE, update: UPDATE_B }} />));
     expect(shown()).toBe("true");
     expect(screen.getByTestId("update").textContent).toBe("9");
+  });
+});
+
+describe("receiptDrawn (A11 shows only when no receipt is on the page)", () => {
+  const IMPORT = { ...NONE, fromImport: true };
+  it("is false with no receipt, and once the reader closed it", () => {
+    expect(receiptDrawn(NONE, true, 0)).toBe(false);
+    expect(receiptDrawn({ ...NONE, update: UPDATE_A }, false, 0)).toBe(false);
+  });
+  it("is true for an update or a clean import", () => {
+    expect(receiptDrawn({ ...NONE, update: UPDATE_A }, true, 0)).toBe(true);
+    expect(receiptDrawn(IMPORT, true, 0)).toBe(true);
+  });
+  it("is false for an import over unresolved lines that added nothing: no strip is drawn", () => {
+    expect(receiptDrawn(IMPORT, true, 2)).toBe(false);
+    expect(receiptDrawn({ ...IMPORT, importAdd: { entryId: "e", copies: 3 } }, true, 2)).toBe(true);
   });
 });

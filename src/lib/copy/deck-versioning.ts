@@ -519,6 +519,8 @@ export const deckVersioningCopy = {
     /** The head's eyebrow. The word is what the next step is fixing (`deckTodo`'s `word`). */
     head: (deck: string, word: "complete" | "legal" | "ready" | "built") => `Before ${deck} is ${word}`,
     count: (n: number) => `${n} to do`,
+    /** The foot's first segment on a brew, where a committed deck says `v2 · committed …` (deck messages, A9 and A17). */
+    noVersion: "No version yet",
     /** The one label that marks the filled press. */
     nextStep: "Next step",
     /** Each press's trailing glyph. */

@@ -607,7 +607,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck',
     width: 'plate',
     caption:
-      'Every deck gets a page of its own: the commander up top, how far along it is, and tabs for everything else.\n\n“Consider” is where your commander drops hints: cards it wants that aren’t in the list yet, from your Collection first, then the ones you’d have to buy.',
+      'Every deck gets a page of its own: the commander up top, how far along it is, and tabs for everything else.\n\nWhen a deck is waiting on you, a card under the header lists what to do, the next step first.\n\n“Consider” is where your commander drops hints: cards it wants that aren’t in the list yet, from your Collection first, then the ones you’d have to buy.',
     // When ANALYSIS_TAB ships on production, add “Analysis” to the tab list below (Hugh, 2026-10-06).
     keys: [
       'Tabs include “Your deck”, “Consider”, “Games”, and “Versions” once the deck is committed.',

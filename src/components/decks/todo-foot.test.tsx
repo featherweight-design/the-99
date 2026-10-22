@@ -48,6 +48,23 @@ describe("the to-do card's foot", () => {
     );
   });
 
+  // A brew has no version to state (deck messages, A9 and A17: the board's foot reads `No version yet`).
+  it("says No version yet on a brew's card, in the version's place, and a committed version wins", () => {
+    draw({ ...NONE, noVersion: true }, { ...QUIET, unresolved: 2 });
+    expect(foot().textContent).toBe(copy.noVersion);
+  });
+
+  it("leaves the quiet strip of a brew silent, as shipped", () => {
+    draw({ ...NONE, noVersion: true });
+    expect(foot()).toBeNull();
+  });
+
+  it("states the version rather than No version yet when both are given", () => {
+    draw({ ...FULL, noVersion: true }, { ...QUIET, unresolved: 2 });
+    expect(foot().textContent).toContain(VERSION);
+    expect(foot().textContent).not.toContain(copy.noVersion);
+  });
+
   it("leaves an absent segment out with no stray separator, and plain facts are not presses", () => {
     draw({ ...NONE, proxies: 2, otherDrafts: { count: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
     expect(foot().textContent).toBe(`${proxyCopy.deckHeader.line(2)}${copy.footSeparator}${availabilityCopy.deckRollup.softFoot(1)}${copy.disclosureClosed}`);

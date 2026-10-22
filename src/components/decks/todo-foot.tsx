@@ -24,6 +24,9 @@ const copy = deckVersioningCopy.todoCard;
 export interface TodoFootFacts {
   /** The newest version, while the list matches it. The caller nulls it while the pending row shows. */
   version: { number: number; committedAt: Date } | null;
+  /** A brew: no version was ever committed, so the card's foot says so (`No version yet`). Drawn in the card only; the
+   *  quiet strip of a brew with nothing to do stays silent, as shipped. */
+  noVersion?: boolean;
   /** `proxiedCardCount`. 0 draws nothing. */
   proxies: number;
   /** The deck's live auto copies and the ledger they open. Null when there are none. */
@@ -33,8 +36,8 @@ export interface TodoFootFacts {
   otherDrafts: { count: number; onOpen: () => void } | null;
 }
 
-export function footHasSegments(f: TodoFootFacts): boolean {
-  return f.version !== null || f.proxies > 0 || f.provenance !== null || f.otherDrafts !== null;
+export function footHasSegments(f: TodoFootFacts, quiet: boolean): boolean {
+  return f.version !== null || (!quiet && f.noVersion === true) || f.proxies > 0 || f.provenance !== null || f.otherDrafts !== null;
 }
 
 export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolean }) {
@@ -43,7 +46,7 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
   // A segment that leaves while open (the last auto card kept) takes its disclosure with it, so it
   // does not come back open. Adjusted during render, so the stale panel never paints.
   if (open && !facts.provenance) setOpen(false);
-  if (!footHasSegments(facts)) return null;
+  if (!footHasSegments(facts, quiet)) return null;
 
   // Every item of the line carries the foot's vertical padding itself (the line has none), so a press
   // is as tall as the foot, and a wrapped row is a whole item tall: no two items' boxes overlap,
@@ -83,6 +86,7 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
       node: <VersionSegment className={cell} text={deckVersioningCopy.pending.versionLine(facts.version.number, formatDeckDate(facts.version.committedAt))} />,
     });
   }
+  else if (facts.noVersion && !quiet) segments.push({ key: "version", node: <span className={cell}>{copy.noVersion}</span> });
   if (facts.proxies > 0) segments.push({ key: "proxies", node: <span className={cell}>{proxyCopy.deckHeader.line(facts.proxies)}</span> });
   if (facts.provenance) {
     segments.push({

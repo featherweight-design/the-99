@@ -97,3 +97,25 @@ the deck page's About entry (picture and wording, no version bump). Fixtures are
 | Receipt band: precon, import, update, suggestion | ☐ | ☐ | `ArrivalBandShell` |
 | Remove failure toast | ☐ | ☐ | `ToastFrame` (deck) |
 | Recommended mix label row | ☐ | ☐ | — |
+
+## Close-out (2026-10-22)
+
+Walked on a scratch branch of local-dev migrated to 0165, at 390 and 1300, from main as merged (PRs 1a to 4b).
+Inventory: `docs/superpowers/inventories/deck-messages-closeout.json` (the six PR inventories plus the pass sheet's, 19 rows,
+38 cells, all reached; the `DecklistRow` sameness check, `pnpm check:shared docs/superpowers/inventories/pass-sheet.json`, passes for the deck list and the pass sheet). The precon receipt was photographed from a real
+start (`PROBE_SHOTS=… pnpm probe:precon-own`, which passes at both widths after fixing its checkbox press, rotted since
+the start dialog's custom checkbox).
+
+- **Design review against the whole brief:** A1 to A18 walked; no Red. Fixed here: A11 shows only when no receipt is
+  DRAWN (not merely arrived, and not after its ✕ closed it; `receiptDrawn`).
+- **Not photographed** (no fixture reaches them; code and tests agree with the board): A1 toast (press-only failure),
+  A8 ran out, A11 suggestion, A17 first run (needs a single-deck account), A18 moments.
+- **Rulings on what the walk found (d9 for Hugh, 2026-10-22):** (1) the board's `No version yet` foot is built: a brew's
+  card foot says it where a committed deck says `v2 · committed …` (A9, A17 and every brew's card; the quiet strip of a
+  brew with nothing to do stays silent); (2) A10 draws `History` only when the start has a ledger entry to link: a
+  departure, kept; (3) A11 draws no mark, following STATES: the board's `?` is an erratum for Design; (4) copy-review's
+  wording stands (`Each is…` is true at three or more; the fill-failed press is `Try again to fill this deck`).
+- **About:** the `deck-page` entry's caption gained one sentence about the card; `ABOUT_VERSION` stays 16 and the content
+  hash is re-pinned (Hugh's ruling). The deck screens (`deck-*`), the deck tools' crops and `tour-shopping` were recaptured
+  in all six themes (the whole set was not: a full run re-encodes frames whose fixture data drifted). The Proposed cuts and
+  Top off tool captures reach their new targets in the card.
