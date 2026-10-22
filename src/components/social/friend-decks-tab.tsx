@@ -61,15 +61,19 @@ export function FriendDecksTab({ name, decks }: { name: string; decks: FriendDec
 }
 
 /**
- * The board's pill on a friend's deck tile (`Friends` 1e), on this surface only: no hairline edge, and Building in
+ * The board's pill on a friend's deck tile (`Friends` 1e), on this surface only, for the three statuses the board
+ * draws (Complete, To buy, Building): no hairline edge, and Building in
  * `--fg-body` on its own 18% plate. Every other value is the app's own (`statusPillStyle`), which already draws what
  * the board draws (Complete in `--success`, To buy in `--accent`, each on its 18% plate); the app-wide pills are
  * unchanged (d9, 2026-10-22).
  */
+const BOARD_DRAWN: ReadonlySet<StatusPill> = new Set(["Complete", "To buy", "Building"]);
+
 export function friendPillStyle(status: StatusPill): CSSProperties {
   const base = statusPillStyle(status);
   const building = status === "Building"
     ? { color: "var(--fg-body)", background: "color-mix(in srgb, var(--fg-body) 18%, var(--bg))" }
     : {};
-  return { ...base, ...building, border: "none" };
+  // Only the statuses the board draws lose the edge: Over's red and Draft's dashed edge carry their status in it.
+  return BOARD_DRAWN.has(status) ? { ...base, ...building, border: "none" } : base;
 }

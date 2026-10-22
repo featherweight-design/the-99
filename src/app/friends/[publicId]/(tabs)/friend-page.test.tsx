@@ -208,6 +208,14 @@ describe("a friend's page group", () => {
     expect(complete.style.borderStyle).toBe("none");
   });
 
+  it("keeps the app's edge on a status the board does not draw, where the edge carries it (Over's red, Draft's dash)", async () => {
+    m.loadFriendDecks.mockResolvedValue([{ ...DECK, status: "Over", built: 101 }, { ...DECK, name: "Big Dinos", status: "Draft" }]);
+    render(await FriendDecksPage({ params: params() }));
+    const [over, draft] = screen.getAllByTestId("friend-deck").map((t) => within(t).getByText(/^(Over|Draft)/));
+    expect(over.style.borderStyle).not.toBe("none");
+    expect(draft.style.borderStyle).not.toBe("none");
+  });
+
   it("is not found for a friend whose decks cannot be read for the reader", async () => {
     m.loadFriendDecks.mockResolvedValue(null);
     await expect(FriendDecksPage({ params: params() })).rejects.toThrow("NOT_FOUND");
