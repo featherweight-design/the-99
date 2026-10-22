@@ -729,6 +729,8 @@ export type AdminDoorProps = {
   tour?: boolean;
   /** `COMMANDERS_PLACE_ENABLED` for this reader: Discover leaves the bar, and with `friends` Friends takes its slot. */
   commandersPlace?: boolean;
+  /** `HOME_FEED_ENABLED` for this reader: Settings has its news section, so the menu's Settings row has somewhere to go. */
+  homeFeed?: boolean;
 };
 
 /** The bar's unseen counts (menu and Home handoff, R1 Menu 8), filled by the feed and Friends PRs; absent draws none. */
@@ -760,6 +762,7 @@ export function NavRail({
   friendsMoment,
   tour,
   commandersPlace = false,
+  homeFeed = false,
   helpMoment = false,
   badges,
 }: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; helpMoment?: boolean; badges?: NavBadges } & AdminDoorProps) {
@@ -866,7 +869,7 @@ export function NavRail({
         <HelpButton place="rail" />
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
-        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsInBar={inBar} credits={credits} friendsMoment={friendsMoment} tour={tour} />
+        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} commandersPlace={commandersPlace} homeFeed={homeFeed} credits={credits} friendsMoment={friendsMoment} tour={tour} />
       </div>
       {tag}
       {/* The search's desktop field and dropdown, and ⌘K (card search PR D). */}
@@ -984,8 +987,7 @@ export function TabBar({
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, friendsMoment, tour, commandersPlace = false }: { theme: ThemeKey } & AdminDoorProps) {
-  const inBar = friendsInBar({ commandersPlace, friends: friends ?? false });
+export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, friendsMoment, tour, commandersPlace = false, homeFeed = false }: { theme: ThemeKey } & AdminDoorProps) {
   const ref = useRef<HTMLElement>(null);
   const { mode, slides, under } = useQuickReturn(ref);
   return (
@@ -1027,7 +1029,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, fri
         <div className="flex items-center gap-[6px]">
           <HelpButton place="header" />
           {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsInBar={inBar} credits={credits} friendsMoment={friendsMoment} tour={tour} />
+          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} commandersPlace={commandersPlace} homeFeed={homeFeed} credits={credits} friendsMoment={friendsMoment} tour={tour} />
         </div>
       </div>
     </header>

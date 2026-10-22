@@ -413,7 +413,8 @@ export function AccountMenu({
   adminDoor = false,
   adminEnv,
   friends = false,
-  friendsInBar = false,
+  commandersPlace = false,
+  homeFeed = false,
   credits = null,
   friendsMoment = false,
   tour = false,
@@ -426,9 +427,12 @@ export function AccountMenu({
   adminEnv?: string;
   /** `SOCIAL_FRIENDS_ENABLED` for this reader, resolved by the shell; only the boolean reaches the client. */
   friends?: boolean;
-  /** Friends is in the bar (with `friends` and `COMMANDERS_PLACE_ENABLED`): the Settings row in place of Friends, and
-   *  M11 on the bar's slot rather than this button. */
-  friendsInBar?: boolean;
+  /** `COMMANDERS_PLACE_ENABLED` for this reader. With `friends`, Friends is in the bar: the Settings row in place of
+   *  Friends, and M11 on the bar's slot rather than this button. */
+  commandersPlace?: boolean;
+  /** `HOME_FEED_ENABLED` for this reader: with the Commanders place, Settings has its news section, so its row is drawn
+   *  even with Friends off. */
+  homeFeed?: boolean;
   /** The credit chip, read per request by the shell (plan E10) and re-read on every open. */
   credits?: ChipState | null;
   /** M11, Friends after a game: resolved by the shell (a game logged, no friend yet) and drawn only beside the Friends row. */
@@ -479,7 +483,9 @@ export function AccountMenu({
   const onAdmin = () => go("/admin");
   const onFriends = () => go("/friends");
   const onSettings = () => go("/settings");
-  const settings = friends && friendsInBar;
+  // Settings is drawn once it has a section to show (news with the feed, Spares with Friends) and the Commanders place
+  // has moved the menu's rows. With `friends` on, that is exactly "Friends is in the bar", so its row is the one taken.
+  const settings = commandersPlace && (friends || homeFeed);
   const onCredits = () => go("/credits");
   // The chip is re-read each time the menu opens (plan E10): the layout does not re-render on navigation, so the
   // shell's value is only the first paint. A failed read keeps what is drawn.

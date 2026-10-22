@@ -634,10 +634,11 @@ describe("AccountMenu Friends row (Social R1 placement)", () => {
 });
 
 
-// Menu and Home handoff, R1 Menu 3: once Friends is in the bar, Settings takes its row in the same place.
+// Menu and Home handoff, R1 Menu 3: once Friends is in the bar, Settings takes its row in the same place; with the Home
+// feed on, Settings has its news section, so the row is drawn with Friends off too.
 describe("AccountMenu Settings row (menu and Home)", () => {
   it.each(["popover", "sheet"] as const)("draws Settings where Friends was, and no Friends row, in the %s", (panel) => {
-    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" friends friendsInBar />);
+    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" friends commandersPlace />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
     expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/settings", "/admin", "Manage account", "Sign out"]);
@@ -652,8 +653,22 @@ describe("AccountMenu Settings row (menu and Home)", () => {
     expect(screen.queryByRole("menuitem", { name: "Settings" })).toBeNull();
   });
 
-  it("draws neither row with Friends off, whatever the bar", () => {
-    render(<AccountMenu panel="popover" theme="amonkhet" friendsInBar />);
+  it("draws Settings with Friends off once the Home feed is on, in the same place", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" adminDoor adminEnv="production" commandersPlace homeFeed />);
+    fireEvent.click(trigger());
+    const items = screen.getAllByRole("menuitem");
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/settings", "/admin", "Manage account", "Sign out"]);
+  });
+
+  it("keeps the shipped Friends row and no Settings without the Commanders place, the Home feed on or not", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" friends homeFeed />);
+    fireEvent.click(trigger());
+    expect(screen.getByRole("menuitem", { name: "Friends" })).toHaveAttribute("href", "/friends");
+    expect(screen.queryByRole("menuitem", { name: "Settings" })).toBeNull();
+  });
+
+  it("draws neither row with Friends and the Home feed off, whatever the bar", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" commandersPlace />);
     fireEvent.click(trigger());
     expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
     expect(screen.queryByRole("menuitem", { name: "Settings" })).toBeNull();
@@ -664,7 +679,7 @@ describe("AccountMenu Settings row (menu and Home)", () => {
     const providerPush = vi.fn();
     render(
       <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush, registerContentScope: () => {} }}>
-        <AccountMenu panel="sheet" theme="amonkhet" friends friendsInBar />
+        <AccountMenu panel="sheet" theme="amonkhet" friends commandersPlace />
       </Report.Provider>,
     );
     fireEvent.click(trigger());
