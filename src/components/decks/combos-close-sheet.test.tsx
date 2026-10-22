@@ -1,16 +1,30 @@
 import { priceCopy } from "../../lib/copy/price";
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
-import type { MissingPieceWhere, NearCombo, NearCombos } from "../../lib/combos/near-combos";
+import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
+import { comboModal } from "../../lib/bracket/combo-modal";
+import type { MissingPieceWhere, NearCombo, NearComboCard, NearCombos } from "../../lib/combos/near-combos";
+import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
+// What a card stacked on the sheet calls it: `registerSheet`'s first argument.
+const registerSheet = vi.fn<(label: string, ...rest: unknown[]) => () => void>(() => () => {});
 vi.mock("../cards/card-detail-provider", () => ({
-  useCardDetail: () => ({ registerSheet: () => () => {}, openOracleId: null, revealing: false }),
-  CardDetailTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  useCardDetail: () => ({ registerSheet, openOracleId: null, revealing: false }),
+  // A plate is a press that opens the card: drawn as a button, as the real trigger is.
+  CardDetailTrigger: ({ children, testId }: { children?: React.ReactNode; testId?: string }) => (
+    <button type="button" data-testid={testId}>{children}</button>
+  ),
 }));
+const addCardToDeck = vi.fn<(deckId: string, oracleId: string) => Promise<DeckMutationResult>>();
+vi.mock("../../app/decks/actions", () => ({ addCardToDeck: (d: string, o: string) => addCardToDeck(d, o) }));
 
 const { CombosCloseSheet, groupNearCombos } = await import("./combos-close-sheet");
+const { AddOptimisticCardProvider } = await import("./optimistic-deck");
+const { ComboBody } = await import("./receipt-modal");
 const copy = combosCloseCopy.sheet;
+const detail = combosCloseCopy.detail;
 
 const COMMANDER = "cmd";
 const combo = (id: string, missing: string, held: string, where: MissingPieceWhere, produces = ["Infinite damage"]): NearCombo => ({
@@ -19,7 +33,7 @@ const combo = (id: string, missing: string, held: string, where: MissingPieceWhe
     { oracleId: `${held}-id`, name: held, held: true },
     { oracleId: `${missing}-id`, name: missing, held: false },
   ].map((p) => (p.name === held && held === "Avatar Aang" ? { ...p, oracleId: COMMANDER } : p)),
-  missing: { oracleId: `${missing}-id`, name: missing, where },
+  missing: { oracleId: `${missing}-id`, name: missing, where, card: null },
   produces,
   steps: null,
   manaNeeded: null,
@@ -44,9 +58,28 @@ const LIST: NearCombo[] = [
   combo("5", "Odd Card", "Some Piece", { kind: "buy", cents: null, soldOut: true, qualifier: null }),
 ];
 
-function draw(list: NearCombo[] = LIST, total = list.length) {
+const ART = new Map([[COMMANDER, { name: "Avatar Aang", imageUri: "https://img/aang.jpg" }]]);
+const optimisticAdd = vi.fn();
+const EDITS = { add: optimisticAdd } as unknown as Parameters<typeof AddOptimisticCardProvider>[0]["value"];
+
+function sheet(list: NearCombo[], total: number) {
   const nearCombos: NearCombos = { combos: list, total };
-  return render(<CombosCloseSheet nearCombos={nearCombos} deckName="HD - Avatar Aang" commanderOracleIds={[COMMANDER]} onClose={vi.fn()} />);
+  return (
+    <AddOptimisticCardProvider value={EDITS}>
+      <CombosCloseSheet
+        nearCombos={nearCombos}
+        deckId="deck-1"
+        deckName="HD - Avatar Aang"
+        commanderOracleIds={[COMMANDER]}
+        art={ART}
+        onClose={vi.fn()}
+      />
+    </AddOptimisticCardProvider>
+  );
+}
+
+function draw(list: NearCombo[] = LIST, total = list.length) {
+  return render(sheet(list, total));
 }
 
 const rows = () => [...document.querySelectorAll<HTMLElement>("[data-combo-row]")];
@@ -160,5 +193,220 @@ describe("CombosCloseSheet", () => {
     expect(dialog.className).toContain("max-h-[calc(100%-52px)]");
     expect(dialog.className).toContain("rounded-t-[18px]");
     expect(screen.getByRole("button", { name: copy.done })).toBeTruthy();
+  });
+});
+
+// UI-2: the combo, pushed inside the sheet (`How-It-Works.dc.html`).
+const press = (name: string) => row(name).querySelector<HTMLButtonElement>("[data-combo-press]")!;
+const shownDetail = () => document.querySelector<HTMLElement>("[data-combo-detail]");
+const plate = (name: string) => screen.getAllByTestId("receipt-tile").find((t) => t.textContent!.includes(name))!;
+const plateWhere = (name: string) => plate(name).querySelector<HTMLElement>("[data-plate-where]");
+const CARD: NearComboCard = {
+  typeLine: "Instant", cardTypeGroup: "Instants", role: "removal", cmc: 1, manaCost: "{R}", imageUri: "https://img/searing.jpg",
+};
+const SEARING: NearCombo = {
+  ...LIST[2],
+  missing: { ...LIST[2].missing, card: CARD },
+  steps: "Cast Searing Touch with buyback.\nIt goes back to your hand.\n",
+  manaNeeded: "{R}",
+  manaValueNeeded: 1,
+  notablePrerequisites: "Avatar Aang transformed into Aang, Master of Elements.",
+};
+
+describe("a row opens its combo inside the sheet", () => {
+  beforeEach(() => {
+    registerSheet.mockClear();
+    addCardToDeck.mockReset();
+    optimisticAdd.mockReset();
+  });
+
+  it("pushes the combo on the row's press, under ← N combos, at 760 with no Done", () => {
+    draw();
+    expect(shownDetail()).toBeNull();
+    fireEvent.click(press("Searing Touch"));
+    expect(shownDetail()?.dataset.comboDetail).toBe("3");
+    expect(document.querySelector("[data-combos-close-list]")).toHaveAttribute("hidden");
+    const back = screen.getByRole("button", { name: detail.backAria(5) });
+    expect(back.textContent).toBe("←" + detail.back(5));
+    expect(back).toHaveFocus();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toContain("md:w-[760px]");
+    expect(screen.queryByRole("button", { name: copy.done })).toBeNull();
+    // The close stays, beside the way back.
+    expect(screen.getByRole("button", { name: copy.closeAria })).toBeTruthy();
+  });
+
+  it("pushes it from a press anywhere else on the row too", () => {
+    draw();
+    fireEvent.click(within(row("Exquisite Blood")).getByText("Exquisite Blood"));
+    expect(shownDetail()?.dataset.comboDetail).toBe("1");
+  });
+
+  it("returns to the same list on the way back, focus on the row it left", () => {
+    draw();
+    const list = document.querySelector("[data-combos-close-list]");
+    fireEvent.click(press("Time Vault"));
+    fireEvent.click(screen.getByRole("button", { name: detail.backAria(5) }));
+    expect(shownDetail()).toBeNull();
+    // The same node, kept under the combo, so its scroll and rows are where the reader left them.
+    expect(document.querySelector("[data-combos-close-list]")).toBe(list);
+    expect(list).not.toHaveAttribute("hidden");
+    expect(press("Time Vault")).toHaveFocus();
+    expect(screen.getByRole("button", { name: copy.done })).toBeTruthy();
+  });
+
+  it("leaves the other deck's link its own control: it navigates and does not open the combo", () => {
+    draw();
+    const link = within(row("Heliod, Sun-Crowned")).getByRole("link");
+    expect(link).toHaveAttribute("href", "/decks/gods");
+    // Next's Link stands down for a press already handled; the row's own handler still sees it.
+    link.addEventListener("click", (e) => e.preventDefault());
+    fireEvent.click(link);
+    expect(shownDetail()).toBeNull();
+    expect(link.closest("button")).toBeNull();
+  });
+
+  it("makes the press a real button a keyboard reaches, so Enter and Space open the combo", () => {
+    draw();
+    const p = press("Searing Touch");
+    expect(p.tagName).toBe("BUTTON");
+    expect(p).toHaveAttribute("type", "button");
+    expect(p).not.toHaveAttribute("tabindex");
+    expect(p).toHaveAccessibleName(copy.openAria("Searing Touch", ["Avatar Aang"]));
+    // What a browser does with Enter or Space on a focused button.
+    p.focus();
+    act(() => p.click());
+    expect(shownDetail()?.dataset.comboDetail).toBe("3");
+  });
+
+  it("draws the combo's steps, mana and needs from the stored fields, as the receipt reads them", () => {
+    draw([SEARING]);
+    fireEvent.click(press("Searing Touch"));
+    const body = within(shownDetail()!);
+    expect(body.getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+      "Infinite damage",
+      "Cast Searing Touch with buyback.",
+      "It goes back to your hand.",
+    ]);
+    expect(shownDetail()!.querySelector('[data-mana="costs"]')).not.toBeNull();
+    expect(body.getByText(deckAnalysisCopy.receipt.prerequisites)).toBeTruthy();
+    expect(body.getByText("Avatar Aang transformed into Aang, Master of Elements.")).toBeTruthy();
+    // The title leads with the lemniscate, then the pair.
+    const title = body.getByRole("heading", { level: 3 });
+    expect(title.querySelector("svg")).not.toBeNull();
+    expect(title.textContent).toBe("Avatar Aang + Searing Touch");
+  });
+
+  it("says where each piece is under its plate, and outlines the missing one", () => {
+    draw([SEARING]);
+    fireEvent.click(press("Searing Touch"));
+    expect(plateWhere("Avatar Aang")!.textContent).toBe(detail.plate.inThisDeck);
+    expect(plateWhere("Avatar Aang")!.querySelector('[data-dot="owned"]')).not.toBeNull();
+    expect(plateWhere("Searing Touch")!.textContent).toBe("$1.49");
+    expect(plateWhere("Searing Touch")!.querySelector('[data-dot="buy"]')).not.toBeNull();
+    expect(plate("Searing Touch").querySelector("[data-missing-piece]")!.className).toContain("[outline:1.5px_dashed_var(--accent)]");
+    expect(plate("Avatar Aang").querySelector("[data-missing-piece]")).toBeNull();
+    expect(registerSheet).toHaveBeenLastCalledWith("Avatar Aang + Searing Touch", undefined, false, undefined);
+    // The missing card's art is the catalog's (the read's `missing.card`).
+    expect(plate("Searing Touch").querySelector<HTMLImageElement>("img")?.getAttribute("src") ?? plate("Searing Touch").innerHTML).toContain("https://img/searing.jpg");
+  });
+
+  it.each([
+    ["a spare", { kind: "spare" } as MissingPieceWhere, detail.plate.spare, "owned"],
+    // The detail lists every deck holding a copy (G4), committed first; the row names the first and +N.
+    ["another deck's", LIST[1].missing.where, "in HD - Gods, A brew, Another brew", "owned"],
+    ["a foil price", { kind: "buy", cents: 940, soldOut: false, qualifier: "foil" } as MissingPieceWhere, "$9.40 foil", "buy"],
+    ["sold out", { kind: "buy", cents: null, soldOut: true, qualifier: null } as MissingPieceWhere, priceCopy.tag.soldOut, "buy"],
+    ["never stocked", { kind: "buy", cents: null, soldOut: false, qualifier: null } as MissingPieceWhere, "", "buy"],
+  ])("writes %s on the missing plate as the row decides it", (_, where, text, dot) => {
+    draw([combo("w", "Missing Card", "Avatar Aang", where)]);
+    fireEvent.click(press("Missing Card"));
+    expect(plateWhere("Missing Card")!.textContent).toBe(text);
+    expect(plateWhere("Missing Card")!.querySelector(`[data-dot="${dot}"]`)).not.toBeNull();
+    // The plate is a press (it opens the card), so a deck it names is words, never a link inside it.
+    expect(within(shownDetail()!).queryByRole("link", { name: copy.where.deckLinkAria("HD - Gods") })).toBeNull();
+  });
+
+  it("lays the plates out held first and the missing piece last, the title in the same order", () => {
+    // The read sorts pieces by name (`shapeNearCombos`), so the missing "Aardvark Lens" arrives first.
+    const byName = combo("o", "Aardvark Lens", "Zebra Totem", { kind: "spare" });
+    draw([{ ...byName, pieces: [...byName.pieces].sort((a, b) => a.name.localeCompare(b.name)) }]);
+    fireEvent.click(press("Aardvark Lens"));
+    const names = within(shownDetail()!).getAllByTestId("receipt-tile").map((t) => t.textContent);
+    expect(names[0]).toContain("Zebra Totem");
+    expect(names[1]).toContain("Aardvark Lens");
+    expect(within(shownDetail()!).getByRole("heading", { level: 3 }).textContent).toMatch(/Zebra Totem.*\+.*Aardvark Lens/);
+    // The dialog's title and a stacked card's back label name it in the same order.
+    expect(registerSheet).toHaveBeenLastCalledWith("Zebra Totem + Aardvark Lens", undefined, false, undefined);
+  });
+
+  it("keeps the turn-again mark beside the combo mark in the detail's title for a loop of turns", () => {
+    draw();
+    fireEvent.click(press("Time Vault"));
+    const title = within(shownDetail()!).getByRole("heading", { level: 3 });
+    expect(title.querySelector('[data-testid="card-fact-extraTurns"]')).not.toBeNull();
+  });
+
+  it("draws no turn-again mark on a combo that does not loop turns", () => {
+    draw([SEARING]);
+    fireEvent.click(press("Searing Touch"));
+    expect(within(shownDetail()!).getByRole("heading", { level: 3 }).querySelector('[data-testid="card-fact-extraTurns"]')).toBeNull();
+  });
+
+  it("ends the combo with Commander Spellbook bottom left and Add bottom right, and nothing else", () => {
+    draw([SEARING]);
+    fireEvent.click(press("Searing Touch"));
+    const foot = shownDetail()!.querySelector<HTMLElement>('[data-combo-foot="one-away"]')!;
+    const link = within(foot).getByRole("link");
+    expect(link).toHaveAttribute("href", SPELLBOOK_SOURCE.variantUrl("3"));
+    expect(link.textContent).toBe(deckAnalysisCopy.provenance.source(deckAnalysisCopy.receipt.spellbook));
+    expect(within(foot).getByRole("button").textContent).toBe(detail.add("Searing Touch"));
+    expect(foot.textContent).not.toContain(deckAnalysisCopy.receipt.assembled);
+  });
+
+  it("leaves the Analysis receipt's foot as it shipped: assembled, the link, no Add and no where-lines", () => {
+    render(<ComboBody combo={comboModal({ ...SEARING, cards: SEARING.pieces, bracketTag: "" })} art={new Map()} />);
+    const body = screen.getByTestId("receipt-combo");
+    expect(body.querySelector("[data-combo-foot]")).toBeNull();
+    expect(within(body).getByText(deckAnalysisCopy.receipt.assembled)).toBeTruthy();
+    expect(within(body).getByRole("link")).toHaveAttribute("href", SPELLBOOK_SOURCE.variantUrl("3"));
+    expect(within(body).queryByText(detail.add("Searing Touch"))).toBeNull();
+    expect(body.querySelector("[data-plate-where]")).toBeNull();
+    expect(body.querySelector("[data-missing-piece]")).toBeNull();
+    expect(within(body).getByRole("heading", { level: 3 }).querySelector("svg")).toBeNull();
+  });
+
+  it("adds the missing card to this deck, predicts its row, then goes back to the list", async () => {
+    addCardToDeck.mockResolvedValue({ ok: true });
+    draw([SEARING, LIST[0]]);
+    fireEvent.click(press("Searing Touch"));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: detail.add("Searing Touch") }));
+    });
+    expect(addCardToDeck).toHaveBeenCalledWith("deck-1", "Searing Touch-id");
+    expect(optimisticAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ oracleId: "Searing Touch-id", name: "Searing Touch", typeLine: "Instant", owned: false, quantity: 1, imageUri: CARD.imageUri }),
+    );
+    expect(shownDetail()).toBeNull();
+    expect(press("Searing Touch")).toHaveFocus();
+  });
+
+  it("stays on the combo and says why when the add is refused", async () => {
+    addCardToDeck.mockResolvedValue({ ok: false, message: "That deck is full." });
+    draw([SEARING]);
+    fireEvent.click(press("Searing Touch"));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: detail.add("Searing Touch") }));
+    });
+    expect(shownDetail()).not.toBeNull();
+    expect(screen.getByRole("alert").textContent).toBe("That deck is full.");
+  });
+
+  it("is back on the list when the read stops listing the open combo", () => {
+    const view = draw([SEARING, LIST[0]], 2);
+    fireEvent.click(press("Searing Touch"));
+    view.rerender(sheet([LIST[0]], 1));
+    expect(shownDetail()).toBeNull();
+    expect(screen.getByRole("heading", { name: "1 combo" })).toBeTruthy();
   });
 });

@@ -1,9 +1,9 @@
 /**
  * src/lib/copy/combos-close.ts — combos one piece away (UI-1: the deck page's segment and the
- * list sheet).
+ * list sheet; UI-2: the combo pushed inside it).
  *
  * Transcribed from `design/design_handoff_the99_combos_close/` (`Deck-Page.dc.html`,
- * `The-List.dc.html`). Every string is a placeholder for `/copy-review`.
+ * `The-List.dc.html`, `How-It-Works.dc.html`). Every string is a placeholder for `/copy-review`.
  */
 
 const count = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : `${n} ${many}`);
@@ -44,5 +44,24 @@ export const combosCloseCopy = {
       deckLinkAria: (deckName: string) => `Open the ${deckName} deck`,
     },
     foot: "From Commander Spellbook. Two-card combos legal in this deck’s colors.",
+    /** A row's press, which opens the combo: `Searing Touch with Avatar Aang`. */
+    openAria: (missing: string, held: readonly string[]) => `Open the combo: ${missing} with ${held.join(", ")}`,
+  },
+
+  /** The combo pushed inside the sheet (UI-2, `How-It-Works.dc.html`). */
+  detail: {
+    /** `← 5 combos`: the way back to the list, with the list's count. */
+    back: (n: number) => count(n, "combo", "combos"),
+    backAria: (n: number) => `Back to ${count(n, "combo", "combos")} one piece away`,
+    /** The combo's name, what a card stacked on it calls it (`← Avatar Aang + Searing Touch`). */
+    name: (pieces: readonly string[]) => pieces.join(" + "),
+    plate: {
+      /** A held piece. */
+      inThisDeck: "in this deck",
+      /** The missing piece, owned and unclaimed. */
+      spare: "spare",
+    },
+    /** The foot's compact Add, bottom right. */
+    add: (card: string) => `Add ${card}`,
   },
 } as const;

@@ -133,7 +133,7 @@ describe("owned basic lands", () => {
 describe("rankNearCombos", () => {
   const combo = (id: string, where: NearCombo["missing"]["where"], o: Partial<NearCombo> = {}): NearCombo => ({
     variantId: id, pieces: [{ oracleId: "x", name: "x", held: true }, { oracleId: `m-${id}`, name: `m-${id}`, held: false }],
-    missing: { oracleId: `m-${id}`, name: `m-${id}`, where }, produces: [`Infinite ${id}`], steps: null, manaNeeded: null,
+    missing: { oracleId: `m-${id}`, name: `m-${id}`, where, card: null }, produces: [`Infinite ${id}`], steps: null, manaNeeded: null,
     manaValueNeeded: 0, notablePrerequisites: null, usesCommander: false, ...o,
   });
 
@@ -196,7 +196,13 @@ describe("loadNearCombos", () => {
   });
 
   it("places each missing piece from the deck's own vantage and ranks the result", async () => {
-    selects.push([{ commander: "id-Cmdr", partner: null }], [{ oracleId: "id-Held" }], [{ oracleId: "id-Cmdr", identity: ["U"] }]);
+    selects.push(
+      [{ commander: "id-Cmdr", partner: null }],
+      [{ oracleId: "id-Held" }],
+      [{ oracleId: "id-Cmdr", identity: ["U"] }],
+      // The missing cards' catalog rows, for the combo detail's plate and Add's predicted row.
+      [{ oracleId: "id-Bought", typeLine: "Instant", oracleText: "Draw two cards.", keywords: [], cmc: 2, manaCost: "{1}{U}", imageUri: "https://img/b.jpg" }],
+    );
     execute
       .mockResolvedValueOnce({
         rows: [
@@ -215,6 +221,11 @@ describe("loadNearCombos", () => {
       ["buy", { kind: "buy", cents: 350, soldOut: false, qualifier: null }],
     ]);
     expect(out.combos[0].usesCommander).toBe(true);
+    expect(out.combos[1].missing.card).toEqual({
+      typeLine: "Instant", cardTypeGroup: "Instants", role: "draw", cmc: 2, manaCost: "{1}{U}", imageUri: "https://img/b.jpg",
+    });
+    // A card the catalog has no row for carries none, rather than a guess.
+    expect(out.combos[0].missing.card).toBeNull();
     expect(loadAvailability).toHaveBeenCalledWith("u", expect.objectContaining({ excludeDeckId: "d", oracleIds: ["id-Bought", "id-Spare"] }));
   });
 

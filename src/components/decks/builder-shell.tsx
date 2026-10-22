@@ -2395,8 +2395,10 @@ export function BuilderShell({
           {combosSheet && nearCombos && nearComboCount > 0 && (
             <CombosCloseSheet
               nearCombos={nearCombos}
+              deckId={deck.id}
               deckName={deck.name}
               commanderOracleIds={[deck.commander.oracleId, ...(deck.partner ? [deck.partner.oracleId] : [])]}
+              art={findingArt}
               onClose={() => setCombosSheet(false)}
             />
           )}

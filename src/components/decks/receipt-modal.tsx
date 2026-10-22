@@ -14,6 +14,11 @@ import { useMinWidth } from "../ui/use-min-width";
 import { FindingMark } from "./finding-mark";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import { ComboGlyph } from "../cards/combo-glyph";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { FactTooltip } from "../cards/fact-tooltip";
+import { combosCloseCopy } from "../../lib/copy/combos-close";
+import { producesInfiniteTurns } from "../../lib/spellbook/combo-features";
 
 /**
  * What a receipt tile draws for a card: the name printed on the copy the player owns, and its art.
@@ -125,6 +130,7 @@ export function ModalChrome({
   lead,
   foot,
   fit = false,
+  back,
   children,
 }: {
   mark?: React.ReactNode;
@@ -147,6 +153,11 @@ export function ModalChrome({
   lead?: React.ReactNode;
   /** Pinned under the scrolling body, outside it (the pass sheet's Undo and Done). */
   foot?: React.ReactNode;
+  /**
+   * A body pushed inside the sheet (combos close, `.bk2`): the header is `← {label}` and the close,
+   * and the title is read, never drawn. The way back is the caller's; Escape and Back still close the sheet.
+   */
+  back?: SheetBack;
   backLabel?: string;
   /** What a card stacked on this sheet calls it on the phone, where that differs (stacked sheets R1, s2). */
   phoneBackLabel?: string;
@@ -262,6 +273,7 @@ export function ModalChrome({
           eyebrow={eyebrow}
           lead={lead}
           foot={foot}
+          back={back}
         >
           {children}
         </ModalPanel>
@@ -290,6 +302,7 @@ export function ModalPanel({
   eyebrow,
   lead,
   foot,
+  back,
   children,
 }: {
   titleId?: string;
@@ -306,11 +319,39 @@ export function ModalPanel({
   eyebrow?: string;
   lead?: React.ReactNode;
   foot?: React.ReactNode;
+  back?: SheetBack;
   children: React.ReactNode;
 }) {
   return (
     <>
-      {eyebrow !== undefined ? (
+      {back !== undefined ? (
+        // `.bk2`: the way back to what the body was pushed from, and the close.
+        <div
+          className="flex flex-none items-center gap-[8px] min-h-[52px] pl-[16px] pr-[8px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
+          style={{ opacity: behind ? 0.55 : undefined }}
+        >
+          <h2 id={titleId} tabIndex={-1} className="sr-only">{title}</h2>
+          <button
+            type="button"
+            onClick={back.onBack}
+            aria-label={back.aria}
+            // Where focus lands when the body is pushed (the caller finds it by this).
+            data-sheet-back
+            className="-ml-[8px] inline-flex min-h-[44px] min-w-0 items-center gap-[8px] rounded-[8px] bg-transparent border-0 px-[8px] cursor-pointer font-sans text-[13.5px] font-medium text-[color:var(--fg)]"
+          >
+            <span aria-hidden="true" className="text-[16px] text-[color:var(--fg-muted)]">←</span>
+            <span className="min-w-0 truncate">{back.label}</span>
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={closeLabel}
+            className="ml-auto flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)]"
+          >
+            ×
+          </button>
+        </div>
+      ) : eyebrow !== undefined ? (
         // `.hd2`: the eyebrow, the title and the sentence in one column beside the 44px close.
         <div
           className="flex flex-none items-start gap-[10px] py-[10px] pl-[18px] pr-[8px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
@@ -395,6 +436,13 @@ export function ModalPanel({
   );
 }
 
+/** `ModalChrome`'s `back`: the pushed body's way back, `← {label}`, named `aria`. */
+export type SheetBack = {
+  label: string;
+  aria: string;
+  onBack: () => void;
+};
+
 // Literal class strings, so Tailwind sees each one.
 const WIDTH_CLASS = {
   560: "md:w-[560px] ",
@@ -411,12 +459,21 @@ export function ReceiptTile({
   art,
   siblings,
   width,
+  where,
+  missing = false,
 }: {
   card: CardRef;
   art: FindingArt;
   siblings: readonly Sibling[];
   /** A fixed plate width, for the combo body. The grid sizes its own. */
   width?: number;
+  /**
+   * A line under the name saying where this card is for the reader (combos close, `How-It-Works.dc.html`
+   * `.pl .ps`): mono 10px, its dot 6px from its words. Unset, the tile is as shipped.
+   */
+  where?: React.ReactNode;
+  /** The piece a combo is missing: its art carries the 1.5px dashed accent outline (`.pl.miss`). */
+  missing?: boolean;
 }) {
   const drawn = art.get(card.oracleId);
   const name = drawn?.name ?? card.name;
@@ -432,7 +489,12 @@ export function ReceiptTile({
       style={width ? { width } : undefined}
     >
       <span
-        className={"relative block w-full overflow-hidden border border-[color:var(--border-strong)] " + (width ? "rounded-[6px]" : "rounded-[8px]")}
+        data-missing-piece={missing || undefined}
+        className={
+          "relative block w-full overflow-hidden border border-[color:var(--border-strong)] "
+          + (width ? "rounded-[6px]" : "rounded-[8px]")
+          + (missing ? " [outline:1.5px_dashed_var(--accent)] outline-offset-2" : "")
+        }
         style={{
           aspectRatio: "63 / 88",
           backgroundColor: "var(--elevated)",
@@ -445,6 +507,11 @@ export function ReceiptTile({
       <span className={(width ? "text-[11px] md:text-[10.5px]" : "text-[11.5px] md:text-[12px]") + " leading-[1.3]"} style={{ color: "var(--fg-body)" }}>
         {name}
       </span>
+      {where != null ? (
+        <span data-plate-where className="flex flex-wrap items-center gap-[6px] font-mono text-[10px] text-[color:var(--fg-body)]">
+          {where}
+        </span>
+      ) : null}
     </CardDetailTrigger>
   );
 }
@@ -456,33 +523,66 @@ export function ReceiptTile({
  * Shared with the benchmark ledger's win speed (audit build rule 4), which passes `stats` (the
  * line's odds and what finds it, under the chips) and `siblings` (every piece of every line, so a
  * plate's Prev/Next walks the whole ledger).
+ *
+ * And with combos one piece away (combos close R1 call 4, R1b), which passes `oneAway`: each plate
+ * says where that piece is, the missing one is outlined, the title leads with the lemniscate, the
+ * body's two columns stand 18 apart from md (`How-It-Works.dc.html` `.md .cbd`), and the foot is its
+ * own (`.cft`): the Spellbook link bottom left and the caller's action bottom right, with no
+ * "assembled" line. Unset, the receipt and the ledger draw exactly as they shipped.
  */
 export function ComboBody({
   combo,
   art,
   stats,
   siblings: allSiblings,
+  oneAway,
 }: {
   combo: ComboModal;
   art: FindingArt;
   stats?: React.ReactNode;
   siblings?: readonly Sibling[];
+  oneAway?: {
+    /** The plate's where-line for each piece. */
+    where: (oracleId: string) => React.ReactNode;
+    missingOracleId: string;
+    /** Bottom right of the foot: the compact Add. */
+    action: React.ReactNode;
+  };
 }) {
   const names = combo.cards.map((c) => art.get(c.oracleId)?.name ?? c.name);
   const siblings = allSiblings ?? combo.cards.map((c) => ({ oracleId: c.oracleId, name: art.get(c.oracleId)?.name ?? c.name, imageUri: art.get(c.oracleId)?.imageUri ?? null }));
   return (
     <section className="border-b border-b-[color:var(--border)] border-[color:var(--border)] last:border-b-0" data-testid="receipt-combo">
-      <div className="flex flex-col md:flex-row gap-[14px] md:gap-[16px] px-[16px] py-[14px] md:px-[18px] md:py-[16px]">
-        <div className="flex flex-none gap-[7px]">
+      <div className={"flex flex-col md:flex-row gap-[14px] px-[16px] py-[14px] md:px-[18px] md:py-[16px] " + (oneAway ? "md:gap-[18px]" : "md:gap-[16px]")}>
+        <div className={"flex flex-none gap-[7px]" + (oneAway ? " md:self-start" : "")}>
           {combo.cards.map((card) => (
-            <ReceiptTile key={card.oracleId} card={card} art={art} siblings={siblings} width={96} />
+            <ReceiptTile
+              key={card.oracleId}
+              card={card}
+              art={art}
+              siblings={siblings}
+              width={96}
+              where={oneAway?.where(card.oracleId)}
+              missing={oneAway?.missingOracleId === card.oracleId}
+            />
           ))}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-[11px]">
           <h3
-            className="m-0 font-display font-bold text-[16px] md:text-[17px] leading-[1.25]"
+            className={"m-0 font-display font-bold text-[16px] md:text-[17px] leading-[1.25]" + (oneAway ? " flex flex-wrap items-center gap-x-[8px]" : "")}
             style={{ color: "var(--fg)" }}
           >
+            {oneAway ? (
+              <span className="inline-flex items-center gap-[5px]">
+                <ComboGlyph />
+                {/* A combo that loops turns keeps its turn-again mark beside the lemniscate, as on its row. */}
+                {producesInfiniteTurns(combo.produces) ? (
+                  <FactTooltip sentence={combosCloseCopy.sheet.loopMark}>
+                    <CardFactMark fact="extraTurns" />
+                  </FactTooltip>
+                ) : null}
+              </span>
+            ) : null}
             {names.map((n, i) => (
               <span key={i}>
                 {i > 0 ? <span style={{ color: "var(--fg-faint)", fontWeight: 400 }}> + </span> : null}
@@ -543,6 +643,20 @@ export function ComboBody({
           ) : null}
         </div>
       </div>
+      {oneAway ? (
+        // `.cft` (R1b): the Spellbook link bottom left, the action bottom right, nothing else.
+        <div data-combo-foot="one-away" className="flex items-center gap-[12px] border-t border-[color:var(--border)] px-[16px] pt-[12px] pb-[18px]">
+          <a
+            href={SPELLBOOK_SOURCE.variantUrl(combo.variantId)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-[44px] items-center font-mono text-[10.5px] text-[color:var(--accent-text)] underline decoration-[color:var(--accent-text)] underline-offset-[3px]"
+          >
+            {copy.provenance.source(copy.receipt.spellbook)}
+          </a>
+          <div className="ml-auto flex flex-col items-end">{oneAway.action}</div>
+        </div>
+      ) : (
       <div className="flex flex-wrap items-center gap-[12px] border-t border-[color:var(--border)] px-[16px] pt-[12px] pb-[14px] md:px-[18px]">
         <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
           {copy.receipt.assembled}
@@ -556,6 +670,7 @@ export function ComboBody({
           <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{copy.provenance.source(copy.receipt.spellbook)}</span>
         </a>
       </div>
+      )}
     </section>
   );
 }
