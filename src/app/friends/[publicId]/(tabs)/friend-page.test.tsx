@@ -73,7 +73,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const DECK = { name: "Thopter Factory", commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"], artCropUri: null, status: "To buy", built: 99, bodySize: 99, toBuy: 8 };
+const DECK = { id: null as string | null, name: "Thopter Factory", commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"], artCropUri: null, status: "To buy", built: 99, bodySize: 99, toBuy: 8 };
 const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Ghalta, Primal Hunger", imageUri: null, spare: 2, onWishlist: true };
 
 describe("a friend's page group", () => {
@@ -214,6 +214,46 @@ describe("a friend's page group", () => {
     const [over, draft] = screen.getAllByTestId("friend-deck").map((t) => within(t).getByText(/^(Over|Draft)/));
     expect(over.style.borderStyle).not.toBe("none");
     expect(draft.style.borderStyle).not.toBe("none");
+  });
+
+  describe("with FRIEND_DECKS_ENABLED on for the reader (friend decks call 6)", () => {
+    const OPEN = { ...BOTH, FRIEND_DECKS_ENABLED: "true" };
+    const ID = "11111111-1111-4111-8111-111111111111";
+
+    it("draws the read-only /decks tile: the art band's identity, the count alone, no status, the whole tile a press", async () => {
+      m.requestSwitchEnv.mockResolvedValue(OPEN);
+      m.loadFriendDecks.mockResolvedValue([{ ...DECK, id: ID }]);
+      render(await FriendDecksPage({ params: params() }));
+      const tile = screen.getByTestId("friend-deck");
+      const press = within(tile).getByRole("link");
+      expect(press.getAttribute("href")).toBe(`/friends/${COLIN.publicId}/decks/${ID}`);
+      expect(press.getAttribute("aria-label")).toBe("Thopter Factory, Sai, Master Thopterist, Blue, 99 cards");
+      expect(tile.textContent).toContain("99 cards");
+      expect(tile.textContent).not.toMatch(/To buy|99 \/ 99/);
+      expect(screen.getByText(p.decks.lineOpen("Colin"))).toBeTruthy();
+    });
+
+    it("keeps the colour alone when the deck is named for its commander", async () => {
+      m.requestSwitchEnv.mockResolvedValue(OPEN);
+      m.loadFriendDecks.mockResolvedValue([{ ...DECK, id: ID, name: "Sai" }]);
+      render(await FriendDecksPage({ params: params() }));
+      const tile = screen.getByTestId("friend-deck");
+      expect(tile.textContent).not.toContain("Sai, Master Thopterist");
+      expect(within(tile).getByRole("link").getAttribute("aria-label")).toBe("Sai, Blue, 99 cards");
+    });
+
+    it("draws no press for a deck the owner's read carried no id for", async () => {
+      m.requestSwitchEnv.mockResolvedValue(OPEN);
+      m.loadFriendDecks.mockResolvedValue([DECK]);
+      render(await FriendDecksPage({ params: params() }));
+      expect(within(screen.getByTestId("friend-deck")).queryByRole("link")).toBeNull();
+    });
+
+    it("rewords the empty tab's body: a deck shared shows with its whole list", async () => {
+      m.requestSwitchEnv.mockResolvedValue(OPEN);
+      m.loadFriendDecks.mockResolvedValue([]);
+      expect(renderToString(await FriendDecksPage({ params: params() }))).toContain(p.decks.emptyBodyOpen("Colin"));
+    });
   });
 
   it("is not found for a friend whose decks cannot be read for the reader", async () => {

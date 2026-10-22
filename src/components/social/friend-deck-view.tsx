@@ -11,6 +11,7 @@ import { preconsCopy } from "../../lib/copy/precons";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { groupByCardType, type DeckDetailCard } from "../../lib/decks/grouping";
 import { colorLabel } from "../../lib/decks/format";
+import { commanderRepeats } from "../../lib/decks/commander-repeats";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { isBasicType } from "../../lib/decks/basic-type";
 import type { FriendDeckCard, FriendDeckPage } from "../../lib/social/decks";
@@ -80,7 +81,7 @@ export function FriendDeckView({
   const head = deck.commanders[0];
   // The commander line is left out when the deck's name already says it (whole, or the part before the comma).
   const commanderLine = deck.commanders.map((c) => c.name).join(" + ");
-  const repeats = deck.commanders.length === 1 && head && (deck.name === head.name || deck.name === head.name.split(",")[0]);
+  const repeats = head !== undefined && commanderRepeats(deck.name, head.name, deck.commanders[1]?.name ?? null);
 
   return (
     <CardDetailProvider deckPrintingPicks={printingPicks} viewPrintings={viewPrintings}>
