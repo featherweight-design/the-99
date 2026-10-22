@@ -25,7 +25,7 @@ import { resolveEnv } from "../switches/resolve";
 import { readSwitchSnapshot } from "../switches/snapshot";
 import { availableFeedKinds } from "./flag";
 import { priceDropKey, priceDropped } from "./price-drop-rule";
-import { recordFeedItem } from "../social/feed-write";
+import { lastFeedItemAt, recordFeedItem } from "../social/feed-write";
 
 /** The lines that still need a baseline, every reader's: a kind turned on later must find one waiting. */
 export function baselineMissingQuery() {
@@ -50,6 +50,14 @@ export function priceDropCandidatesQuery() {
       and coalesce((select sum(ci.quantity) from ${collectionItems} ci
                     where ci.user_id = wi.user_id and ci.oracle_id = wi.oracle_id), 0) < wi.quantity
     order by wi.user_id, wi.oracle_id`;
+}
+
+/** One line as it stands now, row-locked: its baseline and stamp, and whether the collection still leaves it unmet. */
+export function currentLineQuery(userId: string, oracleId: string) {
+  return sql`select wi.price_at_add_cents as at_add_cents, wi.price_noticed_at as noticed_at,
+      coalesce((select sum(ci.quantity) from ${collectionItems} ci
+                where ci.user_id = wi.user_id and ci.oracle_id = wi.oracle_id), 0) < wi.quantity as unmet
+    from ${wishlistItems} wi where wi.user_id = ${userId} and wi.oracle_id = ${oracleId} for update`;
 }
 
 export type PriceDropRun = { backfilled: number; candidates: number; switchedOff: number; noticed: number; failed: number };
@@ -90,10 +98,23 @@ export async function noticePriceDrops(base: NodeJS.ProcessEnv, now: Date = new 
   const read = await loadPrices([...new Set(live.map((r) => r.oracle_id))]);
   for (const r of live) {
     const nowCents = cheapestNow(read, r.oracle_id);
-    const noticedAt = r.noticed_at === null ? null : new Date(r.noticed_at);
-    if (!priceDropped({ atAddCents: r.at_add_cents, nowCents, noticedAt, now })) continue;
+    // Cheap first, off the candidate read; the transaction decides again on what is true at the write.
+    if (!priceDropped({ atAddCents: r.at_add_cents, nowCents, noticedAt: r.noticed_at === null ? null : new Date(r.noticed_at), now })) continue;
     try {
       const wrote = await db.transaction(async (tx) => {
+        // The collection's own per-user lock, then the line: a collection write or a wishlist edit between the read
+        // above and here is seen, never stamped over.
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${r.user_id}, 0))`);
+        const line = (await tx.execute<{ at_add_cents: number | null; noticed_at: Date | string | null; unmet: boolean }>(
+          currentLineQuery(r.user_id, r.oracle_id),
+        )).rows[0];
+        // Gone, met by the collection, or re-added since (a different baseline): not this notice's line any more.
+        if (!line || !line.unmet || line.at_add_cents !== r.at_add_cents) return false;
+        // The cooldown outlives the line: a want removed and added again starts with no stamp, but the feed remembers.
+        const told = await lastFeedItemAt(tx, r.user_id, "price-drop", r.oracle_id);
+        const stamped = line.noticed_at === null ? null : new Date(line.noticed_at);
+        const lastNoticed = told && (!stamped || told > stamped) ? told : stamped;
+        if (!priceDropped({ atAddCents: line.at_add_cents, nowCents, noticedAt: lastNoticed, now })) return false;
         const written = await recordFeedItem(tx, {
           userId: r.user_id,
           kind: "price-drop",

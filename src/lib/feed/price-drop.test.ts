@@ -1,7 +1,7 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
-import { backfillQuery, baselineMissingQuery, priceDropCandidatesQuery } from "./price-drop";
+import { backfillQuery, baselineMissingQuery, currentLineQuery, priceDropCandidatesQuery } from "./price-drop";
 
 const render = (q: Parameters<PgDialect["sqlToQuery"]>[0]) => {
   const { sql, params } = new PgDialect().sqlToQuery(q);
@@ -27,5 +27,13 @@ describe("the price-drop job's SQL", () => {
     expect(q).toContain("where (up.feed_kinds ->> 'price-drop') is not null and wi.price_at_add_cents is not null");
     // Qualified on both sides (AGENTS.md, alias and qualify): an unqualified oracle_id would compare a row to itself.
     expect(q).toContain(`coalesce((select sum(ci.quantity) from "collection_items" ci where ci.user_id = wi.user_id and ci.oracle_id = wi.oracle_id), 0) < wi.quantity`);
+  });
+
+  it("re-reads one line row-locked, with its baseline, stamp and whether it is still unmet", () => {
+    const { q, params } = render(currentLineQuery("u1", "card"));
+    expect(q).toContain(`from "wishlist_items" wi where wi.user_id = $1 and wi.oracle_id = $2 for update`);
+    expect(q).toContain("wi.price_at_add_cents as at_add_cents, wi.price_noticed_at as noticed_at");
+    expect(q).toContain(`where ci.user_id = wi.user_id and ci.oracle_id = wi.oracle_id), 0) < wi.quantity as unmet`);
+    expect(params).toEqual(["u1", "card"]);
   });
 });

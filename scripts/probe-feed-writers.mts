@@ -129,6 +129,15 @@ async function main() {
     drops = await items(U, "price-drop");
     check("a week later, still fallen: told again under that week's key", drops.length === 2 && drops[1].dedupe_key === priceDropKey(P1, nextWeek));
 
+    // The want removed and added again: a fresh line has no stamp, but the feed remembers the week's notice.
+    await db.execute(sql`delete from wishlist_items where user_id = ${U} and oracle_id = ${P1}`);
+    await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity, price_at_add_cents) values (${U}, ${P1}, 1, ${today(P1) * 2})`);
+    // Inside seven days of the notice but in the NEXT ISO week, so only the cooldown (not the week's key) can stop it.
+    let soon = new Date(nextWeek.getTime() + 86_400_000);
+    while (priceDropKey(P1, soon) === priceDropKey(P1, nextWeek)) soon = new Date(soon.getTime() + 86_400_000);
+    await noticePriceDrops(ENV, soon);
+    check("a line removed and wanted again inside the week is not told twice", (await items(U, "price-drop")).filter((d) => d.oracle_id === P1).length === 2);
+
     // The kind off: a fallen line is not told and not marked.
     await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity, price_at_add_cents) values (${U}, ${P3}, 1, ${today(P3) + 500})`);
     await prefs.setFeedKinds(U, ["trade-match", "combo"]);
