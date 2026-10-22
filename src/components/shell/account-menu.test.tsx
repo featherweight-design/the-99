@@ -517,14 +517,19 @@ describe("AccountMenu items", () => {
   });
 
   it("takes this browser's push subscription out BEFORE the session ends", async () => {
-    const order: string[] = [];
-    forgetThisDevice.mockImplementationOnce(async () => { order.push("forget"); });
-    signOut.mockImplementationOnce(async () => { order.push("signOut"); });
+    signOut.mockClear();
+    forgetThisDevice.mockClear();
+    let finish!: () => void;
+    forgetThisDevice.mockImplementationOnce(() => new Promise<void>((done) => { finish = done; }));
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    await waitFor(() => expect(forgetThisDevice).toHaveBeenCalledOnce());
+    // Cleanup is still pending: the session must not have ended.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(signOut).not.toHaveBeenCalled();
+    finish();
     await waitFor(() => expect(signOut).toHaveBeenCalledOnce());
-    expect(order).toEqual(["forget", "signOut"]);
   });
 
   // A successful sign-out navigates away, so the disabled state is only ever

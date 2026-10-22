@@ -14,8 +14,9 @@ async function forget(): Promise<void> {
   const registration = await navigator.serviceWorker.getRegistration();
   const subscription = await registration?.pushManager.getSubscription();
   if (!subscription) return;
-  await unsubscribeDevice(subscription.endpoint);
-  await subscription.unsubscribe();
+  // Both start at once and neither waits on the other: a stalled or failed server removal must not keep the browser
+  // subscribed (the push service then answers 404 or 410 and the sender deletes the row), and the reverse.
+  await Promise.allSettled([unsubscribeDevice(subscription.endpoint), subscription.unsubscribe()]);
 }
 
 export async function forgetThisDevice(): Promise<void> {
