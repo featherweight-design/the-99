@@ -2766,6 +2766,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   a stale row) shows nothing, leaving, removal and unfriending each delete the grant ROW (counted in the table, since
   the read alone would hide a missed cleanup), rejoining does not restore it, and `friendGeneration` moves when a
   friend starts sharing, when their collection moves and when they rename.
+- `pnpm probe:spare-settings` proves Settings' Spares (menu and Home plan PR 3, G3) through `loadFriendSpares`: a
+  friend's `spare_min` (absent row and a row holding 1 offer every spare; 3 drops a 1-spare card; 4 drops a 3-spare
+  one) and `spare_keep` (a kept card is not offered at any count) are the GRANTOR's alone, so a second friend on
+  defaults and the viewer's own settings never filter what the viewer sees; a keep or a release moves the keeper's
+  data stamp and not the viewer's or another friend's; and `searchSpareCards` (the lib call behind the settings
+  action, which needs a Clerk session and is unit-tested) answers only the reader's own cards and counts and drops a
+  kept card. It WRITES three per-run made-up accounts and removes every row by those ids in a finally, so its target
+  is NAMED rather than `.env`'s (env.mjs would put local-dev back over a prefix): `SPARES_PROBE_URL` is the database
+  and `PROBE_DB_BRANCH` must equal the `neon.branch_id` it reports through the app's own `db`, with staging,
+  production and local-dev refused by id. Run it on a scratch branch migrated to this schema. First run 2026-10-22 on
+  a scratch branch: every check passed, and a wrong `PROBE_DB_BRANCH` refused before any write.
 - `pnpm probe:owned-support` proves `/discover`'s stored owned-support counts (`owned_support_counts`,
   `owned_support_stamps`; `storedOwnedSupport` in `discovery/candidates.ts`) against a real database. A miss and a
   hit both answer exactly what the live aggregate answers, the store holds every commander with owned support rather
