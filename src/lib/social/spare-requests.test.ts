@@ -172,7 +172,7 @@ describe("Ask instead (G1: one transaction)", () => {
   });
 
   /** A transaction over a script of results, which rolls back (rejects) whenever its body throws. */
-  async function scripted(results: unknown[], prior: unknown[] = [], savepoint?: () => never) {
+  async function scripted(results: unknown[], prior: unknown[] = []) {
     const { db } = await import("../../db");
     const ran: SQL[] = [];
     const seen = { rolledBack: false, inserted: [] as Record<string, unknown>[], priorWhere: [] as SQL[] };
@@ -180,7 +180,6 @@ describe("Ask instead (G1: one transaction)", () => {
       execute: vi.fn(async (s: SQL) => { ran.push(s); return results.shift(); }),
       select: () => ({ from: () => ({ where: async (w: SQL) => { seen.priorWhere.push(w); return prior; } }) }),
       insert: () => ({ values: (v: Record<string, unknown>) => { seen.inserted.push(v); return { returning: async () => [{ id: "new" }] }; } }),
-      transaction: async (fn: (t: unknown) => Promise<unknown>) => (savepoint ? savepoint() : fn(tx)),
     };
     vi.mocked(db.transaction).mockImplementationOnce((async (fn: (t: unknown) => Promise<unknown>) => {
       try { return await fn(tx); } catch (e) { seen.rolledBack = true; throw e; }
@@ -215,31 +214,21 @@ describe("Ask instead (G1: one transaction)", () => {
   });
 
   it("lands the new ask after the withdraw, with the copies capped at the friend's spare count", async () => {
-    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [{ id: CARD }] }]);
+    // askLock, deck, friendship, withdraw; then askIn: askLock, deck (re-entrant), friendship, expire.
+    const DECK = { rows: [{ id: CARD }] };
+    const ran = await scripted([{ rows: [] }, DECK, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, DECK, FRIENDS, { rows: [] }]);
     expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 7, deckId: CARD })).toEqual({ ok: true, id: "new" });
     expect(ran.seen.rolledBack).toBe(false);
     expect(ran.seen.inserted[0]).toMatchObject({ copies: 2, deckId: CARD });
-    // The deck is checked as the asker's own before it is stored.
-    expect(render(ran[6]).q).toBe(`select odk.id from "decks" odk where odk.id = $1 and odk.user_id = $2`);
+    // The deck is locked before the withdraw writes a request row: deck before request, a deck delete's order.
+    const qs = ran.map((q) => render(q).q);
+    expect(qs[1]).toBe(`select odk.id from "decks" odk where odk.id = $1 and odk.user_id = $2 for key share`);
+    expect(qs.findIndex((q) => q.includes("for key share"))).toBeLessThan(qs.findIndex((q) => q.includes("'withdrawn'")));
+    expect(qs.findLastIndex((q) => q.includes("for key share"))).toBeLessThan(qs.findIndex((q) => q.includes("'expired'")));
   });
 
-  it("stores the deck null when it is deleted between the check and the insert (its foreign key refuses)", async () => {
-    const fk = () => { throw Object.assign(new Error("fk"), { cause: { code: "23503" } }); };
-    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [{ id: CARD }] }], [], fk);
-    expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: CARD })).toEqual({ ok: true, id: "new" });
-    expect(ran.seen.rolledBack).toBe(false);
-    expect(ran.seen.inserted).toEqual([expect.objectContaining({ deckId: null })]);
-  });
-
-  it("rethrows any other failure of the insert, rolling the ask back", async () => {
-    const boom = () => { throw new Error("boom"); };
-    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [{ id: CARD }] }], [], boom);
-    await expect(askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: CARD })).rejects.toThrow("boom");
-    expect(ran.seen.rolledBack).toBe(true);
-  });
-
-  it("stores no deck the asker does not own", async () => {
-    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [] }]);
+  it("stores no deck the asker does not own (or one a delete took first)", async () => {
+    const ran = await scripted([{ rows: [] }, { rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, { rows: [] }, FRIENDS, { rows: [] }]);
     expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: CARD })).toEqual({ ok: true, id: "new" });
     expect(ran.seen.inserted[0]).toMatchObject({ copies: 1, deckId: null });
   });
@@ -248,7 +237,7 @@ describe("Ask instead (G1: one transaction)", () => {
 describe("ownDeckQuery", () => {
   it("the asker's own deck, by id and owner", () => {
     const { q, params } = render(ownDeckQuery("a", CARD));
-    expect(q).toBe(`select odk.id from "decks" odk where odk.id = $1 and odk.user_id = $2`);
+    expect(q).toBe(`select odk.id from "decks" odk where odk.id = $1 and odk.user_id = $2 for key share`);
     expect(params).toEqual([CARD, "a"]);
   });
 });

@@ -28,7 +28,7 @@
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, decks, friendLinks, socialProfiles, spareRequests, userPrefs } from "../../db/schema";
-import { isForeignKeyViolation, isUniqueViolation } from "../db-error";
+import { isUniqueViolation } from "../db-error";
 import { resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
 import type { ProfileCommander } from "./commander";
@@ -82,9 +82,20 @@ export function expireStaleQuery(askerId: string, oracleId: string, now: Date): 
           where xfl.user_id = xsr.asker_user_id and xfl.friend_user_id = xsr.holder_user_id))`;
 }
 
-/** The asker's own deck, read in the ask's transaction: one row back means `deck_id` may be stored (G2). */
+/**
+ * The asker's own deck, read and KEY SHARE locked in the ask's transaction: one row back means `deck_id` may be
+ * stored (G2). It is taken before any request row is written, so every ask path locks deck before request, the
+ * order a deck delete takes them (the deck, then its `on delete set null`): a delete in progress is waited out and
+ * then reads as no deck, and one that comes later waits for the ask.
+ */
 export function ownDeckQuery(askerId: string, deckId: string): SQL {
-  return sql`select odk.id from ${decks} odk where odk.id = ${deckId} and odk.user_id = ${askerId}`;
+  return sql`select odk.id from ${decks} odk where odk.id = ${deckId} and odk.user_id = ${askerId} for key share`;
+}
+
+/** The deck to store with the ask, locked (`ownDeckQuery`); not the asker's (or not a deck) is null, never a refusal. */
+async function lockOwnDeck(tx: Tx, a: Asking): Promise<string | null> {
+  if (!isUuid(a.deckId)) return null;
+  return (await tx.execute(ownDeckQuery(a.askerId, a.deckId))).rows.length > 0 ? a.deckId : null;
 }
 
 /** One ask, decided: who asks whom for what, with the copies already capped. */
@@ -98,6 +109,7 @@ export type Asking = { askerId: string; holderId: string; oracleId: string; copi
  */
 export async function askIn(tx: Tx, a: Asking): Promise<AskOutcome> {
   await tx.execute(askLockQuery(a.askerId, a.oracleId));
+  const deckId = await lockOwnDeck(tx, a);
   const links = await tx.execute(lockFriendshipQuery(a.askerId, a.holderId));
   if (links.rows.length !== 2) return { ok: false, reason: "not-friend" };
   await tx.execute(expireStaleQuery(a.askerId, a.oracleId, a.now));
@@ -110,25 +122,10 @@ export async function askIn(tx: Tx, a: Asking): Promise<AskOutcome> {
     .where(and(eq(spareRequests.askerUserId, a.askerId), eq(spareRequests.oracleId, a.oracleId)));
   const refusal = askRefusal(prior.map((p) => ({ ...p, status: p.status as StoredStatus })), a.holderId, a.now);
   if (refusal) return { ok: false, reason: refusal };
-  // Not the asker's deck (or not a deck): stored null, never a refusal.
-  const deckId = isUuid(a.deckId) && (await tx.execute(ownDeckQuery(a.askerId, a.deckId))).rows.length > 0 ? a.deckId : null;
-  const insert = (t: Tx, deck: string | null) => t
+  const [row] = await tx
     .insert(spareRequests)
-    .values({ askerUserId: a.askerId, holderUserId: a.holderId, oracleId: a.oracleId, createdAt: a.now, copies: a.copies, deckId: deck })
+    .values({ askerUserId: a.askerId, holderUserId: a.holderId, oracleId: a.oracleId, createdAt: a.now, copies: a.copies, deckId })
     .returning({ id: spareRequests.id });
-  // The deck is display only: one deleted between the check and the insert (its foreign key refuses) is stored null,
-  // inside a savepoint so the ask and any Ask instead withdraw survive. No lock on the deck: Ask instead already holds
-  // the old request's row, which a deck delete's `set null` would wait on, so locking here could deadlock.
-  let row: { id: string };
-  if (deckId === null) [row] = await insert(tx, null);
-  else {
-    try {
-      [row] = await tx.transaction((sp) => insert(sp as Tx, deckId));
-    } catch (e) {
-      if (!isForeignKeyViolation(e)) throw e;
-      [row] = await insert(tx, null);
-    }
-  }
   await recordFeedItem(tx, { userId: a.holderId, kind: "spare-request", dedupeKey: row.id, oracleId: a.oracleId, friendUserId: a.askerId, now: a.now });
   return { ok: true, id: row.id };
 }
@@ -211,6 +208,8 @@ export async function askInsteadForSpare(
   if (!isUuid(fromRequestId)) return { ok: false, reason: "gone" };
   return inAskTransaction(async (tx) => {
     await tx.execute(askLockQuery(askerId, asking.oracleId));
+    // The deck before the withdraw writes a request row (`ownDeckQuery`'s order); `askIn` takes it again, re-entrantly.
+    await lockOwnDeck(tx, asking);
     const links = await tx.execute(lockFriendshipQuery(askerId, asking.holderId));
     if (links.rows.length !== 2) return { ok: false, reason: "not-friend" };
     const gone = await tx.execute(withdrawForInsteadQuery(askerId, fromRequestId, asking.oracleId, asking.holderId, now));
