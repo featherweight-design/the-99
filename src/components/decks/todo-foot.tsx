@@ -114,13 +114,17 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
           </Fragment>
         ))}
       </div>
-      {open === "provenance" && facts.provenance && (
-        <div id={`${ids}-provenance`} className={panel}>
+      {/* Both panels stay MOUNTED while closed, `hidden` (out of the accessibility tree and the tab
+          order): the ledger holds each line's undo in flight and the refusal it reports, and a
+          toggle that unmounted it would re-enable an Undo whose request is still running and drop
+          that request's error. `aria-controls` always points at a mounted panel. */}
+      {facts.provenance && (
+        <div id={`${ids}-provenance`} hidden={open !== "provenance"} className={panel}>
           {facts.provenance.panel}
         </div>
       )}
-      {open === "drafts" && facts.otherDrafts && (
-        <div id={`${ids}-drafts`} className={panel}>
+      {facts.otherDrafts && (
+        <div id={`${ids}-drafts`} hidden={open !== "drafts"} className={panel}>
           {/* `.sldp`: the soft glyph, then the count as a bold lead and the soft band's shipped
               sentence, until the pass sheet groups these by draft (PR 3). 12px under the rule, as
               the ledger sits: the panel's 4px (`.fo`) and this 8px. */}

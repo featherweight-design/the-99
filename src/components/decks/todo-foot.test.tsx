@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -6,10 +6,13 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { deckTodo, type TodoFacts } from "../../lib/decks/todo";
 import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { TodoFootFacts } from "./todo-foot";
 
-vi.mock("../../app/decks/actions", () => ({ fillDeck: vi.fn() }));
+vi.mock("../../app/decks/actions", () => ({ fillDeck: vi.fn(), undoFillPass: vi.fn() }));
 const { TodoCard, UnresolvedRow } = await import("./todo-card");
+const { ProvenanceLedger } = await import("./provenance-line");
+const { undoFillPass } = await import("../../app/decks/actions");
 
 const copy = deckVersioningCopy.todoCard;
 const VERSION = deckVersioningCopy.pending.versionLine(2, "1 Sep 2026");
@@ -72,23 +75,49 @@ describe("the to-do card's foot", () => {
 
   it("opens one disclosure at a time, inside the card under the line", () => {
     draw(FULL, { ...QUIET, unresolved: 2 });
-    expect(screen.queryByText("the ledger lines")).toBeNull();
-    fireEvent.click(provenance());
-    expect(provenance()).toHaveAttribute("aria-expanded", "true");
+    // Closed panels are mounted and hidden, and `aria-controls` names them all the while.
     const panel = screen.getByText("the ledger lines").parentElement!;
     expect(panel.id).toBe(provenance().getAttribute("aria-controls"));
+    expect(screen.getByText("the ledger lines")).not.toBeVisible();
+    expect(screen.getByText(availabilityCopy.deckRollup.softBody)).not.toBeVisible();
+    fireEvent.click(provenance());
+    expect(provenance()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("the ledger lines")).toBeVisible();
     expect(screen.getByRole("region", { name: copy.head("Big Stompy", "complete") })).toContainElement(panel);
     expect(provenance()).toHaveTextContent(copy.disclosureOpen);
 
     fireEvent.click(drafts());
     expect(provenance()).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("the ledger lines")).toBeNull();
-    expect(screen.getByText(availabilityCopy.deckRollup.softBody)).toBeInTheDocument();
+    expect(screen.getByText("the ledger lines")).not.toBeVisible();
+    expect(screen.getByText(availabilityCopy.deckRollup.softBody)).toBeVisible();
     // `.sldp`: the count leads in bold, before the shipped sentence.
     expect(screen.getByText(availabilityCopy.deckRollup.softLead(4)).tagName).toBe("B");
 
     fireEvent.click(drafts());
-    expect(screen.queryByText(availabilityCopy.deckRollup.softBody)).toBeNull();
+    expect(screen.getByText(availabilityCopy.deckRollup.softBody)).not.toBeVisible();
+  });
+
+  // A toggle must not tear the ledger down: its lines hold the undo in flight and the refusal.
+  it("keeps an undo in flight, and its refusal, across closing and reopening the ledger", async () => {
+    let reject!: (e: Error) => void;
+    vi.mocked(undoFillPass).mockImplementation(() => new Promise((_, r) => { reject = r; }));
+    const cards = [{ oracleId: "a", name: "Card a", typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp", owned: true, quantity: 1, auto: true, availability: null } as DeckDetailCard];
+    const pass = { id: "p1", kind: "top_off" as const, ordinal: 1, createdAt: new Date("2026-01-01"), live: 1, kept: 0, removed: 0, openSlots: 5, liveCards: [{ oracleId: "a", quantity: 1 }] };
+    const ledgerPanel = <ProvenanceLedger deckId="d" bodySize={99} cards={cards} total={1} passes={[pass]} markedPassId={null} onMarkChange={vi.fn()} onAnnounce={vi.fn()} />;
+    draw({ ...NONE, provenance: { count: 1, panel: ledgerPanel } }, { ...QUIET, unresolved: 2 });
+    const toggle = () => screen.getByRole("button", { name: topOffCopy.ledger.header("1") });
+    const undo = () => screen.getByRole("button", { name: topOffCopy.ledger.undoAria("1", topOffCopy.ledger.passLabel("1")) });
+
+    fireEvent.click(toggle());
+    fireEvent.click(undo());
+    expect(undo()).toBeDisabled();
+    fireEvent.click(toggle());
+    fireEvent.click(toggle());
+    expect(undo()).toBeDisabled();
+
+    await act(async () => reject(new Error("network")));
+    expect(screen.getByText(topOffCopy.ledger.undoFailed)).toBeVisible();
+    expect(undo()).not.toBeDisabled();
   });
 
   it("closes a disclosure whose segment left, so it does not come back open", () => {
@@ -124,7 +153,7 @@ describe("the quiet strip", () => {
     const view = draw(FULL, { ...QUIET, unresolved: 2 });
     fireEvent.click(provenance());
     view.rerender(<TodoCard todo={deckTodo(QUIET)} deckName="Big Stompy" foot={FULL} renderRow={() => null} />);
-    expect(screen.getByText("the ledger lines")).toBeInTheDocument();
+    expect(screen.getByText("the ledger lines")).toBeVisible();
   });
 
   it("is absent when there is nothing to do and nothing to state", () => {
