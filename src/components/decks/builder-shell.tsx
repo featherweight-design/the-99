@@ -2345,7 +2345,9 @@ export function BuilderShell({
                   bodySize={bodySize}
                   newestAsOf={newestAsOf}
                   onAnnounce={setAnnouncement}
-                  onClose={() => setPassSheet(null)}
+                  // Only the sheet this callback belongs to: an Undo finishing after Done must not
+                  // dismiss the sheet opened since.
+                  onClose={() => setPassSheet((cur) => (cur === passSheet ? null : cur))}
                 />
               </LockCardsProvider>
             </PendingChangeProvider>

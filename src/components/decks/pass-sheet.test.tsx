@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -7,7 +7,7 @@ import type { FillPassSummary } from "../../lib/decks/fill-passes";
 vi.mock("../../app/decks/actions", () => ({ undoFillPass: vi.fn() }));
 // The rows are the list's own and are proved with it; this file proves the frame around them.
 vi.mock("./decklist-row", () => ({ DecklistRow: () => null }));
-vi.mock("./decklist-group-header", () => ({ DecklistGroupHeader: () => null }));
+vi.mock("./decklist-group-header", () => ({ DecklistGroupHeader: ({ label }: { label: string }) => <h3>{label}</h3> }));
 vi.mock("./hover-preview", () => ({ HoverPreviewProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ registerSheet: () => () => {}, openOracleId: null, revealing: false }), CardDetailTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</> }));
 
@@ -59,9 +59,54 @@ describe("PassSheet (one pass)", () => {
     expect(view.container.textContent).toContain("4 cards");
   });
 
+  it("drops a card the player kept from the sheet and the count, and reports it as kept", () => {
+    const kept = { ...card("c"), auto: false };
+    const view = render(
+      <PassSheet
+        target={{ kind: "pass", passId: "p1" }}
+        deckId="d"
+        cards={[card("a"), card("b"), kept]}
+        passes={[pass("top_off", 3)]}
+        bodySize={99}
+        newestAsOf={null}
+        onAnnounce={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: ledger.sheetTitle(2) })).toBeTruthy();
+    expect(view.container.textContent).toContain("1 now yours");
+  });
+
   it("offers Done only on the seed, whose reversal is Clear all auto", () => {
     draw(pass("seed", 3));
     expect(screen.getByRole("button", { name: ledger.sheetDone })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Undo/ })).toBeNull();
+  });
+});
+
+describe("PassSheet (other drafts)", () => {
+  it("lists a draft that holds one copy but wants another", () => {
+    const wanted = {
+      ...card("a"),
+      availability: { owned: 2, hard: 0, soft: 1, free: 1, claims: [{ id: "d2", name: "Brew Two", quantity: 2, granted: 1, mature: false, pending: false }] },
+    } as unknown as DeckDetailCard;
+    render(<PassSheet target={{ kind: "drafts" }} deckId="d" cards={[wanted]} passes={[]} bodySize={99} newestAsOf={null} onAnnounce={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByText("Brew Two")).toBeTruthy();
+  });
+});
+
+describe("PassSheet undo state", () => {
+  it("is shared with the pass's other control and survives the sheet closing", async () => {
+    const { undoFillPass } = await import("../../app/decks/actions");
+    let finish!: (v: { removed: number; built: number }) => void;
+    vi.mocked(undoFillPass).mockImplementation(() => new Promise((r) => { finish = r; }));
+    const first = draw(pass("top_off", 3));
+    fireEvent.click(screen.getByRole("button", { name: /^Undo/ }));
+    first.unmount();
+    // A fresh sheet for the same pass (the ledger's control reads the same state) is already pending.
+    draw(pass("top_off", 3));
+    expect(screen.getByRole("button", { name: /^Undo/ })).toBeDisabled();
+    finish({ removed: 3, built: 90 });
+    await waitFor(() => expect(screen.getByRole("button", { name: /^Undo/ })).not.toBeDisabled());
   });
 });

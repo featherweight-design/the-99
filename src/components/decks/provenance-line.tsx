@@ -10,7 +10,7 @@
 // line and its desktop meta stay as the board draws them; the card shell and
 // its accent rule went, because the to-do card is the shell now.
 
-import { useState, useTransition } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
@@ -37,10 +37,27 @@ export function passBuyCount(pass: FillPassSummary, cards: readonly DeckDetailCa
   return pass.liveCards.reduce((n, c) => (owned.get(c.oracleId) === false ? n + c.quantity : n), 0);
 }
 
+// One pass's undo state, held outside any component so the ledger line and the pass sheet read the
+// same figure, and so it survives the sheet being dismissed while the request runs. Keyed per deck
+// and pass: rule (g) wants an undo in flight to leave its neighbours enabled.
+type UndoState = { pending: boolean; error: string | null };
+const IDLE: UndoState = { pending: false, error: null };
+const undoStates = new Map<string, UndoState>();
+const undoListeners = new Set<() => void>();
+const setUndoState = (key: string, next: UndoState) => {
+  if (next.pending || next.error) undoStates.set(key, next);
+  else undoStates.delete(key);
+  undoListeners.forEach((l) => l());
+};
+const subscribeUndo = (l: () => void) => {
+  undoListeners.add(l);
+  return () => void undoListeners.delete(l);
+};
+
 /**
- * A pass's undo, shared by its ledger line and the pass sheet's foot, so both run one write and say
- * one thing. Per caller rather than per ledger, because rule (g) requires an undo in flight to leave
- * its neighbours enabled, and a single pending flag in the ledger would disable all of them.
+ * A pass's undo, shared by its ledger line and the pass sheet's foot, so both run one write, say one
+ * thing and disable together. The state is per pass (see above), not per ledger, so one undo in flight
+ * leaves its neighbours enabled.
  */
 export function usePassUndo({
   deckId,
@@ -54,26 +71,30 @@ export function usePassUndo({
   pass: FillPassSummary;
   bodySize: number;
   onAnnounce: (message: string) => void;
-  onError: (message: string | null) => void;
+  /** Also told of a refusal, for a caller that reports it somewhere of its own. */
+  onError?: (message: string | null) => void;
   onDone?: () => void;
 }) {
-  const [pending, startTransition] = useTransition();
-  const undo = () => {
-    onError(null);
-    startTransition(async () => {
-      try {
-        // Both figures come back from the write's own transaction. Rule (g)
-        // keeps every other control live during an undo, so subtracting from
-        // the size this click started from could state one that was never true.
-        const { removed, built: settled } = await undoFillPass(deckId, pass.id);
-        onDone?.();
-        onAnnounce(topOffCopy.announce.undone(String(removed), String(settled), bodySize));
-      } catch {
-        onError(ledger.undoFailed);
-      }
-    });
+  const key = `${deckId}:${pass.id}`;
+  const state = useSyncExternalStore(subscribeUndo, () => undoStates.get(key) ?? IDLE, () => IDLE);
+  const undo = async () => {
+    if (undoStates.get(key)?.pending) return;
+    onError?.(null);
+    setUndoState(key, { pending: true, error: null });
+    try {
+      // Both figures come back from the write's own transaction. Rule (g)
+      // keeps every other control live during an undo, so subtracting from
+      // the size this click started from could state one that was never true.
+      const { removed, built: settled } = await undoFillPass(deckId, pass.id);
+      setUndoState(key, IDLE);
+      onDone?.();
+      onAnnounce(topOffCopy.announce.undone(String(removed), String(settled), bodySize));
+    } catch {
+      setUndoState(key, { pending: false, error: ledger.undoFailed });
+      onError?.(ledger.undoFailed);
+    }
   };
-  return { pending, undo };
+  return { pending: state.pending, error: state.error, undo };
 }
 
 interface ProvenanceLedgerProps {

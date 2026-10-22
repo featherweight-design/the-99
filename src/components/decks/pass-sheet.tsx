@@ -14,11 +14,10 @@
 // count in the head drops in the same paint, exactly as the list loses it. A row's press opens the
 // card detail stacked on the sheet (`ModalChrome` registers it), whose close reads `← {eyebrow}`.
 
-import { useState } from "react";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { printedNameOf } from "../../lib/collection/browse";
-import { availabilityState, holdsCopy } from "../../lib/decks/availability";
+import { availabilityState, type DeckClaim } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { GhostButton, PrimaryButton } from "../ui/button";
@@ -71,21 +70,30 @@ function OnePassSheet({
   newestAsOf,
   onClose,
 }: Common & { pass: FillPassSummary; bodySize: number; onAnnounce: (message: string) => void }) {
-  const [error, setError] = useState<string | null>(null);
-  const { pending, undo } = usePassUndo({ deckId, pass, bodySize, onAnnounce, onError: setError, onDone: onClose });
+  const { pending, error, undo } = usePassUndo({ deckId, pass, bodySize, onAnnounce, onDone: onClose });
   const byId = new Map(cards.map((c) => [c.oracleId, c]));
-  // The pass's LIVE cards: those still in the deck, the copies it placed and no more.
-  const live = pass.liveCards.flatMap((lc) => {
+  // The pass's LIVE cards: those still in the deck AND still auto, the copies it placed and no more.
+  // A card the player kept (its `auto` cleared, the row staying) is no longer the pass's: Undo
+  // preserves it, so it leaves the sheet and counts as kept.
+  const placed = pass.liveCards.flatMap((lc) => {
     const card = byId.get(lc.oracleId);
     return card ? [{ card, copies: Math.min(lc.quantity, card.quantity) }] : [];
   });
+  const live = placed.filter((l) => l.card.auto);
+  const kept = placed.reduce((n, l) => (l.card.auto ? n : n + l.copies), 0);
   const label = ledger.sheetLabel(pass);
   // One figure for the title, the lead and the Undo: the cards the sheet draws, so a ✕ in flight
   // moves all three together rather than splitting them.
   const count = live.reduce((n, l) => n + l.copies, 0);
-  // A card the ✕ took is a removal the server has not yet counted, so `placed` (live + kept + removed)
-  // holds still and the lead keeps saying what the pass placed.
-  const shown = { ...pass, live: count, removed: pass.removed + Math.max(0, pass.live - count) };
+  // What the server has not counted yet goes to kept or removed, so `placed` (live + kept + removed)
+  // holds still and the lead keeps saying what the pass placed. Buy counts the remaining live copies.
+  const shown: FillPassSummary = {
+    ...pass,
+    live: count,
+    kept: pass.kept + kept,
+    removed: pass.removed + Math.max(0, pass.live - count - kept),
+    liveCards: live.map((l) => ({ oracleId: l.card.oracleId, quantity: l.copies })),
+  };
   const n = String(count);
   const rows = live.map((l) => l.card);
 
@@ -93,7 +101,7 @@ function OnePassSheet({
     <SheetFrame
       eyebrow={label}
       count={count}
-      lead={lineSentence(shown, passBuyCount(pass, cards))}
+      lead={lineSentence(shown, passBuyCount(shown, cards))}
       closeLabel={ledger.sheetCloseAria(label)}
       onClose={onClose}
       // The seed has no Undo in the ledger either ("Clear all auto" reverses it), so its sheet offers Done only.
@@ -116,6 +124,12 @@ function OnePassSheet({
   );
 }
 
+/** A draft that still WANTS a copy: unsleeved, and asking for more than it was granted. Soft is
+ *  graded by `quantity - granted` (`availability-query.ts`), so a partly granted ask is still here. */
+function wantsCopy(c: Pick<DeckClaim, "mature" | "quantity"> & { granted?: number }): boolean {
+  return !c.mature && c.quantity - (c.granted ?? 0) > 0;
+}
+
 function DraftsSheet({ deckId, cards, newestAsOf, onClose }: Common) {
   // Every card here some other draft also wants (`availabilityState`'s soft, from this deck's own
   // vantage, as the foot's count reads it), under each draft that wants it: a claim that holds no
@@ -127,7 +141,7 @@ function DraftsSheet({ deckId, cards, newestAsOf, onClose }: Common) {
     if (!a || availabilityState(a, { selfExcluded: true }) !== "soft") continue;
     soft.push(card);
     for (const claim of a.claims) {
-      if (holdsCopy(claim)) continue;
+      if (!wantsCopy(claim)) continue;
       const group = groups.get(claim.id) ?? { name: claim.name, cards: [] };
       if (!group.cards.includes(card)) group.cards.push(card);
       groups.set(claim.id, group);
