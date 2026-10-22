@@ -15,7 +15,6 @@ import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { commandersPlaceEnabled } from "../../lib/commanders/place-flag";
 import { PlacePathsProvider } from "../commanders/place-paths";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { commandersPlaceEnabled } from "../../lib/commanders/place-flag";
