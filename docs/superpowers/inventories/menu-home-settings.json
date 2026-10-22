@@ -1,0 +1,56 @@
+{
+  "feature": "Menu and Home, PR 3: /settings with the Spares section (handoff design_handoff_the99_menu_home, R1 Settings; plan 2026-10-22-menu-home.md)",
+  "note": "The first row is the account's first visit in each width, which the About sheet's what's-new covers on a branch with unseen entries (clearAbout cannot help: it writes the database `.env` names, not the scratch branch); the page is photographed from the second row on. Run on a scratch Neon branch migrated to this PR (the page reads user_prefs.spare_min and spare_keep), with SOCIAL_FRIENDS_ENABLED on. The kept row is made by the run itself: the search finds a spare card and keeps it, which writes one spare_keep row on that scratch branch. A second run then starts with that card kept (and the search row keeps another).",
+  "rows": [
+    {
+      "id": "settings-first-visit",
+      "label": "/settings, first visit in this width: the About sheet over it (what a reader with unseen entries meets)",
+      "view": "src/components/settings/spares-section.tsx",
+      "steps": [
+        {
+          "goto": "/settings",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "label": "/settings: title, Spares head, the threshold stepper, who sees them, Kept back and its search",
+      "view": "src/components/settings/spares-section.tsx",
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "[aria-label^='Keep a card back']",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "settings-kept",
+      "label": "/settings after keeping a card from the search: its shipped collection row with ✕",
+      "view": "src/components/settings/spares-section.tsx",
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "[aria-label^='Keep a card back']",
+          "settle": 1000
+        },
+        {
+          "fill": "[aria-label^='Keep a card back']",
+          "text": "an"
+        },
+        {
+          "wait": "button[aria-label^='Keep '][aria-label*='spare']",
+          "settle": 500
+        },
+        {
+          "click": "button[aria-label^='Keep '][aria-label*='spare']"
+        },
+        {
+          "wait": "button[aria-label^='Let ']",
+          "settle": 1000
+        }
+      ]
+    }
+  ]
+}
