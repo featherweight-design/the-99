@@ -1,3 +1,4 @@
+import { roleStripCopy } from "../../lib/copy/decks-builder";
 // The strip's contract after #184: the cell IS the control.
 //
 // A cell under target is a button that opens its shelf; a cell that has met
@@ -377,12 +378,16 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
 
   // Brass, and beside the EDHREC line rather than under it — the two sub-runs
   // read as one sentence about where the numbers come from.
-  it("draws the note in accent, at the source line's size and breakpoint", () => {
+  it("draws the note in accent, at the source line's size, at both widths (deck messages A16)", () => {
     render(<RoleCounterStrip mix={TEST_MIX} cards={[]} wasCounts={ZERO} />);
     const note = screen.getByText(deckVersioningCopy.pending.mixStripDraftNote);
+    const source = screen.getByText(roleStripCopy.sourceStarting, { exact: false });
     expect(note.getAttribute("style")).toContain("var(--accent-text)");
-    expect(note.className).toContain("text-[10.5px]");
-    expect(note.className).toContain("md:inline");
+    expect(note.className).toContain("md:text-[10.5px]");
+    // Not hidden on the phone: the source line and the note join the label row there, in one group.
+    expect(note.className).not.toContain("hidden");
+    expect(source.className).not.toContain("hidden");
+    expect(note.parentElement).toBe(source.parentElement);
   });
 });
 

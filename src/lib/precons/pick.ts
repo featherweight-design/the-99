@@ -194,5 +194,5 @@ export function parsePickReceipt(value: string | string[] | undefined): string[]
   return ids.slice(0, PICK_MAX);
 }
 
-/** The receipt's dismissal, per receipt: an entry id names it, since there is no deck (not `arrivalDismissKey`). */
+/** The receipt's dismissal, per receipt: an entry id names it, since there is no deck. */
 export const pickReceiptDismissKey = (entryIds: readonly string[]) => `the99:precon-pick-receipt:${entryIds[0] ?? ""}`;

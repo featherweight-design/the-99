@@ -692,19 +692,13 @@ export default async function DeckBuilderPage({
       gameOpponents={deckOpponents ? opponentsWire(deckOpponents) : null}
       gameSummary={gameSummary}
       versions={versions}
-      // Left in the URL rather than swept with a router.replace. Stripping it
-      // would clear `arrivedFromImport` on the very next render, taking the
-      // arrival strip away in the same frame it appeared. The costs of leaving
-      // it are small and bounded: a refresh re-renders the strip, but the
-      // dismissal is persisted per deck so a dismissed strip stays dismissed;
-      // and a bookmarked URL can only be reopened by the deck's owner, who sees
-      // one dismissible line.
+      // The receipts' parameters (`imported`, `printings`, `from`, `added`, `updated`) are read here once.
+      // The shell holds what they said for the visit and takes them off the address, so a refresh or a
+      // bookmark brings no receipt (`useVisitReceipts`).
       arrivedFromImport={arrivedFromImport(query[IMPORTED_PARAM])}
-      // `?from=precon`: the one navigation "Start a deck from this" made. Left in the URL for the
-      // same reason as `imported`; the strip's dismissal is the same per-deck flag.
+      // `?from=precon`: the one navigation "Start a deck from this" made.
       preconArrival={preconArrivalRead ? await preconArrivalRead : null}
       preconAddReceipt={preconAddReceiptRead ? await preconAddReceiptRead : null}
-      preconAddedClaimed={preconAddedParam !== undefined}
       importAddReceipt={importAddReceiptRead ? await importAddReceiptRead : null}
       // A linked deck gets neither door: no suggestion (lock 2). Its link is drawn in Versions as v0
       // (precons PR 6b), and on the open precon with Unlink (PR 6a-2).
@@ -714,9 +708,6 @@ export default async function DeckBuilderPage({
       preconOrigin={originRead ? (await originRead)?.summary ?? null : null}
       // Deck printings: the strip's printing clauses, from the same one navigation.
       arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled(env))}
-      // Left in the URL for the same reason. Its strip is dismissible too, but
-      // the dismissal is component state rather than storage: an update happens
-      // many times, and persisting it would silence every one after the first.
       updateArrival={readUpdateArrival(query[UPDATED_PARAM])}
       // How a URL names the tab it opens on. Read on arrival only — the builder
       // never writes it back, so switching tabs still costs no history entry.

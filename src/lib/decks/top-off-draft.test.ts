@@ -8,7 +8,7 @@ describe("topOffDraftKey", () => {
     );
   });
 
-  // Same reasoning as arrivalDismissKey: two decks holding the same cards are
+  // Two decks holding the same cards are
   // still two selections, so nothing about the contents reaches the key.
   it("gives two decks two keys", () => {
     expect(topOffDraftKey("deck-one")).not.toBe(topOffDraftKey("deck-two"));

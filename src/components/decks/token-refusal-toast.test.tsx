@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DECK_TOAST_CLAIM, TOAST_MS } from "../collection/edit-toast";
-import { TokenRefusalToast } from "./token-refusal-toast";
+import { DeckRefusalToast, TokenRefusalToast } from "./token-refusal-toast";
 
 afterEach(() => {
   cleanup();
@@ -88,5 +88,35 @@ describe("TokenRefusalToast", () => {
       receipt.remove();
       globalThis.ResizeObserver = original;
     }
+  });
+});
+
+describe("DeckRefusalToast (a card's failed removal, deck messages A1)", () => {
+  it("is a deck-slot alert: the title, the card's name as the detail, no press", () => {
+    render(<DeckRefusalToast title="We couldn’t remove that." detail="Sol Ring" onDone={() => {}} />);
+    const alert = screen.getByRole("alert");
+    expect(alert.getAttribute("data-toast")).toBe("deck");
+    expect(alert.textContent).toBe("We couldn’t remove that.Sol Ring");
+    expect(alert.querySelector("button, a")).toBeNull();
+  });
+});
+
+describe("one refusal at a time, whoever owns it", () => {
+  it("a newer refusal replaces an older one, in either order", () => {
+    const tokenDone = vi.fn();
+    const removeDone = vi.fn();
+    // A token refusal first, then a removal's: the token's leaves.
+    render(<TokenRefusalToast name="Spirit" onDone={tokenDone} />);
+    render(<DeckRefusalToast title="We couldn’t remove that." detail="Sol Ring" onDone={removeDone} />);
+    expect(tokenDone).toHaveBeenCalledTimes(1);
+    expect(removeDone).not.toHaveBeenCalled();
+    cleanup();
+    // And the other way round.
+    const tokenDone2 = vi.fn();
+    const removeDone2 = vi.fn();
+    render(<DeckRefusalToast title="We couldn’t remove that." detail="Sol Ring" onDone={removeDone2} />);
+    render(<TokenRefusalToast name="Spirit" onDone={tokenDone2} />);
+    expect(removeDone2).toHaveBeenCalledTimes(1);
+    expect(tokenDone2).not.toHaveBeenCalled();
   });
 });

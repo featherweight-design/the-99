@@ -1,0 +1,65 @@
+{
+  "feature": "Deck page messages, PR 4a: receipts last the visit, the shorter precon receipt, the update receipt on the band, the remove-failure toast, the mix's phone parity (handoff design_handoff_the99_deck_messages; plan 2026-10-21-deck-messages.md)",
+  "note": "Fixture decks of the headless account on a scratch branch of local-dev. The toast (A1) is a press-only failure: it is proved by its tests, not photographed. The precon receipt needs a deck started from a precon, which no fixture deck is: `pnpm probe:precon-own` walks it at both widths.",
+  "rows": [
+    {
+      "id": "import-receipt",
+      "label": "/decks/[id]?imported=1&printings=12-3, the import's receipt: one sentence at both widths",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289?imported=1&printings=12-3",
+          "wait": "button[aria-label='Dismiss']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "update-receipt",
+      "label": "/decks/[id]?updated=19-6-1, the update's receipt on the shared band",
+      "view": "src/components/decks/update-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289?updated=19-6-1",
+          "wait": "button[aria-label='Dismiss']",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "receipt-dismissed",
+      "label": "/decks/[id]?imported=1, after the \u2715: gone for the visit, and the address is clean",
+      "view": "src/components/decks/use-visit-receipts.ts",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289?imported=1",
+          "wait": "button[aria-label='Dismiss']",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Dismiss$"
+        },
+        {
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "mix-phone",
+      "label": "/decks/[id], the recommended mix: the source line and the draft note on the phone's label row",
+      "view": "src/components/decks/role-counter-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289",
+          "wait": "section[aria-label='Recommended mix']",
+          "settle": 3000
+        },
+        {
+          "scrollTo": "section[aria-label='Recommended mix']",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

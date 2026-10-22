@@ -183,10 +183,9 @@ export const preconsCopy = {
         ? `All ${n(cards)} cards added to your collection.`
         : `${n(cards)} cards added to your collection.${catalogGap(unmapped)}`,
     history: "History",
-    body: (unmapped: number, owned: number, of: number, toBuy: number) =>
-      `You own ${n(owned)} of its ${n(of)}. The ${n(toBuy)} you don’t are in Shopping.${catalogGap(unmapped)}`,
+    // Deck messages A10: the shorter receipt. `of` is the precon's own count, never a literal 99.
+    bodyShort: (unmapped: number, owned: number, of: number) => `You own ${n(owned)} of its ${n(of)}.${catalogGap(unmapped)}`,
     bodyAll: (unmapped: number) => `You own every card.${catalogGap(unmapped)}`,
-    meta: (set: string) => `${set} · printings: this precon’s copies`,
   },
   // R3 addendum: the built-from link (`precons-link · copy strings.ts`, placeholders until
   // /copy-review). No verdict word on any share; selection says select / unselect. Every card count

@@ -7,7 +7,7 @@ export type TopOffDraft = { ticked: Set<string>; declined: Set<string> };
 
 /** Per-deck localStorage key for an uncommitted top-off selection.
  *
- *  Keyed on the deck id for the same reason `arrivalDismissKey` is: deck ids
+ *  Keyed on the deck id: deck ids
  *  are `uuid().defaultRandom()` primary keys and are never reused, so a deck
  *  deleted and rebuilt from the same list gets a new id, a new key, and an
  *  empty selection rather than inheriting a dead one. */

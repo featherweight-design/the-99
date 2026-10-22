@@ -560,7 +560,12 @@ export const deckHeaderCopy = {
 export const ownedStateCopy = { owned: "Owned", notOwned: "Not owned" } as const;
 
 /** The deck's role strip: what its header calls the mix the deck is measured against. */
-export const roleStripCopy = { mixLabel: "Recommended mix" } as const;
+export const roleStripCopy = {
+  mixLabel: "Recommended mix",
+  /** Where the figures come from (`mixSourceLine`): EDHREC only when they were measured there. */
+  sourceMeasured: "EDHREC averages",
+  sourceStarting: "A common starting point",
+} as const;
 
 /** The guided first run (A17): the to-do card's head on a first run. The deck page's guided banner retired
  *  into the card, and this is the one string of it still drawn: no `0/99`, no commander line. */

@@ -4,7 +4,7 @@
 // Per width: the Start dialog draws the box UNTICKED, says "this precon’s copies" for Printings (ticked or not) and nothing
 // about a draft; starting (one action: the box, the deck and its reservations) lands on the deck with ONE arrival band: "Started from the Probe Own precon",
 // "All 31 cards added to your collection." with a History link, the ✓ at the band's top-left, no second receipt banner, no
-// Undo, no "draft" sentence, and `?added=` already stripped while `from=precon` stays; a reload shows the minimal band; a
+// Undo, no "draft" sentence, and `?added=` and `?from=` both stripped; a reload brings no receipt; a
 // forged `?added=` draws nothing and is stripped all the same; History titles the entry "Added from Probe Own". Layout: no
 // horizontal overflow, the band text stops before its dismiss.
 //
@@ -156,10 +156,10 @@ try {
     check(await historyLink.isVisible() && /\/collection\/history\?entry=/.test((await historyLink.getAttribute("href")) ?? ""), `${w.name}: the band links the add's History entry`, "link");
     check((await page.getByText("copies added").count()) === 0 && (await page.getByRole("button", { name: "Undo" }).count()) === 0, `${w.name}: no receipt banner and no Undo on the deck page`, "none");
     check((await page.getByText(/draft until you commit/i).count()) === 0, `${w.name}: no draft sentence in the band`, "none");
-    check(await page.getByText("printings: this precon’s copies").isVisible(), `${w.name}: the band's meta line names the precon's copies`, "meta");
+    check((await page.getByText("printings: this precon’s copies").count()) === 0, `${w.name}: the band has no meta line (deck messages A10: the shorter receipt)`, "no meta");
     await page.waitForFunction(() => !new URL(location.href).searchParams.has("added"), null, { timeout: 10_000 });
     const sp = await page.evaluate(() => new URL(location.href).searchParams.get("from"));
-    check(sp === "precon", `${w.name}: ?added= is stripped and from=precon stays`, `from=${sp}`);
+    check(sp === null, `${w.name}: ?added= and ?from= are both stripped once the page has read them`, `from=${sp}`);
     const geo = await page.evaluate(() => {
       const head = [...document.querySelectorAll("p")].find((p) => p.textContent?.startsWith("Started from the"));
       const band = head.closest('div[style*="surface-rail"]');
@@ -178,10 +178,10 @@ try {
     check(geo.textRight <= geo.dismissLeft + 0.5, `${w.name}: the band text stops before the dismiss`, `text ends ${geo.textRight.toFixed(0)}, dismiss starts ${geo.dismissLeft.toFixed(0)}`);
     console.log(`${w.name}: band height ${geo.height.toFixed(1)}px`);
 
-    // A reload: the address was stripped, so the band is the minimal one now (History keeps the record).
+    // A reload: the address was stripped, so the receipt is gone with it (it lasts the visit; History keeps the record).
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByText("Started from the").first().waitFor({ timeout: 30_000 });
-    check((await page.getByText("added to your collection").count()) === 0, `${w.name}: a reload does not repeat the added line`, "gone");
+    await onPage(page, "h1:visible").first().waitFor({ timeout: 30_000 });
+    check((await page.getByText("Started from the").count()) === 0 && (await page.getByText("added to your collection").count()) === 0, `${w.name}: a reload brings no receipt`, "gone");
 
     // A claim no receipt can be drawn for (an id that is nobody's) is still spent: stripped from the address, nothing drawn.
     const deckUrl = new URL(page.url());

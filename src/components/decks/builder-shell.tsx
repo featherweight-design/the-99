@@ -37,7 +37,7 @@ import type { Bracket } from "../../lib/bracket/types";
 import { useDeclaration } from "./use-declaration";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
-import { StripAddedParam } from "./precons/precon-added-receipt";
+import { hasReceipt, useVisitReceipts } from "./use-visit-receipts";
 import type { PreconAddReceipt } from "../../lib/precons/add-receipt-read";
 import type { ImportAddReceipt } from "../../lib/decks/import-add-receipt";
 import type { PreconArrival } from "../../lib/precons/arrival-read";
@@ -89,7 +89,7 @@ import { comboScopeIds } from "../../lib/decks/combo-scope";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { BasicCountsProvider, createBasicCounts, type BasicCounts } from "./basic-counts";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import { MutationError } from "./mutation-error";
+import { DeckRefusalToast } from "./token-refusal-toast";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLedger } from "./provenance-line";
 import { PassSheet, type PassSheetTarget } from "./pass-sheet";
@@ -181,8 +181,6 @@ interface BuilderShellProps {
   preconArrival?: PreconArrival | null;
   /** The receipt of the collection add this precon start made, read from the ledger; null when there was none. */
   preconAddReceipt?: PreconAddReceipt | null;
-  /** `?added=` was on the URL (whatever the read made of it): it is stripped once the page has seen it. */
-  preconAddedClaimed?: boolean;
   /** The ticked import's collection add (no-collection entry S10), read from the ledger; null when there was none. */
   importAddReceipt?: ImportAddReceipt | null;
   /** The import's printing counts for the strip's clauses (deck printings), or null. */
@@ -336,7 +334,6 @@ export function BuilderShell({
   arrivedFromImport,
   preconArrival = null,
   preconAddReceipt = null,
-  preconAddedClaimed = false,
   importAddReceipt = null,
   arrivalPrintings = null,
   preconLink = null,
@@ -486,10 +483,16 @@ export function BuilderShell({
   // Whether the import arrived with unresolved lines, fixed at arrival: the owned strip's head is a claim about what
   // the import brought over, which resolving a line while the strip is up must not revise.
   const [arrivedUnresolved] = useState(() => deck.unresolvedRows.length > 0);
-  // The receipt, held for the visit: `added` leaves the URL after the first view (`StripAddedParam`) while `imported`
-  // stays, so a later server refresh (resolving a line) arrives with no receipt and would drop the strip's add line.
-  const [heldAddReceipt] = useState(importAddReceipt);
-  const addReceipt = importAddReceipt ?? heldAddReceipt;
+  // The receipts, held for the visit: the page's parameters leave the address once read, so a later server refresh
+  // (resolving a line) arrives with none and would drop the strip or its add line. ✕ hides it for the visit.
+  const receipts = useVisitReceipts({
+    fromImport: arrivedFromImport,
+    printings: arrivalPrintings,
+    importAdd: importAddReceipt,
+    precon: preconArrival,
+    preconAdd: preconAddReceipt,
+    update: updateArrival,
+  });
   // The basics stepper's save queue, one for the deck (`basic-counts.tsx`): it outlives a List ↔ Card switch,
   // and Clear auto and the Add panel flush it before writing the rows it would race. Built once, and handed
   // this render's prediction and router after each commit; a press always comes after one.
@@ -1113,7 +1116,9 @@ export function BuilderShell({
   // removals in flight, card B landing must not erase card A's refusal.
   //
   // Declared ahead of `markSpent` because its setter is read there.
-  const [removeFailure, setRemoveFailure] = useState<Record<string, string>>({});
+  const [removeFailure, setRemoveFailure] = useState<Record<string, { name: string; key: number }>>({});
+  const [oracleIdOfFailure, failure] = Object.entries(removeFailure)[0] ?? [];
+  const latestRemoveFailure = failure ? { oracleId: oracleIdOfFailure, ...failure } : null;
   const markSpent = useCallback(
     (card: DeckDetailCard) => {
       removalCounterRef.current += 1;
@@ -1227,7 +1232,8 @@ export function BuilderShell({
     // generation) answers for a receipt that no longer describes the card's
     // current state, and must not clear a newer one standing in its place.
     if (from !== (removalRef.current[oracleId] ?? 0)) return;
-    setRemoveFailure((prev) => ({ ...prev, [oracleId]: `${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}` }));
+    // One failure at a time (deck messages A1): a newer one replaces whatever the toast was saying.
+    setRemoveFailure({ [oracleId]: { name: cardName, key: Date.now() } });
     // The card never left, so there is nothing to undo. Leaving its own slot
     // would offer to put back a card the deck still holds — every other
     // receipt stands.
@@ -1570,18 +1576,17 @@ export function BuilderShell({
           <span className="sr-only" aria-live="polite" aria-atomic="true">
             {announcement}
           </span>
+          {/* A failed removal (deck messages A1) is the deck toast: one at a time, a newer replaces it, no press. */}
+          {latestRemoveFailure && (
+            <DeckRefusalToast
+              key={latestRemoveFailure.key}
+              title={DECK_REMOVE_FALLBACK_MESSAGE}
+              detail={latestRemoveFailure.name}
+              onDone={() => setRemoveFailure((prev) => dropKey(prev, latestRemoveFailure.oracleId))}
+            />
+          )}
 
           <div className="flex-1 flex flex-col min-w-0">
-            {Object.keys(removeFailure).length > 0 && (
-              <div className="px-[14px] md:px-[20px] pt-[10px] flex flex-col gap-[6px]">
-                {/* One failed removal, one message — several can stand at once
-                    (H29), each naming its own card. */}
-                {Object.entries(removeFailure).map(([oracleId, message]) => (
-                  <MutationError key={oracleId} message={message} />
-                ))}
-              </div>
-            )}
-
             {/* Builder Spine — unchanged by an import. No extra figure, no
                 second bar, no "97 + 2": the deck's number is what's built, and
                 the exception lives in the prose below it. */}
@@ -1647,16 +1652,20 @@ export function BuilderShell({
                 import gets the strip, an import that came up short gets the
                 to-do card's unresolved row instead, whose warning would be contradicted by a line
                 reading "nothing needs your attention". */}
-            {preconArrival && (
-              <PreconArrivalBand deckId={deck.id} arrival={preconArrival} added={preconAddReceipt ? { entryId: preconAddReceipt.entryId } : null} />
+            {receipts.shown && receipts.held.precon && (
+              <PreconArrivalBand
+                onDismiss={receipts.dismiss}
+                arrival={receipts.held.precon}
+                added={receipts.held.preconAdd ? { entryId: receipts.held.preconAdd.entryId } : null}
+              />
             )}
-            {preconAddedClaimed ? <StripAddedParam /> : null}
-            {preconLink && preconLink.suggestions.length > 0 && (
+            {/* The suggestion only when no receipt came with this visit (deck messages A11). */}
+            {!hasReceipt(receipts.held) && preconLink && preconLink.suggestions.length > 0 && (
               <PreconSuggestion deckId={deck.id} deckName={deck.name} suggestions={preconLink.suggestions} />
             )}
             {/* A ticked import (no-collection entry) also draws its strip over unresolved lines: what it
                 added is a fact the unresolved row does not state, and its head then says only that. */}
-            {arrivedFromImport && (unresolvedRows.length === 0 || addReceipt) && (
+            {receipts.shown && receipts.held.fromImport && (unresolvedRows.length === 0 || receipts.held.importAdd) && (
               /* A length, not `counts.total`: the strip's sentence says
                  "lines", and a Moxfield export writes basics as one line
                  ("35 Forest"), so the quantity sum would claim a 99-card deck
@@ -1668,10 +1677,10 @@ export function BuilderShell({
                  claim about what the import brought over, which an add the
                  player makes while the strip is still up must not revise. */
               <ArrivalStrip
-                deckId={deck.id}
+                onDismiss={receipts.dismiss}
                 importedLineCount={deck.cards.length}
-                printings={arrivalPrintings}
-                added={addReceipt}
+                printings={receipts.held.printings}
+                added={receipts.held.importAdd}
                 unresolved={arrivedUnresolved}
               />
             )}
@@ -1679,7 +1688,7 @@ export function BuilderShell({
             {/* An update's own strip. Not gated on the unresolved row the way
                 the import's is: an update's sentence is about what moved, which
                 unresolved lines do not contradict. */}
-            {updateArrival && <UpdateStrip arrival={updateArrival} />}
+            {receipts.shown && receipts.held.update && <UpdateStrip arrival={receipts.held.update} onDismiss={receipts.dismiss} />}
 
             {/* The to-do card (handoff `deck_messages`): what the deck is waiting on, one row each,
                 under the receipts. `deckTodo` holds every element's shipped gate and the order; fill
