@@ -146,7 +146,7 @@ describe("a friend's decks", () => {
     expect(within(dialog).getByText(picker.footNoDecks("Jo"))).toBeInTheDocument();
   });
 
-  it("a friend whose rules withhold nothing gets no A deck not listed", async () => {
+  it("a friend whose deck rules are off gets no A deck not listed", async () => {
     await mount();
     const dialog = await openPicker();
     fireEvent.click(await within(dialog).findByRole("button", { name: /Dave/ }));
@@ -154,7 +154,7 @@ describe("a friend's decks", () => {
     expect(within(dialog).queryByRole("button", { name: new RegExp(picker.notListed) })).toBeNull();
   });
 
-  it("a friend whose rules withhold a deck gets A deck not listed, which logs the friend with no deck", async () => {
+  it("a friend whose deck rules are on gets A deck not listed, which logs the friend with no deck", async () => {
     friends.mockResolvedValue([friend(DAVE, "Dave", 1, true)]);
     await mount();
     const dialog = await openPicker();

@@ -63,11 +63,11 @@ describe("listFriendDecks", () => {
 describe("listPickerFriends", () => {
   const friend = (publicId: string, displayName: string) => ({ publicId, displayName, since: new Date(), commander: null });
 
-  it("tells the picker each friend's visible count and whether anything was withheld, by that friend's switch", async () => {
+  it("tells the picker each friend's visible count and whether their rules apply, by that friend's switch", async () => {
     m.listFriends.mockResolvedValue([friend("p-on", "Dave"), friend("p-off", "Jo"), friend("p-none", "Lee")]);
     m.rows.mockResolvedValue([
-      { publicId: "p-on", ownerId: "u-on", count: 4, visible: 2, withheld: true },
-      { publicId: "p-off", ownerId: "u-off", count: 3, visible: 0, withheld: true },
+      { publicId: "p-on", ownerId: "u-on", count: 4, visible: 2 },
+      { publicId: "p-off", ownerId: "u-off", count: 3, visible: 0 },
     ]);
     m.resolveSwitchEnv.mockImplementation(async (id: string) => (id === "u-on" ? ON : { SOCIAL_FRIENDS_ENABLED: "true" }));
     const out = await listPickerFriends(VIEWER);

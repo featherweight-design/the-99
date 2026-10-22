@@ -143,10 +143,10 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
 - **The game log's seat picker** (PR 5, Hugh's ruling 2026-10-22). With the switch on for the OWNER, `friendDecksQuery`
   leaves out a deck hidden from friends, and every deck while Friends can see my decks is off (no prefs row reads as
   on); drafts stay pickable, because the unfinished rule is the tab's alone. The friend list's count is the same rule
-  (`friendDeckCountsQuery`'s `visible`), so the count and the list agree. The picker is told only `withheld`, a
-  boolean per friend (a hidden deck, or decks off whether or not any exist), never how many or which, and then offers
-  A deck not listed: the same seat as Just <name> (`{ friend, deck: null, commander: null }`, logged as `{ friend }`).
-  A withheld friend with nothing listed is not told "has no decks". `friendDecksIn` (the write-time check of a chosen
+  (`friendDeckCountsQuery`'s `visible`), so the count and the list agree. For every friend whose switch is on the
+  picker offers A deck not listed (`withheld`), whether or not they hid anything, so its presence says nothing of a
+  hidden deck: the same seat as Just <name> (`{ friend, deck: null, commander: null }`, logged as `{ friend }`).
+  Such a friend with nothing listed is not told "has no decks". `friendDecksIn` (the write-time check of a chosen
   seat) and Rule 0's seating are NOT filtered, so a game logged against a deck hidden since the pick still logs.
 - **Writes.** `writeFriendDeckPrefs` and `setDeckHiddenFromFriends` write only on a change, because the stamp trigger
   fires on any UPDATE and the stamp is what moves a friend's `friendGeneration`. Hiding never writes `last_edited_at`

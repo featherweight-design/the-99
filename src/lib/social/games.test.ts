@@ -42,15 +42,15 @@ describe("friendDeckCountsQuery", () => {
   const q = friendDeckCountsQuery(VIEWER).toSQL();
 
   it("counts decks only for friends the viewer's own link row names, one count per friend", () => {
-    expect(q.sql).toMatch(/where "friend_links"\."user_id" = \$1 group by "social_profiles"\."public_id", "friend_links"\."friend_user_id", "user_prefs"\."friends_see_decks"$/);
+    expect(q.sql).toMatch(/where "friend_links"\."user_id" = \$1 group by "social_profiles"\."public_id", "friend_links"\."friend_user_id"$/);
     expect(q.sql).toContain(`left join "decks" on "decks"."user_id" = "friend_links"."friend_user_id"`);
     expect(q.params).toEqual([VIEWER]);
   });
 
-  it("counts the decks the owner's rules let through apart, and says only WHETHER any were withheld", () => {
+  it("counts the decks the owner's rules let through apart, and reads nothing about what was hidden", () => {
     expect(q.sql).toContain(`left join "user_prefs" on "user_prefs"."user_id" = "friend_links"."friend_user_id"`);
     expect(q.sql).toContain(`count("decks"."id") filter (where (not "decks"."hidden_from_friends" and coalesce("user_prefs"."friends_see_decks", true)))`);
-    expect(q.sql).toContain(`(not coalesce("user_prefs"."friends_see_decks", true) or coalesce(bool_or("decks"."hidden_from_friends"), false))`);
+    expect(q.sql).not.toContain("bool_or");
     // No unfinished rule: drafts are pickable.
     expect(q.sql).not.toMatch(/friends_see_unfinished|status/);
   });
@@ -71,11 +71,10 @@ describe("the picker's deck rules (friend decks PR 5)", () => {
     expect(q.sql).not.toMatch(/friends_see_unfinished|status/);
   });
 
-  it("the count and withheld follow the owner's switch, and withheld carries no count", () => {
-    const row = { count: 3, visible: 1, withheld: true };
-    expect(pickerDeckFigures(row, true)).toEqual({ deckCount: 1, withheld: true });
-    expect(pickerDeckFigures(row, false)).toEqual({ deckCount: 3, withheld: false });
-    expect(typeof pickerDeckFigures(row, true).withheld).toBe("boolean");
+  it("the count and withheld follow the owner's switch, and withheld is the same whether or not anything was hidden", () => {
+    expect(pickerDeckFigures({ count: 3, visible: 1 }, true)).toEqual({ deckCount: 1, withheld: true });
+    expect(pickerDeckFigures({ count: 3, visible: 3 }, true)).toEqual({ deckCount: 3, withheld: true });
+    expect(pickerDeckFigures({ count: 3, visible: 1 }, false)).toEqual({ deckCount: 3, withheld: false });
   });
 });
 

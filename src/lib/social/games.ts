@@ -12,8 +12,9 @@
  * **What the picker offers follows the owner's deck rules** (friend decks, PR 5; Hugh's ruling 2026-10-22). With
  * `FRIEND_DECKS_ENABLED` on for the OWNER, `friendDecksQuery` and the picker's count leave out a deck the owner hid
  * from friends, and every deck while their "Friends can see my decks" is off. Drafts stay: the unfinished rule is the
- * Decks tab's, not the picker's. The picker learns only that something was withheld (`PickerFriend.withheld`), never
- * how many or which, and offers "A deck not listed", which seats the friend with no deck. `friendDecksIn`, the
+ * Decks tab's, not the picker's. The picker offers "A deck not listed", which seats the friend with no deck, for EVERY friend
+ * whose rules apply (`PickerFriend.withheld`), not only one who hid something: offered only then, its presence would say a
+ * hidden deck exists. `friendDecksIn`, the
  * write-time check of a seat already chosen, is NOT filtered: a game logged against a deck hidden since still logs.
  *
  * Nothing returned carries a Clerk id: a friend is a `publicId` and a display name. `resolveFriendSeatsIn`
@@ -204,14 +205,14 @@ export async function resolveFriendSeatsIn(tx: Tx, viewerId: string, asks: reado
 
 /**
  * A friend as the seat picker lists them: a face, a name and how many decks they can be seated with. `withheld` says
- * only that the friend's rules keep some deck, or all of them, out of the picker: never how many or which.
+ * the friend's deck rules apply (their switch is on), so a deck may be out of the picker: never whether one is, how many
+ * or which.
  */
 export type PickerFriend = { publicId: string; displayName: string; commanderArt: string | null; deckCount: number; withheld: boolean };
 
 /**
- * One row per friend of the viewer's, through the viewer's own link rows: every deck, the decks `pickerSeesDeck`
- * passes, and whether the rules withhold anything (a hidden deck, or "Friends can see my decks" off, decks or none).
- * The owner's id is for deciding their switch on the server; `listPickerFriends` never sends it on. Apart so a test can
+ * One row per friend of the viewer's, through the viewer's own link rows: every deck, and the decks `pickerSeesDeck`
+ * passes. The owner's id is for deciding their switch on the server; `listPickerFriends` never sends it on. Apart so a test can
  * render its SQL.
  */
 export function friendDeckCountsQuery(viewerId: string, q: Reader = db) {
@@ -221,19 +222,21 @@ export function friendDeckCountsQuery(viewerId: string, q: Reader = db) {
       ownerId: friendLinks.friendUserId,
       count: sql<number>`count(${decks.id})::int`,
       visible: sql<number>`(count(${decks.id}) filter (where ${pickerSeesDeck}))::int`,
-      withheld: sql<boolean>`(not coalesce(${userPrefs.friendsSeeDecks}, true) or coalesce(bool_or(${decks.hiddenFromFriends}), false))`,
     })
     .from(friendLinks)
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
     .leftJoin(userPrefs, eq(userPrefs.userId, friendLinks.friendUserId))
     .leftJoin(decks, eq(decks.userId, friendLinks.friendUserId))
     .where(eq(friendLinks.userId, viewerId))
-    .groupBy(socialProfiles.publicId, friendLinks.friendUserId, userPrefs.friendsSeeDecks);
+    .groupBy(socialProfiles.publicId, friendLinks.friendUserId);
 }
 
-/** What the picker says of one friend's decks, by that friend's switch: the rules apply only while it is on. Pure. */
-export function pickerDeckFigures(row: { count: number; visible: number; withheld: boolean }, ruled: boolean): { deckCount: number; withheld: boolean } {
-  return ruled ? { deckCount: row.visible, withheld: row.withheld } : { deckCount: row.count, withheld: false };
+/**
+ * What the picker says of one friend's decks, by that friend's switch: the rules apply only while it is on, and then A
+ * deck not listed is offered whatever they hid, so it says nothing of whether they hid anything. Pure.
+ */
+export function pickerDeckFigures(row: { count: number; visible: number }, ruled: boolean): { deckCount: number; withheld: boolean } {
+  return ruled ? { deckCount: row.visible, withheld: true } : { deckCount: row.count, withheld: false };
 }
 
 /**
