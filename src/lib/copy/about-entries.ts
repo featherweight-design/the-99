@@ -454,6 +454,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     replaces: 'ready-to-build',
     chapter: '04',
     screen: 'home',
+    frame: 'feed',
     switch: 'HOME_FEED_ENABLED',
     title: 'Home’s news, and the new bar',
     route: '/',

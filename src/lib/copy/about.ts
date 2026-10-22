@@ -181,6 +181,12 @@ export interface AboutEntry {
   screen: AboutScreen;
   /** Set exactly when `screen` is `deck`: which of its views. */
   view?: DeckView;
+  /**
+   * A variant frame of the screen, `<screen>-<frame>`, photographed with the switches that make this entry's surface
+   * exist (`whats-new`'s `home-feed`: Home with the feed on). The screen's own frame stays what a reader WITHOUT those
+   * switches sees, which is what the entries still drawn there describe (`ready-to-build`).
+   */
+  frame?: string;
   route: string;
   /** Appended after the route when the link does not land on the page itself. */
   opens?: string;

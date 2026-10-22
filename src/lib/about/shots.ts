@@ -18,6 +18,12 @@ export function screenShotId(screen: AboutScreen, view?: DeckView): string {
   return screen === "deck" ? `deck-${view}` : screen;
 }
 
+/**
+ * Variant frames of a screen, photographed with the switches an entry's surface needs (`AboutEntry.frame`): Home with the
+ * feed on, beside `home`, which is Home as a reader without it sees it (Ready to build).
+ */
+export const VARIANT_FRAMES: readonly string[] = ["home-feed"];
+
 export function toolShotId(tool: ToolId): string {
   return `tool-${tool}`;
 }
@@ -28,6 +34,7 @@ export const TOUR_SHOTS = ["tour-commanders", "tour-decks", "tour-shopping"] as 
 /** Every image the set must hold in every theme. */
 export const REQUIRED_SHOTS: readonly string[] = [
   ...ABOUT_SCREENS.flatMap((s) => (s === "deck" ? DECK_VIEWS.map((v) => screenShotId("deck", v)) : [s])),
+  ...VARIANT_FRAMES,
   ...TOOLS.map((t) => toolShotId(t.id)),
   ...TOUR_SHOTS,
 ];
@@ -79,11 +86,12 @@ export function shotFor(theme: string | undefined, id: string, set: ShotSet = SE
  */
 export function entryShotFor(
   theme: string | undefined,
-  entry: { id: string; screen: AboutScreen; view?: DeckView },
+  entry: { id: string; screen: AboutScreen; view?: DeckView; frame?: string },
   set: ShotSet = SET,
 ): Shot | null {
   if (entry.screen === "deck" && !entry.view) return null;
-  const id = entry.screen === "deck" ? screenShotId("deck", entry.view!) : screenShotId(entry.screen);
+  const base = entry.screen === "deck" ? screenShotId("deck", entry.view!) : screenShotId(entry.screen);
+  const id = entry.frame ? `${base}-${entry.frame}` : base;
   const r = resolve(theme, id, set);
   if (!r) return null;
   const b = r.e.entries && Object.hasOwn(r.e.entries, entry.id) ? r.e.entries[entry.id] : undefined;

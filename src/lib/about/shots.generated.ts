@@ -501,7 +501,7 @@ export const SHOTS = {
     "home": {
       "width": 780,
       "height": 1688,
-      "bytes": 67414,
+      "bytes": 48126,
       "quality": 75,
       "entries": {
         "getting-help": [
@@ -511,16 +511,10 @@ export const SHOTS = {
           0.0521
         ],
         "ready-to-build": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2343
-        ],
-        "whats-new": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2343
+          0.0436,
+          0.2813,
+          0.9128,
+          0.3412
         ],
         "resume": [
           0.041,
@@ -533,6 +527,20 @@ export const SHOTS = {
           0.1102,
           0.9179,
           0.0178
+        ]
+      }
+    },
+    "home-feed": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 67414,
+      "quality": 75,
+      "entries": {
+        "whats-new": [
+          0.041,
+          0.2493,
+          0.9179,
+          0.2343
         ]
       }
     },
@@ -1339,7 +1347,7 @@ export const SHOTS = {
     "home": {
       "width": 780,
       "height": 1688,
-      "bytes": 65288,
+      "bytes": 46242,
       "quality": 75,
       "entries": {
         "getting-help": [
@@ -1349,16 +1357,10 @@ export const SHOTS = {
           0.0521
         ],
         "ready-to-build": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2343
-        ],
-        "whats-new": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2343
+          0.0436,
+          0.2813,
+          0.9128,
+          0.3412
         ],
         "resume": [
           0.041,
@@ -1371,6 +1373,20 @@ export const SHOTS = {
           0.1102,
           0.9179,
           0.0178
+        ]
+      }
+    },
+    "home-feed": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 65288,
+      "quality": 75,
+      "entries": {
+        "whats-new": [
+          0.041,
+          0.2493,
+          0.9179,
+          0.2343
         ]
       }
     },
@@ -2177,7 +2193,7 @@ export const SHOTS = {
     "home": {
       "width": 780,
       "height": 1688,
-      "bytes": 66958,
+      "bytes": 47756,
       "quality": 75,
       "entries": {
         "getting-help": [
@@ -2187,16 +2203,10 @@ export const SHOTS = {
           0.0521
         ],
         "ready-to-build": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2343
-        ],
-        "whats-new": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2343
+          0.0436,
+          0.2813,
+          0.9128,
+          0.3412
         ],
         "resume": [
           0.041,
@@ -2209,6 +2219,20 @@ export const SHOTS = {
           0.1102,
           0.9179,
           0.0178
+        ]
+      }
+    },
+    "home-feed": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 66958,
+      "quality": 75,
+      "entries": {
+        "whats-new": [
+          0.041,
+          0.2493,
+          0.9179,
+          0.2343
         ]
       }
     },
@@ -3015,7 +3039,7 @@ export const SHOTS = {
     "home": {
       "width": 780,
       "height": 1688,
-      "bytes": 62870,
+      "bytes": 47682,
       "quality": 75,
       "entries": {
         "getting-help": [
@@ -3025,16 +3049,10 @@ export const SHOTS = {
           0.0521
         ],
         "ready-to-build": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.261
-        ],
-        "whats-new": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.261
+          0.0436,
+          0.2813,
+          0.9128,
+          0.3412
         ],
         "resume": [
           0.041,
@@ -3047,6 +3065,20 @@ export const SHOTS = {
           0.1102,
           0.9179,
           0.0178
+        ]
+      }
+    },
+    "home-feed": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 62870,
+      "quality": 75,
+      "entries": {
+        "whats-new": [
+          0.041,
+          0.2493,
+          0.9179,
+          0.261
         ]
       }
     },
@@ -3853,7 +3885,7 @@ export const SHOTS = {
     "home": {
       "width": 780,
       "height": 1688,
-      "bytes": 64170,
+      "bytes": 46480,
       "quality": 75,
       "entries": {
         "getting-help": [
@@ -3863,16 +3895,10 @@ export const SHOTS = {
           0.0521
         ],
         "ready-to-build": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2076
-        ],
-        "whats-new": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2076
+          0.0436,
+          0.2813,
+          0.9128,
+          0.3412
         ],
         "resume": [
           0.041,
@@ -3885,6 +3911,20 @@ export const SHOTS = {
           0.1102,
           0.9179,
           0.0178
+        ]
+      }
+    },
+    "home-feed": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 64170,
+      "quality": 75,
+      "entries": {
+        "whats-new": [
+          0.041,
+          0.2493,
+          0.9179,
+          0.2076
         ]
       }
     },
@@ -4691,7 +4731,7 @@ export const SHOTS = {
     "home": {
       "width": 780,
       "height": 1688,
-      "bytes": 67396,
+      "bytes": 47434,
       "quality": 75,
       "entries": {
         "getting-help": [
@@ -4701,16 +4741,10 @@ export const SHOTS = {
           0.0521
         ],
         "ready-to-build": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2343
-        ],
-        "whats-new": [
-          0.041,
-          0.2493,
-          0.9179,
-          0.2343
+          0.0436,
+          0.2813,
+          0.9128,
+          0.3412
         ],
         "resume": [
           0.041,
@@ -4723,6 +4757,20 @@ export const SHOTS = {
           0.1102,
           0.9179,
           0.0178
+        ]
+      }
+    },
+    "home-feed": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 67396,
+      "quality": 75,
+      "entries": {
+        "whats-new": [
+          0.041,
+          0.2493,
+          0.9179,
+          0.2343
         ]
       }
     },

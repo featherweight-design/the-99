@@ -21,14 +21,14 @@ const fileOf = (theme: string, id: string) => join(DIR, theme, `${id}.webp`);
 describe("the screenshot set's coverage", () => {
   it("needs a frame for every screen (each of a deck's views), a crop for every tool and the tour's three pictures", () => {
     // Pinned, not recomputed from the same formula `REQUIRED_SHOTS` uses: 15 screens with a deck's 7 views apart (22),
-    // the 14 tools, and the tour's 3 pictures. A screen, tool or view added to its registry moves this on purpose
+    // the 14 tools, the tour's 3 pictures and Home with the feed on (`home-feed`, `AboutEntry.frame`). A screen, tool or view added to its registry moves this on purpose
     // (`credits`, the launch-end batch).
-    expect(REQUIRED_SHOTS).toHaveLength(39);
+    expect(REQUIRED_SHOTS).toHaveLength(40);
     expect(ABOUT_SCREENS.filter((s) => s !== "deck")).toHaveLength(15);
     expect(DECK_VIEWS).toHaveLength(7);
     expect(TOOLS).toHaveLength(14);
     expect(TOUR_SHOTS).toHaveLength(3);
-    for (const id of ["home", "account", "credits", "deck-shopping", "deck-versions", "tool-matchups", "tool-lineup", "tour-decks"]) {
+    for (const id of ["home", "home-feed", "account", "credits", "deck-shopping", "deck-versions", "tool-matchups", "tool-lineup", "tour-decks"]) {
       expect(REQUIRED_SHOTS).toContain(id);
     }
     for (const t of TOOLS) expect(REQUIRED_SHOTS).toContain(toolShotId(t.id));
@@ -50,7 +50,8 @@ describe("the screenshot set's coverage", () => {
   it("places every About entry on its screen's frame in every theme (readiness R2 gap 9)", () => {
     for (const { key } of THEMES) {
       for (const e of aboutEntries) {
-        const frame = e.screen === "deck" ? `deck-${e.view}` : e.screen;
+        const base = e.screen === "deck" ? `deck-${e.view}` : e.screen;
+        const frame = e.frame ? `${base}-${e.frame}` : base;
         const box = SET[key]?.[frame]?.entries?.[e.id];
         expect(box, `${key}/${frame}#${e.id}`).toHaveLength(4);
         const [x, y, w, h] = box!;

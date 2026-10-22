@@ -88,7 +88,7 @@ export function referenceScreens(
           keys: e.keys,
           first: firstSentence(e.caption),
           screen: screenName(place),
-          shot: entryShotFor(theme, { id: e.id, screen: place.screen, view: place.view }),
+          shot: entryShotFor(theme, { id: e.id, screen: place.screen, view: place.view, ...(e.frame ? { frame: e.frame } : {}) }),
           inTools: card !== undefined,
           tryIt: card ? tryOf(card) : null,
           row: entryRow[e.id] ?? null,

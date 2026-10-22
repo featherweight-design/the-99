@@ -22,11 +22,10 @@
 export const ABOUT_LOCATORS = {
   // ---- home ----------------------------------------------------------------
   "getting-help": { screen: "home", locator: "header [data-help-button='header']:visible" },
-  // With the feed on (the capture server's switches) Ready to build is not on Home: its box lands on the lead story, the one
-  // thing that takes its place at the top, so the frame still places the entry while `whats-new` replaces it.
-  "ready-to-build": { screen: "home", locator: "[data-testid='hero-art-link'], [data-feed-lead]" },
-  // The menu and Home line's one entry, drawn in place of Ready to build while the feed is on: the lead story (Home PR 6b).
-  "whats-new": { screen: "home", locator: "[data-feed-lead]" },
+  "ready-to-build": { screen: "home", locator: "[data-testid='hero-art-link'] >> nth=0" },
+  // The menu and Home line's one entry, drawn in place of Ready to build while the feed is on: the lead story (Home PR 6b), on
+  // its own frame, Home photographed with the feed on (`AboutEntry.frame`); `home` is Home without it.
+  "whats-new": { screen: "home-feed", locator: "[data-feed-lead]" },
   resume: {
     screen: "home",
     locator: "#home-heading",
