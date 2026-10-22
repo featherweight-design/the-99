@@ -24,7 +24,7 @@ describe("strategyName", () => {
 
 describe("creatureTypePlural", () => {
   it("follows the endings, with the irregulars and the unchanged", () => {
-    expect(["Fox", "Sphinx", "Harpy", "Monkey", "Merfolk", "Eldrazi", "Wolf", "Human", "Time Lord", "Sheep", "Mouse"].map(creatureTypePlural))
-      .toEqual(["Foxes", "Sphinxes", "Harpies", "Monkeys", "Merfolk", "Eldrazi", "Wolves", "Humans", "Time Lords", "Sheep", "Mice"]);
+    expect(["Fox", "Sphinx", "Harpy", "Monkey", "Merfolk", "Eldrazi", "Wolf", "Human", "Time Lord", "Sheep", "Mouse", "Primarch", "Yeti"].map(creatureTypePlural))
+      .toEqual(["Foxes", "Sphinxes", "Harpies", "Monkeys", "Merfolk", "Eldrazi", "Wolves", "Humans", "Time Lords", "Sheep", "Mice", "Primarchs", "Yetis"]);
   });
 });

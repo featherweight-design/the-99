@@ -30,14 +30,14 @@ const IRREGULAR: Record<string, string> = {
   Djinn: "Djinn", Efreet: "Efreet", Elk: "Elk", Kor: "Kor", Vedalken: "Vedalken", Nephilim: "Nephilim", Bison: "Bison",
   Squid: "Squid", Naga: "Naga", Azra: "Azra", Surrakar: "Surrakar", Aurochs: "Aurochs", Astartes: "Astartes",
   Custodes: "Custodes", Fish: "Fish", Jellyfish: "Jellyfish", Starfish: "Starfish", Sheep: "Sheep", Samurai: "Samurai",
-  Thalakos: "Thalakos", Drix: "Drix",
+  Thalakos: "Thalakos", Drix: "Drix", Primarch: "Primarchs", Yeti: "Yetis",
 };
 
 /** A creature type as a legend names its deck: `Elf` → `Elves`, `Merfolk` → `Merfolk`, `Time Lord` → `Time Lords`. */
 export function creatureTypePlural(type: string): string {
   const irregular = IRREGULAR[type];
   if (irregular) return irregular;
-  if (/(folk|kin|born|i)$/.test(type)) return type;
+  if (/(folk|kin|born|i)$/.test(type)) return type; // Eldrazi, Dauthi, Soltari
   if (/[^aeiou]y$/.test(type)) return `${type.slice(0, -1)}ies`;
   if (/(s|x|z|ch|sh)$/.test(type)) return `${type}es`;
   return `${type}s`;
