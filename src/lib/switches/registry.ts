@@ -63,6 +63,7 @@ export const SWITCHES = [
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
   { name: "PRECONS_ENABLED", kind: "feature" },
+  { name: "PUSH_ENABLED", kind: "feature", needs: "HOME_FEED_ENABLED" },
   { name: "PROPOSED_CUTS_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
   { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
@@ -128,6 +129,8 @@ export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>
     "its read filters a friend's Decks tab by the owner's new Settings defaults, which hide drafts, before any surface lets the owner see or change them (friend decks handoff, PR 4)",
   NEAR_COMBOS_ENABLED:
     "backend only until Design prompt 17's surface ships: no surface draws the near-combos reads yet (plan 2026-10-22-near-combos-backend.md)",
+  PUSH_ENABLED:
+    "no surface draws the push column or sends a push until Settings' push UI ships, and a send needs VAPID keys Hugh sets in Vercel (plan 2026-10-22-push.md)",
   SPARE_REQUESTS_ENABLED:
     "the Friends badge counts spare requests waiting on the reader, and no surface answers one until the UI PR (plan 2026-10-22-spare-requests.md)",
   STRATEGY_FOCUS_ENABLED:

@@ -2151,6 +2151,15 @@ export const userPrefs = pgTable(
      */
     feedKindsDeclined: text("feed_kinds_declined").array().notNull().default(sql`'{}'::text[]`),
     /**
+     * The news kinds this reader has PUSH on (push notifications, `lib/push/`): the same closed set and the same shape as
+     * `feed_kinds`, kind -> when it was turned on, and `isKindOn`'s rule (`spare-request` is on by default). A push kind
+     * sends only what arrived after its stamp, so turning one on never pushes yesterday's news. Written only when the map
+     * changes, because of the stamp trigger above.
+     */
+    pushKinds: jsonb("push_kinds").$type<Record<string, string>>().notNull().default({}),
+    /** The default-on kinds this reader turned push OFF for; `feed_kinds_declined`'s rule, for `push_kinds`. */
+    pushKindsDeclined: text("push_kinds_declined").array().notNull().default(sql`'{}'::text[]`),
+    /**
      * When this reader last saw Home's feed: an item created after it is unseen. Null is a feed never seen, every item
      * unseen. Written only when an unseen item exists (`markFeedSeen`), because of the stamp trigger above.
      */
@@ -3715,6 +3724,52 @@ export const spareRequests = pgTable("spare_requests", {
   check("spare_requests_copies_check", sql`${t.copies} between 1 and 99`),
   check("spare_requests_answered_check", sql`(${t.status} in ('yes', 'no')) = (${t.answeredAt} is not null)`),
   check("spare_requests_not_self_check", sql`${t.askerUserId} <> ${t.holderUserId}`),
+]);
+
+/**
+ * One row per device that turned push on (`lib/push/`, plan `2026-10-22-push.md`): the push service's endpoint and the
+ * keys it encrypts to, the browser's own time zone (the overnight hold is judged in it), a short label of the browser
+ * for the reader's own list, and when a push last reached it. `endpoint` is unique: a re-subscribe of the same device
+ * replaces its row. A 404 or 410 from the push service, or a sign-out on the device, deletes the row. No stamp trigger:
+ * nothing here is in a cached payload. Purged with the account.
+ */
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  userAgent: text("user_agent").notNull().default(""),
+  timeZone: text("time_zone").notNull().default("UTC"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastOkAt: timestamp("last_ok_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("push_subscriptions_endpoint_idx").on(t.endpoint),
+  index("push_subscriptions_user_idx").on(t.userId),
+  check("push_subscriptions_endpoint_check", sql`length(${t.endpoint}) between 1 and 2048 and ${t.endpoint} like 'https://%'`),
+  check("push_subscriptions_user_agent_check", sql`length(${t.userAgent}) <= 200`),
+]);
+
+/**
+ * The pushes waiting to go: one row per event per reader, written in the SAME transaction as the feed item it announces
+ * (so a rolled-back event sends nothing) when the reader has a subscription and the kind's push on. `batch_key` names
+ * the job run that wrote it, so several of one kind from one job are one push. The overnight hold is judged at flush time,
+ * in each device's own zone, so a row carries no send time. `payload` is the `PushItem` (`lib/push/message.ts`), built from plain data so the notification
+ * is made later and apart from the feed. Pruned a week after it is sent or abandoned. Purged with the account.
+ */
+export const pushOutbox = pgTable("push_outbox", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  kind: text("kind").notNull(),
+  itemKey: text("item_key").notNull(),
+  batchKey: text("batch_key").notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("push_outbox_item_idx").on(t.userId, t.kind, t.itemKey),
+  index("push_outbox_due_idx").on(t.userId, t.createdAt).where(sql`${t.sentAt} is null`),
+  check("push_outbox_kind_check", sql`${t.kind} in ('new-set', 'new-precon', 'price-drop', 'trade-match', 'spare-request', 'combo')`),
 ]);
 
 /**
