@@ -139,8 +139,15 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
   `FriendDeckCard` (catalog facts and the owner's printing; no price, availability, proxy, lock, auto tag or combo
   partner), with `owned` read from the VIEWER's collection. The grant is read again after the reads.
 - **Absence.** Every null of `loadFriendDeck` is the same 404: a stranger, a deck not theirs, hidden, unfinished, decks
-  off. On the tab and the page a hidden deck and a deleted one cannot be told apart. The game log's seat picker
-  (`friendDecksQuery`) and Rule 0's seating (`friendDecksIn`) do not read the rule yet: an open scope question.
+  off. On the tab and the page a hidden deck and a deleted one cannot be told apart.
+- **The game log's seat picker** (PR 5, Hugh's ruling 2026-10-22). With the switch on for the OWNER, `friendDecksQuery`
+  leaves out a deck hidden from friends, and every deck while Friends can see my decks is off (no prefs row reads as
+  on); drafts stay pickable, because the unfinished rule is the tab's alone. The friend list's count is the same rule
+  (`friendDeckCountsQuery`'s `visible`), so the count and the list agree. For every friend whose switch is on the
+  picker offers A deck not listed (`withheld`), whether or not they hid anything, so its presence says nothing of a
+  hidden deck: the same seat as Just <name> (`{ friend, deck: null, commander: null }`, logged as `{ friend }`).
+  Such a friend with nothing listed is not told "has no decks". `friendDecksIn` (the write-time check of a chosen
+  seat) and Rule 0's seating are NOT filtered, so a game logged against a deck hidden since the pick still logs.
 - **Writes.** `writeFriendDeckPrefs` and `setDeckHiddenFromFriends` write only on a change, because the stamp trigger
   fires on any UPDATE and the stamp is what moves a friend's `friendGeneration`. Hiding never writes `last_edited_at`
   and never touches Tonight's table or a logged game, which keep a hidden deck's name (G4, Hugh 2026-10-22).

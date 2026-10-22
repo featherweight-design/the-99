@@ -14,7 +14,7 @@ const LEE = "00000000-0000-4000-8000-0000000000d3";
 const DECK = "00000000-0000-4000-8000-0000000000e1";
 const SOKKA = "00000000-0000-4000-8000-0000000000a1";
 const TYMNA = "00000000-0000-4000-8000-0000000000a2";
-const friend = (publicId: string, displayName: string, deckCount: number) => ({ publicId, displayName, commanderArt: null, deckCount });
+const friend = (publicId: string, displayName: string, deckCount: number, withheld = false) => ({ publicId, displayName, commanderArt: null, deckCount, withheld });
 const deck = { deckId: DECK, name: "Avengers Tempo", commanderOracleId: SOKKA, partnerOracleId: null, commanderName: "Sokka, Swordmaster", commanderImageUri: null };
 const hit = { oracleId: TYMNA, name: "Tymna the Weaver", typeLine: "Legendary Creature", manaCost: null, colorIdentity: ["W", "B"], partner: null, flavorName: null, imageUri: null };
 
@@ -144,6 +144,42 @@ describe("a friend's decks", () => {
     expect(within(dialog).getByRole("button", { name: new RegExp(picker.pickCommander) })).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: new RegExp(picker.justFriend("Jo")) })).toBeInTheDocument();
     expect(within(dialog).getByText(picker.footNoDecks("Jo"))).toBeInTheDocument();
+  });
+
+  it("a friend whose deck rules are off gets no A deck not listed", async () => {
+    await mount();
+    const dialog = await openPicker();
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Dave/ }));
+    expect(await within(dialog).findByText("Avengers Tempo")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: new RegExp(picker.notListed) })).toBeNull();
+  });
+
+  it("a friend whose deck rules are on gets A deck not listed, which logs the friend with no deck", async () => {
+    friends.mockResolvedValue([friend(DAVE, "Dave", 1, true)]);
+    await mount();
+    const dialog = await openPicker();
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Dave/ }));
+    expect(await within(dialog).findByText("Avengers Tempo")).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: new RegExp(picker.notListed) }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: picker.title })).toBeNull());
+    won();
+    save();
+    await waitFor(() => expect(logGame).toHaveBeenCalled());
+    // Exactly the seat Just Dave makes: the friend, and no deck or commander.
+    expect(logGame.mock.calls[0][1].opponents).toEqual([{ friend: DAVE }]);
+  });
+
+  it("a friend with every deck withheld is never told to have no decks", async () => {
+    friends.mockResolvedValue([friend(JO, "Jo", 0, true)]);
+    friendDecks.mockResolvedValue([]);
+    await mount();
+    const dialog = await openPicker();
+    // Nor in the friends list, where the row would otherwise read "no decks".
+    expect(within(await within(dialog).findByRole("button", { name: /Jo/ })).queryByText(picker.deckCount(0))).toBeNull();
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Jo/ }));
+    expect(await within(dialog).findByRole("button", { name: new RegExp(picker.notListed) })).toBeInTheDocument();
+    expect(within(dialog).queryByText(picker.noDecks("Jo"))).toBeNull();
+    expect(within(dialog).getByRole("button", { name: new RegExp(picker.justFriend("Jo")) })).toBeInTheDocument();
   });
 
   it("Back returns to the friends", async () => {

@@ -59,6 +59,13 @@ export const gameSeatsCopy = {
     pickCommander: "Pick a commander",
     justFriend: (name: string) => `Just ${name}`,
     justFriendSub: "no deck or commander",
+    /**
+     * Not drawn in the handoff (friend decks PR 5, Hugh's ruling 2026-10-22): offered when the friend's own rules keep
+     * some deck, or all of them, out of the picker. Seats the friend with no deck, as Just <name> does. Placeholder for
+     * /copy-review.
+     */
+    notListed: "A deck not listed",
+    notListedSub: "no deck is named",
     footNoDecks: (name: string) => `Either way, ${name}’s name is kept with the game.`,
     /** Not drawn in the handoff: a friends or decks read that failed is not an empty list. */
     friendsFailed: "Couldn’t load your friends. Any commander still works.",

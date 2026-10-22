@@ -3,7 +3,7 @@
 // precedent); `probe:game-opponents` proves the answers.
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
-import { friendDeckCountsQuery, friendDecksIn, friendDecksQuery, friendshipsIn, listFriendDecks, listPodSeats, podSeatsQuery } from "./games";
+import { friendDeckCountsQuery, friendDecksIn, friendDecksQuery, friendshipsIn, listFriendDecks, listPodSeats, pickerDeckFigures, podSeatsQuery } from "./games";
 
 const VIEWER = "user_viewer";
 const FRIEND = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -42,9 +42,39 @@ describe("friendDeckCountsQuery", () => {
   const q = friendDeckCountsQuery(VIEWER).toSQL();
 
   it("counts decks only for friends the viewer's own link row names, one count per friend", () => {
-    expect(q.sql).toMatch(/where "friend_links"\."user_id" = \$1 group by "social_profiles"\."public_id"$/);
-    expect(q.sql).toContain(`"decks"."user_id" = "friend_links"."friend_user_id"`);
+    expect(q.sql).toMatch(/where "friend_links"\."user_id" = \$1 group by "social_profiles"\."public_id", "friend_links"\."friend_user_id"$/);
+    expect(q.sql).toContain(`left join "decks" on "decks"."user_id" = "friend_links"."friend_user_id"`);
     expect(q.params).toEqual([VIEWER]);
+  });
+
+  it("counts the decks the owner's rules let through apart, and reads nothing about what was hidden", () => {
+    expect(q.sql).toContain(`left join "user_prefs" on "user_prefs"."user_id" = "friend_links"."friend_user_id"`);
+    expect(q.sql).toContain(`count("decks"."id") filter (where (not "decks"."hidden_from_friends" and coalesce("user_prefs"."friends_see_decks", true)))`);
+    expect(q.sql).not.toContain("bool_or");
+    // No unfinished rule: drafts are pickable.
+    expect(q.sql).not.toMatch(/friends_see_unfinished|status/);
+  });
+});
+
+describe("the picker's deck rules (friend decks PR 5)", () => {
+  it("as shipped for an owner whose switch is off: every deck, no rule", () => {
+    const q = friendDecksQuery(VIEWER, [FRIEND]).toSQL();
+    expect(q.sql).not.toContain("hidden_from_friends");
+    expect(q.params).toEqual([VIEWER, FRIEND]);
+  });
+
+  it("for an owner whose switch is on: no hidden deck, and none at all while Friends can see my decks is off", () => {
+    const q = friendDecksQuery(VIEWER, [FRIEND], ["user_friend"]).toSQL();
+    expect(q.sql).toContain(`left join "user_prefs" on "user_prefs"."user_id" = "decks"."user_id"`);
+    expect(q.sql).toContain(`("decks"."user_id" not in ($3) or (not "decks"."hidden_from_friends" and coalesce("user_prefs"."friends_see_decks", true)))`);
+    expect(q.params).toEqual([VIEWER, FRIEND, "user_friend"]);
+    expect(q.sql).not.toMatch(/friends_see_unfinished|status/);
+  });
+
+  it("the count and withheld follow the owner's switch, and withheld is the same whether or not anything was hidden", () => {
+    expect(pickerDeckFigures({ count: 3, visible: 1 }, true)).toEqual({ deckCount: 1, withheld: true });
+    expect(pickerDeckFigures({ count: 3, visible: 3 }, true)).toEqual({ deckCount: 3, withheld: true });
+    expect(pickerDeckFigures({ count: 3, visible: 1 }, false)).toEqual({ deckCount: 3, withheld: false });
   });
 });
 
@@ -72,6 +102,11 @@ describe("the write-time reads", () => {
     const q = friendDecksIn(tx, VIEWER, [DECK]).toSQL();
     expect(q.sql).toContain(`"friend_links"."friend_user_id" = "decks"."user_id" and "friend_links"."user_id" = $1`);
     expect(q.sql).toMatch(/for key share of "decks"$/);
+  });
+
+  it("check a chosen friend deck without the owner's deck rules, so a deck hidden since the pick still logs", () => {
+    const q = friendDecksIn(tx, VIEWER, [DECK]).toSQL();
+    expect(q.sql).not.toMatch(/hidden_from_friends|user_prefs/);
   });
 });
 
