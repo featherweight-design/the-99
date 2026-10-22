@@ -78,6 +78,10 @@ export const PER_REQUEST_READS = {
   // spending a welcome credit writes `model_calls` and a purchase writes `credit_grants`, neither of which moves the
   // stamp, so the strip is read fresh beside the chip's read rather than stored in the payload.
   "src/lib/payments/welcome-read.ts": "Home's welcome strip reads the welcome lot, its dismissal and everBought fresh on every request; a run or a purchase moves no key Home has",
+  // The Home feed (menu and Home PR 6): What's new and its lead story. \`feed_items\` carries no stamp trigger (a price
+  // job, a friend's spare or a collection write adds an item without moving Home's key), and the catalog kinds arrive
+  // with a catalog stamp, so the feed is read fresh beside the welcome strip; its visit writes run through \`after()\`.
+  "src/lib/feed/home.ts": "Home's What's new and lead story read feed_items and the catalog kinds fresh on every request; a new item moves no key Home has",
 };
 
 /** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */

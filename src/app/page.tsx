@@ -48,6 +48,10 @@ import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
 import { readFreeAllowance, readWelcomeState, welcomeSheetFor } from "../lib/payments/welcome-read";
 import { stripFacts, type WelcomeFacts } from "../lib/payments/welcome-sheet";
 import { WelcomeStrip } from "../components/welcome/welcome-strip";
+import { after } from "next/server";
+import { homeFeedEnabled } from "../lib/feed/flag";
+import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
+import { commandersPlaceEnabled } from "../lib/commanders/place-flag";
 
 /**
  * What the signed-in Home draws, cached whole. First run draws none of the Dashboard. Both carry the reader's About
@@ -56,7 +60,7 @@ import { WelcomeStrip } from "../components/welcome/welcome-strip";
  */
 type HomePayload =
   | { firstRun: true; aboutSeen: SeenState | null; tourDue: boolean }
-  | ({ firstRun: false; aboutSeen: SeenState | null } & Omit<ComponentProps<typeof Dashboard>, "now" | "about">);
+  | ({ firstRun: false; aboutSeen: SeenState | null } & Omit<ComponentProps<typeof Dashboard>, "now" | "about" | "feed" | "commandersPlace">);
 
 /** The reader's About seen state for the banner line, or null. A failed read draws no line and is not stored. */
 async function readAboutSeen(userId: string, env: NodeJS.ProcessEnv): Promise<SeenState | null> {
@@ -218,26 +222,29 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       return { value: { firstRun: true, aboutSeen: seen, tourDue: due }, store: true };
     }
 
+    // Direction B (HOME_FEED_ENABLED): Ready to build leaves Home, so its ranked list and rotation are not read, and the
+    // arrivals banner keeps About's line alone (G6: new precons are the feed's). The switch is in the key.
+    const feedOn = homeFeedEnabled(env);
     const [lastUpdated, ranked, shopping, unplayed, arrivals] = await Promise.all([
       perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
-      perf.timed("rankedList", () => getRankedList(userId, env)),
+      feedOn ? null : perf.timed("rankedList", () => getRankedList(userId, env)),
       perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, env)),
       // What the Ready-to-build rotation leans on (the themes each candidate plays that no deck
       // does). Beside the ranked list, never after it: it reads nothing the list returns. Null on
       // failure, which walks the plain shuffle.
-      perf.timed("unplayedCounts", () => loadUnplayedCounts(userId, env)),
+      feedOn ? null : perf.timed("unplayedCounts", () => loadUnplayedCounts(userId, env)),
       // The arrivals banner (upcoming precons): read only past the first-run return above, so a first-run
       // account neither sees it nor reads it. Null when its switch is off, when nothing is new, or when the read
       // failed, which records a fallback so that render is served and not stored.
-      upcomingPreconsEnabled(env) ? perf.timed("arrivals", () => loadArrivalsBanner(userId, now)) : null,
+      upcomingPreconsEnabled(env) && !feedOn ? perf.timed("arrivals", () => loadArrivalsBanner(userId, now)) : null,
     ]);
 
     // The slice FIRST, then the printings — the two shown rather than every commander the
     // player could build. `getRankedList` deliberately does not resolve art itself: this
     // page draws two of its rows on the desktop hero and the rest never reach a screen,
     // and the lookup is a join over `collection_items × printings × sets`.
-    const slice = readySlice(ranked.items, { userId, now, unplayed });
-    const ready = { ...slice, shown: await perf.timed("ownedArt", () => withOwnedCardArt(userId, slice.shown)) };
+    const slice = ranked ? readySlice(ranked.items, { userId, now, unplayed }) : null;
+    const ready = slice ? { ...slice, shown: await perf.timed("ownedArt", () => withOwnedCardArt(userId, slice.shown)) } : null;
 
     // One availability read between the in-use clause and the Commitments card.
     // Fail soft, the same way src/app/commanders/page.tsx does: losing
@@ -254,7 +261,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       ]);
       // The shown pair, not the whole ranked list — only a rendered hero prints
       // the clause.
-      inUse = receiptCountsByCommander(ready.shown, collection, availability);
+      inUse = receiptCountsByCommander(ready?.shown ?? [], collection, availability);
       commitments = commitmentFigures(availability.values());
     } catch {
       // Both consumers render nothing rather than a zero, which would be a claim.
@@ -265,7 +272,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     return {
       value: { firstRun: false, aboutSeen: seen, stats, lastUpdated, ready, inUse, decks, commitments, shopping, arrivals },
       // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
-      store: !ranked.degraded,
+      store: ranked ? !ranked.degraded : true,
     };
   }, env);
   // The welcome-credits strip (welcome credits D2, PR 2): read per request, after the cached load and never stored,
@@ -335,6 +342,22 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // Decided per request, outside the cached payload; the client reads and strips the parameter itself.
   const tourAgain = firstRunTourEnabled(env);
 
+  // The Home feed (menu and Home PR 6), read per request after the cached load and never stored: `feed_items` moves no
+  // data stamp. Null with HOME_FEED_ENABLED off, and Home draws as shipped. A failed read draws no feed. The visit's
+  // writes (the seen cursor, the trade-match notice) run after the response, on first run too, since a first-run
+  // Home is still a Home visit and its badge clears there.
+  const feedOn = homeFeedEnabled(env);
+  let feed: HomeFeed | null = null;
+  if (feedOn && !data.firstRun) {
+    try {
+      feed = await loadHomeFeed(userId, env, now);
+    } catch (error) {
+      // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
+      console.error("home: the feed could not be read", error instanceof Error ? error.message : "");
+    }
+  }
+  if (feedOn) after(homeFeedAfter(userId, env, now));
+
   if (data.firstRun) {
     return (
       <FirstRunChecklist
@@ -347,6 +370,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
         tour={data.tourDue}
         tourAgain={tourAgain}
+        news={feedOn}
+        commandersPlace={commandersPlaceEnabled(env)}
       />
     );
   }
@@ -380,6 +405,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       cartEnabled={allDecksCartEnabled(env)}
       helpMeChoose={helpMeChooseEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
+      feed={feed}
+      commandersPlace={commandersPlaceEnabled(env)}
       tables={homeTables}
       friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: true, invites }}
       // One clock for the whole page, read on the server, so every relative

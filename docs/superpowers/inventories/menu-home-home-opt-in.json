@@ -1,0 +1,12 @@
+{
+  "feature": "Home, direction B: What's new while every kind is off, the inline opt-in (menu and Home handoff call 7; plan 2026-10-22-menu-home.md, PR 6)",
+  "note": "The second of the line's three Home inventories (see `menu-home-home.json`): an account with cards whose user_prefs.feed_kinds is empty, the default. No lead and no Home badge. Run on a scratch Neon branch with HOME_FEED_ENABLED on.",
+  "rows": [
+    {
+      "id": "home-nothing-chosen",
+      "label": "/ nothing chosen: What's new is the opt-in, the news boxes unchecked (one column on a phone, two from md), Show these and the in-app foot",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-feed-opt-in]", "settle": 2000 }]
+    }
+  ]
+}

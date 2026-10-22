@@ -1,0 +1,12 @@
+{
+  "feature": "First-run Home: the Choose your news row (menu and Home handoff, .frw.new; plan 2026-10-22-menu-home.md, PR 6)",
+  "note": "The third of the line's three Home inventories (see `menu-home-home.json`): an account with no cards and no decks. Run on a scratch Neon branch with HOME_FEED_ENABLED on; with COMMANDERS_PLACE_ENABLED on too, the desktop lock line names Collection, Commanders and Decks only.",
+  "rows": [
+    {
+      "id": "first-run-news",
+      "label": "/ first run: Choose your news last in the checklist, under Add your friends, to Settings",
+      "view": "src/components/home/first-run.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-first-run-news]", "settle": 2000 }]
+    }
+  ]
+}

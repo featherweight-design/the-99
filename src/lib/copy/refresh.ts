@@ -282,6 +282,10 @@ export const refreshCopy = {
       // With Collection open at zero cards (no-collection entry, call 6; NO_COLLECTION_ENTRY_ENABLED): the page
       // line names the three slots still locked. The four-name `pageLine` stays for the switch off.
       pageLineOpen: 'Commanders, Discover and Decks open once your cards are in.',
+      // With the Commanders place on, Discover is not in the bar, so the line names only the slots the lock holds
+      // there (menu and Home audit, erratum 1): Collection too, or only Commanders and Decks with the lock open.
+      pageLinePlace: 'Collection, Commanders and Decks open once your cards are in.',
+      pageLineOpenPlace: 'Commanders and Decks open once your cards are in.',
       // Outside first run there is no step 1, so the note's button names where the cards go (to /collection).
       addYourCards: 'Add your cards',
       // Appended to the note's sentence when the account has a deck: Decks is locked, Home's resume row is not.
@@ -339,3 +343,14 @@ export const refreshCopy = {
     complete: 'Complete',
   },
 } as const;
+
+/**
+ * The lock's desktop page line, naming exactly the slots the bar locks: `place` is `COMMANDERS_PLACE_ENABLED` (Discover
+ * leaves the bar), `open` is the open lock of `NO_COLLECTION_ENTRY_ENABLED` (Collection opens). The nav's own rule,
+ * `lockedItems` over `barItems`, gives the same four sets.
+ */
+export function lockPageLine(place: boolean, open: boolean): string {
+  const l = refreshCopy.firstRun.lock;
+  if (place) return open ? l.pageLineOpenPlace : l.pageLinePlace;
+  return open ? l.pageLineOpen : l.pageLine;
+}
