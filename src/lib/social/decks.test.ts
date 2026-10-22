@@ -11,9 +11,13 @@ const m = vi.hoisted(() => ({
   getDeckDetail: vi.fn(),
   loadFriendDeckPrefs: vi.fn(),
   owned: vi.fn(),
+  deckFlag: vi.fn(),
 }));
 vi.mock("../../db", () => ({
-  db: { selectDistinct: () => ({ from: () => ({ where: () => m.owned() }) }) },
+  db: {
+    selectDistinct: () => ({ from: () => ({ where: () => m.owned() }) }),
+    select: () => ({ from: () => ({ where: () => m.deckFlag() }) }),
+  },
 }));
 vi.mock("./deck-visibility", async (orig) => ({
   ...(await orig<typeof import("./deck-visibility")>()),
@@ -145,6 +149,22 @@ describe("loadFriendDeck", () => {
     m.listDecksWithStats.mockResolvedValue([{ ...ROW, id: DECK, statusPill: "Complete" }]);
     m.getDeckDetail.mockReset().mockResolvedValue(DETAIL);
     m.owned.mockReset().mockResolvedValue([{ oracleId: "b" }, { oracleId: "c0" }]);
+    m.deckFlag.mockReset().mockResolvedValue([{ hiddenFromFriends: false }]);
+  });
+
+  it("returns nothing when the owner hides the deck, or turns decks off, while it is read", async () => {
+    m.deckFlag.mockResolvedValue([{ hiddenFromFriends: true }]);
+    expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
+    m.deckFlag.mockResolvedValue([{ hiddenFromFriends: false }]);
+    m.loadFriendDeckPrefs.mockResolvedValueOnce({ seeDecks: true, seeUnfinished: false }).mockResolvedValueOnce({ seeDecks: false, seeUnfinished: false });
+    expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
+    m.deckFlag.mockResolvedValue([]);
+    expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
+  });
+
+  it("keeps a commander's mana value", async () => {
+    m.getDeckDetail.mockResolvedValue({ ...DETAIL, commander: { ...COMMANDER, cmc: 3 } });
+    expect((await loadFriendDeck("user_viewer", "x", DECK))!.commanders[0].cmc).toBe(3);
   });
 
   it("reads nothing for a deck id that is not a uuid, or a public id that is not the viewer's friend", async () => {

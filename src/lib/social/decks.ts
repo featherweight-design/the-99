@@ -25,7 +25,7 @@ import type { StatusPill } from "../decks/status";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { collectionItems } from "../../db/schema";
+import { collectionItems, decks } from "../../db/schema";
 import { getDeckDetail, listDecksWithStats, type DeckListItem } from "../decks/read";
 import { cardTypeGroup, type DeckDetailCard } from "../decks/grouping";
 import { resolveFriend } from "./access";
@@ -143,6 +143,10 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     .selectDistinct({ oracleId: collectionItems.oracleId })
     .from(collectionItems)
     .where(and(eq(collectionItems.userId, viewerId), inArray(collectionItems.oracleId, ids)));
+  // The owner's rules are read AGAIN after the list was, as the grant is: a deck hidden, or decks turned off, while the
+  // reads ran returns nothing rather than what was read past that. The status is the first read's (a list edit cannot
+  // hide a deck by itself); the flag and the prefs are fresh. The grant is still read last.
+  if (!(await stillVisible(friendId, deckId, row.statusPill))) return null;
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
   const owned = new Set(ownedRows.map((r) => r.oracleId));
   const commanders = [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
@@ -151,7 +155,7 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     typeLine: c.typeLine,
     cardTypeGroup: cardTypeGroup(c.typeLine),
     role: "other" as const,
-    cmc: 0,
+    cmc: c.cmc ?? 0,
     quantity: 1,
     manaCost: c.manaCost,
     imageUri: c.imageUri,
@@ -198,4 +202,13 @@ function friendCard(c: DeckDetailCard, owned: ReadonlySet<string>): FriendDeckCa
     commander: c.commander,
     owned: owned.has(c.oracleId),
   };
+}
+
+/** The owner's own rules over one deck, read fresh: its flag and their prefs, with the status already read. */
+async function stillVisible(ownerId: string, deckId: string, statusPill: DeckListItem["statusPill"]): Promise<boolean> {
+  const [[deck], prefs] = await Promise.all([
+    db.select({ hiddenFromFriends: decks.hiddenFromFriends }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, ownerId))),
+    loadFriendDeckPrefs(ownerId),
+  ]);
+  return deck !== undefined && friendCanSeeDeck({ hiddenFromFriends: deck.hiddenFromFriends, statusPill }, prefs);
 }
