@@ -10,7 +10,7 @@ describe("CountStepper on a coarse pointer", () => {
     for (const name of ["Fewer", "More"]) expect(screen.getByRole("button", { name }).className).toContain("pointer-coarse:w-[44px]");
     const figure = screen.getByRole("textbox", { name: "Count" });
     expect(figure.className).toContain("pointer-coarse:min-w-[44px]!");
-    expect(figure.className).toContain("pointer-coarse:h-[44px]");
+    expect(figure.closest("label")?.className).toContain("pointer-coarse:py-[12px]");
   });
 
   it("leaves the band's figure as drawn", () => {
