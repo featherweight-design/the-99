@@ -3,7 +3,7 @@
 Account 2, 2026-10-22. Brief: Hugh's prompt in the project chat (three changes drawn together). Readiness: `READINESS.md`. States: `STATES-menu-home.md`.
 Canvas: https://claude.ai/artifact/MhvPe5ucbxVLZ15jDCobpS
 
-**Status: R1 approved by Hugh 2026-10-22.** Home ships as direction **B** (the lead story), the recommendation; Hugh did not name A or B, so B stands unless he flips it. A stays drawn for reference. Every string is a placeholder for `/copy-review`. The spare-request flow
+**Status: R1 approved by Hugh 2026-10-22.** Home ships as direction **B** (the lead story): Hugh's ruling, 2026-10-22. A stays drawn for reference only. Every string is a placeholder for `/copy-review`. The spare-request flow
 (Ask, Yes / No, 14-day expiry) is a later round and is drawn only where its items land (blue "later round" outlines).
 Orange dashed outlines mark what is new against the shipped page.
 

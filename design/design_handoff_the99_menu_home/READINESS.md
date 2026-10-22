@@ -4,9 +4,8 @@
 
 ## For Hugh
 
-1. **Home direction B is the build.** Hugh approved R1 without naming A or B; B (lead story on top, then where you
-   left off, What's new, Friends, Commitments) was the recommendation and is what this handoff specifies. Say "A" and
-   the lead goes; the feed sits under the decks as drawn on `Home-Directions`.
+1. **Home direction B is the build** (Hugh's ruling, 2026-10-22: "B works great"): lead story on top, then where you
+   left off, What's new, Friends, Commitments. A on `Home-Directions` is reference only.
 2. **About entries.** The feed, the Settings page and Friends in the bar are new features; the Commanders tabs rework
    shipped pages. Hugh decides which owe an entry (or one entry for the line).
 3. **Copy** is placeholder throughout, for `/copy-review`, including the six kind names and their Settings lines,
