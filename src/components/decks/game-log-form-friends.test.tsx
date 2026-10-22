@@ -174,6 +174,8 @@ describe("a friend's decks", () => {
     friendDecks.mockResolvedValue([]);
     await mount();
     const dialog = await openPicker();
+    // Nor in the friends list, where the row would otherwise read "no decks".
+    expect(within(await within(dialog).findByRole("button", { name: /Jo/ })).queryByText(picker.deckCount(0))).toBeNull();
     fireEvent.click(await within(dialog).findByRole("button", { name: /Jo/ }));
     expect(await within(dialog).findByRole("button", { name: new RegExp(picker.notListed) })).toBeInTheDocument();
     expect(within(dialog).queryByText(picker.noDecks("Jo"))).toBeNull();

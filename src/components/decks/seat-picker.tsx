@@ -304,7 +304,8 @@ function Body({
               >
                 <Face name={f.displayName} commander={{ artCropUri: f.commanderArt }} size={40} />
                 <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{f.displayName}</span>
-                <span className="shrink-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{here ? copy.seated : copy.deckCount(f.deckCount)}</span>
+                <span className="shrink-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{/* "no decks" would be untrue of a friend whose rules may withhold decks, so their row says no count at all. */}
+                  {here ? copy.seated : f.withheld && f.deckCount === 0 ? null : copy.deckCount(f.deckCount)}</span>
               </button>
             </li>
           );
