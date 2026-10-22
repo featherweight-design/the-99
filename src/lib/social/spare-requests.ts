@@ -19,7 +19,7 @@
  */
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { friendLinks, socialProfiles, spareRequests } from "../../db/schema";
+import { friendLinks, socialProfiles, spareRequests, userPrefs } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { resolveFriend } from "./access";
 import { recordFeedItem } from "./feed-write";
@@ -183,4 +183,69 @@ export async function loadMyAsks(askerId: string, env: NodeJS.ProcessEnv, now = 
       state: requestState(a, now), createdAt: a.createdAt, answeredAt: a.answeredAt,
     }];
   });
+}
+
+/**
+ * The Friends badge's spare-request half (plan PR 2). Two counts with two clearings, so the shell keeps them apart:
+ * - WAITING: the holder's open, unexpired asks from current friends, whatever their feed opt-in (Waiting on you is the
+ *   only place to answer one). Cleared by answering, never by a visit.
+ * - UNSEEN ANSWERS: the asker's asks answered after `friends_seen_at` and still shown (`askShown`), to current friends.
+ *   Cleared by a `/friends` visit, like a trade match (`markAnswersSeenQuery`).
+ */
+export function waitingAsksCountQuery(holderId: string, now: Date): SQL {
+  return sql`select count(*)::int as n
+    from ${spareRequests} wsr
+    join ${friendLinks} wfl on wfl.user_id = wsr.holder_user_id and wfl.friend_user_id = wsr.asker_user_id
+    where wsr.holder_user_id = ${holderId} and wsr.status = 'open'
+      and wsr.created_at > ${openFloor(now).toISOString()}::timestamptz`;
+}
+
+/** Answers newer than the asker's Friends cursor (none read is every answer unseen), to current friends, still shown. */
+function unseenAnswers(askerId: string, now: Date): SQL {
+  return sql`select 1 from ${spareRequests} usr
+    join ${friendLinks} ufl on ufl.user_id = usr.asker_user_id and ufl.friend_user_id = usr.holder_user_id
+    where usr.asker_user_id = ${askerId} and usr.status in ('yes', 'no')
+      and usr.answered_at > ${openFloor(now).toISOString()}::timestamptz
+      and usr.answered_at > coalesce(
+        (select uup.friends_seen_at from ${userPrefs} uup where uup.user_id = ${askerId}), '-infinity'::timestamptz)`;
+}
+
+export function unseenAnswersCountQuery(askerId: string, now: Date): SQL {
+  return sql`select count(*)::int as n from (${unseenAnswers(askerId, now)}) ua`;
+}
+
+/**
+ * Moves the asker's Friends cursor to `now`, ONLY while an unseen answer exists, never backwards. Written as an upsert
+ * because an asker may have no prefs row yet, and with no row the cursor reads null and every answer stays unseen.
+ * `user_prefs` carries the stamp trigger, so the write happens only when it changes something (the `markUpcomingSeen`
+ * rule).
+ */
+export function markAnswersSeenQuery(askerId: string, now: Date): SQL {
+  return sql`insert into ${userPrefs} as mup (user_id, friends_seen_at)
+    select ${askerId}, ${now.toISOString()}::timestamptz
+    where exists (${unseenAnswers(askerId, now)})
+    on conflict (user_id) do update set friends_seen_at = excluded.friends_seen_at
+      where mup.friends_seen_at is null or mup.friends_seen_at < excluded.friends_seen_at`;
+}
+
+async function countOf(query: SQL, q: Executor): Promise<number> {
+  const { rows } = await q.execute<{ n: number }>(query);
+  return Number((rows as { n: number }[])[0]?.n ?? 0);
+}
+
+/** Open asks waiting on this holder's answer; 0 while the switch is off. */
+export async function waitingAsksCount(holderId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
+  return spareRequestsEnabled(env) ? countOf(waitingAsksCountQuery(holderId, now), q) : 0;
+}
+
+/** Answers this asker has not seen on `/friends`; 0 while the switch is off. */
+export async function unseenAnswersCount(askerId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
+  return spareRequestsEnabled(env) ? countOf(unseenAnswersCountQuery(askerId, now), q) : 0;
+}
+
+/** Marks this asker's answers seen; whether it wrote. */
+export async function markAnswersSeen(askerId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
+  if (!spareRequestsEnabled(env)) return false;
+  const done = await q.execute(markAnswersSeenQuery(askerId, now));
+  return (done.rowCount ?? 0) > 0;
 }

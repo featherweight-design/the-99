@@ -2617,7 +2617,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the asker), and not one whose kind is off; a second ask for the card, to the same friend or another, is `asked`; only
   the holder answers, once; after a No that friend is `declined` and the next is asked at once; an ask fifteen days old
   leaves the holder's list, cannot be answered, reads expired on the asker's list and frees the card (the stale row
-  written `expired`); two asks at once let one through; an unfriend empties both lists and refuses every answer; the
+  written `expired`); two asks at once let one through; with `HOME_FEED_ENABLED` the holder's feed and Home badge carry a
+  new ask and drop it once answered, the waiting count rises, survives a `/friends` visit and falls on the answer, and the
+  asker's unseen answers equal what her list shows, clear on a visit (through the upsert, with no prefs row) and stay
+  clear; an unfriend empties both lists and refuses every answer; the
   asker's purge deletes every ask on either side and the feed items naming them. It WRITES: `SPARE_PROBE_URL` and
   `SPARE_PROBE_BRANCH` are never defaulted, the branch must match `neon.branch_id`, and staging, production and
   local-dev are refused by id. Run it on a scratch branch off local-dev. Three per-run accounts, purged in a finally.

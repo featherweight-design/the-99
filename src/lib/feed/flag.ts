@@ -4,7 +4,7 @@
  * on. Every caller passes the reader's resolved env (`requestSwitchEnv`).
  */
 import { preconsEnabled } from "../precons/flag";
-import { socialFriendsEnabled } from "../social/flag";
+import { socialFriendsEnabled, spareRequestsEnabled } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { FEED_KINDS, type FeedKind } from "./kinds";
 
@@ -14,8 +14,8 @@ export function homeFeedEnabled(env: NodeJS.ProcessEnv): boolean {
 
 /**
  * Whether a kind can be offered and read for this reader, the feed itself aside: a new precon links to
- * `/decks/precons/[fileName]`, which 404s with Precons off; a price drop is about the wishlist; a trade match needs friends and the wishlist; a spare request ships with its own flow (G5, a later
- * round) and is never available yet. A kind that is not available is neither offered in Settings nor read,
+ * `/decks/precons/[fileName]`, which 404s with Precons off; a price drop is about the wishlist; a trade match needs friends and the wishlist; a spare request needs `SPARE_REQUESTS_ENABLED` (G5), which
+ * needs friends. A kind that is not available is neither offered in Settings nor read,
  * though a reader's choice for it is kept.
  */
 export function feedKindAvailable(kind: FeedKind, env: NodeJS.ProcessEnv): boolean {
@@ -30,7 +30,7 @@ export function feedKindAvailable(kind: FeedKind, env: NodeJS.ProcessEnv): boole
     case "trade-match":
       return socialFriendsEnabled(env) && wishlistEnabled(env);
     case "spare-request":
-      return false;
+      return spareRequestsEnabled(env);
   }
 }
 

@@ -23,6 +23,7 @@ import { db } from "../../db";
 import { catalogFirstSeen, precons, sets, userPrefs } from "../../db/schema";
 import { RELEASE_SET_TYPES } from "../catalog/index-due";
 import { storedFeedBranch } from "../social/feed-items";
+import { unseenAnswersCount } from "../social/spare-requests";
 import { availableFeedKinds } from "./flag";
 import { feedOrder, isStoredKind, windowFloor, type FeedKind, type StoredKind } from "./kinds";
 
@@ -71,7 +72,7 @@ export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Dat
           > (pup.feed_kinds ->> 'new-precon')::timestamptz`);
   }
   const stored = kinds.filter(isStoredKind);
-  if (stored.length > 0) branches.push(storedFeedBranch(viewerId, stored));
+  if (stored.length > 0) branches.push(storedFeedBranch(viewerId, stored, now));
   if (branches.length === 0) return null;
   return sql.join(branches, sql` union all `);
 }
@@ -181,9 +182,17 @@ export async function unseenCount(userId: string, env: NodeJS.ProcessEnv, now = 
   return countUnder(unseenCountQuery(userId, availableFeedKinds(env), now, "feed_seen_at"), q);
 }
 
-/** The Friends badge: unseen trade matches (by `friends_seen_at`), the grant re-joined. 0 while the kind is unavailable. */
+/**
+ * The Friends badge's SEEN half: unseen trade matches (by `friends_seen_at`, the grant re-joined; 0 while the kind is
+ * unavailable) and answers to the reader's spare requests not yet seen (`unseenAnswersCount`). Both clear on a `/friends`
+ * visit. The asks waiting on the reader's own answer are the other half (`waitingAsksCount`), cleared by answering.
+ */
 export async function unseenFriendsCount(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
-  return countUnder(unseenCountQuery(userId, tradeMatchOnly(env), now, "friends_seen_at"), q);
+  const [matches, answers] = await Promise.all([
+    countUnder(unseenCountQuery(userId, tradeMatchOnly(env), now, "friends_seen_at"), q),
+    unseenAnswersCount(userId, env, now, q),
+  ]);
+  return matches + answers;
 }
 
 const tradeMatchOnly = (env: NodeJS.ProcessEnv): FeedKind[] => availableFeedKinds(env).filter((k) => k === "trade-match");

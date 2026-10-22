@@ -11,6 +11,8 @@
  *   row's `oracle_id`). Keeping a card back is his withdrawal of the offer, so it retracts the match. A later change
  *   to his threshold or to how many spare copies he holds does NOT: the row is a dated notice, like a price drop that
  *   later rises again (lead's ruling, PR #2184 review round 1).
+ * - a SPARE REQUEST ("Ann wants your spare") stands only while its ask (`spare_requests`, by the request id the writer
+ *   used as the dedupe key) is still open and unexpired: answering it, or fourteen days passing, drops it with no write.
  * An unfriend, a pod left, a share turned off or a card kept back drops the row from the feed and from both badges at once, with no
  * write. What comes back names the friend by `social_profiles.public_id` and display name, never a Clerk id.
  *
@@ -18,7 +20,8 @@
  * Friends count are each one statement.
  */
 import { sql, type SQL } from "drizzle-orm";
-import { feedItems, friendLinks, podMembers, podSpareShares, socialProfiles, spareKeep, userPrefs } from "../../db/schema";
+import { feedItems, friendLinks, podMembers, podSpareShares, socialProfiles, spareKeep, spareRequests, userPrefs } from "../../db/schema";
+import { openFloor } from "./spare-request-rules";
 import type { StoredKind } from "../feed/kinds";
 
 /**
@@ -31,7 +34,7 @@ import type { StoredKind } from "../feed/kinds";
  * as the catalog branches type it: `public_id` is a uuid and the union's other branches give `null::text`, which
  * Postgres refuses to match ("UNION types text and uuid cannot be matched"), so it is cast to text.
  */
-export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[]): SQL {
+export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[], now: Date): SQL {
   return sql`select fi.kind as kind, 'item:' || fi.id::text as key, fi.created_at as created_at,
       null::text as code, null::text as name, null::text as file_name,
       fi.oracle_id as oracle_id, fi.variant_id as variant_id,
@@ -42,6 +45,10 @@ export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[])
     where fi.user_id = ${viewerId}
       and fi.kind = any(${sql.param([...kinds])}::text[])
       and fi.created_at > (fup.feed_kinds ->> fi.kind)::timestamptz
+      and (fi.kind <> 'spare-request' or exists (
+        select 1 from ${spareRequests} fsr
+        where fsr.id::text = fi.dedupe_key and fsr.status = 'open'
+          and fsr.created_at > ${openFloor(now).toISOString()}::timestamptz))
       and (fi.friend_user_id is null or (sp.public_id is not null and (
         (fi.kind = 'trade-match' and exists (
           select 1 from ${friendLinks} gl

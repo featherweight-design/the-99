@@ -95,4 +95,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `spare-request` feed item (`recordFeedItem`, keyed on the request id; nothing for a holder with that kind off) in
   the same transaction. An answer is one conditional UPDATE on the holder's own open, unexpired ask while the
   friendship row stands. Every read joins the live friendship and names the other side by `public_id`. The purge
-  deletes both sides (`SOCIAL_PURGED`). Proof: `pnpm probe:spare-requests`.
+  deletes both sides (`SOCIAL_PURGED`). PR 2: the feed keeps a `spare-request` item only while its ask is open
+  (`storedFeedBranch`), and the Friends badge has two halves (`NavBadges.friends`, cleared by a `/friends` visit: unseen
+  trade matches plus unseen answers to the reader's asks, `unseenAnswersCount` / `markAnswersSeen`, an upsert so a
+  reader with no prefs row can still be marked; `NavBadges.friendsWaiting`: the incoming open asks, `waitingAsksCount`,
+  cleared only by answering, whatever the reader's feed opt-in). Proof: `pnpm probe:spare-requests`.

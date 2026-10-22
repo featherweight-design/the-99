@@ -35,6 +35,14 @@ describe("useSeenBadges", () => {
     expect(result.current?.friends).toBe(1);
   });
 
+  it("clears only the seen half: spare requests waiting on the reader stay until answered", () => {
+    const badges = { friends: 2, friendsWaiting: 1 };
+    const { result, rerender } = hook(badges, "/friends");
+    rerender({ badges, pathname: "/decks" });
+    expect(result.current?.friends).toBe(0);
+    expect(result.current?.friendsWaiting).toBe(1);
+  });
+
   it("shows a new count from the server again, even after a visit", () => {
     const { result, rerender } = hook({ friends: 1 }, "/friends");
     rerender({ badges: { friends: 1 }, pathname: "/decks" });

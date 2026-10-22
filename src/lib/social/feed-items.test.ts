@@ -3,13 +3,17 @@ import { describe, expect, it } from "vitest";
 
 import { storedFeedBranch } from "./feed-items";
 
-const { sql, params } = new PgDialect().sqlToQuery(storedFeedBranch("viewer_1", ["trade-match", "combo"]));
+const { sql, params } = new PgDialect().sqlToQuery(storedFeedBranch("viewer_1", ["trade-match", "combo", "spare-request"], new Date("2026-10-22T12:00:00Z")));
 const q = sql.replace(/\s+/g, " ");
 
 describe("storedFeedBranch", () => {
   it("reads only the viewer's own rows of the kinds asked for", () => {
     expect(q).toMatch(/where fi\.user_id = \$1 and fi\.kind = any\(\$2::text\[\]\)/);
-    expect(params).toEqual(["viewer_1", ["trade-match", "combo"]]);
+    expect(params).toEqual(["viewer_1", ["trade-match", "combo", "spare-request"], "2026-10-08T12:00:00.000Z"]);
+  });
+
+  it("keeps a spare request only while its ask is open and inside its fourteen days, by the request id it was keyed on", () => {
+    expect(q).toContain(`and (fi.kind <> 'spare-request' or exists ( select 1 from "spare_requests" fsr where fsr.id::text = fi.dedupe_key and fsr.status = 'open' and fsr.created_at > $3::timestamptz))`);
   });
 
   it("re-joins the live spare grant for a trade match: the friendship, the friend's share, both in that pod", () => {
