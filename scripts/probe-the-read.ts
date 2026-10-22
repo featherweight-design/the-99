@@ -219,6 +219,8 @@ async function main() {
 
     console.log("\n8. History lists the player's own runs from the stored ask, and no one else's");
     const { loadChooseHistory, hasListableRun } = await import("../src/lib/intake/history-read");
+    // The history read takes its path from the caller, so a script needs no request: today's address, the switch off.
+    const HIST_PATH = "/decks/new/choose";
     const HIST = `${USER}-history`;
     const OTHER = `${USER}-history-other`;
     const unit = async (user: string, status: string) => ((await fixture.execute(sql`insert into model_calls (user_id, feature, model, origin, status) values (${user}, 'intake', 'stub', 'player', ${status}) returning id`)).rows[0] as { id: string }).id;
@@ -236,21 +238,21 @@ async function main() {
     await insertRun(HIST, { status: "failed", error: "timeout", ask: "w=timed+out&v=results", ago: 30 });
     const ok2 = await insertRun(HIST, { status: "ok", ask: "w=third&v=results", res: result, ago: 20 });
     await insertRun(OTHER, { status: "ok", ask: "w=someone+else&v=results", res: result, ago: 10 });
-    const all = await loadChooseHistory(HIST);
+    const all = await loadChooseHistory(HIST, { path: HIST_PATH });
     check("it lists the answered runs and the one that found nothing, newest first", all.rows.map((r) => [r.id, r.state]), [[ok2, "ok"], [none, "nothing"], [ok1, "ok"]]);
     check("a run with no stored ask, a failed read and another player's run are not listed", all.rows.map((r) => r.words), ["third", "a deck of nothing", "scary horrors"]);
     check("a row carries its pick count, its first three picks and its stored pool", [all.rows[0].picks, all.rows[0].thumbs.length, all.rows[0].pool], [4, 3, 164]);
     check("a run that found nothing keeps its stored pool and shows no picks", [all.rows[1].picks, all.rows[1].pool], [0, 3445]);
     check("its link is the ask, the run's id and the past-run mark", all.rows[2].href, `/decks/new/choose?w=scary+horrors&v=results&r=${ok1}&h=1`);
-    const p1 = await loadChooseHistory(HIST, { limit: 2 });
-    const p2 = await loadChooseHistory(HIST, { limit: 2, cursor: p1.nextCursor });
+    const p1 = await loadChooseHistory(HIST, { path: HIST_PATH, limit: 2 });
+    const p2 = await loadChooseHistory(HIST, { path: HIST_PATH, limit: 2, cursor: p1.nextCursor });
     check("the keyset pages with no row twice and none dropped", [p1.rows.length, p1.nextCursor !== null, p2.rows.length, p2.nextCursor], [2, true, 1, null]);
     check("the door's question is yes for a player with a run and no for one with none", [await hasListableRun(HIST), await hasListableRun(`${USER}-nobody`)], [true, false]);
     const stale = await insertRun(HIST, { status: "pending", ask: "w=abandoned&v=results", ago: 7 });
-    const afterReap = await loadChooseHistory(HIST);
+    const afterReap = await loadChooseHistory(HIST, { path: HIST_PATH });
     check("a run abandoned past the reaper's cutoff is reaped, its credit returned, and never listed as reading", [afterReap.rows.some((r) => r.id === stale), (await readRow(stale)).unit], [false, "refunded"]);
     const live = await insertRun(HIST, { status: "pending", ask: "w=in+flight&v=results", ago: 1 });
-    check("a run in flight is listed on top as reading", [(await loadChooseHistory(HIST)).rows[0]].map((r) => [r.id, r.state, r.picks]), [[live, "reading", 0]]);
+    check("a run in flight is listed on top as reading", [(await loadChooseHistory(HIST, { path: HIST_PATH })).rows[0]].map((r) => [r.id, r.state, r.picks]), [[live, "reading", 0]]);
   } finally {
     await fixture.execute(sql`delete from intake_reads where user_id like ${`${USER}%`}`);
     await fixture.execute(sql`delete from model_calls where user_id like ${`${USER}%`}`);

@@ -182,15 +182,23 @@ describe("the choose page", () => {
     expect(plain.props.standing).toBeNull();
   });
 
-  it("sends an old GET submit to the form with its answers, never starting a read", async () => {
-    await expect(ChoosePage({ searchParams: Promise.resolve({ v: "submit", w: "scary", t: "horrors" }) }))
-      .rejects.toThrow(/NEXT_REDIRECT/);
+  it.each([
+    ["off", undefined, "/decks/new/choose?"],
+    ["on", "true", "/commanders/choose?"],
+  ])("sends an old GET submit to the form with its answers at the address the switch gives (%s), never starting a read", async (_name, placeOn, address) => {
+    if (placeOn) vi.stubEnv("COMMANDERS_PLACE_ENABLED", placeOn);
     try {
-      await ChoosePage({ searchParams: Promise.resolve({ v: "submit", w: "scary", t: "horrors" }) });
-    } catch (e) {
-      const digest = String((e as { digest?: string }).digest);
-      expect(digest).toContain("/decks/new/choose?");
+      let digest = "";
+      try {
+        await ChoosePage({ searchParams: Promise.resolve({ v: "submit", w: "scary", t: "horrors" }) });
+      } catch (e) {
+        digest = String((e as { digest?: string }).digest);
+      }
+      expect(digest).toContain("NEXT_REDIRECT");
+      expect(digest).toContain(address);
       expect(digest).not.toContain("v=results");
+    } finally {
+      vi.unstubAllEnvs();
     }
   });
 

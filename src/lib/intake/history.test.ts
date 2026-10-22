@@ -4,6 +4,8 @@ import { decodeKey, encodeKey, mergeFirstPage, shapeRun, type ChooseHistoryRow, 
 import { parseChooseParams, type ChooseParams } from "./params";
 import { askOf, pastRunHref } from "./submit";
 
+const AT = "/commanders/choose";
+
 const ID = "0000aaaa-0000-4000-8000-000000000001";
 const OC = (n: number) => `0000bbbb-0000-4000-8000-00000000000${n}`;
 const base: RawRun = {
@@ -14,35 +16,35 @@ const base: RawRun = {
 
 describe("shapeRun", () => {
   it("shapes an answered run: the words, the first three picks, the count and the reopen link", () => {
-    const row = shapeRun(base)!;
+    const row = shapeRun(base, AT)!;
     expect(row).toMatchObject({ id: ID, at: "2026-10-13T21:40:00.123Z", state: "ok", words: "a graveyard deck", picks: 4, pool: 164 });
     expect(row.thumbs).toEqual([OC(1), OC(2), OC(3)]);
-    expect(row.href).toBe(`/decks/new/choose?w=a+graveyard+deck&c=b%2Cg&v=results&r=${ID}&h=1`);
+    expect(row.href).toBe(`/commanders/choose?w=a+graveyard+deck&c=b%2Cg&v=results&r=${ID}&h=1`);
   });
 
   it("lists a run that found nothing with no picks, and keeps its stored pool", () => {
-    const row = shapeRun({ ...base, status: "failed", errorClass: "nothing_valid", result: { picks: [], pool: 3445, weighed: 0 } })!;
+    const row = shapeRun({ ...base, status: "failed", errorClass: "nothing_valid", result: { picks: [], pool: 3445, weighed: 0 } }, AT)!;
     expect(row).toMatchObject({ state: "nothing", picks: 0, thumbs: [], pool: 3445 });
   });
 
   it("lists the run in flight with neither picks nor pool", () => {
-    expect(shapeRun({ ...base, status: "pending", result: null })).toMatchObject({ state: "reading", picks: 0, thumbs: [], pool: null });
+    expect(shapeRun({ ...base, status: "pending", result: null }, AT)).toMatchObject({ state: "reading", picks: 0, thumbs: [], pool: null });
   });
 
   it("never lists a run that has no answer: a failed, stopped or interrupted read", () => {
-    expect(shapeRun({ ...base, status: "failed", errorClass: "timeout", result: null })).toBeNull();
-    expect(shapeRun({ ...base, status: "failed", errorClass: "interrupted", result: null })).toBeNull();
-    expect(shapeRun({ ...base, status: "cancelled", result: null })).toBeNull();
+    expect(shapeRun({ ...base, status: "failed", errorClass: "timeout", result: null }, AT)).toBeNull();
+    expect(shapeRun({ ...base, status: "failed", errorClass: "interrupted", result: null }, AT)).toBeNull();
+    expect(shapeRun({ ...base, status: "cancelled", result: null }, AT)).toBeNull();
   });
 
   it("draws a tagged card as its name and collapses line breaks", () => {
     const tagged = new URLSearchParams({ w: "unlike mine\n  [[0000cccc-0000-4000-8000-000000000001|Meren of Clan Nel Toth]] please", v: "results" }).toString();
-    const row = shapeRun({ ...base, ask: tagged })!;
+    const row = shapeRun({ ...base, ask: tagged }, AT)!;
     expect(row.words).toBe("unlike mine Meren of Clan Nel Toth please");
   });
 
   it("does not list an ask with no words: a read is never made from none", () => {
-    expect(shapeRun({ ...base, ask: "c=b&v=results" })).toBeNull();
+    expect(shapeRun({ ...base, ask: "c=b&v=results" }, AT)).toBeNull();
   });
 });
 
@@ -76,7 +78,7 @@ describe("the stored ask", () => {
   });
 
   it("makes a reopen link that names the run and marks it past", () => {
-    const href = pastRunHref(askOf(p), ID);
+    const href = pastRunHref(AT, askOf(p), ID);
     const sp = new URLSearchParams(href.split("?")[1]);
     expect(sp.get("r")).toBe(ID);
     expect(sp.get("h")).toBe("1");

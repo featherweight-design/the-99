@@ -1,6 +1,6 @@
 {
   "feature": "Commanders place: For you, Discover and Help me choose on one strip (menu and Home line, plan 2026-10-22-menu-home.md, PR 1)",
-  "note": "Photographed over the audit account on a server with COMMANDERS_PLACE_ENABLED, HELP_ME_CHOOSE_ENABLED and NO_COLLECTION_ENTRY_ENABLED on. Each tab is its own row at both widths; the two retired addresses are rows too, because a redirect that never lands leaves the cell empty. The strip is the Collection place's, extracted (`shares`).",
+  "note": "Photographed over the audit account on a server with COMMANDERS_PLACE_ENABLED, HELP_ME_CHOOSE_ENABLED and NO_COLLECTION_ENTRY_ENABLED on. Each tab is its own row at both widths; the two retired addresses are rows too, because a redirect that never lands leaves the cell empty. The strip is the Collection place's, extracted (`shares`). The two door rows wait on an href that names the tab, so a door still pointing at the retired address fails to be reached.",
   "clearAbout": true,
   "shares": {
     "module": "src/components/place/place-strip.tsx",
@@ -12,31 +12,96 @@
       "id": "for-you",
       "label": "/commanders, For you: title and count line (desktop), the strip, then today's ranked page",
       "view": "src/components/commanders/commanders-place-head.tsx",
-      "steps": [{ "goto": "/commanders", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "nav[aria-label='Commanders sections']",
+          "settle": 2500
+        }
+      ]
     },
     {
       "id": "discover",
       "label": "/commanders/discover, Discover: the same strip with Discover lit; no Help me choose door on the rack",
       "view": "src/components/commanders/commanders-place-head.tsx",
-      "steps": [{ "goto": "/commanders/discover", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+      "steps": [
+        {
+          "goto": "/commanders/discover",
+          "wait": "nav[aria-label='Commanders sections']",
+          "settle": 2500
+        }
+      ]
     },
     {
       "id": "choose",
       "label": "/commanders/choose, Help me choose: the intake form under the strip, with no back-to-New-deck link",
       "view": "src/components/commanders/commanders-place-head.tsx",
-      "steps": [{ "goto": "/commanders/choose", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+      "steps": [
+        {
+          "goto": "/commanders/choose",
+          "wait": "nav[aria-label='Commanders sections']",
+          "settle": 2500
+        }
+      ]
     },
     {
       "id": "legacy-discover",
       "label": "/discover with a query: lands on the Discover tab, query kept",
       "view": "src/components/commanders/commanders-place-head.tsx",
-      "steps": [{ "goto": "/discover?c=g", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+      "steps": [
+        {
+          "goto": "/discover?c=g",
+          "wait": "nav[aria-label='Commanders sections']",
+          "settle": 2500
+        }
+      ]
     },
     {
       "id": "legacy-choose",
       "label": "/decks/new/choose with a query: lands on the Help me choose tab, query kept",
       "view": "src/components/commanders/commanders-place-head.tsx",
-      "steps": [{ "goto": "/decks/new/choose?t=dinosaurs", "wait": "nav[aria-label='Commanders sections']", "settle": 2500 }]
+      "steps": [
+        {
+          "goto": "/decks/new/choose?t=dinosaurs",
+          "wait": "nav[aria-label='Commanders sections']",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "new-deck-door",
+      "label": "/decks/new, Not sure what to build?: the door lands on the Help me choose tab, with no hop through the old address",
+      "view": "src/components/commanders/commanders-place-head.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new",
+          "wait": "a[href='/commanders/choose']",
+          "settle": 800
+        },
+        {
+          "clickRole": "link",
+          "name": "Help me choose"
+        },
+        {
+          "wait": "nav[aria-label='Commanders sections']",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "history-link",
+      "label": "/commanders/choose, History: its link stays on the tab (phone only: from lg History is a column beside the form)",
+      "view": "src/components/commanders/commanders-place-head.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/choose",
+          "wait": "a[href='/commanders/choose?v=history']",
+          "settle": 800
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
     }
   ]
 }

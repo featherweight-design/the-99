@@ -19,6 +19,7 @@ const tools = (over: Partial<ShowcaseInput> = {}) =>
     },
     deckCount: 1,
     hasSyncBase: true,
+    place: false,
     ...over,
   });
 

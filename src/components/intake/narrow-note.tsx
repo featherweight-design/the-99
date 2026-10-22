@@ -11,9 +11,9 @@ import Link from "next/link";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { serializeChooseParams } from "../../lib/intake/params";
 import type { NarrowOption } from "../../lib/intake/present";
-import { CHOOSE_PATH } from "../../lib/intake/submit";
+import { useChoosePath } from "../commanders/place-paths";
 
-export const optionHref = (o: NarrowOption) => `${CHOOSE_PATH}${serializeChooseParams(o.params)}`;
+export const optionHref = (path: string, o: NarrowOption) => `${path}${serializeChooseParams(o.params)}`;
 
 export function NarrowNote({
   count,
@@ -82,6 +82,7 @@ function YourselfLine({ changeHref }: { changeHref: string }) {
 }
 
 function Options({ options, column = false }: { options: readonly NarrowOption[]; column?: boolean }) {
+  const choose = useChoosePath();
   return (
     <ul
       className={[
@@ -92,7 +93,7 @@ function Options({ options, column = false }: { options: readonly NarrowOption[]
       {options.map((o, i) => (
         <li key={o.label}>
           <Link
-            href={optionHref(o)}
+            href={optionHref(choose, o)}
             data-testid="narrow-option"
             className={[
               "flex items-center gap-[12px] min-h-[48px] md:min-h-[44px] p-[8px_12px_8px_14px] rounded-[9px] border border-solid no-underline text-left",

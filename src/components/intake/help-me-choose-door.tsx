@@ -1,3 +1,5 @@
+"use client";
+
 // Help me choose's doors (HANDOFF §1, and discovery R3's empty-state lines). Each is drawn only where
 // its host passes the feature's flag; none reads the flag itself, because the flag is a server setting
 // and the hosts render on the client.
@@ -6,7 +8,7 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
-import { CHOOSE_PATH } from "../../lib/intake/submit";
+import { useChoosePath } from "../commanders/place-paths";
 
 const copy = helpMeChooseCopy.door;
 
@@ -16,6 +18,7 @@ const copy = helpMeChooseCopy.door;
  * a wide door and takes its own 44px line under it on a narrow one.
  */
 export function HelpMeChooseDoor({ pastRuns = false }: { pastRuns?: boolean }) {
+  const choose = useChoosePath();
   return (
     <div
       data-testid="help-me-choose-door"
@@ -30,7 +33,7 @@ export function HelpMeChooseDoor({ pastRuns = false }: { pastRuns?: boolean }) {
         {pastRuns && <PastRunsLink className="flex min-h-[44px] items-center md:hidden" />}
       </div>
       <Link
-        href={CHOOSE_PATH}
+        href={choose}
         className="flex h-[44px] flex-none items-center justify-center rounded-[8px] border border-solid border-[color:var(--accent)] px-[16px] text-[13.5px] font-semibold text-[color:var(--accent-text)] no-underline md:h-[38px]"
       >
         {copy.cta}
@@ -40,9 +43,10 @@ export function HelpMeChooseDoor({ pastRuns = false }: { pastRuns?: boolean }) {
 }
 
 function PastRunsLink({ className }: { className: string }) {
+  const choose = useChoosePath();
   return (
     <Link
-      href={`${CHOOSE_PATH}?v=history`}
+      href={`${choose}?v=history`}
       prefetch={false}
       data-testid="past-runs-link"
       className={`${className} text-[12.5px] font-medium text-[color:var(--accent-text)] no-underline md:text-[13px]`}
@@ -58,6 +62,7 @@ function PastRunsLink({ className }: { className: string }) {
  * encoding) and nothing else: search, order and scope stay behind.
  */
 export function DiscoverChooseLink({ colors, exactly, wide }: { colors: readonly string[]; exactly: boolean; wide: boolean }) {
+  const choose = useChoosePath();
   const sp = new URLSearchParams();
   if (colors.length > 0) sp.set("c", colors.join(",").toLowerCase());
   if (colors.length > 0 && exactly) sp.set("m", "exact");
@@ -69,7 +74,7 @@ export function DiscoverChooseLink({ colors, exactly, wide }: { colors: readonly
     >
       {copy.discoverLead}
       <Link
-        href={qs ? `${CHOOSE_PATH}?${qs}` : CHOOSE_PATH}
+        href={qs ? `${choose}?${qs}` : choose}
         className={[
           "border-0 border-b border-b-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] text-[color:var(--accent-text)] no-underline",
           // The words are 12.5px; the press is the whole 44px line they sit on, the lead included:
@@ -89,9 +94,10 @@ export function DiscoverChooseLink({ colors, exactly, wide }: { colors: readonly
  * it a moment's anchor (M12 on /commanders' banner).
  */
 export function ChooseDoorPress({ className = "", ...rest }: Omit<ComponentProps<typeof Link>, "href" | "children">) {
+  const choose = useChoosePath();
   return (
     <Link
-      href={CHOOSE_PATH}
+      href={choose}
       {...rest}
       className={`${className} text-[color:var(--accent-text)] underline decoration-[color:color-mix(in_oklab,var(--accent)_55%,transparent)] underline-offset-[3px]`}
     >

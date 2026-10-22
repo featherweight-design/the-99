@@ -15,6 +15,7 @@ import { GhostButton, PrimaryButton } from "../ui/button";
 import { PendingMark } from "../ui/pending-mark";
 import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "./filtered-empty";
 import { laneHref } from "./list-nav";
+import { usePlace } from "./place-paths";
 
 const { empty: copy } = discoveryCopy;
 
@@ -37,6 +38,7 @@ export function DiscoveryEmpty({
   total: number;
   onClearSearch: () => void;
 }) {
+  const place = usePlace();
   return (
     <ZeroState
       heading={discoverCopy.empty.heading}
@@ -47,7 +49,7 @@ export function DiscoveryEmpty({
         </PrimaryButton>
       }
       secondary={
-        <GhostButton href={laneHref("owned", query)} className={ZERO_SECONDARY}>
+        <GhostButton href={laneHref("owned", query, place)} className={ZERO_SECONDARY}>
           {discoverCopy.empty.otherLane}
         </GhostButton>
       }
