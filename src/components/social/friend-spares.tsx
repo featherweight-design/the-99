@@ -235,15 +235,18 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
   // and focus would fall to <body>. It lands on that status instead (focusable, so a screen reader reads Requested),
   // unless the reader has moved on (as `StandInsSheet` does after a take).
   const listRef = useRef<HTMLUListElement | null>(null);
-  const [landOn, setLandOn] = useState<string | null>(null);
+  // A ref read after every render: the ask's answer redraws this section (the provider's asks move), and that render
+  // is the one whose status takes focus.
+  const landOn = useRef<string | null>(null);
   useEffect(() => {
-    if (!landOn) return;
-    setLandOn(null);
+    const friend = landOn.current;
+    if (!friend) return;
+    landOn.current = null;
     const active = document.activeElement;
     if (active && active !== document.body && active.isConnected) return;
-    const row = [...(listRef.current?.querySelectorAll<HTMLElement>("li[data-friend]") ?? [])].find((li) => li.dataset.friend === landOn);
+    const row = [...(listRef.current?.querySelectorAll<HTMLElement>("li[data-friend]") ?? [])].find((li) => li.dataset.friend === friend);
     row?.querySelector<HTMLElement>('[data-testid="friend-spare-status"]')?.focus();
-  }, [landOn]);
+  });
   async function press(s: FriendSpare, fromRequestId?: string) {
     if (busy) return;
     setBusy(s.friend.publicId);
@@ -255,7 +258,7 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
     });
     setBusy(null);
     if (!ok) setToast({ id: ++seq.current, text: spareCopy.request.failed });
-    else setLandOn(s.friend.publicId);
+    else landOn.current = s.friend.publicId;
   }
   return (
     <section aria-label={spareCopy.modalTitleSpares} data-testid="friend-spares" className="flex flex-col">

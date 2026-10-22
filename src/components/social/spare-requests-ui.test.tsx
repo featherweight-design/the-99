@@ -199,19 +199,20 @@ describe("pressing Ask", () => {
 
   it("still serves a card's asks after the card leaves the list (a stand-in taken, its sheet left open)", async () => {
     served = { spares: [spare("Colin", 2)], asks: [ask("Colin", "open")] };
-    let seen: AskStateLine[] = [];
+    const seen = vi.fn<(asks: readonly AskStateLine[]) => void>();
     function Probe() {
-      seen = useContext(SpareRequestsContext)?.asksFor(JACE.oracleId) ?? [];
+      seen(useContext(SpareRequestsContext)?.asksFor(JACE.oracleId) ?? []);
       return null;
     }
+    const last = () => (seen.mock.lastCall?.[0] ?? []).map((a) => a.state);
     const ui = (ids: string[]) => (
       <FriendSparesProvider oracleIds={ids} newestAsOf={asOf} requests deckId="deck-1"><Probe /></FriendSparesProvider>
     );
     let view!: ReturnType<typeof render>;
     await act(async () => { view = render(ui([JACE.oracleId])); });
-    expect(seen.map((a) => a.state)).toEqual(["open"]);
+    expect(last()).toEqual(["open"]);
     await act(async () => { view.rerender(ui([])); });
-    expect(seen.map((a) => a.state)).toEqual(["open"]);
+    expect(last()).toEqual(["open"]);
   });
 
   it("sends no deck from the cart", async () => {
