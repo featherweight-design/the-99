@@ -3,8 +3,21 @@
   "note": "Needs NEAR_COMBOS_ENABLED='true' on the server and three decks the signed-in account owns: COMBOS_MANY_DECK (many two-card near combos, a piece held in several decks; local-dev HD - Brago d3f9ccb4-8ed9-47e1-8b68-9b6fcd4bc85c), COMBOS_ONE_DECK (exactly one; HD -Thorin bc4f48f5-af6b-424a-9f1f-6cd9b44f9809) and COMBOS_NONE_DECK (none; HD - Soldiers 8a32d0d2-5fb8-4142-9901-b3e391c0714a).",
   "clearAbout": true,
   "widths": [
-    { "label": "phone", "width": 390, "height": 844 },
-    { "label": "desktop", "width": 1300, "height": 900 }
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "tablet",
+      "width": 820,
+      "height": 1000
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
   ],
   "rows": [
     {
@@ -12,8 +25,15 @@
       "label": "/decks/[id] many: the segment after the version",
       "view": "src/components/decks/todo-foot.tsx",
       "steps": [
-        { "goto": "/decks/${COMBOS_MANY_DECK}", "wait": "[data-combos-close]", "settle": 1200 },
-        { "scrollTo": "[data-combos-close]", "settle": 400 }
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-combos-close]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-combos-close]",
+          "settle": 400
+        }
       ]
     },
     {
@@ -21,8 +41,15 @@
       "label": "/decks/[id] many: the list, You own it then To buy",
       "view": "src/components/decks/combos-close-sheet.tsx",
       "steps": [
-        { "goto": "/decks/${COMBOS_MANY_DECK}", "wait": "[data-combos-close]", "settle": 1200 },
-        { "click": "[data-combos-close]", "settle": 900 }
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-combos-close]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-combos-close]",
+          "settle": 900
+        }
       ]
     },
     {
@@ -30,8 +57,15 @@
       "label": "/decks/[id] one: one combo, singular title and lead",
       "view": "src/components/decks/combos-close-sheet.tsx",
       "steps": [
-        { "goto": "/decks/${COMBOS_ONE_DECK}", "wait": "[data-combos-close]", "settle": 1200 },
-        { "click": "[data-combos-close]", "settle": 900 }
+        {
+          "goto": "/decks/${COMBOS_ONE_DECK}",
+          "wait": "[data-combos-close]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-combos-close]",
+          "settle": 900
+        }
       ]
     },
     {
@@ -39,7 +73,11 @@
       "label": "/decks/[id] none: no segment",
       "view": "src/components/decks/todo-foot.tsx",
       "steps": [
-        { "goto": "/decks/${COMBOS_NONE_DECK}", "wait": "[role=tablist]", "settle": 1500 }
+        {
+          "goto": "/decks/${COMBOS_NONE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        }
       ]
     }
   ]

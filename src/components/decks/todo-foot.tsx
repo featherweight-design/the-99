@@ -105,7 +105,7 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
   }
   else if (facts.noVersion && !quiet) segments.push({ key: "version", node: <span className={cell}>{copy.noVersion}</span> });
   if (hasNearCombos(facts)) {
-    segments.push({ key: "combos", node: <NearCombosSegment className={cell} count={facts.nearCombos.count} onOpen={facts.nearCombos.onOpen} /> });
+    segments.push({ key: "combos", node: <NearCombosSegment className={cell} quiet={quiet} count={facts.nearCombos.count} onOpen={facts.nearCombos.onOpen} /> });
   }
   if (facts.proxies > 0) segments.push({ key: "proxies", node: <span className={cell}>{proxyCopy.deckHeader.line(facts.proxies)}</span> });
   if (facts.provenance) {
@@ -161,17 +161,21 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
  * `∞ 5 combos one piece away ›` (combos close, call 1; `Deck-Page.dc.html` `.sl .cbs`): the glyph at
  * 13px in `--fact` with its glow, the words in body ink, a faint caret, one dotted rule under all
  * three. Its own drawing, not `segmentPress`'s: the board sets it apart from the shipped segments,
- * which keep theirs. The press opens a dialog (the list sheet). On a coarse pointer the hit reaches
- * 44px tall past the line (`TOUCH_HIT`) without growing the strip.
+ * which keep theirs. The press opens a dialog (the list sheet). On a coarse pointer the hit is 44px
+ * tall: in the quiet strip by `TOUCH_HIT`, past the line without growing it; in the to-do card's
+ * foot by real padding (`CARD_FOOT_TOUCH`), because the card clips (`overflow-hidden`) and would cut
+ * a hit that reaches past its edge. The card's foot grows by those few pixels on touch alone.
  */
-function NearCombosSegment({ count, onOpen, className }: { count: number; onOpen: () => void; className: string }) {
+// 11px at line-height 1.7 is ~18.7px; 13px above and below makes the button itself 44 tall.
+const CARD_FOOT_TOUCH = "[@media(pointer:coarse)]:py-[13px]";
+function NearCombosSegment({ count, onOpen, className, quiet }: { count: number; onOpen: () => void; className: string; quiet: boolean }) {
   return (
     <button
       type="button"
       aria-haspopup="dialog"
       onClick={onOpen}
       data-combos-close
-      className={`${className} ${TOUCH_HIT} inline-flex items-center bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] text-[color:var(--fg-body)]`}
+      className={`${className} ${quiet ? TOUCH_HIT : CARD_FOOT_TOUCH} inline-flex items-center bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] text-[color:var(--fg-body)]`}
     >
       <span className="inline-flex items-center gap-[6px] whitespace-nowrap [border-bottom:1px_dotted_var(--fg-faint)]">
         <ComboGlyph size={13} />

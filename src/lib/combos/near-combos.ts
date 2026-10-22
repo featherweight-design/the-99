@@ -4,7 +4,8 @@ import { cards, deckCards, decks, spellbookVariantCards, spellbookVariants } fro
 import { holdsCopy, type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { deckIdentity } from "../decks/format";
-import { priceState } from "../decks/price";
+import { priceQualifier, priceState } from "../decks/price";
+import type { PriceRead } from "../decks/price-query";
 import { cheapestNow, loadPrices } from "../decks/price-query";
 import { isMandatoryLoop } from "../spellbook/combo-features";
 import {
@@ -37,9 +38,10 @@ export type MissingPieceWhere =
   /**
    * Not owned. `cents` is the buy tag's figure, null when no printing is stocked now. `soldOut` tells
    * the two nulls apart as the buy tag does (`priceState`): stocked before and not now, against a
-   * card the feed has never stocked, which the tag leaves silent.
+   * card the feed has never stocked, which the tag leaves silent. `qualifier` is the buy tag's
+   * `priceQualifier` ("foil", "etched") when the only stocked printing is that finish, else null.
    */
-  | { kind: "buy"; cents: number | null; soldOut: boolean };
+  | { kind: "buy"; cents: number | null; soldOut: boolean; qualifier: string | null };
 
 /** A deck holding a copy. `committed` is a sleeved version; otherwise a brew given a copy. */
 export type HoldingDeck = { id: string; name: string; committed: boolean };
@@ -116,8 +118,15 @@ export function shapeNearCombos(
  * a spare however many other copies are claimed; owning every copy claimed is `elsewhere`, naming
  * the decks that hold one.
  */
-export function whereIs(availability: Availability | undefined, cents: number | null, soldOut = false): MissingPieceWhere {
-  if (!availability || availability.owned <= 0) return { kind: "buy", cents, soldOut: cents === null && soldOut };
+export function whereIs(
+  availability: Availability | undefined,
+  cents: number | null,
+  soldOut = false,
+  qualifier: string | null = null,
+): MissingPieceWhere {
+  if (!availability || availability.owned <= 0) {
+    return { kind: "buy", cents, soldOut: cents === null && soldOut, qualifier: cents === null ? null : qualifier };
+  }
   if (availability.free > 0) return { kind: "spare" };
   return { kind: "elsewhere", decks: holdingDecks(availability) };
 }
@@ -142,6 +151,12 @@ export async function loadPieceAvailability(
   `)).rows as { oracle_id: string }[];
   for (const { oracle_id } of held) availability.set(oracle_id, { owned: 1, hard: 0, soft: 0, free: 1, claims: [] });
   return availability;
+}
+
+/** The buy tag's finish qualifier for a card ("foil", "etched"), from the same read its figure came from. */
+function qualifierOf(prices: PriceRead, oracleId: string): string | null {
+  const fact = prices.prices.get(oracleId);
+  return fact ? priceQualifier(fact, priceState(fact, prices.newestAsOf)) : null;
 }
 
 /** The bucket a missing piece ranks in: spare, elsewhere, a priced buy, an unpriced buy. */
@@ -212,6 +227,7 @@ export async function loadNearCombos(args: {
         availability.get(c.missing.oracleId),
         cheapestNow(prices, c.missing.oracleId),
         priceState(prices.prices.get(c.missing.oracleId), prices.newestAsOf) === "soldOut",
+        qualifierOf(prices, c.missing.oracleId),
       ),
     },
   }));

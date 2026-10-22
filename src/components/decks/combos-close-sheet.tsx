@@ -24,11 +24,19 @@ import { SheetFrame } from "./pass-sheet";
 
 const copy = combosCloseCopy.sheet;
 
-/** Split the ranked list into the sheet's two groups, keeping the read's order inside each. */
+const buyCents = (c: NearCombo) => (c.missing.where.kind === "buy" ? c.missing.where.cents : null);
+
+/**
+ * Split the ranked list into the sheet's two groups. You own it keeps the read's order (spares, then a
+ * copy in another deck). To buy is strictly cheapest first, an unpriced card last: the read leads each
+ * bucket with one combo per outcome, which can put a $10 combo ahead of a $2 one, and this group is
+ * drawn as a price list. Ties keep the read's order (the sort is stable).
+ */
 export function groupNearCombos(combos: readonly NearCombo[]): { own: NearCombo[]; buy: NearCombo[] } {
+  const price = (c: NearCombo) => buyCents(c) ?? Number.POSITIVE_INFINITY;
   return {
     own: combos.filter((c) => c.missing.where.kind !== "buy"),
-    buy: combos.filter((c) => c.missing.where.kind === "buy"),
+    buy: combos.filter((c) => c.missing.where.kind === "buy").sort((a, b) => price(a) - price(b)),
   };
 }
 
@@ -99,9 +107,11 @@ function Group({
 
 /**
  * `.or` at 390 (marks, then the missing card over `with`, the where-line and what it does, then the
- * chevron) and `.md2 .or` from md: one line, columns aligned (marks 38, the name, `with` taking the
+ * chevron) and `.md2 .or` from lg (1024): one line, columns aligned (marks 38, the name, `with` taking the
  * rest at least 200, where 190, what it does 190 right-aligned), at least 44 tall. One subtree, two
- * layouts. The name may truncate at md (the mock holds it `flex: none`): a long name with `with` at
+ * layouts. One line waits for lg, not md: from 768 the modal is narrower than its 900, and the
+ * fixed columns (with-line 200, where 190, what it does 190) left the name a few pixels. The name
+ * may truncate at lg (the mock holds it `flex: none`): a long name with `with` at
  * its 200 floor would otherwise push the where column out of line with the rows around it.
  */
 function ComboRow({ combo, commanderOracleIds }: { combo: NearCombo; commanderOracleIds: readonly string[] }) {
@@ -110,10 +120,10 @@ function ComboRow({ combo, commanderOracleIds }: { combo: NearCombo; commanderOr
     <div
       data-combo-row
       data-where={combo.missing.where.kind}
-      className="relative flex items-start gap-[10px] rounded-[9px] bg-[color:var(--surface-rail)] py-[10px] pr-[4px] pl-[11px] md:min-h-[44px] md:items-center md:gap-[12px] md:py-0 md:pr-[6px] md:pl-[14px]"
+      className="relative flex items-start gap-[10px] rounded-[9px] bg-[color:var(--surface-rail)] py-[10px] pr-[4px] pl-[11px] lg:min-h-[44px] lg:items-center lg:gap-[12px] lg:py-0 lg:pr-[6px] lg:pl-[14px]"
     >
       {/* `.gl`: the lemniscate, and the turn-again mark under it (beside it from md) for a loop of turns. */}
-      <span className="flex flex-none flex-col gap-[5px] pt-[2px] md:w-[38px] md:flex-row md:pt-0">
+      <span className="flex flex-none flex-col gap-[5px] pt-[2px] lg:w-[38px] lg:flex-row lg:pt-0">
         <ComboGlyph />
         {producesInfiniteTurns(combo.produces) ? (
           <FactTooltip sentence={copy.loopMark}>
@@ -121,11 +131,11 @@ function ComboRow({ combo, commanderOracleIds }: { combo: NearCombo; commanderOr
           </FactTooltip>
         ) : null}
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[12px]">
-        <span className="min-w-0 truncate text-[14px] font-semibold text-[color:var(--fg)] md:flex-initial md:text-[13.5px]">
+      <div className="flex min-w-0 flex-1 flex-col gap-[3px] lg:flex-row lg:items-baseline lg:gap-[12px]">
+        <span className="min-w-0 truncate text-[14px] font-semibold text-[color:var(--fg)] lg:flex-initial lg:text-[13.5px]">
           {combo.missing.name}
         </span>
-        <span className="text-[12.5px] leading-[1.4] text-[color:var(--fg-body)] md:min-w-[200px] md:flex-1 md:truncate md:whitespace-nowrap">
+        <span className="text-[12.5px] leading-[1.4] text-[color:var(--fg-body)] lg:min-w-[200px] lg:flex-1 lg:truncate lg:whitespace-nowrap">
           {copy.with}{" "}
           {held.map((p, i) => (
             <span key={p.oracleId}>
@@ -137,12 +147,12 @@ function ComboRow({ combo, commanderOracleIds }: { combo: NearCombo; commanderOr
             </span>
           ))}
         </span>
-        <span className="mt-[2px] flex flex-wrap items-center gap-[8px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:mt-0 md:flex-none md:flex-nowrap">
-          <span className="inline-flex items-center gap-[7px] md:w-[190px]" data-where-line>
+        <span className="mt-[2px] flex flex-wrap items-center gap-[8px] font-mono text-[10.5px] text-[color:var(--fg-body)] lg:mt-0 lg:flex-none lg:flex-nowrap">
+          <span className="inline-flex items-center gap-[7px] lg:w-[190px]" data-where-line>
             <Where combo={combo} />
           </span>
           {combo.produces[0] ? (
-            <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)] md:w-[190px] md:whitespace-nowrap md:text-right">
+            <span title={combo.produces[0]} className="font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)] lg:w-[190px] lg:truncate lg:whitespace-nowrap lg:text-right">
               {combo.produces[0]}
             </span>
           ) : null}
@@ -208,6 +218,7 @@ function Where({ combo }: { combo: NearCombo }) {
         // `.btag`: the buy tag's ink and figure (`formatCents`, as the shipped tag formats it).
         <span className="rounded-[4px] px-[5px] font-mono text-[10px] leading-[15px] text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]">
           {formatCents(where.cents)}
+          {where.qualifier ? ` ${where.qualifier}` : null}
         </span>
       ) : where.soldOut ? (
         // The buy tag's own word, for a card stocked before and not now. A card the feed has never

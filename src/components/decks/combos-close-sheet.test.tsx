@@ -39,9 +39,9 @@ const LIST: NearCombo[] = [
       { id: "brew2", name: "Another brew", committed: false },
     ],
   }),
-  combo("3", "Searing Touch", "Avatar Aang", { kind: "buy", cents: 149, soldOut: false }),
-  combo("4", "Time Vault", "Voltaic Key", { kind: "buy", cents: 115000, soldOut: false }, ["Infinite turns"]),
-  combo("5", "Odd Card", "Some Piece", { kind: "buy", cents: null, soldOut: true }),
+  combo("3", "Searing Touch", "Avatar Aang", { kind: "buy", cents: 149, soldOut: false, qualifier: null }),
+  combo("4", "Time Vault", "Voltaic Key", { kind: "buy", cents: 115000, soldOut: false, qualifier: null }, ["Infinite turns"]),
+  combo("5", "Odd Card", "Some Piece", { kind: "buy", cents: null, soldOut: true, qualifier: null }),
 ];
 
 function draw(list: NearCombo[] = LIST, total = list.length) {
@@ -70,10 +70,29 @@ describe("CombosCloseSheet", () => {
     const headings = [...document.querySelectorAll("[data-combos-close-group]")].map((h) => h.textContent);
     expect(headings).toEqual([`${copy.groups.own}2`, `${copy.groups.buy}3`]);
     expect(rows().map((r) => r.dataset.where)).toEqual(["spare", "elsewhere", "buy", "buy", "buy"]);
-    // Grouping is a split of the read's order, never a re-sort.
+    // You own it keeps the read's order; To buy is a price list, cheapest first and unpriced last.
     const { own, buy } = groupNearCombos([LIST[2], LIST[0], LIST[4], LIST[1], LIST[3]]);
     expect(own.map((c) => c.variantId)).toEqual(["1", "2"]);
-    expect(buy.map((c) => c.variantId)).toEqual(["3", "5", "4"]);
+    expect(buy.map((c) => c.variantId)).toEqual(["3", "4", "5"]);
+  });
+
+  it("sorts To buy by price even where the read led with one combo per outcome", () => {
+    // The read's order: $1 (outcome A), $10 (outcome B, promoted as its outcome's first), $2 (A again).
+    const read = [
+      combo("a1", "One", "Piece", { kind: "buy", cents: 100, soldOut: false, qualifier: null }, ["Infinite mana"]),
+      combo("b10", "Ten", "Piece", { kind: "buy", cents: 1000, soldOut: false, qualifier: null }, ["Infinite turns"]),
+      combo("a2", "Two", "Piece", { kind: "buy", cents: 200, soldOut: false, qualifier: null }, ["Infinite mana"]),
+    ];
+    expect(groupNearCombos(read).buy.map((c) => c.variantId)).toEqual(["a1", "a2", "b10"]);
+  });
+
+  it("names a foil-only or etched-only price's finish beside the figure, as the buy tag does", () => {
+    draw([
+      combo("f", "Foil Card", "Piece", { kind: "buy", cents: 940, soldOut: false, qualifier: "foil" }),
+      combo("e", "Etched Card", "Piece", { kind: "buy", cents: 1200, soldOut: false, qualifier: "etched" }),
+    ]);
+    expect(whereLine("Foil Card").textContent).toBe("$9.40 foil");
+    expect(whereLine("Etched Card").textContent).toBe("$12.00 etched");
   });
 
   it("draws no group that has no rows", () => {
@@ -101,7 +120,7 @@ describe("CombosCloseSheet", () => {
   });
 
   it("leaves a card the feed has never stocked silent after its dot, as the buy tag does", () => {
-    draw([combo("6", "Never Stocked", "Other Piece", { kind: "buy", cents: null, soldOut: false })]);
+    draw([combo("6", "Never Stocked", "Other Piece", { kind: "buy", cents: null, soldOut: false, qualifier: null })]);
     expect(whereLine("Never Stocked").textContent).toBe("");
     expect(whereLine("Never Stocked").querySelector('[data-dot="buy"]')).not.toBeNull();
   });

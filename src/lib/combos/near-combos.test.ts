@@ -93,9 +93,10 @@ describe("whereIs", () => {
   });
 
   it("not owned is a buy at the tag's figure, or null when nothing is stocked", () => {
-    expect(whereIs(undefined, 1299)).toEqual({ kind: "buy", cents: 1299, soldOut: false });
-    expect(whereIs(avail({ owned: 0 }), null)).toEqual({ kind: "buy", cents: null, soldOut: false });
-    expect(whereIs(undefined, null, true)).toEqual({ kind: "buy", cents: null, soldOut: true });
+    expect(whereIs(undefined, 1299)).toEqual({ kind: "buy", cents: 1299, soldOut: false, qualifier: null });
+    expect(whereIs(avail({ owned: 0 }), null)).toEqual({ kind: "buy", cents: null, soldOut: false, qualifier: null });
+    expect(whereIs(undefined, null, true)).toEqual({ kind: "buy", cents: null, soldOut: true, qualifier: null });
+    expect(whereIs(undefined, 940, false, "foil")).toEqual({ kind: "buy", cents: 940, soldOut: false, qualifier: "foil" });
   });
 });
 
@@ -138,9 +139,9 @@ describe("rankNearCombos", () => {
 
   it("leads with a spare, then a piece in another deck, then the cheapest buy, an unpriced buy last", () => {
     const list = [
-      combo("unpriced", { kind: "buy", cents: null, soldOut: false }),
-      combo("dear", { kind: "buy", cents: 2000, soldOut: false }),
-      combo("cheap", { kind: "buy", cents: 25, soldOut: false }),
+      combo("unpriced", { kind: "buy", cents: null, soldOut: false, qualifier: null }),
+      combo("dear", { kind: "buy", cents: 2000, soldOut: false, qualifier: null }),
+      combo("cheap", { kind: "buy", cents: 25, soldOut: false, qualifier: null }),
       combo("elsewhere", { kind: "elsewhere", decks: [] }),
       combo("spare", { kind: "spare" }),
     ];
@@ -158,13 +159,13 @@ describe("rankNearCombos", () => {
       loopA("spare-dup-1", { kind: "spare" }),
       loopA("spare-dup-2", { kind: "spare" }),
       combo("spare-other", { kind: "spare" }, { manaValueNeeded: 5 }),
-      combo("buy-other", { kind: "buy", cents: 10, soldOut: false }),
+      combo("buy-other", { kind: "buy", cents: 10, soldOut: false, qualifier: null }),
     ];
     expect(rankNearCombos(list, 10).combos.map((c) => c.variantId)).toEqual(["spare-dup-1", "spare-other", "spare-dup-2", "buy-other"]);
   });
 
   it("caps the list and reports the total before the cap", () => {
-    const list = Array.from({ length: 30 }, (_, i) => combo(`v${i}`, { kind: "buy", cents: i, soldOut: false }));
+    const list = Array.from({ length: 30 }, (_, i) => combo(`v${i}`, { kind: "buy", cents: i, soldOut: false, qualifier: null }));
     const out = rankNearCombos(list, 20);
     expect(out.combos).toHaveLength(20);
     expect(out.total).toBe(30);
@@ -209,7 +210,7 @@ describe("loadNearCombos", () => {
     const out = await loadNearCombos({ userId: "u", deckId: "d", env: ON });
     expect(out.combos.map((c) => [c.variantId, c.missing.where])).toEqual([
       ["spare", { kind: "spare" }],
-      ["buy", { kind: "buy", cents: 350, soldOut: false }],
+      ["buy", { kind: "buy", cents: 350, soldOut: false, qualifier: null }],
     ]);
     expect(out.combos[0].usesCommander).toBe(true);
     expect(loadAvailability).toHaveBeenCalledWith("u", expect.objectContaining({ excludeDeckId: "d", oracleIds: ["id-Bought", "id-Spare"] }));
