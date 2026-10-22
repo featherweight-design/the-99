@@ -3,6 +3,8 @@
 // count, cards on the reader's wishlist first and marked under the count. View only: a press on the card opens card
 // details, as every card does, and nothing asks for the card (the request flow is a later round, G5).
 
+import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 import type { FriendSpareList } from "../../lib/social/spares";
 import { socialCopy } from "../../lib/copy/social";
 import { CardDetailProvider, CardDetailTrigger, cardDetailCopy, type SiblingCard } from "../cards/card-detail-provider";
@@ -12,6 +14,9 @@ const p = socialCopy.friendPage;
 const EAGER_TILES = 4;
 
 export function FriendSparesTab({ name, spares }: { name: string; spares: FriendSpareList | null }) {
+  const router = useRouter();
+  // A wishlist write from a spare's details moves its mark and its place: refresh the page, as the Wishlist tab does.
+  const onWishlistWrite = useCallback(() => router.refresh(), [router]);
   if (spares === null) return <Empty title={p.spares.noneTitle(name)} body={p.spares.noneBody(name)} />;
   if (spares.lines.length === 0) return <Empty title={p.spares.emptyTitle(name)} body={p.spares.emptyBody(name)} />;
   const { lines } = spares;
@@ -19,7 +24,7 @@ export function FriendSparesTab({ name, spares }: { name: string; spares: Friend
   return (
     <>
       <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.spares.line(spares.pods)}</p>
-      <CardDetailProvider>
+      <CardDetailProvider onWishlistWrite={onWishlistWrite}>
         {/* The board's grid: two columns on a phone, six from desktop. */}
         <ul className="m-0 mt-[12px] grid list-none grid-cols-2 gap-x-[8px] gap-y-[12px] p-0 md:grid-cols-6 md:gap-[20px]">
           {lines.map((line, i) => {
