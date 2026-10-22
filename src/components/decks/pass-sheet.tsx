@@ -74,21 +74,24 @@ function OnePassSheet({
   const [error, setError] = useState<string | null>(null);
   const { pending, undo } = usePassUndo({ deckId, pass, bodySize, onAnnounce, onError: setError, onDone: onClose });
   const byId = new Map(cards.map((c) => [c.oracleId, c]));
-  // The pass's LIVE cards: those still in the deck, the copies it placed and no more. The title, the
-  // lead and the Undo all draw `pass.live`, the server's figure, so a ✕ in flight cannot split them.
+  // The pass's LIVE cards: those still in the deck, the copies it placed and no more.
   const live = pass.liveCards.flatMap((lc) => {
     const card = byId.get(lc.oracleId);
     return card ? [{ card, copies: Math.min(lc.quantity, card.quantity) }] : [];
   });
   const label = ledger.sheetLabel(pass);
-  const n = String(pass.live);
+  // One figure for the title, the lead and the Undo: the cards the sheet draws, so a ✕ in flight
+  // moves all three together rather than splitting them.
+  const count = live.reduce((n, l) => n + l.copies, 0);
+  const shown = { ...pass, live: count };
+  const n = String(count);
   const rows = live.map((l) => l.card);
 
   return (
     <SheetFrame
       eyebrow={label}
-      count={pass.live}
-      lead={lineSentence(pass, passBuyCount(pass, cards))}
+      count={count}
+      lead={lineSentence(shown, passBuyCount(pass, cards))}
       closeLabel={ledger.sheetCloseAria(label)}
       onClose={onClose}
       // The seed has no Undo in the ledger either ("Clear all auto" reverses it), so its sheet offers Done only.
@@ -101,7 +104,7 @@ function OnePassSheet({
             aria-label={ledger.undoAria(n, label)}
             className={FOOT_BUTTON}
           >
-            {pending ? ledger.undoInFlight(n) : pass.live === 1 ? ledger.undoOne : ledger.undo(n)}
+            {pending ? ledger.undoInFlight(n) : count === 1 ? ledger.undoOne : ledger.undo(n)}
           </GhostButton>
         </>
       )}

@@ -45,11 +45,11 @@ function draw(p: FillPassSummary) {
 }
 
 describe("PassSheet (one pass)", () => {
-  it("offers Undo on a top-off, and the title and the Undo draw the server's figure", () => {
-    // 3 cards still listed, 2 live on the server (a ✕ in flight): one figure, not two.
+  it("offers Undo on a top-off, and the title and the Undo draw one figure", () => {
+    // The server's count lags a ✕ in flight (2 of 3 cards drawn are live): the sheet's own count wins.
     draw(pass("top_off", 2));
-    expect(screen.getByRole("heading", { name: ledger.sheetTitle(2) })).toBeTruthy();
-    expect(screen.getByRole("button", { name: ledger.undoAria("2", ledger.sheetLabel(pass("top_off", 2))) })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: ledger.sheetTitle(3) })).toBeTruthy();
+    expect(screen.getByRole("button", { name: ledger.undoAria("3", ledger.sheetLabel(pass("top_off", 2))) })).toBeTruthy();
     expect(screen.getByRole("button", { name: ledger.sheetDone })).toBeTruthy();
   });
 
