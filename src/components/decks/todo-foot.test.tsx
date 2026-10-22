@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -8,6 +9,7 @@ import { deckTodo, type TodoFacts } from "../../lib/decks/todo";
 import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { TodoFootFacts } from "./todo-foot";
+import { TOUCH_HIT } from "../ui/touch-hit";
 
 vi.mock("../../app/decks/actions", () => ({ fillDeck: vi.fn(), undoFillPass: vi.fn() }));
 const { TodoCard, UnresolvedRow } = await import("./todo-card");
@@ -196,5 +198,54 @@ describe("the version segment", () => {
     history.replaceState(null, "", "/decks/d");
     draw({ ...NONE, version: FULL.version });
     expect(document.activeElement).toBe(document.body);
+  });
+});
+
+// Combos one piece away (combos close, call 1; `Deck-Page.dc.html`): the segment after the version.
+describe("the combos-one-piece-away segment", () => {
+  const segment = () => document.querySelector("[data-combos-close]") as HTMLElement | null;
+
+  it("draws nothing at zero or with no read", () => {
+    const zero = draw({ ...FULL, nearCombos: { count: 0, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(segment()).toBeNull();
+    zero.unmount();
+    draw({ ...FULL, nearCombos: null }, { ...QUIET, unresolved: 2 });
+    expect(segment()).toBeNull();
+  });
+
+  it("says 1 combo or N combos, after the version and before proxies", () => {
+    const one = draw({ ...FULL, nearCombos: { count: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(segment()).toHaveTextContent(`${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`);
+    expect(combosCloseCopy.segment(1)).toBe("1 combo one piece away");
+    expect(foot().textContent!.startsWith([VERSION, `${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`, proxyCopy.deckHeader.line(1)].join(copy.footSeparator))).toBe(true);
+    one.unmount();
+    draw({ ...FULL, nearCombos: { count: 5, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(screen.getByRole("button", { name: "5 combos one piece away" })).toBe(segment());
+  });
+
+  it("counts toward the quiet strip: a brew with nothing to do but combos still draws it", () => {
+    draw({ ...NONE, noVersion: true, nearCombos: { count: 3, onOpen: vi.fn() } });
+    expect(foot()).not.toBeNull();
+    expect(foot().textContent).toBe(`${combosCloseCopy.segment(3)}${combosCloseCopy.caret}`);
+  });
+
+  // The card clips its children (`overflow-hidden`), so a hit reaching past the foot would be cut:
+  // in the card the button is itself 44 tall on touch; in the quiet strip `TOUCH_HIT` reaches past.
+  it("keeps a whole 44px touch target in the to-do card's foot as well as in the strip", () => {
+    const card = draw({ ...FULL, nearCombos: { count: 2, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
+    expect(segment()!.className).toContain("[@media(pointer:coarse)]:py-[13px]");
+    expect(segment()!.className).not.toContain(TOUCH_HIT);
+    card.unmount();
+    draw({ ...NONE, nearCombos: { count: 2, onOpen: vi.fn() } });
+    expect(segment()!.className).toContain(TOUCH_HIT);
+  });
+
+  it("opens the list as a dialog on a press", () => {
+    const onOpen = vi.fn();
+    draw({ ...NONE, nearCombos: { count: 2, onOpen } });
+    expect(segment()!.tagName).toBe("BUTTON");
+    expect(segment()).toHaveAttribute("aria-haspopup", "dialog");
+    fireEvent.click(segment()!);
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });

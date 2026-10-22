@@ -93,6 +93,8 @@ import { DeckRefusalToast } from "./token-refusal-toast";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLedger } from "./provenance-line";
 import { PassSheet, type PassSheetTarget } from "./pass-sheet";
+import { CombosCloseSheet } from "./combos-close-sheet";
+import type { NearCombos } from "../../lib/combos/near-combos";
 // Type only, for the same reason `games.ts` is imported as one: the module
 // reaches for the database.
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
@@ -308,6 +310,10 @@ interface BuilderShellProps {
   landing?: Pick<ToolLanding, "tool" | "target" | "moment" | "lands"> | null;
   /** A token that moves on each render carrying `?tool=`, so a landing on the mounted shell runs again. */
   landingRequest?: string | null;
+  /** `loadNearCombos` (two pieces): the combos this deck is one piece away from, for the status line's
+   *  segment and its list (combos close). Null when the read failed or never ran: no segment. Empty
+   *  while `NEAR_COMBOS_ENABLED` is off. */
+  nearCombos?: NearCombos | null;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -373,6 +379,7 @@ export function BuilderShell({
   tuningHubEnabled = false,
   landing = null,
   landingRequest = null,
+  nearCombos = null,
 }: BuilderShellProps) {
   // The table's log prefill (Rule 0 PR 8), held here because the Games panel remounts on every tab change.
   const [offeredPrefill, spendPrefill] = useHeldPrefill(gamePrefill);
@@ -451,6 +458,12 @@ export function BuilderShell({
   // A pass the incoming summaries no longer list (an undo, a sweep, a keep-all) takes its sheet with
   // it. Adjusted during render, so the stale sheet never paints.
   if (passSheet?.kind === "pass" && !fillPasses.some((p) => p.id === passSheet.passId)) setPassSheet(null);
+
+  // Combos one piece away, the list (combos close), open for the visit. It leaves with its segment:
+  // a refresh that leaves none (the last piece added) closes it, and there is no empty sheet (R1b).
+  const nearComboCount = nearCombos?.total ?? 0;
+  const [combosSheet, setCombosSheet] = useState(false);
+  if (combosSheet && nearComboCount === 0) setCombosSheet(false);
 
   // The top-off list is open. At phone widths its commit bar takes the bottom
   // slot, so the quick-add dock hides — one bottom slot, one occupant (state
@@ -1757,6 +1770,7 @@ export function BuilderShell({
                 otherDrafts: commitments.softClaimed > 0
                   ? { count: commitments.softClaimed, onOpen: () => setPassSheet({ kind: "drafts" }) }
                   : null,
+                nearCombos: nearComboCount > 0 ? { count: nearComboCount, onOpen: () => setCombosSheet(true) } : null,
               }}
               renderRow={(row) =>
                 row.kind === "fillFailed" ? (
@@ -2361,6 +2375,14 @@ export function BuilderShell({
                 />
               </LockCardsProvider>
             </PendingChangeProvider>
+          )}
+          {combosSheet && nearCombos && nearComboCount > 0 && (
+            <CombosCloseSheet
+              nearCombos={nearCombos}
+              deckName={deck.name}
+              commanderOracleIds={[deck.commander.oracleId, ...(deck.partner ? [deck.partner.oracleId] : [])]}
+              onClose={() => setCombosSheet(false)}
+            />
           )}
         </div>
         </LabelRowsProvider>

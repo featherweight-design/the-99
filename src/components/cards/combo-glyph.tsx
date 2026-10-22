@@ -43,11 +43,16 @@ const GLOW = "drop-shadow(0 0 3px color-mix(in oklab, var(--fact) 45%, transpare
  */
 export const COMBO_GLYPH_PX = CARD_FACT_MARK_PX;
 
-export function ComboGlyph() {
+/**
+ * `size` is for the one host that draws the glyph as TYPE rather than as a mark: the deck page's
+ * `∞ N combos one piece away ›` segment (combos close, `Deck-Page.dc.html` `.cbs .lem`, 13px), set
+ * in an 11px mono line. Every mark host keeps the ruled 16 by leaving it unset.
+ */
+export function ComboGlyph({ size = COMBO_GLYPH_PX }: { size?: number } = {}) {
   return (
     <svg
-      width={COMBO_GLYPH_PX}
-      height={COMBO_GLYPH_PX}
+      width={size}
+      height={size}
       viewBox="0 0 16 16"
       // `block` so the glyph does not sit on the text baseline and lift the line box.
       className="block shrink-0"

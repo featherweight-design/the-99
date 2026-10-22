@@ -100,7 +100,7 @@ function OnePassSheet({
   return (
     <SheetFrame
       eyebrow={label}
-      count={count}
+      title={ledger.sheetTitle(count)}
       lead={lineSentence(shown, passBuyCount(shown, cards))}
       closeLabel={ledger.sheetCloseAria(label)}
       onClose={onClose}
@@ -121,7 +121,9 @@ function OnePassSheet({
         </>
       )}
     >
-      <Rows deckId={deckId} cards={rows} siblings={rows} newestAsOf={newestAsOf} />
+      <RowsBody>
+        <Rows deckId={deckId} cards={rows} siblings={rows} newestAsOf={newestAsOf} />
+      </RowsBody>
     </SheetFrame>
   );
 }
@@ -156,17 +158,19 @@ function DraftsSheet({ deckId, cards, newestAsOf, onClose }: Common) {
   return (
     <SheetFrame
       eyebrow={availabilityCopy.deckRollup.sheetEyebrow}
-      count={soft.length}
+      title={ledger.sheetTitle(soft.length)}
       lead={availabilityCopy.deckRollup.softBody}
       closeLabel={availabilityCopy.deckRollup.sheetCloseAria}
       onClose={onClose}
     >
-      {ordered.map((g, i) => (
-        <div key={g.name + i} className={i > 0 ? "mt-[8px]" : undefined}>
-          <DecklistGroupHeader label={g.name} count={g.cards.length} />
-          <Rows deckId={deckId} cards={g.cards} siblings={siblings} newestAsOf={newestAsOf} />
-        </div>
-      ))}
+      <RowsBody>
+        {ordered.map((g, i) => (
+          <div key={g.name + i} className={i > 0 ? "mt-[8px]" : undefined}>
+            <DecklistGroupHeader label={g.name} count={g.cards.length} />
+            <Rows deckId={deckId} cards={g.cards} siblings={siblings} newestAsOf={newestAsOf} />
+          </div>
+        ))}
+      </RowsBody>
     </SheetFrame>
   );
 }
@@ -176,18 +180,27 @@ const FOOT_BUTTON_BASE =
   "inline-flex items-center justify-center h-[44px] md:h-[38px] rounded-[9px] px-[18px] font-sans text-[13.5px] font-semibold whitespace-nowrap";
 const FOOT_BUTTON = `flex-1 md:flex-none ${FOOT_BUTTON_BASE}`;
 
-function SheetFrame({
+/**
+ * The pass sheet's frame (`Pass Sheet.dc.html` `.bs`/`.md`): `ModalChrome` with the `.hd2` head
+ * (eyebrow, title, lead), the body as given, and the `.sf` foot (an optional Undo or note, then
+ * Done). Shared with the combos-one-piece-away list (`combos-close-sheet.tsx`), which adds the 900
+ * modal and the phone sheet that sizes to its rows; the pass sheet's own props leave both unset.
+ */
+export function SheetFrame({
   eyebrow,
-  count,
+  title,
   lead,
   closeLabel,
   onClose,
   undo,
   note,
+  width = 600,
+  fit = false,
+  doneLabel = ledger.sheetDone,
   children,
 }: {
   eyebrow: string;
-  count: number;
+  title: string;
   lead: React.ReactNode;
   closeLabel: string;
   onClose: () => void;
@@ -195,19 +208,24 @@ function SheetFrame({
   /** A line of words in Undo's place when the sheet has no Undo: centred above Done at 390, at the left where Undo
    *  stands from md. Not a press. */
   note?: string;
+  width?: 600 | 900;
+  /** The phone sheet sizes to its rows (`ModalChrome`'s `fit`). */
+  fit?: boolean;
+  doneLabel?: string;
   children: React.ReactNode;
 }) {
   return (
     <ModalChrome
       eyebrow={eyebrow}
-      title={ledger.sheetTitle(count)}
+      title={title}
       lead={lead}
       // Fixed on the eyebrow: a title that moved with the count would re-register the sheet under
       // an open card. The card's close reads `← 1st top-off` at both widths.
       backLabel={eyebrow}
       closeLabel={closeLabel}
       onClose={onClose}
-      width={600}
+      width={width}
+      fit={fit}
       ground="var(--surface)"
       foot={
         <div
@@ -218,16 +236,22 @@ function SheetFrame({
           {undo}
           {note ? <p className="m-0 text-center font-mono text-[11px] text-[color:var(--fg-faint)] md:text-left">{note}</p> : null}
           <PrimaryButton onClick={onClose} className={`${note ? "w-full md:w-auto" : "flex-1 md:flex-none"} ${FOOT_BUTTON_BASE} md:ml-auto`}>
-            {ledger.sheetDone}
+            {doneLabel}
           </PrimaryButton>
         </div>
       }
     >
-      {/* `.sr`. The preview waits for the pointer to move: the sheet opens under a resting one. */}
-      <HoverPreviewProvider waitForMove className="flex flex-col px-[12px] py-[10px]">
-        {children}
-      </HoverPreviewProvider>
+      {children}
     </ModalChrome>
+  );
+}
+
+/** `.sr`. The preview waits for the pointer to move: the sheet opens under a resting one. */
+function RowsBody({ children }: { children: React.ReactNode }) {
+  return (
+    <HoverPreviewProvider waitForMove className="flex flex-col px-[12px] py-[10px]">
+      {children}
+    </HoverPreviewProvider>
   );
 }
 
