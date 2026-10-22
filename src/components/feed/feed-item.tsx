@@ -9,9 +9,7 @@ import Link from "next/link";
 import { useId, type ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 import { feedCopy } from "../../lib/copy/feed";
-import { refreshCopy } from "../../lib/copy/refresh";
 import { formatCents } from "../../lib/decks/price";
-import { elapsed } from "../../lib/decks/touched";
 import type { FeedView } from "../../lib/feed/home";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { ComboGlyph } from "../cards/combo-glyph";
@@ -20,18 +18,12 @@ import { usePreviewRow } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { CommanderThumb } from "../ui/commander-thumb";
+import { feedAge } from "../../lib/feed/age";
 
 const c = feedCopy.home;
 
 /** A friend's face, by public id: the Home friends read's own faces, so no new read draws them. */
 export type FeedFaces = ReadonlyMap<string, Pick<ProfileCommander, "artCropUri"> | null>;
-
-/** "5h ago", "yesterday", "4d ago": the resume rows' own elapsed figure, against the page's one clock. */
-export function feedAge(at: string, now: string): string {
-  const e = elapsed(new Date(at), new Date(now));
-  const words = refreshCopy.home.elapsed;
-  return e.unit === "yesterday" ? words.yesterday : words[e.unit](e.value);
-}
 
 /** What an item says: its title, its line, and its press label (null: no press yet, the later round's spare request). */
 export function feedText(item: FeedView): { title: string; line: ReactNode; press: string | null } {
@@ -133,7 +125,7 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   const art = (
     <>
       <span className="block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)]">
-        <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={null} size="feed" />
+        <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={item.card?.colorIdentity ?? null} size="feed" />
       </span>
       {item.friend && (
         <span data-feed-face className="absolute right-[-6px] bottom-[-5px] h-[24px] w-[24px] overflow-hidden rounded-[7px] [border:1.5px_solid_var(--surface-inset)]">

@@ -26,7 +26,8 @@ import { loadFeed, type FeedItem } from "./read";
 type Executor = Pick<typeof db, "execute">;
 
 /** The card an item is drawn with: the full card image (never the art crop) and the crop for the lead's backdrop. */
-export type FeedCard = { oracleId: string; name: string; image: string | null; art: string | null };
+/** `colorIdentity`: the card's own, so a card with no art draws its identity gradient at card shape (`CommanderThumb`). */
+export type FeedCard = { oracleId: string; name: string; image: string | null; art: string | null; colorIdentity: string[] | null };
 
 /** One item, as the row and the lead draw it. Client-safe: plain data, the time as an ISO string. */
 export type FeedView = {
@@ -61,7 +62,7 @@ export type HomeFeed =
 /** One card from each new set: a mythic, then a rare, then the lowest collector number, with an image. */
 export function setCardsQuery(codes: readonly string[]) {
   return sql`select distinct on (sp.set_code) sp.set_code as code, ss.card_count as size,
-      sc.oracle_id as oracle_id, sc.name as name,
+      sc.oracle_id as oracle_id, sc.name as name, sc.color_identity as identity,
       coalesce(sp.image_uri, sc.image_uri) as image, coalesce(sp.art_crop_uri, sc.art_crop_uri) as art
     from ${printings} sp
     join ${cards} sc on sc.oracle_id = sp.oracle_id
@@ -75,7 +76,7 @@ export function setCardsQuery(codes: readonly string[]) {
 /** Each new precon's commander (its first, by position), drawn from the precon's own printing where it names one. */
 export function preconCommandersQuery(files: readonly string[]) {
   return sql`select distinct on (pc.file_name) pc.file_name as file_name,
-      pcc.oracle_id as oracle_id, pcc.name as name,
+      pcc.oracle_id as oracle_id, pcc.name as name, pcc.color_identity as identity,
       coalesce(pcp.image_uri, pcc.image_uri) as image, coalesce(pcp.art_crop_uri, pcc.art_crop_uri) as art
     from ${preconCards} pc
     join ${cards} pcc on pcc.oracle_id = pc.oracle_id
@@ -105,12 +106,12 @@ export function preconOwnedQuery(userId: string, files: readonly string[]) {
 
 /** The stored kinds' cards, by oracle id. */
 export function feedCardsQuery(ids: readonly string[]) {
-  return sql`select fc.oracle_id as oracle_id, fc.name as name, fc.image_uri as image, fc.art_crop_uri as art
+  return sql`select fc.oracle_id as oracle_id, fc.name as name, fc.color_identity as identity, fc.image_uri as image, fc.art_crop_uri as art
     from ${cards} fc where fc.oracle_id = any(${sql.param([...ids])}::uuid[])`;
 }
 
-type CardRow = { oracle_id: string; name: string; image: string | null; art: string | null };
-const toCard = (r: CardRow): FeedCard => ({ oracleId: r.oracle_id, name: r.name, image: r.image, art: r.art });
+type CardRow = { oracle_id: string; name: string; identity: string[] | null; image: string | null; art: string | null };
+const toCard = (r: CardRow): FeedCard => ({ oracleId: r.oracle_id, name: r.name, image: r.image, art: r.art, colorIdentity: r.identity ?? null });
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
@@ -155,7 +156,7 @@ export function toViews(
     } satisfies Omit<FeedView, "card">;
     if (item.kind === "new-set") {
       const s = found.sets.get(item.code) ?? null;
-      return { ...base, card: s && { oracleId: s.oracleId, name: s.name, image: s.image, art: s.art }, href: item.href, name: item.name, setSize: s?.size ?? null };
+      return { ...base, card: s && { oracleId: s.oracleId, name: s.name, image: s.image, art: s.art, colorIdentity: s.colorIdentity }, href: item.href, name: item.name, setSize: s?.size ?? null };
     }
     if (item.kind === "new-precon") {
       return { ...base, card: found.precons.get(item.fileName) ?? null, href: item.href, name: item.name, owned: found.owned.get(item.fileName) ?? null };

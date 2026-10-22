@@ -69,9 +69,11 @@ export const refreshCopy = {
       committed: (t: string) => `committed ${t}`,
       played: (t: string) => `played ${t}`,
     },
-    // Lower case, and no "just now" — a stamp of 0 is not news, so anything
-    // under an hour reads `0h ago`.
+    // Lower case. A deck's touched stamp has no "just now" (a stamp of 0 is not news, so under an hour reads `0h ago`);
+    // the feed and Waiting on you do (`justNow`, Design's prompt 13 carry-over, ratified in the friend-decks handoff):
+    // something that arrived in the last hour is the news.
     elapsed: {
+      justNow: 'just now',
       hours: (h: number) => `${h}h ago`,
       yesterday: 'yesterday',
       days: (d: number) => `${d}d ago`,

@@ -9,7 +9,7 @@ vi.mock("../social/trade-match", () => ({ noticeTradeMatches: marks.notice }));
 // The reader owns Sai in another printing: the row draws the chain's picture, the one card details opens.
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
-import { comboPieces, homeFeedAfter, loadHomeFeed, preconOwnedQuery, setCardsQuery, splitLead, toViews, type FeedView } from "./home";
+import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, type FeedView } from "./home";
 import type { FeedItem } from "./read";
 
 const ON = { HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
@@ -180,5 +180,13 @@ describe("preconOwnedQuery", () => {
     // The copies the ingest could not map are part of the deck, though never owned.
     expect(q).toContain("(sum(pn.need) + max(pr.unmapped_count))::int as total");
     expect(q).toContain('join "precons" pr on pr.file_name = pn.file_name');
+  });
+});
+
+describe("the feed's card lookups carry the card's colour identity", () => {
+  it("so a card with no art can draw its identity gradient", () => {
+    expect(text(setCardsQuery(["sos"]))).toContain("sc.color_identity as identity");
+    expect(text(preconCommandersQuery(["f"]))).toContain("pcc.color_identity as identity");
+    expect(text(feedCardsQuery(["c"]))).toContain("fc.color_identity as identity");
   });
 });

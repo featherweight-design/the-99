@@ -7,7 +7,8 @@
 import type { FeedView } from "../../lib/feed/home";
 import { feedCopy } from "../../lib/copy/feed";
 import type { ProfileCommander } from "../../lib/social/commander";
-import { FeedPress, feedAge, feedText } from "../feed/feed-item";
+import { FeedPress, feedText } from "../feed/feed-item";
+import { feedAge } from "../../lib/feed/age";
 import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
 import { CommanderThumb } from "../ui/commander-thumb";
@@ -40,10 +41,10 @@ export function LeadStory({
       )}
       <div aria-hidden className="relative m-[6px_2px_0_4px] h-[134px] w-[96px] flex-none -rotate-4 md:m-0 md:h-[168px] md:w-[120px]">
         <span className="block rounded-[5px] shadow-[0_10px_24px_rgba(0,0,0,.6)] md:hidden">
-          <CommanderThumb imageUri={image} colorIdentity={null} size="lead" />
+          <CommanderThumb imageUri={image} colorIdentity={item.card?.colorIdentity ?? null} size="lead" />
         </span>
         <span className="hidden rounded-[6px] shadow-[0_10px_24px_rgba(0,0,0,.6)] md:block">
-          <CommanderThumb imageUri={image} colorIdentity={null} size="leadWide" />
+          <CommanderThumb imageUri={image} colorIdentity={item.card?.colorIdentity ?? null} size="leadWide" />
         </span>
         {item.friend && (
           <span data-lead-face className="absolute right-[-10px] bottom-[-8px] h-[36px] w-[36px] rotate-4 overflow-hidden rounded-[10px] [border:2px_solid_var(--surface-rail)]">
