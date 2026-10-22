@@ -96,6 +96,10 @@ describe("All features", () => {
     expect(ALL_FEATURES_RAISES.has("SPARE_REQUESTS_ENABLED")).toBe(false);
   });
 
+  it("leaves strategy focus off until Design's handoff gives it a surface", () => {
+    expect(ALL_FEATURES_RAISES.has("STRATEGY_FOCUS_ENABLED")).toBe(false);
+  });
+
   it("raises a switch added later: the set is the registry's, not a list kept with the row", () => {
     expect([...ALL_FEATURES_RAISES].sort()).toEqual(
       SWITCHES.filter((s) => s.kind !== "plumbing" && !(s.name in ALL_FEATURES_EXCLUDED)).map((s) => s.name).sort(),

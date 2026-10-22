@@ -765,6 +765,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SOCIAL_WISHLIST_ENABLED: { label: "Wishlist", description: "Cards wanted outside any deck." },
   NEAR_COMBOS_ENABLED: { label: "Near combos", description: "Combos a deck is one card from, and where that card is. No surface yet." },
   SPARE_REQUESTS_ENABLED: { label: "Spare requests", description: "Ask a friend for a spare, and their Yes or No. Needs Friends." },
+  STRATEGY_FOCUS_ENABLED: { label: "Strategy focus", description: "A deck's top strategies, and leaning into one. Makes no model call. Needs the Analysis tab." },
   STAND_IN_LABELS_ENABLED: { label: "Stand-in labels", description: "Stand-in labels where a card has none yet." },
   SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },
   TUNING_ENABLED: { label: "Suggested changes", description: "Suggested changes for a deck." },

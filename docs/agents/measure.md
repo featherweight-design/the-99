@@ -107,3 +107,15 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   And it said "built decks" throughout: `loadPlayedTags` joins no `deck_versions`, so a BREW
   counts — deliberately — and `novelty.ts` records that this exact wording was corrected there
   once already. Every figure it prints includes brews.
+
+- **`pnpm measure:strategy`** (`scripts/measure-strategy-axes.mts`) is the strategy-focus groundwork's re-test (research
+  `boards/strategy-focus-research-2026-10-18.md`). The label themes have no word for artifact, Equipment and Aura,
+  vehicle, big-creature or single-creature-type decks, so `src/lib/strategy/axes.ts` reads those off the front face's
+  type line. `cards` holds no power, so a big creature is a creature of mana value 6 or more, a named proxy. Each axis
+  scores `copies × ln(lift)` (floor 5 copies, baseline share floored at 0.5%), against two baselines printed apart: the
+  catalog, and the commander's 64 highest-inclusion nonland cards. A list built around its commander's plan reads near
+  0 against that average by construction, and an EDHREC average against itself always does. Its first run
+  (2026-10-18): the catalog peak names the axis a reader would for nearly every list, but it does not separate precons
+  from tuned decks (medians: decks 62.6, precons 56.9, older precons 42.3, `HD Tune` decks 46.3). It now scores through the shipped
+  rule (`scoredAxes` in `src/lib/strategy/score.ts`, which drops `tribal` when a creature type scores) and also prints the
+  radar and the stability run that set `MIN_NONLAND`; see `docs/agents/strategy.md`.

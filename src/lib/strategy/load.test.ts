@@ -1,0 +1,135 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../cache/catalog-generation", () => ({ catalogGeneration: vi.fn(async () => "g1") }));
+vi.mock("../labels/generation", () => ({ labelGeneration: vi.fn(async (): Promise<string | undefined> => "l1") }));
+
+import { db } from "../../db";
+import { catalogGeneration } from "../cache/catalog-generation";
+import { labelGeneration } from "../labels/generation";
+import { LABEL_PROMPT_VERSION, labelInputHash } from "../labels/prompt";
+import type { Job } from "../labels/types";
+import { baselineFromRows, catalogQuery, deckCardsQuery, freshThemes, loadDeckStrategy, loadStrategyBaseline, toStrategyCard, type CardRow } from "./load";
+
+let n = 0;
+/** A card with no label row; `labelled` gives it a FRESH one carrying the themes. */
+const row = (typeLine: string, extra: Partial<CardRow> = {}): CardRow => ({
+  oracleId: `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}`, name: `Card ${n}`, manaCost: "{2}", oracleText: "Text.",
+  layout: "normal", typeLine, manaValue: 3, keywords: [], quantity: 1,
+  labels: null, labelModel: null, promptVersion: null, inputHash: null, ...extra,
+});
+const themeJob = (kind: string): Job => ({
+  space: "theme", kind, restrictedTo: null, affects: "self", to: null, method: null, trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
+}) as Job;
+const labelled = (r: CardRow, themes: string[], model = "m", version = LABEL_PROMPT_VERSION): CardRow => ({
+  ...r, labels: themes.map(themeJob), labelModel: model, promptVersion: version,
+  inputHash: labelInputHash({ oracleId: r.oracleId, name: r.name, mana_cost: r.manaCost, type_line: r.typeLine, oracle_text: r.oracleText, layout: r.layout }, model, version),
+});
+
+describe("deckCardsQuery", () => {
+  const { sql, params } = deckCardsQuery(db, "user_1", "deck-1").toSQL();
+
+  it("scopes the deck to its owner", () => {
+    expect(sql).toContain('"decks"."user_id" = $');
+    expect(params).toContain("user_1");
+  });
+
+  it("reads the card's own label row, whole, with the inputs its freshness is judged against", () => {
+    expect(sql).toContain('"card_labels"."input_hash"');
+    expect(sql).toContain('"cards"."oracle_text"');
+  });
+});
+
+describe("catalogQuery", () => {
+  it("reads only commander-legal cards and no deck", () => {
+    const { sql } = catalogQuery(db).toSQL();
+    expect(sql).toContain('"cards"."commander_legal" = $');
+    expect(sql).not.toContain("deck");
+  });
+});
+
+describe("toStrategyCard", () => {
+  it("drops lands, including a land's back face read from the front", () => {
+    expect(toStrategyCard(row("Land — Forest"))).toBeNull();
+    expect(toStrategyCard(row("Artifact Land"))).toBeNull();
+    expect(toStrategyCard(row("Instant // Land"))).not.toBeNull();
+  });
+
+  it("drops a non-game card, and reads a missing label row as no themes", () => {
+    expect(toStrategyCard(row("Token Creature — Elf", { layout: "token" }))).toBeNull();
+    expect(toStrategyCard(row("Artifact"))?.themes).toEqual([]);
+  });
+});
+
+describe("loadStrategyBaseline", () => {
+  beforeEach(() => {
+    vi.mocked(catalogGeneration).mockResolvedValue("g1");
+    vi.mocked(labelGeneration).mockResolvedValue("l1");
+  });
+
+  it("reads the catalog once per generation, and again when it moves", async () => {
+    const read = vi.fn(async () => [row("Artifact"), row("Sorcery"), row("Land")]);
+    const a = await loadStrategyBaseline(1, read);
+    await loadStrategyBaseline(2, read);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(a.axes.total).toBe(2);
+    vi.mocked(catalogGeneration).mockResolvedValue("g2");
+    await loadStrategyBaseline(3, read);
+    expect(read).toHaveBeenCalledTimes(2);
+  });
+
+  it("reads again when only the labels move, and uncached when their generation is unreadable", async () => {
+    const read = vi.fn(async () => [row("Artifact")]);
+    vi.mocked(catalogGeneration).mockResolvedValue("g9");
+    await loadStrategyBaseline(10, read);
+    await loadStrategyBaseline(11, read);
+    expect(read).toHaveBeenCalledTimes(1);
+    vi.mocked(labelGeneration).mockResolvedValue("l2");
+    await loadStrategyBaseline(12, read);
+    expect(read).toHaveBeenCalledTimes(2);
+    vi.mocked(labelGeneration).mockResolvedValue(undefined);
+    await loadStrategyBaseline(13, read);
+    await loadStrategyBaseline(14, read);
+    expect(read).toHaveBeenCalledTimes(4);
+  });
+
+  it("builds the counts from the same rule the deck read uses", () => {
+    const b = baselineFromRows([labelled(row("Artifact"), ["mill"]), labelled(row("Land — Island"), ["mill"])]);
+    expect(b.themes.get("mill")).toBe(1);
+  });
+});
+
+describe("loadDeckStrategy", () => {
+  it("reads nothing with the switch off, and with the Analysis tab off", async () => {
+    const spy = vi.spyOn(db, "select");
+    expect(await loadDeckStrategy("u", "d", {} as unknown as NodeJS.ProcessEnv)).toBeNull();
+    expect(await loadDeckStrategy("u", "d", { STRATEGY_FOCUS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeNull();
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe("strategyFocusEnabled", () => {
+  it("needs the exact string 'true' on both its own switch and the Analysis tab", async () => {
+    const { strategyFocusEnabled } = await import("./flag");
+    const env = (own: string | undefined, tab: string | undefined) =>
+      ({ STRATEGY_FOCUS_ENABLED: own, ANALYSIS_TAB_ENABLED: tab }) as unknown as NodeJS.ProcessEnv;
+    expect(strategyFocusEnabled(env("true", "true"))).toBe(true);
+    expect(strategyFocusEnabled(env("TRUE", "true"))).toBe(false);
+    expect(strategyFocusEnabled(env("true", undefined))).toBe(false);
+  });
+});
+
+describe("freshThemes", () => {
+  it("reads a fresh label's themes, and nothing from a stale or unregistered one", () => {
+    const card = labelled(row("Instant"), ["mill", "tokens"]);
+    expect(freshThemes(card)).toEqual(["mill", "tokens"]);
+    // The card's text moved since it was labelled: the label describes text it no longer has.
+    expect(freshThemes({ ...card, oracleText: "New text." })).toEqual([]);
+    expect(freshThemes({ ...card, promptVersion: "not-a-version" })).toEqual([]);
+    expect(freshThemes(row("Instant"))).toEqual([]);
+  });
+
+  it("keeps a stale card's type-line axes", () => {
+    const stale = { ...labelled(row("Artifact"), ["mill"]), oracleText: "Changed." };
+    expect(toStrategyCard(stale)).toMatchObject({ typeLine: "Artifact", themes: [] });
+  });
+});

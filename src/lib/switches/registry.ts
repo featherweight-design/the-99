@@ -75,6 +75,7 @@ export const SWITCHES = [
   { name: "SOCIAL_WISHLIST_ENABLED", kind: "feature" },
   { name: "SPARE_REQUESTS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "STAND_IN_LABELS_ENABLED", kind: "feature" },
+  { name: "STRATEGY_FOCUS_ENABLED", kind: "feature", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "SWAP_TOOLS_ENABLED", kind: "model" },
   { name: "TUNING_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "UPCOMING_PRECONS_ENABLED", kind: "feature", needs: "PRECONS_ENABLED" },
@@ -129,6 +130,8 @@ export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>
     "backend only until Design prompt 17's surface ships: no surface draws the near-combos reads yet (plan 2026-10-22-near-combos-backend.md)",
   SPARE_REQUESTS_ENABLED:
     "the Friends badge counts spare requests waiting on the reader, and no surface answers one until the UI PR (plan 2026-10-22-spare-requests.md)",
+  STRATEGY_FOCUS_ENABLED:
+    "backend only until Design's handoff lands: the scores and lean-in have no surface yet (brief 2026-10-22-strategy-focus.md)",
 };
 
 /**
