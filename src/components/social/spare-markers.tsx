@@ -79,8 +79,11 @@ export async function fetchAsks(oracleIds: readonly string[]): Promise<AskStateL
 }
 
 type Ctx = {
-  /** The cards with a spare, and their friends. */
+  /** The cards with a spare, and their friends: the cards on the list NOW only. */
   byCard: ReadonlyMap<string, FriendSpare[]>;
+  /** Every card's spares read this visit, a card that left the list included (the cart keeps a line bought this
+   *  visit as a held slot, and By friend draws it under the friends it sat under). */
+  seen: ReadonlyMap<string, FriendSpare[]>;
   /** The card whose spares-only modal is open (swap tools off), or null. */
   opened: SpareCard | null;
   open: (card: SpareCard) => void;
@@ -156,8 +159,10 @@ export function FriendSparesProvider({
   useEffect(() => {
     if (!key) return;
     let live = true;
-    void fetchSpares(key.split(",")).then((rows) => {
-      if (live) setSpares(rows);
+    const ids = new Set(key.split(","));
+    void fetchSpares([...ids]).then((rows) => {
+      // A read replaces only the cards it asked about: a card that left the list keeps what was read for it.
+      if (live) setSpares((prev) => [...prev.filter((s) => !ids.has(s.oracleId)), ...rows]);
     });
     return () => {
       live = false;
@@ -211,13 +216,17 @@ export function FriendSparesProvider({
     // empty list included, rather than when a later read lands.
     const asked = new Set(key ? key.split(",") : []);
     const byCard = new Map<string, FriendSpare[]>();
-    for (const s of spares) if (asked.has(s.oracleId)) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
+    const seen = new Map<string, FriendSpare[]>();
+    for (const s of spares) {
+      seen.set(s.oracleId, [...(seen.get(s.oracleId) ?? []), s]);
+      if (asked.has(s.oracleId)) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
+    }
     // The asks are NOT cut to the cards asked for now: a row only draws its own card's, and a sheet left open on a card
     // that just left the list (a stand-in taken) must still draw Requested, not offer an Ask the write would refuse.
     const asksByCard = new Map<string, AskStateLine[]>();
     for (const a of asks) asksByCard.set(a.oracleId, [...(asksByCard.get(a.oracleId) ?? []), a]);
     const req: RequestsCtx | null = requests ? { asksFor: (id) => asksByCard.get(id) ?? [], ask } : null;
-    return { byCard, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req };
+    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req };
   }, [spares, asks, opened, key, newestAsOf, requests, ask]);
   return (
     <SparesContext.Provider value={value}>
@@ -254,7 +263,7 @@ export function StaticSparesProvider({
   const value = useMemo<Ctx>(() => {
     const byCard = new Map<string, FriendSpare[]>();
     for (const s of spares) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
-    return { byCard, opened: null, open: () => {}, close: () => {}, newestAsOf, requests: null };
+    return { byCard, seen: byCard, opened: null, open: () => {}, close: () => {}, newestAsOf, requests: null };
   }, [spares, newestAsOf]);
   return <SparesContext.Provider value={value}>{children}</SparesContext.Provider>;
 }

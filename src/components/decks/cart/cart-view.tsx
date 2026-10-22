@@ -19,7 +19,7 @@ import { FriendSparesProvider, SparesSheetHost, usePageSpares } from "../../soci
 import { CartDeckGroup } from "./cart-deck-group";
 import { DeckSelect } from "./deck-select";
 import { ViewSwitch, type CartViewMode } from "./view-switch";
-import { ByFriendList, byFriendHead, useByFriend } from "./cart-by-friend";
+import { ByFriendList, byFriendHead, useByFriend, type HeldLines } from "./cart-by-friend";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { HoverPreviewProvider } from "../hover-preview";
@@ -35,9 +35,25 @@ function byCardOrder(a: SelectedLine, b: SelectedLine): number {
 }
 
 /**
- * The by-card list, with a line bought this visit that the read no longer lists kept as a held
- * slot where it was (S3), sorted among the rest by the line as it was drawn before the press.
+ * The lines to draw: the selected ones, and each line bought this visit that the read no longer lists, kept as a held
+ * slot where it was (S3), sorted among the rest by the line as it was drawn before the press. A line gone from the
+ * read and bought for a deck still selected: the slot belongs to the selection it was bought in, and unselecting
+ * those decks takes it out with every other line of theirs. By card and By friend both draw from this.
  */
+function useWithHeld(lines: SelectedLine[], read: ReadonlySet<string>, selected: ReadonlySet<string>): { lines: SelectedLine[]; held: HeldLines } {
+  const gotIt = useCartGotIt();
+  return useMemo(() => {
+    const gone = [...(gotIt?.held.values() ?? [])].filter((h) =>
+      !read.has(h.line.oracleId) && [...h.deckIds].some((d) => selected.has(d)));
+    if (gone.length === 0) return { lines, held: new Map() };
+    return {
+      lines: [...lines, ...gone.map((h) => h.line)].sort(byCardOrder),
+      held: new Map(gone.map((h) => [h.line.oracleId, h.added])),
+    };
+  }, [gotIt, lines, read, selected]);
+}
+
+/** The by-card list (`useWithHeld`'s lines, a held one as its slot). */
 function ByCardList({
   lines, read, selected, deckNames, newestAsOf,
 }: {
@@ -48,20 +64,15 @@ function ByCardList({
   deckNames: Map<string, string>;
   newestAsOf: Date | null;
 }) {
-  const gotIt = useCartGotIt();
-  // Gone from the read, and bought for a deck still selected: the slot belongs to the selection
-  // it was bought in, and unselecting those decks takes it out with every other line of theirs.
-  const gone = [...(gotIt?.held.values() ?? [])].filter((h) =>
-    !read.has(h.line.oracleId) && [...h.deckIds].some((d) => selected.has(d)));
-  const rows = [
-    ...lines.map((line) => ({ line, added: 0, held: false })),
-    ...gone.map((h) => ({ line: h.line, added: h.added, held: true })),
-  ].sort((a, b) => byCardOrder(a.line, b.line));
+  const drawn = useWithHeld(lines, read, selected);
   return (
     <ul className="m-0 list-none p-0">
-      {rows.map((r) => (r.held
-        ? <CartHeldSlot key={r.line.oracleId} name={r.line.name} added={r.added} />
-        : <CartLine key={r.line.oracleId} line={r.line} deckNames={deckNames} newestAsOf={newestAsOf} />))}
+      {drawn.lines.map((line) => {
+        const added = drawn.held.get(line.oracleId);
+        return added !== undefined
+          ? <CartHeldSlot key={line.oracleId} name={line.name} added={added} />
+          : <CartLine key={line.oracleId} line={line} deckNames={deckNames} newestAsOf={newestAsOf} />;
+      })}
     </ul>
   );
 }
@@ -282,12 +293,16 @@ export function CartView({
                   onView={chooseView}
                   byDeckView={cart.decks.length >= 2}
                   lines={lines}
+                  read={readIds}
+                  selected={selected}
                   showBuy={showKey}
                   drawn={drawnIds}
                 />
                 <ListHead
                   view={view}
                   lines={lines}
+                  read={readIds}
+                  selected={selected}
                   byDeck={copy.list.headByDeck(deckCount, total.copies)}
                 />
               </div>
@@ -361,8 +376,11 @@ function shown(view: CartViewMode, byFriend: boolean): CartViewMode {
 }
 
 /** The list head for the view drawn. */
-function ListHead({ view, lines, byDeck }: { view: CartViewMode; lines: SelectedLine[]; byDeck: string }) {
-  const byFriend = useByFriend(lines);
+function ListHead({ view, lines, read, selected, byDeck }: {
+  view: CartViewMode; lines: SelectedLine[]; read: ReadonlySet<string>; selected: ReadonlySet<string>; byDeck: string;
+}) {
+  const drawn = useWithHeld(lines, read, selected);
+  const byFriend = useByFriend(drawn.lines, drawn.held);
   const v = shown(view, byFriend !== null);
   return (
     <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
@@ -382,9 +400,10 @@ function CardOrFriendList({
   deckNames: Map<string, string>;
   newestAsOf: Date | null;
 }) {
-  const byFriend = useByFriend(lines);
+  const drawn = useWithHeld(lines, read, selected);
+  const byFriend = useByFriend(drawn.lines, drawn.held);
   if (view === "friend" && byFriend) {
-    return <ByFriendList groups={byFriend.groups} requests={byFriend.requests} deckNames={deckNames} newestAsOf={newestAsOf} />;
+    return <ByFriendList groups={byFriend.groups} requests={byFriend.requests} held={drawn.held} deckNames={deckNames} newestAsOf={newestAsOf} />;
   }
   return <ByCardList lines={lines} read={read} selected={selected} deckNames={deckNames} newestAsOf={newestAsOf} />;
 }
@@ -396,17 +415,20 @@ function CardOrFriendList({
  * friend never does: its line's press is the Ask. Nothing at all with none of the three.
  */
 function CartKeyRow({
-  view, onView, byDeckView, lines, showBuy, drawn,
+  view, onView, byDeckView, lines, read, selected, showBuy, drawn,
 }: {
   view: CartViewMode;
   onView: (v: CartViewMode) => void;
   byDeckView: boolean;
   lines: SelectedLine[];
+  read: ReadonlySet<string>;
+  selected: ReadonlySet<string>;
   showBuy: boolean;
   drawn: ReadonlySet<string>;
 }) {
   const spares = usePageSpares();
-  const byFriend = useByFriend(lines);
+  const withHeld = useWithHeld(lines, read, selected);
+  const byFriend = useByFriend(withHeld.lines, withHeld.held);
   const v = shown(view, byFriend !== null);
   const viewSwitch = byDeckView || byFriend
     // An explicit `?view=deck` with one deck keeps its own segment, so the switch always shows the view it is on.

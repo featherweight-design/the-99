@@ -17,19 +17,27 @@ import { usePageSpares } from "../../social/spare-markers";
 import { RowEnd, SpareRequestsContext, rowAsk, type RequestsCtx } from "../../social/friend-spares";
 import { Face } from "../../social/face";
 import { SocialToast, type SocialToastState } from "../../social/social-toast";
-import { CartLine } from "./cart-line";
+import { CartHeldSlot, CartLine } from "./cart-line";
 
 /** One friend's panel: who they are, the spares they hold of the drawn lines, and those lines in the cart's order. */
 export type FriendGroup = { friend: SpareFriend; spares: number; lines: SelectedLine[] };
+
+/** Lines bought this visit that the read no longer lists, by card, with the copies the press added (S3's held slot). */
+export type HeldLines = ReadonlyMap<string, number>;
+const NO_HELD: HeldLines = new Map();
 
 /**
  * The panels for these lines (already in the by-card order), most spares first, then by name (R1 decision 16's order
  * for people). A spare is counted in copies, as the modal's friend row counts it.
  */
-export function groupByFriend(lines: readonly SelectedLine[], byCard: ReadonlyMap<string, readonly FriendSpare[]>): FriendGroup[] {
+export function groupByFriend(
+  lines: readonly SelectedLine[], byCard: ReadonlyMap<string, readonly FriendSpare[]>,
+  held: HeldLines = NO_HELD, seen: ReadonlyMap<string, readonly FriendSpare[]> = byCard,
+): FriendGroup[] {
   const groups = new Map<string, FriendGroup>();
   for (const line of lines) {
-    for (const s of byCard.get(line.oracleId) ?? []) {
+    // A held line has left the list, so its spares are the ones read for it this visit: it keeps its place under them.
+    for (const s of byCard.get(line.oracleId) ?? (held.has(line.oracleId) ? seen.get(line.oracleId) : undefined) ?? []) {
       const g = groups.get(s.friend.publicId) ?? { friend: s.friend, spares: 0, lines: [] };
       if (!g.lines.includes(line)) g.lines.push(line);
       g.spares += s.spare;
@@ -47,10 +55,12 @@ export function groupByFriend(lines: readonly SelectedLine[], byCard: ReadonlyMa
  * spares not read yet, or no drawn line with a friend's spare. Null is what hides the switch's segment, and what
  * sends a `?view=friend` arrival to By card until the read lands.
  */
-export function useByFriend(lines: readonly SelectedLine[]): { groups: FriendGroup[]; requests: RequestsCtx } | null {
+export function useByFriend(
+  lines: readonly SelectedLine[], held: HeldLines = NO_HELD,
+): { groups: FriendGroup[]; requests: RequestsCtx } | null {
   const spares = usePageSpares();
   const requests = useContext(SpareRequestsContext);
-  const groups = useMemo(() => (spares ? groupByFriend(lines, spares.byCard) : []), [lines, spares]);
+  const groups = useMemo(() => (spares ? groupByFriend(lines, spares.byCard, held, spares.seen) : []), [lines, spares, held]);
   if (!requests || groups.length === 0) return null;
   return { groups, requests };
 }
@@ -65,11 +75,14 @@ const lineKey = (publicId: string, oracleId: string) => `${publicId}:${oracleId}
 export function ByFriendList({
   groups,
   requests,
+  held = NO_HELD,
   deckNames,
   newestAsOf,
 }: {
   groups: readonly FriendGroup[];
   requests: RequestsCtx;
+  /** Lines bought this visit and gone from the read: drawn as By card draws them, a held slot where the line was. */
+  held?: HeldLines;
   deckNames: Map<string, string>;
   newestAsOf: Date | null;
 }) {
@@ -128,6 +141,8 @@ export function ByFriendList({
           </header>
           <ul className="m-0 list-none p-0">
             {g.lines.map((line) => {
+              const added = held.get(line.oracleId);
+              if (added !== undefined) return <CartHeldSlot key={line.oracleId} name={line.name} added={added} />;
               const key = lineKey(g.friend.publicId, line.oracleId);
               const ask = rowAsk(requests.asksFor(line.oracleId), g.friend.publicId);
               return (

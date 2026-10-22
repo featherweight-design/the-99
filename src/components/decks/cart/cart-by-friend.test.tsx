@@ -8,8 +8,9 @@ import type { AskStateLine } from "../../../lib/social/spare-requests";
 
 const actions = vi.hoisted(() => ({ askSpareAction: vi.fn(), askInsteadAction: vi.fn() }));
 vi.mock("../../../app/friends/spare-actions", () => actions);
-vi.mock("../../../app/collection/edit-actions", () => ({ loadPrintingChoices: vi.fn() }));
-vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks: vi.fn(), readCartChooser: vi.fn(async () => null), markBought: vi.fn() }));
+const bought = vi.hoisted(() => ({ loadPrintingChoices: vi.fn(), markBoughtForDecks: vi.fn() }));
+vi.mock("../../../app/collection/edit-actions", () => ({ loadPrintingChoices: bought.loadPrintingChoices }));
+vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks: bought.markBoughtForDecks, readCartChooser: vi.fn(async () => null), markBought: vi.fn() }));
 vi.mock("../../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("../../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -30,6 +31,7 @@ const { CartView } = await import("./cart-view");
 const { groupByFriend } = await import("./cart-by-friend");
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { spareCopy } from "../../../lib/copy/social";
+import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { CartPayload } from "../../../lib/decks/cart";
 
 const r = spareCopy.request;
@@ -186,6 +188,34 @@ describe("By friend's panels", () => {
     expect(list().queryByTestId("other-ways")).toBeNull();
     expect(screen.queryByTestId("spare-key")).toBeNull();
     expect(screen.getByText(/press to add/)).toBeTruthy();
+  });
+});
+
+describe("a line bought in By friend", () => {
+  it("keeps its held slot in each panel it sat in, and the view stays By friend", async () => {
+    bought.loadPrintingChoices.mockResolvedValue([{
+      scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+      collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+      finishes: ["nonfoil"], owned: { nonfoil: 0 },
+    }]);
+    bought.markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
+    // Jace is the only line with a spare: once it is bought and gone, nothing else holds the view up.
+    served = { spares: [spare(JACE, "Colin"), spare(JACE, "Max", 1, ["Cube night"])], asks: [] };
+    const props = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true, initialView: "friend" as const };
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(<CartView cart={cart()} {...props} />); });
+    const tag = within(lineIn("Colin", "Jace")).getByRole("button", { name: gotItCopy.row.tagAria("Jace, Multiverse Architect") });
+    fireEvent.click(tag);
+    const add = await screen.findByRole("button", { name: /^Add/ });
+    await act(async () => { fireEvent.click(add); });
+    const after = cart();
+    after.lines = after.lines.filter((l) => l.oracleId !== JACE);
+    await act(async () => { view.rerender(<CartView cart={after} {...props} />); });
+    expect(panels().map((p) => p.getAttribute("data-friend"))).toEqual(["p-Colin", "p-Max"]);
+    for (const name of ["Colin", "Max"]) {
+      const slot = panel(name).getAllByRole("listitem").find((li) => li.hasAttribute("data-held-slot"))!;
+      expect(slot.textContent).toContain(gotItCopy.slot.held("Jace, Multiverse Architect"));
+    }
   });
 });
 
