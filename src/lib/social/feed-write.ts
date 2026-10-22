@@ -15,7 +15,7 @@
 import { sql, type SQL } from "drizzle-orm";
 
 import type { db } from "../../db";
-import { feedItems, userPrefs } from "../../db/schema";
+import { feedItems, friendLinks, userPrefs } from "../../db/schema";
 import { isStoredKind, type StoredKind } from "../feed/kinds";
 
 export type FeedItemInput = {
@@ -50,6 +50,20 @@ export function feedItemProblem(input: FeedItemInput): string | null {
   return null;
 }
 
+/**
+ * An item naming a friend is written only while that friendship stands, and holds the reader's friendship row FOR
+ * SHARE until the insert commits (the `resolveFriendSeatsIn` rule, `games.ts`). The purge locks those rows before it
+ * deletes the friend's feed items, so a write racing a friend's purge either waits and is then refused (the row is
+ * gone) or commits first and is deleted by it: it can never restore a purged account's id. One statement, so the lock
+ * spans the insert even when the caller passes no transaction.
+ */
+function friendHeld(input: FeedItemInput): SQL {
+  if (input.friendUserId == null) return sql``;
+  return sql`
+      and exists (select 1 from ${friendLinks} wfl
+        where wfl.user_id = ${input.userId} and wfl.friend_user_id = ${input.friendUserId} for share)`;
+}
+
 /** The insert, apart so a test can render it: one row, only while the kind is on for the reader, nothing on a repeat. */
 export function recordFeedItemQuery(input: FeedItemInput): SQL {
   const now = (input.now ?? new Date()).toISOString();
@@ -57,7 +71,7 @@ export function recordFeedItemQuery(input: FeedItemInput): SQL {
     select ${input.userId}, ${input.kind}, ${input.dedupeKey}, ${input.oracleId ?? null}::uuid, ${input.variantId ?? null}::text,
       ${input.friendUserId ?? null}::text, ${JSON.stringify(input.data ?? {})}::jsonb, ${now}::timestamptz
     from ${userPrefs} wup
-    where wup.user_id = ${input.userId} and (wup.feed_kinds ->> ${input.kind}) is not null
+    where wup.user_id = ${input.userId} and (wup.feed_kinds ->> ${input.kind}) is not null${friendHeld(input)}
     on conflict (user_id, kind, dedupe_key) do nothing
     returning id`;
 }

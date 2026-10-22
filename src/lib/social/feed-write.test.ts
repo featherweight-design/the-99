@@ -34,6 +34,17 @@ describe("recordFeedItemQuery", () => {
     expect(params.filter((p) => p === "combo")).toHaveLength(2);
   });
 
+  it("names no friendship when the item names no friend", () => {
+    expect(q).not.toContain("friend_links");
+  });
+
+  it("writes an item naming a friend only while the friendship stands, holding it FOR SHARE through the insert", () => {
+    const named = flat(new PgDialect().sqlToQuery(recordFeedItemQuery({
+      userId: "u", kind: "trade-match", dedupeKey: "c:f", oracleId: "00000000-0000-4000-8000-000000000001", friendUserId: "f", now: NOW,
+    })).sql);
+    expect(named).toMatch(/and exists \(select 1 from "friend_links" wfl where wfl\.user_id = \$\d+ and wfl\.friend_user_id = \$\d+ for share\)/);
+  });
+
   it("writes the same event once (the dedupe key, per reader and kind)", () => {
     expect(q).toContain("on conflict (user_id, kind, dedupe_key) do nothing returning id");
   });
