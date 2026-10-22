@@ -16,7 +16,7 @@
 // sheet as they always did (the dialog owns one history entry, and a second for the combo would have
 // to be unwound by every way out). `← N combos` is the way back to the list, at its scroll position.
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import { addCardToDeck } from "../../app/decks/actions";
@@ -98,6 +98,9 @@ export function CombosCloseSheet({
     setOpenId(variantId);
   };
   const pop = () => setOpenId(null);
+  // An Add answers for ITS combo only: if the reader has gone back and opened another meanwhile, a
+  // late success must not dismiss that one.
+  const added = (variantId: string) => setOpenId((current) => (current === variantId ? null : current));
 
   // The list stays mounted (hidden) under the combo, so going back restores its scroll and puts focus
   // on the row's press. Layout, so neither the combo nor the list paints at the other's position first.
@@ -113,10 +116,25 @@ export function CombosCloseSheet({
     if (!was) return;
     left.current = null;
     if (el) el.scrollTop = was.scrollTop;
-    listRef.current
-      ?.querySelector<HTMLButtonElement>(`[data-combo-row="${CSS.escape(was.variantId)}"] [data-combo-press]`)
-      ?.focus({ preventScroll: true });
+    const row = listRef.current?.querySelector<HTMLButtonElement>(`[data-combo-row="${CSS.escape(was.variantId)}"] [data-combo-press]`);
+    // The pressed row's combo may have been added (its row is gone): the list's first row stands in.
+    (row ?? listRef.current?.querySelector<HTMLButtonElement>("[data-combo-press]"))?.focus({ preventScroll: true });
   }, [shown]);
+
+  // A revalidation can remove the focused row after the way back (an Add whose read lands late): focus
+  // would fall to the page under the dialog. Only then, and only while the list is showing, it goes to
+  // the list's first row, so no control or stacked card the reader has since moved to loses focus.
+  const rowIds = nearCombos.combos.map((c) => c.variantId).join("|");
+  const seenRows = useRef(rowIds);
+  useEffect(() => {
+    // Not on mount, where the dialog places its own first focus: only when the rows change.
+    if (seenRows.current === rowIds) return;
+    seenRows.current = rowIds;
+    if (shown !== null) return;
+    const list = listRef.current;
+    if (!list || (document.activeElement && document.activeElement !== document.body)) return;
+    list.querySelector<HTMLButtonElement>("[data-combo-press]")?.focus({ preventScroll: true });
+  }, [rowIds, shown]);
 
   // One order for the combo everywhere it is named (title, plates, a stacked card's back label):
   // what you have, then what it needs. The read sorts pieces by name.
@@ -143,7 +161,7 @@ export function CombosCloseSheet({
         <Group label={copy.groups.buy} combos={buy} first={own.length === 0} commanderOracleIds={commanderOracleIds} onOpen={push} />
         <p className="m-0 px-[4px] pt-[4px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.foot}</p>
       </div>
-      {open ? <ComboDetail key={open.variantId} combo={open} deckId={deckId} art={art} onAdded={pop} /> : null}
+      {open ? <ComboDetail key={open.variantId} combo={open} deckId={deckId} art={art} onAdded={() => added(open.variantId)} /> : null}
     </SheetFrame>
   );
 }

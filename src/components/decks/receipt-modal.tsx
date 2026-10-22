@@ -477,12 +477,15 @@ export function ReceiptTile({
 }) {
   const drawn = art.get(card.oracleId);
   const name = drawn?.name ?? card.name;
+  // The where-line describes the plate's press, so focusing a plate also says where the card is.
+  const whereId = useId();
   return (
     <CardDetailTrigger
       oracleId={card.oracleId}
       name={name}
       siblings={siblings}
       imageUri={drawn?.imageUri ?? null}
+      describedBy={where != null ? whereId : undefined}
       testId="receipt-tile"
       // The grid's tiles are the 760 receipt's (3a); the combo body's fixed plates are unchanged.
       className={"flex w-full flex-col items-stretch text-left " + (width ? "gap-[5px] md:gap-[6px]" : "gap-[6px] md:gap-[7px]")}
@@ -508,7 +511,7 @@ export function ReceiptTile({
         {name}
       </span>
       {where != null ? (
-        <span data-plate-where className="flex flex-wrap items-center gap-[6px] font-mono text-[10px] text-[color:var(--fg-body)]">
+        <span id={whereId} data-plate-where className="flex flex-wrap items-center gap-[6px] font-mono text-[10px] text-[color:var(--fg-body)]">
           {where}
         </span>
       ) : null}

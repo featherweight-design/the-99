@@ -13,8 +13,8 @@ const registerSheet = vi.fn<(label: string, ...rest: unknown[]) => () => void>((
 vi.mock("../cards/card-detail-provider", () => ({
   useCardDetail: () => ({ registerSheet, openOracleId: null, revealing: false }),
   // A plate is a press that opens the card: drawn as a button, as the real trigger is.
-  CardDetailTrigger: ({ children, testId }: { children?: React.ReactNode; testId?: string }) => (
-    <button type="button" data-testid={testId}>{children}</button>
+  CardDetailTrigger: ({ children, testId, describedBy }: { children?: React.ReactNode; testId?: string; describedBy?: string }) => (
+    <button type="button" data-testid={testId} aria-describedby={describedBy}>{children}</button>
   ),
 }));
 const addCardToDeck = vi.fn<(deckId: string, oracleId: string) => Promise<DeckMutationResult>>();
@@ -306,6 +306,9 @@ describe("a row opens its combo inside the sheet", () => {
     expect(plateWhere("Searing Touch")!.querySelector('[data-dot="buy"]')).not.toBeNull();
     expect(plate("Searing Touch").querySelector("[data-missing-piece]")!.className).toContain("[outline:1.5px_dashed_var(--accent)]");
     expect(plate("Avatar Aang").querySelector("[data-missing-piece]")).toBeNull();
+    // Focusing a plate says where the card is: its where-line describes the press.
+    const describedBy = plate("Searing Touch").getAttribute("aria-describedby");
+    expect(describedBy && document.getElementById(describedBy)).toBe(plateWhere("Searing Touch"));
     expect(registerSheet).toHaveBeenLastCalledWith("Avatar Aang + Searing Touch", undefined, false, undefined);
     // The missing card's art is the catalog's (the read's `missing.card`).
     expect(plate("Searing Touch").querySelector<HTMLImageElement>("img")?.getAttribute("src") ?? plate("Searing Touch").innerHTML).toContain("https://img/searing.jpg");
@@ -389,6 +392,31 @@ describe("a row opens its combo inside the sheet", () => {
     );
     expect(shownDetail()).toBeNull();
     expect(press("Searing Touch")).toHaveFocus();
+  });
+
+  it("keeps focus in the sheet when the added combo's row then leaves the list", async () => {
+    addCardToDeck.mockResolvedValue({ ok: true });
+    const view = draw([SEARING, LIST[0]]);
+    fireEvent.click(press("Searing Touch"));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: detail.add("Searing Touch") }));
+    });
+    // The revalidated read drops the added combo: focus lands on the surviving row, not the page.
+    view.rerender(sheet([LIST[0]], 1));
+    expect(press("Exquisite Blood")).toHaveFocus();
+  });
+
+  it("does not let a late Add dismiss another combo the reader has opened since", async () => {
+    let finish: (r: DeckMutationResult) => void = () => {};
+    addCardToDeck.mockReturnValue(new Promise<DeckMutationResult>((r) => (finish = r)));
+    draw([SEARING, LIST[0]]);
+    fireEvent.click(press("Searing Touch"));
+    fireEvent.click(screen.getByRole("button", { name: detail.add("Searing Touch") }));
+    // Back to the list while it is pending, and into another combo.
+    fireEvent.click(document.querySelector<HTMLButtonElement>("[data-sheet-back]")!);
+    fireEvent.click(press("Exquisite Blood"));
+    await act(async () => finish({ ok: true }));
+    expect(shownDetail()?.getAttribute("data-combo-detail")).toBe(LIST[0].variantId);
   });
 
   it("stays on the combo and says why when the add is refused", async () => {
