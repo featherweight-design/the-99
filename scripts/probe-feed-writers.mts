@@ -124,7 +124,10 @@ async function main() {
     check("a second run the same week tells nothing", (await items(U, "price-drop")).length === 1, JSON.stringify(r));
     // Eight days on, still fallen: the once-a-week rule lets it through again, under next week's key.
     await db.execute(sql`update wishlist_items set price_noticed_at = price_noticed_at - interval '8 days' where user_id = ${U} and oracle_id = ${P1}`);
+    // A Sunday noon at least a week on: the Monday after it is the next ISO week and strictly inside the cooldown.
     const nextWeek = new Date(now.getTime() + 8 * 86_400_000);
+    nextWeek.setUTCHours(12, 0, 0, 0);
+    while (nextWeek.getUTCDay() !== 0) nextWeek.setUTCDate(nextWeek.getUTCDate() + 1);
     await noticePriceDrops(ENV, () => nextWeek);
     drops = await items(U, "price-drop");
     check("a week later, still fallen: told again under that week's key", drops.length === 2 && drops[1].dedupe_key === priceDropKey(P1, nextWeek));
@@ -270,7 +273,7 @@ async function main() {
         + (select count(*) from friend_links where user_id in (${U}, ${F}) or friend_user_id in (${U}, ${F}))
         + (select count(*) from pods where owner_user_id in (${U}, ${F}))
         as n`);
-    console.log(`\ncleanup: ${Number(left[0]?.n ?? -1) === 0 ? "every row this run wrote is gone" : `${left[0]?.n} rows remain`}`);
+    check("cleanup: every row this run wrote is gone", Number(left[0]?.n ?? -1) === 0, `${left[0]?.n} rows remain`);
   }
 }
 

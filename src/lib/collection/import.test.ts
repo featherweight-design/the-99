@@ -6,12 +6,16 @@ const stub = vi.hoisted(() => {
   const executed: string[] = [];
   const inserted: Record<string, unknown>[] = [];
   const standing: { rows: Record<string, unknown>[] } = { rows: [] };
+  // One trace of what the write does, in order: the lock, the row writes, the commit, and (below) the combo writer.
+  const trace: string[] = [];
+  const fail = { commit: false };
   const tx = {
     delete: (table: Table) => {
       deleted.push(getTableName(table));
+      trace.push("write");
       return { where: async () => {} };
     },
-    insert: () => ({ values: async (v: Record<string, unknown>[]) => { inserted.push(...v); } }),
+    insert: () => ({ values: async (v: Record<string, unknown>[]) => { inserted.push(...v); trace.push("write"); } }),
     // The holdings the replace finds before it deletes: none, so the write is a first fill.
     select: () => ({ from: () => ({ where: async () => standing.rows }) }),
     update: () => ({ set: () => ({ where: async () => {}, returning: async () => [{ id: "u" }] }) }),
@@ -20,6 +24,7 @@ const stub = vi.hoisted(() => {
     // lock be deleted with this suite still green.
     execute: async (q: { queryChunks?: unknown[] }) => {
       executed.push(JSON.stringify(q?.queryChunks ?? q));
+      if (executed[executed.length - 1].includes("pg_advisory_xact_lock")) trace.push("lock");
       return { rows: [] };
     },
   };
@@ -28,7 +33,16 @@ const stub = vi.hoisted(() => {
     executed,
     inserted,
     standing,
-    db: { transaction: async (fn: (t: typeof tx) => Promise<void>) => fn(tx) },
+    trace,
+    fail,
+    db: {
+      transaction: async (fn: (t: typeof tx) => Promise<void>) => {
+        await fn(tx);
+        // The commit: reached only when the callback returned, and a stand-in for a commit that itself fails.
+        if (fail.commit) throw new Error("commit failed");
+        trace.push("commit");
+      },
+    },
   };
 });
 
@@ -38,7 +52,7 @@ vi.mock("../../db", () => ({ db: stub.db }));
 // `probe:feed-writers`. What this suite pins is the WIRING: watched under the lock before the rows move, the delta
 // read in the same transaction, and the notice only after the commit.
 const combo = vi.hoisted(() => ({
-  order: [] as string[],
+  order: stub.trace,
   delta: null as null | { added: string[]; held: Set<string> },
 }));
 vi.mock("../feed/combo-writer", () => ({
@@ -100,15 +114,28 @@ describe("replaceCollection", () => {
     expect(stub.executed.join(" ")).toContain("pg_advisory_xact_lock");
   });
 
-  it("watches combos before the rows move and tells them only after the transaction, when the write added a card", async () => {
-    combo.order.length = 0;
+  it("watches combos under the lock, before the rows move, and tells them only after the commit, when the write added a card", async () => {
+    stub.trace.length = 0;
     combo.delta = null;
     await replaceCollection("user_1", []);
-    expect(combo.order).toEqual(["watch", "delta"]);
-    combo.order.length = 0;
+    expect(stub.trace).toEqual(["lock", "watch", "write", "write", "delta", "commit"]);
+    stub.trace.length = 0;
     combo.delta = { added: ["new"], held: new Set(["new", "held-before"]) };
     await replaceCollection("user_1", []);
-    expect(combo.order).toEqual(["watch", "delta", "after-commit", "notice"]);
+    expect(stub.trace).toEqual(["lock", "watch", "write", "write", "delta", "commit", "after-commit", "notice"]);
     combo.delta = null;
+  });
+
+  it("tells nothing when the transaction does not commit", async () => {
+    stub.trace.length = 0;
+    combo.delta = { added: ["new"], held: new Set(["new", "held-before"]) };
+    stub.fail.commit = true;
+    try {
+      await expect(replaceCollection("user_1", [])).rejects.toThrow("commit failed");
+    } finally {
+      stub.fail.commit = false;
+      combo.delta = null;
+    }
+    expect(stub.trace).toEqual(["lock", "watch", "write", "write", "delta"]);
   });
 });
