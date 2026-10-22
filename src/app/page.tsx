@@ -28,7 +28,6 @@ import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvite
 import { loadHomeTables } from "../lib/social/rule-zero-home";
 import { HomeTableCard } from "../components/rule-zero/home-table-card";
 import { loadInviteCount } from "../lib/invites/read";
-import { wishlistEnabled } from "../lib/wishlist/flag";
 import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
 import { firstRunTourEnabled } from "../lib/discovery/onboarding-flag";
 import { readTourSeen, tourDue } from "../lib/discovery/tour";
@@ -382,7 +381,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       helpMeChoose={helpMeChooseEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
       tables={homeTables}
-      friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: wishlistEnabled(env), invites }}
+      friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: true, invites }}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
       now={now.toISOString()}

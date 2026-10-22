@@ -12,7 +12,6 @@ import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
 import { ruleZeroEnabled, socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
 import { loadInviteCount } from "../../lib/invites/read";
-import { wishlistEnabled } from "../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { perfRoute } from "../../lib/perf/timing";
 import { ensureProfile, friendPublicId, loadFriendsAndLinks, profileAgeMs } from "../../lib/social/friends";
@@ -94,7 +93,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       origin={originFrom(await headers())}
       nowMs={now.getTime()}
       maxLinks={MAX_OPEN_INVITES}
-      friendPages={wishlistEnabled(env)}
+      friendPages
       invites={invites}
     />
     </>
