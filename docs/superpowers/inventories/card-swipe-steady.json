@@ -1,0 +1,30 @@
+{
+  "feature": "Card details: paging holds the shelf still (the door strip's measured height)",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "phone-short", "width": 390, "height": 664 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "all-paged",
+      "label": "/decks/[id] All: a card paged to with Next, no door",
+      "steps": [
+        { "goto": "/decks/${SWIPE_DECK_ID}", "wait": "[data-decklist-row]", "settle": 2000 },
+        { "click": "[data-decklist-row]", "wait": "[role=dialog]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Next card: ", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "shopping-paged",
+      "label": "/decks/[id] Shopping: the second row (the first is the commander, which opens with no door), paged to with Next; the stand-ins door at the sheet's head",
+      "steps": [
+        { "goto": "/decks/${SWIPE_DECK_ID}", "wait": "[data-decklist-row]", "settle": 2000 },
+        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 1000 },
+        { "click": "[data-decklist-row]:visible >> nth=1", "wait": "[role=dialog]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Next card: ", "settle": 1500 }
+      ]
+    }
+  ]
+}

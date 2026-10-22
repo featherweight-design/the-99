@@ -153,6 +153,29 @@ describe("the swap tools' door", () => {
     mount({ door: () => null });
     expect(screen.getByTestId("card-band").style.height).toBe("calc(100% - 280px)");
   });
+
+  // The modal remounts on every page, so the strip's height is measured after each mount. Settling it
+  // moves the sheet and the band, and a move laid out with transitions on eased the sheet up 45px and
+  // the card down a size on every swipe (`probe:card-swipe-steady`). The new height must be laid out
+  // with the hold on, and the hold must then come off, or no snap would ever ease again.
+  it("lays out its measured strip with the sheet's transitions held, then lets them go", () => {
+    const reads: { band: string; held: boolean }[] = [];
+    const heights = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+      if (this.querySelector('[data-testid="door-strip"]') && this.getAttribute("role") !== "dialog") return 45;
+      if (this.getAttribute("role") === "dialog") {
+        reads.push({ band: screen.queryByTestId("card-band")?.style.height ?? "", held: this.hasAttribute("data-settling") });
+      }
+      return 0;
+    });
+    try {
+      mount({ door: (layout) => (layout === "strip" ? <div data-testid="door-strip">See stand-ins</div> : null) });
+      expect(screen.getByTestId("card-band").style.height).toBe("calc(100% - 325px)");
+      expect(reads).toContainEqual({ band: "calc(100% - 325px)", held: true });
+      expect(screen.getByRole("dialog")).not.toHaveAttribute("data-settling");
+    } finally {
+      heights.mockRestore();
+    }
+  });
 });
 
 describe("a screen too short for the teaser", () => {
