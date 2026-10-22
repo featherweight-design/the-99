@@ -1,0 +1,74 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-22T15:30:00Z"
+ },
+ "title": "The 99 \u00b7 Spare requests",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 1408,
+   "title": "R1 \u00b7 the flow, calls, gaps"
+  },
+  "Shopping.dc.html": {
+   "x": 1692,
+   "y": 0,
+   "w": 2780,
+   "h": 2116,
+   "title": "Shopping \u00b7 the row and the modal\u2019s Ask"
+  },
+  "Deck-List.dc.html": {
+   "x": 0,
+   "y": 2416,
+   "w": 2620,
+   "h": 1244,
+   "title": "Deck list \u00b7 the All view\u2019s mark"
+  },
+  "Cart-By-Friend.dc.html": {
+   "x": 2700,
+   "y": 2416,
+   "w": 1960,
+   "h": 1488,
+   "title": "Shopping for all decks \u00b7 By friend"
+  },
+  "Asker-States.dc.html": {
+   "x": 0,
+   "y": 3780,
+   "w": 2380,
+   "h": 2766,
+   "title": "The asker \u00b7 states and Your asks"
+  },
+  "Friend-Side.dc.html": {
+   "x": 2460,
+   "y": 4024,
+   "w": 1950,
+   "h": 2983,
+   "title": "The friend \u00b7 Yes or No, badge, Home, Settings"
+  },
+  "Note.dc.html": {
+   "x": 0,
+   "y": 6666,
+   "w": 1900,
+   "h": 640,
+   "title": "Open question \u00b7 a note on the ask"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Shopping.dc.html",
+  "Deck-List.dc.html",
+  "Cart-By-Friend.dc.html",
+  "Asker-States.dc.html",
+  "Friend-Side.dc.html",
+  "Note.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
