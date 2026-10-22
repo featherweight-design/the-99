@@ -10,7 +10,7 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, wishlistItems } from "../../db/schema";
-import { loadPrices } from "../decks/price-query";
+import { cheapestNow, loadPrices } from "../decks/price-query";
 import type { PriceFact } from "../decks/price";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -161,6 +161,10 @@ async function writeWant(
   oracleId: string,
   want: (held: number, current: number | null) => number,
 ): Promise<WantResult | null> {
+  // The price-drop baseline (menu and Home G2): today's cheapest, as every buy tag draws it, read before the lock so
+  // the collection lock is held no longer than it was. Written only by a NEW line; a quantity change keeps the
+  // line's own. Null when the card has no live price, which the price job fills on its next run.
+  const atAdd = cheapestNow(await loadPrices([oracleId]), oracleId);
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
     const { rows: [card] } = await tx.execute<{ held: number; current: number | null }>(sql`
@@ -178,7 +182,8 @@ async function writeWant(
       return { status: "held", quantity, held: card.held };
     }
     await tx.execute(sql`
-      insert into ${wishlistItems} (user_id, oracle_id, quantity) values (${viewerId}, ${oracleId}, ${quantity})
+      insert into ${wishlistItems} (user_id, oracle_id, quantity, price_at_add_cents)
+      values (${viewerId}, ${oracleId}, ${quantity}, ${atAdd}::int)
       on conflict (user_id, oracle_id) do update set quantity = excluded.quantity
     `);
     return { status: "wanted", quantity, held: card.held };

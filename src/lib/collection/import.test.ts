@@ -34,6 +34,22 @@ const stub = vi.hoisted(() => {
 
 vi.mock("../../db", () => ({ db: stub.db }));
 
+// The combo writer (menu and Home G1), stubbed: its own SQL is pinned in `combo-writer.test.ts` and its effect in
+// `probe:feed-writers`. What this suite pins is the WIRING: watched under the lock before the rows move, the delta
+// read in the same transaction, and the notice only after the commit.
+const combo = vi.hoisted(() => ({
+  order: [] as string[],
+  delta: null as null | { added: string[]; held: Set<string> },
+}));
+vi.mock("../feed/combo-writer", () => ({
+  comboWatchIn: async () => { combo.order.push("watch"); return new Set(["held-before"]); },
+  comboDeltaIn: async () => { combo.order.push("delta"); return combo.delta; },
+  noticeCombos: async () => { combo.order.push("notice"); return 1; },
+}));
+vi.mock("../feed/after-commit", () => ({
+  afterCommit: async (_label: string, task: () => Promise<unknown>) => { combo.order.push("after-commit"); await task(); },
+}));
+
 import { replaceCollection } from "./import";
 
 describe("replaceCollection", () => {
@@ -82,5 +98,17 @@ describe("replaceCollection", () => {
     stub.executed.length = 0;
     await replaceCollection("user_1", []);
     expect(stub.executed.join(" ")).toContain("pg_advisory_xact_lock");
+  });
+
+  it("watches combos before the rows move and tells them only after the transaction, when the write added a card", async () => {
+    combo.order.length = 0;
+    combo.delta = null;
+    await replaceCollection("user_1", []);
+    expect(combo.order).toEqual(["watch", "delta"]);
+    combo.order.length = 0;
+    combo.delta = { added: ["new"], held: new Set(["new", "held-before"]) };
+    await replaceCollection("user_1", []);
+    expect(combo.order).toEqual(["watch", "delta", "after-commit", "notice"]);
+    combo.delta = null;
   });
 });

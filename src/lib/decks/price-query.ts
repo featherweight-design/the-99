@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { parseAsOf, priceState, type PriceFact } from "./price";
+import { parseAsOf, priceOf, priceState, type PriceFact } from "./price";
 
 // Timestamps are driver-dependent: the neon serverless driver parses
 // `timestamp` to a Date, others hand back the raw string. `parseAsOf` takes
@@ -214,4 +214,14 @@ export function pricesForDeck(read: PriceRead, deckId: string): Map<string, Pric
     if (fact) out.set(oracleId, fact);
   }
   return out;
+}
+
+/**
+ * Today's cheapest live figure for a card from one read, in cents: what its buy tag draws (`priceState`, `priceOf`).
+ * Null when the card is sold out or was never stocked. The wishlist's price at add and the feed's price drops
+ * (menu and Home G2) both read it, so the drop is measured in the figure the reader sees.
+ */
+export function cheapestNow(read: PriceRead, oracleId: string): number | null {
+  const fact = read.prices.get(oracleId);
+  return fact ? priceOf(fact, priceState(fact, read.newestAsOf)) : null;
 }

@@ -12,6 +12,8 @@ import { toCollectionItemValues, type PendingItem } from "./pending";
 import { addedByKey, addedFor, fileArrival } from "./added-at";
 import { collectionItemKey } from "./key";
 import { sweepCollectedIn } from "../wishlist/collected";
+import { afterCommit } from "../feed/after-commit";
+import { comboDeltaIn, comboWatchIn, noticeCombos, type ComboDelta } from "../feed/combo-writer";
 
 const INSERT_BATCH = 500;
 // scryfall_id is a uuid column, so a malformed id from a hand-edited CSV would fail the
@@ -160,6 +162,8 @@ export async function replaceCollection(
   const values = toCollectionItemValues(userId, items);
   let alreadyConfirmed = false;
   let notEmpty: number | null = null;
+  // The combo writer's view of the replace (menu and Home G1), told after the commit; null while the kind is off.
+  let combos: ComboDelta | null = null;
   try {
     await db.transaction(async (tx) => {
       // SERIALIZED PER USER, not per upload. The conditional stamp below locks one
@@ -212,6 +216,7 @@ export async function replaceCollection(
       }
       // Each holding already held keeps its date through the replace; a new one arrives now, exactly only into a
       // collection that had content (this file filled an empty one otherwise: "since", not "added on").
+      const comboWatch = await comboWatchIn(tx, userId);
       const standing = await tx.select({
         oracleId: collectionItems.oracleId, setCode: collectionItems.setCode, collectorNumber: collectionItems.collectorNumber,
         finish: collectionItems.finish, addedAt: collectionItems.addedAt, addedExact: collectionItems.addedExact,
@@ -231,7 +236,11 @@ export async function replaceCollection(
       }
       // A wishlist line the new collection reaches leaves as collected, with this replace (Social R2 G5).
       await sweepCollectedIn(tx, userId);
+      combos = await comboDeltaIn(tx, userId, comboWatch);
     });
+    // Assigned inside the transaction's callback, which narrowing cannot see.
+    const delta = combos as ComboDelta | null;
+    if (delta) await afterCommit("combo notice", () => noticeCombos(db, userId, delta));
   } catch (err) {
     // Only this module's own sentinel is swallowed; a real failure still reaches the caller.
     if (!(err instanceof AlreadyConfirmed) && !(err instanceof NotEmpty)) throw err;

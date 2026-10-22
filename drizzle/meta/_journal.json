@@ -1135,6 +1135,13 @@
       "when": 1792645755825,
       "tag": "0161_commanders_place_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 162,
+      "version": "7",
+      "when": 1792650537209,
+      "tag": "0162_wishlist_price_at_add",
+      "breakpoints": true
     }
   ]
 }
