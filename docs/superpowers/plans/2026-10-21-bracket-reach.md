@@ -80,6 +80,12 @@ Amendments to the PR 3 list above, each the board's call:
 - **Cache keys:** nothing caches the Help me choose results or the trial figures today, and `cachePageForUser` already
   keys every switch, so review 12 is a no-op.
 
+**Ruling (a), 2026-10-22:** the form names a card to buy only when every result could offer it. None can: a
+result's buying half is its commander's own candidates, and the one shared part (the universal staples) holds no
+Game Changer, which the staples step never seeds anyway. So the form's estimate is the collection alone: a short
+caption states what the player's cards come to and leaves the buy to the commander, on the new deck. The catalog
+read of Game Changers is gone.
+
 ## About
 
 Whether the choice owes an About entry (or an edit to Help me choose's) is Hugh's call; prompt 9 asks Design to draw it beside the credits entry.
