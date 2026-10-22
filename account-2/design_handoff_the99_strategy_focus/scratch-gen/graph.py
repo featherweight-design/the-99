@@ -128,7 +128,7 @@ AANG = [("Allies", 22, "aang-swift-savior"), ("Spells matter", 17, "counterspell
 OWN = '<span class="od"></span>'
 NEW_KEYS = ["avenger-of-zendikar", "bloodline-keeper"]
 TONES = ["#6E6352", "#5A5144", "#4A4238", "#3D372F", "#332E28"]
-SUB = "What this deck runs the most of, by card count."
+SUB = "The themes your deck is built around and how many cards support each strategy."
 
 
 def focus_line(focus):

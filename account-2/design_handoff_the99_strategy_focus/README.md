@@ -31,7 +31,7 @@ Analysis tab and Suggested changes (two lists) on Hugh's HD - Avatar Aang, in Lo
    focus arc pulled out in accent; the legend carries names and counts and is the press. An applied addition grows the focus arc
    in a lighter accent, legend `11 +2`. Piles (with the phone's on-their-side form), strip and bars stay on Graph-Options.
 5. **Tuning keeps its four tools.** Analysis gets one block, last in the reading, above Tuning.
-6. **R2d (Hugh's notes, 20:45).** Heading *The deck’s strategy*; sub *What this deck runs the most of, by card count.*
+6. **R2d (Hugh's notes, 20:45).** Heading *The deck’s strategy*; sub *The themes your deck is built around and how many cards support each strategy.*
    The legend is the pick: a *Pick a focus* kicker and a radio per row, the picked row tinted. The ring and legend centre
    on desktop. Focus line: *Focus Tokens: Suggested changes builds toward it. Keep it balanced* / *No focus yet. Pick one
    and Suggested changes will build toward it.* Ownership dot sits between the thumb and the name, as shipped. Empty states
