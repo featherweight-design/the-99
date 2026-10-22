@@ -186,7 +186,7 @@ export function toViews(
  * chain card details uses (\`chainArt\`: the reader's own printing, else the one details opens on), so its hover preview
  * and its press show one picture; the catalog's representative stays where the chain has none.
  */
-async function lookups(userId: string, items: readonly FeedItem[], q: Executor, env: NodeJS.ProcessEnv) {
+export async function lookups(userId: string, items: readonly FeedItem[], q: Executor, env: NodeJS.ProcessEnv) {
   const codes = items.flatMap((i) => (i.kind === "new-set" ? [i.code] : []));
   const files = items.flatMap((i) => (i.kind === "new-precon" ? [i.fileName] : []));
   const ids = [

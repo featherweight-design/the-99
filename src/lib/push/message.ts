@@ -18,7 +18,7 @@ export type PushItem =
   | { kind: "new-precon"; key: string; batch: string; name: string; owned: number; of: number; href: string }
   | { kind: "price-drop"; key: string; batch: string; oracleId: string; card: string; wasCents: number; nowCents: number; image: string | null }
   | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; card: string; image: string | null }
-  | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; copies: number; image: string | null }
+  | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; image: string | null }
   | { kind: "combo"; key: string; batch: string; oracleId: string; a: string; b: string; added: string; image: string | null };
 
 export type PushMessage = {
@@ -93,7 +93,7 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
     }
     case "spare-request":
       // Never collapsed: one group, one item.
-      return home("spare-request", keys, c.one.spareRequest.title(first.friend, first.card), c.one.spareRequest.body(first.friend, first.copies), { route: "/friends", image: first.image });
+      return home("spare-request", keys, c.one.spareRequest.title(first.friend, first.card), c.one.spareRequest.body, { route: "/friends", image: first.image });
     case "combo": {
       if (n === 1) return home("combo", keys, c.one.combo.title, c.one.combo.body(first.a, first.b, first.added), { openCard: first.oracleId, openCombo: true, image: first.image });
       return home("combo", keys, c.many.combo.title(n), c.many.combo.body);

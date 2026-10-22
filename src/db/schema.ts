@@ -3763,8 +3763,9 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
  * The pushes waiting to go: one row per event per reader, written in the SAME transaction as the feed item it announces
  * (so a rolled-back event sends nothing) when the reader has a subscription and the kind's push on. `batch_key` names
  * the job run that wrote it, so several of one kind from one job are one push. The overnight hold is judged at flush time,
- * in each device's own zone, so a row carries no send time. `payload` is the `PushItem` (`lib/push/message.ts`), built from plain data so the notification
- * is made later and apart from the feed. Pruned a week after it is sent or abandoned. Purged with the account.
+ * in each device's own zone, so a row carries no send time. The row holds no words: the flush resolves (kind, item_key)
+ * through the feed's own read (`lib/push/resolve.ts`), so a push says what Home says. `payload` is reserved and always
+ * `{}`. Pruned a week after it is sent or abandoned. Purged with the account.
  */
 export const pushOutbox = pgTable("push_outbox", {
   id: uuid("id").primaryKey().defaultRandom(),

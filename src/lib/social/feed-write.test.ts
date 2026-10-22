@@ -34,9 +34,14 @@ describe("recordFeedItemQuery", () => {
   });
 
   it("writes only while the kind is ON and the item is newer than its enabledAt (`kindEnabledAt`): a kind that is off is not written", () => {
-    expect(q).toMatch(/where \$\d+::timestamptz > coalesce\(\(wup\.feed_kinds ->> \$\d+::text\)::timestamptz, case when \$\d+::text = any\(\$\d+::text\[\]\) and not \(\$\d+::text = any\(coalesce\(wup\.feed_kinds_declined, '\{\}'::text\[\]\)\)\) then '-infinity'::timestamptz end\)/);
-    expect(params.filter((p) => p === "combo")).toHaveLength(4);
+    expect(q).toMatch(/where \(\$\d+::timestamptz > coalesce\(\(wup\.feed_kinds ->> \$\d+::text\)::timestamptz, case when \$\d+::text = any\(\$\d+::text\[\]\) and not \(\$\d+::text = any\(coalesce\(wup\.feed_kinds_declined, '\{\}'::text\[\]\)\)\) then '-infinity'::timestamptz end\)/);
+    expect(params.filter((p) => p === "combo")).toHaveLength(7); // the dedupe-key kind column, the feed stamp (x3), the push stamp (x3)
     expect(params).toContainEqual(["spare-request"]);
+  });
+
+  it("also writes while the reader has a DEVICE and the item is newer than the kind's PUSH stamp, with the feed kind off", () => {
+    expect(q).toMatch(/or \(exists \(select 1 from "push_subscriptions" wps where wps\.user_id = \$\d+\) and \$\d+::timestamptz > coalesce\(\(wup\.push_kinds ->> /);
+    expect(q).toContain("wup.push_kinds_declined");
   });
 
   it("names no friendship when the item names no friend", () => {

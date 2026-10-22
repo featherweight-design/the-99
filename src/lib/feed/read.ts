@@ -142,7 +142,7 @@ export type FeedItem =
       data: Record<string, unknown>;
     });
 
-type Row = {
+export type FeedRow = {
   kind: FeedKind;
   key: string;
   created_at: Date | string;
@@ -158,7 +158,7 @@ type Row = {
 };
 
 /** A row as the reader draws it. Exported for the tests. */
-export function toFeedItem(r: Row): FeedItem {
+export function toFeedItem(r: FeedRow): FeedItem {
   const base = { key: r.key, createdAt: new Date(r.created_at), unseen: r.unseen === true };
   if (r.kind === "new-set") return { ...base, kind: r.kind, code: r.code!, name: r.name!, href: `/collection/sets/${encodeURIComponent(r.code!)}` };
   if (r.kind === "new-precon") {
@@ -178,8 +178,8 @@ export function toFeedItem(r: Row): FeedItem {
 export async function loadFeed(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<FeedItem[]> {
   const query = feedQuery(userId, availableFeedKinds(env), now);
   if (!query) return [];
-  const { rows } = await q.execute<Row>(query);
-  return (rows as Row[]).map(toFeedItem).sort(feedOrder);
+  const { rows } = await q.execute<FeedRow>(query);
+  return (rows as FeedRow[]).map(toFeedItem).sort(feedOrder);
 }
 
 /** Home's badge: unseen items in the window. One statement; 0 while the feed is off. */

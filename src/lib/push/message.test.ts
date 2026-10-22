@@ -6,7 +6,7 @@ const set = (key: string, name: string, batch = "run-1"): PushItem => ({ kind: "
 const precon = (key: string, name: string, batch = "run-1"): PushItem => ({ kind: "new-precon", key, batch, name, owned: 31, of: 100, href: `/decks/precons/${key}` });
 const drop = (key: string, card: string, batch = "run-1"): PushItem => ({ kind: "price-drop", key, batch, oracleId: `o-${key}`, card, wasCents: 840, nowCents: 510, image: `img-${key}` });
 const match = (key: string, friend: string, publicId: string, card = "Ghoulcaller Gisa", batch = "w-1"): PushItem => ({ kind: "trade-match", key, batch, friend, publicId, card, image: `img-${key}` });
-const ask = (key: string, friend = "Peter"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card: "Lathliss, Dragon Queen", copies: 1, image: null });
+const ask = (key: string, friend = "Peter"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card: "Lathliss, Dragon Queen", image: null });
 const combo = (key: string, batch = "u-1"): PushItem => ({ kind: "combo", key, batch, oracleId: `o-${key}`, a: "Thassa's Oracle", b: "Demonic Consultation", added: "Demonic Consultation", image: `img-${key}` });
 
 describe("one item of each kind (the handoff's table)", () => {
@@ -26,7 +26,7 @@ describe("one item of each kind (the handoff's table)", () => {
     expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: "It’s on your wishlist.", route: "/friends/p-colin" });
   });
   it("spare request: says where to answer, lands on Friends", () => {
-    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: "Peter wants 1. Answer in Friends.", route: "/friends", tag: "spare-request" });
+    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: "A friend wants a card you have spare. Answer in Friends.", route: "/friends", tag: "spare-request" });
   });
   it("combo: names its kind, Home with the first piece open for its combo", () => {
     expect(toMessage([combo("c1")])).toMatchObject({
