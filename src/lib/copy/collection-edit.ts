@@ -562,8 +562,8 @@ export const collectionEditCopy = {
       /** (renamed, for /copy-review) Hugh, 2026-10-16: Fast is Auto. */
       fast: "Auto",
       normal: "Normal",
-      /** (reworded, for /copy-review) Auto adds with no press (Hugh, 2026-10-16). */
-      fastLine: "each card goes on the list as soon as it reads, at its first printing. You can change any of them on the list.",
+      /** (reworded, for /copy-review) Auto adds with no press (Hugh, 2026-10-16), at the matched printing (#2146). */
+      fastLine: "each card goes on the list as soon as it reads, at the printing we matched. You can change any of them on the list.",
       /** (reworded, for /copy-review) Normal picks the printing in the camera (Hugh, 2026-10-16). */
       normalLine: "you choose each card’s printing here, as you scan it.",
     },
