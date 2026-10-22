@@ -89,10 +89,10 @@ kit.CSS += r"""
 .fld p,.fld li{font-size:12.5px;line-height:1.5;color:var(--fg-muted)}
 .fld ol{margin:0;padding-left:17px;display:flex;flex-direction:column;gap:5px}
 .fld .mv{font:12px 'IBM Plex Mono';color:var(--fg-body)}
-.cft{display:flex;align-items:center;gap:12px;border-top:1px solid var(--border);padding:10px 16px 12px;flex-wrap:wrap}
+.cft{display:flex;align-items:center;gap:12px;border-top:1px solid var(--border);padding:12px 16px 18px}
 .cft .a{font:10.5px 'IBM Plex Mono';color:var(--fg-faint)}
-.cft .sb{margin-left:auto;display:inline-flex;align-items:center;min-height:44px;font:10.5px 'IBM Plex Mono';color:var(--accent);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px}
-.addb{display:flex;align-items:center;justify-content:center;height:44px;border-radius:9px;border:1px solid var(--border-strong);color:var(--fg);font:600 13.5px 'IBM Plex Sans'}
+.cft .sb{display:inline-flex;align-items:center;min-height:44px;font:10.5px 'IBM Plex Mono';color:var(--accent);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px}
+.addb{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 18px;border-radius:9px;border:1px solid var(--border-strong);color:var(--fg);font:600 13.5px 'IBM Plex Sans'}
 .md .cbd{flex-direction:row;gap:18px;padding:16px 18px}
 .md .cbd .pls{flex:none;align-self:flex-start}
 /* phone card details, full sheet (shipped CardModal at snap=full) */
@@ -305,10 +305,8 @@ def combo_body(desk=False, own=False):
 
 
 def combo_foot(own=False, desk=False):
-    add = "Add Searing Touch" if own else "Add Searing Touch · to buy"
-    return (f'<div class="cft"><span class="a">one piece away · Searing Touch is the missing piece</span>'
-            '<span class="sb">Commander Spellbook ↗</span></div>'
-            f'<div style="padding:0 16px 22px"><span class="addb">{add}</span></div>')
+    return ('<div class="cft"><span class="sb">Commander Spellbook ↗</span>'
+            '<span class="addb">Add Searing Touch</span></div>')
 
 
 def detail_phone(own=False):
@@ -345,9 +343,8 @@ def modal_list(combos=COMBOS, hit=None):
 
 def modal_detail():
     ov = ('<div class="scrim"></div><div class="md" style="width:760px"><div class="bk2"><span class="ar">←</span>5 combos<span class="x">✕</span></div>'
-          f'{combo_body(True)}<div class="cft"><span class="a">one piece away · Searing Touch is the missing piece</span>'
-          '<span class="addb" style="height:36px;padding:0 16px;margin-left:12px">Add Searing Touch · to buy</span>'
-          '<span class="sb">Commander Spellbook ↗</span></div></div>')
+          f'{combo_body(True)}<div class="cft"><span class="sb">Commander Spellbook ↗</span>'
+          '<span class="addb" style="height:36px">Add Searing Touch</span></div></div>')
     return page_desk_ov(quiet(5), ov)
 
 
@@ -443,10 +440,8 @@ def sheet_board():
                     "‘HD - Gods’ is a link: it opens that deck’s page, where Heliod’s row is. A 44px hit area; the row’s other 300px open the combo. Adding it here would make Heliod spoken for twice, which the to-do card already says.")
             + frame("<b>A piece to buy</b> · 390", sheet_phone(press="Searing Touch"),
                     "The shipped BuyTag with its price, on a hollow dot. Searing Touch completes with the commander. Pressed: opens how it works (next board).")
-            + frame("<b>One</b> · 390", sheet_phone(ONE), "The sheet sizes to its rows.")
+            + frame("<b>One</b> · 390", sheet_phone(ONE), "The sheet sizes to its rows. Adding the last one closes the sheet and the segment goes: no empty sheet.")
             + "</div><div class=\"frames\">"
-            + frame("<b>Empty</b> · 390 · after adding the last piece", sheet_empty(),
-                    "The only way to see an empty sheet: you added the last missing card from it. The row leaves; the sheet says so and the segment goes.")
             + frame("<b>Many</b> · 1300", modal_list(hit="Heliod, Sun-Crowned"), "One line per combo, columns line up: name, with, where (fixed 190), what it does, ›.")
             + "</div>")
     return doc("Combos one piece away · the list", body, max(W_PH, 390 + 1300 + 44 + 112))
@@ -459,8 +454,8 @@ def detail_board():
                        "Added for one-away: each plate says where that piece is, the missing one is outlined, and the foot adds the card from here, as Consider’s Add does. "
                        "A plate opens that card’s details, stacked, with ← the combo. Steps here are the fixture’s; the build draws Spellbook’s own words.")
             + '<div class="frames">'
-            + frame("<b>To buy</b> · 390", detail_phone(), "Searing Touch to buy: $1.49 on its plate, and ‘Add Searing Touch · to buy’ (Consider’s wording).")
-            + frame("<b>You own it</b> · 390", detail_phone(own=True), "The same combo if you had a spare: the plate says spare and the press is Add.")
+            + frame("<b>To buy</b> · 390", detail_phone(), "Searing Touch to buy: $1.49 on its plate says so, so the press is just ‘Add Searing Touch’, bottom right; Commander Spellbook moves bottom left.")
+            + frame("<b>You own it</b> · 390", detail_phone(own=True), "The same combo if you had a spare: only the plate changes (spare); the press is the same Add.")
             + frame("<b>A plate pressed</b> · 390", card_over_detail(), "The shipped card details, stacked, closing back to the combo.")
             + "</div><div class=\"frames\">"
             + frame("<b>To buy</b> · 1300", modal_detail(), "The shipped body at the modal’s width: plates left, words right. Add and the Spellbook link share the foot.")
@@ -534,6 +529,6 @@ def main_board():
 
 BOARDS = [("Main", main_board, "R1 · where it sits, the calls, gaps"),
           ("Deck-Page", deck_board, "The deck page · many, with a to-do, one, empty"),
-          ("The-List", sheet_board, "The list · many, another deck, to buy, one, empty"),
+          ("The-List", sheet_board, "The list · many, another deck, to buy, one"),
           ("How-It-Works", detail_board, "How it works · steps and mana"),
           ("Card-Details", card_board, "Card details · combos and pieces held")]

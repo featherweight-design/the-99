@@ -10,9 +10,9 @@
 | S6 | List row | In another deck | every copy held by other decks | green dot "in **HD - …**", deck name links to `/decks/{id}` (44px hit area) |
 | S7 | List row | To buy | no copy | hollow ring + price tag |
 | S8 | List row | Commander piece | the held piece is the commander | "commander" after its name |
-| S9 | List sheet | Empty | the last missing piece was just added while the sheet was open | "Nothing one piece away now" box, Done |
-| S10 | Combo detail | To buy | a row pressed | ComboBody pushed ("← N combos"): plates with where-lines, chips, Mana needed, Steps, Needs, foot line, Commander Spellbook ↗, "Add X · to buy" |
-| S11 | Combo detail | Owned | missing piece is a spare / in another deck | the same, press "Add X" |
+| S9 | List sheet | Last one added | the last missing piece added from the combo detail | the sheet closes; the segment goes (no empty sheet) |
+| S10 | Combo detail | To buy | a row pressed | ComboBody pushed ("← N combos"): plates with where-lines, chips, Mana needed, Steps, Needs; foot: Commander Spellbook ↗ bottom left, "Add X" bottom right |
+| S11 | Combo detail | Owned | missing piece is a spare / in another deck | the same; only the plate's where-line changes |
 | S12 | Combo detail | Plate pressed | a plate | shipped card details stacked ("← A + B") |
 | S13 | Combo detail | No mana / unknown | `mana_needed` empty / missing | "No mana needed" / "Commander Spellbook doesn't say" (shipped) |
 | S14 | Card details block | Closed | default | shipped counts "N in this deck · N you own · N you don't" |

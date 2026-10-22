@@ -2,7 +2,7 @@
 
 Account 2, 2026-10-22. Hugh's prompt in the project thread (rulings closed in the 10-21 workshop and on 10-22). Canvas: https://claude.ai/artifact/HTAi9E8E8CUMTPAydCDhx4
 
-**Status: R1, awaiting Hugh's audit.** Drawn over the shipped deck page (deck messages A2, #2170), the shipped card details "Two-card combos" block (`ComboPartnersDetail`) and the shipped combo receipt (`ComboBody` in `receipt-modal.tsx`). Every new string is a placeholder for `/copy-review`.
+**Status: R1b, awaiting Hugh's audit.** R1b (Hugh, 2026-10-22): no empty sheet (adding the last one closes the sheet); the combo foot drops the "missing piece" line and "to buy", Commander Spellbook bottom left, Add bottom right. Drawn over the shipped deck page (deck messages A2, #2170), the shipped card details "Two-card combos" block (`ComboPartnersDetail`) and the shipped combo receipt (`ComboBody` in `receipt-modal.tsx`). Every new string is a placeholder for `/copy-review`.
 
 ## Hugh's rulings (closed)
 
@@ -16,7 +16,7 @@ Account 2, 2026-10-22. Hugh's prompt in the project thread (rulings closed in th
 1. **Where it sits: a status-line segment**, "∞ 5 combos one piece away ›". It is the to-do card's foot when the deck has something to do, and the quiet status strip when it doesn't (deck messages: the foot stands alone). Not a to-do row (a combo is optional and would compete with the next step every visit), not the Analysis tab (it waits behind Analyze), not a Combos tab (none exists; a sixth tab overflows at 390). With none, no segment.
 2. **The press opens a sheet (390) / modal (1300)**, the pass sheet's chrome, grouped "You own it" (spare, then another deck) and "To buy" (cheapest first). The foot says "From Commander Spellbook. Two-card combos legal in this deck's colors."
 3. **"In another deck" links**: the deck's name is a link to `/decks/{id}`, styled as card details' In your decks, with a 44px hit area; the rest of the row opens the combo.
-4. **How it works**: the shipped ComboBody pushed inside the sheet ("← 5 combos"), each plate saying where that piece is (in this deck, spare, in HD - …, or its price), Mana needed, Steps, Needs, the Commander Spellbook link, and one Add press in the foot ("Add Searing Touch · to buy" when it must be bought). A plate opens the shipped card details stacked on top. Depth stays two.
+4. **How it works**: the shipped ComboBody pushed inside the sheet ("← 5 combos"), each plate saying where that piece is (in this deck, spare, in HD - …, or its price), Mana needed, Steps, Needs, and a foot with the Commander Spellbook link bottom left and one compact "Add Searing Touch" bottom right (the plate already says whether it is to buy). A plate opens the shipped card details stacked on top. Depth stays two.
 5. **Card details**: the shipped block extended. Closed: unchanged counts. Open: "Whole in this deck" then "One piece away · you hold the rest", each line with the same where-line and marks as the deck's list; a line opens the combo. Today a partner's name opens the partner's card; that moves to the plate inside the combo. **Hugh's call.**
 6. **A deck-level count.** Combo awareness refused any deck-level count; this segment is one. **Hugh's call.**
 
@@ -24,7 +24,7 @@ Account 2, 2026-10-22. Hugh's prompt in the project thread (rulings closed in th
 
 - `Main.dc.html` — the placement question (picked segment, not-picked to-do row, quiet deck), the calls, the gaps.
 - `Deck-Page.dc.html` — many (quiet and with a to-do), one, empty, at 390 and 1300.
-- `The-List.dc.html` — the sheet and modal: many, a piece in another deck (link pressed), a piece to buy, one, empty.
+- `The-List.dc.html` — the sheet and modal: many, a piece in another deck (link pressed), a piece to buy, one. Adding the last one closes the sheet; there is no empty sheet.
 - `How-It-Works.dc.html` — the combo detail with steps and mana: to buy, owned as a spare, a plate pressed; the 1300 modal.
 - `Card-Details.dc.html` — the block closed, open, a line pressed at 390; open in the 1300 modal.
 - `About.dc.html` — the new entry `combos-one-away` opened in the shipped Reference at 1300 and 390, and the edit to `combo-awareness`. Strings in `about · combos one piece away.ts`.
