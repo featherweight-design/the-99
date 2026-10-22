@@ -313,7 +313,7 @@ describe("FilterRack — Help me choose's link", () => {
     stubWidth(true);
     render(withLink("discover", discover({ colors: ["R", "G"], match: "exactly", q: "dino" }), true));
     const href = new URL(within(screen.getByTestId("discover-choose-link")).getByRole("link").getAttribute("href")!, "http://x");
-    expect(href.pathname).toBe("/decks/new/choose");
+    expect(href.pathname).toBe("/commanders/choose");
     expect(Object.fromEntries(href.searchParams)).toEqual({ c: "r,g", m: "exact" });
   });
 

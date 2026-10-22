@@ -37,14 +37,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import Link from "next/link";
 import { GhostButton } from "../ui/button";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { AddCardsSheet } from "./add-cards-sheet";
 import { COLLECTION_SAVED_EVENT, CollectionEditToast } from "./edit-toast";
 import { ReplaceIcon } from "./replace-icon";
-import { PendingReporter } from "../shell/pending-reporter";
+import { PlaceStrip } from "../place/place-strip";
 import { collectionTabsCopy } from "../../lib/copy/collection";
 import { refreshCollectionHeader } from "../../app/collection/actions";
 import { wishlistCopy } from "../../lib/copy/wishlist";
@@ -130,30 +129,6 @@ export function CollectionPlaceHead({
   const pathname = usePathname();
   const current = placeFromPathname(pathname);
 
-  // Optimistic tab highlight (#1222 follow-up, Hugh's ruling): a press moves the underline
-  // and `aria-current` to the pressed tab at once, not once its content has loaded. Set by
-  // `onNavigate` — fired only for a real client-side navigation, never a modifier-key click
-  // that opens a new tab and leaves this page alone — and cleared whenever the pathname next
-  // commits, whatever it commits to. That one rule covers every reconciliation case: a normal
-  // commit to the pressed tab, a second tab pressed before the first lands (its own onNavigate
-  // simply overwrites this before either commits), and a Back that lands on a sibling tab.
-  // Abandoning the navigation without any further pathname change (an offline press) is the one
-  // case this cannot see — the same blind spot the loading screen and every Link in the app
-  // already has, with no existing mechanism that covers it either.
-  const [pendingPlace, setPendingPlace] = useState<CollectionPlace | null>(null);
-  // Adjusted DURING RENDER (react.dev's own pattern for resetting state when a prop
-  // changes), not in an effect: an effect keyed on `pathname` alone would also have to read
-  // `pendingPlace` to guard its call (`react-hooks/set-state-in-effect` refuses an
-  // unconditional one), and adding `pendingPlace` to that effect's own deps would re-run it
-  // the instant a press sets it — clearing the highlight one render after creating it. This
-  // compares against the pathname LAST SEEN here, decoupled from pendingPlace's own
-  // transitions, and fires only on an actual commit either way.
-  const [committedFor, setCommittedFor] = useState(pathname);
-  if (pathname !== committedFor) {
-    setCommittedFor(pathname);
-    if (pendingPlace !== null) setPendingPlace(null);
-  }
-
   // The layout that mounts this once fetches its two props on first mount only; a Next
   // layout does not re-run on a sibling navigation. So the figures are re-read here on every
   // tab switch and on window focus (the same cross-tab trigger `DeltaStrip` polls on), and
@@ -226,10 +201,8 @@ export function CollectionPlaceHead({
   if (current === null) {
     throw new Error(`CollectionPlaceHead rendered on an unrecognised path: ${pathname}`);
   }
-  const effective = pendingPlace ?? current;
   const tabs = visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyShows }, wishlistEnabled);
-  // Five tabs and a labelled trailing control outgrow a 390px phone, so beside five the tabs
-  // close up and the control is drawn as its mark alone (board WP1).
+  // Beside five tabs the strip closes them up (`PlaceStrip`) and the trailing control is drawn as its mark alone (board WP1).
   const compact = tabs.length >= 5;
   const titleClass =
     "font-display font-bold m-0 md:text-[30px] md:leading-[45px]";
@@ -286,35 +259,8 @@ export function CollectionPlaceHead({
         ) : null}
       </div>
 
-      {/* Place navigation, so a nav of links rather than ARIA tabs (E10): each one changes
-          the path, carries no query, and Back is a route change. */}
-      <nav
-        aria-label={collectionTabsCopy.regionAria}
-        // Scrolls sideways rather than widening the page when five tabs and + Add outgrow a narrow phone (320px).
-        className="flex h-[48px] items-stretch gap-[2px] overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 pl-[8px] pr-[4px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
-      >
-        {tabs.map((tab) => {
-          const on = tab.place === effective;
-          return (
-            <Link
-              key={tab.place}
-              href={tab.href}
-              aria-current={on ? "page" : undefined}
-              data-testid={`collection-tab-${tab.place}`}
-              onNavigate={() => setPendingPlace(tab.place)}
-              className={[
-                `flex min-w-[44px] items-center justify-center ${compact ? "px-[7px]" : "px-[11px]"} md:px-[10px] text-[14px]`,
-                "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]",
-                on
-                  ? "font-semibold text-[color:var(--fg)] shadow-[inset_0_-2px_0_var(--accent)]"
-                  : "font-medium text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors",
-              ].join(" ")}
-            >
-              {tab.label}
-              <PendingReporter href={tab.href} />
-            </Link>
-          );
-        })}
+      {/* Place navigation, so a nav of links rather than ARIA tabs (E10): `PlaceStrip`. */}
+      <PlaceStrip tabs={tabs} current={current} ariaLabel={collectionTabsCopy.regionAria} testIdPrefix="collection-tab">
         {hasCollection && editEnabled ? (
           // The strip has room for one trailing control beside the tabs, and `+ Add` (70px) fits
           // where `↻ Replace` (92px) does not; the upload moves into the sheet (B0). Beside five
@@ -348,7 +294,7 @@ export function CollectionPlaceHead({
             Replace
           </a>
         ) : null}
-      </nav>
+      </PlaceStrip>
       {editEnabled ? <CollectionEditToast /> : null}
       {editEnabled && adding ? (
         <AddCardsSheet

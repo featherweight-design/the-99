@@ -41,6 +41,7 @@ describe("pendingRouteFor: the screen each route shows while it loads", () => {
     expect(pendingRouteFor(`/decks/${id}/changes`)).toEqual({ kind: "kept", screen: "decks" });
     expect(pendingRouteFor(`/decks/${id}/import`)).toEqual({ kind: "kept", screen: "deckUpdate" });
     expect(pendingRouteFor("/decks/new/choose?t=elves")).toEqual({ kind: "kept", screen: "choose" });
+    expect(pendingRouteFor("/commanders/choose?t=elves")).toEqual({ kind: "kept", screen: "choose" });
   });
 
   it("reads the path alone, without its query, hash or trailing slash", () => {

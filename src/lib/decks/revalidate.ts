@@ -49,5 +49,6 @@ export function claimSurfaces(deckId: string): string[] {
     "/collection",
     "/commanders",
     "/discover",
+    "/commanders/discover",
   ];
 }

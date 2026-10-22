@@ -60,7 +60,7 @@ describe("ToolCard, its five states (STATES 'A tool card')", () => {
 
   it("needs no deck: the card opens the tool's page, named for it", () => {
     render(<ToolCard card={model("help-me-choose")} shot={null} />);
-    expect(screen.getByRole("link", { name: "Open Help me choose" }).getAttribute("href")).toBe("/decks/new/choose?tool=help-me-choose");
+    expect(screen.getByRole("link", { name: "Open Help me choose" }).getAttribute("href")).toBe("/commanders/choose?tool=help-me-choose");
   });
 
   it("draws the capture with its control haloed, and nothing when there is no capture", () => {

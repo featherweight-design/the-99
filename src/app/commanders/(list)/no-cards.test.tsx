@@ -6,29 +6,29 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 
 const env = vi.hoisted(() => ({ value: {} as unknown as NodeJS.ProcessEnv }));
-vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => env.value }));
-vi.mock("../../lib/home/summary", () => ({
+vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => env.value }));
+vi.mock("../../../lib/home/summary", () => ({
   getCollectionStats: async () => ({ uniqueCards: 0, totalCards: 0 }),
   listRecentDecks: async () => [],
 }));
-vi.mock("../../lib/commanders/avail-pref", () => ({ readCommandersAvail: async () => null }));
-vi.mock("../../lib/sets/lane-printed-in", () => ({
+vi.mock("../../../lib/commanders/avail-pref", () => ({ readCommandersAvail: async () => null }));
+vi.mock("../../../lib/sets/lane-printed-in", () => ({
   loadCommanderPrintings: () => Promise.resolve(null),
   lanePrintedInFor: async () => null,
 }));
-vi.mock("../../lib/commanders/rankings", () => ({
+vi.mock("../../../lib/commanders/rankings", () => ({
   commanderRankingsKey: () => ["commander-rankings"],
   loadCommanderRankings: async () => ({}),
 }));
-vi.mock("../../lib/cache/user-lists", () => ({ cacheForUser: async () => ({}) }));
-vi.mock("./actions", () => ({ retryRecs: async () => {} }));
-vi.mock("../../lib/discovery/payload", () => ({ loadDiscoveryPayload: async () => ({}) }));
-vi.mock("../../components/commanders/discovery-view", () => ({ DiscoveryView: () => null }));
-vi.mock("../../components/commanders/commanders-view", () => ({ CommandersView: () => null }));
+vi.mock("../../../lib/cache/user-lists", () => ({ cacheForUser: async () => ({}) }));
+vi.mock("../actions", () => ({ retryRecs: async () => {} }));
+vi.mock("../../../lib/discovery/payload", () => ({ loadDiscoveryPayload: async () => ({}) }));
+vi.mock("../../../components/commanders/discovery-view", () => ({ DiscoveryView: () => null }));
+vi.mock("../../../components/commanders/commanders-view", () => ({ CommandersView: () => null }));
 
 const { default: CommandersPage } = await import("./page");
-const { default: DiscoverPage } = await import("../discover/page");
+const { default: DiscoverPage } = await import("./discover/page");
 
 const ON = { NO_COLLECTION_ENTRY_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 

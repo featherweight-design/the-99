@@ -5,7 +5,8 @@ import { resolveWords, serializeChooseParams, type ChooseParams } from "./params
 
 const WORDS_CAP = { measure: wordsLength, maxTags: READ_TAGS_MAX };
 
-export const CHOOSE_PATH = "/decks/new/choose";
+/** Help me choose lives on the Commanders place (menu and Home, PR 1); `/decks/new/choose` redirects here when `COMMANDERS_PLACE_ENABLED` is on and answers in place when it is off. */
+export const CHOOSE_PATH = "/commanders/choose";
 
 /**
  * RETIRED AS THE SUBMIT (rework plan PR 3): the form now submits through `submitChoose`, and its

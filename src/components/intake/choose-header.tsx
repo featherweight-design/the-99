@@ -23,7 +23,8 @@ export function ChooseHeader({
   titleId,
   meta,
 }: {
-  back: { href: string; label: string };
+  /** The way back. Absent on the Commanders place (`COMMANDERS_PLACE_ENABLED`): the strip is the way out, and the tab is where New deck's door lands. */
+  back?: { href: string; label: string };
   title: string;
   sub: string;
   subPhone: string;
@@ -45,7 +46,9 @@ export function ChooseHeader({
             "md:w-full md:max-w-[1160px] md:mx-auto md:p-[34px_40px_26px]",
       ].join(" ")}
     >
-      {trailing ? (
+      {back === undefined ? (
+        trailing ? <div className="flex min-h-[44px] items-center justify-end md:min-h-0">{trailing}</div> : null
+      ) : trailing ? (
         <div className="flex min-h-[44px] items-center justify-between md:min-h-0">
           <Link href={back.href} className="flex min-h-[44px] items-center font-mono text-[11px] text-[color:var(--fg-faint)] no-underline md:min-h-0">
             {back.label}

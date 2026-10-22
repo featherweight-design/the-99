@@ -205,7 +205,7 @@ describe("CreatePicker — Help me choose's door", () => {
     render(<CreatePicker legalCommanders={commanders} helpDoor />);
     const door = screen.getByTestId("help-me-choose-door");
     expect(door.parentElement!.firstElementChild).toBe(door);
-    expect(screen.getByRole("link", { name: "Help me choose →" }).getAttribute("href")).toBe("/decks/new/choose");
+    expect(screen.getByRole("link", { name: "Help me choose →" }).getAttribute("href")).toBe("/commanders/choose");
     expect(screen.getByText(addPanelCopy.createPicker.sub)).toBeTruthy();
   });
 
@@ -223,7 +223,7 @@ describe("CreatePicker — Help me choose's door", () => {
     expect(links.filter((l) => /(^|\s)hidden(\s|$)/.test(l.className))).toHaveLength(1);
     expect(links.filter((l) => /md:hidden/.test(l.className))).toHaveLength(1);
     for (const l of links) {
-      expect(l.getAttribute("href")).toBe("/decks/new/choose?v=history");
+      expect(l.getAttribute("href")).toBe("/commanders/choose?v=history");
       expect(l.textContent).toBe("Your past runs ›");
     }
   });

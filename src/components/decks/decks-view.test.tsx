@@ -329,7 +329,7 @@ describe("DecksView", () => {
     const { rerender } = render(
       <DecksView decks={[]} folders={[]} shopping={SHOPPING} buildable={9} cards={1284} now={NOW} helpMeChoose />,
     );
-    expect(screen.getByRole("link", { name: "Help me choose →" })).toHaveAttribute("href", "/decks/new/choose");
+    expect(screen.getByRole("link", { name: "Help me choose →" })).toHaveAttribute("href", "/commanders/choose");
     rerender(view([]));
     expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
   });

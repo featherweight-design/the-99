@@ -12,7 +12,7 @@ const index = buildPhraseIndex(
 );
 const target = (over: Partial<ReturnType<typeof emptyParams>>) => submitTarget({ ...emptyParams(), ...over }, index);
 const landed = (url: string) => {
-  expect(url.startsWith("/decks/new/choose?")).toBe(true);
+  expect(url.startsWith("/commanders/choose?")).toBe(true);
   return parseChooseParams(new URLSearchParams(url.split("?")[1]));
 };
 
@@ -56,7 +56,7 @@ describe("the submit redirect", () => {
   });
 
   it("searches a blank submit with no index read at all", () => {
-    expect(submitTarget(emptyParams(), null)).toBe("/decks/new/choose?v=results");
+    expect(submitTarget(emptyParams(), null)).toBe("/commanders/choose?v=results");
   });
 });
 

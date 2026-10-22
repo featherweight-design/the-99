@@ -91,6 +91,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/decks/new", dynamic: false },
   // Help me choose ranks and badges commanders by what the player owns.
   { path: "/decks/new/choose", dynamic: false },
+  // The Commanders place (menu and Home, PR 1): the same lists at their tab addresses.
+  { path: "/commanders/choose", dynamic: false },
+  { path: "/commanders/discover", dynamic: false },
   { path: "/decks/shopping", dynamic: false },
   { path: "/decks/precons", dynamic: false },
   { path: "/decks/precons/[fileName]", dynamic: true },

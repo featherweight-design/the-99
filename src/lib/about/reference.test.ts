@@ -75,7 +75,7 @@ describe("an entry's marks", () => {
     expect(topOff.tryIt).toBeNull();
     // A tool with a page of its own: Try it opens the page.
     const choose = byId.get("help-me-choose")!;
-    expect(choose.tryIt?.href).toBe("/decks/new/choose?tool=help-me-choose");
+    expect(choose.tryIt?.href).toBe("/commanders/choose?tool=help-me-choose");
     // An entry no card covers.
     const plain = entries.find((e) => !TOOLS.some((t) => t.entry === e.id))!;
     expect(plain.inTools).toBe(false);

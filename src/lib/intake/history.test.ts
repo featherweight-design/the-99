@@ -17,7 +17,7 @@ describe("shapeRun", () => {
     const row = shapeRun(base)!;
     expect(row).toMatchObject({ id: ID, at: "2026-10-13T21:40:00.123Z", state: "ok", words: "a graveyard deck", picks: 4, pool: 164 });
     expect(row.thumbs).toEqual([OC(1), OC(2), OC(3)]);
-    expect(row.href).toBe(`/decks/new/choose?w=a+graveyard+deck&c=b%2Cg&v=results&r=${ID}&h=1`);
+    expect(row.href).toBe(`/commanders/choose?w=a+graveyard+deck&c=b%2Cg&v=results&r=${ID}&h=1`);
   });
 
   it("lists a run that found nothing with no picks, and keeps its stored pool", () => {

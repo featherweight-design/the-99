@@ -189,7 +189,7 @@ describe("the choose page", () => {
       await ChoosePage({ searchParams: Promise.resolve({ v: "submit", w: "scary", t: "horrors" }) });
     } catch (e) {
       const digest = String((e as { digest?: string }).digest);
-      expect(digest).toContain("/decks/new/choose?");
+      expect(digest).toContain("/commanders/choose?");
       expect(digest).not.toContain("v=results");
     }
   });
@@ -241,7 +241,7 @@ describe("the choose page", () => {
     it("says the run will not open when it is gone, another player's, failed or unreadable", async () => {
       for (const past of [null, { state: { kind: "none" }, at: "x" }, { state: { kind: "failed" }, at: "x" }, { state: { kind: "stopped" }, at: "x" }]) {
         stub.past.mockResolvedValue(past);
-        expect(find(await open(), PastWontOpen)!.props).toMatchObject({ historyHref: "/decks/new/choose?v=history" });
+        expect(find(await open(), PastWontOpen)!.props).toMatchObject({ historyHref: "/commanders/choose?v=history" });
       }
       stub.past.mockRejectedValue(new Error("db down"));
       expect(find(await open(), PastWontOpen)).toBeTruthy();

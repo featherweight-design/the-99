@@ -3,20 +3,20 @@
 // the classifier, and the fields fetch must ask for the classifier's figures to match its rows.
 import { describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
-import { encodeDiscovery } from "../../lib/discovery/encode";
-import type { DiscoveryList } from "../../lib/discovery/list";
+import { encodeDiscovery } from "../../../../lib/discovery/encode";
+import type { DiscoveryList } from "../../../../lib/discovery/list";
 
 const list = { items: [], sort: "fit", candidateCount: 0 } as unknown as DiscoveryList;
-vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/switches/request", () => ({
+vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../../../lib/switches/request", () => ({
   requestSwitchEnv: async () => ({ LABEL_ROLE_COUNTS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv,
 }));
-vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: 10 }) }));
-vi.mock("../../lib/sets/lane-printed-in", () => ({ lanePrintedInFor: async () => null }));
-vi.mock("../../lib/discovery/payload", () => ({
+vi.mock("../../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: 10 }) }));
+vi.mock("../../../../lib/sets/lane-printed-in", () => ({ lanePrintedInFor: async () => null }));
+vi.mock("../../../../lib/discovery/payload", () => ({
   loadDiscoveryPayload: async () => ({ encoded: encodeDiscovery(list), oracleIds: [], basis: "classifier", fellBack: true }),
 }));
-vi.mock("../../components/commanders/discovery-view", () => ({ DiscoveryView: () => null }));
+vi.mock("../../../../components/commanders/discovery-view", () => ({ DiscoveryView: () => null }));
 
 const { default: DiscoverPage } = await import("./page");
 

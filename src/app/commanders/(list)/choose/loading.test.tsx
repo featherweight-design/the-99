@@ -5,7 +5,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-const nav = vi.hoisted(() => ({ qs: "", path: "/decks/new/choose" }));
+const nav = vi.hoisted(() => ({ qs: "", path: "/commanders/choose" }));
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(nav.qs), usePathname: () => nav.path }));
 
 const { default: Loading } = await import("./loading");
@@ -22,12 +22,12 @@ describe("the choose route's loading screen", () => {
     expect(screen.queryByText("We read this as")).toBeNull();
     expect(container.textContent).not.toContain("Clearing a space");
     // The header's way back is the page's own: the form, holding the answers.
-    expect(screen.getByRole("link").getAttribute("href")).toBe("/decks/new/choose?t=dinosaurs&b=150");
+    expect(screen.getByRole("link").getAttribute("href")).toBe("/commanders/choose?t=dinosaurs&b=150");
   });
 
   it("is what the shell's page-load fallback draws for the route, and nowhere else", () => {
     nav.qs = "t=dinosaurs&v=results";
-    nav.path = "/decks/new/choose";
+    nav.path = "/commanders/choose";
     const { unmount } = render(<ShellLoading />);
     expect(screen.getByTestId("choose-loading")).toBeTruthy();
     expect(screen.queryByText("Clearing a space")).toBeNull();
@@ -36,7 +36,7 @@ describe("the choose route's loading screen", () => {
     render(<ShellLoading />);
     expect(screen.queryByTestId("choose-loading")).toBeNull();
     expect(screen.getByText("Clearing a space")).toBeTruthy();
-    nav.path = "/decks/new/choose";
+    nav.path = "/commanders/choose";
   });
 
   it("keeps the shell's screen on the form's address", () => {

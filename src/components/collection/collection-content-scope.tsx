@@ -11,7 +11,14 @@ import { placeFromPathname } from "./collection-place-head";
  * though no document navigation ever happened. A press that leaves the group (Replace, a set's
  * own page, or anywhere else) still escalates over the full `<main>` as before.
  */
-export function CollectionContentScope({ children }: { children: React.ReactNode }) {
-  const ref = usePendingContentScope((pathname) => placeFromPathname(pathname) !== null);
+export function CollectionContentScope({
+  children,
+  inPlace = (pathname) => placeFromPathname(pathname) !== null,
+}: {
+  children: React.ReactNode;
+  /** Whether a path is one of the place's own routes; the Commanders place passes its own. */
+  inPlace?: (pathname: string) => boolean;
+}) {
+  const ref = usePendingContentScope(inPlace);
   return <div ref={ref as React.Ref<HTMLDivElement>}>{children}</div>;
 }

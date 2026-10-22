@@ -9,31 +9,31 @@ const seen = vi.hoisted(() => ({
   env: {} as Record<string, string>,
   candidateCount: 0,
 }));
-vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => seen.env as NodeJS.ProcessEnv }));
-vi.mock("../../lib/home/summary", () => ({
+vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => seen.env as NodeJS.ProcessEnv }));
+vi.mock("../../../lib/home/summary", () => ({
   getCollectionStats: async () => ({ uniqueCards: 10 }),
   listRecentDecks: async () => [],
 }));
-vi.mock("../../lib/commanders/avail-pref", () => ({ readCommandersAvail: async () => null }));
-vi.mock("../../lib/sets/lane-printed-in", () => ({
+vi.mock("../../../lib/commanders/avail-pref", () => ({ readCommandersAvail: async () => null }));
+vi.mock("../../../lib/sets/lane-printed-in", () => ({
   loadCommanderPrintings: () => Promise.resolve(null),
   lanePrintedInFor: async () => null,
 }));
-vi.mock("../../lib/commanders/rankings", () => ({
+vi.mock("../../../lib/commanders/rankings", () => ({
   commanderRankingsKey: () => ["commander-rankings"],
   loadCommanderRankings: async () => ({}),
 }));
-vi.mock("../../lib/cache/user-lists", () => ({
+vi.mock("../../../lib/cache/user-lists", () => ({
   cacheForUser: async (_u: string, _k: string[], _load: unknown, opts: { store?: typeof seen.store } = {}) => {
     seen.store = opts.store;
     return { items: [], degraded: false, uniqueCardsRead: 10, candidateCount: seen.candidateCount, freeRanking: null, availOk: true };
   },
 }));
-vi.mock("./actions", () => ({ retryRecs: async () => {} }));
+vi.mock("../actions", () => ({ retryRecs: async () => {} }));
 
 const { default: CommandersPage } = await import("./page");
-const { CommandersView } = await import("../../components/commanders/commanders-view");
+const { CommandersView } = await import("../../../components/commanders/commanders-view");
 
 describe("/commanders", () => {
   it("files a ranking only when it did not fall back to the classifier", async () => {

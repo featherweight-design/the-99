@@ -24,7 +24,7 @@ describe("DecksZeroActions", () => {
     render(<DecksZeroActions buildable={230} cards={3250} helpMeChoose />);
     const line = screen.getByTestId("decks-zero-choose");
     expect(line).toHaveTextContent("Not sure what to build? Help me choose →");
-    expect(screen.getByRole("link", { name: "Help me choose →" })).toHaveAttribute("href", "/decks/new/choose");
+    expect(screen.getByRole("link", { name: "Help me choose →" })).toHaveAttribute("href", "/commanders/choose");
     // Under the buttons and the buildable line, never between them.
     const buildable = screen.getByText("230 commanders buildable from 3,250 cards");
     expect(buildable.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
