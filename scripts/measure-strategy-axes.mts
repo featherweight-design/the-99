@@ -23,6 +23,7 @@ const pool = new Pool({ connectionString: THE_99_NEON_STAGING_DIRECT });
 const AVERAGE_SIZE = 64;
 
 type CardRow = {
+  commander_legal: boolean;
   oracle_id: string; name: string; mana_cost: string | null; oracle_text: string | null; type_line: string; cmc: number; keywords: string[] | null; layout: string;
   labels: unknown; model: string | null; prompt_version: string | null; input_hash: string | null;
 };
@@ -66,10 +67,10 @@ async function main() {
   try {
     await client.query("begin transaction isolation level repeatable read read only");
     const { rows: catalog } = await client.query<CardRow>(`
-      select c.oracle_id, c.name, c.mana_cost, c.oracle_text, c.type_line, c.cmc, c.keywords, c.layout,
+      select c.commander_legal, c.oracle_id, c.name, c.mana_cost, c.oracle_text, c.type_line, c.cmc, c.keywords, c.layout,
              l.labels, l.model, l.prompt_version, l.input_hash
-        from cards c left join card_labels l on l.oracle_id = c.oracle_id
-       where c.commander_legal`);
+        from cards c left join card_labels l on l.oracle_id = c.oracle_id`);
+    // EVERY card, as the app's deck read keeps a banned card a list holds; only the catalog baseline is legal cards.
     const byId = new Map(catalog.map((c) => [c.oracle_id, c]));
     const card = (id: string, quantity: number): Card | null => {
       const c = byId.get(id);
@@ -138,7 +139,7 @@ async function main() {
       const c = card(r.oracle_id, 1);
       if (c) averages.set(r.commander, [...(averages.get(r.commander) ?? []), c]);
     }
-    const catalogBase = catalogBaseline([...byId.keys()].map((id) => card(id, 1)).filter((c): c is Card => c !== null));
+    const catalogBase = catalogBaseline(catalog.filter((c) => c.commander_legal).map((c) => card(c.oracle_id, 1)).filter((c): c is Card => c !== null));
 
     console.log(`rules: floor ${AXIS_FLOOR} copies · big creature = creature of MV ≥ ${BIG_CREATURE_MIN_MV} (no power column) · up to ${TYPAL_AXES} typal axes · baseline floor ${BASELINE_FLOOR}`);
     console.log(`catalog baseline: ${catalogBase.axes.total} commander-legal nonland game cards, one copy each`);
