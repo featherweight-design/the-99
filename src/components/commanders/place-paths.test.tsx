@@ -11,7 +11,7 @@ const doors = () => (
   <>
     <HelpMeChooseDoor pastRuns />
     <DiscoverChooseLink colors={["G"]} exactly={false} wide />
-    <ChooseDoorPress data-testid="press">x</ChooseDoorPress>
+    <ChooseDoorPress />
   </>
 );
 const hrefs = () => screen.getAllByRole("link").map((l) => l.getAttribute("href"));
