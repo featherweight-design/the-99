@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { orderModalPartners, summariseByState } from "../../lib/combos/modal-block";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { ComboGlyph } from "./combo-glyph";
 import { Chevron } from "../ui/chevron";
 
@@ -53,7 +54,10 @@ export function ComboPartnersDetail({
   // Opened FOR the combo (a feed item): bring the block on screen once, at mount, in a modal whose column may scroll.
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (initiallyExpanded) rootRef.current?.scrollIntoView?.({ block: "nearest" });
+    if (!initiallyExpanded) return;
+    // The app's scroll, not the reader's (quick return).
+    noteAppScroll();
+    rootRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [initiallyExpanded]);
   const partners = card.comboPartners ?? [];
   if (partners.length === 0) return null;
