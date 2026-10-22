@@ -34,6 +34,9 @@ export function screenForPath(pathname: string, search: string | URLSearchParams
     if (list === undefined) return null;
     return params.get("card") ? "card-details" : list;
   }
+  // The tabs of the Commanders place: Discover is its own screen, Help me choose is New deck's as it was at /decks/new/choose.
+  if (path === "/commanders/discover") return "discover";
+  if (path === "/commanders/choose") return "new-deck";
   if (seg[0] === "commanders") return "commanders";
   if (path === "/discover") return "discover";
   if (seg[0] === "decks") {

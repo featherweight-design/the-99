@@ -120,7 +120,7 @@
     {
       "id": "landing-page-help-me-choose",
       "label": "/decks/new/choose — Try it's landing on Help me choose: the halo on the tool's own control (R2·3 #1995)",
-      "view": "src/app/decks/new/choose/page.tsx",
+      "view": "src/app/commanders/(list)/choose/page.tsx",
       "steps": [
         {
           "goto": "/decks/new/choose?tool=help-me-choose",

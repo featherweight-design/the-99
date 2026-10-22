@@ -15,7 +15,7 @@ const APP = dirname(fileURLToPath(import.meta.url));
 // back on every navigation. These keep theirs, and with it their screen at press: each is a
 // deck surface whose wait is long enough that the screen is the answer, not a fallback. The precon list's sits in a
 // route group, `(list)`, so the open precon beside it does not inherit it and keeps the shared screen.
-const KEPT = ["credits", "decks/[id]", "decks/[id]/changes", "decks/[id]/import", "decks/new/choose", "decks/precons/(list)"];
+const KEPT = ["credits", "decks/[id]", "decks/[id]/changes", "decks/[id]/import", "commanders/(list)/choose", "decks/new/choose", "decks/precons/(list)"];
 
 // Every directory under the app, the root included as `""`.
 function segments(dir: string, segment = ""): { segment: string; hasPage: boolean }[] {

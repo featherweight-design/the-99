@@ -1,23 +1,24 @@
-import { requireUserId } from "../../lib/auth";
-import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
-import { cacheForUser } from "../../lib/cache/user-lists";
-import { commanderRankingsKey, loadCommanderRankings } from "../../lib/commanders/rankings";
-import { readCommandersAvail } from "../../lib/commanders/avail-pref";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requireUserId } from "../../../lib/auth";
+import { getCollectionStats, listRecentDecks } from "../../../lib/home/summary";
+import { cacheForUser } from "../../../lib/cache/user-lists";
+import { commanderRankingsKey, loadCommanderRankings } from "../../../lib/commanders/rankings";
+import { readCommandersAvail } from "../../../lib/commanders/avail-pref";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 import { permanentRedirect } from "next/navigation";
-import { NoCardsEmpty } from "../../components/commanders/no-cards-empty";
-import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
-import { helpMeChooseEnabled } from "../../lib/intake/flag";
-import { commandersCopy } from "../../lib/copy/commanders";
-import { CommandersView } from "../../components/commanders/commanders-view";
-import { PageHeader } from "../../components/commanders/page-header";
-import { scopeRedirectTarget } from "./scope-redirect";
-import { searchParamsToQuery } from "../../lib/commanders/search-params";
-import { retryRecs } from "./actions";
-import { lanePrintedInFor, loadCommanderPrintings } from "../../lib/sets/lane-printed-in";
-import { perfRead, perfRoute } from "../../lib/perf/timing";
-import { RetryGhost } from "../../components/commanders/retry-submit";
-import { GhostButton, PrimaryButton } from "../../components/ui/button";
+import { NoCardsEmpty } from "../../../components/commanders/no-cards-empty";
+import { noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
+import { commandersPlaceEnabled } from "../../../lib/commanders/place-flag";
+import { helpMeChooseEnabled } from "../../../lib/intake/flag";
+import { commandersCopy } from "../../../lib/copy/commanders";
+import { CommandersView } from "../../../components/commanders/commanders-view";
+import { PageHeader } from "../../../components/commanders/page-header";
+import { scopeRedirectTarget } from "../scope-redirect";
+import { searchParamsToQuery } from "../../../lib/commanders/search-params";
+import { retryRecs } from "../actions";
+import { lanePrintedInFor, loadCommanderPrintings } from "../../../lib/sets/lane-printed-in";
+import { perfRead, perfRoute } from "../../../lib/perf/timing";
+import { RetryGhost } from "../../../components/commanders/retry-submit";
+import { GhostButton, PrimaryButton } from "../../../components/ui/button";
 
 export default async function CommandersPage({
   searchParams,
@@ -220,7 +221,7 @@ export default async function CommandersPage({
         availOk={availOk}
         printedIn={printedIn}
         savedAvail={savedAvail}
-        helpMeChoose={helpMeChooseEnabled(env)}
+        helpMeChoose={helpMeChooseEnabled(env) && !commandersPlaceEnabled(env)}
       />
     </section>
   );

@@ -37,6 +37,10 @@ export function pendingRouteFor(href: string): PendingRoute {
       if (second === "sets") return { kind: "overlay", key: third ? "setGrid" : "sets" };
       return { kind: "overlay", key: "collection" };
     case "commanders":
+      // Help me choose, a tab of the Commanders place, keeps the loading screen it had at /decks/new/choose.
+      if (second === "choose") return { kind: "kept", screen: "choose" };
+      // Discover keeps the loading screen it had at /discover, not the owned list's.
+      if (second === "discover") return { kind: "overlay", key: "discover" };
       return { kind: "overlay", key: "commanders" };
     // The public card and commander pages (launch epic F3). The app never routes a member to either (Locked 3) and a stranger
     // gets the bare shell, which draws no loading screen, so these only name what a member's direct load would stream: the
