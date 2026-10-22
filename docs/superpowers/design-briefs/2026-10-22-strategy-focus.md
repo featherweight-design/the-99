@@ -119,8 +119,10 @@ Every screen at 390 and desktop. Mobile and desktop ship in the same PR.
 8. All adds owned.
 9. Short: fewer than 5 candidates for the axis (a narrow creature type).
 10. No candidates at all (every legal card on the axis is already in the deck).
-11. Cuts run out before adds (most of the deck already sits on the axis): adds shown without a cut, or capped at the
-    cuts available. Design's call.
+11. Cuts run out before adds (most of the deck already sits on the axis). Only pairs can be accepted, so the count
+    always holds: either the list is capped at the cuts available, or the extra adds are shown for information only,
+    with no accept. When no eligible cut remains at all, nothing can be accepted, and the state says why. Design picks
+    the presentation; the pair rule is fixed.
 12. A pair accepted, and a pair dismissed.
 13. The deck changes after the result was read (the same stale treatment the other tools use).
 
