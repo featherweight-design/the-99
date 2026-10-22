@@ -32,6 +32,7 @@ import { cardSearchEnabled } from "../../lib/card-search/flag";
 import { CardSearchRoot } from "../card-search/card-search";
 import { helpPanelEnabled } from "../../lib/discovery/onboarding-flag";
 import { HelpRoot } from "../help/help-root";
+import { unseenCount } from "../../lib/feed/read";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -122,11 +123,20 @@ export default async function Shell({
     moments.includes("help-me-choose") && !spentMoments.includes("help-me-choose")
       ? !(await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)))
       : false;
-  // The bar's unseen counts (menu and Home handoff, R1 Menu 8): Home's from the feed (PR 6), Friends' from what waits on
-  // the reader. An absent count draws no badge. Friends' is the unseen trade matches (product call 2), cleared by a
-  // /friends visit, and read only while Friends has its slot in the bar. A trade match is noticed after the response
-  // (`noticeTradeMatches`, after() only), so one that appears is counted on the next render.
+  // The bar's unseen counts (menu and Home handoff, R1 Menu 8): Home's from the feed, Friends' from what waits on the
+  // reader. An absent count draws no badge. Home's is one statement over the feed's union, read only with
+  // HOME_FEED_ENABLED on; a failed read draws no badge rather than breaking every page. Friends' is the unseen trade
+  // matches (product call 2), cleared by a /friends visit, and read only while Friends has its slot in the bar. A trade
+  // match is noticed after the response (`noticeTradeMatches`, after() only), so one that appears is counted on the next
+  // render.
   const badges: NavBadges = {};
+  if (homeFeedEnabled(env)) {
+    const homeUnseen = await perfRead("shell.feedUnseen", () => unseenCount(userId, env)).catch((error: unknown) => {
+      console.error("shell: the feed's unseen count could not be read", error instanceof Error ? error.message : "");
+      return 0;
+    });
+    if (homeUnseen > 0) badges.home = homeUnseen;
+  }
   if (door.friends && door.commandersPlace) {
     badges.friends = await perfRead("shell.friendsBadge", () => unseenFriendsCount(userId, env));
     after(() => noticeTradeMatches(userId, env));

@@ -140,7 +140,7 @@ export async function noticeCombos(q: Executor, userId: string, delta: ComboDelt
       kind: "combo",
       dedupeKey: p.variantId,
       variantId: p.variantId,
-      // The piece this write added ("Your last upload added Demonic Consultation"); the first when it added both.
+      // The piece this write added ("You added Demonic Consultation"); the first when it added both.
       oracleId: arrived[0],
       data: { cards: p.cards, added: arrived },
     });

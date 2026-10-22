@@ -3,7 +3,7 @@ import { refreshCopy } from "../../lib/copy/refresh";
 // leaves it, Friends takes the fifth slot with `SOCIAL_FRIENDS_ENABLED`, Friends never locks, and the phone bracket
 // spans the locked run alone. Off, the shipped bar stands; nav.test.tsx pins that whole.
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NavRail, TabBar } from "./nav";
 
 vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
@@ -139,6 +139,10 @@ describe("the phone bracket spans the locked slots alone", () => {
 
 describe("the slot badge", () => {
   const badgeOn = (link: HTMLElement) => link.querySelector<HTMLElement>("[data-nav-badge]");
+  // Off Home: on Home the Home count is the page being read, so it is not drawn (below).
+  beforeEach(() => {
+    pathname = "/decks";
+  });
 
   it("draws the count as an accent pill with --bg ink, and says it in words", () => {
     render(<TabBar locked={false} commandersPlace friends badges={{ home: 3, friends: 1 }} />);
@@ -180,6 +184,24 @@ describe("the slot badge", () => {
     expect(primary().querySelector("[data-nav-badge]")).toBeNull();
     expect(within(primary()).getByRole("link", { name: "Home" })).toBeInTheDocument();
     expect(within(primary()).getByRole("link", { name: "Friends" })).toBeInTheDocument();
+  });
+
+  it("clears Home's count on a Home visit, and keeps it cleared until the shell renders a new count", () => {
+    const home = () => within(primary()).getByRole("link", { name: /^Home/ });
+    const badges = { home: 3, friends: 1 };
+    const { rerender } = render(<TabBar locked={false} commandersPlace friends badges={badges} />);
+    expect(badgeOn(home())).toHaveTextContent(/^3$/);
+    pathname = "/";
+    rerender(<TabBar locked={false} commandersPlace friends badges={badges} />);
+    expect(badgeOn(home())).toBeNull();
+    expect(home()).toHaveAccessibleName("Home");
+    // Friends' count is not Home's to clear.
+    expect(badgeOn(within(primary()).getByRole("link", { name: /^Friends/ }))).toHaveTextContent(/^1$/);
+    pathname = "/decks";
+    rerender(<TabBar locked={false} commandersPlace friends badges={badges} />);
+    expect(badgeOn(home())).toBeNull();
+    rerender(<TabBar locked={false} commandersPlace friends badges={{ home: 2, friends: 1 }} />);
+    expect(badgeOn(home())).toHaveTextContent(/^2$/);
   });
 
   it("sits clear of the pending pip, at the glyph's top-right", () => {

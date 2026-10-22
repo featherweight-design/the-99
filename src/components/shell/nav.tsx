@@ -737,24 +737,30 @@ export type AdminDoorProps = {
 export type NavBadges = { home?: number; friends?: number };
 
 /**
- * The Friends badge as the reader should see it. The shell sits in the root layout, which a client navigation does not
- * render again, so the count it drew would outlive the /friends visit that cleared it (`markFriendsSeen`, after that
- * page's response). The board draws the badge ON /friends, so it stays through that first visit and clears once the
- * reader leaves, staying cleared on a later return; a new
- * count from the server (any later render of the layout, a new `badges` object) starts over, so a match noticed after
- * the visit still shows.
+ * The bar's counts as the reader should see them. The shell sits in the root layout, which a client navigation does not
+ * render again, so a count it drew would outlive the visit that clears it (the seen writes run after the page's
+ * response). Friends': the board draws the badge ON /friends, so it stays through that first visit and clears once the
+ * reader leaves, staying cleared on a later return (`markFriendsSeen`). Home's: dropped while the reader is on Home and
+ * from then on (menu and Home handoff, call 8). Either starts over when the server sends a new count (any later render
+ * of the layout, a new `badges` object), so news noticed after the visit still shows.
  */
 export function useSeenBadges(badges: NavBadges | undefined, pathname: string): NavBadges | undefined {
-  // `fresh`: not visited since this count arrived; `visiting`: on the first visit; `cleared`: left it, for good.
-  const [seen, setSeen] = useState<{ from: NavBadges | undefined; friends: "fresh" | "visiting" | "cleared" }>({ from: badges, friends: "fresh" });
+  // `friends`: `fresh`, not visited since this count arrived; `visiting`, on the first visit; `cleared`, left it for good.
+  const [seen, setSeen] = useState<{ from: NavBadges | undefined; friends: "fresh" | "visiting" | "cleared"; home: boolean }>({
+    from: badges, friends: "fresh", home: false,
+  });
   let state = seen;
-  if (state.from !== badges) state = { from: badges, friends: "fresh" };
+  if (state.from !== badges) state = { from: badges, friends: "fresh", home: false };
   const onFriends = pathname === "/friends";
   if (state.friends === "fresh" && onFriends && (badges?.friends ?? 0) > 0) state = { ...state, friends: "visiting" };
   else if (state.friends === "visiting" && !onFriends) state = { ...state, friends: "cleared" };
+  const homeCounted = (badges?.home ?? 0) > 0;
+  if (homeCounted && pathname === "/" && !state.home) state = { ...state, home: true };
   // Adjusted during render (react.dev's pattern for state that follows a prop), never in an effect.
   if (state !== seen) setSeen(state);
-  return state.friends === "cleared" ? { ...badges, friends: 0 } : badges;
+  const dropHome = homeCounted && (pathname === "/" || state.home);
+  if (state.friends !== "cleared" && !dropHome) return badges;
+  return { ...badges, ...(state.friends === "cleared" ? { friends: 0 } : {}), ...(dropHome ? { home: 0 } : {}) };
 }
 
 function slotBadge(badges: NavBadges | undefined, href: NavHref): number {
