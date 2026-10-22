@@ -60,7 +60,7 @@ async function signIn(page) {
 async function legend(page) {
   const radios = onPage(page, "[data-strategy-block] [role=radio]");
   await radios.first().waitFor({ state: "visible", timeout: 30_000 });
-  return radios.evaluateAll((els) => els.map((el) => ({ key: el.getAttribute("data-strategy"), checked: el.getAttribute("aria-checked") === "true" })));
+  return radios.evaluateAll((els) => els.map((el) => ({ key: el.getAttribute("data-strategy"), checked: el.getAttribute("aria-checked") === "true", outside: el.textContent.includes("your focus") })));
 }
 
 async function openBlock(page) {
@@ -83,7 +83,13 @@ try {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await openBlock(page);
     const rows = await legend(page);
-    if (original === undefined) original = rows.find((r) => r.checked)?.key ?? null;
+    if (original === undefined) {
+      const stored = rows.find((r) => r.checked);
+      // A stored focus outside the top five is drawn only while it is the focus: once the probe picks another row, the
+      // legend no longer offers it, so the finally could not put it back. Refused before any write.
+      if (stored?.outside) throw new Error(`SF_DECK's focus ${stored.key} is outside its top five: pick a deck whose focus is in it, or none`);
+      original = stored?.key ?? null;
+    }
     const target = rows.find((r) => !r.checked);
     if (!target) throw new Error("every row is checked: the deck has one strategy");
     touched = true;
@@ -110,6 +116,10 @@ try {
     // With no focus to restore and none drawn, Keep it balanced is absent and there is nothing to do.
     if (await restore.count().catch(() => 0)) await restore.click().catch(() => {});
     await page.waitForTimeout(1500);
+    // Verified, not assumed: a restore that did not persist fails the run.
+    const after = await openBlock(page).then(() => legend(page)).catch(() => null);
+    const now = after?.find((r) => r.checked)?.key ?? null;
+    report("the deck's focus is put back", after !== null && now === original, `found ${original ?? "none"}, left ${now ?? "none"}`);
   }
   await browser.close();
 }
