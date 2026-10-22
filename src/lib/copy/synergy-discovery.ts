@@ -168,28 +168,23 @@ export const synergyCopy = {
 
   // ── Surface B · the last-31 strip ─────────────────────────────────────
   lastSlots: {
-    // Named for the open slots, not for the number 31 — a partly built deck has
-    // a different number and the heading has to survive it.
-    heading: (n: string) => `The last ${n}`,
-
     // The one refusal on this surface. Two controls used to fail two ways and
     // needed two strings; one commit settles one way, so `fillFailed` went with
     // control A and `topOffCopy.commit.refused` points here.
     topUpFailed: 'We couldn’t add those. The deck is unchanged.',
 
-    // §7.6 — printed when the candidate list is empty and slots remain (top-off
-    // STATES §13), and nowhere else. It must never print because a player left
-    // rows unticked: 'your collection ran out' would then be false, and blaming
-    // the collection for the player's own restraint is the worst sentence this
-    // surface could say. Stopping short is `topOffCopy.strip.doorNoteAgain`,
-    // which is neutral.
-    //
-    // The clause after the separator is lifted verbatim from
-    // recommendationsCopy.fill.provenanceShort, which already says this about
-    // the 68-card fill. Expressive moment: it is the one line here that is
-    // allowed a voice, and it earns it by being honest about a shortfall.
-    short: (total: string, n: string) =>
-      `${total} of 99. Your collection ran out ${n} short: there was nothing left in it that EDHREC ranks for this commander.`,
+    // §7.6 — the to-do card's ran-out row, drawn when the candidate list is empty and slots
+    // remain (top-off STATES §13), and nowhere else. It must never draw because a player left rows
+    // unticked: 'your collection ran out' would then be false, and blaming the collection for the
+    // player's own restraint is the worst sentence this surface could say. No literal 99: the
+    // figure is the shortfall against the deck's own body size.
+    exhaustedTitle: (n: string) => `${n} short, and your collection ran out`,
+    // The all-negative pool (`topOffCopy.strip.exhaustedAllNegative`): the collection did not run out, EDHREC
+    // ranked what is left and ranked it against this deck, so the title says only that nothing is left to suggest.
+    exhaustedTitleAllNegative: (n: string) => `${n} short, and nothing left to suggest`,
+    // The clause lifted verbatim from the shipped sentence, which took it from
+    // recommendationsCopy.fill.provenanceShort.
+    exhaustedBody: 'There was nothing left in it that EDHREC ranks for this commander.',
   },
 
   // ── Surface B · the Consider shelf ────────────────────────────────────

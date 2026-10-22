@@ -1,7 +1,8 @@
 "use client";
 
-// LastSlotsStrip — the last-31 box, sitting between the provenance ledger and
-// the decklist in the builder.
+// LastSlotsStrip — the last N, now the to-do card's A8 row (handoff `deck_messages`). The row's
+// one press is the door; it toggles to Close, and the list opens inside the card under the row.
+// With the pool empty the same row is the ran-out plate, whose press switches to Consider.
 //
 // #361 deleted the two fill CTAs. The strip no longer adds cards; it opens a
 // list (#360 scope 1). One door, and behind it the whole ranked pool with a
@@ -9,10 +10,9 @@
 //
 // The strip owns the selection rather than the list, because ticks and declines
 // survive the list being closed (state 9) while TopOffList unmounts on close.
-// It also owns the box, the heading, the caption and the door note; everything
-// from the selection head down belongs to TopOffList.
+// It also owns the row; everything from the selection head down belongs to TopOffList.
 
-import { type Ref, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { chooseBulkTicks } from "../../lib/decks/bulk-choice";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -30,6 +30,7 @@ import { canSeed, type TopOffCandidateWithFacts } from "../../lib/decks/last-slo
 type RowCandidate = TopOffCandidateWithFacts;
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { TopOffList } from "./top-off-list";
+import { TodoRow } from "./todo-card";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 import type { Bracket } from "../../lib/bracket/types";
 import { useTopOffDraft } from "./use-top-off-draft";
@@ -51,8 +52,8 @@ export interface LastSlotsStripProps {
   candidates: RowCandidate[];
   /** The pool is empty because every ranked card argues against itself rather
    *  than because the collection ran out. Two different facts, two different
-   *  sentences: `synergyCopy.lastSlots.short` describes only the first, and it
-   *  is false in both of its clauses for the second. */
+   *  sentences: `synergyCopy.lastSlots.exhaustedBody` describes only the first, and it
+   *  is false for the second. */
   allNegative?: boolean;
   /** Oracle ids in the deck right now — the list names a row that went illegal
       while it was open rather than dropping it from under the cursor. */
@@ -71,6 +72,11 @@ export interface LastSlotsStripProps {
   declaredBracket: Bracket | null;
   noteCounts: NoteCounts;
 
+  /** The to-do card's next step: the label, the tint and the only filled press. */
+  next: boolean;
+  /** The ran-out row's press: switch the shell to Consider, which has cards to buy. */
+  onConsider: () => void;
+
   /** Writes one message per settle to the live region in builder-shell.tsx. */
   onAnnounce: (message: string) => void;
   /** True while the commit is running. The shell uses it to disable quick-add. */
@@ -83,68 +89,10 @@ export interface LastSlotsStripProps {
   onBarHeight?: (height: number) => void;
 }
 
-// ── Exhausted line (state 13) ──────────────────────────────────────────────
-// The strip keeps a line and loses its control. §16's plate, which is the
-// shipped provenance shape with a sans sentence and the accent left border —
-// accent rather than warning because an exhausted pool is honest, not alarming.
-// Border-left is set via inline styles (as provenance-line.tsx does) so jsdom
-// can inspect the individual longhand properties.
-
-function ExhaustedLine({
-  total,
-  shortfall,
-  allNegative = false,
-  ref,
-}: {
-  total: string;
-  shortfall: string;
-  /** See `LastSlotsStripProps.allNegative`. */
-  allNegative?: boolean;
-  ref?: Ref<HTMLDivElement>;
-}) {
-  return (
-    <div
-      ref={ref}
-      data-testid="last-slots-exhausted"
-      // The plate is what a closing list has left to return focus to when the
-      // pass emptied the pool, so it takes focus programmatically. Not in the
-      // tab order: it is a sentence, and reaching it by tabbing would be one
-      // more stop between the strip and the decklist.
-      tabIndex={-1}
-      className="flex items-start gap-[10px] rounded-[9px] px-[13px] py-[11px]"
-      style={{
-        background: "var(--surface-sunken)",
-        border: "1px solid var(--border)",
-        borderLeftWidth: "3px",
-        borderLeftStyle: "solid",
-        borderLeftColor: "var(--accent)",
-      }}
-    >
-      <div
-        className="flex flex-none items-center justify-center rounded-full font-mono text-[10px] md:text-[11px] w-[18px] h-[18px] md:w-[20px] md:h-[20px]"
-        aria-hidden
-        style={{ border: "1px solid var(--accent-shadow)", color: "var(--accent-text)" }}
-      >
-        i
-      </div>
-      <p className="flex-1 text-[12.5px] leading-[1.6]" style={{ color: "var(--fg-body)" }}>
-        {/* Two ways to empty the pool, and only one of them is the collection
-            running out. `lastSlots.short` says there was nothing left that
-            EDHREC ranks — false when the rows were cut because EDHREC ranked
-            them BELOW their own baseline, which is where a deck holding every
-            positively-ranked card lands. */}
-        {allNegative
-          ? topOffCopy.strip.exhaustedAllNegative
-          : synergyCopy.lastSlots.short(total, shortfall)}
-      </p>
-    </div>
-  );
-}
-
 // ── LastSlotsStrip ─────────────────────────────────────────────────────────
 
 export function LastSlotsStrip(props: LastSlotsStripProps) {
-  // States 10 and 14: the strip is absent at a full deck. Arithmetic, not a
+  // States 10 and 14: the row is absent at a full deck (`deckTodo` drops it at the same figure). Arithmetic, not a
   // flag. The guard lives in the outer component so the stateful inner one
   // never calls hooks conditionally — React requires hooks to run every render.
   if (props.openSlots <= 0) return null;
@@ -161,17 +109,21 @@ function LastSlotsStripInner({
   newestAsOf,
   declaredBracket,
   noteCounts,
+  next,
+  onConsider,
   onAnnounce,
   onInflight,
   onOpenChange,
   onBarHeight,
 }: LastSlotsStripProps) {
   const listId = useId();
-  const doorRef = useRef<HTMLButtonElement>(null);
+  // The row's one press, in all three faces: the door, Close, and ran out's Consider.
+  const pressRef = useRef<HTMLButtonElement>(null);
   // M1 (discovery R1): the door is the moment's control while it is drawn, which is a deck under its size with
-  // cards left to offer. Registered only while the door is mounted, so the ref does the gating.
+  // cards left to offer. Attached only while the press IS the door (closed, pool not empty), so the ref does
+  // the gating: the press swaps to the bare ref in its other two faces and the anchor unregisters.
   const doorMoment = useMomentAnchor("top-off", { eligible: openSlots > 0, copy: momentsCopy.topOff(openSlots) });
-  const doorRefs = useMergedRef(doorRef, doorMoment.ref);
+  const doorRefs = useMergedRef(pressRef, doorMoment.ref);
   const isDesktop = useIsDesktop();
 
   const [open, setOpen] = useState(false);
@@ -185,21 +137,8 @@ function LastSlotsStripInner({
   // the player has to clear again.
   const { ticked, declined, restored, setTicked, setDeclined, discard } = useTopOffDraft(deckId);
 
-  // The list has been opened before, so the door note stops promising a seed
-  // that already happened. Cancelling does not discard the selection, so this
-  // is true from the open rather than from a landed pass: reopening after a
-  // cancel restores what the player left, which is the reopen note's promise
-  // and not the first-open one's.
-  //
-  // A restored selection counts as a visit. The note promises what will arrive
-  // ticked, and a reload no longer empties the selection — so printing the
-  // first-open note to a player whose own 31 picks are about to come back
-  // would be the one reading of this state that is now false.
-  const [visitedThisMount, setVisitedThisMount] = useState(false);
-  const visited = visitedThisMount || restored;
-
   // Ticks are seeded on the FIRST open only. Reopening restores the selection
-  // the player left, which is the promise strip.doorNoteAgain makes — and a
+  // the player left, declines and all — and a
   // restored selection is that same selection, so it is never seeded over.
   const seeded = useRef(false);
 
@@ -242,8 +181,6 @@ function LastSlotsStripInner({
   // is actually shown.
   const seedableIds = candidates.filter(canSeed).map((c) => c.oracleId);
 
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const exhaustedRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const moveFocus = useRef(false);
 
@@ -285,7 +222,6 @@ function LastSlotsStripInner({
     openToken.current += 1;
     moveFocus.current = true;
     setOpen(true);
-    setVisitedThisMount(true);
     onOpenChange?.(true);
 
     if (!owed) {
@@ -344,24 +280,15 @@ function LastSlotsStripInner({
     onOpenChange?.(false);
   }
 
-  // The door and `Close the list` are two faces of one disclosure, because the
-  // drawing replaces the first with the second rather than relabelling a single
-  // control the way the shipped CoverageDisclosure does. That costs a focus
-  // move the chip never needs: the door unmounts under the cursor, and a button
-  // that unmounts drops focus to the body, which is the very thing §1e's "does
-  // not steal focus" is protecting against. Focus therefore follows the
-  // disclosure to whichever face is mounted — never into the rows, which is
-  // what the handoff rules out. Both moves wait for the render that mounts the
-  // target; a synchronous focus() would find nothing there.
-  //
-  // A pass can take the last candidates and leave slots still open, and then
-  // the door the list closes back onto does not exist — the exhausted plate
-  // stands in its place. Focus follows the drawing rather than the control, or
-  // the one close that ends the feature drops the reader on the body.
+  // The door, `Close the list` and ran out's `Consider` are three faces of ONE press, relabelled
+  // in place, so the control under the cursor never unmounts and nothing drops focus to the body.
+  // Focus is still placed on it after each toggle: a click does not focus a button in every
+  // browser, and the reader must land on the face that is now drawn, never in the rows, which
+  // §1e rules out. When a pass took the last candidates the same press is Consider.
   useEffect(() => {
     if (!moveFocus.current) return;
     moveFocus.current = false;
-    const target = open ? closeRef.current : (doorRef.current ?? exhaustedRef.current);
+    const target = pressRef.current;
     // The strip is the last thing on the builder page, so its head sits near the
     // bottom of the viewport and the list opens below the fold — at 390px the
     // player is handed a commit bar reading `Add 31 cards` with not one card on
@@ -390,193 +317,94 @@ function LastSlotsStripInner({
     [],
   );
 
-  // State 13: nothing left to offer. The line replaces the caption and the
-  // door both — a control with nothing to do is absent, not disabled.
-  const exhausted = candidates.length === 0;
+  // State 13: nothing left to offer, and the row says why and points to Consider instead.
+  // The open list outranks it: a quick-add can take the last candidates while the list is up, and
+  // tearing the pass down mid-selection is the whole of what state 17's frozen pool forbids.
+  const exhausted = candidates.length === 0 && !open;
 
-  // The first-open note promises what will arrive ticked, and the seed clamps to
-  // the open slots, so it states the seeded figure rather than the owned one —
-  // which now means the SEEDABLE count, not the owned one. The promise and the
-  // seed read the same list or the note overstates by exactly the cards whose
-  // every copy is sleeved elsewhere.
-  //
-  // The two reopen notes are about ownership rather than ticks, so they keep the
-  // unclamped owned count: you do still own all of them.
+  // The body states the seeded figure rather than the owned one, which means the SEEDABLE count:
+  // the promise and the seed read the same list, or the body overstates by exactly the cards whose
+  // every copy is sleeved elsewhere. A seed of zero is two opposite facts, and the OWNED count
+  // picks between them, never the seed: `You own none of them` is false to a player who owns them
+  // all with every copy in another deck.
   const seedCount = String(Math.min(seedableIds.length, Math.max(openSlots, 0)));
-  // A seed of zero is now two opposite facts, and the sentence has to tell them
-  // apart: the player owns none of the candidates, or they own them and every
-  // copy is sleeved in another deck. `doorNote`'s zero branch says `You own none
-  // of these`, which is false in the second case and false to the player best
-  // placed to notice. The OWNED count picks between them, never the seed.
-  const noneFree = seedCount === "0" && ownedIds.length > 0;
-  const doorNote = !visited
-    ? noneFree
-      ? topOffCopy.strip.doorNoteNoneFree
-      : topOffCopy.strip.doorNote(seedCount)
-    : ownedIds.length === 0
-      ? topOffCopy.strip.doorNoteAgain(String(candidates.length))
-      : topOffCopy.strip.doorNoteAgainOwned(
-          String(ownedIds.length),
-          String(candidates.length),
-        );
-
-  // At 390px the desktop sentence runs three mono lines, so the phone forms drop
-  // the provenance and keep the promise. Both reopen cases take the one string:
-  // the closed caption directly above already states the candidate count.
-  const doorNoteMobile = !visited
-    ? noneFree
-      ? topOffCopy.strip.doorNoteNoneFreeMobile
-      : topOffCopy.strip.doorNoteMobile(seedCount)
-    : topOffCopy.strip.doorNoteAgainMobile;
+  const cand = String(candidates.length);
+  const body = seedCount !== "0"
+    ? topOffCopy.strip.rowBody(cand, seedCount)
+    : ownedIds.length > 0
+      ? topOffCopy.strip.rowBodyNoneFree(cand)
+      : topOffCopy.strip.rowBodyNoneOwned(cand);
+  const n = String(openSlots);
 
   return (
-    <div
-      ref={rootRef}
-      className={[
-        "mx-[16px] md:mx-[30px] mt-[10px] md:mt-[12px] mb-[12px] md:mb-[16px] rounded-[10px]",
-        // The open panel is tighter at phone, where the list beneath it carries
-        // its own spacing; desktop padding does not change between the two.
-        open ? "px-[12px] pt-[12px] pb-[10px]" : "px-[14px] py-[13px]",
-        "md:px-[16px] md:py-[14px]",
-      ].join(" ")}
-      style={{
-        background: "var(--surface-rail)",
-        border: "1px solid var(--border-strong)",
-      }}
-    >
-      {/* Heading and caption. One baseline row at desktop, two blocks at phone;
-          `Close the list` joins that row while the list is open. */}
-      <div className="md:flex md:items-baseline md:gap-[10px] md:mb-[11px]">
-        <p
-          className="font-mono uppercase text-[10px] md:text-[10.5px] mb-[4px] md:mb-0"
-          style={{ letterSpacing: ".14em", color: "var(--accent-text)" }}
-        >
-          {topOffCopy.strip.heading(String(openSlots))}
-        </p>
-
-        {!exhausted && (
-          <p
-            className="font-mono text-[10px] md:text-[10.5px] mb-[11px] md:mb-0"
-            style={{ color: "var(--fg-faint)" }}
-          >
-            <span className="md:hidden">
-              {open
-                ? topOffCopy.strip.captionMobileOpen(String(candidates.length))
-                : topOffCopy.strip.captionMobile(
-                    String(openSlots),
-                    String(candidates.length),
-                  )}
-            </span>
-            {/* Desktop drops the caption once the list is open: the list's own
-                head carries the candidate count and the slot denominator, and
-                the ordering line carries the ordering, so leaving it up states
-                both a third time. Phone keeps its variant because that head is
-                desktop-only. */}
-            {!open && (
-              <span className="hidden md:inline">
-                {topOffCopy.strip.caption(String(openSlots), String(candidates.length))}
-              </span>
-            )}
-          </p>
-        )}
-
-        {open && (
-          <button
-            ref={closeRef}
-            type="button"
-            onClick={closeList}
-            // The expanded half of the disclosure the door opens, so it carries
-            // the state and the target rather than leaving the pair silent
-            // about both while the list is up.
-            aria-expanded
-            aria-controls={listId}
-            // `Close` is a visual truncation at 390px, not a second label, and
-            // both spans are in the DOM at every width — so without this the
-            // spoken name is the two of them run together.
-            aria-label={topOffCopy.strip.close}
-            // The rule belongs to the word, not to the tap target: the phone
-            // box is 44px tall and centres its text, so a border on the button
-            // draws a detached dash a good 15px under the label, underlining
-            // nothing. `flex w-fit` rather than `inline-flex` because the phone
-            // head is a block, where `ml-auto` on an inline box does nothing and
-            // the control sat left, reading as a section label over the ticks.
-            className="ml-auto flex-none flex w-fit items-center min-h-[44px] md:min-h-0 font-mono text-[10px] md:text-[11px] bg-transparent cursor-pointer [color:var(--fg-faint)]"
-          >
-            {/* Shortened at 390px, where the strip head has one line to give.
-                One element with responsive spans, not two mounted controls. */}
-            <span className="md:hidden [border-bottom:1px_dashed_var(--border-dashed)]">
-              {topOffCopy.strip.closeShort}
-            </span>
-            <span className="hidden md:inline [border-bottom:1px_dashed_var(--border-dashed)]">
-              {topOffCopy.strip.close}
-            </span>
-          </button>
-        )}
-      </div>
-
-      {/* The open list outranks the exhausted plate. A quick-add can take the
-          last candidates while the list is up, and gating on the pool first
-          would tear the pass down mid-selection and stand a plate in its place,
-          which is the whole of what state 17's frozen pool forbids. The plate is
-          what the list closes back onto instead. */}
-      {open ? (
-        <TopOffList
-          deckId={deckId}
-          listId={listId}
-          openSlots={openSlots}
-          bodySize={bodySize}
-          candidates={candidates}
-          deckOracleIds={deckOracleIds}
-          ticked={ticked}
-          onTickedChange={setTicked}
-          declined={declined}
-          onDeclinedChange={setDeclined}
-          newestAsOf={newestAsOf}
-          declaredBracket={declaredBracket}
-          noteCounts={noteCounts}
-          onAnnounce={onAnnounce}
-          onCommitted={discard}
-          onInflight={(v) => onInflight?.(v)}
-          onBarHeight={(h) => onBarHeight?.(h)}
-          onClose={closeList}
-        />
-      ) : exhausted ? (
-        <ExhaustedLine
-          ref={exhaustedRef}
-          total={String(bodySize - openSlots)}
-          shortfall={String(openSlots)}
-          allNegative={allNegative}
+    <div ref={rootRef}>
+      {exhausted ? (
+        <TodoRow
+          tone="action"
+          mark={n}
+          title={allNegative ? synergyCopy.lastSlots.exhaustedTitleAllNegative(n) : synergyCopy.lastSlots.exhaustedTitle(n)}
+          // Two ways to empty the pool, and only one of them is the collection running out:
+          // `exhaustedBody` says there was nothing left that EDHREC ranks, which is false when the
+          // rows were cut because EDHREC ranked them BELOW their own baseline.
+          body={allNegative ? topOffCopy.strip.exhaustedAllNegative : synergyCopy.lastSlots.exhaustedBody}
+          next={next}
+          pressRef={pressRef}
+          press={{
+            label: topOffCopy.strip.exhaustedPress,
+            name: topOffCopy.strip.exhaustedPressAria,
+            onPress: onConsider,
+          }}
         />
       ) : (
-        <div className="md:flex md:items-center md:gap-[12px] md:flex-wrap">
-          <button
-            ref={doorRefs}
-            aria-describedby={doorMoment["aria-describedby"]}
-            type="button"
-            onClick={openList}
-            aria-expanded={false}
-            aria-controls={listId}
-            aria-label={topOffCopy.strip.openAria(String(openSlots))}
-            className={[
-              "flex md:inline-flex items-center justify-center md:justify-start",
-              "gap-[8px] md:gap-[9px] w-full md:w-auto min-h-[44px] md:min-h-0",
-              "md:px-[16px] md:py-[10px] rounded-[8px] bg-transparent",
-              "font-semibold text-[14px] md:text-[13px] cursor-pointer",
-              "[border:1px_solid_var(--accent)] [color:var(--accent-text)]",
-            ].join(" ")}
-          >
-            {topOffCopy.strip.open(String(openSlots))}
-            <span aria-hidden className="font-mono text-[12px]" style={{ color: "var(--fg-faint)" }}>
-              {"↓"}
-            </span>
-          </button>
-          <p
-            className="font-mono text-[10px] md:text-[10.5px] leading-[1.55] md:leading-[1.6] mt-[9px] md:mt-0 md:flex-1 md:min-w-[240px]"
-            style={{ color: "var(--fg-locked)" }}
-          >
-            <span className="md:hidden">{doorNoteMobile}</span>
-            <span className="hidden md:inline">{doorNote}</span>
-          </p>
+        <TodoRow
+          tone="action"
+          mark={n}
+          title={topOffCopy.strip.open(n)}
+          body={body}
+          next={next}
+          pressRef={open ? pressRef : doorRefs}
+          press={
+            open
+              ? {
+                  label: topOffCopy.strip.closeShort,
+                  name: topOffCopy.strip.close,
+                  onPress: closeList,
+                  expanded: true,
+                  controls: listId,
+                }
+              : {
+                  label: topOffCopy.strip.openShort,
+                  name: topOffCopy.strip.openAria(n),
+                  onPress: openList,
+                  expanded: false,
+                  controls: listId,
+                  describedBy: doorMoment["aria-describedby"],
+                }
+          }
+        />
+      )}
+      {open && (
+        <div className="px-[12px] pb-[10px] md:px-[16px] md:pb-[14px]">
+          <TopOffList
+            deckId={deckId}
+            listId={listId}
+            openSlots={openSlots}
+            bodySize={bodySize}
+            candidates={candidates}
+            deckOracleIds={deckOracleIds}
+            ticked={ticked}
+            onTickedChange={setTicked}
+            declined={declined}
+            onDeclinedChange={setDeclined}
+            newestAsOf={newestAsOf}
+            declaredBracket={declaredBracket}
+            noteCounts={noteCounts}
+            onAnnounce={onAnnounce}
+            onCommitted={discard}
+            onInflight={(v) => onInflight?.(v)}
+            onBarHeight={(h) => onBarHeight?.(h)}
+            onClose={closeList}
+          />
         </div>
       )}
     </div>

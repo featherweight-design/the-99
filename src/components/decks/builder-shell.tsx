@@ -49,7 +49,6 @@ import { UpdateStrip } from "./update-strip";
 import type { ArrivalPrintings, UpdateArrivalState } from "../../lib/decks/arrival";
 import { FillFailedRow, TodoCard, UnresolvedRow } from "./todo-card";
 import { deckTodo } from "../../lib/decks/todo";
-import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crown } from "../ui/crown";
 import { addPanelCopy, builtFragment, shortCommanderName } from "../../lib/copy/decks-builder";
@@ -1718,40 +1717,6 @@ export function BuilderShell({
               />
             )}
 
-            {/* Last-31 strip — the door onto the top-off list. Open slots are
-                its only condition: it unmounts as a unit at 0 and at nothing
-                else. An empty candidate pool is a state the strip renders, not
-                a reason to take the door away, which is why there is no gate
-                here any more — the old `candidates > 0` gate made STATES 12 and
-                13 unreachable by unmounting exactly the case they describe.
-
-                The count is measured against `total`, not `built`: an
-                unresolved line is a card the player already chose and we could
-                not name, so it holds the slot it arrived on. Measured against
-                `built`, an import that came up two lines short offered to
-                choose two more cards beside a banner explaining the two lines —
-                and taking that offer would put the deck two cards over as soon
-                as those lines were resolved.
-
-                Mounted once, with responsive Tailwind classes for every
-                width-dependent element — the same shape the ledger now takes. */}
-            <LastSlotsStrip
-              deckId={deck.id}
-              openSlots={bodySize - counts.total}
-              bodySize={bodySize}
-              candidates={candidates}
-              allNegative={candidatesAllNegative}
-              deckOracleIds={topOffDeckOracleIds}
-              newestAsOf={newestAsOf}
-              declaredBracket={declaration.declared}
-              noteCounts={deck.noteCounts}
-              onAnnounce={setAnnouncement}
-              onInflight={setFillInflight}
-              onOpenChange={setTopOffOpen}
-              onBarHeight={setTopOffBarHeight}
-            />
-
-
             {/* Arrival chrome. Mutually exclusive by construction: a clean
                 import gets the strip, an import that came up short gets the
                 to-do card's unresolved row instead, whose warning would be contradicted by a line
@@ -1791,9 +1756,9 @@ export function BuilderShell({
             {updateArrival && <UpdateStrip arrival={updateArrival} />}
 
             {/* The to-do card (handoff `deck_messages`): what the deck is waiting on, one row each,
-                under the receipts. `deckTodo` holds every element's shipped gate and the order; in this
-                PR only fill failed and unresolved feed it, and the last N, the pending card and the
-                guided banner still draw as their own blocks.
+                under the receipts. `deckTodo` holds every element's shipped gate and the order; fill
+                failed, unresolved and the last N feed it here, and the pending card still draws as
+                its own block below.
 
                 Fill failed's gate is the old banner's, now the rule's: never on a first run (nothing
                 persisted tells a failed fill from one never asked for, so a player who made their
@@ -1801,25 +1766,48 @@ export function BuilderShell({
                 unresolved lines (an import whose every line went unresolved is not a failed fill —
                 the player asked for a decklist, not a baseline). Unresolved is not gated on arrival:
                 the lines stay unresolved across visits, and so does the explanation of why the
-                counts do not add up. */}
+                counts do not add up.
+
+                The last N's only condition is its open slots, and an empty pool is a state the row
+                draws (ran out), not a reason to take it away. The count is measured against `total`,
+                not `built`: an unresolved line is a card the player already chose and we could not
+                name, so it holds the slot it arrived on. Measured against `built`, an import two
+                lines short offered to choose two more cards, and taking that offer would put the
+                deck two over the moment those lines were resolved. On a first run the guided step
+                heads the card and this is its one row. */}
             <TodoCard
-              // The rule takes the real `firstRun` (fill failed's gate needs it), but the card's head stays
-              // the eyebrow while the guided banner below still draws its own step: one "Step 3 of 3" a page.
-              todo={{
-                ...deckTodo({
-                  firstRun,
-                  filled: deck.filled,
-                  cards: cards.length,
-                  unresolved: unresolvedRows.length,
-                }),
-                firstRun: false,
-              }}
+              todo={deckTodo({
+                firstRun,
+                filled: deck.filled,
+                cards: cards.length,
+                unresolved: unresolvedRows.length,
+                openSlots: bodySize - counts.total,
+                candidates: candidates.length,
+              })}
               deckName={deck.name}
               renderRow={(row) =>
                 row.kind === "fillFailed" ? (
                   <FillFailedRow deckId={deck.id} next={row.next} />
                 ) : row.kind === "unresolved" ? (
                   <UnresolvedRow count={unresolvedRows.length} next={row.next} onLook={seeUnresolved} />
+                ) : row.kind === "lastN" || row.kind === "ranOut" ? (
+                  <LastSlotsStrip
+                    deckId={deck.id}
+                    openSlots={bodySize - counts.total}
+                    bodySize={bodySize}
+                    candidates={candidates}
+                    allNegative={candidatesAllNegative}
+                    deckOracleIds={topOffDeckOracleIds}
+                    newestAsOf={newestAsOf}
+                    declaredBracket={declaration.declared}
+                    noteCounts={deck.noteCounts}
+                    next={row.next}
+                    onConsider={() => setView("consider")}
+                    onAnnounce={setAnnouncement}
+                    onInflight={setFillInflight}
+                    onOpenChange={setTopOffOpen}
+                    onBarHeight={setTopOffBarHeight}
+                  />
                 ) : null
               }
             />
@@ -1867,8 +1855,6 @@ export function BuilderShell({
                 copy above the tabs was on screen while reading the decklist,
                 which EDHREC has nothing to do with. The claim belongs on the
                 shelf that makes it. */}
-            {/* Guided first-run banner (only when firstRun === true) */}
-            {firstRun && <GuidedBanner commanderName={deck.commander.name} />}
 
             {/* The decklist and Consider as peer tabs. The desktop toolbar rides
                 this row; at phone width Consider draws its own toolbar row. */}

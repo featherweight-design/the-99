@@ -125,7 +125,7 @@ describe("Top-off door — unresolved lines hold their slots", () => {
   it("takes the door away when every open slot is an unresolved line", async () => {
     await shell(97, unresolved(2));
     expect(screen.queryByRole("button", { name: door("2") })).toBeNull();
-    expect(screen.queryByText(topOffCopy.strip.heading("2"))).toBeNull();
+    expect(screen.queryByText(topOffCopy.strip.open("2"))).toBeNull();
   });
 
   it("counts only the slots no line has spoken for", async () => {

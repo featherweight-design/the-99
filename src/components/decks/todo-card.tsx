@@ -8,7 +8,7 @@
 // baseline from md; the press is 96px at 390 and 132px from md, and on the phone its hit area is
 // stretched over the whole row by a pseudo-element, so there is still one control per row.
 
-import { Fragment, type ReactNode, useTransition } from "react";
+import { Fragment, type ReactNode, type Ref, useTransition } from "react";
 import { fillDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -45,7 +45,9 @@ export function TodoCard({ todo, deckName, renderRow }: TodoCardProps) {
         </span>
       </div>
       {todo.rows.map((row) => (
-        <Fragment key={row.kind}>{renderRow(row)}</Fragment>
+        // The last N and ran out are ONE slot, keyed as one, so a pool emptying under an open
+        // list re-draws the row rather than remounting it and tearing the selection down.
+        <Fragment key={row.kind === "ranOut" ? "lastN" : row.kind}>{renderRow(row)}</Fragment>
       ))}
     </section>
   );
@@ -66,10 +68,17 @@ export interface TodoRowProps {
     name: string;
     onPress: () => void;
     disabled?: boolean;
+    /** A press that opens something in the card (the last N's list) is a disclosure. */
+    expanded?: boolean;
+    controls?: string;
+    describedBy?: string;
   };
+  /** The press's element, for a caller that moves focus to it or anchors a moment on it. A prop of its
+   *  own rather than a field of `press`, so reading `press` during render never reads a ref. */
+  pressRef?: Ref<HTMLButtonElement>;
 }
 
-export function TodoRow({ tone, mark, title, body, next, press }: TodoRowProps) {
+export function TodoRow({ tone, mark, title, body, next, press, pressRef }: TodoRowProps) {
   const warning = tone === "warning";
   return (
     <div
@@ -113,8 +122,12 @@ export function TodoRow({ tone, mark, title, body, next, press }: TodoRowProps) 
       <button
         type="button"
         onClick={press.onPress}
+        ref={pressRef}
         disabled={press.disabled}
         aria-label={press.name}
+        aria-expanded={press.expanded}
+        aria-controls={press.controls}
+        aria-describedby={press.describedBy}
         className={[
           "flex-none flex items-center justify-center gap-[5px] w-[96px] md:w-[132px] h-[36px] rounded-[8px]",
           "font-sans font-semibold text-[12.5px] whitespace-nowrap cursor-pointer disabled:cursor-default disabled:opacity-50",

@@ -79,6 +79,8 @@ const base = {
   newestAsOf: null,
   declaredBracket: null,
   noteCounts: { gameChanger: 0, extraTurns: 0, tutor: 0 },
+  next: true,
+  onConsider: () => {},
   onAnnounce: () => {},
 };
 
@@ -108,8 +110,8 @@ beforeEach(() => {
 });
 
 describe("LastSlotsStrip", () => {
-  // States 10 and 14. The strip is arithmetic, not a flag: a full deck has no
-  // last slots, so there is no box to draw around them.
+  // States 10 and 14. The row is arithmetic, not a flag: a full deck has no
+  // last slots, so there is no row to draw for them.
   it("renders nothing at all when there are no open slots", () => {
     // Unwrapped: the provider draws live regions of its own, and no row is drawn at 0.
     const { container } = rtlRender(<LastSlotsStrip {...base} openSlots={0} />);
@@ -151,41 +153,47 @@ describe("LastSlotsStrip", () => {
     expect(onInflight).toHaveBeenLastCalledWith(false);
   });
 
-  it("names the owned candidates in the door note before any pass", () => {
+  it("titles the row for the open slots and names the press in full", () => {
     render(<LastSlotsStrip {...base} />);
-    expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
+    expect(screen.getByText(topOffCopy.strip.open("3"))).toBeInTheDocument();
+    const press = screen.getByRole("button", { name: doorName("3") });
+    expect(press).toHaveTextContent(topOffCopy.strip.openShort);
+    expect(press).toHaveAttribute("aria-expanded", "false");
   });
 
-  // The note promises what will arrive ticked, and the seed clamps to the open
-  // slots. Two owned candidates for one slot arrives as one tick, so promising
-  // two is a promise the open cannot keep.
-  it("clamps the door note's promise to the slots the seed can fill", () => {
+  it("names the pool and what the player can sleeve in the body", () => {
+    render(<LastSlotsStrip {...base} />);
+    expect(screen.getByText(topOffCopy.strip.rowBody("3", "2"))).toBeInTheDocument();
+  });
+
+  // The body states what the seed can fill, and the seed clamps to the open
+  // slots. Two owned candidates for one slot arrives as one tick, so saying
+  // two is a figure the open cannot keep.
+  it("clamps the body's figure to the slots the seed can fill", () => {
     render(<LastSlotsStrip {...base} openSlots={1} />);
-    expect(screen.getAllByText(topOffCopy.strip.doorNote("1"))).toHaveLength(2);
-    expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
+    expect(screen.getByText(topOffCopy.strip.rowBody("3", "1"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.rowBody("3", "2"))).toBeNull();
   });
 
-  // A player who owns none of the candidates seeds no ticks, and the note has
+  // A player who owns none of the candidates seeds no ticks, and the body has
   // to say that rather than counting zero of them.
-  it("says the list arrives untouched when nothing in the pool is owned", () => {
+  it("says the player owns none when nothing in the pool is owned", () => {
     render(
       <LastSlotsStrip {...base} candidates={[candidate("buy-1", false), candidate("buy-2", false)]} />,
     );
-    expect(screen.getByText(topOffCopy.strip.doorNote("0"))).toBeInTheDocument();
-    // Asserting the rendered key alone cannot see a missing zero branch, since
-    // both sides of the comparison come from the same function.
-    expect(topOffCopy.strip.doorNote("0")).not.toMatch(/^0 /);
+    expect(screen.getByText(topOffCopy.strip.rowBodyNoneOwned("2"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.rowBody("2", "0"))).toBeNull();
   });
 
-  // State 13. A control with nothing to do is absent, not disabled — and the
-  // caption goes with it rather than counting a pool of zero.
-  it("replaces the door and the caption with the exhausted line when the pool is empty", () => {
+  // State 13. The door has nothing to open, so the same row says why and its
+  // press goes to Consider instead — no literal 99, the shortfall is the figure.
+  it("draws the ran-out row in place of the door when the pool is empty", () => {
     render(<LastSlotsStrip {...base} candidates={[]} />);
-    expect(screen.getByTestId("last-slots-exhausted")).toHaveTextContent(
-      synergyCopy.lastSlots.short("96", "3"),
-    );
+    expect(screen.getByText(synergyCopy.lastSlots.exhaustedTitle("3"))).toBeInTheDocument();
+    expect(screen.getByText(synergyCopy.lastSlots.exhaustedBody)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: doorName("3") })).toBeNull();
-    expect(screen.queryByText(topOffCopy.strip.caption("3", "0"))).toBeNull();
+    expect(screen.getByRole("button", { name: topOffCopy.strip.exhaustedPressAria }))
+      .toHaveTextContent(topOffCopy.strip.exhaustedPress);
   });
 
   // A card owned with every copy sleeved in another deck is offered, and rightly
@@ -207,29 +215,29 @@ describe("LastSlotsStrip", () => {
       <LastSlotsStrip {...base} candidates={[claimed("held-1"), claimed("held-2"), spare("free-1")]} />,
     );
 
-    // One, not three: the note states what will arrive ticked, so it reads the
+    // One, not three: the body states what the seed can fill, so it reads the
     // same list the seed does or it overstates by exactly the cards whose every
     // copy is sleeved elsewhere.
-    expect(screen.getAllByText(topOffCopy.strip.doorNote("1"))).toHaveLength(2);
-    expect(screen.queryByText(topOffCopy.strip.doorNote("3"))).toBeNull();
+    expect(screen.getByText(topOffCopy.strip.rowBody("3", "1"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.rowBody("3", "3"))).toBeNull();
   });
 
   it("does not tell a player who owns every candidate that they own none", () => {
-    // A seed of zero is two opposite facts now. `doorNote`'s zero branch says
-    // `You own none of these`, which is false when the player owns all of them
+    // A seed of zero is two opposite facts. `rowBodyNoneOwned` says
+    // `You own none of them`, which is false when the player owns all of them
     // and every copy is sleeved in another deck — and false to the player best
     // placed to notice. The OWNED count picks between them, never the seed.
     render(<LastSlotsStrip {...base} candidates={[claimed("held-1"), claimed("held-2")]} />);
 
-    expect(screen.getByText(topOffCopy.strip.doorNoteNoneFree)).toBeInTheDocument();
-    expect(screen.queryByText(topOffCopy.strip.doorNote("0"))).toBeNull();
+    expect(screen.getByText(topOffCopy.strip.rowBodyNoneFree("2"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.rowBodyNoneOwned("2"))).toBeNull();
   });
 
   it("still says `you own none` when the player really owns none", () => {
     render(<LastSlotsStrip {...base} candidates={[candidate("buy-1", false)]} />);
 
-    expect(screen.getByText(topOffCopy.strip.doorNote("0"))).toBeInTheDocument();
-    expect(screen.queryByText(topOffCopy.strip.doorNoteNoneFree)).toBeNull();
+    expect(screen.getByText(topOffCopy.strip.rowBodyNoneOwned("1"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.rowBodyNoneFree("1"))).toBeNull();
   });
 
   // THE SEED ASKS WHAT THE DECK NEEDS, which is the whole of this change. It used to take the
@@ -356,9 +364,9 @@ describe("LastSlotsStrip", () => {
   });
 
   it("leaves a claimed card unticked when the list opens", async () => {
-    // The door-note checks above read `seedCount`, which is derived from the same
+    // The body checks above read `seedCount`, which is derived from the same
     // list the seed is — so a regression that seeded from `ownedIds` while the
-    // note kept reading `seedableIds` would pass every one of them with claimed
+    // body kept reading `seedableIds` would pass every one of them with claimed
     // rows pre-ticked again. This opens the list and reads the boxes.
     // The ACTION offers both, so what keeps the claimed row unticked is the strip's own
     // intersection against `canSeed` rather than the stub being tidy. A seed that took the
@@ -382,30 +390,26 @@ describe("LastSlotsStrip", () => {
     // let one failed read silently empty the promise the strip makes.
     render(<LastSlotsStrip {...base} candidates={[candidate("unread", true)]} />);
 
-    expect(screen.getAllByText(topOffCopy.strip.doorNote("1"))).toHaveLength(2);
+    expect(screen.getByText(topOffCopy.strip.rowBody("1", "1"))).toBeInTheDocument();
   });
 
   it("does not claim nothing was ranked when the tail was simply cut", () => {
-    // `lastSlots.short` says the collection ran out and that there was nothing
-    // left that EDHREC ranks. Both clauses are false for a pool emptied by the
-    // negative cut: EDHREC ranked those cards, and what it said was that they
-    // belong here less than in decks generally.
+    // `exhaustedBody` says there was nothing left that EDHREC ranks, which is
+    // false for a pool emptied by the negative cut: EDHREC ranked those cards,
+    // and what it said was that they belong here less than in decks generally.
     render(<LastSlotsStrip {...base} candidates={[]} allNegative />);
 
-    expect(screen.getByTestId("last-slots-exhausted"))
-      .toHaveTextContent(topOffCopy.strip.exhaustedAllNegative);
+    expect(screen.getByText(topOffCopy.strip.exhaustedAllNegative)).toBeInTheDocument();
+    expect(screen.queryByText(synergyCopy.lastSlots.exhaustedBody)).toBeNull();
+    // Nor that the collection ran out: the title says only that nothing is left to suggest.
+    expect(screen.queryByText(/your collection ran out/)).toBeNull();
   });
 
-  // §16 — an exhausted pool is honest, not alarming, so the plate carries the
-  // provenance accent and never the warning colour. Asserted as longhands
-  // because jsdom will not expand a shorthand whose value holds a var().
-  it("draws the exhausted line in the provenance shape, not the warning one", () => {
-    render(<LastSlotsStrip {...base} candidates={[]} />);
-    expect(screen.getByTestId("last-slots-exhausted")).toHaveStyle({
-      borderLeftWidth: "3px",
-      borderLeftStyle: "solid",
-      borderLeftColor: "var(--accent)",
-    });
+  it("sends the ran-out press to Consider", async () => {
+    const onConsider = vi.fn();
+    render(<LastSlotsStrip {...base} candidates={[]} onConsider={onConsider} />);
+    await click(screen.getByRole("button", { name: topOffCopy.strip.exhaustedPressAria }));
+    expect(onConsider).toHaveBeenCalledOnce();
   });
 
   it("opens the list, seeds a tick per owned card, and announces the open once", async () => {
@@ -424,20 +428,19 @@ describe("LastSlotsStrip", () => {
     expect(onAnnounce.mock.calls[0][0]).toContain(topOffCopy.announce.opened("3", "3", "2"));
   });
 
-  // At 390px the open-slot figure is the commit bar's denominator, so the strip
-  // caption stops repeating it and picks up the ordering, which phone has
-  // nowhere else to put. Desktop drops the caption outright, because its list
-  // head states both figures and the ordering line states the ordering.
-  it("swaps the phone caption for the ordering once the list is open", async () => {
+  // One press, three faces: the door relabels to Close in place and back, so the
+  // control under the cursor never unmounts.
+  it("relabels the one press Close while the list is open, and back", async () => {
     render(<LastSlotsStrip {...base} />);
-    expect(screen.getByText(topOffCopy.strip.captionMobile("3", "3"))).toBeInTheDocument();
-    expect(screen.getByText(topOffCopy.strip.caption("3", "3"))).toBeInTheDocument();
+    const press = screen.getByRole("button", { name: doorName("3") });
 
-    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(press);
+    expect(press).toHaveAccessibleName(topOffCopy.strip.close);
+    expect(press).toHaveTextContent(topOffCopy.strip.closeShort);
 
-    expect(screen.queryByText(topOffCopy.strip.captionMobile("3", "3"))).toBeNull();
-    expect(screen.getByText(topOffCopy.strip.captionMobileOpen("3"))).toBeInTheDocument();
-    expect(screen.queryByText(topOffCopy.strip.caption("3", "3"))).toBeNull();
+    await click(press);
+    expect(press).toHaveAccessibleName(doorName("3"));
+    expect(press.isConnected).toBe(true);
   });
 
   // The selection survives a close, but the deck does not stand still: a
@@ -478,9 +481,8 @@ describe("LastSlotsStrip", () => {
     expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
   });
 
-  // The door unmounts under the cursor when the list opens, and a button that
-  // unmounts drops focus to the body. Focus follows the disclosure to its other
-  // face instead — never into the rows, which §1e rules out.
+  // A click does not focus a button in every browser, so focus is placed on the
+  // press's new face — never into the rows, which §1e rules out.
   it("moves focus to the close control when the door opens the list", async () => {
     render(<LastSlotsStrip {...base} />);
     await click(screen.getByRole("button", { name: doorName("3") }));
@@ -501,22 +503,19 @@ describe("LastSlotsStrip", () => {
     rerender(<LastSlotsStrip {...base} candidates={[]} />);
 
     expect(screen.getByRole("button", { name: topOffCopy.strip.close })).toBeInTheDocument();
-    expect(screen.queryByTestId("last-slots-exhausted")).toBeNull();
+    expect(screen.queryByRole("button", { name: topOffCopy.strip.exhaustedPressAria })).toBeNull();
   });
 
-  // §1e — focus moves on close and only on close. The door does not exist at
-  // the moment close is asked for, so the move has to wait for the render that
-  // puts it back; a synchronous focus() here would silently do nothing.
   // A pass that takes the last candidates leaves slots open and no door, so the
-  // one close that ends the feature is the one with nothing to return to.
-  it("returns focus to the exhausted plate when the pass emptied the pool", async () => {
+  // close that ends the feature lands on the press's ran-out face, Consider.
+  it("returns focus to the Consider press when the pass emptied the pool", async () => {
     const { rerender } = render(<LastSlotsStrip {...base} />);
     await click(screen.getByRole("button", { name: doorName("3") }));
 
     rerender(<LastSlotsStrip {...base} candidates={[]} />);
     await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
 
-    expect(screen.getByTestId("last-slots-exhausted")).toHaveFocus();
+    expect(screen.getByRole("button", { name: topOffCopy.strip.exhaustedPressAria })).toHaveFocus();
   });
 
   it("returns focus to the door when the list closes", async () => {
@@ -538,34 +537,9 @@ describe("LastSlotsStrip", () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 
-  // The door note is about what the next open will do. Before the first one it
-  // promises the seed; afterwards the seed has already run, so it describes the
-  // pool and the selection the player can come back to.
-  it("changes the door note once the list has been opened and committed", async () => {
-    render(<LastSlotsStrip {...base} />);
-    await click(screen.getByRole("button", { name: doorName("3") }));
-    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98", 99) }));
-
-    expect(await screen.findByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
-    expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
-  });
-
-  // Cancelling adds nothing, but it does not discard the selection either: the
-  // seed has run and the player's edits survive. So the note moves off the
-  // first-open promise even though no pass landed, because promising a seed
-  // that has already happened is the one thing it must not do.
-  it("moves the door note off the first-open promise after a cancel", async () => {
-    render(<LastSlotsStrip {...base} />);
-    await click(screen.getByRole("button", { name: doorName("3") }));
-    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
-
-    expect(screen.getByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
-    expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
-  });
-
-  // The strip is the last thing on the builder page, so at 390px the list opens
-  // below the fold and the player is handed a commit bar with no card on screen.
-  // Closing must not scroll: the door is already where the reader is looking.
+  // The list opens below the row, at 390px below the fold, and the player would
+  // be handed a commit bar with no card on screen. Closing must not scroll: the
+  // press is already where the reader is looking.
   it("brings the panel into view when the list opens, and not when it closes", async () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();
@@ -624,27 +598,16 @@ describe("LastSlotsStrip", () => {
       expect(screen.getAllByRole("checkbox")).toHaveLength(rowsBefore - 1);
     });
 
-    // The door note promises what will arrive ticked. Once a selection
-    // survives the reload, that promise is about a seed that already happened.
-    it("greets a returning player with the reopen note, not the first-open one", async () => {
-      const first = render(<LastSlotsStrip {...base} />);
-      expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
-      await click(screen.getByRole("button", { name: doorName("3") }));
-      await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
-      first.unmount();
-
-      render(<LastSlotsStrip {...base} />);
-      expect(screen.getByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
-      expect(screen.queryAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(0);
-    });
-
     it("does not restore another deck's selection", async () => {
       const first = render(<LastSlotsStrip {...base} />);
       await click(screen.getByRole("button", { name: doorName("3") }));
       first.unmount();
 
       render(<LastSlotsStrip {...base} deckId="deck-2" />);
-      expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
+      await click(screen.getByRole("button", { name: doorName("3") }));
+      // Seeded afresh, which a restored draft never is.
+      expect(actions.chooseBulk).toHaveBeenCalledTimes(2);
+      expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
     });
 
     // What survives a reload is an *uncommitted* selection. A landed pass has
@@ -659,7 +622,6 @@ describe("LastSlotsStrip", () => {
       first.unmount();
 
       render(<LastSlotsStrip {...base} />);
-      expect(screen.getAllByText(topOffCopy.strip.doorNote("2"))).toHaveLength(2);
       await click(screen.getByRole("button", { name: doorName("3") }));
       expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
     });
