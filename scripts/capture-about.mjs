@@ -633,6 +633,7 @@ const browser = await chromium.launch();
 let about = null;
 let USER_ID = null;
 let feedOffSet = false;
+let priorFeedOverride = [];
 try {
   const signInPage = await browser.newPage();
   const userId = await signIn(signInPage, EMAIL, PASSWORD);
@@ -647,9 +648,15 @@ try {
   await signInPage.close();
   about = await captureAboutSeen(userId, sql);
   if (FEED_OFF) {
-    await sql`delete from flag_overrides where switch = 'HOME_FEED_ENABLED' and scope = 'user' and user_id = ${userId}`;
-    await sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by)
-      values ('HOME_FEED_ENABLED', 'user', ${userId}, 'off', 'capture:about, the feed-off Home frame', 'capture:about')`;
+    // The account's own override, kept to put back: the temporary Off replaces it for the run, in ONE transaction, so a
+    // failed insert cannot leave the original deleted.
+    priorFeedOverride = await sql`select value, note, updated_by from flag_overrides
+      where switch = 'HOME_FEED_ENABLED' and scope = 'user' and user_id = ${userId}`;
+    await sql.transaction([
+      sql`delete from flag_overrides where switch = 'HOME_FEED_ENABLED' and scope = 'user' and user_id = ${userId}`,
+      sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by)
+        values ('HOME_FEED_ENABLED', 'user', ${userId}, 'off', 'capture:about, the feed-off Home frame', 'capture:about')`,
+    ]);
     feedOffSet = true;
     await new Promise((resolve) => setTimeout(resolve, 35_000));
   }
@@ -682,7 +689,14 @@ try {
     if (about) await restoreAboutSeen(about, sql);
     // The feed-off pass's account override, so no later run reads Home without the feed.
     if (USER_ID && feedOffSet) {
-      await sql`delete from flag_overrides where switch = 'HOME_FEED_ENABLED' and scope = 'user' and user_id = ${USER_ID}`;
+      const back = priorFeedOverride.map(
+        (r) => sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by)
+          values ('HOME_FEED_ENABLED', 'user', ${USER_ID}, ${r.value}, ${r.note}, ${r.updated_by})`,
+      );
+      await sql.transaction([
+        sql`delete from flag_overrides where switch = 'HOME_FEED_ENABLED' and scope = 'user' and user_id = ${USER_ID}`,
+        ...back,
+      ]);
     }
     // The Sync preview's pending upload: never confirmed, so nothing else holds it.
     if (USER_ID) {
