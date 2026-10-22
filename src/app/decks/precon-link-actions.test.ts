@@ -38,7 +38,6 @@ vi.mock("../../db", () => {
 });
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => true }));
-vi.mock("next/server", () => ({ after: (fn: () => void) => fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => state.revalidated.push(a) }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
@@ -122,7 +121,7 @@ describe("dismissPreconSuggestions (deck messages A11)", () => {
     expect(state.inserted).toEqual([{ userId: "user_1", preconSuggestionsDismissed: [`${DECK}:A`, `${DECK}:B`] }]);
   });
 
-  it("revalidates the deck's own surfaces once the key is saved, so Back does not bring the strip back", async () => {
+  it("revalidates the deck's own surfaces inline once the key is saved, so a cached payload cannot remount the strip", async () => {
     state.selects = [[{ id: DECK }]];
     state.revalidated = [];
     await dismissPreconSuggestions(DECK, ["A"]);

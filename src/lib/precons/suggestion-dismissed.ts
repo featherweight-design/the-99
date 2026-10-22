@@ -7,7 +7,14 @@ type Writer = Pick<typeof db, "insert">;
 /** The key one deck and one precon share in `user_prefs.precon_suggestions_dismissed`: a different precon crossing the
  *  rule later can still suggest. A deck id is a uuid and never reused, so a key for a deleted deck is inert. */
 export function suggestionDismissKey(deckId: string, fileName: string): string {
-  return `${deckId}:${fileName}`;
+  // A uuid is accepted in either case and the database hands back lowercase: the key is always lowercase, so a deck
+  // opened at an uppercase URL finds what the lowercase one saved.
+  return `${deckId.toLowerCase()}:${fileName}`;
+}
+
+/** The precons left once the ones this reader closed for this deck are dropped. */
+export function dropDismissed<T extends { fileName: string }>(matches: readonly T[], closed: ReadonlySet<string>): T[] {
+  return matches.filter((m) => !closed.has(m.fileName));
 }
 
 /** The precons this reader closed the suggestion for on this deck, by file name. No row reads as none. */
@@ -17,7 +24,7 @@ export async function readDismissedSuggestions(userId: string, deckId: string): 
     .from(userPrefs)
     .where(eq(userPrefs.userId, userId))
     .limit(1);
-  const prefix = `${deckId}:`;
+  const prefix = `${deckId.toLowerCase()}:`;
   return new Set((rows[0]?.dismissed ?? []).filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length)));
 }
 

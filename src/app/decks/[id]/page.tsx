@@ -7,7 +7,7 @@ import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds, deckComboFields } from "../../../lib/combos/attach";
-import { readDismissedSuggestions } from "../../../lib/precons/suggestion-dismissed";
+import { dropDismissed, readDismissedSuggestions } from "../../../lib/precons/suggestion-dismissed";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
 import { noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
@@ -708,7 +708,7 @@ export default async function DeckBuilderPage({
           if (!l || l.linked !== null) return null;
           // A suggestion the reader closed stays closed, on the account (deck messages A11): per deck and precon.
           const closed = l.suggestions.length > 0 ? await readDismissedSuggestions(userId, id).catch(() => new Set<string>()) : null;
-          return { suggestions: closed ? l.suggestions.filter((m) => !closed.has(m.fileName)) : l.suggestions, picker: l.picker };
+          return { suggestions: closed ? dropDismissed(l.suggestions, closed) : l.suggestions, picker: l.picker };
         })
         : null}
       preconOrigin={originRead ? (await originRead)?.summary ?? null : null}

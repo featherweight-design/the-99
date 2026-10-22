@@ -7,7 +7,6 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { db } from "../../db";
 import { decks, precons } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
@@ -62,9 +61,10 @@ async function writeLink(userId: string, deckId: string, builtFromPrecon: string
 /**
  * The suggestion strip's ✕ (deck messages A11): closes it for this deck and these precons, on the account. The deck is
  * the reader's (owner-scoped in the select) or nothing is written, and the write adds only a key it does not already
- * hold (`dismissSuggestionsWrite`). The strip hides itself; the deck's own surfaces are revalidated in `after()` so a
- * Back navigation does not bring the cached payload, and the strip, back (inline, the action's reply would carry the
- * whole deck page).
+ * hold (`dismissSuggestionsWrite`). The strip hides itself, and the deck's own surfaces are revalidated INLINE, like
+ * `writeLink`'s: a later navigation to the deck must not remount the strip from the router's cached payload. Inline,
+ * not in `after()`, because the cache-invalidation signal rides this response; the reply carries the deck page, which a
+ * press this rare can afford.
  */
 export async function dismissPreconSuggestions(deckId: string, fileNames: string[]): Promise<void> {
   const userId = await requireUserId();
@@ -77,7 +77,5 @@ export async function dismissPreconSuggestions(deckId: string, fileNames: string
   const [deck] = await db.select({ id: decks.id }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   if (!deck) throw new Error("deck not found");
   await dismissSuggestionsWrite(userId, fileNames.map((f) => suggestionDismissKey(deckId, f)));
-  after(() => {
-    for (const path of deckSurfaces(deckId)) revalidatePath(path);
-  });
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
 }
