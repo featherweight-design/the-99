@@ -132,7 +132,7 @@ def asker_board():
           ("B · Requested", [("Colin", 2, "asked"), ("Max", 1, "held")], "One request at a time. Ask instead moves it from Colin to Max.",
            "In place, no toast. Days left on the sub line, one word on the right. Other friends read <b>Ask instead</b>: one press withdraws Colin’s request and sends Max one. Colin isn’t told; his Waiting on you row and badge simply drop."),
           ("C · Accepted", [("Peter", 2, "yes")], "When it’s yours, press buy on the row.", "Green, as the row’s tick. Nothing else in the app moves."),
-          ("D · Declined", [("Chris", 1, "no")], "Nobody else you know has a spare.", "No Ask to Chris for this card again. If others hold one, their Ask comes back."),
+          ("D · Declined", [("Chris", 1, "no")], "Nobody else you know has a spare.", "No Ask to Chris for this card for 14 days (the shipped cooldown). If others hold one, their Ask comes back at once."),
           ("E · No answer", [("Max", 1, "expired")], "", "After 14 days. Ask again starts a new 14 days.")]
     strip = "".join(frame(f"<b>{t}</b>", f'<div class="stt" style="min-height:{170 if t.startswith("A") else 0}px">{S.fsection(rows, extra, tip=t.startswith("A"))}</div>', cap) for t, rows, extra, cap in st)
     marks = ('<div class="stt" style="display:flex;flex-direction:column;gap:6px;padding:14px 16px">'
