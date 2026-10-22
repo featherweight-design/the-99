@@ -45,6 +45,9 @@ kit.CSS += r"""
 .key>span{display:flex;align-items:center;gap:7px;font:10.5px/1.5 'IBM Plex Mono';color:var(--fg-faint);white-space:nowrap}
 .key .kg{width:18px;display:flex;justify-content:center;flex:none}
 .key .new{outline-offset:2px;border-radius:4px}
+.key .kf{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px;padding-top:6px;border-top:1px solid var(--border)}
+.dk .key .kf{padding:0 0 0 18px;border-top:0;border-left:1px solid var(--border)}
+.key .kf>span{display:flex;align-items:center;gap:6px}
 .lead{font-size:13.5px;line-height:1.5;color:var(--fg-body);border-top:1px solid var(--border);padding-top:12px}
 .dk .lead{border:0;padding:0}
 .grp h4{margin:4px 0 8px;font:600 14.5px 'IBM Plex Sans';color:var(--fg);display:flex;gap:7px;align-items:baseline}
@@ -100,18 +103,23 @@ kit.CSS += r"""
 .fsx2{display:flex;flex-direction:column}
 .fsx2 .h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:6px;font:10.5px 'IBM Plex Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--fg-faint)}
 .fsx2 .h small{letter-spacing:0;text-transform:none;font-size:11.5px}
-.frw{display:flex;align-items:center;gap:12px;padding:9px 0;min-height:52px}
-.frw .nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.frw .nm b{font:600 15px 'IBM Plex Sans';color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.frw .nm span{font:11.5px/1.45 'IBM Plex Mono';color:var(--fg-faint)}
-.frw .nm span.ok{color:var(--success)}
-.chip{flex:none;display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 7px;border-radius:4px;font:11.5px 'IBM Plex Mono';color:var(--fact);background:color-mix(in oklab,var(--fact) 14%,transparent)}
+.fsr{display:flex;align-items:center;gap:12px;padding:9px 0;min-height:52px}
+.fsr .nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.fsr .nm b{font:600 15px 'IBM Plex Sans';color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsr .nm span{font:11.5px/1.45 'IBM Plex Mono';color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsr .nm span em{font-style:normal;color:var(--fact)}
 .ask{flex:none;height:32px;min-width:64px;padding:0 14px;border-radius:8px;border:1px solid var(--accent);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font:600 13px 'IBM Plex Sans';white-space:nowrap}
 .ph .ask{height:36px;border-radius:9px}
-.ast{flex:none;width:76px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font:11px/1.35 'IBM Plex Mono';color:var(--fg-muted);text-align:right}
-.ast b{font:600 12.5px 'IBM Plex Sans';color:var(--accent-text)}
-.ast b.ok{color:var(--success)}
-.ast b.no{color:var(--fg-muted)}
+.fst{flex:none;display:inline-flex;align-items:center;gap:6px;font:500 13px 'IBM Plex Sans';color:var(--accent-text);white-space:nowrap}
+.fst i{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.fst.ok{color:var(--success)} .fst.ok i{width:auto;height:auto;background:none;border-radius:0;font-style:normal;font-size:12px}
+.fst.no{color:var(--fg-muted)} .fst.no i{background:var(--fg-faint)}
+.fst.wt{font:11.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.fsx2 .h .ii{position:relative;width:18px;height:18px;margin-left:6px;border-radius:50%;border:1px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;font:italic 600 11px 'IBM Plex Serif',serif;letter-spacing:0;text-transform:none;color:var(--fg-muted)}
+.fsx2 .h .ii.on{border-color:var(--accent);color:var(--accent-text)}
+.fsx2 .h .lft{display:flex;align-items:center}
+.fsx2{position:relative}
+.tip{position:absolute;z-index:3;left:0;top:26px;width:min(300px,100%);padding:10px 12px;border-radius:9px;background:var(--elevated);border:1px solid var(--border-strong);box-shadow:0 8px 24px rgba(0,0,0,.35);font:12.5px/1.5 'IBM Plex Sans';color:var(--fg-body);letter-spacing:0;text-transform:none}
 .fsx2 .ft{margin-top:4px;font-size:12.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty}
 .fsx2 .ft b{color:var(--fg-body);font-weight:500}
 .sti{margin-top:4px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
@@ -157,24 +165,24 @@ kit.CSS += r"""
 .vs{display:flex;border:1px solid var(--border-strong);border-radius:9px;padding:3px;gap:2px}
 .vs span{height:28px;padding:0 11px;display:flex;align-items:center;border-radius:6px;font:500 12.5px 'IBM Plex Sans';color:var(--fg-muted);white-space:nowrap}
 .vs span.on{background:var(--elevated);color:var(--fg)}
-.fg{margin-top:10px}
-.fg .fh{display:flex;align-items:center;gap:11px;padding:8px 0 10px;border-bottom:1px solid var(--border)}
+.fg{margin-top:14px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg)}
+.fg .fh{display:flex;align-items:center;gap:11px;padding:10px 14px;background:var(--elevated);border-bottom:1px solid var(--border-strong)}
 .fg .fh .nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .fg .fh b{font:600 15px 'IBM Plex Sans';color:var(--fg)}
-.fg .fh span{font:11px 'IBM Plex Mono';color:var(--fg-faint)}
-.fg .fh small{font:11px 'IBM Plex Mono';color:var(--fg-faint)}
+.fg .fh span{font:11px 'IBM Plex Mono';color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fg .fh small{flex:none;font:11px 'IBM Plex Mono';color:var(--fg-muted)}
+.fg .cl{padding:11px 14px}
 .cl{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
 .cl:last-child{border-bottom:0}
 .cl .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .cl .t b{font:400 14px/1.4 'IBM Plex Sans';color:var(--fg);border-bottom:1px dotted var(--border-strong);align-self:flex-start}
 .cl .t span{font:11px/1.5 'IBM Plex Mono';color:var(--fg-muted)}
 .cl .t span.f{color:var(--fg-faint)}
-.cl .rt{display:flex;align-items:center;gap:8px;flex:none;margin-top:1px}
+.cl .rt{display:flex;align-items:center;gap:10px;flex:none;margin-top:1px}
+.cl{align-items:center}
 .cl .ask{height:28px;min-width:56px;border-radius:7px;font-size:12.5px;padding:0 12px}
 .ph .cl .ask{height:32px}
-.cl .am{font:11px 'IBM Plex Mono';color:var(--fg-muted);text-align:right}
-.cl .am b{display:block;font:600 12.5px 'IBM Plex Sans';color:var(--accent-text)}
-.cl .am b.ok{color:var(--success)}
+
 /* ---------------- /friends: Your asks ---------------- */
 .fi .ac .ask{height:36px}
 .fi .xx{position:absolute;right:4px;top:6px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font-size:13px}
@@ -261,9 +269,8 @@ def all_row(name, cost, owned, spare=None, new=False, lit=False):
             f'<span class="pt">{mana(cost)}</span>{pr}{tag}<span class="x">✕</span></div>')
 
 
-KEY_SHOP = [("⇄", "cheaper stand-ins", False), ("spare", "friend has a spare", False),
-            ("buy", "press to add", False), ("over", "over $5", False),
-            ("asked", "you asked", True), ("yes", "friend said yes", True)]
+KEY_SHOP = [("buy", "press to add", False), ("over", "over $5", False), ("⇄", "cheaper stand-ins", False),
+            ("spare", "friend has a spare", False), ("asked", "requested", True), ("yes", "accepted", True)]
 
 
 def key_item(g, t, new):
@@ -282,8 +289,14 @@ def key_item(g, t, new):
     return f'<span class="{"new" if new else ""}">{k}{t}</span>'
 
 
+FRIEND_MARKS = ("spare", "asked", "yes")
+
+
 def key(items):
-    return '<div class="key">' + "".join(key_item(*i) for i in items) + "</div>"
+    rest = "".join(key_item(*i) for i in items if i[0] not in FRIEND_MARKS)
+    fr = "".join(key_item(*i) for i in items if i[0] in FRIEND_MARKS)
+    return f'<div class="key">{rest}<span class="kf">{fr}</span></div>'
+
 
 
 def deck_tabs():
@@ -346,7 +359,7 @@ ALL = [("Arcbound Ravager", ["c2"], True, None), ("Dina, Essence Brewer", ["b", 
        ("Killian, Decisive Mentor", ["c1", "w", "b"], False, None), ("Ornithopter", ["c0"], True, None),
        ("Quintorius Kand", ["c3", "r", "w"], False, None), ("Sai's Thopter Kit", ["c2"], True, None)]
 KEY_ALL = [("$", "to buy", False), ("✦", "foil", False), ("spare", "friend has a spare", True),
-           ("asked", "you asked", True), ("yes", "friend said yes", True)]
+           ("asked", "requested", True), ("yes", "accepted", True)]
 
 
 def all_page(desk=False, lit=None):
@@ -378,33 +391,37 @@ ASK_FOOT = ("A spare is a copy none of their decks uses, drafts included. <b>Ask
 
 
 def frow(name, n, state="ask", when="", new=True):
-    pods = f"shares with {POD[name]}"
+    sp = f'<em>{n} spare{"" if n == 1 else "s"}</em>'
+    sub = f"{sp} · {POD[name]}"
+    nw = " new" if new else ""
     right = ""
-    sub = f'<span>{pods}</span>'
     if state == "ask":
-        right = f'<span class="ask{" new" if new else ""}">Ask</span>'
+        right = f'<span class="ask{nw}">Ask</span>'
     elif state == "asked":
-        right = f'<span class="ast{" new" if new else ""}"><b>Asked</b>{when or "2d ago"}</span>'
-        sub = f'<span>{pods}</span><span>12 days left</span>'
+        right = f'<span class="fst{nw}"><i></i>Requested</span>'
+        sub = f"{sp} · 12 days left"
     elif state == "yes":
-        right = f'<span class="ast{" new" if new else ""}"><b class="ok">Said yes</b>{when or "today"}</span>'
+        right = f'<span class="fst ok{nw}"><i>✓</i>Accepted</span>'
     elif state == "no":
-        right = f'<span class="ast{" new" if new else ""}"><b class="no">Said no</b>{when or "3d ago"}</span>'
+        right = f'<span class="fst no{nw}"><i></i>Declined</span>'
     elif state == "expired":
-        right = f'<span class="ask{" new" if new else ""}">Ask again</span>'
-        sub = f'<span>{pods}</span><span>No answer in 14 days</span>'
+        right = f'<span class="ask{nw}">Ask again</span>'
+        sub = f"{sp} · no answer in 14 days"
     elif state == "held":
-        right = ""
-    chip = f'<span class="chip">{SPARE_SVG.format(s=13)}{n} spare{"" if n == 1 else "s"}</span>'
-    return (f'<div class="frw">{face(name)}<span class="nm"><b>{name}</b>{sub}</span>{chip}{right}</div>')
+        right = f'<span class="fst wt{nw}">after Colin</span>'
+    return f'<div class="fsr">{face(name)}<span class="nm"><b>{name}</b><span>{sub}</span></span>{right}</div>'
 
 
-def fsection(rows, foot_extra="", new=True):
+SPARE_TIP = "Copies none of their decks use. Ask, and they answer yes or no. The trade (or the goat) is between you."
+
+
+def fsection(rows, foot_extra="", new=True, tip=False):
     n = len(rows)
     body = "".join(frow(*r) for r in rows)
-    ft = ASK_FOOT + (f" {foot_extra}" if foot_extra else "")
-    return (f'<section class="fsx2"><div class="h">Friends with a spare · {n}</div>{body}'
-            f'<p class="ft{" new" if new and foot_extra else ""}">{ft}</p></section>')
+    ii = f'<span class="ii{" on" if tip else ""}{" new" if new else ""}">i</span>'
+    tp = f'<div class="tip">{SPARE_TIP}</div>' if tip else ""
+    ft = f'<p class="ft{" new" if new else ""}">{foot_extra}</p>' if foot_extra else ""
+    return (f'<section class="fsx2"><div class="h"><span class="lft">Friends with a spare · {n}{ii}</span></div>{tp}{body}{ft}</section>')
 
 
 def replacing(card, im, price, over=False, deck=None, jobs=None):
@@ -428,11 +445,11 @@ def modal_body(kind, desk=False):
     if kind.startswith("jace"):
         rep = replacing("Jace, Multiverse Architect", "jace.jpg", "$8.40", True, DECK, "planeswalker · mana value 4 · draw")
         sec = fsection([("Colin", 2, "asked"), ("Max", 1, "held")],
-                       "One ask at a time for a card: if Colin says no, or 14 days pass, you can ask Max.")
+                       "One request at a time. If Colin declines or 14 days pass, Max’s Ask comes back.")
         return "Before you buy", rep + sec + standins_tail()
     if kind.startswith("gisa"):
         rep = replacing("Ghoulcaller Gisa", "gisa.jpg", "$4.75")
-        sec = fsection([("Peter", 2, "yes")], "When it’s yours, press buy on the row to add it to your collection.")
+        sec = fsection([("Peter", 2, "yes")], "When it’s yours, press buy on the row.")
         return "Friends with a spare", rep + sec
     st = {"dina-ask": "ask", "dina-no": "no", "dina-expired": "expired"}[kind]
     rep = replacing("Dina, Essence Brewer", "dina.jpg", "$1.20")
@@ -440,7 +457,7 @@ def modal_body(kind, desk=False):
     extra = ""
     if st == "no":
         rows = [("Chris", 1, "no")]
-        extra = "Chris said no to this one. Nobody else you know has a spare."
+        extra = "Nobody else you know has a spare."
     return "Friends with a spare", rep + fsection(rows, extra)
 
 
@@ -467,11 +484,11 @@ def cline(card, decks, price, state, over):
     if state == "ask":
         r = '<span class="ask new">Ask</span>'
     elif state == "asked":
-        r = '<span class="am new"><b>Asked</b>2d ago</span>'
+        r = '<span class="fst new"><i></i>Requested</span>'
     elif state == "yes":
-        r = '<span class="am new"><b class="ok">Said yes</b>today</span>'
+        r = '<span class="fst ok new"><i>✓</i>Accepted</span>'
     else:
-        r = '<span class="am new">asked Colin</span>'
+        r = '<span class="fst wt new">after Colin</span>'
     return (f'<div class="cl"><span class="t"><b>{card}</b><span>{decks}</span></span>'
             f'<span class="rt">{r}{buytag(price, False)}</span></div>')
 
@@ -481,7 +498,7 @@ def cart_list():
     for name, pod, lines in BYF:
         n = len(lines)
         out.append(f'<div class="fg"><div class="fh">{face(name, 30, 8)}<span class="nm"><b>{name}</b><span>shares with {pod}</span></span>'
-                   f'<small>{n} card{"" if n == 1 else "s"}</small></div>' + "".join(cline(*l) for l in lines) + "</div>")
+                   f'<small>{n} spare{"" if n == 1 else "s"}</small></div>' + "".join(cline(*l) for l in lines) + "</div>")
     return "".join(out)
 
 
@@ -511,14 +528,14 @@ def items():
                      title="Chris asks for your spare Giada, Font of Hope",
                      detail="You have 1 spare. Chris wants 1 for Angels of Hope.", stamp="1h ago",
                      act='<span class="yn y">Yes</span><span class="yn">No</span><span class="ex">14 days left</span>', unseen=True, w=True)
-    I["ans-yes"] = dict(kind="ans", vis=("card", "jace.jpg", "face-sai.jpg"), kick="Your ask",
-                        title="Colin said yes to Jace, Multiverse Architect",
+    I["ans-yes"] = dict(kind="ans", vis=("card", "jace.jpg", "face-sai.jpg"), kick="Your request",
+                        title="Colin can spare Jace, Multiverse Architect",
                         detail="The handover is between you. When it’s yours, press buy on the row to add it.",
-                        stamp="1h ago", act='<span class="lnk">Your asks ›</span>', unseen=True)
-    I["ans-no"] = dict(kind="ans", vis=("card", "dina.jpg", "face-giada.jpg"), kick="Your ask",
-                       title="Chris said no to Dina, Essence Brewer",
+                        stamp="1h ago", act='<span class="lnk">Your requests ›</span>', unseen=True)
+    I["ans-no"] = dict(kind="ans", vis=("card", "dina.jpg", "face-giada.jpg"), kick="Your request",
+                       title="Chris is keeping Dina, Essence Brewer",
                        detail="Nobody else you know has a spare of it.", stamp="yesterday",
-                       act='<span class="lnk">Your asks ›</span>', unseen=False)
+                       act='<span class="lnk">Your requests ›</span>', unseen=False)
     return I
 
 
@@ -551,19 +568,19 @@ def waiting(desk=False, answered=None, n=None):
 
 def receipt(kind, desk=False):
     who = "Peter"
-    t = "You said yes to Peter" if kind == "yes" else "You said no to Peter"
+    t = "You’re sparing Lathliss for Peter" if kind == "yes" else "You’re keeping Lathliss"
     d = ("Peter’s been told. Hand Lathliss over when you meet; your collection stays as it is until you change it."
-         if kind == "yes" else "Peter’s been told. Lathliss stays yours.")
-    kd = '<span class="kd ok">Spare request · answered</span>' if kind == "yes" else '<span class="kd">Spare request · answered</span>'
+         if kind == "yes" else "Peter’s been told.")
+    kd = '<span class="kd ok">Spare request · accepted</span>' if kind == "yes" else '<span class="kd">Spare request · declined</span>'
     vis = P.vis(("card", "lathliss.jpg", "face-captain-america.jpg"))
     return (f'<div class="fi rc new">{vis}<div class="bd"><div class="kr">{kd}<small>just now</small></div>'
             f'<div class="tt">{t}</div><div class="dt">{d}</div></div></div>')
 
 
-YA = [("asked", "jace.jpg", "Colin", "Asked", "You asked Colin for Jace, Multiverse Architect", "For Thopter Works · 12 days left", None, "2d ago"),
-      ("yes", "gisa.jpg", "Peter", "Said yes", "Peter said yes to Ghoulcaller Gisa", "The handover is between you. When it’s yours, press buy on the row to add it.", None, "today"),
-      ("no", "dina.jpg", "Chris", "Said no", "Chris said no to Dina, Essence Brewer", "Nobody else you know has a spare of it.", None, "yesterday"),
-      ("expired", "giada.jpg", "Max", "No answer", "Max didn’t answer about Giada, Font of Hope", "Asked 14 days ago, for Angels of Hope.", "Ask again", "today"),
+YA = [("asked", "jace.jpg", "Colin", "Requested", "You asked Colin for Jace, Multiverse Architect", "For Thopter Works · 12 days left", None, "2d ago"),
+      ("yes", "gisa.jpg", "Peter", "Accepted", "Peter can spare Ghoulcaller Gisa", "The handover is between you. When it’s yours, press buy on the row to add it.", None, "today"),
+      ("no", "dina.jpg", "Chris", "Declined", "Chris is keeping Dina, Essence Brewer", "Nobody else you know has a spare of it.", None, "yesterday"),
+      ("expired", "giada.jpg", "Max", "No answer", "Max didn’t answer about Giada, Font of Hope", "Requested 14 days ago, for Angels of Hope.", "Ask again", "today"),
       ("gone", "ghalta.jpg", "Colin", "No longer spare", "Colin’s Ghalta isn’t spare any more", "It went into one of Colin’s decks, so the ask closed.", None, "3d ago")]
 
 
@@ -579,7 +596,7 @@ def your_asks(desk=False, which=("asked", "yes", "no", "expired")):
         rows.append(f'<div class="fi">{vis}<div class="bd"><div class="kr">{un}<span class="kd {kc}">{kick}</span><small>{when}</small></div>'
                     f'<div class="tt">{title}</div><div class="dt">{line}</div>{"" if desk else act}</div>{act if desk else ""}'
                     f'<span class="xx">✕</span></div>')
-    return (f'<section class="sec ya new"><div class="sech">Your asks · {len(rows)}<span class="r" style="font-size:12.5px;color:var(--fg-faint)">newest first</span></div>'
+    return (f'<section class="sec ya new"><div class="sech">Your requests · {len(rows)}<span class="r" style="font-size:12.5px;color:var(--fg-faint)">newest first</span></div>'
             f'<div class="fd">{"".join(rows)}</div></section>')
 
 

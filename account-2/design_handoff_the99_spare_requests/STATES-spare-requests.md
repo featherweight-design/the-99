@@ -1,14 +1,14 @@
-# Spare requests — states (R1)
+# Spare requests — states (R2)
 
 | Surface | States drawn | Board |
 | --- | --- | --- |
-| Shopping row press | spare (plain glyph), asked (accent dot), said yes (green tick); with ⇄ when over the limit | Shopping, Asker-States |
-| Shopping key | `you asked`, `friend said yes` join only while a row draws them | Shopping |
-| Spares modal, friend row | Ask · Asked (days left; others' Ask steps aside) · Said yes · Said no · No answer (Ask again) | Shopping, Asker-States |
+| Shopping row press | spare (plain glyph), requested (accent dot), accepted (green tick); with ⇄ when over the limit | Shopping, Asker-States |
+| Shopping key | `requested`, `accepted` join only while a row draws them; the three friend marks sit together after the buy marks | Shopping |
+| Spares modal, friend row | Ask · Requested (days left on the sub line; others read “after {friend}”) · Accepted · Declined · No answer (Ask again); ⓘ tooltip on the section head | Shopping, Asker-States |
 | Modal title | Friends with a spare (spares only) · Before you buy (spares and stand-ins), as shipped | Shopping |
 | All view row | spare glyph press before `$` on a card you don't own; owned rows unchanged | Deck-List |
-| Cart, By friend | groups per friend; line press Ask · Asked · Said yes · asked {friend} (one open ask) | Cart-By-Friend |
-| Your asks (/friends) | asked · said yes · said no · no answer + Ask again · no longer spare (copy only); ✕ withdraws or clears | Asker-States |
+| Cart, By friend | groups per friend; each friend a panel with a header band; line Ask · Requested · Accepted · after {friend} (one open request) | Cart-By-Friend |
+| Your requests (/friends) | Requested · Accepted · Declined · no answer + Ask again · no longer spare (copy only); ✕ withdraws or clears | Asker-States |
 | Home, asker | `Your ask` item for a yes or a no; none for an expiry | Asker-States |
 | Waiting on you (friend) | request with Yes, No, days left; receipt after an answer (visit only) | Friend-Side |
 | Home, friend | lead story with Yes and No | Friend-Side |

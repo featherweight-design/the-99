@@ -14,36 +14,36 @@
    "x": 0,
    "y": 0,
    "w": 1612,
-   "h": 1408,
-   "title": "R1 \u00b7 the flow, calls, gaps"
+   "h": 1372,
+   "title": "R2 \u00b7 the flow, calls, gaps"
   },
   "Shopping.dc.html": {
    "x": 1692,
    "y": 0,
    "w": 2780,
-   "h": 2116,
+   "h": 2123,
    "title": "Shopping \u00b7 the row and the modal\u2019s Ask"
   },
   "Deck-List.dc.html": {
    "x": 0,
    "y": 2416,
    "w": 2620,
-   "h": 1244,
+   "h": 1229,
    "title": "Deck list \u00b7 the All view\u2019s mark"
   },
   "Cart-By-Friend.dc.html": {
    "x": 2700,
    "y": 2416,
    "w": 1960,
-   "h": 1488,
+   "h": 1560,
    "title": "Shopping for all decks \u00b7 By friend"
   },
   "Asker-States.dc.html": {
    "x": 0,
    "y": 3780,
    "w": 2380,
-   "h": 2766,
-   "title": "The asker \u00b7 states and Your asks"
+   "h": 2674,
+   "title": "The asker \u00b7 states and Your requests"
   },
   "Friend-Side.dc.html": {
    "x": 2460,
@@ -51,13 +51,6 @@
    "w": 1950,
    "h": 2983,
    "title": "The friend \u00b7 Yes or No, badge, Home, Settings"
-  },
-  "Note.dc.html": {
-   "x": 0,
-   "y": 6666,
-   "w": 1900,
-   "h": 640,
-   "title": "Open question \u00b7 a note on the ask"
   }
  },
  "order": [
