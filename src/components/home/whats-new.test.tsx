@@ -86,7 +86,8 @@ describe("WhatsNew, nothing chosen: the inline opt-in", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /Combos you can make/ }));
     fireEvent.click(screen.getByRole("button", { name: "Show these" }));
     await waitFor(() => expect(nav.refresh).toHaveBeenCalled());
-    expect(save).toHaveBeenCalledWith(["new-set", "combo"]);
+    // With the kinds the page offered, so a kind that came available since keeps what it had.
+    expect(save).toHaveBeenCalledWith(["new-set", "combo"], offer.offer);
   });
 
   it("says so when the save fails, and stays", async () => {
@@ -95,6 +96,7 @@ describe("WhatsNew, nothing chosen: the inline opt-in", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /New sets/ }));
     fireEvent.click(screen.getByRole("button", { name: "Show these" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t save that. Try again.");
-    expect(nav.refresh).not.toHaveBeenCalled();
+    // A refusal redraws the page, so the boxes offered are the current ones.
+    expect(nav.refresh).toHaveBeenCalled();
   });
 });

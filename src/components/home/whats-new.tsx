@@ -128,10 +128,14 @@ function OptIn({ offer }: { offer: FeedKind[] }) {
     setBusy(true);
     setFailed(false);
     try {
-      const r = await saveFeedKinds(on);
-      // Saved, or the feed went off for this reader meanwhile: either way the page's next render decides.
+      const r = await saveFeedKinds(on, offer);
+      // Saved, or the feed went off for this reader meanwhile: either way the page's next render decides. A refusal
+      // (a kind went unavailable under the page) redraws too, so the boxes it offers are the current ones.
       if (r.ok || r.reason === "off") router.refresh();
-      else setFailed(true);
+      else {
+        setFailed(true);
+        router.refresh();
+      }
     } catch {
       setFailed(true);
     } finally {

@@ -111,17 +111,14 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * breaks on a deployment lacking config it needs. A plumbing switch is never raised (it is not a
  * feature a reader tries), so it needs no entry here.
  *
- * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config. One entry since
- * 2026-10-22, for a switch whose surfaces are still landing rather than missing config.
+ * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config. It held
+ * `COMMANDERS_PLACE_ENABLED` and `HOME_FEED_ENABLED` on 2026-10-22 while their surfaces landed (menu and Home), and
+ * is empty again now that Home draws the feed.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
-export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
-  // The feed's store and its Settings section land before Home draws it (plan 2026-10-22-menu-home.md, PR 4 then
-  // PR 6): raised now, a reader could tick kinds that show nowhere. The PR that draws Home's feed removes this entry.
-  HOME_FEED_ENABLED: "Home does not draw the feed yet: its Settings section would change nothing a reader sees.",
-};
+export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {};
 
 /**
  * What All features raises: every `feature` and `model` switch not excluded, and every parent those
