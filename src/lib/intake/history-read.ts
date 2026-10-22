@@ -49,18 +49,16 @@ export function runsPageQuery(userId: string, key: HistoryKey | null, limit: num
 
 export async function loadChooseHistory(
   userId: string,
-  /** `path` is where Help me choose lives for the reader (`choosePath`), which the caller resolves from its own env: this read needs no request. */
-  opts: { path: string; cursor?: string | null; limit?: number; now?: Date },
+  opts: { cursor?: string | null; limit?: number; now?: Date } = {},
 ): Promise<ChooseHistoryPage> {
   const limit = opts.limit ?? CHOOSE_HISTORY_PAGE;
   const key = decodeKey(opts.cursor);
   await reapAbandonedReads(userId, opts.now);
-  const { path } = opts;
   const found = await runsPageQuery(userId, key, limit);
   const more = found.length > limit;
   const page = found.slice(0, limit);
   const rows = page.flatMap((r) => {
-    const row = r.ask === null ? null : shapeRun({ ...r, ask: r.ask }, path);
+    const row = r.ask === null ? null : shapeRun({ ...r, ask: r.ask });
     return row ? [row] : [];
   });
   const last = page[page.length - 1];

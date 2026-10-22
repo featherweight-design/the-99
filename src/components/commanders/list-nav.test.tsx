@@ -5,22 +5,16 @@ import { commanderDetailHref, laneHref, useRerankAnnouncement } from "./list-nav
 describe("list-nav", () => {
   describe("laneHref", () => {
     it("carries the search to the owned lane", () => {
-      expect(laneHref("owned", "atraxa", false)).toBe("/commanders?q=atraxa");
+      expect(laneHref("owned", "atraxa")).toBe("/commanders?q=atraxa");
     });
 
     it("carries the search to the discover lane", () => {
-      expect(laneHref("discover", "atraxa", false)).toBe("/discover?q=atraxa");
-    });
-
-    // On the Commanders place the other lane is a tab of it, never the retired address.
-    it("names the Discover tab on the place", () => {
-      expect(laneHref("discover", "atraxa", true)).toBe("/commanders/discover?q=atraxa");
-      expect(laneHref("owned", "atraxa", true)).toBe("/commanders?q=atraxa");
+      expect(laneHref("discover", "atraxa")).toBe("/discover?q=atraxa");
     });
 
     // A name with a space is the common case, not the exotic one.
     it("encodes the query", () => {
-      expect(laneHref("owned", "atraxa, praetors' voice", false)).toBe(
+      expect(laneHref("owned", "atraxa, praetors' voice")).toBe(
         "/commanders?q=atraxa%2C%20praetors'%20voice",
       );
     });
@@ -28,8 +22,8 @@ describe("list-nav", () => {
     // A bare `?` is a URL the reader would see in their address bar, so nothing
     // to carry means the path travels alone.
     it("drops the query string when there is no search", () => {
-      expect(laneHref("owned", "", false)).toBe("/commanders");
-      expect(laneHref("discover", "   ", false)).toBe("/discover");
+      expect(laneHref("owned", "")).toBe("/commanders");
+      expect(laneHref("discover", "   ")).toBe("/discover");
     });
   });
 

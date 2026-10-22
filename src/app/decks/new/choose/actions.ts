@@ -13,8 +13,6 @@ import { after } from "next/server";
 
 import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { askOf, resultsTarget } from "../../../../lib/intake/submit";
-import { choosePath } from "../../../../lib/commanders/place-paths";
-import { commandersPlaceEnabled } from "../../../../lib/commanders/place-flag";
 import { beginTheRead } from "../../../../lib/intake/the-read-run";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
@@ -38,7 +36,6 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!helpMeChooseEnabled(env)) throw new Error("not found");
-  const path = choosePath(commandersPlaceEnabled(env));
   // A bound on what a caller may send, far past any real form: 800 words percent-encoded as three
   // bytes each run to 7,200 characters, and every theme and set comes on top.
   if (typeof query !== "string" || query.length > 64_000) return { kind: "refused" };
@@ -56,22 +53,22 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   const words = resolved.text.trim();
   // The catalog's name can be longer than the one the address carried: measure again, on the text the prompt gets.
   if (wordsLength(resolved.text) > READ_WORDS_MAX_CHARS) return { kind: "refused" };
-  if (!words) redirect(resultsTarget(path, p, null));
+  if (!words) redirect(resultsTarget(p, null));
   // Themes and sets reach both prompts as filter lines, outside the player-text boundary. The parser
   // checks their shape only, so a value either picker would not offer refuses the read: the free
   // results, nothing reserved. A failed vocabulary read refuses it the same way.
-  if (!(await filtersKnown(p.themes, p.sets))) redirect(resultsTarget(path, p, null));
+  if (!(await filtersKnown(p.themes, p.sets))) redirect(resultsTarget(p, null));
   // The card is null (above), so the answers are exactly the read's filters.
   const begun = await beginTheRead(userId, { readId: randomUUID(), words, tagged: resolved.tagged, filters: answersOf(p), env, ask: askOf(p) });
   if (begun.kind === "started") {
     after(begun.finish);
     // From the form the free list was never seen, so the page holds its loading state until the read
     // settles; from the results (a retry) the list is already on screen and stays under the panel.
-    redirect(resultsTarget(path, p, begun.readId, from === "results" ? null : "form"));
+    redirect(resultsTarget(p, begun.readId, from === "results" ? null : "form"));
   }
   // A repeat lands on the stored read, marked so its line says no credit was used (7m).
-  if (begun.kind === "read" || begun.kind === "nothing") redirect(resultsTarget(path, p, begun.readId, "repeat"));
-  redirect(resultsTarget(path, p, null, begun.kind === "in_flight" ? "busy" : null));
+  if (begun.kind === "read" || begun.kind === "nothing") redirect(resultsTarget(p, begun.readId, "repeat"));
+  redirect(resultsTarget(p, null, begun.kind === "in_flight" ? "busy" : null));
 }
 
 /** Whether every theme and set is one the form's pickers offer now. */

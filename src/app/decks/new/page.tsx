@@ -15,8 +15,7 @@ import { MAX_SETS, MAX_THEMES } from "../../../lib/intake/answers";
 import { handOffFrom, pastFrom, resultsHref } from "../../../lib/intake/hand-off";
 import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-load";
 import { serializeChooseParams } from "../../../lib/intake/params";
-import { choosePath } from "../../../lib/commanders/place-paths";
-import { commandersPlaceEnabled } from "../../../lib/commanders/place-flag";
+import { CHOOSE_PATH } from "../../../lib/intake/submit";
 
 export default async function NewDeckPage({
   searchParams,
@@ -30,7 +29,6 @@ export default async function NewDeckPage({
   const commanderParam = typeof raw.commander === "string" ? raw.commander : undefined;
   const select = raw.select;
   const helpMeChoose = helpMeChooseEnabled(env);
-  const chooseAt = choosePath(commandersPlaceEnabled(env));
 
   // Pre-filled door: validate the ?commander= param server-side, and draw the copy the
   // reader owns. Both live in `loadPreFilledCommander` so they can be tested — a route
@@ -59,8 +57,8 @@ export default async function NewDeckPage({
           // *From my collection* or no choice drawn; the hand-off sets it on *Hit bracket N*.
           bracketBuys: false,
         },
-        resultsHref: resultsHref(chooseAt, asked, pastFrom(searchParamsOf(raw))),
-        changeHref: `${chooseAt}${serializeChooseParams({ ...asked, notUsed: [], readId: null, results: false })}`,
+        resultsHref: resultsHref(asked, pastFrom(searchParamsOf(raw))),
+        changeHref: `${CHOOSE_PATH}${serializeChooseParams({ ...asked, notUsed: [], readId: null, results: false })}`,
         drawBlock: hasAnswerRows(answers),
         // The Bracket row reads what the deck reaches (bracket reach PR 3b) from 3 up, switch on.
         readReach: answers.bracket !== null && answers.bracket >= 3 && bracketReachEnabled(env),

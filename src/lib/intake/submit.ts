@@ -5,6 +5,7 @@ import { resolveWords, serializeChooseParams, type ChooseParams } from "./params
 
 const WORDS_CAP = { measure: wordsLength, maxTags: READ_TAGS_MAX };
 
+export const CHOOSE_PATH = "/decks/new/choose";
 
 /**
  * RETIRED AS THE SUBMIT (rework plan PR 3): the form now submits through `submitChoose`, and its
@@ -22,7 +23,7 @@ const WORDS_CAP = { measure: wordsLength, maxTags: READ_TAGS_MAX };
  *
  * Pure over the index, so the redirect a page makes is tested without a request.
  */
-export function submitTarget(path: string, p: ChooseParams, index: PhraseIndex | null): string {
+export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string {
   // Bounded here as the parser bounds `w`, so no answer comes from words the results would cut.
   const words = plainText(capBody(p.words, READ_WORDS_MAX_CHARS, WORDS_CAP)).trim();
   const match: Pick<MatchResult, "chips" | "phrases" | "themeJoin"> = words && index
@@ -46,7 +47,7 @@ export function submitTarget(path: string, p: ChooseParams, index: PhraseIndex |
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
   }, match.themeJoin);
-  return `${path}${serializeChooseParams({
+  return `${CHOOSE_PATH}${serializeChooseParams({
     ...p,
     words,
     themes: resolved.themes,
@@ -76,8 +77,8 @@ export function submitTarget(path: string, p: ChooseParams, index: PhraseIndex |
  */
 export type Arrival = "repeat" | "busy" | "form";
 
-export function resultsTarget(path: string, p: ChooseParams, readId: string | null, arrival: Arrival | null = null): string {
-  const target = `${path}${serializeChooseParams({ ...askParams(p), readId })}`;
+export function resultsTarget(p: ChooseParams, readId: string | null, arrival: Arrival | null = null): string {
+  const target = `${CHOOSE_PATH}${serializeChooseParams({ ...askParams(p), readId })}`;
   if (arrival === "repeat" && readId) return `${target}&${REPEAT_PARAM}=1`;
   if (arrival === "busy" && !readId) return `${target}&${BUSY_PARAM}=1`;
   if (arrival === "form" && readId) return `${target}&${FORM_PARAM}=1`;
@@ -108,8 +109,8 @@ export function askOf(p: ChooseParams): string {
 }
 
 /** The address of a stored run: its ask, the run's id, and the past-run mark. */
-export function pastRunHref(path: string, ask: string, readId: string): string {
-  return `${path}?${ask}&r=${readId}&${PAST_PARAM}=1`;
+export function pastRunHref(ask: string, readId: string): string {
+  return `${CHOOSE_PATH}?${ask}&r=${readId}&${PAST_PARAM}=1`;
 }
 
 /**
@@ -135,8 +136,8 @@ export const REPEAT_PARAM = "rr";
 export const BUSY_PARAM = "rb";
 
 /** The form with these answers in it: where an old `v=submit` address goes, so a GET never charges. */
-export function formTarget(path: string, p: ChooseParams): string {
-  return `${path}${serializeChooseParams({ ...p, card: null, notUsed: [], readId: null, results: false })}`;
+export function formTarget(p: ChooseParams): string {
+  return `${CHOOSE_PATH}${serializeChooseParams({ ...p, card: null, notUsed: [], readId: null, results: false })}`;
 }
 
 /**

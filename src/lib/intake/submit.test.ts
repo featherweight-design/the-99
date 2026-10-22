@@ -4,17 +4,15 @@ import { buildPhraseIndex } from "./match";
 import { emptyParams, parseChooseParams, READ_WORDS_MAX_CHARS } from "./params";
 import { BUSY_PARAM, formTarget, FORM_PARAM, REPEAT_PARAM, resultsTarget, submitTarget } from "./submit";
 
-const AT = "/commanders/choose";
-
 const DS = "0000aaaa-0000-4000-8000-000000000001";
 const SOL = "0000aaaa-0000-4000-8000-000000000002";
 const index = buildPhraseIndex(
   [{ slug: "dinosaurs", label: "Dinosaurs" }, { slug: "landfall", label: "Landfall" }],
   [{ oracleId: DS, name: "Doubling Season" }, { oracleId: SOL, name: "Sol Ring" }],
 );
-const target = (over: Partial<ReturnType<typeof emptyParams>>) => submitTarget(AT, { ...emptyParams(), ...over }, index);
+const target = (over: Partial<ReturnType<typeof emptyParams>>) => submitTarget({ ...emptyParams(), ...over }, index);
 const landed = (url: string) => {
-  expect(url.startsWith("/commanders/choose?")).toBe(true);
+  expect(url.startsWith("/decks/new/choose?")).toBe(true);
   return parseChooseParams(new URLSearchParams(url.split("?")[1]));
 };
 
@@ -58,7 +56,7 @@ describe("the submit redirect", () => {
   });
 
   it("searches a blank submit with no index read at all", () => {
-    expect(submitTarget(AT, emptyParams(), null)).toBe("/commanders/choose?v=results");
+    expect(submitTarget(emptyParams(), null)).toBe("/decks/new/choose?v=results");
   });
 });
 
@@ -85,7 +83,7 @@ describe("submitTarget's card and Not used order", () => {
   });
 
   it("reads a carried card's id in any case as the same card", () => {
-    const p = landed(submitTarget(AT, parseChooseParams(new URLSearchParams(`a=${SOL.toUpperCase()}&w=with+Doubling+Season`)), index));
+    const p = landed(submitTarget(parseChooseParams(new URLSearchParams(`a=${SOL.toUpperCase()}&w=with+Doubling+Season`)), index));
     expect(p.card).toBe(SOL);
     expect(p.notUsed).toEqual(["Doubling Season"]);
   });
@@ -109,31 +107,31 @@ describe("resultsTarget and formTarget (rework plan PR 3)", () => {
   const p = { ...emptyParams(), words: "  a Landfall deck  ", themes: ["landfall"], card: "0000aaaa-0000-4000-8000-000000000001", notUsed: ["x"] };
 
   it("lands on the results with the words kept whole and unmatched, r naming the read, and never a card", () => {
-    const sp = new URLSearchParams(resultsTarget(AT, p, "r1").split("?")[1]);
+    const sp = new URLSearchParams(resultsTarget(p, "r1").split("?")[1]);
     expect([sp.get("v"), sp.get("w"), sp.get("t"), sp.get("r"), sp.get("a"), sp.get("n"), sp.get("d")])
       .toEqual(["results", "a Landfall deck", "landfall", "r1", null, null, null]);
-    expect(new URLSearchParams(resultsTarget(AT, p, null).split("?")[1]).get("r")).toBeNull();
+    expect(new URLSearchParams(resultsTarget(p, null).split("?")[1]).get("r")).toBeNull();
   });
 
   it("marks a repeat outside the answers, and only with a read to name (7m)", () => {
-    expect(new URLSearchParams(resultsTarget(AT, p, "r1", "repeat").split("?")[1]).get(REPEAT_PARAM)).toBe("1");
-    expect(new URLSearchParams(resultsTarget(AT, p, "r1").split("?")[1]).get(REPEAT_PARAM)).toBeNull();
-    expect(new URLSearchParams(resultsTarget(AT, p, null, "repeat").split("?")[1]).get(REPEAT_PARAM)).toBeNull();
+    expect(new URLSearchParams(resultsTarget(p, "r1", "repeat").split("?")[1]).get(REPEAT_PARAM)).toBe("1");
+    expect(new URLSearchParams(resultsTarget(p, "r1").split("?")[1]).get(REPEAT_PARAM)).toBeNull();
+    expect(new URLSearchParams(resultsTarget(p, null, "repeat").split("?")[1]).get(REPEAT_PARAM)).toBeNull();
   });
 
   it("marks a read that did not start for another running, only with no read to name", () => {
-    expect(new URLSearchParams(resultsTarget(AT, p, null, "busy").split("?")[1]).get(BUSY_PARAM)).toBe("1");
-    expect(new URLSearchParams(resultsTarget(AT, p, "r1", "busy").split("?")[1]).get(BUSY_PARAM)).toBeNull();
+    expect(new URLSearchParams(resultsTarget(p, null, "busy").split("?")[1]).get(BUSY_PARAM)).toBe("1");
+    expect(new URLSearchParams(resultsTarget(p, "r1", "busy").split("?")[1]).get(BUSY_PARAM)).toBeNull();
   });
 
   it("marks a read the form started outside the answers, and only with a read to name", () => {
-    expect(new URLSearchParams(resultsTarget(AT, p, "r1", "form").split("?")[1]).get(FORM_PARAM)).toBe("1");
-    expect(new URLSearchParams(resultsTarget(AT, p, "r1").split("?")[1]).get(FORM_PARAM)).toBeNull();
-    expect(new URLSearchParams(resultsTarget(AT, p, null, "form").split("?")[1]).get(FORM_PARAM)).toBeNull();
+    expect(new URLSearchParams(resultsTarget(p, "r1", "form").split("?")[1]).get(FORM_PARAM)).toBe("1");
+    expect(new URLSearchParams(resultsTarget(p, "r1").split("?")[1]).get(FORM_PARAM)).toBeNull();
+    expect(new URLSearchParams(resultsTarget(p, null, "form").split("?")[1]).get(FORM_PARAM)).toBeNull();
   });
 
   it("sends an old GET submit back to the form with its answers", () => {
-    const sp = new URLSearchParams(formTarget(AT, p).split("?")[1]);
+    const sp = new URLSearchParams(formTarget(p).split("?")[1]);
     expect([sp.get("v"), sp.get("t"), sp.get("a")]).toEqual([null, "landfall", null]);
   });
 });

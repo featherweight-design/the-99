@@ -15,7 +15,6 @@ import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { PlacePathsProvider } from "../commanders/place-paths";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { commandersPlaceEnabled } from "../../lib/commanders/place-flag";
 import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
@@ -131,7 +130,6 @@ export default async function Shell({
     // loading overlay, which renders beside the shell rather than inside it. Unlocked it is the
     // global 74px from globals.css.
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
-    <PlacePathsProvider place={commandersPlaceEnabled(env)}>
     <NavigationPendingProvider stall={stall}>
       {/* The halo targets (discovery R2), on whatever the switches say: every moment's control registers here. */}
       {/* `navLocked`: the shell's own lock, which the tour taken again (R3·2) reads for its captions. */}
@@ -177,7 +175,6 @@ export default async function Shell({
       </MomentsProvider>
       </TargetsProvider>
     </NavigationPendingProvider>
-    </PlacePathsProvider>
     </div>
   );
 }

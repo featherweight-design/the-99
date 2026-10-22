@@ -16,7 +16,6 @@ function input(over: Partial<ShowcaseInput> = {}): ShowcaseInput {
     fits: {},
     deckCount: 3,
     hasSyncBase: true,
-    place: false,
     ...over,
   };
 }

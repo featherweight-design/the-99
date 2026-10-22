@@ -12,10 +12,9 @@ Behind `COMMANDERS_PLACE_ENABLED` (`commandersPlaceEnabled`, `src/lib/commanders
   so both places draw one strip (links, not ARIA tabs; the optimistic highlight; a layout so a press does not remount it).
 - The retired addresses `/discover` and `/decks/new/choose` are thin pages: switch on, a TEMPORARY redirect to the tab with the
   query kept (`placeRedirect`); off, they render the tab's page in place. Never a permanent redirect: the switch can go back off.
-- **Every link follows the switch** (`lib/commanders/place-paths.ts`: `choosePath(place)`, `discoverPath(place)`, `atPlace`). On, a door,
-  the lane toggle, a results link, a server redirect and a tool's Try it name `/commanders/choose` and `/commanders/discover`; off, they name
-  today's addresses. Server code passes `commandersPlaceEnabled(env)`; a client component reads the shell's `PlacePathsProvider`
-  (`usePlace`, `useChoosePath`). There is no module-level `CHOOSE_PATH` any more: a builder takes its `path`, so a caller that forgets it fails typecheck.
+- **In-app links still name today's addresses** (`CHOOSE_PATH` is `/decks/new/choose`, `laneHref` and the bar say `/discover`), so with the
+  switch on each hops once through the temporary redirect, query kept. Menu and Home PR 1b moves every door onto the tab addresses
+  (`choosePath` / `discoverPath`, a shell-level provider for client components); until it lands the hop is the whole cost.
 - On: the Discover door ("Not sure what you want? Help me choose") and the guided banner's door are not drawn, and with them the M12
   moment's first two anchors. M12's bar-slot fallback (`helpOnSlot`) is PR 2's. The form's "‹ New deck" back link goes (`ChooseHeader`'s `back` is optional).
 - A new path a collection change can stale goes in `COLLECTION_ROUTES` and `claimSurfaces`; the About screen for a path is `screenForPath`.

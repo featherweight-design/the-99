@@ -38,7 +38,6 @@ import { CommanderRow } from "./commander-row";
 import { commanderDetailHref } from "./list-nav";
 import { useDiscoveryCache } from "./discovery-cache";
 import { laneHref, useRerankAnnouncement } from "./list-nav";
-import { usePlace } from "./place-paths";
 // Imported, never redeclared: it is 25, and the reveal band only lines up with
 // the shipped control if both windows step by the same number.
 import {
@@ -132,7 +131,6 @@ export function DiscoveryView({
       setKnownSets([]);
     }
   }
-  const place = usePlace();
   const search = useSearchParams();
   const router = useRouter();
   // #338's contract: a control whose flip is a server round-trip says so for the
@@ -572,7 +570,7 @@ export function DiscoveryView({
   // because a deck is already built around it, and the list that shows those is
   // the other route — so its correction is a link rather than a control, and
   // `correct` below has no case for it.
-  const ownedHref = laneHref("owned", trimmedQuery, place);
+  const ownedHref = laneHref("owned", trimmedQuery);
 
   // The one control that would bring the named row back, per cause. One each,
   // because the report names one cause: a correction that flipped two controls

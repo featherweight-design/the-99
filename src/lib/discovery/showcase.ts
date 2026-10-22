@@ -1,4 +1,3 @@
-import { atPlace } from "../commanders/place-paths";
 import { showcaseCopy, writtenForYouCopy, type ToolCopy } from "../copy/discovery";
 import type { SwitchName } from "../switches/registry";
 import type { DeckToolId, ToolFit } from "./fits";
@@ -46,8 +45,6 @@ export type ShowcaseInput = {
   deckCount: number;
   /** Whether the reader has a confirmed upload Sync can merge against. */
   hasSyncBase: boolean;
-  /** `COMMANDERS_PLACE_ENABLED` for the reader: a tool that lands on a tab of the place lands on the tab. */
-  place: boolean;
 };
 
 /** The Try it address: the tool's page, or a deck, with the one-time parameter its landing reads. */
@@ -62,7 +59,7 @@ function stateOf(tool: Tool, copy: ToolCopy, input: ShowcaseInput): CardState {
   const id = tool.id as ToolId;
   if (tool.lands.kind === "route") {
     if (tool.needsDeck && input.deckCount === 0) return { kind: "none", line: showcaseCopy.needsADeck, door: null };
-    return { kind: "page", href: tryHref(atPlace(tool.lands.href, input.place), id), label: copy.press ?? copy.name };
+    return { kind: "page", href: tryHref(tool.lands.href, id), label: copy.press ?? copy.name };
   }
   if (input.deckCount === 0) return { kind: "none", line: showcaseCopy.needsADeck, door: null };
   const decks = input.fits[id as DeckToolId]?.decks ?? [];

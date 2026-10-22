@@ -1,4 +1,3 @@
-import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { creditGrants, modelCalls, userPrefs } from "../../db/schema";
@@ -146,7 +145,6 @@ export function welcomeSheetFor(env: NodeJS.ProcessEnv, facts: { cards: number; 
     fits: facts.decks.length > 0 ? fitsOf(deckFacts(facts.decks), tools) : {},
     deckCount: facts.decks.length,
     hasSyncBase: false,
-    place: commandersPlaceEnabled(env),
   });
   return welcomeSheet({ written: written.rows, cards: facts.cards, decks: facts.decks.length, groups });
 }
