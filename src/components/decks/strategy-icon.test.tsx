@@ -5,8 +5,14 @@ import { FIXED_AXES } from "@/lib/strategy/axes";
 import { STRATEGY_GLYPHS, StrategyIcon, glyphOf } from "./strategy-icon";
 
 describe("StrategyIcon", () => {
-  it("gives every theme and type-line axis a glyph of its own", () => {
+  it("gives every theme and type-line axis a glyph of its own, each drawn differently", () => {
     for (const key of [...THEMES, ...FIXED_AXES]) expect(glyphOf(key)).toBe(key);
+    // Distinct drawings: a copy-pasted entry would show one strategy's icon on another's legend row. Only `tribal`
+    // shares, deliberately, the spears every creature type draws.
+    const drawn = Object.entries(STRATEGY_GLYPHS)
+      .filter(([k]) => k !== "tribal")
+      .map(([, g]) => renderToStaticMarkup(<svg>{g}</svg>));
+    expect(new Set(drawn).size).toBe(drawn.length);
   });
 
   it("draws every creature type, and the tribal theme, with the shared spears", () => {
