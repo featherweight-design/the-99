@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { suggestionDismissKey, type PreconMatch } from "../../../lib/precons/link";
+import type { PreconMatch } from "../../../lib/precons/link";
 
-const linkActions = vi.hoisted(() => ({ linkPrecon: vi.fn(), unlinkPrecon: vi.fn() }));
+const linkActions = vi.hoisted(() => ({ linkPrecon: vi.fn(), unlinkPrecon: vi.fn(), dismissPreconSuggestions: vi.fn(async () => {}) }));
 vi.mock("../../../app/decks/precon-link-actions", () => linkActions);
 import { PreconSuggestion } from "./precon-suggestion";
 import { LinkPreconRow } from "./precon-link-dialogs";
@@ -14,7 +14,7 @@ const match = (name: string, shared: number, of: number, sameCommanders: boolean
 const eldrazi = match("Eldrazi Unbound", 73, 85, true);
 const counter = match("Counter Intelligence", 64, 91, false, { commanders: ["Kilo, Apogee Mind"], setCode: "EOC", releaseDate: "2025-08-01" });
 
-beforeEach(() => { window.localStorage.clear(); linkActions.linkPrecon.mockReset(); });
+beforeEach(() => { window.localStorage.clear(); linkActions.linkPrecon.mockReset(); linkActions.dismissPreconSuggestions.mockClear(); });
 
 describe("PreconSuggestion", () => {
   it("names the precon and the count, never a verdict (K1)", () => {
@@ -35,16 +35,23 @@ describe("PreconSuggestion", () => {
     expect(screen.getByText("64 of its 91 cards are in this deck · led by Kilo, Apogee Mind")).toBeInTheDocument();
   });
 
-  it("remembers ✕ in this browser per deck and precon, and writes nothing (K1d)", () => {
-    const { unmount } = render(<PreconSuggestion deckId="d1" deckName="HD - Eldrazi" suggestions={[eldrazi]} />);
+  it("remembers ✕ on the account per deck and precon, and stores nothing in the browser (K1d, A11)", () => {
+    render(<PreconSuggestion deckId="d1" deckName="HD - Eldrazi" suggestions={[eldrazi]} />);
     fireEvent.click(screen.getByRole("button", { name: "Dismiss the suggestion that this started as Eldrazi Unbound" }));
     expect(screen.queryByText(/Looks like/)).toBeNull();
-    expect(window.localStorage.getItem(suggestionDismissKey("d1", eldrazi.fileName))).toBe("1");
-    unmount();
-    // Another precon crossing the rule later still suggests.
-    render(<PreconSuggestion deckId="d1" deckName="HD - Eldrazi" suggestions={[counter]} />);
-    expect(screen.getByText(/Counter Intelligence/)).toBeInTheDocument();
+    expect(linkActions.dismissPreconSuggestions).toHaveBeenCalledWith("d1", [eldrazi.fileName]);
+    expect(window.localStorage.length).toBe(0);
     expect(linkActions.linkPrecon).not.toHaveBeenCalled();
+  });
+
+  it("stays hidden once the write has failed: it does not roll back", async () => {
+    linkActions.dismissPreconSuggestions.mockRejectedValueOnce(new Error("offline"));
+    render(<PreconSuggestion deckId="d1" deckName="HD - Eldrazi" suggestions={[eldrazi]} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Dismiss/ }));
+    // Let the rejection land before looking.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(linkActions.dismissPreconSuggestions).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/Looks like/)).toBeNull();
   });
 
   it("names two precons in one strip, a Link each, and ✕ dismisses both (K15)", () => {
@@ -56,7 +63,7 @@ describe("PreconSuggestion", () => {
     expect(screen.getByText("EOC · Aug 2025 · led by Kilo, Apogee Mind · 64 of its 91 cards are in this deck")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Dismiss/ }));
     expect(screen.queryByText(/Looks like/)).toBeNull();
-    expect(window.localStorage.getItem(suggestionDismissKey("d1", counter.fileName))).toBe("1");
+    expect(linkActions.dismissPreconSuggestions).toHaveBeenCalledWith("d1", [eldrazi.fileName, counter.fileName]);
   });
 
   it("confirms before linking, with the precon's own card count (K3), and keeps the dialog on a failure", async () => {

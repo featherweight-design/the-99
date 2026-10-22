@@ -272,7 +272,7 @@ Everything in the column is mounted ONCE and is responsive by class, except the 
 - **Copy:** `src/lib/copy/precons.ts:195-213`: "Looks like this started as ${precon}." / "…, with a different commander."; meta "N of its N cards are in this deck · same commander" / "· led by X"; two: "Looks like this started as one of two precons" / "link the one it came from" + per-row meta; buttons "Link it" / "Link".
 - **Actions:** Link it opens `ConfirmLinkDialog`; ✕ dismisses both.
 - **Treatment:** `ArrivalBandShell` (same band as A10), no ✓, button outlined `--accent`, ✕ `--fg-muted`.
-- **Dismissible:** ✕, localStorage per suggestion (`suggestionDismissKey(deckId, fileName)`).
+- **Dismissible:** ✕, localStorage per suggestion (`suggestionDismissKey(deckId, fileName)`). *Superseded (Hugh's call 2, built in PR 4b): the ✕ is remembered on the account, `user_prefs.precon_suggestions_dismissed`, `lib/precons/suggestion-dismissed.ts`.*
 - **Duplicates:** the Versions tab's foot row "Built from a precon? … Link a precon" (`LinkPreconRow`, builder-shell.tsx:2018; precons.ts:215-219).
 - **Origin:** `design/design_handoff_the99_precons` (R3, "the precon link's doors").
 - **Count:** decks with `built_from_precon is null` whose `deck_cards` + commanders overlap a precon's distinct non-basics past `pickSuggestions`'s threshold; needs the loader, not plain SQL.

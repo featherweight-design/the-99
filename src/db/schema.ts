@@ -2100,6 +2100,13 @@ export const userPrefs = pgTable(
      */
     momentsSpent: text("moments_spent").array().notNull().default(sql`'{}'::text[]`),
     /**
+     * The precon suggestions this reader closed with the ✕ (deck messages A11, `lib/precons/suggestion-dismissed.ts`):
+     * `<deck id>:<precon file name>`, per deck AND precon, so a different precon crossing the rule later can still
+     * suggest. Keys only accumulate (a deck id is never reused). Written only when a key is added
+     * (`dismissSuggestionsWrite`), because of the stamp trigger above.
+     */
+    preconSuggestionsDismissed: text("precon_suggestions_dismissed").array().notNull().default(sql`'{}'::text[]`),
+    /**
      * When this reader's first-run tour was spent (discovery R3, `lib/discovery/tour.ts`): written once, only while
      * null (`spendTourWrite`), because of the stamp trigger above, so taking the tour again moves nothing. Null is a
      * tour never taken.

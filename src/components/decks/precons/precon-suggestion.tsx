@@ -3,13 +3,13 @@
 // The suggestion line (R3 addendum, STATES K1, K1d, K2, K15): an unlinked deck that shares a
 // precon's list under the shared rule is told so, in the arrival strip's band (audit finding 5),
 // between the deck header and its tabs. A count of cards and never a verdict. `Link it` opens the
-// confirm (K3); ✕ hides it for this deck and precon in this browser (G-R3-2), and writes nothing.
+// confirm (K3); ✕ hides it for this deck and precon, remembered on the account (deck messages A11, `user_prefs`).
 
 import { useState } from "react";
 import { preconMonth, preconsCopy } from "../../../lib/copy/precons";
-import { suggestionDismissKey, type PreconMatch } from "../../../lib/precons/link";
+import { dismissPreconSuggestions } from "../../../app/decks/precon-link-actions";
+import type { PreconMatch } from "../../../lib/precons/link";
 import { ArrivalBandShell } from "../arrival-strip";
-import { useLocalFlag } from "../use-local-flag";
 import { ConfirmLinkDialog } from "./precon-link-dialogs";
 
 const copy = preconsCopy.link.suggestion;
@@ -27,18 +27,19 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
   /** At most two, same commanders first (`pickSuggestions`). */
   suggestions: PreconMatch[];
 }) {
-  // One flag per precon, so a different precon crossing the rule later can still suggest. Two hooks
-  // always: the strip names at most two.
-  const [firstGone, dismissFirst] = useLocalFlag(suggestionDismissKey(deckId, suggestions[0]?.fileName ?? ""));
-  const [secondGone, dismissSecond] = useLocalFlag(suggestionDismissKey(deckId, suggestions[1]?.fileName ?? ""));
+  // Closed on the account, per precon, so a different precon crossing the rule later can still suggest. The strip
+  // hides at once; the server drops what was closed from the next read. A write that fails only means the strip is
+  // offered again next visit, so the press has nothing to report.
+  const [gone, setGone] = useState<ReadonlySet<string>>(new Set());
   const [confirming, setConfirming] = useState<PreconMatch | null>(null);
-  const shown = suggestions.filter((_, i) => !(i === 0 ? firstGone : secondGone)).slice(0, 2);
+  const shown = suggestions.filter((m) => !gone.has(m.fileName)).slice(0, 2);
   if (shown.length === 0 && confirming === null) return null;
 
   // ✕ dismisses every precon the strip names (K15).
   const dismiss = () => {
-    if (suggestions[0]) dismissFirst();
-    if (suggestions[1]) dismissSecond();
+    const names = shown.map((m) => m.fileName);
+    setGone((prev) => new Set([...prev, ...names]));
+    void dismissPreconSuggestions(deckId, names).catch(() => {});
   };
   const dialog = confirming && (
     <ConfirmLinkDialog deckId={deckId} deckName={deckName} match={confirming} onDismiss={() => setConfirming(null)} />

@@ -12,6 +12,8 @@ import { decks, precons } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { deckSurfaces } from "../../lib/decks/revalidate";
+import { isUuid } from "../../lib/uuid";
+import { dismissSuggestionsWrite, suggestionDismissKey } from "../../lib/precons/suggestion-dismissed";
 import { preconsEnabled } from "../../lib/precons/flag";
 
 export async function linkPrecon(deckId: string, fileName: string): Promise<void> {
@@ -54,4 +56,26 @@ async function writeLink(userId: string, deckId: string, builtFromPrecon: string
   for (const path of deckSurfaces(deckId)) revalidatePath(path);
   revalidatePath("/decks/precons");
   revalidatePath("/decks/precons/[fileName]", "page");
+}
+
+/**
+ * The suggestion strip's ✕ (deck messages A11): closes it for this deck and these precons, on the account. The deck is
+ * the reader's (owner-scoped in the select) or nothing is written, and the write adds only a key it does not already
+ * hold (`dismissSuggestionsWrite`). The strip hides itself, and the deck's own surfaces are revalidated INLINE, like
+ * `writeLink`'s: a later navigation to the deck must not remount the strip from the router's cached payload. Inline,
+ * not in `after()`, because the cache-invalidation signal rides this response; the reply carries the deck page, which a
+ * press this rare can afford.
+ */
+export async function dismissPreconSuggestions(deckId: string, fileNames: string[]): Promise<void> {
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!preconsEnabled(env)) throw new Error("precons are off");
+  if (typeof deckId !== "string" || !isUuid(deckId)) throw new Error("deck not found");
+  // The strip names at most two precons.
+  if (!Array.isArray(fileNames) || fileNames.length === 0 || fileNames.length > 2
+    || fileNames.some((f) => typeof f !== "string" || f.length === 0 || f.length > 200)) throw new Error("precon not found");
+  const [deck] = await db.select({ id: decks.id }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+  if (!deck) throw new Error("deck not found");
+  await dismissSuggestionsWrite(userId, fileNames.map((f) => suggestionDismissKey(deckId, f)));
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
 }

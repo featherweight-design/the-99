@@ -8,7 +8,7 @@ vi.mock("../../lib/switches/request", async () => {
 });
 
 const state = vi.hoisted(() => ({
-  selects: [] as unknown[][], updated: [] as unknown[][], sets: [] as unknown[], wheres: [] as unknown[], revalidated: [] as unknown[][],
+  selects: [] as unknown[][], inserted: [] as unknown[], updated: [] as unknown[][], sets: [] as unknown[], wheres: [] as unknown[], revalidated: [] as unknown[][],
 }));
 
 vi.mock("../../db", () => {
@@ -27,7 +27,14 @@ vi.mock("../../db", () => {
     q.returning = () => Promise.resolve(state.updated.shift() ?? []);
     return q;
   };
-  return { db: { select, update } };
+  const insert = () => {
+    const q: Record<string, unknown> = {};
+    q.values = (v: unknown) => { state.inserted.push(v); return q; };
+    q.onConflictDoUpdate = () => q;
+    q.then = (res: (v: unknown) => unknown) => Promise.resolve([]).then(res);
+    return q;
+  };
+  return { db: { select, update, insert } };
 });
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => true }));
@@ -35,7 +42,7 @@ vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => state.revali
 
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
-import { linkPrecon, unlinkPrecon } from "./precon-link-actions";
+import { dismissPreconSuggestions, linkPrecon, unlinkPrecon } from "./precon-link-actions";
 
 const rendered = (w: unknown) => new PgDialect().sqlToQuery(w as SQL);
 
@@ -101,5 +108,37 @@ describe("unlinkPrecon", () => {
   it("refuses a deck the reader does not own", async () => {
     state.updated = [[]];
     await expect(unlinkPrecon("deck-2", "X")).rejects.toThrow("deck not found");
+  });
+});
+
+describe("dismissPreconSuggestions (deck messages A11)", () => {
+  const DECK = "7d0a1c1e-4d1a-4b9a-8d3c-2f7a5a9e1b11";
+  beforeEach(() => { state.inserted = []; state.selects = []; state.revalidated = []; });
+
+  it("records one key per deck and precon on the reader's account", async () => {
+    state.selects = [[{ id: DECK }]];
+    await dismissPreconSuggestions(DECK, ["A", "B"]);
+    expect(state.inserted).toEqual([{ userId: "user_1", preconSuggestionsDismissed: [`${DECK}:A`, `${DECK}:B`] }]);
+  });
+
+  it("revalidates the deck's own surfaces inline once the key is saved, so a cached payload cannot remount the strip", async () => {
+    state.selects = [[{ id: DECK }]];
+    state.revalidated = [];
+    await dismissPreconSuggestions(DECK, ["A"]);
+    expect(state.revalidated).toEqual(expect.arrayContaining([[`/decks/${DECK}`]]));
+  });
+
+  it("writes nothing for a deck the reader does not own", async () => {
+    state.selects = [[]];
+    await expect(dismissPreconSuggestions(DECK, ["A"])).rejects.toThrow("deck not found");
+    expect(state.inserted).toEqual([]);
+  });
+
+  it("refuses a malformed deck id or precon list before reading anything", async () => {
+    await expect(dismissPreconSuggestions("deck-1", ["A"])).rejects.toThrow("deck not found");
+    await expect(dismissPreconSuggestions(DECK, [])).rejects.toThrow("precon not found");
+    await expect(dismissPreconSuggestions(DECK, ["A", "B", "C"])).rejects.toThrow("precon not found");
+    await expect(dismissPreconSuggestions(DECK, ["x".repeat(201)])).rejects.toThrow("precon not found");
+    expect(state.inserted).toEqual([]);
   });
 });
