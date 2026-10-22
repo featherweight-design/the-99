@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const trialFillRows = vi.fn();
@@ -243,6 +243,23 @@ describe("the results' hover preview", () => {
       fireEvent.mouseEnter(name, { clientX: 10, clientY: 10 });
       act(() => { vi.advanceTimersByTime(1000); });
       expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/c1.jpg");
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("previews no best fit, which already draws its art, and still previews the rows under them", () => {
+    hoverable();
+    try {
+      const rows = [1, 2, 3, 4].map((i) => ({ ...row(i), imageUri: `https://img.test/c${i}.jpg` }));
+      draw(page(4, { rows }));
+      expect(screen.getAllByTestId("best-fit")).toHaveLength(3);
+      for (const tile of screen.getAllByTestId("best-fit")) {
+        fireEvent.mouseEnter(within(tile).getByTestId("row-name"), { clientX: 10, clientY: 10 });
+        act(() => { vi.advanceTimersByTime(1000); });
+        expect(screen.queryByTestId("hover-preview")).toBeNull();
+      }
+      fireEvent.mouseEnter(within(screen.getByTestId("result-row")).getByTestId("row-name"), { clientX: 10, clientY: 10 });
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/c4.jpg");
     } finally { vi.useRealTimers(); }
   });
 });
