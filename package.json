@@ -65,6 +65,7 @@
     "probe:invites": "tsx scripts/probe-invites.mts",
     "probe:invites-join": "tsx scripts/probe-invites-join.mts",
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
+    "probe:feed-store": "tsx scripts/probe-feed-store.mts",
     "probe:card-search": "tsx scripts/probe-card-search.mts",
     "probe:card-search-ui": "node scripts/probe-card-search-ui.mjs",
     "probe:card-search-followups": "node scripts/probe-card-search-followups.mjs",

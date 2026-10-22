@@ -16,6 +16,7 @@ import type { CutCite } from "../lib/tuning/cuts-schema";
 import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
 import { ALL_FEATURES, SWITCH_NAMES } from "../lib/switches/registry";
+import { STORED_KINDS } from "../lib/feed/kinds";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -2117,6 +2118,23 @@ export const userPrefs = pgTable(
      * stamp trigger above: the stamp is what moves a friend's `friendGeneration`.
      */
     spareMin: integer("spare_min").notNull().default(1),
+    /**
+     * The news kinds this reader has turned on (menu and Home, `lib/feed/prefs.ts`): kind -> when it was turned on, as
+     * an ISO instant. A kind that is off is ABSENT. A kind shows only what arrived after its own instant, so turning one
+     * on never backfills. Written only when the map changes (`setFeedKinds`), because of the stamp trigger above.
+     */
+    feedKinds: jsonb("feed_kinds").$type<Record<string, string>>().notNull().default({}),
+    /**
+     * When this reader last saw Home's feed: an item created after it is unseen. Null is a feed never seen, every item
+     * unseen. Written only when an unseen item exists (`markFeedSeen`), because of the stamp trigger above.
+     */
+    feedSeenAt: timestamp("feed_seen_at", { withTimezone: true }),
+    /**
+     * When this reader last saw /friends: a trade match created after it counts on the Friends badge. Apart from
+     * `feed_seen_at`, so Home never clears the Friends badge and /friends never clears Home's. Written only when an
+     * unseen trade match exists (`markFriendsSeen`), because of the stamp trigger above.
+     */
+    friendsSeenAt: timestamp("friends_seen_at", { withTimezone: true }),
   },
   (t) => [
     check("user_prefs_commanders_avail_check", sql`${t.commandersAvail} in ('all', 'free')`),
@@ -3589,6 +3607,38 @@ export const wishlistCollected = pgTable("wishlist_collected", {
   collectedAt: timestamp("collected_at").notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
+]);
+
+/**
+ * The news feed's STORED items (menu and Home, G1; `lib/feed/`): one row per event a job noticed for this reader, of a
+ * kind that was ON for them when it was written (`recordFeedItem`, which writes nothing for a kind that is off). The
+ * catalog kinds (new set, new precon) are never stored: they are read from `catalog_first_seen`.
+ *
+ * `dedupe_key` is the writer's own name for the event (a variant id, a card and a week), unique per reader and kind, so
+ * a job re-run writes nothing twice. `friend_user_id` names the friend a trade match is about: the row alone never proves
+ * the friendship, so every read re-joins the live grant (`lib/social/feed-items.ts`), and the purge deletes the rows
+ * that name a deleted account on either side (`purgeSocialIn`). Read per request, never in a cached payload, so it
+ * carries no stamp trigger.
+ */
+export const feedItems = pgTable("feed_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  kind: text("kind").notNull(),
+  dedupeKey: text("dedupe_key").notNull(),
+  /** The card the item is about: a price drop's, a trade match's, a combo's first card. */
+  oracleId: uuid("oracle_id"),
+  /** A combo's Spellbook variant. No foreign key: `spellbook_variants` is replaced by every combo ingest. */
+  variantId: text("variant_id"),
+  friendUserId: text("friend_user_id"),
+  /** What the row draws beyond its ids (a price drop's two prices). Written by the job, never by a player. */
+  data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  unique("feed_items_dedupe_unique").on(t.userId, t.kind, t.dedupeKey),
+  index("feed_items_user_created_idx").on(t.userId, t.createdAt),
+  index("feed_items_friend_idx").on(t.friendUserId).where(sql`${t.friendUserId} is not null`),
+  check("feed_items_kind_check", sql`${t.kind} in (${sql.raw(STORED_KINDS.map((k) => `'${k}'`).join(", "))})`),
+  check("feed_items_not_self_check", sql`${t.friendUserId} is null or ${t.friendUserId} <> ${t.userId}`),
 ]);
 
 /**

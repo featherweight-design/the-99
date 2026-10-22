@@ -2586,6 +2586,19 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (Social R2 G5), and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. Mutation-checked:
   dropping the viewer predicate from the friendship join makes the stranger see the list.
+- `pnpm probe:feed-store` proves the news feed's store (menu and Home PR 4, `src/lib/feed/`,
+  `src/lib/social/feed-items.ts`) against a real schema: `setFeedKinds` stamps a kind's `enabledAt`, keeps it while the
+  kind stays on, drops it when off and writes nothing (no stamp move) on an unchanged save; `recordFeedItem` writes only
+  a kind that is on, once per dedupe key, and refuses a row naming the reader as the friend; `loadFeed` reads newest
+  first inside 14 days, honors each kind's `enabledAt` (a kind turned off and on again does not bring back its old
+  rows), reads a set arrival and never a BASELINE stamp, and drops a trade match the moment the friend stops sharing
+  spares with the pod; both badges, with `markFeedSeen` and `markFriendsSeen` each writing only while an unseen item
+  exists, moving only their own cursor and no stamp on a repeat; the purge deletes every row naming the deleted friend;
+  and it prints the EXPLAIN of the read and the count. It WRITES, so it fails closed: the URL comes from
+  `FEED_PROBE_URL` (never `DATABASE_URL`, which `env.mjs` overrides), `FEED_PROBE_BRANCH` (default the feed lane's
+  scratch branch) must equal the branch the database reports, and staging, production and local-dev are refused by id.
+  Two per-run accounts, purged in a finally, plus two `catalog_first_seen` set stamps it deletes by key. Its first run
+  found the union refusing `uuid` against `text` (`friend_public_id`), which every unit test had rendered and passed.
 - `pnpm probe:invites` proves the sender's invite writes (plan `2026-10-16-invites.md` PR 2) against a real database,
   with Clerk STUBBED (no real invitation): every count, the invariant after every write, a press made while another
   write holds the sender's lock waiting and then finding none left (mutation-checked: drop the lock and it over-holds),
