@@ -160,7 +160,9 @@ export function ProxyListView({
               {rows.map((row) => (
                 <li
                   key={row.oracleId}
-                  className="relative flex items-center gap-[12px] rounded-[10px] px-[12px] py-[11px] min-h-[44px] hover:bg-[color:var(--elevated)] transition-colors"
+                  // A coarse pointer's deck links are 44px lines, so a row that holds some ends at the last line (no bottom padding) and
+                  // the link never reaches the next row's press.
+                  className={`relative flex items-center gap-[12px] rounded-[10px] px-[12px] py-[11px] min-h-[44px] hover:bg-[color:var(--elevated)] transition-colors${row.decks.length > 0 ? " pointer-coarse:pb-0" : ""}`}
                 >
                   <span className="min-w-0 flex-1">
                     {/* The whole row opens the card (H20): the card name's
@@ -186,15 +188,15 @@ export function ProxyListView({
                         {[row.setCode, row.rarity].filter(Boolean).join(" · ")}
                       </span>
                     )}
-                    <span className="mt-[2px] flex flex-wrap items-center gap-x-[8px] gap-y-[2px] font-mono text-[11px]">
+                    <span className="mt-[2px] flex flex-wrap items-center gap-x-[8px] gap-y-[2px] font-mono text-[11px] pointer-coarse:mt-0">
                       {row.decks.map((deck) => (
                         <Link
                           key={deck.id}
                           href={`/decks/${deck.id}`}
                           aria-label={proxyCopy.row.deckAria(deck.name)}
-                          className="relative z-[1] truncate text-[color:var(--fg-muted)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
+                          className="relative z-[1] truncate text-[color:var(--fg-muted)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors pointer-coarse:inline-flex pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] pointer-coarse:max-w-full pointer-coarse:items-center"
                         >
-                          {deck.name}
+                          <span className="truncate">{deck.name}</span>
                         </Link>
                       ))}
                       {/* Ruling 3's case is otherwise invisible here — a legend

@@ -43,9 +43,10 @@ export function CountStepper({
     : "flex-none flex items-center";
   const button = band
     ? "flex h-[44px] w-[44px] md:h-[32px] md:w-[32px] items-center justify-center font-mono text-[15px] md:text-[13px] leading-none text-[color:var(--fg-body)] md:text-[color:var(--fg-faint)] md:group-hover:text-[color:var(--fg)] md:group-focus-within:text-[color:var(--fg)]"
-    // A row is one 34px line at every width, so the row's buttons are the ✕'s 22x20 everywhere and a coarse pointer's
-    // 44px hit is drawn past them (TOUCH_HIT), as on the ✕ that takes the − slot at 1.
-    : `flex h-[20px] w-[22px] items-center justify-center font-mono text-[13px] leading-none text-[color:var(--border-dashed)] active:text-[color:var(--fg-body)] group-hover:text-[color:var(--fg-body)] group-focus-within:text-[color:var(--fg-body)] ${TOUCH_HIT}`;
+    // A row is one 34px line at every width, so the row's buttons are the ✕'s 22x20 and a coarse pointer's 44px hit is
+    // drawn past them (TOUCH_HIT), as on the ✕ that takes the − slot at 1. On a coarse pointer the button is itself the
+    // 44px-wide slot (the hit adds height only), so its hit never reaches the figure's.
+    : `flex h-[20px] w-[22px] items-center justify-center font-mono text-[13px] leading-none text-[color:var(--border-dashed)] active:text-[color:var(--fg-body)] group-hover:text-[color:var(--fg-body)] group-focus-within:text-[color:var(--fg-body)] pointer-coarse:w-[44px] ${TOUCH_HIT}`;
   const ring =
     "cursor-pointer bg-transparent border-0 p-0 rounded-[6px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]";
   return (
@@ -64,6 +65,13 @@ export function CountStepper({
     </span>
   );
 }
+
+/** A coarse pointer's row figure is its own 44px slot between the − and + slots: 44px wide and tall, the extra height drawn past
+ *  the 34px line by negative margins on a `<label>` around the input (an input has no pseudo-element to carry a hit, and a
+ *  label's press focuses it), so a tap on the count opens the field instead of stepping it, and the focus underline stays
+ *  under the digits. */
+const ROW_FIGURE_SLOT = "pointer-coarse:-my-[12px] pointer-coarse:py-[12px]";
+const ROW_FIGURE_COARSE = "pointer-coarse:min-w-[44px]!";
 
 function CountField({
   count,
@@ -85,7 +93,9 @@ function CountField({
     setDraft(null);
   };
   const shownText = draft ?? String(count);
+  // The label's padding is part of the figure's hit: a press on it focuses the input and must not reach the row's own press.
   return (
+    <label className={`flex justify-center ${band ? "" : ROW_FIGURE_SLOT}`} onClick={(e) => e.stopPropagation()}>
     <input
       inputMode="numeric"
       aria-label={label}
@@ -114,7 +124,8 @@ function CountField({
       // past 99, an imported stack in the thousands) widens the field by its own digits, at the same font, rather
       // than clipping. Monospace, so `ch` is one digit.
       style={{ minWidth: band ? 32 : 24, width: `${shownText.length + 0.5}ch` }}
-      className={`h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] [@media(pointer:fine)]:md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
+      className={`${band ? "" : ROW_FIGURE_COARSE} h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] [@media(pointer:fine)]:md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
     />
+    </label>
   );
 }

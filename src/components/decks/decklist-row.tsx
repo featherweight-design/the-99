@@ -659,7 +659,7 @@ export function DecklistRow({
       type="button"
       onClick={handleRemove}
       disabled={isPending}
-      className={`flex-none flex items-center justify-center ${stepperOn ? "w-[22px] h-[20px]" : "w-[26px] self-stretch"} ${TOUCH_HIT}${withAt("remove")}${endCol}
+      className={`flex-none flex items-center justify-center ${stepperOn ? "w-[22px] h-[20px] pointer-coarse:w-[44px]" : "w-[26px] self-stretch"} ${TOUCH_HIT}${withAt("remove")}${endCol}
         rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
         active:text-[color:var(--fg-body)] pointer-coarse:active:bg-[color:var(--elevated)]
         group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors`}

@@ -13,6 +13,7 @@
 // carries. A route passes its state in and gets pips out; no prop names a route.
 
 import { chassisCopy, PIP_ORDER, PIP_BACKGROUND, type PipCode } from "../../lib/copy/filter-chassis";
+import { TOUCH_HIT } from "./touch-hit";
 
 /**
  * Scryfall's own symbols, committed under `public/mana/`. They are finished
@@ -61,9 +62,15 @@ export type ColourPipsProps = {
    * two-forms-one-control disagreement this component exists to end.
    */
   unavailable?: readonly string[];
+  /**
+   * A coarse pointer's 44px slot per pip with no gap between slots: the drawn pip stays its 22px and the
+   * button's hit is exactly its own slot (`TOUCH_HIT`), so five of them take 220px rather than the 260px the
+   * `sheet` form needs. For the precons' phone row, where the sort shares the line; a fine pointer is as shipped.
+   */
+  touchSlots?: boolean;
 };
 
-export function ColourPips({ value, onToggle, form, unavailable, legend }: ColourPipsProps) {
+export function ColourPips({ value, onToggle, form, unavailable, legend, touchSlots }: ColourPipsProps) {
   // Read is case-tolerant so a lowercase caller still lights its pips; the
   // WRITE is always canonical uppercase (`PIP_ORDER`). A caller whose state is
   // lowercase maps on the way out — the commander rack is the only one.
@@ -75,7 +82,7 @@ export function ColourPips({ value, onToggle, form, unavailable, legend }: Colou
     <div
       role="group"
       aria-label={legend ?? chassisCopy.colour.legend}
-      className={form === "wide" ? "flex items-center gap-[6px]" : "flex items-center gap-[10px]"}
+      className={form === "wide" ? `flex items-center gap-[6px]${touchSlots ? " pointer-coarse:gap-0" : ""}` : "flex items-center gap-[10px]"}
     >
       {PIP_ORDER.map((code) => {
         const lit = on.has(code);
@@ -135,6 +142,7 @@ export function ColourPips({ value, onToggle, form, unavailable, legend }: Colou
               // and not the one decision 7 rules out.
               dead ? "cursor-default opacity-[0.42]" : "cursor-pointer",
               lit ? "shadow-[0_0_0_2px_var(--accent)]" : "shadow-none",
+              touchSlots ? `pointer-coarse:mx-[11px] ${TOUCH_HIT}` : "",
             ].join(" ")}
             // The symbol is a background rather than an `<img>`: it is
             // decorative here — the button's own `aria-label` names the colour —

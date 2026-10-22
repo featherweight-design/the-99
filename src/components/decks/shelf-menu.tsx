@@ -23,7 +23,7 @@ import { stripControlChars } from "./folder-create-dialog";
 import { useMomentHold } from "../../lib/moments/hold";
 
 const ROW =
-  "flex h-[38px] w-full cursor-pointer items-center border-x-0 border-b-0 border-t border-solid "
+  "flex h-[38px] pointer-coarse:h-auto pointer-coarse:min-h-[44px] pointer-coarse:text-[14px] w-full cursor-pointer items-center border-x-0 border-b-0 border-t border-solid "
   + "border-t-[color:var(--elevated)] bg-transparent px-[13px] text-left font-sans text-[13px] "
   + "hover:bg-[color:var(--elevated)] transition-colors";
 

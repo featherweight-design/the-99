@@ -205,7 +205,7 @@ export function PreconListView({
     })),
   ];
 
-  const pips = <ColourPips form="wide" value={colours} onToggle={onColour} />;
+  const pips = <ColourPips form="wide" value={colours} onToggle={onColour} touchSlots />;
   const toggle = (
     <ViewToggle options={VIEWS} value={view} onChange={onView} compact={!wide} className={wide ? "ml-[2px]" : ""} />
   );

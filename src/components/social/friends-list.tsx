@@ -189,7 +189,7 @@ export function FriendMenu({
               <button
                 type="button"
                 onClick={() => setMenu("confirm")}
-                className="flex h-[38px] w-full cursor-pointer items-center border-0 bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--danger)] hover:bg-[color:var(--elevated)]"
+                className="flex h-[38px] pointer-coarse:h-auto pointer-coarse:min-h-[44px] pointer-coarse:text-[14px] w-full cursor-pointer items-center border-0 bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--danger)] hover:bg-[color:var(--elevated)]"
               >
                 {f.remove}
               </button>
