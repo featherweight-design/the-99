@@ -30,6 +30,16 @@ const KEYS: (keyof VisitReceipts)[] = ["fromImport", "printings", "importAdd", "
 /** Whether the navigation carried a receipt at all. */
 export const hasReceipt = (r: VisitReceipts) => r.fromImport || r.precon !== null || r.update !== null;
 
+/**
+ * Whether a receipt is DRAWN now (deck messages A11: the suggestion shows only when no receipt does). Not
+ * `hasReceipt`: an import over unresolved lines draws no strip unless it added cards, and a receipt the reader closed
+ * is no longer on the page, so neither keeps the suggestion away.
+ */
+export function receiptDrawn(r: VisitReceipts, shown: boolean, unresolved: number): boolean {
+  if (!shown) return false;
+  return r.precon !== null || r.update !== null || (r.fromImport && (unresolved === 0 || r.importAdd !== null));
+}
+
 const sameReceipts = (a: VisitReceipts, b: VisitReceipts) => KEYS.every((k) => a[k] === b[k]);
 
 /** The URL parameters a receipt rides on. All of them leave the address once the page has read them. */

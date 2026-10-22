@@ -97,3 +97,25 @@ the deck page's About entry (picture and wording, no version bump). Fixtures are
 | Receipt band: precon, import, update, suggestion | ☐ | ☐ | `ArrivalBandShell` |
 | Remove failure toast | ☐ | ☐ | `ToastFrame` (deck) |
 | Recommended mix label row | ☐ | ☐ | — |
+
+## Close-out (2026-10-22)
+
+Walked on a scratch branch of local-dev migrated to 0165, at 390 and 1300, from main as merged (PRs 1a to 4b).
+Inventory: `docs/superpowers/inventories/deck-messages-closeout.json` (the six PR inventories plus the pass sheet's, 19 rows,
+38 cells, all reached; `pnpm check:shared` on its `DecklistRow` block). The precon receipt was photographed from a real
+start (`PROBE_SHOTS=… pnpm probe:precon-own`, which passes at both widths after fixing its checkbox press, rotted since
+the start dialog's custom checkbox).
+
+- **Design review against the whole brief:** A1 to A18 walked; no Red. Fixed here: A11 shows only when no receipt is
+  DRAWN (not merely arrived, and not after its ✕ closed it; `receiptDrawn`).
+- **Not photographed** (no fixture reaches them; code and tests agree with the board): A1 toast (press-only failure),
+  A8 ran out, A11 suggestion, A17 first run (needs a single-deck account), A18 moments.
+- **Open, for Design or Hugh (not built):** (1) the board's `No version yet` foot under fill failed and first run has no
+  code, no string and no recorded departure; (2) A10 draws `History` on every precon receipt, the code only when the start
+  added cards (there is no entry to link otherwise); (3) the board draws a `?` mark on A11 where STATES says "no ✓";
+  (4) wording for copy-review: the spoken-for-twice many-body reads `Each is…` (board: `Both are…`), and the fill-failed
+  press name is `Try again to fill this deck` (README: `Try filling again`).
+- **About:** the `deck-page` entry's caption gained one sentence about the card; `ABOUT_VERSION` stays 16 and the content
+  hash is re-pinned (Hugh's ruling). The deck screens (`deck-*`), the deck tools' crops and `tour-shopping` were recaptured
+  in all six themes (the whole set was not: a full run re-encodes frames whose fixture data drifted). The Proposed cuts and
+  Top off tool captures reach their new targets in the card.
