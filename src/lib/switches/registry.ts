@@ -56,6 +56,7 @@ export const SWITCHES = [
   { name: "MANA_BALANCE_ENABLED", kind: "feature", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "MOMENTS_ENABLED", kind: "feature" },
   { name: "NAV_STALL_LOG_ENABLED", kind: "plumbing" },
+  { name: "NEAR_COMBOS_ENABLED", kind: "feature" },
   { name: "NEVER_CUT_ENABLED", kind: "feature" },
   { name: "NOTICES_ENABLED", kind: "feature" },
   { name: "NO_COLLECTION_ENTRY_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
@@ -116,7 +117,7 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config. It held
  * `COMMANDERS_PLACE_ENABLED` and `HOME_FEED_ENABLED` on 2026-10-22 while their surfaces landed (menu and Home), and
  * is empty again now that Home draws the feed. It holds `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests' UI
- * PR draws the asks and answers.
+ * PR draws the asks and answers, and `NEAR_COMBOS_ENABLED` from 2026-10-22 until Design prompt 17's surface lands.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
@@ -124,6 +125,8 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
   FRIEND_DECKS_ENABLED:
     "its read filters a friend's Decks tab by the owner's new Settings defaults, which hide drafts, before any surface lets the owner see or change them (friend decks handoff, PR 4)",
+  NEAR_COMBOS_ENABLED:
+    "backend only until Design prompt 17's surface ships: no surface draws the near-combos reads yet (plan 2026-10-22-near-combos-backend.md)",
   SPARE_REQUESTS_ENABLED:
     "the Friends badge counts spare requests waiting on the reader, and no surface answers one until the UI PR (plan 2026-10-22-spare-requests.md)",
 };

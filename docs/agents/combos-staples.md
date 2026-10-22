@@ -84,3 +84,23 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `identity_composition` needs its own branch rather than the same refusal, because an empty
   composition is a LEGITIMATE state until the first widened index run and a hard refusal would
   fail every run until then and take the floors down with it.
+
+## Near combos (`NEAR_COMBOS_ENABLED`)
+
+Plan `docs/superpowers/plans/2026-10-22-near-combos-backend.md`. Backend only until Design prompt 17's surface; the
+switch is unset in production and listed in `ALL_FEATURES_EXCLUDED`.
+
+- **One rule for "one piece away".** `addableMissingPiece` (`src/lib/synopsis/combo-facts.ts`) decides it for the
+  Overview's near combos and for `loadNearCombos` alike: every row of the stored variant present, a counted outcome
+  (`isInfiniteOrGameEnding`), never a loop that draws the game, and exactly one missing piece the deck could add (not
+  command-zone-only, Commander-legal, inside the commanders' identity). Templates are out: the query never reads them.
+- **Where the piece is** comes from `loadAvailability` read from the deck's own vantage (`excludeDeckId`): `spare`
+  when `free > 0`, `elsewhere` when every owned copy is claimed (the claiming decks named), else `buy` at
+  `cheapestNow`'s cents, or null when nothing is stocked.
+- **Ranking is per bucket.** Spare, elsewhere, priced buy, unpriced buy; inside each, one combo per outcome leads
+  (`pickTop`), cheapest first, then `byRank`. Applying the one-per-outcome lead across the whole list lifted a buy
+  above a spare on 8 of local-dev's 20 decks, which is why it is per bucket.
+- **Sizes, staging 2026-10-22.** Across 41 decks: two-piece near combos median 21 per deck (p90 47), three-piece
+  median 9 (p90 66, max 182). Hence the cap (20) and `total`.
+- Steps (`steps`, Spellbook's `description`) and mana (`mana_needed`, `mana_value_needed`) were stored for every
+  variant by #820; this line changed no ingest.

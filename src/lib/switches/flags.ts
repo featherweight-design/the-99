@@ -3,6 +3,7 @@ import { howItWorksEnabled } from "../about/how-it-works-flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
+import { nearCombosEnabled } from "../combos/flag";
 import { changeCommanderEnabled } from "../commander-change/flag";
 import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
@@ -93,6 +94,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
   SOCIAL_WISHLIST_ENABLED: wishlistEnabled,
   SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
+  NEAR_COMBOS_ENABLED: nearCombosEnabled,
   STAND_IN_LABELS_ENABLED: standInLabelsEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   TUNING_ENABLED: tuningEnabled,

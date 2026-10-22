@@ -763,6 +763,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SOCIAL_GAMES_ENABLED: { label: "Opponents", description: "Opponents in the game log." },
   SOCIAL_INVITES_ENABLED: { label: "Invites", description: "Inviting someone new, and invite counts." },
   SOCIAL_WISHLIST_ENABLED: { label: "Wishlist", description: "Cards wanted outside any deck." },
+  NEAR_COMBOS_ENABLED: { label: "Near combos", description: "Combos a deck is one card from, and where that card is. No surface yet." },
   SPARE_REQUESTS_ENABLED: { label: "Spare requests", description: "Ask a friend for a spare, and their Yes or No. Needs Friends." },
   STAND_IN_LABELS_ENABLED: { label: "Stand-in labels", description: "Stand-in labels where a card has none yet." },
   SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },

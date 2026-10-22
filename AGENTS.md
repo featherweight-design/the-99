@@ -221,6 +221,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   Background: `docs/agents/list-payloads.md`.
 - `pnpm db:seed:combos` ingests Commander Spellbook into `spellbook_variants`, `spellbook_variant_cards` and `card_bracket_flags`. The sweep runs BEFORE the bulk file. The publish is two transactions (flags, then bulk) and REFUSES a partial ingest under any collapse floor, leaving the previous tables standing and exiting non-zero. It also stores the tutor mark (`isTutor`), dark after a deploy until this job runs: dispatch it. `card_bracket_flags` carries per-flag sources; an ABSENT id means no flag applies and nothing more.
   Background: `docs/agents/combos-staples.md`.
+- **Near combos** (`NEAR_COMBOS_ENABLED`; unset in production, in `ALL_FEATURES_EXCLUDED` until Design prompt 17's surface). `loadNearCombos` (`src/lib/combos/near-combos.ts`) lists the combos a deck is ONE piece away from, by `addableMissingPiece` (`synopsis/combo-facts.ts`), the same rule the Overview's near combos use, and places the missing piece: a `spare` (an unclaimed copy), `elsewhere` (every copy claimed, naming the decks) or `buy` (`cheapestNow`). Ranked bucket by bucket, one per outcome leading inside each, capped with a `total`. Steps and mana were already stored by #820. No route or action reads it yet. Proof: `pnpm probe:near-combos`.
+  Background: `docs/agents/combos-staples.md`.
 - `pnpm check:spellbook` validates Spellbook's LIVE feed contract, no database, daily.
   Background: `docs/agents/ci.md`.
 - `pnpm build:combo-features` regenerates `produces-kinds.generated.ts`. Developer-run; the diff IS the review. CARD COUNT IS NEVER THE TEST: what a variant PRODUCES decides whether the bracket system counts it (`probe:bracket`).

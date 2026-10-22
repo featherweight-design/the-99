@@ -77,14 +77,14 @@ export function anySizeComboQuery(present: readonly string[], commanders: readon
  * then a stable tail. Free is a bucket and not just the low end of mana: a cheap line that skips
  * the commander must not outrank a dearer one that uses it.
  */
-function byRank(a: Ranked, b: Ranked): number {
+export function byRank(a: Ranked, b: Ranked): number {
   const free = (r: Ranked) => (r.mana === 0 ? 0 : 1);
   // A mandatory loop leads whatever its size: the cap must never cost the overview the one risk
   // that ends the game, and a deck rarely holds more than one or two.
   return Number(b.mandatory) - Number(a.mandatory) || a.pieces - b.pieces || free(a) - free(b) || Number(b.commander) - Number(a.commander) || (a.mana ?? 99) - (b.mana ?? 99) || a.id.localeCompare(b.id);
 }
 
-type Ranked = { pieces: number; mana: number | null; commander: boolean; id: string; sig: string; mandatory?: boolean };
+export type Ranked = { pieces: number; mana: number | null; commander: boolean; id: string; sig: string; mandatory?: boolean };
 
 /**
  * The top `cap` of a ranked list, one per distinct outcome first. Variants differing by one
@@ -92,8 +92,14 @@ type Ranked = { pieces: number; mana: number | null; commander: boolean; id: str
  * push a different win line out of it: on Counter Intelligence the commander's own infinite
  * turns and the +1/+1 loop were both cut by variants of the draw loop.
  */
-function pickTop<T>(items: readonly T[], rank: (t: T) => Ranked, cap: number): T[] {
-  const sorted = [...items].sort((a, b) => byRank(rank(a), rank(b)));
+export function pickTop<T>(
+  items: readonly T[],
+  rank: (t: T) => Ranked,
+  cap: number,
+  /** Orders ahead of `byRank` when given: the near-combos read leads with where the missing piece is. */
+  first?: (a: T, b: T) => number,
+): T[] {
+  const sorted = [...items].sort((a, b) => (first ? first(a, b) : 0) || byRank(rank(a), rank(b)));
   const firstOfSig = new Set<string>();
   const lead = sorted.filter((t) => {
     const sig = rank(t).sig;
@@ -105,14 +111,36 @@ function pickTop<T>(items: readonly T[], rank: (t: T) => Ranked, cap: number): T
   return [...lead, ...rest].slice(0, cap);
 }
 
+/**
+ * The one piece a variant's rows lack, when that variant is a combo the deck could finish by adding
+ * it; null otherwise. The ONE rule for "one piece away": the Overview's facts and the near-combos
+ * read both call it, so they cannot disagree. All rows of a stored variant must be present, it must
+ * produce a counted outcome, a loop that draws the game is never one to want, and the missing piece
+ * must be a card this deck could add: not command-zone-only, legal, inside the deck's identity.
+ */
+export function addableMissingPiece(pieces: readonly ComboPieceRow[], identity: readonly string[]): ComboPieceRow | null {
+  const first = pieces[0];
+  if (!first || pieces.length !== first.card_count || !isInfiniteOrGameEnding(first.produces) || isMandatoryLoop(first.produces)) return null;
+  const missing = pieces.filter((p) => !p.held);
+  if (missing.length !== 1) return null;
+  const m = missing[0];
+  return m.must_be_commander || !m.commander_legal || !fitsIdentity(identity, m.color_identity) ? null : m;
+}
+
+/** The query's rows grouped by variant, in the order they arrived. */
+export function byVariantId(rows: readonly ComboPieceRow[]): Map<string, ComboPieceRow[]> {
+  const out = new Map<string, ComboPieceRow[]>();
+  for (const r of rows) out.set(r.variant_id, [...(out.get(r.variant_id) ?? []), r]);
+  return out;
+}
+
 /** Pure shaping of the query's rows into the prompt's two lists. */
 export function shapeComboFacts(
   rows: readonly ComboPieceRow[],
   identity: readonly string[],
   commanderIds: readonly string[],
 ): ComboFacts {
-  const byVariant = new Map<string, ComboPieceRow[]>();
-  for (const r of rows) byVariant.set(r.variant_id, [...(byVariant.get(r.variant_id) ?? []), r]);
+  const byVariant = byVariantId(rows);
   const assembled: (ComboFact & { pieceCount: number; id: string })[] = [];
   const near: (NearComboFact & { pieceCount: number; mana: number | null; usesCommander: boolean; id: string })[] = [];
   for (const [id, pieces] of byVariant) {
@@ -131,11 +159,9 @@ export function shapeComboFacts(
         usesCommander: pieces.some((p) => commanderIds.includes(p.oracle_id)),
         manaNeeded: first.mana_value_needed,
       });
-    } else if (missing.length === 1 && !isMandatoryLoop(first.produces)) {
-      // A loop that draws the game is never a piece to want: a near-combo only invites completing it.
-      const m = missing[0];
-      // The missing piece must be a card this deck could add: not command-zone-only, legal, in colour.
-      if (m.must_be_commander || !m.commander_legal || !fitsIdentity(identity, m.color_identity)) continue;
+    } else {
+      const m = addableMissingPiece(pieces, identity);
+      if (!m) continue;
       near.push({
         id,
         pieceCount: pieces.length,

@@ -69,6 +69,7 @@
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
     "probe:feed-store": "tsx scripts/probe-feed-store.mts",
     "probe:feed-writers": "tsx scripts/probe-feed-writers.mts",
+    "probe:near-combos": "tsx scripts/probe-near-combos.mts",
     "probe:spare-requests": "tsx scripts/probe-spare-requests.mts",
     "probe:card-search": "tsx scripts/probe-card-search.mts",
     "probe:card-search-ui": "node scripts/probe-card-search-ui.mjs",
