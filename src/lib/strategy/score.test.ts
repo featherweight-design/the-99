@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { LabelTheme } from "../labels/types";
-import { BROAD_THEMES, MIN_NONLAND, TOP_AXES, catalogBaseline, deckStrategy, scoredAxes, themeCounts, type StrategyCard } from "./score";
+import {
+  MIN_NONLAND, TOP_AXES, catalogBaseline, deckStrategy, onStrategy, pendingChanges, scoredAxes, strategyAxis, themeCounts,
+  type KeyedStrategyCard, type StrategyCard,
+} from "./score";
 
 const card = (typeLine: string, themes: LabelTheme[] = [], quantity = 1, manaValue = 3): StrategyCard => ({ typeLine, manaValue, keywords: [], themes, quantity });
 const many = (n: number, c: StrategyCard) => Array.from({ length: n }, () => c);
@@ -45,11 +48,9 @@ describe("scoredAxes", () => {
     expect(scoredAxes(mixed, catalog).map((a) => a.key)).toEqual(["tribal"]);
   });
 
-  it("draws a broad theme but does not offer lean-in on it", () => {
+  it("scores a broad theme like any other: it can be the focus", () => {
     const [axis] = scoredAxes([...many(10, card("Instant", ["evasion"])), ...filler(50)], catalog);
-    expect(axis).toMatchObject({ key: "evasion", leanable: false });
-    expect(BROAD_THEMES.has("evasion")).toBe(true);
-    expect(scoredAxes([...many(10, card("Instant", ["mill"])), ...filler(50)], catalog)[0].leanable).toBe(true);
+    expect(axis).toEqual({ key: "evasion", family: "theme", copies: 10, score: expect.any(Number) });
   });
 });
 
@@ -72,5 +73,59 @@ describe("deckStrategy", () => {
   it("refuses a list under the nonland floor, counting copies", () => {
     expect(deckStrategy(many(MIN_NONLAND - 1, card("Artifact")), catalog)).toEqual({ state: "tooSmall", nonland: MIN_NONLAND - 1 });
     expect(deckStrategy([card("Artifact", [], MIN_NONLAND)], catalog).state).toBe("ok");
+  });
+});
+
+describe("onStrategy", () => {
+  it("reads a theme off the labels and an axis off the type line, a changeling on every type", () => {
+    expect(onStrategy(card("Instant", ["mill"]), "mill")).toBe(true);
+    expect(onStrategy(card("Instant", ["mill"]), "tokens")).toBe(false);
+    expect(onStrategy(card("Artifact Creature — Elf"), "artifacts")).toBe(true);
+    expect(onStrategy(card("Artifact Creature — Elf"), "typal:Elf")).toBe(true);
+    expect(onStrategy(card("Artifact Creature — Elf"), "typal:Goblin")).toBe(false);
+    expect(onStrategy({ ...card("Creature — Shapeshifter"), keywords: ["Changeling"] }, "typal:Goblin")).toBe(true);
+    // A creature type on a card that cannot carry one (an Equipment's subtype) is not a creature type.
+    expect(onStrategy(card("Artifact — Equipment"), "typal:Elf")).toBe(false);
+  });
+});
+
+describe("strategyAxis", () => {
+  it("returns the scored axis when the deck scores it", () => {
+    const cards = [...many(20, card("Artifact")), ...filler(40)];
+    expect(strategyAxis(cards, catalog, "artifacts")).toEqual(scoredAxes(cards, catalog)[0]);
+  });
+
+  it("still counts a focus the deck no longer scores, and scores it 0", () => {
+    const cards = [...many(3, card("Instant", ["mill"])), ...filler(57)];
+    expect(strategyAxis(cards, catalog, "mill")).toEqual({ key: "mill", family: "theme", copies: 3, score: 0 });
+    // A creature type the deck does not rank among its types still counts its own cards.
+    const elves = [...many(4, card("Creature — Elf")), ...filler(56)];
+    expect(strategyAxis(elves, catalog, "typal:Elf")).toMatchObject({ family: "type", copies: 4, score: 0 });
+  });
+});
+
+describe("pendingChanges", () => {
+  const keyed = (oracleId: string, c: StrategyCard): KeyedStrategyCard => ({ ...c, oracleId });
+  const mill = (id: string, q = 1) => keyed(id, card("Instant", ["mill"], q));
+  const art = (id: string) => keyed(id, card("Artifact"));
+
+  it("counts adds and cuts per strategy by the card's quantity change", () => {
+    const committed = [mill("a"), mill("b"), art("c")];
+    const live = [mill("a", 3), art("c"), art("d")];
+    expect(pendingChanges(committed, live, ["mill", "artifacts", "tokens"])).toEqual({
+      mill: { added: 2, removed: 1 },
+      artifacts: { added: 1, removed: 0 },
+    });
+  });
+
+  it("reports nothing for an unchanged list", () => {
+    const list = [mill("a"), art("c")];
+    expect(pendingChanges(list, list, ["mill", "artifacts"])).toEqual({});
+  });
+
+  it("judges a kept card by its labels now", () => {
+    const committed = [keyed("a", card("Instant", [], 1))];
+    const live = [keyed("a", card("Instant", ["mill"], 2))];
+    expect(pendingChanges(committed, live, ["mill"])).toEqual({ mill: { added: 1, removed: 0 } });
   });
 });

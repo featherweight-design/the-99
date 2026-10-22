@@ -8,7 +8,10 @@ import { catalogGeneration } from "../cache/catalog-generation";
 import { labelGeneration } from "../labels/generation";
 import { LABEL_PROMPT_VERSION, labelInputHash } from "../labels/prompt";
 import type { Job } from "../labels/types";
-import { baselineFromRows, catalogQuery, deckCardsQuery, freshThemes, loadDeckStrategy, loadStrategyBaseline, toStrategyCard, type CardRow } from "./load";
+import {
+  baselineFromRows, catalogQuery, deckCardsQuery, freshThemes, loadDeckStrategy, loadStrategyBaseline, strategyRead, toStrategyCard,
+  versionCardsQuery, type CardRow,
+} from "./load";
 
 let n = 0;
 /** A card with no label row; `labelled` gives it a FRESH one carrying the themes. */
@@ -131,5 +134,47 @@ describe("freshThemes", () => {
   it("keeps a stale card's type-line axes", () => {
     const stale = { ...labelled(row("Artifact"), ["mill"]), oracleText: "Changed." };
     expect(toStrategyCard(stale)).toMatchObject({ typeLine: "Artifact", themes: [] });
+  });
+});
+
+describe("versionCardsQuery", () => {
+  it("reads one version's cards with their label rows", () => {
+    const { sql, params } = versionCardsQuery(db, "v-1").toSQL();
+    expect(sql).toContain('"deck_version_cards"."version_id" = $');
+    expect(sql).toContain('"card_labels"."input_hash"');
+    expect(params).toContain("v-1");
+  });
+});
+
+describe("strategyRead", () => {
+  const millRows = (k: number) => Array.from({ length: k }, () => labelled(row("Instant"), ["mill"]));
+  const filler = (k: number) => Array.from({ length: k }, () => row("Sorcery"));
+  // Mill is rare in this catalog, so a deck of 10 mill cards leans on it.
+  const baseline = baselineFromRows([...millRows(5), ...filler(995)]);
+
+  it("draws the focus from the top five, or as a sixth row it still counts", () => {
+    const live = [...millRows(10), ...filler(30)];
+    const inTop = strategyRead(live, null, baseline, "mill");
+    expect(inTop.focus).toMatchObject({ key: "mill", inTop: true, axis: { copies: 10 } });
+    const outside = strategyRead(live, null, baseline, "artifacts");
+    expect(outside.focus).toMatchObject({ key: "artifacts", inTop: false, axis: { copies: 0, score: 0 } });
+  });
+
+  it("reads a key the vocabulary does not name as no focus", () => {
+    expect(strategyRead(filler(40), null, baseline, "retiredTheme").focus).toBeNull();
+    expect(strategyRead(filler(40), null, baseline, null).focus).toBeNull();
+  });
+
+  it("compares with the committed version, and has nothing to compare for a deck with none", () => {
+    const committed = [...millRows(10), ...filler(30)];
+    const live = [...committed, ...millRows(2)];
+    expect(strategyRead(live, committed, baseline, null).pending).toEqual({ mill: { added: 2, removed: 0 } });
+    expect(strategyRead(live, null, baseline, null).pending).toBeNull();
+  });
+
+  it("counts the pending change on a focus outside the top five", () => {
+    const committed = filler(40);
+    const live = [...filler(40), row("Artifact")];
+    expect(strategyRead(live, committed, baseline, "artifacts").pending).toEqual({ artifacts: { added: 1, removed: 0 } });
   });
 });

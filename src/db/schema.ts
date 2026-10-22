@@ -621,6 +621,13 @@ export const decks = pgTable("decks", {
    */
   declaredBracket: integer("declared_bracket"),
   /**
+   * The strategy the player picked as the deck's focus on Analysis (`src/lib/strategy/focus.ts`): a label theme, a
+   * type-line axis or `typal:<Type>`. Null is no focus, which "Keep it balanced" writes back. Checked against the
+   * vocabulary by the one action that writes it, and read through `parseStrategyKey`, so a key retired later reads as
+   * no focus rather than failing. Copied to the version at commit, as the bracket declaration is.
+   */
+  strategyFocus: text("strategy_focus"),
+  /**
    * The not-legal cards the player last saw in the deck notices, sorted (readiness F11). Legality
    * is derived live from the deck's cards and has no log sequence to be read against when a card
    * came in by import, so its read state is the SET: a notice is unread while the deck's current
@@ -919,6 +926,8 @@ export const deckVersions = pgTable("deck_versions", {
    * cards contradict. The deck-level answer is left standing — stated, not deleted.
    */
   declaredBracket: integer("declared_bracket"),
+  /** The deck's focus when this version was committed (`decks.strategy_focus`), copied as it stood. */
+  strategyFocus: text("strategy_focus"),
   /**
    * What that version's cards permitted, as a sorted list, snapshotted at commit.
    *
