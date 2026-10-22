@@ -107,7 +107,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     // The runs are a decoration beside the form: a failed read draws History's own retry, never a broken form.
     // History is read FIRST: its read refunds abandoned reads, and an allowance read beside it could
     // count a credit the list has just returned, leaving the form saying nothing is left.
-    const history = await loadChooseHistory(userId, { now }).catch(() => null);
+    const history = await loadChooseHistory(userId, { path: chooseAt, now }).catch(() => null);
     const allowance = await readAllowance(userId, now, "intake").then((a) => withPayments(a, env)).catch(() => null);
     const historyView = sp.get("v") === "history";
     return (

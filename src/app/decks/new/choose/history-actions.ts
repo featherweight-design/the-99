@@ -3,6 +3,8 @@
 import { requireUserId } from "../../../../lib/auth";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
+import { choosePath } from "../../../../lib/commanders/place-paths";
+import { commandersPlaceEnabled } from "../../../../lib/commanders/place-flag";
 import { loadChooseHistory } from "../../../../lib/intake/history-read";
 import type { ChooseHistoryPage } from "../../../../lib/intake/history";
 
@@ -15,5 +17,5 @@ export async function chooseHistoryPage(cursor: string | null = null): Promise<C
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!helpMeChooseEnabled(env)) throw new Error("not found");
-  return loadChooseHistory(userId, { cursor: typeof cursor === "string" ? cursor : null });
+  return loadChooseHistory(userId, { path: choosePath(commandersPlaceEnabled(env)), cursor: typeof cursor === "string" ? cursor : null });
 }

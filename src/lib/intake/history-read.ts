@@ -1,9 +1,6 @@
 import { and, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
-import { choosePath } from "../commanders/place-paths";
-import { commandersPlaceEnabled } from "../commanders/place-flag";
-import { requestSwitchEnv } from "../switches/request";
 import { cards, intakeReads } from "../../db/schema";
 import {
   CHOOSE_HISTORY_PAGE, decodeKey, encodeKey, shapeRun,
@@ -52,12 +49,13 @@ export function runsPageQuery(userId: string, key: HistoryKey | null, limit: num
 
 export async function loadChooseHistory(
   userId: string,
-  opts: { cursor?: string | null; limit?: number; now?: Date } = {},
+  /** `path` is where Help me choose lives for the reader (`choosePath`), which the caller resolves from its own env: this read needs no request. */
+  opts: { path: string; cursor?: string | null; limit?: number; now?: Date },
 ): Promise<ChooseHistoryPage> {
   const limit = opts.limit ?? CHOOSE_HISTORY_PAGE;
   const key = decodeKey(opts.cursor);
   await reapAbandonedReads(userId, opts.now);
-  const path = choosePath(commandersPlaceEnabled(await requestSwitchEnv(userId)));
+  const { path } = opts;
   const found = await runsPageQuery(userId, key, limit);
   const more = found.length > limit;
   const page = found.slice(0, limit);
