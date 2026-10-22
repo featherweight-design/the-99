@@ -1717,7 +1717,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   **The row lights under a pointer**, which needed the fill to leave the inline `style` — an
   inline background outranks every utility, so no hover could exist at all, and a class-list
   assertion cannot see that. **The name opens the card and does not tick the row**, those
-  being the same press on a control nested in the tick's label. **The type word is drawn on
+  being the same press on a control nested in the tick's label. **A press on the row opens the card at both widths
+  and ticks nothing**: only the box ticks (Hugh's ruling of 2026-10-21). **The type word is drawn on
   desktop and absent on the phone**, whose row is two lines by design with no room for it.
 
   **The card itself appears under the pointer.** The row borrows the shared

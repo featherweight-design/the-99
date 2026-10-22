@@ -1,4 +1,6 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render as rtlRender, screen } from "@testing-library/react";
+import type { ReactElement, ReactNode } from "react";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -30,6 +32,13 @@ vi.mock("../../app/decks/actions", () => ({
 }));
 
 import { LastSlotsStrip } from "./last-slots-strip";
+
+// The list's rows open the card at every width, so they need the provider that
+// `builder-shell.tsx` wraps the strip in. `rerender` keeps the wrapper.
+function Detail({ children }: { children: ReactNode }) {
+  return <CardDetailProvider fetchCard={async () => null}>{children}</CardDetailProvider>;
+}
+const render = (ui: ReactElement) => rtlRender(ui, { wrapper: Detail });
 
 function candidate(id: string, owned: boolean): TopOffCandidateWithFacts {
   return {
@@ -102,7 +111,8 @@ describe("LastSlotsStrip", () => {
   // States 10 and 14. The strip is arithmetic, not a flag: a full deck has no
   // last slots, so there is no box to draw around them.
   it("renders nothing at all when there are no open slots", () => {
-    const { container } = render(<LastSlotsStrip {...base} openSlots={0} />);
+    // Unwrapped: the provider draws live regions of its own, and no row is drawn at 0.
+    const { container } = rtlRender(<LastSlotsStrip {...base} openSlots={0} />);
     expect(container).toBeEmptyDOMElement();
   });
 

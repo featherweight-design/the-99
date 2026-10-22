@@ -64,6 +64,8 @@ import { BuyTag } from "./buy-tag";
 import { GhostButton } from "../ui/button";
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { useIsDesktop } from "../ui/use-is-desktop";
+import { TOUCH_HIT } from "../ui/touch-hit";
+import { useRowOpen } from "./update-diff-row";
 import { useDockClearance } from "../shell/dock-clearance";
 
 /** How long ticking settles before one message is announced. Thirty fast taps
@@ -1292,10 +1294,9 @@ function CandidateRow({
   /** The card note's two deck-level inputs. See `LastSlotsStripProps`. */
   declaredBracket: Bracket | null;
   noteCounts: NoteCounts;
-  /** Desktop alone opens the card. The phone row is one tap target on purpose —
-      the addendum's own rule, and what makes 38 of them tickable one-handed — so
-      a button inside it would put "read this card" and "tick this card" on the
-      same press. */
+  /** Which width's layout to mount. Both widths open the card the same way: a press on the
+      row's body opens it, and only the tick box ticks (Hugh's ruling of 2026-10-21, which
+      supersedes the addendum's "the target is the row"). */
   isDesktop: boolean;
   /** The pool, so the modal pages through the list the reader is in. */
   siblings: readonly Sibling[];
@@ -1337,10 +1338,12 @@ function CandidateRow({
   const committed =
     c.owned && c.availability !== null && availabilityState(c.availability) === "hard";
   const tickId = useId();
+  // A PRESS ON THE ROW OPENS THE CARD, the way every other card row does; the box alone ticks.
+  // Hugh's ruling of 2026-10-21 reverses the addendum's "the target is the row": a reader must
+  // be able to read a card before deciding to add it. `useRowOpen` leaves a press on the box,
+  // the name's trigger and the decline to those controls.
+  const rowOpen = useRowOpen(c, siblings, true);
 
-  // The row's tappable area is three labels pointing at one box rather than one
-  // label wrapping everything, because the decline has to sit inside line 2 at
-  // phone and a control nested in a label toggles the tick on every tap of it.
   // At desktop each wrapper is `contents`, so the row is one flex context and
   // the eight slots order themselves against the column header.
   return (
@@ -1364,8 +1367,9 @@ function CandidateRow({
       // instead of leaving every reader to count levels — the reason `data-top-off-type`
       // below carries one.
       data-top-off-row
+      {...rowOpen}
       className={[
-        "flex flex-col rounded-[7px]",
+        "flex flex-col rounded-[7px] cursor-pointer",
         "pl-[8px] pr-[10px] md:px-[9px] py-[2px] md:py-[1px]",
         ticked
           ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
@@ -1412,7 +1416,7 @@ function CandidateRow({
       <label
         htmlFor={tickId}
         aria-hidden
-        className="flex-none flex items-center justify-center font-mono w-[26px] h-[26px] md:w-[18px] md:h-[18px] rounded-[6px] md:rounded-[5px] text-[13px] md:text-[11px] cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-[color:var(--accent)]"
+        className={`${TOUCH_HIT} flex-none flex items-center justify-center font-mono w-[26px] h-[26px] md:w-[18px] md:h-[18px] rounded-[6px] md:rounded-[5px] text-[13px] md:text-[11px] cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-[color:var(--accent)]`}
         style={
           ticked
             ? {
@@ -1431,22 +1435,15 @@ function CandidateRow({
       </label>
 
       <span className="flex flex-auto min-w-0 flex-col gap-[4px] md:contents">
-        <label
-          htmlFor={tickId}
-          className="flex items-center gap-[7px] cursor-pointer md:contents"
-        >
+        <span className="flex items-center gap-[7px] md:contents">
           <OwnershipDot
             owned={c.owned}
             committed={committed}
             size={7}
             className="md:order-1"
           />
-          {/* Phone keeps the name as TEXT inside the label. The addendum's rule
-              for this row is that the target is the row, not the box — which is
-              what makes 38 of them tickable one-handed — so a button here would
-              put "read this card" and "tick this card" on one press. Desktop
-              takes the trigger instead, below, where a pointer can tell the two
-              apart and a hover says which is which. */}
+          {/* The phone's name is a trigger too, so the keyboard reaches the card at
+              both widths; a press anywhere else on the row opens it through `rowOpen`. */}
           {!isDesktop && (
             /* THE NAME AND ITS MARKS ARE ONE GROUP, and the wrapper carries the `flex-auto`
                the name used to. "Inline after the name" is about the TEXT: with the name
@@ -1454,16 +1451,19 @@ function CandidateRow({
                the column beside the buy tag. Measured before this wrapper existed: the glyph
                sat 87px past the end of `Mu Yanling` at 390 and 535px past it at 1300. */
             <span className="flex-auto min-w-0 flex items-center gap-[7px]">
-              <span
+              <CardDetailTrigger
+                oracleId={c.oracleId}
+                name={c.name}
+                siblings={siblings}
+                title={c.name}
                 // Named for the probe, for the reason `data-top-off-type` below is: the note
                 // indents to THIS column, and recognising it by its type size would pick up
                 // whatever else on the row happens to be set at 12.5px.
-                data-testid="top-off-name"
-                className="min-w-0 text-[12.5px]"
-                style={{ color: "var(--fg)" }}
+                testId="top-off-name"
+                className="min-w-0 text-left truncate text-[12.5px] [color:var(--fg)]"
               >
                 {c.name}
-              </span>
+              </CardDetailTrigger>
               {factMarks}
             </span>
           )}
@@ -1493,13 +1493,10 @@ function CandidateRow({
               />
             ) : null}
           </span>
-        </label>
+        </span>
 
-        {/* Outside the label, deliberately: a control nested in one toggles the
-            tick on every press of it — the same trap the decline control is
-            placed against, recorded in the addendum. `md:contents` on the parent
-            makes this a direct child of the row's flex context, so `order` puts
-            it back beside the dot however the DOM is arranged. */}
+        {/* `md:contents` on the parent makes this a direct child of the row's flex
+            context, so `order` puts it back beside the dot however the DOM is arranged. */}
         {/* THE NAME AND ITS MARKS ARE ONE GROUP, carrying the `md:order-2` and the `flex-auto`
             the trigger used to own — so the shrink competition against the clause below is
             unchanged, and the glyph follows the TEXT rather than the cell. Measured before
@@ -1579,10 +1576,7 @@ function CandidateRow({
         )}
 
         <span className="flex items-center gap-[8px] font-mono text-[10px] md:contents">
-          <label
-            htmlFor={tickId}
-            className="flex items-center gap-[8px] cursor-pointer md:contents"
-          >
+          <span className="flex items-center gap-[8px] md:contents">
             {/* THE PIP TRACK YIELDS ONLY ON A ROW THAT CARRIES A CLAUSE — about 4 of 38.
                 The other 34 keep their pips. Phone only: on desktop the clause sits in the
                 name cell's tail and the cost column is one of the four fixed slots, which do
@@ -1615,7 +1609,7 @@ function CandidateRow({
                 ? synergyCopy.figure.inclusionNone
                 : synergyCopy.figure.inclusion(String(c.inclusionPct))}
             </span>
-          </label>
+          </span>
 
           {/* A word, never a glyph: the deck row's remove is a visually identical
               × one surface away, and that one is irreversible. The dashed
