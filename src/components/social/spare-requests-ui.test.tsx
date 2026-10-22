@@ -209,7 +209,15 @@ describe("pressing Ask", () => {
       <FriendSparesProvider oracleIds={ids} newestAsOf={asOf} requests deckId="deck-1"><Probe /></FriendSparesProvider>
     );
     let view!: ReturnType<typeof render>;
-    await act(async () => { view = render(ui([JACE.oracleId])); });
+    const B = "22222222-2222-4222-8222-222222222222";
+    await act(async () => { view = render(ui([JACE.oracleId, B])); });
+    expect(last()).toEqual(["open"]);
+    // Jace leaves; the read for B alone lands (it serves nothing for Jace) and Jace keeps its ask.
+    served = { spares: [], asks: [] };
+    await act(async () => { view.rerender(ui([B])); });
+    const askReads = fetchMock.mock.calls.map((c) => String(c[0])).filter((u) => u.startsWith("/api/spare-requests"));
+    expect(askReads.at(-1)).toContain(B);
+    expect(askReads.at(-1)).not.toContain(JACE.oracleId);
     expect(last()).toEqual(["open"]);
     await act(async () => { view.rerender(ui([])); });
     expect(last()).toEqual(["open"]);
@@ -320,8 +328,12 @@ describe("the rules the rows draw from", () => {
   it("mergeRead: an unpressed card takes the read whole; a pressed one keeps the press and adds only unheld answers", () => {
     const press = ask("Colin", "open", { id: "new-1" });
     const read = [ask("Max", "no"), ask("Gus", "open"), ask("Ed", "expired")];
-    expect(mergeRead([], read, new Set())).toEqual(read);
-    expect(mergeRead([press], read, new Set([JACE.oracleId]))).toEqual([press, read[0], read[2]]);
+    const q = new Set([JACE.oracleId]);
+    expect(mergeRead([], read, new Set(), q)).toEqual(read);
+    expect(mergeRead([press], read, q, q)).toEqual([press, read[0], read[2]]);
+    // A card the read did not ask about keeps what is held.
+    const other = ask("Colin", "open", { id: "other", oracleId: "22222222-2222-4222-8222-222222222222" });
+    expect(mergeRead([other], read, new Set(), q)).toEqual([other, ...read]);
   });
 
   it("rowAsk: an open ask the holder no longer offers still blocks the card, so the others read Ask instead", () => {

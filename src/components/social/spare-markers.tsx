@@ -105,15 +105,19 @@ export function afterAsk(asks: readonly AskStateLine[], press: AskPress, id: str
 const isOpenAsk = (a: AskStateLine) => a.state === "open" || a.state === "unavailable" || a.state === "unneeded";
 
 /**
- * A read landing over the asks held now. A card no press moved since the read was sent takes the read whole. A pressed
- * card keeps what the press left and adds the read's answered and expired asks it does not hold, never an open one:
- * the read was sent before the press, so its open ask is the one an Ask instead withdrew.
+ * A read landing over the asks held now. It answers only for the cards it `queried`: every other card keeps what is
+ * held (a sheet left open on a card that left the list keeps its Requested while the next read asks only for the rest).
+ * A queried card no press moved since the read was sent takes the read whole. A pressed one keeps what the press left
+ * and adds the read's answered and expired asks it does not hold, never an open one: the read was sent before the
+ * press, so its open ask is the one an Ask instead withdrew.
  */
-export function mergeRead(now: readonly AskStateLine[], read: readonly AskStateLine[], pressed: ReadonlySet<string>): AskStateLine[] {
+export function mergeRead(
+  now: readonly AskStateLine[], read: readonly AskStateLine[], pressed: ReadonlySet<string>, queried: ReadonlySet<string>,
+): AskStateLine[] {
   const held = new Set(now.map((a) => a.id));
   return [
-    ...now.filter((a) => pressed.has(a.oracleId)),
-    ...read.filter((a) => !pressed.has(a.oracleId) || (!isOpenAsk(a) && !held.has(a.id))),
+    ...now.filter((a) => !queried.has(a.oracleId) || pressed.has(a.oracleId)),
+    ...read.filter((a) => queried.has(a.oracleId) && (!pressed.has(a.oracleId) || (!isOpenAsk(a) && !held.has(a.id)))),
   ];
 }
 
@@ -168,9 +172,10 @@ export function FriendSparesProvider({
     let live = true;
     const sent = new Set<string>();
     pressed.current = sent;
-    void fetchAsks(key.split(",")).then((rows) => {
+    const queried = new Set(key.split(","));
+    void fetchAsks([...queried]).then((rows) => {
       if (!live) return;
-      setAsks((now) => mergeRead(now, rows, sent));
+      setAsks((now) => mergeRead(now, rows, sent, queried));
     });
     return () => {
       live = false;
