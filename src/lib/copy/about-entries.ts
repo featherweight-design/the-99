@@ -1604,9 +1604,18 @@ export const aboutEntries: readonly AboutEntry[] = [
     // rule (`ABOUT_VERSION`'s header) is that a switched entry bumps nothing, and d9 ruled to follow it.
     switch: 'STRATEGY_FOCUS_ENABLED',
     caption:
-      'What is this deck about? On “Analysis”, “The deck’s strategy” rings up to five strategies the list leans on harder than Commander decks do in general: a creature type, a theme like Tokens, or a card type. Pick one as the deck’s focus, and its icon takes the middle of the ring.\n\nWith a focus picked, “Suggested changes” aims at it: most of its additions count toward the focus, and each shows the count it moves. Add one and its arc grows.',
+      'What is this deck about? On “Analysis”, “The deck’s strategy” rings up to five strategies the list leans on more than the Commander card pool does overall: a creature type, a theme like Tokens, or a card type. Pick one as the deck’s focus, and its icon takes the middle of the ring.\n\nWith a focus picked, “Suggested changes” aims at it: most of its additions count toward the focus, and each shows the count it moves. Add one and its arc grows.',
+    // The Suggested changes paragraph and its credit line need Tuning as well: the ring needs only Analysis
+    // (review round 1).
+    captionLineSwitches: {
+      'With a focus picked, “Suggested changes” aims at it: most of its additions count toward the focus, and each shows the count it moves. Add one and its arc grows.': 'TUNING_ENABLED',
+    },
+    keySwitches: {
+      '“Suggested changes” uses a credit, as it always has.': 'TUNING_ENABLED',
+    },
     keys: [
-      'The ring and the focus are free. “Suggested changes” uses a credit, as it always has.',
+      'The ring and the focus are free.',
+      '“Suggested changes” uses a credit, as it always has.',
       '“Keep it balanced” clears the focus.',
       'Lands aren’t counted, so a landfall deck reads its payoffs, not its lands.',
     ],

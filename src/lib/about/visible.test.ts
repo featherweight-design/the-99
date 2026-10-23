@@ -738,3 +738,20 @@ describe("friend-spares' requests form (SPARE_REQUESTS_ENABLED)", () => {
     expect(unseenEntries(visibleEntries(ASKS), met).map((e) => e.id)).toContain("friend-spares");
   });
 });
+
+describe("deck-focus without Suggested changes", () => {
+  // Review round 1 (#2254): the ring needs only Analysis, so with Tuning off the entry still draws but says nothing of
+  // Suggested changes, its paragraph or its credit line.
+  const ring = { ANALYSIS_TAB_ENABLED: "true", STRATEGY_FOCUS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const entry = (env: NodeJS.ProcessEnv) => visibleEntries(env).find((e) => e.id === "deck-focus");
+
+  it("drops the Suggested changes paragraph and key with Tuning off, and keeps them with it on", () => {
+    const off = entry(ring)!;
+    expect(off.caption).not.toContain("Suggested changes");
+    expect(off.keys.join(" ")).not.toContain("Suggested changes");
+    expect(off.keys).toContain("The ring and the focus are free.");
+    const on = entry({ ...ring, TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!;
+    expect(on.caption).toContain("“Suggested changes” aims at it");
+    expect(on.keys).toContain("“Suggested changes” uses a credit, as it always has.");
+  });
+});
