@@ -49,11 +49,21 @@ export function deviceState(f: DeviceFacts): DeviceState {
 /** What the row calls this device. An iOS device is an iPhone, in Safari or installed (board iPhone draws both). */
 export const deviceWord = (f: Pick<DeviceFacts, "ios" | "phone">): DeviceWord => (f.ios ? "iPhone" : f.phone ? "phone" : "browser");
 
-/** An iOS version from a user agent (`iPhone OS 17_4`, `CPU OS 16_3`), or null off iOS. An iPad reporting as a Mac is not iOS here. */
-export function iosVersion(ua: string): [number, number] | null {
-  if (!/iPhone|iPod|iPad/.test(ua)) return null;
-  const m = /OS (\d+)_(\d+)/.exec(ua);
-  return m ? [Number(m[1]), Number(m[2])] : [0, 0];
+/**
+ * An iOS version from a user agent (`iPhone OS 17_4`, `CPU OS 16_3`), or null off iOS. An iPad asking for the desktop site
+ * says "Macintosh": a touch screen (`maxTouchPoints` over 1, which no Mac has) gives it away, and its version is Safari's
+ * (`Version/17.4`).
+ */
+export function iosVersion(ua: string, maxTouchPoints = 0): [number, number] | null {
+  if (/iPhone|iPod|iPad/.test(ua)) {
+    const m = /OS (\d+)_(\d+)/.exec(ua);
+    return m ? [Number(m[1]), Number(m[2])] : [0, 0];
+  }
+  if (/Macintosh/.test(ua) && maxTouchPoints > 1) {
+    const m = /Version\/(\d+)\.(\d+)/.exec(ua);
+    return m ? [Number(m[1]), Number(m[2])] : [0, 0];
+  }
+  return null;
 }
 
 /** A short label for the reader's own device list: `Chrome on Android`. Never the raw user agent. */

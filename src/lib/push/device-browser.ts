@@ -30,7 +30,7 @@ export async function readDeviceFacts(): Promise<{ facts: DeviceFacts; registrat
     }
   }
   const facts: DeviceFacts = {
-    ios: iosVersion(ua),
+    ios: iosVersion(ua, navigator.maxTouchPoints ?? 0),
     standalone: window.matchMedia?.("(display-mode: standalone)").matches === true || nav.standalone === true,
     phone: window.matchMedia?.("(pointer: coarse)").matches === true && Math.min(window.screen.width, window.screen.height) < 600,
     pushApi,
