@@ -121,4 +121,10 @@ describe("the combo block's near-combos face", () => {
     expect(within(cmdr).getByText(combosCloseCopy.sheet.commander)).toBeTruthy();
     expect(within(turns).queryByText(combosCloseCopy.sheet.commander)).toBeNull();
   });
+
+  it("a line's press names the card by its printed name, as the sheet it opens does", async () => {
+    render(<ComboPartnersDetail card={{ ...card(FIXTURE, true), printedName: "Godzilla, Doom Inevitable" }} deckName="HD - Gishath" onOpenCombo={vi.fn()} />);
+    await open();
+    expect(screen.getByRole("button", { name: combosCloseCopy.card.openAria("Godzilla, Doom Inevitable", "Terror of the Peaks") })).toBeTruthy();
+  });
 });

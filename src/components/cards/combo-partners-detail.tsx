@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { BrowseCard } from "../../lib/collection/browse";
+import { printedNameOf, type BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { groupCardCombos, orderModalPartners, summariseByState, summariseCardCombos } from "../../lib/combos/modal-block";
@@ -213,7 +213,7 @@ export function ComboPartnersDetail({
                 and the partner's NAME at 600 in `--fg`: the name is the half a reader is
                 looking for, and it is also the half that is pressable.
                 13px, not the 13.5/15 the block above this one uses. */}
-            <span className="flex flex-auto min-w-0 flex-col gap-[3px] sm:flex-row sm:items-center sm:gap-[10px]">
+            <span className="flex flex-auto min-w-0 flex-col sm:flex-row sm:items-center sm:gap-[10px]">
               {/* THE TRUNCATION IS ON EACH HALF, not on this wrapper. `truncate` sets
                   `overflow: hidden`, so a wrapper carrying it CLIPS the partner button's
                   44px touch area — the padding that buys the height sits outside the line
@@ -402,7 +402,7 @@ function NearComboLine({
           type="button"
           data-combo-press
           onClick={() => press(combo)}
-          aria-label={combosCloseCopy.card.openAria(card.name, partner.name)}
+          aria-label={combosCloseCopy.card.openAria(printedNameOf(card), partner.name)}
           className="w-[20px] flex-none cursor-pointer self-stretch border-0 bg-transparent p-0 text-center text-[15px] text-[color:var(--fg-faint)] outline-none"
         >
           <span aria-hidden>›</span>
