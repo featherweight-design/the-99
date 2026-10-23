@@ -10,6 +10,8 @@
  * It checks no switch: a device exists only if the reader subscribed while push was available, and the flush judges the
  * switch and the keys again before anything is sent.
  */
+import { randomUUID } from "node:crypto";
+
 import { sql, type SQL } from "drizzle-orm";
 
 import { pushOutbox, pushSubscriptions, userPrefs } from "../../db/schema";
@@ -30,7 +32,13 @@ export type PushEnqueue = {
   when?: SQL;
 };
 
-/** The default batch: the kind and the 15-minute window `now` falls in. A writer that knows its job run passes its own. */
+/**
+ * A producer's run boundary: ONE key a job or a call makes when it starts and passes to every item it records, so the run's
+ * items of a kind are one push however long it takes (the 15-minute default below splits a run that crosses a window edge).
+ */
+export const newBatchKey = (kind: StoredKind): string => `${kind}:${randomUUID()}`;
+
+/** The default batch, for a writer that records one item on its own: the kind and the 15-minute window `now` falls in. A writer that knows its job run passes its own. */
 export const defaultBatchKey = (kind: StoredKind, now: Date): string => `${kind}:${Math.floor(now.getTime() / BATCH_WINDOW_MS)}`;
 
 export function enqueuePushQuery(input: PushEnqueue): SQL {

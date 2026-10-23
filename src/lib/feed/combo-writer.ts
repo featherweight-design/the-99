@@ -18,6 +18,7 @@ import { sql } from "drizzle-orm";
 import type { db } from "../../db";
 import { cards, collectionItems, spellbookVariantCards, spellbookVariants, userPrefs } from "../../db/schema";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
+import { newBatchKey } from "../push/enqueue";
 import { feedOrPushWanted } from "../push/kind-gate";
 import { recordFeedItem } from "../social/feed-write";
 import { resolveSwitchEnv } from "../switches/snapshot";
@@ -131,6 +132,8 @@ export async function noticeCombos(q: Executor, userId: string, delta: ComboDelt
   }));
   const added = new Set(delta.added);
   let written = 0;
+  // One call, one batch: the pairs this write completed are one push.
+  const batchKey = newBatchKey("combo");
   // Every candidate, most popular first, until THREE are written: a variant already told (the dedupe key) is not
   // news and must not use up one of the three places.
   for (const p of newlyCompleted({ added, held: delta.held, pairs, limit: pairs.length })) {
@@ -144,6 +147,7 @@ export async function noticeCombos(q: Executor, userId: string, delta: ComboDelt
       // The piece this write added ("You added Demonic Consultation"); the first when it added both.
       oracleId: arrived[0],
       data: { cards: p.cards, added: arrived },
+      batchKey,
     });
     if (ok) written += 1;
   }

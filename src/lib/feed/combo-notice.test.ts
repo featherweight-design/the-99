@@ -35,6 +35,17 @@ describe("comboWatchIn", () => {
 describe("noticeCombos", () => {
   const delta = { added: ["a"], held: new Set(["a", "b1", "b2", "b3", "b4"]) };
 
+  it("gives every pair one call writes ONE batch key, and a later call its own, so they are one push however long it takes", async () => {
+    m.record.mockResolvedValue(true);
+    await noticeCombos(q([row(1, 50), row(2, 40)]) as never, "u1", delta);
+    await noticeCombos(q([row(3, 50)]) as never, "u1", delta);
+    const keys = m.record.mock.calls.map((c) => (c[1] as { batchKey?: string }).batchKey);
+    expect(keys[0]).toMatch(/^combo:/);
+    expect(keys[0]).toBe(keys[1]);
+    expect(keys[2]).toMatch(/^combo:/);
+    expect(keys[2]).not.toBe(keys[0]);
+  });
+
   it("does not let variants already told use up the three places", async () => {
     const rows = [row(1, 50), row(2, 40), row(3, 30), row(4, 20)];
     m.record.mockImplementation(async (_q: unknown, item: { variantId: string }) => item.variantId === "v4");

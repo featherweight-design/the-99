@@ -12,6 +12,7 @@
  * `friendGeneration`, which moves on any granting friend's data stamp, name or grant) costs two and reads no spares.
  * The fingerprint is held per server instance, so a cold instance pays one full read, which writes nothing new.
  */
+import { newBatchKey } from "../push/enqueue";
 import { feedOrPushWanted } from "../push/kind-gate";
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
@@ -76,6 +77,8 @@ export async function noticeTradeMatches(viewerId: string, env: NodeJS.ProcessEn
     spares.push(...(await loadFriendSpares(viewerId, wished.slice(i, i + MAX_SPARES_BATCH))));
   }
   let written = 0;
+  // One call, one batch: the matches this notice found are one push ("Colin has 3 spares you want").
+  const batchKey = newBatchKey("trade-match");
   if (spares.length > 0) {
     // A spare names its friend by public id; the item stores the account, read through the same grant.
     const byPublic = new Map((await spareGrantorsQuery(viewerId)).map((g) => [g.publicId, g.userId]));
@@ -89,6 +92,7 @@ export async function noticeTradeMatches(viewerId: string, env: NodeJS.ProcessEn
         dedupeKey: tradeMatchKey(s.oracleId, friendUserId),
         oracleId: s.oracleId,
         friendUserId,
+        batchKey,
       });
       if (ok) written += 1;
     }
