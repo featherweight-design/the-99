@@ -59,10 +59,10 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
   const waiting = rows.filter((row) => !receipts.has(row.key));
   if (waiting.length === 0 && receipts.size === 0) return null;
   const shown = placeReceipts(waiting, receipts);
-  async function press(row: SpareRequestRow, a: Answer, index: number) {
+  async function press(row: SpareRequestRow, a: Answer, index: number, from: Element) {
     if (!(await answer(row.ask.id, a))) return;
     setReceipts((prev) => new Map(prev).set(row.key, { row, answer: a, index }));
-    land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`);
+    land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`, from);
   }
   return (
     <section aria-labelledby="waiting-on-you" data-testid="waiting-on-you" className="mt-[26px] md:mt-[34px]">
@@ -79,7 +79,7 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
           ) : item.row.kind === "spare-request" ? (
             <AskRow key={item.row.key} row={item.row} now={now}
               busy={busy?.id === item.row.ask.id ? busy.answer : null} locked={busy !== null}
-              onAnswer={(a) => void press(item.row as SpareRequestRow, a, index)} />
+              onAnswer={(a, from) => void press(item.row as SpareRequestRow, a, index, from)} />
           ) : (
             <TradeRow key={item.row.key} row={item.row} now={now} />
           ),
@@ -121,7 +121,7 @@ function Unseen() {
 
 /** A spare request: "Peter asks for your spare Lathliss", the spare count and the copies, Yes, No and the days left. */
 function AskRow({ row, now, busy, locked, onAnswer }: {
-  row: SpareRequestRow; now: Date; busy: Answer | null; locked: boolean; onAnswer: (a: Answer) => void;
+  row: SpareRequestRow; now: Date; busy: Answer | null; locked: boolean; onAnswer: (a: Answer, from: Element) => void;
 }) {
   const { ask } = row;
   const friend = ask.asker.displayName;

@@ -31,6 +31,7 @@ import type { HomeFeed } from "../../lib/feed/home";
 import { lockPageLine } from "../../lib/copy/refresh";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { LeadSlot } from "./lead-story";
+import { HeldLeadProvider } from "./held-lead";
 import { WhatsNew } from "./whats-new";
 
 export type DashboardProps = {
@@ -236,6 +237,7 @@ export function Dashboard(props: DashboardProps) {
           the split rather than staying at `sm`: left behind, it gave 640–1179 a
           third layout, one column wide with desktop padding. */}
       <Frame>
+      <HeldLeadProvider>
       <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         {/* Below 1180 both columns are `display: contents`, so their blocks are one list and `order` places them: Ready to
             build, Friends, the resume block, Commitments (Friends on Home, R2b; readiness gap 3). Friends is drawn ONCE,
@@ -307,6 +309,7 @@ export function Dashboard(props: DashboardProps) {
           </div>
         )}
       </div>
+            </HeldLeadProvider>
       </Frame>
     </div>
   );

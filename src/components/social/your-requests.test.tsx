@@ -20,7 +20,8 @@ const req = (id: string, state: YourRequest["state"], over: Partial<YourRequest>
   id, oracleId: `card-${id}`, card: { name: "Jace, Multiverse Architect", imageUri: null }, copies: 1,
   deckName: "Thopter Works", deckId: "deck-1", holder: { publicId: "pub-colin", displayName: "Colin", commander: null },
   state, daysLeft: state === "open" || state === "unavailable" || state === "unneeded" ? 12 : null,
-  createdAt: new Date(NOW.getTime() - 2 * DAY), answeredAt: null, unseen: false, othersWithSpare: [], ...over,
+  createdAt: new Date(NOW.getTime() - 2 * DAY), answeredAt: null, cleared: false, unseen: false, othersWithSpare: [],
+  canAskAgain: state === "expired", ...over,
 });
 
 beforeEach(() => {
@@ -51,12 +52,14 @@ describe("requestText", () => {
     expect(requestText(req("a", "no", { othersWithSpare: ["Max", "Chris", "Sam"] }), NOW).detail).toBe("Max and 2 more have a spare too.");
   });
 
-  it("No answer: the friend didn't answer, requested 14 days ago, timed at the expiry", () => {
+  it("No answer: the friend didn't answer, requested N days ago (the ask's own age), timed at the expiry", () => {
     const createdAt = new Date(NOW.getTime() - 15 * DAY);
     const t = requestText(req("a", "expired", { createdAt }), NOW);
-    expect([t.kind, t.title, t.detail]).toEqual(["No answer", "Colin didn’t answer about Jace, Multiverse Architect", "Requested 14 days ago, for Thopter Works."]);
+    expect([t.kind, t.title, t.detail]).toEqual(["No answer", "Colin didn’t answer about Jace, Multiverse Architect", "Requested 15 days ago, for Thopter Works."]);
     expect(t.at.getTime()).toBe(createdAt.getTime() + 14 * DAY);
-    expect(requestText(req("a", "expired", { deckName: null }), NOW).detail).toBe("Requested 14 days ago.");
+    // Whole days elapsed, never the expiry window's length: 21 days and a few hours read 21.
+    const old = new Date(NOW.getTime() - 21 * DAY - 5 * 3_600_000);
+    expect(requestText(req("a", "expired", { createdAt: old, deckName: null }), NOW).detail).toBe("Requested 21 days ago.");
   });
 
   it("No longer spare and No longer needed", () => {
@@ -93,11 +96,14 @@ describe("YourRequests", () => {
     expect(seen.hasAttribute("data-unseen")).toBe(false);
   });
 
-  it("offers Ask again only on an unanswered ask whose card has no open ask", () => {
-    render(<YourRequests rows={[req("a", "expired"), req("b", "expired", { oracleId: "card-c" }), req("c", "open")]} now={NOW} />);
-    const [free, blocked] = screen.getAllByTestId("your-request");
+  // The server decides (`canAskAgain`: an open ask for the card, or a No from this friend inside the cooldown, a
+  // cleared one included, would refuse it); the row only follows it.
+  it("offers Ask again only on an unanswered ask the server would take", () => {
+    render(<YourRequests rows={[req("a", "expired"), req("b", "expired", { canAskAgain: false }), req("c", "no", { canAskAgain: true })]} now={NOW} />);
+    const [free, refused, declined] = screen.getAllByTestId("your-request");
     expect(within(free).getByRole("button", { name: r.askAgainAria("Colin", "Jace, Multiverse Architect") })).toBeTruthy();
-    expect(within(blocked).queryByTestId("friend-spare-ask")).toBeNull();
+    expect(within(refused).queryByTestId("friend-spare-ask")).toBeNull();
+    expect(within(declined).queryByTestId("friend-spare-ask")).toBeNull();
   });
 
   it("✕ closes through the action and lands focus on the next row's ✕", async () => {
@@ -140,6 +146,38 @@ describe("YourRequests", () => {
     rerender(<YourRequests rows={[req("new", "open", { oracleId: "card-a" }), expired]} now={NOW} />);
     const fresh = screen.getAllByTestId("your-request")[0];
     expect(document.activeElement).toBe(within(fresh).getByTestId("your-request-status"));
+  });
+
+  it("Ask again lands on the new ask by its id, whatever state the redraw derives for it (here no longer needed)", async () => {
+    actions.askSpareAction.mockResolvedValue({ ok: true, id: "new" });
+    const expired = req("a", "expired");
+    const { rerender } = render(<YourRequests rows={[expired]} now={NOW} />);
+    const again = screen.getByTestId("friend-spare-ask");
+    again.focus();
+    await act(async () => fireEvent.click(again));
+    rerender(<YourRequests rows={[req("new", "unneeded", { oracleId: "card-a" }), { ...expired, canAskAgain: false }]} now={NOW} />);
+    const fresh = screen.getAllByTestId("your-request")[0];
+    expect(fresh.dataset.state).toBe("unneeded");
+    expect(document.activeElement).toBe(within(fresh).getByTestId("your-request-status"));
+  });
+
+  // The pressed control is taken at the press: a reader who tabs elsewhere while the action is out keeps their focus.
+  it.each(["✕", "Ask again"])("a %s whose action is slow does not pull back a reader who moved on", async (which) => {
+    let finishClose: (v: unknown) => void = () => {};
+    let finishAsk: (v: unknown) => void = () => {};
+    actions.closeSpareAction.mockReturnValue(new Promise((res) => { finishClose = res; }));
+    actions.askSpareAction.mockReturnValue(new Promise((res) => { finishAsk = res; }));
+    const elsewhere = document.createElement("button");
+    document.body.appendChild(elsewhere);
+    const { rerender } = render(<YourRequests rows={[req("a", "expired"), req("b", "yes")]} now={NOW} />);
+    const press = which === "✕" ? screen.getAllByTestId("your-request-close")[0] : screen.getByTestId("friend-spare-ask");
+    press.focus();
+    await act(async () => fireEvent.click(press));
+    elsewhere.focus();
+    await act(async () => (which === "✕" ? finishClose({ ok: true, closed: "cleared" }) : finishAsk({ ok: true, id: "new" })));
+    rerender(<YourRequests rows={which === "✕" ? [req("b", "yes")] : [req("new", "open", { oracleId: "card-a" }), req("b", "yes")]} now={NOW} />);
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
   });
 
   it.each(["✕", "Ask again"])("a failed %s: the shared toast, the row as it was, no refresh", async (which) => {

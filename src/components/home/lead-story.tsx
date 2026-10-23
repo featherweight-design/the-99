@@ -9,7 +9,8 @@
 // answer turns the story into that row's receipt for the visit. The action revalidates `/friends`, and any revalidation
 // in an action re-renders the page it was pressed from, so Home's lead moves on (the answered ask has left the feed)
 // as the action lands. `LeadSlot` therefore HOLDS the story from the press: the same item, so the same instance, keeps
-// its receipt for the visit; a failed answer lets it go again.
+// its receipt for the visit; a failed answer lets it go again. A server lead the held story displaces is drawn by What's
+// new as one of its rows (`held-lead.tsx`), so it is never marked seen without being drawn.
 
 import { useRef, useState } from "react";
 import type { FeedView } from "../../lib/feed/home";
@@ -24,15 +25,22 @@ import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "../social/spare-answer";
+import { useHeldLead } from "./held-lead";
 
 type Face = Pick<ProfileCommander, "artCropUri"> | null;
 
 /** Home's lead, held once its ask is pressed (see the head): the server's lead until then. */
 export function LeadSlot({ lead, now, face }: { lead: FeedView | null; now: string; face?: Face }) {
   const [held, setHeld] = useState<{ item: FeedView; face: Face } | null>(null);
+  // Published to What's new (`held-lead.tsx`), which draws a server lead this slot displaces as one of its rows.
+  const publish = useHeldLead();
   const shown = held ?? (lead ? { item: lead, face: face ?? null } : null);
   if (!shown) return null;
-  return <LeadStory key={shown.item.key} item={shown.item} now={now} face={shown.face} onHold={(on) => setHeld(on ? shown : null)} />;
+  const hold = (on: boolean) => {
+    setHeld(on ? shown : null);
+    publish?.setKey(on ? shown.item.key : null);
+  };
+  return <LeadStory key={shown.item.key} item={shown.item} now={now} face={shown.face} onHold={hold} />;
 }
 
 export function LeadStory({
@@ -63,7 +71,7 @@ export function LeadStory({
     : ask
       ? { title: feed.title, line: spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName), press: null }
       : feed;
-  async function press(a: Answer) {
+  async function press(a: Answer, from: Element) {
     if (!ask || busy) return;
     onHold?.(true);
     if (!(await answer(ask.id, a))) {
@@ -71,7 +79,7 @@ export function LeadStory({
       return;
     }
     setAnswered(a);
-    land('[data-testid="spare-receipt-status"]');
+    land('[data-testid="spare-receipt-status"]', from);
   }
   const art = item.card?.art ?? null;
   const image = item.card?.image ?? null;
@@ -124,7 +132,7 @@ export function LeadStory({
         {ask && !receipt && (
           <div className="mt-[6px] min-w-0">
             <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null}
-              onAnswer={(a) => void press(a)} size="lead" />
+              onAnswer={(a, from) => void press(a, from)} size="lead" />
           </div>
         )}
       </div>

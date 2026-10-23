@@ -75,6 +75,25 @@ describe("LeadStory, a spare request", () => {
 
 // Any revalidation in an action re-renders the page it was pressed from: Home's lead moves on (the answered ask has left
 // the feed) as the answer lands. The slot holds the answered story, receipt and all, for the visit.
+// The pressed control is taken at the press: a reader who tabs elsewhere while the answer is out keeps their focus.
+describe("focus after a slow answer", () => {
+  it("does not pull back a reader who moved on while the action was out", async () => {
+    let finish: (v: { ok: true }) => void = () => {};
+    actions.answerSpareAction.mockReturnValue(new Promise((res) => { finish = res; }));
+    const elsewhere = document.createElement("button");
+    document.body.appendChild(elsewhere);
+    render(<LeadSlot lead={LEAD} now={NOW} />);
+    const yes = screen.getByRole("button", { name: /^Yes,/ });
+    yes.focus();
+    await act(async () => fireEvent.click(yes));
+    elsewhere.focus();
+    await act(async () => finish({ ok: true }));
+    expect(screen.getByTestId("spare-receipt-status")).toBeTruthy();
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
+  });
+});
+
 describe("LeadSlot", () => {
   const NEXT: FeedView = { ...LEAD, key: "item:2", kind: "trade-match", ask: undefined, href: "/friends/pub-colin",
     friend: { publicId: "pub-colin", displayName: "Colin" } };

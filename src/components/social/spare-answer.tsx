@@ -20,6 +20,8 @@ export type Answer = "yes" | "no";
 /**
  * Lands focus on `selector` inside `root` once a render draws it, while focus is still on the control that was pressed
  * (or has fallen to <body> because that control left the document). A reader who has moved on keeps their focus.
+ * `from` is the pressed control, taken by the caller AT THE PRESS, before the action is awaited: taken after, it would
+ * be wherever the reader had tabbed to meanwhile, and their focus would be pulled back to the receipt.
  */
 export function useLandFocus(root: RefObject<HTMLElement | null>) {
   const target = useRef<{ selector: string; from: Element | null } | null>(null);
@@ -38,8 +40,8 @@ export function useLandFocus(root: RefObject<HTMLElement | null>) {
     target.current = null;
     el.focus();
   });
-  return (selector: string) => {
-    target.current = { selector, from: typeof document === "undefined" ? null : document.activeElement };
+  return (selector: string, from: Element | null) => {
+    target.current = { selector, from };
   };
 }
 
@@ -82,7 +84,8 @@ export function useSpareAnswer() {
  */
 export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, size }: {
   friend: string; card: string; daysLeft: number; busy: Answer | null; locked: boolean;
-  onAnswer: (a: Answer) => void;
+  /** `from` is the pressed button, for `useLandFocus`. */
+  onAnswer: (a: Answer, from: Element) => void;
   size: "row" | "lead";
 }) {
   const press = "inline-flex flex-none cursor-pointer items-center justify-center whitespace-nowrap font-sans disabled:cursor-default";
@@ -98,11 +101,11 @@ export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, 
   return (
     <span data-testid="spare-answer" className={`flex min-w-0 flex-wrap items-center gap-[8px] ${size === "row" ? "md:justify-end" : ""}`}>
       <button type="button" data-testid="spare-yes" aria-label={r.yesAria(friend, card)} aria-busy={busy === "yes" || undefined}
-        disabled={locked} onClick={() => onAnswer("yes")} className={yes}>
+        disabled={locked} onClick={(e) => onAnswer("yes", e.currentTarget)} className={yes}>
         {r.yes}
       </button>
       <button type="button" data-testid="spare-no" aria-label={r.noAria(friend, card)} aria-busy={busy === "no" || undefined}
-        disabled={locked} onClick={() => onAnswer("no")} className={no}>
+        disabled={locked} onClick={(e) => onAnswer("no", e.currentTarget)} className={no}>
         {r.no}
       </button>
       <span data-testid="spare-days" className={`whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-muted)]`}>

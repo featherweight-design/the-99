@@ -162,6 +162,25 @@ describe("WaitingOnYou, spare requests", () => {
   });
 });
 
+// The pressed control is taken at the press: a reader who tabs elsewhere while the answer is out keeps their focus.
+describe("focus after a slow answer", () => {
+  it("does not pull back a reader who moved on while the action was out", async () => {
+    let finish: (v: { ok: true }) => void = () => {};
+    actions.answerSpareAction.mockReturnValue(new Promise((res) => { finish = res; }));
+    const elsewhere = document.createElement("button");
+    document.body.appendChild(elsewhere);
+    render(<WaitingOnYou rows={[ASK]} now={NOW} />);
+    const yes = screen.getByRole("button", { name: /^Yes,/ });
+    yes.focus();
+    await act(async () => fireEvent.click(yes));
+    elsewhere.focus();
+    await act(async () => finish({ ok: true }));
+    expect(screen.getByTestId("spare-receipt-status")).toBeTruthy();
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
+  });
+});
+
 describe("placeReceipts", () => {
   const receipt = (row: SpareRequestRow, index: number): Receipt => ({ row, answer: "yes", index });
   it("puts each receipt back where its row stood, and past the end when the list is shorter", () => {

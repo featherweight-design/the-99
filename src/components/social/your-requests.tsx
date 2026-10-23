@@ -3,7 +3,7 @@
 // `Asker-States`): the reader's own asks under Waiting on you, newest first, in the shipped feed rows. The kicker names
 // the state (Requested, Accepted, Declined, No answer, No longer spare, No longer needed), an answer the reader has not
 // seen carries the diamond, and a bare ✕ withdraws an open ask or clears the rest (`closeSpareAction`). An ask that
-// went unanswered offers Ask again to the same friend (`askSpareAction`), unless the card already has an open ask.
+// went unanswered offers Ask again to the same friend (`askSpareAction`) only when the server would take it (`canAskAgain`).
 // Empty, the section is absent.
 //
 // Both writes answer with the shared toast on a failure and leave the row as it was (G5). ✕ revalidates `/friends`, so
@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import { askSpareAction, closeSpareAction } from "../../app/friends/spare-actions";
 import { feedAge } from "../../lib/feed/age";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
-import { expiresAt, SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
+import { expiresAt } from "../../lib/social/spare-request-rules";
 import type { YourRequest } from "../../lib/social/your-requests";
 import { FadingImg } from "../ui/hydrated-art";
 import { faceInitials } from "./face";
@@ -23,6 +23,9 @@ import { useLandFocus, useSpareToast } from "./spare-answer";
 
 const r = spareCopy.request;
 const m = r.mine;
+
+/** Whole days from the ask to now: the age the No answer line states (never the expiry window's length). */
+export const daysAgo = (createdAt: Date, now: Date): number => Math.floor((now.getTime() - createdAt.getTime()) / 86_400_000);
 
 const isOpen = (a: YourRequest) => a.state === "open" || a.state === "unavailable" || a.state === "unneeded";
 
@@ -43,7 +46,7 @@ export function requestText(a: YourRequest, now: Date): { kind: string; ink: str
       };
     case "expired": {
       const at = expiresAt(a.createdAt);
-      return { kind: m.kind.expired, ink: "text-[color:var(--fg-faint)]", at: at < now ? at : now, title: m.noAnswer(friend, card), detail: m.noAnswerDetail(SPARE_REQUEST_DAYS, a.deckName) };
+      return { kind: m.kind.expired, ink: "text-[color:var(--fg-faint)]", at: at < now ? at : now, title: m.noAnswer(friend, card), detail: m.noAnswerDetail(daysAgo(a.createdAt, now), a.deckName) };
     }
     case "unavailable":
       return { kind: m.kind.unavailable, ink: "text-[color:var(--fg-faint)]", at: a.createdAt, title: m.noLongerSpare(friend, card), detail: m.noLongerSpareDetail };
@@ -77,27 +80,29 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
   });
   useEffect(() => toTitle, []);
   if (rows.length === 0) return null;
-  const openCards = new Set(rows.filter(isOpen).map((a) => a.oracleId));
 
-  async function close(a: YourRequest, index: number) {
+  async function close(a: YourRequest, index: number, from: Element) {
     if (busy) return;
     setBusy(a.id);
     const ok = await closeSpareAction(a.id).then((o) => o.ok, () => false);
     setBusy(null);
     if (!ok) return toast.fail();
     const next = rows[index + 1] ?? rows[index - 1];
-    if (next) land(`[data-request="${next.id}"] [data-testid="your-request-close"]`);
+    if (next) land(`[data-request="${next.id}"] [data-testid="your-request-close"]`, from);
     else lastClosed.current = true;
   }
 
   async function askAgain(a: YourRequest) {
     if (busy) return;
+    // The pressed Ask again, taken before the action is awaited (RowEnd's press hands no event on).
+    const from = document.activeElement;
     setBusy(a.id);
-    const ok = await askSpareAction({ friendPublicId: a.holder.publicId, oracleId: a.oracleId, copies: a.copies, deckId: a.deckId })
-      .then((o) => o.ok, () => false);
+    const out = await askSpareAction({ friendPublicId: a.holder.publicId, oracleId: a.oracleId, copies: a.copies, deckId: a.deckId })
+      .catch(() => null);
     setBusy(null);
-    if (!ok) return toast.fail();
-    land(`[data-oracle="${a.oracleId}"][data-state="open"] [data-testid="your-request-status"]`);
+    if (!out?.ok) return toast.fail();
+    // The new ask by its own id: its state is derived on the redraw (it can come back `unneeded` or `unavailable`).
+    land(`[data-request="${out.id}"] [data-testid="your-request-status"]`, from);
     router.refresh();
   }
 
@@ -114,7 +119,9 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
       <ul className="m-0 mt-[12px] flex list-none flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-0 [border:1px_solid_var(--border)]">
         {rows.map((a, index) => {
           const text = requestText(a, now);
-          const again = a.state === "expired" && !openCards.has(a.oracleId);
+          // Offered only when the server would take it (`canAskAgain`: no open ask for the card, no No from this friend
+          // inside the cooldown, a cleared one included).
+          const again = a.state === "expired" && a.canAskAgain;
           return (
             <li
               key={a.id}
@@ -168,7 +175,7 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
                 aria-label={isOpen(a) ? m.withdrawAria(a.holder.displayName, a.card.name) : m.clearAria(a.holder.displayName, a.card.name)}
                 aria-busy={busy === a.id || undefined}
                 disabled={busy !== null}
-                onClick={() => void close(a, index)}
+                onClick={(e) => void close(a, index, e.currentTarget)}
                 className="absolute right-[4px] top-[6px] flex h-[36px] w-[36px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg-muted)] disabled:cursor-default"
               >
                 <span aria-hidden>✕</span>
