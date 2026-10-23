@@ -19,7 +19,7 @@ export async function fetchCharges({ token, teamId, from, to }) {
   return text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
 }
 
-/** Production deployments of one project created in [from, to). Pages by `until`, stops on a repeat. */
+/** Deployments of one project (every target; both projects only ever deploy production) created in [from, to). Pages by `until`, stops on a repeat. */
 export async function fetchDeployments({ token, teamId, projectId, from, to }) {
   const seen = new Map();
   let until = to.getTime();

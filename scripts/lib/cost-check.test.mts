@@ -116,12 +116,13 @@ describe("evaluate", () => {
 });
 
 describe("renderReport", () => {
-  it("shows every rule and carries no token", () => {
+  it("shows a row for every rule, the verdict and the build counts", () => {
     const verdict = evaluate({ vercel: { thisWeek: week(), lastWeek: week() }, neon: null, neonWeek: null });
     const md = renderReport({ date: "2026-10-26", vercel: { thisWeek: week(), lastWeek: week() }, neon: null, neonWeek: null, verdict, builds: { "the-99": 90 } });
     expect(md).toContain("**RED**");
     expect(md).toContain("Neon could be read");
     expect(md).toContain("the-99 90");
+    for (const r of verdict.rules) expect(md).toContain(`| ${r.label} |`);
   });
 });
 
