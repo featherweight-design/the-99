@@ -43,7 +43,7 @@ Words *phone* / *browser* / *iPhone*: phone-sized touch device, desktop browser,
 | Several of one kind from one job | one push, collapsed copy, lands on Home's What's new |
 | Spare request | never collapsed; still held overnight |
 | App open and focused | no push; badge/feed as shipped |
-| Tap | lands per kind (README table); marks that item seen |
+| Tap | lands per kind (README table); marks nothing (only Home and /friends move the seen cursor) |
 | Opening Home | closes delivered notifications for items it marks seen |
 | Subscription 404/410 | row deleted; re-subscribe silently on next visit if still granted |
 | Sign out | this device's subscription deleted |
