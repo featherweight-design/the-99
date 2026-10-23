@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   try {
     const report = await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveSwitchEnvStrict });
     // Counts only, never an id, an endpoint or a word.
-    console.info(`[push-flush] rows ${report.rows}, readers ${report.readers}, sent ${report.sent}, held ${report.held}, gone ${report.gone}, failed ${report.failed}, abandoned ${report.abandoned}, pruned ${report.pruned}`);
+    console.info(`[push-flush] rows ${report.rows}, readers ${report.readers}, sent ${report.sent}, held ${report.held}, gone ${report.gone}, failed ${report.failed}, abandoned ${report.abandoned}, pruned ${report.pruned}, queued ${report.queued}`);
     return Response.json(report);
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;

@@ -1,7 +1,8 @@
 /**
  * A feed view as a push item (`message.ts`): the same facts Home draws, in the shape a notification is built from.
  * Pure. Null when the view lacks what its notification needs (a card the catalog no longer holds, a missing price pair, a
- * friend who is gone): that push is dropped, never sent half-worded. Only the STORED kinds; the catalog kinds come in 3c.
+ * friend who is gone, a set with no card count or a precon with no count of its cards): that push is dropped, never sent
+ * half-worded. Home draws such a row with its title alone; a notification has no line to leave out.
  */
 import type { FeedView } from "../feed/home";
 import type { PushItem } from "./message";
@@ -10,6 +11,12 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
   const base = { key: view.key, batch };
   const card = view.card;
   switch (view.kind) {
+    case "new-set":
+      if (!view.name || !view.href || !view.setSize) return null;
+      return { ...base, kind: "new-set", name: view.name, cards: view.setSize, href: view.href };
+    case "new-precon":
+      if (!view.name || !view.href || !view.owned) return null;
+      return { ...base, kind: "new-precon", name: view.name, owned: view.owned.owned, of: view.owned.of, href: view.href };
     case "price-drop":
       if (!card || !view.drop) return null;
       return { ...base, kind: "price-drop", oracleId: card.oracleId, card: card.name, wasCents: view.drop.fromCents, nowCents: view.drop.toCents, image: card.image };
@@ -22,7 +29,5 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
     case "combo":
       if (!card || !view.combo || !view.opens) return null;
       return { ...base, kind: "combo", oracleId: view.opens, a: view.combo.pieces[0], b: view.combo.pieces[1], added: view.combo.added, image: card.image };
-    default:
-      return null;
   }
 }
