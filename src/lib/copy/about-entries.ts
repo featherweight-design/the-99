@@ -1969,9 +1969,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'Only a friend asking for your spare starts ticked. Nothing is sent until you allow it on a device.',
       'Nothing is sent until you allow it on a device.',
-      'Nothing comes between 9pm and 9am; it waits for the morning. Several at once arrive as one.',
+      'Nothing comes between 9pm and 9am; it waits for the morning. Several of one kind arrive as one, except a friend’s ask.',
       'A tap opens what it’s about. Opening Home marks your news seen.',
-      'No push while The 99 is open in front of you. No email, ever.',
+      'No push while The 99 is open in front of you, except in Safari and on iPhone. No email, ever.',
     ],
     // The spare-request kind starts on (`push_kinds`' rule), and is offered only with spare requests on; without it no kind
     // starts ticked, and the key keeps its second sentence alone.
