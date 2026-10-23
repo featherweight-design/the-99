@@ -77,5 +77,7 @@ export const combosCloseCopy = {
     openAria: (card: string, partner: string) => `Open the combo: ${card} + ${partner}`,
     /** The combo sheet's way back to the card it was opened from. */
     backAria: (card: string) => `Back to ${card}`,
+    /** The combo sheet's ×, which also returns to the card. */
+    closeAria: "Close the combo",
   },
 } as const;

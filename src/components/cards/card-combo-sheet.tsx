@@ -91,9 +91,13 @@ export function CardComboSheet({
   return (
     <ModalChrome
       title={title}
-      closeLabel={back}
+      closeLabel={copy.card.closeAria}
       onClose={onClose}
       width={760}
+      // `.bk2`, as the combo pushed inside the deck's list draws it: `← {card}` and the close, the
+      // title spoken only (the body's own heading names the combo).
+      back={{ label: name, aria: back, onBack: onClose }}
+      // Lifts the card into the held slot under the sheet (its header is `back`'s, which wins).
       overCard={{ name, backAria: back }}
     >
       <div data-card-combo={combo.variantId}>

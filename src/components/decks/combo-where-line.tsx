@@ -65,7 +65,7 @@ export function MissingPieceWhereLine({ where, on }: { where: CardComboWhere; on
             <Link
               href={`/decks/${deck.id}`}
               aria-label={copy.where.deckLinkAria(deck.name)}
-              className="inline -my-[15px] py-[15px] leading-[14px] [overflow-wrap:anywhere] [box-decoration-break:clone] text-[color:var(--fg-body)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
+              className="inline -my-[15px] py-[15px] leading-[14px] [overflow-wrap:anywhere] [box-decoration-break:clone] text-[color:var(--fg-body)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors active:rounded-[3px] active:[outline:2px_solid_var(--accent)] active:outline-offset-2"
             >
               {deck.name}
             </Link>

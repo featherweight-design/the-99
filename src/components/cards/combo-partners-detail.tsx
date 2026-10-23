@@ -123,7 +123,7 @@ export function ComboPartnersDetail({
             <ComboGlyph />
             {/* At 390px the label and the counts STACK inside the same 52px row rather than
                 competing for it; above that they sit on one line. */}
-            <span className="flex flex-auto min-w-0 flex-col sm:flex-row sm:items-center sm:gap-[10px]">
+            <span className="flex flex-auto min-w-0 flex-col gap-[3px] sm:flex-row sm:items-center sm:gap-[10px]">
               <span
                 className="font-mono text-[10px] uppercase tracking-[0.1em]"
                 style={{ color: "var(--fg-faint)" }}
@@ -213,7 +213,7 @@ export function ComboPartnersDetail({
                 and the partner's NAME at 600 in `--fg`: the name is the half a reader is
                 looking for, and it is also the half that is pressable.
                 13px, not the 13.5/15 the block above this one uses. */}
-            <span className="flex flex-auto min-w-0 flex-col sm:flex-row sm:items-center sm:gap-[10px]">
+            <span className="flex flex-auto min-w-0 flex-col gap-[3px] sm:flex-row sm:items-center sm:gap-[10px]">
               {/* THE TRUNCATION IS ON EACH HALF, not on this wrapper. `truncate` sets
                   `overflow: hidden`, so a wrapper carrying it CLIPS the partner button's
                   44px touch area — the padding that buys the height sits outside the line

@@ -1,5 +1,5 @@
 {
-  "feature": "Combos one piece away (combos-close handoff): the deck page segment, its list sheet and the combo pushed inside it",
+  "feature": "Combos one piece away (combos-close handoff): the deck page segment, its list sheet and the combo pushed inside it, and card details' combo block (UI-3)",
   "note": "Needs NEAR_COMBOS_ENABLED='true' on the server and three decks the signed-in account owns: COMBOS_MANY_DECK (many two-card near combos, a piece held in several decks; local-dev HD - Brago d3f9ccb4-8ed9-47e1-8b68-9b6fcd4bc85c), COMBOS_ONE_DECK (exactly one; HD -Thorin bc4f48f5-af6b-424a-9f1f-6cd9b44f9809) and COMBOS_NONE_DECK (none; HD - Soldiers 8a32d0d2-5fb8-4142-9901-b3e391c0714a).",
   "clearAbout": true,
   "widths": [
@@ -116,6 +116,88 @@
         },
         {
           "click": "[data-where=buy] [data-combo-press] >> nth=0",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "card-closed",
+      "label": "card details from /decks/[id] many: the combo block closed, its counts",
+      "view": "src/components/cards/combo-partners-detail.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-decklist-row]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-decklist-row]:has([data-testid=combo-glyph])",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid=combo-partners-block]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "card-split",
+      "label": "card details from /decks/[id] many: the block open, Whole in this deck then One piece away, each line's where",
+      "view": "src/components/cards/combo-partners-detail.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-decklist-row]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-decklist-row]:has([data-testid=combo-glyph])",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid=combo-partners-block]",
+          "settle": 400
+        },
+        {
+          "click": "[data-testid=combo-partners-block] button[aria-expanded=false]",
+          "wait": "[data-combo-lines]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-combo-lines]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "card-combo",
+      "label": "card details from /decks/[id] many: a line pressed, the combo stacked on the card, back names the card",
+      "view": "src/components/cards/card-combo-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-decklist-row]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-decklist-row]:has([data-testid=combo-glyph])",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid=combo-partners-block]",
+          "settle": 400
+        },
+        {
+          "click": "[data-testid=combo-partners-block] button[aria-expanded=false]",
+          "wait": "[data-combo-lines]",
+          "settle": 600
+        },
+        {
+          "click": "[data-combo-line] [data-combo-press] >> nth=0",
+          "wait": "[data-card-combo]",
           "settle": 900
         }
       ]
