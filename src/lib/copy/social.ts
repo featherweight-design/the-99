@@ -165,7 +165,7 @@ export const socialCopy = {
   waiting: {
     /** The mono section head, drawn uppercase by CSS; `n` is every row the section shows. */
     head: (n: number) => `Waiting on you · ${n}`,
-    kind: { "trade-match": "Trade match" },
+    kind: { "spare-request": "Spare request", "trade-match": "Trade match" },
     /** For a screen reader, beside the unseen diamond. */
     unseen: "new",
     tradeTitle: (friend: string, card: string) => `${friend} has a spare ${card}`,
@@ -377,12 +377,64 @@ export const spareCopy = {
     oneAtATime: (from: string, to: string) => `One request at a time. Ask instead moves it from ${from} to ${to}.`,
     whenYours: "When it’s yours, press buy on the row.",
     nobodyElse: "Nobody else you know has a spare.",
-    /** The shared toast on a failed Ask or Ask instead (G5); the row is left as it was. */
+    /** The shared toast on a failed Ask, Ask instead, Ask again, Yes, No or ✕ (G5); the row is left as it was. */
     failed: "We couldn’t send that. Try again.",
     /** The Shopping key's items, after `friend has a spare`, each only while a row draws it (call 4). */
     keyRequested: "requested",
     keyAccepted: "accepted",
     /** The row press's name, with the glyph's mark. */
     markAria: (base: string, mark: "requested" | "accepted") => `${base}, ${mark}`,
+    /**
+     * The holder's side (PR 3d; board `Friend-Side`, call 8): the ask as a Waiting on you row and Home's lead story,
+     * with Yes and No and the days left, and the receipt the row turns into for the visit. The title is the feed's
+     * own (`feedCopy.home.title.spareRequest`).
+     */
+    /** "You have 2 spare. Peter wants 1 for Dragons of Tarkir."; the deck clause only when the ask names one. */
+    incomingDetail: (spare: number, friend: string, copies: number, deck: string | null) =>
+      `You have ${spare} spare. ${friend} wants ${copies}${deck ? ` for ${deck}` : ""}.`,
+    yes: "Yes",
+    no: "No",
+    yesAria: (friend: string, card: string) => `Yes, spare ${card} for ${friend}`,
+    noAria: (friend: string, card: string) => `No, keep ${card} from ${friend}`,
+    /** The receipt's kicker, drawn uppercase by CSS. */
+    receiptKind: { yes: "Spare request · accepted", no: "Spare request · declined" },
+    sparing: (card: string, friend: string) => `You’re sparing ${card} for ${friend}`,
+    sparingDetail: (friend: string, card: string) =>
+      `${friend}’s been told. Hand ${card} over when you meet; your collection stays as it is until you change it.`,
+    keeping: (card: string) => `You’re keeping ${card}`,
+    keepingDetail: (friend: string) => `${friend}’s been told.`,
+    /**
+     * The asker's side (PR 3d; board `Asker-States`, call 7): Your requests on `/friends`, in the feed's rows. The
+     * kicker names the state (uppercase by CSS); No longer spare and No longer needed are copy only on the board.
+     */
+    mine: {
+      head: (n: number) => `Your requests · ${n}`,
+      order: "newest first",
+      kind: {
+        open: "Requested",
+        yes: "Accepted",
+        no: "Declined",
+        expired: "No answer",
+        unavailable: "No longer spare",
+        unneeded: "No longer needed",
+      },
+      asked: (friend: string, card: string) => `You asked ${friend} for ${card}`,
+      /** "For Thopter Works · 12 days left"; the days alone with no deck. */
+      openDetail: (deck: string | null, days: string) => (deck ? `For ${deck} · ${days}` : days),
+      canSpare: (friend: string, card: string) => `${friend} can spare ${card}`,
+      acceptedDetail: "The handover is between you. When it’s yours, press buy on the row to add it.",
+      keeping: (friend: string, card: string) => `${friend} is keeping ${card}`,
+      nobodyElse: "Nobody else you know has a spare of it.",
+      /** After a No, when other friends offer the card: the first by spares, and how many more. */
+      othersHave: (first: string, more: number) =>
+        more === 0 ? `${first} has a spare too.` : `${first} and ${more} more have a spare too.`,
+      noAnswer: (friend: string, card: string) => `${friend} didn’t answer about ${card}`,
+      noAnswerDetail: (days: number, deck: string | null) => `Requested ${days} days ago${deck ? `, for ${deck}` : ""}.`,
+      noLongerSpare: (friend: string, card: string) => `${friend} no longer has a spare ${card}`,
+      noLongerSpareDetail: "Your request is still open. ✕ withdraws it.",
+      noLongerNeededDetail: "It’s off your buy lists now. ✕ withdraws the request.",
+      withdrawAria: (friend: string, card: string) => `Withdraw your request to ${friend} for ${card}`,
+      clearAria: (friend: string, card: string) => `Clear your request to ${friend} for ${card}`,
+    },
   },
 } as const;

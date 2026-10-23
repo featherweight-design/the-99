@@ -217,11 +217,13 @@ export function FriendSpareSection({ spares, card }: { spares: readonly FriendSp
 }
 
 const ASK_PRESS = "flex flex-none cursor-pointer items-center justify-center whitespace-nowrap bg-transparent font-sans disabled:cursor-default";
-/** The press's box: the modal's friend row (`.ask`, 36px at phone, 32px from md), or the cart's By friend line
- *  (`.cl .ask`, 32px at phone, 28px from md, a 56px floor and 12.5px type). */
+/** The press's box: the modal's friend row (`.ask`, 36px at phone, 32px from md), the cart's By friend line
+ *  (`.cl .ask`, 32px at phone, 28px from md, a 56px floor and 12.5px type), or Your requests' row. */
 const ASK_SIZE = {
   sheet: "h-[36px] min-w-[64px] rounded-[9px] px-[14px] text-[13px] md:h-[32px] md:rounded-[8px]",
   line: "h-[32px] min-w-[56px] rounded-[7px] px-[12px] text-[12.5px] md:h-[28px]",
+  /** Your requests' Ask again on `/friends` (`.fi .ac .ask`): 36px at both widths. */
+  row: "h-[36px] min-w-[64px] rounded-[9px] px-[14px] text-[13px] md:rounded-[8px]",
 } as const;
 const ASK_INK = "font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]";
 const ASK_ALT_INK = "font-medium text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)]";

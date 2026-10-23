@@ -8,6 +8,7 @@
 //   them on through Settings' own action, and from then on the switches live in Settings alone.
 // The lead story is not in this list (`splitLead`); the head's count is every unseen item, the badge's own figure.
 
+import { displaceLead, useHeldLead } from "./held-lead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -44,8 +45,10 @@ const HEAD = "m-0 flex items-baseline gap-[8px] font-mono text-[10px] font-norma
 const ROWS = "m-0 list-none p-0 [&>li+li]:[border-top:1px_solid_var(--border)]";
 const DAY = "m-0 px-[14px] pt-[9px] font-mono text-[9px] font-medium tracking-[.14em] text-[color:var(--fg-locked)] uppercase";
 
-export function WhatsNew({ feed, now, faces, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; className?: string }) {
+export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; className?: string }) {
   const [expanded, setExpanded] = useState(false);
+  // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
+  const feed = displaceLead(served, useHeldLead()?.key ?? null);
   const chosen = feed.chosen;
   const count = chosen && feed.unseen > 0 ? feed.unseen : 0;
   // The lead alone and nothing more: the head stands over no box, since the quiet line would contradict the lead.

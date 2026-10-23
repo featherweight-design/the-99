@@ -37,7 +37,7 @@ import { spareRequestsEnabled } from "./flag";
 import { isUuid } from "./rules";
 import {
   askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, isAnswer, openFloor, requestState, shownFloor,
-  type AskRefusal, type AskerState, type StoredStatus,
+  type AskRefusal, type AskerState, type PriorAsk, type StoredStatus,
 } from "./spare-request-rules";
 import { loadFriendSpares, loadOwnOffered } from "./spares";
 
@@ -342,11 +342,19 @@ export async function loadIncomingAsks(holderId: string, env: NodeJS.ProcessEnv,
 }
 
 export type MyAsk = {
-  id: string; oracleId: string; card: AskCard; copies: number; deckName: string | null; holder: OtherSide;
+  id: string; oracleId: string; card: AskCard; copies: number; deckName: string | null;
+  /** The asker's own deck the ask was for (their own id, so Ask again can carry it), or null. */
+  deckId: string | null;
+  holder: OtherSide;
   state: AskerState;
   /** Days left on an open (or unavailable, or unneeded) ask; null once answered or expired. */
   daysLeft: number | null;
   createdAt: Date; answeredAt: Date | null;
+  /**
+   * The asker cleared it from their list: read only with `keepClearedDeclines`, for a No still inside its cooldown
+   * (which still holds that friend back). Your requests never draws one.
+   */
+  cleared: boolean;
 };
 
 /**
@@ -362,6 +370,7 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
     : sql`msr.asker_cleared_at is null`;
   return sql`select msr.id, msr.oracle_id, msr.status, msr.created_at, msr.answered_at, msr.copies,
       msp.public_id::text as public_id, msp.display_name, mc.name as card_name, mc.image_uri as card_image, mdk.name as deck_name,
+      mdk.id as deck_id, msr.asker_cleared_at is not null as cleared,
       mcc.oracle_id as commander_oracle_id, mcc.name as commander_name, mcc.art_crop_uri as commander_art
     from ${spareRequests} msr
     join ${friendLinks} mfl on mfl.user_id = msr.asker_user_id and mfl.friend_user_id = msr.holder_user_id
@@ -377,6 +386,7 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
 type MyRow = Face & {
   id: string; oracle_id: string; status: StoredStatus; created_at: Date | string; answered_at: Date | string | null;
   copies: number; public_id: string; display_name: string; card_name: string; card_image: string | null; deck_name: string | null;
+  deck_id: string | null; cleared: boolean;
 };
 
 export type MyAsksOptions = {
@@ -391,38 +401,83 @@ export type MyAsksOptions = {
   keepClearedDeclines?: boolean;
 };
 
+/** One shown ask as stored, before the live derivation (`deriveMyAsks`). Opaque outside this module. */
+export type ShownAsk = { r: MyRow; a: { status: Exclude<StoredStatus, "withdrawn">; createdAt: Date; answeredAt: Date | null } };
+
+/** The asker's shown asks as stored (`myAsksQuery`, then `askShown`), newest first. No live read. */
+export async function readShownAsks(
+  askerId: string, now: Date, opts: Pick<MyAsksOptions, "oracleIds" | "keepClearedDeclines"> = {}, q: Executor = db,
+): Promise<ShownAsk[]> {
+  if (opts.oracleIds && opts.oracleIds.length === 0) return [];
+  const { rows } = await q.execute<MyRow>(myAsksQuery(askerId, now, opts.oracleIds, opts.keepClearedDeclines));
+  return (rows as MyRow[]).flatMap((r) => {
+    if (r.status === "withdrawn") return [];
+    const a = { status: r.status, createdAt: new Date(r.created_at), answeredAt: r.answered_at == null ? null : new Date(r.answered_at) };
+    return askShown(a, now) ? [{ r, a: { ...a, status: r.status as Exclude<StoredStatus, "withdrawn"> } }] : [];
+  });
+}
+
+/** The cards whose OPEN asks need their holder's live offer (`loadFriendSpares`) to read open or unavailable. */
+export function openAskCards(shown: readonly ShownAsk[], now: Date): string[] {
+  return [...new Set(shown.filter(({ a }) => requestState(a, now) === "open").map(({ r }) => r.oracle_id))];
+}
+
+/** The key `deriveMyAsks` looks a holder's live offer up by: the card and the holder's public id. */
+export const offerKey = (oracleId: string, publicId: string): string => `${oracleId} ${publicId}`;
+
 /**
- * The asker's list (Your requests). An OPEN ask reads `unavailable` when its holder no longer offers the card to the
- * asker (one `loadFriendSpares` read for the open asks' cards, the rule the Ask press checked), then `unneeded` per
- * `stillNeeded` (`askerState`).
+ * Each shown ask as the asker sees it (`askerState`): `offered` holds `offerKey`s for the holders who offer the card
+ * now (needed for the open asks' cards only), `stillNeeded` as `MyAsksOptions` describes. Pure.
+ */
+export function deriveMyAsks(
+  shown: readonly ShownAsk[], now: Date, offered: ReadonlySet<string>, stillNeeded?: ReadonlySet<string>,
+): MyAsk[] {
+  return shown.map(({ r, a }) => {
+    const state = askerState(a, now, {
+      offered: offered.has(offerKey(r.oracle_id, r.public_id)),
+      needed: stillNeeded ? stillNeeded.has(r.oracle_id) : true,
+    });
+    const open = state === "open" || state === "unavailable" || state === "unneeded";
+    return {
+      id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies),
+      deckName: r.deck_name, deckId: r.deck_id, holder: { publicId: r.public_id, displayName: r.display_name, commander: faceOf(r) },
+      state, daysLeft: open ? daysLeft(a.createdAt, now) : null, createdAt: a.createdAt, answeredAt: a.answeredAt,
+      cleared: r.cleared === true,
+    };
+  });
+}
+
+/**
+ * Whether the asker may ask this ask's holder for its card again now, by the write's own rule (`askRefusal`) over the
+ * asker's shown asks for the card. `asks` must be read WITH `keepClearedDeclines`: a No the asker cleared still holds
+ * that friend back for the cooldown. Public ids stand in for the holder, since they name one person each. `offered` is
+ * whether the holder offers the card to the asker NOW (`loadFriendSpares`): without it the write refuses `not-spare`.
+ */
+export function canAskAgain(ask: MyAsk, asks: readonly MyAsk[], now: Date, offered: boolean): boolean {
+  if (!offered) return false;
+  const prior: PriorAsk[] = asks.filter((m) => m.oracleId === ask.oracleId).map((m) => ({
+    holderUserId: m.holder.publicId,
+    status: m.state === "unavailable" || m.state === "unneeded" ? "open" : m.state,
+    createdAt: m.createdAt, answeredAt: m.answeredAt,
+  }));
+  return askRefusal(prior, ask.holder.publicId, now) === null;
+}
+
+/**
+ * The asker's list (Your requests, Shopping). An OPEN ask reads `unavailable` when its holder no longer offers the card
+ * to the asker (one `loadFriendSpares` read for the open asks' cards, the rule the Ask press checked), then `unneeded`
+ * per `stillNeeded` (`askerState`).
  */
 export async function loadMyAsks(
   askerId: string, env: NodeJS.ProcessEnv, now = new Date(), opts: MyAsksOptions = {}, q: Executor = db,
 ): Promise<MyAsk[]> {
   if (!spareRequestsEnabled(env)) return [];
-  if (opts.oracleIds && opts.oracleIds.length === 0) return [];
-  const { rows } = await q.execute<MyRow>(myAsksQuery(askerId, now, opts.oracleIds, opts.keepClearedDeclines));
-  const shown = (rows as MyRow[]).flatMap((r) => {
-    if (r.status === "withdrawn") return [];
-    const a = { status: r.status, createdAt: new Date(r.created_at), answeredAt: r.answered_at == null ? null : new Date(r.answered_at) };
-    return askShown(a, now) ? [{ r, a: { ...a, status: r.status as Exclude<StoredStatus, "withdrawn"> } }] : [];
-  });
-  const openCards = [...new Set(shown.filter(({ a }) => requestState(a, now) === "open").map(({ r }) => r.oracle_id))];
+  const shown = await readShownAsks(askerId, now, opts, q);
+  const openCards = openAskCards(shown, now);
   const offered = new Set(
-    openCards.length === 0 ? [] : (await loadFriendSpares(askerId, openCards)).map((s) => `${s.oracleId} ${s.friend.publicId}`),
+    openCards.length === 0 ? [] : (await loadFriendSpares(askerId, openCards)).map((s) => offerKey(s.oracleId, s.friend.publicId)),
   );
-  return shown.map(({ r, a }) => {
-    const state = askerState(a, now, {
-      offered: offered.has(`${r.oracle_id} ${r.public_id}`),
-      needed: opts.stillNeeded ? opts.stillNeeded.has(r.oracle_id) : true,
-    });
-    const open = state === "open" || state === "unavailable" || state === "unneeded";
-    return {
-      id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies),
-      deckName: r.deck_name, holder: { publicId: r.public_id, displayName: r.display_name, commander: faceOf(r) },
-      state, daysLeft: open ? daysLeft(a.createdAt, now) : null, createdAt: a.createdAt, answeredAt: a.answeredAt,
-    };
-  });
+  return deriveMyAsks(shown, now, offered, opts.stillNeeded);
 }
 
 /** One ask as `GET /api/spare-requests` serves it to the asker (the Shopping modal and the row marks). */

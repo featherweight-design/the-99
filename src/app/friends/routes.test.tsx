@@ -26,7 +26,8 @@ const m = vi.hoisted(() => ({
   spendInviteOnSignUp: vi.fn(),
   friendPublicId: vi.fn(),
   after: vi.fn((_fn: () => unknown) => {}),
-  loadWaitingOnYou: vi.fn(async (..._args: unknown[]) => []),
+  loadWaitingOnYou: vi.fn(async (..._args: unknown[]): Promise<unknown[]> => []),
+  loadYourRequests: vi.fn(async (..._args: unknown[]): Promise<unknown[]> => []),
   noticeTradeMatches: vi.fn(async (..._args: unknown[]) => 0),
   markFriendsSeen: vi.fn(async (..._args: unknown[]) => false),
 }));
@@ -57,6 +58,7 @@ vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));
 // Waiting on you and its after() work have their own tests (`waiting.test.ts`, `waiting-on-you.test.tsx`).
 vi.mock("../../lib/social/waiting", () => ({ loadWaitingOnYou: m.loadWaitingOnYou }));
+vi.mock("../../lib/social/your-requests", () => ({ loadYourRequests: m.loadYourRequests }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: m.noticeTradeMatches }));
 vi.mock("../../lib/feed/prefs", () => ({ markFriendsSeen: m.markFriendsSeen }));
 vi.mock("next/server", () => ({ after: m.after }));
@@ -68,7 +70,7 @@ vi.mock("./actions", () => ({
 
 import FriendsPage from "./page";
 import FriendLinkPage from "../friend/[token]/page";
-import { socialCopy } from "../../lib/copy/social";
+import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { SpendFriendLink } from "../../components/social/spend-friend-link";
 
 const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
@@ -131,6 +133,41 @@ describe("/friends", () => {
     expect(m.noticeTradeMatches).toHaveBeenCalledWith("user_1", env);
     expect(m.markFriendsSeen).toHaveBeenCalledWith("user_1", env, now);
     expect(m.noticeTradeMatches.mock.invocationCallOrder[0]).toBeLessThan(m.markFriendsSeen.mock.invocationCallOrder[0]);
+  });
+
+  // Spare requests PR 3d: one ask seen from both accounts. The holder (Sam) answers it in Waiting on you; the asker
+  // (Peter) follows it in Your requests, under Waiting on you; each read is the reader's own, with their own switches.
+  it("draws the holder's Waiting on you row and the asker's Your requests, each on their own page", async () => {
+    const at = new Date("2026-10-22T10:00:00Z");
+    const card = { name: "Lathliss, Dragon Queen", imageUri: null };
+    m.requireUserId.mockResolvedValue("user_sam");
+    m.loadWaitingOnYou.mockResolvedValue([{
+      key: "req-1", kind: "spare-request", createdAt: at, unseen: true,
+      ask: { id: "req-1", oracleId: "lathliss", card, copies: 1, deckName: "Dragons of Tarkir", spare: 2,
+        asker: { publicId: "pub-peter", displayName: "Peter", commander: null }, createdAt: at, daysLeft: 13 },
+    }]);
+    m.loadYourRequests.mockResolvedValue([]);
+    const sam = render(await FriendsPage({ searchParams: query() }));
+    expect(m.loadWaitingOnYou).toHaveBeenLastCalledWith("user_sam", ON, expect.any(Date));
+    expect(m.loadYourRequests).toHaveBeenLastCalledWith("user_sam", ON, expect.any(Date));
+    expect(screen.getByTestId("waiting-on-you")).toBeTruthy();
+    expect(screen.getByRole("button", { name: spareCopy.request.yesAria("Peter", card.name) })).toBeTruthy();
+    expect(screen.queryByTestId("your-requests")).toBeNull();
+    sam.unmount();
+
+    m.requireUserId.mockResolvedValue("user_peter");
+    m.loadWaitingOnYou.mockResolvedValue([]);
+    m.loadYourRequests.mockResolvedValue([{
+      id: "req-1", oracleId: "lathliss", card, copies: 1, deckName: "Dragons of Tarkir", deckId: "deck-1",
+      holder: { publicId: "pub-sam", displayName: "Sam", commander: null }, state: "open", daysLeft: 13,
+      createdAt: at, answeredAt: null, unseen: false, othersWithSpare: [],
+    }]);
+    render(await FriendsPage({ searchParams: query() }));
+    expect(m.loadYourRequests).toHaveBeenLastCalledWith("user_peter", ON, expect.any(Date));
+    expect(screen.queryByTestId("waiting-on-you")).toBeNull();
+    const mine = screen.getByTestId("your-requests");
+    expect(mine.textContent).toContain(spareCopy.request.mine.asked("Sam", card.name));
+    expect(mine.textContent).toContain("For Dragons of Tarkir · 13 days left");
   });
 
   it("draws the receipt after Accept for a friend the reader has, by public id (E10)", async () => {

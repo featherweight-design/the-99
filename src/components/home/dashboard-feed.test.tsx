@@ -1,11 +1,13 @@
 // Home, direction B (menu and Home PR 6): every Home state the feed draws, and the boundary at the mount. With no
 // `feed` the Dashboard is Home as shipped: Ready to build, no lead and no What's new.
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }), usePathname: () => "/" }));
 vi.mock("../../app/friends/actions", () => ({ createInviteAction: vi.fn() }));
 vi.mock("../social/use-invite-watch", () => ({ useInviteWatch: vi.fn() }));
 vi.mock("../../app/settings/feed-actions", () => ({ saveFeedKinds: vi.fn() }));
+const spare = vi.hoisted(() => ({ answerSpareAction: vi.fn() }));
+vi.mock("../../app/friends/spare-actions", () => spare);
 vi.mock("../cards/card-detail-provider", () => ({
   CardDetailProvider: ({ children }: { children: React.ReactNode }) => <div data-card-detail-provider>{children}</div>,
   useCardDetailIfAny: () => null,
@@ -115,5 +117,38 @@ describe("Home, direction B", () => {
     expect(container.querySelector("[data-lead-story]")).toBeNull();
     expect(container.querySelector("[data-whats-new=opt-in]")).not.toBeNull();
     expect(screen.getAllByRole("checkbox")).toHaveLength(2);
+  });
+});
+
+// Spare requests PR 3d, Copilot round 1: an answered spare request is held in the lead's place for the visit, and the
+// action's redraw moves the server's lead on. That new lead has already left the list (`splitLead`), so What's new
+// draws it as a row while the receipt holds the slot: never drawn nowhere, never marked seen unread.
+describe("Home holding an answered spare request", () => {
+  const ASK = view(0, {
+    kind: "spare-request", unseen: true, key: "ask", name: null, href: null,
+    card: { oracleId: "l", name: "Lathliss, Dragon Queen", image: null, art: null, colorIdentity: ["R"] },
+    friend: { publicId: "p1", displayName: "Colin" },
+    ask: { id: "req-1", spare: 2, copies: 1, deckName: null, daysLeft: 13 },
+  });
+  const OTHER = view(2, { key: "set-2" });
+
+  it("draws a lead the held receipt displaces as a What's new row, beside the receipt", async () => {
+    spare.answerSpareAction.mockResolvedValue({ ok: true });
+    const { container, rerender } = render(<Dashboard {...BASE} feed={chosen([OTHER], { lead: ASK, unseen: 2, on: ["spare-request", "trade-match", "new-set"] })} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Yes,/ })));
+    // The redraw: the answered ask has left the feed, and the trade match is the server's lead now, out of the list.
+    rerender(<Dashboard {...BASE} feed={chosen([OTHER], { lead: LEAD, unseen: 1 })} />);
+    const lead = container.querySelector<HTMLElement>("[data-lead-story]")!;
+    expect(lead.dataset.leadStory).toBe("spare-request");
+    expect(within(lead).getByRole("heading", { level: 3 }).textContent).toBe("You’re sparing Lathliss for Colin");
+    const list = container.querySelector<HTMLElement>("[data-whats-new]")!;
+    expect(list.querySelector('[data-feed-item="trade-match"]')).not.toBeNull();
+    expect(within(list).getByText("Colin has a spare Ghalta, Primal Hunger")).toBeTruthy();
+  });
+
+  it("before any answer, the server's lead is the lead and is not repeated in the list", () => {
+    const { container } = render(<Dashboard {...BASE} feed={chosen([OTHER], { lead: LEAD, unseen: 1 })} />);
+    expect(container.querySelector<HTMLElement>("[data-lead-story]")!.dataset.leadStory).toBe("trade-match");
+    expect(container.querySelector('[data-whats-new] [data-feed-item="trade-match"]')).toBeNull();
   });
 });

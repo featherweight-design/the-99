@@ -2,14 +2,19 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
-const marks = vi.hoisted(() => ({ seen: vi.fn(), notice: vi.fn() }));
+const marks = vi.hoisted(() => ({ seen: vi.fn(), notice: vi.fn(), asks: vi.fn(async (..._a: unknown[]): Promise<unknown[]> => []) }));
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("./prefs", async (importOriginal) => ({ ...(await importOriginal<typeof import("./prefs")>()), markFeedSeen: marks.seen }));
 vi.mock("../social/trade-match", () => ({ noticeTradeMatches: marks.notice }));
+vi.mock("../social/spare-requests", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../social/spare-requests")>()),
+  loadIncomingAsks: marks.asks,
+}));
 // The reader owns Sai in another printing: the row draws the chain's picture, the one card details opens.
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
-import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, type FeedView } from "./home";
+import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, withLeadAsk, type FeedView, type HomeFeed } from "./home";
+import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 
 const ON = { HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
@@ -198,5 +203,38 @@ describe("the feed's card lookups carry the card's colour identity", () => {
     expect(text(setCardsQuery(["sos"]))).toContain("sc.color_identity as identity");
     expect(text(preconCommandersQuery(["f"]))).toContain("pcc.color_identity as identity");
     expect(text(feedCardsQuery(["c"]))).toContain("fc.color_identity as identity");
+  });
+});
+
+describe("a spare request leading Home (spare requests PR 3d)", () => {
+  const SPARE = { ...ON, SPARE_REQUESTS_ENABLED: "true" } as NodeJS.ProcessEnv;
+  const incoming = (o: Partial<IncomingAsk> = {}): IncomingAsk => ({
+    id: "req-1", oracleId: "c1", card: { name: "Lathliss", imageUri: null }, copies: 1, deckName: "Dragons", spare: 2,
+    asker: { publicId: "p1", displayName: "Peter", commander: null }, createdAt: NOW, daysLeft: 13, ...o,
+  });
+  const lead = view({ key: "item:s", kind: "spare-request", card: { oracleId: "c1", name: "Lathliss", image: null, art: null, colorIdentity: null }, friend: { publicId: "p1", displayName: "Peter" } });
+  const feedOf = (l: FeedView | null): HomeFeed => ({ chosen: true, on: ["spare-request"], items: [], unseen: 1, lead: l });
+
+  it("attaches the lead's own ask, by card and asker", () => {
+    const out = withLeadAsk(feedOf(lead), [incoming({ id: "other", oracleId: "c2" }), incoming({ id: "x", asker: { publicId: "p2", displayName: "Ann", commander: null } }), incoming()]);
+    expect(out.chosen && out.lead?.ask).toEqual({ id: "req-1", spare: 2, copies: 1, deckName: "Dragons", daysLeft: 13 });
+  });
+
+  it("leaves the lead a line when its ask is gone or no longer offered (not among the incoming asks)", () => {
+    const out = withLeadAsk(feedOf(lead), [incoming({ oracleId: "c2" })]);
+    expect(out.chosen && out.lead?.ask).toBeUndefined();
+  });
+
+  it("reads the incoming asks only when a spare request leads", async () => {
+    marks.asks.mockClear();
+    marks.asks.mockResolvedValue([incoming()]);
+    const ask = row({ kind: "spare-request", key: "item:s", created_at: "2026-10-22T10:00:00Z", oracle_id: "c1", friend_public_id: "p1", friend_name: "Peter" });
+    const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, { feed: [ask], cards: [{ oracle_id: "c1", name: "Lathliss", image: null, art: null }] }));
+    expect(marks.asks).toHaveBeenCalledWith("u1", SPARE, NOW, expect.anything());
+    expect(feed?.chosen && feed.lead?.ask?.id).toBe("req-1");
+    marks.asks.mockClear();
+    const drop = row({ kind: "price-drop", key: "item:d", created_at: "2026-10-22T10:00:00Z", oracle_id: "c1", data: { fromCents: 2, toCents: 1 } });
+    await loadHomeFeed("u1", ON, NOW, fake({ "price-drop": "2026-10-01T00:00:00Z" }, { feed: [drop] }));
+    expect(marks.asks).not.toHaveBeenCalled();
   });
 });
