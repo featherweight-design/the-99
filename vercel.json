@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "node scripts/vercel-ignore.mjs",
   "crons": [
-    { "path": "/api/cron/account-sweep", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/account-sweep", "schedule": "*/30 * * * *" },
     { "path": "/api/cron/invite-sweep", "schedule": "17 * * * *" }
   ]
 }
