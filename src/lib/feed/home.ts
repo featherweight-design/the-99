@@ -5,7 +5,8 @@
  *
  * `loadHomeFeed` answers three ways:
  * - null: `HOME_FEED_ENABLED` is off for the reader (Home as shipped), and nothing is read;
- * - `{ chosen: false }`: every kind the reader can be offered is off, so What's new IS the opt-in (handoff call 7);
+ * - `{ chosen: false }`: What's new IS the opt-in (handoff call 7): every kind the reader can be offered is off
+ *   (`alsoOn: false`), or the reader never chose and only a default-on kind is on, with nothing yet (`alsoOn: true`);
  * - `{ chosen: true }`: the items in the window, each with the card it is drawn with, read in four catalog lookups
  *   and one ownership count over the whole list (never one per item).
  *
