@@ -3,6 +3,7 @@
 // empty state, a retry, and a way home. Built from the shared empty state and button primitives
 // rather than a layout of its own, sized as the 404 page is.
 
+import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
@@ -32,6 +33,9 @@ export function ErrorNotice({
 }) {
   useEffect(() => {
     logBoundaryError(boundary, error.digest);
+    // A server error carries a digest and was reported where it happened (`onRequestError`); only a
+    // browser-side throw is new here.
+    if (!error.digest) Sentry.captureException(error);
   }, [boundary, error]);
 
   return (

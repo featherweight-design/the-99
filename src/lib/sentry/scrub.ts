@@ -1,0 +1,58 @@
+// What leaves the app for Sentry. Errors only, and nothing about who the player is: no user, no
+// cookies, no headers, no request body (a webhook's body and signature included), no query string,
+// no exception message. A client error's message is the original and can carry a card name, a deck
+// name or a query (see `logBoundaryError`), so an event keeps its type, stack and digest tag and
+// not its words. Pure: it imports nothing from the app, so every runtime and the tests load it.
+import type { Breadcrumb, ErrorEvent } from "@sentry/nextjs";
+
+const REDACTED = "[redacted]";
+
+// A friend link and a join link are capabilities: whoever holds the token can use it. They travel as
+// a path segment, which a URL in a breadcrumb, a request or a transaction name would carry.
+const TOKEN_PATHS: RegExp[] = [/(\/friend\/)[^/?#]+/g, /(\/join\/)[^/?#]+/g];
+
+/** A URL or route name with the query and hash cut off and any link token replaced. */
+export function scrubUrl(value: string): string {
+  const cut = value.split(/[?#]/, 1)[0];
+  return TOKEN_PATHS.reduce((acc, re) => acc.replace(re, `$1${REDACTED}`), cut);
+}
+
+// Navigation and clicks say how a reader got to the error. Console, fetch and XHR breadcrumbs carry
+// the app's own log lines and request URLs, and nothing else is worth the risk.
+const KEPT_BREADCRUMBS = new Set(["navigation", "ui.click"]);
+
+export function scrubBreadcrumb(crumb: Breadcrumb): Breadcrumb | null {
+  if (!crumb.category || !KEPT_BREADCRUMBS.has(crumb.category)) return null;
+  const data: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(crumb.data ?? {})) {
+    if (key === "from" || key === "to") data[key] = typeof value === "string" ? scrubUrl(value) : REDACTED;
+  }
+  // A click's `message` is the element's selector, which is markup and not player text; it is kept
+  // only for a click, and a navigation has none.
+  return { category: crumb.category, level: crumb.level, timestamp: crumb.timestamp, data, ...(crumb.category === "ui.click" && { message: crumb.message }) };
+}
+
+export function scrubEvent(event: ErrorEvent): ErrorEvent {
+  const next: ErrorEvent = { ...event };
+  delete next.user;
+  delete next.extra;
+  delete next.server_name;
+  delete next.message;
+  delete next.logentry;
+  delete next.modules;
+  if (typeof next.transaction === "string") next.transaction = scrubUrl(next.transaction);
+  if (next.request) {
+    // Method and the path only: no data, cookies, headers, query string or env.
+    next.request = { method: next.request.method, ...(next.request.url && { url: scrubUrl(next.request.url) }) };
+  }
+  if (next.exception?.values) {
+    next.exception = {
+      ...next.exception,
+      values: next.exception.values.map((v) => ({ ...v, value: REDACTED })),
+    };
+  }
+  if (next.breadcrumbs) {
+    next.breadcrumbs = next.breadcrumbs.map(scrubBreadcrumb).filter((c): c is Breadcrumb => c !== null);
+  }
+  return next;
+}

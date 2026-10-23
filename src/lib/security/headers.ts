@@ -30,16 +30,20 @@ export function clerkFrontendHost(publishableKey: string | undefined): string | 
   }
 }
 
-/** The report-only policy. `clerkHost` is added to the script and connect sources when known. */
-export function contentSecurityPolicy(clerkHost: string | null): string {
+/**
+ * The report-only policy. `clerkHost` is added to the script and connect sources when known, and `sentryHost`
+ * (the DSN's own ingest host, `sentryIngestHost`) to the connect sources: the browser posts error events there.
+ */
+export function contentSecurityPolicy(clerkHost: string | null, sentryHost: string | null = null): string {
   const clerk = clerkHost ? [`https://${clerkHost}`] : [];
+  const sentry = sentryHost ? [`https://${sentryHost}`] : [];
   const sources = {
     "default-src": ["'self'"],
     "script-src": ["'self'", "'unsafe-inline'", ...clerk, "https://challenges.cloudflare.com"],
     "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:", "https://cards.scryfall.io", "https://svgs.scryfall.io", "https://img.clerk.com"],
     "font-src": ["'self'", "data:"],
-    "connect-src": ["'self'", ...clerk, "https://clerk-telemetry.com"],
+    "connect-src": ["'self'", ...clerk, "https://clerk-telemetry.com", ...sentry],
     "frame-src": ["https://challenges.cloudflare.com"],
     "worker-src": ["'self'", "blob:"],
     "manifest-src": ["'self'"],
@@ -60,7 +64,7 @@ export const CSP_REPORT_PATH = "/api/csp-report";
  * scanner's route. Microphone, geolocation, payment, USB and the interest cohort are denied. Every directive
  * NOT named keeps its browser default, deliberately (the app uses the clipboard, for one).
  */
-export function securityHeaders(opts: { production: boolean; clerkHost: string | null }): HeaderEntry[] {
+export function securityHeaders(opts: { production: boolean; clerkHost: string | null; sentryHost?: string | null }): HeaderEntry[] {
   const enforced: HeaderEntry[] = [
     { key: "Strict-Transport-Security", value: "max-age=31536000" },
     { key: "X-Content-Type-Options", value: "nosniff" },
@@ -70,6 +74,6 @@ export function securityHeaders(opts: { production: boolean; clerkHost: string |
   ];
   // Development serves eval'd scripts and a websocket, which would drown the reports in noise.
   return opts.production
-    ? [...enforced, { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy(opts.clerkHost) }]
+    ? [...enforced, { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy(opts.clerkHost, opts.sentryHost ?? null) }]
     : enforced;
 }

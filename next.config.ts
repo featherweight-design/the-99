@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { CLERK_JS_VERSION, CLERK_UI_VERSION } from "./src/lib/shell/clerk-scripts";
+import { sentryIngestHost } from "./src/lib/sentry/options";
 import { clerkFrontendHost, securityHeaders } from "./src/lib/security/headers";
 
 // Deliberately empty. `experimental.staleTimes.dynamic` used to live here, to
@@ -33,6 +35,7 @@ const nextConfig: NextConfig = {
     const headers = securityHeaders({
       production: process.env.NODE_ENV === "production",
       clerkHost: clerkFrontendHost(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
+      sentryHost: sentryIngestHost(process.env.NEXT_PUBLIC_SENTRY_DSN),
     });
     return [{ source: "/:path*", headers }];
   },
@@ -41,4 +44,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Error monitoring (`src/lib/sentry/`). Source maps upload at build only when SENTRY_AUTH_TOKEN, SENTRY_ORG and
+// SENTRY_PROJECT are all set (Production scope), and are deleted from the output after; a preview or a local
+// build uploads nothing. No tunnel route (it would add a public path), no telemetry to Sentry about the build.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  telemetry: false,
+  widenClientFileUpload: true,
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
+  release: { name: process.env.VERCEL_GIT_COMMIT_SHA },
+});
