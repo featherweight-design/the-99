@@ -118,7 +118,8 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     return () => clearTimeout(timer);
   }, [open, query, deckCards, search, scoped]);
 
-  // Opening the picker brings the field to the top of the visible area (K9), but only when the list would not fit
+  // Opening the picker brings the field to the middle of the visible area (Hugh, 2026-10-22: the top left more room
+  // above the keyboard than the list needs), but only when the list would not fit
   // under it there: a sticky bar and a phone keyboard would otherwise cover the list. A field that already has the
   // room stays where it is (Hugh, 2026-10-20: every `[[ ]]` press scrolled the page down, often taking the field out
   // of view). The room is the list's phone cap, or the list itself where it is taller (from `md` it has no cap, and
@@ -144,7 +145,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
       if (appScrolling()) { later = setTimeout(check, 120); return; }
       const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, el);
       const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list?.getBoundingClientRect().bottom ?? 0);
-      if (needed > floor) reveal(el, "start");
+      if (needed > floor) reveal(el, "center", undefined, () => ({ top: vv ? vv.offsetTop : 0, bottom: footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, el) }));
     };
     const moved = (e: Event) => {
       if (e.type === "pointerdown" && e.target instanceof Node && el.contains(e.target)) return;

@@ -192,7 +192,7 @@ describe("adding", () => {
     expect(reveal).not.toHaveBeenCalled();
   });
 
-  it("brings the field to the top when the open list itself runs past the window, though the phone cap would fit", async () => {
+  it("brings the field to the middle of the visible area when the open list itself runs past the window, though the phone cap would fit", async () => {
     vi.mocked(reveal).mockClear();
     mount(view([note("a", "x")]));
     const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
@@ -207,13 +207,13 @@ describe("adding", () => {
     try {
       click(screen.getByRole("button", { name: "Insert a card tag" }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
-      expect(reveal).toHaveBeenCalledWith(field, "start");
+      expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
     } finally {
       HTMLElement.prototype.getBoundingClientRect = own;
     }
   });
 
-  it("brings the field to the top when the list's room would end under a bar pinned over the window's foot", async () => {
+  it("brings the field to the middle of the visible area when the list's room would end under a bar pinned over the window's foot", async () => {
     vi.mocked(reveal).mockClear();
     const bar = document.createElement("nav");
     bar.setAttribute("data-foot-bar", "");
@@ -227,7 +227,7 @@ describe("adding", () => {
       at(field, window.innerHeight - 306);
       click(screen.getByRole("button", { name: "Insert a card tag" }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
-      expect(reveal).toHaveBeenCalledWith(field, "start");
+      expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
     } finally {
       bar.remove();
     }
@@ -247,7 +247,7 @@ describe("adding", () => {
     expect(reveal).not.toHaveBeenCalled();
     await new Promise((done) => setTimeout(done, 200));
     expect(reveal).toHaveBeenCalledTimes(1);
-    expect(reveal).toHaveBeenCalledWith(field, "start");
+    expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
   });
 
   it("never starts a reveal again once the reader has moved the page themselves", async () => {
@@ -286,20 +286,37 @@ describe("adding", () => {
       // An autosized box grows by pasted blank lines: its foot drops to 100px above the window's, the list unchanged.
       field.getBoundingClientRect = () => ({ top: 200, bottom: window.innerHeight - 100, left: 0, right: 300, width: 300, height: window.innerHeight - 300, x: 0, y: 200, toJSON: () => ({}) });
       for (const o of observed) if (o.els.includes(field)) o.cb();
-      expect(reveal).toHaveBeenCalledWith(field, "start");
+      expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
     } finally {
       vi.unstubAllGlobals();
     }
   });
 
-  it("brings the field to the top when the open list would not fit under it", async () => {
+  it("brings the field to the middle of the visible area when the open list would not fit under it", async () => {
     vi.mocked(reveal).mockClear();
     mount(view([note("a", "x")]));
     const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
     at(field, window.innerHeight - 100);
     click(screen.getByRole("button", { name: "Insert a card tag" }));
     expect(await screen.findByText(/Type a card name/)).toBeTruthy();
-    expect(reveal).toHaveBeenCalledWith(field, "start");
+    expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
+  });
+
+  it("names the visible band to centre in: the visual viewport, a keyboard shrinking it", async () => {
+    vi.mocked(reveal).mockClear();
+    const vv = { offsetTop: 10, height: 300, addEventListener() {}, removeEventListener() {} };
+    Object.defineProperty(window, "visualViewport", { configurable: true, value: vv });
+    try {
+      mount(view([note("a", "x")]));
+      const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+      at(field, 280);
+      click(screen.getByRole("button", { name: "Insert a card tag" }));
+      expect(await screen.findByText(/Type a card name/)).toBeTruthy();
+      const band = vi.mocked(reveal).mock.calls.at(-1)?.[3];
+      expect(band?.()).toEqual({ top: 10, bottom: 310 });
+    } finally {
+      Object.defineProperty(window, "visualViewport", { configurable: true, value: undefined });
+    }
   });
 
   it("shows any card after the deck's, and a refused search in place", async () => {
