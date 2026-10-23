@@ -96,8 +96,8 @@ describe("All features", () => {
     expect(ALL_FEATURES_RAISES.has("SPARE_REQUESTS_ENABLED")).toBe(true);
   });
 
-  it("leaves strategy focus off until Design's handoff gives it a surface", () => {
-    expect(ALL_FEATURES_RAISES.has("STRATEGY_FOCUS_ENABLED")).toBe(false);
+  it("raises strategy focus now its line has closed, its About entry included", () => {
+    expect(ALL_FEATURES_RAISES.has("STRATEGY_FOCUS_ENABLED")).toBe(true);
   });
 
   it("raises a switch added later: the set is the registry's, not a list kept with the row", () => {

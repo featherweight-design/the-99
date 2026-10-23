@@ -157,7 +157,9 @@ export type AboutSwitch =
   // Spare requests (close-out): `friend-spares`' variant, which says a spare is view only while it is off.
   | 'SPARE_REQUESTS_ENABLED'
   // Combos one piece away (combos-close close-out): its own entry, and combo-awareness's card-details key.
-  | 'NEAR_COMBOS_ENABLED';
+  | 'NEAR_COMBOS_ENABLED'
+  // Strategy focus (handoff design_handoff_the99_strategy_focus): the strategy ring on Analysis and its focus pick.
+  | 'STRATEGY_FOCUS_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
