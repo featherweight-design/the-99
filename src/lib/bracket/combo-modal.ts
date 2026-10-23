@@ -25,7 +25,13 @@ export type ComboModal = {
   prerequisites: string | null;
 };
 
-export function comboModal(combo: ComboRef): ComboModal {
+/** What `comboModal` reads off a combo: a `ComboRef`, or any record carrying the same stored fields. */
+export type ComboModalInput = Pick<
+  ComboRef,
+  "variantId" | "cards" | "produces" | "manaValueNeeded" | "manaNeeded" | "steps" | "notablePrerequisites"
+>;
+
+export function comboModal(combo: ComboRef | ComboModalInput): ComboModal {
   return {
     variantId: combo.variantId,
     cards: combo.cards,
@@ -42,11 +48,22 @@ export function comboModal(combo: ComboRef): ComboModal {
   };
 }
 
-function readMana(combo: ComboRef): ComboModal["mana"] {
+function readMana(combo: ComboModalInput): ComboModal["mana"] {
   const value = combo.manaValueNeeded;
   // `== null` and not `!value`: zero is the FREE reading, and a truthiness test would file the
   // 59% case under "unknown" — losing exactly the fact worth drawing.
   if (value == null) return { kind: "unknown" };
   if (value === 0) return { kind: "free" };
   return { kind: "costs", pips: combo.manaNeeded, value };
+}
+
+/**
+ * A combo one piece away (`loadNearCombos`) as the combo body draws it (combos close UI-2): its
+ * pieces, the missing one included, are the plates, and every other field is the same stored one a
+ * `ComboRef` carries, read by `comboModal` itself so the steps split and the mana reads one way.
+ */
+export function nearComboModal(
+  combo: Omit<ComboModalInput, "cards"> & { pieces: readonly { oracleId: string; name: string }[] },
+): ComboModal {
+  return comboModal({ ...combo, cards: combo.pieces.map(({ oracleId, name }) => ({ oracleId, name })) });
 }

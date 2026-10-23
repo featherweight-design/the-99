@@ -1,5 +1,5 @@
 {
-  "feature": "Combos one piece away (combos-close handoff): the deck page segment and its list sheet",
+  "feature": "Combos one piece away (combos-close handoff): the deck page segment, its list sheet and the combo pushed inside it",
   "note": "Needs NEAR_COMBOS_ENABLED='true' on the server and three decks the signed-in account owns: COMBOS_MANY_DECK (many two-card near combos, a piece held in several decks; local-dev HD - Brago d3f9ccb4-8ed9-47e1-8b68-9b6fcd4bc85c), COMBOS_ONE_DECK (exactly one; HD -Thorin bc4f48f5-af6b-424a-9f1f-6cd9b44f9809) and COMBOS_NONE_DECK (none; HD - Soldiers 8a32d0d2-5fb8-4142-9901-b3e391c0714a).",
   "clearAbout": true,
   "widths": [
@@ -77,6 +77,46 @@
           "goto": "/decks/${COMBOS_NONE_DECK}",
           "wait": "[role=tablist]",
           "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "detail-spare",
+      "label": "/decks/[id] many: a spare combo pushed inside the sheet (\u2190 N combos, plates, steps, Spellbook and Add)",
+      "view": "src/components/decks/combos-close-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-combos-close]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-combos-close]",
+          "settle": 900
+        },
+        {
+          "click": "[data-where=spare] [data-combo-press] >> nth=0",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "detail-buy",
+      "label": "/decks/[id] many: a combo to buy pushed (the missing plate's price and outline)",
+      "view": "src/components/decks/combos-close-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-combos-close]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-combos-close]",
+          "settle": 900
+        },
+        {
+          "click": "[data-where=buy] [data-combo-press] >> nth=0",
+          "settle": 900
         }
       ]
     }

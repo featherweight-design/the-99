@@ -26,7 +26,7 @@ import { DecklistRow } from "./decklist-row";
 import { HoverPreviewProvider } from "./hover-preview";
 import { MutationError } from "./mutation-error";
 import { lineSentence, passBuyCount, usePassUndo } from "./provenance-line";
-import { ModalChrome } from "./receipt-modal";
+import { ModalChrome, type SheetBack } from "./receipt-modal";
 
 const ledger = topOffCopy.ledger;
 
@@ -197,6 +197,8 @@ export function SheetFrame({
   width = 600,
   fit = false,
   doneLabel = ledger.sheetDone,
+  back,
+  backLabel,
   children,
 }: {
   eyebrow: string;
@@ -208,10 +210,15 @@ export function SheetFrame({
   /** A line of words in Undo's place when the sheet has no Undo: centred above Done at 390, at the left where Undo
    *  stands from md. Not a press. */
   note?: string;
-  width?: 600 | 900;
+  /** 760 is a body pushed inside the 900 list (combos close, `How-It-Works.dc.html` `.md`). */
+  width?: 600 | 760 | 900;
   /** The phone sheet sizes to its rows (`ModalChrome`'s `fit`). */
   fit?: boolean;
   doneLabel?: string;
+  /** A body pushed inside the sheet: the header is its way back (`ModalChrome`'s `back`), and Done goes. */
+  back?: SheetBack;
+  /** What a card stacked on the sheet calls it, where that is not the eyebrow (a pushed body's own name). */
+  backLabel?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -221,13 +228,14 @@ export function SheetFrame({
       lead={lead}
       // Fixed on the eyebrow: a title that moved with the count would re-register the sheet under
       // an open card. The card's close reads `← 1st top-off` at both widths.
-      backLabel={eyebrow}
+      backLabel={backLabel ?? eyebrow}
       closeLabel={closeLabel}
       onClose={onClose}
       width={width}
       fit={fit}
       ground="var(--surface)"
-      foot={
+      back={back}
+      foot={back ? undefined : (
         <div
           className={`flex items-center gap-[8px] px-[14px] pt-[12px] pb-[26px] md:px-[16px] md:pb-[14px] [border-top:1px_solid_var(--border)] ${
             note ? "flex-col md:flex-row" : "flex-wrap"
@@ -239,7 +247,7 @@ export function SheetFrame({
             {doneLabel}
           </PrimaryButton>
         </div>
-      }
+      )}
     >
       {children}
     </ModalChrome>

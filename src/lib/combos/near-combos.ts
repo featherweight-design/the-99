@@ -4,6 +4,8 @@ import { cards, deckCards, decks, spellbookVariantCards, spellbookVariants } fro
 import { holdsCopy, type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { deckIdentity } from "../decks/format";
+import { cardTypeGroup, type DeckDetailCard } from "../decks/grouping";
+import { classifyRoles } from "../recs/roles";
 import { priceQualifier, priceState } from "../decks/price";
 import type { PriceRead } from "../decks/price-query";
 import { cheapestNow, loadPrices } from "../decks/price-query";
@@ -58,11 +60,18 @@ export function holdingDecks(availability: Pick<Availability, "claims">): Holdin
 
 export type NearComboPiece = { oracleId: string; name: string; held: boolean };
 
+/**
+ * The missing card as the catalog has it, for the combo detail (combos close UI-2): its plate's art,
+ * and the row Add predicts into the decklist before the server answers (`useAddOptimisticCard`).
+ * Null when the catalog holds no row for it.
+ */
+export type NearComboCard = Pick<DeckDetailCard, "typeLine" | "cardTypeGroup" | "role" | "cmc" | "manaCost" | "imageUri">;
+
 export type NearCombo = {
   variantId: string;
   /** Every piece, the missing one included, by name. */
   pieces: NearComboPiece[];
-  missing: { oracleId: string; name: string; where: MissingPieceWhere };
+  missing: { oracleId: string; name: string; where: MissingPieceWhere; card: NearComboCard | null };
   produces: string[];
   /** Spellbook's steps, newline-separated. */
   steps: string | null;
@@ -215,10 +224,34 @@ export async function loadNearCombos(args: {
   if (candidates.length === 0) return EMPTY;
 
   const missingIds = [...new Set(candidates.map((c) => c.missing.oracleId))];
-  const [availability, prices] = await Promise.all([
+  const [availability, prices, catalog] = await Promise.all([
     loadPieceAvailability(args.userId, missingIds, { excludeDeckId: args.deckId, env: args.env }),
     loadPrices(missingIds),
+    db
+      .select({
+        oracleId: cards.oracleId,
+        typeLine: cards.typeLine,
+        oracleText: cards.oracleText,
+        keywords: cards.keywords,
+        cmc: cards.cmc,
+        manaCost: cards.manaCost,
+        imageUri: cards.imageUri,
+      })
+      .from(cards)
+      .where(inArray(cards.oracleId, missingIds)),
   ]);
+  const cardOf = (oracleId: string): NearComboCard | null => {
+    const c = catalog.find((r) => r.oracleId === oracleId);
+    if (!c) return null;
+    return {
+      typeLine: c.typeLine,
+      cardTypeGroup: cardTypeGroup(c.typeLine),
+      role: classifyRoles({ typeLine: c.typeLine, oracleText: c.oracleText, keywords: c.keywords })[0] ?? "other",
+      cmc: c.cmc,
+      manaCost: c.manaCost,
+      imageUri: c.imageUri,
+    };
+  };
   const placed: NearCombo[] = candidates.map((c) => ({
     ...c,
     missing: {
@@ -229,6 +262,7 @@ export async function loadNearCombos(args: {
         priceState(prices.prices.get(c.missing.oracleId), prices.newestAsOf) === "soldOut",
         qualifierOf(prices, c.missing.oracleId),
       ),
+      card: cardOf(c.missing.oracleId),
     },
   }));
   return rankNearCombos(placed, args.cap ?? NEAR_COMBOS_CAP);

@@ -98,6 +98,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLedger } from "./provenance-line";
 import { PassSheet, type PassSheetTarget } from "./pass-sheet";
 import { CombosCloseSheet } from "./combos-close-sheet";
+import { useDeckTitleFocusOnClose } from "./deck-title-focus";
 import type { NearCombos } from "../../lib/combos/near-combos";
 // Type only, for the same reason `games.ts` is imported as one: the module
 // reaches for the database.
@@ -471,11 +472,12 @@ export function BuilderShell({
   // it. Adjusted during render, so the stale sheet never paints.
   if (passSheet?.kind === "pass" && !fillPasses.some((p) => p.id === passSheet.passId)) setPassSheet(null);
 
-  // Combos one piece away, the list (combos close), open for the visit. It leaves with its segment:
-  // a refresh that leaves none (the last piece added) closes it, and there is no empty sheet (R1b).
+  // Combos one piece away, the list (combos close), open for the visit.
   const nearComboCount = nearCombos?.total ?? 0;
   const [combosSheet, setCombosSheet] = useState(false);
-  if (combosSheet && nearComboCount === 0) setCombosSheet(false);
+  useDeckTitleFocusOnClose(combosSheet);
+  // With none left the sheet closes itself, once the reader is back on its list: never from under a
+  // combo the reader is reading (or a card stacked on it).
 
   // The top-off list is open. At phone widths its commit bar takes the bottom
   // slot, so the quick-add dock hides — one bottom slot, one occupant (state
@@ -2392,11 +2394,13 @@ export function BuilderShell({
               </LockCardsProvider>
             </PendingChangeProvider>
           )}
-          {combosSheet && nearCombos && nearComboCount > 0 && (
+          {combosSheet && nearCombos && (
             <CombosCloseSheet
               nearCombos={nearCombos}
+              deckId={deck.id}
               deckName={deck.name}
               commanderOracleIds={[deck.commander.oracleId, ...(deck.partner ? [deck.partner.oracleId] : [])]}
+              art={findingArt}
               onClose={() => setCombosSheet(false)}
             />
           )}
