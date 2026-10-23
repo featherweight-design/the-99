@@ -40,12 +40,18 @@ export function payloadFor(message: PushMessage): string {
   return body(0);
 }
 
+/** How long one send may wait for the push service before it counts as a transient failure. */
+export const SEND_TIMEOUT_MS = 10_000;
+
 export const sendWebPush: PushSender = async (target, payload, config) => {
   try {
     await webpush.sendNotification({ endpoint: target.endpoint, keys: { p256dh: target.p256dh, auth: target.auth } }, payload, {
       vapidDetails: { subject: config.subject, publicKey: config.publicKey, privateKey: config.privateKey },
       TTL: TTL_SECONDS,
       urgency: "normal",
+      // A push service that takes the connection and never answers must not stall the run: every later device and reader
+      // waits on this await. A timeout rejects into the transient path below and the row retries next run.
+      timeout: SEND_TIMEOUT_MS,
       // No `topic`: the push service would keep ONE undelivered message per topic and drop the rest, and the flush has
       // already recorded each as sent. The device's own `tag` replaces a notification with its successor when it shows them.
     });

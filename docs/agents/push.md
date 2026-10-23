@@ -69,8 +69,8 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   send that succeeded is recorded at once, so a later failure never repeats it.
 - **Send** (`send.ts`, the only caller of `web-push`, exact pin 3.6.7): VAPID-signed, TTL one day, NO `topic` (the push service keeps
   one undelivered message per topic and would drop the rest of a burst the flush already recorded as sent). The device's own `tag`
-  does the replacing: the kind, except a spare request, which is tagged by its own key so two asks never replace each other. A 404 or 410 deletes the device; any other failure is transient and leaves the
-  rows for the next run. Counts only are logged: never an endpoint, a key or a word.
+  does the replacing: the kind, except a spare request, which is tagged by its own key so two asks never replace each other. A 404 or 410 deletes the device; any other failure, a send that waits
+  over 10 seconds included (`SEND_TIMEOUT_MS`), is transient and leaves the rows for the next run. Counts only are logged: never an endpoint, a key or a word.
 - Rows a week old are pruned. Proof: `probe:push-flush` (a fake sender against a real database).
 - Not yet: the service worker's `push` and `notificationclick` handlers (PR 3d), so nothing a device receives is shown yet; and the
   catalog kinds (PR 3c).

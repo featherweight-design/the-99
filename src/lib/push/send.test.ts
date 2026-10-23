@@ -5,7 +5,7 @@ vi.mock("web-push", () => ({ default: { sendNotification: m.send } }));
 
 import type { PushConfig } from "./config";
 import type { PushMessage } from "./message";
-import { MAX_PAYLOAD_BYTES, TTL_SECONDS, payloadFor, sendWebPush } from "./send";
+import { MAX_PAYLOAD_BYTES, SEND_TIMEOUT_MS, TTL_SECONDS, payloadFor, sendWebPush } from "./send";
 
 const config: PushConfig = { publicKey: "pub", privateKey: "priv", subject: "mailto:a@b.co" };
 const target = { endpoint: "https://fcm.googleapis.com/x", p256dh: "p", auth: "a" };
@@ -39,7 +39,7 @@ describe("sendWebPush", () => {
     expect(await sendWebPush(target, "{}", config)).toEqual({ ok: true });
     expect(m.send).toHaveBeenCalledWith(
       { endpoint: target.endpoint, keys: { p256dh: "p", auth: "a" } }, "{}",
-      { vapidDetails: { subject: config.subject, publicKey: "pub", privateKey: "priv" }, TTL: TTL_SECONDS, urgency: "normal" },
+      { vapidDetails: { subject: config.subject, publicKey: "pub", privateKey: "priv" }, TTL: TTL_SECONDS, urgency: "normal", timeout: SEND_TIMEOUT_MS },
     );
   });
 
