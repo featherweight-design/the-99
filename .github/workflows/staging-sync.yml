@@ -98,9 +98,18 @@ jobs:
               echo "staging-deployed is already at \`$TARGET\`: nothing to wait for." >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
-          else
-            deployed=""
           fi
+          # Diff from what staging LAST DEPLOYED, the base Vercel's ignore step uses (VERCEL_GIT_PREVIOUS_SHA), never
+          # from the marker, which a timed-out run can leave behind a deploy that later succeeded. The newest
+          # deployment whose latest status is success; none, or one that is not an ancestor of TARGET, means wait.
+          deployed=""
+          for id in $(gh api -X GET "repos/$GITHUB_REPOSITORY/deployments" -f environment="$DEPLOY_ENV" -f per_page=30 --jq '.[].id'); do
+            if [ "$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0].state // ""')" = "success" ]; then
+              deployed=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id" --jq '.sha')
+              break
+            fi
+          done
+          if [ -n "$deployed" ] && ! git merge-base --is-ancestor "$deployed" "$TARGET"; then deployed=""; fi
           # The ignore step's own diff and rule (`diffArgs`: -z and no renames, so a non-ASCII path is not quoted out
           # of its prefix), against HEAD, which is the TARGET this run checked out.
           builds=$(DEPLOYED="$deployed" node --input-type=module -e '
