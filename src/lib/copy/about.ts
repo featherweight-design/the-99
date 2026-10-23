@@ -154,7 +154,7 @@ export type AboutSwitch =
   | 'COMMANDERS_PLACE_ENABLED'
   // Friend decks (close-out): the friends key's privacy sentence follows it. Its own entry is deferred (READINESS G6).
   | 'FRIEND_DECKS_ENABLED'
-  // Spare requests (close-out): caption lines on `friend-spares`, which says a spare is view only while it is off.
+  // Spare requests (close-out): `friend-spares`' variant, which says a spare is view only while it is off.
   | 'SPARE_REQUESTS_ENABLED';
 
 /**

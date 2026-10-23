@@ -100,7 +100,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   COMMANDERS_PLACE_ENABLED: commandersPlaceEnabled,
   // Friend decks (close-out): a KEY line only, swapping the friends key's privacy sentence. Already needs SOCIAL_FRIENDS_ENABLED.
   FRIEND_DECKS_ENABLED: friendDecksEnabled,
-  // Spare requests (close-out): lines on `friend-spares` only. Already needs SOCIAL_FRIENDS_ENABLED.
+  // Spare requests (close-out): `friend-spares`' variant only. Already needs SOCIAL_FRIENDS_ENABLED.
   SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
 };
 

@@ -1039,14 +1039,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck’s Shopping filter',
     width: 'plate',
     caption:
-      'Before you buy a card, check whether a friend has one sitting idle. On a deck’s “Shopping” list, a card a friend can spare gets the friends mark beside its price. Press it to see who has one, the pod they share it with, and how many.\n\nA spare is a copy none of their decks uses, drafts included. It’s view only, so the trade happens at the table. Press “Ask” beside a friend to ask for one, and they answer yes or no in “Friends”. A request with no answer lapses after 14 days, and the trade itself still happens at the table.\n\nYour own spares stay private until you tick “Share my spares with this pod” on one of your pods in “Friends”.',
-    // Spare requests (close-out, d9's ruling (a)): with requests on, the view-only sentence is false, so it gives way to
-    // the ask and its answer. Switched lines move no ABOUT_VERSION (the rule on it in about.ts).
-    captionLineSwitches: {
-      ' It’s view only, so the trade happens at the table.': '!SPARE_REQUESTS_ENABLED',
-      ' Press “Ask” beside a friend to ask for one, and they answer yes or no in “Friends”. A request with no answer lapses after 14 days, and the trade itself still happens at the table.':
-        'SPARE_REQUESTS_ENABLED',
-    },
+      'Before you buy a card, check whether a friend has one sitting idle. On a deck’s “Shopping” list, a card a friend can spare gets the friends mark beside its price. Press it to see who has one, the pod they share it with, and how many.\n\nA spare is a copy none of their decks uses, drafts included. It’s view only, so the trade happens at the table.\n\nYour own spares stay private until you tick “Share my spares with this pod” on one of your pods in “Friends”.',
     keys: [
       'You only see spares from friends who share them with a pod you’re both in.',
       'When cheaper stand-ins exist too, the same window opens as “Before you buy”, friends first.',
@@ -1056,6 +1049,22 @@ export const aboutEntries: readonly AboutEntry[] = [
     keySwitches: {
       'When cheaper stand-ins exist too, the same window opens as “Before you buy”, friends first.': 'SWAP_TOOLS_ENABLED',
       'The same mark shows on the cart for all your decks.': 'ALL_DECKS_CART_ENABLED',
+    },
+    // Spare requests (close-out): with requests on, the view-only sentence is false, so the entry reads this form, which
+    // asks and answers instead. A variant, not line switches, so turning the switch on ANNOUNCES it (seen by
+    // `friend-spares@SPARE_REQUESTS_ENABLED`) with no ABOUT_VERSION bump. The keys are the entry's own; `keySwitches`
+    // still applies to them.
+    variant: {
+      switch: 'SPARE_REQUESTS_ENABLED',
+      title: 'When a friend has a spare',
+      caption:
+        'Before you buy a card, check whether a friend has one sitting idle. On a deck’s “Shopping” list, a card a friend can spare gets the friends mark beside its price. Press it to see who has one, the pod they share it with, and how many.\n\nA spare is a copy none of their decks uses, drafts included. Press “Ask” beside a friend to ask for one, and they answer yes or no in “Friends”. A request with no answer lapses after 14 days, and the trade itself still happens at the table.\n\nYour own spares stay private until you tick “Share my spares with this pod” on one of your pods in “Friends”.',
+      keys: [
+        'You only see spares from friends who share them with a pod you’re both in.',
+        'When cheaper stand-ins exist too, the same window opens as “Before you buy”, friends first.',
+        'A spare changes nothing: no price, no cart, and no card moves into your deck.',
+        'The same mark shows on the cart for all your decks.',
+      ],
     },
     marksPending: true,
     since: 14,
