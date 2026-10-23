@@ -47,7 +47,7 @@ import { refundsCredit } from "../../lib/tuning/refund";
 import { retryable } from "../../lib/tuning/retry";
 import { loadOwnedCandidates } from "../../lib/tuning/owned-candidates";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
-import { loadFocusCandidates, withFocusCandidates } from "../../lib/strategy/candidates";
+import { loadFocusCandidates, planFocusCandidates } from "../../lib/strategy/candidates";
 import { focusPack, loadAddCards, loadRunStrategy, strategyChips } from "../../lib/strategy/run";
 
 /**
@@ -287,25 +287,24 @@ export async function runTuning(
           inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits, env,
         })
         : undefined;
-      const ownedNone = ownedCandidates !== undefined && ownedCandidates.length === 0;
+      // The cards the run could add toward the focus (plan 4c). On an owned-only run they are read under its limits
+      // before "nothing owned fits" is decided, and join the shortlist (`planFocusCandidates`).
+      const focusPlan = focusRun
+        ? await planFocusCandidates(limits, ownedCandidates, (l) => loadFocusCandidates({
+          userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
+          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits: l, focus: focusRun.key, env,
+          stapleCondition: profile.skeleton.condition, roleBasis: profile.skeleton.roleBasis ?? "classifier",
+        }))
+        : null;
+      const shortlist = focusPlan ? focusPlan.shortlist : ownedCandidates;
+      const ownedNone = focusPlan ? focusPlan.ownedNone : ownedCandidates !== undefined && ownedCandidates.length === 0;
       const pack = buildEvidencePack({
         profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), notes,
         limits: ownedNone ? { ...limits, ownedOnly: false } : limits,
-        ownedCandidates: ownedNone ? undefined : ownedCandidates,
+        ownedCandidates: ownedNone ? undefined : shortlist,
         ownedNone,
       });
-      // The cards the run could add toward the focus (plan 4c), under the limits the pack states: an owned-only run
-      // with nothing owned that fits asks for cards to buy, so its candidates are buyable too.
-      if (focusRun) {
-        const candidates = await loadFocusCandidates({
-          userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
-          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits: pack.limits, focus: focusRun.key, env,
-          stapleCondition: profile.skeleton.condition, roleBasis: profile.skeleton.roleBasis ?? "classifier",
-        });
-        pack.focus = focusPack(focusRun, candidates);
-        // Owned-only: every addition must come from the shortlist, so an owned focus candidate joins it.
-        if (pack.limits.ownedOnly && pack.ownedCandidates) pack.ownedCandidates = withFocusCandidates(pack.ownedCandidates, candidates);
-      }
+      if (focusRun && focusPlan) pack.focus = focusPack(focusRun, focusPlan.candidates);
       const { system, user } = buildPrompt(pack);
       // One ask, and at most one more when the first comes back with nothing to show (a degenerate answer, or
       // every suggestion dropped: model tiering saw 1 in 24 Sonnet 5.5 answers be one word of "skip"). The

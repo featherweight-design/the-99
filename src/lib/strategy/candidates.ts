@@ -136,6 +136,27 @@ export function withFocusCandidates<T extends { oracleId: string; name: string; 
   return [...shortlist, ...candidates.filter((c) => !held.has(c.oracleId)).map(({ oracleId, name, typeLine }) => ({ oracleId, name, typeLine }))];
 }
 
+type Limits = CandidateArgs["limits"];
+type Listed = { oracleId: string; name: string; typeLine: string };
+
+/**
+ * A focus run's candidates and the owned shortlist the prompt states, decided together (review round 2): an owned-only
+ * run reads its focus candidates under its own limits FIRST, so an owned, free, on-focus card the commander's list lacks
+ * still counts as something owned that fits. Only when the shortlist and those candidates are both empty does the run
+ * fall back to cards to buy (`ownedNone`), and its candidates are then read without the owned rule.
+ */
+export async function planFocusCandidates(
+  limits: Limits,
+  shortlist: readonly Listed[] | undefined,
+  load: (limits: Limits) => Promise<FocusCandidate[]>,
+): Promise<{ candidates: FocusCandidate[]; shortlist: Listed[] | undefined; ownedNone: boolean }> {
+  if (!limits.ownedOnly) return { candidates: await load(limits), shortlist: shortlist ? [...shortlist] : undefined, ownedNone: false };
+  const owned = await load(limits);
+  const merged = withFocusCandidates(shortlist ?? [], owned);
+  if (merged.length > 0) return { candidates: owned, shortlist: merged, ownedNone: false };
+  return { candidates: await load({ ...limits, ownedOnly: false }), shortlist: undefined, ownedNone: true };
+}
+
 /**
  * The focus candidates for one run, at most `max`, or none for a deck with no commander. `env` is the reader's resolved
  * switches, for the claim model's free-copy read on an owned-only run.

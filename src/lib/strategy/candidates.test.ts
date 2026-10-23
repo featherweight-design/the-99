@@ -6,7 +6,7 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn(async ()
 vi.mock("../decks/price-query", () => ({ loadPrices: vi.fn(async () => ({ prices: prices.map, newestAsOf: prices.newestAsOf })) }));
 
 import { db } from "../../db";
-import { candidateQuery, FOCUS_CANDIDATES_MAX, loadFocusCandidates, rankCandidates, withFocusCandidates } from "./candidates";
+import { candidateQuery, FOCUS_CANDIDATES_MAX, loadFocusCandidates, planFocusCandidates, rankCandidates, withFocusCandidates } from "./candidates";
 
 const args = {
   userId: "u1",
@@ -116,5 +116,27 @@ describe("withFocusCandidates", () => {
       { oracleId: "staple", name: "Staple", typeLine: "Artifact", roles: ["ramp"] },
     ];
     expect(withFocusCandidates(shortlist, candidates).map((c) => c.oracleId)).toEqual(["a", "b", "staple"]);
+  });
+});
+
+describe("planFocusCandidates", () => {
+  type Limits = Parameters<typeof planFocusCandidates>[0];
+  const limits: Limits = { capCents: null, sets: [], ownedOnly: true };
+  const staple = { oracleId: "staple", name: "Staple", typeLine: "Artifact", roles: [] };
+  const buyable = { oracleId: "buy", name: "Buy", typeLine: "Artifact", roles: [] };
+  const load = (l: Limits) => Promise.resolve(l.ownedOnly ? [staple] : [buyable]);
+
+  // Review round 2: an empty commander shortlist with an owned, free, on-focus staple is not "nothing owned fits".
+  it("keeps an owned-only run owned when only a focus candidate fits", async () => {
+    expect(await planFocusCandidates(limits, [], load)).toEqual({ candidates: [staple], shortlist: [{ oracleId: "staple", name: "Staple", typeLine: "Artifact" }], ownedNone: false });
+  });
+
+  it("falls back to cards to buy only when the shortlist and the owned candidates are both empty", async () => {
+    const none = (l: Limits) => Promise.resolve(l.ownedOnly ? [] : [buyable]);
+    expect(await planFocusCandidates(limits, [], none)).toEqual({ candidates: [buyable], shortlist: undefined, ownedNone: true });
+  });
+
+  it("reads an ordinary run's candidates under its own limits and leaves the shortlist alone", async () => {
+    expect(await planFocusCandidates({ ...limits, ownedOnly: false }, undefined, load)).toEqual({ candidates: [buyable], shortlist: undefined, ownedNone: false });
   });
 });
