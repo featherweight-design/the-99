@@ -131,6 +131,8 @@ export function summariseNeon({ project, branches, endpoints }, now) {
  */
 export function neonWeek(current, previous) {
   if (!previous || previous.month !== current.month) return null;
+  // A snapshot with a counter or time that cannot be read is no snapshot: skip the comparison, never subtract NaN.
+  if (![previous.computeSeconds, previous.transferBytes, Date.parse(previous.at)].every(Number.isFinite)) return null;
   const days = (Date.parse(current.at) - Date.parse(previous.at)) / 86_400_000;
   if (!(days >= 1) || current.computeSeconds < previous.computeSeconds || current.transferBytes < previous.transferBytes) return null;
   const k = 7 / days;

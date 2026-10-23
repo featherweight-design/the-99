@@ -92,6 +92,14 @@ describe("neonWeek", () => {
     expect(half.days).toBeCloseTo(3.5);
     expect(half.computeCuHours).toBeCloseTo(100);
   });
+  it("makes no comparison from a snapshot whose counters or time cannot be read", () => {
+    const cur = snap("2026-10-23T00:00:00Z", 5, 1) as never;
+    const old = snap("2026-10-16T00:00:00Z", 1, 1);
+    expect(neonWeek(cur, { ...old, computeSeconds: undefined } as never)).toBeNull();
+    expect(neonWeek(cur, { ...old, transferBytes: "x" } as never)).toBeNull();
+    expect(neonWeek(cur, { ...old, at: "yesterday-ish", month: "2026-10" } as never)).toBeNull();
+    expect(neonWeek(cur, {} as never)).toBeNull();
+  });
   it("makes no comparison without a snapshot, within a day, across a month, or when a counter went down", () => {
     const cur = snap("2026-11-02T00:00:00Z", 10, 1) as never;
     expect(neonWeek(cur, null)).toBeNull();
