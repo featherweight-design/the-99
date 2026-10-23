@@ -53,7 +53,7 @@ describe("splitWeeks", () => {
 const neonRaw = (over: Record<string, unknown> = {}, endpoints: unknown[] = []) => ({
   project: { compute_time_seconds: 3600 * 100, data_transfer_bytes: 50e9 },
   branches: [
-    { id: "br-a", name: "production", compute_time_seconds: 3600 * 60, data_transfer_bytes: 10e9, logical_size: 1.3e9 },
+    { id: "br-noisy-violet-a6vw4ess", name: "production", compute_time_seconds: 3600 * 60, data_transfer_bytes: 10e9, logical_size: 1.3e9 },
     { id: "br-b", name: "scratch-x", compute_time_seconds: 10, data_transfer_bytes: 1, logical_size: 0.8e9 },
   ],
   endpoints,
@@ -63,10 +63,18 @@ const neonRaw = (over: Record<string, unknown> = {}, endpoints: unknown[] = []) 
 describe("summariseNeon", () => {
   it("lists every scratch branch with its compute ceiling, and only scratch branches", () => {
     const s = summariseNeon(neonRaw({}, [
-      { branch_id: "br-a", autoscaling_limit_max_cu: 1 }, { branch_id: "br-b", autoscaling_limit_max_cu: 1 },
+      { branch_id: "br-noisy-violet-a6vw4ess", autoscaling_limit_max_cu: 1 }, { branch_id: "br-b", autoscaling_limit_max_cu: 1 },
     ]) as never, new Date("2026-10-23T00:00:00Z"));
     expect(s.scratchEndpoints).toEqual([{ branch: "scratch-x", maxCu: 1 }]);
     expect(s.branchCount).toBe(2);
+  });
+  it("treats a branch as scratch by id, not by name, so cost-probe without the prefix is caught", () => {
+    const raw = neonRaw({ branches: [
+      { id: "br-noisy-violet-a6vw4ess", name: "production", compute_time_seconds: 1, data_transfer_bytes: 1, logical_size: 1 },
+      { id: "br-zzz", name: "cost-probe", compute_time_seconds: 1, data_transfer_bytes: 1, logical_size: 1 },
+    ] }, [{ branch_id: "br-zzz", autoscaling_limit_max_cu: 1 }, { branch_id: "br-patient-hall-a6nbonvo", autoscaling_limit_max_cu: 1 }]);
+    const s = summariseNeon(raw as never, new Date("2026-10-23T00:00:00Z"));
+    expect(s.scratchEndpoints).toEqual([{ branch: "cost-probe", maxCu: 1 }]);
   });
   it("keeps a scratch branch at 0.25 too", () => {
     const s = summariseNeon(neonRaw({}, [{ branch_id: "br-b", autoscaling_limit_max_cu: 0.25 }]) as never, new Date("2026-10-23T00:00:00Z"));
@@ -130,6 +138,11 @@ describe("evaluate", () => {
     const at = (scratchMaxCu: number) => evaluate({ vercel: { thisWeek: week(), lastWeek: week() }, neon, neonWeek: null } as never, { ...THRESHOLDS, scratchMaxCu });
     expect(fired(at(1))).toEqual([]);
     expect(fired(at(0.5))).toEqual(["scratch-cap"]);
+  });
+  it("checks growth from a zero baseline too", () => {
+    expect(fired(run({ vercel: { thisWeek: week({ costUsd: 17.5 }), lastWeek: week({ costUsd: 0 }) } }))).toEqual(["vercel-cost"]);
+    expect(fired(run({ vercel: { thisWeek: week({ buildMinutes: 5000 }), lastWeek: week({ buildMinutes: 0 }) } }))).toEqual(["build-minutes"]);
+    expect(fired(run({ vercel: { thisWeek: week({ costUsd: 3, buildMinutes: 100 }), lastWeek: week({ costUsd: 0, buildMinutes: 0 }) } }))).toEqual([]);
   });
   it("counts an increase of exactly 50% as growth", () => {
     expect(fired(run({ vercel: { thisWeek: week({ costUsd: 24 }), lastWeek: week({ costUsd: 16 }) } }))).toEqual(["vercel-cost"]);

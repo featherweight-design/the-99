@@ -2,7 +2,11 @@
 // below, which can only GET (cost-check.test.mts fails on any other verb in this file). The tokens are least-scope
 // but neither Vercel nor Neon can make one read-only, so this file is where that promise is kept.
 
+import { LOCAL_DEV_BRANCH, PRODUCTION_BRANCH, STAGING_BRANCH } from "./scratch-branch.mjs";
+
 const VERCEL = "https://api.vercel.com";
+// A scratch branch is anything that is not one of the three permanent ones, as `assertScratchBranch` defines it.
+const PERMANENT = new Set([PRODUCTION_BRANCH, STAGING_BRANCH, LOCAL_DEV_BRANCH]);
 const NEON = "https://console.neon.tech/api/v2";
 
 async function get(url, token) {
@@ -113,9 +117,9 @@ export function summariseNeon({ project, branches, endpoints }, now) {
       id: b.id, name: b.name, computeSeconds: Number(b.compute_time_seconds) || 0,
       transferBytes: Number(b.data_transfer_bytes) || 0, logicalBytes: Number(b.logical_size) || 0,
     })),
-    // Every scratch branch's compute ceiling; the rule compares them with its own cap, so the cap lives in one place.
+    // Every non-permanent branch's compute ceiling; the rule compares them with its own cap, so the cap lives in one place.
     scratchEndpoints: endpoints
-      .filter((e) => byBranch.get(e.branch_id)?.name?.startsWith("scratch-"))
+      .filter((e) => e.branch_id && !PERMANENT.has(e.branch_id) && byBranch.has(e.branch_id))
       .map((e) => ({ branch: byBranch.get(e.branch_id).name, maxCu: e.autoscaling_limit_max_cu ?? 0 })),
     branchCount: branches.length,
   };

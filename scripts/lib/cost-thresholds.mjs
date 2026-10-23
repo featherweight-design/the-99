@@ -27,10 +27,10 @@ export function evaluate({ vercel, neon, neonWeek }, t = THRESHOLDS) {
     add("vercel-read", "Vercel could be read", true, "the Vercel read failed");
   } else {
     const { thisWeek: w, lastWeek: p } = vercel;
-    const costGrew = p.costUsd > 0 && w.costUsd >= p.costUsd * t.vercelGrowth.factor && w.costUsd - p.costUsd >= t.vercelGrowth.minUsd;
+    const costGrew = w.costUsd >= p.costUsd * t.vercelGrowth.factor && w.costUsd - p.costUsd >= t.vercelGrowth.minUsd;
     add("vercel-cost", `Vercel week cost over ${money(t.vercelWeekUsd)} or up ${Math.round((t.vercelGrowth.factor - 1) * 100)}%`,
       w.costUsd > t.vercelWeekUsd || costGrew, `${money(w.costUsd)} this week, ${money(p.costUsd)} last`);
-    const buildGrew = p.buildMinutes > 0 && w.buildMinutes >= p.buildMinutes * t.buildGrowth.factor && w.buildMinutes - p.buildMinutes >= t.buildGrowth.minMinutes;
+    const buildGrew = w.buildMinutes >= p.buildMinutes * t.buildGrowth.factor && w.buildMinutes - p.buildMinutes >= t.buildGrowth.minMinutes;
     add("build-minutes", `Build CPU minutes up ${Math.round((t.buildGrowth.factor - 1) * 100)}% and ${t.buildGrowth.minMinutes} minutes`,
       buildGrew, `${Math.round(w.buildMinutes)} this week, ${Math.round(p.buildMinutes)} last`);
   }
