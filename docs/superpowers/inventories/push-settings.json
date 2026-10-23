@@ -1,6 +1,6 @@
 {
-  "feature": "Push notifications, PR 4: /settings' What's new on Home with the push column, the device row and the iPhone guidance sheet (handoff design_handoff_the99_push, boards Settings, Device-States, The-Ask, iPhone; plan 2026-10-22-push.md)",
-  "note": "Run against `next start` (the service worker registers in production only; under `next dev` every device reads Can't and the column leaves, which is the Can't frame), with HOME_FEED_ENABLED=true and PUSH_ENABLED=true and VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT set to a throwaway pair from `pnpm push:keys`, passed to the server process only, on a database migrated to the push foundation (local-dev is; the run only loads pages, plus clearAbout's captured-and-restored About columns). Headless Chromium reports notification permission `denied` by default, so the plain widths read Blocked (real). The `-default` widths STAGE `Notification.permission` as `default` (an init script; the one state headless Chromium cannot reach) and read Not on yet. The `-allowed` widths run Chromium's new headless (`channel: chromium`) with `notifications` granted, which with no subscription in a fresh browser reads Off here (real). The `iphone` width is Safari's iPhone user agent (iOS 17.4, not installed), which reads Needs Home Screen, and its How › opens the guidance sheet. Nothing here presses a push box, because a press asks the browser and subscribes. On is proved by src/components/settings/news-section.push.test.tsx; a real device's is Hugh's check in the PR body.",
+  "feature": "Push notifications: /settings' What's new on Home with the push column, the device row and the iPhone guidance sheet (PR 4), Home's push landing (PR 5) and the About entry push on the settings screen (close-out) (handoff design_handoff_the99_push, boards Settings, Device-States, The-Ask, iPhone, About; plan 2026-10-22-push.md)",
+  "note": "Run against `next start` (the service worker registers in production only; under `next dev` every device reads Can't and the column leaves, which is the Can't frame), with HOME_FEED_ENABLED=true and PUSH_ENABLED=true and VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT set to a throwaway pair from `pnpm push:keys`, passed to the server process only, on a database migrated to the push foundation (local-dev is; the run only loads pages, plus clearAbout's captured-and-restored About columns). Headless Chromium reports notification permission `denied` by default, so the plain widths read Blocked (real). The `-default` widths STAGE `Notification.permission` as `default` (an init script; the one state headless Chromium cannot reach) and read Not on yet. The `-allowed` widths run Chromium's new headless (`channel: chromium`) with `notifications` granted, which with no subscription in a fresh browser reads Off here (real). The `iphone` width is Safari's iPhone user agent (iOS 17.4, not installed), which reads Needs Home Screen, and its How › opens the guidance sheet. Nothing here presses a push box, because a press asks the browser and subscribes. On is proved by src/components/settings/news-section.push.test.tsx; a real device's is Hugh's check in the PR body. Close-out rows: `home-push-landing` loads Home as a tapped price drop lands (`/?push-card=<oracle id>`, Demonic Consultation, a real catalog card; local-dev has no feed items, so the card is not one the feed drew) and waits for card details to open; the address losing `push-card` is not in the picture and is read separately. `about-push` opens the Reference at `#push` (the entry needs the reader's PUSH_ENABLED on), with SPARE_REQUESTS_ENABLED unset unless the run sets it, so its first key is the switch-off one.",
   "clearAbout": true,
   "rows": [
     {
@@ -91,6 +91,38 @@
         {
           "waitDialog": "Add The 99 to your Home Screen",
           "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "home-push-landing",
+      "label": "Home landed from a push (`?push-card=` Demonic Consultation): card details open through the feed's opener, the address stripped of push-card",
+      "view": "src/components/push/push-landing.tsx",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/?push-card=9a1412db-45ad-46ea-8f12-a85d203113d8",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "about-push",
+      "label": "/about Reference, #push opened: Push notifications (Settings screen), its caption and keys",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/about?tab=reference#push",
+          "wait": "[data-entry-open='push']",
+          "settle": 1200
         }
       ]
     }

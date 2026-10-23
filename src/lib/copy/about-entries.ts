@@ -475,12 +475,16 @@ export const aboutEntries: readonly AboutEntry[] = [
     },
     keys: [
       'News stays in the app: a count on Home in the bar, and the list. No email, ever.',
+      'News shows on Home, and as push where you turn it on. No email, ever.',
       'A story stays 14 days. Opening Home marks it seen.',
       'Old links to Discover and Help me choose land on their tabs.',
       'Friends see your deck names, commanders and statuses, never the lists.',
       'Friends can see your decks and their lists, except drafts and decks you’re building.',
     ],
     keySwitches: {
+      // Push notifications (close-out, handoff A4): news also leaves the app as a push where a reader turns it on.
+      'News stays in the app: a count on Home in the bar, and the list. No email, ever.': '!PUSH_ENABLED',
+      'News shows on Home, and as push where you turn it on. No email, ever.': 'PUSH_ENABLED',
       'Old links to Discover and Help me choose land on their tabs.': 'COMMANDERS_PLACE_ENABLED',
       // Friend decks (close-out, READINESS 7): with the switch on, friends see the lists, so the key takes the privacy
       // line's default sentence instead.
@@ -1943,6 +1947,39 @@ export const aboutEntries: readonly AboutEntry[] = [
       '“How it works ›” on a tool opens its full entry.',
       'My note on why The 99 exists now closes the Reference.',
     ],
+    since: 16,
+  },
+  {
+    id: 'push',
+    chapter: '04',
+    screen: 'settings',
+    switch: 'PUSH_ENABLED',
+    title: 'Push notifications',
+    route: '/settings',
+    caption:
+      'The 99 can tell your phone or computer when something new lands, even with the app closed. It sends the same news Home shows, and you choose each kind on its own:\n\n- A set or a precon that just came out\n- A price drop on a card on your wishlist\n- A combo you can now make with cards you own\n- A friend with a spare of a card on your wishlist\n- A friend asking for one of your spares\n\nIn Settings, tick Push beside a kind. Your browser asks once before anything is sent, and each phone or computer has its own switch at the top of the column.\n\nOn iPhone, add The 99 to your Home Screen first (Share, then Add to Home Screen), open it from there, and turn push on.',
+    // Each line follows the kind's own availability (`feedKindAvailable`, src/lib/feed/flag.ts): a kind Settings does not
+    // offer has no push box. A new set is always offered, so its line stays and only ` or a precon` follows Precons.
+    captionLineSwitches: {
+      ' or a precon': 'PRECONS_ENABLED',
+      '- A price drop on a card on your wishlist': 'SOCIAL_WISHLIST_ENABLED',
+      '- A friend with a spare of a card on your wishlist': ['SOCIAL_FRIENDS_ENABLED', 'SOCIAL_WISHLIST_ENABLED'],
+      '- A friend asking for one of your spares': 'SPARE_REQUESTS_ENABLED',
+    },
+    keys: [
+      'Only a friend asking for your spare starts ticked. Nothing is sent until you allow it on a device.',
+      'Nothing is sent until you allow it on a device.',
+      'Nothing comes between 9pm and 9am; it waits for the morning. Several of one kind arrive as one, except a friend’s ask.',
+      'A tap opens what it’s about. Opening Home marks your news seen.',
+      'No push while The 99 is open in front of you, except in Safari and on iPhone. No email, ever.',
+    ],
+    // The spare-request kind starts on (`push_kinds`' rule), and is offered only with spare requests on; without it no kind
+    // starts ticked, and the key keeps its second sentence alone.
+    keySwitches: {
+      'Only a friend asking for your spare starts ticked. Nothing is sent until you allow it on a device.': 'SPARE_REQUESTS_ENABLED',
+      'Nothing is sent until you allow it on a device.': '!SPARE_REQUESTS_ENABLED',
+    },
+    // The version current when it ships: a switched entry is announced by its switch and bumps nothing.
     since: 16,
   },
 ] as const;

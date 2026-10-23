@@ -47,6 +47,8 @@ export function screenForPath(pathname: string, search: string | URLSearchParams
   }
   if (path === "/friends") return "friends";
   if (path === "/credits") return "credits";
+  // Settings (push close-out): the push column and the device row the `push` entry lives on.
+  if (path === "/settings") return "settings";
   // A Rule 0 table is set from a pod on Friends, and its entries (pods, the table) live on that screen.
   if (seg[0] === "friends" && seg[1] === "table" && seg.length === 3) return "friends";
   // A friend's page and its tabs and decks (`/friends/{publicId}/**`) are Friends' too, so the ? finds `friend-decks`.

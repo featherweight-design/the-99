@@ -634,6 +634,20 @@ export const SHOTS = {
         ]
       }
     },
+    "settings": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 44816,
+      "quality": 75,
+      "entries": {
+        "push": [
+          0.041,
+          0.266,
+          0.9179,
+          0.0892
+        ]
+      }
+    },
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
@@ -1495,6 +1509,20 @@ export const SHOTS = {
           0.3916,
           0.9179,
           0.0658
+        ]
+      }
+    },
+    "settings": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 44380,
+      "quality": 75,
+      "entries": {
+        "push": [
+          0.041,
+          0.266,
+          0.9179,
+          0.0892
         ]
       }
     },
@@ -2362,6 +2390,20 @@ export const SHOTS = {
         ]
       }
     },
+    "settings": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 45102,
+      "quality": 75,
+      "entries": {
+        "push": [
+          0.041,
+          0.2767,
+          0.9179,
+          0.0892
+        ]
+      }
+    },
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
@@ -3223,6 +3265,20 @@ export const SHOTS = {
           0.3916,
           0.9179,
           0.0658
+        ]
+      }
+    },
+    "settings": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 44402,
+      "quality": 75,
+      "entries": {
+        "push": [
+          0.041,
+          0.2601,
+          0.9179,
+          0.0892
         ]
       }
     },
@@ -4090,6 +4146,20 @@ export const SHOTS = {
         ]
       }
     },
+    "settings": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 43974,
+      "quality": 75,
+      "entries": {
+        "push": [
+          0.041,
+          0.2624,
+          0.9179,
+          0.0892
+        ]
+      }
+    },
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
@@ -4951,6 +5021,20 @@ export const SHOTS = {
           0.3916,
           0.9179,
           0.0658
+        ]
+      }
+    },
+    "settings": {
+      "width": 780,
+      "height": 1688,
+      "bytes": 44412,
+      "quality": 75,
+      "entries": {
+        "push": [
+          0.041,
+          0.2636,
+          0.9179,
+          0.0892
         ]
       }
     },

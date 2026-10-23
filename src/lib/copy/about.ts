@@ -93,7 +93,7 @@ export type AboutWidth = 'inset' | 'plate';
  */
 export const ABOUT_SCREENS = [
   'home', 'collection', 'card-details', 'sets', 'proxies', 'history', 'wishlist', 'upload', 'commanders', 'discover',
-  'new-deck', 'decks', 'deck', 'friends', 'account', 'credits',
+  'new-deck', 'decks', 'deck', 'friends', 'account', 'settings', 'credits',
 ] as const;
 export type AboutScreen = (typeof ABOUT_SCREENS)[number];
 
@@ -159,7 +159,9 @@ export type AboutSwitch =
   // Combos one piece away (combos-close close-out): its own entry, and combo-awareness's card-details key.
   | 'NEAR_COMBOS_ENABLED'
   // Strategy focus (handoff design_handoff_the99_strategy_focus): the strategy ring on Analysis and its focus pick.
-  | 'STRATEGY_FOCUS_ENABLED';
+  | 'STRATEGY_FOCUS_ENABLED'
+  // Push notifications (close-out, handoff design_handoff_the99_push): its own entry, and `whats-new`'s news key.
+  | 'PUSH_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is

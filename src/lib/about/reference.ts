@@ -45,7 +45,7 @@ export type ReferenceScreen = {
   entries: ReferenceEntry[];
 };
 
-/** The 22 screens, in order. */
+/** The 23 screens, in order. */
 type Place = { screen: AboutScreen; view?: DeckView };
 export const REFERENCE_SCREENS: readonly Place[] = ABOUT_SCREENS.flatMap((screen): Place[] =>
   screen === "deck" ? DECK_VIEWS.map((view) => ({ screen, view })) : [{ screen }],
