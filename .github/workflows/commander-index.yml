@@ -60,9 +60,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # A staging leg runs the code staging is deployed from (`staging`, synced daily by `Staging sync`), so it
-          # never runs a migration-dependent ingest against a staging database a day behind main (docs/agents/ops.md).
-          ref: staging
+          # A staging leg runs the commit staging has deployed and migrated (`staging-deployed`, moved by `Staging
+          # sync` only after that deploy succeeds), never code ahead of staging's database (docs/agents/ops.md).
+          ref: staging-deployed
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -98,9 +98,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # A staging leg runs the code staging is deployed from (`staging`, synced daily by `Staging sync`), so it
-          # never runs a migration-dependent ingest against a staging database a day behind main (docs/agents/ops.md).
-          ref: staging
+          # A staging leg runs the commit staging has deployed and migrated (`staging-deployed`, moved by `Staging
+          # sync` only after that deploy succeeds), never code ahead of staging's database (docs/agents/ops.md).
+          ref: staging-deployed
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -165,9 +165,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # A staging leg runs the code staging is deployed from (`staging`, synced daily by `Staging sync`), so it
-          # never runs a migration-dependent ingest against a staging database a day behind main (docs/agents/ops.md).
-          ref: staging
+          # A staging leg runs the commit staging has deployed and migrated (`staging-deployed`, moved by `Staging
+          # sync` only after that deploy succeeds), never code ahead of staging's database (docs/agents/ops.md).
+          ref: staging-deployed
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

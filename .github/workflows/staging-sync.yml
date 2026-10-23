@@ -16,8 +16,11 @@
 # secret. Without it the run falls back to `GITHUB_TOKEN`, which works on any day main changed no workflow and
 # fails loudly on a day it did.
 #
-# The staging legs of the catalog jobs check out `staging` too, so they always run the code staging's
-# database was migrated for. Undo all of this when production gets a release cycle: docs/agents/ops.md,
+# THE SECOND BRANCH. Moving `staging` does not migrate anything: Vercel's build of it does, minutes later, and it
+# can fail. So the run waits for that deployment to succeed and only then moves `staging-deployed` to the same
+# commit. The staging legs of the catalog jobs check out `staging-deployed`, so they never run code ahead of
+# staging's migrations, whoever triggers them and whenever. A sync that changes only paths the build skips
+# (`skippablePath`, the ignore step's own rule) has nothing to wait for. Undo all of this when production gets a release cycle: docs/agents/ops.md,
 # "Staging deploys once a day".
 name: Staging sync
 
@@ -30,6 +33,7 @@ on:
 
 permissions:
   contents: write
+  deployments: read
 
 concurrency:
   group: staging-sync
@@ -38,36 +42,97 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # Vercel's GitHub deployment environment for the staging project's production deploys.
+      DEPLOY_ENV: 'Production – the-99-staging'
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
           token: ${{ secrets.STAGING_SYNC_TOKEN || github.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
       - name: Fast-forward staging to main
+        id: move
         run: |
           set -euo pipefail
           main=$(git rev-parse origin/main)
+          echo "target=$main" >> "$GITHUB_OUTPUT"
           if git ls-remote --exit-code --heads origin staging >/dev/null; then
-            git fetch --quiet origin staging
             current=$(git rev-parse origin/staging)
-            if [ "$current" = "$main" ]; then
-              echo "staging is already at main ($main): nothing to deploy." | tee -a "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
             if ! git merge-base --is-ancestor "$current" "$main"; then
-              echo "staging ($current) is not an ancestor of main ($main): refusing to overwrite it." >&2
+              echo "staging ($current) is not an ancestor of main ($main): refusing to overwrite it." | tee -a "$GITHUB_STEP_SUMMARY" >&2
               exit 1
             fi
           else
             current="(none)"
           fi
+          if [ "$current" = "$main" ]; then
+            echo "staging is already at main (\`$main\`)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           # No --force: the push is a fast-forward or it fails.
-          git push origin "$main:refs/heads/staging"
+          if ! git push origin "$main:refs/heads/staging" 2> push.err; then
+            cat push.err >&2
+            if grep -q "workflows" push.err; then
+              {
+                echo "**Refused: the push moves staging over a change to \`.github/workflows/\`, which \`GITHUB_TOKEN\` may not do.**"
+                echo "Set the Actions secret \`STAGING_SYNC_TOKEN\` (a fine-grained token for this repository, Contents and Workflows read and write), then dispatch Staging sync again."
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 1
+          fi
+          echo "staging moved from \`$current\` to \`$main\`." >> "$GITHUB_STEP_SUMMARY"
+      - name: Wait for staging's deployment to succeed
+        env:
+          TARGET: ${{ steps.move.outputs.target }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin staging-deployed >/dev/null; then
+            deployed=$(git rev-parse origin/staging-deployed)
+            if [ "$deployed" = "$TARGET" ]; then
+              echo "staging-deployed is already at \`$TARGET\`: nothing to wait for." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            changed=$(git diff --name-only --no-renames "$deployed" "$TARGET")
+          else
+            changed="(first sync)"
+          fi
+          builds=$(CHANGED="$changed" node --input-type=module -e '
+            import { skippablePath } from "./scripts/lib/vercel-ignore.mjs";
+            const paths = process.env.CHANGED.split("\n").filter(Boolean);
+            console.log(paths.length === 0 || paths.some((p) => !skippablePath(p)) ? "yes" : "no");
+          ')
+          if [ "$builds" = "no" ]; then
+            echo "Nothing the build reads changed, so Vercel skips it and there is no migration to wait for." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Vercel posts a GitHub deployment per build, and its status turns success only once the build, which
+          # migrates staging's database (`vercel-build`), has finished.
+          for i in $(seq 1 75); do
+            state=$(gh api -X GET "repos/$GITHUB_REPOSITORY/deployments" -f sha="$TARGET" -f environment="$DEPLOY_ENV" \
+              --jq '.[0].id // empty' | while read -r id; do
+                gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0].state // "pending"'
+              done)
+            case "${state:-none}" in
+              success) echo "Staging deployed \`$TARGET\` and migrated." >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+              failure|error) echo "Staging's deployment of \`$TARGET\` failed ($state): staging-deployed stays where it was." | tee -a "$GITHUB_STEP_SUMMARY" >&2; exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "No successful staging deployment of \`$TARGET\` after 25 minutes: staging-deployed stays where it was." | tee -a "$GITHUB_STEP_SUMMARY" >&2
+          exit 1
+      - name: Move staging-deployed
+        env:
+          TARGET: ${{ steps.move.outputs.target }}
+        run: |
+          set -euo pipefail
+          git push origin "$TARGET:refs/heads/staging-deployed"
           {
-            echo "staging moved from \`$current\` to \`$main\`."
-            echo
-            echo "Vercel now deploys \`the-99-staging\` from it, migrating staging's database on the way."
-            echo "Confirm with \`curl https://staging.the-99.dev/api/health\`."
+            echo "staging-deployed is at \`$TARGET\`: the catalog jobs' staging legs now run it."
+            echo "Check: \`curl https://staging.the-99.dev/api/health\`."
           } >> "$GITHUB_STEP_SUMMARY"
