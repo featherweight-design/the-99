@@ -9,6 +9,13 @@
 # Fast-forward only. A `staging` that is not an ancestor of main (someone committed to it) fails the run
 # rather than being overwritten. Nothing commits to `staging` but this workflow.
 #
+# THE TOKEN. GitHub refuses a push with the workflow's own `GITHUB_TOKEN` when the commits it moves `staging`
+# over change a file under `.github/workflows/` ("without `workflows` permission"), and that token cannot be
+# given the permission. So the push uses `STAGING_SYNC_TOKEN` when it is set: a fine-grained personal access
+# token Hugh creates, for this repository only, with Contents and Workflows read and write, saved as an Actions
+# secret. Without it the run falls back to `GITHUB_TOKEN`, which works on any day main changed no workflow and
+# fails loudly on a day it did.
+#
 # The staging legs of the catalog jobs check out `staging` too, so they always run the code staging's
 # database was migrated for. Undo all of this when production gets a release cycle: docs/agents/ops.md,
 # "Staging deploys once a day".
@@ -37,6 +44,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.STAGING_SYNC_TOKEN || github.token }}
       - name: Fast-forward staging to main
         run: |
           set -euo pipefail
