@@ -216,9 +216,10 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
     setDeviceBusy(true);
     try {
       if (sub) {
-        const [server, browser] = await Promise.allSettled([unsubscribeDevice(sub.endpoint), sub.unsubscribe()]);
-        if (browser.status === "rejected" || browser.value === false) throw new Error("unsubscribe");
-        if (server.status === "rejected") throw new Error("server");
+        // The BROWSER's unsubscribe decides the row: once it has left, this device gets nothing whatever the server holds.
+        // A server row left behind (its delete failed) answers the next send 410 and the flush deletes it.
+        if (!(await sub.unsubscribe())) throw new Error("unsubscribe");
+        await unsubscribeDevice(sub.endpoint).catch(() => undefined);
       }
       subscription.current = null;
       setDevice((d) => d && { ...d, state: "off-here" });

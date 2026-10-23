@@ -294,6 +294,16 @@ describe("on and off on this device", () => {
     expect(pushBox("spare-request").checked).toBe(true);
   });
 
+  it("a server delete that fails after the browser left still reads Off here, with no toast", async () => {
+    deviceIs({ permission: "granted", subscribed: true });
+    await draw();
+    m.unsubscribeDevice.mockRejectedValueOnce(new Error("network"));
+    await act(async () => fireEvent.click(deviceBox()!));
+    expect(existing!.unsubscribe).toHaveBeenCalled();
+    expect(deviceRow().textContent).toContain(P.device.offHere);
+    expect(document.body.textContent).not.toContain(P.failed ?? "We couldn't save that");
+  });
+
   it("re-ticking Off here subscribes with no prompt", async () => {
     deviceIs({ permission: "granted" });
     await draw();

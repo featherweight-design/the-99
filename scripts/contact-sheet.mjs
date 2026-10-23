@@ -204,15 +204,15 @@ async function run(page, steps) {
     if (step.wait !== undefined) {
       await onPage(page, step.wait).first().waitFor({ state: "visible", timeout: 15_000 });
     }
-    // A moment's bubble (discovery R1): portalled to the end of the document, outside `<main>`, so it is the one wait
-    // that is not page-scoped. It names the note it expects (`"Mana Balance, a tip"`), so another moment arriving in its
-    // place fails the row rather than photographing the wrong tip.
     // A sheet portalled to `<body>` (outside `<main>`), named by its accessible name, so the shell's account sheet (also a
     // `role="dialog"`) can never stand in for it.
     if (step.waitDialog !== undefined) {
       if (typeof step.waitDialog !== "string") throw new Error("waitDialog takes the dialog's accessible name");
       await page.getByRole("dialog", { name: step.waitDialog, exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
     }
+    // A moment's bubble (discovery R1): portalled to the end of the document, outside `<main>`, so it is the one wait
+    // that is not page-scoped. It names the note it expects (`"Mana Balance, a tip"`), so another moment arriving in its
+    // place fails the row rather than photographing the wrong tip.
     if (step.waitNote !== undefined) {
       if (typeof step.waitNote !== "string") throw new Error("waitNote takes the note's accessible name");
       await page.getByRole("note", { name: step.waitNote, exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
@@ -387,7 +387,8 @@ try {
     if (widthBrowser !== browser) cameraBrowsers.add(widthBrowser);
     const context = await widthBrowser.newContext({
       // A width may grant browser permissions (`"permissions": ["notifications"]`), for a surface whose state follows one:
-      // a headless browser's notification permission is `default`, so the push device row reads Not on yet without it.
+      // headless Chromium reports notifications as `denied`, never `default`, so without a grant the push device row reads
+      // Blocked.
       permissions: [...(size.camera ? ["camera"] : []), ...(size.permissions ?? [])],
       viewport: { width: size.width, height: size.height },
       deviceScaleFactor: 1,
