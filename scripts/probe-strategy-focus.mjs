@@ -9,16 +9,23 @@
 //   PROBE_BASE=http://localhost:3417 SF_DECK=<deck id> pnpm probe:strategy-focus
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { neon } from "@neondatabase/serverless";
 import { requireEnv } from "./lib/env.mjs";
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { onPage } from "./lib/surface.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const DECK = process.env.SF_DECK;
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!DECK) throw new Error("Set SF_DECK to an analyzed deck with a strategy.");
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 if (/the-99\.dev|vercel\.app/.test(BASE)) throw new Error(`refusing ${BASE}: this probe writes`);
+// The presses write through the SERVER's database, which the probe cannot ask. It checks the database this checkout's
+// \`.env\` names, the one a server started here reads, and refuses anything but a scratch branch: run the server from
+// the same worktree. Refused before the first press.
+const [{ branch }] = await neon(DATABASE_URL)`select current_setting('neon.branch_id') as branch`;
+assertScratchBranch(branch, "probe:strategy-focus");
 
 let failures = 0;
 function report(label, ok, detail) {
