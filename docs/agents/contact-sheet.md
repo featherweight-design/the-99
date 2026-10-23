@@ -59,3 +59,13 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 ## `"signedOut": true`: photographing a public surface
 
 An inventory with `"signedOut": true` skips the Clerk sign-in, so a page that answers a reader with no session (`/privacy`, `/terms`) is photographed as that reader sees it, with the shell's bare signed-out branch around it. It cannot be combined with `clearAbout` (the run refuses). `legal-pages.json` (signed in) and `legal-pages-signed-out.json` are the pair for the legal pages (launch epic B1); the notice after the article is outside `<main>`, so a sheet cannot reach it and `pnpm probe:fan-content-notice` measures it on both pages.
+
+## Browser state per width, and portalled sheets
+
+A width may carry `"permissions"` (granted on its context), `"userAgent"`, `"channel": "chromium"` (Chromium's new
+headless mode, launched for that width alone) and `"notificationPermission"`. The default headless shell reports
+`Notification.permission` as `denied` whatever is granted, so a granted notification permission needs the `chromium`
+channel; and no headless Chromium ever reports `default`, so `notificationPermission` STAGES that read with an init
+script, and a row photographed under it says so in its label. `waitDialog: "<accessible name>"` waits for a sheet
+portalled to `<body>` (outside `<main>`) by its name, so the shell's account sheet cannot stand in for it.
+`push-settings.json` uses all of them.

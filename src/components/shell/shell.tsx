@@ -34,6 +34,8 @@ import { CardSearchRoot } from "../card-search/card-search";
 import { helpPanelEnabled } from "../../lib/discovery/onboarding-flag";
 import { HelpRoot } from "../help/help-root";
 import { unseenCount } from "../../lib/feed/read";
+import { pushEnabled } from "../../lib/push/flag";
+import { PushHeartbeat } from "../push/push-heartbeat";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -168,6 +170,7 @@ export default async function Shell({
       <MomentsProvider live={moments} spent={spentMoments}>
       <CardSearchShell userId={cardSearch ? userId : null}>
       <HelpRoot on={help}>
+      {pushEnabled(env) && <PushHeartbeat />}
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} badges={badges} />
         {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a

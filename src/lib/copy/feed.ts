@@ -75,7 +75,7 @@ export const feedCopy = {
       /** Follows the struck old price and the new one, both formatted. */
       priceDrop: "at the cheapest printing.",
       tradeMatch: "It’s on your wishlist.",
-      spareRequest: "A friend wants a card you have spare.",
+      spareRequest: "Answer in Friends.",
       /** Source-neutral: an upload, a hand add and a bought card all complete a pair. */
       combo: (added: string) => `You added ${added}.`,
     },

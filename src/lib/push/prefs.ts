@@ -9,7 +9,7 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { userPrefs } from "../../db/schema";
-import { nextFeedPrefs, parseDeclined, parseFeedKinds, type FeedPrefs } from "../feed/prefs";
+import { effectiveKinds, nextFeedPrefs, parseDeclined, parseFeedKinds, type FeedPrefs } from "../feed/prefs";
 import { FEED_KINDS, type FeedKind } from "../feed/kinds";
 
 type Q = Pick<typeof db, "select" | "insert" | "update">;
@@ -49,4 +49,15 @@ export async function setPushKinds(userId: string, on: readonly FeedKind[], now 
     if (done.length > 0) return true;
   }
   throw new Error("setPushKinds: the reader's push choices kept changing under the save");
+}
+
+/**
+ * Settings' push column: which of the kinds Settings offers (`offered`, `loadNewsSettings`' kinds) have PUSH on for
+ * this reader, by the feed's own rule (`effectiveKinds`: `spare-request` reads on until declined). Nothing is read
+ * when nothing is offered.
+ */
+export async function loadPushKinds(userId: string, offered: readonly FeedKind[], q: Pick<typeof db, "select"> = db): Promise<FeedKind[]> {
+  if (offered.length === 0) return [];
+  const on = effectiveKinds(await readPushPrefs(userId, q));
+  return offered.filter((k) => on.includes(k));
 }

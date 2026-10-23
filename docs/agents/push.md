@@ -96,6 +96,23 @@ This file holds what a reader of the code needs and the plan's decisions in one 
 - `FlushReport.queued` counts the rows the catalog pass wrote. Proof: `probe:push-flush` section 7 (its own set, printing, precons
   and stamps, removed in its finally).
 
+## Added by PR 4 (the Settings column)
+
+- `news-section.tsx` takes `push` (`{ publicKey, on }`, from `settings/page.tsx` only while `pushAvailable`; the PUBLIC key
+  alone reaches the client). Without it the section is exactly as shipped. Words in `src/lib/copy/push-settings.ts`.
+- The device row's state is `deviceState` (`src/lib/push/device.ts`, pure, facts in, state out); `readDeviceFacts`
+  (`device-browser.ts`) is the one reader of `window`. No service worker registration (any non-production build, or a
+  worker that is not there 3 seconds after `ready` is awaited) reads Can't, so the column never shows under `next dev`.
+  A registration whose first worker is still installing is waited for too (`subscribe` fails until it is active). The
+  section reads the device AGAIN, never prompting, when the page comes back to the foreground or the window regains focus
+  (permission allowed or revoked in the browser's or phone's settings) and when the worker becomes ready after the first
+  read gave up; a read that began before or during a subscribe or unsubscribe is dropped (`ops`).
+- The prompt is asked only from a push tick's press while permission is `default`. A kind's tick sends its save FIRST and
+  then asks in the same press without awaiting the save, because awaiting a round trip spends the press's user activation.
+  G1's silent re-subscribe runs on EVERY page load, not only Settings (`PushHeartbeat`, mounted by the shell while the
+  reader's switch is on): permission granted and a live subscription calls `subscribeDevice` once, so the device's time zone,
+  which its held hours follow, stays current when the reader travels. Never a prompt.
+
 ## Decisions the plan fixed (D1 to D5)
 
 1. Outbox, not a direct send: `recordFeedItem` runs inside transactions, so a send from it could announce a rolled-back event.
