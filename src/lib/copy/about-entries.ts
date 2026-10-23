@@ -1351,11 +1351,45 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'Nobody can find you by searching. A friend link works once and lasts 7 days, and you can revoke one that’s still open.',
       'Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.',
+      'Friends see your name, your commander and the decks you let them open, never your collection. Your spares show only to the pods you share them with.',
       'You add your own friends to your pods. Leave one you own and it passes to its longest-standing member.',
       'Removing a friend or leaving a pod tells nobody.',
     ],
+    // Friend decks (addendum `design_handoff_the99_about/addendum-friend-decks`): with the switch on, friends see the
+    // decks a player lets them open, so key 2 swaps for its sentence (a pair, one key drawn).
+    keySwitches: {
+      'Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.': '!FRIEND_DECKS_ENABLED',
+      'Friends see your name, your commander and the decks you let them open, never your collection. Your spares show only to the pods you share them with.': 'FRIEND_DECKS_ENABLED',
+    },
     marksPending: true,
     since: 14,
+  },
+  // Friend decks (addendum `design_handoff_the99_about/addendum-friend-decks`, approved 2026-10-23; the line's handoff
+  // `design_handoff_the99_friend_decks`, READINESS G6 deferred its entry here). Switched, so no bump: `since` is the version
+  // current when it ships. Its halo is the /friends privacy line, `[data-decks-seen]`.
+  {
+    id: 'friend-decks',
+    screen: 'friends',
+    switch: 'FRIEND_DECKS_ENABLED',
+    chapter: '04',
+    title: 'Your friends’ decks',
+    route: '/friends',
+    caption:
+      'On a friend’s page, press any deck under “Decks” to see its whole list, read-only: the commander, every card by type, and a dot on each card you own yourself. Press a card for its details, and add it to your wishlist from there.\n\nYour decks open for friends the same way. Out of the box they see a deck once its list is full and committed, never your drafts or the decks you’re still building. In Settings, under “Your decks”:\n\n- Friends can see my decks: turn it off and they see none\n- Include drafts and decks I’m building: turn it on and they see them all\n\nTo keep one deck to yourself, tick “Hidden from friends” in its ⋯ menu.\n\nLogging a game with a friend? Their decks are listed when you seat them. If the one they played isn’t, pick “A deck not listed”: they’re seated by name, with no deck. A game already logged keeps the deck it named, even if it’s hidden later.',
+    captionLineSwitches: {
+      ', and add it to your wishlist from there': 'SOCIAL_WISHLIST_ENABLED',
+      'Logging a game with a friend? Their decks are listed when you seat them. If the one they played isn’t, pick “A deck not listed”: they’re seated by name, with no deck. A game already logged keeps the deck it named, even if it’s hidden later.': 'SOCIAL_GAMES_ENABLED',
+    },
+    keys: [
+      'Friends never see a deck’s prices, what it still needs to buy, or its notes.',
+      'A hidden deck has no tile, and its link stops working, the same as a deleted deck’s.',
+      'Hiding a deck never changes your spares: its cards still count as in use.',
+      '“A deck not listed” shows for every friend, so it never gives away a hidden deck.',
+    ],
+    keySwitches: {
+      '“A deck not listed” shows for every friend, so it never gives away a hidden deck.': 'SOCIAL_GAMES_ENABLED',
+    },
+    since: 16,
   },
   {
     id: 'invites',
@@ -1413,8 +1447,14 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Seats are optional. A game with nobody seated counts as it always has.',
       'Each square is one game, won, lost or drawn. No percentages, so one game reads as one game.',
       'A seat keeps names and decks as they were that night, even if a friend renames a deck or leaves.',
+      'A seat keeps names and decks as they were that night, even if a friend renames or hides a deck, or leaves.',
       '“Seat a pod” sits a whole pod at once.',
     ],
+    // Friend decks: with the switch on a friend can hide a deck too, so key 3 swaps for the sentence that says so.
+    keySwitches: {
+      'A seat keeps names and decks as they were that night, even if a friend renames a deck or leaves.': '!FRIEND_DECKS_ENABLED',
+      'A seat keeps names and decks as they were that night, even if a friend renames or hides a deck, or leaves.': 'FRIEND_DECKS_ENABLED',
+    },
     marksPending: true,
     since: 14,
   },

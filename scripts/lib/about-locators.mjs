@@ -272,6 +272,7 @@ export const ABOUT_LOCATORS = {
 
   // ---- friends, account --------------------------------------------------------
   friends: { screen: "friends", locator: "button:has-text('Add a friend') >> nth=0" },
+  "friend-decks": { screen: "friends", locator: "[data-decks-seen]" },
   invites: { screen: "friends", locator: "[data-about-invite]", note: "Add a friend with the count line under it, one box" },
   "rule-zero": { screen: "friends", locator: "[data-testid='pod-rule-zero'] >> nth=0" },
   themes: { screen: "account", locator: "[role='dialog'] [role='radiogroup']" },
