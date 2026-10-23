@@ -153,7 +153,7 @@ export default async function Shell({
   }
   // An installed app carries the Home slot's count on its icon (push PR 5, G6), only with this reader's
   // PUSH_ENABLED on (`pushEnabled`, never `pushAvailable`: the key parsing stays off the pages' switch path, `flag.ts`).
-  const appBadge = pushEnabled(env);
+  const pushOn = pushEnabled(env);
   const stall = navStallLogEnabled(env)
     ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
     : null;
@@ -174,7 +174,7 @@ export default async function Shell({
       <MomentsProvider live={moments} spent={spentMoments}>
       <CardSearchShell userId={cardSearch ? userId : null}>
       <HelpRoot on={help}>
-      {appBadge && <PushHeartbeat />}
+      {pushOn && <PushHeartbeat />}
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} badges={badges} />
         {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a
@@ -207,7 +207,7 @@ export default async function Shell({
         />
         {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
         {sheet && <AboutSheet state={sheet} />}
-        {appBadge && <AppBadge badges={badges} />}
+        {pushOn && <AppBadge badges={badges} />}
       </div>
       </HelpRoot>
       </CardSearchShell>
