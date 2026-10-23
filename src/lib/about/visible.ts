@@ -15,6 +15,7 @@ import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnable
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
+import { nearCombosEnabled } from "../combos/flag";
 import {
   friendDecksEnabled, ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled,
 } from "../social/flag";
@@ -102,6 +103,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   FRIEND_DECKS_ENABLED: friendDecksEnabled,
   // Spare requests (close-out): `friend-spares`' variant only. Already needs SOCIAL_FRIENDS_ENABLED.
   SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
+  // Combos one piece away (close-out): its own entry, and combo-awareness's card-details key.
+  NEAR_COMBOS_ENABLED: nearCombosEnabled,
 };
 
 /**

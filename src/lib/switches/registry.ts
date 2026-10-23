@@ -119,15 +119,13 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config. It held
  * `COMMANDERS_PLACE_ENABLED` and `HOME_FEED_ENABLED` on 2026-10-22 while their surfaces landed (menu and Home), and
  * is empty again now that Home draws the feed. It held `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests'
- * close-out (the asks and answers drawn, its About lines shipped), and holds `NEAR_COMBOS_ENABLED` from 2026-10-22 until
- * Design prompt 17's surface lands. `FRIEND_DECKS_ENABLED` left it on 2026-10-22 with its About entry (`friend-decks`).
+ * close-out (the asks and answers drawn, its About lines shipped). `NEAR_COMBOS_ENABLED` held it from 2026-10-22 and left it with its
+ * About entry (`combos-one-away`) once the deck page and card details drew it. `FRIEND_DECKS_ENABLED` left it on 2026-10-22 with its About entry (`friend-decks`).
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
-  NEAR_COMBOS_ENABLED:
-    "backend only until Design prompt 17's surface ships: no surface draws the near-combos reads yet (plan 2026-10-22-near-combos-backend.md)",
   PUSH_ENABLED:
     "no surface draws the push column or sends a push until Settings' push UI ships, and a send needs VAPID keys Hugh sets in Vercel (plan 2026-10-22-push.md)",
   STRATEGY_FOCUS_ENABLED:
