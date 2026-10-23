@@ -134,7 +134,7 @@ export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>
   SPARE_REQUESTS_ENABLED:
     "the Friends badge counts spare requests waiting on the reader, and no surface answers one until the UI PR (plan 2026-10-22-spare-requests.md)",
   STRATEGY_FOCUS_ENABLED:
-    "no surface draws the strategy block or offers a focus until the Analysis block ships (handoff design_handoff_the99_strategy_focus)",
+    "the Analysis tab draws the strategy block and its focus pick; Suggested changes does not aim at the focus until the strategy focus line's PR 4 (handoff design_handoff_the99_strategy_focus)",
 };
 
 /**
