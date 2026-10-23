@@ -335,13 +335,24 @@ export function TuningPanel({
       return null;
     }
   }, [deps, deckId, reviewRunId]);
+  // True when the re-read a successful limits save or a focus change just tried to force did NOT
+  // land (an exception, or a resolved-null read) — `stateRef` then still holds the fingerprint from
+  // BEFORE that input moved, which a gate check must not trust (pre-open review round 4, previously
+  // missed): the input genuinely changed, but the "unchanged" verdict it was meant to retire is
+  // still sitting in `stateRef`.
+  const gateStaleRead = useRef(false);
   // Strategy focus: a pick or a clear is new input to the gate (handoff Call 2), so the panel re-reads it when the focus
-  // the server holds moves. Not on mount, which reads already.
+  // the server holds moves. Not on mount, which reads already. As the limits save does, it retires
+  // an "unchanged" reading on screen, and a refresh that does not land leaves `gateStaleRead` set so
+  // the next press re-reads before judging the gate (review round 1).
   const shownFocus = useRef(facts.focus ?? null);
   useEffect(() => {
     if ((facts.focus ?? null) === shownFocus.current) return;
     shownFocus.current = facts.focus ?? null;
-    void reread();
+    void (async () => {
+      gateStaleRead.current = (await reread()) === null;
+      setUnchangedShown(false);
+    })();
   }, [facts.focus, reread]);
 
   // Debounced trailing-edge, PARTIAL and MERGED: typing the cap fires `saveLimits` on every
@@ -368,11 +379,6 @@ export function TuningPanel({
   // edit queued in the SAME unsent patch; a newer edit that had already moved into its OWN,
   // separately-chained send was invisible to that check.
   const limitFieldRevision = useRef<Record<LimitField, number>>({ capDollars: 0, sets: 0, ownedOnly: 0 });
-  // True when the re-read a successful save just tried to force did NOT land (an exception, or
-  // a resolved-null read) — `stateRef` then still holds the PRE-SAVE fingerprint, which a gate
-  // check must not trust (pre-open review round 4, previously missed): the save genuinely
-  // happened, but the "unchanged" verdict it was meant to retire is still sitting in `stateRef`.
-  const limitsStaleRead = useRef(false);
   const sendLimits = useCallback(
     (patch: LimitsPatch, revisionAtSend: Partial<Record<LimitField, number>>): Promise<boolean> => {
       const keys = Object.keys(patch) as LimitField[];
@@ -397,7 +403,7 @@ export function TuningPanel({
             // The fingerprint changed server-side, so a prior "unchanged" reading of this exact
             // gate no longer applies — re-read so the manifest and the gate reopen without
             // waiting for an unrelated navigation to revalidate the page (round 1).
-            limitsStaleRead.current = (await reread()) === null;
+            gateStaleRead.current = (await reread()) === null;
             setUnchangedShown(false);
             keys.forEach((key) => failedLimitFields.current.delete(key));
             const settled = keys.filter((key) => limitFieldRevision.current[key] === revisionAtSend[key]);
@@ -514,6 +520,9 @@ export function TuningPanel({
 
   useEffect(() => {
     let live = true;
+    // Shares `reread`'s ordering: a refresh asked while this read is out (a focus pick landing) is
+    // newer, so this older snapshot records the baseline and settles but is not drawn (review round 1).
+    const mine = ++asked.current;
     deps.read(deckId, leftReview.current ? null : reviewRunId).then(
       (next) => {
         if (!live) return;
@@ -526,8 +535,10 @@ export function TuningPanel({
             runId: next.run && next.run.status !== "pending" ? next.run.id : null,
           }));
         }
-        setState(next);
-        stateRef.current = next;
+        if (mine === asked.current) {
+          setState(next);
+          stateRef.current = next;
+        }
         settledRef.current?.();
       },
       // A first read that fails draws nothing, as a deck with no reading does; a reopened run's
@@ -696,14 +707,14 @@ export function TuningPanel({
         return;
       }
       let current = flushed.touched ? stateRef.current : state;
-      // The save's own re-read failed — `current` is the PRE-SAVE fingerprint, not the one this
+      // A save's or a focus change's own re-read failed — `current` is the fingerprint from before it, not the one this
       // press must judge "unchanged" against. Checked on the FLAG alone, not `flushed.touched`:
       // a press made after that save (and its failed re-read) had already settled sees
       // `touched: false` here, since nothing was pending or in flight by the time THIS press
       // ran, but the flag itself survives across presses until a read actually lands (round 5).
-      if (limitsStaleRead.current) {
+      if (gateStaleRead.current) {
         current = await reread();
-        limitsStaleRead.current = current === null;
+        gateStaleRead.current = current === null;
       }
       if (current === null) {
         setRefused(deckTuningCopy.run.refused);
