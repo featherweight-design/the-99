@@ -363,12 +363,24 @@ export function cardComboQuery(
   oracleId: string,
   limit = CARD_COMBOS_SHORTLIST,
   maxPieces = MAX_COMBO_PIECES,
-  /** The deck in scope: a piece there is held, by `pieceState`'s rule (a command-zone-only piece only as a commander). */
-  scope: { deck: readonly string[]; commanders: readonly string[] } = { deck: [], commanders: [] },
+  /**
+   * The deck in scope: a piece there is held, by `pieceState`'s rule (a command-zone-only piece only as a commander).
+   * With `identity` (the card is in the deck, UI-3 OPEN-5) the shortlist keeps only a variant whole in the deck or one
+   * piece away by `addableMissingPiece`'s piece rule, BEFORE the limit, so rejected variants never crowd out kept ones.
+   */
+  scope: { deck: readonly string[]; commanders: readonly string[]; identity?: readonly string[] } = { deck: [], commanders: [] },
 ) {
   const card = sql.param(oracleId);
   const deckP = sql.param([...scope.deck]);
   const commandersP = sql.param([...scope.commanders]);
+  const held = sql`(case when vc.must_be_commander then vc.oracle_id = any(${commandersP}::uuid[])
+                         else vc.oracle_id = any(${deckP}::uuid[]) end)`;
+  const eligible = scope.identity
+    ? sql`and (count(*) filter (where not ${held}) = 0
+               or (count(*) filter (where not ${held}) = 1
+                   and bool_and(${held} or (not vc.must_be_commander and pc.commander_legal
+                                            and pc.color_identity <@ ${sql.param([...scope.identity])}::text[]))))`
+    : sql``;
   return sql`
     with cand as (
       select v.variant_id, v.card_count, v.popularity
@@ -389,10 +401,12 @@ export function cardComboQuery(
              count(*) over () as total
       from cand
       join ${spellbookVariantCards} vc on vc.variant_id = cand.variant_id and vc.oracle_id <> ${card}::uuid
+      join cards pc on pc.oracle_id = vc.oracle_id
       group by cand.variant_id, cand.card_count, cand.popularity
       -- Every other piece stored: a variant naming one card twice keeps fewer rows than its count
       -- (the ingest dedupes), and must not be counted in the total or take a shortlist slot.
       having count(*) = cand.card_count - 1
+      ${eligible}
       order by unowned, cand.card_count, cand.popularity desc nulls last, cand.variant_id
       limit ${limit}
     )
@@ -545,19 +559,20 @@ export async function loadCardCombos(args: {
     commanders: new Set(args.deck?.commanderOracleIds ?? []),
   };
   const inScope = args.deck !== undefined && scope.deck.has(args.oracleId);
-  const query = cardComboQuery(args.userId, args.oracleId, CARD_COMBOS_SHORTLIST, args.maxPieces, { deck: [...scope.deck], commanders: [...scope.commanders] });
-  const [result, identity] = await Promise.all([
-    db.execute(query),
-    // The deck's identity, for the addability rule: only when the card is in the deck, the one case
-    // the block splits (`keptInDeckScope`).
+  // The deck's identity, for the addability rule: only when the card is in the deck, the one case the
+  // block splits (`keptInDeckScope`). Read first, so the shortlist is cut from kept variants alone.
+  const identity =
     inScope && scope.commanders.size > 0
-      ? db.select({ identity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, [...scope.commanders]))
-      : Promise.resolve(null),
-  ]);
-  let rows = result.rows as CardComboRow[];
-  if (inScope && identity) {
-    const [first, second] = identity.map((c) => c.identity);
-    const deckColors = deckIdentity(first ?? [], second ?? null);
+      ? await db.select({ identity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, [...scope.commanders]))
+      : null;
+  const deckColors = identity ? deckIdentity(identity[0]?.identity ?? [], identity[1]?.identity ?? null) : null;
+  const query = cardComboQuery(args.userId, args.oracleId, CARD_COMBOS_SHORTLIST, args.maxPieces, {
+    deck: [...scope.deck],
+    commanders: [...scope.commanders],
+    ...(deckColors ? { identity: deckColors } : {}),
+  });
+  let rows = (await db.execute(query)).rows as CardComboRow[];
+  if (deckColors) {
     const kept = new Set([...byCardVariant(rows)].filter(([, pieces]) => keptInDeckScope(pieces, args.oracleId, scope, deckColors)).map(([id]) => id));
     rows = rows.filter((r) => kept.has(r.variant_id));
   }

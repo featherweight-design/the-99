@@ -17,7 +17,7 @@ vi.mock("./card-detail-provider", () => ({
 const addCardToDeck = vi.fn<(deckId: string, oracleId: string) => Promise<DeckMutationResult>>();
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck: (d: string, o: string) => addCardToDeck(d, o) }));
 
-const { CardComboSheet, offersAdd, openedCardWhere } = await import("./card-combo-sheet");
+const { CardComboSheet, cheapestLive, offersAdd, openedCardWhere } = await import("./card-combo-sheet");
 
 const partner = (where: CardComboOther["where"]): CardComboOther => ({
   oracleId: "id-surge",
@@ -51,6 +51,24 @@ describe("openedCardWhere (OPEN-10)", () => {
   });
 });
 
+describe("cheapestLive: the opened card's buy tag", () => {
+  const now = new Date("2026-10-22T09:00:00Z");
+  const stale = new Date("2026-10-20T09:00:00Z");
+  const fact = (cents: number | null, foilCents: number | null, asOf = now) => ({ cents, foilCents, etchedCents: null, asOf });
+  const prices = (...facts: ReturnType<typeof fact>[]) =>
+    ({ byScryfallId: Object.fromEntries(facts.map((f, i) => [`s${i}`, f])), byPrintingKey: {}, ambiguousKeys: [], newestAsOf: now }) as never;
+  it("the cheapest live non-foil figure first, bare", () => {
+    expect(cheapestLive(prices(fact(450, 120), fact(300, null), fact(100, null, stale)))).toEqual({ cents: 300, qualifier: null });
+  });
+  it("a card stocked only in foil keeps its foil figure, qualified (round 1)", () => {
+    expect(cheapestLive(prices(fact(null, 940), fact(null, 1200)))).toEqual({ cents: 940, qualifier: "foil" });
+  });
+  it("nothing live: no figure", () => {
+    expect(cheapestLive(prices(fact(100, null, stale)))).toEqual({ cents: null, qualifier: null });
+    expect(cheapestLive(null)).toEqual({ cents: null, qualifier: null });
+  });
+});
+
 describe("offersAdd (OPEN-11)", () => {
   it("only on the deck's page, for a partner the deck lacks, with the card in the deck", () => {
     expect(offersAdd(combo({ kind: "spare" }), true, "deck-1")).toBe(true);
@@ -61,8 +79,8 @@ describe("offersAdd (OPEN-11)", () => {
 });
 
 describe("the combo over the card", () => {
-  const draw = (c: CardCombo, inScope: boolean, deckId: string | null, onAdded = vi.fn()) =>
-    render(<CardComboSheet card={CARD} combo={c} inScope={inScope} deckId={deckId} onClose={vi.fn()} onAdded={onAdded} />);
+  const draw = (c: CardCombo, inScope: boolean, deckId: string | null, onAddSettled = vi.fn(), onAddLanded = vi.fn()) =>
+    render(<CardComboSheet card={CARD} combo={c} inScope={inScope} deckId={deckId} onClose={vi.fn()} onAddLanded={onAddLanded} onAddSettled={onAddSettled} />);
 
   it("stacks over the card, named `{card} + {partner}`, the way back named for the card", () => {
     draw(combo({ kind: "spare" }), true, "deck-1");
@@ -84,13 +102,27 @@ describe("the combo over the card", () => {
 
   it("offers Add for a one-away partner on the deck page, and goes back to the card once it lands", async () => {
     addCardToDeck.mockResolvedValue({ ok: true } as DeckMutationResult);
-    const onAdded = vi.fn();
-    draw(combo({ kind: "spare" }), true, "deck-1", onAdded);
+    const onAddSettled = vi.fn();
+    const onAddLanded = vi.fn();
+    draw(combo({ kind: "spare" }), true, "deck-1", onAddSettled, onAddLanded);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: combosCloseCopy.detail.add("Warstorm Surge") }));
     });
     expect(addCardToDeck).toHaveBeenCalledWith("deck-1", "id-surge");
-    expect(onAdded).toHaveBeenCalledTimes(1);
+    expect(onAddLanded).toHaveBeenCalledTimes(1);
+    expect(onAddSettled).toHaveBeenCalledTimes(1);
+  });
+
+  it("a refused Add reports nothing landed", async () => {
+    addCardToDeck.mockResolvedValue({ ok: false, error: "nope" } as unknown as DeckMutationResult);
+    const onAddSettled = vi.fn();
+    const onAddLanded = vi.fn();
+    draw(combo({ kind: "spare" }), true, "deck-1", onAddSettled, onAddLanded);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: combosCloseCopy.detail.add("Warstorm Surge") }));
+    });
+    expect(onAddLanded).not.toHaveBeenCalled();
+    expect(onAddSettled).not.toHaveBeenCalled();
   });
 
   it("a whole combo, a deck-less card or a card outside the deck: the Spellbook link alone", () => {

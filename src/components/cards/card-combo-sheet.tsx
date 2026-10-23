@@ -11,13 +11,14 @@ import { useEffect, useState } from "react";
 
 import { addCardToDeck } from "../../app/decks/actions";
 import { nearComboModal } from "../../lib/bracket/combo-modal";
-import { cheapestLiveCents } from "../../lib/cards/price-lookup";
+import type { PrintingPrices } from "../../lib/cards/price-lookup";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { printedNameOf, resolvedPrinting } from "../../lib/collection/browse";
 import { holdingDecks } from "../../lib/combos/holding-decks";
 import type { CardCombo, CardComboWhere } from "../../lib/combos/near-combos";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { priceOf, priceQualifier, priceState } from "../../lib/decks/price";
 import { MissingPieceWhereLine } from "../decks/combo-where-line";
 import { MutationError } from "../decks/mutation-error";
 import { ComboBody, ModalChrome, type FindingArt } from "../decks/receipt-modal";
@@ -34,7 +35,29 @@ export function openedCardWhere(card: BrowseCard, inScope: boolean): CardComboWh
   if (inScope) return { kind: "inDeck" };
   const a = card.availability;
   if (a && a.owned > 0) return a.free > 0 ? { kind: "spare" } : { kind: "elsewhere", decks: holdingDecks(a) };
-  return { kind: "buy", cents: cheapestLiveCents(card.prices), soldOut: false, qualifier: null };
+  return { kind: "buy", ...cheapestLive(card.prices), soldOut: false };
+}
+
+/**
+ * Pure: the card's cheapest LIVE figure, a non-foil one first and else a foil or etched one with its
+ * qualifier, by the shared price rules (`priceState`, `priceOf`, `priceQualifier`), as the server's
+ * read prices a partner (`cheapestNow`, `qualifierOf`). Nothing live: no figure.
+ */
+export function cheapestLive(prices: PrintingPrices | null | undefined): { cents: number | null; qualifier: string | null } {
+  let plain: number | null = null;
+  let finish: { cents: number; qualifier: string | null } | null = null;
+  for (const fact of Object.values(prices?.byScryfallId ?? {})) {
+    const state = priceState(fact, prices?.newestAsOf ?? null);
+    const cents = priceOf(fact, state);
+    if (cents === null) continue;
+    if (state === "priced") {
+      if (plain === null || cents < plain) plain = cents;
+    } else if (finish === null || cents < finish.cents) {
+      finish = { cents, qualifier: priceQualifier(fact, state) };
+    }
+  }
+  if (plain !== null) return { cents: plain, qualifier: null };
+  return finish ?? { cents: null, qualifier: null };
 }
 
 /**
@@ -54,7 +77,8 @@ export function CardComboSheet({
   inScope,
   deckId,
   onClose,
-  onAdded,
+  onAddLanded,
+  onAddSettled,
 }: {
   /** The card the combo was opened from, under the sheet. */
   card: BrowseCard;
@@ -64,8 +88,10 @@ export function CardComboSheet({
   /** The deck page's deck, which Add adds to; null anywhere else. */
   deckId: string | null;
   onClose: () => void;
-  /** Add landed and the page has redrawn: back to the card, whose block reads again. */
-  onAdded: () => void;
+  /** Add wrote: the provider re-reads the card once it is live again, even if this sheet has gone. */
+  onAddLanded: () => void;
+  /** Add's redraw landed: the provider returns to the card unless a card is open over this sheet. */
+  onAddSettled: () => void;
 }) {
   const partner = combo.others[0];
   const name = printedNameOf(card);
@@ -85,8 +111,8 @@ export function CardComboSheet({
   // against the list that holds the partner, and its line moves to `Whole in this deck`.
   const [added, setAdded] = useState(false);
   useEffect(() => {
-    if (added && !isPending) onAdded();
-  }, [added, isPending, onAdded]);
+    if (added && !isPending) onAddSettled();
+  }, [added, isPending, onAddSettled]);
 
   return (
     <ModalChrome
@@ -121,7 +147,10 @@ export function CardComboSheet({
                   onClick={() =>
                     run(async () => {
                       const outcome = await addCardToDeck(deckId!, add.oracleId);
-                      if (!outcome || outcome.ok) setAdded(true);
+                      if (!outcome || outcome.ok) {
+                        onAddLanded();
+                        setAdded(true);
+                      }
                       return outcome;
                     })
                   }

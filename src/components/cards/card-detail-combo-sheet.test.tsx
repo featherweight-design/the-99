@@ -12,7 +12,8 @@ vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
   clearCardArtPreference: vi.fn(async () => {}),
 }));
-vi.mock("../../app/decks/actions", () => ({ addCardToDeck: vi.fn(async () => ({ ok: true })) }));
+const addCardToDeck = vi.fn(async (..._args: unknown[]) => ({ ok: true }) as { ok: boolean });
+vi.mock("../../app/decks/actions", () => ({ addCardToDeck: (...a: unknown[]) => addCardToDeck(...a) }));
 
 const { CardDetailProvider, CardDetailTrigger, useCardDetail, warmCardModal } = await import("./card-detail-provider");
 await warmCardModal();
@@ -103,5 +104,58 @@ describe("a combo line opened from card details", () => {
     expect(document.querySelector("[data-combo-line=v-1]")).not.toBeNull();
     expect(document.querySelector("[data-combo-line=v-1] [data-combo-press]")).toBeNull();
     expect(screen.queryByRole("button", { name: combosCloseCopy.card.openAria("Polyraptor", "Warstorm Surge") })).toBeNull();
+  });
+
+  describe("Add from the combo (round 1)", () => {
+    const IN_DECK = card("o-poly", "Polyraptor", { cardCombos: { combos: [COMBO], inScope: true } });
+    const mountDeck = (fetchCard = vi.fn(async (id: string) => (id === "o-surge" ? card("o-surge", "Warstorm Surge") : IN_DECK))) => {
+      render(
+        <CardDetailProvider fetchCard={fetchCard} deckPage deckId="deck-1" deckName="HD - Gishath" comboDeckOracleIds={["o-poly", "o-cmdr"]} comboCommanderOracleIds={["o-cmdr"]}>
+          <CardDetailTrigger oracleId="o-poly" name="Polyraptor">Polyraptor</CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      return fetchCard;
+    };
+    const openCombo = async () => {
+      await click(screen.getByText("Polyraptor"));
+      await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
+      await click(screen.getByRole("button", { name: combosCloseCopy.card.openAria("Polyraptor", "Warstorm Surge") }));
+      await waitFor(() => expect(document.querySelector("[data-card-combo=v-1]")).not.toBeNull());
+    };
+
+    it("re-reads the card even when the sheet was dismissed while the Add was pending", async () => {
+      let resolve!: (v: { ok: boolean }) => void;
+      addCardToDeck.mockImplementationOnce(() => new Promise((r) => { resolve = r; }));
+      const fetchCard = mountDeck();
+      await openCombo();
+      await act(async () => { screen.getByRole("button", { name: combosCloseCopy.detail.add("Warstorm Surge") }).click(); });
+      await click(screen.getByRole("button", { name: combosCloseCopy.card.backAria("Polyraptor") }));
+      expect(document.querySelector("[data-card-combo=v-1]")).toBeNull();
+      const reads = fetchCard.mock.calls.filter(([id]) => id === "o-poly").length;
+      await act(async () => { resolve({ ok: true }); });
+      await waitFor(() => expect(fetchCard.mock.calls.filter(([id]) => id === "o-poly").length).toBe(reads + 1));
+    });
+
+    it("a partner opened over the sheet stays when the Add settles under it", async () => {
+      let resolve!: (v: { ok: boolean }) => void;
+      addCardToDeck.mockImplementationOnce(() => new Promise((r) => { resolve = r; }));
+      mountDeck();
+      await openCombo();
+      await act(async () => { screen.getByRole("button", { name: combosCloseCopy.detail.add("Warstorm Surge") }).click(); });
+      const plates = document.querySelectorAll<HTMLElement>("[data-card-combo=v-1] [data-testid=receipt-tile]");
+      await click(plates[1]);
+      await waitFor(() => expect(screen.getAllByText("Warstorm Surge").length).toBeGreaterThan(0));
+      await act(async () => { resolve({ ok: true }); });
+      expect(document.querySelector("[data-card-combo=v-1]")).not.toBeNull();
+    });
+
+    it("the way back puts focus on the line that opened the combo", async () => {
+      mountDeck();
+      await openCombo();
+      await click(screen.getByRole("button", { name: combosCloseCopy.card.backAria("Polyraptor") }));
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole("button", { name: combosCloseCopy.card.openAria("Polyraptor", "Warstorm Surge") })),
+      );
+    });
   });
 });

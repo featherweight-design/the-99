@@ -331,6 +331,21 @@ describe("read B: a card's combos", () => {
     expect(q.params).toContainEqual(["id-Cmdr"]);
   });
 
+  it("with the deck's colors, the shortlist keeps only whole or addable one-away variants BEFORE its limit", async () => {
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const scoped = new PgDialect().sqlToQuery(
+      cardComboQuery("user_1", CARD, 200, 2, { deck: ["id-InDeck"], commanders: ["id-Cmdr"], identity: ["G", "R"] }),
+    );
+    // In the scored CTE's HAVING, ahead of its `limit`: a rejected variant never takes a shortlist slot.
+    const having = scoped.sql.slice(scoped.sql.indexOf("having count(*) ="), scoped.sql.indexOf("limit $"));
+    expect(having).toMatch(/count\(\*\) filter \(where not \(case when vc\.must_be_commander/);
+    expect(having).toMatch(/not vc\.must_be_commander and pc\.commander_legal\s+and pc\.color_identity <@ \$\d+::text\[\]/);
+    expect(scoped.params).toContainEqual(["G", "R"]);
+    // Deck-less, or the card outside the deck: no eligibility, every variant competes.
+    const flat = new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD, 200, 2, { deck: ["id-InDeck"], commanders: ["id-Cmdr"] }));
+    expect(flat.sql).not.toMatch(/color_identity <@/);
+  });
+
   it("the shortlist and its total count only variants with every other piece stored", async () => {
     const { PgDialect } = await import("drizzle-orm/pg-core");
     const q = new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD));

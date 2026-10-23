@@ -1466,19 +1466,52 @@ export function CardDetailProvider({
 
   // The combo sheet's way back is its close: the sheet unmounts and its registration puts the card back.
   const closeComboSheet = useCallback(() => setComboSheet(null), []);
-  // An Add from the combo landed: back to the card, then (once it is the live card again) read it anew.
+  // An Add from the combo WROTE: the card it was opened from is read anew once it is the live card again,
+  // whatever happens to the sheet meanwhile (Back or × while the Add was pending unmounts it). Owned here,
+  // so the write's consequence outlives the sheet; the tick re-runs the effect when the sheet is already gone.
   const comboSheetCard = comboSheet?.card.oracleId ?? null;
-  const addedFromComboSheet = useCallback(() => {
+  const [comboRereadTick, setComboRereadTick] = useState(0);
+  const comboAddLanded = useCallback(() => {
     comboReread.current = comboSheetCard;
-    setComboSheet(null);
+    setComboRereadTick((n) => n + 1);
   }, [comboSheetCard]);
+  // A card stacked over the sheet (a partner's plate pressed), shown or loading: the third layer.
+  const cardOverComboRef = useRef(false);
+  const cardOverCombo = held !== null && (card !== null || pendingOracleId !== null);
+  useEffect(() => {
+    cardOverComboRef.current = cardOverCombo;
+  }, [cardOverCombo]);
+  // The Add settled (the redrawn page landed): back to the card, unless the reader has since opened a
+  // card over the sheet, which must not be dismissed from under them.
+  const comboAddSettled = useCallback(() => {
+    if (!cardOverComboRef.current) setComboSheet(null);
+  }, []);
   // After the sheet's own cleanup has put the card back in the live slot (a child's unmount runs first).
   useEffect(() => {
     const id = comboReread.current;
-    if (comboSheet !== null || id === null) return;
+    if (comboSheet !== null || held !== null || id === null) return;
     comboReread.current = null;
     evict(id);
-  }, [comboSheet, evict]);
+  }, [comboSheet, held, comboRereadTick, evict]);
+  // Focus back on the line that opened the sheet once its card is live again. The dialog's own return
+  // ran while the card was still covered (inert), so it found nothing to land on.
+  const comboFocusRef = useRef<string | null>(null);
+  useEffect(() => {
+    const variantId = comboFocusRef.current;
+    if (comboSheet !== null || held !== null || variantId === null) return;
+    comboFocusRef.current = null;
+    const frame = requestAnimationFrame(() => {
+      const target =
+        document.querySelector<HTMLElement>(`[data-combo-line="${CSS.escape(variantId)}"] [data-combo-press]`) ??
+        document.querySelector<HTMLElement>("[data-testid=combo-partners-block] button[aria-expanded]");
+      target?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [comboSheet, held]);
+  const openComboSheet = useCallback((card: BrowseCard, combo: CardCombo) => {
+    comboFocusRef.current = combo.variantId;
+    setComboSheet({ card, combo });
+  }, []);
 
   const prefetch = useCallback(
     (oracleId: string, art?: string | null) => {
@@ -1801,7 +1834,7 @@ export function CardDetailProvider({
           openCombo={comboFor === card.oracleId}
           // A combo line opens its combo over this card: only on a card nothing is stacked on (stacked
           // sheets R1, call 8). A card over a sheet, or a partner, draws its lines with no press.
-          onOpenCombo={sheetsBelow > 0 || partnerOf !== null ? null : (combo) => setComboSheet({ card, combo })}
+          onOpenCombo={sheetsBelow > 0 || partnerOf !== null ? null : (combo) => openComboSheet(card, combo)}
         />
       ) : null}
       {/* Before the third layer in the document, so a card opened from the picker paints over it:
@@ -1816,7 +1849,8 @@ export function CardDetailProvider({
           inScope={(comboSheet.card.cardCombos?.inScope ?? false) && deckName !== null}
           deckId={deckPage ? deckId : null}
           onClose={closeComboSheet}
-          onAdded={addedFromComboSheet}
+          onAddLanded={comboAddLanded}
+          onAddSettled={comboAddSettled}
         />
       ) : null}
       {/* A card opened from a sheet that sits over a held card: the third layer (audit F16). */}
