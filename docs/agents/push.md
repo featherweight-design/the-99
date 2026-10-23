@@ -72,8 +72,6 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   does the replacing: the kind, except a spare request, which is tagged by its own key so two asks never replace each other. A 404 or 410 deletes the device; any other failure, a send that waits
   over 10 seconds included (`SEND_TIMEOUT_MS`), is transient and leaves the rows for the next run. Counts only are logged: never an endpoint, a key or a word.
 - Rows a week old are pruned. Proof: `probe:push-flush` (a fake sender against a real database).
-- Not yet: the service worker's `push` and `notificationclick` handlers (PR 3d), so nothing a device receives is shown yet; and the
-  catalog kinds (PR 3c, below).
 
 ## Added by PR 3c (the catalog kinds)
 
@@ -92,8 +90,9 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   notification's `keys` match Home's. **Batch**: `<kind>:<UTC day of the run>` (`catalogBatchKey`), so the precons one refresh
   brings are one push ("2 new precons are out", landing on `/decks/precons`); one set is one push on its page.
 - **Resolve**: `resolvePushItems` reads catalog keys through the same branch with no stamp (`catalogItemsByKeyQuery`), then the
-  feed's `lookups` and `toViews`, then `toPushItem`. A set or precon the feed no longer lists is dropped as `gone`; a set with no
-  card count or a precon with no count of its cards is dropped too (Home draws it title-only; a notification is never half-worded).
+  feed's `lookups` and `toViews`, then `toPushItem`. A set or precon the feed no longer lists is dropped as `gone`; a precon with no
+  count of its cards is dropped too (a notification is never half-worded), but a new set with no card count yet (none of its
+  printings has art) still goes as "<Set> is out" with "See the set.", because a dropped row is settled and never retried.
 - `FlushReport.queued` counts the rows the catalog pass wrote. Proof: `probe:push-flush` section 7 (its own set, printing, precons
   and stamps, removed in its finally).
 

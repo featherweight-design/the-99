@@ -1,8 +1,8 @@
 /**
  * A feed view as a push item (`message.ts`): the same facts Home draws, in the shape a notification is built from.
  * Pure. Null when the view lacks what its notification needs (a card the catalog no longer holds, a missing price pair, a
- * friend who is gone, a set with no card count or a precon with no count of its cards): that push is dropped, never sent
- * half-worded. Home draws such a row with its title alone; a notification has no line to leave out.
+ * friend who is gone, or a precon with no count of its cards): that push is dropped, never sent half-worded. A new set
+ * with no card count yet (none of its printings has art) still goes, without the figure. Home draws such a row with its title alone; a notification has no line to leave out.
  */
 import type { FeedView } from "../feed/home";
 import type { PushItem } from "./message";
@@ -12,8 +12,9 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
   const card = view.card;
   switch (view.kind) {
     case "new-set":
-      if (!view.name || !view.href || !view.setSize) return null;
-      return { ...base, kind: "new-set", name: view.name, cards: view.setSize, href: view.href };
+      // No card count yet (no printing has art): still a push, never dropped as gone, because it would never be retried.
+      if (!view.name || !view.href) return null;
+      return { ...base, kind: "new-set", name: view.name, cards: view.setSize ?? null, href: view.href };
     case "new-precon":
       if (!view.name || !view.href || !view.owned) return null;
       return { ...base, kind: "new-precon", name: view.name, owned: view.owned.owned, of: view.owned.of, href: view.href };

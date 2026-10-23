@@ -46,7 +46,8 @@ describe("a feed view as a push item", () => {
     });
   });
   it("a set or precon missing a part of its words is dropped, never sent title-only", () => {
-    expect(toPushItem(view({ kind: "new-set", name: "Duskmourn", setSize: null, href: "/collection/sets/dsk" }), "b")).toBeNull();
+    // No card count yet (no printing has art): still a push, so it is never settled as gone and lost.
+    expect(toPushItem(view({ kind: "new-set", key: "set:dsk", name: "Duskmourn", setSize: null, href: "/collection/sets/dsk" }), "b")).toMatchObject({ kind: "new-set", cards: null });
     expect(toPushItem(view({ kind: "new-set", name: null, setSize: 286, href: "/collection/sets/dsk" }), "b")).toBeNull();
     expect(toPushItem(view({ kind: "new-precon", name: "Death Toll", owned: null, href: "/decks/precons/X" }), "b")).toBeNull();
   });
