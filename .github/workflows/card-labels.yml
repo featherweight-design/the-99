@@ -91,6 +91,10 @@ jobs:
     environment: catalog-staging
     steps:
       - uses: actions/checkout@v4
+        with:
+          # A staging leg runs the commit staging has deployed and migrated (`staging-deployed`, moved by `Staging
+          # sync` only after that deploy succeeds), never code ahead of staging's database (docs/agents/ops.md).
+          ref: staging-deployed
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

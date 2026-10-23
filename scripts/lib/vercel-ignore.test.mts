@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { decide, diffArgs, skippablePath, STAGING_PROJECT_ID } from "./vercel-ignore.mjs";
+import { decide, diffArgs, skippablePath, STAGING_BRANCH, STAGING_PROJECT_ID } from "./vercel-ignore.mjs";
 
 describe("skippablePath", () => {
   it.each(["docs/agents/ops.md", "docs/superpowers/plans/x.md", "design/design_handoff_x/a.html", ".github/workflows/ci.yml", "AGENTS.md", "README.md"])("%s is skippable", (p) => {
@@ -28,13 +28,21 @@ describe("decide", () => {
     expect(decide({ ...prod, changed: undefined }).build).toBe(true);
     expect(decide({ ...prod, changed: [] }).build).toBe(true);
   });
-  it("staging skips a preview or a non-main ref, even with app changes", () => {
+  it("staging skips a preview or any ref but its own branch, main included, even with app changes", () => {
+    expect(STAGING_BRANCH).toBe("staging");
     expect(decide({ projectId: STAGING_PROJECT_ID, env: "preview", ref: "feat", changed: ["src/x.ts"] }).build).toBe(false);
     expect(decide({ projectId: STAGING_PROJECT_ID, env: "production", ref: "other", changed: ["src/x.ts"] }).build).toBe(false);
+    expect(decide({ projectId: STAGING_PROJECT_ID, env: "production", ref: "main", changed: ["src/x.ts"] }).build).toBe(false);
   });
-  it("staging builds main, and builds when the environment is not stated", () => {
-    expect(decide({ projectId: STAGING_PROJECT_ID, env: "production", ref: "main", changed: ["src/x.ts"] }).build).toBe(true);
+  it("staging builds its own branch, and builds when the environment is not stated", () => {
+    expect(decide({ projectId: STAGING_PROJECT_ID, env: "production", ref: "staging", changed: ["src/x.ts"] }).build).toBe(true);
     expect(decide({ projectId: STAGING_PROJECT_ID, changed: ["src/x.ts"] }).build).toBe(true);
+  });
+  it("staging still skips its own branch when nothing the build reads changed", () => {
+    expect(decide({ projectId: STAGING_PROJECT_ID, env: "production", ref: "staging", changed: ["docs/a.md"] }).build).toBe(false);
+  });
+  it("production still builds main", () => {
+    expect(decide({ projectId: "prj_other", env: "production", ref: "main", changed: ["src/x.ts"] }).build).toBe(true);
   });
   it("neither project builds a preview or any non-production environment", () => {
     for (const projectId of ["prj_other", STAGING_PROJECT_ID]) {
