@@ -14,7 +14,7 @@ export const pushCopy = {
     newPrecon: { title: t.newPrecon, body: feedCopy.home.line.newPrecon },
     priceDrop: { title: t.priceDrop, body: (was: string, now: string) => `Was ${was}, now ${now} at the cheapest printing.` },
     tradeMatch: { title: t.tradeMatch, body: feedCopy.home.line.tradeMatch },
-    spareRequest: { title: t.spareRequest, body: `${feedCopy.home.line.spareRequest} Answer in Friends.` },
+    spareRequest: { title: t.spareRequest, body: feedCopy.home.line.spareRequest },
     combo: { title: "You can make a combo", body: (a: string, b: string, added: string) => `${a} + ${b}. ${feedCopy.home.line.combo(added)}` },
   },
   /** Several of one kind from one job, or what waited the night, as one notification. */

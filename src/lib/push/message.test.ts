@@ -30,7 +30,7 @@ describe("one item of each kind (the handoff's table)", () => {
     expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: "It’s on your wishlist.", route: "/friends/p-colin" });
   });
   it("spare request: says where to answer, lands on Friends", () => {
-    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: "A friend wants a card you have spare. Answer in Friends.", route: "/friends", tag: "spare-request:r1" });
+    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: "Answer in Friends.", route: "/friends", tag: "spare-request:r1" });
   });
   it("combo: names its kind, Home with the first piece open for its combo", () => {
     expect(toMessage([combo("c1")])).toMatchObject({
