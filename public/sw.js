@@ -210,16 +210,19 @@ function alwaysShows() {
   return /AppleWebKit/.test(ua) && !/Chrome|Chromium|Edg|OPR|SamsungBrowser|Android/.test(ua);
 }
 
-/** A same-origin path, or "/": a payload is ours, but a landing is never trusted to leave the app. */
+/**
+ * The landing as an ABSOLUTE URL on this origin, or Home's: a payload is ours, but a landing is never trusted to leave the app.
+ * Judged on what the URL parser makes of it, not on the string (it drops tabs and line breaks), and returned whole, never as a
+ * path: a path like "//host/x" would be read as another host by the next parse. Applying it twice gives the same answer.
+ */
 function landing(route) {
-  if (typeof route !== "string" || !route.startsWith("/")) return "/";
-  // Judged on what the URL parser makes of it, not on the string: it drops tabs and line breaks, so "/\t/evil.example"
-  // would pass a string check and still resolve to another host.
+  const home = new URL("/", self.location.origin).href;
+  if (typeof route !== "string") return home;
   try {
     const url = new URL(route, self.location.origin);
-    return url.origin === self.location.origin ? url.pathname + url.search + url.hash : "/";
+    return url.origin === self.location.origin ? url.href : home;
   } catch {
-    return "/";
+    return home;
   }
 }
 
@@ -267,7 +270,7 @@ self.addEventListener("notificationclick", (event) => {
  * opened cold has nobody listening yet. The page reads them once and strips them (the landing PR).
  */
 async function openLanding(data) {
-  const url = new URL(landing(data.route), self.location.origin);
+  const url = new URL(landing(data.route));
   if (typeof data.openCard === "string" && data.openCard) {
     url.searchParams.set("push-card", data.openCard);
     if (data.openCombo === true) url.searchParams.set("push-combo", "1");

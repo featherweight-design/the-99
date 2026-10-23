@@ -439,7 +439,7 @@ describe("push", () => {
     await push(payload);
     expect(showNotification).toHaveBeenCalledWith("Jace is cheaper", {
       body: "Was $8.40, now $5.10.", tag: "price-drop", icon: "/icons/icon-192.png", image: "https://cards.scryfall.io/x.jpg",
-      data: { route: "/", keys: ["item:1"], openCard: "o1", openCombo: false },
+      data: { route: `${ORIGIN}/`, keys: ["item:1"], openCard: "o1", openCombo: false },
     });
   });
 
@@ -462,15 +462,15 @@ describe("push", () => {
     await push({ ...payload, image: "http://evil.example/x.jpg", route: "//evil.example/x" });
     const options = showNotification.mock.calls[0]![1] as { image?: string; data: { route: string } };
     expect(options.image).toBeUndefined();
-    expect(options.data.route).toBe("/");
-    for (const route of ["https://evil.example", "/\\evil", "friends", 7, null]) {
+    expect(options.data.route).toBe(`${ORIGIN}/`);
+    for (const route of ["https://evil.example", "/\\evil", 7, null]) {
       showNotification.mockClear();
       await push({ ...payload, route });
-      expect((showNotification.mock.calls[0]![1] as { data: { route: string } }).data.route, String(route)).toBe("/");
+      expect((showNotification.mock.calls[0]![1] as { data: { route: string } }).data.route, String(route)).toBe(`${ORIGIN}/`);
     }
     showNotification.mockClear();
     await push({ ...payload, route: "/friends/abc?x=1" });
-    expect((showNotification.mock.calls[0]![1] as { data: { route: string } }).data.route).toBe("/friends/abc?x=1");
+    expect((showNotification.mock.calls[0]![1] as { data: { route: string } }).data.route).toBe(`${ORIGIN}/friends/abc?x=1`);
   });
 
   it("shows nothing while a window of the app has focus: its own surfaces say it", async () => {
@@ -543,6 +543,14 @@ describe("push", () => {
       await click({ route });
       expect(openWindow, JSON.stringify(route)).toHaveBeenLastCalledWith(`${ORIGIN}/`);
     }
+    // Parsed twice (once at the push, once at the tap): a same-origin route whose PATH starts "//" must not turn into a host
+    // the second time.
+    const host = new URL(ORIGIN).host;
+    await push({ ...payload, route: `/.//${host}//evil.example/x` });
+    const stored = (showNotification.mock.calls.at(-1)![1] as { data: { route: string } }).data.route;
+    expect(new URL(stored).origin).toBe(ORIGIN);
+    await click({ route: stored });
+    expect(new URL(openWindow.mock.calls.at(-1)![0] as string).origin).toBe(ORIGIN);
   });
 
   it("still lands when the window refuses to focus or navigate: it opens one instead", async () => {
