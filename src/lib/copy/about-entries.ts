@@ -1597,16 +1597,17 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'Giving a deck a focus',
     route: '/decks',
     opens: 'opens a deck’s Analysis tab',
+    width: 'plate',
     // 2026-10-22 (strategy focus close-out, `design_handoff_the99_strategy_focus/about · giving a deck a focus.ts`):
     // follows STRATEGY_FOCUS_ENABLED, so turning the ring on is what announces it. NO BUMP, as `mana-balance`: a switched
     // entry is seen by its id, and `since` is the current version. The handoff asked for the launch-end bump; the code's
     // rule (`ABOUT_VERSION`'s header) is that a switched entry bumps nothing, and d9 ruled to follow it.
     switch: 'STRATEGY_FOCUS_ENABLED',
     caption:
-      'What is this deck about? Under Analysis, The deck’s strategy rings up to five themes the deck is built around, counted from the list against every Commander card: a creature type, a theme like Tokens, or a card type. Pick one as the deck’s focus, and its icon takes the middle of the ring.\n\nWith a focus picked, Suggested changes aims at it: its additions lean toward the focus, and each says how far it moves it. Add one and its arc grows.',
+      'What is this deck about? On “Analysis”, “The deck’s strategy” rings up to five strategies the list leans on harder than Commander decks do in general: a creature type, a theme like Tokens, or a card type. Pick one as the deck’s focus, and its icon takes the middle of the ring.\n\nWith a focus picked, “Suggested changes” aims at it: most of its additions count toward the focus, and each shows the count it moves. Add one and its arc grows.',
     keys: [
-      'The ring and the focus are free. Suggested changes uses a credit, as it always has.',
-      'Keep it balanced clears the focus.',
+      'The ring and the focus are free. “Suggested changes” uses a credit, as it always has.',
+      '“Keep it balanced” clears the focus.',
       'Lands aren’t counted, so a landfall deck reads its payoffs, not its lands.',
     ],
     marksPending: true,
