@@ -139,6 +139,39 @@
           "scrollTo": "[data-testid=combo-partners-block]",
           "settle": 400
         }
+      ],
+      "widths": [
+        "tablet",
+        "desktop"
+      ]
+    },
+    {
+      "id": "card-closed-phone",
+      "label": "card details from /decks/[id] many: the combo block closed, its counts (phone: the sheet raised by All details)",
+      "view": "src/components/cards/combo-partners-detail.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-decklist-row]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-decklist-row]:has([data-testid=combo-glyph])",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details$",
+          "settle": 1000
+        },
+        {
+          "scrollTo": "[data-testid=combo-partners-block]",
+          "settle": 400
+        }
+      ],
+      "widths": [
+        "phone"
       ]
     },
     {
@@ -169,6 +202,48 @@
           "scrollTo": "[data-combo-lines]",
           "settle": 400
         }
+      ],
+      "widths": [
+        "tablet",
+        "desktop"
+      ]
+    },
+    {
+      "id": "card-split-phone",
+      "label": "card details from /decks/[id] many: the block open, Whole in this deck then One piece away, each line's where (phone: the sheet raised by All details)",
+      "view": "src/components/cards/combo-partners-detail.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-decklist-row]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-decklist-row]:has([data-testid=combo-glyph])",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details$",
+          "settle": 1000
+        },
+        {
+          "scrollTo": "[data-testid=combo-partners-block]",
+          "settle": 400
+        },
+        {
+          "click": "[data-testid=combo-partners-block] button[aria-expanded=false]",
+          "wait": "[data-combo-lines]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-combo-lines]",
+          "settle": 400
+        }
+      ],
+      "widths": [
+        "phone"
       ]
     },
     {
@@ -200,6 +275,49 @@
           "wait": "[data-card-combo]",
           "settle": 900
         }
+      ],
+      "widths": [
+        "tablet",
+        "desktop"
+      ]
+    },
+    {
+      "id": "card-combo-phone",
+      "label": "card details from /decks/[id] many: a line pressed, the combo stacked on the card, back names the card (phone: the sheet raised by All details)",
+      "view": "src/components/cards/card-combo-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${COMBOS_MANY_DECK}",
+          "wait": "[data-decklist-row]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-decklist-row]:has([data-testid=combo-glyph])",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details$",
+          "settle": 1000
+        },
+        {
+          "scrollTo": "[data-testid=combo-partners-block]",
+          "settle": 400
+        },
+        {
+          "click": "[data-testid=combo-partners-block] button[aria-expanded=false]",
+          "wait": "[data-combo-lines]",
+          "settle": 600
+        },
+        {
+          "click": "[data-combo-line] [data-combo-press] >> nth=0",
+          "wait": "[data-card-combo]",
+          "settle": 900
+        }
+      ],
+      "widths": [
+        "phone"
       ]
     }
   ]
