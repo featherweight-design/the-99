@@ -3,7 +3,7 @@
 // Writes the summary to $GITHUB_STEP_SUMMARY and --report, this run's Neon snapshot to --snapshot, and exits 1 when
 // a rule fires or either source cannot be read. Previous snapshot: --previous <file> (optional).
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
-import { fetchCharges, fetchDeployments, fetchNeon, neonWeek, splitWeeks, summariseNeon } from "./lib/cost-sources.mjs";
+import { fetchCharges, fetchDeployments, fetchNeon, neonWeek, parsePrevious, splitWeeks, summariseNeon } from "./lib/cost-sources.mjs";
 import { evaluate } from "./lib/cost-thresholds.mjs";
 import { renderReport } from "./lib/cost-report.mjs";
 
@@ -36,7 +36,10 @@ try {
   if (!token) throw new Error("NEON_API_KEY_READONLY is not set");
   neon = summariseNeon(await fetchNeon({ token, projectId: NEON_PROJECT }), now);
   const prevFile = flag("--previous");
-  const previous = prevFile && existsSync(prevFile) ? JSON.parse(readFileSync(prevFile, "utf8")) : null;
+  // A missing or unparsable baseline only skips the weekly comparison; it must not discard this run's own reads.
+  const text = prevFile && existsSync(prevFile) ? readFileSync(prevFile, "utf8") : null;
+  const previous = text === null ? null : parsePrevious(text);
+  if (text !== null && previous === null) problems.push("Neon: the previous snapshot could not be read; the weekly comparison was skipped");
   week = neonWeek(neon, previous);
   if (flag("--snapshot")) writeFileSync(flag("--snapshot"), JSON.stringify(neon));
 } catch (e) {

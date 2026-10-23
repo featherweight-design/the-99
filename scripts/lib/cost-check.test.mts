@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchBranches, fetchDeployments, neonWeek, splitWeeks, summariseCharges, summariseNeon } from "./cost-sources.mjs";
+import { fetchBranches, fetchDeployments, neonWeek, parsePrevious, splitWeeks, summariseCharges, summariseNeon } from "./cost-sources.mjs";
 import { evaluate, THRESHOLDS } from "./cost-thresholds.mjs";
 import { renderReport } from "./cost-report.mjs";
 
@@ -225,5 +225,12 @@ describe("fetchDeployments", () => {
     let n = 0;
     vi.stubGlobal("fetch", async () => page([`d${n}`], 1000 - n++));
     await expect(fetchDeployments(args)).rejects.toThrow(/40 pages/);
+  });
+});
+
+describe("parsePrevious", () => {
+  it("returns the snapshot object, and null for anything unreadable so only the comparison is lost", () => {
+    expect(parsePrevious('{"month":"2026-10"}')).toEqual({ month: "2026-10" });
+    for (const bad of ["", "{", "null", "[1]", "3", '"x"']) expect(parsePrevious(bad)).toBeNull();
   });
 });

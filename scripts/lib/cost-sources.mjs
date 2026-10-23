@@ -142,3 +142,13 @@ export function neonWeek(current, previous) {
     transferGb: ((current.transferBytes - previous.transferBytes) / 1e9) * k,
   };
 }
+
+/** The previous snapshot from its file's text, or null when it is not a JSON object: only the comparison is lost. */
+export function parsePrevious(text) {
+  try {
+    const v = JSON.parse(text);
+    return v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
