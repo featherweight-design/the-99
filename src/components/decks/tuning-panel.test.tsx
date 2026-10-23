@@ -1808,3 +1808,158 @@ describe("TuningPanel: a past run History reopened (re-review)", () => {
     expect(d.read).toHaveBeenLastCalledWith(D1, null);
   });
 });
+
+describe("the strategy focus in Suggested changes", () => {
+  const focused: TuningFacts = { ...facts, focus: "tokens" };
+
+  it("reads the deck's focus as one accent row before what you own, and not without one", () => {
+    const rows = manifestRows(focused, "go wide", null, readSteps(focused, "go wide"));
+    const keys = rows.flatMap((r) => (r.kind === "read" ? [r.key] : []));
+    expect(keys.slice(-2)).toEqual(["focus", "collection"]);
+    expect(rows.find((r) => r.kind === "read" && r.key === "focus")).toMatchObject({ label: deckTuningCopy.manifest.focus, count: "Tokens", accent: true });
+    expect(readSteps(facts, "go wide")).not.toContain("focus");
+  });
+
+  it("adds one lead sentence before a run, aimed at the focus", async () => {
+    render(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={deps([fresh])} />);
+    expect(await screen.findByText((t) => t.includes(copy.focusLead("Tokens")))).toBeInTheDocument();
+  });
+
+  it("names the run's own focus in its read-from line, whatever the deck's focus is now", async () => {
+    const aimed = { ...results, itemsValidationReport: { askedCount: 8, survivedCount: 8, keptCount: 5, focus: "lifegain" } };
+    render(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={deps([aimed])} />);
+    expect(await screen.findByText((t) => t.includes(deckTuningCopy.manifest.readFocus("Life gain")))).toBeInTheDocument();
+  });
+
+  it("re-reads its gate when the focus the server holds moves", async () => {
+    const d = deps([fresh]);
+    const { rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} />);
+    await waitFor(() => expect(d.read).toHaveBeenCalled());
+    const before = (d.read as ReturnType<typeof vi.fn>).mock.calls.length;
+    rerender(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={d} />);
+    await waitFor(() => expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(before + 1));
+  });
+
+  // Review round 1: a focus change is new input, as a limits save is, so it retires an "unchanged"
+  // reading, retries a refresh that did not land before the next press, and is never overwritten
+  // by the panel's own older first read.
+  const moved: TuningState = { ...results, stale: true };
+
+  it("clears the unchanged state when the focus moves", async () => {
+    const d = deps([results, moved]);
+    const { rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} />);
+    await screen.findByRole("button", { name: copy.again });
+    await press(copy.again);
+    expect(screen.getByTestId("tuning-unchanged")).toBeInTheDocument();
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={d} />);
+    });
+    await waitFor(() => expect(screen.queryByTestId("tuning-unchanged")).toBeNull());
+  });
+
+  it("re-reads before judging a press when the focus refresh failed", async () => {
+    let call = 0;
+    const read = vi.fn(async () => {
+      call += 1;
+      if (call === 1) return results;
+      if (call === 2) throw new Error("dropped");
+      return moved;
+    });
+    const d = deps([results], { read });
+    const { rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} />);
+    await screen.findByRole("button", { name: copy.again });
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={d} />);
+    });
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    await press(copy.again);
+    expect(read.mock.calls.length).toBeGreaterThanOrEqual(3);
+    expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
+    expect(d.run).toHaveBeenCalled();
+  });
+
+  it("does not let its first read, landing last, overwrite a focus refresh", async () => {
+    let releaseFirst: (s: TuningState) => void = () => {};
+    let call = 0;
+    const read = vi.fn(() => {
+      call += 1;
+      if (call === 1) return new Promise<TuningState>((resolve) => { releaseFirst = resolve; });
+      return Promise.resolve(moved);
+    });
+    const d = deps([results], { read });
+    const { rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} />);
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={d} />);
+    });
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      releaseFirst(results);
+    });
+    await press(copy.again);
+    expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
+    expect(d.run).toHaveBeenCalled();
+  });
+
+  // Review round 2: the first read is kept when the newer refresh fails, and a press made while the
+  // refresh is still out re-reads rather than judging the snapshot from before the focus moved.
+  it("draws its first read when the newer focus refresh failed, and re-reads before a press", async () => {
+    let releaseFirst: (s: TuningState) => void = () => {};
+    let call = 0;
+    const read = vi.fn(() => {
+      call += 1;
+      if (call === 1) return new Promise<TuningState>((resolve) => { releaseFirst = resolve; });
+      if (call === 2) return Promise.reject(new Error("dropped"));
+      return Promise.resolve(moved);
+    });
+    const d = deps([results], { read });
+    const { rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} />);
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={d} />);
+    });
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      releaseFirst(results);
+    });
+    await screen.findByRole("button", { name: copy.again });
+    await press(copy.again);
+    expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
+    expect(d.run).toHaveBeenCalled();
+    // The press's own re-read (the third) came before the run it started.
+    expect(read.mock.invocationCallOrder[2]).toBeLessThan((d.run as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]);
+  });
+
+  it("re-reads a press made while the focus refresh is still out", async () => {
+    let call = 0;
+    const read = vi.fn(() => {
+      call += 1;
+      if (call === 1) return Promise.resolve(results);
+      if (call === 2) return new Promise<TuningState>(() => {});
+      return Promise.resolve(moved);
+    });
+    const d = deps([results], { read });
+    const { rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} />);
+    await screen.findByRole("button", { name: copy.again });
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={d} />);
+    });
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    await press(copy.again);
+    expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
+    expect(d.run).toHaveBeenCalled();
+    // The press's own re-read (the third) came before the run it started.
+    expect(read.mock.invocationCallOrder[2]).toBeLessThan((d.run as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]);
+  });
+
+  // Review round 3: a focus write that settles back onto the value already shown (A, B, A) still re-reads the gate.
+  it("re-reads when the focus settles again on the same value", async () => {
+    const d = deps([results, moved]);
+    const at = (revision: number) => ({ ...focused, focusRevision: revision });
+    const { rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={at(1)} onLogGame={vi.fn()} deps={d} />);
+    await screen.findByRole("button", { name: copy.again });
+    const before = (d.read as ReturnType<typeof vi.fn>).mock.calls.length;
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[3]} facts={at(2)} onLogGame={vi.fn()} deps={d} />);
+    });
+    await waitFor(() => expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(before + 1));
+  });
+});

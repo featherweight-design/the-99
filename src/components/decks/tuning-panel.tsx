@@ -1,5 +1,8 @@
 "use client";
 
+import { strategyName } from "@/lib/copy/strategy-focus";
+import { parseStrategyKey } from "@/lib/strategy/focus";
+import type { StrategyKey } from "@/lib/strategy/score";
 import { useTarget } from "../discovery/targets-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -96,13 +99,18 @@ export type TuningFacts = {
   intent: string | null;
   /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them. */
   limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  /** The deck's strategy focus, held by the shell (`useStrategyFocus`); absent or null with none. */
+  focus?: StrategyKey | null;
+  /** Moves each time the shell's focus write settles (`useHeldPick`'s `revision`), even onto the value it already
+   *  held; the panel re-reads its gate on it. Absent, the panel follows `focus` alone. */
+  focusRevision?: number;
 };
 
 /** The checklist's own vocabulary (H35, PR 3) — a row the panel already knows how to draw,
  *  never a real per-step database read. `notes` here is the game log's notes row, unchanged
  *  since before this PR; `playerNotes` is the new Additional notes row, named differently so
  *  the two are never confused in a switch. */
-export type ManifestStep = "games" | "notes" | "decklist" | "description" | "limits" | "playerNotes" | "collection";
+export type ManifestStep = "games" | "notes" | "decklist" | "description" | "limits" | "playerNotes" | "focus" | "collection";
 
 const copy = deckTuningCopy.panel;
 const manifest = deckTuningCopy.manifest;
@@ -330,6 +338,31 @@ export function TuningPanel({
       return null;
     }
   }, [deps, deckId, reviewRunId]);
+  // True when the re-read a successful limits save or a focus change just tried to force did NOT
+  // land (an exception, or a resolved-null read) — `stateRef` then still holds the fingerprint from
+  // BEFORE that input moved, which a gate check must not trust (pre-open review round 4, previously
+  // missed): the input genuinely changed, but the "unchanged" verdict it was meant to retire is
+  // still sitting in `stateRef`.
+  const gateStaleRead = useRef(false);
+  // Strategy focus: a pick or a clear is new input to the gate (handoff Call 2), so the panel re-reads it when the focus
+  // the server holds moves. Not on mount, which reads already. As the limits save does, it retires
+  // an "unchanged" reading on screen, and a refresh that does not land leaves `gateStaleRead` set so
+  // the next press re-reads before judging the gate (review round 1).
+  // Keyed on the revision as well as the value: an A, B, A run of picks settles back on A, and a read taken while
+  // the writes were queued may hold B's gate (review round 3).
+  const shownFocus = useRef({ key: facts.focus ?? null, revision: facts.focusRevision ?? 0 });
+  useEffect(() => {
+    const now = { key: facts.focus ?? null, revision: facts.focusRevision ?? 0 };
+    if (now.key === shownFocus.current.key && now.revision === shownFocus.current.revision) return;
+    shownFocus.current = now;
+    // Stale from the moment the focus moves, not from when the read lands: a press made while this read is out must
+    // re-read rather than judge the gate on the snapshot from before the focus changed (review round 2).
+    gateStaleRead.current = true;
+    void (async () => {
+      gateStaleRead.current = (await reread()) === null;
+      setUnchangedShown(false);
+    })();
+  }, [facts.focus, facts.focusRevision, reread]);
 
   // Debounced trailing-edge, PARTIAL and MERGED: typing the cap fires `saveLimits` on every
   // keystroke, so only the latest value within one pause reaches the server — and only the
@@ -355,11 +388,6 @@ export function TuningPanel({
   // edit queued in the SAME unsent patch; a newer edit that had already moved into its OWN,
   // separately-chained send was invisible to that check.
   const limitFieldRevision = useRef<Record<LimitField, number>>({ capDollars: 0, sets: 0, ownedOnly: 0 });
-  // True when the re-read a successful save just tried to force did NOT land (an exception, or
-  // a resolved-null read) — `stateRef` then still holds the PRE-SAVE fingerprint, which a gate
-  // check must not trust (pre-open review round 4, previously missed): the save genuinely
-  // happened, but the "unchanged" verdict it was meant to retire is still sitting in `stateRef`.
-  const limitsStaleRead = useRef(false);
   const sendLimits = useCallback(
     (patch: LimitsPatch, revisionAtSend: Partial<Record<LimitField, number>>): Promise<boolean> => {
       const keys = Object.keys(patch) as LimitField[];
@@ -383,8 +411,10 @@ export function TuningPanel({
             setLimitsError(null);
             // The fingerprint changed server-side, so a prior "unchanged" reading of this exact
             // gate no longer applies — re-read so the manifest and the gate reopen without
-            // waiting for an unrelated navigation to revalidate the page (round 1).
-            limitsStaleRead.current = (await reread()) === null;
+            // waiting for an unrelated navigation to revalidate the page (round 1). Stale until it lands, as the
+            // focus refresh is.
+            gateStaleRead.current = true;
+            gateStaleRead.current = (await reread()) === null;
             setUnchangedShown(false);
             keys.forEach((key) => failedLimitFields.current.delete(key));
             const settled = keys.filter((key) => limitFieldRevision.current[key] === revisionAtSend[key]);
@@ -501,6 +531,11 @@ export function TuningPanel({
 
   useEffect(() => {
     let live = true;
+    // Shares `reread`'s ordering: a refresh asked while this read is out (a focus pick landing) is
+    // newer, so this older snapshot records the baseline and settles but is not drawn over it (review round 1). When
+    // no newer snapshot has landed (the refresh is still out, or failed), it is drawn as a fallback with the gate
+    // marked stale, so the panel is never blank and a press re-reads before trusting it (review round 2).
+    const mine = ++asked.current;
     deps.read(deckId, leftReview.current ? null : reviewRunId).then(
       (next) => {
         if (!live) return;
@@ -513,8 +548,14 @@ export function TuningPanel({
             runId: next.run && next.run.status !== "pending" ? next.run.id : null,
           }));
         }
-        setState(next);
-        stateRef.current = next;
+        if (mine === asked.current) {
+          setState(next);
+          stateRef.current = next;
+        } else if (stateRef.current === null) {
+          setState(next);
+          stateRef.current = next;
+          gateStaleRead.current = true;
+        }
         settledRef.current?.();
       },
       // A first read that fails draws nothing, as a deck with no reading does; a reopened run's
@@ -683,14 +724,14 @@ export function TuningPanel({
         return;
       }
       let current = flushed.touched ? stateRef.current : state;
-      // The save's own re-read failed — `current` is the PRE-SAVE fingerprint, not the one this
+      // A save's or a focus change's own re-read failed — `current` is the fingerprint from before it, not the one this
       // press must judge "unchanged" against. Checked on the FLAG alone, not `flushed.touched`:
       // a press made after that save (and its failed re-read) had already settled sees
       // `touched: false` here, since nothing was pending or in flight by the time THIS press
       // ran, but the flag itself survives across presses until a read actually lands (round 5).
-      if (limitsStaleRead.current) {
+      if (gateStaleRead.current) {
         current = await reread();
-        limitsStaleRead.current = current === null;
+        gateStaleRead.current = current === null;
       }
       if (current === null) {
         setRefused(deckTuningCopy.run.refused);
@@ -1037,6 +1078,7 @@ export function TuningPanel({
             : facts.fix === null
               ? copy.unmarkedLead(cap(numberWord(facts.gameCount)))
               : copy.readyLead(cap(numberWord(facts.gameCount)), axisName(facts.fix.key), facts.fix.hurt, facts.gameCount)}
+          {allLocked === null && facts.focus ? ` ${copy.focusLead(strategyName(facts.focus))}` : null}
         </Lead>
         {checklist}
       </>
@@ -1291,9 +1333,13 @@ function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) 
   // (review round 1), and `state.run`'s report would then describe an attempt that produced
   // none of what is shown.
   const notesRead = state.itemsValidationReport?.hadNotes ? [descriptionManifest.readNotes] : [];
+  // Strategy focus: the RUN's own focus (its report), so a run reopened from History names what it aimed at, whatever
+  // the deck's focus is now.
+  const runFocus = parseStrategyKey(state.itemsValidationReport?.focus);
+  const focusRead = runFocus ? [manifest.readFocus(strategyName(runFocus))] : [];
   const parts =
     state.gameCount === 0
-      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...descriptionRead, ...limitsRead, ...notesRead]
+      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...descriptionRead, ...limitsRead, ...notesRead, ...focusRead]
       : [
           manifest.readGames(state.gameCount),
           ...(facts.noteCount > 0 ? [manifest.readNotes(facts.noteCount)] : []),
@@ -1303,6 +1349,7 @@ function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) 
           ...descriptionRead,
           ...limitsRead,
           ...notesRead,
+          ...focusRead,
         ];
   return (
     <p className="mt-[8px] font-mono text-[9.5px] leading-[1.5] md:mt-[9px] md:text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
@@ -1417,6 +1464,8 @@ export function readSteps(facts: TuningFacts, _intent: string | null): ManifestS
     ...(facts.gameCount > 0 ? (["games", "notes"] as const) : []),
     "decklist",
     "description",
+    // Strategy focus (handoff Call 2): one row, before what you own, only with a focus.
+    ...(facts.focus ? (["focus"] as const) : []),
     "collection",
   ];
 }
@@ -1448,7 +1497,7 @@ export function manifestRows(
   const rows: ManifestRow[] = facts.gameCount === 0 ? [{ kind: "noGames", key: "games" }] : [];
   for (const step of steps) {
     if (ticked !== null) {
-      rows.push({ kind: "read", key: step, label: labelOf(step, facts), count: null, done: ticked.has(step) });
+      rows.push({ kind: "read", key: step, label: labelOf(step, facts), count: null, done: ticked.has(step), ...(step === "focus" ? { accent: true as const } : {}) });
       continue;
     }
     // The preview only — the absent description gets the games row's own dashed treatment
@@ -1470,6 +1519,7 @@ export function manifestRows(
       label: labelOf(step, facts),
       count: n === null ? null : countOf(step, n, facts),
       done: false,
+      ...(step === "focus" ? { accent: true as const } : {}),
     });
   }
   return rows;
@@ -1483,6 +1533,7 @@ function known(facts: TuningFacts, intent: string | null, step: ManifestStep): n
     case "description": return intent === null ? 0 : 1;
     // Worded without a figure, so the unchecked row reads the same before and after its read.
     case "collection": return 0;
+    case "focus": return 1;
     // Only ever drawn while reading, where `ticked !== null` short-circuits before this runs.
     case "limits": case "playerNotes": return null;
   }
@@ -1497,6 +1548,7 @@ function labelOf(step: ManifestStep, facts: TuningFacts): string {
     case "limits": return descriptionManifest.limits;
     case "playerNotes": return descriptionManifest.notes;
     case "collection": return manifest.collection;
+    case "focus": return manifest.focus;
   }
 }
 
@@ -1509,6 +1561,7 @@ function countOf(step: ManifestStep, n: number, facts: TuningFacts): string {
     // above, before `countOf` is ever reached for this step.
     case "description": return descriptionManifest.descriptionCount;
     case "collection": return manifest.collectionCount;
+    case "focus": return facts.focus ? strategyName(facts.focus) : "";
     // Only ever drawn while reading, where `countOf` is never called for them.
     case "limits": case "playerNotes": return "";
   }

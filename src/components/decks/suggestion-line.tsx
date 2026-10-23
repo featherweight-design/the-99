@@ -191,10 +191,12 @@ export function SuggestionLine({
           <li
             key={i}
             className="flex items-baseline gap-[5px] rounded-[5px] px-[7px] py-[3px] font-mono text-[9.5px]"
-            style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
+            data-cite={c.kind}
+            // The strategy focus's chip (handoff Call 3): dashed accent, its label in accent.
+            style={{ background: "var(--surface-sunken)", border: c.kind === "focus" ? "1px dashed var(--accent)" : "1px solid var(--border)" }}
           >
-            <span className="uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>{cardCopy.cite[c.kind]}</span>
-            <span style={{ color: "var(--fg-muted)" }}>{c.value}</span>
+            <span className="uppercase tracking-[0.1em]" style={{ color: c.kind === "focus" ? "var(--accent-text)" : "var(--fg-locked)" }}>{cardCopy.cite[c.kind]}</span>
+            <span style={{ color: c.kind === "focus" ? "var(--fg)" : "var(--fg-muted)" }}>{c.value}</span>
           </li>
         ))}
       </ul>

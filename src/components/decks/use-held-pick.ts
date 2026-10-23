@@ -43,8 +43,15 @@ export function useHeldPick<T>(
   deckId: string,
   stored: T,
   send: (deckId: string, value: T) => Promise<PickReply<T>>,
-): { value: T; refused: boolean; pick: (value: T) => void } {
+): { value: T; settled: T; revision: number; refused: boolean; pick: (value: T) => void } {
   const [value, setValue] = useState(stored);
+  /** The value the server last confirmed for the newest press: what a reader that must not run ahead of the write
+   *  (Suggested changes' gate) follows. */
+  const [settled, setSettled] = useState(stored);
+  /** Moves every time the newest press settles (or a fresh server value arrives), EVEN when `settled` comes back the
+   *  value it already held: an A, B, A run of presses ends on the value it started from, and a read taken while the
+   *  writes were queued may have seen the middle one, so a reader keyed on the value alone would never re-read. */
+  const [revision, setRevision] = useState(0);
   const [seen, setSeen] = useState({ deckId, stored });
   const [refused, setRefused] = useState(false);
   const [, startTransition] = useTransition();
@@ -69,6 +76,8 @@ export function useHeldPick<T>(
     // describes what is on screen.
     setSeen({ deckId, stored });
     setValue(stored);
+    setSettled(stored);
+    setRevision((r) => r + 1);
     setRefused(false);
   }
 
@@ -86,12 +95,16 @@ export function useHeldPick<T>(
         confirmed.current = { press, value: result.value };
       }
       if (press !== newest.current) return;
+      setRevision((r) => r + 1);
+      if (result?.ok) setSettled(result.value);
       if (!result?.ok) {
+        // What the server holds now: the last confirmed value, which a superseded success may have moved.
+        setSettled(confirmed.current.value);
         setValue(confirmed.current.value);
         setRefused(true);
       }
     });
   };
 
-  return { value, refused, pick };
+  return { value, settled, revision, refused, pick };
 }

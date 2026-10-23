@@ -37,6 +37,8 @@ export const deckTuningCopy = {
     // against you in 7 of 9."
     readyLead: (gamesWord: string, axis: string, marked: number, games: number) =>
       `${gamesWord} games in, and ${axis} has been marked against you in ${marked} of ${games}. We will read everything below and suggest up to five cards to add and five to cut, each with its own reason.`,
+    /** Strategy focus: the one sentence the never-run lead gains (handoff Call 2). */
+    focusLead: (name: string) => `They aim at ${name}, the deck\u2019s focus.`,
     noGamesLead:
       "No games logged yet, so we will read this list, the recommended mix and what you own, and suggest up to five cards to add and five to cut. Log a game and suggestions can also cite how the deck played.",
     unmarkedLead: (gamesWord: string) =>
@@ -113,6 +115,9 @@ export const deckTuningCopy = {
     readMix: "the recommended mix",
     readCollection: "your collection",
     readNoGames: "no games logged",
+    /** Strategy focus: the manifest row and the read-from line's part. The name is `strategyName`'s. */
+    focus: "This deck\u2019s focus",
+    readFocus: (name: string) => `focus ${name}`,
   },
 
   // ── The failure classes: tag, body, what survived, one Try again ────────

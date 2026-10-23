@@ -31,7 +31,8 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
  * is only ever one.
  */
 export type ManifestRow =
-  | { kind: "read"; key: string; label: string; count: string | null; done: boolean }
+  /** `accent`: the strategy focus's row (handoff Call 2), drawn dashed in accent, its count in accent. */
+  | { kind: "read"; key: string; label: string; count: string | null; done: boolean; accent?: true }
   | { kind: "absent"; key: string; label: string; caption: string; actionLabel: string }
   | { kind: "writing"; label: string; active: boolean }
   | { kind: "noGames"; key: "games" };
@@ -140,8 +141,9 @@ export function ManifestRows({
                 data-testid="manifest-row"
                 data-kind="read"
                 data-done={row.done || undefined}
-                className="flex min-h-[36px] cursor-default items-center gap-[10px] px-[2px] py-[8px] md:min-h-[32px] md:py-0"
-                style={{ borderBottom: "1px solid var(--border)" }}
+                data-accent={row.accent || undefined}
+                className={`flex min-h-[36px] cursor-default items-center gap-[10px] py-[8px] md:min-h-[32px] md:py-0 ${row.accent ? "my-[4px] rounded-[8px] px-[12px]" : "px-[2px]"}`}
+                style={row.accent ? { border: "1px dashed var(--accent)" } : { borderBottom: "1px solid var(--border)" }}
               >
                 <Mark kind={row.done ? "read" : "pending"} />
                 <span
@@ -152,7 +154,7 @@ export function ManifestRows({
                   <span className="sr-only"> {row.done ? copy.rowRead : copy.rowUnread}</span>
                 </span>
                 {row.count !== null ? (
-                  <span className="flex-none font-mono text-[10px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
+                  <span className="flex-none font-mono text-[10px] md:text-[11px]" style={{ color: row.accent ? "var(--accent-text)" : "var(--fg-faint)" }}>
                     {row.count}
                   </span>
                 ) : null}

@@ -149,3 +149,13 @@ describe("SuggestionLine", () => {
     expect(screen.getByTestId("bracket-flag")).toBeInTheDocument();
   });
 });
+
+describe("the strategy focus chip", () => {
+  it("draws the focus chip dashed in accent, and every other chip as shipped", () => {
+    draw({ ...add, evidence: [{ kind: "focus", value: "Tokens 11 → 12" }, { kind: "games", value: "mana 5 of 9" }] });
+    const focus = document.querySelector('[data-cite="focus"]') as HTMLElement;
+    expect(focus.textContent).toBe("focusTokens 11 → 12");
+    expect(focus.style.border).toBe("1px dashed var(--accent)");
+    expect((document.querySelector('[data-cite="games"]') as HTMLElement).style.border).toBe("1px solid var(--border)");
+  });
+});
