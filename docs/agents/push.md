@@ -53,10 +53,14 @@ This file holds what a reader of the code needs and the plan's decisions in one 
 
 ## Added by PR 3b (the server sender)
 
-- **`/api/cron/push-flush`** (`vercel.json`, every 5 minutes, `CRON_SECRET` bearer like `account-sweep`): `flushPush`
+- **`/api/cron/push-flush`** (`vercel.json`, every 15 minutes, the cost ruling of 2026-10-22: a 5-minute cron keeps both Neon databases awake;
+  `CRON_SECRET` bearer like `account-sweep`): `flushPush`
   (`src/lib/push/flush.ts`). Without the three VAPID variables it answers 200 `dormant` and reads nothing; the code is live on
-  every deployment and sends only where Hugh set the keys. It takes no lock: an overlapping run can only send a push twice, and
-  a notification's `tag` is its kind, so the second replaces the first on the device.
+  every deployment and sends only where Hugh set the keys. It takes no lock: an overlapping run can send a push twice (a
+  notification's `tag` is its kind, so the second replaces the first on the device), but never loses another run's progress:
+  `payload.done` is merged in the database and a row is settled only when the merged set covers every device. Each device
+  takes its oldest `PER_DEVICE` (50) rows still waiting for it, so a held or failing device never starves an awake one. Switches
+  are read STRICTLY (`resolveSwitchEnvStrict`): a failed override read leaves the reader's rows for the next run.
 - **Per reader**: the switch again (off abandons the row); a row over 24 hours old is stale and abandoned; the words come from
   `resolvePushItems`, and a row that no longer stands is abandoned. **Per device** (`planDevice`, pure, `plan.ts`): nothing inside
   its held hours (21:00 to 09:00 in ITS zone); a LIVE push (one per kind and batch) for what arrived while it was not held; the

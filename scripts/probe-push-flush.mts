@@ -40,13 +40,17 @@ async function main() {
   const { rows } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);
   if (rows[0]?.b !== named) throw new Error(`probe:push-flush: database reports ${rows[0]?.b}, not ${named}`);
 
-  const { flushPush } = await import("../src/lib/push/flush");
+  const { flushPush, PER_DEVICE } = await import("../src/lib/push/flush");
   const { recordFeedItem } = await import("../src/lib/social/feed-write");
   const [card] = await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards).limit(1);
   const config = { publicKey: "pub", privateKey: "priv", subject: "mailto:probe@example.com" };
   const sent: { endpoint: string; payload: Record<string, unknown> }[] = [];
   let mode: "ok" | "gone" | "busy" = "ok";
+  let beforeSend: ((endpoint: string) => Promise<void>) | null = null;
+  let busyFor: string | null = null;
   const send = async (t: { endpoint: string }, payload: string) => {
+    if (beforeSend) await beforeSend(t.endpoint);
+    if (busyFor === t.endpoint) return { ok: false as const, gone: false, status: 503 };
     if (mode === "busy") return { ok: false as const, gone: false, status: 503 };
     if (mode === "gone") return { ok: false as const, gone: true, status: 410 };
     sent.push({ endpoint: t.endpoint, payload: JSON.parse(payload) });
@@ -151,8 +155,7 @@ async function main() {
     // 4d. Fair: a reader with a long backlog held overnight takes only its share of a run.
     const X = U("x");
     await reader(X); await device(X, "x", "Asia/Tokyo"); // 01:00 at DAY: held
-    const { PER_READER } = await import("../src/lib/push/flush");
-    for (let i = 0; i < PER_READER + 10; i++) {
+    for (let i = 0; i < PER_DEVICE + 10; i++) {
       await db.insert(pushOutbox).values({ userId: X, kind: "price-drop", itemKey: `item:backlog-${i}`, batchKey: "b", payload: {}, createdAt: new Date(Date.parse("2026-10-22T10:00:00.000Z") + i * 1000) });
     }
     const Y = U("y");
@@ -160,7 +163,40 @@ async function main() {
     await dropAt(Y, "f1", new Date("2026-10-22T15:30:00.000Z"));
     sent.length = 0;
     const fair = await flush(DAY);
-    check("the backlog takes only its share of the run (PER_READER of its rows, plus the other reader's one), and the other reader still goes", sent.some((x) => x.endpoint === endpoint("y")) && fair.rows === PER_READER + 1, JSON.stringify(fair));
+    check("the backlog takes only its share of the run (PER_DEVICE of its rows, plus the other reader's one), and the other reader still goes", sent.some((x) => x.endpoint === endpoint("y")) && fair.rows === PER_DEVICE + 1, JSON.stringify(fair));
+
+    // 4e. A held device does not starve an awake one: the awake device already has the oldest PER_DEVICE rows (the held one
+    // has not), and the newer rows still reach it this run.
+    const Z = U("z");
+    await reader(Z); await device(Z, "za", "UTC"); await device(Z, "zb", "Asia/Tokyo"); // 01:00 in Tokyo at DAY: held
+    const [za] = await db.select({ id: pushSubscriptions.id }).from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint("za")));
+    for (let i = 0; i < PER_DEVICE + 3; i++) await dropAt(Z, `z${i}`, new Date(Date.parse("2026-10-22T14:00:00.000Z") + i * 1000), `zb${i}`);
+    const zRows = (await outbox(Z)).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    for (const r of zRows.slice(0, PER_DEVICE)) await db.update(pushOutbox).set({ payload: { done: [za!.id] } }).where(eq(pushOutbox.id, r.id));
+    sent.length = 0;
+    await flush(DAY);
+    const newer = new Set(zRows.slice(PER_DEVICE).map((r) => r.id));
+    const after = await outbox(Z);
+    check("an awake device gets the rows past the held device's backlog in the same run", sent.some((x) => x.endpoint === endpoint("za"))
+      && after.filter((r) => newer.has(r.id)).every((r) => ((r.payload as { done?: string[] }).done ?? []).includes(za!.id)));
+
+    // 4f. An overlapping run's progress is merged, never overwritten: while this run sends to one device, another run records
+    // the second device as done; this run's own send to the second device fails. Both stay recorded and the row is settled.
+    const O = U("o");
+    await reader(O); await device(O, "oa", "UTC"); await device(O, "ob", "UTC");
+    const [ob] = await db.select({ id: pushSubscriptions.id }).from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint("ob")));
+    await dropAt(O, "ov1", new Date("2026-10-22T15:00:00.000Z"));
+    const [oRow] = await outbox(O);
+    beforeSend = async (e) => {
+      if (e === endpoint("oa")) await db.update(pushOutbox).set({ payload: { done: [ob!.id] } }).where(eq(pushOutbox.id, oRow!.id));
+    };
+    busyFor = endpoint("ob");
+    sent.length = 0;
+    await flush(DAY);
+    beforeSend = null; busyFor = null;
+    const [oAfter] = await outbox(O);
+    const oDone = (oAfter?.payload as { done?: string[] }).done ?? [];
+    check("an overlapping run's recorded device survives this run's write, and the row is settled", oDone.length === 2 && oDone.includes(ob!.id) && oAfter?.sentAt != null, JSON.stringify(oDone));
 
     // 5. Abandoned, never sent.
     const E = U("e"); // no device

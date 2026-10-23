@@ -4,14 +4,14 @@ import type { NextRequest } from "next/server";
 import { flushPush } from "../../../../lib/push/flush";
 import { pushConfig } from "../../../../lib/push/config";
 import { sendWebPush } from "../../../../lib/push/send";
-import { resolveSwitchEnv } from "../../../../lib/switches/snapshot";
+import { resolveSwitchEnvStrict } from "../../../../lib/switches/snapshot";
 
 // Pin to Node: the neon-serverless websocket driver and `web-push` do not run on Edge.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * The push flush's trigger (`src/lib/push/flush.ts`), called by the Vercel cron in `vercel.json` every five minutes.
+ * The push flush's trigger (`src/lib/push/flush.ts`), called by the Vercel cron in `vercel.json` every fifteen minutes.
  * Public in `src/proxy.ts` (`/api/cron(.*)`); what authorizes it is `CRON_SECRET`, sent by Vercel as a bearer token. Until that
  * secret is set it answers 503 and does nothing; a call without it is refused with 401 before anything runs. Without the
  * VAPID keys it answers 200 `dormant` and reads nothing: the code is live on every deployment and sends only where Hugh set them.
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   } as unknown as NodeJS.ProcessEnv);
   if (!config) return Response.json({ dormant: true });
   try {
-    const report = await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveSwitchEnv });
+    const report = await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveSwitchEnvStrict });
     // Counts only, never an id, an endpoint or a word.
     console.info(`[push-flush] rows ${report.rows}, readers ${report.readers}, sent ${report.sent}, held ${report.held}, gone ${report.gone}, failed ${report.failed}, abandoned ${report.abandoned}, pruned ${report.pruned}`);
     return Response.json(report);

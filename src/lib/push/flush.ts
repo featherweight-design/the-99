@@ -1,9 +1,11 @@
 /**
  * The flush (plan `2026-10-22-push.md`, D1): the pushes the outbox holds go to the devices, judged one device at a time.
- * Run by `/api/cron/push-flush` every five minutes. It takes no lock: an overlapping run can only send a push twice, and a
- * notification's `tag` is its kind, so the second replaces the first on the device.
+ * Run by `/api/cron/push-flush` every fifteen minutes. It takes no lock: an overlapping run can send a push twice (a
+ * notification's `tag` is its kind, so the second replaces the first on the device), but it never loses another run's
+ * progress, because `payload.done` is merged in the database and a row is settled only when the merged set covers every device.
  *
- * Fair across readers (`PER_READER`, round by round). Per reader: the switch again (an off switch abandons the row); rows older
+ * Fair across devices (`PER_DEVICE`, round by round): each device's oldest rows still waiting for IT, so a device that is
+ * held or failing cannot keep an awake one from its news. Per reader: the switch again (an off switch abandons the row); rows older
  * than a day are no longer news and are abandoned; a row whose kind the reader has since unticked, re-stamped after the event or
  * lost the feature for is abandoned (`stillWanted`); the words come from the feed's own read (`resolvePushItems`), and a row that no longer stands is abandoned
  * too. Per device (`planDevice`): nothing inside its held hours, a live push for what arrived while it was not held, the
@@ -29,8 +31,9 @@ import { payloadFor, type PushSender } from "./send";
 export const STALE_MS = 24 * 60 * 60_000;
 export const RETAIN_MS = 7 * 24 * 60 * 60_000;
 export const MAX_ROWS = 1000;
-/** One reader's share of a run: a reader whose rows are held or failing cannot crowd the others out of the batch. */
-export const PER_READER = 50;
+/** One device's share of a run (a reader with no device counts as one): rows held or failing for one device cannot crowd
+ * out another device's, the reader's own included. */
+export const PER_DEVICE = 50;
 
 export type FlushReport = {
   rows: number; readers: number; sent: number; held: number; gone: number; failed: number; abandoned: number; pruned: number;
@@ -56,20 +59,36 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
   const q = deps.q ?? db;
   const report: FlushReport = { rows: 0, readers: 0, sent: 0, held: 0, gone: 0, failed: 0, abandoned: 0, pruned: 0 };
 
-  // Fair across readers: each reader's oldest PER_READER rows, then the whole batch round by round (everyone's first row, then
-  // everyone's second), so rows that are held overnight or keep failing for some readers never starve the rest.
+  // Fair across devices: each device's oldest PER_DEVICE rows that it has NOT had yet (a reader with no device: its oldest
+  // rows, to be abandoned), then the whole batch round by round, so rows held overnight or failing on one device never starve
+  // another. A row a device already has does not count against that device's share.
   const picked = (await q.execute<{ id: string }>(sql`
-    select pr.id as id from (
-      select po.id as id, po.created_at as created_at, row_number() over (partition by po.user_id order by po.created_at, po.id) as rn
-      from ${pushOutbox} po where po.sent_at is null) pr
-    where pr.rn <= ${PER_READER}
-    order by pr.rn, pr.created_at
+    select w.id as id from (
+      select po.id as id, po.created_at as created_at,
+        row_number() over (partition by coalesce(ps.id::text, po.user_id) order by po.created_at, po.id) as rn
+      from ${pushOutbox} po
+      left join ${pushSubscriptions} ps on ps.user_id = po.user_id
+      where po.sent_at is null
+        and (ps.id is null or not (coalesce(po.payload->'done', '[]'::jsonb) @> jsonb_build_array(ps.id::text)))) w
+    where w.rn <= ${PER_DEVICE}
+    group by w.id
+    order by min(w.rn), min(w.created_at)
     limit ${MAX_ROWS}`)).rows.map((r) => r.id);
   const rows = picked.length === 0 ? [] : (await q.select().from(pushOutbox).where(inArray(pushOutbox.id, picked))).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   report.rows = rows.length;
   const byUser = new Map<string, Row[]>();
   for (const r of rows) byUser.set(r.userId, [...(byUser.get(r.userId) ?? []), r]);
   report.readers = byUser.size;
+
+  // Merges device ids into a row's `payload.done` IN the database, so a run that overlaps this one keeps what it recorded.
+  const markDone = async (id: string, deviceIds: readonly string[]) => {
+    if (deviceIds.length === 0) return;
+    await q.execute(sql`
+      update ${pushOutbox} set payload = payload || jsonb_build_object('done', (
+        select coalesce(jsonb_agg(distinct e), '[]'::jsonb)
+        from jsonb_array_elements(coalesce(payload->'done', '[]'::jsonb) || ${JSON.stringify(deviceIds)}::jsonb) e))
+      where id = ${id}`);
+  };
 
   const settle = async (ids: string[], reason: string) => {
     if (ids.length === 0) return;
@@ -108,7 +127,7 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
       for (const r of live) { const i = itemByKey.get(`${r.kind}\u0000${r.itemKey}`); if (i) items.set(r.id, i); }
 
       const done = new Map<string, Set<string>>(live.map((r) => [r.id, new Set(doneOf(r))]));
-      const persisted = new Map<string, number>(live.map((r) => [r.id, done.get(r.id)!.size]));
+      const recorded = new Map<string, Set<string>>(live.map((r) => [r.id, new Set(done.get(r.id))]));
       const removed = new Set<string>();
       for (const device of devices) {
         const waiting: OutboxRow[] = live.filter((r) => !done.get(r.id)!.has(device.id)).map((r) => ({ id: r.id, itemKey: r.itemKey, createdAt: r.createdAt }));
@@ -124,8 +143,8 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
             // not make this one go out again. (Delivery and this write cannot be atomic; this is the narrowest window.)
             for (const id of s.rowIds) {
               done.get(id)!.add(device.id);
-              await q.update(pushOutbox).set({ payload: { done: [...done.get(id)!] } }).where(eq(pushOutbox.id, id));
-              persisted.set(id, done.get(id)!.size);
+              await markDone(id, [device.id]);
+              recorded.get(id)!.add(device.id);
             }
             await q.update(pushSubscriptions).set({ lastOkAt: now }).where(eq(pushSubscriptions.id, device.id)).catch(() => undefined);
           } else if (result.gone) {
@@ -143,13 +162,16 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
         if (allOk) for (const id of plan.covered) done.get(id)!.add(device.id);
       }
 
-      // A row is sent once every device the reader still has is done with it.
+      // A row is sent once every device the reader still has is done with it, judged on the MERGED set in the database (an
+      // overlapping run may have recorded devices this one did not).
       const remaining = devices.filter((d) => !removed.has(d.id)).map((d) => d.id);
       for (const r of live) {
-        const d = done.get(r.id)!;
-        const complete = remaining.every((id) => d.has(id));
-        if (!complete && d.size === persisted.get(r.id)) continue; // nothing new to record
-        await q.update(pushOutbox).set(complete ? { sentAt: now, payload: { done: [...d] } } : { payload: { done: [...d] } }).where(eq(pushOutbox.id, r.id));
+        const fresh = [...done.get(r.id)!].filter((id) => !recorded.get(r.id)!.has(id));
+        await markDone(r.id, fresh);
+        await q.execute(sql`
+          update ${pushOutbox} set sent_at = ${now}
+          where id = ${r.id} and sent_at is null
+            and coalesce(payload->'done', '[]'::jsonb) @> ${JSON.stringify(remaining)}::jsonb`);
       }
     } catch (error) {
       report.failed += 1;
