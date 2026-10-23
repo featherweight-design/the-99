@@ -1,6 +1,8 @@
 import type { SQL } from "drizzle-orm";
 import type { CardBracketFlags } from "../bracket/flags-read";
 import type { ModalComboPartner } from "../combos/near-miss";
+import type { CardCombos } from "../combos/near-combos";
+import { nearCombosEnabled } from "../combos/flag";
 // One card's full detail, for surfaces that hold nothing but an oracle id — the decklist,
 // the Add panel and the builder spine (#127, #91). loadBrowseCards cannot serve them: it is
 // rooted in collection_items, and a deck routinely lists cards the user does not own.
@@ -293,6 +295,21 @@ export async function withComboPartners(
   }
 }
 
+/**
+ * The card's combos for the same block, read from `loadCardCombos` (combos one piece away UI-3), when
+ * `NEAR_COMBOS_ENABLED` is on for the reader. The same seam as `withComboPartners` and for the same
+ * reason: injected, so deleting this call fails a test rather than silently losing the block; FAIL-SOFT,
+ * so a failed read omits the block and keeps the card; OMITTED WHEN EMPTY, the block's absence.
+ */
+export async function withCardCombos(card: BrowseCard, read: () => Promise<CardCombos>): Promise<BrowseCard> {
+  try {
+    const { combos, inScope } = await read();
+    return combos.length > 0 ? { ...card, cardCombos: { combos, inScope } } : card;
+  } catch {
+    return card;
+  }
+}
+
 export async function withBracketFacts(
   card: BrowseCard,
   /**
@@ -340,6 +357,11 @@ export const loadCardDetail = cache(async function loadCardDetail(
   deckOracleIds: readonly string[] | undefined,
   /** The reader's resolved switches (`requestSwitchEnv`): the Fits door's gate. A probe passes `process.env`. */
   env: NodeJS.ProcessEnv,
+  /**
+   * That deck's commanders, apart from `deckOracleIds` (which already lists them): `loadCardCombos`
+   * holds a command-zone-only piece only as a commander, and reads the deck's colors from them.
+   */
+  commanderOracleIds?: readonly string[],
 ): Promise<BrowseCard | null> {
   // TWO STAGES, and never more. Every read below is keyed on (reader, oracle id) alone, so none
   // waits on another's answer. They used to run in serial stages, each a round trip to the
@@ -405,21 +427,39 @@ export const loadCardDetail = cache(async function loadCardDetail(
   const proxiedBy = proxyingDecks(userId, oracleId);
   const gate = fitsGate(userId, oracleId, undefined, env);
   const flags = settle(async () => (await import("../bracket/flags-read")).loadBracketFlags([oracleId]));
-  const partners = settle(async () =>
-    (await import("../combos/near-miss")).loadCardComboPartners({ userId, oracleId, deckOracleIds }),
-  );
+  // ONE combo read, never two: with near combos on, the block's lines come from `loadCardCombos`
+  // (two-card combos only, combos close E3) and the shipped partners read is not started.
+  const near = nearCombosEnabled(env);
+  const combos = near
+    ? settle(async () => {
+        const { loadCardCombos, CARD_COMBOS_SHORTLIST } = await import("../combos/near-combos");
+        return loadCardCombos({
+          userId,
+          oracleId,
+          env,
+          maxPieces: 2,
+          // Uncapped in practice (the SQL shortlist): the closed row counts this same list (OPEN-1).
+          cap: CARD_COMBOS_SHORTLIST,
+          deck: deckOracleIds ? { oracleIds: deckOracleIds, commanderOracleIds: commanderOracleIds ?? [] } : undefined,
+        });
+      })
+    : null;
+  const partners = near
+    ? null
+    : settle(async () =>
+        (await import("../combos/near-miss")).loadCardComboPartners({ userId, oracleId, deckOracleIds }),
+      );
   // The Wishlist section: off for this reader, or a failed read, is no section. Started with the rest and caught here,
   // so a rejection that lands before anyone awaits it is never an unhandled one.
   const wishlist: Promise<BrowseCard["wishlist"]> = wishlistEnabled(env)
     ? loadWishlistWant(userId, oracleId).then((want) => ({ want }), () => null)
     : Promise.resolve(null);
-  const assemble = async (base: BrowseCard) =>
-    withComboPartners(
-      await withBracketFacts({ ...base, wishlist: await wishlist }, () => unsettle(flags)),
-      userId,
-      deckOracleIds,
-      () => unsettle(partners),
-    );
+  const assemble = async (base: BrowseCard) => {
+    const faced = await withBracketFacts({ ...base, wishlist: await wishlist }, () => unsettle(flags));
+    return combos
+      ? withCardCombos(faced, () => unsettle(combos))
+      : withComboPartners(faced, userId, deckOracleIds, () => unsettle(partners!));
+  };
 
   if (owned.length > 0) {
     // `availability` only for a card the user owns: the query is driven by the collection, and every

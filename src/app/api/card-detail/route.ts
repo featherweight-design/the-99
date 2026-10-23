@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
-import { MAX_DECK_SCOPE, sanitizeDeckScope } from "../../../lib/combos/deck-scope-param";
+import { MAX_COMMANDER_SCOPE, MAX_DECK_SCOPE, sanitizeCommanderScope, sanitizeDeckScope } from "../../../lib/combos/deck-scope-param";
 import { loadCardDetail } from "../../../lib/collection/card-detail";
 import { encodeCardDetail } from "../../../lib/cards/card-detail-wire";
 import { perfRoute } from "../../../lib/perf/timing";
@@ -26,7 +26,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * where the action runs in the function that just drew the page.
  *
  * `?id=` is the oracle id. `?scope=` is the comma-joined cards of the deck the modal was opened
- * from, if any: what makes `in this deck` sayable in the combo block. Sent by the client and
+ * from, if any: what makes `in this deck` sayable in the combo block, and `?commanders=` that deck's
+ * commanders apart (at most two). Sent by the client and
  * only ever used to CLASSIFY partners the reader already sees, every id checked against the
  * combo index, so a crafted list can show that reader a wrong word about their own deck and
  * reach nothing else. The reader is the SESSION's, never a parameter: every read is of the
@@ -53,8 +54,14 @@ export async function GET(req: NextRequest) {
   const ids = scope ? scope.split(",") : undefined;
   if (ids && ids.length > MAX_DECK_SCOPE) return NextResponse.json(null, { status: 400 });
   const scoped = sanitizeDeckScope(ids);
+  // `?commanders=`: that deck's commanders, apart (combos close UI-3). More than two did not come
+  // from the app, and is refused like an over-long scope.
+  const commanderParam = params.get("commanders");
+  const commanderIds = commanderParam ? commanderParam.split(",") : undefined;
+  if (commanderIds && commanderIds.length > MAX_COMMANDER_SCOPE) return NextResponse.json(null, { status: 400 });
+  const commanders = sanitizeCommanderScope(commanderIds);
   const env = await requestSwitchEnv(userId);
-  const card = await perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped, env));
+  const card = await perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped, env, commanders));
   // Per reader and per moment: a card carries the reader's availability, which their own
   // writes move, so no shared or stored copy is ever right.
   // `encodeCardDetail`, not `NextResponse.json`: a price fact's `asOf` is a Date, and plain JSON

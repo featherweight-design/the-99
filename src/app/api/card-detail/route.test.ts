@@ -34,7 +34,7 @@ describe("GET /api/card-detail", () => {
     expect(await res.json()).toEqual({ oracleId: ID, name: "Sol Ring" });
     expect(res.headers.get("content-type")).toBe("application/json");
     expect(res.headers.get("cache-control")).toBe("private, no-store");
-    expect(stub.load).toHaveBeenCalledWith("user_1", ID, undefined, ENV);
+    expect(stub.load).toHaveBeenCalledWith("user_1", ID, undefined, ENV, undefined);
     expect(stub.load.mock.calls[0][3]).toBe(ENV);
   });
 
@@ -69,12 +69,21 @@ describe("GET /api/card-detail", () => {
   it("reads as the signed-in reader, whatever the URL says", async () => {
     stub.userId = "user_session";
     await get(`id=${ID}&user=user_other&userId=user_other`);
-    expect(stub.load).toHaveBeenCalledWith("user_session", ID, undefined, ENV);
+    expect(stub.load).toHaveBeenCalledWith("user_session", ID, undefined, ENV, undefined);
   });
 
   it("passes the deck scope through the same sanitizer the action used", async () => {
     await get(`id=${ID}&scope=${OTHER},junk,${ID}`);
-    expect(stub.load).toHaveBeenCalledWith("user_1", ID, [OTHER, ID], ENV);
+    expect(stub.load).toHaveBeenCalledWith("user_1", ID, [OTHER, ID], ENV, undefined);
+  });
+
+  it("passes the deck's commanders apart, sanitized, and refuses more than two (combos close UI-3)", async () => {
+    await get(`id=${ID}&scope=${OTHER}&commanders=${OTHER},junk`);
+    expect(stub.load).toHaveBeenCalledWith("user_1", ID, [OTHER], ENV, [OTHER]);
+    stub.load.mockClear();
+    const res = await get(`id=${ID}&commanders=${OTHER},${ID},${OTHER}`);
+    expect(res.status).toBe(400);
+    expect(stub.load).not.toHaveBeenCalled();
   });
 });
 
@@ -103,8 +112,8 @@ describe("the route and the action", () => {
     stub.userId = "user_1";
     stub.load.mockReset();
     stub.load.mockResolvedValue(card);
-    const viaRoute = decodeCardDetail(await (await get(`id=${ID}&scope=${OTHER}`)).text());
-    const viaAction = await getCardDetail(ID, [OTHER]);
+    const viaRoute = decodeCardDetail(await (await get(`id=${ID}&scope=${OTHER}&commanders=${OTHER}`)).text());
+    const viaAction = await getCardDetail(ID, [OTHER], [OTHER]);
     expect(viaRoute).toEqual(viaAction);
     expect(stub.load.mock.calls[0]).toEqual(stub.load.mock.calls[1]);
   });

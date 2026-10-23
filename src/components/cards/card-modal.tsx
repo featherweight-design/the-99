@@ -31,6 +31,7 @@ import { clearCardArtPreference, setCardArtPreference } from "../../app/collecti
 import { ManaCost } from "./mana-pips";
 import { CardFactMark } from "./card-fact-mark";
 import { ComboPartnersDetail } from "./combo-partners-detail";
+import type { CardCombo } from "../../lib/combos/near-combos";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { PrintingRegion, printingKey } from "./printing-region";
 import { PriceTag } from "./price-tag";
@@ -734,6 +735,7 @@ export function CardModal({
   enterOffset = 0,
   startMinimized = false,
   openCombo = false,
+  onOpenCombo = null,
   onMinimizedChange,
   onArtChange,
   openAtPrinting = null,
@@ -913,6 +915,12 @@ export function CardModal({
   /** Opened FOR the combo (a feed item's See the combo): the combo block starts open, and on the phone the sheet opens full so
    *  the block is on screen. Read once at construction; the provider names it for this card alone. */
   openCombo?: boolean;
+  /**
+   * Opens a combo line's combo over this card (combos one piece away UI-3), from the combo block's
+   * near-combos face. The provider's, like `onSelectCard`, and null on a stacked card: nothing in a
+   * stacked card opens a further layer.
+   */
+  onOpenCombo?: ((combo: CardCombo) => void) | null;
   /** Told whenever the phone's sheet reaches or leaves its min snap, so paging can carry it. */
   onMinimizedChange?: (minimized: boolean) => void;
   /**
@@ -2776,6 +2784,7 @@ export function CardModal({
                 deckName={deckName}
                 onSelectPartner={onSelectCard}
                 initiallyExpanded={openCombo}
+                onOpenCombo={onOpenCombo}
               />
               <AvailabilityDetail card={card} deckPage={deckPage} onEditCopies={onEditCopies} receiptLink={receiptLink} />
               <ProxyDetail card={card} />

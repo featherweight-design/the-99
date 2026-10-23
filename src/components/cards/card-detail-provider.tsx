@@ -34,6 +34,7 @@ import { faceFilm, printedNameOf, resolvedPrinting, withDeckPick, type FoilFinis
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import type { FitsViewMemory } from "./fits-view";
+import type { CardCombo } from "../../lib/combos/near-combos";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckPrintingScope } from "./card-modal";
 import { setDeckPrinting } from "../../app/decks/printing-actions";
@@ -49,6 +50,8 @@ import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 const CardModal = onDemand(() => import("./card-modal").then((m) => m.CardModal));
 const FitsView = onDemand(() => import("./fits-view").then((m) => m.FitsView));
 const FitsPicker = onDemand(() => import("./fits-picker").then((m) => m.FitsPicker));
+// A combo opened from card details' combo block (combos close UI-3), over the card as the picker is.
+const CardComboSheet = onDemand(() => import("./card-combo-sheet").then((m) => m.CardComboSheet));
 
 /**
  * A component loaded when first wanted, drawn at once from then on. Until its code has arrived it
@@ -577,6 +580,7 @@ export function CardDetailProvider({
   deckPage = false,
   deckOracleIds,
   comboDeckOracleIds,
+  comboCommanderOracleIds,
   deckPrintingPicks = null,
   viewPrintings = null,
   collectionEdit = false,
@@ -590,6 +594,7 @@ export function CardDetailProvider({
   fetchCard?: (
     oracleId: string,
     deckOracleIds?: readonly string[],
+    commanderOracleIds?: readonly string[],
   ) => Promise<BrowseCard | null>;
   /**
    * The read a PREFETCH makes. Production is `GET /api/card-detail`, which is an ordinary request
@@ -601,6 +606,7 @@ export function CardDetailProvider({
   prefetchCard?: (
     oracleId: string,
     deckOracleIds?: readonly string[],
+    commanderOracleIds?: readonly string[],
   ) => Promise<BrowseCard | null>;
   /** See `CardDetailContextValue.deckId`. Set by the deck page alone. */
   deckId?: string | null;
@@ -634,6 +640,12 @@ export function CardDetailProvider({
    * block calling a card in-deck because it happens to be proxyable.
    */
   comboDeckOracleIds?: readonly string[];
+  /**
+   * That deck's commanders, apart from `comboDeckOracleIds` (which lists them too): the near-combos
+   * read (`loadCardCombos`, combos close UI-3) holds a command-zone-only piece only as a commander
+   * and reads the deck's colors from them. Passed by the deck page with `comboDeckOracleIds`.
+   */
+  comboCommanderOracleIds?: readonly string[];
   /**
    * Collection edit R2 §C: the receipt draws `Edit copies`, and pressing it closes the modal and
    * opens the Add cards sheet in edit mode for the card. Passed by `/collection` alone, and only
@@ -818,9 +830,17 @@ export function CardDetailProvider({
   // on a caller passing a literal, which would otherwise rebuild the fetch and evict the
   // open card on renders that changed nothing.
   const comboScopeKey = (comboDeckOracleIds ?? []).join(",");
+  // The commanders ride the SAME identity: a new commander is a new question, so `comboScope` is
+  // rebuilt when either moves, and every `scope === comboScope` test below covers both.
+  const comboCommanderKey = (comboCommanderOracleIds ?? []).join(",");
   const comboScope = useMemo(
     () => (comboScopeKey ? comboScopeKey.split(",") : undefined),
-    [comboScopeKey],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the commanders' key is a deliberate extra dependency (above)
+    [comboScopeKey, comboCommanderKey],
+  );
+  const comboCommanders = useMemo(
+    () => (comboCommanderKey ? comboCommanderKey.split(",") : undefined),
+    [comboCommanderKey],
   );
   // The scope current NOW, for a prefetch landing after the deck changed under it.
   const comboScopeRef = useRef(comboScope);
@@ -1049,7 +1069,7 @@ export function CardDetailProvider({
               ? await withinWait(ahead.read)
               : undefined;
           if (latest.current !== request) return;
-          next = joined !== undefined ? joined : await fetchCard(oracleId, comboScope);
+          next = joined !== undefined ? joined : await (comboCommanders ? fetchCard(oracleId, comboScope, comboCommanders) : fetchCard(oracleId, comboScope));
           if (latest.current !== request) return;
           raced = (evictions.current.get(oracleId) ?? 0) !== evictedAtStart;
         }
@@ -1095,7 +1115,7 @@ export function CardDetailProvider({
         }
       }
     },
-    [fetchCard, show, comboScope, setSiblings, file],
+    [fetchCard, show, comboScope, comboCommanders, setSiblings, file],
   );
   useEffect(() => { loadRef.current = load; }, [load]);
 
@@ -1178,6 +1198,12 @@ export function CardDetailProvider({
   // door is drawn for a Commander-legal card and a reader with a deck, both off the card's own payload,
   // which leaves them absent while the swap tools are off (`fitsGate`), so no door is drawn then.
   const [fitsFor, setFitsFor] = useState<BrowseCard | null>(null);
+  // COMBOS ONE PIECE AWAY (UI-3, OPEN-8): the combo a card's combo line opened, over that card. Owned
+  // here, like the picker, because a sheet inside the card would be inside the card it lifts into the
+  // held slot. `reread` is the card an Add changed: once the sheet has gone and the card is back, it
+  // is evicted so its block reads again (the partner now in the deck).
+  const [comboSheet, setComboSheet] = useState<{ card: BrowseCard; combo: CardCombo } | null>(null);
+  const comboReread = useRef<string | null>(null);
   // FIND A DECK'S VIEW (handoff R2, `FIND_A_DECK_READ_ENABLED`, on the card as `fitsRead`): the door
   // opens the view inside this card's own dialog rather than stacking the picker. Keyed on the card,
   // so a card opened from the view (a partner, with the way back) leaves it standing for the return.
@@ -1242,6 +1268,7 @@ export function CardDetailProvider({
     if (heldRef.current === null) {
       setFitsFor(null);
       setFitsViewFor(null);
+      setComboSheet(null);
     }
     // The live slot's trail goes with its card. A held card's own is in `Held`.
     trailRef.current = [];
@@ -1437,6 +1464,22 @@ export function CardDetailProvider({
   }, [editedId, editedSiblings, evict, open]);
   const doneEditing = useCallback(() => setEditing(null), []);
 
+  // The combo sheet's way back is its close: the sheet unmounts and its registration puts the card back.
+  const closeComboSheet = useCallback(() => setComboSheet(null), []);
+  // An Add from the combo landed: back to the card, then (once it is the live card again) read it anew.
+  const comboSheetCard = comboSheet?.card.oracleId ?? null;
+  const addedFromComboSheet = useCallback(() => {
+    comboReread.current = comboSheetCard;
+    setComboSheet(null);
+  }, [comboSheetCard]);
+  // After the sheet's own cleanup has put the card back in the live slot (a child's unmount runs first).
+  useEffect(() => {
+    const id = comboReread.current;
+    if (comboSheet !== null || id === null) return;
+    comboReread.current = null;
+    evict(id);
+  }, [comboSheet, evict]);
+
   const prefetch = useCallback(
     (oracleId: string, art?: string | null) => {
       warmCardModal();
@@ -1446,13 +1489,14 @@ export function CardDetailProvider({
       if (art) preloadCardArt(art);
       const evictedAt = evictions.current.get(oracleId) ?? 0;
       const scope = comboScope;
+      const commanders = comboCommanders;
       const answeredAt = answers.current.get(oracleId) ?? 0;
       const entry = {
         oracleId,
         scope,
         evictedAt,
         answeredAt,
-        read: prefetchCard(oracleId, scope).then(
+        read: (commanders ? prefetchCard(oracleId, scope, commanders) : prefetchCard(oracleId, scope)).then(
           (next) => {
             // Filed only if nothing moved under it: an eviction since it started means a write
             // it may have read the wrong side of, and a new scope means a different question.
@@ -1476,7 +1520,7 @@ export function CardDetailProvider({
         if (prefetching.current === entry) prefetching.current = null;
       });
     },
-    [prefetchCard, comboScope, file],
+    [prefetchCard, comboScope, comboCommanders, file],
   );
 
   const value = useMemo<CardDetailContextValue>(
@@ -1655,6 +1699,8 @@ export function CardDetailProvider({
           // Kept mounted under the picker it opened, so its close can hand focus back to the door.
           onFindDeck={fitsDoor(held.card)}
           fitsOpen={fitsFor !== null}
+          // Under its own combo sheet, the card keeps drawing its lines as it did (covered, so inert).
+          onOpenCombo={comboSheet?.card.oracleId === held.card.oracleId ? NOOP : null}
           onPrev={null}
           onNext={null}
         />
@@ -1753,11 +1799,26 @@ export function CardDetailProvider({
           startMinimized={minimized && enterFrom !== null}
           onMinimizedChange={setMinimized}
           openCombo={comboFor === card.oracleId}
+          // A combo line opens its combo over this card: only on a card nothing is stacked on (stacked
+          // sheets R1, call 8). A card over a sheet, or a partner, draws its lines with no press.
+          onOpenCombo={sheetsBelow > 0 || partnerOf !== null ? null : (combo) => setComboSheet({ card, combo })}
         />
       ) : null}
       {/* Before the third layer in the document, so a card opened from the picker paints over it:
           both are fixed at z-50, and the later one wins. */}
       {fitsFor ? <FitsPicker card={fitsFor} onClose={() => setFitsFor(null)} /> : null}
+      {/* The same for a combo opened from the card's combo block: a partner's plate opens its card over it. */}
+      {comboSheet ? (
+        <CardComboSheet
+          key={comboSheet.combo.variantId}
+          card={comboSheet.card}
+          combo={comboSheet.combo}
+          inScope={(comboSheet.card.cardCombos?.inScope ?? false) && deckName !== null}
+          deckId={deckPage ? deckId : null}
+          onClose={closeComboSheet}
+          onAdded={addedFromComboSheet}
+        />
+      ) : null}
       {/* A card opened from a sheet that sits over a held card: the third layer (audit F16). */}
       {held && card ? (
         <CardModal
