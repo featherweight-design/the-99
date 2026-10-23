@@ -1,0 +1,362 @@
+{
+  "feature": "Spare requests close-out (plan 2026-10-22-spare-requests.md; handoff design_handoff_the99_spare_requests): Shopping's marks and key (3b), the friends-with-a-spare modal's four answers (3b), the cart's By friend view (3c), /friends' Waiting on you and Your requests, Home's lead story and Settings' feed kind (3d), and the friend-spares About entry with requests on (PR 4)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED, SPARE_REQUESTS_ENABLED, HOME_FEED_ENABLED, ALL_DECKS_CART_ENABLED, SWAP_TOOLS_ENABLED, COLLECTION_EDIT_ENABLED and COMMANDERS_PLACE_ENABLED on for the reader (the last puts Friends and its badge in the tab bar and rail, as the boards draw them) (MOMENTS_ENABLED off, so no bubble covers a press). FIXTURES ON A SCRATCH BRANCH OFF local-dev ONLY: they are social, collection and spare-request rows. The reader (the audit account) needs: one deck SPARE_DECK whose Shopping list holds six unowned cards; five friends sharing spares through two pods (`Thursday pod`, `Cube night`); the reader's asks in every state Your requests draws, for those cards: SPARE_REQUESTED open to one friend while a second friend also has a spare (Requested, and Ask instead on the other), SPARE_ACCEPTED answered yes, SPARE_DECLINED answered no while another friend still has a spare, SPARE_EXPIRED unanswered past 14 days with the holder still offering (Ask again), SPARE_ASK held by a friend and never asked (Ask), one open ask whose holder then stopped sharing (No longer spare) and one for a card on none of the reader's decks (No longer needed); two friends' open asks for the reader's own spares, one naming the asker's deck (Waiting on you, Home's lead). Every visit moves `user_prefs.feed_seen_at` (Home) and `friends_seen_at` (/friends), so the second width would photograph no lead story and no unseen mark: hold both at the seeded values for the run. The rows write nothing; Yes and No receipts are pressed in a separate run because a press answers the ask for every later cell. The About row draws the PR 4 caption (Press “Ask” beside a friend...), so photograph it from a server running the close-out branch.",
+  "out": "contact-sheets/spare-requests",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "shopping-rows",
+      "label": "3b Shopping: the spare glyph on each row a friend spares, with the requested and accepted marks (call 4)",
+      "view": "src/components/social/spare-markers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "wait": "[data-mark=requested]",
+          "settle": 400,
+          "scrollTo": "[data-decklist-row]:has([data-mark=requested])"
+        }
+      ]
+    },
+    {
+      "id": "shopping-key",
+      "label": "3b the Shopping key: friend has a spare, then requested and accepted (E1)",
+      "view": "src/components/social/spare-markers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid=spare-key-accepted]",
+          "settle": 400,
+          "scrollTo": "[data-testid=shopping-key]"
+        }
+      ]
+    },
+    {
+      "id": "modal-requested",
+      "label": "3b modal, Requested with its days left, and Ask instead on the other friend with the one-at-a-time line (G1)",
+      "view": "src/components/social/friend-spares.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "[Ff]riends with a spare of ${SPARE_REQUESTED}",
+          "wait": "[data-testid=friend-spares] [data-ask=askInstead]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "modal-accepted",
+      "label": "3b modal, Accepted, and the when-it's-yours line",
+      "view": "src/components/social/friend-spares.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "[Ff]riends with a spare of ${SPARE_ACCEPTED}",
+          "wait": "[data-testid=friend-spares] [data-ask=accepted]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "modal-declined",
+      "label": "3b modal, Declined, with Ask on the friend who still has one",
+      "view": "src/components/social/friend-spares.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "[Ff]riends with a spare of ${SPARE_DECLINED}",
+          "wait": "[data-testid=friend-spares] [data-ask=declined]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "modal-ask-again",
+      "label": "3b modal, no answer in 14 days: Ask again",
+      "view": "src/components/social/friend-spares.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "[Ff]riends with a spare of ${SPARE_EXPIRED}",
+          "wait": "[data-testid=friend-spares] [data-ask=askAgain]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "modal-ask",
+      "label": "3b modal, a friend never asked: Ask",
+      "view": "src/components/social/friend-spares.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "[Ff]riends with a spare of ${SPARE_ASK}",
+          "wait": "[data-testid=friend-spares] [data-ask=ask]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "cart-switch",
+      "label": "3c the cart's view switch with the By friend segment",
+      "view": "src/components/decks/cart/view-switch.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/shopping",
+          "wait": "#cart-view-friend",
+          "settle": 1500,
+          "scrollTo": "[data-cart-controls]"
+        }
+      ]
+    },
+    {
+      "id": "cart-by-friend",
+      "label": "3c /decks/shopping?view=friend: a panel per friend, Requested, Accepted, Ask, Ask instead",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "fullPage": true,
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=friend",
+          "wait": "[data-testid=friend-panel]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "cart-by-friend-foot",
+      "label": "3c By friend, the last panel scrolled into view: Ask instead and Ask again (the desktop column scrolls on its own)",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=friend",
+          "wait": "[data-testid=friend-panel] [data-ask=askAgain]",
+          "settle": 2000,
+          "scrollTo": "[data-testid=friend-panel]:has([data-ask=askAgain])"
+        }
+      ]
+    },
+    {
+      "id": "friends-badge",
+      "label": "3d the Friends badge in the tab bar and rail: the asks waiting on the reader plus the unseen answer",
+      "view": "src/components/shell/nav.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "main, [role=main], h1",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "friends-waiting",
+      "label": "3d /friends Waiting on you: two spare requests with Yes, No and the days left",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "[data-testid=waiting-on-you] [data-kind=spare-request]",
+          "settle": 1500,
+          "scrollTo": "[data-testid=waiting-on-you]"
+        }
+      ]
+    },
+    {
+      "id": "friends-your-requests",
+      "label": "3d /friends Your requests: Requested, Accepted (unseen), Declined, No answer with Ask again, No longer spare, No longer needed",
+      "view": "src/components/social/your-requests.tsx",
+      "fullPage": true,
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "[data-testid=your-requests] [data-state=unneeded]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "home-lead",
+      "label": "3d Home: the incoming spare request as the lead story, with Yes and No",
+      "view": "src/components/home/lead-story.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-lead-story=spare-request] [data-testid=spare-yes]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "settings-kind",
+      "label": "3d /settings: Friends asking for your spares, on by default, with its caption",
+      "view": "src/components/settings/news-section.tsx",
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "section[aria-labelledby=settings-news]",
+          "settle": 1200,
+          "scrollTo": "section[aria-labelledby=settings-news]"
+        }
+      ]
+    },
+    {
+      "id": "about-entry",
+      "label": "PR 4 /about Reference: When a friend has a spare, with requests on (the Ask sentence, no view-only sentence)",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#friend-spares",
+          "wait": "[data-entry-open=friend-spares]",
+          "settle": 1500,
+          "scrollTo": "#friend-spares"
+        }
+      ]
+    }
+  ]
+}

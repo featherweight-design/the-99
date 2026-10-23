@@ -94,7 +94,7 @@ describe("the friend row's right element", () => {
     expect(within(colin).getByTestId("friend-spare-sub").textContent).toBe("2 spares · 12 days left");
     expect(within(colin).queryByRole("button")).toBeNull();
     expect(within(rowOf(d, "Max")).getByTestId("friend-spare-ask").textContent).toBe(r.askInstead);
-    expect(d.getByTestId("friend-spares-line").textContent).toBe(r.oneAtATime("Colin", "Max"));
+    expect(d.getByTestId("friend-spares-line").textContent).toBe(r.oneAtATime("Colin"));
   });
 
   it("reads Accepted after a yes, with its state line", async () => {

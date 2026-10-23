@@ -34,6 +34,7 @@ import { markFriendsSeen } from "../../lib/feed/prefs";
 import { WaitingOnYou } from "../../components/social/waiting-on-you";
 import { loadYourRequests } from "../../lib/social/your-requests";
 import { YourRequests } from "../../components/social/your-requests";
+import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
 
 export default async function FriendsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const perf = perfRoute("/friends");
@@ -102,7 +103,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     <ToolLandingMount landing={landing} request={request} />
     <FriendsView
       profile={profile}
-      waiting={<><WaitingOnYou rows={waiting} now={now} /><YourRequests rows={mine} now={now} /></>}
+      waiting={<><WaitingOnYou rows={waiting} now={now} /><YourRequests rows={mine} now={now} canBuy={shoppingMarkBoughtEnabled(env)} /></>}
       pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} ruleZero={tables ? { tables, now } : null} />}
       friends={friends}
       links={links}

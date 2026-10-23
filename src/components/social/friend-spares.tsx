@@ -84,7 +84,7 @@ export function rowAsk(asks: readonly AskStateLine[], publicId: string): RowAsk 
  */
 export function stateLine(rows: readonly { name: string; ask: RowAsk }[], canBuy: boolean): string | null {
   const instead = rows.find((r) => r.ask.kind === "askInstead");
-  if (instead && instead.ask.kind === "askInstead") return spareCopy.request.oneAtATime(instead.ask.from, instead.name);
+  if (instead && instead.ask.kind === "askInstead") return spareCopy.request.oneAtATime(instead.ask.from);
   if (rows.some((r) => r.ask.kind === "accepted")) return canBuy ? spareCopy.request.whenYours : spareCopy.request.whenYoursNoBuy;
   if (rows.length > 0 && rows.every((r) => r.ask.kind === "declined")) return spareCopy.request.nobodyElse;
   return null;

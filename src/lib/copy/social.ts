@@ -374,7 +374,7 @@ export const spareCopy = {
     tipLabel: "What a spare is",
     tip: "Copies none of their decks use. Ask, and they answer yes or no. The trade (or the goat) is between you.",
     /** The one state sentence under the rows, for the state the rows are in. */
-    oneAtATime: (from: string, to: string) => `One request at a time. Ask instead moves it from ${from} to ${to}.`,
+    oneAtATime: (from: string) => `One request at a time. Ask instead moves it from ${from}.`,
     whenYours: "When it’s yours, press buy on the row.",
     /** `whenYours` where the row has no buy press (`SHOPPING_MARK_BOUGHT_ENABLED` off): the collection takes it by hand. */
     whenYoursNoBuy: "When it’s yours, add it to your collection.",
@@ -397,7 +397,7 @@ export const spareCopy = {
     yes: "Yes",
     no: "No",
     yesAria: (friend: string, card: string) => `Yes, spare ${card} for ${friend}`,
-    noAria: (friend: string, card: string) => `No, keep ${card} from ${friend}`,
+    noAria: (friend: string, card: string) => `No, don’t spare ${card} for ${friend}`,
     /** The receipt's kicker, drawn uppercase by CSS. */
     receiptKind: { yes: "Spare request · accepted", no: "Spare request · declined" },
     sparing: (card: string, friend: string) => `You’re sparing ${card} for ${friend}`,
@@ -424,7 +424,9 @@ export const spareCopy = {
       /** "For Thopter Works · 12 days left"; the days alone with no deck. */
       openDetail: (deck: string | null, days: string) => (deck ? `For ${deck} · ${days}` : days),
       canSpare: (friend: string, card: string) => `${friend} can spare ${card}`,
-      acceptedDetail: "The handover is between you. When it’s yours, press buy on the row to add it.",
+      acceptedDetail: "The handover is between you. Once it’s yours, press buy on it in Shopping.",
+      /** `acceptedDetail` with no buy press (`SHOPPING_MARK_BOUGHT_ENABLED` off): the collection takes it by hand. */
+      acceptedDetailNoBuy: "The handover is between you. Once it’s yours, add it to your collection.",
       keeping: (friend: string, card: string) => `${friend} is keeping ${card}`,
       nobodyElse: "Nobody else you know has a spare of it.",
       /** After a No, when other friends offer the card: the first by spares, and how many more. */

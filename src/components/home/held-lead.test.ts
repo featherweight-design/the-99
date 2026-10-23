@@ -26,7 +26,7 @@ describe("displaceLead", () => {
     expect(displaceLead(feed, "lead")).toBe(feed);
     const none: HomeFeed = { ...feed, lead: null };
     expect(displaceLead(none, "held")).toBe(none);
-    const offer: HomeFeed = { chosen: false, offer: ["new-set"] };
+    const offer: HomeFeed = { chosen: false, offer: ["new-set"], alsoOn: false };
     expect(displaceLead(offer, "held")).toBe(offer);
   });
 });

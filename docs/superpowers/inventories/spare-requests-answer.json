@@ -1,0 +1,18 @@
+{
+  "feature": "Spare requests: Yes and No are one control on /friends and Home",
+  "note": "Import equality only (pnpm check:shared): the photographed rows are in spare-requests.json. Yes and No on Waiting on you and Home's lead story are one control.",
+  "shares": {
+    "module": "src/components/social/spare-answer.tsx",
+    "binding": "AnswerPresses"
+  },
+  "rows": [
+    {
+      "id": "friends-waiting",
+      "view": "src/components/social/waiting-on-you.tsx"
+    },
+    {
+      "id": "home-lead",
+      "view": "src/components/home/lead-story.tsx"
+    }
+  ]
+}
