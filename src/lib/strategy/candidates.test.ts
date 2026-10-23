@@ -6,7 +6,7 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn(async ()
 vi.mock("../decks/price-query", () => ({ loadPrices: vi.fn(async () => ({ prices: prices.map, newestAsOf: prices.newestAsOf })) }));
 
 import { db } from "../../db";
-import { candidateQuery, FOCUS_CANDIDATES_MAX, loadFocusCandidates, rankCandidates } from "./candidates";
+import { candidateQuery, FOCUS_CANDIDATES_MAX, loadFocusCandidates, rankCandidates, withFocusCandidates } from "./candidates";
 
 const args = {
   userId: "u1",
@@ -14,6 +14,7 @@ const args = {
   colorIdentity: ["W", "U"],
   inDeck: new Set(["d1"]),
   limits: { capCents: null, sets: [], ownedOnly: false },
+  stapleCondition: "WU",
 };
 
 describe("candidateQuery", () => {
@@ -25,6 +26,14 @@ describe("candidateQuery", () => {
     expect(sql).toContain('"cards"."commander_legal" = $');
     expect(sql).toContain("twin.name");
     expect(sql).not.toContain("collection_items");
+  });
+
+  // Review round 1: the staples bucket is the profile's resolved one, so a deck served by the colour-count fallback
+  // keeps its staples, in the membership test and the share alike.
+  it("reads the staples of the bucket the profile resolved, the colour-count fallback included", () => {
+    const { params } = candidateQuery(db, { ...args, colorIdentity: ["W", "U", "B"], stapleCondition: "count:3" }).toSQL();
+    expect(params.filter((p) => p === "count:3")).toHaveLength(2);
+    expect(params).not.toContain("WUB");
   });
 
   it("keeps an owned-only run to the player's own cards", () => {
@@ -50,7 +59,7 @@ describe("loadFocusCandidates", () => {
   });
   const reader = (rows: ReturnType<typeof row>[]) =>
     ({ select: () => ({ from: () => ({ leftJoin: () => ({ where: async () => rows }) }) }) }) as unknown as Parameters<typeof loadFocusCandidates>[1];
-  const base = { ...args, deckId: "deck", focus: "artifacts" as const, env: {} as NodeJS.ProcessEnv };
+  const base = { ...args, deckId: "deck", focus: "artifacts" as const, roleBasis: "classifier" as const, env: {} as NodeJS.ProcessEnv };
 
   beforeEach(() => {
     availability.map = new Map();
@@ -85,5 +94,27 @@ describe("loadFocusCandidates", () => {
     const many = Array.from({ length: FOCUS_CANDIDATES_MAX + 5 }, (_, i) => row(`a${i}`, "Artifact", 100 - i));
     expect(await loadFocusCandidates(base, reader(many))).toHaveLength(FOCUS_CANDIDATES_MAX);
     expect(await loadFocusCandidates({ ...base, commanderOracleIds: [] }, reader(many))).toEqual([]);
+  });
+
+  // Review round 1: roles by the profile's own rules, so a listed role is one the addition moves in its counts.
+  it("reads a candidate's roles off its front face, as the profile counts them", async () => {
+    // A transform card whose BACK face taps for mana: the profile does not count it as ramp.
+    const transform = { ...row("dfc", "Artifact", 50, "Draw a card.\n//\n{T}: Add {C}."), layout: "transform" };
+    const [card] = await loadFocusCandidates(base, reader([transform]));
+    expect(card.roles).not.toContain("ramp");
+  });
+
+});
+
+describe("withFocusCandidates", () => {
+  // Review round 1: on an owned-only run every addition must come from the shortlist, so a focus candidate the
+  // shortlist missed (a staple-only card, or one past its cap) joins it, after the shortlist's own order.
+  it("adds the candidates the owned shortlist lacks, keeping its order and never repeating one", () => {
+    const shortlist = [{ oracleId: "a", name: "A", typeLine: "Artifact" }, { oracleId: "b", name: "B", typeLine: "Artifact" }];
+    const candidates = [
+      { oracleId: "b", name: "B", typeLine: "Artifact", roles: [] },
+      { oracleId: "staple", name: "Staple", typeLine: "Artifact", roles: ["ramp"] },
+    ];
+    expect(withFocusCandidates(shortlist, candidates).map((c) => c.oracleId)).toEqual(["a", "b", "staple"]);
   });
 });

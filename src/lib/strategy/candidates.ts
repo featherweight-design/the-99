@@ -23,10 +23,10 @@ import { cardLabels, cards, collectionItems, commanderSupportCards, formatStaple
 import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
+import { castFaceText } from "../cards/facet";
 import { labelRoleSet } from "../labels/role-sets";
-import { rolesByLabelElseText } from "../recs/roles";
+import { classifyRoles, rolesByLabelElseText } from "../recs/roles";
 import { printedIn } from "../sets/printed-in-sql";
-import { identityCondition } from "../staples/condition";
 import { cardColumns, freshJobs, toStrategyCard, type CardRow } from "./load";
 import { onStrategy, type StrategyKey } from "./score";
 
@@ -41,10 +41,17 @@ export type FocusCandidate = { oracleId: string; name: string; typeLine: string;
  */
 export const FOCUS_CANDIDATES_MAX = 20;
 
+/** The role basis the deck's profile counted by (`ProfileSkeleton.roleBasis`): a candidate's roles must be the ones its
+ *  addition would move in those counts. */
+export type RoleBasis = "labels" | "classifier";
+
 export type CandidateArgs = {
   userId: string;
   commanderOracleIds: readonly string[];
   colorIdentity: readonly string[];
+  /** The staples bucket the profile resolved (`ProfileSkeleton.condition`): the exact identity, or the colour-count
+   *  fallback when the exact one has none, so a deck served by `count:3` keeps its staples. */
+  stapleCondition: string;
   inDeck: ReadonlySet<string>;
   limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
 };
@@ -55,7 +62,7 @@ export type CandidateArgs = {
  */
 export function candidateQuery(q: Reader, args: CandidateArgs) {
   const commanders = sql.param([...args.commanderOracleIds]);
-  const condition = identityCondition(args.colorIdentity);
+  const condition = args.stapleCondition;
   return q
     .select({
       ...cardColumns,
@@ -92,22 +99,41 @@ export function rankCandidates<T extends RankedRow>(rows: readonly T[]): T[] {
   return [...rows].sort((a, b) => desc(a.inclusion, b.inclusion) || desc(a.stapleShare, b.stapleShare) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
 
-/** The roles a candidate fills: its fresh label role set, else the text classifier (`rolesByLabelElseText`). */
-function rolesOf(r: CardRow): string[] {
+/**
+ * The roles a candidate fills, by the profile's own rules (`profile/build.ts`'s `rolesFor`): the FRONT face's text
+ * (`castFaceText`), and on the labels basis its fresh label role set, else the classifier. So a card listed as ramp is
+ * one whose addition moves the profile's ramp count.
+ */
+function rolesOf(r: CardRow, basis: RoleBasis): string[] {
+  const card = { oracleId: r.oracleId, typeLine: r.typeLine, oracleText: castFaceText(r.oracleText, r.layout), keywords: r.keywords };
+  if (basis !== "labels") return classifyRoles(card);
   const jobs = freshJobs(r);
-  const sets = jobs ? new Map([[r.oracleId, labelRoleSet(jobs, r.typeLine, r.oracleText)]]) : new Map();
-  return rolesByLabelElseText(r, sets);
+  return rolesByLabelElseText(card, jobs ? new Map([[r.oracleId, labelRoleSet(jobs, r.typeLine, card.oracleText)]]) : new Map());
 }
 
 /** The roles each of these catalog cards fills, by the candidates' own rule; for the eval's role-coverage count. */
-export async function loadCardRoles(oracleIds: readonly string[], read: Reader = db): Promise<Map<string, string[]>> {
+export async function loadCardRoles(oracleIds: readonly string[], basis: RoleBasis, read: Reader = db): Promise<Map<string, string[]>> {
   if (oracleIds.length === 0) return new Map();
   const rows = await read
     .select({ ...cardColumns, quantity: sql<number>`1` })
     .from(cards)
     .leftJoin(cardLabels, eq(cardLabels.oracleId, cards.oracleId))
     .where(sql`${cards.oracleId} = any(${sql.param([...oracleIds])}::uuid[])`);
-  return new Map(rows.map((r) => [r.oracleId, rolesOf(r)]));
+  return new Map(rows.map((r) => [r.oracleId, rolesOf(r, basis)]));
+}
+
+/**
+ * An owned-only run's shortlist with the focus candidates joined on (review round 1): `limitsRules` says every addition
+ * comes from the shortlist, and an owned-only candidate passed the same owned and free-copy test, but the shortlist
+ * stops at its own cap and reads only the commander's list, so a staple-only or lower-ranked focus card would be offered
+ * by one rule and forbidden by the other. The shortlist's order is kept; candidates it lacks follow in their own order.
+ */
+export function withFocusCandidates<T extends { oracleId: string; name: string; typeLine: string }>(
+  shortlist: readonly T[],
+  candidates: readonly FocusCandidate[],
+): (T | Pick<FocusCandidate, "oracleId" | "name" | "typeLine">)[] {
+  const held = new Set(shortlist.map((c) => c.oracleId));
+  return [...shortlist, ...candidates.filter((c) => !held.has(c.oracleId)).map(({ oracleId, name, typeLine }) => ({ oracleId, name, typeLine }))];
 }
 
 /**
@@ -115,7 +141,7 @@ export async function loadCardRoles(oracleIds: readonly string[], read: Reader =
  * switches, for the claim model's free-copy read on an owned-only run.
  */
 export async function loadFocusCandidates(
-  args: CandidateArgs & { deckId: string; focus: StrategyKey; env: NodeJS.ProcessEnv; max?: number },
+  args: CandidateArgs & { deckId: string; focus: StrategyKey; roleBasis: RoleBasis; env: NodeJS.ProcessEnv; max?: number },
   read: Reader = db,
 ): Promise<FocusCandidate[]> {
   const max = args.max ?? FOCUS_CANDIDATES_MAX;
@@ -148,7 +174,7 @@ export async function loadFocusCandidates(
         const cents = fact ? priceOf(fact, priceState(fact, priced.newestAsOf)) : null;
         if (cents !== null && cents > capCents) continue;
       }
-      out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r) });
+      out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis) });
       if (out.length >= max) break;
     }
   }

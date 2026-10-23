@@ -47,6 +47,8 @@ const app = await openTuning();
 const { loadAddCards, loadRunStrategy, strategyChips } = await import("../../src/lib/strategy/run");
 const { onStrategy } = await import("../../src/lib/strategy/score");
 const { loadCardRoles } = await import("../../src/lib/strategy/candidates");
+// The basis the eval's profiles counted by: `tuning-app` builds them from `process.env`, as this does.
+const roleBasis = (await import("../../src/lib/decks/label-counts-flag")).roleBasisFromEnv(process.env);
 const { tuningInputs } = await import("../../src/lib/decks/tuning-read");
 const named = NAMES.slice(0, Number(args.count)).map((n) => {
   const hit = [...app.nameOf].find(([, name]) => name === n);
@@ -122,7 +124,7 @@ for (const [customId, answer] of run.answers) {
   t.usd += commonRow(cell, answer, false, app.maxTokens).usdAsRun ?? 0;
   // Roles covered (plan 4c): each role two or more short of its target (not advisory, not land) that at least one kept
   // addition fills, by the candidates' own role rule.
-  const addRoles = await loadCardRoles(kept.flatMap((k) => (k.addOracleId ? [k.addOracleId] : [])));
+  const addRoles = await loadCardRoles(kept.flatMap((k) => (k.addOracleId ? [k.addOracleId] : [])), roleBasis);
   const gaps = deck.pack.targets.roles.filter((r) => r.role !== "land" && !r.advisory && r.target - r.have >= 2);
   t.gaps += gaps.length;
   t.covered += gaps.filter((g) => [...addRoles.values()].some((roles) => roles.includes(g.role))).length;

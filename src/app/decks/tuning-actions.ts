@@ -47,7 +47,7 @@ import { refundsCredit } from "../../lib/tuning/refund";
 import { retryable } from "../../lib/tuning/retry";
 import { loadOwnedCandidates } from "../../lib/tuning/owned-candidates";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
-import { loadFocusCandidates } from "../../lib/strategy/candidates";
+import { loadFocusCandidates, withFocusCandidates } from "../../lib/strategy/candidates";
 import { focusPack, loadAddCards, loadRunStrategy, strategyChips } from "../../lib/strategy/run";
 
 /**
@@ -300,8 +300,11 @@ export async function runTuning(
         const candidates = await loadFocusCandidates({
           userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
           inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits: pack.limits, focus: focusRun.key, env,
+          stapleCondition: profile.skeleton.condition, roleBasis: profile.skeleton.roleBasis ?? "classifier",
         });
         pack.focus = focusPack(focusRun, candidates);
+        // Owned-only: every addition must come from the shortlist, so an owned focus candidate joins it.
+        if (pack.limits.ownedOnly && pack.ownedCandidates) pack.ownedCandidates = withFocusCandidates(pack.ownedCandidates, candidates);
       }
       const { system, user } = buildPrompt(pack);
       // One ask, and at most one more when the first comes back with nothing to show (a degenerate answer, or

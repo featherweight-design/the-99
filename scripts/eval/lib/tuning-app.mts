@@ -93,6 +93,7 @@ export async function openTuning() {
         const candidates = process.env.EVAL_FOCUS_CANDIDATES === "off" ? [] : await loadFocusCandidates({
           userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
           inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits: pack.limits, focus, env: process.env,
+          stapleCondition: profile.skeleton.condition, roleBasis: profile.skeleton.roleBasis ?? "classifier",
         });
         pack.focus = focusPack(await loadRunStrategy(inputs.head, focus), candidates);
       }
