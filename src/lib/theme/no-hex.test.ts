@@ -21,6 +21,9 @@ const ALLOWED = new Set([
   "components/social/add-friend-dialog.tsx",
   // The invite QR (invites PR 4) is drawn on the same light plate with the same ink, for the same camera.
   "components/social/invite-qr.tsx",
+  // The iPhone guidance sheet draws Safari's own Share and Add glyphs in iOS's system blue (push handoff, iPhone board),
+  // so the reader matches them to the buttons on their phone; that blue is Apple's, not a theme's.
+  "components/settings/push-how-sheet.tsx",
   // The card page's link-preview image (F3 PR 2b) is drawn once into a PNG by `next/og`, which reads no stylesheet, so
   // its colours are literals. A visitor always gets the default theme, and `og-card-image.test.tsx` pins every ink to
   // that theme's tokens read out of globals.css, so it cannot drift.
