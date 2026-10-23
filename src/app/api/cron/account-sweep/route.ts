@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * The account sweep's trigger (`src/lib/account/sweep.ts`), called by the Vercel cron in `vercel.json` every
- * five minutes. Public in `src/proxy.ts` (`/api/cron(.*)`); what authorizes it is `CRON_SECRET`, which Vercel
+ * thirty minutes. Public in `src/proxy.ts` (`/api/cron(.*)`); what authorizes it is `CRON_SECRET`, which Vercel
  * sends as a bearer token on every cron call. Until that secret is set it answers 503 and does nothing; a call
  * without it is refused with 401 before anything runs.
  */

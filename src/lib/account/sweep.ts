@@ -3,7 +3,7 @@
  * the moment it is deleted and leaves a tombstone (`account_tombstones`); a request that was already past its
  * auth when that purge committed can still write a row for the account afterwards. Clerk revokes the account's
  * sessions on delete and a session token lives about a minute, so such writes stop within minutes. A Vercel cron
- * (`/api/cron/account-sweep`, every five minutes) therefore runs the idempotent purge again for every tombstone
+ * (`/api/cron/account-sweep`, every thirty minutes) therefore runs the idempotent purge again for every tombstone
  * still holding its raw id, which erases them.
  *
  * The raw id is held for a day and no longer: a tombstone past `deleted_at` + 24h gets its last purge on the

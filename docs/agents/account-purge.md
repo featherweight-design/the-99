@@ -29,7 +29,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   purge that fails is still swept: `account_tombstones` holds `id_hash`, the SHA-256 of the Clerk id (random and
   never reissued, so it needs no key), the raw `clerk_id`, and `deleted_at`; a re-run keeps the first row.
   `purgeAccount` itself writes no tombstone, so a probe that purges its own fixtures leaves none. A request already past its auth when the purge committed can still write a row for the account, so a
-  Vercel cron (`vercel.json`, every five minutes) calls `GET /api/cron/account-sweep` (public in `src/proxy.ts`,
+  Vercel cron (`vercel.json`, every thirty minutes) calls `GET /api/cron/account-sweep` (public in `src/proxy.ts`,
   authorized only by `CRON_SECRET` as a bearer token, 503 without it), which runs the idempotent purge AGAIN for
   every tombstone still holding its raw id, oldest first and with no cap, so a new tombstone never waits behind
   older ones (`sweepTombstones`, `src/lib/account/sweep.ts`).
