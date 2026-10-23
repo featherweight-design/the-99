@@ -1,7 +1,7 @@
 // Your requests on /friends (spare requests PR 3d; board `Asker-States`, call 7): absent when empty, the head with its
 // count and order, each state's kicker, title and line, the diamond on an unseen answer, the ✕ (withdraw an open ask,
 // clear the rest) and Ask again through the actions, the shared toast on a failure, and focus after each press.
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { spareCopy } from "../../lib/copy/social";
 import type { YourRequest } from "../../lib/social/your-requests";
@@ -110,6 +110,22 @@ describe("YourRequests", () => {
     // The action's redraw drops the row.
     rerender(<YourRequests rows={[req("b", "yes")]} now={NOW} />);
     expect(document.activeElement).toBe(within(screen.getByTestId("your-request")).getByTestId("your-request-close"));
+  });
+
+  it("✕ on the last row hands focus to the page's title as the section leaves", async () => {
+    actions.closeSpareAction.mockResolvedValue({ ok: true, closed: "withdrawn" });
+    const title = document.createElement("h1");
+    title.id = "friends-title";
+    title.tabIndex = -1;
+    document.body.appendChild(title);
+    const { rerender } = render(<YourRequests rows={[req("a", "open")]} now={NOW} />);
+    const x = screen.getByTestId("your-request-close");
+    x.focus();
+    await act(async () => fireEvent.click(x));
+    // The action's redraw has no rows left: the section goes, and focus must not fall to the body.
+    await act(async () => { rerender(<YourRequests rows={[]} now={NOW} />); });
+    await waitFor(() => expect(document.activeElement).toBe(title));
+    title.remove();
   });
 
   it("Ask again asks the same friend for the same copies and deck, refreshes, and lands on the new Requested", async () => {

@@ -10,7 +10,7 @@
 // its row leaves with the action's redraw; Ask again revalidates nothing (it is Shopping's write), so the list refreshes
 // itself. Focus follows the press (`useLandFocus`): to the next row's ✕ after a ✕, to the new Requested after Ask again.
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { askSpareAction, closeSpareAction } from "../../app/friends/spare-actions";
 import { feedAge } from "../../lib/feed/age";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
@@ -58,6 +58,24 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
   const land = useLandFocus(root);
   const toast = useSpareToast();
   const [busy, setBusy] = useState<string | null>(null);
+  // The last row's ✕ takes the section with it (no rows, no section), so `land` has nowhere to go: on the way out the
+  // section hands focus to the page's title, unless the reader has moved on.
+  // The section draws nothing once the redraw has no rows, or is unmounted by its page: either way, once.
+  const lastClosed = useRef(false);
+  const toTitle = () => {
+    if (!lastClosed.current) return;
+    lastClosed.current = false;
+    requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (active && active !== document.body && active.isConnected) return;
+      document.getElementById("friends-title")?.focus();
+    });
+  };
+  const empty = rows.length === 0;
+  useEffect(() => {
+    if (empty) toTitle();
+  });
+  useEffect(() => toTitle, []);
   if (rows.length === 0) return null;
   const openCards = new Set(rows.filter(isOpen).map((a) => a.oracleId));
 
@@ -68,7 +86,8 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
     setBusy(null);
     if (!ok) return toast.fail();
     const next = rows[index + 1] ?? rows[index - 1];
-    land(next ? `[data-request="${next.id}"] [data-testid="your-request-close"]` : "#your-requests");
+    if (next) land(`[data-request="${next.id}"] [data-testid="your-request-close"]`);
+    else lastClosed.current = true;
   }
 
   async function askAgain(a: YourRequest) {
@@ -118,7 +137,8 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
                     : faceInitials(a.holder.displayName)}
                 </span>
               </span>
-              <div className="flex min-w-0 flex-col gap-[3px]">
+              {/* Clear of the ✕ (36px at the row's top right): the whole text column, title and detail included. */}
+              <div className="flex min-w-0 flex-col gap-[3px] pr-[30px]">
                 <p className="m-0 flex min-w-0 items-center gap-[7px]">
                   {a.unseen && (
                     <>
@@ -129,7 +149,7 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
                   <span data-testid="your-request-status" tabIndex={-1} className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] ${text.ink}`}>
                     {text.kind}
                   </span>
-                  <small className="ml-auto mr-[30px] flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                  <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
                     {feedAge(text.at.toISOString(), now.toISOString())}
                   </small>
                 </p>
@@ -137,7 +157,7 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
                 <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{text.detail}</p>
               </div>
               {again && (
-                <div className="col-start-2 mt-[9px] flex min-w-0 md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:pr-[34px]">
+                <div className="col-start-2 mt-[6px] flex min-w-0 md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:pr-[34px]">
                   <RowEnd ask={{ kind: "askAgain" }} friend={a.holder.displayName} card={a.card.name} busy={busy === a.id}
                     locked={busy !== null} onAsk={() => void askAgain(a)} size="row" />
                 </div>

@@ -137,7 +137,7 @@ function AskRow({ row, now, busy, locked, onAnswer }: {
         <p className={TITLE}>{feedCopy.home.title.spareRequest(friend, ask.card.name)}</p>
         <p className={DETAIL}>{r.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)}</p>
       </div>
-      <div className="col-start-2 mt-[9px] min-w-0 md:col-start-3 md:row-start-1 md:mt-0">
+      <div className="col-start-2 mt-[6px] min-w-0 md:col-start-3 md:row-start-1 md:mt-0">
         <AnswerPresses friend={friend} card={ask.card.name} daysLeft={ask.daysLeft} busy={busy} locked={locked} onAnswer={onAnswer} size="row" />
       </div>
     </li>
