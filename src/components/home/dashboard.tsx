@@ -33,6 +33,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { LeadSlot } from "./lead-story";
 import { HeldLeadProvider } from "./held-lead";
 import { WhatsNew } from "./whats-new";
+import { PushLanding } from "../push/push-landing";
 
 export type DashboardProps = {
   stats: { totalCards: number; uniqueCards: number };
@@ -48,6 +49,12 @@ export type DashboardProps = {
   feed?: HomeFeed | null;
   /** `COMMANDERS_PLACE_ENABLED` for this reader: the lock's page line names only the slots the bar locks. */
   commandersPlace?: boolean;
+  /**
+   * PUSH_ENABLED is on for this reader and the feed was read (push PR 5): a push's landing opens its card here, through the
+   * feed's provider, and the visit closes every delivered notification (D4). Absent, nothing of push runs.
+   */
+  /** This server visit's token while push is on for the reader (`PushLanding`); null otherwise. */
+  pushVisit?: string | null;
   /** Keyed by commander oracleId, and only for the commanders shown. */
   inUse: Map<string, ReceiptCounts>;
   decks: DeckListItem[];
@@ -237,6 +244,7 @@ export function Dashboard(props: DashboardProps) {
           the split rather than staying at `sm`: left behind, it gave 640–1179 a
           third layout, one column wide with desktop padding. */}
       <Frame>
+      {feed && props.pushVisit && <PushLanding visit={props.pushVisit} />}
       <HeldLeadProvider>
       <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         {/* Below 1180 both columns are `display: contents`, so their blocks are one list and `order` places them: Ready to

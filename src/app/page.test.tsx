@@ -56,6 +56,7 @@ const { Dashboard } = await import("../components/home/dashboard");
 const { FirstRunChecklist } = await import("../components/home/first-run");
 const { PreconPickReceipt } = await import("../components/home/precon-pick-receipt");
 const { HomeTour } = await import("../components/discovery/home-tour");
+const { PushLanding } = await import("../components/push/push-landing");
 
 const BANNER = { lines: [{ kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 }], href: "/decks/precons?sort=newest#announced", keys: ["trc"] };
 const ON = { PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true" };
@@ -322,5 +323,41 @@ describe("Home's feed visit writes (menu and Home PR 6)", () => {
     stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, total: 0 });
     await HomePage();
     expect(stub.pool).not.toHaveBeenCalled();
+  });
+});
+
+describe("Home with push (push PR 5)", () => {
+  const PUSH = { ...ON, HOME_FEED_ENABLED: "true", PUSH_ENABLED: "true" };
+  const FEED = { chosen: true, items: [], lead: null, unseen: 0, on: [] };
+
+  it("hands the dashboard push when the switch is on and the feed was read", async () => {
+    stub.env = { ...PUSH };
+    stub.loadFeed.mockResolvedValue(FEED);
+    const page = (await HomePage()) as ReactElement<{ pushVisit?: string | null }>;
+    expect(page.type).toBe(Dashboard);
+    expect(page.props.pushVisit).toEqual(expect.any(String));
+  });
+
+  it("hands it no push with the switch off, with the feed off, or after a failed feed read", async () => {
+    stub.loadFeed.mockResolvedValue(FEED);
+    stub.env = { ...PUSH, PUSH_ENABLED: "" };
+    expect(((await HomePage()) as ReactElement<{ pushVisit?: string | null }>).props.pushVisit).toBeNull();
+    stub.env = { ...ON, PUSH_ENABLED: "true" };
+    expect(((await HomePage()) as ReactElement<{ pushVisit?: string | null }>).props.pushVisit).toBeNull();
+    stub.env = { ...PUSH };
+    stub.loadFeed.mockRejectedValue(new Error("feed read failed"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const page = (await HomePage()) as ReactElement<{ pushVisit?: string | null }>;
+    err.mockRestore();
+    expect(page.props.pushVisit).toBeNull();
+  });
+
+  it("mounts the landing beside a first-run checklist with push on, and nothing with it off", async () => {
+    stub.uniqueCards = 0;
+    stub.env = { ...PUSH };
+    const on = (await HomePage()) as ReactElement<{ children: ReactElement[] }>;
+    expect(on.props.children.map((c) => c.type)).toEqual([FirstRunChecklist, PushLanding]);
+    stub.env = { ...PUSH, PUSH_ENABLED: "" };
+    expect(((await HomePage()) as ReactElement).type).toBe(FirstRunChecklist);
   });
 });
