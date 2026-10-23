@@ -3,12 +3,12 @@
 // them builds. Diffs against VERCEL_GIT_PREVIOUS_SHA, the last SUCCESSFUL deploy of the branch, so skipped
 // commits accumulate into the next diff instead of being forgotten.
 import { execFileSync } from "node:child_process";
-import { decide } from "./lib/vercel-ignore.mjs";
+import { decide, diffArgs } from "./lib/vercel-ignore.mjs";
 
 function changedFiles(previous) {
   if (!previous) return null;
   try {
-    const out = execFileSync("git", ["diff", "--name-only", "-z", previous, "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const out = execFileSync("git", diffArgs(previous), { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
     // -z: git quotes a non-ASCII path otherwise, and the quote would hide the prefix.
     return out.split("\0").filter(Boolean);
   } catch {

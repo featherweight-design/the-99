@@ -33,3 +33,12 @@ export function decide({ projectId, env, ref, changed }) {
   if (read.length > 0) return { build: true, reason: `${read.length} changed path(s) the build may read, first: ${read[0]}` };
   return { build: false, reason: `${changed.length} changed path(s), none the build reads` };
 }
+
+/**
+ * The git arguments that list what a deploy would change. `-z` because git quotes a non-ASCII path otherwise
+ * (the quote hides the prefix); `--no-renames` because a rename reports only its destination, so moving a
+ * deployed file under `docs/` would hide the deletion of its source.
+ */
+export function diffArgs(previous) {
+  return ["diff", "--name-only", "-z", "--no-renames", previous, "HEAD"];
+}

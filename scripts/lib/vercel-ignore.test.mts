@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { decide, skippablePath, STAGING_PROJECT_ID } from "./vercel-ignore.mjs";
+import { decide, diffArgs, skippablePath, STAGING_PROJECT_ID } from "./vercel-ignore.mjs";
 
 describe("skippablePath", () => {
   it.each(["docs/agents/ops.md", "docs/superpowers/plans/x.md", "design/design_handoff_x/a.html", ".github/workflows/ci.yml", "AGENTS.md", "README.md"])("%s is skippable", (p) => {
@@ -38,5 +38,14 @@ describe("decide", () => {
   });
   it("the other project builds previews", () => {
     expect(decide({ projectId: "prj_other", env: "preview", ref: "feat", changed: ["src/x.ts"] }).build).toBe(true);
+  });
+});
+
+describe("diffArgs", () => {
+  it("lists a rename as a delete plus an add, so moving a route under docs/ still builds", () => {
+    const args = diffArgs("abc123");
+    expect(args).toEqual(expect.arrayContaining(["--no-renames", "-z", "abc123", "HEAD"]));
+    // With renames off git reports both sides of a move; the source is built for.
+    expect(decide({ projectId: "prj_other", env: "production", ref: "main", changed: ["src/app/example/page.tsx", "docs/example/page.tsx"] }).build).toBe(true);
   });
 });
