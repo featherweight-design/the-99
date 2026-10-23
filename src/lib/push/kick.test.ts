@@ -53,39 +53,44 @@ describe("kickPush", () => {
     expect(m.flush.mock.calls[0]![0]).toMatchObject({ onlyUser: "u1" });
   });
 
-  it("makes a burst for one reader ONE flush: items recorded while it waits ride along", async () => {
+  it("makes a burst for one reader ONE flush plus at most one more pass, decided after each request", async () => {
     kickPush("u1"); kickPush("u1"); kickPush("u1"); // three combos noticed by one collection write
-    expect(m.after).toHaveBeenCalledOnce();
-    kickPush("u2"); // another reader has their own
-    expect(m.after).toHaveBeenCalledTimes(2);
-    await run(0);
-    expect(m.flush).toHaveBeenCalledOnce();
-  });
-
-  it("an item recorded while the flush runs gets one more pass, never a second flush at the same time", async () => {
+    expect(m.after).toHaveBeenCalledTimes(3); // each scheduled after its request, never absorbed at the call
     let release!: () => void;
     m.flush.mockImplementationOnce(() => new Promise((done) => { release = () => done({}); }));
-    kickPush("u1");
-    const done = (m.after.mock.calls[0]![0] as () => Promise<void>)();
+    const calls = m.after.mock.calls.map((c) => (c[0] as () => Promise<void>)());
+    await vi.advanceTimersByTimeAsync(KICK_DELAY_MS);
+    expect(m.flush).toHaveBeenCalledOnce(); // the other two found it running
+    release();
+    await Promise.all(calls);
+    expect(m.flush).toHaveBeenCalledTimes(2); // one more pass, not two
+  });
+
+  it("a request that commits while another's flush runs still gets its row sent in seconds", async () => {
+    let release!: () => void;
+    m.flush.mockImplementationOnce(() => new Promise((done) => { release = () => done({}); }));
+    kickPush("u3"); // request A
+    const a = (m.after.mock.calls[0]![0] as () => Promise<void>)();
     await vi.advanceTimersByTimeAsync(KICK_DELAY_MS);
     expect(m.flush).toHaveBeenCalledOnce();
-    kickPush("u1"); kickPush("u1"); // written mid-flush
-    expect(m.after).toHaveBeenCalledOnce();
-    release();
-    await done;
-    expect(m.flush).toHaveBeenCalledTimes(2);
-    // Finished: the next item starts a fresh kick.
-    kickPush("u1");
+    kickPush("u3"); // request B: its transaction is still open, so nothing is decided now
     expect(m.after).toHaveBeenCalledTimes(2);
+    release();
+    await a; // A finishes before B's callback runs: A's flush could not have seen B's row
+    expect(m.flush).toHaveBeenCalledOnce();
+    await run(1); // B's own callback, after B committed: no flush running, so it flushes
+    expect(m.flush).toHaveBeenCalledTimes(2);
+  });
+
+  it("a second reader is never held behind the first", async () => {
+    kickPush("u4"); kickPush("u5");
+    await Promise.all([run(0), run(1)]);
+    expect(m.flush.mock.calls.map((c) => (c[0] as { onlyUser: string }).onlyUser).sort()).toEqual(["u4", "u5"]);
   });
 
   it("outside a request (a job, a script) does nothing and throws nothing: the cron delivers it", () => {
     m.after.mockImplementation(() => { throw new Error("`after` was called outside a request scope"); });
     expect(() => kickPush("u9")).not.toThrow();
-    // Nothing is left pending, so a later request for the same reader still kicks.
-    m.after.mockImplementation(() => {});
-    kickPush("u9");
-    expect(m.after).toHaveBeenCalledTimes(2);
   });
 
   it("reports a failed kick to monitoring and swallows it: the rows wait for the cron", async () => {

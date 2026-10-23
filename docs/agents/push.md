@@ -90,10 +90,11 @@ This file holds what a reader of the code needs and the plan's decisions in one 
 
 - **The kick** (`src/lib/push/kick.ts`, D1): `recordFeedItem`'s one statement also says whether it queued a push
   (`pushed`), and when it did, `kickPush(userId)` schedules a flush of that reader's rows with `after()`, `KICK_DELAY_MS` (2s)
-  after the response, so a spare ask reaches the friend in seconds rather than at the next 15-minute cron. A burst is ONE
-  flush: an item recorded while that reader's kick waits rides along, and one recorded while it runs asks for one more pass
-  when it ends, never a second flush at the same time (per server instance; across instances an overlap can send twice,
-  as the cron's can). The delay is what keeps a notice's loop, which writes from inside `after()`, one batch. `flushPush({ onlyUser })` selects that reader's rows
+  after the response, so a spare ask reaches the friend in seconds rather than at the next 15-minute cron. Every request
+  schedules its OWN callback, so the coalescing is decided after that request's transaction committed, never at the call:
+  a callback that finds that reader's flush already running asks it for one more pass and does nothing else. A burst is one
+  flush and at most one more pass, never two at once (per server instance; across instances an overlap can send twice, as
+  the cron's can). The delay is what keeps a notice's loop, which writes from inside `after()`, one batch. `flushPush({ onlyUser })` selects that reader's rows
   only and never prunes. Outside a request (a job such as the price-drop run, a script, a probe) `after()` cannot be
   scheduled, so nothing happens and the cron delivers it; a kick that fails is reported (`push-kick`) and its rows wait.
   The flush is imported lazily, so the feed writer does not load the sender. Dormant without the VAPID keys.
