@@ -256,6 +256,7 @@ export const ABOUT_LOCATORS = {
   "suggested-changes": { screen: "deck-analysis", locator: "#tab-analysis", reaches: true, note: "a tool on an analyzed deck" },
   "proposed-cuts": { screen: "deck-analysis", locator: "#tab-analysis", reaches: true, note: "a tool on an analyzed deck" },
   "mana-balance": { screen: "deck-analysis", locator: "#tab-analysis", reaches: true, note: "a tool on an analyzed deck" },
+  "deck-focus": { screen: "deck-analysis", locator: "[data-strategy-block]", reaches: true, note: "the strategy ring on an analyzed deck" },
   credits: {
     screen: "deck-analysis",
     locator: "#panel-analysis button:has-text('Analyze')",

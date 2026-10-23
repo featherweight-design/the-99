@@ -210,6 +210,7 @@ describe("an entry tied to a switch", () => {
       "suggested-changes",
       "proposed-cuts",
       "mana-balance",
+      "deck-focus",
       "deck-stats",
       "decks-stats",
       "notes",
