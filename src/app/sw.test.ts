@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 // `public/sw.js` run against a fake worker scope: which requests it answers, from where, and what it
 // keeps. It is plain JavaScript served as-is, so it is loaded as text rather than imported.
@@ -28,6 +28,10 @@ class FakeCache {
 }
 
 let stores: Map<string, FakeCache>;
+let showNotification: Mock<(...args: unknown[]) => Promise<void>>;
+let windows: { url: string; focused: boolean; focus: ReturnType<typeof vi.fn>; navigate: ReturnType<typeof vi.fn>; postMessage: ReturnType<typeof vi.fn> }[];
+let openWindow: Mock<(url: string) => Promise<null>>;
+let userAgent: string;
 let listeners: Record<string, (e: unknown) => void>;
 let network: ReturnType<typeof vi.fn>;
 
@@ -41,11 +45,17 @@ beforeEach(() => {
     has: async (name: string) => stores.has(name),
     delete: async (name: string) => stores.delete(name),
   };
+  showNotification = vi.fn(async () => {});
+  windows = [];
+  openWindow = vi.fn(async () => null);
+  userAgent = "Mozilla/5.0 (X11; Linux x86_64) Chrome/140";
   const self = {
     location: new URL(ORIGIN),
     addEventListener: (type: string, fn: (e: unknown) => void) => (listeners[type] = fn),
     skipWaiting: () => {},
-    clients: { claim: async () => {} },
+    clients: { claim: async () => {}, matchAll: async () => windows, openWindow: (url: string) => openWindow(url) },
+    registration: { showNotification: (...a: unknown[]) => showNotification(...a) },
+    navigator: { get userAgent() { return userAgent; } }, // a WorkerNavigator: no maxTouchPoints
   };
   start = () => runInNewContext(SOURCE, { self, caches, fetch: network, URL, Response, Request, Headers, Set, Math, Date });
   start();
@@ -150,7 +160,7 @@ describe("the service worker", () => {
 
   it("trims the static cache to its newest 600 files", async () => {
     for (let i = 0; i < 605; i++) await fetchVia(`/_next/static/immutable/chunks/${i}.js`);
-    const kept = [...stores.get("static-v1")!.entries.keys()];
+    const kept = [...stores.get("static-v2")!.entries.keys()];
     expect(kept).toHaveLength(600);
     expect(kept[0]).toBe(`${ORIGIN}/_next/static/immutable/chunks/5.js`);
   });
@@ -160,8 +170,8 @@ describe("the service worker", () => {
     await install();
     const offlineCall = network.mock.calls.find(([input]) => input === "/offline");
     expect(offlineCall?.[1]).toMatchObject({ credentials: "omit" });
-    expect(await stores.get("offline-v1")!.entries.get(`${ORIGIN}/offline`)?.clone().text()).toContain("o.css");
-    expect([...stores.get("offline-v1")!.entries.keys()].sort()).toEqual([
+    expect(await stores.get("offline-v2")!.entries.get(`${ORIGIN}/offline`)?.clone().text()).toContain("o.css");
+    expect([...stores.get("offline-v2")!.entries.keys()].sort()).toEqual([
       `${ORIGIN}/_next/static/chunks/f.js`,
       `${ORIGIN}/_next/static/chunks/o.js`,
       `${ORIGIN}/_next/static/css/o.css`,
@@ -187,7 +197,7 @@ describe("the service worker", () => {
       start();
       serve();
       await install();
-      const before = await stores.get("offline-v1")!.entries.get(`${ORIGIN}/offline`)!.clone().text();
+      const before = await stores.get("offline-v2")!.entries.get(`${ORIGIN}/offline`)!.clone().text();
       // An hour on, a deploy has moved the page to a new stylesheet that will not load.
       vi.setSystemTime(new Date("2026-10-14T13:30:00Z"));
       network.mockImplementation(async (input: Request | string) => {
@@ -197,7 +207,7 @@ describe("the service worker", () => {
         return answered(`page ${path}`, path);
       });
       await load("/decks");
-      expect(await stores.get("offline-v1")!.entries.get(`${ORIGIN}/offline`)!.clone().text()).toBe(before);
+      expect(await stores.get("offline-v2")!.entries.get(`${ORIGIN}/offline`)!.clone().text()).toBe(before);
     } finally {
       vi.useRealTimers();
     }
@@ -215,7 +225,7 @@ describe("the service worker", () => {
           if (path.startsWith("/_next/static/")) return answered(`asset ${path}`, path);
           return answered(`page ${path}`, path);
         });
-      const kept = () => [...stores.get("offline-v1")!.entries.keys()].filter((u) => u.endsWith(".css")).sort();
+      const kept = () => [...stores.get("offline-v2")!.entries.keys()].filter((u) => u.endsWith(".css")).sort();
       generation("a");
       await install();
       // A deploy later, a refresh: a document that drew the first copy may still ask for a.css.
@@ -242,7 +252,7 @@ describe("the service worker", () => {
       // A second worker publishes a page drawn with b.css while this one is mid-refresh with c.css:
       // simulated by writing B's page into the cache the moment this refresh's own write lands.
       vi.setSystemTime(new Date("2026-10-14T13:30:00Z"));
-      const offline = stores.get("offline-v1")!;
+      const offline = stores.get("offline-v2")!;
       const put = offline.put.bind(offline);
       let raced = false;
       offline.put = async (req: Request, res: Response) => {
@@ -348,7 +358,7 @@ describe("the service worker", () => {
       });
       // And the install fails, so the worker before it stays in charge.
       await expect(install()).rejects.toThrow("could not be kept");
-      expect(stores.get("offline-v1")?.entries.size ?? 0).toBe(0);
+      expect(stores.get("offline-v2")?.entries.size ?? 0).toBe(0);
     }
   });
 
@@ -400,6 +410,163 @@ describe("the service worker", () => {
     let done: Promise<unknown> = Promise.resolve();
     listeners.activate({ waitUntil: (p: Promise<unknown>) => (done = p) });
     await done;
-    expect([...stores.keys()].sort()).toEqual(["someone-else", "static-v1"]);
+    expect([...stores.keys()].sort()).toEqual(["someone-else", "static-v2"]);
+  });
+});
+
+// Push (plan 2026-10-22-push.md, PR 3d): what the worker shows, when it does not, and where a tap lands.
+describe("push", () => {
+  const payload = { title: "Jace is cheaper", body: "Was $8.40, now $5.10.", route: "/", tag: "price-drop", keys: ["item:1"], openCard: "o1", openCombo: false, image: "https://cards.scryfall.io/x.jpg" };
+  const win = (url = `${ORIGIN}/decks`, focused = false) => ({ url, focused, focus: vi.fn(async () => {}), navigate: vi.fn(async (): Promise<unknown> => ({})), postMessage: vi.fn() });
+
+  async function push(data: unknown, raw?: string) {
+    const waits: Promise<unknown>[] = [];
+    listeners.push({
+      data: raw === undefined ? { json: () => data } : { json: () => JSON.parse(raw) },
+      waitUntil: (p: Promise<unknown>) => waits.push(p),
+    });
+    await Promise.all(waits);
+  }
+  async function click(data: unknown) {
+    const waits: Promise<unknown>[] = [];
+    const close = vi.fn();
+    listeners.notificationclick({ notification: { data, close }, waitUntil: (p: Promise<unknown>) => waits.push(p) });
+    await Promise.all(waits);
+    return close;
+  }
+
+  it("shows the payload as sent: the words, the tag, the icon, the card image, and what a tap needs", async () => {
+    await push(payload);
+    expect(showNotification).toHaveBeenCalledWith("Jace is cheaper", {
+      body: "Was $8.40, now $5.10.", tag: "price-drop", icon: "/icons/icon-192.png", image: "https://cards.scryfall.io/x.jpg",
+      data: { route: `${ORIGIN}/`, keys: ["item:1"], openCard: "o1", openCombo: false },
+    });
+  });
+
+  it("keeps nothing of it: no cache is touched", async () => {
+    await push(payload);
+    expect(everythingKept()).toEqual([]);
+  });
+
+  it("shows a generic notification for a payload it cannot read, never nothing (a silent push costs the subscription)", async () => {
+    await push(null, "not json");
+    expect(showNotification).toHaveBeenCalledWith("The 99", expect.objectContaining({ body: "", tag: "the-99" }));
+    showNotification.mockClear();
+    const waits: Promise<unknown>[] = [];
+    listeners.push({ data: null, waitUntil: (p: Promise<unknown>) => waits.push(p) });
+    await Promise.all(waits);
+    expect(showNotification).toHaveBeenCalledOnce(); // a push with no data at all
+  });
+
+  it("takes no image that is not https, and a landing that leaves the app becomes Home", async () => {
+    await push({ ...payload, image: "http://evil.example/x.jpg", route: "//evil.example/x" });
+    const options = showNotification.mock.calls[0]![1] as { image?: string; data: { route: string } };
+    expect(options.image).toBeUndefined();
+    expect(options.data.route).toBe(`${ORIGIN}/`);
+    for (const route of ["https://evil.example", "/\\evil", 7, null]) {
+      showNotification.mockClear();
+      await push({ ...payload, route });
+      expect((showNotification.mock.calls[0]![1] as { data: { route: string } }).data.route, String(route)).toBe(`${ORIGIN}/`);
+    }
+    showNotification.mockClear();
+    await push({ ...payload, route: "/friends/abc?x=1" });
+    expect((showNotification.mock.calls[0]![1] as { data: { route: string } }).data.route).toBe(`${ORIGIN}/friends/abc?x=1`);
+  });
+
+  it("shows nothing while a window of the app has focus: its own surfaces say it", async () => {
+    windows = [win(`${ORIGIN}/`, true)];
+    await push(payload);
+    expect(showNotification).not.toHaveBeenCalled();
+    windows = [win(`${ORIGIN}/`, false)];
+    await push(payload);
+    expect(showNotification).toHaveBeenCalledOnce();
+  });
+
+  it("shows it in Safari's WebKit even with a window focused: WebKit revokes a push that stays silent", async () => {
+    windows = [win(`${ORIGIN}/`, true)];
+    const shows = {
+      "an installed iPhone": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+      "an iPad asking for the desktop site, or Safari on a Mac": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+      "Chrome on an iPhone (WebKit)": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/124.0 Mobile/15E148 Safari/604.1",
+    };
+    for (const [who, ua] of Object.entries(shows)) {
+      userAgent = ua;
+      showNotification.mockClear();
+      await push(payload);
+      expect(showNotification, who).toHaveBeenCalledOnce();
+    }
+    const silent = {
+      "Chrome on a Mac": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+      "Chrome on Android": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36",
+      "Edge on Windows": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 Edg/124.0",
+      "Firefox on a Mac": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.4; rv:125.0) Gecko/20100101 Firefox/125.0",
+    };
+    for (const [who, ua] of Object.entries(silent)) {
+      userAgent = ua;
+      showNotification.mockClear();
+      await push(payload);
+      expect(showNotification, who).not.toHaveBeenCalled();
+    }
+  });
+
+  it("a tap closes the notification and focuses an open window, taking it to the landing with what to open IN the address", async () => {
+    const w = win();
+    windows = [win("https://elsewhere.example/"), w];
+    const close = await click({ route: "/friends/abc", keys: ["item:1"], openCard: "o1", openCombo: true });
+    expect(close).toHaveBeenCalledOnce();
+    expect(w.focus).toHaveBeenCalledOnce();
+    expect(w.navigate).toHaveBeenCalledWith(`${ORIGIN}/friends/abc?push-card=o1&push-combo=1`);
+    // Never a message: one sent at a navigation reaches the page being left.
+    expect(w.postMessage).not.toHaveBeenCalled();
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
+  it("a cold tap carries what to open too: a window opened from nothing has no listener for a message", async () => {
+    windows = [];
+    await click({ route: "/", openCard: "o 1/x", openCombo: false });
+    expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/?push-card=o+1%2Fx`);
+  });
+
+  it("a tap with no window of the app open opens one at the landing", async () => {
+    windows = [win("https://elsewhere.example/")];
+    await click({ route: "/decks/precons" });
+    expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/decks/precons`);
+  });
+
+  it("a tap whose payload is missing or hostile lands on Home", async () => {
+    await click(undefined);
+    expect(openWindow).toHaveBeenLastCalledWith(`${ORIGIN}/`);
+    await click({ route: "https://evil.example/" });
+    expect(openWindow).toHaveBeenLastCalledWith(`${ORIGIN}/`);
+    // The URL parser drops tabs and line breaks, so a string check alone would let these leave the app.
+    for (const route of ["/\t/evil.example/x", "/\n/evil.example/x", "/\r/evil.example/x", "//evil.example/", "/\\evil.example/"]) {
+      await click({ route });
+      expect(openWindow, JSON.stringify(route)).toHaveBeenLastCalledWith(`${ORIGIN}/`);
+    }
+    // Parsed twice (once at the push, once at the tap): a same-origin route whose PATH starts "//" must not turn into a host
+    // the second time.
+    const host = new URL(ORIGIN).host;
+    await push({ ...payload, route: `/.//${host}//evil.example/x` });
+    const stored = (showNotification.mock.calls.at(-1)![1] as { data: { route: string } }).data.route;
+    expect(new URL(stored).origin).toBe(ORIGIN);
+    await click({ route: stored });
+    expect(new URL(openWindow.mock.calls.at(-1)![0] as string).origin).toBe(ORIGIN);
+  });
+
+  it("still lands when the window refuses to focus or navigate: it opens one instead", async () => {
+    const w = win();
+    w.focus.mockRejectedValue(new Error("no"));
+    w.navigate.mockRejectedValue(new Error("no"));
+    windows = [w];
+    await click({ route: "/friends" });
+    expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/friends`);
+  });
+
+  it("opens a window when navigation resolves to null: the window went away between the lookup and the tap", async () => {
+    const w = win();
+    w.navigate.mockResolvedValue(null);
+    windows = [w];
+    await click({ route: "/decks" });
+    expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/decks`);
   });
 });

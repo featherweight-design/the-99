@@ -26,3 +26,22 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   device that has it, while a self-unregistering one leaves on the next visit. Bump `VERSION` in it to drop
   every cache it holds. `measure:load`'s EVICTED figure is the load it exists for: a returning reader
   whose HTTP cache was cleared.
+
+- **Push (plan `2026-10-22-push.md`, PR 3d; `VERSION` v2).** The worker also handles `push` and `notificationclick`, and nothing else
+  about its caching changed. A `push` carries the server's small JSON payload (`src/lib/push/send.ts`): the title, body, `tag`, a
+  `route`, the item `keys`, and `openCard` / `openCombo` for Home. It is shown as sent (`showNotification`, icon
+  `/icons/icon-192.png`, the card `image` only when https) and **nothing of it is kept**: no cache is touched. A payload it cannot read
+  still shows a generic "The 99", never nothing, because a push that shows nothing costs the subscription. **A focused window of the app
+  gets no notification** (its own surfaces say it) **except in Safari's WebKit**: an installed iPhone or iPad, any browser on iOS,
+  and Safari on a Mac all require every push to show one and revoke a subscription that stays silent (D5, widened from iOS to
+  every Safari). It is decided from the user agent alone: a worker's navigator has no `maxTouchPoints`, and an iPad asking for the
+  desktop site reads as Safari on a Mac, which gets the same answer. A landing
+  (`route`) is kept as an ABSOLUTE URL on this origin, or Home's, judged on the PARSED URL (the parser drops tabs and line breaks,
+  so `/\t/evil.example` passes a string check) and never handed on as a path (a same-origin path starting `//` would read as
+  a host on the next parse): anything that resolves off this origin, or a non-string, becomes Home. A tap closes the
+  notification, focuses an open window of the app and navigates it, or opens one (also when the window refuses to navigate, or `navigate()` resolves to null because it went away). What
+  Home should open rides in the ADDRESS, `push-card=<oracle id>` and `push-combo=1`, never a `postMessage`: a message sent at a
+  navigation reaches the page being left, and a window opened cold has no listener yet. The landing PR reads and strips them.
+  `src/app/sw.test.ts` pins all of it, including that a push touches no cache. The `VERSION` bump drops the v1 caches once; the install
+  keeps `/offline` again.
+

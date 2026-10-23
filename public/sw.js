@@ -21,10 +21,15 @@
 // cached by their origin, and a stale one would be a wrong page rather than a slow one. A request it
 // does not answer goes to the network exactly as if there were no worker.
 //
+// And it shows a PUSH (plan 2026-10-22-push.md, PR 3d): the server sends a small JSON payload (title, body, route, tag, and what
+// Home opens), and a tap lands on `route`. A payload is shown as sent and nothing of it is kept. A window the reader is looking at
+// gets no notification, except in Safari's WebKit (an installed iPhone or iPad, Safari on a Mac), which requires every push to
+// show one and revokes a subscription that stays silent. The tag is the kind (a spare request's own key), so a newer notification replaces an older one of its tag.
+//
 // Hand-written rather than generated: the app builds with Turbopack, which the generators' plugins
 // do not support, and a worker this small is easier to read than to configure.
 
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC = `static-${VERSION}`;
 // Every deploy adds its own hashed files and none are removed by the build, so the cache is trimmed
 // to its newest entries. A build's whole set is a few hundred files.
@@ -187,4 +192,97 @@ async function cacheFirst(request, event) {
 async function trim(cache, limit) {
   const keys = await cache.keys();
   for (const key of keys.slice(0, Math.max(0, keys.length - limit))) await cache.delete(key);
+}
+
+// --- Push ---------------------------------------------------------------------------------------------------------
+
+const PUSH_ICON = "/icons/icon-192.png";
+
+/**
+ * Safari's WebKit (an installed iPhone or iPad app, any browser on iOS, Safari on a Mac): it requires every push to show a
+ * notification and revokes a subscription that stays silent, so the focused-window rule below does not apply there. Read from
+ * the user agent alone: a worker has no `maxTouchPoints`, and an iPad that asks for the desktop site says "Macintosh", which
+ * this rule takes as Safari on a Mac, the same answer.
+ */
+function alwaysShows() {
+  const ua = (self.navigator && self.navigator.userAgent) || "";
+  if (/iPhone|iPad|iPod/.test(ua)) return true;
+  return /AppleWebKit/.test(ua) && !/Chrome|Chromium|Edg|OPR|SamsungBrowser|Android/.test(ua);
+}
+
+/**
+ * The landing as an ABSOLUTE URL on this origin, or Home's: a payload is ours, but a landing is never trusted to leave the app.
+ * Judged on what the URL parser makes of it, not on the string (it drops tabs and line breaks), and returned whole, never as a
+ * path: a path like "//host/x" would be read as another host by the next parse. Applying it twice gives the same answer.
+ */
+function landing(route) {
+  const home = new URL("/", self.location.origin).href;
+  if (typeof route !== "string") return home;
+  try {
+    const url = new URL(route, self.location.origin);
+    return url.origin === self.location.origin ? url.href : home;
+  } catch {
+    return home;
+  }
+}
+
+self.addEventListener("push", (event) => {
+  event.waitUntil(showPush(event));
+});
+
+async function showPush(event) {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {};
+  }
+  if (data === null || typeof data !== "object") data = {};
+  if (!alwaysShows()) {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    // Looking at the app already: its own surfaces say it, and a notification on top would be noise.
+    if (windows.some((w) => w.focused)) return;
+  }
+  const title = typeof data.title === "string" && data.title ? data.title : "The 99";
+  const options = {
+    body: typeof data.body === "string" ? data.body : "",
+    tag: typeof data.tag === "string" && data.tag ? data.tag : "the-99",
+    icon: PUSH_ICON,
+    data: {
+      route: landing(data.route),
+      keys: Array.isArray(data.keys) ? data.keys.filter((k) => typeof k === "string") : [],
+      openCard: typeof data.openCard === "string" ? data.openCard : null,
+      openCombo: data.openCombo === true,
+    },
+  };
+  if (typeof data.image === "string" && data.image.startsWith("https://")) options.image = data.image;
+  await self.registration.showNotification(title, options);
+}
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(openLanding(event.notification.data ?? {}));
+});
+
+/**
+ * Focuses an open window of the app and takes it to the landing, or opens one. What to open there rides in the ADDRESS
+ * (`push-card`, `push-combo`), never a message: a message sent at a navigation reaches the page being left, and a window
+ * opened cold has nobody listening yet. The page reads them once and strips them (the landing PR).
+ */
+async function openLanding(data) {
+  const url = new URL(landing(data.route));
+  if (typeof data.openCard === "string" && data.openCard) {
+    url.searchParams.set("push-card", data.openCard);
+    if (data.openCombo === true) url.searchParams.set("push-combo", "1");
+  }
+  const href = url.href;
+  const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  const mine = windows.find((w) => new URL(w.url).origin === self.location.origin);
+  if (mine) {
+    await mine.focus().catch(() => {});
+    // `navigate()` resolves to null when the window went away meanwhile: that is a failure too.
+    const went = await mine.navigate(href).then((client) => client != null, () => false);
+    if (went) return;
+  }
+  await self.clients.openWindow(href);
 }
