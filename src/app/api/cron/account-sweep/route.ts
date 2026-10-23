@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { sweepTombstones } from "../../../../lib/account/sweep";
+import { captureServerError } from "../../../../lib/sentry/capture";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[account-sweep] sweep failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
+    captureServerError("account-sweep", error);
     return new Response("Sweep failed", { status: 500 });
   }
 }

@@ -7,6 +7,7 @@ import { verifyStripeEvent } from "../../../lib/payments/verify";
 import { stripeClient } from "../../../lib/payments/stripe";
 import { reverseCharge } from "../../../lib/payments/reverse";
 import { PAYMENTS_APP } from "../../../lib/payments/packs";
+import { captureServerError } from "../../../lib/sentry/capture";
 
 // Pin to Node: the Stripe SDK and the neon-serverless websocket driver do not run on Edge.
 export const runtime = "nodejs";
@@ -95,6 +96,7 @@ export async function POST(req: NextRequest) {
     // A fixed message and the SQLSTATE alone: a driver or Stripe error's message can carry ids.
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[stripe-webhook] ${event.type}: failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}; Stripe will retry`);
+    captureServerError("stripe-webhook", error);
     return new Response("Failed", { status: 500 });
   }
 }
@@ -129,6 +131,7 @@ async function reverse(event: { id: string; type: string; data: { object: unknow
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[stripe-webhook] ${event.type}: failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}; Stripe will retry`);
+    captureServerError("stripe-webhook", error);
     return new Response("Failed", { status: 500 });
   }
 }
@@ -164,6 +167,7 @@ async function handlePlanEvent(event: PlanEvent): Promise<Response> {
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[stripe-webhook] ${event.type}: failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}; Stripe will retry`);
+    captureServerError("stripe-webhook", error);
     return new Response("Failed", { status: 500 });
   }
 }

@@ -42,6 +42,13 @@ describe("contentSecurityPolicy", () => {
     expect(directive("frame-ancestors")).toBe("frame-ancestors 'none'");
     expect(csp.endsWith(`report-uri ${CSP_REPORT_PATH}`)).toBe(true);
   });
+  it("allows the Sentry ingest host the DSN names in connect-src alone, and none by default", () => {
+    const withSentry = contentSecurityPolicy(null, "o1.ingest.us.sentry.io");
+    const connect = withSentry.split("; ").find((d) => d.startsWith("connect-src ")) ?? "";
+    expect(connect).toContain("https://o1.ingest.us.sentry.io");
+    expect(withSentry.split("o1.ingest.us.sentry.io")).toHaveLength(2);
+    expect(contentSecurityPolicy(null)).not.toContain("sentry");
+  });
   it("names no Clerk host when the key does not", () => {
     expect(contentSecurityPolicy(null)).not.toContain("clerk.accounts");
   });

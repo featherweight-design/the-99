@@ -81,3 +81,27 @@ A Clerk BACKEND call is a network round trip to Clerk's API: `currentUser()` and
 | `clerkClient().users.*` | admin Accounts pages | per admin page | keep: emails and sign-in times live only in Clerk; admin only |
 | `clerkClient().invitations.*` and `.users.getUserList` | `src/lib/invites/clerk.ts` | once per email invite | keep: Clerk owns invitations |
 
+
+## Error monitoring (Sentry)
+
+ERRORS ONLY: no tracing, no replay, no logs. `@sentry/nextjs` is pinned exactly (11.6.0, the newest release two weeks old at the time). One Sentry project, two environments (`staging`, `production`).
+
+- **Dormant by construction.** `sentryOptions` (`src/lib/sentry/options.ts`) enables the SDK only when a DSN is set AND `*_SENTRY_ENVIRONMENT` names something other than `local`; an unset environment reads as `local`. A dev machine and a Preview deployment have neither variable, so they send nothing. No kill switch: unset the DSN and redeploy.
+- **Where it runs.** `src/instrumentation.ts` (`register` loads `lib/sentry/init-server.ts` for Node and edge; `onRequestError = Sentry.captureRequestError` covers render, route handlers, Server Actions and the proxy), `src/instrumentation-client.ts` (browser), and `ErrorNotice` (a boundary reports a browser-side throw only; a server error carries a digest and was reported where it happened). Sentry 11 has no `sendDefaultPii`: `dataCollection` is set to all-off.
+- **What leaves.** `scrubEvent` (`src/lib/sentry/scrub.ts`, pure, `scrub.test.ts`) removes the user, cookies, headers, request body and query string (a webhook's body and signature included), `extra`, the server name, and every exception MESSAGE (a client error's message can carry a card name, a deck name or a query; the type, stack and digest stay). Breadcrumbs are kept for navigation and clicks only, with query strings cut and a `/friend/<token>` or `/join/<token>` token replaced.
+- **Handled errors.** A route that answers 500 itself never reaches `onRequestError`, so the stripe-webhook, clerk-webhook and both cron catch sites call `captureServerError(tag, error)` (`lib/sentry/capture.ts`): a fixed tag and the SQLSTATE, never the error's message. A new such site calls it too.
+- **CSP.** The DSN's own ingest host is added to `connect-src` of the report-only policy (`sentryIngestHost`, from `NEXT_PUBLIC_SENTRY_DSN` at build time). No tunnel route.
+- **Source maps** upload at build only when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are all set, are deleted from the output afterwards, and are tagged with `VERCEL_GIT_COMMIT_SHA`.
+- **Variables Hugh sets in Vercel, on BOTH projects, Production scope (Preview stays unset):**
+
+| Variable | Value | Sensitive |
+|---|---|---|
+| `NEXT_PUBLIC_SENTRY_DSN` | the project DSN | OFF (inlined into the browser bundle; Sensitive breaks that) |
+| `SENTRY_DSN` | the same DSN | ON |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT` | `production` on the production project, `staging` on staging | OFF |
+| `SENTRY_ENVIRONMENT` | the same | OFF |
+| `SENTRY_ORG` | org slug | OFF |
+| `SENTRY_PROJECT` | project slug | OFF |
+| `SENTRY_AUTH_TOKEN` | org auth token, scopes `project:releases` and `org:read` | ON |
+
+Never put any of them in `.env`.

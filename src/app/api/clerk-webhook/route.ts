@@ -4,6 +4,7 @@ import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../../lib/invites/spend";
 import { grantWelcome } from "../../../lib/payments/welcome";
 import { resolveSwitchEnvStrict } from "../../../lib/switches/snapshot";
+import { captureServerError } from "../../../lib/sentry/capture";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
     // A fixed message and the SQLSTATE alone: a driver error's message and parameters can carry the id.
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[clerk-webhook] purge failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
+    captureServerError("clerk-webhook:purge", error);
     return new Response("Purge failed", { status: 500 });
   }
 }
@@ -68,9 +70,10 @@ async function handleCreated(data: { id?: unknown; created_at?: unknown; first_n
     const created = typeof data.created_at === "number" && Number.isFinite(data.created_at) ? new Date(data.created_at) : new Date();
     const result = await grantWelcome(data.id, created, await resolveSwitchEnvStrict(data.id));
     console.info(`[clerk-webhook] user.created: welcome ${result.granted ? "granted" : result.reason}`);
-  } catch {
+  } catch (error) {
     welcomeFailed = true;
     console.error("[clerk-webhook] user.created: welcome grant failed");
+    captureServerError("clerk-webhook:welcome", error);
   }
   const invite = await spendOnCreated(data);
   return welcomeFailed && invite.ok ? new Response("Grant failed", { status: 500 }) : invite;
@@ -89,8 +92,9 @@ async function spendOnCreated(data: { id?: unknown; first_name?: unknown; public
     const result = await spendInviteOnSignUp(data.id, reservationId, data.first_name);
     console.info(`[clerk-webhook] user.created: invite ${result.spent ? "spent" : result.reason}`);
     return new Response("Handled", { status: 200 });
-  } catch {
+  } catch (error) {
     console.error("[clerk-webhook] user.created: invite spend failed");
+    captureServerError("clerk-webhook:invite", error);
     return new Response("Spend failed", { status: 500 });
   }
 }
