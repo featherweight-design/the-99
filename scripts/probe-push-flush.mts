@@ -7,6 +7,13 @@
 // device, the switch off, or a row that no longer resolves is abandoned, never sent; a device that subscribed after an
 // event never gets it; a row a week old is pruned.
 //
+// PR 3c, section 7: the catalog kinds. It seeds its OWN set, printing, precons and `catalog_first_seen` stamps (probe-named
+// keys, removed in the finally) and proves the cron pass queues and sends them: a baseline stamp never pushes, a fresh set is
+// one push on its page, two fresh precons of one day collapse to ONE push, a precon that arrived before the reader's tick never
+// pushes, a second run queues nothing new and sends nothing twice, and a catalog row whose precon is gone is abandoned. Every
+// flush here also runs the catalog pass for ANY reader on the target with a device and a catalog kind ticked: on a scratch
+// branch those rows are harmless (the sender is fake), which is one more reason this probe never runs on a shared database.
+//
 // It WRITES, so it fails closed on its target: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL` reports, and never
 // staging, production or local-dev. Its accounts are made-up ids and it removes every row it wrote, in a finally.
 //
@@ -36,7 +43,9 @@ async function main() {
   if (PROTECTED.has(named)) throw new Error(`probe:push-flush: ${named} is staging, production or local-dev; it writes`);
   const { db } = await import("../src/db");
   const { sql, eq, like } = await import("drizzle-orm");
-  const { pushOutbox, pushSubscriptions, userPrefs, cards } = await import("../src/db/schema");
+  const { pushOutbox, pushSubscriptions, userPrefs, cards, sets, printings, precons, preconCards, catalogFirstSeen } = await import("../src/db/schema");
+  const { inArray } = await import("drizzle-orm");
+  const { randomUUID } = await import("node:crypto");
   const { rows } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);
   if (rows[0]?.b !== named) throw new Error(`probe:push-flush: database reports ${rows[0]?.b}, not ${named}`);
 
@@ -69,6 +78,11 @@ async function main() {
     await db.insert(pushSubscriptions).values({ userId, endpoint: endpoint(n), p256dh: point, auth: authKey, userAgent: "probe", timeZone: tz, createdAt });
   };
   const reader = async (userId: string) => db.insert(userPrefs).values({ userId, pushKinds: { "price-drop": stamp } });
+  // Section 7's catalog fixtures: probe-named, so the finally removes exactly these.
+  const SET_FRESH = `zpf${run}`;
+  const SET_BASE = `zpb${run}`;
+  const PRECON = (n: string) => `probe_flush_${n}_${run}`;
+  const preconFiles = ["a", "b", "old", "gone"].map(PRECON);
 
   try {
     // 1. A live push goes once.
@@ -243,7 +257,71 @@ async function main() {
     const last = await flush(DAY);
     check("a device that subscribed AFTER the event is sent nothing, the older one is", sent.filter((s) => s.endpoint === endpoint("h")).length === 0 && sent.filter((s) => s.endpoint === endpoint("h0")).length === 1);
     check("a row a week old is pruned", last.pruned >= 1 && (await outbox(H)).every((r) => r.itemKey !== "item:old"));
+
+    // 7. The catalog kinds (PR 3c): the cron pass queues a reader's new sets and precons and they go out like any row.
+    const [art] = await db.select({ oracleId: cards.oracleId }).from(cards).where(sql`${cards.imageUri} is not null`).limit(1);
+    await db.insert(sets).values([
+      { code: SET_FRESH, name: `Probe Set ${run}`, setType: "expansion", releasedAt: "2026-10-01", cardCount: 5 },
+      { code: SET_BASE, name: `Probe Baseline ${run}`, setType: "expansion", releasedAt: "2026-10-01", cardCount: 5 },
+    ]);
+    await db.insert(printings).values([SET_FRESH, SET_BASE].map((code) => ({
+      scryfallId: randomUUID(), oracleId: art!.oracleId, setCode: code, collectorNumber: "1", finishes: ["nonfoil"], imageUri: "https://example.com/probe.jpg",
+    })));
+    await db.insert(precons).values(preconFiles.map((fileName) => ({ fileName, name: `Probe ${fileName}`, setCode: SET_FRESH.toUpperCase(), releaseDate: "2026-10-01" })));
+    await db.insert(preconCards).values(preconFiles.map((fileName) => ({ fileName, position: 0, oracleId: art!.oracleId, quantity: 1, isCommander: true })));
+    const seen = (h: string) => new Date(`2026-10-22T${h}:00.000Z`);
+    await db.insert(catalogFirstSeen).values([
+      { kind: "set", key: SET_FRESH, firstSeenAt: seen("09:05"), baseline: false },
+      { kind: "set", key: SET_BASE, firstSeenAt: seen("09:05"), baseline: true }, // a baseline stamp is never an arrival
+      { kind: "precon", key: PRECON("a"), firstSeenAt: seen("09:05"), baseline: false },
+      { kind: "precon", key: PRECON("b"), firstSeenAt: seen("09:06"), baseline: false },
+      { kind: "precon", key: PRECON("old"), firstSeenAt: seen("08:00"), baseline: false }, // before the reader ticked precons
+    ]);
+    const P = U("p");
+    await db.insert(userPrefs).values({ userId: P, pushKinds: { "new-set": stamp, "new-precon": "2026-10-22T08:30:00.000Z" } });
+    await device(P, "p", "UTC");
+    const catOn = { ...on, PRECONS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const catFlush = () => flushPush({ config, now: DAY, send: send as never, resolveEnv: async () => catOn });
+    // The request-time kick (one reader) never runs the catalog pass: that is the cron's job.
+    const kicked7 = await flushPush({ config, now: DAY, send: send as never, resolveEnv: async () => catOn, onlyUser: P });
+    check("a kicked flush queues no catalog arrival", kicked7.queued === 0 && (await outbox(P)).length === 0, JSON.stringify(kicked7));
+    sent.length = 0;
+    const c1 = await catFlush();
+    const pRows = await outbox(P);
+    const byKey = new Map(pRows.map((r) => [r.itemKey, r]));
+    check("the cron pass queues the fresh set and both fresh precons", byKey.has(`set:${SET_FRESH}`) && byKey.has(`precon:${PRECON("a")}`) && byKey.has(`precon:${PRECON("b")}`), JSON.stringify(c1));
+    check("a baseline stamp is never queued", !byKey.has(`set:${SET_BASE}`));
+    check("a precon that arrived before the reader ticked the kind is never queued", !byKey.has(`precon:${PRECON("old")}`));
+    check("one day's precons share a batch, and the row carries the item's own moment",
+      byKey.get(`precon:${PRECON("a")}`)?.batchKey === "new-precon:2026-10-22" && byKey.get(`precon:${PRECON("b")}`)?.batchKey === "new-precon:2026-10-22"
+        && byKey.get(`set:${SET_FRESH}`)?.createdAt.toISOString() === seen("09:05").toISOString());
+    // Real arrivals on the target may join these pushes, so the checks are by key, not by an exact count.
+    const pSent = sent.filter((x) => x.endpoint === endpoint("p"));
+    const setPush = pSent.find((x) => (x.payload.keys as string[]).includes(`set:${SET_FRESH}`));
+    const preconPushes = pSent.filter((x) => (x.payload.keys as string[]).some((k) => k.startsWith("precon:probe_flush_")));
+    check("the set goes out on the feed's words, landing on its page", setPush !== undefined && setPush.payload.tag === "new-set"
+      && ((setPush.payload.keys as string[]).length > 1 || (setPush.payload.title === `Probe Set ${run} is out` && setPush.payload.route === `/collection/sets/${SET_FRESH}`)), JSON.stringify(setPush?.payload));
+    check("the two precons collapse into ONE push, landing on Precons", preconPushes.length === 1
+      && (preconPushes[0]!.payload.keys as string[]).includes(`precon:${PRECON("a")}`) && (preconPushes[0]!.payload.keys as string[]).includes(`precon:${PRECON("b")}`)
+      && String(preconPushes[0]!.payload.title).endsWith("new precons are out") && preconPushes[0]!.payload.route === "/decks/precons", JSON.stringify(preconPushes.map((x) => x.payload)));
+    check("no push names the baseline set or the early precon", pSent.every((x) => !(x.payload.keys as string[]).some((k) => k === `set:${SET_BASE}` || k === `precon:${PRECON("old")}`)));
+    check("the catalog rows are settled", pRows.every((r) => r.sentAt != null));
+    sent.length = 0;
+    await catFlush();
+    check("the next run queues nothing new and sends nothing twice", (await outbox(P)).length === pRows.length && sent.filter((x) => x.endpoint === endpoint("p")).length === 0);
+
+    // A catalog row whose precon the feed no longer lists is abandoned as gone, never sent.
+    await db.insert(pushOutbox).values({ userId: P, kind: "new-precon", itemKey: `precon:${PRECON("gone")}`, batchKey: "new-precon:2026-10-22", payload: {}, createdAt: new Date("2026-10-22T15:00:00.000Z") });
+    sent.length = 0;
+    await catFlush();
+    const goneRow = (await outbox(P)).find((r) => r.itemKey === `precon:${PRECON("gone")}`);
+    check("a catalog row the feed does not list (no stamp) is abandoned as gone", sent.filter((x) => x.endpoint === endpoint("p")).length === 0
+      && goneRow?.sentAt != null && (goneRow.payload as { dropped?: string }).dropped === "gone", JSON.stringify(goneRow?.payload));
   } finally {
+    await db.delete(catalogFirstSeen).where(inArray(catalogFirstSeen.key, [SET_FRESH, SET_BASE, ...preconFiles]));
+    await db.delete(precons).where(inArray(precons.fileName, preconFiles)); // precon_cards cascade
+    await db.delete(printings).where(inArray(printings.setCode, [SET_FRESH, SET_BASE]));
+    await db.delete(sets).where(inArray(sets.code, [SET_FRESH, SET_BASE]));
     await db.delete(pushSubscriptions).where(like(pushSubscriptions.endpoint, `%${run}-%`));
     for (const t of ["push_outbox", "feed_items", "user_prefs", "user_data_stamps"]) {
       await db.execute(sql`delete from ${sql.raw(t)} where user_id like ${`probe_flush_%_${run}`}`);

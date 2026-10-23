@@ -35,8 +35,20 @@ describe("a feed view as a push item", () => {
     // Valid combo data and `opens`, but the piece's card is gone from the catalog: dropped like every other stored kind.
     expect(toPushItem(view({ kind: "combo", card: null, opens: "o9", combo: { pieces: ["A", "B"], added: "B" } }), "b")).toBeNull();
   });
-  it("is null for a kind this PR does not push", () => {
-    expect(toPushItem(view({ kind: "new-set", name: "Set" }), "b")).toBeNull();
-    expect(toPushItem(view({ kind: "new-precon", name: "Precon" }), "b")).toBeNull();
+  it("new set: its name, card count and page (PR 3c)", () => {
+    expect(toPushItem(view({ kind: "new-set", key: "set:dsk", name: "Duskmourn", setSize: 286, href: "/collection/sets/dsk" }), "b")).toEqual({
+      kind: "new-set", key: "set:dsk", batch: "b", name: "Duskmourn", cards: 286, href: "/collection/sets/dsk",
+    });
+  });
+  it("new precon: its name, the cards owned of its total and its page (PR 3c)", () => {
+    expect(toPushItem(view({ kind: "new-precon", key: "precon:X", name: "Death Toll", owned: { owned: 37, of: 100 }, href: "/decks/precons/X" }), "b")).toEqual({
+      kind: "new-precon", key: "precon:X", batch: "b", name: "Death Toll", owned: 37, of: 100, href: "/decks/precons/X",
+    });
+  });
+  it("a set or precon missing a part of its words is dropped, never sent title-only", () => {
+    // No card count yet (no printing has art): still a push, so it is never settled as gone and lost.
+    expect(toPushItem(view({ kind: "new-set", key: "set:dsk", name: "Duskmourn", setSize: null, href: "/collection/sets/dsk" }), "b")).toMatchObject({ kind: "new-set", cards: null });
+    expect(toPushItem(view({ kind: "new-set", name: null, setSize: 286, href: "/collection/sets/dsk" }), "b")).toBeNull();
+    expect(toPushItem(view({ kind: "new-precon", name: "Death Toll", owned: null, href: "/decks/precons/X" }), "b")).toBeNull();
   });
 });

@@ -72,13 +72,35 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   does the replacing: the kind, except a spare request, which is tagged by its own key so two asks never replace each other. A 404 or 410 deletes the device; any other failure, a send that waits
   over 10 seconds included (`SEND_TIMEOUT_MS`), is transient and leaves the rows for the next run. Counts only are logged: never an endpoint, a key or a word.
 - Rows a week old are pruned. Proof: `probe:push-flush` (a fake sender against a real database).
-- Not yet: the service worker's `push` and `notificationclick` handlers (PR 3d), so nothing a device receives is shown yet; and the
-  catalog kinds (PR 3c).
+
+## Added by PR 3c (the catalog kinds)
+
+- **The cron flush queues new sets and precons itself** (D2 as amended: no fan-out from the refresh job, which holds the
+  `catalog-ingest` lock). `enqueueCatalogArrivals` (`src/lib/push/catalog.ts`) runs first in every `flushPush`: for each reader
+  with a device and a catalog kind's PUSH ticked, under their own switches (`catalogPushKinds`: push on, and the kind available,
+  so a precon needs Precons), one statement per kind inserts a `push_outbox` row per arrival, `on conflict do nothing`. A reader
+  whose switch read fails is skipped until the next run; the others go on. The flush limited to one reader (the request-time
+  kick) is meant to skip this pass: it is the cron's job.
+- **An arrival is exactly what Home lists**: the feed's own branch (`catalogBranch`, extracted from `feedUnion` in
+  `src/lib/feed/read.ts`, with a gate per caller): a stamp that is not the baseline, released by today, a release-type set that is
+  not digital or a precon with no twin. Its moment (the later of the stamp and the release day) must be newer than the kind's PUSH
+  stamp (`pushKindEnabledAt`), inside the flush's 24-hour stale window and not after now. The row's `created_at` IS that moment, so
+  `stillWanted`, the stale rule, the held hours and a device's subscribe time judge the event, as for a stored kind.
+- **Keys** are the feed's own (`set:<code>`, `precon:<file name>`; `catalogKey` / `parseCatalogKey` in `catalog-rule.ts`), so a
+  notification's `keys` match Home's. **Batch**: `<kind>:<UTC day of the run>` (`catalogBatchKey`), so the precons one refresh
+  brings are one push ("2 new precons are out", landing on `/decks/precons`); one set is one push on its page.
+- **Resolve**: `resolvePushItems` reads catalog keys through the same branch with no stamp (`catalogItemsByKeyQuery`), then the
+  feed's `lookups` and `toViews`, then `toPushItem`. A set or precon the feed no longer lists is dropped as `gone`; a precon with no
+  count of its cards is dropped too (a notification is never half-worded), but a new set with no card count yet (none of its
+  printings has art) still goes as "<Set> is out" with "See the set.", because a dropped row is settled and never retried.
+- `FlushReport.queued` counts the rows the catalog pass wrote. Proof: `probe:push-flush` section 7 (its own set, printing, precons
+  and stamps, removed in its finally).
 
 ## Decisions the plan fixed (D1 to D5)
 
 1. Outbox, not a direct send: `recordFeedItem` runs inside transactions, so a send from it could announce a rolled-back event.
-2. New-set and new-precon have no per-user row (`catalog_first_seen`): the catalog refresh's end enqueues per subscribed reader.
+2. New-set and new-precon have no per-user row (`catalog_first_seen`): as amended, the cron flush computes each subscribed reader's
+   arrivals and queues them (PR 3c), instead of a fan-out from the refresh job.
 3. `push_kinds` is `{kind: enabledAt}` plus a declined list: ticking a kind never pushes what already happened.
 4. Seen is a cursor (`feed_seen_at`, `friends_seen_at`), so a push cannot mark one key seen. Home and `/friends` landings
    already move their cursor; set, precon and friend-page landings do not. Opening Home closes every delivered notification.

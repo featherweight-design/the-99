@@ -15,7 +15,7 @@ import { pushCopy } from "../copy/push";
 import type { FeedKind } from "../feed/kinds";
 
 export type PushItem =
-  | { kind: "new-set"; key: string; batch: string; name: string; cards: number; href: string }
+  | { kind: "new-set"; key: string; batch: string; name: string; cards: number | null; href: string }
   | { kind: "new-precon"; key: string; batch: string; name: string; owned: number; of: number; href: string }
   | { kind: "price-drop"; key: string; batch: string; oracleId: string; card: string; wasCents: number; nowCents: number; image: string | null }
   | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; card: string; image: string | null }

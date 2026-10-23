@@ -14,6 +14,10 @@ describe("one item of each kind (the handoff's table)", () => {
     const m = toMessage([set("eoe", "Edge of Eternities")]);
     expect(m).toMatchObject({ title: "Edge of Eternities is out", body: "281 cards. See the set.", route: "/collection/sets/eoe", tag: "new-set", keys: ["eoe"] });
   });
+  it("new set with no card count yet: still goes, without the figure", () => {
+    const m = toMessage([{ ...set("eoe", "Edge of Eternities"), cards: null } as PushItem]);
+    expect(m).toMatchObject({ title: "Edge of Eternities is out", body: "See the set.", route: "/collection/sets/eoe" });
+  });
   it("new precon: the precon's page", () => {
     expect(toMessage([precon("ci", "Counter Intelligence")])).toMatchObject({ title: "Counter Intelligence precon is out", body: "You own 31 of its 100 cards.", route: "/decks/precons/ci" });
   });

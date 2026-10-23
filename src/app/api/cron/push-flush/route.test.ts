@@ -23,7 +23,7 @@ const set = (env: Record<string, string | undefined>) => { for (const [k, v] of 
 beforeEach(() => {
   vi.clearAllMocks();
   set({ CRON_SECRET: "s3cret", ...KEYS });
-  m.flush.mockResolvedValue({ rows: 0, readers: 0, sent: 0, held: 0, gone: 0, failed: 0, abandoned: 0, pruned: 0 });
+  m.flush.mockResolvedValue({ rows: 0, readers: 0, sent: 0, held: 0, gone: 0, failed: 0, abandoned: 0, pruned: 0, queued: 0 });
 });
 
 describe("GET /api/cron/push-flush", () => {

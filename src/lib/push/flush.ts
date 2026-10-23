@@ -12,13 +12,17 @@
  * morning release for what arrived while it was. A device the push service answers 404 or 410 is deleted. A transient failure
  * leaves the rows for the next run. A row is SENT once every device the reader has is done with it (`payload.done`).
  * Every outcome is a count; no endpoint, key or word is logged.
+ *
+ * First, the catalog kinds (PR 3c, `catalog.ts`): a new set or precon has no per-reader row, so the run queues each subscribed
+ * reader's arrivals as outbox rows, and from there they are judged and sent exactly like a stored kind's.
  */
 import { eq, inArray, lt, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { pushOutbox, pushSubscriptions } from "../../db/schema";
 import { availableFeedKinds } from "../feed/flag";
-import { isStoredKind } from "../feed/kinds";
+import { isFeedKind } from "../feed/kinds";
+import { enqueueCatalogArrivals } from "./catalog";
 import type { PushConfig } from "./config";
 import { stillWanted } from "./eligible";
 import { pushEnabled } from "./flag";
@@ -38,6 +42,8 @@ export const PER_DEVICE = 50;
 
 export type FlushReport = {
   rows: number; readers: number; sent: number; held: number; gone: number; failed: number; abandoned: number; pruned: number;
+  /** Catalog arrivals (new set, new precon) queued by this run (PR 3c). */
+  queued: number;
 };
 
 export type FlushDeps = {
@@ -60,7 +66,16 @@ const doneOf = (row: Row): string[] => {
 export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
   const { config, now, send, resolveEnv } = deps;
   const q = deps.q ?? db;
-  const report: FlushReport = { rows: 0, readers: 0, sent: 0, held: 0, gone: 0, failed: 0, abandoned: 0, pruned: 0 };
+  const report: FlushReport = { rows: 0, readers: 0, sent: 0, held: 0, gone: 0, failed: 0, abandoned: 0, pruned: 0, queued: 0 };
+
+  // The catalog kinds have no per-reader row (D2 as amended): this run queues each subscribed reader's new sets and precons
+  // first, so they go out below with everything else. The CRON's job only: a flush limited to one reader (the request-time
+  // kick) skips it.
+  if (deps.onlyUser === undefined) {
+    const catalog = await enqueueCatalogArrivals({ now, staleMs: STALE_MS, resolveEnv, q });
+    report.queued = catalog.queued;
+    report.failed += catalog.failed;
+  }
 
   // Fair across devices: each device's oldest PER_DEVICE rows that it has NOT had yet (a reader with no device: its oldest
   // rows, to be abandoned), then the whole batch round by round, so rows held overnight or failing on one device never starve
@@ -110,7 +125,7 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
       // after the event, or its feature went off for them.
       const prefs = await readPushPrefs(userId, q);
       const available = availableFeedKinds(env);
-      const fresh = young.filter((r) => isStoredKind(r.kind) && stillWanted(prefs, r.kind, r.createdAt, available));
+      const fresh = young.filter((r) => isFeedKind(r.kind) && stillWanted(prefs, r.kind, r.createdAt, available));
       const unwanted = young.filter((r) => !fresh.includes(r));
       await settle(unwanted.map((r) => r.id), "off");
       report.abandoned += unwanted.length;
@@ -119,7 +134,7 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
       const devices = await q.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId)).orderBy(pushSubscriptions.createdAt);
       if (devices.length === 0) { await settle(fresh.map((r) => r.id), "no-device"); report.abandoned += fresh.length; continue; }
 
-      const refs: OutboxRef[] = fresh.flatMap((r) => (isStoredKind(r.kind) ? [{ kind: r.kind, key: r.itemKey, batch: r.batchKey }] : []));
+      const refs: OutboxRef[] = fresh.flatMap((r) => (isFeedKind(r.kind) ? [{ kind: r.kind, key: r.itemKey, batch: r.batchKey }] : []));
       const { items: resolved, dropped } = await resolvePushItems(userId, refs, env, now, q);
       const dropKeys = new Set(dropped.map((d) => `${d.kind}\u0000${d.key}`));
       const live = fresh.filter((r) => !dropKeys.has(`${r.kind}\u0000${r.itemKey}`));

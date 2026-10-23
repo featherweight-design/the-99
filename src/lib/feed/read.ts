@@ -25,7 +25,7 @@ import { RELEASE_SET_TYPES } from "../catalog/index-due";
 import { storedFeedBranch } from "../social/feed-items";
 import { unseenAnswersCount } from "../social/spare-requests";
 import { availableFeedKinds } from "./flag";
-import { feedOrder, isStoredKind, windowFloor, type FeedKind, type StoredKind } from "./kinds";
+import { CATALOG_KINDS, feedOrder, isStoredKind, windowFloor, type CatalogKind, type FeedKind, type StoredKind } from "./kinds";
 
 type Executor = Pick<typeof db, "execute">;
 
@@ -36,16 +36,26 @@ const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 export type FeedCursor = "feed_seen_at" | "friends_seen_at";
 
 /**
- * The union of every branch for these kinds, or null when none is left. Each catalog branch joins the reader's own
- * prefs row, so a reader with no row reads nothing of those; the stored branch LEFT JOINS it, so a default-on kind
- * reaches a reader with no row (`kindEnabledAt`, spare requests G4).
+ * What a catalog branch is filtered by, beyond the arrival rules every reader shares: `moment` is the item's time (the
+ * later of the stamp and the release day), `prefs` the reader's `user_prefs` row (JOINED, so a reader with no row reads
+ * nothing of these kinds), `id` the set's code or the precon's file name.
  */
-export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Date): SQL | null {
+export type CatalogGate = (at: { moment: SQL; prefs: SQL; id: SQL }) => SQL;
+
+/** The feed's gate: newer than the kind's own `enabledAt` in `user_prefs.feed_kinds`. */
+const feedGate = (kind: CatalogKind): CatalogGate => ({ moment, prefs }) => sql`${moment} > (${prefs}.feed_kinds ->> ${sql.raw(`'${kind}'`)})::timestamptz`;
+
+/**
+ * One catalog kind's branch: its arrivals (`catalog_first_seen`, not the baseline, released by today; a set of a release
+ * type and not digital, a precon with no twin), under `gate`. The feed's columns. Shared by the feed and by push
+ * (`lib/push/catalog.ts`), so a push names exactly what Home lists.
+ */
+export function catalogBranch(kind: CatalogKind, viewerId: string, now: Date, gate: CatalogGate): SQL {
   const today = utcDay(now);
-  const branches: SQL[] = [];
-  if (kinds.includes("new-set")) {
-    branches.push(sql`select 'new-set'::text as kind, 'set:' || s.code as key,
-        greatest(sf.first_seen_at at time zone 'UTC', s.released_at::timestamp at time zone 'UTC') as created_at,
+  if (kind === "new-set") {
+    const moment = sql`greatest(sf.first_seen_at at time zone 'UTC', s.released_at::timestamp at time zone 'UTC')`;
+    return sql`select 'new-set'::text as kind, 'set:' || s.code as key,
+        ${moment} as created_at,
         s.code as code, s.name as name, null::text as file_name,
         null::uuid as oracle_id, null::text as variant_id, null::text as friend_public_id, null::text as friend_name,
         '{}'::jsonb as data
@@ -55,23 +65,30 @@ export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Dat
       where sf.baseline = false and s.digital = false
         and s.set_type = any(${sql.param([...RELEASE_SET_TYPES])}::text[])
         and s.released_at <= ${today}::date
-        and greatest(sf.first_seen_at at time zone 'UTC', s.released_at::timestamp at time zone 'UTC')
-          > (sup.feed_kinds ->> 'new-set')::timestamptz`);
+        and ${gate({ moment, prefs: sql`sup`, id: sql`s.code` })}`;
   }
-  if (kinds.includes("new-precon")) {
-    branches.push(sql`select 'new-precon'::text as kind, 'precon:' || p.file_name as key,
-        greatest(pf.first_seen_at at time zone 'UTC', p.release_date::timestamp at time zone 'UTC') as created_at,
-        lower(p.set_code) as code, p.name as name, p.file_name as file_name,
-        null::uuid as oracle_id, null::text as variant_id, null::text as friend_public_id, null::text as friend_name,
-        '{}'::jsonb as data
-      from ${precons} p
-      join ${catalogFirstSeen} pf on pf.kind = 'precon' and pf.key = p.file_name
-      join ${userPrefs} pup on pup.user_id = ${viewerId}
-      where pf.baseline = false and p.twin_of is null
-        and p.release_date <= ${today}::date
-        and greatest(pf.first_seen_at at time zone 'UTC', p.release_date::timestamp at time zone 'UTC')
-          > (pup.feed_kinds ->> 'new-precon')::timestamptz`);
-  }
+  const moment = sql`greatest(pf.first_seen_at at time zone 'UTC', p.release_date::timestamp at time zone 'UTC')`;
+  return sql`select 'new-precon'::text as kind, 'precon:' || p.file_name as key,
+      ${moment} as created_at,
+      lower(p.set_code) as code, p.name as name, p.file_name as file_name,
+      null::uuid as oracle_id, null::text as variant_id, null::text as friend_public_id, null::text as friend_name,
+      '{}'::jsonb as data
+    from ${precons} p
+    join ${catalogFirstSeen} pf on pf.kind = 'precon' and pf.key = p.file_name
+    join ${userPrefs} pup on pup.user_id = ${viewerId}
+    where pf.baseline = false and p.twin_of is null
+      and p.release_date <= ${today}::date
+      and ${gate({ moment, prefs: sql`pup`, id: sql`p.file_name` })}`;
+}
+
+/**
+ * The union of every branch for these kinds, or null when none is left. Each catalog branch joins the reader's own
+ * prefs row, so a reader with no row reads nothing of those; the stored branch LEFT JOINS it, so a default-on kind
+ * reaches a reader with no row (`kindEnabledAt`, spare requests G4).
+ */
+export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Date): SQL | null {
+  const branches: SQL[] = [];
+  for (const kind of CATALOG_KINDS) if (kinds.includes(kind)) branches.push(catalogBranch(kind, viewerId, now, feedGate(kind)));
   const stored = kinds.filter(isStoredKind);
   if (stored.length > 0) branches.push(storedFeedBranch(viewerId, stored, now));
   if (branches.length === 0) return null;

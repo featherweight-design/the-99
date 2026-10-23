@@ -9,7 +9,8 @@ const t = feedCopy.home.title;
 export const pushCopy = {
   /** One item of a kind, as the notification reads. */
   one: {
-    newSet: { title: t.newSet, body: (cards: number) => feedCopy.home.line.newSet(cards) + " See the set." },
+    // A set whose printings have no art yet has no card count on Home: the push still goes, without the figure.
+    newSet: { title: t.newSet, body: (cards: number | null) => (cards === null ? "See the set." : `${feedCopy.home.line.newSet(cards)} See the set.`) },
     newPrecon: { title: t.newPrecon, body: feedCopy.home.line.newPrecon },
     priceDrop: { title: t.priceDrop, body: (was: string, now: string) => `Was ${was}, now ${now} at the cheapest printing.` },
     tradeMatch: { title: t.tradeMatch, body: feedCopy.home.line.tradeMatch },
