@@ -392,6 +392,13 @@ describe("the strategy focus in the prompt", () => {
     const { system, user } = buildPrompt({ ...pack, focus: { ...focus, candidates } });
     expect(user).toContain("Cards not in the deck that count toward the focus:\n- Bitterblossom (Kindred Enchantment — Faerie)\n- Tireless Provisioner (Creature — Elf Scout; ramp)");
     expect(system).toContain('Draw the additions that count toward the focus from the list under "Cards not in the deck that count toward the focus" first');
+    // The fixture pack's roles: a role two or more short is named in the rule; none short, no line.
+    const short = pack.targets.roles.filter((r) => r.role !== "land" && !r.advisory && r.target - r.have >= 2).map((r) => r.role);
+    if (short.length > 0) expect(system).toContain(`This deck is two or more short on ${short.join(" and ")}`);
+    const draw = { ...pack, targets: { ...pack.targets, roles: [{ role: "draw" as const, have: 2, target: 6, advisory: false, measured: true }] } };
+    expect(buildPrompt({ ...draw, focus: { ...focus, candidates } }).system).toContain("This deck is two or more short on draw: at least one addition must fill that role");
+    const met = { ...pack, targets: { ...pack.targets, roles: [{ role: "draw" as const, have: 6, target: 6, advisory: false, measured: true }] } };
+    expect(buildPrompt({ ...met, focus: { ...focus, candidates } }).system).not.toContain("two or more short");
   });
 
   it("says nothing of candidates when there are none", () => {
