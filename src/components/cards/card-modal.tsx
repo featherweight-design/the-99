@@ -920,7 +920,8 @@ export function CardModal({
    * near-combos face. The provider's, like `onSelectCard`, and null on a stacked card: nothing in a
    * stacked card opens a further layer.
    */
-  onOpenCombo?: ((combo: CardCombo) => void) | null;
+  /** A combo line's press, with the card as this modal SHOWS it (its printing, name and art: `preview`). */
+  onOpenCombo?: ((combo: CardCombo, shown: BrowseCard) => void) | null;
   /** Told whenever the phone's sheet reaches or leaves its min snap, so paging can carry it. */
   onMinimizedChange?: (minimized: boolean) => void;
   /**
@@ -2780,11 +2781,12 @@ export function CardModal({
                   the hinge where the reader crosses from what the card IS to what they HAVE,
                   which is exactly what a pair fact is. */}
               <ComboPartnersDetail
-                card={card}
+                // The card as shown: the line's press names its printing, as the sheet it opens does.
+                card={preview}
                 deckName={deckName}
                 onSelectPartner={onSelectCard}
                 initiallyExpanded={openCombo}
-                onOpenCombo={onOpenCombo}
+                onOpenCombo={onOpenCombo ? (combo) => onOpenCombo(combo, preview) : null}
               />
               <AvailabilityDetail card={card} deckPage={deckPage} onEditCopies={onEditCopies} receiptLink={receiptLink} />
               <ProxyDetail card={card} />

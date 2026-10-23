@@ -1491,20 +1491,21 @@ export function CardDetailProvider({
   // is read anew and its line moves to `Whole in this deck` (a different list, so a new button): the
   // focus waits for that read to land (`comboFocusAwait`, the card as it was when evicted).
   const comboFocusRef = useRef<string | null>(null);
-  const comboFocusAwait = useRef<BrowseCard | null>(null);
+  // The `settleTick` the re-read must pass: success, failure and a null answer all settle it.
+  const comboFocusAwait = useRef<number | null>(null);
   // After the sheet's own cleanup has put the card back in the live slot (a child's unmount runs first).
   useEffect(() => {
     const id = comboReread.current;
     if (comboSheet !== null || held !== null || id === null) return;
     comboReread.current = null;
-    if (comboFocusRef.current !== null && card?.oracleId === id) comboFocusAwait.current = card;
+    if (comboFocusRef.current !== null && card?.oracleId === id) comboFocusAwait.current = settleTick;
     evict(id);
-  }, [comboSheet, held, comboRereadTick, evict, card]);
+  }, [comboSheet, held, comboRereadTick, evict, card, settleTick]);
   useEffect(() => {
     const variantId = comboFocusRef.current;
     if (comboSheet !== null || held !== null || variantId === null) return;
-    // The re-read has not landed yet: the line on screen is about to be replaced.
-    if (comboFocusAwait.current !== null && comboFocusAwait.current === card) return;
+    // The re-read has not settled yet: the line on screen is about to be replaced.
+    if (comboFocusAwait.current !== null && settleTick <= comboFocusAwait.current) return;
     comboFocusAwait.current = null;
     comboFocusRef.current = null;
     const frame = requestAnimationFrame(() => {
@@ -1517,7 +1518,7 @@ export function CardDetailProvider({
       target?.focus();
     });
     return () => cancelAnimationFrame(frame);
-  }, [comboSheet, held, card]);
+  }, [comboSheet, held, settleTick]);
   const openComboSheet = useCallback((card: BrowseCard, combo: CardCombo) => {
     comboFocusRef.current = combo.variantId;
     setComboSheet({ card, combo });
@@ -1844,7 +1845,7 @@ export function CardDetailProvider({
           openCombo={comboFor === card.oracleId}
           // A combo line opens its combo over this card: only on a card nothing is stacked on (stacked
           // sheets R1, call 8). A card over a sheet, or a partner, draws its lines with no press.
-          onOpenCombo={sheetsBelow > 0 || partnerOf !== null ? null : (combo) => openComboSheet(card, combo)}
+          onOpenCombo={sheetsBelow > 0 || partnerOf !== null ? null : (combo, shown) => openComboSheet(shown, combo)}
         />
       ) : null}
       {/* Before the third layer in the document, so a card opened from the picker paints over it:

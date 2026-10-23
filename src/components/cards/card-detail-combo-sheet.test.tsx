@@ -185,5 +185,48 @@ describe("a combo line opened from card details", () => {
         expect(document.activeElement).toBe(screen.getByRole("button", { name: combosCloseCopy.card.openAria("Polyraptor", "Warstorm Surge") }));
       });
     });
+
+    it.each([
+      ["rejects", () => Promise.reject(new Error("offline"))],
+      ["finds nothing", () => Promise.resolve(null)],
+    ])("after an Add whose re-read %s, focus still lands back on the line (round 3)", async (_label, answer) => {
+      let added = false;
+      const fetchCard = vi.fn(async (id: string): Promise<BrowseCard | null> => {
+        if (id === "o-surge") return card("o-surge", "Warstorm Surge");
+        return added ? answer() : IN_DECK;
+      });
+      mountDeck(fetchCard as never);
+      await openCombo();
+      addCardToDeck.mockImplementationOnce(async () => { added = true; return { ok: true }; });
+      await act(async () => { screen.getByRole("button", { name: combosCloseCopy.detail.add("Warstorm Surge") }).click(); });
+      await waitFor(() => expect(document.querySelector("[data-card-combo=v-1]")).toBeNull());
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole("button", { name: combosCloseCopy.card.openAria("Polyraptor", "Warstorm Surge") })),
+      );
+    });
+  });
+
+  it("a combo opened from a card shown at another printing keeps that printing's art (round 3)", async () => {
+    function OpenAt() {
+      const { open } = useCardDetail();
+      return (
+        <button type="button" onClick={() => open("o-poly", [], { setCode: "RIX", collectorNumber: "144", imageUri: "https://img.example/rix-144.jpg" })}>
+          at RIX
+        </button>
+      );
+    }
+    render(
+      <CardDetailProvider fetchCard={vi.fn(async () => POLY)} comboDeckOracleIds={["o-x", "o-cmdr"]} comboCommanderOracleIds={["o-cmdr"]}>
+        <OpenAt />
+      </CardDetailProvider>,
+    );
+    await click(screen.getByText("at RIX"));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Two-card combos/ })).toBeTruthy());
+    await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
+    await click(screen.getByRole("button", { name: combosCloseCopy.card.openAria("Polyraptor", "Warstorm Surge") }));
+    await waitFor(() => expect(document.querySelector("[data-card-combo=v-1]")).not.toBeNull());
+    // Plate art is a CSS background layer (`ArtLayer`), so the printing is read off the opened card's plate style.
+    const plate = document.querySelectorAll<HTMLElement>("[data-card-combo=v-1] [data-testid=receipt-tile]")[0];
+    expect(plate.innerHTML).toContain("rix-144");
   });
 });
