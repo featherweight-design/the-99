@@ -66,9 +66,8 @@ CALLS = [
      "<p>One entry, <code>friend-decks</code>, <b>Your friends’ decks</b>, on Friends, chapter 04, following <code>FRIEND_DECKS_ENABLED</code>, <code>since: 16</code> (switched, no bump). It covers the four things in one caption: a friend’s deck opens read-only (with your own dots), "
      "Settings › Your decks (both boxes, by their shipped names), Hidden from friends in the ⋯ menu, and the game log’s “A deck not listed”. The halo is the /friends privacy line, <code>[data-decks-seen]</code>. Board E1.</p>"
      "<p>Two shipped entries get a switched key each (no bump): <code>friends</code> key 2 stops saying friends never see what you own, and <code>opponents</code> key 3 names hiding beside renaming.</p>"),
-    ("2 · Jaws’ tile: cut the shark out of the poster", "rd", "R2 · PICK ONE",
-     "<p>R1’s card on a gradient is gone. A printing whose art carries the card’s words gets a <b>crop box set on its full card image</b>; one with no box yet draws the gradient, never the words.</p>"
-     "<p>For Jaws, two boxes from the real card avoid every word: <b>1 · the swimmer and the shark</b> (recommended) and <b>2 · the jaws</b>. Board Jaws-Tile.</p>"),
+    ("2 · Jaws’ tile: as shipped", "ok", "RATIFIED",
+     "<p>SLD 2175’s art crop carries the poster’s words, so the band shows part of its title. Hugh’s call (2026-10-23): card text in a band is fine; leave the tile as shipped. No crop table, no card overlay. R1’s card-on-gradient and R2’s hand-set crops are withdrawn.</p>"),
     ("3 · Spare requests (#2221, #2230)", "ok", "RATIFIED",
      "<p><b>Tick in <code>var(--bg)</code>:</b> all six themes are dark, so it is a dark tick on green in each, as the board drew it (no theme draws it light). <b>Tooltip upward:</b> right for a 640 modal. <b>The 11 shared-component differences:</b> the shipped view switch, key items and buy tag win; the board’s were drift in Design’s kit. <b>Declined inside the cooldown</b> over Ask instead: right, since Ask instead would be refused. Board Calls.</p>"),
     ("4 · Push landings and seen (#2219, D4)", "ok", "RATIFIED",
@@ -84,7 +83,6 @@ CALLS = [
 def main_board():
     calls = "".join(f'<div class="note"><h4><span class="vd {k}">{v}</span>{t}</h4>{b}</div>' for t, k, v, b in CALLS)
     idx = ("<ul><li><b>E1-Friend-Decks</b>: the entry in the Reference at 1300 and 390, its picture in six themes, line switches, gaps.</li>"
-           "<li><b>Jaws-Tile</b>: call 2 (R2), two crops cut from the real Jaws card, and the rule for full-art and borderless printings.</li>"
            "<li><b>Calls</b>: calls 3 to 6, with the accepted mark in six themes, the tooltip in the 640 modal, and the string fixes.</li></ul>")
     edits = ('<table class="tbl"><tr><th>Entry</th><th>Today</th><th>With <code>FRIEND_DECKS_ENABLED</code> on</th></tr>'
              '<tr><td><code>friends</code> key 2</td><td>Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.</td>'
@@ -239,7 +237,6 @@ def calls_board():
 
 
 BOARDS = [("Main", main_board, "Main · the entry and the six calls"),
-          ("Jaws-Tile", jaws_board, "Call 2 · full-art and borderless tiles"),
           ("Calls", calls_board, "Calls 3 to 6 · ratified and fixed")]
 
 import aboutfd
