@@ -52,5 +52,6 @@ export function enqueuePushQuery(input: PushEnqueue): SQL {
     where ${input.when ?? sql`true`}
       and exists (select 1 from ${pushSubscriptions} pps where pps.user_id = ${input.userId})
       and ${now.toISOString()}::timestamptz > ${pushKindEnabledAt(sql`pup`, sql`${input.kind}::text`)}
-    on conflict (user_id, kind, item_key) do nothing`;
+    on conflict (user_id, kind, item_key) do nothing
+    returning id`;
 }

@@ -24,6 +24,7 @@ import { stillWanted } from "./eligible";
 import { pushEnabled } from "./flag";
 import type { PushItem } from "./message";
 import { planDevice, type OutboxRow } from "./plan";
+import { captureServerError } from "../sentry/capture";
 import { readPushPrefs } from "./prefs";
 import { resolvePushItems, type OutboxRef } from "./resolve";
 import { payloadFor, type PushSender } from "./send";
@@ -45,6 +46,8 @@ export type FlushDeps = {
   send: PushSender;
   /** The reader's resolved switches (`resolveSwitchEnv`). */
   resolveEnv: (userId: string) => Promise<NodeJS.ProcessEnv>;
+  /** One reader's rows only, and no pruning: the kick after a write in a request (`kick.ts`). The cron passes nothing. */
+  onlyUser?: string;
   q?: typeof db;
 };
 
@@ -68,7 +71,7 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
         row_number() over (partition by coalesce(ps.id::text, po.user_id) order by po.created_at, po.id) as rn
       from ${pushOutbox} po
       left join ${pushSubscriptions} ps on ps.user_id = po.user_id
-      where po.sent_at is null
+      where po.sent_at is null${deps.onlyUser === undefined ? sql`` : sql` and po.user_id = ${deps.onlyUser}`}
         and (ps.id is null or not (coalesce(po.payload->'done', '[]'::jsonb) @> jsonb_build_array(ps.id::text)))) w
     where w.rn <= ${PER_DEVICE}
     group by w.id
@@ -177,12 +180,16 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
       report.failed += 1;
       const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
       console.error(`[push-flush] a reader's pushes failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
+      // Caught so the other readers still go, so reported here: neither the cron's nor the kick's catch ever sees it.
+      captureServerError("push-flush-reader", error);
     }
   }
 
   // A week after it was written a row goes, sent or abandoned (an unsent one is abandoned as stale long before).
-  const cutoff = new Date(now.getTime() - RETAIN_MS);
-  const pruned = await q.delete(pushOutbox).where(lt(pushOutbox.createdAt, cutoff)).returning({ id: pushOutbox.id });
-  report.pruned = pruned.length;
+  if (deps.onlyUser === undefined) {
+    const cutoff = new Date(now.getTime() - RETAIN_MS);
+    const pruned = await q.delete(pushOutbox).where(lt(pushOutbox.createdAt, cutoff)).returning({ id: pushOutbox.id });
+    report.pruned = pruned.length;
+  }
   return report;
 }

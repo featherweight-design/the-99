@@ -198,6 +198,25 @@ async function main() {
     const oDone = (oAfter?.payload as { done?: string[] }).done ?? [];
     check("an overlapping run's recorded device survives this run's write, and the row is settled", oDone.length === 2 && oDone.includes(ob!.id) && oAfter?.sentAt != null, JSON.stringify(oDone));
 
+    // 4g. The kick: recordFeedItem's statement says whether it queued a push, and a flush for ONE reader (the kick's) sends
+    // that reader's rows and leaves everyone else's for the cron.
+    const K1 = U("k1");
+    const K2 = U("k2");
+    await reader(K1); await device(K1, "k1", "UTC");
+    await reader(K2); await device(K2, "k2", "UTC");
+    const { recordFeedItemQuery } = await import("../src/lib/social/feed-write");
+    const flagged = await db.execute<{ pushed: boolean }>(recordFeedItemQuery({ userId: K1, kind: "price-drop", dedupeKey: "kick1", oracleId: card!.oracleId, data: { fromCents: 840, toCents: 510 }, now: new Date("2026-10-22T15:50:00.000Z") }));
+    check("the feed write reports that it queued a push", flagged.rows[0]?.pushed === true);
+    const E0 = U("e0"); // the kind on for Home but no device: the feed row is written, no push is queued
+    await db.insert(userPrefs).values({ userId: E0, feedKinds: { "price-drop": stamp }, pushKinds: { "price-drop": stamp } });
+    const unflagged = await db.execute<{ pushed: boolean }>(recordFeedItemQuery({ userId: E0, kind: "price-drop", dedupeKey: "kick0", oracleId: card!.oracleId, data: { fromCents: 840, toCents: 510 }, now: new Date("2026-10-22T15:50:00.000Z") }));
+    check("and that it did not, for a reader with no device", unflagged.rows.length === 1 && unflagged.rows[0]?.pushed === false);
+    await dropAt(K2, "kick2", new Date("2026-10-22T15:50:00.000Z"));
+    sent.length = 0;
+    const kicked = await flushPush({ config, now: DAY, send: send as never, resolveEnv: async () => on, onlyUser: K1 });
+    check("a kicked flush sends only its reader's rows", sent.length === 1 && sent[0]!.endpoint === endpoint("k1") && kicked.rows === 1 && kicked.pruned === 0, JSON.stringify(kicked));
+    check("and leaves the other reader's for the cron", (await outbox(K2))[0]?.sentAt == null);
+
     // 5. Abandoned, never sent.
     const E = U("e"); // no device
     await reader(E);

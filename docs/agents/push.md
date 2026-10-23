@@ -86,6 +86,23 @@ This file holds what a reader of the code needs and the plan's decisions in one 
 5. An installed iPhone must show every push (WebKit revokes a silent subscription), so the "no push with a focused client"
    rule skips only off iOS.
 
+## Added by the kick PR (after 3b)
+
+- **The kick** (`src/lib/push/kick.ts`, D1): `recordFeedItem`'s one statement also says whether it queued a push
+  (`pushed`), and when it did, `kickPush(userId)` schedules a flush of that reader's rows with `after()`, once that reader's
+  writes on this instance have been quiet for `KICK_DELAY_MS` (2s; each new item restarts it, capped at `KICK_MAX_WAIT_MS`,
+  10s), so a spare ask reaches the friend in seconds rather than at the next 15-minute cron. Every request
+  schedules its OWN callback, so the coalescing is decided after that request's transaction committed, never at the call:
+  a callback that finds that reader's flush already running asks it for one more pass and does nothing else. A burst is one
+  flush and at most one more pass, never two at once (per server instance; across instances an overlap can send twice, as
+  the cron's can). The quiet window is what keeps a notice's loop, which writes from inside `after()`, one batch. A reader whose
+  flush fails inside the run is reported there (`push-flush-reader`), for the cron and the kick alike. `flushPush({ onlyUser })` selects that reader's rows
+  only and never prunes. Outside a request (a job such as the price-drop run, a script, a probe) `after()` cannot be
+  scheduled, so nothing happens and the cron delivers it; a kick that fails is reported (`push-kick`) and its rows wait.
+  The flush is imported lazily, so the feed writer does not load the sender. Dormant without the VAPID keys.
+- Proof: `probe:push-flush` section 4g (the `pushed` flag both ways; a kicked flush sends only its reader's rows and leaves
+  another's for the cron; fails with the filter removed), `kick.test.ts`, `feed-write-push.test.ts`.
+
 ## Landing contract (consumed by the landing PR)
 
 A message carries `route`, `tag` (the kind), the item `keys`, and for a price drop or combo `openCard` (an oracle id) and
