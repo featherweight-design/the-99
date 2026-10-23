@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { flushPush } from "../../../../lib/push/flush";
 import { pushConfig } from "../../../../lib/push/config";
 import { sendWebPush } from "../../../../lib/push/send";
+import { captureServerError } from "../../../../lib/sentry/capture";
 import { resolveSwitchEnvStrict } from "../../../../lib/switches/snapshot";
 
 // Pin to Node: the neon-serverless websocket driver and `web-push` do not run on Edge.
@@ -35,6 +36,8 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[push-flush] flush failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
+    // Caught here, so Next's onRequestError never sees it: report it the way the sibling crons do (a tag and SQLSTATE only).
+    captureServerError("push-flush", error);
     return new Response("Flush failed", { status: 500 });
   }
 }

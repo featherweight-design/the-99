@@ -1,9 +1,10 @@
 import { generateKeyPairSync } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ flush: vi.fn() }));
+const m = vi.hoisted(() => ({ flush: vi.fn(), capture: vi.fn() }));
 vi.mock("../../../../lib/push/flush", () => ({ flushPush: m.flush }));
 vi.mock("../../../../lib/push/send", () => ({ sendWebPush: vi.fn() }));
+vi.mock("../../../../lib/sentry/capture", () => ({ captureServerError: m.capture }));
 vi.mock("../../../../lib/switches/snapshot", () => ({ resolveSwitchEnvStrict: vi.fn() }));
 
 import { resolveSwitchEnvStrict } from "../../../../lib/switches/snapshot";
@@ -64,5 +65,7 @@ describe("GET /api/cron/push-flush", () => {
     const res = await call("Bearer s3cret");
     expect(res.status).toBe(500);
     expect(await res.text()).toBe("Flush failed");
+    // Reported to monitoring under its tag: caught here, Next's onRequestError would never see it.
+    expect(m.capture).toHaveBeenCalledWith("push-flush", expect.any(Error));
   });
 });
