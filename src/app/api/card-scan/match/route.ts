@@ -11,6 +11,7 @@
 //   - every answer is `private, no-store`, and each request is counted in the observe-only `card-scan` bucket.
 // A route rather than a server action because the scanner asks in the background while the camera runs: Next runs a
 // page's actions one at a time, and a lookup queued as an action would wait on, and delay, the reader's adds.
+import { captureServerError } from "../../../../lib/sentry/capture";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { cardScanEnabled } from "../../../../lib/card-scan/flag";
@@ -57,6 +58,8 @@ export async function POST(req: NextRequest) {
     // says as not ready and never retries. Anything else (the lock an ingest holds while it republishes, a dropped
     // connection) may pass, so it is `unavailable`, which the scanner retries.
     const error = missingIndex(err) ? "no-index" : "unavailable";
+    // "no-index" is a database not set up yet; only a failure that should not happen is reported.
+    if (error === "unavailable") captureServerError("card-scan", err);
     return NextResponse.json({ error }, { status: 503, headers: HEADERS });
   }
   if (result.kind === "no-index") return NextResponse.json({ error: "no-index" }, { status: 503, headers: HEADERS });
