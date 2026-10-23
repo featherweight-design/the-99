@@ -1,0 +1,242 @@
+// @vitest-environment node
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fetchBranches, fetchDeployments, neonWeek, parsePrevious, splitWeeks, summariseCharges, summariseNeon } from "./cost-sources.mjs";
+import { evaluate, THRESHOLDS } from "./cost-thresholds.mjs";
+import { renderReport } from "./cost-report.mjs";
+
+const row = (ServiceName: string, ConsumedQuantity: number, EffectiveCost: number, day = "2026-10-20", ConsumedUnit: string | null = "unit") =>
+  ({ ServiceName, ConsumedQuantity, EffectiveCost, ConsumedUnit, ChargePeriodStart: `${day}T07:00:00.000Z` });
+
+const week = (over: Record<string, number> = {}) => ({
+  costUsd: 17, buildMinutes: 3600, buildUsd: 12.6, functionGbHours: 5, activeCpuHours: 1.3, invocations: 110000, transferGb: 3, observabilityEvents: 270000, ...over,
+});
+
+describe("summariseCharges", () => {
+  it("sums by service and leaves the plan seat out of usage", () => {
+    const s = summariseCharges([
+      row("Build CPU Minutes", 100, 0.35), row("Build CPU Minutes", 50, 0.175), row("Fast Data Transfer", 2, 0), row("Fast Origin Transfer", 1.5, 0.1),
+      row("Pro", 0, 20, "2026-10-20", null),
+    ]);
+    expect(s.buildMinutes).toBe(150);
+    expect(s.transferGb).toBe(3.5);
+    expect(s.costUsd).toBeCloseTo(0.625);
+  });
+});
+
+describe("unreadable figures fail the read instead of counting as zero", () => {
+  it("a usage row with an unreadable cost or quantity throws", () => {
+    expect(() => summariseCharges([row("Build CPU Minutes", NaN, 1)])).toThrow(/unreadable/);
+    expect(() => summariseCharges([{ ServiceName: "Build CPU Minutes", ConsumedUnit: "minute", EffectiveCost: null, ConsumedQuantity: 3 }])).toThrow(/unreadable/);
+    expect(() => summariseCharges([{ ServiceName: "Build CPU Minutes", ConsumedUnit: "minute", ConsumedQuantity: "x" }])).toThrow(/unreadable/);
+  });
+  it("a Neon project without its counters throws", () => {
+    expect(() => summariseNeon({ project: {}, branches: [], endpoints: [] } as never, new Date())).toThrow(/compute_time_seconds/);
+    expect(() => summariseNeon({ project: { compute_time_seconds: 1 }, branches: [], endpoints: [] } as never, new Date())).toThrow(/data_transfer_bytes/);
+  });
+});
+
+describe("splitWeeks", () => {
+  it("throws on a row with a missing or invalid start time rather than dropping it", () => {
+    const cut = new Date("2026-10-16T00:00:00Z");
+    expect(() => splitWeeks([{ ServiceName: "Build CPU Minutes", ConsumedUnit: "minute", EffectiveCost: 80, ConsumedQuantity: 1 }], cut)).toThrow(/start time/);
+    expect(() => splitWeeks([{ ...row("Build CPU Minutes", 1, 1), ChargePeriodStart: "not a date" }], cut)).toThrow(/start time/);
+  });
+  it("puts rows on or after the cut in this week and earlier ones in last week", () => {
+    const cut = new Date("2026-10-16T00:00:00Z");
+    const { thisWeek, lastWeek } = splitWeeks([row("Build CPU Minutes", 10, 1, "2026-10-17"), row("Build CPU Minutes", 4, 1, "2026-10-10")], cut);
+    expect([thisWeek.buildMinutes, lastWeek.buildMinutes]).toEqual([10, 4]);
+  });
+});
+
+const neonRaw = (over: Record<string, unknown> = {}, endpoints: unknown[] = []) => ({
+  project: { compute_time_seconds: 3600 * 100, data_transfer_bytes: 50e9 },
+  branches: [
+    { id: "br-noisy-violet-a6vw4ess", name: "production", compute_time_seconds: 3600 * 60, data_transfer_bytes: 10e9, logical_size: 1.3e9 },
+    { id: "br-b", name: "scratch-x", compute_time_seconds: 10, data_transfer_bytes: 1, logical_size: 0.8e9 },
+  ],
+  endpoints,
+  ...over,
+});
+
+describe("summariseNeon", () => {
+  it("lists every scratch branch with its compute ceiling, and only scratch branches", () => {
+    const s = summariseNeon(neonRaw({}, [
+      { branch_id: "br-noisy-violet-a6vw4ess", autoscaling_limit_max_cu: 1 }, { branch_id: "br-b", autoscaling_limit_max_cu: 1 },
+    ]) as never, new Date("2026-10-23T00:00:00Z"));
+    expect(s.scratchEndpoints).toEqual([{ branch: "scratch-x", maxCu: 1 }]);
+    expect(s.branchCount).toBe(2);
+  });
+  it("treats a branch as scratch by id, not by name, so cost-probe without the prefix is caught", () => {
+    const raw = neonRaw({ branches: [
+      { id: "br-noisy-violet-a6vw4ess", name: "production", compute_time_seconds: 1, data_transfer_bytes: 1, logical_size: 1 },
+      { id: "br-zzz", name: "cost-probe", compute_time_seconds: 1, data_transfer_bytes: 1, logical_size: 1 },
+    ] }, [{ branch_id: "br-zzz", autoscaling_limit_max_cu: 1 }, { branch_id: "br-patient-hall-a6nbonvo", autoscaling_limit_max_cu: 1 }]);
+    const s = summariseNeon(raw as never, new Date("2026-10-23T00:00:00Z"));
+    expect(s.scratchEndpoints).toEqual([{ branch: "cost-probe", maxCu: 1 }]);
+  });
+  it("fails the read when a scratch endpoint's ceiling is missing, null or not a number", () => {
+    for (const bad of [undefined, null, "x", NaN]) {
+      const raw = neonRaw({}, [{ branch_id: "br-b", autoscaling_limit_max_cu: bad }]);
+      expect(() => summariseNeon(raw as never, new Date("2026-10-23T00:00:00Z"))).toThrow(/compute ceiling/);
+    }
+  });
+  it("keeps a scratch branch at 0.25 too", () => {
+    const s = summariseNeon(neonRaw({}, [{ branch_id: "br-b", autoscaling_limit_max_cu: 0.25 }]) as never, new Date("2026-10-23T00:00:00Z"));
+    expect(s.scratchEndpoints).toEqual([{ branch: "scratch-x", maxCu: 0.25 }]);
+  });
+});
+
+describe("neonWeek", () => {
+  const snap = (at: string, cu: number, gb: number) => ({ at, month: at.slice(0, 7), computeSeconds: cu * 3600, transferBytes: gb * 1e9 });
+  it("scales the change since the snapshot to seven days", () => {
+    const w = neonWeek(snap("2026-10-23T00:00:00Z", 300, 90) as never, snap("2026-10-16T00:00:00Z", 100, 40) as never)!;
+    expect(w.computeCuHours).toBeCloseTo(200);
+    expect(w.transferGb).toBeCloseTo(50);
+    const half = neonWeek(snap("2026-10-23T00:00:00Z", 300, 90) as never, snap("2026-10-19T12:00:00Z", 250, 80) as never)!;
+    expect(half.days).toBeCloseTo(3.5);
+    expect(half.computeCuHours).toBeCloseTo(100);
+  });
+  it("makes no comparison from a snapshot whose counters or time cannot be read", () => {
+    const cur = snap("2026-10-23T00:00:00Z", 5, 1) as never;
+    const old = snap("2026-10-16T00:00:00Z", 1, 1);
+    expect(neonWeek(cur, { ...old, computeSeconds: undefined } as never)).toBeNull();
+    expect(neonWeek(cur, { ...old, transferBytes: "x" } as never)).toBeNull();
+    expect(neonWeek(cur, { ...old, at: "yesterday-ish", month: "2026-10" } as never)).toBeNull();
+    expect(neonWeek(cur, {} as never)).toBeNull();
+  });
+  it("makes no comparison without a snapshot, within a day, across a month, or when a counter went down", () => {
+    const cur = snap("2026-11-02T00:00:00Z", 10, 1) as never;
+    expect(neonWeek(cur, null)).toBeNull();
+    expect(neonWeek(snap("2026-10-23T12:00:00Z", 5, 1) as never, snap("2026-10-23T00:00:00Z", 1, 1) as never)).toBeNull();
+    expect(neonWeek(cur, snap("2026-10-30T00:00:00Z", 900, 400) as never)).toBeNull();
+    expect(neonWeek(snap("2026-10-23T00:00:00Z", 5, 1) as never, snap("2026-10-16T00:00:00Z", 9, 1) as never)).toBeNull();
+  });
+});
+
+describe("evaluate", () => {
+  const calm = summariseNeon(neonRaw({}, []) as never, new Date("2026-10-23T00:00:00Z"));
+  const run = (o: Record<string, unknown>) => evaluate({ vercel: { thisWeek: week(), lastWeek: week() }, neon: calm, neonWeek: { days: 7, computeCuHours: 150, transferGb: 20 }, ...o } as never);
+  const fired = (v: { rules: { id: string; fired: boolean }[] }) => v.rules.filter((r) => r.fired).map((r) => r.id);
+
+  it("is green on the October baseline", () => {
+    expect(fired(run({}))).toEqual([]);
+    expect(run({}).red).toBe(false);
+  });
+  it("fires on a Vercel week over the ceiling", () => {
+    expect(fired(run({ vercel: { thisWeek: week({ costUsd: THRESHOLDS.vercelWeekUsd + 1 }), lastWeek: week() } }))).toEqual(["vercel-cost"]);
+  });
+  it("fires on Vercel growth only when both the factor and the dollar floor are met", () => {
+    expect(fired(run({ vercel: { thisWeek: week({ costUsd: 26 }), lastWeek: week({ costUsd: 17 }) } }))).toEqual(["vercel-cost"]);
+    expect(fired(run({ vercel: { thisWeek: week({ costUsd: 6 }), lastWeek: week({ costUsd: 3 }) } }))).toEqual([]);
+  });
+  it("fires on build minutes up 50% and 1,500 minutes", () => {
+    expect(fired(run({ vercel: { thisWeek: week({ buildMinutes: 5500 }), lastWeek: week() } }))).toEqual(["build-minutes"]);
+    expect(fired(run({ vercel: { thisWeek: week({ buildMinutes: 1500 }), lastWeek: week({ buildMinutes: 900 }) } }))).toEqual([]);
+  });
+  it("fires on Neon compute and transfer past their weekly ceilings", () => {
+    expect(fired(run({ neonWeek: { days: 7, computeCuHours: 201, transferGb: 101 } }))).toEqual(["neon-compute", "neon-transfer"]);
+  });
+  it("skips, and does not fire, the Neon comparisons without a snapshot", () => {
+    const v = run({ neonWeek: null });
+    expect(fired(v)).toEqual([]);
+    expect(v.rules.filter((r: { skipped?: boolean }) => r.skipped).map((r: { id: string }) => r.id)).toEqual(["neon-compute", "neon-transfer"]);
+  });
+  it("fires on too many branches and on a scratch branch above 0.25 CU", () => {
+    expect(fired(run({ neon: { ...calm, branchCount: 11 } }))).toEqual(["branches"]);
+    expect(fired(run({ neon: { ...calm, scratchEndpoints: [{ branch: "scratch-x", maxCu: 1 }] } }))).toEqual(["scratch-cap"]);
+  });
+  it("compares scratch ceilings with the configured cap, not a fixed one", () => {
+    const neon = { ...calm, scratchEndpoints: [{ branch: "scratch-x", maxCu: 1 }] };
+    const at = (scratchMaxCu: number) => evaluate({ vercel: { thisWeek: week(), lastWeek: week() }, neon, neonWeek: null } as never, { ...THRESHOLDS, scratchMaxCu });
+    expect(fired(at(1))).toEqual([]);
+    expect(fired(at(0.5))).toEqual(["scratch-cap"]);
+  });
+  it("checks growth from a zero baseline too", () => {
+    expect(fired(run({ vercel: { thisWeek: week({ costUsd: 17.5 }), lastWeek: week({ costUsd: 0 }) } }))).toEqual(["vercel-cost"]);
+    expect(fired(run({ vercel: { thisWeek: week({ buildMinutes: 5000 }), lastWeek: week({ buildMinutes: 0 }) } }))).toEqual(["build-minutes"]);
+    expect(fired(run({ vercel: { thisWeek: week({ costUsd: 3, buildMinutes: 100 }), lastWeek: week({ costUsd: 0, buildMinutes: 0 }) } }))).toEqual([]);
+  });
+  it("counts an increase of exactly 50% as growth", () => {
+    expect(fired(run({ vercel: { thisWeek: week({ costUsd: 24 }), lastWeek: week({ costUsd: 16 }) } }))).toEqual(["vercel-cost"]);
+    expect(fired(run({ vercel: { thisWeek: week({ buildMinutes: 4500 }), lastWeek: week({ buildMinutes: 3000 }) } }))).toEqual(["build-minutes"]);
+  });
+  it("is red when either source could not be read, never silently green", () => {
+    expect(fired(run({ vercel: null }))).toEqual(["vercel-read"]);
+    expect(run({ neon: null, neonWeek: null }).red).toBe(true);
+    expect(fired(run({ neon: null, neonWeek: null }))).toEqual(["neon-read"]);
+  });
+});
+
+describe("renderReport", () => {
+  it("shows a row for every rule, the verdict and the build counts", () => {
+    const verdict = evaluate({ vercel: { thisWeek: week(), lastWeek: week() }, neon: null, neonWeek: null });
+    const md = renderReport({ date: "2026-10-26", vercel: { thisWeek: week(), lastWeek: week() }, neon: null, neonWeek: null, verdict, builds: { "the-99": 90 } });
+    expect(md).toContain("**RED**");
+    expect(md).toContain("Neon could be read");
+    expect(md).toContain("the-99 90");
+    for (const r of verdict.rules) expect(md).toContain(`| ${r.label} |`);
+  });
+});
+
+describe("the check is read-only", () => {
+  const read = (f: string) => readFileSync(join(process.cwd(), f), "utf8");
+  it("sends no request but a GET: one fetch, no verb option, no write method names", () => {
+    const src = read("scripts/lib/cost-sources.mjs");
+    expect(src.match(/\bfetch\(/g)).toHaveLength(1);
+    expect(src).not.toMatch(/\bmethod\s*:/i);
+    expect(src).not.toMatch(/\b(POST|PUT|PATCH|DELETE)\b/);
+  });
+  it("the script reaches the network only through those helpers", () => {
+    const src = read("scripts/cost-check.mjs");
+    expect(src).not.toMatch(/\bfetch\(|https?:\/\//);
+  });
+});
+
+describe("fetchBranches", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const page = (branches: unknown[], next?: string) => ({ ok: true, json: async () => ({ branches, pagination: next ? { next } : {} }) });
+  it("follows the cursor until the last page, so branches past the first page are counted", async () => {
+    const urls: string[] = [];
+    const pages = [page(Array.from({ length: 3 }, (_, i) => ({ id: `a${i}` })), "c1"), page([{ id: "b0", name: "scratch-late" }])];
+    vi.stubGlobal("fetch", async (u: string) => { urls.push(u); return pages[urls.length - 1]; });
+    const all = await fetchBranches({ token: "t", projectId: "p" });
+    expect(all.map((b: { id: string }) => b.id)).toEqual(["a0", "a1", "a2", "b0"]);
+    expect(urls[1]).toContain("cursor=c1");
+  });
+  it("throws when the cursor stops advancing, so a repeated page is never an inventory", async () => {
+    vi.stubGlobal("fetch", async () => page([{ id: "x" }], "same"));
+    await expect(fetchBranches({ token: "t", projectId: "p" })).rejects.toThrow(/stopped advancing/);
+  });
+});
+
+describe("fetchDeployments", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const args = { token: "t", teamId: "team", projectId: "p", from: new Date("2026-10-16T00:00:00Z"), to: new Date("2026-10-23T00:00:00Z") };
+  const page = (uids: string[], next?: number) => ({ ok: true, json: async () => ({ deployments: uids.map((uid) => ({ uid })), pagination: next ? { next } : {} }) });
+  it("returns every page's deployments once the last page has no next", async () => {
+    const pages = [page(["a", "b"], 5), page(["c"])];
+    let i = 0;
+    vi.stubGlobal("fetch", async () => pages[i++]);
+    expect((await fetchDeployments(args)).map((d: { uid: string }) => d.uid)).toEqual(["a", "b", "c"]);
+  });
+  it("throws when a next page adds nothing, instead of returning a short count", async () => {
+    const pages = [page(["a"], 5), page(["a"], 4)];
+    let i = 0;
+    vi.stubGlobal("fetch", async () => pages[i++]);
+    await expect(fetchDeployments(args)).rejects.toThrow(/stopped advancing/);
+  });
+  it("throws when the page limit is hit with more still advertised", async () => {
+    let n = 0;
+    vi.stubGlobal("fetch", async () => page([`d${n}`], 1000 - n++));
+    await expect(fetchDeployments(args)).rejects.toThrow(/40 pages/);
+  });
+});
+
+describe("parsePrevious", () => {
+  it("returns the snapshot object, and null for anything unreadable so only the comparison is lost", () => {
+    expect(parsePrevious('{"month":"2026-10"}')).toEqual({ month: "2026-10" });
+    for (const bad of ["", "{", "null", "[1]", "3", '"x"']) expect(parsePrevious(bad)).toBeNull();
+  });
+});
