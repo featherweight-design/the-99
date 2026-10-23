@@ -359,6 +359,8 @@ const WHOLE_ROW_OK: Record<string, string> = {
  * open a swap or a printing sheet, the pull sheet's head. A press and no preview is what they are.
  */
 const NOT_A_ROW = new Set<string>([
+  // Opens a notification's card on landing and draws nothing: no row, so nothing to hover.
+  "components/push/push-landing.tsx",
   "components/commanders/detail.tsx",
   "components/decks/change-commander-door.tsx",
   "components/decks/got-it-door.tsx",
