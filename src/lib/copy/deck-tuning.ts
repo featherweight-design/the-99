@@ -35,10 +35,10 @@ export const deckTuningCopy = {
     again: "Suggest again",
     // A counted word, as the canvas writes it: "Nine games in, and cards in hand has been marked
     // against you in 7 of 9."
-    /** Strategy focus: the one sentence the never-run lead gains (handoff Call 2). */
-    focusLead: (name: string) => `They aim at ${name}, the deck\u2019s focus.`,
     readyLead: (gamesWord: string, axis: string, marked: number, games: number) =>
       `${gamesWord} games in, and ${axis} has been marked against you in ${marked} of ${games}. We will read everything below and suggest up to five cards to add and five to cut, each with its own reason.`,
+    /** Strategy focus: the one sentence the never-run lead gains (handoff Call 2). */
+    focusLead: (name: string) => `They aim at ${name}, the deck\u2019s focus.`,
     noGamesLead:
       "No games logged yet, so we will read this list, the recommended mix and what you own, and suggest up to five cards to add and five to cut. Log a game and suggestions can also cite how the deck played.",
     unmarkedLead: (gamesWord: string) =>

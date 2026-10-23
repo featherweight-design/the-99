@@ -92,6 +92,8 @@ export function useHeldPick<T>(
       if (press !== newest.current) return;
       if (result?.ok) setSettled(result.value);
       if (!result?.ok) {
+        // What the server holds now: the last confirmed value, which a superseded success may have moved.
+        setSettled(confirmed.current.value);
         setValue(confirmed.current.value);
         setRefused(true);
       }

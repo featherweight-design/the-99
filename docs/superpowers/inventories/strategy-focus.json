@@ -1,6 +1,6 @@
 {
   "feature": "Strategy focus, PRs 3 and 4b: the strategy block on Analysis, and Suggested changes aiming at the focus",
-  "note": "Needs ANALYSIS_TAB_ENABLED and STRATEGY_FOCUS_ENABLED 'true' (and TUNING_ENABLED for the tools below it), on a scratch branch off local-dev migrated past 0172, as the audit account. The block draws only over a reading, so each deck must have been analyzed. SF_NOFOCUS_DECK: an analyzed deck with no focus (HD - Brago). SF_FOCUS_DECK: an analyzed deck with a focus set in its top five (HD - Elves, strategy_focus 'typal:Elf'). SF_PENDING_DECK: an analyzed, committed deck with a focus and cards toward it added since the commit (HD Tune - Blood Rites). The empty states (none, tooSmall) and a focus outside the top five are held by strategy-block.test.tsx: a deck under 30 nonland cannot hold a reading. PR 4b adds two rows on SF_FOCUS_DECK (HD - Elves, focus typal:Elf): SC-ready, Suggested changes opened with the focus row and the lead sentence, before a run; and SC-results, after one run (a real call on the scratch branch, about a cent), with the dashed focus chip on additions toward the focus and the off-plan chip on cuts.",
+  "note": "Needs ANALYSIS_TAB_ENABLED and STRATEGY_FOCUS_ENABLED 'true' (and TUNING_ENABLED for the tools below it), on a scratch branch off local-dev migrated past 0172, as the audit account. The block draws only over a reading, so each deck must have been analyzed. SF_NOFOCUS_DECK: an analyzed deck with no focus (HD - Brago). SF_FOCUS_DECK: an analyzed deck with a focus set in its top five (HD - Elves, strategy_focus 'typal:Elf'). SF_PENDING_DECK: an analyzed, committed deck with a focus and cards toward it added since the commit (HD Tune - Blood Rites). The empty states (none, tooSmall) and a focus outside the top five are held by strategy-block.test.tsx: a deck under 30 nonland cannot hold a reading. PR 4b adds two rows on SF_FOCUS_DECK (HD - Elves, focus typal:Elf): SC-ready, Suggested changes opened with the focus row and the lead sentence, before a run; and SC-results, that run reopened from History (one real call on the scratch branch, about a cent, made beforehand), with the dashed focus chip on additions toward the focus, the off-plan chip on cuts and focus Elves in the read-from line.",
   "out": "/tmp/contact-sheet/strategy-focus",
   "rows": [
     {
@@ -113,7 +113,7 @@
     },
     {
       "id": "SC-results",
-      "label": "Suggested changes, after a run: an addition toward the focus leads with the dashed focus chip, an off-plan cut with list \u00b7 on none of the top N",
+      "label": "Suggested changes, a run reopened from History: the dashed focus chip on additions toward the focus, list \u00b7 on none of the top N on off-plan cuts, and focus Elves in the read-from line",
       "view": "src/components/decks/suggestion-line.tsx",
       "steps": [
         {
@@ -127,15 +127,19 @@
           "settle": 700
         },
         {
-          "wait": "[data-tool-tile='suggested']",
+          "wait": "[data-tool-tile='history']",
           "settle": 900
         },
         {
-          "click": "[data-tool-tile='suggested']",
-          "settle": 900
+          "click": "[data-tool-tile='history']",
+          "settle": 700
         },
         {
-          "wait": "[data-tuning-tool='suggested']",
+          "wait": "[data-history-row]",
+          "settle": 700
+        },
+        {
+          "click": "[data-history-row]",
           "settle": 900
         },
         {
