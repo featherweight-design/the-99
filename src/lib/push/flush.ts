@@ -93,7 +93,7 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
         if (plan.held) { report.held += waiting.length; continue; }
         let allOk = true;
         for (const s of plan.sends) {
-          const result = await send({ endpoint: device.endpoint, p256dh: device.p256dh, auth: device.auth }, payloadFor(s.message), config, s.message.tag);
+          const result = await send({ endpoint: device.endpoint, p256dh: device.p256dh, auth: device.auth }, payloadFor(s.message), config);
           if (result.ok) {
             report.sent += 1;
             // Recorded as it goes: a later send failing must not make this one go out again.

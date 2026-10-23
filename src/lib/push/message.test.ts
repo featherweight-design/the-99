@@ -26,7 +26,7 @@ describe("one item of each kind (the handoff's table)", () => {
     expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: "It’s on your wishlist.", route: "/friends/p-colin" });
   });
   it("spare request: says where to answer, lands on Friends", () => {
-    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: "A friend wants a card you have spare. Answer in Friends.", route: "/friends", tag: "spare-request" });
+    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: "A friend wants a card you have spare. Answer in Friends.", route: "/friends", tag: "spare-request:r1" });
   });
   it("combo: names its kind, Home with the first piece open for its combo", () => {
     expect(toMessage([combo("c1")])).toMatchObject({
@@ -70,6 +70,11 @@ describe("collapse", () => {
       expect(messagesFor([ask("r1"), ask("r2"), ask("r3", "Colin")], mode)).toHaveLength(3);
     }
   });
+  it("tags each spare request by its own key, so two asks never replace each other on the device; every other kind by its kind", () => {
+    expect(messagesFor([ask("r1"), ask("r2")], "live").map((m) => m.tag)).toEqual(["spare-request:r1", "spare-request:r2"]);
+    expect(toMessage([drop("a", "A")]).tag).toBe("price-drop");
+  });
+
   it("keeps the order the first item of each group arrived", () => {
     const msgs = messagesFor([combo("x"), drop("a", "A"), combo("y")], "live");
     expect(msgs.map((m) => m.tag)).toEqual(["combo", "price-drop"]);

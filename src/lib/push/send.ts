@@ -11,18 +11,21 @@ import type { PushMessage } from "./message";
 
 export type SendTarget = { endpoint: string; p256dh: string; auth: string };
 export type SendResult = { ok: true } | { ok: false; gone: boolean; status: number | null };
-export type PushSender = (target: SendTarget, payload: string, config: PushConfig, tag: string) => Promise<SendResult>;
+export type PushSender = (target: SendTarget, payload: string, config: PushConfig) => Promise<SendResult>;
 
 /** A message that waits a day is no longer news: the push service drops it after this. */
 export const TTL_SECONDS = 24 * 60 * 60;
 /** Web Push carries 4096 bytes after encryption; the JSON stays well under it. */
 export const MAX_PAYLOAD_BYTES = 3000;
 
+/** The first `n` characters, never splitting a surrogate pair. */
+const clip = (text: string, n: number): string => Array.from(text).slice(0, n).join("");
+
 /** The service worker's payload: what a notification shows, where a tap lands and what Home opens. */
 export function payloadFor(message: PushMessage): string {
   const body = (n: number) => JSON.stringify({
-    title: message.title.slice(0, 120),
-    body: message.body.slice(0, n),
+    title: clip(message.title, 120),
+    body: clip(message.body, n),
     route: message.route,
     tag: message.tag,
     keys: message.keys.slice(0, 20),
@@ -37,14 +40,14 @@ export function payloadFor(message: PushMessage): string {
   return body(0);
 }
 
-export const sendWebPush: PushSender = async (target, payload, config, tag) => {
+export const sendWebPush: PushSender = async (target, payload, config) => {
   try {
     await webpush.sendNotification({ endpoint: target.endpoint, keys: { p256dh: target.p256dh, auth: target.auth } }, payload, {
       vapidDetails: { subject: config.subject, publicKey: config.publicKey, privateKey: config.privateKey },
       TTL: TTL_SECONDS,
       urgency: "normal",
-      // The push service keeps one undelivered message per topic: a newer news of a kind replaces an older one.
-      topic: tag,
+      // No `topic`: the push service would keep ONE undelivered message per topic and drop the rest, and the flush has
+      // already recorded each as sent. The device's own `tag` replaces a notification with its successor when it shows them.
     });
     return { ok: true };
   } catch (error) {
