@@ -7,7 +7,7 @@
 // reveal, and checks two facts on a laid-out page:
 //
 // 1. THE FIELD STAYS IN VIEW: its box is inside the visible viewport and nothing is painted over it after the press.
-// 2. THE PAGE DOES NOT JUMP: with the open list's room under the field it does not move at all; without it, it
+// 2. THE PAGE DOES NOT JUMP: with the open list's room under the field it does not move at all; without it,
 //    the field is centered in the visible band (the visual viewport above any bar pinned over the foot), not
 //    pinned to its top (Hugh, 2026-10-22), unless the page ends before it can get there.
 // 3. THE FILLED LIST IS SEEN: after typing a name, the list (uncapped from `md`) ends inside the visible area and

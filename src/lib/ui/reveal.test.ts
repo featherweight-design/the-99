@@ -148,6 +148,22 @@ describe("reveal", () => {
     expect(JSON.stringify(to.mock.calls.at(-1))).toContain("921");
   });
 
+  it("centers in the visible band a caller names, not in the window", () => {
+    media(true);
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    Object.defineProperty(document.documentElement, "scrollHeight", { value: 5000, configurable: true });
+    el.getBoundingClientRect = () => ({ top: 1000, left: 0, width: 100, height: 100 }) as DOMRect;
+    el.getClientRects = () => [el.getBoundingClientRect()] as unknown as DOMRectList;
+    const to = vi.fn();
+    window.scrollTo = to as unknown as typeof window.scrollTo;
+    // A keyboard leaves the top 300px of a 768px window visible: the target's middle goes to y=150, not y=384.
+    reveal(el, "center", undefined, () => ({ top: 0, bottom: 300 }));
+    expect(to.mock.calls.at(-1)?.[1]).toBe(900);
+    reveal(el, "center");
+    expect(to.mock.calls.at(-1)?.[1]).toBe(666);
+  });
+
   it("jumps under reduced motion, with no beat", () => {
     media(true);
     const { box, el } = scene();
