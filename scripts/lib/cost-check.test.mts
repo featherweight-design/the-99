@@ -25,6 +25,18 @@ describe("summariseCharges", () => {
   });
 });
 
+describe("unreadable figures fail the read instead of counting as zero", () => {
+  it("a usage row with an unreadable cost or quantity throws", () => {
+    expect(() => summariseCharges([row("Build CPU Minutes", NaN, 1)])).toThrow(/unreadable/);
+    expect(() => summariseCharges([{ ServiceName: "Build CPU Minutes", ConsumedUnit: "minute", EffectiveCost: null, ConsumedQuantity: 3 }])).toThrow(/unreadable/);
+    expect(() => summariseCharges([{ ServiceName: "Build CPU Minutes", ConsumedUnit: "minute", ConsumedQuantity: "x" }])).toThrow(/unreadable/);
+  });
+  it("a Neon project without its counters throws", () => {
+    expect(() => summariseNeon({ project: {}, branches: [], endpoints: [] } as never, new Date())).toThrow(/compute_time_seconds/);
+    expect(() => summariseNeon({ project: { compute_time_seconds: 1 }, branches: [], endpoints: [] } as never, new Date())).toThrow(/data_transfer_bytes/);
+  });
+});
+
 describe("splitWeeks", () => {
   it("puts rows on or after the cut in this week and earlier ones in last week", () => {
     const cut = new Date("2026-10-16T00:00:00Z");
@@ -44,16 +56,16 @@ const neonRaw = (over: Record<string, unknown> = {}, endpoints: unknown[] = []) 
 });
 
 describe("summariseNeon", () => {
-  it("lists scratch branches whose compute can exceed 0.25 CU, and only scratch branches", () => {
+  it("lists every scratch branch with its compute ceiling, and only scratch branches", () => {
     const s = summariseNeon(neonRaw({}, [
       { branch_id: "br-a", autoscaling_limit_max_cu: 1 }, { branch_id: "br-b", autoscaling_limit_max_cu: 1 },
     ]) as never, new Date("2026-10-23T00:00:00Z"));
-    expect(s.scratchOverCap).toEqual([{ branch: "scratch-x", maxCu: 1 }]);
+    expect(s.scratchEndpoints).toEqual([{ branch: "scratch-x", maxCu: 1 }]);
     expect(s.branchCount).toBe(2);
   });
-  it("passes a scratch branch at 0.25", () => {
+  it("keeps a scratch branch at 0.25 too", () => {
     const s = summariseNeon(neonRaw({}, [{ branch_id: "br-b", autoscaling_limit_max_cu: 0.25 }]) as never, new Date("2026-10-23T00:00:00Z"));
-    expect(s.scratchOverCap).toEqual([]);
+    expect(s.scratchEndpoints).toEqual([{ branch: "scratch-x", maxCu: 0.25 }]);
   });
 });
 
@@ -106,7 +118,17 @@ describe("evaluate", () => {
   });
   it("fires on too many branches and on a scratch branch above 0.25 CU", () => {
     expect(fired(run({ neon: { ...calm, branchCount: 11 } }))).toEqual(["branches"]);
-    expect(fired(run({ neon: { ...calm, scratchOverCap: [{ branch: "scratch-x", maxCu: 1 }] } }))).toEqual(["scratch-cap"]);
+    expect(fired(run({ neon: { ...calm, scratchEndpoints: [{ branch: "scratch-x", maxCu: 1 }] } }))).toEqual(["scratch-cap"]);
+  });
+  it("compares scratch ceilings with the configured cap, not a fixed one", () => {
+    const neon = { ...calm, scratchEndpoints: [{ branch: "scratch-x", maxCu: 1 }] };
+    const at = (scratchMaxCu: number) => evaluate({ vercel: { thisWeek: week(), lastWeek: week() }, neon, neonWeek: null } as never, { ...THRESHOLDS, scratchMaxCu });
+    expect(fired(at(1))).toEqual([]);
+    expect(fired(at(0.5))).toEqual(["scratch-cap"]);
+  });
+  it("counts an increase of exactly 50% as growth", () => {
+    expect(fired(run({ vercel: { thisWeek: week({ costUsd: 24 }), lastWeek: week({ costUsd: 16 }) } }))).toEqual(["vercel-cost"]);
+    expect(fired(run({ vercel: { thisWeek: week({ buildMinutes: 4500 }), lastWeek: week({ buildMinutes: 3000 }) } }))).toEqual(["build-minutes"]);
   });
   it("is red when either source could not be read, never silently green", () => {
     expect(fired(run({ vercel: null }))).toEqual(["vercel-read"]);

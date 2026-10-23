@@ -16,7 +16,9 @@ export const getText = async (url, token) => (await get(url, token)).text();
 /** Vercel's FOCUS billing charges for [from, to), one object per line. */
 export async function fetchCharges({ token, teamId, from, to }) {
   const text = await getText(`${VERCEL}/v1/billing/charges?teamId=${teamId}&from=${from.toISOString()}&to=${to.toISOString()}`, token);
-  return text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
+  const rows = text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
+  if (rows.length === 0) throw new Error("the billing API returned no charge rows");
+  return rows;
 }
 
 /** Deployments of one project (every target; both projects only ever deploy production) created in [from, to). Pages by `until`, stops on a repeat. */
@@ -48,6 +50,12 @@ const sum = (rows, name, key) => rows.filter((r) => r.ServiceName === name).redu
 /** One week of charge rows to the figures the rules read. The plan seat (no consumed unit) is not usage. */
 export function summariseCharges(rows) {
   const usage = rows.filter((r) => r.ConsumedUnit);
+  // A usage row whose figures cannot be read must fail the Vercel read, not count as zero and read green.
+  for (const r of usage) {
+    if (!Number.isFinite(Number(r.EffectiveCost)) || !Number.isFinite(Number(r.ConsumedQuantity)) || r.EffectiveCost === null || r.ConsumedQuantity === null) {
+      throw new Error(`a ${r.ServiceName ?? "charge"} row has an unreadable cost or quantity`);
+    }
+  }
   return {
     costUsd: usage.reduce((a, r) => a + (Number(r.EffectiveCost) || 0), 0),
     buildMinutes: sum(rows, "Build CPU Minutes", "ConsumedQuantity"),
@@ -70,6 +78,9 @@ export function splitWeeks(rows, weekStart) {
 
 /** The Neon counters (billing period to date) and the settings the rules check, as a snapshot. */
 export function summariseNeon({ project, branches, endpoints }, now) {
+  for (const k of ["compute_time_seconds", "data_transfer_bytes"]) {
+    if (project?.[k] === null || project?.[k] === undefined || !Number.isFinite(Number(project[k]))) throw new Error(`the Neon project has no readable ${k}`);
+  }
   const byBranch = new Map(branches.map((b) => [b.id, b]));
   return {
     at: now.toISOString(),
@@ -80,9 +91,10 @@ export function summariseNeon({ project, branches, endpoints }, now) {
       id: b.id, name: b.name, computeSeconds: Number(b.compute_time_seconds) || 0,
       transferBytes: Number(b.data_transfer_bytes) || 0, logicalBytes: Number(b.logical_size) || 0,
     })),
-    scratchOverCap: endpoints
-      .filter((e) => byBranch.get(e.branch_id)?.name?.startsWith("scratch-") && (e.autoscaling_limit_max_cu ?? 0) > 0.25)
-      .map((e) => ({ branch: byBranch.get(e.branch_id).name, maxCu: e.autoscaling_limit_max_cu })),
+    // Every scratch branch's compute ceiling; the rule compares them with its own cap, so the cap lives in one place.
+    scratchEndpoints: endpoints
+      .filter((e) => byBranch.get(e.branch_id)?.name?.startsWith("scratch-"))
+      .map((e) => ({ branch: byBranch.get(e.branch_id).name, maxCu: e.autoscaling_limit_max_cu ?? 0 })),
     branchCount: branches.length,
   };
 }
