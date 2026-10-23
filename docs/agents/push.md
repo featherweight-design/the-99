@@ -96,6 +96,17 @@ This file holds what a reader of the code needs and the plan's decisions in one 
 - `FlushReport.queued` counts the rows the catalog pass wrote. Proof: `probe:push-flush` section 7 (its own set, printing, precons
   and stamps, removed in its finally).
 
+## Added by PR 4 (the Settings column)
+
+- `news-section.tsx` takes `push` (`{ publicKey, on }`, from `settings/page.tsx` only while `pushAvailable`; the PUBLIC key
+  alone reaches the client). Without it the section is exactly as shipped. Words in `src/lib/copy/push-settings.ts`.
+- The device row's state is `deviceState` (`src/lib/push/device.ts`, pure, facts in, state out); `readDeviceFacts`
+  (`device-browser.ts`) is the one reader of `window`. No service worker registration (any non-production build, or a
+  worker that is not there 3 seconds after `ready` is awaited) reads Can't, so the column never shows under `next dev`.
+- The prompt is asked only from a push tick's press while permission is `default`. A kind's tick sends its save FIRST and
+  then asks in the same press without awaiting the save, because awaiting a round trip spends the press's user activation.
+  A visit with permission granted and a live subscription calls `subscribeDevice` once (G1's silent re-subscribe).
+
 ## Decisions the plan fixed (D1 to D5)
 
 1. Outbox, not a direct send: `recordFeedItem` runs inside transactions, so a send from it could announce a rolled-back event.

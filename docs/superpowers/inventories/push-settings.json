@@ -1,0 +1,12 @@
+{
+  "feature": "Push notifications, PR 4: /settings' What's new on Home with the push column, the device row and the iPhone guidance sheet (handoff design_handoff_the99_push, boards Settings, Device-States, The-Ask, iPhone; plan 2026-10-22-push.md)",
+  "note": "Run on a scratch Neon branch migrated to this PR, with HOME_FEED_ENABLED and PUSH_ENABLED on and VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT set to a pair from `pnpm push:keys`, against `next start` (the service worker registers in production only; under `next dev` every device reads Can't and the column leaves, which is the Can't frame). A headless browser's permission is `default`, so the device row reads Not on yet; nothing here presses a push box, because a press asks the browser. The other states (On, Off here, Blocked, Needs Home Screen) and the sheet are proved by src/components/settings/news-section.push.test.tsx; a real device's are Hugh's check in the PR body.",
+  "rows": [
+    {
+      "id": "settings-push-column",
+      "label": "/settings: What's new on Home with the Push head, the device row first, each kind's push box, and the foot's push clause",
+      "view": "src/components/settings/news-section.tsx",
+      "steps": [{ "goto": "/settings", "wait": "[data-push-device]", "settle": 3500 }]
+    }
+  ]
+}

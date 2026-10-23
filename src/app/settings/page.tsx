@@ -12,8 +12,11 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { friendDecksEnabled, socialFriendsEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
-import { homeFeedEnabled } from "../../lib/feed/flag";
+import { availableFeedKinds, homeFeedEnabled } from "../../lib/feed/flag";
 import { loadNewsSettings } from "../../lib/feed/prefs";
+import { pushAvailable } from "../../lib/push/available";
+import { pushConfig } from "../../lib/push/config";
+import { loadPushKinds } from "../../lib/push/prefs";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { listSharedPods } from "../../lib/social/spares";
 import { loadKeptBack, readSpareMin } from "../../lib/social/spare-settings";
@@ -31,14 +34,20 @@ export default async function SettingsPage() {
   if (!friends && !homeFeedEnabled(env)) notFound();
   // `loadNewsSettings` reads nothing and returns [] while the feed is off, and the section then draws nothing.
   // Your decks (`FRIEND_DECKS_ENABLED`, which needs the friends switch): the reader's own two rules.
-  const [news, spares, deckPrefs] = await Promise.all([
+  // Push (`PUSH_ENABLED` and the VAPID keys, push handoff calls 1 to 4): the push column's ticks among the same kinds,
+  // and the PUBLIC key a browser subscribes with. Unavailable, the section is as shipped. The private key never leaves
+  // the server.
+  const config = pushAvailable(env) ? pushConfig(env) : null;
+  const [news, pushOn, spares, deckPrefs] = await Promise.all([
     loadNewsSettings(userId, env),
+    config ? loadPushKinds(userId, availableFeedKinds(env)) : null,
     friends ? loadSpares(userId) : null,
     friendDecksEnabled(env) ? loadFriendDeckPrefs(userId) : null,
   ]);
+  const push = config && pushOn ? { publicKey: config.publicKey, on: pushOn } : null;
   return (
     <SettingsView>
-      <NewsSection kinds={news} />
+      <NewsSection kinds={news} push={push} />
       {spares && <SparesSection {...spares} />}
       {deckPrefs && <FriendDecksSection prefs={deckPrefs} />}
     </SettingsView>
