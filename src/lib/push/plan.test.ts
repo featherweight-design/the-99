@@ -45,6 +45,14 @@ describe("planDevice", () => {
     expect(new Set(plan.sends.map((s) => s.message.tag))).toEqual(new Set(["price-drop"]));
   });
 
+  it("sends in the order the news happened, so the newest is last and wins the tag on the device", () => {
+    // A daytime drop from yesterday afternoon (live), the overnight one (release), a drop from this morning after 09:00 (live).
+    const rows = [row("1", "2026-10-22T13:30:00Z"), row("2", "2026-10-22T03:00:00Z"), row("3", "2026-10-21T18:00:00Z")];
+    const plan = planDevice(rows, items(drop("1", "late"), drop("2", "night"), drop("3", "early")), device, at("2026-10-22T14:00:00Z"));
+    const order = plan.sends.map((s) => s.rowIds.join());
+    expect(order).toEqual(["3", "2", "1"]);
+  });
+
   it("never merges spare requests, live or on release, and sends them in the morning after a night's hold", () => {
     const rows = [row("1", "2026-10-22T03:00:00Z"), row("2", "2026-10-22T04:00:00Z")];
     expect(planDevice(rows, items(ask("1"), ask("2")), device, at("2026-10-22T13:05:00Z")).sends).toHaveLength(2);

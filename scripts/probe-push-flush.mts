@@ -1,7 +1,9 @@
 // Proves the push flush (plan 2026-10-22-push.md, PR 3b) against a real database with a FAKE sender, so nothing leaves the
 // machine: a live push goes once and its row is settled; the same flush sends nothing twice; a device inside its held hours
 // gets nothing and the row waits, then the morning release sends one push per kind; a device the push service answers 410
-// for is deleted; a transient failure leaves the row for the next run and keeps the sends that already went; a reader with no
+// for is deleted; a transient failure leaves the row for the next run and keeps the sends that already went (recorded in the
+// database as each goes); a row whose kind was unticked, or stamped again after the event, while it waited is abandoned; one
+// reader's rows cannot crowd the others out of a run; a reader with no
 // device, the switch off, or a row that no longer resolves is abandoned, never sent; a device that subscribed after an
 // event never gets it; a row a week old is pruned.
 //
@@ -50,8 +52,8 @@ async function main() {
     sent.push({ endpoint: t.endpoint, payload: JSON.parse(payload) });
     return { ok: true as const };
   };
-  const on = { PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const off = { PUSH_ENABLED: "false", HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const on = { PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const off = { PUSH_ENABLED: "false", HOME_FEED_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const stamp = "2026-01-01T00:00:00.000Z";
   // NY is UTC-4 in October: 12:00 local = 16:00Z; 23:00 local = 03:00Z next day; 09:05 local = 13:05Z.
   const DAY = new Date("2026-10-22T16:00:00.000Z");
@@ -111,6 +113,54 @@ async function main() {
     sent.length = 0;
     await flush(DAY);
     check("the next run sends to both devices and settles it", sent.length === 2 && (await outbox(D))[0]?.sentAt != null, String(sent.length));
+
+    // 4b. A send that went is recorded at once: when the NEXT send of the same device fails, only the second is retried.
+    const K = U("k");
+    await reader(K); await device(K, "k", "UTC");
+    await dropAt(K, "p1", new Date("2026-10-22T15:00:00.000Z"), "run-a");
+    await dropAt(K, "p2", new Date("2026-10-22T15:01:00.000Z"), "run-b");
+    let calls = 0;
+    const flaky = async (t: { endpoint: string }, payload: string) => {
+      calls++;
+      if (calls === 2) return { ok: false as const, gone: false, status: 503 };
+      sent.push({ endpoint: t.endpoint, payload: JSON.parse(payload) });
+      return { ok: true as const };
+    };
+    sent.length = 0;
+    await flushPush({ config, now: DAY, send: flaky as never, resolveEnv: async () => on });
+    const afterFlaky = await outbox(K);
+    check("the send that went is recorded though the next one failed", afterFlaky.filter((r) => r.sentAt != null).length === 1 && afterFlaky.filter((r) => r.sentAt == null).length === 1 && sent.length === 1, `${sent.length}`);
+    sent.length = 0;
+    await flush(DAY);
+    check("the next run sends only the one that did not go", sent.length === 1 && (await outbox(K)).every((r) => r.sentAt != null), String(sent.length));
+
+    // 4c. Judged again at the flush: unticked, or stamped after the event, while it waited.
+    const L = U("l");
+    await reader(L); await device(L, "l", "UTC");
+    await dropAt(L, "u1", new Date("2026-10-22T10:00:00.000Z"));
+    await db.update(userPrefs).set({ pushKinds: {} }).where(eq(userPrefs.userId, L)); // unticked while it waited
+    const M = U("m");
+    await reader(M); await device(M, "m", "UTC");
+    await dropAt(M, "u2", new Date("2026-10-22T10:00:00.000Z"));
+    await db.update(userPrefs).set({ pushKinds: { "price-drop": "2026-10-22T12:00:00.000Z" } }).where(eq(userPrefs.userId, M)); // off and on again after the event
+    sent.length = 0;
+    await flush(DAY);
+    check("a kind unticked while the row waited is abandoned, never sent", sent.filter((x) => x.endpoint === endpoint("l")).length === 0 && (await outbox(L))[0]?.sentAt != null);
+    check("a kind stamped again AFTER the event is abandoned too", sent.filter((x) => x.endpoint === endpoint("m")).length === 0 && (await outbox(M))[0]?.sentAt != null);
+
+    // 4d. Fair: a reader with a long backlog held overnight takes only its share of a run.
+    const X = U("x");
+    await reader(X); await device(X, "x", "Asia/Tokyo"); // 01:00 at DAY: held
+    const { PER_READER } = await import("../src/lib/push/flush");
+    for (let i = 0; i < PER_READER + 10; i++) {
+      await db.insert(pushOutbox).values({ userId: X, kind: "price-drop", itemKey: `item:backlog-${i}`, batchKey: "b", payload: {}, createdAt: new Date(Date.parse("2026-10-22T10:00:00.000Z") + i * 1000) });
+    }
+    const Y = U("y");
+    await reader(Y); await device(Y, "y", "UTC");
+    await dropAt(Y, "f1", new Date("2026-10-22T15:30:00.000Z"));
+    sent.length = 0;
+    const fair = await flush(DAY);
+    check("the backlog takes only its share of the run (PER_READER of its rows, plus the other reader's one), and the other reader still goes", sent.some((x) => x.endpoint === endpoint("y")) && fair.rows === PER_READER + 1, JSON.stringify(fair));
 
     // 5. Abandoned, never sent.
     const E = U("e"); // no device

@@ -5,7 +5,8 @@
  * - A device that subscribed AFTER an event never hears of it: such a row is covered without sending.
  * - Inside the device's held hours (21:00 to 09:00 in ITS zone) nothing goes and nothing is covered: the rows wait.
  * - Outside them, rows that arrived while the device was NOT held are sent LIVE (one message per kind and batch) and rows that
- *   arrived during the held hours are sent as the morning RELEASE (one per kind). A spare request is never merged.
+ *   arrived during the held hours are sent as the morning RELEASE (one per kind). A spare request is never merged. Sends go
+ *   oldest news first, so the newest notification of a tag is the last one the device shows.
  */
 import { isHeld } from "./hold";
 import { messagesFor, type PushItem, type PushMessage } from "./message";
@@ -36,10 +37,13 @@ export function planDevice(rows: readonly OutboxRow[], items: ReadonlyMap<string
     rowOf.set(item.key, row);
     (isHeld(row.createdAt, device.timeZone) ? waiting : live).push(item);
   }
-  const sends = [...messagesFor(live, "live"), ...messagesFor(waiting, "release")].map((message) => ({
-    message,
-    rowIds: message.keys.flatMap((k) => (rowOf.get(k) ? [rowOf.get(k)!.id] : [])),
-  }));
+  const grouped = [...messagesFor(live, "live"), ...messagesFor(waiting, "release")].map((message) => {
+    const rowsOf = message.keys.flatMap((k) => (rowOf.get(k) ? [rowOf.get(k)!] : []));
+    return { message, rowIds: rowsOf.map((r) => r.id), newest: Math.max(...rowsOf.map((r) => r.createdAt.getTime())) };
+  });
+  // In the order the news happened, oldest first: messages of one tag replace each other on the device in the order they
+  // arrive, so the newest must come last, whether it is the morning's release or a daytime push.
+  const sends = grouped.sort((a, b) => a.newest - b.newest).map(({ message, rowIds }) => ({ message, rowIds }));
   for (const s of sends) covered.push(...s.rowIds);
   return { sends, covered, held: false };
 }

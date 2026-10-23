@@ -16,6 +16,7 @@ describe("the trim", () => {
     expect(text).toContain("delete from push_subscriptions ps");
     expect(text).toContain("inner_ps.user_id =");
     expect(text).toContain("ps.id in (");
+    expect(text).toContain("order by inner_ps.refreshed_at desc");
     expect(text).toContain("offset");
     expect(params).toEqual(["u1", "u1", MAX_DEVICES]);
   });
@@ -80,9 +81,13 @@ describe("saveDevice", () => {
     expect(n).toBe(1);
   });
 
-  it("restamps created_at on a refresh or takeover, so the trim keeps the row just saved", async () => {
+  it("restamps refreshed_at on EVERY save (the trim's recency), and created_at only on a takeover (the subscription's start)", async () => {
     const f = fake();
     await saveDevice("u1", device, f.q as never);
-    expect(f.conflict()!.set).toHaveProperty("createdAt");
+    const set = f.conflict()!.set as { refreshedAt: SQL; createdAt: SQL };
+    expect(set).toHaveProperty("refreshedAt");
+    const created = dialect.sqlToQuery(set.createdAt).sql;
+    expect(created).toContain("push_subscriptions.user_id <> excluded.user_id");
+    expect(created).toContain("else push_subscriptions.created_at end");
   });
 });

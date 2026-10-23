@@ -43,8 +43,13 @@ async function saveOnce(userId: string, device: DeviceInput, q: Q): Promise<void
       .values({ userId, ...device })
       .onConflictDoUpdate({
         target: pushSubscriptions.endpoint,
-        // `created_at` is when the device last subscribed: a refresh or a takeover is the newest, so the trim never deletes the row just saved.
-        set: { userId, p256dh: device.p256dh, auth: device.auth, userAgent: device.userAgent, timeZone: device.timeZone, createdAt: sql`now()` },
+        // `refreshed_at` is the trim's recency: every save is the newest, so the trim never deletes the row just saved.
+        // `created_at` is when this ACCOUNT's subscription began: a refresh keeps it, a takeover by another account resets it.
+        set: {
+          userId, p256dh: device.p256dh, auth: device.auth, userAgent: device.userAgent, timeZone: device.timeZone,
+          refreshedAt: sql`now()`,
+          createdAt: sql`case when push_subscriptions.user_id <> excluded.user_id then now() else push_subscriptions.created_at end`,
+        },
       });
     await trimDevices(userId, tx);
   });
@@ -57,7 +62,7 @@ export async function trimDevices(userId: string, q: Pick<typeof db, "execute"> 
     where ps.user_id = ${userId} and ps.id in (
       select inner_ps.id from push_subscriptions inner_ps
       where inner_ps.user_id = ${userId}
-      order by inner_ps.created_at desc, inner_ps.id desc
+      order by inner_ps.refreshed_at desc, inner_ps.id desc
       offset ${MAX_DEVICES}
     )`);
 }

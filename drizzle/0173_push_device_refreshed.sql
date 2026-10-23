@@ -1,0 +1,1 @@
+ALTER TABLE "push_subscriptions" ADD COLUMN "refreshed_at" timestamp with time zone DEFAULT now() NOT NULL;

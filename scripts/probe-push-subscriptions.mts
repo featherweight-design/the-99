@@ -52,7 +52,14 @@ async function main() {
     const [row] = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, device(1).endpoint));
     check("a re-subscribe of the same endpoint refreshes it, never adds", (await count(A)) === 1 && row?.timeZone === "Asia/Tokyo" && row?.userAgent === "refreshed");
 
+    const [before] = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, device(1).endpoint));
+    await saveDevice(A, { ...device(1), userAgent: "again" });
+    const [again] = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, device(1).endpoint));
+    check("a refresh by the same account keeps created_at (the subscription's start) and moves refreshed_at", again!.createdAt.getTime() === before!.createdAt.getTime() && again!.refreshedAt.getTime() >= before!.refreshedAt.getTime());
+    await new Promise((r) => setTimeout(r, 20));
     await saveDevice(B, device(1));
+    const [taken] = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, device(1).endpoint));
+    check("a takeover by another account restarts created_at", taken!.createdAt.getTime() > before!.createdAt.getTime());
     check("a browser signing in as another account takes its row over", (await count(A)) === 0 && (await count(B)) === 1);
 
     check("a removal only deletes the reader's own row", (await removeDevice(A, device(1).endpoint)) === false && (await count(B)) === 1);
@@ -60,7 +67,7 @@ async function main() {
 
     for (let n = 1; n <= MAX_DEVICES + 3; n++) {
       await saveDevice(A, device(n));
-      await db.update(pushSubscriptions).set({ createdAt: new Date(Date.now() - (MAX_DEVICES + 3 - n) * 60_000) }).where(eq(pushSubscriptions.endpoint, device(n).endpoint));
+      await db.update(pushSubscriptions).set({ refreshedAt: new Date(Date.now() - (MAX_DEVICES + 3 - n) * 60_000) }).where(eq(pushSubscriptions.endpoint, device(n).endpoint));
     }
     const kept = (await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, A))).map((r) => r.userAgent);
     check(`a reader keeps at most ${MAX_DEVICES}`, kept.length <= MAX_DEVICES, `${kept.length}`);
