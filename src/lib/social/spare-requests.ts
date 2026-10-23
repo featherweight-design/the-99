@@ -450,9 +450,11 @@ export function deriveMyAsks(
 /**
  * Whether the asker may ask this ask's holder for its card again now, by the write's own rule (`askRefusal`) over the
  * asker's shown asks for the card. `asks` must be read WITH `keepClearedDeclines`: a No the asker cleared still holds
- * that friend back for the cooldown. Public ids stand in for the holder, since they name one person each.
+ * that friend back for the cooldown. Public ids stand in for the holder, since they name one person each. `offered` is
+ * whether the holder offers the card to the asker NOW (`loadFriendSpares`): without it the write refuses `not-spare`.
  */
-export function canAskAgain(ask: MyAsk, asks: readonly MyAsk[], now: Date): boolean {
+export function canAskAgain(ask: MyAsk, asks: readonly MyAsk[], now: Date, offered: boolean): boolean {
+  if (!offered) return false;
   const prior: PriorAsk[] = asks.filter((m) => m.oracleId === ask.oracleId).map((m) => ({
     holderUserId: m.holder.publicId,
     status: m.state === "unavailable" || m.state === "unneeded" ? "open" : m.state,

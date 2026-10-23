@@ -1,5 +1,5 @@
 // Your requests' read (spare requests PR 3d): ONE read of the stored asks (cleared Nos inside their cooldown included,
-// for the retry rule, never returned), ONE friend-spares read for the open and declined asks' cards, the buy list only
+// for the retry rule, never returned), ONE friend-spares read for the open, expired and declined asks' cards, the buy list only
 // with an open ask, the diamond from the Friends cursor, who else has a spare after a No, and Ask again's eligibility.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -75,20 +75,21 @@ describe("loadYourRequests", () => {
     expect(m.spares).not.toHaveBeenCalled();
   });
 
-  it("reads every friend's spares ONCE for the open and declined cards together, and the buy list as stillNeeded", async () => {
+  it("reads every friend's spares ONCE for the open, expired and declined cards together, and the buy list as stillNeeded", async () => {
     m.shown.mockResolvedValue([
       stored("open", "open", { card: "sol" }),
       stored("gone", "open", { card: "bolt", holder: "Max" }),
       stored("no", "no", { card: "jace", answeredAt: ago(1) }),
+      stored("old", "expired", { card: "ring", createdAt: ago(15) }),
     ]);
     m.spares.mockResolvedValue([{ oracleId: "sol", friend: friend("Colin"), spare: 1 }]);
     m.buyRows.mockResolvedValue([{ deckId: "d1", oracleId: "bolt", quantity: 1 }]);
     const rows = await loadYourRequests("u1", ON, NOW);
     expect(m.spares).toHaveBeenCalledTimes(1);
-    expect(new Set(m.spares.mock.calls[0][1])).toEqual(new Set(["sol", "bolt", "jace"]));
+    expect(new Set(m.spares.mock.calls[0][1])).toEqual(new Set(["sol", "bolt", "jace", "ring"]));
     expect(m.buyRows).toHaveBeenCalledWith("u1", undefined, undefined, ON);
     // Colin still offers Sol but no deck buys it: unneeded. Max no longer offers Bolt: unavailable (before unneeded).
-    expect(rows.map((r) => [r.id, r.state])).toEqual([["open", "unneeded"], ["gone", "unavailable"], ["no", "no"]]);
+    expect(rows.map((r) => [r.id, r.state])).toEqual([["open", "unneeded"], ["gone", "unavailable"], ["no", "no"], ["old", "expired"]]);
   });
 
   it("marks answers newer than the Friends cursor", async () => {
@@ -113,10 +114,29 @@ describe("loadYourRequests", () => {
 
   describe("Ask again's eligibility (canAskAgain)", () => {
     const expired = (o: Parameters<typeof stored>[2] = {}) => stored("exp", "expired", { createdAt: ago(15), ...o });
+    // Colin still offers the card: the default for these cases, since Ask again needs it (the write's `not-spare`).
+    beforeEach(() => m.spares.mockResolvedValue([{ oracleId: "jace", friend: friend("Colin"), spare: 1 }]));
 
     it("is offered on an unanswered ask with nothing standing in the way", async () => {
       m.shown.mockResolvedValue([expired()]);
       expect((await loadYourRequests("u1", ON, NOW))[0].canAskAgain).toBe(true);
+    });
+
+    it("is refused once the holder no longer offers the card (used, kept back or no longer shared)", async () => {
+      m.shown.mockResolvedValue([expired()]);
+      m.spares.mockResolvedValue([{ oracleId: "jace", friend: friend("Max"), spare: 1 }]);
+      const rows = await loadYourRequests("u1", ON, NOW);
+      expect(new Set(m.spares.mock.calls[0][1])).toEqual(new Set(["jace"]));
+      expect(rows[0].canAskAgain).toBe(false);
+    });
+
+    it("reads an ask still stored open past its window as expired, offered only while the holder offers", async () => {
+      m.shown.mockResolvedValue([stored("aged", "open", { createdAt: ago(15) })]);
+      const offered = await loadYourRequests("u1", ON, NOW);
+      expect([offered[0].state, offered[0].canAskAgain]).toEqual(["expired", true]);
+      m.spares.mockResolvedValue([]);
+      const vanished = await loadYourRequests("u1", ON, NOW);
+      expect([vanished[0].state, vanished[0].canAskAgain]).toEqual(["expired", false]);
     });
 
     it("is refused while a later No from the same friend is inside the cooldown, even one the reader cleared", async () => {
