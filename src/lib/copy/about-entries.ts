@@ -1519,10 +1519,13 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Limits set the most a card can cost, which sets adds come from, and whether they come only from your Collection.',
       'Each run uses a credit.',
       'Every run is kept in History, under Tuning. Open one and its changes come back, each checked against the deck as it is now.',
+      'It aims at the deck’s focus when one is picked.',
     ],
     // History lives in the Tuning hub, which draws only with a second tool on.
     keySwitches: {
       'Every run is kept in History, under Tuning. Open one and its changes come back, each checked against the deck as it is now.': 'TUNING_HUB_ENABLED',
+      // The focus line follows the strategy ring's switch (strategy focus close-out).
+      'It aims at the deck’s focus when one is picked.': 'STRATEGY_FOCUS_ENABLED',
     },
     marksPending: true,
     since: 10,
@@ -1585,6 +1588,39 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 14,
+  },
+  {
+    id: 'deck-focus',
+    screen: 'deck',
+    view: 'analysis',
+    chapter: '04',
+    title: 'Giving a deck a focus',
+    route: '/decks',
+    opens: 'opens a deck’s Analysis tab',
+    width: 'plate',
+    // 2026-10-22 (strategy focus close-out, `design_handoff_the99_strategy_focus/about · giving a deck a focus.ts`):
+    // follows STRATEGY_FOCUS_ENABLED, so turning the ring on is what announces it. NO BUMP, as `mana-balance`: a switched
+    // entry is seen by its id, and `since` is the current version. The handoff asked for the launch-end bump; the code's
+    // rule (`ABOUT_VERSION`'s header) is that a switched entry bumps nothing, and d9 ruled to follow it.
+    switch: 'STRATEGY_FOCUS_ENABLED',
+    caption:
+      'What is this deck about? On “Analysis”, “The deck’s strategy” rings up to five strategies the list leans on more than the Commander card pool does overall: a creature type, a theme like Tokens, or a card type. Pick one as the deck’s focus, and its icon takes the middle of the ring.\n\nWith a focus picked, “Suggested changes” aims at it: most of its additions count toward the focus, and each shows the count it moves. Add one and its arc grows.',
+    // The Suggested changes paragraph and its credit line need Tuning as well: the ring needs only Analysis
+    // (review round 1).
+    captionLineSwitches: {
+      'With a focus picked, “Suggested changes” aims at it: most of its additions count toward the focus, and each shows the count it moves. Add one and its arc grows.': 'TUNING_ENABLED',
+    },
+    keySwitches: {
+      '“Suggested changes” uses a credit, as it always has.': 'TUNING_ENABLED',
+    },
+    keys: [
+      'The ring and the focus are free.',
+      '“Suggested changes” uses a credit, as it always has.',
+      '“Keep it balanced” clears the focus.',
+      'Lands aren’t counted, so a landfall deck reads its payoffs, not its lands.',
+    ],
+    marksPending: true,
+    since: 16,
   },
   {
     id: 'deck-stats',

@@ -121,6 +121,7 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * Home drew the feed. It held `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests'
  * close-out (the asks and answers drawn, its About lines shipped). `NEAR_COMBOS_ENABLED` held it from 2026-10-22 and left it with its
  * About entry (`combos-one-away`) once the deck page and card details drew it. `FRIEND_DECKS_ENABLED` left it on 2026-10-22 with its About entry (`friend-decks`).
+ * `STRATEGY_FOCUS_ENABLED` left it on 2026-10-22 with Suggested changes aiming at the focus and its About entry (`deck-focus`).
  * It holds what is listed below, each with its reason.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
@@ -129,8 +130,6 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
   PUSH_ENABLED:
     "no surface draws the push column or sends a push until Settings' push UI ships, and a send needs VAPID keys Hugh sets in Vercel (plan 2026-10-22-push.md)",
-  STRATEGY_FOCUS_ENABLED:
-    "the Analysis tab draws the strategy block and its focus pick; Suggested changes does not aim at the focus until the strategy focus line's PR 4 (handoff design_handoff_the99_strategy_focus)",
 };
 
 /**

@@ -38,6 +38,7 @@ import { homeFeedEnabled } from "../feed/flag";
 import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
+import { strategyFocusEnabled } from "../strategy/flag";
 
 /**
  * Each switch read through its feature's OWN flag function, never restated here: an About
@@ -105,6 +106,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
   // Combos one piece away (close-out): its own entry, and combo-awareness's card-details key.
   NEAR_COMBOS_ENABLED: nearCombosEnabled,
+  STRATEGY_FOCUS_ENABLED: strategyFocusEnabled,
 };
 
 /**
