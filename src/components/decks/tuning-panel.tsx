@@ -349,6 +349,9 @@ export function TuningPanel({
   useEffect(() => {
     if ((facts.focus ?? null) === shownFocus.current) return;
     shownFocus.current = facts.focus ?? null;
+    // Stale from the moment the focus moves, not from when the read lands: a press made while this read is out must
+    // re-read rather than judge the gate on the snapshot from before the focus changed (review round 2).
+    gateStaleRead.current = true;
     void (async () => {
       gateStaleRead.current = (await reread()) === null;
       setUnchangedShown(false);
@@ -402,7 +405,9 @@ export function TuningPanel({
             setLimitsError(null);
             // The fingerprint changed server-side, so a prior "unchanged" reading of this exact
             // gate no longer applies — re-read so the manifest and the gate reopen without
-            // waiting for an unrelated navigation to revalidate the page (round 1).
+            // waiting for an unrelated navigation to revalidate the page (round 1). Stale until it lands, as the
+            // focus refresh is.
+            gateStaleRead.current = true;
             gateStaleRead.current = (await reread()) === null;
             setUnchangedShown(false);
             keys.forEach((key) => failedLimitFields.current.delete(key));
@@ -521,7 +526,9 @@ export function TuningPanel({
   useEffect(() => {
     let live = true;
     // Shares `reread`'s ordering: a refresh asked while this read is out (a focus pick landing) is
-    // newer, so this older snapshot records the baseline and settles but is not drawn (review round 1).
+    // newer, so this older snapshot records the baseline and settles but is not drawn over it (review round 1). When
+    // no newer snapshot has landed (the refresh is still out, or failed), it is drawn as a fallback with the gate
+    // marked stale, so the panel is never blank and a press re-reads before trusting it (review round 2).
     const mine = ++asked.current;
     deps.read(deckId, leftReview.current ? null : reviewRunId).then(
       (next) => {
@@ -538,6 +545,10 @@ export function TuningPanel({
         if (mine === asked.current) {
           setState(next);
           stateRef.current = next;
+        } else if (stateRef.current === null) {
+          setState(next);
+          stateRef.current = next;
+          gateStaleRead.current = true;
         }
         settledRef.current?.();
       },
