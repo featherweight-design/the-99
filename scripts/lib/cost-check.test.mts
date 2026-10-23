@@ -76,6 +76,12 @@ describe("summariseNeon", () => {
     const s = summariseNeon(raw as never, new Date("2026-10-23T00:00:00Z"));
     expect(s.scratchEndpoints).toEqual([{ branch: "cost-probe", maxCu: 1 }]);
   });
+  it("fails the read when a scratch endpoint's ceiling is missing, null or not a number", () => {
+    for (const bad of [undefined, null, "x", NaN]) {
+      const raw = neonRaw({}, [{ branch_id: "br-b", autoscaling_limit_max_cu: bad }]);
+      expect(() => summariseNeon(raw as never, new Date("2026-10-23T00:00:00Z"))).toThrow(/compute ceiling/);
+    }
+  });
   it("keeps a scratch branch at 0.25 too", () => {
     const s = summariseNeon(neonRaw({}, [{ branch_id: "br-b", autoscaling_limit_max_cu: 0.25 }]) as never, new Date("2026-10-23T00:00:00Z"));
     expect(s.scratchEndpoints).toEqual([{ branch: "scratch-x", maxCu: 0.25 }]);

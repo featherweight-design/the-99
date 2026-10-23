@@ -120,7 +120,12 @@ export function summariseNeon({ project, branches, endpoints }, now) {
     // Every non-permanent branch's compute ceiling; the rule compares them with its own cap, so the cap lives in one place.
     scratchEndpoints: endpoints
       .filter((e) => e.branch_id && !PERMANENT.has(e.branch_id) && byBranch.has(e.branch_id))
-      .map((e) => ({ branch: byBranch.get(e.branch_id).name, maxCu: e.autoscaling_limit_max_cu ?? 0 })),
+      .map((e) => {
+        // A ceiling that cannot be read must fail the Neon read, not pass as 0 and report "none over".
+        const maxCu = e.autoscaling_limit_max_cu;
+        if (maxCu === null || maxCu === undefined || !Number.isFinite(Number(maxCu))) throw new Error(`the endpoint of ${byBranch.get(e.branch_id).name} has no readable compute ceiling`);
+        return { branch: byBranch.get(e.branch_id).name, maxCu: Number(maxCu) };
+      }),
     branchCount: branches.length,
   };
 }
