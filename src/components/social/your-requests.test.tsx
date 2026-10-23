@@ -42,6 +42,8 @@ describe("requestText", () => {
     const answeredAt = new Date(NOW.getTime() - 3_600_000);
     const t = requestText(req("a", "yes", { answeredAt }), NOW);
     expect([t.kind, t.title, t.detail]).toEqual(["Accepted", "Colin can spare Jace, Multiverse Architect", m.acceptedDetail]);
+    // No buy press on the rows (mark-bought off): the line points at the collection instead.
+    expect(requestText(req("a", "yes", { answeredAt }), NOW, false).detail).toBe(m.acceptedDetailNoBuy);
     expect(t.at).toBe(answeredAt);
   });
 

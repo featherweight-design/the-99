@@ -39,11 +39,11 @@ describe("the news section", () => {
 
   // Spare requests PR 3d (board `Friend-Side`, Settings): the default-on kind reads checked as it arrives, and its line
   // says it starts on; no other kind's line does.
-  it("draws Friends asking for your spares checked by default, its line saying it stays on", () => {
+  it("draws Friends asking for your spares checked by default, its line saying it starts on", () => {
     render(<NewsSection kinds={[...ALL_BUT_SPARES, { kind: "spare-request", on: true }]} />);
     expect(box("spare-request").checked).toBe(true);
     expect(screen.getByText(`${C.kinds["spare-request"].line} ${C.defaultOn}`)).toBeTruthy();
-    expect(screen.getByText("A friend asks for a card you have spare. On until you turn it off.")).toBeTruthy();
+    expect(screen.getByText("A friend asks for a card you have spare. On from the start.")).toBeTruthy();
     expect(screen.getAllByText(new RegExp(C.defaultOn))).toHaveLength(1);
   });
 

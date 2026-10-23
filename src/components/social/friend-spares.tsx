@@ -18,6 +18,8 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { InfoTip } from "../ui/info-tip";
 import { Face } from "./face";
 import { SocialToast, type SocialToastState } from "./social-toast";
+import { useGotIt } from "../decks/got-it";
+import { useCartGotIt } from "../decks/cart/cart-got-it";
 
 /** One Ask or Ask instead from the modal: the friend, the card and the copies the row is short. */
 export type AskPress = {
@@ -76,11 +78,14 @@ export function rowAsk(asks: readonly AskStateLine[], publicId: string): RowAsk 
   return { kind: "ask" };
 }
 
-/** The one sentence under the rows for the state they are in, or null (Shopping and Asker-States boards). */
-export function stateLine(rows: readonly { name: string; ask: RowAsk }[]): string | null {
+/**
+ * The one sentence under the rows for the state they are in, or null (Shopping and Asker-States boards). `canBuy`: the
+ * row has its buy press (mark-bought on, so a got-it provider is mounted); without it Accepted points at the collection.
+ */
+export function stateLine(rows: readonly { name: string; ask: RowAsk }[], canBuy: boolean): string | null {
   const instead = rows.find((r) => r.ask.kind === "askInstead");
-  if (instead && instead.ask.kind === "askInstead") return spareCopy.request.oneAtATime(instead.ask.from, instead.name);
-  if (rows.some((r) => r.ask.kind === "accepted")) return spareCopy.request.whenYours;
+  if (instead && instead.ask.kind === "askInstead") return spareCopy.request.oneAtATime(instead.ask.from);
+  if (rows.some((r) => r.ask.kind === "accepted")) return canBuy ? spareCopy.request.whenYours : spareCopy.request.whenYoursNoBuy;
   if (rows.length > 0 && rows.every((r) => r.ask.kind === "declined")) return spareCopy.request.nobodyElse;
   return null;
 }
@@ -233,7 +238,11 @@ const STATUS = "inline-flex flex-none items-center gap-[6px] whitespace-nowrap f
 function RequestSection({ spares, card, requests }: { spares: readonly FriendSpare[]; card: SectionCard; requests: RequestsCtx }) {
   const tipId = useId();
   const rows = orderSpares(spares).map((s) => ({ s, name: s.friend.displayName, ask: rowAsk(requests.asksFor(card.oracleId), s.friend.publicId) }));
-  const line = stateLine(rows);
+  // Both providers mount only with mark-bought on (the deck page's and the cart's), so either one means a buy press.
+  const deckGotIt = useGotIt();
+  const cartGotIt = useCartGotIt();
+  const canBuy = deckGotIt !== null || cartGotIt !== null;
+  const line = stateLine(rows, canBuy);
   const cardName = printedFaceName(card);
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);

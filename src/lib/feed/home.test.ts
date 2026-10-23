@@ -57,7 +57,7 @@ describe("loadHomeFeed", () => {
   it("answers the opt-in while every kind the reader can be offered is off, reading no feed", async () => {
     const q = fake({}, {});
     const feed = await loadHomeFeed("u1", ON, NOW, q);
-    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"] });
+    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], alsoOn: false });
     expect((q as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
   });
 
@@ -65,7 +65,8 @@ describe("loadHomeFeed", () => {
     const SPARE = { ...ON, SPARE_REQUESTS_ENABLED: "true" } as NodeJS.ProcessEnv;
     const empty = await loadHomeFeed("u1", SPARE, NOW, fake({}, {}));
     // The default-on kind already on is not offered: an unticked box there would save it off.
-    expect(empty).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"] });
+    // `alsoOn`: spare requests already show here, so the offer must not say nothing does.
+    expect(empty).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], alsoOn: true });
     const ask = row({ kind: "spare-request", key: "item:s", created_at: "2026-10-22T10:00:00Z", friend_public_id: "p1", friend_name: "Peter" });
     const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, { feed: [ask] }));
     expect(feed?.chosen && feed.lead?.key).toBe("item:s");

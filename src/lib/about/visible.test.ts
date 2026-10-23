@@ -699,3 +699,38 @@ describe("whats-new's line switches, in every state of the four switches they na
     }
   });
 });
+
+// Spare requests close-out: `friend-spares` says a spare is view only while requests are off; with them on it reads its
+// variant, which says how to ask and how an ask is answered, and the flip announces it.
+describe("friend-spares' requests form (SPARE_REQUESTS_ENABLED)", () => {
+  const FRIENDS = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const ASKS = { SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const drawn = (env: NodeJS.ProcessEnv) => visibleEntries(env).find((e) => e.id === "friend-spares");
+  const VIEW_ONLY = "It’s view only";
+  const ASK = "Press “Ask” beside a friend";
+
+  it("keeps view only with the switch off and reads the ask with it on", () => {
+    expect(drawn(FRIENDS)!.caption).toContain(VIEW_ONLY);
+    expect(drawn(FRIENDS)!.caption).not.toContain(ASK);
+    expect(drawn(FRIENDS)!.variantOn).toBeUndefined();
+    const on = drawn(ASKS)!;
+    expect(on.caption).toContain("drafts included. Press “Ask”");
+    expect(on.caption).not.toContain(VIEW_ONLY);
+    expect(on.variantOn).toBe("SPARE_REQUESTS_ENABLED");
+    // SPARE_REQUESTS_ENABLED needs its parent: alone the entry does not draw at all.
+    expect(drawn({ SPARE_REQUESTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeUndefined();
+  });
+
+  it("keeps the entry's key switches in its requests form", () => {
+    const keys = drawn(ASKS)!.keys;
+    expect(keys).not.toContain("The same mark shows on the cart for all your decks.");
+    expect(drawn({ ...ASKS, ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!.keys)
+      .toContain("The same mark shows on the cart for all your decks.");
+  });
+
+  it("is announced on the flip, with no version bump, to a reader who met the view-only form", () => {
+    const met = seen(ABOUT_VERSION, switchedIds(visibleEntries(FRIENDS)));
+    expect(unseenEntries(visibleEntries(FRIENDS), met)).toEqual([]);
+    expect(unseenEntries(visibleEntries(ASKS), met).map((e) => e.id)).toContain("friend-spares");
+  });
+});

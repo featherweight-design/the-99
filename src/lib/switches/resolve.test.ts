@@ -92,8 +92,8 @@ describe("All features", () => {
     expect(tuningEnabled(mine)).toBe(true);
   });
 
-  it("leaves spare requests off until their UI draws the asks and answers", () => {
-    expect(ALL_FEATURES_RAISES.has("SPARE_REQUESTS_ENABLED")).toBe(false);
+  it("raises spare requests now that their surfaces and About lines have shipped (close-out)", () => {
+    expect(ALL_FEATURES_RAISES.has("SPARE_REQUESTS_ENABLED")).toBe(true);
   });
 
   it("leaves strategy focus off until Design's handoff gives it a surface", () => {

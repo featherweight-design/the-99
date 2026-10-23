@@ -1,0 +1,18 @@
+{
+  "feature": "Spare requests: the friend row's Ask / status end is one control in the cart's By friend view and Your requests (the modal defines it)",
+  "note": "Import equality only (pnpm check:shared): the photographed rows are in spare-requests.json. The friend row's Ask / status element on the cart's By friend view and Your requests is one control; the Shopping modal defines it, so it cannot be listed as an importer.",
+  "shares": {
+    "module": "src/components/social/friend-spares.tsx",
+    "binding": "RowEnd"
+  },
+  "rows": [
+    {
+      "id": "cart-by-friend",
+      "view": "src/components/decks/cart/cart-by-friend.tsx"
+    },
+    {
+      "id": "friends-your-requests",
+      "view": "src/components/social/your-requests.tsx"
+    }
+  ]
+}

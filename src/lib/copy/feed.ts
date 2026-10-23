@@ -16,7 +16,7 @@ export const feedCopy = {
       combo: { name: "Combos you can make", line: "You now own both halves of a two-card combo." },
     } satisfies Record<FeedKind, { name: string; line: string }>,
     /** After a default-on kind's line (spare requests, board `Friend-Side`): it starts checked and stays so. */
-    defaultOn: "On until you turn it off.",
+    defaultOn: "On from the start.",
     /** The mono foot under the checkboxes. */
     foot: "In the app only: a count on Home and the list. No email, ever.",
     failed: "We couldn’t save that. Try again.", // toast, role alert
@@ -45,6 +45,8 @@ export const feedCopy = {
     optIn: {
       title: "Choose what shows here",
       line: "Pick what you want to hear about. Nothing shows until you do, and you can change it in Settings.",
+      /** The same offer once a default-on kind (spare requests) is on: something already shows here. */
+      lineAlsoOn: "Pick what else you want to hear about. You can change it in Settings.",
       save: "Show these",
       foot: "In the app only. No email, ever.",
     },
