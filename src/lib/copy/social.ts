@@ -376,6 +376,8 @@ export const spareCopy = {
     /** The one state sentence under the rows, for the state the rows are in. */
     oneAtATime: (from: string, to: string) => `One request at a time. Ask instead moves it from ${from} to ${to}.`,
     whenYours: "When it’s yours, press buy on the row.",
+    /** `whenYours` where the row has no buy press (`SHOPPING_MARK_BOUGHT_ENABLED` off): the collection takes it by hand. */
+    whenYoursNoBuy: "When it’s yours, add it to your collection.",
     nobodyElse: "Nobody else you know has a spare.",
     /** The shared toast on a failed Ask, Ask instead, Ask again, Yes, No or ✕ (G5); the row is left as it was. */
     failed: "We couldn’t send that. Try again.",

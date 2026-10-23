@@ -14,6 +14,12 @@ import { cardMark, rowAsk, SpareRequestsContext, stateLine } from "./friend-spar
 
 const actions = vi.hoisted(() => ({ askSpareAction: vi.fn(), askInsteadAction: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => actions);
+// A got-it provider is mounted only with mark-bought on: the Accepted line names the row's buy press only then.
+const gotIt = vi.hoisted(() => ({ on: true }));
+vi.mock("../decks/got-it", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../decks/got-it")>()),
+  useGotIt: () => (gotIt.on ? {} : null),
+}));
 
 const r = spareCopy.request;
 const asOf = new Date("2026-10-20T00:00:00Z");
@@ -42,6 +48,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  gotIt.on = true;
 });
 
 function Press({ c = JACE }: { c?: DeckDetailCard }) {
@@ -98,6 +105,14 @@ describe("the friend row's right element", () => {
     expect(within(row).getByTestId("friend-spare-status").textContent).toContain(r.accepted);
     expect(within(row).queryByRole("button")).toBeNull();
     expect(d.getByTestId("friend-spares-line").textContent).toBe(r.whenYours);
+  });
+
+  it("points Accepted at the collection when the row has no buy press (mark-bought off)", async () => {
+    gotIt.on = false;
+    served = { spares: [spare("Peter", 2)], asks: [ask("Peter", "yes", { answeredAt: "2026-10-19T00:00:00Z" })] };
+    await mount(<Press />);
+    const d = await openModal();
+    expect(d.getByTestId("friend-spares-line").textContent).toBe(r.whenYoursNoBuy);
   });
 
   it("reads Declined with no Ask inside the cooldown, and says nobody else has one when nobody does", async () => {
@@ -350,6 +365,6 @@ describe("the rules the rows draw from", () => {
   });
 
   it("stateLine: says nothing while a decline leaves others to ask", () => {
-    expect(stateLine([{ name: "Chris", ask: { kind: "declined" } }, { name: "Max", ask: { kind: "ask" } }])).toBeNull();
+    expect(stateLine([{ name: "Chris", ask: { kind: "declined" } }, { name: "Max", ask: { kind: "ask" } }], true)).toBeNull();
   });
 });
