@@ -47,6 +47,7 @@ import { refundsCredit } from "../../lib/tuning/refund";
 import { retryable } from "../../lib/tuning/retry";
 import { loadOwnedCandidates } from "../../lib/tuning/owned-candidates";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
+import { loadFocusCandidates } from "../../lib/strategy/candidates";
 import { focusPack, loadAddCards, loadRunStrategy, strategyChips } from "../../lib/strategy/run";
 
 /**
@@ -293,7 +294,15 @@ export async function runTuning(
         ownedCandidates: ownedNone ? undefined : ownedCandidates,
         ownedNone,
       });
-      if (focusRun) pack.focus = focusPack(focusRun);
+      // The cards the run could add toward the focus (plan 4c), under the limits the pack states: an owned-only run
+      // with nothing owned that fits asks for cards to buy, so its candidates are buyable too.
+      if (focusRun) {
+        const candidates = await loadFocusCandidates({
+          userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
+          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits: pack.limits, focus: focusRun.key, env,
+        });
+        pack.focus = focusPack(focusRun, candidates);
+      }
       const { system, user } = buildPrompt(pack);
       // One ask, and at most one more when the first comes back with nothing to show (a degenerate answer, or
       // every suggestion dropped: model tiering saw 1 in 24 Sonnet 5.5 answers be one word of "skip"). The

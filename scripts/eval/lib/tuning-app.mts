@@ -32,6 +32,7 @@ export async function openTuning() {
   const limits = await import("../../../src/lib/tuning/limits");
   const { PROMPT_VERSION } = await import("../../../src/lib/tuning/prompt-version");
   const { focusPack, loadRunStrategy } = await import("../../../src/lib/strategy/run");
+  const { loadFocusCandidates } = await import("../../../src/lib/strategy/candidates");
   type StrategyKey = import("../../../src/lib/strategy/score").StrategyKey;
   type EvidencePack = import("../../../src/lib/tuning/evidence").EvidencePack;
   type TuningResponse = import("../../../src/lib/tuning/response-schema").TuningResponse;
@@ -87,7 +88,14 @@ export async function openTuning() {
         limits: { capCents: null, sets: [], ownedOnly: false },
       });
       const focus = focusOf?.get(deckId);
-      if (focus) pack.focus = focusPack(await loadRunStrategy(inputs.head, focus));
+      if (focus) {
+        // `EVAL_FOCUS_CANDIDATES=off` sends the focus with no candidate list: the before arm of plan 4c's eval.
+        const candidates = process.env.EVAL_FOCUS_CANDIDATES === "off" ? [] : await loadFocusCandidates({
+          userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
+          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits: pack.limits, focus, env: process.env,
+        });
+        pack.focus = focusPack(await loadRunStrategy(inputs.head, focus), candidates);
+      }
       const { pack: shown, messages } = applyVariant(variant, pack, buildPrompt, deckId);
       out.push({ deckId, pack: shown, ...messages });
     }

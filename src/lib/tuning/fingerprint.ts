@@ -77,7 +77,9 @@ export function tuningFingerprint(input: FingerprintInput): string {
       intent: input.intent ?? "",
       collection: input.collection ?? "",
       ...(input.locks && input.locks.length > 0 ? { locks: [...input.locks].sort(byteOrder) } : {}),
-      ...(input.focus ? { focus: input.focus } : {}),
+      // `focusCandidates`: a focus run's prompt carries the cards it could add toward the focus (plan 4c), so a deck
+      // with a focus reads as changed once when that list ships; a deck with none hashes exactly as before.
+      ...(input.focus ? { focus: input.focus, focusCandidates: 1 } : {}),
       limits: {
         capCents: input.limits.capCents,
         sets: [...input.limits.sets].sort(byteOrder),

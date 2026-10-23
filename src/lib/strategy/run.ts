@@ -14,6 +14,7 @@ import { strategyName } from "../copy/strategy-focus";
 import type { ProfileHead } from "../profile/load";
 import type { FocusPack } from "../tuning/evidence";
 import type { TuningCitation } from "../../db/schema";
+import type { FocusCandidate } from "./candidates";
 import { cardColumns, loadStrategyBaseline, toStrategyCard, type CardRow } from "./load";
 import { deckStrategy, onStrategy, strategyAxis, type KeyedStrategyCard, type StrategyKey } from "./score";
 
@@ -57,8 +58,8 @@ export async function loadRunStrategy(head: ProfileHead, key: StrategyKey, read:
   };
 }
 
-/** The focus as the prompt states it, from the run's strategy. */
-export function focusPack(run: RunStrategy): FocusPack {
+/** The focus as the prompt states it, from the run's strategy and the cards it could add toward it (plan 4c). */
+export function focusPack(run: RunStrategy, candidates: readonly FocusCandidate[] = []): FocusPack {
   const name = (id: string) => run.names.get(id) ?? id;
   const on = run.cards.filter((c) => onStrategy(c, run.key)).map((c) => name(c.oracleId));
   const offTop = run.top.length === 0 ? [] : run.cards
@@ -71,6 +72,7 @@ export function focusPack(run: RunStrategy): FocusPack {
     on: [...new Set(on)].sort(),
     top: run.top.map(strategyName),
     offTop: [...new Set(offTop)].sort(),
+    candidates: candidates.map((c) => ({ name: c.name, typeLine: c.typeLine, roles: c.roles })),
   };
 }
 

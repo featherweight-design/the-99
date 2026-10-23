@@ -97,18 +97,23 @@ function focusRules(focus: EvidencePack["focus"]): string[] {
   if (!focus) return [];
   return [
     `The player picked a focus for this deck, named under "${FOCUS_HEADING}". Build toward it: at least half of the additions must be cards that count toward the focus, doing what its listed cards do. The focus comes before a role count: fill a role that is only one short with a card that also counts toward the focus, or leave it for a later run.`,
+    ...(focus.candidates.length > 0 ? [`Draw the additions that count toward the focus from the list under "${CANDIDATES_HEADING}" first; a role two or more short still gets an addition that fills it, from that list when one there does.`] : []),
     ...(focus.offTop.length > 0 ? ["Prefer cuts from the cards listed as on none of the top strategies. Never cut a card listed as counting toward the focus unless a game or a note gives a reason."] : []),
     "The app shows how far each addition moves the focus, and marks each cut that is on none of the top strategies: never state either in a rationale or a citation.",
   ];
 }
 
 const FOCUS_HEADING = "The player's focus";
+const CANDIDATES_HEADING = "Cards not in the deck that count toward the focus";
 
 function focusBlock(focus: NonNullable<EvidencePack["focus"]>): string {
   return [
     `${FOCUS_HEADING}: ${focus.name}. ${focus.copies} of the ${focus.nonland} nonland cards count toward it${focus.on.length > 0 ? `: ${focus.on.join(", ")}` : ""}.`,
     ...(focus.top.length > 0 ? [`This deck's top strategies: ${focus.top.join(", ")}.`] : []),
     ...(focus.offTop.length > 0 ? [`Cards on none of them nor the focus: ${focus.offTop.join(", ")}.`] : []),
+    ...(focus.candidates.length > 0
+      ? [`${CANDIDATES_HEADING}:`, ...focus.candidates.map((c) => `- ${c.name} (${c.typeLine}${c.roles.length > 0 ? `; ${c.roles.join(", ")}` : ""})`)]
+      : []),
   ].join("\n");
 }
 
