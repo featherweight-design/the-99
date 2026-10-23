@@ -672,7 +672,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no bubble or sheet. A screen frame missing what it
   must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
   the top and its header scrolled away; the tour row on `account`; the Rule 0 row and the invite count on `friends`;
-  the balance on `credits`) is refused
+  the balance on `credits`; the push device row reading Not on yet on `settings`, which needs `PUSH_ENABLED` and a
+  throwaway VAPID pair from `pnpm push:keys` in the server's environment only, and `next start`, since the service worker
+  registers in production alone: the capture STAGES `Notification.permission` as `default`, which headless Chromium never
+  reports) is refused
   (`REQUIRED_ON_FRAME`); the tool crops and tour pictures are not checked. It refuses any database but a scratch branch (`assertScratchBranch`)
   before its first write, and writes only `clearAboutSheet`'s seen marks, put back in a `finally`, and the pending
   upload `tool-collection-sync`'s preview writes (the account's own collection, read as a file in memory so the Sync

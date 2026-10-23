@@ -21,6 +21,7 @@ export const SCREEN_NAMES: Record<AboutScreen, string> = {
   deck: 'A deck',
   friends: 'Friends',
   account: 'Account menu',
+  settings: 'Settings',
   credits: 'Credits',
 };
 
@@ -151,6 +152,7 @@ export const SCREEN_WHERE: Record<AboutScreen, string> = {
   deck: 'a deck',
   friends: '/friends',
   account: 'everywhere',
+  settings: '/settings',
   credits: '/credits',
 };
 

@@ -39,6 +39,7 @@ import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 import { strategyFocusEnabled } from "../strategy/flag";
+import { pushEnabled } from "../push/flag";
 
 /**
  * Each switch read through its feature's OWN flag function, never restated here: an About
@@ -107,6 +108,10 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Combos one piece away (close-out): its own entry, and combo-awareness's card-details key.
   NEAR_COMBOS_ENABLED: nearCombosEnabled,
   STRATEGY_FOCUS_ENABLED: strategyFocusEnabled,
+  // Push notifications (close-out): its own entry, and `whats-new`'s news key. Already needs HOME_FEED_ENABLED. The
+  // switch alone, as its flag reads it: the VAPID check (`pushAvailable`) parses keys with `node:crypto`, and this module
+  // is imported by `proxy.ts`.
+  PUSH_ENABLED: pushEnabled,
 };
 
 /**

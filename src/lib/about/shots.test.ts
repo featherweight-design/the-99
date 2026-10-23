@@ -20,15 +20,15 @@ const fileOf = (theme: string, id: string) => join(DIR, theme, `${id}.webp`);
 
 describe("the screenshot set's coverage", () => {
   it("needs a frame for every screen (each of a deck's views), a crop for every tool and the tour's three pictures", () => {
-    // Pinned, not recomputed from the same formula `REQUIRED_SHOTS` uses: 15 screens with a deck's 7 views apart (22),
+    // Pinned, not recomputed from the same formula `REQUIRED_SHOTS` uses: 16 screens with a deck's 7 views apart (23),
     // the 14 tools, the tour's 3 pictures and Home with the feed on (`home-feed`, `AboutEntry.frame`). A screen, tool or view added to its registry moves this on purpose
-    // (`credits`, the launch-end batch).
-    expect(REQUIRED_SHOTS).toHaveLength(40);
-    expect(ABOUT_SCREENS.filter((s) => s !== "deck")).toHaveLength(15);
+    // (`credits`, the launch-end batch; `settings`, the push close-out).
+    expect(REQUIRED_SHOTS).toHaveLength(41);
+    expect(ABOUT_SCREENS.filter((s) => s !== "deck")).toHaveLength(16);
     expect(DECK_VIEWS).toHaveLength(7);
     expect(TOOLS).toHaveLength(14);
     expect(TOUR_SHOTS).toHaveLength(3);
-    for (const id of ["home", "home-feed", "account", "credits", "deck-shopping", "deck-versions", "tool-matchups", "tool-lineup", "tour-decks"]) {
+    for (const id of ["home", "home-feed", "account", "settings", "credits", "deck-shopping", "deck-versions", "tool-matchups", "tool-lineup", "tour-decks"]) {
       expect(REQUIRED_SHOTS).toContain(id);
     }
     for (const t of TOOLS) expect(REQUIRED_SHOTS).toContain(toolShotId(t.id));

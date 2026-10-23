@@ -13,7 +13,8 @@
 // `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED` and `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and
 // `PAYMENTS_ENABLED` ON, so the frames show the ?, the account menu's `Take the tour` row, the pod's `Rule 0 check` row,
 // the invite count line and /credits that the launch-end entries point at (About batch, 2026-10-21), and `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to
-// `off`, so no bubble or sheet is photographed. The fixture account has decks, so its Home is the dashboard and the
+// `off`, so no bubble or sheet is photographed. The `settings` frame (push close-out) also needs a throwaway VAPID pair from
+// `pnpm push:keys` in the server's environment only, or /settings draws no push column. The fixture account has decks, so its Home is the dashboard and the
 // tour never opens on its own. A SCREEN frame missing what those switches draw is refused (`REQUIRED_ON_FRAME`; tool crops and
 // tour pictures are not checked), so a server
 // started with the old switch set cannot ship a stale set (docs/probes.md, capture:about).
@@ -253,7 +254,19 @@ function screens(f) {
     },
     // The buying-credits entry's frame (launch-end batch): drawn only with the payments line on.
     credits: { path: "/credits" },
+    // The push entry's frame (push close-out, handoff A2): What's new on Home with the push column and its device row. Drawn
+    // only with PUSH_ENABLED, HOME_FEED_ENABLED and the VAPID keys, and only where the service worker registers
+    // (`next start`); the device row reads Not on yet from the staged permission below.
+    settings: { path: "/settings", steps: deviceRead },
   };
+}
+
+/**
+ * /settings as it opens, once the push device row has read the browser (it holds its space blank while `reading`). At
+ * 390x844 What's new on Home sits high enough that the row is on the frame with the header and its ? still drawn.
+ */
+async function deviceRead(page) {
+  await page.waitForSelector(`${PAGE} [data-push-device]:not([data-push-device='reading'])`, { timeout: 15_000 });
 }
 
 /** The tour's pictures (R3 C5): the top of what opens there, as a 3:2 crop. */
@@ -505,6 +518,8 @@ const REQUIRED_ON_FRAME = {
   // The feed Home (HOME_FEED_ENABLED on, the fixture's one unseen price drop): the lead story is what `whats-new` boxes.
   "home-feed": [["[data-feed-lead]", "the lead story (HOME_FEED_ENABLED on; the fixture account's feed kinds on and one unseen item)"]],
   credits: [["[data-testid='credits-total']", "the balance on /credits (PAYMENTS_ENABLED on)"]],
+  // The push entry's device row, as Design drew it (handoff A2): Not on yet, the browser not yet asked.
+  settings: [["[data-push-device='not-on']", "the push device row reading Not on yet (PUSH_ENABLED and HOME_FEED_ENABLED on, the VAPID keys set, `next start`)"]],
 };
 
 /** True when some match of `selector` has a box inside the 390x844 frame: drawn where the photograph will see it. */
@@ -674,6 +689,12 @@ try {
     const { hostname } = new URL(BASE);
     await context.addCookies([{ name: "the99_theme", value: theme, domain: hostname, path: "/" }]);
     const page = await context.newPage();
+    // Headless Chromium reports notification permission as `denied`, never `default`, so the push device row would read
+    // Blocked. The settings frame is Design's Not on yet (handoff A2), so `Notification.permission` is STAGED as `default`,
+    // the contact sheet's `notificationPermission` (push-settings inventory). Nothing presses the push box.
+    await page.addInitScript(() => {
+      if ("Notification" in window) Object.defineProperty(Notification, "permission", { get: () => "default", configurable: true });
+    });
     await setupClerkTestingToken({ page });
     await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
     await clearAboutSheet(page, userId);

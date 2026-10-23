@@ -189,10 +189,10 @@ describe("every entry's place (discovery R2, E8)", () => {
     }
   });
 
-  it("covers all 22 places the Reference lists, so no screen is drawn empty by accident", () => {
+  it("covers all 23 places the Reference lists, so no screen is drawn empty by accident", () => {
     const places = new Set(aboutEntries.map((e) => (e.view ? `${e.screen}/${e.view}` : e.screen)));
     expect(places.size).toBe(ABOUT_SCREENS.length - 1 + DECK_VIEWS.length);
-    expect(places.size).toBe(22);
+    expect(places.size).toBe(23);
   });
 });
 

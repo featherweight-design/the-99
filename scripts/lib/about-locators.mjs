@@ -291,6 +291,10 @@ export const ABOUT_LOCATORS = {
     note: "the account menu's About The 99 row opens the page it describes",
   },
 
+  // ---- settings ------------------------------------------------------------------
+  // Push notifications (handoff A3): the device row at the top of the push column, read Not on yet on the frame.
+  push: { screen: "settings", locator: "[data-push-device]", note: "the device row, at the top of What's new on Home's push column" },
+
   // ---- credits -------------------------------------------------------------------
   "buying-credits": { screen: "credits", locator: "section:has([data-testid='credits-total'])", note: "the balance strip" },
 };

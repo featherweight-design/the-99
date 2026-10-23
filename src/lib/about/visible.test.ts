@@ -8,7 +8,7 @@ import { readSheetState } from "./sheet-state";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SEARCH_ENABLED: "true", CARD_SCAN_ENABLED: "true", FRIEND_DECKS_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", STRATEGY_FOCUS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SEARCH_ENABLED: "true", CARD_SCAN_ENABLED: "true", FRIEND_DECKS_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", STRATEGY_FOCUS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -94,6 +94,7 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
       ["notes", "DECK_NOTES_ENABLED"],
       ["buying-credits", "PAYMENTS_ENABLED"],
       ["getting-help", "HELP_PANEL_ENABLED"],
+      ["push", "PUSH_ENABLED"],
     ]);
     // Versions 12 (collection edit), 13 (evidence benchmarks) and 14 (deck printings and I got it, and later every
     // switched entry since, a way in without a collection included) added only switched entries; 16 (the launch-end
@@ -155,11 +156,11 @@ describe("an entry tied to a switch", () => {
     // bumped to 15 (#1840), and went back, since a switched entry is announced by its id.
     // The launch-end batch (2026-10-21): every switched entry it adds is since: 16, the bump's own version.
     // The menu and Home line (2026-10-22): `whats-new` is since: 16 too, with no bump of its own (a switched entry is announced by its id).
-    // Friend decks (2026-10-22): `friend-decks` is since: 16 too, no bump. So are `combos-one-away` and `deck-focus` (2026-10-22).
-    const batch = ["card-scan", "card-search", "invites", "rule-zero", "buying-credits", "getting-help", "whats-new", "friend-decks", "combos-one-away", "deck-focus"];
+    // Friend decks (2026-10-22): `friend-decks` is since: 16 too, no bump. So are `combos-one-away` and `deck-focus` (2026-10-22), and `push` (2026-10-23).
+    const batch = ["card-scan", "card-search", "invites", "rule-zero", "buying-credits", "getting-help", "whats-new", "friend-decks", "combos-one-away", "deck-focus", "push"];
     expect(launch.filter((e) => batch.includes(e.id)).map((e) => e.since)).toEqual(batch.map(() => 16));
     const later = [...batch, "suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts", "start-without-a-collection", "friends", "opponents", "wishlist", "friend-spares"];
-    const [, , , , , , , , , , suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts, startWithout, friends, opponents, wishlist, friendSpares] = later.map((id) => launch.filter((e) => e.id === id));
+    const [, , , , , , , , , , , suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts, startWithout, friends, opponents, wishlist, friendSpares] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
@@ -215,6 +216,7 @@ describe("an entry tied to a switch", () => {
       "decks-stats",
       "notes",
       "getting-help",
+      "push",
     ]);
   });
 
@@ -753,5 +755,37 @@ describe("deck-focus without Suggested changes", () => {
     const on = entry({ ...ring, TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!;
     expect(on.caption).toContain("“Suggested changes” aims at it");
     expect(on.keys).toContain("“Suggested changes” uses a credit, as it always has.");
+  });
+});
+
+describe("push (close-out): each line follows the kind's own availability (`feedKindAvailable`)", () => {
+  const env = (extra: Record<string, string>) => ({ HOME_FEED_ENABLED: "true", PUSH_ENABLED: "true", ...extra }) as unknown as NodeJS.ProcessEnv;
+  const push = (e: NodeJS.ProcessEnv) => visibleEntries(e).find((x) => x.id === "push");
+
+  it("draws only with PUSH_ENABLED, which needs Home's news", () => {
+    expect(push(env({}))).toBeDefined();
+    expect(push({ PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeUndefined();
+  });
+
+  it("names a precon only with Precons on, and a set always", () => {
+    expect(push(env({}))!.caption).toContain("- A set that just came out\n");
+    expect(push(env({ PRECONS_ENABLED: "true" }))!.caption).toContain("- A set or a precon that just came out\n");
+  });
+
+  it("names the spare-request kind, and its starting tick, only with spare requests on", () => {
+    const off = push(env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }))!;
+    expect(off.caption).not.toContain("asking for one of your spares");
+    expect(off.caption).toContain("- A friend with a spare of a card on your wishlist");
+    expect(off.keys[0]).toBe("Nothing is sent until you allow it on a device.");
+    const on = push(env({ SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" }))!;
+    expect(on.caption).toContain("- A friend asking for one of your spares");
+    expect(on.keys[0]).toBe("Only a friend asking for your spare starts ticked. Nothing is sent until you allow it on a device.");
+    expect(on.keys).toHaveLength(4);
+  });
+
+  it("swaps whats-new's news key with the switch", () => {
+    const key = (e: NodeJS.ProcessEnv) => visibleEntries(e).find((x) => x.id === "whats-new")!.keys[0];
+    expect(key({ HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toMatch(/^News stays in the app/);
+    expect(key(env({}))).toBe("News shows on Home, and as push where you turn it on. No email, ever.");
   });
 });
