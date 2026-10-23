@@ -49,7 +49,7 @@ export function PushHowSheet({ onClose }: { onClose: () => void }) {
       panelRef={panelRef}
       header={<SheetHeader title={c.title} closeLabel={c.close} onDismiss={onClose} />}
     >
-      <div className="flex flex-col px-[16px] pb-[24px]">
+      <div className="flex flex-col gap-[12px] px-[16px] pt-[14px] pb-[24px]">
         <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{c.line}</p>
         <ol className="m-0 mt-[4px] flex list-none flex-col p-0">
           {c.steps.map((step, i) => (
@@ -60,7 +60,7 @@ export function PushHowSheet({ onClose }: { onClose: () => void }) {
               <span className="text-[14px] leading-[1.5] text-[color:var(--fg)]">
                 {step.lead}
                 {step.glyph === "share" && <> <Glyph name="share" /></>}
-                {step.strong && <> <b className="font-semibold">{step.strong}</b></>}
+                {step.strong && <> <b className="font-bold">{step.strong}</b></>}
                 {step.glyph === "add" && <> <Glyph name="add" /></>}
                 {step.rest}
                 {step.small && <small className="block text-[12.5px] text-[color:var(--fg-muted)]">{step.small}</small>}
@@ -68,7 +68,7 @@ export function PushHowSheet({ onClose }: { onClose: () => void }) {
             </li>
           ))}
         </ol>
-        <p className="m-0 mt-[6px] font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot}</p>
+        <p className="m-0 font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot}</p>
       </div>
     </Sheet>,
     document.body,

@@ -41,8 +41,10 @@ export const pushSettingsCopy = {
     ],
     foot: "Needs iOS 16.4 or later.",
   },
-  /** The foot where push is possible (call 8); `feedCopy.news.foot` where it is not. `push` is drawn bold. */
+  /** The foot where push is possible (call 8); `footCant` on a device that cannot push; `feedCopy.news.foot` with push off. `push` is drawn bold. */
   foot: { home: "Home: in the app, a count on Home and the list. ", push: "Push", rest: ": only to devices you turn on, and never 9pm to 9am. No email, ever." },
+  /** The foot on a device that cannot push (board Device-States, Can't): the push clause leaves, the Home clause stays. */
+  footCant: "Home: in the app, a count on Home and the list. No email, ever.",
   /** The shared toast, for a push save or a subscribe that failed. */
   failed: feedCopy.news.failed,
 } as const;

@@ -180,13 +180,14 @@ describe("the device row's states", () => {
     expect(within(deviceRow()).getByText(P.device.title("iPhone"))).toBeTruthy();
   });
 
-  it("Can't: no column at all, the Home column and the foot as shipped", async () => {
+  it("Can't: no column at all, the Home column, and the foot without its push clause", async () => {
     deviceIs({ pushApi: false });
     await draw();
     expect(screen.queryByText(P.head)).toBeNull();
     expect(screen.queryByRole("checkbox", { name: P.kindAria("new-set") })).toBeNull();
     expect(screen.getAllByRole("checkbox")).toHaveLength(KINDS.length);
-    expect(screen.getByText(C.foot)).toBeTruthy();
+    expect(document.querySelector("section > p")!.textContent).toBe(P.footCant);
+    expect(screen.queryByText(C.foot)).toBeNull();
   });
 });
 

@@ -372,7 +372,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
             <b className="font-medium text-[color:var(--fg-muted)]">{p.foot.push}</b>
             {p.foot.rest}
           </>
-        ) : c.foot}
+        ) : push !== null && device?.state === "cant" ? p.footCant : c.foot}
       </p>
       <SocialToast toast={toast} onDone={() => setToast(null)} />
       {sheet && <PushHowSheet onClose={() => setSheet(false)} />}
