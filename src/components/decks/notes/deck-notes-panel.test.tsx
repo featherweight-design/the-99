@@ -302,18 +302,23 @@ describe("adding", () => {
     expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
   });
 
-  it("names the visible band to centre in: the visual viewport, a keyboard shrinking it", async () => {
+  it.each([
+    // Room to centre: the band is the whole visible area, the visual viewport's top to its foot.
+    { height: 900, fieldTop: 800, band: { top: 10, bottom: 910 } },
+    // A short band (a keyboard up): centred, the list's 224px would run past the foot, so the band narrows and the
+    // field sits as high as the list needs (46px field: middle at 310 - 224 - 23).
+    { height: 300, fieldTop: 280, band: { top: 10, bottom: 116 } },
+  ])("names the visible band to centre in: the visual viewport, narrowed for the list ($height tall)", async ({ height, fieldTop, band }) => {
     vi.mocked(reveal).mockClear();
-    const vv = { offsetTop: 10, height: 300, addEventListener() {}, removeEventListener() {} };
+    const vv = { offsetTop: 10, height, addEventListener() {}, removeEventListener() {} };
     Object.defineProperty(window, "visualViewport", { configurable: true, value: vv });
     try {
       mount(view([note("a", "x")]));
       const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
-      at(field, 280);
+      at(field, fieldTop);
       click(screen.getByRole("button", { name: "Insert a card tag" }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
-      const band = vi.mocked(reveal).mock.calls.at(-1)?.[3];
-      expect(band?.()).toEqual({ top: 10, bottom: 310 });
+      expect(vi.mocked(reveal).mock.calls.at(-1)?.[3]?.()).toEqual(band);
     } finally {
       Object.defineProperty(window, "visualViewport", { configurable: true, value: undefined });
     }
