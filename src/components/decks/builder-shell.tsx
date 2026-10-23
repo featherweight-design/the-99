@@ -1558,6 +1558,7 @@ export function BuilderShell({
         limits: deck.limits ?? { capCents: null, sets: [], ownedOnly: false },
         // The focus the server holds, not the press in flight: the panel re-reads its gate when it moves.
         focus: strategyFocus.settled,
+        focusRevision: strategyFocus.settledRevision,
       }}
       printedInSets={printedInSets}
       onLogGame={() => setView("games")}

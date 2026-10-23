@@ -39,4 +39,20 @@ describe("useHeldPick's settled value", () => {
     expect(result.current.value).toBe("tokens");
     expect(result.current.settled).toBe("tokens");
   });
+
+  // Review round 3: A, B, A settles on the value it started from, and a reader that took its read while the writes
+  // were queued must still be told the writes settled.
+  it("moves its revision when the newest press settles back onto the value it held", async () => {
+    const { send, sent, reply } = heldSend();
+    const { result } = renderHook(() => useHeldPick<string | null>("d1", "tokens", send));
+    const before = result.current.revision;
+    act(() => result.current.pick("lifegain"));
+    act(() => result.current.pick("tokens"));
+    await waitFor(() => expect(sent("lifegain")).toBe(true));
+    await act(async () => reply("lifegain", { ok: true, value: "lifegain" }));
+    await waitFor(() => expect(sent("tokens")).toBe(true));
+    await act(async () => reply("tokens", { ok: true, value: "tokens" }));
+    await waitFor(() => expect(result.current.revision).toBeGreaterThan(before));
+    expect(result.current.settled).toBe("tokens");
+  });
 });

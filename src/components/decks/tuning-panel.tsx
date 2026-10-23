@@ -101,6 +101,9 @@ export type TuningFacts = {
   limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
   /** The deck's strategy focus, held by the shell (`useStrategyFocus`); absent or null with none. */
   focus?: StrategyKey | null;
+  /** Moves each time the shell's focus write settles (`useHeldPick`'s `revision`), even onto the value it already
+   *  held; the panel re-reads its gate on it. Absent, the panel follows `focus` alone. */
+  focusRevision?: number;
 };
 
 /** The checklist's own vocabulary (H35, PR 3) — a row the panel already knows how to draw,
@@ -345,10 +348,13 @@ export function TuningPanel({
   // the server holds moves. Not on mount, which reads already. As the limits save does, it retires
   // an "unchanged" reading on screen, and a refresh that does not land leaves `gateStaleRead` set so
   // the next press re-reads before judging the gate (review round 1).
-  const shownFocus = useRef(facts.focus ?? null);
+  // Keyed on the revision as well as the value: an A, B, A run of picks settles back on A, and a read taken while
+  // the writes were queued may hold B's gate (review round 3).
+  const shownFocus = useRef({ key: facts.focus ?? null, revision: facts.focusRevision ?? 0 });
   useEffect(() => {
-    if ((facts.focus ?? null) === shownFocus.current) return;
-    shownFocus.current = facts.focus ?? null;
+    const now = { key: facts.focus ?? null, revision: facts.focusRevision ?? 0 };
+    if (now.key === shownFocus.current.key && now.revision === shownFocus.current.revision) return;
+    shownFocus.current = now;
     // Stale from the moment the focus moves, not from when the read lands: a press made while this read is out must
     // re-read rather than judge the gate on the snapshot from before the focus changed (review round 2).
     gateStaleRead.current = true;
@@ -356,7 +362,7 @@ export function TuningPanel({
       gateStaleRead.current = (await reread()) === null;
       setUnchangedShown(false);
     })();
-  }, [facts.focus, reread]);
+  }, [facts.focus, facts.focusRevision, reread]);
 
   // Debounced trailing-edge, PARTIAL and MERGED: typing the cap fires `saveLimits` on every
   // keystroke, so only the latest value within one pause reaches the server — and only the

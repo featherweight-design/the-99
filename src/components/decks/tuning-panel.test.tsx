@@ -1949,4 +1949,17 @@ describe("the strategy focus in Suggested changes", () => {
     // The press's own re-read (the third) came before the run it started.
     expect(read.mock.invocationCallOrder[2]).toBeLessThan((d.run as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]);
   });
+
+  // Review round 3: a focus write that settles back onto the value already shown (A, B, A) still re-reads the gate.
+  it("re-reads when the focus settles again on the same value", async () => {
+    const d = deps([results, moved]);
+    const at = (revision: number) => ({ ...focused, focusRevision: revision });
+    const { rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={at(1)} onLogGame={vi.fn()} deps={d} />);
+    await screen.findByRole("button", { name: copy.again });
+    const before = (d.read as ReturnType<typeof vi.fn>).mock.calls.length;
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[3]} facts={at(2)} onLogGame={vi.fn()} deps={d} />);
+    });
+    await waitFor(() => expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(before + 1));
+  });
 });
