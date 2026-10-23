@@ -151,6 +151,17 @@ describe("WaitingOnYou, spare requests", () => {
     expect(screen.getByRole("button", { name: /^Yes,/ })).toBeTruthy();
   });
 
+  it("keeps the failure toast when the last row left while its answer was out", async () => {
+    let finish: (v: { ok: false; reason: string }) => void = () => {};
+    actions.answerSpareAction.mockReturnValue(new Promise((res) => { finish = res; }));
+    const { rerender } = render(<WaitingOnYou rows={[ASK]} now={NOW} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Yes,/ })));
+    // A redraw while the answer is out drops the row (the friend's spare went), then the answer is refused.
+    rerender(<WaitingOnYou rows={[]} now={NOW} />);
+    await act(async () => finish({ ok: false, reason: "gone" }));
+    expect(screen.getByRole("alert").textContent).toContain(r.failed);
+  });
+
   it("takes one answer at a time", async () => {
     let finish: (v: { ok: true }) => void = () => {};
     actions.answerSpareAction.mockReturnValue(new Promise((res) => { finish = res; }));

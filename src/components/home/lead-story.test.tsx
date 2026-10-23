@@ -126,6 +126,22 @@ describe("LeadSlot", () => {
     expect(screen.getByRole("region").dataset.leadStory).toBe("trade-match");
   });
 
+  it.each([
+    ["refused", () => Promise.resolve({ ok: false, reason: "gone" })],
+    ["thrown", () => Promise.reject(new Error("network"))],
+  ])("keeps a %s answer's failure toast when the lead changed while it was out", async (_, outcome) => {
+    let fail: () => void = () => {};
+    actions.answerSpareAction.mockReturnValue(new Promise((res, rej) => { fail = () => void outcome().then(res, rej); }));
+    const { rerender } = render(<LeadSlot lead={LEAD} now={NOW} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Yes,/ })));
+    // The server's lead moves on, then goes, while the answer is out.
+    rerender(<LeadSlot lead={NEXT} now={NOW} />);
+    await act(async () => fail());
+    expect(screen.getByRole("alert").textContent).toContain(spareCopy.request.failed);
+    rerender(<LeadSlot lead={null} now={NOW} />);
+    expect(screen.getByRole("alert").textContent).toContain(spareCopy.request.failed);
+  });
+
   it("draws nothing with no lead", () => {
     const { container } = render(<LeadSlot lead={null} now={NOW} />);
     expect(container.querySelector("[data-lead-story]")).toBeNull();

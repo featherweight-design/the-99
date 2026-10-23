@@ -57,7 +57,8 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
   const { busy, answer, toast } = useSpareAnswer();
   // An answered ask stays out even before the action's redraw drops it from the server's rows.
   const waiting = rows.filter((row) => !receipts.has(row.key));
-  if (waiting.length === 0 && receipts.size === 0) return null;
+  // The last row can leave while its answer is out (the friend's spare went): the failure toast still shows.
+  if (waiting.length === 0 && receipts.size === 0) return toast;
   const shown = placeReceipts(waiting, receipts);
   async function press(row: SpareRequestRow, a: Answer, index: number, from: Element) {
     if (!(await answer(row.ask.id, a))) return;

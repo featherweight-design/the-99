@@ -24,7 +24,7 @@ import { feedAge } from "../../lib/feed/age";
 import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
 import { CommanderThumb } from "../ui/commander-thumb";
-import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "../social/spare-answer";
+import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, useSpareToast, type Answer, type SpareToast } from "../social/spare-answer";
 import { useHeldLead } from "./held-lead";
 
 type Face = Pick<ProfileCommander, "artCropUri"> | null;
@@ -34,13 +34,21 @@ export function LeadSlot({ lead, now, face }: { lead: FeedView | null; now: stri
   const [held, setHeld] = useState<{ item: FeedView; face: Face } | null>(null);
   // Published to What's new (`held-lead.tsx`), which draws a server lead this slot displaces as one of its rows.
   const publish = useHeldLead();
+  // The failure toast lives here, not in the story: a failed answer releases the hold, and the story that showed it may
+  // then be replaced or gone (the server's lead moved on while the answer was out).
+  const toast = useSpareToast();
   const shown = held ?? (lead ? { item: lead, face: face ?? null } : null);
-  if (!shown) return null;
+  if (!shown) return toast.node;
   const hold = (on: boolean) => {
     setHeld(on ? shown : null);
     publish?.setKey(on ? shown.item.key : null);
   };
-  return <LeadStory key={shown.item.key} item={shown.item} now={now} face={shown.face} onHold={hold} />;
+  return (
+    <>
+      <LeadStory key={shown.item.key} item={shown.item} now={now} face={shown.face} onHold={hold} toast={toast} />
+      {toast.node}
+    </>
+  );
 }
 
 export function LeadStory({
@@ -49,6 +57,7 @@ export function LeadStory({
   face,
   className = "",
   onHold,
+  toast: shared,
 }: {
   item: FeedView;
   now: string;
@@ -56,13 +65,15 @@ export function LeadStory({
   className?: string;
   /** Called true as an answer is pressed and false when it fails, so the slot keeps this story through the redraw. */
   onHold?: (on: boolean) => void;
+  /** A toast owned by the slot, which outlives this story; without one the story keeps its own. */
+  toast?: SpareToast;
 }) {
   const feed = feedText(item);
   const ask = item.ask ?? null;
   const [answered, setAnswered] = useState<Answer | null>(null);
   const root = useRef<HTMLElement | null>(null);
   const land = useLandFocus(root);
-  const { busy, answer, toast } = useSpareAnswer();
+  const { busy, answer, toast } = useSpareAnswer(shared);
   const friend = item.friend?.displayName ?? "";
   const cardName = item.card?.name ?? "";
   const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend) : null;
@@ -136,7 +147,7 @@ export function LeadStory({
           </div>
         )}
       </div>
-      {toast}
+      {!shared && toast}
     </section>
   );
 }

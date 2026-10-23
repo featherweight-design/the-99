@@ -87,7 +87,8 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
     if (empty) toTitle();
   });
   useEffect(() => toTitle, []);
-  if (rows.length === 0) return null;
+  // The last row can leave while its press is out (expired, or its friend gone): a failure toast still shows.
+  if (rows.length === 0) return toast.node;
 
   async function close(a: YourRequest, index: number, from: Element) {
     if (busy) return;

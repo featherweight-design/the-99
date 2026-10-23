@@ -202,6 +202,16 @@ describe("YourRequests", () => {
     expect((screen.getAllByTestId("your-request-close")[0] as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it("keeps the failure toast when the last row left while its press was out", async () => {
+    let finish: (v: unknown) => void = () => {};
+    actions.askSpareAction.mockReturnValue(new Promise((res) => { finish = res; }));
+    const { rerender } = render(<YourRequests rows={[req("a", "expired")]} now={NOW} />);
+    await act(async () => fireEvent.click(screen.getByTestId("friend-spare-ask")));
+    rerender(<YourRequests rows={[]} now={NOW} />);
+    await act(async () => finish({ ok: false, reason: "asked" }));
+    expect(screen.getByRole("alert").textContent).toContain(r.failed);
+  });
+
   it.each(["✕", "Ask again"])("a failed %s: the shared toast, the row as it was, no refresh", async (which) => {
     actions.closeSpareAction.mockResolvedValue({ ok: false, reason: "gone" });
     actions.askSpareAction.mockResolvedValue({ ok: false, reason: "asked" });

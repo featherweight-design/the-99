@@ -46,6 +46,8 @@ export function useLandFocus(root: RefObject<HTMLElement | null>) {
   };
 }
 
+export type SpareToast = ReturnType<typeof useSpareToast>;
+
 /** The shared toast's state for a surface's spare writes, and the one failure line (G5). */
 export function useSpareToast() {
   const [toast, setToast] = useState<SocialToastState | null>(null);
@@ -60,9 +62,12 @@ export function useSpareToast() {
  * One answer at a time per surface: `busy` is the request being answered and with what, and `answer` resolves true once the action
  * answered ok. A thrown action (the network, a deploy) reads as a refusal: the toast, the row unchanged.
  */
-export function useSpareAnswer() {
+export function useSpareAnswer(shared?: SpareToast) {
   const [busy, setBusy] = useState<{ id: string; answer: Answer } | null>(null);
-  const toast = useSpareToast();
+  // A surface whose answering element can be swapped out mid-press (Home's lead) passes a toast owned above it, so a
+  // failure still shows after that element is gone.
+  const own = useSpareToast();
+  const toast = shared ?? own;
   async function answer(requestId: string, a: Answer): Promise<boolean> {
     if (busy) return false;
     setBusy({ id: requestId, answer: a });
