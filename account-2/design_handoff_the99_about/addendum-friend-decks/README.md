@@ -1,6 +1,6 @@
 # About · friend decks, and calls on what shipped (addendum)
 
-Account 2, 2026-10-22. Status: **R1, for Hugh's review.** Addendum to `design/design_handoff_the99_friend_decks/` (#2203,
+Account 2, 2026-10-22. Status: **R1, with call 2 at R2, for Hugh's review.** Addendum to `design/design_handoff_the99_friend_decks/` (#2203,
 READINESS G6 deferred its entry here), with calls on the shipped lines of spare requests (#2221, #2230), push (#2219) and
 menu and Home. Checked against main at `6560671`. Canvas (account 2): https://claude.ai/artifact/VGwkbjxhv51y1yMuzAYWS8
 
@@ -27,12 +27,12 @@ menu and Home. Checked against main at `6560671`. Canvas (account 2): https://cl
    set as the switch draws it (`scratch-gen/fdframes.py`), standing in for the recapture. Not picked: a friend's deck
    page as the picture, which needs a new capture screen, a friend fixture and a screen for `/friends/{publicId}/**`.
    Two shipped entries take a switched key each: `friends` key 2 and `opponents` key 3 (in the `.ts`).
-2. **Jaws' tile: redrawn as a rule.** A band never shows a card's words. It takes, in order: this printing's crop if it
-   is clean (Scryfall `full_art` false and not `borderless`, or `textless`); else the newest clean printing of the same
-   card; else the identity gradient **with the commander's full card at card shape** at the band's top right, tilted 4°
-   (B, recommended; A, the gradient alone, is what ships today). The card is for tiles (`DeckTileArt`): 150px tall in the
-   248 band, 100px in the 168 band, 46px in on the owner's tile so the ⋯ stays clear. Other `ArtWash` bands take steps 1
-   and 2 and the plain gradient. Drawn with Ghalta standing in for Jaws (canvases can't load Scryfall).
+2. **Jaws' tile: R2, cut the shark out of the poster.** R1's card on a gradient was rejected (awkward, read as broken).
+   SLD 2175's art crop is the whole poster, words included, but the poster has clean water in it. A printing whose art
+   carries the card's words gets a **crop box set by hand on its full card image** (fractions of the card); one with no
+   box yet draws the identity gradient, never the words. Two boxes for Jaws, from Hugh's image of the card: **1 · the
+   swimmer and the shark** (0.008, 0.234, 0.654, 0.551; recommended) and **2 · the jaws** (0.212, 0.460, 0.767, 0.731).
+   Pick one. Drawn at 390, 1300, the owner's /decks and the 168 band, beside the shipped fault and the fallback.
 3. **Spare requests: ratified.** The accepted tick in `var(--bg)` is dark on green in all six themes (every `--bg` is
    dark; 6.3 to 6.7:1). The ⓘ tooltip opening upward in the 640 modal. #2230's 11 shared-component differences: the
    shipped view switch, key items and buy tag win (the boards' were kit drift); the 2 spacing ones too; the phone's 25px
@@ -57,8 +57,9 @@ menu and Home. Checked against main at `6560671`. Canvas (account 2): https://cl
 - A4 · Capture: `friends` with `FRIEND_DECKS_ENABLED` on and default rules; the line is one line longer.
 - A5 · Optional: `screenForPath` maps `/friends/{publicId}/**` to `friends`, so the ? on a friend's pages finds this entry.
 - A6 · Release: `FRIEND_DECKS_ENABLED` leaves `ALL_FEATURES_EXCLUDED` with the entry.
-- J1 to J3 (Jaws-Tile board): store per printing whether its crop is clean; the tile needs the commander's `image_uri`
-  beside a null crop; a pair tries the second commander's crop before the gradient.
+- J1 to J3 (Jaws-Tile board): a `printing_art_crops` catalog table (printing id, box); a boxed band draws the full card
+  image scaled to the box, then `ArtWash`, everywhere a commander band draws; `full_art`, or `borderless` without
+  `textless`, with no box draws the gradient.
 
 ## Reading the boards
 

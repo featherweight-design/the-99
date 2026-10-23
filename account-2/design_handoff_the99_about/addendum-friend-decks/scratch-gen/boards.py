@@ -66,9 +66,9 @@ CALLS = [
      "<p>One entry, <code>friend-decks</code>, <b>Your friends’ decks</b>, on Friends, chapter 04, following <code>FRIEND_DECKS_ENABLED</code>, <code>since: 16</code> (switched, no bump). It covers the four things in one caption: a friend’s deck opens read-only (with your own dots), "
      "Settings › Your decks (both boxes, by their shipped names), Hidden from friends in the ⋯ menu, and the game log’s “A deck not listed”. The halo is the /friends privacy line, <code>[data-decks-seen]</code>. Board E1.</p>"
      "<p>Two shipped entries get a switched key each (no bump): <code>friends</code> key 2 stops saying friends never see what you own, and <code>opponents</code> key 3 names hiding beside renaming.</p>"),
-    ("2 · Jaws’ tile: a band never shows card text", "rd", "REDRAWN",
-     "<p>A printing whose art crop carries the frame’s words (full art, or borderless with text over the art) is not a crop. The band takes, in order: <b>this printing’s crop</b> if it is clean, else the <b>newest clean printing</b> of the same card, else <b>the identity gradient with the card itself at card shape</b>, tilted, at the band’s top right.</p>"
-     "<p>Jaws has only SLD 2175, so it lands on the third: its art is still there, as a card, where the words belong. Board Jaws-Tile.</p>"),
+    ("2 · Jaws’ tile: cut the shark out of the poster", "rd", "R2 · PICK ONE",
+     "<p>R1’s card on a gradient is gone. A printing whose art carries the card’s words gets a <b>crop box set on its full card image</b>; one with no box yet draws the gradient, never the words.</p>"
+     "<p>For Jaws, two boxes from the real card avoid every word: <b>1 · the swimmer and the shark</b> (recommended) and <b>2 · the jaws</b>. Board Jaws-Tile.</p>"),
     ("3 · Spare requests (#2221, #2230)", "ok", "RATIFIED",
      "<p><b>Tick in <code>var(--bg)</code>:</b> all six themes are dark, so it is a dark tick on green in each, as the board drew it (no theme draws it light). <b>Tooltip upward:</b> right for a 640 modal. <b>The 11 shared-component differences:</b> the shipped view switch, key items and buy tag win; the board’s were drift in Design’s kit. <b>Declined inside the cooldown</b> over Ask instead: right, since Ask instead would be refused. Board Calls.</p>"),
     ("4 · Push landings and seen (#2219, D4)", "ok", "RATIFIED",
@@ -84,7 +84,7 @@ CALLS = [
 def main_board():
     calls = "".join(f'<div class="note"><h4><span class="vd {k}">{v}</span>{t}</h4>{b}</div>' for t, k, v, b in CALLS)
     idx = ("<ul><li><b>E1-Friend-Decks</b>: the entry in the Reference at 1300 and 390, its picture in six themes, line switches, gaps.</li>"
-           "<li><b>Jaws-Tile</b>: call 2, the band’s rule for full-art and borderless printings, on a friend’s tile and the owner’s.</li>"
+           "<li><b>Jaws-Tile</b>: call 2 (R2), two crops cut from the real Jaws card, and the rule for full-art and borderless printings.</li>"
            "<li><b>Calls</b>: calls 3 to 6, with the accepted mark in six themes, the tooltip in the 640 modal, and the string fixes.</li></ul>")
     edits = ('<table class="tbl"><tr><th>Entry</th><th>Today</th><th>With <code>FRIEND_DECKS_ENABLED</code> on</th></tr>'
              '<tr><td><code>friends</code> key 2</td><td>Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.</td>'
@@ -103,19 +103,23 @@ def main_board():
 
 
 # ============================================================================ Jaws
-STAND = ("Ghalta, Primal Hunger", "Ghalta, Primal Hunger", "ghalta.jpg", "Complete", 99, 0, "G")
-GRAD_G = "linear-gradient(150deg, #84b277, #406f3b 58%, #264823)"   # commanderGradient(['G']), src/lib/cards/gradients.ts
+JAWS = ("Jaws, Relentless Predator", "Jaws, Relentless Predator", "jaws-rising.jpg", "Complete", 99, 0, "U")
+GRAD_U = "linear-gradient(150deg, #6a9bcb, #305c88 58%, #1c3a57)"   # commanderGradient(['U']), src/lib/cards/gradients.ts
+# Crop boxes as fractions of SLD 2175's full card image (Hugh's upload, the card at 758x1032).
+BOX = {"rising": (0.008, 0.234, 0.654, 0.551), "face": (0.212, 0.460, 0.767, 0.731)}
 
 
 def jtile(mode, narrow=False, owner=False):
-    t = F.deck_tile(STAND, narrow=narrow, owner=owner)
+    """mode: shipped (the printing's own crop, text and all) | grad (no crop: the shipped null branch) | rising | face"""
+    t = F.deck_tile(JAWS, narrow=narrow, owner=owner)
+    art = f'<img class="art" src="{img("jaws-rising.jpg")}" alt="">'
     if mode == "shipped":
-        return t
-    art = f'<img class="art" src="{img("ghalta.jpg")}" alt="">'
+        return t.replace(art, f'<img class="art" src="{img("jaws-card.jpg")}" alt="" style="object-position:center 28%">', 1)
     if mode == "grad":
-        return t.replace(art, f'<div class="grad" style="background:{GRAD_G}"></div>', 1)
-    t = t.replace('<div class="band">', f'<div class="band cardb{" ow" if owner else ""}">', 1)
-    return t.replace(art, f'<div class="grad" style="background:{GRAD_G}"></div><img class="jc new" src="{img("ghalta.jpg")}" alt="">', 1)
+        return t.replace(art, f'<div class="grad" style="background:{GRAD_U}"></div>', 1)
+    if mode == "face":
+        return t.replace(art, f'<img class="art" src="{img("jaws-face.jpg")}" alt="" style="object-position:center 40%">', 1)
+    return t.replace(art, f'<img class="art" src="{img("jaws-rising.jpg")}" alt="" style="object-position:center 35%">', 1)
 
 
 def ftab(tiles, desk_=False):
@@ -126,38 +130,47 @@ def ftab(tiles, desk_=False):
 def jaws_board():
     sai = F.deck_tile(F.COLIN[0])
     p0 = ph(ftab(f'<div style="position:relative"><span class="bad" style="right:10px;top:10px">card text in the band</span>{jtile("shipped")}</div>' + sai), "Friends", h=844)
+    p1 = ph(ftab(jtile("rising") + sai), "Friends", h=844)
+    p2 = ph(ftab(jtile("face") + sai), "Friends", h=844)
     pa = ph(ftab(jtile("grad") + sai), "Friends", h=844)
-    pb = ph(ftab(jtile("card") + sai), "Friends", h=844)
-    db = dk(ftab(jtile("card") + F.deck_tile(F.COLIN[0]) + F.deck_tile(F.COLIN[2]), True), "Friends")
+    d1 = dk(ftab(jtile("rising") + F.deck_tile(F.COLIN[0]) + F.deck_tile(F.COLIN[2]), True), "Friends")
+    d2 = dk(ftab(jtile("face") + F.deck_tile(F.COLIN[0]) + F.deck_tile(F.COLIN[2]), True), "Friends")
     own = ('<div style="padding:14px 16px 0;display:flex;align-items:baseline;justify-content:space-between"><h1 style="margin:0;font:700 22px Cinzel,serif">Decks</h1>'
            '<span style="font:11px IBM Plex Mono;color:var(--fg-faint)">3 decks</span></div>'
-           f'<div class="dts" style="padding:14px 16px 16px">{jtile("card", owner=True)}{F.deck_tile(F.MINE[0], owner=True)}</div>')
+           f'<div class="dts" style="padding:14px 16px 16px">{jtile("rising", owner=True)}{F.deck_tile(F.MINE[0], owner=True)}</div>')
     po = ph(own, "Decks", h=844)
-    narrow = (f'<div style="display:flex;gap:14px;align-items:flex-start"><div style="width:230px">{jtile("card", narrow=True)}</div>'
-              f'<div style="width:230px">{jtile("grad", narrow=True)}</div></div>')
-    order = ('<ol class="order">'
-             '<li><span><b>This printing’s crop, when it is clean.</b> Clean means Scryfall’s <code>full_art</code> is false and the border isn’t <code>borderless</code>, or the printing is <code>textless</code>. Almost every deck stops here.</span></li>'
-             '<li><span><b>Else the newest clean printing of the same card.</b> The band is the card’s art, not this copy’s: a Sol Ring band is Sol Ring whichever Sol Ring you own. Card details and the list keep your printing.</span></li>'
-             '<li><span><b>Else the identity gradient, with the card itself at card shape</b> at the band’s top right, tilted 4°, the full card image (never a crop of it). The name block stays bottom left, as on every tile. This is Jaws: SLD 2175 is its only printing.</span></li></ol>')
-    tbl = ('<table class="tbl" style="max-width:1240px"><tr><th>Where a band draws a commander</th><th>Steps 1 and 2</th><th>Step 3</th></tr>'
-           '<tr><td>/decks tile, a friend’s Decks tile (<code>DeckTileArt</code>)</td><td>yes</td><td>the card at card shape, as drawn</td></tr>'
-           '<tr><td>Deck page spine, Home’s resume and hero, Commanders rows and detail (<code>ArtWash</code>)</td><td>yes</td><td>the gradient alone (no room for a card at their heights; the shipped null branch)</td></tr></table>')
-    body = (board_head("Call 2 · Jaws, Relentless Predator’s tile", "A band never shows a card’s words; when no crop is clean, show the card",
-                       "Jaws’ only printing, SLD 2175, is borderless full art: its title, cost, type line and P/T are painted into the picture, so Scryfall’s own art crop carries them and no crop avoids them (#2220). "
-                       "<b>Drawn with Ghalta standing in for Jaws</b>: canvases can’t load Scryfall, and the design folder has no Jaws. Ghalta’s full card in the band shows the same fault: frame words across the art.")
-            + frames(frame("<b>Shipped</b> · 390 · the fault", p0, "A crop that carries the frame’s words reads as a broken image: half a title, a type line, a P/T box."),
-                     frame("<b>A</b> · 390 · gradient alone", pa, "The shipped no-art branch (G5). Clean, but the deck loses its face: a green slab beside Sai’s art."),
-                     frame("<b>B</b> · 390 · recommended", pb, "The gradient, and Jaws as a card: the words are where a card keeps them. Tilted 4°, the app’s card shadow. Same height, same name block."),
+    narrow = (f'<div style="display:flex;gap:14px;align-items:flex-start"><div style="width:230px">{jtile("rising", narrow=True)}</div>'
+              f'<div style="width:230px">{jtile("face", narrow=True)}</div></div>')
+    card = (f'<div style="display:flex;gap:28px;align-items:flex-start;max-width:1240px"><div style="position:relative;width:300px;flex:none">'
+            f'<img src="{img("jaws-card.jpg")}" alt="" style="width:300px;display:block;border-radius:12px">'
+            '<span style="position:absolute;left:3px;top:92px;width:193px;height:126px;outline:2px solid #CF8745;border-radius:3px"></span>'
+            '<span style="position:absolute;left:64px;top:190px;width:166px;height:110px;outline:2px dashed #8FA6BE;border-radius:3px"></span></div>'
+            '<div style="display:flex;flex-direction:column;gap:12px;font-size:13.5px;line-height:1.6;color:var(--fg-body)">'
+            '<p><b style="color:#CF8745">Solid: 1 · The swimmer and the shark.</b> The poster’s own story: the swimmer at the waterline, the shark rising under her. Left of the cost and type line, above the rules text. The bottom-left is open water, so the name block sits on calm blue.</p>'
+            '<p><b style="color:#8FA6BE">Dashed: 2 · The jaws.</b> Tight on the mouth, below the type line and left of the P/T. The loudest picture on any tile; the name block sits on the jaw.</p>'
+            '<p>Both are cut from the full card image, because Scryfall’s art crop of this printing is the whole poster, words included. No text survives in either box.</p></div></div>')
+    rule = ('<ol class="order">'
+            '<li><span><b>A printing whose art crop is clean draws its crop</b>, as today. Almost every deck.</span></li>'
+            '<li><span><b>A printing whose art carries the card’s words</b> (full art or borderless with text over the picture) draws a <b>crop box we set on its full card image</b>: a small catalog table of boxes, one row per such printing, written by hand. Jaws is the first row.</span></li>'
+            '<li><span><b>Such a printing with no box yet</b> draws the identity gradient (the shipped null branch), never the words. It gets a box when someone notices.</span></li></ol>')
+    body = (board_head("Call 2 · Jaws, Relentless Predator’s tile", "Cut the shark out of the poster",
+                       "Hugh’s R1 note: the card on a gradient looked awkward and broken. R2 draws from the real card (SLD 2175, Hugh’s image). Its art crop carries the title, cost, type line, P/T and rules, "
+                       "but the poster has clean water in it: two boxes avoid every word. <b>Pick one</b>, 1 recommended.", tag="R2")
+            + sec("The two boxes, on the card", "", card)
+            + frames(frame("<b>Shipped</b> · 390 · the fault", p0, "The printing’s own crop: half the title and the cost in the band."),
+                     frame("<b>1 · The swimmer and the shark</b> · 390 · recommended", p1, "Reads as Jaws at a glance, and as art, not a card. Name and colour on open water."),
+                     frame("<b>2 · The jaws</b> · 390", p2, "All teeth. Strong, but it reads as a close-up of anything with teeth."),
                      gap=40)
-            + frames(frame("<b>B</b> · 1300 · a friend’s Decks", db, "Three across; the card scales with the band (150 tall in the 248 band)."))
-            + frames(frame("<b>B</b> · 390 · the owner’s /decks", po, "The same band on your own tile, with its ⋯ in the top-right corner: the card steps left of it (46px in), so the menu stays clear."), gap=40)
-            + sec("Under the 330 floor", "The 168 band (a cell under 330) takes a 100px card, 12px in. Left B, right A.", narrow)
-            + sec("The rule, in order", "", order)
-            + sec("Where it applies", "Steps 1 and 2 are one read, wherever <code>commanderArtCropUri</code> is chosen (<code>lib/decks/read.ts</code>), so every band gets them. Step 3’s card is for tiles only.", tbl)
+            + frames(frame("<b>1</b> · 1300 · a friend’s Decks", d1, "Three across; the band is wider than the box, so cover trims a little top and bottom."))
+            + frames(frame("<b>2</b> · 1300 · a friend’s Decks", d2, "The same at 1300."))
+            + frames(frame("<b>1</b> · 390 · the owner’s /decks", po, "Your own tile, the ⋯ over the corner, as every tile."),
+                     frame("<b>Fallback</b> · 390 · no box yet", pa, "A text-over-art printing nobody has boxed yet: the gradient, never the words."), gap=40)
+            + sec("Under the 330 floor", "The 168 band. Left 1, right 2.", narrow)
+            + sec("The rule", "", rule)
             + '<div class="note" style="max-width:1240px"><h4>For engineering</h4><ul>'
-              '<li><b>J1 · Data.</b> Store per printing whether its crop is clean (<code>full_art</code>, <code>border_color</code>, <code>textless</code> from Scryfall, read at ingest). Engineering confirms SLD 2175’s flags; if a borderless printing with a clean crop exists in the catalog, step 1 keeps it.</li>'
-              '<li><b>J2 · The card.</b> Step 3 needs the commander’s full card image (<code>image_uri</code>) beside a null crop; the tile already has the identity.</li>'
-              '<li><b>J3 · Pairs.</b> A partner pair with no clean crop for the first commander tries the second’s before the gradient; step 3 draws the first commander’s card only.</li></ul></div>')
+              '<li><b>J1 · Data.</b> <code>printing_art_crops</code>: printing id, the box as fractions of the full card image (x0, y0, x1, y1). Jaws’ SLD 2175: box 1 is 0.008, 0.234, 0.654, 0.551; box 2 is 0.212, 0.460, 0.767, 0.731 (measured on the card at 758×1032). Catalog data, copied staging to production like the rest.</li>'
+              '<li><b>J2 · Drawing.</b> A boxed printing’s band draws the full card image (<code>image_uri</code>, large) scaled so the box fills the band, then <code>ArtWash</code> as usual. Everywhere a commander band draws (tiles, spines, Home, Commanders).</li>'
+              '<li><b>J3 · Which printings.</b> Scryfall’s <code>full_art</code>, or <code>border_color: borderless</code> without <code>textless</code>, marks a printing whose crop may carry words; one without a box draws the gradient. Engineering can list the commanders it hits so Design boxes the ones that matter.</li></ul></div>')
     return doc("Jaws · full-art tiles", body, 1612)
 
 
