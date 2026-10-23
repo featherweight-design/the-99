@@ -1,0 +1,82 @@
+name: Weekly cost check
+
+# READ-ONLY. Reads Vercel billing and Neon consumption (GET requests only, `scripts/cost-check.mjs`), compares
+# this week with last, writes the job summary and goes RED past a threshold (`scripts/lib/cost-thresholds.mjs`).
+# A red run also opens, or comments on, a GitHub issue labelled `cost`, because a failed scheduled run emails only
+# whoever last edited the cron line. Hugh may prefer the email alone; delete the "Open an issue" step to switch.
+#
+# DORMANT until the repository variable COST_CHECK_ENABLED is 'true', which Hugh sets after he has created the two
+# secrets himself (boards/hugh-todos.md has the steps): VERCEL_USAGE_TOKEN and NEON_API_KEY_READONLY. Neither
+# service can make a read-only key, so the script's GET-only rule (tested) is what keeps the promise.
+#
+# Neon's counters are billing-period to date, so each run uploads a snapshot artifact and the next run diffs
+# against the newest one it can download. A run with no usable snapshot says so and skips those two rules.
+on:
+  schedule:
+    # Mondays 14:23 UTC, off the hour where scheduled jobs contend.
+    - cron: '23 14 * * 1'
+  workflow_dispatch:
+
+# Read the repo and earlier runs' artifacts; write only issues.
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: cost-check
+
+jobs:
+  check:
+    if: ${{ vars.COST_CHECK_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Fetch the previous snapshot
+        # Newest completed run that still has the artifact; a red run uploads one too (always() below).
+        continue-on-error: true
+        run: |
+          mkdir -p prev out
+          for id in $(gh run list --workflow cost-check.yml --status completed --limit 10 --json databaseId -q '.[].databaseId'); do
+            if gh run download "$id" -n cost-snapshot -D prev 2>/dev/null; then echo "previous snapshot from run $id"; break; fi
+          done
+      - name: Check costs
+        id: check
+        continue-on-error: true
+        env:
+          VERCEL_USAGE_TOKEN: ${{ secrets.VERCEL_USAGE_TOKEN }}
+          NEON_API_KEY_READONLY: ${{ secrets.NEON_API_KEY_READONLY }}
+          COST_CHECK_VERCEL_TEAM_ID: ${{ vars.COST_CHECK_VERCEL_TEAM_ID || 'team_tBEQct4aCLPw5a8jbqRJbuPZ' }}
+        run: |
+          mkdir -p out
+          node scripts/cost-check.mjs --previous prev/snapshot.json --snapshot out/snapshot.json --report out/report.md
+      - name: Keep the snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cost-snapshot
+          path: out/snapshot.json
+          if-no-files-found: ignore
+          retention-days: 90
+      - name: Open an issue
+        # !cancelled(), not the implicit success(): a failed snapshot upload must not suppress the alert.
+        if: ${{ !cancelled() && steps.check.outcome == 'failure' }}
+        run: |
+          { cat out/report.md 2>/dev/null || echo "The cost check failed before it wrote a report."; echo; echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"; } > out/body.md
+          # Posting labels[] does not create a missing label, so make it first (422 when it exists: fine).
+          gh api -X POST "repos/$GITHUB_REPOSITORY/labels" -f name=cost -f color=B60205 -f description="Weekly cost check went red" > /dev/null 2>&1 || true
+          open=$(gh api "repos/$GITHUB_REPOSITORY/issues?labels=cost&state=open" -q '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$open/comments" -F body=@out/body.md > /dev/null
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues" -f title="Cost check red $(date -u +%F)" -f "labels[]=cost" -F body=@out/body.md > /dev/null
+          fi
+      - name: Fail the run when a rule fired
+        if: ${{ !cancelled() && steps.check.outcome == 'failure' }}
+        run: exit 1
