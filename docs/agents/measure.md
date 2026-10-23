@@ -119,3 +119,13 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   from tuned decks (medians: decks 62.6, precons 56.9, older precons 42.3, `HD Tune` decks 46.3). It now scores through the shipped
   rule (`scoredAxes` in `src/lib/strategy/score.ts`, which drops `tribal` when a creature type scores) and also prints the
   radar and the stability run that set `MIN_NONLAND`; see `docs/agents/strategy.md`.
+
+## `pnpm measure:any-cards-fill <fixture.json>`
+
+Help me choose's "Any cards" fill run on a real collection, through the real `buildFillPlan` (no budget, no bracket).
+It prints the role counts, the nonland cards by LABEL (the residual's rows are role `other` but still ramp or removal),
+the land drops, the owned cards under the 10% floor that got in, and the cards EDHREC lists at 40% or more that were
+left out. The fixture is `{ commander, rows: [[oracle id, quantity], ...] }`, pulled read-only and kept OUTSIDE the repo
+(it is a player's collection). The script seeds those rows under its own fixture account, so it runs only on a scratch
+branch made from local-dev (`assertScratchBranch` refuses production, staging and local-dev). For a before/after, run it
+from two checkouts against the same branch and fixture. First used for Any cards fill tune #2 (Szarel, 2026-10-22).

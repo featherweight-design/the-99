@@ -1354,12 +1354,32 @@ describe('"Any cards" (Help me choose): ownership alone no longer wins a role sl
   });
 
   // The residual ranked on synergy alone and bought a $40 card over owned on-theme ones.
-  it("fills the residual with on-list owned cards before any card to buy", () => {
-    const owned = c({ oracleId: "mine", name: "mine", typeLine: "Creature", oracleText: "Menace", inclusionPct: 4 });
+  it("fills the residual with played owned cards (10% or more) before any card to buy", () => {
+    const owned = c({ oracleId: "mine", name: "mine", typeLine: "Creature", oracleText: "Menace", inclusionPct: 12 });
     const buy = { ...owned, oracleId: "buy", name: "buy", owned: false, ownedQuantity: 0, inclusionPct: 30 };
     const synergyRank = new Map([["buy", 2], ["mine", 1]]);
     expect(ids(planFill([buy, owned], { ...ANY, synergyRank, slots: 1 }))).toEqual(["mine"]);
     expect(ids(planFill([buy, owned], { ...FLAT, synergyRank, slots: 1 }))).toEqual(["buy"]);
+  });
+
+  // Tune #2 (Hugh's Szarel deck, 2026-10-22): owned cards at 4.6% to 7.5% took residual slots from
+  // unowned staples at 59% to 64%. The residual now holds the role pass's 10% floor.
+  it("ranks an owned card under 10% with the cards to buy in the residual, by inclusion", () => {
+    const owned = c({ oracleId: "mine", name: "mine", typeLine: "Creature", oracleText: "Menace", inclusionPct: 4.6 });
+    const buy = { ...owned, oracleId: "buy", name: "buy", owned: false, ownedQuantity: 0, inclusionPct: 64 };
+    // Synergy favours the owned card; under Any cards the floor and inclusion decide, not synergy.
+    const synergyRank = new Map([["mine", 2], ["buy", 1]]);
+    expect(ids(planFill([owned, buy], { ...ANY, synergyRank, slots: 1 }))).toEqual(["buy"]);
+    expect(ids(planFill([owned, buy], { ...ANY, slots: 1 }))).toEqual(["buy"]);
+  });
+
+  // Under the floor the residual ranks by `byAnyCardsPreference`, never synergy: here synergy favours the buy, and
+  // only the inclusion tie-break (owned wins) gives the owned card the slot.
+  it("breaks a residual inclusion tie under the floor toward the owned card, whatever synergy says", () => {
+    const owned = c({ oracleId: "z-mine", name: "z-mine", typeLine: "Creature", oracleText: "Menace", inclusionPct: 6 });
+    const buy = { ...owned, oracleId: "a-buy", name: "a-buy", owned: false, ownedQuantity: 0, inclusionPct: 6 };
+    const synergyRank = new Map([["a-buy", 2], ["z-mine", 1]]);
+    expect(ids(planFill([buy, owned], { ...ANY, synergyRank, slots: 1 }))).toEqual(["z-mine"]);
   });
 
   it("does not put an owned card EDHREC does not list ahead of a card to buy in the residual", () => {
