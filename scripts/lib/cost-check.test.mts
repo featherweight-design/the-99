@@ -183,4 +183,3 @@ describe("fetchBranches", () => {
     await expect(fetchBranches({ token: "t", projectId: "p" })).rejects.toThrow(/stopped advancing/);
   });
 });
-});
