@@ -103,6 +103,10 @@ This file holds what a reader of the code needs and the plan's decisions in one 
 - The device row's state is `deviceState` (`src/lib/push/device.ts`, pure, facts in, state out); `readDeviceFacts`
   (`device-browser.ts`) is the one reader of `window`. No service worker registration (any non-production build, or a
   worker that is not there 3 seconds after `ready` is awaited) reads Can't, so the column never shows under `next dev`.
+  A registration whose first worker is still installing is waited for too (`subscribe` fails until it is active). The
+  section reads the device AGAIN, never prompting, when the page comes back to the foreground or the window regains focus
+  (permission allowed or revoked in the browser's or phone's settings) and when the worker becomes ready after the first
+  read gave up; a read that began before or during a subscribe or unsubscribe is dropped (`ops`).
 - The prompt is asked only from a push tick's press while permission is `default`. A kind's tick sends its save FIRST and
   then asks in the same press without awaiting the save, because awaiting a round trip spends the press's user activation.
   A visit with permission granted and a live subscription calls `subscribeDevice` once (G1's silent re-subscribe).

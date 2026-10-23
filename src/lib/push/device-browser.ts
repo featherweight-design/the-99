@@ -18,7 +18,9 @@ export async function readDeviceFacts(): Promise<{ facts: DeviceFacts; registrat
   if (pushApi) {
     try {
       registration = (await navigator.serviceWorker.getRegistration()) ?? null;
-      if (!registration) {
+      // None yet, or one whose first worker is still installing: `subscribe` would fail until it is active, so wait for
+      // `ready` (bounded; the section reads again when it does become ready).
+      if (!registration?.active) {
         registration = await Promise.race([
           navigator.serviceWorker.ready,
           new Promise<null>((done) => setTimeout(() => done(null), READY_MS)),

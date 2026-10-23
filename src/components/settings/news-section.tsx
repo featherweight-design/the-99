@@ -105,30 +105,53 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
   const pushWanted = push !== null;
   const publicKey = push?.publicKey;
 
+  // Bumped when a subscribe or unsubscribe starts and ends: a read that began before or during one is stale and dropped,
+  // so a slow read can never overwrite what a press just did.
+  const ops = useRef(0);
+
   useEffect(() => {
     if (!pushWanted || !publicKey) return;
     let live = true;
-    void readDeviceFacts().then(({ facts, registration: reg, subscription: sub }) => {
-      if (!live) return;
-      registration.current = reg;
-      subscription.current = sub;
-      const state = deviceState(facts);
-      setDevice({
-        state,
-        word: deviceWord(facts),
-        installedIphone: facts.ios !== null && facts.standalone,
-        oldIos: iosTooOld(facts),
+    let heartbeat = true;
+    const read = () => {
+      const started = ops.current;
+      void readDeviceFacts().then(({ facts, registration: reg, subscription: sub }) => {
+        if (!live || ops.current !== started) return;
+        registration.current = reg;
+        subscription.current = sub;
+        const state = deviceState(facts);
+        setDevice({
+          state,
+          word: deviceWord(facts),
+          installedIphone: facts.ios !== null && facts.standalone,
+          oldIos: iosTooOld(facts),
+        });
+        // The heartbeat (handoff G1): permission still granted and a live subscription, so re-save it, refreshing the
+        // device's zone and last seen and restoring a row the sender deleted on a 404 or 410. Never a prompt. Once a visit.
+        if (heartbeat && state === "on" && sub) {
+          heartbeat = false;
+          void subscribeDevice(devicePayload(sub.toJSON(), navigator.userAgent, timeZone())).catch(() => undefined);
+        }
+      }).catch(() => {
+        if (live && ops.current === started) setDevice({ state: "cant", word: "browser", installedIphone: false, oldIos: false });
       });
-      // The heartbeat (handoff G1): permission still granted and a live subscription, so re-save it, refreshing the
-      // device's zone and last seen and restoring a row the sender deleted on a 404 or 410. Never a prompt.
-      if (state === "on" && sub) {
-        void subscribeDevice(devicePayload(sub.toJSON(), navigator.userAgent, timeZone())).catch(() => undefined);
-      }
-    }).catch(() => {
-      if (live) setDevice({ state: "cant", word: "browser", installedIphone: false, oldIos: false });
-    });
+    };
+    read();
+    // Read again, never prompting, when what the first read saw can have changed under the page: the reader comes back
+    // from the browser's or the phone's settings (permission allowed or revoked there), or the worker the shell registers
+    // after load became ready after the first read gave up waiting for it.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") read();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", read);
+    void navigator.serviceWorker?.ready.then(() => {
+      if (live) read();
+    }).catch(() => undefined);
     return () => {
       live = false;
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", read);
     };
   }, [pushWanted, publicKey]);
 
@@ -177,6 +200,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
   async function turnOn(ask: boolean) {
     if (!push || !device) return;
     const was = device.state;
+    ops.current++;
     setDeviceBusy(true);
     try {
       if (ask) {
@@ -206,6 +230,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
       setDevice((d) => d && { ...d, state: was });
       sayFailed();
     } finally {
+      ops.current++;
       setDeviceBusy(false);
     }
   }
@@ -213,6 +238,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
   /** The device row unticked: this browser's subscription leaves, the server's row with it, and the ticks stay. */
   async function turnOff() {
     const sub = subscription.current;
+    ops.current++;
     setDeviceBusy(true);
     try {
       if (sub) {
@@ -226,6 +252,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
     } catch {
       sayFailed();
     } finally {
+      ops.current++;
       setDeviceBusy(false);
     }
   }

@@ -304,6 +304,34 @@ describe("on and off on this device", () => {
     expect(document.body.textContent).not.toContain(P.failed ?? "We couldn't save that");
   });
 
+  it("reads the device again when the reader comes back to the page (allowed in the browser's settings), never prompting", async () => {
+    deviceIs({ permission: "denied" });
+    await draw();
+    expect(deviceRow().textContent).toContain(P.device.blocked.browser.lead);
+    deviceIs({ permission: "granted", subscribed: false });
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(deviceRow().textContent).toContain(P.device.offHere);
+    expect(requestPermission).not.toHaveBeenCalled();
+  });
+
+  it("a read that started before a press finished never overwrites what the press did", async () => {
+    deviceIs({ permission: "granted", subscribed: true });
+    await draw();
+    // A slow read (the reader refocused the window) that still sees the old subscription...
+    let late!: (v: unknown) => void;
+    m.readDeviceFacts.mockImplementationOnce(() => new Promise((done) => { late = done; }));
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+    });
+    // ...while the reader unticks the row.
+    await act(async () => fireEvent.click(deviceBox()!));
+    expect(deviceRow().textContent).toContain(P.device.offHere);
+    await act(async () => late({ facts: { ...desktop, permission: "granted", subscribed: true }, registration: { pushManager: { subscribe } }, subscription: existing }));
+    expect(deviceRow().textContent).toContain(P.device.offHere);
+  });
+
   it("re-ticking Off here subscribes with no prompt", async () => {
     deviceIs({ permission: "granted" });
     await draw();
