@@ -117,10 +117,11 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * feature a reader tries), so it needs no entry here.
  *
  * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config. It held
- * `COMMANDERS_PLACE_ENABLED` and `HOME_FEED_ENABLED` on 2026-10-22 while their surfaces landed (menu and Home), and
- * is empty again now that Home draws the feed. It held `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests'
+ * `COMMANDERS_PLACE_ENABLED` and `HOME_FEED_ENABLED` on 2026-10-22 while their surfaces landed (menu and Home), until
+ * Home drew the feed. It held `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests'
  * close-out (the asks and answers drawn, its About lines shipped). `NEAR_COMBOS_ENABLED` held it from 2026-10-22 and left it with its
  * About entry (`combos-one-away`) once the deck page and card details drew it. `FRIEND_DECKS_ENABLED` left it on 2026-10-22 with its About entry (`friend-decks`).
+ * It holds what is listed below, each with its reason.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
