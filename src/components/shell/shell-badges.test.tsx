@@ -16,7 +16,8 @@ const unseenCount = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: 5 }), hasAnyDeck: async () => true }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => state.env }));
 vi.mock("../../lib/feed/read", () => ({ unseenCount }));
-const seen = vi.hoisted(() => ({ rail: undefined as unknown, tab: undefined as unknown }));
+const seen = vi.hoisted(() => ({ rail: undefined as unknown, tab: undefined as unknown, icon: undefined as unknown }));
+vi.mock("../push/app-badge", () => ({ AppBadge: (p: { badges?: unknown }) => ((seen.icon = p.badges), null) }));
 vi.mock("./nav", () => ({
   NavRail: (p: { badges?: unknown }) => ((seen.rail = p.badges), null),
   TabBar: (p: { badges?: unknown }) => ((seen.tab = p.badges), null),
@@ -32,6 +33,7 @@ async function renderShell() {
 
 afterEach(() => {
   state.env = {} as NodeJS.ProcessEnv;
+  seen.icon = undefined;
   unseenCount.mockReset();
 });
 
@@ -59,5 +61,27 @@ describe("Shell and the Home badge", () => {
     await renderShell();
     expect(seen.rail).toEqual({});
     err.mockRestore();
+  });
+});
+
+describe("Shell and the app icon's badge (push PR 5, G6)", () => {
+  const PUSH = { HOME_FEED_ENABLED: "true", PUSH_ENABLED: "true" };
+
+  it("hands the icon the bars' own counts with the switch on", async () => {
+    state.env = { ...PUSH } as unknown as NodeJS.ProcessEnv;
+    unseenCount.mockResolvedValue(3);
+    await renderShell();
+    expect(seen.icon).toEqual({ home: 3 });
+    expect(seen.icon).toBe(seen.tab);
+  });
+
+  it("mounts no badge with the switch off, or with Home's feed off (push needs it)", async () => {
+    unseenCount.mockResolvedValue(3);
+    state.env = { ...PUSH, PUSH_ENABLED: "" } as unknown as NodeJS.ProcessEnv;
+    await renderShell();
+    expect(seen.icon).toBeUndefined();
+    state.env = { PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    await renderShell();
+    expect(seen.icon).toBeUndefined();
   });
 });

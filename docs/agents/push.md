@@ -142,6 +142,33 @@ This file holds what a reader of the code needs and the plan's decisions in one 
 - Proof: `probe:push-flush` section 4g (the `pushed` flag both ways; a kicked flush sends only its reader's rows and leaves
   another's for the cron; fails with the filter removed), `kick.test.ts`, `feed-write-push.test.ts`.
 
+## Added by PR 5 (landing, badge, seen)
+
+- **Gate.** Everything here runs only with the reader's `PUSH_ENABLED` on (`pushEnabled`, decided on the server). Not
+  `pushAvailable`: Home is a cached page, and `available.ts` brings `config.ts`'s key parsing (and its catches) onto its
+  path, which `list-cache-tables.test.mts` refuses. Without the keys no push is ever sent, so a landing never arrives and
+  there is nothing to close; only the icon badge runs with the switch on and no keys. Off, Home and the shell render
+  exactly as before and no browser API is called.
+- **The landing** (`src/components/push/push-landing.tsx`, rules in `src/lib/push/landing.ts`). Home mounts `PushLanding`
+  inside the feed's `CardDetailProvider`, only when the visit marks the feed seen (the switch on and the feed read; never
+  after a failed read). On mount it reads `push-card` (exactly one, a uuid, lowercased) and `push-combo` (exactly `1`) from
+  the live address, opens that card through the feed's own opener (`useCardDetailIfAny().open(id, …, { combo: true })`,
+  the call `FeedPress` makes for a price drop or a combo), and strips both parameters, valid or not, through `mirrorUrl`
+  (with `history.state` kept). A first-run Home has no provider: it opens nothing and still strips. A landing marks nothing
+  seen (D4); Home's own `after()` does, as shipped.
+- **Closing what was delivered** (D4, G5): the same mount closes every notification the worker has shown
+  (`registration.getNotifications()`), a landing or not, since the visit marks every unseen item seen. Guarded throughout:
+  no service worker, no registration or no `getNotifications` does nothing and throws nothing.
+- **The badge** (G6, call 7; `src/components/push/app-badge.tsx`): the shell mounts `AppBadge` with the bars' own
+  `badges`, and it puts the Home slot's count AS THE BAR SHOWS IT (`useSeenBadges`, so 0 on Home and after the visit) on
+  the icon with `navigator.setAppBadge`, or `clearAppBadge` at 0. On every page, not Home alone: on Home the slot always
+  reads 0, so a Home-only badge could only ever clear. Missing or refused (a page that is not an installed app), nothing
+  happens. Apart from the landing so the shell never loads the card-detail provider. The icon keeps its last figure
+  while the app is closed: the worker does not count pushes.
+- Proof: `landing.test.ts` (hostile values), `push-landing.test.tsx`, `app-badge.test.tsx`, the mount boundaries in
+  `dashboard-feed.test.tsx`, `page.test.tsx` and `shell-badges.test.tsx`. No real-browser probe yet (the plan's
+  "presses a notification in a real browser" is owed).
+
 ## Landing contract (consumed by the landing PR)
 
 A message carries `route`, `tag` (the kind), the item `keys`, and for a price drop or combo `openCard` (an oracle id) and

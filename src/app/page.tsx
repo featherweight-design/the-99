@@ -52,6 +52,8 @@ import { after } from "next/server";
 import { homeFeedEnabled } from "../lib/feed/flag";
 import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
 import { commandersPlaceEnabled } from "../lib/commanders/place-flag";
+import { pushEnabled } from "../lib/push/flag";
+import { PushLanding } from "../components/push/push-landing";
 
 /**
  * What the signed-in Home draws, cached whole. First run draws none of the Dashboard. Both carry the reader's About
@@ -359,9 +361,14 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   }
   // Not after a failed read: the cursor would clear items that were never drawn.
   if (feedOn && !feedFailed) after(homeFeedAfter(userId, env, now));
+  // Push (plan `2026-10-22-push.md`, PR 5): with this reader's PUSH_ENABLED on (`pushEnabled`;
+  // `pushAvailable` would bring key parsing onto the cached page's path, which `list-cache-tables` refuses), a push's landing opens its card and the
+  // visit closes every delivered notification, but only when the visit marks the feed seen (not after a failed read), so
+  // a closed notification is always one whose item this visit cleared (D4).
+  const push = pushEnabled(env) && feedOn && !feedFailed;
 
   if (data.firstRun) {
-    return (
+    const firstRun = (
       <FirstRunChecklist
         addByHand={collectionEditEnabled(env)}
         about={about}
@@ -376,6 +383,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         commandersPlace={commandersPlaceEnabled(env)}
       />
     );
+    // No feed provider on a first run, so a landing opens nothing here; it still strips the address and closes what was
+    // delivered, since this visit marks the feed seen too.
+    return push ? <>{firstRun}<PushLanding /></> : firstRun;
   }
 
   // A precon pick's receipt (no-collection entry S5): read per request from the ledger, outside the cached payload,
@@ -408,6 +418,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       helpMeChoose={helpMeChooseEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
       feed={feed}
+      push={push}
       commandersPlace={commandersPlaceEnabled(env)}
       tables={homeTables}
       friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: true, invites }}

@@ -12,6 +12,7 @@ vi.mock("../cards/card-detail-provider", () => ({
   CardDetailProvider: ({ children }: { children: React.ReactNode }) => <div data-card-detail-provider>{children}</div>,
   useCardDetailIfAny: () => null,
 }));
+vi.mock("../push/push-landing", () => ({ PushLanding: () => <i data-push-landing /> }));
 import { Dashboard } from "./dashboard";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { CommanderListItem } from "../../lib/recs/recommend";
@@ -150,5 +151,18 @@ describe("Home holding an answered spare request", () => {
     const { container } = render(<Dashboard {...BASE} feed={chosen([OTHER], { lead: LEAD, unseen: 1 })} />);
     expect(container.querySelector<HTMLElement>("[data-lead-story]")!.dataset.leadStory).toBe("trade-match");
     expect(container.querySelector('[data-whats-new] [data-feed-item="trade-match"]')).toBeNull();
+  });
+});
+
+describe("a push's landing on Home (push PR 5): the boundary at the mount", () => {
+  it("mounts the landing inside the feed's card-detail provider when push is on", () => {
+    const { container } = render(<Dashboard {...BASE} feed={chosen([view(1)])} push />);
+    expect(container.querySelector("[data-card-detail-provider] [data-push-landing]")).not.toBeNull();
+  });
+
+  it("mounts nothing with push off, or with no feed", () => {
+    expect(render(<Dashboard {...BASE} feed={chosen([view(1)])} />).container.querySelector("[data-push-landing]")).toBeNull();
+    expect(render(<Dashboard {...BASE} feed={chosen([view(1)])} push={false} />).container.querySelector("[data-push-landing]")).toBeNull();
+    expect(render(<Dashboard {...BASE} feed={null} push />).container.querySelector("[data-push-landing]")).toBeNull();
   });
 });
