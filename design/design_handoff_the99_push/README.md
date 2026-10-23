@@ -35,7 +35,8 @@ Android shade, macOS banner) is drawn approximately and labelled so.
 5. **The notification is the feed item.** Title and body are the feed item's words; reworded only where a push stands
    alone (price drop spells was/now, combo names its kind, spare request says where to answer). App icon; the feed
    item's card at card shape where the system shows an image (Android, desktop), never an art crop. No action buttons.
-   A tap lands where the feed press lands and marks that item seen.
+   A tap lands where the feed press lands. Only Home and /friends mark anything seen, by their cursors; opening Home
+   closes every delivered notification (corrected by `design_handoff_the99_about/addendum-friend-decks`, call 4).
 6. **Delivery: A (Hugh’s ruling, 2026-10-22):** send each as it happens; several of one kind from one job are one push
    landing on Home's What's new; **nothing 9pm to 9am** in the device's time zone, what waited goes at 9am one per kind.
    No quiet-hours setting (the OS's Focus / Do Not Disturb cover the rest). B (one digest a day) drawn on Delivery.
@@ -68,7 +69,8 @@ Android shade, macOS banner) is drawn approximately and labelled so.
 - **G4 · Collapse and hold.** One push per (user, kind, job run); `tag` = kind. 21:00–09:00 in the row's `time_zone` a
   push waits; at 09:00 the waiting ones go, one per kind. Spare requests never collapse; they still wait for 09:00.
 - **G5 · Landing and seen.** Payload carries route and feed item key; the worker focuses or opens a window at the route;
-  the page marks that key seen. Opening Home closes delivered notifications for items it marks seen.
+  the landing marks nothing itself: seen is a cursor that only Home and /friends move (as shipped, #2219). Opening Home
+  closes every delivered notification.
 - **G6 · Foreground and badge.** Skip `showNotification` with a focused client. Installed apps `setAppBadge(unseen)`.
 - **G7 · Sign out** deletes this device's subscription.
 - **G8 · Switch** `PUSH_ENABLED`. Off: no column, no device row, no sends, today's foot.

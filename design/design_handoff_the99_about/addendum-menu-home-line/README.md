@@ -39,7 +39,8 @@ Checked against main at `653499e`. Canvas (account 2): https://claude.ai/artifac
    This addendum supersedes that line in the bracket-reach `aboutCredits` string.
 
 Also seen and left as built (not in Hugh's list): the pass sheet's desktop modal is centred (#2188); a friend's deck
-status uses `friendPillStyle` over the shipped `statusPillStyle` (#2193).
+status uses `friendPillStyle` over the shipped `statusPillStyle` (#2193). That pill draws only with `FRIEND_DECKS_ENABLED`
+off; with it on, a friend's tile shows the card count alone (#2220; corrected by `addendum-friend-decks`).
 
 ## Gaps
 
