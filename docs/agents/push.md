@@ -109,7 +109,9 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   read gave up; a read that began before or during a subscribe or unsubscribe is dropped (`ops`).
 - The prompt is asked only from a push tick's press while permission is `default`. A kind's tick sends its save FIRST and
   then asks in the same press without awaiting the save, because awaiting a round trip spends the press's user activation.
-  A visit with permission granted and a live subscription calls `subscribeDevice` once (G1's silent re-subscribe).
+  G1's silent re-subscribe runs on EVERY page load, not only Settings (`PushHeartbeat`, mounted by the shell while the
+  reader's switch is on): permission granted and a live subscription calls `subscribeDevice` once, so the device's time zone,
+  which its held hours follow, stays current when the reader travels. Never a prompt.
 
 ## Decisions the plan fixed (D1 to D5)
 

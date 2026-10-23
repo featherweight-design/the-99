@@ -353,18 +353,9 @@ describe("on and off on this device", () => {
   });
 });
 
-describe("the heartbeat", () => {
-  it("a visit with permission granted and a live subscription re-saves it once, with no prompt", async () => {
+describe("the heartbeat lives in the shell now (PushHeartbeat)", () => {
+  it("Settings never re-saves the subscription itself", async () => {
     deviceIs({ permission: "granted", subscribed: true });
-    await draw();
-    expect(m.subscribeDevice).toHaveBeenCalledTimes(1);
-    expect(m.subscribeDevice).toHaveBeenCalledWith(expect.objectContaining({ endpoint: SUB_JSON.endpoint, timeZone: expect.any(String) }));
-    expect(requestPermission).not.toHaveBeenCalled();
-    expect(subscribe).not.toHaveBeenCalled();
-  });
-
-  it("no subscription, no heartbeat", async () => {
-    deviceIs({ permission: "granted" });
     await draw();
     expect(m.subscribeDevice).not.toHaveBeenCalled();
   });

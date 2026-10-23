@@ -21,7 +21,7 @@ import { feedCopy } from "../../lib/copy/feed";
 import { pushSettingsCopy, type DeviceWord } from "../../lib/copy/push-settings";
 import { DEFAULT_ON_KINDS, type FeedKind } from "../../lib/feed/kinds";
 import type { NewsSetting } from "../../lib/feed/prefs";
-import { applicationServerKey, devicePayload, deviceState, deviceWord, iosTooOld, type DeviceState } from "../../lib/push/device";
+import { applicationServerKey, devicePayload, deviceState, deviceTimeZone, deviceWord, iosTooOld, type DeviceState } from "../../lib/push/device";
 import { readDeviceFacts } from "../../lib/push/device-browser";
 import { SECTION_HEAD } from "../social/friends-list";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
@@ -44,14 +44,6 @@ const NAME = "font-sans text-[14px] font-medium text-[color:var(--fg)]";
 const LINE = "text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]";
 /** The push column's cell: its own 44px press, the box on the row's first line (the Home box's 8px pad plus its 1px nudge). */
 const PUSH_CELL = "ml-[8px] flex min-h-[44px] w-[44px] flex-none cursor-pointer justify-center pt-[9px]";
-
-const timeZone = () => {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  } catch {
-    return "UTC";
-  }
-};
 
 function Bell() {
   return (
@@ -112,7 +104,6 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
   useEffect(() => {
     if (!pushWanted || !publicKey) return;
     let live = true;
-    let heartbeat = true;
     const read = () => {
       const started = ops.current;
       void readDeviceFacts().then(({ facts, registration: reg, subscription: sub }) => {
@@ -126,12 +117,6 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
           installedIphone: facts.ios !== null && facts.standalone,
           oldIos: iosTooOld(facts),
         });
-        // The heartbeat (handoff G1): permission still granted and a live subscription, so re-save it, refreshing the
-        // device's zone and last seen and restoring a row the sender deleted on a 404 or 410. Never a prompt. Once a visit.
-        if (heartbeat && state === "on" && sub) {
-          heartbeat = false;
-          void subscribeDevice(devicePayload(sub.toJSON(), navigator.userAgent, timeZone())).catch(() => undefined);
-        }
       }).catch(() => {
         if (live && ops.current === started) setDevice({ state: "cant", word: "browser", installedIphone: false, oldIos: false });
       });
@@ -213,7 +198,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: applicationServerKey(push.publicKey) });
       let r: Awaited<ReturnType<typeof subscribeDevice>>;
       try {
-        r = await subscribeDevice(devicePayload(sub.toJSON(), navigator.userAgent, timeZone()));
+        r = await subscribeDevice(devicePayload(sub.toJSON(), navigator.userAgent, deviceTimeZone()));
       } catch (e) {
         await sub.unsubscribe().catch(() => false);
         throw e;

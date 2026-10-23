@@ -86,3 +86,12 @@ export function applicationServerKey(base64url: string): Uint8Array<ArrayBuffer>
 export function devicePayload(json: PushSubscriptionJSON, ua: string, timeZone: string) {
   return { endpoint: json.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth, userAgent: deviceLabel(ua), timeZone };
 }
+
+/** The device's IANA zone, for its held hours; UTC when the browser cannot say. */
+export function deviceTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
