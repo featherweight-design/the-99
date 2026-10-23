@@ -9,7 +9,8 @@ const REDACTED = "[redacted]";
 
 // A friend link and a join link are capabilities: whoever holds the token can use it. They travel as
 // a path segment, which a URL in a breadcrumb, a request or a transaction name would carry.
-const TOKEN_PATHS: RegExp[] = [/(\/friend\/)[^/?#]+/g, /(\/join\/)[^/?#]+/g];
+// The admin account page is addressed by a raw Clerk user id, the one route that is.
+const TOKEN_PATHS: RegExp[] = [/(\/friend\/)[^/?#]+/g, /(\/join\/)[^/?#]+/g, /(\/admin\/accounts\/)[^/?#]+/g];
 
 /** A URL or route name with the query and hash cut off and any link token replaced. */
 export function scrubUrl(value: string): string {
@@ -27,9 +28,9 @@ export function scrubBreadcrumb(crumb: Breadcrumb): Breadcrumb | null {
   for (const [key, value] of Object.entries(crumb.data ?? {})) {
     if (key === "from" || key === "to") data[key] = typeof value === "string" ? scrubUrl(value) : REDACTED;
   }
-  // A click's `message` is the element's selector, which is markup and not player text; it is kept
-  // only for a click, and a navigation has none.
-  return { category: crumb.category, level: crumb.level, timestamp: crumb.timestamp, data, ...(crumb.category === "ui.click" && { message: crumb.message }) };
+  // No `message`: a click's is the element's selector, which carries its `aria-label` and `title`, and those
+  // hold a member's name, a pod's name or a deck's name.
+  return { category: crumb.category, level: crumb.level, timestamp: crumb.timestamp, data };
 }
 
 export function scrubEvent(event: ErrorEvent): ErrorEvent {
@@ -44,6 +45,13 @@ export function scrubEvent(event: ErrorEvent): ErrorEvent {
   if (next.request) {
     // Method and the path only: no data, cookies, headers, query string or env.
     next.request = { method: next.request.method, ...(next.request.url && { url: scrubUrl(next.request.url) }) };
+  }
+  if (next.contexts?.nextjs) {
+    // `onRequestError` records the original path, query included, beside the (scrubbed) request.
+    const nextjs = Object.fromEntries(
+      Object.entries(next.contexts.nextjs).map(([k, v]) => [k, typeof v === "string" ? scrubUrl(v) : v]),
+    );
+    next.contexts = { ...next.contexts, nextjs };
   }
   if (next.exception?.values) {
     next.exception = {

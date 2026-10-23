@@ -23,6 +23,7 @@ describe("scrubEvent", () => {
     server_name: "host-1",
     extra: { body: "{}" },
     transaction: "GET /friend/tok_SECRET",
+    contexts: { nextjs: { request_path: "/friend/tok_SECRET?q=private", router_kind: "App Router", route_type: "render" } },
     request: {
       method: "POST",
       url: "https://x.dev/api/stripe-webhook?sig=1",
@@ -36,13 +37,15 @@ describe("scrubEvent", () => {
       { category: "console", message: `log ${EMAIL}` },
       { category: "fetch", data: { url: "/api/x?q=secret" } },
       { category: "navigation", data: { from: "/friend/tok_SECRET?a=1", to: "/decks" } },
+      { category: "navigation", data: { from: "/admin/accounts/user_2abcDEFghiJKL", to: "/decks" } },
+      { category: "ui.click", message: 'button[aria-label="Remove Hugh from Friday Night Pod"]' },
     ],
   } as unknown as ErrorEvent;
 
   const out = JSON.stringify(scrubEvent(event));
 
   it("carries no identity, body, header, cookie, query or message", () => {
-    for (const leak of [EMAIL, CLERK_ID, "1.2.3.4", "host-1", "customer_email", "stripe-signature", "v1=abc", "__session", "sig=1", "tok_SECRET", "Sol Ring", "q=secret", "a=1"]) {
+    for (const leak of [EMAIL, CLERK_ID, "1.2.3.4", "host-1", "customer_email", "stripe-signature", "v1=abc", "__session", "sig=1", "tok_SECRET", CLERK_ID.slice(0, 10), "Sol Ring", "q=secret", "a=1", "q=private", "Friday Night Pod", "Hugh"]) {
       expect(out, leak).not.toContain(leak);
     }
   });
@@ -52,8 +55,13 @@ describe("scrubEvent", () => {
     expect(e.exception?.values?.[0].type).toBe("Error");
     expect(e.transaction).toBe("GET /friend/[redacted]");
   });
-  it("keeps only navigation breadcrumbs, scrubbed", () => {
-    expect(scrubEvent(event).breadcrumbs).toEqual([{ category: "navigation", data: { from: "/friend/[redacted]", to: "/decks" } }]);
+  it("keeps only navigation and click breadcrumbs, scrubbed, with no click text", () => {
+    expect(scrubEvent(event).breadcrumbs).toEqual([
+      { category: "navigation", data: { from: "/friend/[redacted]", to: "/decks" } },
+      { category: "navigation", data: { from: "/admin/accounts/[redacted]", to: "/decks" } },
+      { category: "ui.click", data: {} },
+    ]);
+    expect(scrubEvent(event).contexts?.nextjs).toMatchObject({ request_path: "/friend/[redacted]", router_kind: "App Router" });
   });
 });
 
