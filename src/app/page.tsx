@@ -363,8 +363,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   if (feedOn && !feedFailed) after(homeFeedAfter(userId, env, now));
   // Push (plan `2026-10-22-push.md`, PR 5): with this reader's PUSH_ENABLED on (`pushEnabled`;
   // `pushAvailable` would bring key parsing onto the cached page's path, which `list-cache-tables` refuses), a push's landing opens its card and the
-  // visit closes every delivered notification, but only when the visit marks the feed seen (not after a failed read), so
-  // a closed notification is always one whose item this visit cleared (D4).
+  // visit closes every delivered notification (D4: opening Home closes them all), but only when the visit also marks the
+  // feed seen (not after a failed read). An item written after this request began, whose push landed before the page
+  // mounted, can be closed while still unseen: its row stays in the feed and on the badge until the next visit.
   const push = pushEnabled(env) && feedOn && !feedFailed;
 
   if (data.firstRun) {
