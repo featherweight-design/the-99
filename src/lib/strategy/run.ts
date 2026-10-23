@@ -75,7 +75,7 @@ export function focusPack(run: RunStrategy): FocusPack {
 }
 
 /** A model citation restating that a card is on none of the top strategies, which the app's own chip says. */
-const RESTATES_OFF_TOP = /\bon none of (the|its|them|the deck's) (top )?strateg/i;
+const RESTATES_OFF_TOP = /\bon none of (them|the top|its top|the deck's top|the strategies|the deck's strategies)\b/i;
 
 type Line = { addOracleId: string | null; cutOracleId: string | null; evidence: TuningCitation[] };
 

@@ -45,6 +45,13 @@ describe("strategyChips", () => {
     expect(cut.evidence.map((e) => e.value)).toEqual(["on none of the top 2", "Lost 3 of 5 games"]);
   });
 
+  it("recognises the pack's and the chip's own wordings as restatements", () => {
+    for (const value of ["Cards on none of them nor the focus", "Ponder is on none of them", "on none of the top 5 strategies", "on none of the top 2", "Ponder: on none of the top strategies"]) {
+      const [cut] = strategyChips([line(null, "c", [{ kind: "decklist", value }, { kind: "games", value: "Lost 3 of 5 games" }])], run, adds);
+      expect(cut.evidence.map((e) => e.value)).toEqual(["on none of the top 2", "Lost 3 of 5 games"]);
+    }
+  });
+
   it("adds no chip to an addition the run has no card for (a land), or a cut when nothing scores", () => {
     expect(strategyChips([line("land", null)], run, adds)[0].evidence).toHaveLength(1);
     expect(strategyChips([line(null, "c")], { ...run, top: [] }, adds)[0].evidence).toHaveLength(1);

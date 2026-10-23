@@ -106,7 +106,8 @@ export type ValidationReport = {
    *  Absent for a run persisted before this column's meaning existed, same as every other
    *  optional field here. */
   hadNotes?: boolean;
-  /** The strategy focus THIS run aimed at (`StrategyKey`), for `ReadFrom` and a History receipt. Absent with no focus. */
+  /** The strategy focus THIS run aimed at (`StrategyKey`), which the panel's `ReadFrom` names (strategy focus PR 4b).
+   *  Absent with no focus. */
   focus?: string;
   /** Every drop `validateSuggestions` produced, per candidate — the same list `chooseRefusal`
    *  reads to pick the one-line `refusal`, kept here in full rather than discarded once that

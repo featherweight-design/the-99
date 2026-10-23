@@ -82,8 +82,8 @@ With a focus set (and the switch on), a Suggested changes run reads it in `tunin
   `focus · Tokens 11 → 12`, before and after that ONE addition, never chained; a nonland cut on none of the top
   strategies nor the focus leads with `list · on none of the top N`. The model is never offered the `focus` kind and the
   validator drops it from the model (`citationHolds`).
-- **The receipt.** The run's `validation_report.focus` records what it aimed at, for `ReadFrom` and History. Still one
-  credit, one call.
+- **The receipt.** The run's `validation_report.focus` records what it aimed at; the panel's `ReadFrom` names it from
+  PR 4b. Still one credit, one call.
 - **The eval.** `pnpm eval:tuning-focus` (paid, $3 cap on `ledger-strategy-focus.jsonl`, staging read-only) runs the same
   decks with no focus and with their Nth strategy as the focus, and prints additions on the focus, off-plan cuts and
   cost per run.
