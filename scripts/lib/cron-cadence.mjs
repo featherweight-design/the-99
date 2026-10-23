@@ -27,10 +27,12 @@ export function expandField(field, [lo, hi]) {
 }
 
 /**
- * The shortest gap, in minutes, between two consecutive firings of a 5-field cron, found by walking a leap year
- * of UTC minutes
- * (2024 and 2025, not wrapped, so the December to January gap is a real one). Day-of-month and day-of-week both restricted fire on either, as in standard cron.
- * Returns Infinity for a cron that fires at most once a year.
+ * The shortest gap, in minutes, between two consecutive firings of a 5-field cron. Walks a full 400-year Gregorian
+ * cycle of UTC days (146,097, after which every weekday and date alignment repeats), so a month, day-of-month and
+ * day-of-week combination that only lines up in some years or on a leap day is still seen. Within a matching day the
+ * firings are the cross of the minute and hour sets; between matching days the gap runs from the last firing of one
+ * to the first of the next. Day-of-month and day-of-week both restricted fire on either, as in standard cron.
+ * Returns Infinity for a cron that fires at most once a cycle.
  */
 export function minGapMinutes(expr) {
   const f = expr.trim().split(/\s+/);
@@ -38,18 +40,21 @@ export function minGapMinutes(expr) {
   const [min, hour, dom, mon, dow] = f.map((x, i) => expandField(x, RANGES[i]));
   if (dow.has(7)) dow.add(0);
   const domStar = f[2] === "*", dowStar = f[4] === "*";
+  const times = [...hour].sort((a, b) => a - b).flatMap((h) => [...min].sort((a, b) => a - b).map((m) => h * 60 + m));
+  let best = Infinity;
+  for (let i = 1; i < times.length; i++) best = Math.min(best, times[i] - times[i - 1]);
   const start = Date.UTC(2024, 0, 1);
-  let prev = null, best = Infinity;
-  for (let t = 0; t < 731 * 1440; t++) {
-    const d = new Date(start + t * 60000);
-    if (!min.has(d.getUTCMinutes()) || !hour.has(d.getUTCHours()) || !mon.has(d.getUTCMonth() + 1)) continue;
-    const dayOk = domStar && dowStar ? true
+  let prevDay = null;
+  for (let day = 0; day < 146097; day++) {
+    const d = new Date(start + day * 86_400_000);
+    if (!mon.has(d.getUTCMonth() + 1)) continue;
+    const ok = domStar && dowStar ? true
       : domStar ? dow.has(d.getUTCDay())
       : dowStar ? dom.has(d.getUTCDate())
       : dom.has(d.getUTCDate()) || dow.has(d.getUTCDay());
-    if (!dayOk) continue;
-    if (prev !== null) best = Math.min(best, t - prev);
-    prev = t;
+    if (!ok) continue;
+    if (prevDay !== null) best = Math.min(best, (day - prevDay) * 1440 + times[0] - times[times.length - 1]);
+    prevDay = day;
   }
   return best;
 }
