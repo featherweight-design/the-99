@@ -45,6 +45,8 @@ export const feedCopy = {
     optIn: {
       title: "Choose what shows here",
       line: "Pick what you want to hear about. Nothing shows until you do, and you can change it in Settings.",
+      /** The same offer once a default-on kind (spare requests) is on: something already shows here. */
+      lineAlsoOn: "Pick what else you want to hear about. You can change it in Settings.",
       save: "Show these",
       foot: "In the app only. No email, ever.",
     },

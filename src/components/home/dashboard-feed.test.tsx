@@ -113,7 +113,7 @@ describe("Home, direction B", () => {
   });
 
   it("nothing chosen: no lead, the inline opt-in", () => {
-    const { container } = render(<Dashboard {...BASE} feed={{ chosen: false, offer: ["new-set", "combo"] }} />);
+    const { container } = render(<Dashboard {...BASE} feed={{ chosen: false, offer: ["new-set", "combo"], alsoOn: false }} />);
     expect(container.querySelector("[data-lead-story]")).toBeNull();
     expect(container.querySelector("[data-whats-new=opt-in]")).not.toBeNull();
     expect(screen.getAllByRole("checkbox")).toHaveLength(2);

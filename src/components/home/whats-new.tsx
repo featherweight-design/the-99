@@ -69,7 +69,7 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
       </h2>
       <div className="flex flex-col overflow-hidden rounded-[14px] [border:1px_solid_var(--border)] bg-[color:var(--surface-inset)]">
         {!chosen ? (
-          <OptIn key={feed.offer.join(",")} offer={feed.offer} />
+          <OptIn key={feed.offer.join(",")} offer={feed.offer} alsoOn={feed.alsoOn} />
         ) : feed.items.length === 0 ? (
           <Quiet on={feed.on} />
         ) : (
@@ -120,7 +120,7 @@ function Quiet({ on }: { on: FeedKind[] }) {
 }
 
 /** The inline opt-in: the kinds this reader can be offered, every box empty, and one Show these. */
-function OptIn({ offer }: { offer: FeedKind[] }) {
+function OptIn({ offer, alsoOn }: { offer: FeedKind[]; alsoOn: boolean }) {
   const router = useRouter();
   const [on, setOn] = useState<FeedKind[]>([]);
   const [busy, setBusy] = useState(false);
@@ -149,7 +149,7 @@ function OptIn({ offer }: { offer: FeedKind[] }) {
   return (
     <div data-feed-opt-in className="flex flex-col gap-[4px] p-[14px]">
       <h3 className="m-0 font-display text-[17px] font-bold text-[color:var(--fg)]">{c.optIn.title}</h3>
-      <p className="m-0 mb-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.optIn.line}</p>
+      <p className="m-0 mb-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{alsoOn ? c.optIn.lineAlsoOn : c.optIn.line}</p>
       <ul className="m-0 list-none p-0 md:grid md:grid-cols-2 md:gap-x-[24px]">
         {offer.map((kind) => {
           const k = feedCopy.news.kinds[kind];

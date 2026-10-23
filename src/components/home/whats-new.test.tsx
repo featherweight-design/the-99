@@ -9,6 +9,7 @@ vi.mock("../cards/card-detail-provider", () => ({ useCardDetailIfAny: () => null
 
 import { FEED_SHOWN, WhatsNew, feedGroups } from "./whats-new";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
+import { feedCopy } from "../../lib/copy/feed";
 
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (n: number, hoursAgo: number, o: Partial<FeedView> = {}): FeedView => ({
@@ -69,7 +70,7 @@ describe("WhatsNew, kinds on", () => {
 });
 
 describe("WhatsNew, nothing chosen: the inline opt-in", () => {
-  const offer: HomeFeed = { chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"] };
+  const offer: HomeFeed = { chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], alsoOn: false };
 
   it("draws every kind unchecked, no count and no Settings link, and Show these waits for a choice", () => {
     render(<WhatsNew feed={offer} now={NOW} />);
@@ -77,6 +78,14 @@ describe("WhatsNew, nothing chosen: the inline opt-in", () => {
     for (const box of screen.getAllByRole("checkbox")) expect(box).not.toBeChecked();
     expect(screen.queryByRole("link", { name: /Choose what shows/ })).toBeNull();
     expect(screen.getByRole("button", { name: "Show these" })).toBeDisabled();
+  });
+
+  it("says nothing shows until a choice, unless a default-on kind already shows here", () => {
+    const { rerender } = render(<WhatsNew feed={offer} now={NOW} />);
+    expect(screen.getByText(feedCopy.home.optIn.line)).toBeTruthy();
+    rerender(<WhatsNew feed={{ ...offer, alsoOn: true }} now={NOW} />);
+    expect(screen.getByText(feedCopy.home.optIn.lineAlsoOn)).toBeTruthy();
+    expect(screen.queryByText(feedCopy.home.optIn.line)).toBeNull();
   });
 
   it("saves the chosen kinds through Settings' action, then refreshes Home", async () => {
@@ -113,7 +122,7 @@ describe("WhatsNew, nothing chosen: the inline opt-in", () => {
   it("drops a selection the page no longer offers when the offer shrinks", () => {
     const { rerender } = render(<WhatsNew feed={offer} now={NOW} />);
     fireEvent.click(screen.getByRole("checkbox", { name: /Combos you can make/ }));
-    rerender(<WhatsNew feed={{ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match"] }} now={NOW} />);
+    rerender(<WhatsNew feed={{ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match"], alsoOn: false }} now={NOW} />);
     expect(screen.queryByRole("checkbox", { name: /Combos you can make/ })).toBeNull();
     // Back to the full offer: the box the reader had ticked is not ticked behind their back.
     rerender(<WhatsNew feed={offer} now={NOW} />);

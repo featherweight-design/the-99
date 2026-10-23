@@ -66,7 +66,8 @@ export type FeedView = {
 export type LeadAsk = { id: string; spare: number; copies: number; deckName: string | null; daysLeft: number };
 
 export type HomeFeed =
-  | { chosen: false; offer: FeedKind[] }
+  /** `alsoOn`: a default-on kind is on already (the reader never chose), so the offer is for what ELSE shows. */
+  | { chosen: false; offer: FeedKind[]; alsoOn: boolean }
   | { chosen: true; on: FeedKind[]; items: FeedView[]; unseen: number; lead: FeedView | null };
 
 /** One card from each new set: a mythic, then a rare, then the lowest collector number, with an image. */
@@ -234,14 +235,14 @@ export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: 
   const prefs = await readFeedPrefs(userId, q);
   const effective = effectiveKinds(prefs);
   const on = available.filter((k) => effective.includes(k));
-  if (on.length === 0) return { chosen: false, offer: available };
+  if (on.length === 0) return { chosen: false, offer: available, alsoOn: false };
   const items = await loadFeed(userId, env, now, q);
   // A reader who never chose keeps the offer until a default-on kind has something to show (an incoming ask). The
   // offer leaves out the default-on kinds already on: its boxes start empty and it saves only what it offers, so an
   // unticked default would read as turned off.
   const choseNothing = Object.keys(prefs.map).length === 0 && prefs.declined.length === 0;
   const offer = available.filter((k) => !on.includes(k));
-  if (choseNothing && items.length === 0 && offer.length > 0) return { chosen: false, offer };
+  if (choseNothing && items.length === 0 && offer.length > 0) return { chosen: false, offer, alsoOn: true };
   const views = toViews(items, await lookups(userId, items, q, env));
   const feed = splitLead(views, on);
   // Only a spare request that leads is answered on Home; its ask is read only then. The ask waits on the friend's
