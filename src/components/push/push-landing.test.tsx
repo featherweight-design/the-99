@@ -119,9 +119,11 @@ describe("closing what was delivered (D4)", () => {
     await new Promise((done) => setTimeout(done, 20));
     expect(later.getNotifications).not.toHaveBeenCalled();
     expect(later.shown[0]!.close).not.toHaveBeenCalled();
-    // A fresh visit (a new token) closes it.
-    render(<PushLanding visit={nextVisit()} />);
-    await waitFor(() => expect(later.shown[0]!.close).toHaveBeenCalledTimes(1));
+    // A fresh visit closes it, and an in-place refresh of the SAME mounted Home (a new token, no remount) does too.
+    const refreshed = render(<PushLanding visit={visit} />);
+    const third = delivered(1);
+    refreshed.rerender(<PushLanding visit={nextVisit()} />);
+    await waitFor(() => expect(third.shown[0]!.close).toHaveBeenCalledTimes(1));
   });
 
   it("does nothing and throws nothing without a service worker, a registration or getNotifications", async () => {

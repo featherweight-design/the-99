@@ -37,14 +37,15 @@ export function PushLanding({ visit }: { visit: string }) {
     const stripped = strippedLanding(window.location.href);
     if (stripped) mirrorUrl(stripped, window.history.state);
     if (landing && detail) detail.open(landing.card, undefined, undefined, landing.combo ? { combo: true } : undefined);
-    // Once per SERVER visit: a Home restored by Back (no new server read, so nothing newly marked seen) brings back the
-    // same token and closes nothing, so a notification that arrived meanwhile stays until a real visit shows its item.
-    if (!closedFor.has(visit)) {
-      closedFor.add(visit);
-      void closeDeliveredNotifications();
-    }
     // Mount only: the provider's value changes as a card opens, and the landing is spent by then.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    // Once per SERVER visit, and on every new one: a Home restored by Back (no new server read, so nothing newly marked
+    // seen) brings back the same token and closes nothing; an in-place refresh brings a new token and closes again.
+    if (closedFor.has(visit)) return;
+    closedFor.add(visit);
+    void closeDeliveredNotifications();
+  }, [visit]);
   return null;
 }
