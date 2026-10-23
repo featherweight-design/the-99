@@ -65,9 +65,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 90
       - name: Open an issue
-        if: steps.check.outcome == 'failure'
+        # !cancelled(), not the implicit success(): a failed snapshot upload must not suppress the alert.
+        if: ${{ !cancelled() && steps.check.outcome == 'failure' }}
         run: |
           { cat out/report.md 2>/dev/null || echo "The cost check failed before it wrote a report."; echo; echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"; } > out/body.md
+          # Posting labels[] does not create a missing label, so make it first (422 when it exists: fine).
+          gh api -X POST "repos/$GITHUB_REPOSITORY/labels" -f name=cost -f color=B60205 -f description="Weekly cost check went red" > /dev/null 2>&1 || true
           open=$(gh api "repos/$GITHUB_REPOSITORY/issues?labels=cost&state=open" -q '.[0].number // empty')
           if [ -n "$open" ]; then
             gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$open/comments" -F body=@out/body.md > /dev/null
@@ -75,5 +78,5 @@ jobs:
             gh api -X POST "repos/$GITHUB_REPOSITORY/issues" -f title="Cost check red $(date -u +%F)" -f "labels[]=cost" -F body=@out/body.md > /dev/null
           fi
       - name: Fail the run when a rule fired
-        if: steps.check.outcome == 'failure'
+        if: ${{ !cancelled() && steps.check.outcome == 'failure' }}
         run: exit 1
