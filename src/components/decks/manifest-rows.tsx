@@ -142,7 +142,7 @@ export function ManifestRows({
                 data-kind="read"
                 data-done={row.done || undefined}
                 data-accent={row.accent || undefined}
-                className={`flex min-h-[36px] cursor-default items-center gap-[10px] py-[8px] md:min-h-[32px] md:py-0 ${row.accent ? "my-[4px] rounded-[7px] px-[8px]" : "px-[2px]"}`}
+                className={`flex min-h-[36px] cursor-default items-center gap-[10px] py-[8px] md:min-h-[32px] md:py-0 ${row.accent ? "my-[4px] rounded-[8px] px-[12px]" : "px-[2px]"}`}
                 style={row.accent ? { border: "1px dashed var(--accent)" } : { borderBottom: "1px solid var(--border)" }}
               >
                 <Mark kind={row.done ? "read" : "pending"} />

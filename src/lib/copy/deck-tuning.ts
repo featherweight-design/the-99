@@ -116,7 +116,7 @@ export const deckTuningCopy = {
     readCollection: "your collection",
     readNoGames: "no games logged",
     /** Strategy focus: the manifest row and the read-from line's part. The name is `strategyName`'s. */
-    focus: "This deck's focus",
+    focus: "This deck\u2019s focus",
     readFocus: (name: string) => `focus ${name}`,
   },
 

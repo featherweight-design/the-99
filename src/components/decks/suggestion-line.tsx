@@ -196,7 +196,7 @@ export function SuggestionLine({
             style={{ background: "var(--surface-sunken)", border: c.kind === "focus" ? "1px dashed var(--accent)" : "1px solid var(--border)" }}
           >
             <span className="uppercase tracking-[0.1em]" style={{ color: c.kind === "focus" ? "var(--accent-text)" : "var(--fg-locked)" }}>{cardCopy.cite[c.kind]}</span>
-            <span style={{ color: "var(--fg-muted)" }}>{c.value}</span>
+            <span style={{ color: c.kind === "focus" ? "var(--fg)" : "var(--fg-muted)" }}>{c.value}</span>
           </li>
         ))}
       </ul>
