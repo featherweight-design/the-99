@@ -228,11 +228,20 @@ export async function buildFillPlan(
   }
 
   const ownedIds = new Set(pool.map((c) => c.oracleId));
+  // Help me choose under "Any cards". Decided once here, for the buy pool below and `planFill`.
+  const anyCards = Boolean(options.answers) && !sleeveableOnly;
   const unownedTop = dedupeSelectionFromPool(
     data?.topCards && !sleeveableOnly
       ? await unownedTopCards(
           commanders,
-          data.topCards,
+          // `topCards` is every card on the commander's EDHREC page in LIST order (new, high
+          // synergy, top, then by type), and `unownedTopCards` keeps its first 100. Under "Any
+          // cards" that cut decides which cards can be bought at all, and list order put the
+          // instants and sorceries last: Szarel's Worldsoul's Rage (53%) and Planetary Annihilation
+          // (48%) sat at 103 and 104 of 241 and were never candidates, while the deck went short on
+          // removal. Ranked by inclusion, the cut keeps the best-played cards of every type. The
+          // other callers keep list order.
+          anyCards ? byInclusion(data.topCards, inclusionOf) : data.topCards,
           ownedIds,
           new Set(commanders.map((c) => c.oracleId)),
         )
@@ -442,7 +451,7 @@ export async function buildFillPlan(
     hasPartner, skeleton, synergyRank, ...fillOptions, held, slots, gate, identity, commanderCosts,
     staples, labelRoles, raisers, boughtRaisers,
     // Help me choose under "Any cards": ownership alone no longer wins a role slot.
-    ...(answers && !sleeveableOnly ? { anyCards: true } : {}),
+    ...(anyCards ? { anyCards: true } : {}),
     // Every identity colour gets a basic even with no collection row behind it (`planFill`'s
     // `basics`). Loaded here, beside the pool, so no other pass sees them.
     //
@@ -506,4 +515,12 @@ function onlyOracleIdsMiss(only: ReadonlySet<string> | undefined, id: string): b
 function dedupeById(list: readonly FillCandidate[]): FillCandidate[] {
   const seen = new Set<string>();
   return list.filter((c) => !seen.has(c.oracleId) && (seen.add(c.oracleId), true));
+}
+
+/** EDHREC's card names ranked by inclusion, highest first; an unlisted figure last, list order kept on a tie. */
+export function byInclusion(names: readonly string[], inclusionOf: (name: string) => number | null): string[] {
+  return names
+    .map((name, index) => ({ name, index, pct: inclusionOf(name) ?? -1 }))
+    .sort((a, b) => b.pct - a.pct || a.index - b.index)
+    .map((r) => r.name);
 }

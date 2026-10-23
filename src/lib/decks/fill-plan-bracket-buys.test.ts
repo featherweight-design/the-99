@@ -48,7 +48,8 @@ vi.mock("./fill", async (importActual) => ({
   planFill: m.planFill,
 }));
 
-import { buildFillPlan } from "./fill-plan";
+import { buildFillPlan, byInclusion } from "./fill-plan";
+import { getEdhrecData } from "../edhrec/client";
 
 const commanders = [{ oracleId: "cmd", name: "C", colorIdentity: ["U"], manaCost: "{U}" }];
 const ON = envViewWith({ BRACKET_REACH_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true" });
@@ -199,5 +200,32 @@ describe("buildFillPlan's Hit bracket N", () => {
     });
     expect(planArgs().boughtRaisers.map((c: { oracleId: string }) => c.oracleId)).toEqual(["rhystic"]);
     expect(planArgs().raisers).toEqual([]);
+  });
+});
+
+// Any cards fill tune #2 (Hugh's Szarel deck, 2026-10-22): `unownedTopCards` keeps the first 100 names it is handed,
+// and EDHREC's list order put the instants and sorceries last, so a 53% wipe at 103 of 241 could never be bought.
+describe("the buy pool's order under Any cards", () => {
+  const LIST = ["Low Creature", "Wipe", "Removal"];
+  const PCT: Record<string, number> = { "low creature": 4.6, wipe: 53, removal: 41.4 };
+  const edhrec = () =>
+    vi.mocked(getEdhrecData).mockResolvedValueOnce({ data: { inclusionByName: PCT, topCards: LIST } } as never);
+  const handed = () => m.topCards.mock.calls[0][1];
+
+  it("ranks the names it hands `unownedTopCards` by inclusion, so the cut keeps the best-played", async () => {
+    edhrec();
+    await call();
+    expect(handed()).toEqual(["Wipe", "Removal", "Low Creature"]);
+  });
+
+  it("keeps EDHREC's list order with no answers (a plain create)", async () => {
+    edhrec();
+    await buildFillPlan("u", commanders, new Set(), { selected: [], env: ON });
+    expect(handed()).toEqual(LIST);
+  });
+
+  it("ranks by inclusion, an unlisted name last, list order kept on a tie", () => {
+    const pct: Record<string, number> = { a: 10, b: 30, d: 10 };
+    expect(byInclusion(["a", "b", "c", "d"], (n) => pct[n] ?? null)).toEqual(["b", "a", "d", "c"]);
   });
 });

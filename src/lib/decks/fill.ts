@@ -208,8 +208,8 @@ export type PlanFillArgs = {
    * Only an owned card EDHREC lists at `ANY_CARDS_LOW_PLAY_PCT` or more keeps its absolute first
    * place; an owned card listed under it, or not listed at all, ranks with the unowned by inclusion
    * (owned winning a tie), so a well-played card to buy takes the role slot and the low-play one is
-   * the fallback when the gate refuses the buy. The residual puts the player's on-list owned cards
-   * before any card to buy. Absent, `byPreference` rules as it always has (own-only, plain create).
+   * the fallback when the gate refuses the buy. The residual holds the same floor: the played owned
+   * cards first, then everything else by inclusion. Absent, `byPreference` rules as it always has (own-only, plain create).
    */
   anyCards?: boolean;
 };
@@ -840,15 +840,22 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // labelling them as one would claim a measurement nobody made.
   const bySynergy = (a: FillCandidate, b: FillCandidate) =>
     (synergyRank!.get(b.oracleId) ?? 0) - (synergyRank!.get(a.oracleId) ?? 0);
-  // Under "Any cards" the player's on-list owned cards come before any card to buy, synergy within
-  // each group; `sort` is stable, so without a ranking the pool's own order holds inside a group.
-  const onListOwned = (c: FillCandidate) => c.owned && c.inclusionPct != null;
-  const residualOrder = synergyRank || anyCards
+  // Under "Any cards" the residual keeps the role pass's floor: the player's owned cards played at
+  // `ANY_CARDS_LOW_PLAY_PCT` or more come first, synergy within them (`sort` is stable, so without a
+  // ranking the pool's own order holds). Everything else, an owned card under the floor or unlisted
+  // included, ranks with the cards to buy by inclusion, owned winning a tie (`byAnyCardsPreference`).
+  // Before this the first group was every LISTED owned card, so a 4.6% owned card took a slot from a
+  // 64% card to buy (Hugh's Szarel deck, 2026-10-22).
+  const residualOrder = anyCards
     ? [...ordered].sort((a, b) => {
-        if (anyCards && onListOwned(a) !== onListOwned(b)) return onListOwned(a) ? -1 : 1;
-        return synergyRank ? bySynergy(a, b) : 0;
+        const pa = ownedAndPlayed(a), pb = ownedAndPlayed(b);
+        if (pa !== pb) return pa ? -1 : 1;
+        if (pa) return synergyRank ? bySynergy(a, b) : 0;
+        return byAnyCardsPreference(a, b);
       })
-    : ordered;
+    : synergyRank
+      ? [...ordered].sort(bySynergy)
+      : ordered;
   // The residual runs AFTER the sweeps, so its own modal cards are land drops the base has
   // already been built without. Tracked here for the same reason the role pass's are charged
   // to the ceiling: a target of 36 met by 36 basics plus a residual modal card is 37 drops.
