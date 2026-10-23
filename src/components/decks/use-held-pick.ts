@@ -43,8 +43,11 @@ export function useHeldPick<T>(
   deckId: string,
   stored: T,
   send: (deckId: string, value: T) => Promise<PickReply<T>>,
-): { value: T; refused: boolean; pick: (value: T) => void } {
+): { value: T; settled: T; refused: boolean; pick: (value: T) => void } {
   const [value, setValue] = useState(stored);
+  /** The value the server last confirmed for the newest press: what a reader that must not run ahead of the write
+   *  (Suggested changes' gate) follows. */
+  const [settled, setSettled] = useState(stored);
   const [seen, setSeen] = useState({ deckId, stored });
   const [refused, setRefused] = useState(false);
   const [, startTransition] = useTransition();
@@ -69,6 +72,7 @@ export function useHeldPick<T>(
     // describes what is on screen.
     setSeen({ deckId, stored });
     setValue(stored);
+    setSettled(stored);
     setRefused(false);
   }
 
@@ -86,6 +90,7 @@ export function useHeldPick<T>(
         confirmed.current = { press, value: result.value };
       }
       if (press !== newest.current) return;
+      if (result?.ok) setSettled(result.value);
       if (!result?.ok) {
         setValue(confirmed.current.value);
         setRefused(true);
@@ -93,5 +98,5 @@ export function useHeldPick<T>(
     });
   };
 
-  return { value, refused, pick };
+  return { value, settled, refused, pick };
 }

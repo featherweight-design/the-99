@@ -130,3 +130,12 @@ describe("ManifestRows: the writing row (H35, PR 3)", () => {
     expect(onDescribe).toHaveBeenCalledOnce();
   });
 });
+
+describe("the strategy focus row", () => {
+  it("draws an accent read row dashed, its count in accent", () => {
+    render(<ManifestRows rows={[{ kind: "read", key: "focus", label: "This deck's focus", count: "Tokens", done: false, accent: true }]} />);
+    const row = document.querySelector('[data-accent="true"]') as HTMLElement;
+    expect(row.style.border).toBe("1px dashed var(--accent)");
+    expect(row.textContent).toContain("Tokens");
+  });
+});

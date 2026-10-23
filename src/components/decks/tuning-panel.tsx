@@ -1,5 +1,8 @@
 "use client";
 
+import { strategyName } from "@/lib/copy/strategy-focus";
+import { parseStrategyKey } from "@/lib/strategy/focus";
+import type { StrategyKey } from "@/lib/strategy/score";
 import { useTarget } from "../discovery/targets-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -96,13 +99,15 @@ export type TuningFacts = {
   intent: string | null;
   /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them. */
   limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  /** The deck's strategy focus, held by the shell (`useStrategyFocus`); absent or null with none. */
+  focus?: StrategyKey | null;
 };
 
 /** The checklist's own vocabulary (H35, PR 3) — a row the panel already knows how to draw,
  *  never a real per-step database read. `notes` here is the game log's notes row, unchanged
  *  since before this PR; `playerNotes` is the new Additional notes row, named differently so
  *  the two are never confused in a switch. */
-export type ManifestStep = "games" | "notes" | "decklist" | "description" | "limits" | "playerNotes" | "collection";
+export type ManifestStep = "games" | "notes" | "decklist" | "description" | "limits" | "playerNotes" | "focus" | "collection";
 
 const copy = deckTuningCopy.panel;
 const manifest = deckTuningCopy.manifest;
@@ -330,6 +335,14 @@ export function TuningPanel({
       return null;
     }
   }, [deps, deckId, reviewRunId]);
+  // Strategy focus: a pick or a clear is new input to the gate (handoff Call 2), so the panel re-reads it when the focus
+  // the server holds moves. Not on mount, which reads already.
+  const shownFocus = useRef(facts.focus ?? null);
+  useEffect(() => {
+    if ((facts.focus ?? null) === shownFocus.current) return;
+    shownFocus.current = facts.focus ?? null;
+    void reread();
+  }, [facts.focus, reread]);
 
   // Debounced trailing-edge, PARTIAL and MERGED: typing the cap fires `saveLimits` on every
   // keystroke, so only the latest value within one pause reaches the server — and only the
@@ -1037,6 +1050,7 @@ export function TuningPanel({
             : facts.fix === null
               ? copy.unmarkedLead(cap(numberWord(facts.gameCount)))
               : copy.readyLead(cap(numberWord(facts.gameCount)), axisName(facts.fix.key), facts.fix.hurt, facts.gameCount)}
+          {allLocked === null && facts.focus ? ` ${copy.focusLead(strategyName(facts.focus))}` : null}
         </Lead>
         {checklist}
       </>
@@ -1291,9 +1305,13 @@ function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) 
   // (review round 1), and `state.run`'s report would then describe an attempt that produced
   // none of what is shown.
   const notesRead = state.itemsValidationReport?.hadNotes ? [descriptionManifest.readNotes] : [];
+  // Strategy focus: the RUN's own focus (its report), so a run reopened from History names what it aimed at, whatever
+  // the deck's focus is now.
+  const runFocus = parseStrategyKey(state.itemsValidationReport?.focus);
+  const focusRead = runFocus ? [manifest.readFocus(strategyName(runFocus))] : [];
   const parts =
     state.gameCount === 0
-      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...descriptionRead, ...limitsRead, ...notesRead]
+      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection, ...descriptionRead, ...limitsRead, ...notesRead, ...focusRead]
       : [
           manifest.readGames(state.gameCount),
           ...(facts.noteCount > 0 ? [manifest.readNotes(facts.noteCount)] : []),
@@ -1303,6 +1321,7 @@ function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) 
           ...descriptionRead,
           ...limitsRead,
           ...notesRead,
+          ...focusRead,
         ];
   return (
     <p className="mt-[8px] font-mono text-[9.5px] leading-[1.5] md:mt-[9px] md:text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
@@ -1417,6 +1436,8 @@ export function readSteps(facts: TuningFacts, _intent: string | null): ManifestS
     ...(facts.gameCount > 0 ? (["games", "notes"] as const) : []),
     "decklist",
     "description",
+    // Strategy focus (handoff Call 2): one row, before what you own, only with a focus.
+    ...(facts.focus ? (["focus"] as const) : []),
     "collection",
   ];
 }
@@ -1448,7 +1469,7 @@ export function manifestRows(
   const rows: ManifestRow[] = facts.gameCount === 0 ? [{ kind: "noGames", key: "games" }] : [];
   for (const step of steps) {
     if (ticked !== null) {
-      rows.push({ kind: "read", key: step, label: labelOf(step, facts), count: null, done: ticked.has(step) });
+      rows.push({ kind: "read", key: step, label: labelOf(step, facts), count: null, done: ticked.has(step), ...(step === "focus" ? { accent: true as const } : {}) });
       continue;
     }
     // The preview only — the absent description gets the games row's own dashed treatment
@@ -1470,6 +1491,7 @@ export function manifestRows(
       label: labelOf(step, facts),
       count: n === null ? null : countOf(step, n, facts),
       done: false,
+      ...(step === "focus" ? { accent: true as const } : {}),
     });
   }
   return rows;
@@ -1483,6 +1505,7 @@ function known(facts: TuningFacts, intent: string | null, step: ManifestStep): n
     case "description": return intent === null ? 0 : 1;
     // Worded without a figure, so the unchecked row reads the same before and after its read.
     case "collection": return 0;
+    case "focus": return 1;
     // Only ever drawn while reading, where `ticked !== null` short-circuits before this runs.
     case "limits": case "playerNotes": return null;
   }
@@ -1497,6 +1520,7 @@ function labelOf(step: ManifestStep, facts: TuningFacts): string {
     case "limits": return descriptionManifest.limits;
     case "playerNotes": return descriptionManifest.notes;
     case "collection": return manifest.collection;
+    case "focus": return manifest.focus;
   }
 }
 
@@ -1509,6 +1533,7 @@ function countOf(step: ManifestStep, n: number, facts: TuningFacts): string {
     // above, before `countOf` is ever reached for this step.
     case "description": return descriptionManifest.descriptionCount;
     case "collection": return manifest.collectionCount;
+    case "focus": return facts.focus ? strategyName(facts.focus) : "";
     // Only ever drawn while reading, where `countOf` is never called for them.
     case "limits": case "playerNotes": return "";
   }

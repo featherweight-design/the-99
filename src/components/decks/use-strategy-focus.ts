@@ -9,9 +9,9 @@ import { useHeldPick } from "./use-held-pick";
  * back on a refusal; `null` is "Keep it balanced". The ordering rules are `useHeldPick`'s.
  */
 export function useStrategyFocus(deckId: string, stored: StrategyKey | null) {
-  const { value, refused, pick } = useHeldPick<StrategyKey | null>(deckId, stored, async (forDeck, key) => {
+  const { value, settled, refused, pick } = useHeldPick<StrategyKey | null>(deckId, stored, async (forDeck, key) => {
     const result = await setStrategyFocus(forDeck, key);
     return result.ok ? { ok: true, value: result.focus } : { ok: false };
   });
-  return { focus: value, refused, setFocus: pick };
+  return { focus: value, settled, refused, setFocus: pick };
 }

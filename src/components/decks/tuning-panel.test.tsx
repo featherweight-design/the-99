@@ -1808,3 +1808,35 @@ describe("TuningPanel: a past run History reopened (re-review)", () => {
     expect(d.read).toHaveBeenLastCalledWith(D1, null);
   });
 });
+
+describe("the strategy focus in Suggested changes", () => {
+  const focused: TuningFacts = { ...facts, focus: "tokens" };
+
+  it("reads the deck's focus as one accent row before what you own, and not without one", () => {
+    const rows = manifestRows(focused, "go wide", null, readSteps(focused, "go wide"));
+    const keys = rows.flatMap((r) => (r.kind === "read" ? [r.key] : []));
+    expect(keys.slice(-2)).toEqual(["focus", "collection"]);
+    expect(rows.find((r) => r.kind === "read" && r.key === "focus")).toMatchObject({ label: deckTuningCopy.manifest.focus, count: "Tokens", accent: true });
+    expect(readSteps(facts, "go wide")).not.toContain("focus");
+  });
+
+  it("adds one lead sentence before a run, aimed at the focus", async () => {
+    render(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={deps([fresh])} />);
+    expect(await screen.findByText((t) => t.includes(copy.focusLead("Tokens")))).toBeInTheDocument();
+  });
+
+  it("names the run's own focus in its read-from line, whatever the deck's focus is now", async () => {
+    const aimed = { ...results, itemsValidationReport: { askedCount: 8, survivedCount: 8, keptCount: 5, focus: "lifegain" } };
+    render(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={deps([aimed])} />);
+    expect(await screen.findByText((t) => t.includes(deckTuningCopy.manifest.readFocus("Life gain")))).toBeInTheDocument();
+  });
+
+  it("re-reads its gate when the focus the server holds moves", async () => {
+    const d = deps([fresh]);
+    const { rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} />);
+    await waitFor(() => expect(d.read).toHaveBeenCalled());
+    const before = (d.read as ReturnType<typeof vi.fn>).mock.calls.length;
+    rerender(<TuningPanel deckId="d1" permits={[3]} facts={focused} onLogGame={vi.fn()} deps={d} />);
+    await waitFor(() => expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(before + 1));
+  });
+});
