@@ -37,7 +37,7 @@ export type FocusCandidate = { oracleId: string; name: string; typeLine: string;
 
 /**
  * Most names sent. At about 15 tokens a line the list is under 400 tokens; it is a shortlist the model compares, and
- * the eval asks at most half of a run's additions from it.
+ * the prompt asks that at least half of a run's additions count toward the focus, drawn from it first.
  */
 export const FOCUS_CANDIDATES_MAX = 20;
 
