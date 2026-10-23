@@ -17,7 +17,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   working, not a broken probe: local-dev holds the headless account's real snapshot (`pull:staging`) that every
   other lane's probes read, and one of these wiped its printings on 2026-10-15. To cut a scratch branch, create a
   Neon branch of project `misty-rain-01681654` with parent `br-patient-hall-a6nbonvo` (local-dev; it inherits the
-  account's snapshot, migrations and catalog), get its connection string, point the worktree's `.env`
+  account's snapshot, migrations and catalog) with a **0.25 CU compute (`compute: {min_cu: 0.25, max_cu: 0.25}` on `create_branch`),
+  never the 1 CU default** (a scratch branch's compute is the one cost a probe lane controls; Hugh's cost rule, 2026-10-23), get its connection string, point the worktree's `.env`
   `DATABASE_URL` at it (`env.mjs` reads `.env` over the shell), run the probe, then delete the branch. Never
   cut one from staging or production, and never `restore_snapshot` or `reset_from_parent` anything to make one.
   `probe:onboarding`, `probe:locked-nav` and `probe:issues-sheet` also clear a collection, but only the dedicated
