@@ -3752,7 +3752,10 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   auth: text("auth").notNull(),
   userAgent: text("user_agent").notNull().default(""),
   timeZone: text("time_zone").notNull().default("UTC"),
+  /** When this ACCOUNT's subscription on this browser began: kept across a refresh, reset by a takeover. An event from before it is not this device's news (`planDevice`). */
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  /** When the device last subscribed or refreshed: the recency the trim to 10 devices orders by, so the row just saved is never the one it deletes. */
+  refreshedAt: timestamp("refreshed_at", { withTimezone: true }).notNull().defaultNow(),
   lastOkAt: timestamp("last_ok_at", { withTimezone: true }),
 }, (t) => [
   uniqueIndex("push_subscriptions_endpoint_idx").on(t.endpoint),

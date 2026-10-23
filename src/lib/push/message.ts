@@ -3,7 +3,8 @@
  *
  * An ITEM is what a writer queues for one event (the `push_outbox.payload`): the kind, the item's key, and the words'
  * ingredients as plain data, so the notification can be built later and apart from the feed. A MESSAGE is one
- * notification: title, body, the route a tap lands on, `tag` (the kind, so a newer one replaces an older of its kind),
+ * notification: title, body, the route a tap lands on, `tag` (the kind, so a newer one replaces an older of its kind ON THE
+ * DEVICE; a spare request's own key, so two asks never replace each other),
  * the item keys it stands for, and the card image where there is one.
  *
  * Collapse: `live` sends one per (kind, batch), `release` (what waited the night) one per kind. A spare request is never
@@ -27,7 +28,7 @@ export type PushMessage = {
   /** Where a tap lands. */
   route: string;
   /** The kind: a newer notification of it replaces an older one on the device. */
-  tag: FeedKind;
+  tag: string;
   /** The feed items this stands for, in the order given. */
   keys: string[];
   /** Home opens this card's details on landing (price drop, combo); consumed by the landing PR. */
@@ -52,7 +53,7 @@ export function collapse(items: readonly PushItem[], mode: CollapseMode): PushIt
   return [...groups.values()];
 }
 
-const home = (tag: FeedKind, keys: string[], title: string, body: string, extra: Partial<PushMessage> = {}): PushMessage => ({
+const home = (tag: string, keys: string[], title: string, body: string, extra: Partial<PushMessage> = {}): PushMessage => ({
   title, body, route: "/", tag, keys, openCard: null, openCombo: false, image: null, ...extra,
 });
 
@@ -93,7 +94,7 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
     }
     case "spare-request":
       // Never collapsed: one group, one item.
-      return home("spare-request", keys, c.one.spareRequest.title(first.friend, first.card), c.one.spareRequest.body, { route: "/friends", image: first.image });
+      return home(`spare-request:${first.key}`, keys, c.one.spareRequest.title(first.friend, first.card), c.one.spareRequest.body, { route: "/friends", image: first.image });
     case "combo": {
       if (n === 1) return home("combo", keys, c.one.combo.title, c.one.combo.body(first.a, first.b, first.added), { openCard: first.oracleId, openCombo: true, image: first.image });
       return home("combo", keys, c.many.combo.title(n), c.many.combo.body);

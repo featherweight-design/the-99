@@ -51,6 +51,30 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   window (`defaultBatchKey`): one run writes within seconds, and a night's held rows collapse by kind anyway.
 - Proof: `probe:push-subscriptions` (queue, resolve and drop, against a real database).
 
+## Added by PR 3b (the server sender)
+
+- **`/api/cron/push-flush`** (`vercel.json`, every 15 minutes, the cost ruling of 2026-10-22: a 5-minute cron keeps both Neon databases awake;
+  `CRON_SECRET` bearer like `account-sweep`): `flushPush`
+  (`src/lib/push/flush.ts`). Without the three VAPID variables it answers 200 `dormant` and reads nothing; the code is live on
+  every deployment and sends only where Hugh set the keys. It takes no lock: an overlapping run can send a push twice (a
+  notification's `tag` is its kind, so the second replaces the first on the device), but never loses another run's progress:
+  `payload.done` is merged in the database and a row is settled only when the merged set covers every device. Each device
+  takes its oldest `PER_DEVICE` (50) rows still waiting for it, so a held or failing device never starves an awake one. Switches
+  are read STRICTLY (`resolveSwitchEnvStrict`): a failed override read leaves the reader's rows for the next run.
+- **Per reader**: the switch again (off abandons the row); a row over 24 hours old is stale and abandoned; the words come from
+  `resolvePushItems`, and a row that no longer stands is abandoned. **Per device** (`planDevice`, pure, `plan.ts`): nothing inside
+  its held hours (21:00 to 09:00 in ITS zone); a LIVE push (one per kind and batch) for what arrived while it was not held; the
+  morning RELEASE (one per kind) for what arrived while it was; a spare request never merged; a device that subscribed after an
+  event never hears of it. A row is SENT once every device the reader still has is done with it (`payload.done` lists them); a
+  send that succeeded is recorded at once, so a later failure never repeats it.
+- **Send** (`send.ts`, the only caller of `web-push`, exact pin 3.6.7): VAPID-signed, TTL one day, NO `topic` (the push service keeps
+  one undelivered message per topic and would drop the rest of a burst the flush already recorded as sent). The device's own `tag`
+  does the replacing: the kind, except a spare request, which is tagged by its own key so two asks never replace each other. A 404 or 410 deletes the device; any other failure, a send that waits
+  over 10 seconds included (`SEND_TIMEOUT_MS`), is transient and leaves the rows for the next run. Counts only are logged: never an endpoint, a key or a word.
+- Rows a week old are pruned. Proof: `probe:push-flush` (a fake sender against a real database).
+- Not yet: the service worker's `push` and `notificationclick` handlers (PR 3d), so nothing a device receives is shown yet; and the
+  catalog kinds (PR 3c).
+
 ## Decisions the plan fixed (D1 to D5)
 
 1. Outbox, not a direct send: `recordFeedItem` runs inside transactions, so a send from it could announce a rolled-back event.
