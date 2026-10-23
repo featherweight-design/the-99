@@ -25,9 +25,16 @@ const PATHS: Record<Exclude<AboutScreen, "account">, [string, string?]> = {
 describe("screenForPath: a Rule 0 table", () => {
   it("is Friends' screen, where the table's pod and its entries live", () => {
     expect(screenForPath("/friends/table/7a0e0000-0000-4000-8000-000000000001")).toBe("friends");
-    // A friend's own page, and anything deeper under a table, still has no screen.
-    expect(screenForPath("/friends/p1")).toBeNull();
+    // Anything deeper under a table still has no screen.
     expect(screenForPath("/friends/table/7a0e0000-0000-4000-8000-000000000001/x")).toBeNull();
+  });
+});
+
+describe("screenForPath: a friend's pages", () => {
+  it("is Friends' screen, where `friend-decks` lives: the page, its tabs and a friend's deck", () => {
+    for (const p of ["/friends/p1", "/friends/p1/wishlist", "/friends/p1/decks", "/friends/p1/decks/7a0e0000-0000-4000-8000-000000000001"]) {
+      expect(screenForPath(p), p).toBe("friends");
+    }
   });
 });
 
@@ -73,7 +80,7 @@ describe("screenForPath", () => {
   });
 
   it("answers null for a page no entry lives on (G21)", () => {
-    for (const p of ["/decks/shopping", "/friends/p1", "/about", "/admin", "/decks/abc/changes", "/decks/abc/import", "/lab/scan", "/collection/elsewhere"]) {
+    for (const p of ["/decks/shopping", "/about", "/admin", "/decks/abc/changes", "/decks/abc/import", "/lab/scan", "/collection/elsewhere"]) {
       expect(screenForPath(p), p).toBeNull();
     }
   });

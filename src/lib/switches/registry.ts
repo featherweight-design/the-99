@@ -120,13 +120,12 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * `COMMANDERS_PLACE_ENABLED` and `HOME_FEED_ENABLED` on 2026-10-22 while their surfaces landed (menu and Home), and
  * is empty again now that Home draws the feed. It holds `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests' UI
  * PR draws the asks and answers, and `NEAR_COMBOS_ENABLED` from 2026-10-22 until Design prompt 17's surface lands.
+ * `FRIEND_DECKS_ENABLED` left it on 2026-10-22 with its About entry (`friend-decks`).
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
-  FRIEND_DECKS_ENABLED:
-    "the line's surfaces have all shipped (PRs 1 to 5) but its About entry has not: the feature does not go on in production, an All features account included, until Design draws the entry and it ships (friend decks close-out)",
   NEAR_COMBOS_ENABLED:
     "backend only until Design prompt 17's surface ships: no surface draws the near-combos reads yet (plan 2026-10-22-near-combos-backend.md)",
   PUSH_ENABLED:

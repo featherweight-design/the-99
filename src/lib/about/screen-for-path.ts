@@ -2,8 +2,7 @@ import type { AboutScreen } from "../copy/about";
 
 /**
  * The About screen a reader stands on, read from the path the ? is pressed on (discovery R2·8, README-r2 E8). Pure. The
- * routes are the ones `SCREEN_WHERE` prints. `null` is a page no entry lives on (the all-decks cart, a friend's page,
- * About itself, admin): the ? then draws G21's empty line.
+ * routes are the ones `SCREEN_WHERE` prints. `null` is a page no entry lives on (the all-decks cart, About itself, admin): the ? then draws G21's empty line.
  *
  * - `card-details` is the open card dialog on a Collection list, which the list mirrors as `?card=`.
  * - `account` never resolves from a path: the menu is on every screen, and its entries are found by search.
@@ -50,5 +49,7 @@ export function screenForPath(pathname: string, search: string | URLSearchParams
   if (path === "/credits") return "credits";
   // A Rule 0 table is set from a pod on Friends, and its entries (pods, the table) live on that screen.
   if (seg[0] === "friends" && seg[1] === "table" && seg.length === 3) return "friends";
+  // A friend's page and its tabs and decks (`/friends/{publicId}/**`) are Friends' too, so the ? finds `friend-decks`.
+  if (seg[0] === "friends" && seg[1] !== "table") return "friends";
   return null;
 }

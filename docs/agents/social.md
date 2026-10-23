@@ -138,9 +138,10 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
   than tiles under "Open one" with nothing to open. With the viewer's off and the owner's on, that shipped tab is
   already filtered by the owner's rules (the owner's privacy wins) while its line still names drafts: a state only
   per-account overrides can reach.
-- **All features.** `FRIEND_DECKS_ENABLED` stays in `ALL_FEATURES_EXCLUDED` after the line closes, until its About entry
-  ships (READINESS G6): no account, an All features one included, gets the feature in production before that. The
-  friends About key already swaps its privacy sentence on the switch (`keySwitches`, `!FRIEND_DECKS_ENABLED`).
+- **All features.** `FRIEND_DECKS_ENABLED` held a place in `ALL_FEATURES_EXCLUDED` until its About entry,
+  `friend-decks` (Friends, chapter 04, after `friends`; halo `[data-decks-seen]`), shipped: an All features account
+  now gets it. Production's variable stays unset until Hugh flips it. With the switch on, the `friends` entry's key 2
+  and the `opponents` entry's key 3 swap for their friend-decks sentences (`keySwitches` pairs).
 - **The page's read.** The owner's own `getDeckDetail`, run as its owner with `Promise.resolve(null)` in place of the
   shared availability read, so the owner's claim model never runs for a friend; then cut field by field to
   `FriendDeckCard` (catalog facts and the owner's printing; no price, availability, proxy, lock, auto tag or combo
