@@ -33,6 +33,24 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   browser's subscription BEFORE the session ends, bounded at 3 seconds, never throwing. The actions have no UI caller until
   the Settings PR; `probe:push-subscriptions` proves them against a real database in the meantime.
 
+## Added by PR 3a (the outbox, no sender yet)
+
+- **`recordFeedItem` is the one trigger** (`src/lib/social/feed-write.ts`). A NEW item (it returned true) queues a push in the SAME
+  executor: `enqueuePush` (`src/lib/push/enqueue.ts`), one statement, a `push_outbox` row only while the reader has a device,
+  the kind's PUSH is on and the item is newer than the kind's push stamp (`pushKindEnabledAt`, `feed_kinds`' rule over the push
+  columns); the unique index (user, kind, item key) makes a repeat free. It checks no switch: a device exists only if the reader
+  subscribed while push was available, and the flush judges the switch and the keys again before sending.
+- **Push is its own choice**, so the feed insert also writes when the reader has a device and the item is newer than the PUSH stamp,
+  with the feed kind off. Such a row is never drawn: every feed read filters by the feed kind's own stamp.
+- **The row holds no words** (`payload` is reserved, always `{}`). The flush resolves (kind, item key) through the feed's own read:
+  `storedItemsByKeyQuery` (`src/lib/social/feed-items.ts`, the same `standing` rules as the feed: a withdrawn trade match, an
+  answered or expired ask or an unfriended friend is not pushed), `toViews` and `lookups` (`feed/home.ts`), then `toPushItem`
+  (`src/lib/push/to-push-item.ts`); `resolvePushItems` returns the items and the DROPPED refs the flush abandons. A push says what
+  Home says; the spare request's body is Home's line, with no copy count (Home has none).
+- **Batch key.** No job-run id exists at the writers, so `FeedItemInput.batchKey` is optional and defaults to the kind's 15-minute
+  window (`defaultBatchKey`): one run writes within seconds, and a night's held rows collapse by kind anyway.
+- Proof: `probe:push-subscriptions` (queue, resolve and drop, against a real database).
+
 ## Decisions the plan fixed (D1 to D5)
 
 1. Outbox, not a direct send: `recordFeedItem` runs inside transactions, so a send from it could announce a rolled-back event.

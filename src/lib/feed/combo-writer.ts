@@ -18,6 +18,8 @@ import { sql } from "drizzle-orm";
 import type { db } from "../../db";
 import { cards, collectionItems, spellbookVariantCards, spellbookVariants, userPrefs } from "../../db/schema";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
+import { newBatchKey } from "../push/enqueue";
+import { feedOrPushWanted } from "../push/kind-gate";
 import { recordFeedItem } from "../social/feed-write";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { availableFeedKinds } from "./flag";
@@ -74,9 +76,9 @@ export function addedCards(before: ReadonlySet<string>, after: ReadonlySet<strin
   return [...after].filter((id) => !before.has(id)).sort();
 }
 
-/** Whether the reader's combo kind is on. Apart so a test can render it. */
+/** Whether the reader wants combo news: the feed kind on, or a device with the combo push on. Apart so a test can render it. */
 export function comboOnQuery(userId: string) {
-  return sql`select 1 as yes from ${userPrefs} cup where cup.user_id = ${userId} and (cup.feed_kinds ->> 'combo') is not null`;
+  return sql`select 1 as yes from ${userPrefs} cup where cup.user_id = ${userId} and ${feedOrPushWanted(sql`cup`, sql`cup.user_id`, "combo")}`;
 }
 
 /** Every card the reader holds, by oracle id (the collection read's own `owned`). */
@@ -130,6 +132,8 @@ export async function noticeCombos(q: Executor, userId: string, delta: ComboDelt
   }));
   const added = new Set(delta.added);
   let written = 0;
+  // One call, one batch: the pairs this write completed are one push.
+  const batchKey = newBatchKey("combo");
   // Every candidate, most popular first, until THREE are written: a variant already told (the dedupe key) is not
   // news and must not use up one of the three places.
   for (const p of newlyCompleted({ added, held: delta.held, pairs, limit: pairs.length })) {
@@ -143,6 +147,7 @@ export async function noticeCombos(q: Executor, userId: string, delta: ComboDelt
       // The piece this write added ("You added Demonic Consultation"); the first when it added both.
       oracleId: arrived[0],
       data: { cards: p.cards, added: arrived },
+      batchKey,
     });
     if (ok) written += 1;
   }

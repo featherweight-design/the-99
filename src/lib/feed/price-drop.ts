@@ -17,6 +17,8 @@
  * `wishlist_items` carries the `user_data_touch` trigger, so a baseline or a notice moves the reader's stamp once:
  * Home's cache misses that one visit, which also draws the new item.
  */
+import { newBatchKey } from "../push/enqueue";
+import { feedOrPushWanted } from "../push/kind-gate";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { collectionItems, userPrefs, wishlistItems } from "../../db/schema";
@@ -39,13 +41,13 @@ export function backfillQuery(ids: readonly string[], cents: readonly number[]) 
     where wi.oracle_id = v.oracle_id and wi.price_at_add_cents is null`;
 }
 
-/** Every unmet, baselined line of every reader whose price-drop kind is on. */
+/** Every unmet, baselined line of every reader who wants price-drop news: the feed kind on, or a device with its push on. */
 export function priceDropCandidatesQuery() {
   return sql`select wi.user_id as user_id, wi.oracle_id as oracle_id, wi.price_at_add_cents as at_add_cents,
       wi.price_noticed_at as noticed_at
     from ${wishlistItems} wi
     join ${userPrefs} up on up.user_id = wi.user_id
-    where (up.feed_kinds ->> 'price-drop') is not null
+    where ${feedOrPushWanted(sql`up`, sql`wi.user_id`, "price-drop")}
       and wi.price_at_add_cents is not null
       and coalesce((select sum(ci.quantity) from ${collectionItems} ci
                     where ci.user_id = wi.user_id and ci.oracle_id = wi.oracle_id), 0) < wi.quantity
@@ -96,6 +98,8 @@ export async function noticePriceDrops(base: NodeJS.ProcessEnv, clock: () => Dat
   if (live.length === 0) return run;
 
   const read = await loadPrices([...new Set(live.map((r) => r.oracle_id))]);
+  // One run, one batch: a reader's drops from this run are one push, whenever in the run each is written.
+  const batchKey = newBatchKey("price-drop");
   for (const r of live) {
     const nowCents = cheapestNow(read, r.oracle_id);
     // The moment of THIS item, read when it is recorded and used for its cooldown, week, timestamp and stamp: a job
@@ -124,6 +128,7 @@ export async function noticePriceDrops(base: NodeJS.ProcessEnv, clock: () => Dat
           dedupeKey: priceDropKey(r.oracle_id, now),
           oracleId: r.oracle_id,
           data: { fromCents: r.at_add_cents, toCents: nowCents },
+          batchKey,
           now,
         });
         // Only a notice that reached the feed starts the week: a kind turned off mid-run, or this week's item

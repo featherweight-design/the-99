@@ -65,10 +65,13 @@ describe("addedCards", () => {
 });
 
 describe("the combo writer's SQL", () => {
-  it("checks the reader's combo kind alone, on their own prefs row", () => {
+  it("checks the reader's own prefs row for combo news: the feed kind on, or a device with the combo push on", () => {
     const { q, params } = render(comboOnQuery("u1"));
-    expect(q).toBe(`select 1 as yes from "user_prefs" cup where cup.user_id = $1 and (cup.feed_kinds ->> 'combo') is not null`);
-    expect(params).toEqual(["u1"]);
+    expect(q).toContain(`select 1 as yes from "user_prefs" cup where cup.user_id = $1 and `);
+    expect(q).toContain("(cup.feed_kinds ->> $2::text) is not null");
+    expect(q).toContain("(cup.push_kinds ->> $3::text) is not null");
+    expect(q).toContain(`exists (select 1 from "push_subscriptions" wnt where wnt.user_id = cup.user_id)`);
+    expect(params).toEqual(["u1", "combo", "combo"]);
   });
 
   it("reads the reader's held cards by oracle id, qualified", () => {

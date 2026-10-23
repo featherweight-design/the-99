@@ -7,10 +7,18 @@ describe("wishedForMatchQuery", () => {
   const { sql, params } = new PgDialect().sqlToQuery(wishedForMatchQuery("viewer_1"));
   const q = sql.replace(/\s+/g, " ");
 
-  it("reads only the viewer's own lines, and only while their trade-match kind is on", () => {
-    expect(q).toContain("where twi.user_id = $1 and (tup.feed_kinds ->> 'trade-match') is not null");
+  it("reads only the viewer's own lines, and only while they want trade-match news: the feed kind on, or a device with its push on", () => {
+    expect(q).toContain("where twi.user_id = $");
+    expect(q).toContain("(tup.feed_kinds ->> $");
+    expect(q).toContain("(tup.push_kinds ->> $");
+    expect(q).toContain(`exists (select 1 from "push_subscriptions" wnt where wnt.user_id = twi.user_id)`);
     expect(q).toContain(`join "user_prefs" tup on tup.user_id = twi.user_id`);
-    expect(params).toEqual(["viewer_1"]);
+    expect(params).toContain("viewer_1");
+    expect(params.filter((p) => p === "trade-match")).toHaveLength(2); // the two wanted tests
+  });
+
+  it("answers the earlier of the two stamps as the kind's enabledAt", () => {
+    expect(q).toContain("coalesce(tup.feed_kinds ->> 'trade-match', tup.push_kinds ->> 'trade-match') as enabled_at");
   });
 
   it("leaves out a line the collection already reaches, qualified on both sides", () => {

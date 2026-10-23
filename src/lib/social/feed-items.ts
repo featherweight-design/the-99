@@ -26,6 +26,34 @@ import { kindEnabledAt } from "../feed/kind-gate";
 import type { StoredKind } from "../feed/kinds";
 
 /**
+ * The conditions that make a stored item STAND, on `fi` (the item), `sp` (the friend's profile) and the grant tables: a
+ * spare request while its ask is open and unexpired, an item naming a friend while the friendship (and, for a trade
+ * match, the shared spares) still holds. Shared by the feed's branch and the push resolver, so a push is made only for
+ * what Home would still show.
+ */
+function standing(now: Date): SQL {
+  return sql`
+      and (fi.kind <> 'spare-request' or exists (
+        select 1 from ${spareRequests} fsr
+        where fsr.id = (case when fi.kind = 'spare-request' then fi.dedupe_key::uuid end)
+          and fsr.holder_user_id = fi.user_id and fsr.status = 'open'
+          and fsr.created_at > ${openFloor(now).toISOString()}::timestamptz))
+      and (fi.friend_user_id is null or (sp.public_id is not null and (
+        (fi.kind = 'trade-match' and exists (
+          select 1 from ${friendLinks} gl
+          join ${podSpareShares} gs on gs.user_id = gl.friend_user_id
+          join ${podMembers} gf on gf.pod_id = gs.pod_id and gf.user_id = gl.friend_user_id
+          join ${podMembers} gv on gv.pod_id = gs.pod_id and gv.user_id = gl.user_id
+          where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id)
+          and not exists (
+            select 1 from ${spareKeep} sk
+            where sk.user_id = fi.friend_user_id and sk.oracle_id = fi.oracle_id))
+        or (fi.kind <> 'trade-match' and exists (
+          select 1 from ${friendLinks} gl
+          where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id)))))`;
+}
+
+/**
  * The stored branch of the feed union, for `viewerId`, of `kinds` (non-empty; already the kinds available to the
  * reader). Each row is newer than its kind's own `enabledAt` (`kindEnabledAt`: its `user_prefs.feed_kinds` stamp, or
  * always for a default-on kind the reader has not declined), so a kind turned off and on again never brings back what
@@ -48,22 +76,26 @@ export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[],
     where fi.user_id = ${viewerId}
       and fi.kind = any(${sql.param([...kinds])}::text[])
       and fi.created_at > ${kindEnabledAt(sql`fup`, sql`fi.kind`)}
-      and (fi.kind <> 'spare-request' or exists (
-        select 1 from ${spareRequests} fsr
-        where fsr.id = (case when fi.kind = 'spare-request' then fi.dedupe_key::uuid end)
-          and fsr.holder_user_id = fi.user_id and fsr.status = 'open'
-          and fsr.created_at > ${openFloor(now).toISOString()}::timestamptz))
-      and (fi.friend_user_id is null or (sp.public_id is not null and (
-        (fi.kind = 'trade-match' and exists (
-          select 1 from ${friendLinks} gl
-          join ${podSpareShares} gs on gs.user_id = gl.friend_user_id
-          join ${podMembers} gf on gf.pod_id = gs.pod_id and gf.user_id = gl.friend_user_id
-          join ${podMembers} gv on gv.pod_id = gs.pod_id and gv.user_id = gl.user_id
-          where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id)
-          and not exists (
-            select 1 from ${spareKeep} sk
-            where sk.user_id = fi.friend_user_id and sk.oracle_id = fi.oracle_id))
-        or (fi.kind <> 'trade-match' and exists (
-          select 1 from ${friendLinks} gl
-          where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id)))))`;
+      ${standing(now)}`;
+}
+
+/**
+ * Stored items by their opaque feed keys (`item:<id>`, the outbox's own `item_key` and Home's own key), for one reader,
+ * regardless of the reader's FEED toggles (push can be on with the feed kind off) but only while each item still STANDS
+ * (`standing`). Never by a writer's dedupe key: a trade match's names another account. Columns match the union's, with
+ * `unseen` false: the push never reads the cursor.
+ */
+export function storedItemsByKeyQuery(viewerId: string, refs: readonly { kind: StoredKind; key: string }[], now: Date): SQL | null {
+  if (refs.length === 0) return null;
+  const pairs = sql.join(refs.map((r) => sql`(${r.kind}::text, ${r.key}::text)`), sql`, `);
+  return sql`select fi.kind as kind, 'item:' || fi.id::text as key, fi.created_at as created_at,
+      null::text as code, null::text as name, null::text as file_name,
+      fi.oracle_id as oracle_id, fi.variant_id as variant_id,
+      sp.public_id::text as friend_public_id, sp.display_name as friend_name, fi.data as data,
+      false as unseen
+    from ${feedItems} fi
+    left join ${socialProfiles} sp on sp.user_id = fi.friend_user_id
+    where fi.user_id = ${viewerId}
+      and (fi.kind, 'item:' || fi.id::text) in (${pairs})
+      ${standing(now)}`;
 }
