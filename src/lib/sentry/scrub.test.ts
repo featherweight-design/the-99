@@ -32,7 +32,16 @@ describe("scrubEvent", () => {
       headers: { "stripe-signature": "t=1,v1=abc", cookie: "__session=jwt" },
       query_string: "sig=1",
     },
-    exception: { values: [{ type: "Error", value: `no deck called Sol Ring for ${EMAIL}` }] },
+    exception: {
+      values: [
+        {
+          type: "Error",
+          value: `no deck called Sol Ring for ${EMAIL}`,
+          stacktrace: { frames: [{ filename: "https://x.dev/friend/tok_SECRET?q=private", abs_path: "https://x.dev/join/QRTOKEN?a=1", function: "onClick", lineno: 7, colno: 3 }] },
+        },
+      ],
+    },
+    threads: { values: [{ id: 1, stacktrace: { frames: [{ filename: "https://x.dev/friend/tok_SECRET#h" }] } }] },
     breadcrumbs: [
       { category: "console", message: `log ${EMAIL}` },
       { category: "fetch", data: { url: "/api/x?q=secret" } },
@@ -45,7 +54,7 @@ describe("scrubEvent", () => {
   const out = JSON.stringify(scrubEvent(event));
 
   it("carries no identity, body, header, cookie, query or message", () => {
-    for (const leak of [EMAIL, CLERK_ID, "1.2.3.4", "host-1", "customer_email", "stripe-signature", "v1=abc", "__session", "sig=1", "tok_SECRET", CLERK_ID.slice(0, 10), "Sol Ring", "q=secret", "a=1", "q=private", "Friday Night Pod", "Hugh"]) {
+    for (const leak of [EMAIL, CLERK_ID, "1.2.3.4", "host-1", "customer_email", "stripe-signature", "v1=abc", "__session", "sig=1", "tok_SECRET", CLERK_ID.slice(0, 10), "Sol Ring", "q=secret", "a=1", "q=private", "QRTOKEN", "Friday Night Pod", "Hugh"]) {
       expect(out, leak).not.toContain(leak);
     }
   });
@@ -53,6 +62,7 @@ describe("scrubEvent", () => {
     const e = scrubEvent(event);
     expect(e.request).toEqual({ method: "POST", url: "https://x.dev/api/stripe-webhook" });
     expect(e.exception?.values?.[0].type).toBe("Error");
+    expect(e.exception?.values?.[0].stacktrace?.frames?.[0]).toEqual({ filename: "https://x.dev/friend/[redacted]", abs_path: "https://x.dev/join/[redacted]", function: "onClick", lineno: 7, colno: 3 });
     expect(e.transaction).toBe("GET /friend/[redacted]");
   });
   it("keeps only navigation and click breadcrumbs, scrubbed, with no click text", () => {

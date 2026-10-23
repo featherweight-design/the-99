@@ -33,6 +33,17 @@ export function scrubBreadcrumb(crumb: Breadcrumb): Breadcrumb | null {
   return { category: crumb.category, level: crumb.level, timestamp: crumb.timestamp, data };
 }
 
+// An inline script's frame names the DOCUMENT it ran in, query and link token included.
+function scrubStacktrace<T extends { frames?: { filename?: string; abs_path?: string }[] }>(trace: T | undefined): T | undefined {
+  if (!trace?.frames) return trace;
+  const frames = trace.frames.map((f) => ({
+    ...f,
+    ...(f.filename && { filename: scrubUrl(f.filename) }),
+    ...(f.abs_path && { abs_path: scrubUrl(f.abs_path) }),
+  }));
+  return { ...trace, frames };
+}
+
 export function scrubEvent(event: ErrorEvent): ErrorEvent {
   const next: ErrorEvent = { ...event };
   delete next.user;
@@ -56,8 +67,11 @@ export function scrubEvent(event: ErrorEvent): ErrorEvent {
   if (next.exception?.values) {
     next.exception = {
       ...next.exception,
-      values: next.exception.values.map((v) => ({ ...v, value: REDACTED })),
+      values: next.exception.values.map((v) => ({ ...v, value: REDACTED, stacktrace: scrubStacktrace(v.stacktrace) })),
     };
+  }
+  if (next.threads?.values) {
+    next.threads = { ...next.threads, values: next.threads.values.map((t) => ({ ...t, stacktrace: scrubStacktrace(t.stacktrace) })) };
   }
   if (next.breadcrumbs) {
     next.breadcrumbs = next.breadcrumbs.map(scrubBreadcrumb).filter((c): c is Breadcrumb => c !== null);
