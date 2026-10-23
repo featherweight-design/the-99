@@ -20,6 +20,7 @@ import type { db } from "../../db";
 import { feedItems, friendLinks, pushSubscriptions, userPrefs } from "../../db/schema";
 import { kindEnabledAt } from "../feed/kind-gate";
 import { enqueuePushQuery } from "../push/enqueue";
+import { kickPush } from "../push/kick";
 import { pushKindEnabledAt } from "../push/kind-gate";
 import { isStoredKind, type StoredKind } from "../feed/kinds";
 
@@ -100,7 +101,7 @@ export function recordFeedItemQuery(input: FeedItemInput): SQL {
       on conflict (user_id, kind, dedupe_key) do nothing
       returning id),
     pushed as (${push})
-    select id from wrote`;
+    select id, exists (select 1 from pushed) as pushed from wrote`;
 }
 
 /**
@@ -111,7 +112,10 @@ export function recordFeedItemQuery(input: FeedItemInput): SQL {
 export async function recordFeedItem(tx: Executor, input: FeedItemInput): Promise<boolean> {
   const problem = feedItemProblem(input);
   if (problem) throw new Error(`recordFeedItem: ${problem}`);
-  const done = await tx.execute(recordFeedItemQuery(input));
+  const done = await tx.execute<{ id: string; pushed: boolean }>(recordFeedItemQuery(input));
+  // A push was queued with it: in a request, flush this reader's outbox once the response is out (D1's kick), so a spare
+  // ask reaches the friend in seconds rather than at the next cron. Outside a request (a job, a script) the cron delivers it.
+  if (done.rows[0]?.pushed === true) kickPush(input.userId);
   return (done.rowCount ?? done.rows.length) > 0;
 }
 

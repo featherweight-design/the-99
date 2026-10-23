@@ -86,6 +86,17 @@ This file holds what a reader of the code needs and the plan's decisions in one 
 5. An installed iPhone must show every push (WebKit revokes a silent subscription), so the "no push with a focused client"
    rule skips only off iOS.
 
+## Added by the kick PR (after 3b)
+
+- **The kick** (`src/lib/push/kick.ts`, D1): `recordFeedItem`'s one statement also says whether it queued a push
+  (`pushed`), and when it did, `kickPush(userId)` schedules ONE flush of that reader's rows with `after()`, so a spare ask
+  reaches the friend in seconds rather than at the next 15-minute cron. `flushPush({ onlyUser })` selects that reader's rows
+  only and never prunes. Outside a request (a job such as the price-drop run, a script, a probe) `after()` cannot be
+  scheduled, so nothing happens and the cron delivers it; a kick that fails is reported (`push-kick`) and its rows wait.
+  The flush is imported lazily, so the feed writer does not load the sender. Dormant without the VAPID keys.
+- Proof: `probe:push-flush` section 4g (the `pushed` flag both ways; a kicked flush sends only its reader's rows and leaves
+  another's for the cron; fails with the filter removed), `kick.test.ts`, `feed-write-push.test.ts`.
+
 ## Landing contract (consumed by the landing PR)
 
 A message carries `route`, `tag` (the kind), the item `keys`, and for a price drop or combo `openCard` (an oracle id) and
