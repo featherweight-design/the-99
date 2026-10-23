@@ -3,7 +3,7 @@
 A deck's top strategies, and the FOCUS a player picks among them for Suggested changes to aim at. Brief:
 `docs/superpowers/design-briefs/2026-10-22-strategy-focus.md`, reshaped by the handoff
 `design/design_handoff_the99_strategy_focus/` (one swap engine: no lean-in tool and no paid read). Research:
-`boards/strategy-focus-research-2026-10-18.md` (lane 9b), re-test section. Behind `STRATEGY_FOCUS_ENABLED` (needs `ANALYSIS_TAB_ENABLED`), unset in production and held out of All features.
+`boards/strategy-focus-research-2026-10-18.md` (lane 9b), re-test section. Behind `STRATEGY_FOCUS_ENABLED` (needs `ANALYSIS_TAB_ENABLED`), unset in production, and in All features since its close-out (About entry `deck-focus`).
 
 ## The score
 
