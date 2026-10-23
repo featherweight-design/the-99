@@ -27,7 +27,8 @@ export type PushEnqueue = {
   /** The feed item's opaque key: a SQL expression over the feed insert's own row, or a literal for a test. */
   itemKey: string | SQL;
   batchKey?: string;
-  now?: Date;
+  /** The event's own time, REQUIRED: the item and its push must be judged at one instant against the stamps (`recordFeedItemQuery` passes the one it wrote the item at). */
+  now: Date;
   /** An extra condition, e.g. that the feed insert it rides on wrote a row. */
   when?: SQL;
 };
@@ -42,7 +43,7 @@ export const newBatchKey = (kind: StoredKind): string => `${kind}:${randomUUID()
 export const defaultBatchKey = (kind: StoredKind, now: Date): string => `${kind}:${Math.floor(now.getTime() / BATCH_WINDOW_MS)}`;
 
 export function enqueuePushQuery(input: PushEnqueue): SQL {
-  const now = input.now ?? new Date();
+  const now = input.now;
   const batch = input.batchKey ?? defaultBatchKey(input.kind, now);
   return sql`insert into ${pushOutbox} (user_id, kind, item_key, batch_key, payload, created_at)
     select ${input.userId}, ${input.kind}, ${input.itemKey}, ${batch}, '{}'::jsonb, ${now.toISOString()}::timestamptz

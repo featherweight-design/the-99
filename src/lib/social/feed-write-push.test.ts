@@ -25,6 +25,13 @@ describe("recordFeedItem queues its push in the SAME statement", () => {
     expect(outbox).not.toContain("dedupe_key");
   });
 
+  it("judges the item and its push at ONE instant, even when the writer names none", () => {
+    const { now: _omit, ...unstamped } = input;
+    const stamps = render(unstamped as never).params.filter((p) => typeof p === "string" && /^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(p));
+    expect(stamps.length).toBeGreaterThanOrEqual(2); // the feed row's, and the outbox row's (twice)
+    expect(new Set(stamps).size).toBe(1);
+  });
+
   it("passes the writer's own batch key on", () => {
     expect(render({ ...input, batchKey: "run-7" }).params).toContain("run-7");
   });

@@ -79,13 +79,14 @@ function friendHeld(input: FeedItemInput): SQL {
  * null: off for every kind but a default-on one.
  */
 export function recordFeedItemQuery(input: FeedItemInput): SQL {
-  const now = (input.now ?? new Date()).toISOString();
+  const at = input.now ?? new Date();
+  const now = at.toISOString();
   const enabledAt = kindEnabledAt(sql`wup`, sql`${input.kind}::text`);
   const pushEnabledAt = pushKindEnabledAt(sql`wup`, sql`${input.kind}::text`);
   // ONE statement: the feed insert and the push it announces, so they commit or fail together whatever the executor is.
   const push = enqueuePushQuery({
     userId: input.userId, kind: input.kind, itemKey: sql`'item:' || (select wrote.id::text from wrote limit 1)`,
-    batchKey: input.batchKey, now: input.now, when: sql`exists (select 1 from wrote)`,
+    batchKey: input.batchKey, now: at, when: sql`exists (select 1 from wrote)`,
   });
   return sql`with wrote as (
       insert into ${feedItems} (user_id, kind, dedupe_key, oracle_id, variant_id, friend_user_id, data, created_at)
