@@ -157,5 +157,33 @@ describe("a combo line opened from card details", () => {
         expect(document.activeElement).toBe(screen.getByRole("button", { name: combosCloseCopy.card.openAria("Polyraptor", "Warstorm Surge") })),
       );
     });
+
+    it("after an Add, focus lands on the line once the re-read has moved it to Whole in this deck (round 2)", async () => {
+      const WHOLE = card("o-poly", "Polyraptor", {
+        cardCombos: { combos: [{ ...COMBO, others: [{ ...COMBO.others[0], state: "inDeck", where: { kind: "inDeck" } }] }], inScope: true },
+      });
+      let added = false;
+      let release!: () => void;
+      const fetchCard = vi.fn(async (id: string) => {
+        if (id === "o-surge") return card("o-surge", "Warstorm Surge");
+        if (!added) return IN_DECK;
+        await new Promise<void>((r) => { release = r; });
+        return WHOLE;
+      });
+      mountDeck(fetchCard);
+      await openCombo();
+      addCardToDeck.mockImplementationOnce(async () => { added = true; return { ok: true }; });
+      await act(async () => { screen.getByRole("button", { name: combosCloseCopy.detail.add("Warstorm Surge") }).click(); });
+      await waitFor(() => expect(document.querySelector("[data-card-combo=v-1]")).toBeNull());
+      await waitFor(() => expect(release).toBeTypeOf("function"));
+      await act(async () => { release(); });
+      await waitFor(() => {
+        // The line now sits under `Whole in this deck` (the re-read's answer), and its press holds focus.
+        const whole = document.querySelector(`[data-combo-group="${combosCloseCopy.card.groups.whole}"]`);
+        expect(whole).not.toBeNull();
+        expect(document.querySelector(`[data-combo-group="${combosCloseCopy.card.groups.oneAway}"]`)).toBeNull();
+        expect(document.activeElement).toBe(screen.getByRole("button", { name: combosCloseCopy.card.openAria("Polyraptor", "Warstorm Surge") }));
+      });
+    });
   });
 });

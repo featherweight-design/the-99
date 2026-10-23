@@ -1486,28 +1486,38 @@ export function CardDetailProvider({
   const comboAddSettled = useCallback(() => {
     if (!cardOverComboRef.current) setComboSheet(null);
   }, []);
+  // Focus back on the line that opened the sheet once its card is live again. The dialog's own return
+  // ran while the card was still covered (inert), so it found nothing to land on. After an Add the card
+  // is read anew and its line moves to `Whole in this deck` (a different list, so a new button): the
+  // focus waits for that read to land (`comboFocusAwait`, the card as it was when evicted).
+  const comboFocusRef = useRef<string | null>(null);
+  const comboFocusAwait = useRef<BrowseCard | null>(null);
   // After the sheet's own cleanup has put the card back in the live slot (a child's unmount runs first).
   useEffect(() => {
     const id = comboReread.current;
     if (comboSheet !== null || held !== null || id === null) return;
     comboReread.current = null;
+    if (comboFocusRef.current !== null && card?.oracleId === id) comboFocusAwait.current = card;
     evict(id);
-  }, [comboSheet, held, comboRereadTick, evict]);
-  // Focus back on the line that opened the sheet once its card is live again. The dialog's own return
-  // ran while the card was still covered (inert), so it found nothing to land on.
-  const comboFocusRef = useRef<string | null>(null);
+  }, [comboSheet, held, comboRereadTick, evict, card]);
   useEffect(() => {
     const variantId = comboFocusRef.current;
     if (comboSheet !== null || held !== null || variantId === null) return;
+    // The re-read has not landed yet: the line on screen is about to be replaced.
+    if (comboFocusAwait.current !== null && comboFocusAwait.current === card) return;
+    comboFocusAwait.current = null;
     comboFocusRef.current = null;
     const frame = requestAnimationFrame(() => {
+      // Never over a control the reader has reached since.
+      const active = document.activeElement;
+      if (active && active !== document.body) return;
       const target =
         document.querySelector<HTMLElement>(`[data-combo-line="${CSS.escape(variantId)}"] [data-combo-press]`) ??
         document.querySelector<HTMLElement>("[data-testid=combo-partners-block] button[aria-expanded]");
       target?.focus();
     });
     return () => cancelAnimationFrame(frame);
-  }, [comboSheet, held]);
+  }, [comboSheet, held, card]);
   const openComboSheet = useCallback((card: BrowseCard, combo: CardCombo) => {
     comboFocusRef.current = combo.variantId;
     setComboSheet({ card, combo });

@@ -29,11 +29,14 @@ const copy = combosCloseCopy;
 
 /**
  * Pure: where the card the combo was opened FROM is (OPEN-10), from what the card already carries: in
- * the deck in scope; else a spare; else every copy in other decks; else its buy tag's figure.
+ * the deck in scope; else a spare; else every copy in other decks; else its buy tag's figure. Null for
+ * an owned card whose claims could not be read (`availability: null`): where its copies are is unknown,
+ * and a buy tag beside a card the modal calls owned would be false.
  */
-export function openedCardWhere(card: BrowseCard, inScope: boolean): CardComboWhere {
+export function openedCardWhere(card: BrowseCard, inScope: boolean): CardComboWhere | null {
   if (inScope) return { kind: "inDeck" };
   const a = card.availability;
+  if (!a && card.quantity > 0) return null;
   if (a && a.owned > 0) return a.free > 0 ? { kind: "spare" } : { kind: "elsewhere", decks: holdingDecks(a) };
   return { kind: "buy", ...cheapestLive(card.prices), soldOut: false };
 }
@@ -135,12 +138,10 @@ export function CardComboSheet({
             // Outlined only where the deck lacks it: a whole combo has no missing piece.
             missingOracleId: inScope && partner && partner.state !== "inDeck" ? partner.oracleId : undefined,
             stillOracleId: card.oracleId,
-            where: (oracleId) => (
-              <MissingPieceWhereLine
-                where={oracleId === card.oracleId ? openedCardWhere(card, inScope) : (partner?.where ?? { kind: "spare" })}
-                on="plate"
-              />
-            ),
+            where: (oracleId) => {
+              const where = oracleId === card.oracleId ? openedCardWhere(card, inScope) : (partner?.where ?? { kind: "spare" });
+              return where ? <MissingPieceWhereLine where={where} on="plate" /> : null;
+            },
             action: add ? (
               <>
                 <GhostButton

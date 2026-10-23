@@ -49,6 +49,12 @@ describe("openedCardWhere (OPEN-10)", () => {
       .toEqual({ kind: "elsewhere", decks: [{ id: "d", name: "HD - Tovolar", committed: true }] });
     expect(openedCardWhere(CARD, false)).toEqual({ kind: "buy", cents: null, soldOut: false, qualifier: null });
   });
+
+  it("an owned card whose claims could not be read has no where-line, never a buy tag (round 2)", () => {
+    expect(openedCardWhere({ ...CARD, quantity: 2, availability: null } as BrowseCard, false)).toBeNull();
+    // Not owned and no availability read: still its buy tag.
+    expect(openedCardWhere({ ...CARD, quantity: 0, availability: null } as BrowseCard, false)?.kind).toBe("buy");
+  });
 });
 
 describe("cheapestLive: the opened card's buy tag", () => {
