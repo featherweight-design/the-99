@@ -44,7 +44,9 @@ export async function fetchBranches({ token, projectId }) {
     const r = await getJson(`${NEON}/projects/${projectId}/branches?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`, token);
     all.push(...r.branches);
     const next = r.pagination?.next ?? r.pagination?.cursor ?? null;
-    if (!next || next === cursor || r.branches.length === 0) return all;
+    if (!next) return all;
+    // A cursor that does not advance means the inventory is incomplete or repeated; neither may read as a result.
+    if (next === cursor || r.branches.length === 0) throw new Error("the Neon branch list stopped advancing before its last page");
     cursor = next;
   }
   throw new Error("the Neon branch list did not end after 50 pages");

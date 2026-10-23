@@ -178,8 +178,9 @@ describe("fetchBranches", () => {
     expect(all.map((b: { id: string }) => b.id)).toEqual(["a0", "a1", "a2", "b0"]);
     expect(urls[1]).toContain("cursor=c1");
   });
-  it("stops on a repeated cursor instead of looping", async () => {
+  it("throws when the cursor stops advancing, so a repeated page is never an inventory", async () => {
     vi.stubGlobal("fetch", async () => page([{ id: "x" }], "same"));
-    expect((await fetchBranches({ token: "t", projectId: "p" })).length).toBe(2);
+    await expect(fetchBranches({ token: "t", projectId: "p" })).rejects.toThrow(/stopped advancing/);
   });
+});
 });
