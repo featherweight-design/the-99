@@ -207,6 +207,12 @@ async function run(page, steps) {
     // A moment's bubble (discovery R1): portalled to the end of the document, outside `<main>`, so it is the one wait
     // that is not page-scoped. It names the note it expects (`"Mana Balance, a tip"`), so another moment arriving in its
     // place fails the row rather than photographing the wrong tip.
+    // A sheet portalled to `<body>` (outside `<main>`), named by its accessible name, so the shell's account sheet (also a
+    // `role="dialog"`) can never stand in for it.
+    if (step.waitDialog !== undefined) {
+      if (typeof step.waitDialog !== "string") throw new Error("waitDialog takes the dialog's accessible name");
+      await page.getByRole("dialog", { name: step.waitDialog, exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
+    }
     if (step.waitNote !== undefined) {
       if (typeof step.waitNote !== "string") throw new Error("waitNote takes the note's accessible name");
       await page.getByRole("note", { name: step.waitNote, exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
@@ -370,20 +376,36 @@ try {
   for (const size of WIDTHS) {
     // `"camera": { w, h, card?, share, cx, cy, angle }` on a width gives that width its own browser with a fake
     // camera playing the scene (`lib/fake-camera.mjs`), for a surface that reads the camera.
-    const widthBrowser = size.camera
-      ? await chromium.launch({ args: fakeCameraArgs(await writeFakeCamera(size.camera, path.join(outDir, "camera"), size.label)) })
+    // `"channel": "chromium"` on a width launches Chromium's new headless mode for it, where a granted permission is what
+    // the page reads: the default headless shell reports `Notification.permission` as `denied` whatever is granted.
+    const widthBrowser = size.camera || size.channel
+      ? await chromium.launch({
+        ...(size.channel ? { channel: size.channel } : {}),
+        ...(size.camera ? { args: fakeCameraArgs(await writeFakeCamera(size.camera, path.join(outDir, "camera"), size.label)) } : {}),
+      })
       : browser;
     if (widthBrowser !== browser) cameraBrowsers.add(widthBrowser);
     const context = await widthBrowser.newContext({
-      permissions: size.camera ? ["camera"] : [],
+      // A width may grant browser permissions (`"permissions": ["notifications"]`), for a surface whose state follows one:
+      // a headless browser's notification permission is `default`, so the push device row reads Not on yet without it.
+      permissions: [...(size.camera ? ["camera"] : []), ...(size.permissions ?? [])],
       viewport: { width: size.width, height: size.height },
       deviceScaleFactor: 1,
       // A width may name an input: `"touch": true` makes Chromium report `(hover: none)`, where the
       // desktop rail draws its labelled touch form (desktop nav labels), at a desktop viewport.
       hasTouch: size.touch === true,
+      // And a user agent (`"userAgent"`), for a surface drawn from it: the push device row on an iPhone in Safari.
+      ...(size.userAgent ? { userAgent: size.userAgent } : {}),
     });
     if (THEME) await context.addCookies([{ name: "the99_theme", value: THEME, url: BASE }]);
     const page = await context.newPage();
+    // `"notificationPermission": "default"` STAGES what `Notification.permission` reads, for the one state headless Chromium
+    // cannot reach (it never reports `default`). The surface is real; the browser's answer is not, and the row says so.
+    if (size.notificationPermission) {
+      await page.addInitScript((value) => {
+        if ("Notification" in window) Object.defineProperty(Notification, "permission", { get: () => value, configurable: true });
+      }, size.notificationPermission);
+    }
     // An inventory of moments: every load starts with this visit's moment TAKEN, unless the step before it was
     // `clearVisit`, so nothing arrives on the loads that sign in and clear the About gate (the account button carries a
     // moment on every route, Home included) and a row's moment is the first its own route can show.

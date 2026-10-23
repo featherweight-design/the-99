@@ -1,12 +1,147 @@
 {
   "feature": "Push notifications, PR 4: /settings' What's new on Home with the push column, the device row and the iPhone guidance sheet (handoff design_handoff_the99_push, boards Settings, Device-States, The-Ask, iPhone; plan 2026-10-22-push.md)",
-  "note": "Run on a scratch Neon branch migrated to this PR, with HOME_FEED_ENABLED and PUSH_ENABLED on and VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT set to a pair from `pnpm push:keys`, against `next start` (the service worker registers in production only; under `next dev` every device reads Can't and the column leaves, which is the Can't frame). A headless browser's permission is `default`, so the device row reads Not on yet; nothing here presses a push box, because a press asks the browser. The other states (On, Off here, Blocked, Needs Home Screen) and the sheet are proved by src/components/settings/news-section.push.test.tsx; a real device's are Hugh's check in the PR body.",
+  "note": "Run against `next start` (the service worker registers in production only; under `next dev` every device reads Can't and the column leaves, which is the Can't frame), with HOME_FEED_ENABLED=true and PUSH_ENABLED=true and VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT set to a throwaway pair from `pnpm push:keys`, passed to the server process only, on a database migrated to the push foundation (local-dev is; the run only loads pages, plus clearAbout's captured-and-restored About columns). Headless Chromium reports notification permission `denied` by default, so the plain widths read Blocked (real). The `-default` widths STAGE `Notification.permission` as `default` (an init script; the one state headless Chromium cannot reach) and read Not on yet. The `-allowed` widths run Chromium's new headless (`channel: chromium`) with `notifications` granted, which with no subscription in a fresh browser reads Off here (real). The `iphone` width is Safari's iPhone user agent (iOS 17.4, not installed), which reads Needs Home Screen, and its How › opens the guidance sheet. Nothing here presses a push box, because a press asks the browser and subscribes. On is proved by src/components/settings/news-section.push.test.tsx; a real device's is Hugh's check in the PR body.",
+  "clearAbout": true,
   "rows": [
     {
-      "id": "settings-push-column",
-      "label": "/settings: What's new on Home with the Push head, the device row first, each kind's push box, and the foot's push clause",
+      "id": "settings-push-not-on",
+      "label": "/settings: What's new on Home with the Push head, the device row (Not on yet; permission staged `default`), each kind's push box, and the foot's push clause",
       "view": "src/components/settings/news-section.tsx",
-      "steps": [{ "goto": "/settings", "wait": "[data-push-device]", "settle": 3500 }]
+      "widths": [
+        "phone-default",
+        "desktop-default"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "[data-push-device=\"not-on\"]",
+          "settle": 1500,
+          "scrollTo": "#settings-news"
+        }
+      ]
+    },
+    {
+      "id": "settings-push-blocked",
+      "label": "/settings: headless Chromium's own `denied`: the device row reads Blocked, its box disabled",
+      "view": "src/components/settings/news-section.tsx",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "[data-push-device=\"blocked\"]",
+          "settle": 1500,
+          "scrollTo": "#settings-news"
+        }
+      ]
+    },
+    {
+      "id": "settings-push-off-here",
+      "label": "/settings: notifications allowed, no subscription in this browser: the device row reads Off here",
+      "view": "src/components/settings/news-section.tsx",
+      "widths": [
+        "phone-allowed",
+        "desktop-allowed"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "[data-push-device=\"off-here\"]",
+          "settle": 1500,
+          "scrollTo": "#settings-news"
+        }
+      ]
+    },
+    {
+      "id": "settings-push-iphone",
+      "label": "/settings on an iPhone in Safari: the device row reads Needs Home Screen with How ›",
+      "view": "src/components/settings/news-section.tsx",
+      "widths": [
+        "iphone"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "[data-push-device=\"home-screen\"]",
+          "settle": 1500,
+          "scrollTo": "#settings-news"
+        }
+      ]
+    },
+    {
+      "id": "settings-push-iphone-sheet",
+      "label": "/settings on an iPhone in Safari: How › opens Add The 99 to your Home Screen",
+      "view": "src/components/settings/push-how-sheet.tsx",
+      "widths": [
+        "iphone"
+      ],
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "[data-push-device=\"home-screen\"]",
+          "settle": 1000,
+          "scrollTo": "#settings-news"
+        },
+        {
+          "clickRole": "button",
+          "name": "^How"
+        },
+        {
+          "waitDialog": "Add The 99 to your Home Screen",
+          "settle": 600
+        }
+      ]
+    }
+  ],
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    },
+    {
+      "label": "phone-default",
+      "width": 390,
+      "height": 844,
+      "notificationPermission": "default"
+    },
+    {
+      "label": "desktop-default",
+      "width": 1300,
+      "height": 900,
+      "notificationPermission": "default"
+    },
+    {
+      "label": "phone-allowed",
+      "width": 390,
+      "height": 844,
+      "channel": "chromium",
+      "permissions": [
+        "notifications"
+      ]
+    },
+    {
+      "label": "desktop-allowed",
+      "width": 1300,
+      "height": 900,
+      "channel": "chromium",
+      "permissions": [
+        "notifications"
+      ]
+    },
+    {
+      "label": "iphone",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
     }
   ]
 }
