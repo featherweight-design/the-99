@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FeedView } from "../../lib/feed/home";
 import { feedCopy } from "../../lib/copy/feed";
 import { spareCopy } from "../../lib/copy/social";
-import { LeadStory } from "./lead-story";
+import { LeadSlot, LeadStory } from "./lead-story";
 
 const actions = vi.hoisted(() => ({ answerSpareAction: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => actions);
@@ -70,5 +70,45 @@ describe("LeadStory, a spare request", () => {
     render(<LeadStory item={{ ...LEAD, ask: undefined }} now={NOW} />);
     expect(screen.getByText(feedCopy.home.line.spareRequest)).toBeTruthy();
     expect(screen.queryByRole("button")).toBeNull();
+  });
+});
+
+// Any revalidation in an action re-renders the page it was pressed from: Home's lead moves on (the answered ask has left
+// the feed) as the answer lands. The slot holds the answered story, receipt and all, for the visit.
+describe("LeadSlot", () => {
+  const NEXT: FeedView = { ...LEAD, key: "item:2", kind: "trade-match", ask: undefined, href: "/friends/pub-colin",
+    friend: { publicId: "pub-colin", displayName: "Colin" } };
+
+  it("keeps the receipt when the redraw brings another lead, or none", async () => {
+    actions.answerSpareAction.mockResolvedValue({ ok: true });
+    const { rerender } = render(<LeadSlot lead={LEAD} now={NOW} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Yes,/ })));
+    rerender(<LeadSlot lead={NEXT} now={NOW} />);
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("You’re sparing Lathliss for Peter");
+    rerender(<LeadSlot lead={null} now={NOW} />);
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("You’re sparing Lathliss for Peter");
+  });
+
+  it("holds the story while the answer is in flight, so a redraw landing first cannot take it", async () => {
+    let finish: (v: { ok: true }) => void = () => {};
+    actions.answerSpareAction.mockReturnValue(new Promise((res) => { finish = res; }));
+    const { rerender } = render(<LeadSlot lead={LEAD} now={NOW} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^No,/ })));
+    rerender(<LeadSlot lead={NEXT} now={NOW} />);
+    await act(async () => finish({ ok: true }));
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("You’re keeping Lathliss");
+  });
+
+  it("lets the story go after a failed answer, so the next redraw's lead is drawn", async () => {
+    actions.answerSpareAction.mockResolvedValue({ ok: false, reason: "gone" });
+    const { rerender } = render(<LeadSlot lead={LEAD} now={NOW} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Yes,/ })));
+    rerender(<LeadSlot lead={NEXT} now={NOW} />);
+    expect(screen.getByRole("region").dataset.leadStory).toBe("trade-match");
+  });
+
+  it("draws nothing with no lead", () => {
+    const { container } = render(<LeadSlot lead={null} now={NOW} />);
+    expect(container.querySelector("[data-lead-story]")).toBeNull();
   });
 });

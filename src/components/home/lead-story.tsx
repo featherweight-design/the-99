@@ -6,7 +6,10 @@
 //
 // A spare request that leads while its ask is still answerable (`item.ask`; spare requests PR 3d, board `Friend-Side`)
 // carries Yes and No and the days left on the story, the same answer as Waiting on you's row (`spare-answer.tsx`); an
-// answer turns the story into that row's receipt for the visit. The action revalidates `/friends`, never Home.
+// answer turns the story into that row's receipt for the visit. The action revalidates `/friends`, and any revalidation
+// in an action re-renders the page it was pressed from, so Home's lead moves on (the answered ask has left the feed)
+// as the action lands. `LeadSlot` therefore HOLDS the story from the press: the same item, so the same instance, keeps
+// its receipt for the visit; a failed answer lets it go again.
 
 import { useRef, useState } from "react";
 import type { FeedView } from "../../lib/feed/home";
@@ -22,16 +25,29 @@ import { ArtLayer } from "../ui/art-layer";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "../social/spare-answer";
 
+type Face = Pick<ProfileCommander, "artCropUri"> | null;
+
+/** Home's lead, held once its ask is pressed (see the head): the server's lead until then. */
+export function LeadSlot({ lead, now, face }: { lead: FeedView | null; now: string; face?: Face }) {
+  const [held, setHeld] = useState<{ item: FeedView; face: Face } | null>(null);
+  const shown = held ?? (lead ? { item: lead, face: face ?? null } : null);
+  if (!shown) return null;
+  return <LeadStory key={shown.item.key} item={shown.item} now={now} face={shown.face} onHold={(on) => setHeld(on ? shown : null)} />;
+}
+
 export function LeadStory({
   item,
   now,
   face,
   className = "",
+  onHold,
 }: {
   item: FeedView;
   now: string;
-  face?: Pick<ProfileCommander, "artCropUri"> | null;
+  face?: Face;
   className?: string;
+  /** Called true as an answer is pressed and false when it fails, so the slot keeps this story through the redraw. */
+  onHold?: (on: boolean) => void;
 }) {
   const feed = feedText(item);
   const ask = item.ask ?? null;
@@ -48,7 +64,12 @@ export function LeadStory({
       ? { title: feed.title, line: spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName), press: null }
       : feed;
   async function press(a: Answer) {
-    if (!ask || !(await answer(ask.id, a))) return;
+    if (!ask || busy) return;
+    onHold?.(true);
+    if (!(await answer(ask.id, a))) {
+      onHold?.(false);
+      return;
+    }
     setAnswered(a);
     land('[data-testid="spare-receipt-status"]');
   }
@@ -83,8 +104,8 @@ export function LeadStory({
       </div>
       <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
         <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
-          {receipt ? receipt.kind : feedCopy.home.kicker[item.kind]}
-          <small className="ml-auto text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
+          <span className="min-w-0">{receipt ? receipt.kind : feedCopy.home.kicker[item.kind]}</span>
+          <small className="ml-auto flex-none whitespace-nowrap text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
         </p>
         <h3 id="home-lead-title" className="m-0 font-display [overflow-wrap:anywhere] text-[18px] leading-[1.25] font-bold text-[color:var(--fg)] md:text-[22px]">
           {text.title}

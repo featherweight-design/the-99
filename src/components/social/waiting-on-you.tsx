@@ -144,7 +144,7 @@ function AskRow({ row, now, busy, locked, onAnswer }: {
   );
 }
 
-/** The answered ask, for the visit: "You're sparing Lathliss for Peter" (on the success wash) or "You're keeping Lathliss". */
+/** The answered ask, for the visit, on the receipt's success wash (`.fi.rc`): "You're sparing Lathliss for Peter" or "You're keeping Lathliss". */
 function ReceiptRow({ receipt }: { receipt: Receipt }) {
   const { ask } = receipt.row;
   const yes = receipt.answer === "yes";
@@ -154,7 +154,7 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
       data-testid="waiting-receipt"
       data-receipt={receipt.row.key}
       data-answer={receipt.answer}
-      className={`${ASK_ROW} ${yes ? "bg-[color:color-mix(in_oklab,var(--success)_6%,var(--surface-inset))]" : ""}`}
+      className={`${ASK_ROW} bg-[color:color-mix(in_oklab,var(--success)_6%,var(--surface-inset))]`}
     >
       <Picture imageUri={ask.card.imageUri} friend={ask.asker} className="row-span-2 self-start md:row-span-1 md:self-center" />
       {/* Focus lands here after the answer (the pressed Yes or No is gone), so the receipt is read whole. */}

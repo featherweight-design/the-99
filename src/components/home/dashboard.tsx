@@ -30,7 +30,7 @@ import { Fragment } from "react";
 import type { HomeFeed } from "../../lib/feed/home";
 import { lockPageLine } from "../../lib/copy/refresh";
 import { CardDetailProvider } from "../cards/card-detail-provider";
-import { LeadStory } from "./lead-story";
+import { LeadSlot } from "./lead-story";
 import { WhatsNew } from "./whats-new";
 
 export type DashboardProps = {
@@ -245,7 +245,7 @@ export function Dashboard(props: DashboardProps) {
           {props.welcome}
           {/* Direction B: the lead story where Ready to build stood, which leaves Home. */}
           {feed ? (
-            lead && <LeadStory item={lead} now={props.now} face={lead.friend ? faces.get(lead.friend.publicId) ?? null : null} />
+            <LeadSlot lead={lead} now={props.now} face={lead?.friend ? faces.get(lead.friend.publicId) ?? null : null} />
           ) : (
             // At zero cards it ranks nothing and leaves on its own (S12: absent, not empty).
             props.ready && <ReadyToBuild ready={props.ready} inUse={props.inUse} />
