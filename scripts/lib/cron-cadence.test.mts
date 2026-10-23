@@ -8,7 +8,7 @@ describe("minGapMinutes", () => {
   it.each([
     ["*/5 * * * *", 5], ["*/30 * * * *", 30], ["*/15 * * * *", 15], ["17 * * * *", 60], ["0,10 * * * *", 10],
     ["0 9 * * *", 1440], ["0 9 * * 1", 10080], ["* * * * *", 1], ["0-10/2 * * * *", 2], ["0 0,12 * * *", 720],
-    ["30 4 1 * *", 29 * 1440],
+    ["30 4 1 * *", 28 * 1440], ["0,59 0,23 1,31 1,12 *", 1],
   ])("%s runs every %s minutes at its closest", (expr, gap) => {
     expect(minGapMinutes(expr)).toBe(gap);
   });
@@ -23,10 +23,10 @@ describe("minGapMinutes", () => {
 describe("tooFrequent", () => {
   const cfg = (...s: string[]) => ({ crons: s.map((schedule, i) => ({ path: `/c${i}`, schedule })) });
   it("flags a cron under the floor", () => {
-    expect(tooFrequent(cfg("*/5 * * * *", "*/15 * * * *")).map((c) => c.path)).toEqual(["/c0"]);
+    expect(tooFrequent(cfg("*/5 * * * *", "*/15 * * * *")).map((c: { path: string }) => c.path)).toEqual(["/c0"]);
   });
   it("lets an allowlisted path through, and only that path", () => {
-    expect(tooFrequent(cfg("*/5 * * * *", "*/5 * * * *"), [{ path: "/c0", reason: "x" }]).map((c) => c.path)).toEqual(["/c1"]);
+    expect(tooFrequent(cfg("*/5 * * * *", "*/5 * * * *"), [{ path: "/c0", reason: "x" }]).map((c: { path: string }) => c.path)).toEqual(["/c1"]);
   });
   it("handles no crons", () => {
     expect(tooFrequent({})).toEqual([]);

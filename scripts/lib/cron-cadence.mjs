@@ -28,7 +28,8 @@ export function expandField(field, [lo, hi]) {
 
 /**
  * The shortest gap, in minutes, between two consecutive firings of a 5-field cron, found by walking a leap year
- * of UTC minutes. Day-of-month and day-of-week both restricted fire on either, as in standard cron.
+ * of UTC minutes
+ * (2024 and 2025, not wrapped, so the December to January gap is a real one). Day-of-month and day-of-week both restricted fire on either, as in standard cron.
  * Returns Infinity for a cron that fires at most once a year.
  */
 export function minGapMinutes(expr) {
@@ -39,7 +40,7 @@ export function minGapMinutes(expr) {
   const domStar = f[2] === "*", dowStar = f[4] === "*";
   const start = Date.UTC(2024, 0, 1);
   let prev = null, best = Infinity;
-  for (let t = 0; t < 366 * 1440; t++) {
+  for (let t = 0; t < 731 * 1440; t++) {
     const d = new Date(start + t * 60000);
     if (!min.has(d.getUTCMinutes()) || !hour.has(d.getUTCHours()) || !mon.has(d.getUTCMonth() + 1)) continue;
     const dayOk = domStar && dowStar ? true
