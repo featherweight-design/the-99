@@ -755,6 +755,26 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
   {
+    id: 'combos-one-away',
+    screen: 'deck',
+    view: 'your-deck',
+    chapter: '03',
+    title: 'Combos one piece away',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'plate',
+    switch: 'NEAR_COMBOS_ENABLED',
+    caption:
+      'Some decks sit one card short of a combo. The line under the deck’s header, beside its version, counts them: “5 combos one piece away”.\n\nPress it for the list. Each combo says where its missing piece is:\n\n- A spare in your Collection\n- In another of your decks, with a link to that deck\n- To buy, with its price\n\nSay your deck runs Kiki-Jiki, Mirror Breaker and a Zealous Conscripts sits spare in your Collection. That’s one piece away, and the list says where it is.\n\nOpen a combo to see how it works, step by step, and the mana it needs. Add puts the missing piece in the deck from there.\n\nA card’s details list its combos the same way: whole in this deck first, then one piece away.',
+    keys: [
+      'Only two-card combos in this deck’s colors are counted.',
+      'The turn-again mark is a combo that gives you extra turns.',
+      'Combos, their steps and their mana come from Commander Spellbook.',
+    ],
+    // The version current when it ships: a switched entry is announced by its switch and bumps nothing.
+    since: 16,
+  },
+  {
     id: 'card-marks',
     screen: 'collection',
     chapter: '03',
@@ -846,9 +866,16 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Some cards do something remarkable next to one other card. Heliod, Sun-Crowned and Walking Ballista are a classic pair.\n\nOwn both halves of a combo no deck is using yet? Your Collection flags it and names the partner. While you build, cards that would complete a combo in your deck get flagged in “Consider”, “Choose the last” and search. In a deck, a card whose two-card partner is in the same deck is marked on its row.\n\nThe salt is between you and your table.',
     keys: [
       'A card’s details list every partner: this deck’s first, then ones you own, then ones to buy.',
+      'Opened from a deck, a card’s details list its combos whole in that deck first, then one piece away, with where that piece is.',
       'Only two-card combos are flagged.',
       'Combos come from Commander Spellbook.',
     ],
+    // Card details draw the near-combos block while combos one piece away is on (combos-close UI-3).
+    keySwitches: {
+      'A card’s details list every partner: this deck’s first, then ones you own, then ones to buy.': '!NEAR_COMBOS_ENABLED',
+      'Opened from a deck, a card’s details list its combos whole in that deck first, then one piece away, with where that piece is.':
+        'NEAR_COMBOS_ENABLED',
+    },
     marksPending: true,
     since: 9,
   },

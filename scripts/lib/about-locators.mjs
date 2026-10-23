@@ -183,6 +183,13 @@ export const ABOUT_LOCATORS = {
   },
   "decklist-marks": { screen: "deck-your-deck", locator: "[role='group'][aria-label='What the marks on these rows mean']" },
   "locked-cards": { screen: "deck-your-deck", locator: "#panel-deck button:has-text('Lock cards')" },
+  // The status line's `∞ N combos one piece away` segment, beside the version (combos-close UI-1).
+  "combos-one-away": {
+    screen: "deck-your-deck",
+    locator: "#tab-deck",
+    reaches: true,
+    note: "the `∞ N combos one piece away` segment is on the status line beside the version, above the tabs",
+  },
   roles: {
     screen: "deck-your-deck",
     locator: "[role='radiogroup'][aria-label='Group the list'] [role='radio']:has-text('By role')",
