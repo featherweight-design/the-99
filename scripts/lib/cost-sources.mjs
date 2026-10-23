@@ -30,10 +30,12 @@ export async function fetchDeployments({ token, teamId, projectId, from, to }) {
     const fresh = r.deployments.filter((d) => !seen.has(d.uid));
     for (const d of fresh) seen.set(d.uid, d);
     const next = r.pagination?.next;
-    if (fresh.length === 0 || !next || next === until) break;
+    if (!next) return [...seen.values()];
+    // A next page that adds nothing or does not advance is a stall, and a short count must not read as a result.
+    if (fresh.length === 0 || next === until) throw new Error("the Vercel deployment list stopped advancing before its last page");
     until = next;
   }
-  return [...seen.values()];
+  throw new Error("the Vercel deployment list did not end after 40 pages");
 }
 
 /** Every branch of the project: follows the pagination cursor (Neon names it `next`; `cursor` is accepted too). */

@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchBranches, neonWeek, splitWeeks, summariseCharges, summariseNeon } from "./cost-sources.mjs";
+import { fetchBranches, fetchDeployments, neonWeek, splitWeeks, summariseCharges, summariseNeon } from "./cost-sources.mjs";
 import { evaluate, THRESHOLDS } from "./cost-thresholds.mjs";
 import { renderReport } from "./cost-report.mjs";
 
@@ -181,5 +181,28 @@ describe("fetchBranches", () => {
   it("throws when the cursor stops advancing, so a repeated page is never an inventory", async () => {
     vi.stubGlobal("fetch", async () => page([{ id: "x" }], "same"));
     await expect(fetchBranches({ token: "t", projectId: "p" })).rejects.toThrow(/stopped advancing/);
+  });
+});
+
+describe("fetchDeployments", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const args = { token: "t", teamId: "team", projectId: "p", from: new Date("2026-10-16T00:00:00Z"), to: new Date("2026-10-23T00:00:00Z") };
+  const page = (uids: string[], next?: number) => ({ ok: true, json: async () => ({ deployments: uids.map((uid) => ({ uid })), pagination: next ? { next } : {} }) });
+  it("returns every page's deployments once the last page has no next", async () => {
+    const pages = [page(["a", "b"], 5), page(["c"])];
+    let i = 0;
+    vi.stubGlobal("fetch", async () => pages[i++]);
+    expect((await fetchDeployments(args)).map((d: { uid: string }) => d.uid)).toEqual(["a", "b", "c"]);
+  });
+  it("throws when a next page adds nothing, instead of returning a short count", async () => {
+    const pages = [page(["a"], 5), page(["a"], 4)];
+    let i = 0;
+    vi.stubGlobal("fetch", async () => pages[i++]);
+    await expect(fetchDeployments(args)).rejects.toThrow(/stopped advancing/);
+  });
+  it("throws when the page limit is hit with more still advertised", async () => {
+    let n = 0;
+    vi.stubGlobal("fetch", async () => page([`d${n}`], 1000 - n++));
+    await expect(fetchDeployments(args)).rejects.toThrow(/40 pages/);
   });
 });
