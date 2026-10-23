@@ -39,11 +39,14 @@ afterEach(() => {
   else delete (navigator as { serviceWorker?: unknown }).serviceWorker;
 });
 
+let visits = 0;
+const nextVisit = () => `visit-${++visits}`;
+
 describe("opening the landing's card", () => {
   it("opens the card push-card names through the feed's opener, not for its combo", () => {
     delivered(0);
     window.history.replaceState(null, "", `/?push-card=${ID}`);
-    render(<PushLanding />);
+    render(<PushLanding visit={nextVisit()} />);
     expect(h.open).toHaveBeenCalledTimes(1);
     expect(h.open).toHaveBeenCalledWith(ID, undefined, undefined, undefined);
   });
@@ -51,14 +54,14 @@ describe("opening the landing's card", () => {
   it("opens it for its combo with push-combo=1, as the feed's See the combo does", () => {
     delivered(0);
     window.history.replaceState(null, "", `/?push-card=${ID}&push-combo=1`);
-    render(<PushLanding />);
+    render(<PushLanding visit={nextVisit()} />);
     expect(h.open).toHaveBeenCalledWith(ID, undefined, undefined, { combo: true });
   });
 
   it("opens nothing for a value that is not an oracle id, and still strips it", () => {
     delivered(0);
     window.history.replaceState(null, "", "/?push-card=%3Cscript%3E&push-combo=1");
-    render(<PushLanding />);
+    render(<PushLanding visit={nextVisit()} />);
     expect(h.open).not.toHaveBeenCalled();
     expect(h.mirrored).toHaveLength(1);
     expect(new URL(h.mirrored[0]).search).toBe("");
@@ -68,7 +71,7 @@ describe("opening the landing's card", () => {
     delivered(0);
     h.detail = false;
     window.history.replaceState(null, "", `/?push-card=${ID}`);
-    render(<PushLanding />);
+    render(<PushLanding visit={nextVisit()} />);
     expect(h.open).not.toHaveBeenCalled();
     expect(h.mirrored).toHaveLength(1);
   });
@@ -78,7 +81,7 @@ describe("stripping the address", () => {
   it("removes both parameters through mirrorUrl and keeps the rest", () => {
     delivered(0);
     window.history.replaceState(null, "", `/?tour=1&push-card=${ID}&push-combo=1`);
-    render(<PushLanding />);
+    render(<PushLanding visit={nextVisit()} />);
     expect(h.mirrored).toHaveLength(1);
     const url = new URL(h.mirrored[0]);
     expect(url.pathname).toBe("/");
@@ -90,7 +93,7 @@ describe("stripping the address", () => {
   it("writes nothing on a Home visit that did not come from a push", () => {
     delivered(0);
     window.history.replaceState(null, "", "/?tour=1");
-    render(<PushLanding />);
+    render(<PushLanding visit={nextVisit()} />);
     expect(h.mirrored).toHaveLength(0);
     expect(h.open).not.toHaveBeenCalled();
   });
@@ -99,9 +102,26 @@ describe("stripping the address", () => {
 describe("closing what was delivered (D4)", () => {
   it("closes every delivered notification on mount, a landing or not", async () => {
     const { shown, getNotifications } = delivered(3);
-    render(<PushLanding />);
+    render(<PushLanding visit={nextVisit()} />);
     await waitFor(() => expect(getNotifications).toHaveBeenCalledTimes(1));
     await waitFor(() => shown.forEach((n) => expect(n.close).toHaveBeenCalledTimes(1)));
+  });
+
+  it("a Home restored by Back (the same server visit) closes nothing: a notification that came meanwhile stays", async () => {
+    const visit = nextVisit();
+    const first = delivered(1);
+    const { unmount } = render(<PushLanding visit={visit} />);
+    await waitFor(() => expect(first.shown[0]!.close).toHaveBeenCalledTimes(1));
+    unmount();
+    // Away from Home, a new notification arrives; Back restores Home's payload with the same token, no server read.
+    const later = delivered(1);
+    render(<PushLanding visit={visit} />);
+    await new Promise((done) => setTimeout(done, 20));
+    expect(later.getNotifications).not.toHaveBeenCalled();
+    expect(later.shown[0]!.close).not.toHaveBeenCalled();
+    // A fresh visit (a new token) closes it.
+    render(<PushLanding visit={nextVisit()} />);
+    await waitFor(() => expect(later.shown[0]!.close).toHaveBeenCalledTimes(1));
   });
 
   it("does nothing and throws nothing without a service worker, a registration or getNotifications", async () => {
@@ -120,7 +140,7 @@ describe("closing what was delivered (D4)", () => {
     // And mounted with none of it, the landing still opens its card.
     worker(undefined);
     window.history.replaceState(null, "", `/?push-card=${ID}`);
-    expect(() => render(<PushLanding />)).not.toThrow();
+    expect(() => render(<PushLanding visit={nextVisit()} />)).not.toThrow();
     expect(h.open).toHaveBeenCalledTimes(1);
   });
 });

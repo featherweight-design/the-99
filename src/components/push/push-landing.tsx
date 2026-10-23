@@ -25,7 +25,10 @@ export async function closeDeliveredNotifications(): Promise<void> {
   }
 }
 
-export function PushLanding() {
+/** The server visits whose notifications this page has already closed (`visit` tokens, `page.tsx`). */
+const closedFor = new Set<string>();
+
+export function PushLanding({ visit }: { visit: string }) {
   const detail = useCardDetailIfAny();
   useEffect(() => {
     // Read once, from the live address: a tap is a real navigation (`WindowClient.navigate` or a new window), so this
@@ -34,7 +37,12 @@ export function PushLanding() {
     const stripped = strippedLanding(window.location.href);
     if (stripped) mirrorUrl(stripped, window.history.state);
     if (landing && detail) detail.open(landing.card, undefined, undefined, landing.combo ? { combo: true } : undefined);
-    void closeDeliveredNotifications();
+    // Once per SERVER visit: a Home restored by Back (no new server read, so nothing newly marked seen) brings back the
+    // same token and closes nothing, so a notification that arrived meanwhile stays until a real visit shows its item.
+    if (!closedFor.has(visit)) {
+      closedFor.add(visit);
+      void closeDeliveredNotifications();
+    }
     // Mount only: the provider's value changes as a card opens, and the landing is spent by then.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

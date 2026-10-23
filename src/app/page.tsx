@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { allDecksCartEnabled } from "../lib/decks/all-decks-cart-flag";
 import { helpMeChooseEnabled } from "../lib/intake/flag";
 import type { ComponentProps } from "react";
@@ -367,6 +368,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // feed seen (not after a failed read). An item written after this request began, whose push landed before the page
   // mounted, can be closed while still unseen: its row stays in the feed and on the badge until the next visit.
   const push = pushEnabled(env) && feedOn && !feedFailed;
+  // This server visit's own token, outside the cached payload: a Home restored by Back runs the client again with the
+  // SAME token, and closes nothing, because no fresh visit marked anything seen (`PushLanding`).
+  const pushVisit = push ? randomUUID() : null;
 
   if (data.firstRun) {
     const firstRun = (
@@ -386,7 +390,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     );
     // No feed provider on a first run, so a landing opens nothing here; it still strips the address and closes what was
     // delivered, since this visit marks the feed seen too.
-    return push ? <>{firstRun}<PushLanding /></> : firstRun;
+    return pushVisit ? <>{firstRun}<PushLanding visit={pushVisit} /></> : firstRun;
   }
 
   // A precon pick's receipt (no-collection entry S5): read per request from the ledger, outside the cached payload,
@@ -419,7 +423,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       helpMeChoose={helpMeChooseEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
       feed={feed}
-      push={push}
+      pushVisit={pushVisit}
       commandersPlace={commandersPlaceEnabled(env)}
       tables={homeTables}
       friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: true, invites }}

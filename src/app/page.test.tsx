@@ -333,23 +333,23 @@ describe("Home with push (push PR 5)", () => {
   it("hands the dashboard push when the switch is on and the feed was read", async () => {
     stub.env = { ...PUSH };
     stub.loadFeed.mockResolvedValue(FEED);
-    const page = (await HomePage()) as ReactElement<{ push?: boolean }>;
+    const page = (await HomePage()) as ReactElement<{ pushVisit?: string | null }>;
     expect(page.type).toBe(Dashboard);
-    expect(page.props.push).toBe(true);
+    expect(page.props.pushVisit).toEqual(expect.any(String));
   });
 
   it("hands it no push with the switch off, with the feed off, or after a failed feed read", async () => {
     stub.loadFeed.mockResolvedValue(FEED);
     stub.env = { ...PUSH, PUSH_ENABLED: "" };
-    expect(((await HomePage()) as ReactElement<{ push?: boolean }>).props.push).toBe(false);
+    expect(((await HomePage()) as ReactElement<{ pushVisit?: string | null }>).props.pushVisit).toBeNull();
     stub.env = { ...ON, PUSH_ENABLED: "true" };
-    expect(((await HomePage()) as ReactElement<{ push?: boolean }>).props.push).toBe(false);
+    expect(((await HomePage()) as ReactElement<{ pushVisit?: string | null }>).props.pushVisit).toBeNull();
     stub.env = { ...PUSH };
     stub.loadFeed.mockRejectedValue(new Error("feed read failed"));
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
-    const page = (await HomePage()) as ReactElement<{ push?: boolean }>;
+    const page = (await HomePage()) as ReactElement<{ pushVisit?: string | null }>;
     err.mockRestore();
-    expect(page.props.push).toBe(false);
+    expect(page.props.pushVisit).toBeNull();
   });
 
   it("mounts the landing beside a first-run checklist with push on, and nothing with it off", async () => {

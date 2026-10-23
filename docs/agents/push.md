@@ -156,8 +156,9 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   the call `FeedPress` makes for a price drop or a combo), and strips both parameters, valid or not, through `mirrorUrl`
   (with `history.state` kept). A first-run Home has no provider: it opens nothing and still strips. A landing marks nothing
   seen (D4); Home's own `after()` does, as shipped.
-- **Closing what was delivered** (D4, G5): the same mount closes every notification the worker has shown
-  (`registration.getNotifications()`), a landing or not, since the visit marks every unseen item seen. Guarded throughout:
+- **Closing what was delivered** (D4, G5): the same mount closes every notification the worker has shown, ONCE per
+  server visit (a `visit` token from `page.tsx`, outside the cached payload; a Home restored by Back brings the same token
+  and closes nothing, since no fresh visit marked anything seen) (`registration.getNotifications()`), a landing or not, since the visit marks every unseen item seen. Guarded throughout:
   no service worker, no registration or no `getNotifications` does nothing and throws nothing.
 - **The badge** (G6, call 7; `src/components/push/app-badge.tsx`): the shell mounts `AppBadge` with the bars' own
   `badges`, and it puts the Home slot's count AS THE BAR SHOWS IT (`useSeenBadges`, so 0 on Home and after the visit) on

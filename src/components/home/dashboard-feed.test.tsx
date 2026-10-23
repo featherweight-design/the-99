@@ -156,13 +156,13 @@ describe("Home holding an answered spare request", () => {
 
 describe("a push's landing on Home (push PR 5): the boundary at the mount", () => {
   it("mounts the landing inside the feed's card-detail provider when push is on", () => {
-    const { container } = render(<Dashboard {...BASE} feed={chosen([view(1)])} push />);
+    const { container } = render(<Dashboard {...BASE} feed={chosen([view(1)])} pushVisit="v1" />);
     expect(container.querySelector("[data-card-detail-provider] [data-push-landing]")).not.toBeNull();
   });
 
   it("mounts nothing with push off, or with no feed", () => {
     expect(render(<Dashboard {...BASE} feed={chosen([view(1)])} />).container.querySelector("[data-push-landing]")).toBeNull();
-    expect(render(<Dashboard {...BASE} feed={chosen([view(1)])} push={false} />).container.querySelector("[data-push-landing]")).toBeNull();
-    expect(render(<Dashboard {...BASE} feed={null} push />).container.querySelector("[data-push-landing]")).toBeNull();
+    expect(render(<Dashboard {...BASE} feed={chosen([view(1)])} pushVisit={null} />).container.querySelector("[data-push-landing]")).toBeNull();
+    expect(render(<Dashboard {...BASE} feed={null} pushVisit="v1" />).container.querySelector("[data-push-landing]")).toBeNull();
   });
 });

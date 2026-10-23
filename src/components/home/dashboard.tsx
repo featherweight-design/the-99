@@ -53,7 +53,8 @@ export type DashboardProps = {
    * PUSH_ENABLED is on for this reader and the feed was read (push PR 5): a push's landing opens its card here, through the
    * feed's provider, and the visit closes every delivered notification (D4). Absent, nothing of push runs.
    */
-  push?: boolean;
+  /** This server visit's token while push is on for the reader (`PushLanding`); null otherwise. */
+  pushVisit?: string | null;
   /** Keyed by commander oracleId, and only for the commanders shown. */
   inUse: Map<string, ReceiptCounts>;
   decks: DeckListItem[];
@@ -243,7 +244,7 @@ export function Dashboard(props: DashboardProps) {
           the split rather than staying at `sm`: left behind, it gave 640–1179 a
           third layout, one column wide with desktop padding. */}
       <Frame>
-      {feed && props.push && <PushLanding />}
+      {feed && props.pushVisit && <PushLanding visit={props.pushVisit} />}
       <HeldLeadProvider>
       <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         {/* Below 1180 both columns are `display: contents`, so their blocks are one list and `order` places them: Ready to
