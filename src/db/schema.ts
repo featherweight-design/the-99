@@ -3808,7 +3808,7 @@ export const rateHits = pgTable("rate_hits", {
 
 /**
  * One row per deleted account (Hugh's ruling via the orchestrator, 2026-10-14): `recordDeletion` writes it,
- * called by the Clerk webhook in its own commit BEFORE the purge (`purgeAccount` writes none), and the account sweep (`src/lib/account/sweep.ts`, a Vercel cron every five minutes)
+ * called by the Clerk webhook in its own commit BEFORE the purge (`purgeAccount` writes none), and the account sweep (`src/lib/account/sweep.ts`, a Vercel cron every thirty minutes)
  * runs the purge AGAIN for every tombstone younger than a day, so a write that landed after the first purge
  * (a request already past its auth when the purge committed, or a late webhook) is erased. Clerk revokes the
  * account's sessions on delete and a session token lives about a minute, so nothing new arrives long after.
@@ -3824,7 +3824,7 @@ export const accountTombstones = pgTable("account_tombstones", {
   deletedAt: timestamp("deleted_at").notNull().defaultNow(),
 }, (t) => [
   // The sweep reads only the rows still holding a raw id (a day's worth), oldest first; the retired ones pile up
-  // for good and must not be scanned every five minutes.
+  // for good and must not be scanned every thirty minutes.
   index("account_tombstones_held_idx").on(t.deletedAt).where(sql`${t.clerkId} is not null`),
 ]);
 
