@@ -27,7 +27,7 @@ type Reader = Pick<typeof db, "select">;
  * freshness is judged against, so a stale or malformed label counts as no label (`freshJobsOf`, the rule every label
  * reader applies) while the card keeps its type-line axes.
  */
-const cardColumns = {
+export const cardColumns = {
   oracleId: cards.oracleId,
   name: cards.name,
   manaCost: cards.manaCost,

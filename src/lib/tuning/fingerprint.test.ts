@@ -91,3 +91,13 @@ describe("tuningFingerprint", () => {
     expect(bumped.tuningFingerprint(base)).toBe(tuningFingerprint(base));
   });
 });
+
+describe("the strategy focus in the fingerprint", () => {
+  it("hashes a deck with no focus exactly as before, and moves when one is picked or changed", () => {
+    const before = tuningFingerprint(base);
+    expect(tuningFingerprint({ ...base, focus: null })).toBe(before);
+    const tokens = tuningFingerprint({ ...base, focus: "tokens" });
+    expect(tokens).not.toBe(before);
+    expect(tuningFingerprint({ ...base, focus: "typal:Elf" })).not.toBe(tokens);
+  });
+});

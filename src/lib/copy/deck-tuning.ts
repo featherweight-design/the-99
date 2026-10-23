@@ -216,7 +216,11 @@ export const deckTuningCopy = {
     bracketLowers: "Applying it lowers the deck\u2019s bracket to",
     bracketChanges: "Applying it changes the deck\u2019s bracket to",
     // Citation chips: source · value. The source is the evidence kind, named for a reader.
-    cite: { games: "games", note: "note", decklist: "list", intent: "you said", mix: "mix", notes: deckDescriptionCopy.notes.cite },
+    cite: { games: "games", note: "note", decklist: "list", intent: "you said", mix: "mix", notes: deckDescriptionCopy.notes.cite, focus: "focus" },
+    /** Strategy focus: an addition's move on the focus, before and after that ONE addition (`Tokens 11 → 12`). */
+    focusChip: (name: string, before: number, after: number) => `${name} ${before} \u2192 ${after}`,
+    /** Strategy focus: a cut on none of the deck's top strategies, nor its focus. */
+    offTop: (top: number) => `on none of the top ${top}`,
     open: (name: string) => `Open ${name}`,
     swap: (cut: string, add: string) => `Swap ${cut} for ${add}`,
     applyRefused: "We couldn\u2019t make that swap. The deck is unchanged.",

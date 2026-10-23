@@ -44,6 +44,12 @@ export type FingerprintInput = {
    */
   locks?: readonly string[];
   /**
+   * The deck's strategy focus (`STRATEGY_FOCUS_ENABLED`): picking or clearing one reopens the gate, since it changes
+   * what a run aims at. Joins the hash ONLY when set, as `locks` does, so a deck with no focus hashes exactly as
+   * before and no gate reopens on deploy.
+   */
+  focus?: string | null;
+  /**
    * "Kept for this deck" (H35, PR 2): a limit change must reopen the gate, same as an edit to the
    * list does — a run against the old cap/sets/owned-only answers a question the player no
    * longer asked. Unconditional, like `intent` and `collection`: every deck gets this field the
@@ -71,6 +77,7 @@ export function tuningFingerprint(input: FingerprintInput): string {
       intent: input.intent ?? "",
       collection: input.collection ?? "",
       ...(input.locks && input.locks.length > 0 ? { locks: [...input.locks].sort(byteOrder) } : {}),
+      ...(input.focus ? { focus: input.focus } : {}),
       limits: {
         capCents: input.limits.capCents,
         sets: [...input.limits.sets].sort(byteOrder),

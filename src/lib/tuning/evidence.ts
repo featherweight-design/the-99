@@ -63,6 +63,12 @@ export type EvidencePack = {
    * list. Null or absent when the deck has no overview, and the prompt then says nothing about one.
    */
   strategy?: { steps: string[]; keyCards: { oracleId: string; name: string }[] } | null;
+  /**
+   * The deck's strategy focus (`STRATEGY_FOCUS_ENABLED`), set by the run after the pack is built (`focusPack`): its name,
+   * how many of the deck's nonland cards count toward it and which, the top strategies' names, and the nonland cards on
+   * none of them nor the focus. Absent with no focus, and the prompt then says nothing about one.
+   */
+  focus?: FocusPack | null;
   /** Every universal staple (`src/lib/staples/universal.ts`), one per oracle card, sorted by name
    *  as round 4 of the eval named them. None is cut just to fix a role count. Absent is none. */
   universal?: { oracleId: string; name: string }[];
@@ -213,3 +219,6 @@ function universalOf(rows: readonly { oracleId: string; name: string }[]) {
   for (const r of rows) if (!byId.has(r.oracleId)) byId.set(r.oracleId, r);
   return [...byId.values()].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.oracleId < b.oracleId ? -1 : 1));
 }
+
+/** The focus as the prompt states it. Names are app copy and catalog names, never player text. */
+export type FocusPack = { name: string; copies: number; nonland: number; on: string[]; top: string[]; offTop: string[] };

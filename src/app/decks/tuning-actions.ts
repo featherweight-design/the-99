@@ -47,6 +47,7 @@ import { refundsCredit } from "../../lib/tuning/refund";
 import { retryable } from "../../lib/tuning/retry";
 import { loadOwnedCandidates } from "../../lib/tuning/owned-candidates";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
+import { focusPack, loadAddCards, loadRunStrategy, strategyChips } from "../../lib/strategy/run";
 
 /**
  * Deck tuning's server actions. Every one is a PUBLIC ENDPOINT, as `logGame` says of itself, so
@@ -224,7 +225,7 @@ export async function runTuning(
 
   const inputs = await tuningInputs(deckId, userId, env);
   if (!inputs) return { ok: false, message: deckTuningCopy.run.refused };
-  const { head, games, intent, declared, fingerprint, readVersion, locked, allLocked, limits } = inputs;
+  const { head, games, intent, declared, fingerprint, readVersion, locked, allLocked, limits, focus } = inputs;
 
   // `allLocked` is a gate reason, so this refusal lands BEFORE `startRun` reserves a credit: the
   // panel's "No credit is used." is true of the server, not only of a disabled button.
@@ -273,6 +274,8 @@ export async function runTuning(
         ]),
         readTuningContext(head),
       ]);
+      // Strategy focus: read off the same head the prompt is built from, so the chips' "before" is this list's count.
+      const focusRun = focus ? await loadRunStrategy(head, focus) : null;
       // "Owned only": the model is shown what the player owns that fits, since it cannot see ownership
       // and otherwise guesses (Soldiers kept no add). When nothing fits the run asks for cards to BUY
       // instead, under the same cap and sets, and says so (`ownedNone`); owned cards still come first
@@ -290,6 +293,7 @@ export async function runTuning(
         ownedCandidates: ownedNone ? undefined : ownedCandidates,
         ownedNone,
       });
+      if (focusRun) pack.focus = focusPack(focusRun);
       const { system, user } = buildPrompt(pack);
       // One ask, and at most one more when the first comes back with nothing to show (a degenerate answer, or
       // every suggestion dropped: model tiering saw 1 in 24 Sonnet 5.5 answers be one word of "skip"). The
@@ -330,6 +334,7 @@ export async function runTuning(
       const refunded = sized.length > 0 && asked === 1 && refundsCredit(sized.length, askedCount);
       const report: ValidationReport = {
         askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops,
+        ...(focus ? { focus } : {}),
         ...(ownedNone ? { ownedNone: true as const } : {}),
         ...(refunded ? { refunded: true as const } : {}),
       };
@@ -343,7 +348,11 @@ export async function runTuning(
       }
 
       // The bracket flag: shown, never dropped (Hugh, 2026-09-23).
-      const flagged = await withBracketAfter(head, profile, declared, sized, env);
+      const bracketed = await withBracketAfter(head, profile, declared, sized, env);
+      // AFTER validation: the chips are the app's figures, which the validator would drop from the model.
+      const flagged = focusRun
+        ? strategyChips(bracketed, focusRun, await loadAddCards(bracketed.flatMap((s) => (s.addOracleId ? [s.addOracleId] : []))))
+        : bracketed;
       if (await persistRun(run, flagged, droppedCount, billed, report, refunded ? "refunded" : "spent")) revalidateDeck(deckId);
       return undefined;
     } catch (err) {

@@ -2941,7 +2941,9 @@ export type ApplySnapshot = {
 export type TuningCitation = {
   // "notes" (H35, PR 4b): the player's free-text "Additional notes" for that run, distinct from
   // a per-game "note" and from the deck's standing "intent" (description).
-  kind: "games" | "note" | "decklist" | "intent" | "mix" | "notes";
+  // "focus" (strategy focus): how far an addition moves the deck's focus, written by the app after validation, never
+  // by the model (`strategyChips`).
+  kind: "games" | "note" | "decklist" | "intent" | "mix" | "notes" | "focus";
   /** Rendered by the card. Never a percentage, never a net figure. */
   value: string;
 };

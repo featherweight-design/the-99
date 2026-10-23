@@ -17,6 +17,8 @@ export const LEDGER_LIMITS = {
   "ledger-overview-accuracy.jsonl": { hardCapUsd: 15, askAtUsd: 11 },
   /** Tuning lists (Hugh 2026-10-10; `tuning-lists.mts`). */
   "ledger-tuning-lists.jsonl": { hardCapUsd: 3, askAtUsd: 2.5 },
+  /** Strategy focus PR 4a: Suggested changes with and without the focus line, $3 (d9, 2026-10-22). */
+  "ledger-strategy-focus.jsonl": { hardCapUsd: 3, askAtUsd: 2.5 },
   /** Cuts (`cuts-model.mts`, `cuts-blind.mts`). `cuts-plan.mts` keeps a per-task `--cap` of its own. */
   "ledger-cuts.jsonl": { hardCapUsd: 15, askAtUsd: 10 },
   /** Model tiering (2026-10-12): Suggested changes on three models, $2 for the arm set (`tuning-model-arms.mts`). */

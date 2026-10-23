@@ -66,3 +66,24 @@ is pure in `strategy-ring.ts` (arcs from 12 o'clock by live count, the focus pul
 other strategies' changes are said by the legend alone). The shell holds the focus (`useStrategyFocus`, over
 `useHeldPick`, the declaration's ordering rules), so Suggested changes can read the same pick (PR 4). Rank colours derive per
 theme from `--fg-muted` over `--surface-rail`. Proof: `pnpm probe:strategy-focus`; inventory `strategy-focus.json`.
+
+## Suggested changes aims at the focus
+
+With a focus set (and the switch on), a Suggested changes run reads it in `tuningInputs` and the run (`tuning-actions.ts`):
+
+- **The gate.** `tuningFingerprint` joins `focus` only when set, as `locks`, so a deck with none hashes as before and a
+  pick or a clear reopens the unchanged-state gate. No `PROMPT_VERSION` bump: with no focus the prompt is byte for byte
+  today's (`prompt.test.ts`).
+- **The prompt.** `loadRunStrategy` reads the focus and the top strategies off the run's own head; `focusPack` gives the
+  model the focus, its count with its denominator and its cards, the top strategies, and the nonland cards on none of
+  them. Two rules: lean the additions toward the focus, and prefer cuts from the off-plan cards (only when there are
+  any). It is never told the count to state: the chips carry it.
+- **The chips**, written by the app AFTER validation (`strategyChips`): an addition on the focus leads with
+  `focus · Tokens 11 → 12`, before and after that ONE addition, never chained; a nonland cut on none of the top
+  strategies nor the focus leads with `list · on none of the top N`. The model is never offered the `focus` kind and the
+  validator drops it from the model (`citationHolds`).
+- **The receipt.** The run's `validation_report.focus` records what it aimed at; the panel's `ReadFrom` names it from
+  PR 4b. Still one credit, one call.
+- **The eval.** `pnpm eval:tuning-focus` (paid, $3 cap on `ledger-strategy-focus.jsonl`, staging read-only) runs the same
+  decks with no focus and with their Nth strategy as the focus, and prints additions on the focus, off-plan cuts and
+  cost per run.
