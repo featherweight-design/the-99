@@ -123,8 +123,10 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * About entry (`combos-one-away`) once the deck page and card details drew it. `FRIEND_DECKS_ENABLED` left it on 2026-10-22 with its About entry (`friend-decks`).
  * `STRATEGY_FOCUS_ENABLED` left it on 2026-10-22 with Suggested changes aiming at the focus and its About entry (`deck-focus`).
  * `PUSH_ENABLED` held it from 2026-10-22 and left it on 2026-10-23 with its About entry (`push`), once Settings drew the push
- * column and the cron sent: without the VAPID keys a raised switch draws nothing and sends nothing (`pushAvailable`), so it
- * breaks nothing on a deployment lacking them.
+ * column and the cron sent. Without the VAPID keys Settings draws no push column and nothing is sent (`pushAvailable`),
+ * but the About `push` entry and the `whats-new` key follow the switch alone (`pushEnabled`: `visible.ts` sits on the proxy's
+ * path, where the key parsing may not), so they would describe a column that is not there. Both Vercel projects carry the
+ * keys (Production scope) and previews are not built, so that only happens on a local server run without them.
  * It holds what is listed below, each with its reason (none today).
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
