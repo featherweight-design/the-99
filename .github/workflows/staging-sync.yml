@@ -60,7 +60,7 @@ jobs:
         id: move
         run: |
           set -euo pipefail
-          main=$(git rev-parse origin/main)
+          main=$(git rev-parse HEAD)
           echo "target=$main" >> "$GITHUB_OUTPUT"
           if git ls-remote --exit-code --heads origin staging >/dev/null; then
             current=$(git rev-parse origin/staging)
@@ -98,13 +98,16 @@ jobs:
               echo "staging-deployed is already at \`$TARGET\`: nothing to wait for." >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
-            changed=$(git diff --name-only --no-renames "$deployed" "$TARGET")
           else
-            changed="(first sync)"
+            deployed=""
           fi
-          builds=$(CHANGED="$changed" node --input-type=module -e '
-            import { skippablePath } from "./scripts/lib/vercel-ignore.mjs";
-            const paths = process.env.CHANGED.split("\n").filter(Boolean);
+          # The ignore step's own diff and rule (`diffArgs`: -z and no renames, so a non-ASCII path is not quoted out
+          # of its prefix), against HEAD, which is the TARGET this run checked out.
+          builds=$(DEPLOYED="$deployed" node --input-type=module -e '
+            import { execFileSync } from "node:child_process";
+            import { diffArgs, skippablePath } from "./scripts/lib/vercel-ignore.mjs";
+            const prev = process.env.DEPLOYED;
+            const paths = prev ? execFileSync("git", diffArgs(prev), { encoding: "utf8" }).split("\0").filter(Boolean) : [];
             console.log(paths.length === 0 || paths.some((p) => !skippablePath(p)) ? "yes" : "no");
           ')
           if [ "$builds" = "no" ]; then
