@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { CardCombo } from "../../lib/combos/near-combos";
@@ -13,7 +14,7 @@ vi.mock("../../app/collection/actions", () => ({
 }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck: vi.fn(async () => ({ ok: true })) }));
 
-const { CardDetailProvider, CardDetailTrigger, warmCardModal } = await import("./card-detail-provider");
+const { CardDetailProvider, CardDetailTrigger, useCardDetail, warmCardModal } = await import("./card-detail-provider");
 await warmCardModal();
 
 const card = (oracleId: string, name: string, extra: Partial<BrowseCard> = {}): BrowseCard => ({
@@ -83,5 +84,24 @@ describe("a combo line opened from card details", () => {
     await act(async () => { headers[headers.length - 1].click(); });
     expect(document.querySelector("[data-combo-line=v-back]")).not.toBeNull();
     expect(document.querySelector("[data-combo-line=v-back] [data-combo-press]")).toBeNull();
+  });
+
+  it("a card opened over a sheet draws its combo lines with no press (OPEN-9, the live card's rule)", async () => {
+    function Sheet() {
+      const { registerSheet } = useCardDetail();
+      useEffect(() => registerSheet("Cheaper stand-ins"), [registerSheet]);
+      return null;
+    }
+    render(
+      <CardDetailProvider fetchCard={vi.fn(async () => POLY)} comboDeckOracleIds={["o-x", "o-cmdr"]} comboCommanderOracleIds={["o-cmdr"]}>
+        <Sheet />
+        <CardDetailTrigger oracleId="o-poly" name="Polyraptor">Polyraptor</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await click(screen.getByText("Polyraptor"));
+    await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
+    expect(document.querySelector("[data-combo-line=v-1]")).not.toBeNull();
+    expect(document.querySelector("[data-combo-line=v-1] [data-combo-press]")).toBeNull();
+    expect(screen.queryByRole("button", { name: combosCloseCopy.card.openAria("Polyraptor", "Warstorm Surge") })).toBeNull();
   });
 });
