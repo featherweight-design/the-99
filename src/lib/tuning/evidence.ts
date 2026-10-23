@@ -221,4 +221,8 @@ function universalOf(rows: readonly { oracleId: string; name: string }[]) {
 }
 
 /** The focus as the prompt states it. Names are app copy and catalog names, never player text. */
-export type FocusPack = { name: string; copies: number; nonland: number; on: string[]; top: string[]; offTop: string[] };
+export type FocusPack = {
+  name: string; copies: number; nonland: number; on: string[]; top: string[]; offTop: string[];
+  /** Cards not in the deck that count toward the focus, in `loadFocusCandidates`' order (plan 4c); empty for none. */
+  candidates: { name: string; typeLine: string; roles: string[] }[];
+};

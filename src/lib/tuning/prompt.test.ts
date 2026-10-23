@@ -361,7 +361,7 @@ describe("the two lists in the prompt (PROMPT_VERSION 8)", () => {
 });
 
 describe("the strategy focus in the prompt", () => {
-  const focus = { name: "Tokens", copies: 11, nonland: 62, on: ["Anointed Procession", "Secure the Wastes"], top: ["Tokens", "Life gain"], offTop: ["Ponder"] };
+  const focus = { name: "Tokens", copies: 11, nonland: 62, on: ["Anointed Procession", "Secure the Wastes"], top: ["Tokens", "Life gain"], offTop: ["Ponder"], candidates: [] };
 
   it("sends a deck with no focus today's prompt, byte for byte", () => {
     expect(buildPrompt({ ...pack, focus: null })).toEqual(buildPrompt(pack));
@@ -381,5 +381,27 @@ describe("the strategy focus in the prompt", () => {
     const { system, user } = buildPrompt({ ...pack, focus: { ...focus, offTop: [] } });
     expect(system).not.toContain("Prefer cuts from");
     expect(user).not.toContain("Cards on none of them");
+  });
+
+  // Plan 4c: the cards the run could add toward the focus, named with their roles, and one rule to draw from them.
+  it("lists the focus candidates with their roles, and says to draw from them", () => {
+    const candidates = [
+      { name: "Bitterblossom", typeLine: "Kindred Enchantment — Faerie", roles: [] },
+      { name: "Tireless Provisioner", typeLine: "Creature — Elf Scout", roles: ["ramp"] },
+    ];
+    const { system, user } = buildPrompt({ ...pack, focus: { ...focus, candidates } });
+    expect(user).toContain("Cards not in the deck that count toward the focus:\n- Bitterblossom (Kindred Enchantment — Faerie)\n- Tireless Provisioner (Creature — Elf Scout; ramp)");
+    expect(system).toContain('Draw the additions that count toward the focus from the list under "Cards not in the deck that count toward the focus" first');
+    // A role two or more short is named in the rule; with every role met, no line.
+    const draw = { ...pack, targets: { ...pack.targets, roles: [{ role: "draw" as const, have: 2, target: 6, advisory: false, measured: true }] } };
+    expect(buildPrompt({ ...draw, focus: { ...focus, candidates } }).system).toContain("This deck is two or more short on draw: at least one addition must fill that role");
+    const met = { ...pack, targets: { ...pack.targets, roles: [{ role: "draw" as const, have: 6, target: 6, advisory: false, measured: true }] } };
+    expect(buildPrompt({ ...met, focus: { ...focus, candidates } }).system).not.toContain("two or more short");
+  });
+
+  it("says nothing of candidates when there are none", () => {
+    const { system, user } = buildPrompt({ ...pack, focus });
+    expect(user).not.toContain("Cards not in the deck that count toward the focus");
+    expect(system).not.toContain("Draw the additions");
   });
 });

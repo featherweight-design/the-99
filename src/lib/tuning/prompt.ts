@@ -35,7 +35,7 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
   // deck with none sends today's prompt byte for byte (`prompt.test.ts` pins it). No PROMPT_VERSION
   // bump: the lock ids join the gate's fingerprint, which reopens a locked deck's gate alone.
   const base = pack.cards.some((c) => c.locked) ? SYSTEM.replace(COMMANDER_RULE, LOCKED_RULE) : SYSTEM;
-  const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...focusRules(pack.focus), ...limitsRules(pack), ...RATIONALE_RULES].join("\n");
+  const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...focusRules(pack.focus, pack.targets.roles), ...limitsRules(pack), ...RATIONALE_RULES].join("\n");
   // Strategy focus: absent for a deck with none, so its prompt stays byte for byte today's (no PROMPT_VERSION bump; a
   // focus change reopens the gate through the fingerprint, as locks and limits do).
   const blocks = [renderPack(pack), pack.strategy ? strategyBlock(pack.strategy) : null, pack.focus ? focusBlock(pack.focus) : null];
@@ -93,22 +93,37 @@ function limitsRules(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ow
 const OWNED_HEADING = "Cards the player owns that fit this deck";
 
 /** Strategy focus: lean the additions toward it, prefer cuts off every top strategy, and never state the app's count. */
-function focusRules(focus: EvidencePack["focus"]): string[] {
+function focusRules(focus: EvidencePack["focus"], roles: EvidencePack["targets"]["roles"]): string[] {
   if (!focus) return [];
+  // Named, not described: with a candidate list the model filled every addition from it and left a role two short
+  // unfilled in 2 of 3 decks (plan 4c eval, 2026-10-22), until the rule said which roles.
+  const short = roles.filter((r) => r.role !== "land" && !r.advisory && r.target - r.have >= 2).map((r) => r.role);
   return [
     `The player picked a focus for this deck, named under "${FOCUS_HEADING}". Build toward it: at least half of the additions must be cards that count toward the focus, doing what its listed cards do. The focus comes before a role count: fill a role that is only one short with a card that also counts toward the focus, or leave it for a later run.`,
+    ...(focus.candidates.length > 0
+      ? [
+        `Draw the additions that count toward the focus from the list under "${CANDIDATES_HEADING}" first.`,
+        ...(short.length > 0
+          ? [`This deck is two or more short on ${short.join(" and ")}: at least one addition must fill ${short.length > 1 ? "each of those roles" : "that role"}, a card on that list when one there fills it, otherwise any card that fills it, on the focus or not.`]
+          : []),
+      ]
+      : []),
     ...(focus.offTop.length > 0 ? ["Prefer cuts from the cards listed as on none of the top strategies. Never cut a card listed as counting toward the focus unless a game or a note gives a reason."] : []),
     "The app shows how far each addition moves the focus, and marks each cut that is on none of the top strategies: never state either in a rationale or a citation.",
   ];
 }
 
 const FOCUS_HEADING = "The player's focus";
+const CANDIDATES_HEADING = "Cards not in the deck that count toward the focus";
 
 function focusBlock(focus: NonNullable<EvidencePack["focus"]>): string {
   return [
     `${FOCUS_HEADING}: ${focus.name}. ${focus.copies} of the ${focus.nonland} nonland cards count toward it${focus.on.length > 0 ? `: ${focus.on.join(", ")}` : ""}.`,
     ...(focus.top.length > 0 ? [`This deck's top strategies: ${focus.top.join(", ")}.`] : []),
     ...(focus.offTop.length > 0 ? [`Cards on none of them nor the focus: ${focus.offTop.join(", ")}.`] : []),
+    ...(focus.candidates.length > 0
+      ? [`${CANDIDATES_HEADING}:`, ...focus.candidates.map((c) => `- ${c.name} (${c.typeLine}${c.roles.length > 0 ? `; ${c.roles.join(", ")}` : ""})`)]
+      : []),
   ].join("\n");
 }
 

@@ -5,7 +5,7 @@
  * API. It prints, per arm, the kept additions that count toward the focus and the kept cuts on none of the top
  * strategies, the cost per run from the ledger, and writes every row for the PR's two before/after examples.
  *
- *   pnpm eval:tuning-focus [--dry-run] [--rank 2] [--count 10] [--label focus]
+ *   pnpm eval:tuning-focus [--dry-run] [--rank 2] [--count 10] [--label focus] [--arms none,focus]
  *
  * Hard cap $3 on ITS OWN ledger (`ledger-strategy-focus.jsonl`, d9 2026-10-22), checked against each request's worst
  * case before anything is sent. Staging is read-only: nothing is written to any deck. `src/` is imported, never restated.
@@ -26,6 +26,9 @@ const { values: args } = parseArgs({
   options: {
     "dry-run": { type: "boolean", default: false },
     label: { type: "string", default: "focus" },
+    // Plan 4c compares the focus arm with and without its candidate list (`EVAL_FOCUS_CANDIDATES=off`), so it runs
+    // `--arms focus` twice rather than paying for a no-focus arm it does not read.
+    arms: { type: "string", default: "none,focus" },
     rank: { type: "string", default: "2" },
     count: { type: "string", default: "10" },
   },
@@ -43,6 +46,9 @@ const app = await openTuning();
 // AFTER `openTuning`: it points DATABASE_URL at staging, and `src/db` reads it when first imported.
 const { loadAddCards, loadRunStrategy, strategyChips } = await import("../../src/lib/strategy/run");
 const { onStrategy } = await import("../../src/lib/strategy/score");
+const { loadCardRoles } = await import("../../src/lib/strategy/candidates");
+// The basis the eval's profiles counted by: `tuning-app` builds them from `process.env`, as this does.
+const roleBasis = (await import("../../src/lib/decks/label-counts-flag")).roleBasisFromEnv(process.env);
 const { tuningInputs } = await import("../../src/lib/decks/tuning-read");
 const named = NAMES.slice(0, Number(args.count)).map((n) => {
   const hit = [...app.nameOf].find(([, name]) => name === n);
@@ -67,13 +73,15 @@ for (const id of ids) log(`${app.nameOf.get(id)}: focus ${focusOf.get(id)} (${st
 
 const cell = parseCell("sonnet-medium", app.model);
 const variant = TUNING_VARIANTS.base;
-const arms = ["none", "focus"] as const;
+const ARMS = ["none", "focus"] as const;
+const arms = ARMS.filter((a) => args.arms!.split(",").includes(a));
+if (arms.length === 0) throw new Error(`eval: --arms names none of ${ARMS.join(", ")}`);
 const prepared = {
-  none: await app.prepare(ids, variant, null),
-  focus: await app.prepare(ids, variant, null, focusOf),
+  none: arms.includes("none") ? await app.prepare(ids, variant, null) : [],
+  focus: arms.includes("focus") ? await app.prepare(ids, variant, null, focusOf) : [],
 };
 
-const keys = new Map<string, { arm: (typeof arms)[number]; deck: (typeof prepared.none)[number] }>();
+const keys = new Map<string, { arm: (typeof ARMS)[number]; deck: (typeof prepared.none)[number] }>();
 const first = arms.flatMap((arm) => prepared[arm].map((deck, d) => {
   const customId = `${arm}-d${d}`;
   keys.set(customId, { arm, deck });
@@ -99,7 +107,8 @@ const parsed = [...run.answers].filter(([, a]) => a.value !== null);
 const scores = await app.score(parsed.map(([id, a]) => ({ pack: keys.get(id)!.deck.pack, value: a.value! })));
 const scoreOf = new Map(parsed.map(([id], i) => [id, scores[i]]));
 const out = new URL("rows.jsonl", run.dir);
-const tally = { none: { adds: 0, onFocus: 0, cuts: 0, offTop: 0, usd: 0, runs: 0 }, focus: { adds: 0, onFocus: 0, cuts: 0, offTop: 0, usd: 0, runs: 0 } };
+const blank = () => ({ adds: 0, onFocus: 0, cuts: 0, offTop: 0, gaps: 0, covered: 0, usd: 0, runs: 0 });
+const tally = { none: blank(), focus: blank() };
 for (const [customId, answer] of run.answers) {
   const { arm, deck } = keys.get(customId)!;
   const scored = scoreOf.get(customId);
@@ -113,6 +122,12 @@ for (const [customId, answer] of run.answers) {
   const t = tally[arm];
   t.runs += 1;
   t.usd += commonRow(cell, answer, false, app.maxTokens).usdAsRun ?? 0;
+  // Roles covered (plan 4c): each role two or more short of its target (not advisory, not land) that at least one kept
+  // addition fills, by the candidates' own role rule.
+  const addRoles = await loadCardRoles(kept.flatMap((k) => (k.addOracleId ? [k.addOracleId] : [])), roleBasis);
+  const gaps = deck.pack.targets.roles.filter((r) => r.role !== "land" && !r.advisory && r.target - r.have >= 2);
+  t.gaps += gaps.length;
+  t.covered += gaps.filter((g) => [...addRoles.values()].some((roles) => roles.includes(g.role))).length;
   for (const k of chipped) {
     if (k.addOracleId) {
       t.adds += 1;
@@ -131,7 +146,7 @@ for (const [customId, answer] of run.answers) {
 }
 for (const arm of arms) {
   const t = tally[arm];
-  log(`${arm}: additions on the focus ${t.onFocus} of ${t.adds}; cuts on none of the top strategies ${t.offTop} of ${t.cuts}; $${(t.usd / Math.max(t.runs, 1)).toFixed(4)} per run over ${t.runs} runs`);
+  log(`${arm}: additions on the focus ${t.onFocus} of ${t.adds}; cuts on none of the top strategies ${t.offTop} of ${t.cuts}; roles two or more short covered ${t.covered} of ${t.gaps}; $${(t.usd / Math.max(t.runs, 1)).toFixed(4)} per run over ${t.runs} runs`);
 }
 writeFileSync(new URL("done", run.dir), "ok\n");
 log(`wrote ${run.answers.size} rows to ${out.pathname}`);

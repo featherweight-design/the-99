@@ -12,7 +12,7 @@ import { labelGeneration } from "../labels/generation";
 import { isLandFace } from "../cards/facet";
 import { isGameCard } from "../cards/game-card";
 import { freshJobsOf } from "../labels/read";
-import type { LabelTheme } from "../labels/types";
+import type { Job, LabelTheme } from "../labels/types";
 import { strategyFocusEnabled } from "./flag";
 import { parseStrategyKey } from "./focus";
 import {
@@ -49,14 +49,18 @@ export type CardRow = {
   labels: unknown; labelModel: string | null; promptVersion: string | null; inputHash: string | null;
 };
 
-/** The theme kinds of a card's FRESH labels; none for a card with no label row or a stale one. */
-export function freshThemes(r: CardRow): LabelTheme[] {
-  if (r.labelModel === null || r.promptVersion === null || r.inputHash === null) return [];
-  const jobs = freshJobsOf({
+/** A card's FRESH label jobs; null for a card with no label row or a stale one. */
+export function freshJobs(r: CardRow): Job[] | null {
+  if (r.labelModel === null || r.promptVersion === null || r.inputHash === null) return null;
+  return freshJobsOf({
     oracle_id: r.oracleId, labels: r.labels, model: r.labelModel, prompt_version: r.promptVersion, input_hash: r.inputHash,
     name: r.name, mana_cost: r.manaCost, type_line: r.typeLine, oracle_text: r.oracleText, layout: r.layout,
   });
-  return (jobs ?? []).filter((j) => j.space === "theme").map((j) => j.kind as LabelTheme);
+}
+
+/** The theme kinds of a card's FRESH labels; none for a card with no label row or a stale one. */
+export function freshThemes(r: CardRow): LabelTheme[] {
+  return (freshJobs(r) ?? []).filter((j) => j.space === "theme").map((j) => j.kind as LabelTheme);
 }
 
 /** A commander-legal game card that is not a land, as the strategy reads count it. */

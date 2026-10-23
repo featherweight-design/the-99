@@ -62,7 +62,13 @@ describe("focusPack", () => {
   it("names the focus, its cards, the top strategies and the cards off all of them", () => {
     expect(focusPack(run)).toEqual({
       name: "Tokens", copies: 11, nonland: 4, on: ["Secure the Wastes"], top: ["Tokens", "Life gain"], offTop: ["Llanowar Elves", "Ponder"],
+      candidates: [],
     });
+  });
+
+  it("carries the candidates by name, type line and roles, never their ids", () => {
+    const pack = focusPack(run, [{ oracleId: "x", name: "Bitterblossom", typeLine: "Kindred Enchantment — Faerie", roles: [] }]);
+    expect(pack.candidates).toEqual([{ name: "Bitterblossom", typeLine: "Kindred Enchantment — Faerie", roles: [] }]);
   });
 });
 
