@@ -89,13 +89,19 @@ function write(node: Element | null, axis: Axis, v: number): void {
   else window.scrollTo(v, window.scrollY);
 }
 
-function track(el: Element, axis: Axis, mode: RevealBlock): Track | null {
+/** The part of the window the reader can see, in window coordinates: what a keyboard or a pinned bar leaves. */
+export type RevealView = () => { top: number; bottom: number };
+
+function track(el: Element, axis: Axis, mode: RevealBlock, view?: RevealView): Track | null {
   const node = scrollerOf(el, axis);
   if (node === undefined) return null;
   const r = el.getBoundingClientRect();
   const s = getComputedStyle(el);
-  const before = parseFloat(axis === "y" ? s.scrollMarginTop : s.scrollMarginLeft) || 0;
-  const after = parseFloat(axis === "y" ? s.scrollMarginBottom : s.scrollMarginRight) || 0;
+  // A caller that names the visible band has already left out whatever covers the window, so the margins a target
+  // keeps to clear that chrome (a field's `scroll-mt-[96px]`) would only pull its centre off the band's.
+  const margins = !(view && axis === "y");
+  const before = (margins && parseFloat(axis === "y" ? s.scrollMarginTop : s.scrollMarginLeft)) || 0;
+  const after = (margins && parseFloat(axis === "y" ? s.scrollMarginBottom : s.scrollMarginRight)) || 0;
   let viewStart = 0, viewSize: number, max: number;
   if (node) {
     const b = node.getBoundingClientRect();
@@ -111,6 +117,13 @@ function track(el: Element, axis: Axis, mode: RevealBlock): Track | null {
     const pad = axis === "y" ? parseFloat(getComputedStyle(root).scrollPaddingTop) || 0 : 0;
     viewStart = pad;
     viewSize -= pad;
+    // A keyboard shrinks the visual viewport and leaves `innerHeight` alone, so a caller that knows the visible band
+    // names it; the band never starts above the scroll padding.
+    if (view && axis === "y") {
+      const v = view();
+      viewStart = Math.max(pad, v.top);
+      viewSize = Math.max(0, v.bottom - viewStart);
+    }
   }
   const from = read(node, axis);
   const to = scrollTarget(
@@ -176,13 +189,14 @@ export function reveal(
   el: Element | null | undefined,
   block: RevealBlock = "start",
   inline?: RevealInline,
+  view?: RevealView,
 ): () => void {
   if (!el || typeof window === "undefined") return () => {};
   // A hidden instance (the card modal draws its meta twice, one hidden by CSS) has no box to bring.
   if (el.getClientRects().length === 0) return () => {};
   active?.();
   const plan = () =>
-    [track(el, "y", block), inline ? track(el, "x", inline) : null].filter(
+    [track(el, "y", block, view), inline ? track(el, "x", inline) : null].filter(
       (t): t is Track => t !== null && t.to !== t.from,
     );
 

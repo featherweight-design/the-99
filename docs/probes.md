@@ -3001,8 +3001,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm probe:tag-insert-scroll` presses the `[[ ]]` button of deck Notes, the deck's description box on Analysis and
   Help me choose's "Anything else?" at 1300x900 and 390x844 (a tap, with touch), once with the caret in the box and once
   from outside it, and checks the field is still in view with nothing painted over it, and that the page did not move
-  when the open list had its room (`LIST_ROOM_PX`) under the field, or moved no further than the field's top when it
-  did not (K9). `TAG_SCROLL_ROOM=1` adds 2000px under `<main>` so a short page's end cannot hide a jump;
+  when the open list had its room (`LIST_ROOM_PX`) under the field, or left the field centered in the visible band
+  (visual viewport above any foot bar) when it did not, not pinned to the top (Hugh, 2026-10-22). `TAG_SCROLL_ROOM=1` adds 2000px under `<main>` so a short page's end cannot hide a jump;
   `TAG_SCROLL_DECK` names the deck (else the first on `/decks`). It submits nothing; the description box saves on blur,
   so it puts back the words the box held, and it refuses a `PROBE_BASE` that is not localhost. Needs
   `DECK_NOTES_ENABLED`, `HELP_ME_CHOOSE_ENABLED`, `TUNING_ENABLED` and `ANALYSIS_TAB_ENABLED` true. Measured 2026-10-21

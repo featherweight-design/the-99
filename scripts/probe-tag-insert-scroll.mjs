@@ -7,8 +7,9 @@
 // reveal, and checks two facts on a laid-out page:
 //
 // 1. THE FIELD STAYS IN VIEW: its box is inside the visible viewport and nothing is painted over it after the press.
-// 2. THE PAGE DOES NOT JUMP: with the open list's room under the field it does not move at all; without it, it
-//    moves no further than bringing the field to the top of the view (K9).
+// 2. THE PAGE DOES NOT JUMP: with the open list's room under the field it does not move at all; without it,
+//    the field is centered in the visible band (the visual viewport above any bar pinned over the foot), not
+//    pinned to its top (Hugh, 2026-10-22), unless the page ends before it can get there.
 // 3. THE FILLED LIST IS SEEN: after typing a name, the list (uncapped from `md`) ends inside the visible area and
 //    above any shown bar pinned over the window's foot (`data-foot-bar`: the tab bar, Help me choose's dock).
 //
@@ -90,7 +91,8 @@ const measure = (field) =>
     const x = r.left + Math.min(r.width / 2, 40), y = r.top + Math.min(r.height / 2, 12);
     const hit = document.elementFromPoint(x, y);
     const covered = !(hit && (el === hit || el.contains(hit) || hit.contains(el))) ? (hit?.closest("header,nav,[class*=sticky],[class*=fixed]")?.outerHTML.slice(0, 120) ?? hit?.tagName ?? "nothing") : null;
-    return { covered, scrollY: Math.round(window.scrollY), top: Math.round(r.top), bottom: Math.round(r.bottom), viewTop: Math.round(top), viewBottom: Math.round(bottom), floor: window.__footFloor(), focused: document.activeElement === el };
+    const root = document.documentElement;
+    return { covered, scrollY: Math.round(window.scrollY), maxScroll: Math.round(root.scrollHeight - window.innerHeight), top: Math.round(r.top), bottom: Math.round(r.bottom), viewTop: Math.round(top), viewBottom: Math.round(bottom), floor: window.__footFloor(), focused: document.activeElement === el };
   });
 
 async function press(page, button, touch) {
@@ -133,13 +135,23 @@ async function pressOnce(page, label, field, button, touch, cold) {
   const after = await measure(field);
   const inView = after.top >= after.viewTop - 1 && after.bottom <= after.viewBottom + 1 && after.covered === null;
   check(`${label}: the field is still in view after [[ ]]`, inView, { before, after });
-  // A field with the list's room under it in the visible area stays put; one without may be brought up to the top
-  // of the view (K9), never past it.
+  // A field with the list's room under it in the visible area stays put; one without is centered in the visible band
+  // (below the page's scroll padding, above the foot floor), or as near as the page's own ends let it get.
   const moved = after.scrollY - before.scrollY;
   // Judged against the lower floor: a dock may grow once the list opens (Help me choose's does), taking room with it.
   const roomy = before.bottom + LIST_ROOM_PX <= Math.min(before.floor, after.floor);
-  const allowed = roomy ? 1 : Math.max(0, before.top - before.viewTop) + 2;
-  check(`${label}: the page ${roomy ? "does not move (the list has room)" : "moves no further than the field's top"}`, Math.abs(moved) <= allowed, { moved, allowed });
+  if (roomy) check(`${label}: the page does not move (the list has room)`, Math.abs(moved) <= 1, { moved });
+  else {
+    // A bar pinned over the foot may come or go as the picker opens (Notes' dock does), so the band the reveal saw is
+    // either floor's; the field must be centered in one of them.
+    const mid = (after.top + after.bottom) / 2;
+    const offs = [before.floor, after.floor].map((f) => Math.round(mid - (after.viewTop + Math.min(after.viewBottom, f)) / 2));
+    const off = offs.reduce((a, b) => (Math.abs(b) < Math.abs(a) ? b : a));
+    const bandMid = mid - off;
+    // Scrolling down is bounded by the page's end, up by its top: an offset the page could not have closed is fine.
+    const closable = off > 0 ? after.scrollY < after.maxScroll - 1 : after.scrollY > 1;
+    check(`${label}: the field is centered in the visible band`, Math.abs(off) <= 4 || !closable, { off, moved, bandMid, after });
+  }
   check(`${label}: the field keeps focus and holds the open tag`, after.focused && (await field.inputValue()).includes("[["));
   if (!cold) {
     // A name typed in fills the list (from `md` it has no cap): it must still end inside the visible area.

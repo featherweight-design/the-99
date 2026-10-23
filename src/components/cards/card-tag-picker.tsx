@@ -39,6 +39,23 @@ function footFloor(bottom: number, field: Element): number {
   return floor;
 }
 
+/**
+ * The visible band the field is centered in: the visual viewport's top to the foot floor, narrowed from below when
+ * a short band would put the field's middle where its list (`LIST_ROOM_PX`, or the open list's measured extent where
+ * taller) runs past the floor, so the field sits
+ * as high as the list needs and no higher than the band's top.
+ */
+function centerBand(field: Element, list: Element | null, vv: VisualViewport | null): { top: number; bottom: number } {
+  const top = vv ? vv.offsetTop : 0;
+  const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, field);
+  const box = field.getBoundingClientRect();
+  const h = box.height;
+  // The room the list takes under the field: its phone cap, or the list itself where it is taller (from `md` it has no cap).
+  const room = Math.max(LIST_ROOM_PX, (list?.getBoundingClientRect().bottom ?? 0) - box.bottom);
+  const mid = Math.max(top + h / 2, Math.min((top + floor) / 2, floor - room - h / 2));
+  return { top, bottom: 2 * mid - top };
+}
+
 /** The room the open list needs under the field: its phone cap (`max-h-[220px]` on the list) and its 4px gap. */
 const LIST_ROOM_PX = 224;
 
@@ -118,7 +135,8 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     return () => clearTimeout(timer);
   }, [open, query, deckCards, search, scoped]);
 
-  // Opening the picker brings the field to the top of the visible area (K9), but only when the list would not fit
+  // Opening the picker brings the field to the middle of the visible area (Hugh, 2026-10-22: the top left more room
+  // above the keyboard than the list needs), but only when the list would not fit
   // under it there: a sticky bar and a phone keyboard would otherwise cover the list. A field that already has the
   // room stays where it is (Hugh, 2026-10-20: every `[[ ]]` press scrolled the page down, often taking the field out
   // of view). The room is the list's phone cap, or the list itself where it is taller (from `md` it has no cap, and
@@ -144,7 +162,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
       if (appScrolling()) { later = setTimeout(check, 120); return; }
       const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, el);
       const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list?.getBoundingClientRect().bottom ?? 0);
-      if (needed > floor) reveal(el, "start");
+      if (needed > floor) reveal(el, "center", undefined, () => centerBand(el, list, vv));
     };
     const moved = (e: Event) => {
       if (e.type === "pointerdown" && e.target instanceof Node && el.contains(e.target)) return;
