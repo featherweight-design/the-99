@@ -71,9 +71,11 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
   // The catalog kinds have no per-reader row (D2 as amended): this run queues each subscribed reader's new sets and precons
   // first, so they go out below with everything else. The CRON's job only: a flush limited to one reader (the request-time
   // kick) skips it.
-  const catalog = await enqueueCatalogArrivals({ now, staleMs: STALE_MS, resolveEnv, q });
-  report.queued = catalog.queued;
-  report.failed += catalog.failed;
+  if (deps.onlyUser === undefined) {
+    const catalog = await enqueueCatalogArrivals({ now, staleMs: STALE_MS, resolveEnv, q });
+    report.queued = catalog.queued;
+    report.failed += catalog.failed;
+  }
 
   // Fair across devices: each device's oldest PER_DEVICE rows that it has NOT had yet (a reader with no device: its oldest
   // rows, to be abandoned), then the whole batch round by round, so rows held overnight or failing on one device never starve

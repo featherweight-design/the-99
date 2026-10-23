@@ -282,6 +282,9 @@ async function main() {
     await device(P, "p", "UTC");
     const catOn = { ...on, PRECONS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     const catFlush = () => flushPush({ config, now: DAY, send: send as never, resolveEnv: async () => catOn });
+    // The request-time kick (one reader) never runs the catalog pass: that is the cron's job.
+    const kicked7 = await flushPush({ config, now: DAY, send: send as never, resolveEnv: async () => catOn, onlyUser: P });
+    check("a kicked flush queues no catalog arrival", kicked7.queued === 0 && (await outbox(P)).length === 0, JSON.stringify(kicked7));
     sent.length = 0;
     const c1 = await catFlush();
     const pRows = await outbox(P);
