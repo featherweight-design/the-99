@@ -25,8 +25,10 @@ export function skippablePath(path) {
  * @returns {{ build: boolean, reason: string }}
  */
 export function decide({ projectId, env, ref, changed }) {
-  if (projectId === STAGING_PROJECT_ID && (env === "preview" || (ref && ref !== "main"))) {
-    return { build: false, reason: `staging builds main only (env ${env ?? "?"}, ref ${ref ?? "?"})` };
+  // Previews are never used on either project. An unstated environment builds (the bias above).
+  if (env && env !== "production") return { build: false, reason: `only production deploys build (env ${env})` };
+  if (projectId === STAGING_PROJECT_ID && ref && ref !== "main") {
+    return { build: false, reason: `staging builds main only (ref ${ref})` };
   }
   if (!Array.isArray(changed) || changed.length === 0) return { build: true, reason: "no changed-file list: building" };
   const read = changed.filter((p) => !skippablePath(p));

@@ -36,8 +36,15 @@ describe("decide", () => {
     expect(decide({ projectId: STAGING_PROJECT_ID, env: "production", ref: "main", changed: ["src/x.ts"] }).build).toBe(true);
     expect(decide({ projectId: STAGING_PROJECT_ID, changed: ["src/x.ts"] }).build).toBe(true);
   });
-  it("the other project builds previews", () => {
-    expect(decide({ projectId: "prj_other", env: "preview", ref: "feat", changed: ["src/x.ts"] }).build).toBe(true);
+  it("neither project builds a preview or any non-production environment", () => {
+    for (const projectId of ["prj_other", STAGING_PROJECT_ID]) {
+      for (const env of ["preview", "development"]) {
+        expect(decide({ projectId, env, ref: "main", changed: ["src/x.ts"] }).build).toBe(false);
+      }
+    }
+  });
+  it("the other project builds a production deploy of any ref", () => {
+    expect(decide({ projectId: "prj_other", env: "production", ref: "feat", changed: ["src/x.ts"] }).build).toBe(true);
   });
 });
 
