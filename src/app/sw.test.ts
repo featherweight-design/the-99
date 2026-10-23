@@ -417,7 +417,7 @@ describe("the service worker", () => {
 // Push (plan 2026-10-22-push.md, PR 3d): what the worker shows, when it does not, and where a tap lands.
 describe("push", () => {
   const payload = { title: "Jace is cheaper", body: "Was $8.40, now $5.10.", route: "/", tag: "price-drop", keys: ["item:1"], openCard: "o1", openCombo: false, image: "https://cards.scryfall.io/x.jpg" };
-  const win = (url = `${ORIGIN}/decks`, focused = false) => ({ url, focused, focus: vi.fn(async () => {}), navigate: vi.fn(async () => {}), postMessage: vi.fn() });
+  const win = (url = `${ORIGIN}/decks`, focused = false) => ({ url, focused, focus: vi.fn(async () => {}), navigate: vi.fn(async (): Promise<unknown> => ({})), postMessage: vi.fn() });
 
   async function push(data: unknown, raw?: string) {
     const waits: Promise<unknown>[] = [];
@@ -538,6 +538,11 @@ describe("push", () => {
     expect(openWindow).toHaveBeenLastCalledWith(`${ORIGIN}/`);
     await click({ route: "https://evil.example/" });
     expect(openWindow).toHaveBeenLastCalledWith(`${ORIGIN}/`);
+    // The URL parser drops tabs and line breaks, so a string check alone would let these leave the app.
+    for (const route of ["/\t/evil.example/x", "/\n/evil.example/x", "/\r/evil.example/x", "//evil.example/", "/\\evil.example/"]) {
+      await click({ route });
+      expect(openWindow, JSON.stringify(route)).toHaveBeenLastCalledWith(`${ORIGIN}/`);
+    }
   });
 
   it("still lands when the window refuses to focus or navigate: it opens one instead", async () => {
@@ -547,5 +552,13 @@ describe("push", () => {
     windows = [w];
     await click({ route: "/friends" });
     expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/friends`);
+  });
+
+  it("opens a window when navigation resolves to null: the window went away between the lookup and the tap", async () => {
+    const w = win();
+    w.navigate.mockResolvedValue(null);
+    windows = [w];
+    await click({ route: "/decks" });
+    expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/decks`);
   });
 });

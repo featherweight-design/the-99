@@ -212,7 +212,15 @@ function alwaysShows() {
 
 /** A same-origin path, or "/": a payload is ours, but a landing is never trusted to leave the app. */
 function landing(route) {
-  return typeof route === "string" && route.startsWith("/") && !route.startsWith("//") && !route.includes("\\") ? route : "/";
+  if (typeof route !== "string" || !route.startsWith("/")) return "/";
+  // Judged on what the URL parser makes of it, not on the string: it drops tabs and line breaks, so "/\t/evil.example"
+  // would pass a string check and still resolve to another host.
+  try {
+    const url = new URL(route, self.location.origin);
+    return url.origin === self.location.origin ? url.pathname + url.search + url.hash : "/";
+  } catch {
+    return "/";
+  }
 }
 
 self.addEventListener("push", (event) => {
@@ -269,7 +277,8 @@ async function openLanding(data) {
   const mine = windows.find((w) => new URL(w.url).origin === self.location.origin);
   if (mine) {
     await mine.focus().catch(() => {});
-    const went = await mine.navigate(href).then(() => true, () => false);
+    // `navigate()` resolves to null when the window went away meanwhile: that is a failure too.
+    const went = await mine.navigate(href).then((client) => client != null, () => false);
     if (went) return;
   }
   await self.clients.openWindow(href);

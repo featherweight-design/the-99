@@ -36,8 +36,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   and Safari on a Mac all require every push to show one and revoke a subscription that stays silent (D5, widened from iOS to
   every Safari). It is decided from the user agent alone: a worker's navigator has no `maxTouchPoints`, and an iPad asking for the
   desktop site reads as Safari on a Mac, which gets the same answer. A landing
-  (`route`) is a same-origin path or Home: `//host`, a backslash, an absolute URL or a non-string all become `/`. A tap closes the
-  notification, focuses an open window of the app and navigates it, or opens one (also when the window refuses to navigate). What
+  (`route`) is a same-origin path or Home, judged on the PARSED URL (the parser drops tabs and line breaks, so `/\t/evil.example`
+  passes a string check): anything that resolves off this origin, or a non-string, becomes `/`. A tap closes the
+  notification, focuses an open window of the app and navigates it, or opens one (also when the window refuses to navigate, or `navigate()` resolves to null because it went away). What
   Home should open rides in the ADDRESS, `push-card=<oracle id>` and `push-combo=1`, never a `postMessage`: a message sent at a
   navigation reaches the page being left, and a window opened cold has no listener yet. The landing PR reads and strips them.
   `src/app/sw.test.ts` pins all of it, including that a push touches no cache. The `VERSION` bump drops the v1 caches once; the install
