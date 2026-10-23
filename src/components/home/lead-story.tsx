@@ -141,7 +141,8 @@ export function LeadStory({
           </div>
         )}
         {ask && !receipt && (
-          <div className="mt-[6px] min-w-0">
+          // The column's own 6px gap is the board's 6px under the detail; no margin on top of it.
+          <div className="min-w-0">
             <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null}
               onAnswer={(a, from) => void press(a, from)} size="lead" />
           </div>
