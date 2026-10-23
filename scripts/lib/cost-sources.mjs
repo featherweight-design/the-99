@@ -36,13 +36,27 @@ export async function fetchDeployments({ token, teamId, projectId, from, to }) {
   return [...seen.values()];
 }
 
+/** Every branch of the project: follows the pagination cursor (Neon names it `next`; `cursor` is accepted too). */
+export async function fetchBranches({ token, projectId }) {
+  const all = [];
+  let cursor = null;
+  for (let page = 0; page < 50; page++) {
+    const r = await getJson(`${NEON}/projects/${projectId}/branches?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`, token);
+    all.push(...r.branches);
+    const next = r.pagination?.next ?? r.pagination?.cursor ?? null;
+    if (!next || next === cursor || r.branches.length === 0) return all;
+    cursor = next;
+  }
+  throw new Error("the Neon branch list did not end after 50 pages");
+}
+
 export async function fetchNeon({ token, projectId }) {
   const [project, branches, endpoints] = await Promise.all([
     getJson(`${NEON}/projects/${projectId}`, token),
-    getJson(`${NEON}/projects/${projectId}/branches`, token),
+    fetchBranches({ token, projectId }),
     getJson(`${NEON}/projects/${projectId}/endpoints`, token),
   ]);
-  return { project: project.project, branches: branches.branches, endpoints: endpoints.endpoints };
+  return { project: project.project, branches, endpoints: endpoints.endpoints };
 }
 
 const sum = (rows, name, key) => rows.filter((r) => r.ServiceName === name).reduce((a, r) => a + (Number(r[key]) || 0), 0);
@@ -70,6 +84,10 @@ export function summariseCharges(rows) {
 
 /** Splits charge rows into the week before `weekStart` and the week from it, by each row's own start. */
 export function splitWeeks(rows, weekStart) {
+  // A row with no readable start would match neither week and silently drop out; fail the read instead.
+  for (const r of rows) {
+    if (!Number.isFinite(Date.parse(r.ChargePeriodStart))) throw new Error(`a ${r.ServiceName ?? "charge"} row has an unreadable start time`);
+  }
   const cut = weekStart.getTime();
   const thisWeek = rows.filter((r) => Date.parse(r.ChargePeriodStart) >= cut);
   const lastWeek = rows.filter((r) => Date.parse(r.ChargePeriodStart) < cut);

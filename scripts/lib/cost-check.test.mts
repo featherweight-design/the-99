@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-import { neonWeek, splitWeeks, summariseCharges, summariseNeon } from "./cost-sources.mjs";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fetchBranches, neonWeek, splitWeeks, summariseCharges, summariseNeon } from "./cost-sources.mjs";
 import { evaluate, THRESHOLDS } from "./cost-thresholds.mjs";
 import { renderReport } from "./cost-report.mjs";
 
@@ -38,6 +38,11 @@ describe("unreadable figures fail the read instead of counting as zero", () => {
 });
 
 describe("splitWeeks", () => {
+  it("throws on a row with a missing or invalid start time rather than dropping it", () => {
+    const cut = new Date("2026-10-16T00:00:00Z");
+    expect(() => splitWeeks([{ ServiceName: "Build CPU Minutes", ConsumedUnit: "minute", EffectiveCost: 80, ConsumedQuantity: 1 }], cut)).toThrow(/start time/);
+    expect(() => splitWeeks([{ ...row("Build CPU Minutes", 1, 1), ChargePeriodStart: "not a date" }], cut)).toThrow(/start time/);
+  });
   it("puts rows on or after the cut in this week and earlier ones in last week", () => {
     const cut = new Date("2026-10-16T00:00:00Z");
     const { thisWeek, lastWeek } = splitWeeks([row("Build CPU Minutes", 10, 1, "2026-10-17"), row("Build CPU Minutes", 4, 1, "2026-10-10")], cut);
@@ -159,5 +164,22 @@ describe("the check is read-only", () => {
   it("the script reaches the network only through those helpers", () => {
     const src = read("scripts/cost-check.mjs");
     expect(src).not.toMatch(/\bfetch\(|https?:\/\//);
+  });
+});
+
+describe("fetchBranches", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const page = (branches: unknown[], next?: string) => ({ ok: true, json: async () => ({ branches, pagination: next ? { next } : {} }) });
+  it("follows the cursor until the last page, so branches past the first page are counted", async () => {
+    const urls: string[] = [];
+    const pages = [page(Array.from({ length: 3 }, (_, i) => ({ id: `a${i}` })), "c1"), page([{ id: "b0", name: "scratch-late" }])];
+    vi.stubGlobal("fetch", async (u: string) => { urls.push(u); return pages[urls.length - 1]; });
+    const all = await fetchBranches({ token: "t", projectId: "p" });
+    expect(all.map((b: { id: string }) => b.id)).toEqual(["a0", "a1", "a2", "b0"]);
+    expect(urls[1]).toContain("cursor=c1");
+  });
+  it("stops on a repeated cursor instead of looping", async () => {
+    vi.stubGlobal("fetch", async () => page([{ id: "x" }], "same"));
+    expect((await fetchBranches({ token: "t", projectId: "p" })).length).toBe(2);
   });
 });
