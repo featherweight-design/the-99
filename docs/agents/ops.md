@@ -113,3 +113,15 @@ Never put any of them in `.env`.
 - **Neon's counters are billing-period to date**, so each run uploads a `cost-snapshot` artifact (90 days) and diffs against the newest one it can download; the change is scaled to seven days. No snapshot, under a day old, or a new month: those two rules are skipped and the summary says so.
 - **A red run opens, or comments on, an issue labelled `cost`** (REST, not `gh issue`), and the run stays red. Delete the "Open an issue" step to fall back to GitHub's email to whoever last edited the cron line.
 
+
+## Staging deploys once a day (Hugh, 2026-10-23)
+
+**What.** The `the-99-staging` Vercel project builds from the `staging` branch, never main. `Staging sync` (`.github/workflows/staging-sync.yml`) fast-forwards `staging` to main daily at 07:41 UTC, ahead of the 09:00 Catalog refresh, and on dispatch ("sync now": Actions, Staging sync, Run workflow). Its push is what deploys staging, and `vercel-build` migrates staging's database on the way. `scripts/lib/vercel-ignore.mjs` (`STAGING_BRANCH`) skips any other ref on the staging project, main included. Production is unchanged: it still builds every push to main.
+
+**Why.** The cost audit's rank 1: staging rebuilt every commit production had just built, about $38 a month of Build CPU. Hugh's reasoning: feature switches cover most testing, staging is not a gate for production, and staging stays useful for testing database changes. A daily sync keeps that use.
+
+**The catalog jobs.** Their staging legs check out `staging`, not main: `Catalog refresh` and `Price refresh` (the staging matrix leg), `Commander prose` (target staging), and the staging-only jobs of `Combo refresh`, `Commander index` and `Card labels`. Staging's database can be up to a day behind main's migrations, and an ingest built for a newer schema would fail against it. The copy jobs (environment `catalog-production`) still run main's code, because they write production, which main migrates. A main migration that adds a column a copy READS from staging fails that copy loudly until the next sync, never silently. A dispatch of a staging leg runs `staging`'s code, whatever branch it was dispatched from: to try new ingest code on staging, merge it and run Staging sync first.
+
+**To see a change on staging sooner,** dispatch Staging sync, then confirm with `curl https://staging.the-99.dev/api/health`.
+
+**When to undo it.** Put staging back on main when production gets a release cycle (as Concert Crawl's has), because staging is then the gate and must track main. To undo: set the staging project's production branch back to `main` (Vercel, the-99-staging, Settings, Git, Production Branch), set `STAGING_BRANCH` to `main`, delete `staging-sync.yml`, and remove the `ref:` lines from the catalog workflows' staging legs.

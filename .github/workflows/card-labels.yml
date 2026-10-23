@@ -91,6 +91,10 @@ jobs:
     environment: catalog-staging
     steps:
       - uses: actions/checkout@v4
+        with:
+          # A staging leg runs the code staging is deployed from (`staging`, synced daily by `Staging sync`), so it
+          # never runs a migration-dependent ingest against a staging database a day behind main (docs/agents/ops.md).
+          ref: staging
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

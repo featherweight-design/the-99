@@ -1,0 +1,65 @@
+# Staging deploys once a day, not on every push to main (Hugh, 2026-10-23: the cost audit's rank 1, about
+# $38 a month of Build CPU spent rebuilding the commit production had just built).
+#
+# The `the-99-staging` Vercel project's production branch is `staging`, and `scripts/lib/vercel-ignore.mjs`
+# builds that project from `staging` alone. This workflow fast-forwards `staging` to main, daily and on
+# dispatch ("sync now"), and the push it makes is what deploys staging and migrates its database
+# (`vercel-build`). Production is untouched: it still builds every push to main.
+#
+# Fast-forward only. A `staging` that is not an ancestor of main (someone committed to it) fails the run
+# rather than being overwritten. Nothing commits to `staging` but this workflow.
+#
+# The staging legs of the catalog jobs check out `staging` too, so they always run the code staging's
+# database was migrated for. Undo all of this when production gets a release cycle: docs/agents/ops.md,
+# "Staging deploys once a day".
+name: Staging sync
+
+on:
+  schedule:
+    # 07:41 UTC. Off the hour, and ahead of the 09:00 Catalog refresh so staging is usually deployed and migrated
+    # before the day's ingest. The ingest does not depend on that ordering: its staging leg checks out `staging`.
+    - cron: '41 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: staging-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Fast-forward staging to main
+        run: |
+          set -euo pipefail
+          main=$(git rev-parse origin/main)
+          if git ls-remote --exit-code --heads origin staging >/dev/null; then
+            git fetch --quiet origin staging
+            current=$(git rev-parse origin/staging)
+            if [ "$current" = "$main" ]; then
+              echo "staging is already at main ($main): nothing to deploy." | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if ! git merge-base --is-ancestor "$current" "$main"; then
+              echo "staging ($current) is not an ancestor of main ($main): refusing to overwrite it." >&2
+              exit 1
+            fi
+          else
+            current="(none)"
+          fi
+          # No --force: the push is a fast-forward or it fails.
+          git push origin "$main:refs/heads/staging"
+          {
+            echo "staging moved from \`$current\` to \`$main\`."
+            echo
+            echo "Vercel now deploys \`the-99-staging\` from it, migrating staging's database on the way."
+            echo "Confirm with \`curl https://staging.the-99.dev/api/health\`."
+          } >> "$GITHUB_STEP_SUMMARY"

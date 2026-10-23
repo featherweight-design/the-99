@@ -2,8 +2,16 @@
 // vercel.json). Pure, so it is tested alone. The one bias: when anything is unsure, BUILD. A wrongly built
 // deploy costs about a minute of build time; a wrongly skipped one leaves a stale site.
 
-/** The Vercel project that serves staging. Both projects build main; this one must never build anything else. */
+/** The Vercel project that serves staging. Its production branch is `staging`, never main. */
 export const STAGING_PROJECT_ID = "prj_1Wx9XFF4CBTahn7ca05T1alEAAnd";
+
+/**
+ * The one ref the staging project builds (Hugh, 2026-10-23, the cost audit's rank 1). `Staging sync`
+ * (`.github/workflows/staging-sync.yml`) fast-forwards it to main once a day and on dispatch, so staging deploys
+ * once a day instead of on every main push. Production keeps building main. Undo it (staging back on main) when
+ * production gets a release cycle: docs/agents/ops.md, "Staging deploys once a day".
+ */
+export const STAGING_BRANCH = "staging";
 
 /**
  * Paths a deployed build cannot read. An ALLOWLIST: a path matching nothing here is built for.
@@ -27,8 +35,8 @@ export function skippablePath(path) {
 export function decide({ projectId, env, ref, changed }) {
   // Previews are never used on either project. An unstated environment builds (the bias above).
   if (env && env !== "production") return { build: false, reason: `only production deploys build (env ${env})` };
-  if (projectId === STAGING_PROJECT_ID && ref && ref !== "main") {
-    return { build: false, reason: `staging builds main only (ref ${ref})` };
+  if (projectId === STAGING_PROJECT_ID && ref && ref !== STAGING_BRANCH) {
+    return { build: false, reason: `staging builds ${STAGING_BRANCH} only (ref ${ref})` };
   }
   if (!Array.isArray(changed) || changed.length === 0) return { build: true, reason: "no changed-file list: building" };
   const read = changed.filter((p) => !skippablePath(p));
