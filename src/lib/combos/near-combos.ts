@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, deckCards, decks, spellbookVariantCards, spellbookVariants } from "../../db/schema";
-import { holdsCopy, type Availability } from "../decks/availability";
+import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { deckIdentity } from "../decks/format";
 import { cardTypeGroup, type DeckDetailCard } from "../decks/grouping";
@@ -20,6 +20,7 @@ import {
   type ComboPieceRow,
 } from "../synopsis/combo-facts";
 import { nearCombosEnabled } from "./flag";
+import { holdingDecks, type HoldingDeck } from "./holding-decks";
 
 /**
  * SERVER-ONLY. The combos a deck is exactly one piece away from, and where that piece is (plan
@@ -45,18 +46,8 @@ export type MissingPieceWhere =
    */
   | { kind: "buy"; cents: number | null; soldOut: boolean; qualifier: string | null };
 
-/** A deck holding a copy. `committed` is a sleeved version; otherwise a brew given a copy. */
-export type HoldingDeck = { id: string; name: string; committed: boolean };
-
-/**
- * The decks HOLDING a copy (`holdsCopy`: committed decks and brews given one, never a draft that
- * only asks), committed first and otherwise in the query's order, so a surface naming one deck
- * names the first committed one (combos-close G4).
- */
-export function holdingDecks(availability: Pick<Availability, "claims">): HoldingDeck[] {
-  const held = availability.claims.filter(holdsCopy).map((c) => ({ id: c.id, name: c.name, committed: c.mature }));
-  return [...held.filter((d) => d.committed), ...held.filter((d) => !d.committed)];
-}
+// `holdingDecks` is pure, in its own module so a client component (card details' combo, UI-3) can call it.
+export { holdingDecks, type HoldingDeck };
 
 export type NearComboPiece = { oracleId: string; name: string; held: boolean };
 
@@ -284,6 +275,13 @@ export type CardComboPieceState =
   | "elsewhere"
   | "notOwned";
 
+/**
+ * Where another piece is, as the card details block's where-line draws it (combos close UI-3): the
+ * missing piece's own shape (`MissingPieceWhere`, a `buy` priced as the deck page's list prices it)
+ * plus `inDeck`, a piece the deck in scope lists.
+ */
+export type CardComboWhere = MissingPieceWhere | { kind: "inDeck" };
+
 export type CardComboOther = {
   oracleId: string;
   name: string;
@@ -291,6 +289,12 @@ export type CardComboOther = {
   mustBeCommander: boolean;
   /** For `elsewhere`, the decks holding it, committed first. Empty otherwise. */
   decks: HoldingDeck[];
+  /** The where-line, `state` with its decks and, for `notOwned`, its buy tag's figure. */
+  where: CardComboWhere;
+  /** The catalog's art, for the piece's plate in the combo detail (`cards.image_uri`). */
+  imageUri: string | null;
+  /** One of the scoped deck's commanders: the line's faint `commander` tag. */
+  isCommander: boolean;
 };
 
 export type CardCombo = {
@@ -306,7 +310,16 @@ export type CardCombo = {
   usesCommander: boolean;
 };
 
-export type CardCombos = { combos: CardCombo[]; total: number };
+export type CardCombos = {
+  combos: CardCombo[];
+  total: number;
+  /**
+   * A deck is in scope AND lists the card itself (its 99 or a commander). Only then can a combo be
+   * "whole in this deck" or "one piece away": the card details block splits into its two groups on
+   * this alone (UI-3, OPEN-6). False without a deck.
+   */
+  inScope: boolean;
+};
 
 /** The read's default cap. A card's combos run to a median 9 and Ashnod's Altar's to 6,089 on staging. */
 export const CARD_COMBOS_CAP = 12;
@@ -332,6 +345,11 @@ export type CardComboRow = {
   must_be_commander: boolean;
   /** The variant's count before the shortlist, the same on every row. */
   total: number;
+  /** The piece's catalog art, for its plate (UI-3). */
+  image_uri?: string | null;
+  /** For the deck-scoped addability rule (`addableMissingPiece`). */
+  commander_legal?: boolean;
+  color_identity?: string[];
 };
 
 /**
@@ -345,12 +363,24 @@ export function cardComboQuery(
   oracleId: string,
   limit = CARD_COMBOS_SHORTLIST,
   maxPieces = MAX_COMBO_PIECES,
-  /** The deck in scope: a piece there is held, by `pieceState`'s rule (a command-zone-only piece only as a commander). */
-  scope: { deck: readonly string[]; commanders: readonly string[] } = { deck: [], commanders: [] },
+  /**
+   * The deck in scope: a piece there is held, by `pieceState`'s rule (a command-zone-only piece only as a commander).
+   * With `identity` (the card is in the deck, UI-3 OPEN-5) the shortlist keeps only a variant whole in the deck or one
+   * piece away by `addableMissingPiece`'s piece rule, BEFORE the limit, so rejected variants never crowd out kept ones.
+   */
+  scope: { deck: readonly string[]; commanders: readonly string[]; identity?: readonly string[] } = { deck: [], commanders: [] },
 ) {
   const card = sql.param(oracleId);
   const deckP = sql.param([...scope.deck]);
   const commandersP = sql.param([...scope.commanders]);
+  const held = sql`(case when vc.must_be_commander then vc.oracle_id = any(${commandersP}::uuid[])
+                         else vc.oracle_id = any(${deckP}::uuid[]) end)`;
+  const eligible = scope.identity
+    ? sql`and (count(*) filter (where not ${held}) = 0
+               or (count(*) filter (where not ${held}) = 1
+                   and bool_and(${held} or (not vc.must_be_commander and pc.commander_legal
+                                            and pc.color_identity <@ ${sql.param([...scope.identity])}::text[]))))`
+    : sql``;
   return sql`
     with cand as (
       select v.variant_id, v.card_count, v.popularity
@@ -371,15 +401,18 @@ export function cardComboQuery(
              count(*) over () as total
       from cand
       join ${spellbookVariantCards} vc on vc.variant_id = cand.variant_id and vc.oracle_id <> ${card}::uuid
+      join cards pc on pc.oracle_id = vc.oracle_id
       group by cand.variant_id, cand.card_count, cand.popularity
       -- Every other piece stored: a variant naming one card twice keeps fewer rows than its count
       -- (the ingest dedupes), and must not be counted in the total or take a shortlist slot.
       having count(*) = cand.card_count - 1
+      ${eligible}
       order by unowned, cand.card_count, cand.popularity desc nulls last, cand.variant_id
       limit ${limit}
     )
     select s.variant_id, v.produces, v.card_count, v.mana_value_needed, v.mana_needed, v.steps,
-           v.notable_prerequisites, vc.oracle_id, c.name, vc.must_be_commander, s.total::int as total
+           v.notable_prerequisites, vc.oracle_id, c.name, vc.must_be_commander, s.total::int as total,
+           c.image_uri, c.commander_legal, c.color_identity
     from scored s
     join ${spellbookVariants} v on v.variant_id = s.variant_id
     join ${spellbookVariantCards} vc on vc.variant_id = s.variant_id
@@ -414,7 +447,9 @@ export function shapeCardCombos(
   decksOf: (oracleId: string) => HoldingDeck[] = () => [],
   /** The scoped deck's commanders, for `byRank`'s commander preference. */
   commanderIds: ReadonlySet<string> = new Set(),
-): CardCombos {
+  /** The where-line's price for a piece not owned; unpriced (no tag) when absent. */
+  buyOf: (oracleId: string) => Extract<MissingPieceWhere, { kind: "buy" }> = () => UNPRICED,
+): Omit<CardCombos, "inScope"> {
   const byVariant = new Map<string, CardComboRow[]>();
   for (const r of rows) byVariant.set(r.variant_id, [...(byVariant.get(r.variant_id) ?? []), r]);
   const list: CardCombo[] = [];
@@ -428,7 +463,17 @@ export function shapeCardCombos(
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((p) => {
           const state = stateOf({ oracleId: p.oracle_id, mustBeCommander: p.must_be_commander });
-          return { oracleId: p.oracle_id, name: p.name, mustBeCommander: p.must_be_commander, state, decks: state === "elsewhere" ? decksOf(p.oracle_id) : [] };
+          const decks = state === "elsewhere" ? decksOf(p.oracle_id) : [];
+          return {
+            oracleId: p.oracle_id,
+            name: p.name,
+            mustBeCommander: p.must_be_commander,
+            state,
+            decks,
+            where: whereOfState(state, decks, () => buyOf(p.oracle_id)),
+            imageUri: p.image_uri ?? null,
+            isCommander: commanderIds.has(p.oracle_id),
+          };
         }),
       produces: first.produces,
       steps: first.steps,
@@ -448,7 +493,54 @@ export function shapeCardCombos(
   return { combos: top, total: rows[0]?.total ?? 0 };
 }
 
-const NO_CARD_COMBOS: CardCombos = { combos: [], total: 0 };
+const UNPRICED: Extract<MissingPieceWhere, { kind: "buy" }> = { kind: "buy", cents: null, soldOut: false, qualifier: null };
+
+/** Pure: a piece's where-line from its state (the deck first, then the reader's copies, then its buy tag). */
+export function whereOfState(
+  state: CardComboPieceState,
+  decks: HoldingDeck[],
+  buy: () => Extract<MissingPieceWhere, { kind: "buy" }>,
+): CardComboWhere {
+  if (state === "inDeck") return { kind: "inDeck" };
+  if (state === "spare") return { kind: "spare" };
+  if (state === "elsewhere") return { kind: "elsewhere", decks };
+  return buy();
+}
+
+/**
+ * Pure: whether a variant naming the card stays in a DECK-SCOPED list (UI-3, OPEN-5 and OPEN-6), its
+ * rows the card's own included. The card must count as in the deck (a command-zone-only card only as
+ * a commander); every other piece in the deck is a whole combo and stays; otherwise the combo must be
+ * one piece away by `addableMissingPiece`, the rule the deck page's near combos use (one missing
+ * piece, legal, inside the commanders' identity, not command-zone-only, a counted outcome that is not
+ * a mandatory loop), so card details and the deck page name one set.
+ */
+export function keptInDeckScope(
+  pieces: readonly CardComboRow[],
+  oracleId: string,
+  scope: { deck: ReadonlySet<string>; commanders: ReadonlySet<string> },
+  identity: readonly string[],
+): boolean {
+  const held = (p: CardComboRow) => (p.must_be_commander ? scope.commanders.has(p.oracle_id) : scope.deck.has(p.oracle_id));
+  const own = pieces.find((p) => p.oracle_id === oracleId);
+  if (!own || !held(own)) return false;
+  if (pieces.every(held)) return true;
+  const rows: ComboPieceRow[] = pieces.map((p) => ({
+    variant_id: p.variant_id,
+    produces: p.produces,
+    card_count: p.card_count,
+    mana_value_needed: p.mana_value_needed,
+    oracle_id: p.oracle_id,
+    name: p.name,
+    must_be_commander: p.must_be_commander,
+    held: held(p),
+    commander_legal: p.commander_legal ?? false,
+    color_identity: p.color_identity ?? [],
+  }));
+  return addableMissingPiece(rows, identity) !== null;
+}
+
+const NO_CARD_COMBOS: CardCombos = { combos: [], total: 0, inScope: false };
 
 /** Read B. Empty while the switch is off, without a query. */
 export async function loadCardCombos(args: {
@@ -466,17 +558,46 @@ export async function loadCardCombos(args: {
     deck: new Set([...(args.deck?.oracleIds ?? []), ...(args.deck?.commanderOracleIds ?? [])]),
     commanders: new Set(args.deck?.commanderOracleIds ?? []),
   };
-  const query = cardComboQuery(args.userId, args.oracleId, CARD_COMBOS_SHORTLIST, args.maxPieces, { deck: [...scope.deck], commanders: [...scope.commanders] });
-  const rows = (await db.execute(query)).rows as CardComboRow[];
-  if (rows.length === 0) return NO_CARD_COMBOS;
+  const inScope = args.deck !== undefined && scope.deck.has(args.oracleId);
+  // The deck's identity, for the addability rule: only when the card is in the deck, the one case the
+  // block splits (`keptInDeckScope`). Read first, so the shortlist is cut from kept variants alone.
+  const identity =
+    inScope && scope.commanders.size > 0
+      ? await db.select({ identity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, [...scope.commanders]))
+      : null;
+  const deckColors = identity ? deckIdentity(identity[0]?.identity ?? [], identity[1]?.identity ?? null) : null;
+  const query = cardComboQuery(args.userId, args.oracleId, CARD_COMBOS_SHORTLIST, args.maxPieces, {
+    deck: [...scope.deck],
+    commanders: [...scope.commanders],
+    ...(deckColors ? { identity: deckColors } : {}),
+  });
+  let rows = (await db.execute(query)).rows as CardComboRow[];
+  if (deckColors) {
+    const kept = new Set([...byCardVariant(rows)].filter(([, pieces]) => keptInDeckScope(pieces, args.oracleId, scope, deckColors)).map(([id]) => id));
+    rows = rows.filter((r) => kept.has(r.variant_id));
+  }
+  if (rows.length === 0) return { ...NO_CARD_COMBOS, inScope };
   const ids = [...new Set(rows.map((r) => r.oracle_id).filter((id) => id !== args.oracleId))];
-  const availability = await loadPieceAvailability(args.userId, ids, { env: args.env });
-  return shapeCardCombos(
+  // Prices beside availability, as read A prices its missing pieces: a piece not owned draws its buy tag.
+  const [availability, prices] = await Promise.all([loadPieceAvailability(args.userId, ids, { env: args.env }), loadPrices(ids)]);
+  const shaped = shapeCardCombos(
     rows,
     args.oracleId,
     (p) => pieceState(p, scope, availability.get(p.oracleId)),
     args.cap ?? CARD_COMBOS_CAP,
     (id) => holdingDecks(availability.get(id) ?? { claims: [] }),
     scope.commanders,
+    (id) => {
+      const w = whereIs(undefined, cheapestNow(prices, id), priceState(prices.prices.get(id), prices.newestAsOf) === "soldOut", qualifierOf(prices, id));
+      return w.kind === "buy" ? w : UNPRICED;
+    },
   );
+  return { ...shaped, inScope };
+}
+
+/** The query's rows grouped by variant, in the order they arrived. */
+function byCardVariant(rows: readonly CardComboRow[]): Map<string, CardComboRow[]> {
+  const out = new Map<string, CardComboRow[]>();
+  for (const r of rows) out.set(r.variant_id, [...(out.get(r.variant_id) ?? []), r]);
+  return out;
 }

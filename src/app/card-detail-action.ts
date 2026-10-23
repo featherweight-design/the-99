@@ -1,6 +1,6 @@
 "use server";
 
-import { sanitizeDeckScope } from "../lib/combos/deck-scope-param";
+import { sanitizeCommanderScope, sanitizeDeckScope } from "../lib/combos/deck-scope-param";
 import type { BrowseCard } from "../lib/collection/browse";
 import { loadCardDetail } from "../lib/collection/card-detail";
 import { requireUserId } from "../lib/auth";
@@ -31,6 +31,12 @@ export async function getCardDetail(
    * derived from the card and the caller's own collection.
    */
   deckOracleIds?: readonly string[],
+  /**
+   * That deck's commanders, apart (combos close UI-3): what holds a command-zone-only piece and
+   * reads the deck's colors. Sent by the client like the list, shape-checked and capped at two, and
+   * used only to classify and filter the reader's own combo lines.
+   */
+  commanderOracleIds?: readonly string[],
 ): Promise<BrowseCard | null> {
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("getCardDetail");
@@ -42,6 +48,7 @@ export async function getCardDetail(
   // `sanitizeDeckScope`, which is where the rule lives so a test can call it rather than
   // restate it.
   const scoped = sanitizeDeckScope(deckOracleIds);
+  const commanders = sanitizeCommanderScope(commanderOracleIds);
   const env = await requestSwitchEnv(userId);
-  return perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped, env));
+  return perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped, env, commanders));
 }

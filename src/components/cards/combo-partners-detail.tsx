@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { BrowseCard } from "../../lib/collection/browse";
+import { printedNameOf, type BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
-import { orderModalPartners, summariseByState } from "../../lib/combos/modal-block";
+import { combosCloseCopy } from "../../lib/copy/combos-close";
+import { groupCardCombos, orderModalPartners, summariseByState, summariseCardCombos } from "../../lib/combos/modal-block";
+import type { CardCombo } from "../../lib/combos/near-combos";
+import { producesInfiniteTurns } from "../../lib/spellbook/combo-features";
 import { noteAppScroll } from "../../lib/ui/reveal";
 import { ComboGlyph } from "./combo-glyph";
+import { CardFactMark } from "./card-fact-mark";
+import { FactTooltip } from "./fact-tooltip";
+import { MissingPieceWhereLine } from "../decks/combo-where-line";
 import { Chevron } from "../ui/chevron";
 
 const STATE_INK: Record<string, string> = {
@@ -34,6 +40,12 @@ const STATE_INK: Record<string, string> = {
  * card-detail fetch now carries (dependency 5); without one the block draws the two states
  * that have a referent and omits the scope line, which is the `/collection` face the design
  * specifies. The partner's name opens that partner in place (ledger 14).
+ *
+ * COMBOS ONE PIECE AWAY (UI-3, `Card-Details.dc.html`): a card carrying `cardCombos` (the near-combos
+ * read, set by the server only with `NEAR_COMBOS_ENABLED` on) draws its lines from that instead, each
+ * with where the partner is and a press that opens the combo over the card (`onOpenCombo`). The
+ * branch is on the DATA, never a switch read here, so a caller handing the block a shipped card (the
+ * About figure) keeps the shipped face.
  */
 export function ComboPartnersDetail({
   card,
@@ -43,16 +55,24 @@ export function ComboPartnersDetail({
   onSelectPartner,
   /** Starts open. The About figure's caller: its key names the source marker, drawn only open. */
   initiallyExpanded = false,
+  /**
+   * Opens a near-combos line's combo over the card (UI-3). Null on a STACKED card (a card over a sheet,
+   * the third layer, a partner): nothing in a stacked card opens a further layer (stacked sheets R1,
+   * call 8), so its lines draw without the chevron and take no press.
+   */
+  onOpenCombo = null,
 }: {
   card: BrowseCard;
   deckName?: string | null;
   onSelectPartner?: (oracleId: string) => void;
   initiallyExpanded?: boolean;
+  onOpenCombo?: ((combo: CardCombo) => void) | null;
 }) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [boundOpen, setBoundOpen] = useState(false);
+  const near = card.cardCombos;
   const partners = card.comboPartners ?? [];
-  const hasPartners = partners.length > 0;
+  const hasPartners = near ? near.combos.length > 0 : partners.length > 0;
   // Opened FOR the combo (a feed item): bring the block on screen once, in a modal whose column may scroll. Run when
   // the block is DRAWN, not at mount: a cached card can arrive without its partners and get them on revalidation.
   const rootRef = useRef<HTMLDivElement>(null);
@@ -64,9 +84,10 @@ export function ComboPartnersDetail({
     noteAppScroll();
     rootRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [initiallyExpanded, hasPartners]);
-  if (partners.length === 0) return null;
+  if (!hasPartners) return null;
 
-  const summary = summariseByState(partners);
+  // One list for the closed row's counts and the open lines, so the two never name different sets (OPEN-1).
+  const summary = near ? summariseCardCombos(near.combos) : summariseByState(partners);
   const boundId = `combo-bound-${card.oracleId}`;
   const listId = `combo-list-${card.oracleId}`;
   // The accessible name is the label plus the counts AS WORDS, so a reader who cannot see the
@@ -102,7 +123,7 @@ export function ComboPartnersDetail({
             <ComboGlyph />
             {/* At 390px the label and the counts STACK inside the same 52px row rather than
                 competing for it; above that they sit on one line. */}
-            <span className="flex flex-auto min-w-0 flex-col sm:flex-row sm:items-center sm:gap-[10px]">
+            <span className="flex flex-auto min-w-0 flex-col gap-[3px] sm:flex-row sm:items-center sm:gap-[10px]">
               <span
                 className="font-mono text-[10px] uppercase tracking-[0.1em]"
                 style={{ color: "var(--fg-faint)" }}
@@ -170,7 +191,16 @@ export function ComboPartnersDetail({
       )}
       {/* IT GROWS IN PLACE, downward. Not an accordion — no sibling closes — and the scroll
           position does not move. */}
-      {expanded && (
+      {expanded && near ? (
+        <NearComboLines
+          id={listId}
+          card={card}
+          combos={near.combos}
+          inScope={near.inScope && deckName !== null}
+          onOpenCombo={onOpenCombo}
+        />
+      ) : null}
+      {expanded && !near && (
       <ul id={listId} className="flex flex-col gap-[8px] mt-[10px]">
         {orderModalPartners(partners).map((p) => (
           /* AT 390px THE STATE STACKS UNDER THE NAME, not under the glyph. `flex-wrap` with a
@@ -238,5 +268,146 @@ export function ComboPartnersDetail({
       </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * The open block's lines from the near-combos read (`Card-Details.dc.html` `.cbk`): split into `Whole
+ * in this deck` and `One piece away · you hold the rest` when the deck in scope lists the card, one
+ * flat list otherwise (`groupCardCombos`). Each group is its own list under its own heading.
+ */
+function NearComboLines({
+  id,
+  card,
+  combos,
+  inScope,
+  onOpenCombo,
+}: {
+  id: string;
+  card: BrowseCard;
+  combos: readonly CardCombo[];
+  inScope: boolean;
+  onOpenCombo: ((combo: CardCombo) => void) | null;
+}) {
+  const grouped = groupCardCombos(combos, inScope);
+  const lines = (list: readonly CardCombo[], headed: boolean) => (
+    // `.gh + li`: the line straight after a heading has no top border; the heading draws it.
+    <ul className={"m-0 flex list-none flex-col p-0" + (headed ? " [&>li:first-child]:border-t-0" : "")}>
+      {list.map((c) => (
+        <NearComboLine key={c.variantId} card={card} combo={c} onOpenCombo={onOpenCombo} />
+      ))}
+    </ul>
+  );
+  return (
+    <div id={id} data-combo-lines={grouped.split ? "split" : "flat"} className="mt-[6px] flex flex-col">
+      {grouped.split ? (
+        <>
+          {grouped.whole.length > 0 ? (
+            <>
+              <GroupHeading label={combosCloseCopy.card.groups.whole} />
+              {lines(grouped.whole, true)}
+            </>
+          ) : null}
+          {grouped.oneAway.length > 0 ? (
+            <>
+              <GroupHeading label={combosCloseCopy.card.groups.oneAway} />
+              {lines(grouped.oneAway, true)}
+            </>
+          ) : null}
+        </>
+      ) : (
+        lines(grouped.flat, false)
+      )}
+    </div>
+  );
+}
+
+/** `li.gh`: mono 9px, uppercase, faint, a rule above it; no count (the list sheet's headings carry one). */
+function GroupHeading({ label }: { label: string }) {
+  return (
+    <h4
+      data-combo-group={label}
+      className="m-0 border-t border-[color:var(--border)] pt-[10px] pb-[4px] font-mono text-[9px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]"
+    >
+      {label}
+    </h4>
+  );
+}
+
+/**
+ * One line (`.cbk li`), the same at 390 and 1300: the lemniscate (and the turn-again mark for a loop
+ * of turns), then `with {partner}` over where the partner is, then the chevron, the line's press. The
+ * line is a plain container because the where-line may hold a link (another deck's name), which may
+ * not sit inside a button; a pointer press anywhere else on it is the chevron's press (UI-2's
+ * `ComboRow`). On a stacked card (`onOpenCombo` null) there is no chevron and no press.
+ */
+function NearComboLine({
+  card,
+  combo,
+  onOpenCombo,
+}: {
+  card: BrowseCard;
+  combo: CardCombo;
+  onOpenCombo: ((combo: CardCombo) => void) | null;
+}) {
+  const partner = combo.others[0];
+  if (!partner) return null;
+  const press = onOpenCombo;
+  return (
+    <li
+      data-combo-line={combo.variantId}
+      data-where={partner.where.kind}
+      onClick={
+        press
+          ? (e) => {
+              if ((e.target as Element).closest("a, button")) return;
+              press(combo);
+            }
+          : undefined
+      }
+      // `.cbk li.press`: the 2px accent outline, 2px off the line, while it is pressed or its press has focus.
+      className={
+        "flex min-h-[44px] items-center gap-[10px] border-t border-[color:var(--border)]"
+        + (press
+          ? " cursor-pointer active:rounded-[6px] active:[outline:2px_solid_var(--accent)] active:outline-offset-2 has-[[data-combo-press]:focus-visible]:rounded-[6px] has-[[data-combo-press]:focus-visible]:[outline:2px_solid_var(--accent)] has-[[data-combo-press]:focus-visible]:outline-offset-2"
+          : "")
+      }
+    >
+      {/* `.lem`, and the turn-again mark BESIDE it so no line grows (OPEN-13). */}
+      <span className="flex flex-none items-center gap-[5px]">
+        <ComboGlyph />
+        {producesInfiniteTurns(combo.produces) ? (
+          <FactTooltip sentence={combosCloseCopy.sheet.loopMark}>
+            <CardFactMark fact="extraTurns" />
+          </FactTooltip>
+        ) : null}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
+        {/* `.p1`: `with` in the app's words, the partner's name in 600 `--fg`, plain text (its card opens from its plate). */}
+        <span className="flex min-w-0 items-baseline text-[13px] text-[color:var(--fg-body)]">
+          <span className="flex-none whitespace-pre">{comboAwarenessCopy.modal.lineLead}</span>
+          <b className="min-w-0 truncate font-semibold text-[color:var(--fg)]">{partner.name}</b>
+          {partner.isCommander ? (
+            <span className="ml-[4px] flex-none font-mono text-[10px] text-[color:var(--fg-faint)]">{combosCloseCopy.sheet.commander}</span>
+          ) : null}
+        </span>
+        {/* `.p2`: the where-line, the deck page's list's decision verbatim. */}
+        <span data-where-line className="flex min-w-0 items-center gap-[7px] font-mono text-[10px] text-[color:var(--fg-body)]">
+          <MissingPieceWhereLine where={partner.where} on="row" />
+        </span>
+      </span>
+      {press ? (
+        // `.cv`: the line's press, a real button (its own focus ring is the line's outline).
+        <button
+          type="button"
+          data-combo-press
+          onClick={() => press(combo)}
+          aria-label={combosCloseCopy.card.openAria(printedNameOf(card), partner.name)}
+          className="w-[20px] flex-none cursor-pointer self-stretch border-0 bg-transparent p-0 text-center text-[15px] text-[color:var(--fg-faint)] outline-none"
+        >
+          <span aria-hidden>›</span>
+        </button>
+      ) : null}
+    </li>
   );
 }

@@ -26,3 +26,18 @@ export function sanitizeDeckScope(value: unknown): string[] | undefined {
     .slice(0, MAX_DECK_SCOPE)
     .filter((id): id is string => typeof id === "string" && UUID.test(id));
 }
+
+/** A deck has one commander, or two partners. */
+export const MAX_COMMANDER_SCOPE = 2;
+
+/**
+ * The scope's commanders as they arrive (combos close UI-3, OPEN-2): `loadCardCombos` holds a
+ * command-zone-only piece only as a commander and reads the deck's colors from them. The same rule
+ * as `sanitizeDeckScope`, shape first, sliced before filtered, at most two.
+ */
+export function sanitizeCommanderScope(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .slice(0, MAX_COMMANDER_SCOPE)
+    .filter((id): id is string => typeof id === "string" && UUID.test(id));
+}

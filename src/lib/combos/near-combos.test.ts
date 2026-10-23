@@ -19,7 +19,7 @@ vi.mock("../decks/price-query", () => ({
   cheapestNow: (read: { cents: Map<string, number> }, id: string) => read.cents.get(id) ?? null,
 }));
 
-const { cardComboQuery, loadCardCombos, loadNearCombos, pieceState, rankNearCombos, shapeCardCombos, shapeNearCombos, whereIs } = await import("./near-combos");
+const { cardComboQuery, keptInDeckScope, loadCardCombos, loadNearCombos, pieceState, rankNearCombos, shapeCardCombos, shapeNearCombos, whereIs, whereOfState } = await import("./near-combos");
 const { shapeComboFacts } = await import("../synopsis/combo-facts");
 type ComboPieceRow = import("../synopsis/combo-facts").ComboPieceRow;
 type NearCombo = import("./near-combos").NearCombo;
@@ -331,6 +331,21 @@ describe("read B: a card's combos", () => {
     expect(q.params).toContainEqual(["id-Cmdr"]);
   });
 
+  it("with the deck's colors, the shortlist keeps only whole or addable one-away variants BEFORE its limit", async () => {
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const scoped = new PgDialect().sqlToQuery(
+      cardComboQuery("user_1", CARD, 200, 2, { deck: ["id-InDeck"], commanders: ["id-Cmdr"], identity: ["G", "R"] }),
+    );
+    // In the scored CTE's HAVING, ahead of its `limit`: a rejected variant never takes a shortlist slot.
+    const having = scoped.sql.slice(scoped.sql.indexOf("having count(*) ="), scoped.sql.indexOf("limit $"));
+    expect(having).toMatch(/count\(\*\) filter \(where not \(case when vc\.must_be_commander/);
+    expect(having).toMatch(/not vc\.must_be_commander and pc\.commander_legal\s+and pc\.color_identity <@ \$\d+::text\[\]/);
+    expect(scoped.params).toContainEqual(["G", "R"]);
+    // Deck-less, or the card outside the deck: no eligibility, every variant competes.
+    const flat = new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD, 200, 2, { deck: ["id-InDeck"], commanders: ["id-Cmdr"] }));
+    expect(flat.sql).not.toMatch(/color_identity <@/);
+  });
+
   it("the shortlist and its total count only variants with every other piece stored", async () => {
     const { PgDialect } = await import("drizzle-orm/pg-core");
     const q = new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD));
@@ -359,7 +374,7 @@ describe("read B: a card's combos", () => {
 
   it("reads nothing while the switch is off", async () => {
     execute.mockReset();
-    expect(await loadCardCombos({ userId: "u", oracleId: CARD, env: {} as NodeJS.ProcessEnv })).toEqual({ combos: [], total: 0 });
+    expect(await loadCardCombos({ userId: "u", oracleId: CARD, env: {} as NodeJS.ProcessEnv })).toEqual({ combos: [], total: 0, inScope: false });
     expect(execute).not.toHaveBeenCalled();
   });
 
@@ -373,5 +388,95 @@ describe("read B: a card's combos", () => {
     const out = await loadCardCombos({ userId: "u", oracleId: CARD, deck: { oracleIds: ["id-InDeck"], commanderOracleIds: [] }, env: ON });
     expect(out.combos[0].others.map((p) => [p.name, p.state, p.decks.map((d) => d.name)])).toEqual([["Away", "elsewhere", ["Elves"]], ["Gone", "notOwned", []], ["InDeck", "inDeck", []]]);
     expect(loadAvailability).toHaveBeenCalledWith("u", expect.objectContaining({ oracleIds: ["id-InDeck", "id-Away", "id-Gone"] }));
+  });
+
+  // Combos one piece away UI-3: the block's where-lines, art and addability.
+  describe("for card details (UI-3)", () => {
+    const pair = (v: string, partner: string, o: Partial<CardComboRow> = {}, card: Partial<CardComboRow> = {}) => [
+      row(v, "Card", { commander_legal: true, color_identity: ["R"], ...card }),
+      row(v, partner, { commander_legal: true, color_identity: ["R"], image_uri: `https://img/${partner}.jpg`, ...o }),
+    ];
+    const deckScope = { deck: new Set([CARD, "id-InDeck", "id-Cmdr"]), commanders: new Set(["id-Cmdr"]) };
+
+    it("whereOfState: in the deck, a spare, other decks, else the buy tag", () => {
+      const tag = { kind: "buy" as const, cents: 310, soldOut: false, qualifier: null };
+      expect(whereOfState("inDeck", [], () => tag)).toEqual({ kind: "inDeck" });
+      expect(whereOfState("spare", [], () => tag)).toEqual({ kind: "spare" });
+      expect(whereOfState("elsewhere", [{ id: "d", name: "D", committed: true }], () => tag)).toEqual({ kind: "elsewhere", decks: [{ id: "d", name: "D", committed: true }] });
+      expect(whereOfState("notOwned", [], () => tag)).toBe(tag);
+    });
+
+    it("keptInDeckScope: a whole combo stays, a one-away one only when the deck could add the piece", () => {
+      expect(keptInDeckScope(pair("w", "InDeck"), CARD, deckScope, ["R"])).toBe(true);
+      expect(keptInDeckScope(pair("ok", "Away"), CARD, deckScope, ["R"])).toBe(true);
+      expect(keptInDeckScope(pair("off", "Away", { color_identity: ["U"] }), CARD, deckScope, ["R"])).toBe(false);
+      expect(keptInDeckScope(pair("zone", "Away", { must_be_commander: true }), CARD, deckScope, ["R"])).toBe(false);
+      expect(keptInDeckScope(pair("banned", "Away", { commander_legal: false }), CARD, deckScope, ["R"])).toBe(false);
+      // The deck page's definition: a mandatory loop is never one piece away.
+      expect(keptInDeckScope(pair("loop", "Away", { produces: ["Draw the game"] }, { produces: ["Draw the game"] }), CARD, deckScope, ["R"])).toBe(false);
+    });
+
+    it("keptInDeckScope: the card must count as in the deck, a command-zone-only card only as a commander", () => {
+      expect(keptInDeckScope(pair("zone-card", "InDeck", {}, { must_be_commander: true }), CARD, deckScope, ["R"])).toBe(false);
+      const asCommander = { deck: deckScope.deck, commanders: new Set([CARD]) };
+      expect(keptInDeckScope(pair("zone-card", "InDeck", {}, { must_be_commander: true }), CARD, asCommander, ["R"])).toBe(true);
+    });
+
+    it("the query reads each piece's art, legality and identity", async () => {
+      const { PgDialect } = await import("drizzle-orm/pg-core");
+      const q = new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD));
+      expect(q.sql).toMatch(/c\.image_uri, c\.commander_legal, c\.color_identity\s+from scored s/);
+    });
+
+    it("prices a piece not owned, carries its art and its commander tag, and says the card is in scope", async () => {
+      execute.mockReset();
+      loadAvailability.mockReset();
+      loadPrices.mockReset();
+      selects.length = 0;
+      selects.push([{ identity: ["R"] }]);
+      execute
+        .mockResolvedValueOnce({ rows: [...pair("buy", "Bought"), ...pair("cmdr", "Cmdr"), ...pair("off", "OffColor", { color_identity: ["U"] })] })
+        .mockResolvedValueOnce({ rows: [] });
+      loadAvailability.mockResolvedValue(new Map());
+      loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map([["id-Bought", 3420]]) });
+      const out = await loadCardCombos({ userId: "u", oracleId: CARD, deck: { oracleIds: [CARD], commanderOracleIds: ["id-Cmdr"] }, env: ON, maxPieces: 2 });
+      expect(out.inScope).toBe(true);
+      // The off-color partner is not one piece away from this deck: dropped (OPEN-5).
+      expect(out.combos.map((c) => c.variantId).sort()).toEqual(["buy", "cmdr"]);
+      const bought = out.combos.find((c) => c.variantId === "buy")!.others[0];
+      expect(bought.where).toEqual({ kind: "buy", cents: 3420, soldOut: false, qualifier: null });
+      expect(bought.imageUri).toBe("https://img/Bought.jpg");
+      expect(bought.isCommander).toBe(false);
+      const cmdr = out.combos.find((c) => c.variantId === "cmdr")!.others[0];
+      expect([cmdr.where, cmdr.isCommander]).toEqual([{ kind: "inDeck" }, true]);
+      // Priced after the filter: a dropped partner costs no lookup.
+      expect([...(loadPrices.mock.calls[0][0] as string[])].sort()).toEqual(["id-Bought", "id-Cmdr"]);
+    });
+
+    it("deck-less: not in scope, and nothing is filtered by a deck's colors", async () => {
+      execute.mockReset();
+      loadAvailability.mockReset();
+      loadPrices.mockReset();
+      selects.length = 0;
+      execute.mockResolvedValueOnce({ rows: pair("off", "OffColor", { color_identity: ["U"] }) }).mockResolvedValueOnce({ rows: [] });
+      loadAvailability.mockResolvedValue(new Map());
+      loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map() });
+      const out = await loadCardCombos({ userId: "u", oracleId: CARD, env: ON, maxPieces: 2 });
+      expect(out.inScope).toBe(false);
+      expect(out.combos.map((c) => c.variantId)).toEqual(["off"]);
+      expect(out.combos[0].others[0].where).toEqual({ kind: "buy", cents: null, soldOut: false, qualifier: null });
+    });
+
+    it("a deck that does not list the card is not in scope, and keeps its lines", async () => {
+      execute.mockReset();
+      loadAvailability.mockReset();
+      selects.length = 0;
+      execute.mockResolvedValueOnce({ rows: pair("x", "InDeck", { color_identity: ["U"] }) }).mockResolvedValueOnce({ rows: [] });
+      loadAvailability.mockResolvedValue(new Map());
+      loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map() });
+      const out = await loadCardCombos({ userId: "u", oracleId: CARD, deck: { oracleIds: ["id-InDeck"], commanderOracleIds: ["id-Cmdr"] }, env: ON, maxPieces: 2 });
+      expect(out.inScope).toBe(false);
+      expect(out.combos[0].others[0].where).toEqual({ kind: "inDeck" });
+    });
   });
 });

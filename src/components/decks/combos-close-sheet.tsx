@@ -18,11 +18,9 @@
 
 import { useCardDetail } from "../cards/card-detail-provider";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import Link from "next/link";
 
 import { addCardToDeck } from "../../app/decks/actions";
 import { nearComboModal } from "../../lib/bracket/combo-modal";
-import { priceCopy } from "../../lib/copy/price";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { GhostButton } from "../ui/button";
 import { MutationError } from "./mutation-error";
@@ -31,13 +29,13 @@ import { ComboBody, type FindingArt } from "./receipt-modal";
 import { useDeckMutation } from "./use-deck-mutation";
 
 import { combosCloseCopy } from "../../lib/copy/combos-close";
-import type { MissingPieceWhere, NearCombo, NearCombos } from "../../lib/combos/near-combos";
-import { formatCents } from "../../lib/decks/price";
+import type { NearCombo, NearCombos } from "../../lib/combos/near-combos";
 import { producesInfiniteTurns } from "../../lib/spellbook/combo-features";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { SheetFrame } from "./pass-sheet";
+import { MissingPieceWhereLine } from "./combo-where-line";
 
 const copy = combosCloseCopy.sheet;
 const detailCopy = combosCloseCopy.detail;
@@ -260,10 +258,7 @@ function ComboDetail({
             oracleId === missing.oracleId ? (
               <MissingPieceWhereLine where={missing.where} on="plate" />
             ) : (
-              <>
-                <Dot owned />
-                <span className="text-[color:var(--success)]">{detailCopy.plate.inThisDeck}</span>
-              </>
+              <MissingPieceWhereLine where={{ kind: "inDeck" }} on="plate" />
             ),
           action: (
             <>
@@ -394,80 +389,5 @@ function ComboRow({
         <span aria-hidden>›</span>
       </button>
     </div>
-  );
-}
-
-/** A green dot for a card the reader owns; a hollow dashed ring for one to buy. */
-function Dot({ owned }: { owned: boolean }) {
-  return owned ? (
-    <span aria-hidden data-dot="owned" className="inline-block size-[8px] flex-none rounded-full bg-[color:var(--success)]" />
-  ) : (
-    <span aria-hidden data-dot="buy" className="inline-block size-[8px] flex-none rounded-full [border:1.5px_dashed_var(--fg-locked)]" />
-  );
-}
-
-/**
- * Where the missing piece is: the list row's where-line (`on="row"`), and the same decision under the
- * combo's missing plate (`on="plate"`). The plate is itself a press (it opens the card), so there the
- * other deck's name is words, not a link, and a spare is the plate's one word (`How-It-Works.dc.html`).
- */
-function MissingPieceWhereLine({ where, on }: { where: MissingPieceWhere; on: "row" | "plate" }) {
-  if (where.kind === "spare") {
-    return (
-      <>
-        <Dot owned />
-        <span>{on === "row" ? copy.where.spare : detailCopy.plate.spare}</span>
-      </>
-    );
-  }
-  if (where.kind === "elsewhere") {
-    // The decks arrive committed first (`holdingDecks`), so the first is the first committed one (G4).
-    const [deck, ...rest] = where.decks;
-    return (
-      <>
-        <Dot owned />
-        {deck ? (
-          // Shrinkable, and a long deck name (up to 120 characters) wraps inside the column rather
-          // than painting over the next one; the +N stays after the name.
-          <span className="min-w-0 [overflow-wrap:anywhere]">
-            {copy.where.inDeck}{" "}
-            {on === "plate" ? (
-              // The combo's detail lists every deck holding a copy (G4); the row names the first.
-              where.decks.map((d) => d.name).join(", ")
-            ) : (
-            // `.dlk`: card details' In your decks link, its hit reaching 44px tall past the 14px line.
-            <Link
-              href={`/decks/${deck.id}`}
-              aria-label={copy.where.deckLinkAria(deck.name)}
-              className="inline -my-[15px] py-[15px] leading-[14px] [overflow-wrap:anywhere] [box-decoration-break:clone] text-[color:var(--fg-body)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
-            >
-              {deck.name}
-            </Link>
-            )}
-            {on === "row" && rest.length > 0 ? (
-              <>{" "}<span className="text-[color:var(--fg-faint)]">{copy.where.more(rest.length)}</span></>
-            ) : null}
-          </span>
-        ) : (
-          <span>{copy.where.inAnotherDeck}</span>
-        )}
-      </>
-    );
-  }
-  return (
-    <>
-      <Dot owned={false} />
-      {where.cents !== null ? (
-        // `.btag`: the buy tag's ink and figure (`formatCents`, as the shipped tag formats it).
-        <span className="rounded-[4px] px-[5px] font-mono text-[10px] leading-[15px] text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]">
-          {formatCents(where.cents)}
-          {where.qualifier ? ` ${where.qualifier}` : null}
-        </span>
-      ) : where.soldOut ? (
-        // The buy tag's own word, for a card stocked before and not now. A card the feed has never
-        // stocked gets nothing, as the buy tag leaves it (`priceCopy`: silence is a state).
-        <span className="text-[color:var(--fg-muted)]">{priceCopy.tag.soldOut}</span>
-      ) : null}
-    </>
   );
 }

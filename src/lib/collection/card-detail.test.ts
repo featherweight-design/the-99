@@ -506,7 +506,9 @@ describe("loadCardDetail's round trips", () => {
   const catalogRow = { oracleId: "o-1", scryfallId: "s-1", name: "Arcane Signet", gameChanger: false };
 
   /** A fresh module over a db stub that counts what it is asked, plus the two side reads. */
-  async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]>; token?: unknown; gateRows?: unknown[] }) {
+  const cardComboCalls: unknown[] = [];
+  async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]>; token?: unknown; gateRows?: unknown[]; cardCombos?: unknown }) {
+    cardComboCalls.length = 0;
     const asked = { select: 0, printings: 0, execute: 0, flags: 0, partners: 0, token: [] as string[] };
     vi.doMock("../../db", () => ({
       db: {
@@ -532,6 +534,11 @@ describe("loadCardDetail's round trips", () => {
     vi.doMock("../combos/near-miss", () => ({
       loadCardComboPartners: async () => { asked.partners += 1; return []; },
     }));
+    // The near-combos read (combos close UI-3), counted apart so `asked` keeps its shipped shape.
+    vi.doMock("../combos/near-combos", () => ({
+      CARD_COMBOS_SHORTLIST: 200,
+      loadCardCombos: async (args: unknown) => { cardComboCalls.push(args); return opts.cardCombos ?? { combos: [], total: 0, inScope: false }; },
+    }));
     // An id the card catalog does not hold is asked of the token loader (bug batch 2026-10-12).
     vi.doMock("../tokens/detail", () => ({
       loadTokenDetail: async (id: string) => { asked.token.push(id); return opts.token ?? null; },
@@ -544,6 +551,7 @@ describe("loadCardDetail's round trips", () => {
     vi.doUnmock("../../db");
     vi.doUnmock("../bracket/flags-read");
     vi.doUnmock("../combos/near-miss");
+    vi.doUnmock("../combos/near-combos");
     vi.doUnmock("../tokens/detail");
   };
   const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -677,5 +685,56 @@ describe("loadCardDetail's round trips", () => {
     try {
       expect((await load("user_1", "o-1", undefined, ENV_VIEW))?.oracleId).toBe("o-1");
     } finally { done(); }
+  });
+
+  // Combos one piece away UI-3: ONE combo read per card, chosen by the reader's switch.
+  describe("the combo block's read", () => {
+    const NEAR_OFF = envViewWith({ NEAR_COMBOS_ENABLED: "false" });
+    const NEAR_ON = envViewWith({ NEAR_COMBOS_ENABLED: "true" });
+    const line = { variantId: "v1", others: [], produces: [], steps: null, manaNeeded: null, manaValueNeeded: null, notablePrerequisites: null, usesCommander: false };
+
+    it("off: reads the shipped partners and never the near-combos read", async () => {
+      selectCollectionRows.mockResolvedValue([ownedRow]);
+      loadPrintingPrices.mockReset();
+      loadPrintingPrices.mockResolvedValue(null);
+      loadAvailability.mockReset();
+      loadAvailability.mockResolvedValue(new Map());
+      const { load, asked } = await fresh({ catalog: [catalogRow] });
+      try {
+        const card = await load("user_1", "o-1", ["d-1", "c-1"], NEAR_OFF, ["c-1"]);
+        expect(asked.partners).toBe(1);
+        expect(cardComboCalls).toHaveLength(0);
+        expect(card && "cardCombos" in card).toBe(false);
+      } finally { done(); }
+    });
+
+    it("on: reads the near combos (two-card, uncapped, the commanders apart) instead, and sets them on the card", async () => {
+      selectCollectionRows.mockResolvedValue([ownedRow]);
+      loadPrintingPrices.mockReset();
+      loadPrintingPrices.mockResolvedValue(null);
+      loadAvailability.mockReset();
+      loadAvailability.mockResolvedValue(new Map());
+      const { load, asked } = await fresh({ catalog: [catalogRow], cardCombos: { combos: [line], total: 1, inScope: true } });
+      try {
+        const card = await load("user_1", "o-1", ["d-1", "c-1"], NEAR_ON, ["c-1"]);
+        expect(asked.partners).toBe(0);
+        expect(cardComboCalls).toEqual([
+          expect.objectContaining({ userId: "user_1", oracleId: "o-1", maxPieces: 2, cap: 200, deck: { oracleIds: ["d-1", "c-1"], commanderOracleIds: ["c-1"] } }),
+        ]);
+        expect(card?.cardCombos).toEqual({ combos: [line], inScope: true });
+        expect(card && "comboPartners" in card).toBe(false);
+      } finally { done(); }
+    });
+
+    it("on, opened outside a deck: no deck in scope", async () => {
+      selectCollectionRows.mockResolvedValue([]);
+      loadPrintingPrices.mockReset();
+      loadPrintingPrices.mockResolvedValue(null);
+      const { load } = await fresh({ catalog: [catalogRow] });
+      try {
+        await load("user_1", "o-1", undefined, NEAR_ON);
+        expect(cardComboCalls).toEqual([expect.objectContaining({ deck: undefined })]);
+      } finally { done(); }
+    });
   });
 });

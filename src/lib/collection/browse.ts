@@ -16,6 +16,7 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
 import type { PrintingPrices } from "../cards/price-lookup";
 import { cardPriceCode, priceSortCents } from "./copy-price";
 import type { ModalComboPartner } from "../combos/near-miss";
+import type { CardCombos } from "../combos/near-combos";
 import type { CardFact } from "../copy/card-mark";
 import type { DraftWant } from "../decks/draft-wants";
 
@@ -255,6 +256,14 @@ export type BrowseCard = {
    * for a modal most rows are never opened into.
    */
   comboPartners?: ModalComboPartner[];
+  /**
+   * The same block's lines read from `loadCardCombos` (combos one piece away UI-3), set INSTEAD of
+   * `comboPartners` when `NEAR_COMBOS_ENABLED` is on for the reader: one line per two-card combo,
+   * each partner with its where-line and art, and whether the deck in scope lists the card itself
+   * (the block's split). The block draws the new face from this field and the shipped face from
+   * `comboPartners`, never from a switch read on the client. Omitted when empty, as that one is.
+   */
+  cardCombos?: Pick<CardCombos, "combos" | "inScope">;
   availability?: Availability | null;
   /**
    * The committed decks wanting this card only in their DRAFT (`loadDraftWants`), which

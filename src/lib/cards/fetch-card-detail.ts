@@ -1,5 +1,5 @@
 import type { BrowseCard } from "../collection/browse";
-import { MAX_DECK_SCOPE } from "../combos/deck-scope-param";
+import { MAX_COMMANDER_SCOPE, MAX_DECK_SCOPE } from "../combos/deck-scope-param";
 import { decodeCardDetail } from "./card-detail-wire";
 
 /**
@@ -14,12 +14,15 @@ import { decodeCardDetail } from "./card-detail-wire";
 export async function fetchCardDetail(
   oracleId: string,
   deckOracleIds?: readonly string[],
+  /** That deck's commanders, apart (combos close UI-3); the route refuses more than two. */
+  commanderOracleIds?: readonly string[],
 ): Promise<BrowseCard | null> {
   const params = new URLSearchParams({ id: oracleId });
   // Capped HERE, where the route refuses a longer list with a 400: nothing stops a draft growing
   // past a legal deck's size, and one that has must still open its cards. The ids past the cap
   // only lose `in this deck` on their partners, which is what the action's `sanitizeDeckScope` does.
   if (deckOracleIds?.length) params.set("scope", deckOracleIds.slice(0, MAX_DECK_SCOPE).join(","));
+  if (commanderOracleIds?.length) params.set("commanders", commanderOracleIds.slice(0, MAX_COMMANDER_SCOPE).join(","));
   const res = await fetch(`/api/card-detail?${params}`, { headers: { accept: "application/json" } });
   if (res.status === 404) return null;
   // A redirect is the proxy sending a signed-out reader to sign in: HTML, not a card.

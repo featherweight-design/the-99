@@ -969,6 +969,12 @@ export function BuilderShell({
     () => comboScopeIds({ cards, commander: deck.commander, partner: deck.partner }),
     [cards, deck.commander, deck.partner],
   );
+  // The commanders apart (combos close UI-3): the near-combos read holds a command-zone-only piece
+  // only as a commander and reads the deck's colors from them.
+  const comboCommanders = useMemo(
+    () => [deck.commander.oracleId, ...(deck.partner ? [deck.partner.oracleId] : [])],
+    [deck.commander.oracleId, deck.partner],
+  );
 
   // The top-off list's own copy, and deliberately the OPTIMISTIC list. It uses
   // this to name a row that went illegal while the list was open, so a quick-add
@@ -1586,6 +1592,7 @@ export function BuilderShell({
       // Still a different set from `proxyEligibleIds` above, which answers a different
       // question — passing that one would call a card in-deck because it is proxyable.
       comboDeckOracleIds={comboScope}
+      comboCommanderOracleIds={comboCommanders}
       deckPrintingPicks={deck.printingPicks ?? null}
     >
       <DeckSiblingsProvider>

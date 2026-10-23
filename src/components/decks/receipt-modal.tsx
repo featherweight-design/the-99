@@ -461,6 +461,7 @@ export function ReceiptTile({
   width,
   where,
   missing = false,
+  press = true,
 }: {
   card: CardRef;
   art: FindingArt;
@@ -474,23 +475,20 @@ export function ReceiptTile({
   where?: React.ReactNode;
   /** The piece a combo is missing: its art carries the 1.5px dashed accent outline (`.pl.miss`). */
   missing?: boolean;
+  /**
+   * The plate opens its card. False for the card a combo was opened FROM (card details' combo, UI-3
+   * OPEN-10): it is the card under the sheet, and opening it again would stack it on itself.
+   */
+  press?: boolean;
 }) {
   const drawn = art.get(card.oracleId);
   const name = drawn?.name ?? card.name;
   // The where-line describes the plate's press, so focusing a plate also says where the card is.
   const whereId = useId();
-  return (
-    <CardDetailTrigger
-      oracleId={card.oracleId}
-      name={name}
-      siblings={siblings}
-      imageUri={drawn?.imageUri ?? null}
-      describedBy={where != null ? whereId : undefined}
-      testId="receipt-tile"
-      // The grid's tiles are the 760 receipt's (3a); the combo body's fixed plates are unchanged.
-      className={"flex w-full flex-col items-stretch text-left " + (width ? "gap-[5px] md:gap-[6px]" : "gap-[6px] md:gap-[7px]")}
-      style={width ? { width } : undefined}
-    >
+  // The grid's tiles are the 760 receipt's (3a); the combo body's fixed plates are unchanged.
+  const tileClass = "flex w-full flex-col items-stretch text-left " + (width ? "gap-[5px] md:gap-[6px]" : "gap-[6px] md:gap-[7px]");
+  const body = (
+    <>
       <span
         data-missing-piece={missing || undefined}
         className={
@@ -515,6 +513,27 @@ export function ReceiptTile({
           {where}
         </span>
       ) : null}
+    </>
+  );
+  if (!press) {
+    return (
+      <div data-testid="receipt-tile" data-plate-still className={tileClass} style={width ? { width } : undefined}>
+        {body}
+      </div>
+    );
+  }
+  return (
+    <CardDetailTrigger
+      oracleId={card.oracleId}
+      name={name}
+      siblings={siblings}
+      imageUri={drawn?.imageUri ?? null}
+      describedBy={where != null ? whereId : undefined}
+      testId="receipt-tile"
+      className={tileClass}
+      style={width ? { width } : undefined}
+    >
+      {body}
     </CardDetailTrigger>
   );
 }
@@ -549,7 +568,10 @@ export function ComboBody({
     platesInert?: boolean;
     /** The plate's where-line for each piece. */
     where: (oracleId: string) => React.ReactNode;
-    missingOracleId: string;
+    /** The piece outlined as missing; none for a combo the deck holds whole (card details, UI-3). */
+    missingOracleId?: string;
+    /** A plate that is not a press: the card the combo was opened from (card details, UI-3 OPEN-10). */
+    stillOracleId?: string;
     /** Bottom right of the foot: the compact Add. */
     action: React.ReactNode;
   };
@@ -568,7 +590,8 @@ export function ComboBody({
               siblings={siblings}
               width={96}
               where={oneAway?.where(card.oracleId)}
-              missing={oneAway?.missingOracleId === card.oracleId}
+              missing={oneAway?.missingOracleId !== undefined && oneAway.missingOracleId === card.oracleId}
+              press={oneAway?.stillOracleId !== card.oracleId}
             />
           ))}
         </div>

@@ -64,4 +64,20 @@ export const combosCloseCopy = {
     /** The foot's compact Add, bottom right. */
     add: (card: string) => `Add ${card}`,
   },
+
+  /** Card details' combo lines (UI-3, `Card-Details.dc.html`), drawn from the near-combos read. */
+  card: {
+    groups: {
+      /** The partner is in the deck too: the combo is whole. */
+      whole: "Whole in this deck",
+      /** The partner is not in the deck; the deck holds the rest. */
+      oneAway: "One piece away · you hold the rest",
+    },
+    /** A line's press, which opens the combo over the card: `Open the combo: Polyraptor + Warstorm Surge`. */
+    openAria: (card: string, partner: string) => `Open the combo: ${card} + ${partner}`,
+    /** The combo sheet's way back to the card it was opened from. */
+    backAria: (card: string) => `Back to ${card}`,
+    /** The combo sheet's ×, which also returns to the card. */
+    closeAria: "Close the combo",
+  },
 } as const;
