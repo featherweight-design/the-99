@@ -105,3 +105,11 @@ ERRORS ONLY: no tracing, no replay, no logs. `@sentry/nextjs` is pinned exactly 
 | `SENTRY_AUTH_TOKEN` | org auth token, scopes `project:releases` and `org:read` | ON |
 
 Never put any of them in `.env`.
+
+## Weekly cost check (cost audit 2026-10-23)
+
+- **`.github/workflows/cost-check.yml`**, Mondays 14:23 UTC and on dispatch, READ-ONLY, dormant until the repository variable `COST_CHECK_ENABLED` is `'true'`. It runs `scripts/cost-check.mjs`: Vercel billing charges (this week against last, team-wide) and deployment counts per project, Neon project and branch counters and endpoints. It writes the job summary and goes red when a rule in `scripts/lib/cost-thresholds.mjs` fires, or when either source cannot be read (never silently green).
+- **Secrets, set by Hugh in GitHub** (Settings, Secrets and variables, Actions): `VERCEL_USAGE_TOKEN` and `NEON_API_KEY_READONLY`. Neither service issues a read-only key, so `cost-check.test.mts` pins the script to one `fetch` and no verb but GET. `COST_CHECK_VERCEL_TEAM_ID` is a plain variable and defaults to the team.
+- **Neon's counters are billing-period to date**, so each run uploads a `cost-snapshot` artifact (90 days) and diffs against the newest one it can download; the change is scaled to seven days. No snapshot, under a day old, or a new month: those two rules are skipped and the summary says so.
+- **A red run opens, or comments on, an issue labelled `cost`** (REST, not `gh issue`), and the run stays red. Delete the "Open an issue" step to fall back to GitHub's email to whoever last edited the cron line.
+
