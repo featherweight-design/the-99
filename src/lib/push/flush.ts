@@ -24,6 +24,7 @@ import { stillWanted } from "./eligible";
 import { pushEnabled } from "./flag";
 import type { PushItem } from "./message";
 import { planDevice, type OutboxRow } from "./plan";
+import { captureServerError } from "../sentry/capture";
 import { readPushPrefs } from "./prefs";
 import { resolvePushItems, type OutboxRef } from "./resolve";
 import { payloadFor, type PushSender } from "./send";
@@ -179,6 +180,8 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
       report.failed += 1;
       const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
       console.error(`[push-flush] a reader's pushes failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
+      // Caught so the other readers still go, so reported here: neither the cron's nor the kick's catch ever sees it.
+      captureServerError("push-flush-reader", error);
     }
   }
 

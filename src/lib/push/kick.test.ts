@@ -8,7 +8,7 @@ vi.mock("./send", () => ({ sendWebPush: vi.fn() }));
 vi.mock("../switches/snapshot", () => ({ resolveSwitchEnvStrict: vi.fn() }));
 vi.mock("../sentry/capture", () => ({ captureServerError: m.capture }));
 
-import { KICK_DELAY_MS, kickPush } from "./kick";
+import { KICK_DELAY_MS, KICK_MAX_WAIT_MS, kickPush } from "./kick";
 
 const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
 const jwk = publicKey.export({ format: "jwk" });
@@ -80,6 +80,35 @@ describe("kickPush", () => {
     expect(m.flush).toHaveBeenCalledOnce();
     await run(1); // B's own callback, after B committed: no flush running, so it flushes
     expect(m.flush).toHaveBeenCalledTimes(2);
+  });
+
+  it("waits for a producer whose writes span the delay: one flush once the reader's writes go quiet", async () => {
+    // A notice's loop inside after(): each write kicks, 1.5s apart, longer in all than the delay.
+    kickPush("u7");
+    const first = (m.after.mock.calls.at(-1)![0] as () => Promise<void>)();
+    await vi.advanceTimersByTimeAsync(1500);
+    kickPush("u7");
+    const second = (m.after.mock.calls.at(-1)![0] as () => Promise<void>)();
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(m.flush).not.toHaveBeenCalled(); // 3s since the first write, but only 1.5s since the last
+    await vi.advanceTimersByTimeAsync(KICK_DELAY_MS);
+    await Promise.all([first, second]);
+    // One flush once the writes went quiet, and the second request's callback adds its one more pass: never a flush
+    // that read only the first half.
+    expect(m.flush).toHaveBeenCalledTimes(2);
+  });
+
+  it("never waits past KICK_MAX_WAIT_MS for a producer that keeps writing", async () => {
+    kickPush("u8");
+    const done = (m.after.mock.calls.at(-1)![0] as () => Promise<void>)();
+    for (let t = 0; t < KICK_MAX_WAIT_MS; t += 1000) {
+      await vi.advanceTimersByTimeAsync(1000);
+      kickPush("u8");
+    }
+    await vi.advanceTimersByTimeAsync(1);
+    expect(m.flush).toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(KICK_DELAY_MS * 10);
+    await done;
   });
 
   it("a second reader is never held behind the first", async () => {

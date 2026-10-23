@@ -15,8 +15,16 @@ import { after } from "next/server";
 import { captureServerError } from "../sentry/capture";
 import { pushConfig } from "./config";
 
-/** How long a kick waits before it flushes: every item a request (or a notice's loop) records lands first, as one batch. */
+/**
+ * How long a reader's writes must be quiet before a kick flushes: every item a request (or a notice's loop writing from
+ * inside `after()`) records lands first, as one batch. Each new item restarts the wait, up to `KICK_MAX_WAIT_MS`, so a
+ * producer that never stops cannot hold the push forever.
+ */
 export const KICK_DELAY_MS = 2000;
+export const KICK_MAX_WAIT_MS = 10_000;
+
+/** When each reader last had an item queued on this instance (the kick's quiet clock). */
+const lastQueued = new Map<string, number>();
 
 /**
  * One reader's running flush on this server instance. Every request that queued a push schedules its OWN callback, so each
@@ -35,9 +43,16 @@ export function kickPush(userId: string): void {
     VAPID_SUBJECT: process.env.VAPID_SUBJECT,
   } as unknown as NodeJS.ProcessEnv);
   if (!config) return;
+  lastQueued.set(userId, Date.now());
   try {
     after(async () => {
-      await new Promise((done) => setTimeout(done, KICK_DELAY_MS));
+      const started = Date.now();
+      for (;;) {
+        const quietAt = (lastQueued.get(userId) ?? 0) + KICK_DELAY_MS;
+        const wait = Math.min(quietAt, started + KICK_MAX_WAIT_MS) - Date.now();
+        if (wait <= 0) break;
+        await new Promise((done) => setTimeout(done, wait));
+      }
       const live = running.get(userId);
       if (live) {
         // Its last pass may have read the outbox before this request committed: one more, once it ends.
@@ -59,6 +74,7 @@ export function kickPush(userId: string): void {
       } finally {
         // No await between the last `again` check and this delete, so no callback can slip in between them.
         running.delete(userId);
+        if (Date.now() - (lastQueued.get(userId) ?? 0) >= KICK_DELAY_MS) lastQueued.delete(userId);
       }
     });
   } catch {
