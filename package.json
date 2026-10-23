@@ -69,6 +69,7 @@
     "probe:purge": "tsx scripts/probe-purge.mts",
     "probe:invites": "tsx scripts/probe-invites.mts",
     "probe:invites-join": "tsx scripts/probe-invites-join.mts",
+    "probe:push-flush": "tsx scripts/probe-push-flush.mts",
     "probe:push-subscriptions": "tsx scripts/probe-push-subscriptions.mts",
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
     "probe:feed-store": "tsx scripts/probe-feed-store.mts",
@@ -370,6 +371,7 @@
     "stripe": "22.6.2",
     "tailwind-merge": "^3.6.0",
     "uqr": "0.1.3",
+    "web-push": "3.6.7",
     "ws": "^8.21.1",
     "zod": "^4.4.3"
   },
@@ -382,6 +384,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-window": "^1.8.8",
+    "@types/web-push": "^3.6.4",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.1.11",
     "dotenv": "^17.4.2",

@@ -3,6 +3,7 @@
   "ignoreCommand": "node scripts/vercel-ignore.mjs",
   "crons": [
     { "path": "/api/cron/account-sweep", "schedule": "*/30 * * * *" },
-    { "path": "/api/cron/invite-sweep", "schedule": "17 * * * *" }
+    { "path": "/api/cron/invite-sweep", "schedule": "17 * * * *" },
+    { "path": "/api/cron/push-flush", "schedule": "*/5 * * * *" }
   ]
 }
