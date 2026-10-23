@@ -34,9 +34,10 @@ export function useLandFocus(root: RefObject<HTMLElement | null>) {
       target.current = null;
       return;
     }
-    // Not drawn yet (a refresh still on its way): wait for the render that draws it.
+    // Not drawn yet (a refresh still on its way), or drawn but still locked by the press: wait for the render that
+    // draws it pressable. A disabled control cannot take focus, so focusing it would drop the reader on the body.
     const el = root.current?.querySelector<HTMLElement>(t.selector);
-    if (!el) return;
+    if (!el || el.matches(":disabled")) return;
     target.current = null;
     el.focus();
   });

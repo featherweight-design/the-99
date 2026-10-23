@@ -180,6 +180,28 @@ describe("YourRequests", () => {
     elsewhere.remove();
   });
 
+  // A press that succeeded keeps every press locked until its redraw arrives: a second press during a slow refresh
+  // would resend a write the first already made, and report a failure after a success.
+  it.each(["✕", "Ask again"])("a %s that succeeded stays locked until the redraw arrives", async (which) => {
+    actions.closeSpareAction.mockResolvedValue({ ok: true, closed: "cleared" });
+    actions.askSpareAction.mockResolvedValue({ ok: true, id: "new" });
+    const rows = [req("a", "expired"), req("b", "yes")];
+    const { rerender } = render(<YourRequests rows={rows} now={NOW} />);
+    const press = () => (which === "✕" ? screen.getAllByTestId("your-request-close")[0] : screen.getByTestId("friend-spare-ask"));
+    await act(async () => fireEvent.click(press()));
+    // The action is back, the redraw is not: the row still stands, and pressing it again sends nothing.
+    expect((press() as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => fireEvent.click(press()));
+    const sent = which === "✕" ? actions.closeSpareAction : actions.askSpareAction;
+    expect(sent).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("alert")).toBeNull();
+    // The redraw releases the lock.
+    await act(async () => {
+      rerender(<YourRequests rows={which === "✕" ? [req("b", "yes")] : [req("new", "open", { oracleId: "card-a" }), req("b", "yes")]} now={NOW} />);
+    });
+    expect((screen.getAllByTestId("your-request-close")[0] as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it.each(["✕", "Ask again"])("a failed %s: the shared toast, the row as it was, no refresh", async (which) => {
     actions.closeSpareAction.mockResolvedValue({ ok: false, reason: "gone" });
     actions.askSpareAction.mockResolvedValue({ ok: false, reason: "asked" });

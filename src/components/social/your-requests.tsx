@@ -61,6 +61,14 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
   const land = useLandFocus(root);
   const toast = useSpareToast();
   const [busy, setBusy] = useState<string | null>(null);
+  // A press that succeeded holds every press locked until the redraw it caused arrives (new `rows`), so a second press
+  // cannot resend what the first already did (an Ask again the open ask now refuses, a ✕ on a row already gone).
+  // Released during render, not in an effect, so the redraw never paints one frame of unlocked stale rows.
+  const [held, setHeld] = useState<{ rows: readonly YourRequest[]; done: boolean } | null>(null);
+  if (held?.done && held.rows !== rows) {
+    setHeld(null);
+    setBusy(null);
+  }
   // The last row's ✕ takes the section with it (no rows, no section), so `land` has nowhere to go: on the way out the
   // section hands focus to the page's title, unless the reader has moved on.
   // The section draws nothing once the redraw has no rows, or is unmounted by its page: either way, once.
@@ -84,9 +92,14 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
   async function close(a: YourRequest, index: number, from: Element) {
     if (busy) return;
     setBusy(a.id);
+    setHeld({ rows, done: false });
     const ok = await closeSpareAction(a.id).then((o) => o.ok, () => false);
-    setBusy(null);
-    if (!ok) return toast.fail();
+    if (!ok) {
+      setHeld(null);
+      setBusy(null);
+      return toast.fail();
+    }
+    setHeld({ rows, done: true });
     const next = rows[index + 1] ?? rows[index - 1];
     if (next) land(`[data-request="${next.id}"] [data-testid="your-request-close"]`, from);
     else lastClosed.current = true;
@@ -97,10 +110,15 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
     // The pressed Ask again, taken before the action is awaited (RowEnd's press hands no event on).
     const from = document.activeElement;
     setBusy(a.id);
+    setHeld({ rows, done: false });
     const out = await askSpareAction({ friendPublicId: a.holder.publicId, oracleId: a.oracleId, copies: a.copies, deckId: a.deckId })
       .catch(() => null);
-    setBusy(null);
-    if (!out?.ok) return toast.fail();
+    if (!out?.ok) {
+      setHeld(null);
+      setBusy(null);
+      return toast.fail();
+    }
+    setHeld({ rows, done: true });
     // The new ask by its own id: its state is derived on the redraw (it can come back `unneeded` or `unavailable`).
     land(`[data-request="${out.id}"] [data-testid="your-request-status"]`, from);
     router.refresh();
