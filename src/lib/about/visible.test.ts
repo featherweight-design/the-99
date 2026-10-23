@@ -699,3 +699,24 @@ describe("whats-new's line switches, in every state of the four switches they na
     }
   });
 });
+
+// Spare requests close-out (d9's ruling (a)): `friend-spares` says a spare is view only while requests are off, and
+// says how to ask, and how an ask is answered, once they are on.
+describe("friend-spares' caption follows SPARE_REQUESTS_ENABLED", () => {
+  const entry = aboutEntries.find((e) => e.id === "friend-spares")!;
+  const caption = (on: Record<string, string>) => resolveEntry(entry, on as unknown as NodeJS.ProcessEnv).caption;
+  const VIEW_ONLY = "It’s view only";
+  const ASK = "Press “Ask” beside a friend";
+
+  it("keeps view only with the switch off and swaps in the ask with it on", () => {
+    expect(caption({ SOCIAL_FRIENDS_ENABLED: "true" })).toContain(VIEW_ONLY);
+    expect(caption({ SOCIAL_FRIENDS_ENABLED: "true" })).not.toContain(ASK);
+    const on = caption({ SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+    expect(on).toContain(ASK);
+    expect(on).not.toContain(VIEW_ONLY);
+    // One sentence leaves and one arrives: no doubled space where the view-only sentence was.
+    expect(on).toContain("drafts included. Press “Ask”");
+    // SPARE_REQUESTS_ENABLED needs its parent: alone it keeps view only.
+    expect(caption({ SPARE_REQUESTS_ENABLED: "true" })).toContain(VIEW_ONLY);
+  });
+});
