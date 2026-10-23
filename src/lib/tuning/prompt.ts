@@ -96,9 +96,9 @@ const OWNED_HEADING = "Cards the player owns that fit this deck";
 function focusRules(focus: EvidencePack["focus"]): string[] {
   if (!focus) return [];
   return [
-    `The player picked a focus for this deck, named under "${FOCUS_HEADING}". Lean the additions toward it: when two cards meet the same need, add the one that counts toward the focus. Still fill the gaps the games and targets show.`,
+    `The player picked a focus for this deck, named under "${FOCUS_HEADING}". Build toward it: at least half of the additions must be cards that count toward the focus, doing what its listed cards do. The focus comes before a role count: fill a role that is only one short with a card that also counts toward the focus, or leave it for a later run.`,
     ...(focus.offTop.length > 0 ? ["Prefer cuts from the cards listed as on none of the top strategies. Never cut a card listed as counting toward the focus unless a game or a note gives a reason."] : []),
-    "The app shows how far each addition moves the focus: never state that count in a rationale.",
+    "The app shows how far each addition moves the focus, and marks each cut that is on none of the top strategies: never state either in a rationale or a citation.",
   ];
 }
 

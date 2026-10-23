@@ -40,6 +40,11 @@ describe("strategyChips", () => {
     expect(onPlan.evidence).toHaveLength(1);
   });
 
+  it("drops a model citation restating the off-plan line, so the chip says it once", () => {
+    const [cut] = strategyChips([line(null, "c", [{ kind: "decklist", value: "Ponder: on none of the top strategies" }, { kind: "games", value: "Lost 3 of 5 games" }])], run, adds);
+    expect(cut.evidence.map((e) => e.value)).toEqual(["on none of the top 2", "Lost 3 of 5 games"]);
+  });
+
   it("adds no chip to an addition the run has no card for (a land), or a cut when nothing scores", () => {
     expect(strategyChips([line("land", null)], run, adds)[0].evidence).toHaveLength(1);
     expect(strategyChips([line(null, "c")], { ...run, top: [] }, adds)[0].evidence).toHaveLength(1);

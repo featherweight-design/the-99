@@ -74,6 +74,9 @@ export function focusPack(run: RunStrategy): FocusPack {
   };
 }
 
+/** A model citation restating that a card is on none of the top strategies, which the app's own chip says. */
+const RESTATES_OFF_TOP = /\bon none of (the|its|them|the deck's) (top )?strateg/i;
+
 type Line = { addOracleId: string | null; cutOracleId: string | null; evidence: TuningCitation[] };
 
 /**
@@ -96,7 +99,9 @@ export function strategyChips<T extends Line>(lines: readonly T[], run: RunStrat
       const card = deck.get(line.cutOracleId);
       if (!card || [...run.top, run.key].some((k) => onStrategy(card, k))) return line;
       const chip: TuningCitation = { kind: "decklist", value: deckTuningCopy.card.offTop(run.top.length) };
-      return { ...line, evidence: [chip, ...line.evidence] };
+      // The model quotes the pack's own line back ("Ponder: on none of the top strategies") despite being told not to
+      // (eval v4: 10 of 36 chipped cuts). The app's chip says it once.
+      return { ...line, evidence: [chip, ...line.evidence.filter((c) => !RESTATES_OFF_TOP.test(c.value))] };
     }
     return line;
   });

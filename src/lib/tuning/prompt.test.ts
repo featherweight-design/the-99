@@ -372,9 +372,9 @@ describe("the strategy focus in the prompt", () => {
     expect(user).toContain("The player's focus: Tokens. 11 of the 62 nonland cards count toward it: Anointed Procession, Secure the Wastes.");
     expect(user).toContain("This deck's top strategies: Tokens, Life gain.");
     expect(user).toContain("Cards on none of them nor the focus: Ponder.");
-    expect(system).toContain("Lean the additions toward it");
+    expect(system).toContain("at least half of the additions must be cards that count toward the focus");
     expect(system).toContain("Prefer cuts from the cards listed as on none of the top strategies.");
-    expect(system).toContain("never state that count");
+    expect(system).toContain("never state either in a rationale or a citation");
   });
 
   it("drops the cut rule when no card is off every strategy", () => {

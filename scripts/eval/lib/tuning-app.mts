@@ -31,6 +31,8 @@ export async function openTuning() {
   const { sizeLists, validateSuggestions } = await import("../../../src/lib/tuning/validate");
   const limits = await import("../../../src/lib/tuning/limits");
   const { PROMPT_VERSION } = await import("../../../src/lib/tuning/prompt-version");
+  const { focusPack, loadRunStrategy } = await import("../../../src/lib/strategy/run");
+  type StrategyKey = import("../../../src/lib/strategy/score").StrategyKey;
   type EvidencePack = import("../../../src/lib/tuning/evidence").EvidencePack;
   type TuningResponse = import("../../../src/lib/tuning/response-schema").TuningResponse;
   type DeckGame = import("../../../src/lib/decks/games").DeckGame;
@@ -52,8 +54,9 @@ export async function openTuning() {
   for (let i = deckRows.length - 1; i >= 0; i--) if (deckRows[i].user_id !== userId) deckRows.splice(i, 1);
 
   /** The pack and messages for each deck, by the app's own path. `overlay[i]` replaces deck i's
-   *  intent and games in memory, before the pack is built. */
-  async function prepare(ids: readonly string[], variant: TuningVariant, overlay: readonly OverlayDeck[] | null) {
+   *  intent and games in memory, before the pack is built. `focusOf` sets a deck's strategy focus in memory, as the
+   *  run does (`loadRunStrategy`, `focusPack`), whatever the deck has stored. */
+  async function prepare(ids: readonly string[], variant: TuningVariant, overlay: readonly OverlayDeck[] | null, focusOf?: ReadonlyMap<string, StrategyKey>) {
     const out: { deckId: string; pack: EvidencePack; system: string; user: string }[] = [];
     for (const [i, deckId] of ids.entries()) {
       const inputs = await tuningInputs(deckId, userId, process.env);
@@ -83,6 +86,8 @@ export async function openTuning() {
         profile, play: buildPlayGroup(games), intent, owned, now: new Date(OVERLAY_ANCHOR),
         limits: { capCents: null, sets: [], ownedOnly: false },
       });
+      const focus = focusOf?.get(deckId);
+      if (focus) pack.focus = focusPack(await loadRunStrategy(inputs.head, focus));
       const { pack: shown, messages } = applyVariant(variant, pack, buildPrompt, deckId);
       out.push({ deckId, pack: shown, ...messages });
     }
