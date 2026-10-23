@@ -208,6 +208,9 @@ describe("adding", () => {
       click(screen.getByRole("button", { name: "Insert a card tag" }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
       expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
+      // The list is 622px tall under the field and cannot fit in 768px with it centred: the band narrows to the
+      // field's own height at the window's top (middle at 768 - 622 - 23 = 123), so it is brought to the top.
+      expect(vi.mocked(reveal).mock.calls.at(-1)?.[3]?.()).toEqual({ top: 0, bottom: 246 });
     } finally {
       HTMLElement.prototype.getBoundingClientRect = own;
     }

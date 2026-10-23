@@ -41,14 +41,18 @@ function footFloor(bottom: number, field: Element): number {
 
 /**
  * The visible band the field is centered in: the visual viewport's top to the foot floor, narrowed from below when
- * a short band would put the field's middle where its list (`LIST_ROOM_PX`) runs past the floor, so the field sits
+ * a short band would put the field's middle where its list (`LIST_ROOM_PX`, or the open list's measured extent where
+ * taller) runs past the floor, so the field sits
  * as high as the list needs and no higher than the band's top.
  */
-function centerBand(field: Element, vv: VisualViewport | null): { top: number; bottom: number } {
+function centerBand(field: Element, list: Element | null, vv: VisualViewport | null): { top: number; bottom: number } {
   const top = vv ? vv.offsetTop : 0;
   const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, field);
-  const h = field.getBoundingClientRect().height;
-  const mid = Math.max(top + h / 2, Math.min((top + floor) / 2, floor - LIST_ROOM_PX - h / 2));
+  const box = field.getBoundingClientRect();
+  const h = box.height;
+  // The room the list takes under the field: its phone cap, or the list itself where it is taller (from `md` it has no cap).
+  const room = Math.max(LIST_ROOM_PX, (list?.getBoundingClientRect().bottom ?? 0) - box.bottom);
+  const mid = Math.max(top + h / 2, Math.min((top + floor) / 2, floor - room - h / 2));
   return { top, bottom: 2 * mid - top };
 }
 
@@ -158,7 +162,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
       if (appScrolling()) { later = setTimeout(check, 120); return; }
       const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, el);
       const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list?.getBoundingClientRect().bottom ?? 0);
-      if (needed > floor) reveal(el, "center", undefined, () => centerBand(el, vv));
+      if (needed > floor) reveal(el, "center", undefined, () => centerBand(el, list, vv));
     };
     const moved = (e: Event) => {
       if (e.type === "pointerdown" && e.target instanceof Node && el.contains(e.target)) return;
