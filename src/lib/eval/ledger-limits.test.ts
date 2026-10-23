@@ -13,6 +13,7 @@ describe("LEDGER_LIMITS", () => {
       "ledger-model-switch.jsonl": { hardCapUsd: 1.5, askAtUsd: 1.3 },
       "ledger-help-me-choose.jsonl": { hardCapUsd: 5, askAtUsd: null },
       "ledger-find-a-deck.jsonl": { hardCapUsd: 2, askAtUsd: null },
+      "ledger-strategy-focus.jsonl": { hardCapUsd: 3, askAtUsd: 2.5 },
     });
   });
 
