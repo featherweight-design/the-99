@@ -9,6 +9,8 @@ import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 // keeps. It is plain JavaScript served as-is, so it is loaded as text rather than imported.
 const SOURCE = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../public/sw.js"), "utf8");
 const ORIGIN = "https://staging.the-99.dev";
+// `public/icons/icon-192.png` as the data URL the worker sends as a notification's icon.
+const ICON_192 = `data:image/png;base64,${readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../public/icons/icon-192.png")).toString("base64")}`;
 
 class FakeCache {
   entries = new Map<string, Response>();
@@ -438,9 +440,16 @@ describe("push", () => {
   it("shows the payload as sent: the words, the tag, the icon, the card image, and what a tap needs", async () => {
     await push(payload);
     expect(showNotification).toHaveBeenCalledWith("Jace is cheaper", {
-      body: "Was $8.40, now $5.10.", tag: "price-drop", icon: "/icons/icon-192.png", image: "https://cards.scryfall.io/x.jpg",
+      body: "Was $8.40, now $5.10.", tag: "price-drop", icon: ICON_192, image: "https://cards.scryfall.io/x.jpg",
       data: { route: `${ORIGIN}/`, keys: ["item:1"], openCard: "o1", openCombo: false },
     });
+  });
+
+  it("carries the app icon's own bytes, so Chrome never has to fetch it and never draws its lettered stand-in", async () => {
+    await push(payload);
+    const { icon } = showNotification.mock.calls[0]![1] as { icon: string };
+    expect(icon.startsWith("data:image/png;base64,")).toBe(true);
+    expect(icon).toBe(ICON_192); // the same file the manifest names; replacing the icon means replacing this too
   });
 
   it("keeps nothing of it: no cache is touched", async () => {
