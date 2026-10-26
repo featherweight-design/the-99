@@ -74,4 +74,9 @@ describe("the review page's Commander note for a single becoming a pair", () => 
     }, "Kratos", ["Kratos", "Atreus"])} />);
     expect(screen.getByText("a partner joins from the 99")).toBeTruthy();
   });
+
+  it("says only that a partner joins when it came from outside the version's 99", () => {
+    render(<CommanderSection state={grown({}, "Kratos", ["Kratos", "Atreus"])} />);
+    expect(screen.getByText("a partner joins")).toBeTruthy();
+  });
 });

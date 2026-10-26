@@ -132,6 +132,7 @@ export const changeCommanderCopy = {
     noteTrade: "the two trade places",
     noteIntoBody: (old: string) => `${old} moves into the 99`,
     notePartnerJoins: "a partner joins from the 99",
+    notePartnerAdded: "a partner joins",
     // `Going out`'s note when its only rows are new commanders leaving the 99 for the command zone
     // (a trade): nothing in that column goes back in the pool.
     outNoteToZone: "it moves to the command zone",
