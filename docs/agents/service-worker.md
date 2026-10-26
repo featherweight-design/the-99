@@ -30,7 +30,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - **Push (plan `2026-10-22-push.md`, PR 3d; `VERSION` v2).** The worker also handles `push` and `notificationclick`, and nothing else
   about its caching changed. A `push` carries the server's small JSON payload (`src/lib/push/send.ts`): the title, body, `tag`, a
   `route`, the item `keys`, and `openCard` / `openCombo` for Home. It is shown as sent (`showNotification`, icon
-  `/icons/icon-192.png`, the card `image` only when https) and **nothing of it is kept**: no cache is touched. A payload it cannot read
+  `public/icons/icon-192.png` inlined as a data URL so Chrome never fetches it and never falls back to its lettered grey circle, the card `image` only when https) and **nothing of it is kept**: no cache is touched. A payload it cannot read
   still shows a generic "The 99", never nothing, because a push that shows nothing costs the subscription. **A focused window of the app
   gets no notification** (its own surfaces say it) **except in Safari's WebKit**: an installed iPhone or iPad, any browser on iOS,
   and Safari on a Mac all require every push to show one and revoke a subscription that stays silent (D5, widened from iOS to
