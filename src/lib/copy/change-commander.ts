@@ -105,6 +105,8 @@ export const changeCommanderCopy = {
     // Hugh's tightening at /copy-review (2026-09-25).
     landsHalfTrade: "Lands in your pending changes, not yet a version. Discard undoes the whole swap.",
     brew: "This deck has no version yet, so there is nothing to discard back to. Changing commander again is the only way back.",
+    // A single becoming a pair on a deck with no version: a pair never becomes a single again.
+    brewGrow: "This deck has no version yet, so there is nothing to discard back to, and a pair can’t go back to one commander.",
     cta: (short: string) => `Make ${short} commander`,
     ctaPair: (a: string, b: string) => `Make ${a} and ${b} commanders`,
     pending: "Changing…",

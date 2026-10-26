@@ -17,7 +17,7 @@
 import { resolveDeckOwnedPrintings } from "../decks/printings";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, commanderPairSupportCards, commanderSupportCards, deckCards, decks } from "../../db/schema";
+import { cards, collectionItems, commanderPairSupport, commanderPairSupportCards, commanderSupportCards, deckCards, decks } from "../../db/schema";
 import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { isBasicLand } from "../decks/grouping";
@@ -155,7 +155,14 @@ async function growingHits(pairs: string[][], body: string[]): Promise<Map<strin
   const hits = new Map<string, string[]>();
   if (pairs.length === 0 || body.length === 0) return hits;
   const halves = [...new Set(pairs.flat())];
-  const [pairRows, singleRows] = await Promise.all([
+  const [indexedRows, pairRows, singleRows] = await Promise.all([
+    // Which pairs the index holds a list for, read apart from the hits: an indexed pair whose list
+    // matches none of the body keeps its zero rather than falling back to the singles.
+    db.select({ a: commanderPairSupport.commanderOracleId, b: commanderPairSupport.partnerOracleId })
+      .from(commanderPairSupport).where(and(
+        inArray(commanderPairSupport.commanderOracleId, halves),
+        eq(commanderPairSupport.synergyState, "ok"),
+      )),
     db.select({
       a: commanderPairSupportCards.commanderOracleId,
       b: commanderPairSupportCards.partnerOracleId,
@@ -170,10 +177,10 @@ async function growingHits(pairs: string[][], body: string[]): Promise<Map<strin
         inArray(commanderSupportCards.oracleId, body),
       )),
   ]);
-  const byPair = new Map<string, Set<string>>();
+  const byPair = new Map<string, Set<string>>(indexedRows.map((r) => [`${r.a}+${r.b}`, new Set<string>()]));
   for (const r of pairRows) {
     const k = `${r.a}+${r.b}`;
-    byPair.set(k, (byPair.get(k) ?? new Set()).add(r.id));
+    byPair.get(k)?.add(r.id);
   }
   const bySingle = new Map<string, Set<string>>();
   for (const r of singleRows) bySingle.set(r.c, (bySingle.get(r.c) ?? new Set()).add(r.id));

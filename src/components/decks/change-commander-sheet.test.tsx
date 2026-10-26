@@ -207,6 +207,15 @@ describe("ChangeCommanderSheet, a single becoming a pair", () => {
     expect(screen.getByText("Atreus leaves the 99 to lead beside Korvold. The deck stays at 100 cards.")).toBeTruthy();
     expect(screen.getByText("Stays in the command zone")).toBeTruthy();
   });
+
+  it("tells a brew growing to a pair that it can't go back to one commander", async () => {
+    const kept = half("Kratos, Stoic Father", { oracleId: "korvold", owned: true, availability: null });
+    const atreus = half("Atreus, Impulsive Son", { inDeck: true, availability: null });
+    readChangeCandidates.mockResolvedValue(data({ yours: [pairOf(kept, atreus, 12)], toBuy: [] }));
+    mount(false, false);
+    fireEvent.click(await screen.findByRole("button", { name: /^Choose Kratos/ }));
+    expect(screen.getByText(/a pair can’t go back to one commander/)).toBeTruthy();
+  });
 });
 
 describe("ChangeCommanderSheet for a pair", () => {

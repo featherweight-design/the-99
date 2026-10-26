@@ -725,7 +725,7 @@ function Confirm({
       ? copy.confirm.sentencePair(shortName(nus[0].name), shortName(nus[1].name), shortName(olds[0].name), shortName(olds[1].name), body)
       : copy.confirm.sentence(nuShort, oldShort, body);
   const lands = !hasVersion
-    ? copy.confirm.brew
+    ? pairTrade || pairUp ? copy.confirm.brewGrow : copy.confirm.brew
     : halfTrade || pairUp ? copy.confirm.landsHalfTrade : trade || pairTrade ? copy.confirm.landsTrade : copy.confirm.lands(oldShort);
   const mv = nus.reduce((n, h) => n + h.cmc, 0);
   const oldMv = olds.reduce((n, c) => n + c.cmc, 0);
