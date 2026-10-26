@@ -58,6 +58,23 @@ the curve so a changed index cannot silently move it.
 
 **The row keeps "41 of 62 are in its decks".** The meaning did not change, so no copy change is owed for H2.
 
+## Ruling 3 relaxed: a single may become a pair (Hugh, 2026-10-26)
+
+A precon such as *Turtle Power!* (TMNT) arrives with one commander (Heroes in a Half Shell, no
+partner) while its Partner—Character select legends sit in the 99, and a list imported with one
+commander picked leaves its partner in the 99, where the deck reads as not legal. Nothing could
+move that partner to the command zone, so a single may now become a pair. A pair still never
+becomes a single.
+
+- **Shapes** (`tradeShape`): `pairTrade`, both new halves out of the 99 and the old single taking
+  one slot; `pairUp`, one new half out of the 99 and the old single either kept as the other half
+  or leaving the deck. Anything else that changes the size is held back (it would not keep 100).
+- **Identity**: a growing pair must cover the deck's identity and may widen it (`identityFits`): a
+  wider identity makes no card of the 99 illegal, which is what ruling 2 protects.
+- **Candidates** (`growingPairs`): a single deck is also offered the pairs its own legends make, the
+  commander with a partner from the 99 and two partners from the 99, with no EDHREC floor. The
+  figure reads the pair's own list where the index has one, else either half's single list.
+
 ## Decisions this plan makes (one defensible answer each)
 
 1. **The live commander columns are the draft.** `decks.commander_oracle_id` and `partner_oracle_id` already act

@@ -179,6 +179,45 @@ describe("ChangeCommanderSheet", () => {
   });
 });
 
+describe("ChangeCommanderSheet, a single becoming a pair", () => {
+  const pairOf = (a: CandidateHalf, b: CandidateHalf, n: number): Candidate => ({
+    key: `${a.oracleId}+${b.oracleId}`, halves: [a, b], fit: { n, of: 62 }, matched: [], deckCount: 0,
+  });
+  const heroes = { oracleId: "heroes", name: "Heroes in a Half Shell", cmc: 5, manaCost: "{W}{U}{B}{R}{G}", imageUri: null };
+
+  it("confirms two partners out of the 99 with the old commander taking a slot, and writes the pair", async () => {
+    const leo = half("Leonardo, the Balance", { inDeck: true, availability: null });
+    const donnie = half("Donatello, the Brains", { inDeck: true, availability: null });
+    readChangeCandidates.mockResolvedValue(data({ current: [heroes], identity: ["B", "G", "R", "U", "W"], yours: [pairOf(leo, donnie, 30)], toBuy: [] }));
+    changeCommander.mockResolvedValue({ ok: true });
+    mount();
+    expect(await screen.findByText("30 of 62 are in their decks")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Choose Leonardo and Donatello" }));
+    expect(screen.getByText("Leonardo and Donatello leave the 99 for the command zone, and Heroes in a Half Shell takes one of their slots. The deck stays at 100 cards.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Make Leonardo and Donatello commanders" }));
+    await waitFor(() => expect(changeCommander).toHaveBeenCalledWith("d1", { commanderOracleId: leo.oracleId, partnerOracleId: donnie.oracleId }));
+  });
+
+  it("keeps the commander and adds a partner from the 99", async () => {
+    const kept = half("Kratos, Stoic Father", { oracleId: "korvold", owned: true, availability: null });
+    const atreus = half("Atreus, Impulsive Son", { inDeck: true, availability: null });
+    readChangeCandidates.mockResolvedValue(data({ yours: [pairOf(kept, atreus, 12)], toBuy: [] }));
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: /^Choose Kratos/ }));
+    expect(screen.getByText("Atreus leaves the 99 to lead beside Korvold. The deck stays at 100 cards.")).toBeTruthy();
+    expect(screen.getByText("Stays in the command zone")).toBeTruthy();
+  });
+
+  it("tells a brew growing to a pair that it can't go back to one commander", async () => {
+    const kept = half("Kratos, Stoic Father", { oracleId: "korvold", owned: true, availability: null });
+    const atreus = half("Atreus, Impulsive Son", { inDeck: true, availability: null });
+    readChangeCandidates.mockResolvedValue(data({ yours: [pairOf(kept, atreus, 12)], toBuy: [] }));
+    mount(false, false);
+    fireEvent.click(await screen.findByRole("button", { name: /^Choose Kratos/ }));
+    expect(screen.getByText(/a pair can’t go back to one commander/)).toBeTruthy();
+  });
+});
+
 describe("ChangeCommanderSheet for a pair", () => {
   const pairOf = (a: CandidateHalf, b: CandidateHalf, n: number): Candidate => ({
     key: `${a.oracleId}+${b.oracleId}`, halves: [a, b], fit: { n, of: 62 }, matched: [], deckCount: 500,

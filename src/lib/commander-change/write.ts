@@ -36,6 +36,13 @@ function identity(rows: readonly { colorIdentity: string[] }[]): string[] {
   return [...new Set(rows.flatMap((r) => r.colorIdentity))].sort();
 }
 
+/** Whether the new leader's identity (both sorted) fits the deck's: equal, or a superset when a
+ *  single becomes a pair. */
+export function identityFits(from: readonly string[], to: readonly string[], growing: boolean): boolean {
+  if (!growing) return from.join() === to.join();
+  return from.every((c) => to.includes(c));
+}
+
 /** The whole write, inside the caller's transaction. Refuses, writing nothing, unless the deck is
  *  the user's, the new leader is legal, and it matches the deck's size and exact identity. */
 export async function writeCommanderChange(
@@ -48,8 +55,11 @@ export async function writeCommanderChange(
   }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId))).for("update");
   if (!deck) return { ok: false, reason: "unavailable" };
 
-  // Size first: a single leads a single, a pair leads a pair (ruling 3).
-  if ((deck.partnerOracleId === null) !== (to.partnerOracleId === null)) {
+  // Size first: a single leads a single, a pair leads a pair (ruling 3), except that a single may
+  // become a pair (Hugh, 2026-10-26): a precon or an imported list can arrive with its partner in
+  // the 99. A pair never becomes a single.
+  const growing = deck.partnerOracleId === null && to.partnerOracleId !== null;
+  if (deck.partnerOracleId !== null && to.partnerOracleId === null) {
     return { ok: false, reason: "mismatch" };
   }
   if (to.partnerOracleId === to.commanderOracleId) return { ok: false, reason: "illegal" };
@@ -77,9 +87,11 @@ export async function writeCommanderChange(
     return { ok: false, reason: "illegal" };
   }
 
-  // Exactly this deck's identity, so not one card of the 99 changes legality (ruling 2).
+  // Exactly this deck's identity, so not one card of the 99 changes legality (ruling 2). A single
+  // becoming a pair may widen it instead: a wider identity makes no card illegal, and a partner
+  // that sat in the 99 is often the reason the deck reads as not legal.
   const current = fromIds.map((id) => byId.get(id)).filter((c) => c !== undefined);
-  if (identity(current).join() !== identity(incoming as { colorIdentity: string[] }[]).join()) {
+  if (!identityFits(identity(current), identity(incoming as { colorIdentity: string[] }[]), growing)) {
     return { ok: false, reason: "mismatch" };
   }
 
@@ -102,7 +114,9 @@ export async function writeCommanderChange(
   // replaces simply leaves.
   const arrivingFromBody = toIds.filter((id) => !fromIds.includes(id) && inBody.has(id));
   // The staying half first, so it takes the freed slot and the other leaves the deck.
-  const departing = staysOracleId ? [staysOracleId, ...leaving.filter((id) => id !== staysOracleId)] : leaving;
+  // A `pairUp` brings one half out of the 99, and a pair leads 98, so no old card takes its slot.
+  const departing = shape === "pairUp" ? []
+    : staysOracleId ? [staysOracleId, ...leaving.filter((id) => id !== staysOracleId)] : leaving;
   const gone: string[] = [];
   for (const [i, id] of arrivingFromBody.entries()) {
     const quantity = inBody.get(id)!;

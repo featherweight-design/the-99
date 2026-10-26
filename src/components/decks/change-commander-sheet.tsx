@@ -263,7 +263,8 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
     <CandidateRow
       key={c.key}
       candidate={c}
-      pair={pair}
+      // The candidate's own size: a single deck can be offered a pair from its own legends.
+      pair={c.halves.length > 1}
       current={current}
       newestAsOf={data.newestAsOf}
       siblings={siblings}
@@ -290,7 +291,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
         <section className="flex flex-col" aria-label={copy.sheet.groupBuy(data.toBuy.length)}>
           <CandidateGroupHeading
             label={copy.sheet.groupBuy(data.toBuy.length)}
-            note={pair ? copy.sheet.groupNotePairBuy : copy.sheet.groupNote}
+            note={data.toBuy.some((c) => c.halves.length > 1) ? copy.sheet.groupNotePairBuy : copy.sheet.groupNote}
           />
           {toBuy.map(row)}
           <GroupToggle total={data.toBuy.length} all={allBuy} onToggle={() => setAllBuy((v) => !v)} />
@@ -686,12 +687,18 @@ function Confirm({
   const door = useChangeCommander();
   const [writing, setWriting] = useState(false);
   const [failed, setFailed] = useState(false);
-  const body = pair ? 98 : 99;
   const olds = data.current;
   const nus = candidate.halves;
+  // The NEW leader's size: a single becoming a pair leads 98 (`pairTrade`, `pairUp`).
+  const nuPair = nus.length > 1;
+  const body = nuPair ? 98 : 99;
   const shape = shapeOf(candidate, olds);
   const trade = shape === "trade";
   const halfTrade = shape === "halfTrade";
+  const pairTrade = shape === "pairTrade";
+  const pairUp = shape === "pairUp";
+  // A `pairUp` that keeps the commander: it stays, and a partner joins it from the 99.
+  const kept = pairUp ? olds.find((c) => nus.some((h) => h.oracleId === c.oracleId)) ?? null : null;
   // The half-trade's three fates. The default is the first commander (Hugh, A-H1); the write
   // receives the choice and gives that half the freed slot.
   const stays = staysChosen ?? olds[0].oracleId;
@@ -704,7 +711,13 @@ function Confirm({
   const toBuy = nus.filter((h) => !h.inDeck && !h.owned);
   const summed = summedPrice(toBuy, data.newestAsOf);
 
-  const sentence = halfTrade
+  const sentence = pairTrade
+    ? copy.confirm.pairTrade(shortName(nus[0].name), shortName(nus[1].name), oldShort)
+    : pairUp && kept
+    ? copy.confirm.pairUpKeep(shortName(arriving.name), shortName(kept.name))
+    : pairUp
+    ? copy.confirm.pairUp(shortName(arriving.name), shortName(joining.name), oldShort)
+    : halfTrade
     ? copy.confirm.halfTrade(shortName(arriving.name), shortName(joining.name), shortName(staying.name), shortName(released.name), body)
     : trade
     ? copy.confirm.trade(nuShort, oldShort, body)
@@ -712,8 +725,8 @@ function Confirm({
       ? copy.confirm.sentencePair(shortName(nus[0].name), shortName(nus[1].name), shortName(olds[0].name), shortName(olds[1].name), body)
       : copy.confirm.sentence(nuShort, oldShort, body);
   const lands = !hasVersion
-    ? copy.confirm.brew
-    : halfTrade ? copy.confirm.landsHalfTrade : trade ? copy.confirm.landsTrade : copy.confirm.lands(oldShort);
+    ? pairTrade || pairUp ? copy.confirm.brewGrow : copy.confirm.brew
+    : halfTrade || pairUp ? copy.confirm.landsHalfTrade : trade || pairTrade ? copy.confirm.landsTrade : copy.confirm.lands(oldShort);
   const mv = nus.reduce((n, h) => n + h.cmc, 0);
   const oldMv = olds.reduce((n, c) => n + c.cmc, 0);
 
@@ -729,7 +742,7 @@ function Confirm({
         return;
       }
       // Announced from the provider: this sheet is gone by the time a reader would hear it.
-      door?.announce((pair ? copy.confirm.announcedPair : copy.confirm.announced)(nuShort));
+      door?.announce((nuPair ? copy.confirm.announcedPair : copy.confirm.announced)(nuShort));
       onDone();
     } catch {
       setFailed(true);
@@ -751,7 +764,7 @@ function Confirm({
       <div className="flex items-start justify-center gap-[14px] pt-[4px] pb-[2px]">
         <Plate
           cards={olds.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, manaCost: c.manaCost }))}
-          label={halfTrade ? copy.confirm.outHalfTrade : trade ? copy.confirm.tradeOut : pair ? copy.confirm.outPair : copy.confirm.out}
+          label={kept ? copy.confirm.stays : halfTrade ? copy.confirm.outHalfTrade : trade || pairTrade ? copy.confirm.tradeOut : pair ? copy.confirm.outPair : copy.confirm.out}
           tone="out"
           pair={pair}
           fates={halfTrade
@@ -759,14 +772,14 @@ function Confirm({
             : undefined}
         />
         <span aria-hidden="true" className="mt-[-30px] flex-none self-center font-mono text-[18px]" style={{ color: "var(--fg-faint)" }}>
-          {trade ? "⇄" : "→"}
+          {trade || pairTrade ? "⇄" : "→"}
         </span>
         <Plate
           cards={nus.map((h) => ({ oracleId: h.oracleId, name: h.name, imageUri: h.imageUri, manaCost: h.manaCost }))}
-          label={trade ? copy.confirm.tradeIn : pair ? copy.confirm.inPair : copy.confirm.in}
+          label={trade ? copy.confirm.tradeIn : nuPair ? copy.confirm.inPair : copy.confirm.in}
           tone="in"
           compare={copy.sheet.manaValueRel(mv, oldMv, oldShort)}
-          pair={pair}
+          pair={nuPair}
           fates={halfTrade ? nus.map((h) => <InFate key={h.oracleId} half={h} body={body} newestAsOf={data.newestAsOf} />) : undefined}
         />
       </div>
@@ -803,7 +816,7 @@ function Confirm({
             ? copy.confirm.pending
             : failed
               ? copy.confirm.failedRetry
-              : pair
+              : nuPair
                 ? copy.confirm.ctaPair(shortName(nus[0].name), shortName(nus[1].name))
                 : copy.confirm.cta(nuShort)}
         </PrimaryButton>

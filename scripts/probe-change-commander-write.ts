@@ -140,7 +140,9 @@ async function main() {
   // ── Refusals write nothing ─────────────────────────────────────────────────
   const held = await bodyOf(deck);
   check("refused: another identity", await write(deck, blue.oracle_id), { ok: false, reason: "mismatch" });
-  check("refused: a pair for a single", await write(deck, a.oracle_id, b.oracle_id), { ok: false, reason: "mismatch" });
+  // A single may become a pair (Hugh, 2026-10-26), so this is refused for the pairing alone:
+  // these {G} legends print no partner ability.
+  check("refused: a pair that cannot partner", await write(deck, a.oracle_id, b.oracle_id), { ok: false, reason: "illegal" });
   check("refused: the same commander", await write(deck, c.oracle_id), { ok: false, reason: "unchanged" });
   check("refused: a card that cannot lead", await write(deck, fillers[0].oracle_id), { ok: false, reason: "illegal" });
   check("refused: nothing moved", [await live(deck), await bodyOf(deck)], [{ c: c.oracle_id, p: null }, held]);
@@ -316,6 +318,38 @@ async function main() {
   await addCard(bothDeck, anchor2.oracle_id);
   check("pair refused: both new halves from the 98", await write(bothDeck, anchor2.oracle_id, p2.oracle_id, anchor.oracle_id),
     { ok: false, reason: "illegal" });
+
+  // ── A single becoming a pair (Hugh, 2026-10-26) ─────────────────────────────
+  // pairUp, the commander kept: a partner sitting in the 99 joins it, and the identity widens.
+  const upDeck = await makeDeck(anchor.oracle_id);
+  for (const f of fillers) await addCard(upDeck, f.oracle_id);
+  await addCard(upDeck, p2.oracle_id);
+  const upBefore = await bodyOf(upDeck);
+  check("grow, kept: accepted", await write(upDeck, anchor.oracle_id, p2.oracle_id), { ok: true });
+  check("grow, kept: the pair leads", await live(upDeck), { c: anchor.oracle_id, p: p2.oracle_id });
+  const upAfter = await bodyOf(upDeck);
+  check("grow, kept: the partner left the 99", upAfter.some((r) => r.startsWith(p2.oracle_id)), false);
+  check("grow, kept: the deck stays at 100", upAfter.length, upBefore.length - 1);
+  check("grow refused: a pair for a single", await write(upDeck, anchor.oracle_id), { ok: false, reason: "mismatch" });
+
+  // pairTrade: both new halves come out of the 99, and the old single takes one slot.
+  const tradeDeck = await makeDeck(anchor.oracle_id);
+  for (const f of fillers) await addCard(tradeDeck, f.oracle_id);
+  await addCard(tradeDeck, anchor2.oracle_id);
+  await addCard(tradeDeck, p2.oracle_id);
+  const tradeBefore = await bodyOf(tradeDeck);
+  check("grow, both from the 99: accepted", await write(tradeDeck, anchor2.oracle_id, p2.oracle_id), { ok: true });
+  check("grow, both from the 99: the pair leads", await live(tradeDeck), { c: anchor2.oracle_id, p: p2.oracle_id });
+  const tradeAfter = await bodyOf(tradeDeck);
+  check("grow, both from the 99: the old single took a slot", tradeAfter.includes(`${anchor.oracle_id}x1`), true);
+  check("grow, both from the 99: the deck stays at 100", tradeAfter.length, tradeBefore.length - 1);
+
+  // Nothing out of the 99 would make 101: held back, nothing written.
+  const fullDeck = await makeDeck(anchor.oracle_id);
+  for (const f of fillers) await addCard(fullDeck, f.oracle_id);
+  const fullBefore = await bodyOf(fullDeck);
+  check("grow refused: nothing out of the 99", await write(fullDeck, anchor2.oracle_id, p2.oracle_id), { ok: false, reason: "illegal" });
+  check("grow refused: nothing written", [await live(fullDeck), await bodyOf(fullDeck)], [{ c: anchor.oracle_id, p: null }, fullBefore]);
 }
 
 main()

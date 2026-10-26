@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupCandidates, isYours, type Candidate, type CandidateHalf } from "./candidates";
+import { groupCandidates, growingPairs, isYours, type Candidate, type CandidateHalf } from "./candidates";
 import { offerable, tradeShape } from "./pending";
 
 const half = (name: string, over: Partial<CandidateHalf> = {}): CandidateHalf => ({
@@ -61,5 +61,52 @@ describe("tradeShape and offerable", () => {
 
   it("offers a kept half beside a new one from outside the 98", () => {
     expect(tradeShape(["x", "a"], ["x", "y"], new Set(["b"]))).toBe("none");
+  });
+});
+
+describe("tradeShape for a single becoming a pair", () => {
+  it("is a pairTrade when both new halves come out of the 99: the old single takes a slot", () => {
+    expect(tradeShape(["a", "b"], ["x"], new Set(["a", "b"]))).toBe("pairTrade");
+  });
+
+  it("is a pairUp when one new half comes out of the 99, the single kept or leaving", () => {
+    expect(tradeShape(["x", "b"], ["x"], new Set(["b"]))).toBe("pairUp");
+    expect(tradeShape(["a", "b"], ["x"], new Set(["b"]))).toBe("pairUp");
+  });
+
+  it("holds back a pair with nothing out of the 99 (the deck would hold 101), and a pair becoming a single", () => {
+    expect(tradeShape(["a", "b"], ["x"], new Set(["c"]))).toBeNull();
+    expect(tradeShape(["x", "a"], ["x"], new Set(["c"]))).toBeNull();
+    expect(tradeShape(["a"], ["x", "y"], new Set(["a"]))).toBeNull();
+    expect(tradeShape(["x"], ["x", "y"], new Set())).toBeNull();
+  });
+});
+
+describe("growingPairs", () => {
+  const legend = (name: string, colorIdentity: string[], oracleText: string | null) => ({
+    oracleId: name, name, typeLine: "Legendary Creature — Mutant Ninja Turtle", oracleText, colorIdentity,
+  });
+  const select = "Partner—Character select (You can have two commanders if both have this ability.)";
+  // Turtle Power!: the box's commander has no partner, and its turtles sit in the 99.
+  const heroes = legend("Heroes in a Half Shell", ["B", "G", "R", "U", "W"], "Vigilance, menace, trample, haste");
+  const leo = legend("Leonardo, the Balance", ["B", "G", "R", "U", "W"], `Whenever a token you control enters...\n${select}`);
+  const donnie = legend("Donatello, the Brains", ["U"], `If one or more tokens would be created...\n${select}`);
+  const raph = legend("Raphael, the Muscle", ["R"], `Double all damage...\n${select}`);
+  const thrasios = legend("Thrasios, Triton Hero", ["G", "U"], "Partner (You can have two commanders if both have partner.)");
+
+  it("pairs two partners from the 99 that cover the deck's identity, and no pair that narrows it", () => {
+    const pairs = growingPairs(heroes, [leo, donnie, raph, thrasios], heroes.colorIdentity).map((p) => [...p].sort().join("+"));
+    expect(pairs).toContain([leo.oracleId, donnie.oracleId].sort().join("+"));
+    expect(pairs).toContain([leo.oracleId, raph.oracleId].sort().join("+"));
+    // Donatello and Raphael pair, but U+R cannot lead a five-color 99.
+    expect(pairs).not.toContain([donnie.oracleId, raph.oracleId].sort().join("+"));
+    // A different partner kind never pairs with Character select.
+    expect(pairs.some((p) => p.includes(thrasios.oracleId))).toBe(false);
+  });
+
+  it("keeps the commander first beside a partner from the 99, and widens its identity", () => {
+    const pairs = growingPairs(donnie, [raph, leo], donnie.colorIdentity);
+    expect(pairs).toContainEqual([donnie.oracleId, raph.oracleId]);
+    expect(pairs).toContainEqual([donnie.oracleId, leo.oracleId]);
   });
 });

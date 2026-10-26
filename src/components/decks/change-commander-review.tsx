@@ -65,7 +65,15 @@ export function CommanderSection({ state }: { state: DraftState }) {
   const halfNote = halfTrade
     ? copy.review.noteHalfTrade(short(shown(stayed)), short(shown(arrived)), short(shown(released))).split(" · ")
     : null;
-  const note = halfNote
+  // A single becoming a pair (Hugh, 2026-10-26): the old commander moves into the 99, stays to lead
+  // beside its partner, or goes back in the pool.
+  const grew = was.length === 1 && now.length === 2;
+  const note = grew
+    ? stayed ? copy.review.noteIntoBody(short(shown(stayed)))
+      : leaving.length > 0 ? copy.review.notePool(short(shown(leaving[0])))
+      // The partner came out of the version's 99 only when the draft removed it from there.
+      : arrived ? copy.review.notePartnerJoins : copy.review.notePartnerAdded
+    : halfNote
     ? <><span className="inline-block">{halfNote[0]} ·</span> <span className="inline-block">{halfNote[1]}</span></>
     : trade
     ? copy.review.noteTrade
