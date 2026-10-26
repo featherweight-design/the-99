@@ -90,6 +90,14 @@ export const changeCommanderCopy = {
       `The two trade places. ${nu} leaves the ${body} for the command zone, and ${old} takes its slot. The deck stays at ${body}.`,
     buy: (short: string) => `You don’t own ${short} yet. It joins this draft’s buy list:`,
     lands: (oldShort: string) => `Lands in your pending changes, not yet a version. Discard puts ${oldShort} back.`,
+    // A single becoming a pair (Hugh, 2026-10-26): the deck stays at 100, now led by two.
+    pairTrade: (a: string, b: string, old: string) =>
+      `${a} and ${b} leave the 99 for the command zone, and ${old} takes one of their slots. The deck stays at 100 cards.`,
+    pairUp: (arrive: string, joins: string, old: string) =>
+      `${arrive} leaves the 99 for the command zone, and ${joins} joins it there. ${old} leaves the deck. The deck stays at 100 cards.`,
+    pairUpKeep: (arrive: string, kept: string) =>
+      `${arrive} leaves the 99 to lead beside ${kept}. The deck stays at 100 cards.`,
+    stays: "Stays in the command zone",
     landsTrade: "Lands in your pending changes, not yet a version. Discard puts both back where they were.",
     // arrive: the half leaving the body; joins: the other new half; stays / released: the old halves.
     halfTrade: (arrive: string, joins: string, stays: string, released: string, body: number) =>
@@ -120,6 +128,8 @@ export const changeCommanderCopy = {
     notePool: (oldShort: string) => `${oldShort} goes back in the pool when you commit`,
     notePoolPair: (a: string, b: string) => `${a} and ${b} go back in the pool when you commit`,
     noteTrade: "the two trade places",
+    noteIntoBody: (old: string) => `${old} moves into the 99`,
+    notePartnerJoins: "a partner joins from the 99",
     // `Going out`'s note when its only rows are new commanders leaving the 99 for the command zone
     // (a trade): nothing in that column goes back in the pool.
     outNoteToZone: "it moves to the command zone",

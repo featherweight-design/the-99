@@ -44,3 +44,34 @@ describe("the review page's Commander note", () => {
     expect(screen.queryByText(/trade places ·/)).toBeNull();
   });
 });
+
+describe("the review page's Commander note for a single becoming a pair", () => {
+  const grown = (over: Partial<DraftState>, fromId: string, toIds: [string, string]): DraftState => ({
+    ...COMMITTED,
+    commander: {
+      from: { commanderOracleId: fromId, partnerOracleId: null },
+      to: { commanderOracleId: toIds[0], partnerOracleId: toIds[1] },
+    },
+    commanderRows: {
+      rows: [row(fromId, fromId, "from"), row(toIds[0], toIds[0], "to"), row(toIds[1], toIds[1], "to")],
+      newestAsOf: null,
+    },
+    ...over,
+  });
+
+  it("says the old commander moves into the 99 when both partners came out of it", () => {
+    render(<CommanderSection state={grown({
+      addChanges: [{ oracleId: "Heroes", from: 0, to: 1 }],
+      removes: [{ oracleId: "Leonardo", from: 1, to: 0 }, { oracleId: "Donatello", from: 1, to: 0 }],
+    }, "Heroes", ["Leonardo", "Donatello"])} />);
+    expect(screen.getByText("Heroes moves into the 99")).toBeTruthy();
+    expect(screen.getByText("Commanders")).toBeTruthy();
+  });
+
+  it("says a partner joins when the commander stays", () => {
+    render(<CommanderSection state={grown({
+      removes: [{ oracleId: "Atreus", from: 1, to: 0 }],
+    }, "Kratos", ["Kratos", "Atreus"])} />);
+    expect(screen.getByText("a partner joins from the 99")).toBeTruthy();
+  });
+});

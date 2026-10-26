@@ -2,7 +2,10 @@
 //
 // A candidate has the deck's exact color identity and its size — a single for a single, a pair
 // for a pair (brief rulings 2 and 3) — an EDHREC sample of at least `MIN_CANDIDATE_DECKS` decks
-// (H2), and is not the deck's current commander. Each is scored by `fitCount` and sorted into
+// (H2), and is not the deck's current commander. A single deck is also offered the pairs its own
+// legends make (Hugh, 2026-10-26: a precon or an imported list can arrive with its partner in the
+// 99): the commander with a partner from the 99, or two partners from the 99. Those need no EDHREC
+// sample, and their identity may be wider than the deck's (`growingPairs`). Each is scored by `fitCount` and sorted into
 // Yours (every half owned, or already in this deck's 99) and To buy (any half to buy; H1), each
 // group by the figure, then by name (handoff §2.4). Price never orders.
 //
@@ -20,6 +23,8 @@ import { loadAvailability } from "../decks/availability-query";
 import { isBasicLand } from "../decks/grouping";
 import type { PriceFact } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
+import { canPair, partnerAbility } from "../decks/partner";
+import { canonicalPair } from "../edhrec/pair-order";
 import { isCommanderCandidate } from "../recs/score";
 import { loadUniversalStaples } from "../staples/universal";
 import { MIN_CANDIDATE_DECKS, fitBody, fitCount, type Fit } from "./fit";
@@ -98,6 +103,7 @@ function identityOf(rows: readonly { colorIdentity: string[] }[]): string[] {
 type CardFacts = {
   oracleId: string; name: string; manaCost: string | null; cmc: number; artCropUri: string | null;
   imageUri: string | null; typeLine: string; oracleText: string | null; layout: string | null; colorIdentity: string[];
+  commanderLegal: boolean;
 };
 
 function readCards(ids: string[]): Promise<CardFacts[]> {
@@ -105,8 +111,79 @@ function readCards(ids: string[]): Promise<CardFacts[]> {
   return db.select({
     oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, cmc: cards.cmc,
     artCropUri: cards.artCropUri, imageUri: cards.imageUri, typeLine: cards.typeLine, oracleText: cards.oracleText,
-    layout: cards.layout, colorIdentity: cards.colorIdentity,
+    layout: cards.layout, colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal,
   }).from(cards).where(inArray(cards.oracleId, ids));
+}
+
+type Legend = Pick<CardFacts, "oracleId" | "name" | "typeLine" | "oracleText" | "colorIdentity">;
+
+/**
+ * The pairs a single deck's own legends make: the commander kept beside a partner from the 99, and
+ * two partners from the 99 (the commander then takes one of their slots). Each pair must be legal
+ * by `canPair` and cover the deck's identity, so no card of the 99 becomes illegal; it may be
+ * wider, which is what a deck whose partner sat in the 99 needs. `legends` are the 99's cards that
+ * may lead a deck. The commander comes first in a pair that keeps it; any other pair is in
+ * canonical order, so a key matches `commander_pair_support`'s.
+ */
+export function growingPairs(commander: Legend, legends: readonly Legend[], deckIdentity: readonly string[]): string[][] {
+  const side = (c: Legend) => ({ name: c.name, ability: partnerAbility(c.oracleText, c.typeLine) });
+  const covers = (a: Legend, b: Legend) => {
+    const both = new Set([...a.colorIdentity, ...b.colorIdentity]);
+    return deckIdentity.every((c) => both.has(c));
+  };
+  const out: string[][] = [];
+  const others = legends.filter((l) => l.oracleId !== commander.oracleId);
+  for (const b of others) {
+    if (canPair(side(commander), side(b))) out.push([commander.oracleId, b.oracleId]);
+  }
+  for (let i = 0; i < others.length; i++) {
+    for (let j = i + 1; j < others.length; j++) {
+      const [a, b] = [others[i], others[j]];
+      if (!canPair(side(a), side(b)) || !covers(a, b)) continue;
+      const p = canonicalPair(a.oracleId, b.oracleId);
+      out.push([p.commanderOracleId, p.partnerOracleId]);
+    }
+  }
+  return out;
+}
+
+/**
+ * Which body cards a growing pair's decks run: the pair's own EDHREC list where the index has one,
+ * else either half's single list, so a pair EDHREC has not sampled still reads a figure.
+ */
+async function growingHits(pairs: string[][], body: string[]): Promise<Map<string, string[]>> {
+  const hits = new Map<string, string[]>();
+  if (pairs.length === 0 || body.length === 0) return hits;
+  const halves = [...new Set(pairs.flat())];
+  const [pairRows, singleRows] = await Promise.all([
+    db.select({
+      a: commanderPairSupportCards.commanderOracleId,
+      b: commanderPairSupportCards.partnerOracleId,
+      id: commanderPairSupportCards.oracleId,
+    }).from(commanderPairSupportCards).where(and(
+      inArray(commanderPairSupportCards.commanderOracleId, halves),
+      inArray(commanderPairSupportCards.oracleId, body),
+    )),
+    db.select({ c: commanderSupportCards.commanderOracleId, id: commanderSupportCards.oracleId })
+      .from(commanderSupportCards).where(and(
+        inArray(commanderSupportCards.commanderOracleId, halves),
+        inArray(commanderSupportCards.oracleId, body),
+      )),
+  ]);
+  const byPair = new Map<string, Set<string>>();
+  for (const r of pairRows) {
+    const k = `${r.a}+${r.b}`;
+    byPair.set(k, (byPair.get(k) ?? new Set()).add(r.id));
+  }
+  const bySingle = new Map<string, Set<string>>();
+  for (const r of singleRows) bySingle.set(r.c, (bySingle.get(r.c) ?? new Set()).add(r.id));
+  for (const [a, b] of pairs) {
+    const p = canonicalPair(a, b);
+    const own = byPair.get(`${p.commanderOracleId}+${p.partnerOracleId}`);
+    const ids = own ?? new Set([...(bySingle.get(a) ?? []), ...(bySingle.get(b) ?? [])]);
+    hits.set(`${a}+${b}`, [...ids]);
+  }
+  return hits;
 }
 
 /**
@@ -217,11 +294,18 @@ export async function loadChangeCandidates(
   const bodyNames = new Map(bodyRows.map((r) => [r.oracleId, r.name]));
   const bodyArt = new Map(bodyRows.map((r) => [r.oracleId, r.imageUri]));
 
-  const keys = await candidateKeys(currentIds, identity, pair);
+  const sampled = await candidateKeys(currentIds, identity, pair);
+  // A single deck's pairs from its own legends (`growingPairs`). Their support lists are read apart.
+  const growing = pair || currentCards.length === 0 ? [] : growingPairs(
+    currentCards[0],
+    (await readCards([...inDeck])).filter((c) => c.commanderLegal && isCommanderCandidate(c)),
+    identity,
+  );
+  const keys = [...sampled, ...growing.map((ids) => ({ ids, deckCount: 0 }))];
   const halfIds = [...new Set(keys.flatMap((k) => k.ids))];
   const [facts, hits, ownedRows] = await Promise.all([
     readCards(halfIds),
-    supportHits(keys, body, pair),
+    Promise.all([supportHits(sampled, body, pair), growingHits(growing, body)]).then(([a, b]) => new Map([...a, ...b])),
     halfIds.length === 0
       ? Promise.resolve([] as { oracleId: string }[])
       : db.selectDistinct({ oracleId: collectionItems.oracleId }).from(collectionItems)
@@ -239,7 +323,9 @@ export async function loadChangeCandidates(
     .filter((k) => offerable(k.ids, currentIds, inDeck));
 
   // Claims and prices for the halves outside the 99 only: a half in the 99 keeps its own copy.
-  const asked = [...new Set(legal.flatMap((k) => k.ids))].filter((id) => !inDeck.has(id));
+  // The commander a growing pair keeps is held by this deck already, so it is asked about as little.
+  const leads = new Set(currentIds);
+  const asked = [...new Set(legal.flatMap((k) => k.ids))].filter((id) => !inDeck.has(id) && !leads.has(id));
   // The art a reader OWNS for each owned half and for the commander(s) now leading, read beside the
   // claims: a candidate's thumbnail, its hover preview and its card's neighbor plate drew the
   // oracle-level printing while the card details drew the owned one (Hugh, 2026-10-05: Shirei,
@@ -271,14 +357,15 @@ export async function loadChangeCandidates(
       halves: k.ids.map((id) => {
         const f = factBy.get(id)!;
         const here = inDeck.has(id);
+        const held = owned.has(id) || leads.has(id);
         return {
           oracleId: id, name: f.name, printedName: ownedArt.get(id)?.printedName ?? null, manaCost: f.manaCost, cmc: f.cmc,
           artCropUri: ownedArt.get(id)?.artCropUri ?? f.artCropUri,
           imageUri: ownedArt.get(id)?.imageUri ?? f.imageUri,
           inDeck: here,
-          owned: owned.has(id),
-          availability: here ? null : availability?.get(id) ?? null,
-          price: here || owned.has(id) ? null : prices?.prices.get(id) ?? null,
+          owned: held,
+          availability: here || leads.has(id) ? null : availability?.get(id) ?? null,
+          price: here || held ? null : prices?.prices.get(id) ?? null,
         };
       }),
     };

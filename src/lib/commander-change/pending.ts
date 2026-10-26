@@ -32,18 +32,32 @@ export function commanderMoved(version: CommanderPair, live: CommanderPair): boo
  * new one, and the body. `none`: nothing comes out of the body. `trade`: a single out of the 99
  * trades places with the old single. `halfTrade` (the addendum): one half of a new pair comes out
  * of the 98 while both old halves leave, so one old half takes its slot (the reader's choice) and
- * the other leaves the deck. Null for a change no design draws, held back: a half out of the 98
- * beside a half the pair keeps, and both new halves out of the 98.
+ * the other leaves the deck.
+ *
+ * A single becoming a pair (Hugh, 2026-10-26: a precon such as Turtle Power starts with one
+ * commander, and its partners sit in the 99) keeps the deck at 100 only when a half comes out of
+ * the 99, since a pair leads 98. `pairTrade`: both new halves come out of the 99 and the old single
+ * takes one of their slots. `pairUp`: one new half comes out of the 99, and the old single either
+ * leaves the deck or is the other half.
+ *
+ * Null for a change no design draws, held back: a half out of the 98 beside a half the pair keeps,
+ * both new halves out of the 98, a single becoming a pair with nothing out of the 99 (the deck
+ * would hold 101), and a pair becoming a single.
  */
-export type TradeShape = "none" | "trade" | "halfTrade";
+export type TradeShape = "none" | "trade" | "halfTrade" | "pairTrade" | "pairUp";
 
 export function tradeShape(
   toIds: readonly string[], fromIds: readonly string[], body: ReadonlySet<string>,
 ): TradeShape | null {
   const fromBody = toIds.filter((id) => !fromIds.includes(id) && body.has(id)).length;
+  const departing = fromIds.filter((id) => !toIds.includes(id)).length;
+  if (fromIds.length !== toIds.length) {
+    if (fromIds.length === 2) return null;
+    if (fromBody === 2) return "pairTrade";
+    return fromBody === 1 ? "pairUp" : null;
+  }
   if (fromBody === 0) return "none";
   if (toIds.length === 1) return "trade";
-  const departing = fromIds.filter((id) => !toIds.includes(id)).length;
   return fromBody === 1 && departing === 2 ? "halfTrade" : null;
 }
 
