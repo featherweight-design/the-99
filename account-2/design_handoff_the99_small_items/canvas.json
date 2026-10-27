@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-10-27T23:55:00Z"
  },
- "title": "The 99 · Three small items",
+ "title": "The 99 \u00b7 Small items",
  "launch": {
   "view": "canvas"
  },
@@ -14,36 +14,60 @@
    "x": 0,
    "y": 0,
    "w": 1612,
-   "h": 696,
-   "title": "R1 · the three calls"
+   "h": 1143,
+   "title": "R1b \u00b7 the five calls"
   },
   "Cuts-Alternatives.dc.html": {
    "x": 0,
-   "y": 816,
+   "y": 1263,
    "w": 2160,
-   "h": 5029,
-   "title": "1 · Proposed cuts · three alternatives per cut"
+   "h": 3967,
+   "title": "1 \u00b7 Proposed cuts \u00b7 more cuts than you need (R1b)"
   },
   "Draft-Note-Phone.dc.html": {
    "x": 2240,
-   "y": 816,
+   "y": 1263,
    "w": 2330,
    "h": 1833,
-   "title": "2 · Deck toolbar · the draft note on a phone"
+   "title": "2 \u00b7 Deck toolbar \u00b7 the draft note on a phone"
   },
   "Spare-Answer-Sheet.dc.html": {
    "x": 2240,
-   "y": 2769,
+   "y": 3176,
    "w": 1876,
-   "h": 1991,
-   "title": "3 · Spare requests · the answer over Home"
+   "h": 2097,
+   "title": "3 \u00b7 Spare requests \u00b7 the answer over Home (R1b)"
+  },
+  "Dismiss-X.dc.html": {
+   "x": 4650,
+   "y": 1263,
+   "w": 2756,
+   "h": 4776,
+   "title": "4 \u00b7 The dismiss \u2715 on Home and /friends"
+  },
+  "Eng-Rulings.dc.html": {
+   "x": 4650,
+   "y": 6159,
+   "w": 2280,
+   "h": 2516,
+   "title": "4 \u00b7 #2284, #2280, #2288 ratified"
+  },
+  "Precon-Overview.dc.html": {
+   "x": 7500,
+   "y": 1263,
+   "w": 3000,
+   "h": 3855,
+   "title": "5 \u00b7 A precon\u2019s Overview, carried into the deck"
   }
  },
  "order": [
   "Main.dc.html",
   "Cuts-Alternatives.dc.html",
   "Draft-Note-Phone.dc.html",
-  "Spare-Answer-Sheet.dc.html"
+  "Spare-Answer-Sheet.dc.html",
+  "Dismiss-X.dc.html",
+  "Eng-Rulings.dc.html",
+  "Precon-Overview.dc.html"
  ],
  "notes": {},
  "designSystems": []

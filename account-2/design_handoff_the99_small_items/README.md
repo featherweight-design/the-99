@@ -1,27 +1,22 @@
-# The 99 · Three small items (R1, account 2, 2026-10-27)
+# The 99 · Small items (R1b, account 2, 2026-10-27)
 
-A light addendum of three unrelated items, each drawn over the shipped surface it changes.
-Canvas: https://claude.ai/artifact/M6sfvrUxLdd3TWELr19b4x (Main, Cuts-Alternatives, Draft-Note-Phone, Spare-Answer-Sheet).
-Status: R1, awaiting Hugh's audit. Goes to main only on approval, as addenda to the handoffs each item builds on.
+A light addendum of five unrelated items, each drawn over the shipped surface it changes. R1b folds in Hugh's feedback on items 1 and 3 (2026-10-27 23:39) and adds items 4 and 5.
+Canvas: https://claude.ai/artifact/M6sfvrUxLdd3TWELr19b4x (Main, Cuts-Alternatives, Draft-Note-Phone, Spare-Answer-Sheet, Dismiss-X, Eng-Rulings, Precon-Overview).
+Status: R1b, awaiting Hugh's audit. Goes to main only on approval, as addenda to the handoffs each item builds on.
 
-## 1 · Proposed cuts offers alternatives (`Cuts-Alternatives`)
+## 1 · Proposed cuts names more than the deck needs (`Cuts-Alternatives`, R1b)
 
-Hugh's rule (2026-10-27): give the player a choice and never lock them in.
+Hugh's rule (2026-10-27): give the player a choice and never lock them in. R1's alternatives strip is withdrawn (Hugh: "just over shoot by 2-3 ... this is really just about engineering providing more responses with reasoning").
 
-- Each **pending** cut row (`CutRow` in `cuts-panel.tsx`) gains one strip under its figures: **Or cut one of these instead**, then up to **three** card tiles.
-  - Phone: three tiles across the row, each a 72 × 100 card image (the card's own shape) with its name under it (two lines max).
-  - Desktop: the strip sits on the reason's 96px indent; kicker on the left (118px), then three 228px tiles in a row: 40 × 56 card, name, type line. Hover shows the shipped card preview (`usePreviewRow`).
-- **A tile is one press: it swaps.** The tile's card becomes the row's suggestion with **its own** reason and cite chips; the card it replaced takes the tile's slot (accent dashed outline; desktop sub-line `named first`), so switching back is one press. A changed row carries a 3px accent inset edge. Motion: the picked card flips into the row's thumbnail.
-- **Cut** and **Keep** are unchanged and still the only writes to the list. Cut takes the card the row shows; the answered row is the shipped one and its strip leaves with it. Undo brings the row back as it was left (the picked card included).
-- **How many: three.** Three card-size tiles fit the phone row without scrolling. Fewer when the run can't back three; none and the strip is absent (the row is as shipped).
-- Never offered: a locked card, a Key card, the commander, a card named on another row of the run.
-- Kept rows: unchanged (`Show it again` brings the row back with its strip). History re-review: strips show too; a pick re-checks the card as Cut does there.
+- The Look deeper run names **three more cuts than the deck needs** (102 cards: three over, six named). Every row is the shipped `CutRow`; nothing new is drawn on it.
+- The result block's head says how many there are to choose from (`Six to choose from`); the lead says how many to cut (`Three over the ninety-nine. Six named; cut any three.`); the foot `6 named for 3 cuts · …`.
+- Once enough are cut (`Three cut. Back at 99. The other three stay here, so you can Undo one and cut another instead.`), the rest stay open. A fourth Cut is allowed; the lead then says the deck is under, as the count does.
+- Fewer rows when the run can't back that many with checked figures. Never a locked card, a Key card or the commander.
 
 ### For engineering
-- G1. The same Look deeper run names up to three runners-up per cut, each with a reason and cites held to the same rules and validator (no extra credit). Prompt and schema change.
-- G2. A pick is a light write on the item (`chosenOracleId` or similar), so a reload and History show the chosen card. Cut on a picked row cuts that card.
-- G3. A tile whose card has left the list or been locked since is dropped from the strip.
-- G4. Copy for /copy-review: the kicker `Or cut one of these instead`, desktop sub-line `named first`.
+- G1. Same run, same one credit: return **over + 3** cut rows, each with its reason and cite chips under the same rules and validator. Prompt and schema change only; no pick state, no new control.
+- G2. Open: a cap for a deck far over (suggest at most 20 rows).
+- G3. Copy for /copy-review: the head, the lead lines, the foot.
 
 ## 2 · The deck toolbar's draft note on a phone (`Draft-Note-Phone`)
 
@@ -35,13 +30,34 @@ Suggested: a test pinning the phone's caption and group notes while a draft exis
 
 **Engineering's proposal is ratified**, details drawn:
 - `ModalChrome` width **560**; phone `fit` (hugs its row, 18px top radius). Title **Your request**; the sheet's ✕ closes.
-- Body: the shipped Your requests row (`your-requests.tsx`) for this one request, with no ✕. Its clear becomes **Clear**, a plain text button (--fg-muted, no border) at the start of the row's text column, under the detail: 44px tall on a phone, 32 on desktop. Accessible name: the shipped `clearAria`.
+- Body: the shipped Your requests row (`your-requests.tsx`) for this one request, with no ✕. **R1b:** the accepted line becomes `The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.` (`acceptedDetail`, so /friends' Your requests says it too; for /copy-review). Its clear becomes **Clear**, a plain text button (--fg-muted, no border) at the start of the row's text column, under the detail: 44px tall on a phone, 32 on desktop. Accessible name: the shipped `clearAria`.
 - Foot: **All your requests ›** to /friends at Your requests. Phone: left, in a pinned foot. Desktop: right.
 - Opening marks the answer seen (the diamond goes). Clear removes the request for good, closes the sheet and takes the Home item with it; focus goes to the next feed item's ✕ (shipped dismiss). A failed Clear keeps the sheet and shows the shared toast.
 - Answered rows have no Ask instead. Declined shows the shipped `othersHave` line; asking another friend happens in Shopping.
 - The Home item's press label becomes **Your request ›** (was `Your requests ›`), for /copy-review. The item's own ✕ still only hides the item.
 
+## 4 · The dismiss ✕, and three eng rulings (`Dismiss-X`, `Eng-Rulings`)
+
+**The ✕ ends the action line** on What's new rows, the lead story and Waiting on you (redraws #2285's top-right placement):
+- Phone: a 44 × 44 box at the right end of the press's line (Yes, No and the days left on an ask row; the lead's button line inside the band). The time stays on the kicker line; the text column loses its 30px reserve.
+- Desktop: a 32 × 32 box after the time and the press, on #2284's one line (Yes, No, the days left, then ✕ on an ask row; the lead's ✕ at the band's right edge on its button line). Coarse pointer keeps the 44px hit.
+- A row with no press keeps the action line for the ✕ alone. Disabled while an answer is out (rows), absent (lead) or none (receipts), as shipped.
+- Engineering: `DismissButton` renders in the flow of the action line, not `absolute top-[6px] right-[4px]`; drop the `pr-[30px]`/`md:pr-[34px]` reserves (`FeedItemRow`, `TradeRow`, `AskRow`) and the lead's `pr-[28px]`/`md:pr-[20px]`; AnswerPresses wraps in its own box with the ✕ at `ml-auto`. `useFeedDismiss`, focus, aria and toast unchanged. Your requests keeps its own ✕.
+
+**Rulings, all ratified:**
+- #2284 (desktop: time and press share one line on the right): ratified; the ✕ joins as the line's last item.
+- #2280 (one folded mark shows itself, not `+1`): ratified. The 16px mark costs ~3px of the name, which truncates; the right-hand columns never move.
+- #2288 (a trade match's Ask opens the spares sheet over the page): ratified as built (Friends with a spare, `on your wishlist`, that friend first; the press reads Requested or Accepted after).
+
+## 5 · A precon's Overview, carried into the deck (`Precon-Overview`)
+
+- **Precon page** (`/decks/precons/[file]`, `open-precon-view.tsx`): a new Overview block in the header, under the "You own" box and above the list-note line: label `Overview`, aside `written for this precon’s list`, the paragraph (desktop max 760px), and `View full overview →` opening the shipped Overview modal. No credit, no write press; no Overview yet means no block.
+- **Started from the precon** (Start with this precon, with or without I own this precon; either edition): the new deck's bracket reading and Overview are copies of the precon's. The verdict's date line reads `Analysis from the precon list · 27 Oct`; the Overview label's aside `from the precon list`. Nothing to press, nothing spent. The header chip shows the bracket at once.
+- **First edit**: stale exactly as any deck's. The shipped staleness banner with Re-analyze leads the tab; the date line gains `, before your changes`; the Overview stays whole with no write control. After Re-analyze the reading is the deck's own (`analyzed 28 Oct`) and the Overview shows the shipped `This overview was written before your latest changes.` with Write a new overview.
+- Engineering: one Overview and one reading per precon list, written ahead (a batch, like the prose) and re-written when the list or method changes; the deck's copy is judged fresh by the same list key as any reading, so no new staleness rule. Re-analyze costs what it costs today. Importing a list that happens to match a precon carries nothing.
+- Fixture: Turtle Power! (Heroes in a Half Shell); the Overview text and the Core verdict are stand-ins.
+
 ## Files
-- `Main.dc.html`, `Cuts-Alternatives.dc.html`, `Draft-Note-Phone.dc.html`, `Spare-Answer-Sheet.dc.html`: the canvas artboards (images as `/_blob/` urls). `canvas.json`: the canvas index.
+- `Main.dc.html`, `Cuts-Alternatives.dc.html`, `Draft-Note-Phone.dc.html`, `Spare-Answer-Sheet.dc.html`, `Dismiss-X.dc.html`, `Eng-Rulings.dc.html`, `Precon-Overview.dc.html`: the canvas artboards (images as `/_blob/` urls). `canvas.json`: the canvas index.
 - `art/`: the images uploaded to the canvas (card images cut from Hugh's captures, reused from the strategy-focus, deck-messages and spare-requests rounds).
-- `scratch-gen/`: the generators. `cuts/` (strategy-focus kit + `ci.py`), `draft/` (deck-messages kit + `dn.py`), `spare/` (spare-requests kit + `ss.py`, `main.py`). Each `b.py` writes to `../out`; `render.py <names>` measures boards and flags broken images; `toblob.py` swaps `art/` for the canvas's `/_blob/` urls.
+- `scratch-gen/`: the generators. `cuts/` (strategy-focus kit + `ci.py`, `pv.py` via `bp.py`), `draft/` (deck-messages kit + `dn.py`), `spare/` (spare-requests kit + `ss.py`, `main.py` via `bm2.py`, `w4.py` via `b4.py`). Each `b.py` writes to `../out`; `render.py <names>` measures boards and flags broken images; `toblob.py` swaps `art/` for the canvas's `/_blob/` urls.

@@ -109,6 +109,12 @@ WHY = {
                       [("role", "removal 11 · target 8"), ("inclusion", "31%")]),
     "cemetery-prowler": ("Its discount needs creature cards in graveyards, and nothing in the Ally plan puts them there.",
                          [("cost", "mana value 3"), ("inclusion", "0.4%"), ("curve", "three-drops 19")]),
+    "flickering-hound": ("A three-drop body with no Ally text, in a curve that already holds 19 three-drops.",
+                         [("curve", "three-drops 19"), ("inclusion", "0.2%")]),
+    "wizards-staff": ("Equipment that only pays off with Wizards, and the deck runs four.",
+                      [("cost", "mana value 2"), ("inclusion", "0.1%")]),
+    "moonmist": ("A one-turn trick for a deck with three creatures it can transform. Fog effects are not what Avatar Aang wants.",
+                 [("inclusion", "0.6%"), ("role", "protection 6 · target 5")]),
 }
 ALTS = {"assimilation-aegis": ["heartless-act", "path", "searing-touch"],
         "cemetery-prowler": ["flickering-hound", "wizards-staff", "moonmist"]}
@@ -148,23 +154,22 @@ def count(divider="The count"):
     li = "".join(f'<li><span class="s">{s}</span><span class="l">{l}<small>{n}</small></span><span class="f">{f}</span><span class="n">{n}</span></li>'
                  for s, l, f, n in COUNT)
     return (f'<div class="pcn"><div class="pdv">{divider}<i></i></div><div class="ch"><b>What we counted</b>'
-            '<span>from 101 cards · EDHREC for Avatar Aang, 2,184 decks · bracket 3, as declared · free</span></div>'
+            '<span>from 102 cards · EDHREC for Avatar Aang, 2,184 decks · bracket 3, as declared · free</span></div>'
             f'<ul>{li}</ul><p class="pnv">Never named: Avatar Aang, the 6 cards you locked and the 4 Key cards.</p></div>')
 
 
-def panel(rows, lead, desk=False, foot=True):
+def panel(rows, lead, desk=False, foot=True, over="Three over the ninety-nine.", head="Six to choose from", prf="6 named for 3 cuts · each figure checked against the count · 11 credits left"):
     return (f'<section class="pcf"><div class="ph1"><h3>Proposed cuts</h3><span>free count · look deeper 1 credit</span></div>'
-            f'<p class="pld"><b>Two over the ninety-nine.</b> {lead}</p>'
-            '<div class="prb"><div class="prh"><b>Two to cut</b><span>named by a deeper look · read the count below and your description</span></div>'
-            f'<ul>{rows}</ul><p class="prf">2 of 2 named · each figure checked against the count · 11 credits left</p></div>'
+            f'<p class="pld"><b>{over}</b> {lead}</p>'
+            f'<div class="prb"><div class="prh"><b class="new" style="outline-offset:2px">{head}</b><span>named by a deeper look · read the count below and your description</span></div>'
+            f'<ul>{rows}</ul><p class="prf">{prf}</p></div>'
             + (count() if foot else "") + "</section>")
 
 
 CUT = "Analysis tab · Tuning · Proposed cuts"
-LEAD_NAMED = "Two cards named. Cut writes to the list straight away."
-LEAD_ONE = "One cut, none kept. Two were named, so one is left open."
-
-
+SIX = ["assimilation-aegis", "heartless-act", "cemetery-prowler", "flickering-hound", "wizards-staff", "moonmist"]
+LEAD_NAMED = "Six named; cut any three. Cut writes to the list straight away."
+LEAD_DONE = "Back at 99. The other three stay here, so you can Undo one and cut another instead."
 def tool_ph(p, extra=""):
     return P.phone(f'<div class="at">{P.hub_open(p, True, active="cuts")}</div>{extra}', head=False, cut=CUT, nav=False)
 
@@ -174,17 +179,13 @@ def tool_dk(p, extra=""):
 
 
 def s_named(desk=False):
-    return panel(row("assimilation-aegis", ALTS["assimilation-aegis"], desk=desk)
-                 + row("cemetery-prowler", ALTS["cemetery-prowler"], desk=desk), LEAD_NAMED, desk)
+    return panel("".join(row(k, None, desk=desk) for k in SIX), LEAD_NAMED, desk)
 
 
-def s_swapped(desk=False, hov=None):
-    return panel(row("heartless-act", ["assimilation-aegis", "path", "searing-touch"], was="assimilation-aegis", swapped=True, desk=desk)
-                 + row("cemetery-prowler", ALTS["cemetery-prowler"], hov=hov, desk=desk), LEAD_NAMED, desk)
-
-
-def s_cut(desk=False):
-    return panel(done("heartless-act") + row("cemetery-prowler", ALTS["cemetery-prowler"], desk=desk), LEAD_ONE, desk, foot=False)
+def s_done(desk=False):
+    cut = ("assimilation-aegis", "cemetery-prowler", "wizards-staff")
+    rows = "".join(done(k) if k in cut else row(k, None, desk=desk) for k in SIX)
+    return panel(rows, LEAD_DONE, desk, foot=False, over="Three cut.", prf="3 of 3 cut · 3 more named · 11 credits left")
 
 
 def sec(title, sp, body):
@@ -201,45 +202,34 @@ def note(t, b, w=None):
 
 
 def board():
-    prev = ('<div class="prev" style="left:1110px;top:610px"><img src="' + C("wizards-staff") + '" alt=""></div>')
-    body = (board_head("Proposed cuts · alternatives · addendum", "Keep the card you like, cut another instead",
-                       "Your rule from today: give the player a choice and never lock them in. Each named cut now carries <b>three other cards "
-                       "the run could cut in its place</b>, as card tiles under the reason. Press one and it becomes the row’s suggestion, "
-                       "with its own reason and figures; the card it replaced drops into the slot it left, so you can switch back. "
-                       "<b>Cut</b> and <b>Keep</b> are unchanged and still the only way anything leaves the list. Everything else is the shipped panel "
-                       "(Tuning hub R2, canvas C), redrawn from <code>cuts-panel.tsx</code>. Copy is placeholder for /copy-review.", tag="R1")
-            + sec("1 · Named, with alternatives",
-                  "The run named two. Each row gains one strip under its figures: <i>Or cut one of these instead</i> and three tiles. "
-                  "Phone: three card tiles across (72 × 100, the card’s own shape), the name under each. Desktop: the strip sits on the reason’s "
-                  "96px indent, tiles in a row with the card, its name and its type line. A tile is one press: it swaps.",
+    body = (board_head("Proposed cuts · more to choose from · addendum", "Name a few more cuts than you need",
+                       "Your rule from today: give the player a choice and never lock them in. R1 drew three alternatives under each cut; "
+                       "<b>R1b, from your feedback: the run simply names more cuts than the deck needs, two or three over, and you choose.</b> "
+                       "At 102 the deck is three over, so the run names six and you cut any three. Every row is the shipped CutRow (Suggestion, the "
+                       "card, Cut and Keep, its reason and figures); nothing new is drawn on it. The change is engineering’s: more rows back, each with "
+                       "its reasoning. Copy is placeholder for /copy-review.", tag="R1b")
+            + sec("1 · Six named for three cuts",
+                  "The result block’s head says how many there are to choose from; the lead says how many to cut. Rows are in the run’s order, "
+                  "strongest case first.",
                   frames(frame("<b>390</b>", tool_ph(s_named())),
                          frame("<b>1300</b>", tool_dk(s_named(True)))))
-            + sec("2 · Picked one: Heartless Act in place of Assimilation Aegis",
-                  "The row now suggests Heartless Act with <b>its own reason and figures</b> (the run wrote them with the rest). An accent edge marks "
-                  "a row you changed. Assimilation Aegis sits in the slot Heartless Act left, outlined in accent and labelled <i>named first</i> on "
-                  "desktop, so switching back is one press. On the way in, the picked card flips into the row’s thumbnail. Nothing is written to the "
-                  "deck: Cut still does that.",
-                  frames(frame("<b>390</b>", tool_ph(s_swapped())),
-                         frame("<b>1300</b> · hovering a tile shows the shipped card preview", tool_dk(s_swapped(True, hov="wizards-staff"), prev))))
-            + sec("3 · Then Cut",
-                  "Cut takes the card the row shows. The answered row is the shipped one (cut, the name struck, Undo); its strip goes with it. "
-                  "Undo brings the row back as you left it, Heartless Act and all. The lead counts as it does today.",
-                  frames(frame("<b>390</b>", tool_ph(s_cut())),
-                         frame("<b>1300</b>", tool_dk(s_cut(True))),
+            + sec("2 · Three cut, back at 99",
+                  "Each Cut answers its row as shipped (cut, the name struck, Undo). The three you didn’t cut stay open: Undo one and cut "
+                  "another to change your mind. Cutting a fourth is allowed; the lead then says the deck is one under, as the count does.",
+                  frames(frame("<b>390</b>", tool_ph(s_done())),
+                         frame("<b>1300</b>", tool_dk(s_done(True))),
                          '<div style="display:flex;flex-direction:column;gap:14px;width:420px">'
-                         + note("How many: three", "<ul><li>Three tiles fit across the phone’s row at a card size you can recognise, with no scrolling. "
-                                "Four would shrink the cards to stamps; a list would bury the reason.</li><li>Fewer when the run can’t back three "
-                                "with figures it checked. None: the strip is absent, and the row is as shipped.</li><li>Never a locked card, a Key card, "
-                                "the commander, or a card already named on another row.</li></ul>")
-                         + note("Where they come from", "<ul><li>The same Look deeper run, at the same one credit: for each cut it also names up to three "
-                                "runners-up, each with a reason held to the same rules (checked figures, no bracket claims).</li><li>A tile press is a "
-                                "light write (the row remembers your pick), so History and a reload show the card you chose, not the one first named.</li>"
-                                "<li>A tile whose card has since left the list, or been locked, is dropped from the strip.</li></ul>")
-                         + note("Kept and History", "<ul><li><b>Keep</b> is unchanged: the row closes as kept, and <i>Show it again</i> brings it "
-                                "back with its strip.</li><li>A past run reopened from History shows its strips too; picking re-checks the card, as Cut "
-                                "does there.</li></ul>")
+                         + note("How many", "<ul><li><b>Three more than you need</b> (one over: four named; three over: six). Fewer when the run "
+                                "can’t back that many with figures it checked, but never fewer than the deck needs unless the run says why.</li>"
+                                "<li>Never a locked card, a Key card or the commander, as today.</li></ul>")
+                         + note("For engineering", "<ul><li>The same Look deeper run, at the same one credit, returns <b>over + 3</b> cut rows, each "
+                                "with its reason and cite chips held to the same rules and validator. Prompt and schema change only.</li>"
+                                "<li>The panel keeps the rows the run returned; no new control, no pick state.</li>"
+                                "<li>Copy for /copy-review: the head <i>Six to choose from</i>, the lead lines, the foot <i>6 named for 3 cuts</i>.</li>"
+                                "<li>Open question: a cap for a deck far over (say 15 over). Suggest at most 20 rows.</li></ul>")
+                         + note("Unchanged", "<ul><li>Cut, Keep, Undo, Show it again, History.</li><li>The free count below the result.</li></ul>")
                          + "</div>")))
-    return doc("Proposed cuts · alternatives", body, 2160)
+    return doc("Proposed cuts · more to choose from", body, 2160)
 
 
-BOARDS = [("Cuts-Alternatives", board, "Proposed cuts · three alternatives per cut")]
+BOARDS = [("Cuts-Alternatives", board, "Proposed cuts · more cuts than you need")]

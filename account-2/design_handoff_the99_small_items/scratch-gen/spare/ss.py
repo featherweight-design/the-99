@@ -49,7 +49,7 @@ kit.CSS += r"""
 FACE = {"Colin": "face-sai.jpg", "Chris": "face-giada.jpg", "Max": "face-ghalta.jpg", "Peter": "face-captain-america.jpg"}
 ANS = {
     "yes": dict(card="jace.jpg", who="Colin", kind="Accepted", kc="ok", title="Colin can spare Jace, Multiverse Architect",
-                detail="The handover is between you. Once it’s yours, press buy on it in Shopping.", when="1h ago"),
+                detail="The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.", when="1h ago"),
     "no": dict(card="dina.jpg", who="Chris", kind="Declined", kc="", title="Chris is keeping Dina, Essence Brewer",
                detail="Max has a spare too.", when="yesterday"),
 }
@@ -137,7 +137,7 @@ def board():
                        "<code>fit</code>), titled <b>Your request</b>; the body is the shipped Your requests row for this one request; the row’s ✕ "
                        "becomes a <b>Clear</b> text button at the row’s foot, under the text; the foot holds <b>All your requests ›</b>. "
                        "The sheet’s ✕ is then the only ✕ on screen, and Clear sits far from it, in words. Answered rows have no Ask instead. "
-                       "Sam’s fixture from the spare requests round; copy is shipped except the press label.", tag="R1")
+                       "Sam’s fixture from the spare requests round; copy is shipped except the press label and the accepted line’s new ending.", tag="R1b")
             + frames(frame("<b>Home · 390</b> · the item", p_home,
                            "The shipped item with its ✕ (hides the item from Home). Its press now reads <b>Your request ›</b> and opens the sheet."),
                      frame("<b>390</b> · Accepted, sheet open", p_yes,
@@ -153,10 +153,11 @@ def board():
                      '<div style="display:flex;flex-direction:column;gap:16px;width:420px;flex:none">'
                      + frame("<b>The risk, as engineering saw it</b>", risk(),
                              "The shipped row as is: its ✕ (clear for good) sits 30px under the sheet’s ✕ (close). Not drawn this way.")
-                     + '<div class="note"><b>Ratified, with three details</b><ul>'
+                     + '<div class="note"><b>Ratified, with four details</b><ul>'
                        '<li><b>Clear</b> is plain text in --fg-muted, no border, at the start of the row’s text column: 44px tall on a phone, 32 on desktop. '
                        'Named “Clear your request to Colin for Jace, Multiverse Architect” (the shipped clearAria).</li>'
                        '<li><b>All your requests ›</b> goes to /friends at Your requests. Phone: left in a pinned foot; desktop: right.</li>'
+                       '<li><b>Accepted line</b>: <i>…press buy on it in Shopping or add it to your collection.</i> Buying isn’t the only way a received card comes in (your feedback, R1b). Shared with /friends’ Your requests (<code>acceptedDetail</code>). For /copy-review.</li>'
                        '<li><b>Press label</b> on the Home item: <i>Your request ›</i> (was <i>Your requests ›</i>), since it now opens one request. For /copy-review.</li></ul></div>'
                      '<div class="note"><b>Unchanged</b><ul><li>The Home item’s own ✕ still hides the item and leaves the request alone.</li>'
                      '<li>/friends’ Your requests keeps its ✕ rows.</li><li>No Ask instead on an answered row.</li></ul></div></div>'))
