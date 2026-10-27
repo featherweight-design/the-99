@@ -5,7 +5,7 @@
 // column reserves the footer's height rather than assuming a constant. The
 // clearance itself is measured at runtime by `scripts/probe-bottom.mjs`.
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 vi.mock("../../app/decks/actions", () => ({ createDeck: vi.fn() }));
@@ -15,6 +15,13 @@ vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => ({ push: vi.fn() }),
 }));
+
+// Partial: the picker also imports `noteAppScroll` from it.
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal: vi.fn(() => () => {}),
+}));
+const { reveal } = await import("../../lib/ui/reveal");
 
 const { CreatePicker } = await import("./create-picker");
 
@@ -281,5 +288,72 @@ describe("CreatePicker — its search", () => {
     fireEvent.change(search, { target: { value: "greta" } });
     fireEvent.keyDown(search, { key: "Escape" });
     expect(search).toHaveValue("");
+  });
+});
+
+// On a phone the partner slot sits above the list, so a commander picked far down it drew "Add a
+// partner" out of view. jsdom lays nothing out, so the slot's box is stubbed: where it is decides
+// whether the pick brings it into view. The real geometry is `scripts/probe-partner-slot-in-view.mjs`.
+describe("CreatePicker — a pick brings the partner slot into view", () => {
+  const ishai = {
+    oracleId: "oracle-a", name: "Ishai, Ojutai Dragonspeaker", colorIdentity: ["W", "U"], imageUri: null,
+    oracleText: "Partner (You can have two commanders if both have partner.)", typeLine: "Legendary Creature — Human", poolCount: 3,
+  };
+  const tana = { ...ishai, oracleId: "oracle-b", name: "Tana, the Bloodsower", colorIdentity: ["R", "G"] };
+  const lone = { ...commanders[0] };
+
+  function slotAt(top: number) {
+    const real = { rects: Element.prototype.getClientRects, box: Element.prototype.getBoundingClientRect };
+    vi.spyOn(Element.prototype, "getClientRects").mockImplementation(function (this: Element) {
+      return (this.hasAttribute("data-partner-slot") ? [{}] : real.rects.call(this)) as unknown as DOMRectList;
+    });
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      return this.hasAttribute("data-partner-slot")
+        ? ({ top, bottom: top + 62 } as DOMRect)
+        : real.box.call(this);
+    });
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.mocked(reveal).mockClear();
+  });
+
+  it("reveals the slot a pick draws above the window", () => {
+    slotAt(-5000);
+    render(<CreatePicker legalCommanders={[lone, ishai, tana]} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Ishai/ })[0]);
+
+    expect(reveal).toHaveBeenCalledTimes(1);
+    const [el, block] = vi.mocked(reveal).mock.calls[0];
+    expect((el as Element).hasAttribute("data-partner-slot")).toBe(true);
+    expect(block).toBe("center");
+  });
+
+  it("reveals the filled slot once the partner is picked from the list", () => {
+    slotAt(-5000);
+    render(<CreatePicker legalCommanders={[lone, ishai, tana]} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Ishai/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Add a partner/ })[0]);
+    vi.mocked(reveal).mockClear();
+    fireEvent.click(screen.getAllByRole("button", { name: /Tana/ })[0]);
+
+    expect(reveal).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the page alone when the slot is already in view", () => {
+    slotAt(200);
+    render(<CreatePicker legalCommanders={[lone, ishai, tana]} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Ishai/ })[0]);
+
+    expect(reveal).not.toHaveBeenCalled();
+  });
+
+  it("draws no slot, and reveals nothing, for a commander that cannot pair", () => {
+    slotAt(-5000);
+    render(<CreatePicker legalCommanders={[lone, ishai, tana]} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Greta/ })[0]);
+
+    expect(reveal).not.toHaveBeenCalled();
   });
 });
