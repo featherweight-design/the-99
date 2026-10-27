@@ -36,3 +36,23 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   export shape), and the `esbuild` pin rewires `drizzle-kit` from 0.18.20 across several
   breaking 0.x boundaries on a path CI never runs, so `pnpm db:generate` and `drizzle-kit check`
   are the proof for that one and both pass.
+
+## The Node version
+
+- **`.nvmrc` is the one pin: an exact, patched release** (`24.22.1`, 2026-10-27). Every workflow job that runs
+  node sets it up with `actions/setup-node` and `node-version-file: .nvmrc`; no workflow names a version of its
+  own. `scripts/lib/node-version-pin.test.mts` (in `pnpm test`) fails on a bare major, a release below the
+  patched floor, a `node-version:` key, a `setup-node` step that does not read `.nvmrc`, or a job that runs node,
+  pnpm or npx without setting it up (the runner's own node is whatever its image carries).
+- **Why exact, not `24`.** A bare major lets setup-node take whatever the runner has CACHED: on 2026-10-27 CI ran
+  24.21.0 ("Found in cache … node/24.21.0") a week after 24.22.1 shipped the October security release (TLS
+  hostname-check bypasses, a Brotli decompression RCE, the compromised eMudhra intermediates dropped). An exact
+  version the cache does not hold is downloaded. The cost is that the next patch is a deliberate bump: change
+  `.nvmrc` and raise `PATCHED_FLOOR` in the test when a security release lands.
+- **Vercel runs a MAJOR, not a patch.** `engines.node` is `24.x` (the same major as `.nvmrc`, which the test pins).
+  Vercel accepts only majors and rolls patches out itself, so no setting can demand 24.22.1 there; a `>=` range
+  only adds a warning that the build will jump majors on its own, and a floor above what Vercel has rolled out
+  would refuse the build. Read what a deployment actually runs from its logs: `src/instrumentation.ts` logs
+  `[runtime] node vX.Y.Z` once per server start, never in a response
+  (`vercel logs -p the-99 --since 1h -q "[runtime]"`, `-p the-99-staging` for staging, or the dashboard's Logs with that text). Below the patched
+  floor, redeploy; Vercel's own rollout is the fix.
