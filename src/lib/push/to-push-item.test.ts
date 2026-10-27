@@ -17,7 +17,7 @@ describe("a feed view as a push item", () => {
     });
   });
   it("trade match: the friend and the card", () => {
-    expect(toPushItem(view({ kind: "trade-match", friend }), "b")).toMatchObject({ kind: "trade-match", friend: "Colin", publicId: "p-colin", card: card.name });
+    expect(toPushItem(view({ kind: "trade-match", friend }), "b")).toMatchObject({ kind: "trade-match", friend: "Colin", publicId: "p-colin", oracleId: card.oracleId, card: card.name });
   });
   it("spare request: the friend and the card", () => {
     expect(toPushItem(view({ kind: "spare-request", friend }), "b")).toMatchObject({ kind: "spare-request", friend: "Colin", card: card.name });

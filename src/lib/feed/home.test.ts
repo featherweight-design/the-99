@@ -92,7 +92,7 @@ describe("loadHomeFeed", () => {
     if (!feed?.chosen) throw new Error("expected a chosen feed");
     // The trade match leads (priority over the newer price drop) and leaves the list.
     expect(feed.lead?.key).toBe("item:2");
-    expect(feed.lead?.href).toBe("/friends/p1");
+    expect(feed.lead?.href).toBe("/friends/p1?spare=c2");
     expect(feed.items.map((i) => i.key)).toEqual(["item:1", "set:sos"]);
     expect(feed.unseen).toBe(2);
     expect(feed.items[0]).toMatchObject({ card: { name: "Sai", image: "sai-owned.jpg" }, opens: "c1", drop: { fromCents: 640, toCents: 310 } });

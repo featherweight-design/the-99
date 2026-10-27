@@ -238,12 +238,32 @@ export function FriendSparesProvider({
   );
 }
 
-/** The spares-only modal for the card the press opened, where it is mounted; nothing while none is open. */
-export function SparesSheetHost() {
+/**
+ * The spares-only modal for the card the press opened, where it is mounted; nothing while none is open. A friend's
+ * Spares tab (signature card call 8) passes its friend `first`, the box's kicker per card, and `fallback`: what the page
+ * already knows of the card's spares, drawn until the read lands. Shopping and the cart pass none of them.
+ */
+export function SparesSheetHost({
+  first,
+  kickerFor,
+  fallback,
+}: {
+  first?: string;
+  kickerFor?: (oracleId: string) => string | null;
+  fallback?: (oracleId: string) => FriendSpare[];
+} = {}) {
   const ctx = usePageSpares();
   if (!ctx?.opened) return null;
+  const id = ctx.opened.oracleId;
   return (
-    <SparesSheet card={ctx.opened} spares={ctx.byCard.get(ctx.opened.oracleId) ?? []} newestAsOf={ctx.newestAsOf} onClose={ctx.close} />
+    <SparesSheet
+      card={ctx.opened}
+      spares={ctx.byCard.get(id) ?? fallback?.(id) ?? []}
+      newestAsOf={ctx.newestAsOf}
+      onClose={ctx.close}
+      {...(kickerFor ? { kicker: kickerFor(id) } : {})}
+      {...(first ? { first } : {})}
+    />
   );
 }
 
@@ -394,16 +414,22 @@ export function SparesSheet({
   spares,
   newestAsOf,
   onClose,
+  kicker,
+  first,
 }: {
   card: SpareCard;
   spares: readonly FriendSpare[];
   newestAsOf: Date | null;
   onClose: () => void;
+  /** The box's kicker: the shipped `replacing` when absent, none when null (a friend's tab: `on your wishlist` or nothing). */
+  kicker?: string | null;
+  /** A friend's public id listed first, then the shipped order (the friend whose page the modal opened on). */
+  first?: string;
 }) {
   return (
     <HoverPreviewProvider waitForMove>
       <ModalChrome title={spareCopy.modalTitleSpares} closeLabel={spareCopy.close} onClose={onClose} width={640}>
-        <SparesSheetBody card={card} spares={spares} newestAsOf={newestAsOf} />
+        <SparesSheetBody card={card} spares={spares} newestAsOf={newestAsOf} kicker={kicker} first={first} />
       </ModalChrome>
     </HoverPreviewProvider>
   );
@@ -417,10 +443,14 @@ export function SparesSheetBody({
   card,
   spares,
   newestAsOf,
+  kicker = spareCopy.replacing,
+  first,
 }: {
   card: SpareCard;
   spares: readonly FriendSpare[];
   newestAsOf: Date | null;
+  kicker?: string | null;
+  first?: string;
 }) {
   const name = printedFaceName(card);
   return (
@@ -429,9 +459,11 @@ export function SparesSheetBody({
         className="flex flex-col gap-[6px] rounded-[10px] border border-[color:var(--border)] px-[13px] pb-[12px] pt-[11px]"
         style={{ background: "var(--bg)" }}
       >
-        <span className="font-mono text-[9.5px] uppercase tracking-[0.12em]" style={{ color: "var(--fg-faint)" }}>
-          {spareCopy.replacing}
-        </span>
+        {kicker === null ? null : (
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em]" style={{ color: "var(--fg-faint)" }}>
+            {kicker}
+          </span>
+        )}
         <ReplacingLine imageUri={card.imageUri ?? null}>
           <Thumb imageUri={card.imageUri ?? null} side="head" />
           <span aria-hidden="true" className="h-[7px] w-[7px] flex-none rounded-full" style={{ border: "1px dashed var(--fg-faint)" }} />
@@ -446,7 +478,7 @@ export function SparesSheetBody({
           <BuyTag variant="row" price={card.price ?? null} newestAsOf={newestAsOf} />
         </ReplacingLine>
       </section>
-      <FriendSpareSection spares={spares} card={card} />
+      <FriendSpareSection spares={spares} card={card} first={first} />
     </div>
   );
 }
