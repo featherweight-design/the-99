@@ -61,6 +61,8 @@ export const socialCopy = {
     nameField: {
       label: "Your name, as friends see it",
       hint: "Up to 30 characters. Friends see this and your commander.",
+      // With the signature card on (handoff 20, call 1): the face is named a signature card, not a commander.
+      hintSignature: "Up to 30 characters. Friends see this and your signature card.",
       save: "Save",
       cancel: "Cancel",
       failed: "We couldn’t save your name. Try again.", // toast, role alert
@@ -299,6 +301,11 @@ export const socialCopy = {
     typeFriend: (since: string) => `Friend · since ${since}`,
     ownRules: "This is what a friend sees when they open your link: your name, your commander, and an Accept.",
     friendRules: (name: string) => `You and ${name} are friends. Each of you sees the other’s name and commander.`,
+    // With the signature card on (handoff 20, call 1), the three rules and the empty credit name the face as it is.
+    openRulesSignature: (name: string) => `When you accept, you and ${name} become friends. Each of you sees the other’s name and signature card, and nothing else until one of you shares more.`,
+    ownRulesSignature: "This is what a friend sees when they open your link: your name, your signature card, and an Accept.",
+    friendRulesSignature: (name: string) => `You and ${name} are friends. Each of you sees the other’s name and signature card.`,
+    noSignature: "No signature card chosen",
     credit: (commander: string) => `Art · ${commander}`, // drawn uppercase by CSS
     noCommander: "No commander chosen",
     mark: "The 99", // the card's footer, right; drawn uppercase by CSS

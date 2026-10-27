@@ -1402,14 +1402,19 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Nobody can find you by searching. A friend link works once and lasts 7 days, and you can revoke one that’s still open.',
       'Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.',
       'Friends see your name, your commander and the decks you let them open, never your collection. Your spares show only to the pods you share them with.',
+      'Friends see your name and your signature card, never what you own. Your spares show only to the pods you share them with.',
+      'Friends see your name, your signature card and the decks you let them open, never your collection. Your spares show only to the pods you share them with.',
       'You add your own friends to your pods. Leave one you own and it passes to its longest-standing member.',
       'Removing a friend or leaving a pod tells nobody.',
     ],
     // Friend decks (addendum `design_handoff_the99_about/addendum-friend-decks`): with the switch on, friends see the
-    // decks a player lets them open, so key 2 swaps for its sentence (a pair, one key drawn).
+    // decks a player lets them open, so key 2 swaps for its sentence. The signature card (handoff 20, call 1) names the
+    // face a signature card. Four forms, one drawn.
     keySwitches: {
-      'Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.': '!FRIEND_DECKS_ENABLED',
-      'Friends see your name, your commander and the decks you let them open, never your collection. Your spares show only to the pods you share them with.': 'FRIEND_DECKS_ENABLED',
+      'Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.': ['!FRIEND_DECKS_ENABLED', '!SIGNATURE_CARD_ENABLED'],
+      'Friends see your name, your commander and the decks you let them open, never your collection. Your spares show only to the pods you share them with.': ['FRIEND_DECKS_ENABLED', '!SIGNATURE_CARD_ENABLED'],
+      'Friends see your name and your signature card, never what you own. Your spares show only to the pods you share them with.': ['!FRIEND_DECKS_ENABLED', 'SIGNATURE_CARD_ENABLED'],
+      'Friends see your name, your signature card and the decks you let them open, never your collection. Your spares show only to the pods you share them with.': ['FRIEND_DECKS_ENABLED', 'SIGNATURE_CARD_ENABLED'],
     },
     marksPending: true,
     since: 14,

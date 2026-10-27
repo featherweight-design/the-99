@@ -9,7 +9,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { notFound } from "next/navigation";
-import { socialFriendsEnabled } from "../../../lib/social/flag";
+import { signatureCardEnabled, socialFriendsEnabled } from "../../../lib/social/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { readInvite } from "../../../lib/social/friends";
 import { landingView } from "../../../lib/social/landing";
@@ -46,7 +46,8 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
       </main>
     );
   }
-  if (!socialFriendsEnabled(await requestSwitchEnv(userId))) notFound();
+  const env = await requestSwitchEnv(userId);
+  if (!socialFriendsEnabled(env)) notFound();
   // `readInvite` names the inviter only for an open link (E6); an ended one carries its state alone.
   const view = landingView(isInviteToken(token) ? await readInvite(userId, token) : null);
   // The server's clock, so the card's first render names the same day as the server drew it.
@@ -55,7 +56,7 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
     <>
       {/* Opening a friend's link spends it, once, after mount (G4): the card says it is used up. */}
       {view.kind === "friends" && <SpendFriendLink token={token} />}
-      <FriendLanding token={token} view={view} nowMs={now.getTime()} />
+      <FriendLanding token={token} view={view} nowMs={now.getTime()} signature={signatureCardEnabled(env)} />
     </>
   );
 }

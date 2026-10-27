@@ -42,6 +42,7 @@ export function FriendCard({
   compact = false,
   word,
   badge = false,
+  signature = false,
 }: {
   /** Null for a card that is never turned (signed out, expired, ended): the back alone is drawn. */
   face: CardFace | null;
@@ -57,6 +58,8 @@ export function FriendCard({
   word?: string;
   /** The check badge on the card's corner (N6). Compact only. */
   badge?: boolean;
+  /** `SIGNATURE_CARD_ENABLED` for the reader: an empty credit says no signature card, not no commander. */
+  signature?: boolean;
 }) {
   const turn = (
     <div
@@ -65,7 +68,7 @@ export function FriendCard({
       data-arrival={arrival ? "true" : "false"}
     >
       <CardBack dim={dim} word={word ?? copy.kicker} compact={compact} />
-      {face && <CardFront face={face} hidden={!up} compact={compact} />}
+      {face && <CardFront face={face} hidden={!up} compact={compact} signature={signature} />}
     </div>
   );
   if (compact) {
@@ -142,7 +145,7 @@ function CardBack({ dim, word, compact }: { dim: boolean; word: string | null; c
   );
 }
 
-function CardFront({ face, hidden, compact }: { face: CardFace; hidden: boolean; compact: boolean }) {
+function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidden: boolean; compact: boolean; signature: boolean }) {
   const art = face.commander?.artCropUri ?? null;
   // The text box says what accepting shares, so it is the image's description, read after its label.
   const rulesId = useId();
@@ -181,7 +184,7 @@ function CardFront({ face, hidden, compact }: { face: CardFace; hidden: boolean;
         </div>
         <p id={rulesId} className={`m-0 min-h-0 flex-1 overflow-hidden [overflow-wrap:anywhere] rounded-[6px] bg-[color:var(--surface-sunken)] font-sans text-[color:var(--fg-body)] ${compact ? "px-[12px] py-[10px] text-[14px] leading-[1.4]" : "px-[11px] py-[9px] text-[12px] leading-[1.45]"}`}>{face.rules}</p>
         <div className={`flex flex-none justify-between px-[4px] font-mono uppercase text-[color:var(--fg-faint)] ${compact ? "text-[12px] tracking-[.15em]" : "text-[9.5px] tracking-[.04em]"}`}>
-          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{face.commander ? copy.credit(face.commander.name) : copy.noCommander}</span>
+          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{face.commander ? copy.credit(face.commander.name) : signature ? copy.noSignature : copy.noCommander}</span>
           <span className="flex-none pl-[8px]">{copy.mark}</span>
         </div>
       </div>
