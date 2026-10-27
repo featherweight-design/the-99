@@ -15,9 +15,8 @@
 import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import type { ProfileCommander } from "../../lib/social/commander";
 import type { Friend } from "../../lib/social/access";
-import type { InviteOutcome, OpenInvite, OwnProfile } from "../../lib/social/friends";
+import type { InviteOutcome, OpenInvite, OwnCommander, OwnProfile } from "../../lib/social/friends";
 import type { CommanderTile } from "../../lib/decks/commander-picker";
 import { socialCopy } from "../../lib/copy/social";
 import { ACCEPTED_PARAM, INVITE_PARAM, invitePath } from "../../lib/social/client-rules";
@@ -31,6 +30,7 @@ import { FriendsList } from "./friends-list";
 import { OpenLinks } from "./open-links";
 import { AddFriendDialog } from "./add-friend-dialog";
 import { CommanderPicker } from "./commander-picker";
+import { SignaturePicker, type SignaturePick } from "./signature-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { FriendInviteContext } from "./invite-context";
 import { useInviteWatch } from "./use-invite-watch";
@@ -91,6 +91,7 @@ export function FriendsView({
   invites = null,
   openInviteNew = false,
   decksSeen = null,
+  signature = false,
 }: {
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
@@ -114,6 +115,8 @@ export function FriendsView({
   openInviteNew?: boolean;
   /** The reader's own friend deck rules with `FRIEND_DECKS_ENABLED` on, for the head's privacy line; null while off. */
   decksSeen?: FriendDeckPrefs | null;
+  /** `SIGNATURE_CARD_ENABLED` on for the reader: the signature card picker and its words, in place of the commander's. */
+  signature?: boolean;
 }) {
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
@@ -227,7 +230,7 @@ export function FriendsView({
     if (id !== null) setToast((t) => (t?.id === id ? null : t));
   };
   const writeName = useFieldWrite(profile.displayName, setName);
-  const writeCommander = useFieldWrite<ProfileCommander | null>(profile.commander, setCommander);
+  const writeCommander = useFieldWrite<OwnCommander | null>(profile.commander, setCommander);
 
   const listed = friends.filter((f) => !gone.has(f.publicId));
   const open = links.filter((l) => !revoked.has(l.token) && l.expiresAt.getTime() > now.getTime());
@@ -319,8 +322,24 @@ export function FriendsView({
 
   async function pick(tile: CommanderTile | null) {
     setPicking(false);
-    const done = await writeCommander(tile, async () => (await setCommanderAction(tile?.oracleId ?? null)).ok);
+    const shown: OwnCommander | null = tile && { ...tile, printingId: null, printingGone: false };
+    const done = await writeCommander(shown, async () => (await setCommanderAction(tile?.oracleId ?? null)).ok);
     if (done === "failed") say(socialCopy.commander.failed);
+  }
+
+  /**
+   * The signature card picker's save (P4, P6): it stays open while this runs and closes only when the write lands, so
+   * there is no optimistic face to roll back. A failure toasts inside the picker, which stays open.
+   */
+  async function saveFace(next: SignaturePick | null): Promise<boolean> {
+    const out = await setCommanderAction(next?.oracleId ?? null, next?.printingId ?? null).catch(() => null);
+    if (!out?.ok) {
+      say(socialCopy.signature.failed);
+      return false;
+    }
+    setCommander(next?.face ?? null);
+    setPicking(false);
+    return true;
   }
 
   async function remove(friend: Friend) {
@@ -417,6 +436,7 @@ export function FriendsView({
           inviteRef={invite}
           inviteCount={invites ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
           decksSeen={decksSeen}
+          signature={signature}
         />
         {waiting}
         <FriendsList
@@ -475,8 +495,12 @@ export function FriendsView({
         />
       ) : null}
       {shown && !(invites && adding) ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
-      {picking ? <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} /> : null}
-      {invites && adding ? null : toastEl}
+      {picking && signature ? (
+        <SignaturePicker current={commander} onSave={saveFace} onClose={() => setPicking(false)} returnFocusRef={face} toast={toastEl} />
+      ) : picking ? (
+        <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} />
+      ) : null}
+      {(invites && adding) || (picking && signature) ? null : toastEl}
     </FriendInviteContext.Provider>
   );
 }

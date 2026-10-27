@@ -57,7 +57,7 @@ tree, 2026-10-27: **Yellow**, with no substantive design gap. Every open item is
    function. `setCommander` adds `isGameCard` and sets the flag in the same transaction while it is null.
    `skipFacePrompt`/`facePromptDone` with an SQL test.
 
-1b. **Backend: the reads and actions.**
+1b. **Backend: the reads and actions.** *(Folded into PR 2 on 2026-10-27, where its caller is: together they come to about 18 files, under the limit, so no action ships without a consumer.)*
    - `searchFaceCards(query)`: every game card, type line, printing count, 12 hits.
    - `listFacePrintings(oracleId)`: printings with an art crop, usual art first, then newest set, with set name,
      code, collector number and full-card image.
@@ -67,7 +67,7 @@ tree, 2026-10-27: **Yellow**, with no substantive design gap. Every open item is
 
    The actions have no caller until PR 2 and 3. That is planned, and it is why they land with a probe (which also
    covers 1a's write).
-2. **The picker.** `CommanderPicker` with the switch on draws the search over any card (type line, N printings ›),
+2. **The picker (with 1b).** `CommanderPicker` with the switch on draws the search over any card (type line, N printings ›),
    then a second screen: face preview, printing tiles from the printing picker's tile anatomy, set search over 12,
    Usual art first, and Shown now plus the note for P8. One press saves (`setCommanderAction(oracleId, printingId)`)
    and closes. The label sweep goes on /friends' head. Covers P1 to P8 at 390 and D1 to D2 at 1300.

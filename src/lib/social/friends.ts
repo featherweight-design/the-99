@@ -18,7 +18,15 @@ import {
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export type OwnProfile = { publicId: string; displayName: string; commander: ProfileCommander | null };
+/**
+ * The player's own face, with the pick behind it (avatar handoff G2): the printing they chose, or null for the usual
+ * art, and whether that pick is no longer drawn (`printingGone`, P8). Derived from the SAME join the art takes
+ * (`faceJoin`), so the picker's note and the face friends see cannot disagree. Only the own read carries these; a
+ * friend's read never learns what was picked, only the art.
+ */
+export type OwnCommander = ProfileCommander & { printingId: string | null; printingGone: boolean };
+
+export type OwnProfile = { publicId: string; displayName: string; commander: OwnCommander | null };
 
 /**
  * The viewer's profile, created on first use with the name the caller offers (the Clerk first name,
@@ -29,12 +37,23 @@ export async function ensureProfile(viewerId: string, offeredName: unknown): Pro
   const displayName = cleanDisplayName(offeredName) ?? "Player";
   await db.insert(socialProfiles).values({ userId: viewerId, displayName }).onConflictDoNothing();
   const [row] = await db
-    .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName, ...commanderColumns })
+    .select({
+      publicId: socialProfiles.publicId,
+      displayName: socialProfiles.displayName,
+      ...commanderColumns,
+      printingId: socialProfiles.commanderPrintingId,
+      printingGone: sql<boolean>`(${socialProfiles.commanderPrintingId} is not null and ${facePrinting.artCropUri} is null)`,
+    })
     .from(socialProfiles)
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .leftJoin(facePrinting, faceJoin)
     .where(eq(socialProfiles.userId, viewerId));
-  return { publicId: row.publicId, displayName: row.displayName, commander: toCommander(row) };
+  const face = toCommander(row);
+  return {
+    publicId: row.publicId,
+    displayName: row.displayName,
+    commander: face && { ...face, printingId: row.printingId, printingGone: Boolean(row.printingGone) },
+  };
 }
 
 /**

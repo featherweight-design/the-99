@@ -17,7 +17,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { ensureSenderProfile } from "./sender-profile";
-import { socialFriendsEnabled } from "../../lib/social/flag";
+import { signatureCardEnabled, socialFriendsEnabled } from "../../lib/social/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import {
   createInvite, declineInvite, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
@@ -27,7 +27,11 @@ import { addMembers, createPod, deletePod, leavePod, removeMember, renamePod, ty
 import { shareSparesWith } from "../../lib/social/spares";
 import { cleanDisplayName, cleanPodName } from "../../lib/social/rules";
 import { invitePath, isInviteToken, originFrom } from "../../lib/social/client-rules";
-import { listOwnDeckCommanders, searchFaceCommanders, type CommanderTile } from "../../lib/decks/commander-picker";
+import {
+  listFacePrintings, listOwnDeckCommanders, listOwnDeckFaces, searchFaceCards, searchFaceCommanders,
+  type CommanderTile, type FaceCardHit, type FacePrintings, type FaceTile,
+} from "../../lib/decks/commander-picker";
+import { isUuid } from "../../lib/social/rules";
 
 type Off = { ok: false; reason: "off" };
 const OFF: Off = { ok: false, reason: "off" };
@@ -86,6 +90,44 @@ export async function searchFaceCommandersAction(query: unknown): Promise<Picker
   const userId = await socialReader();
   if (!userId) return OFF;
   return { ok: true, tiles: await searchFaceCommanders(query) };
+}
+
+// --- The signature card (`SIGNATURE_CARD_ENABLED`, plan `2026-10-27-signature-card.md`) -----------------------------
+// Each decides the switch for the reader, as the rest of this file decides `SOCIAL_FRIENDS_ENABLED` (it needs it). A
+// pick is saved by `setCommanderAction` above, with the printing the screen offered.
+
+/** The signed-in reader, when their signature card switch (and so their friends switch) is on; null otherwise. */
+async function signatureReader(): Promise<{ userId: string; env: NodeJS.ProcessEnv } | null> {
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  return signatureCardEnabled(env) ? { userId, env } : null;
+}
+
+export type FaceDeckTilesOutcome = { ok: true; tiles: FaceTile[] } | Off;
+
+/** The deck row, each lead in its deck's own printing (call 2). A read, so nothing revalidates. */
+export async function listDeckFacesAction(): Promise<FaceDeckTilesOutcome> {
+  const reader = await signatureReader();
+  if (!reader) return OFF;
+  return { ok: true, tiles: await listOwnDeckFaces(reader.userId, reader.env) };
+}
+
+export type FaceSearchOutcome = { ok: true; hits: FaceCardHit[] } | Off;
+
+/** Any game card by name, with its type line and printing count (call 2, G3). Too short a query finds nothing. */
+export async function searchFaceCardsAction(query: unknown): Promise<FaceSearchOutcome> {
+  if (!(await signatureReader())) return OFF;
+  return { ok: true, hits: await searchFaceCards(query) };
+}
+
+export type FacePrintingsOutcome = { ok: true; card: FacePrintings } | Off | { ok: false; reason: "noCard" };
+
+/** A card's printings screen (call 2, G3). `noCard`: not a uuid, not in the catalog, or not a game card. */
+export async function listFacePrintingsAction(oracleId: unknown): Promise<FacePrintingsOutcome> {
+  if (!(await signatureReader())) return OFF;
+  if (!isUuid(oracleId)) return { ok: false, reason: "noCard" };
+  const card = await listFacePrintings(oracleId);
+  return card ? { ok: true, card } : { ok: false, reason: "noCard" };
 }
 
 // --- Friend links ----------------------------------------------------------------------------------

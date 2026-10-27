@@ -30,6 +30,9 @@ const m = vi.hoisted(() => ({
   shareSparesWith: vi.fn(),
   listOwnDeckCommanders: vi.fn(),
   searchFaceCommanders: vi.fn(),
+  listOwnDeckFaces: vi.fn(),
+  searchFaceCards: vi.fn(),
+  listFacePrintings: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
@@ -50,6 +53,7 @@ vi.mock("../../lib/social/pods", () => ({
 vi.mock("../../lib/social/spares", () => ({ shareSparesWith: m.shareSparesWith }));
 vi.mock("../../lib/decks/commander-picker", () => ({
   listOwnDeckCommanders: m.listOwnDeckCommanders, searchFaceCommanders: m.searchFaceCommanders,
+  listOwnDeckFaces: m.listOwnDeckFaces, searchFaceCards: m.searchFaceCards, listFacePrintings: m.listFacePrintings,
 }));
 
 import * as actions from "./actions";
@@ -92,6 +96,9 @@ describe("the switch", () => {
     ["shareSparesWithAction", () => actions.shareSparesWithAction(POD, true)],
     ["listDeckCommandersAction", () => actions.listDeckCommandersAction()],
     ["searchFaceCommandersAction", () => actions.searchFaceCommandersAction("krenko")],
+    ["listDeckFacesAction", () => actions.listDeckFacesAction()],
+    ["searchFaceCardsAction", () => actions.searchFaceCardsAction("plains")],
+    ["listFacePrintingsAction", () => actions.listFacePrintingsAction(FRIEND)],
   ];
 
   it("covers every exported action", () => {
@@ -298,5 +305,44 @@ describe("the picker's reads (E2)", () => {
     m.searchFaceCommanders.mockResolvedValue([]);
     expect(await actions.searchFaceCommandersAction(42)).toEqual({ ok: true, tiles: [] });
     expect(m.searchFaceCommanders).toHaveBeenCalledWith(42);
+  });
+});
+
+describe("the signature card (SIGNATURE_CARD_ENABLED)", () => {
+  const SIGNATURE = { ...ON, SIGNATURE_CARD_ENABLED: "true" };
+  const CARD = "33333333-3333-4333-8333-333333333333";
+  const signatureCalls: [string, () => Promise<unknown>][] = [
+    ["listDeckFacesAction", () => actions.listDeckFacesAction()],
+    ["searchFaceCardsAction", () => actions.searchFaceCardsAction("plains")],
+    ["listFacePrintingsAction", () => actions.listFacePrintingsAction(CARD)],
+  ];
+
+  it.each(signatureCalls)("%s refuses as off with friends on but the signature card off, reading nothing", async (_n, call) => {
+    m.requestSwitchEnv.mockResolvedValue(ON);
+    expect(await call()).toEqual({ ok: false, reason: "off" });
+    for (const fn of [m.listOwnDeckFaces, m.searchFaceCards, m.listFacePrintings]) expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("reads the deck row for the session's reader, under the reader's switches", async () => {
+    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
+    m.listOwnDeckFaces.mockResolvedValue([]);
+    expect(await actions.listDeckFacesAction()).toEqual({ ok: true, tiles: [] });
+    expect(m.listOwnDeckFaces).toHaveBeenCalledWith("user_1", SIGNATURE);
+  });
+
+  it("hands the search its query as given", async () => {
+    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
+    m.searchFaceCards.mockResolvedValue([]);
+    expect(await actions.searchFaceCardsAction(42)).toEqual({ ok: true, hits: [] });
+    expect(m.searchFaceCards).toHaveBeenCalledWith(42);
+  });
+
+  it("refuses a printings screen for a malformed id without reading, and one the catalog has not got", async () => {
+    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
+    expect(await actions.listFacePrintingsAction("nope")).toEqual({ ok: false, reason: "noCard" });
+    expect(m.listFacePrintings).not.toHaveBeenCalled();
+    m.listFacePrintings.mockResolvedValue(null);
+    expect(await actions.listFacePrintingsAction(CARD)).toEqual({ ok: false, reason: "noCard" });
+    expect(m.listFacePrintings).toHaveBeenCalledWith(CARD);
   });
 });

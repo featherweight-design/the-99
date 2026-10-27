@@ -1,0 +1,22 @@
+{
+  "feature": "Signature card (handoff design_handoff_the99_avatar, R1b; plan 2026-10-27-signature-card.md): /friends with no face yet, and the picker it opens (P1)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SIGNATURE_CARD_ENABLED on, and the audit account with a profile, decks of its own and NO face. Run it before signature-card.json, which needs a face. Read-only: it opens the picker and presses nothing in it.",
+  "out": "contact-sheets/signature-card-empty",
+  "rows": [
+    {
+      "id": "head-empty",
+      "label": "/friends head with no face: Choose your signature card (call 1)",
+      "view": "src/components/social/friends-head.tsx",
+      "steps": [{ "goto": "/friends", "wait": "h1:visible", "settle": 2500 }]
+    },
+    {
+      "id": "picker-decks",
+      "label": "The picker opened from the head: Your signature card, From your decks in each deck's printing (P1)",
+      "view": "src/components/social/signature-picker.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "h1:visible", "settle": 2500 },
+        { "clickRole": "button", "name": "^Choose your signature card$", "waitDialog": "Your signature card", "settle": 2500 }
+      ]
+    }
+  ]
+}

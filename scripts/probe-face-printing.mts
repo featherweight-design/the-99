@@ -37,6 +37,7 @@ async function main() {
   const { setCommander } = await import("../src/lib/social/commander");
   const requests = await import("../src/lib/social/spare-requests");
   const prompt = await import("../src/lib/social/face-prompt");
+  const picker = await import("../src/lib/decks/commander-picker");
   const { NON_GAME_LAYOUTS } = await import("../src/lib/cards/game-card");
 
   const FIXTURE_PRINTING = "00000000-0000-4000-8000-0000000fa0ce";
@@ -93,6 +94,57 @@ async function main() {
     check("a printing of the card is accepted", picked.ok, JSON.stringify(picked));
     check("a friend's read draws the chosen printing's art", (await seen())?.artCropUri === PICK_ART, String((await seen())?.artCropUri));
     check("so does the player's own read", (await friends.ensureProfile(A, "x")).commander?.artCropUri === PICK_ART);
+    const own = (await friends.ensureProfile(A, "x")).commander;
+    check("the own read returns the pick behind the face", own?.printingId === FIXTURE_PRINTING && own.printingGone === false, JSON.stringify(own));
+
+    // 2b. The picker's reads (G3).
+    const hits = await picker.searchFaceCards(land.name);
+    const hit = hits.find((h) => h.oracleId === land.oracle_id);
+    const { rows: counted } = await db.execute<{ n: number }>(sql`
+      select count(*)::int as n from printings where oracle_id = ${land.oracle_id}::uuid and art_crop_uri is not null`);
+    check("the search finds a card that cannot lead a deck", hit !== undefined, JSON.stringify(hits.map((h) => h.name)));
+    check("with its type line and its count of printings with art", hit?.typeLine.startsWith("Basic Land") === true && hit.printings === counted[0].n,
+      `${hit?.typeLine} ${hit?.printings} vs ${counted[0].n}`);
+    if (nonGame[0]) {
+      const { rows: ng } = await db.execute<{ name: string }>(sql`select name from cards where oracle_id = ${nonGame[0].oracle_id}::uuid`);
+      check("the search never offers a card that is not a game card", !(await picker.searchFaceCards(ng[0].name)).some((h) => h.oracleId === nonGame[0].oracle_id));
+      check("nor its printings", (await picker.listFacePrintings(nonGame[0].oracle_id)) === null);
+    }
+    const screen = await picker.listFacePrintings(land.oracle_id);
+    check("the printings screen leads with the card's usual art", screen?.usual.artCropUri === land.art, String(screen?.usual.artCropUri));
+    check("and lists every printing with art, the pick among them", screen?.printings.length === counted[0].n && screen.printings.some((x) => x.scryfallId === FIXTURE_PRINTING),
+      `${screen?.printings.length} vs ${counted[0].n}`);
+    const { rows: order } = await db.execute<{ id: string }>(sql`
+      select p.scryfall_id::text as id from printings p left join sets s on s.code = p.set_code
+       where p.oracle_id = ${land.oracle_id}::uuid and p.art_crop_uri is not null
+       order by s.released_at desc nulls last, p.collector_number asc`);
+    check("newest set first", JSON.stringify(screen?.printings.map((x) => x.scryfallId)) === JSON.stringify(order.map((r) => r.id)));
+
+    // 2c. A pick whose printing lost its crop: friends see the usual art, and only the own read says so (P8).
+    await db.execute(sql`update printings set art_crop_uri = null where scryfall_id = ${FIXTURE_PRINTING}::uuid`);
+    const lost = (await friends.ensureProfile(A, "x")).commander;
+    check("a pick that lost its crop reads as gone, drawn in the usual art", lost?.printingGone === true && lost.artCropUri === land.art, JSON.stringify(lost));
+    await db.execute(sql`update printings set art_crop_uri = ${PICK_ART} where scryfall_id = ${FIXTURE_PRINTING}::uuid`);
+
+    // 2d. The deck row: a lead in the printing its deck shows (the Collection's, with no deck pick).
+    const { rows: leads } = await db.execute<{ oracle_id: string; id: string; set_code: string; num: string; art: string }>(sql`
+      select c.oracle_id::text, p.scryfall_id::text as id, p.set_code, p.collector_number as num, p.art_crop_uri as art
+        from cards c join printings p on p.oracle_id = c.oracle_id
+       where c.type_line like 'Legendary Creature%' and c.commander_legal and p.art_crop_uri is not null
+         and p.art_crop_uri <> c.art_crop_uri
+       order by p.image_uri is null desc, c.name
+       limit 1`);
+    if (leads[0]) {
+      const L = leads[0];
+      await db.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code, collector_number)
+        values (${A}, ${L.oracle_id}::uuid, 1, ${L.set_code}, ${L.num})`);
+      await db.execute(sql`insert into decks (user_id, name, commander_oracle_id) values (${A}, ${`probe ${run}`}, ${L.oracle_id}::uuid)`);
+      const tiles = await picker.listOwnDeckFaces(A, process.env);
+      const tile = tiles.find((x) => x.oracleId === L.oracle_id);
+      // A printing with no full image first: the deck's own art then falls back to another printing's, and the tile
+      // must still draw the crop the face will.
+      check("the deck row saves the printing its deck holds, drawn in that printing's own crop", tile?.printingId === L.id && tile.artCropUri === L.art, JSON.stringify(tile));
+    } else console.log("skip  no legendary creature with a second art in this catalog");
 
     // 4. The raw-SQL readers take the same chain.
     await db.execute(sql`insert into spare_requests (asker_user_id, holder_user_id, oracle_id, status) values (${A}, ${B}, ${land.oracle_id}::uuid, 'open')`);
@@ -135,6 +187,8 @@ async function main() {
     await db.execute(sql`delete from friend_links where user_id in (${A}, ${B})`);
     await db.execute(sql`delete from social_profiles where user_id in (${A}, ${B})`);
     await db.execute(sql`delete from user_prefs where user_id in (${A}, ${B})`);
+    await db.execute(sql`delete from decks where user_id in (${A}, ${B})`);
+    await db.execute(sql`delete from collection_items where user_id in (${A}, ${B})`);
     await db.execute(sql`delete from printings where scryfall_id = ${FIXTURE_PRINTING}::uuid`);
     // Last: the friend_links writes above fire user_data_touch, which upserts a stamp row for each account.
     await db.execute(sql`delete from user_data_stamps where user_id in (${A}, ${B})`);

@@ -6,11 +6,11 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { socialProfiles } from "../../db/schema";
 import { listFriends, type Friend } from "./access";
-import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander } from "./commander";
-import { listOpenInvites, type OpenInvite, type OwnProfile } from "./friends";
+import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
+import { listOpenInvites, type OpenInvite } from "./friends";
 
 /** What Home's Friends section draws. `you` is null until the viewer's profile exists. */
-export type HomeFriends = { you: Omit<OwnProfile, "publicId"> | null; friends: Friend[]; links: OpenInvite[] };
+export type HomeFriends = { you: { displayName: string; commander: ProfileCommander | null } | null; friends: Friend[]; links: OpenInvite[] };
 
 /**
  * The viewer's own face, their friends and their open links, from ONE snapshot, as /friends reads them. Read-only, unlike `ensureProfile`: Home never creates a profile, so a viewer who has none draws
