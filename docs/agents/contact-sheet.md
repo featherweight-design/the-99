@@ -69,3 +69,11 @@ channel; and no headless Chromium ever reports `default`, so `notificationPermis
 script, and a row photographed under it says so in its label. `waitDialog: "<accessible name>"` waits for a sheet
 portalled to `<body>` (outside `<main>`) by its name, so the shell's account sheet cannot stand in for it.
 `push-settings.json` uses all of them.
+
+## `hold`: photographing a loading state
+
+- **`{ "hold": "<url glob>", "ms": 6000 }`** delays every request matching the glob by `ms`, from that step on, and
+  then lets it through. A loading state that Slow 4G alone races past stays up long enough to photograph, and the real
+  answer still arrives. `{ "unhold": "<url glob>" }` removes it, as `"throttle": "off"` ends a throttle; both last for
+  the page, so the row after a held one takes them away. `sheet-loader-fill.json` holds the stand-ins read (a server
+  action POST to the deck's own path).

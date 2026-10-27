@@ -22,6 +22,7 @@ import { HoverPreviewProvider } from "../decks/hover-preview";
 import { ModalChrome } from "../decks/receipt-modal";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { Crown } from "../ui/crown";
+import { SheetLoading } from "../ui/sheet-loading";
 import { ArtLayer } from "../ui/art-layer";
 
 const copy = swapToolsCopy.fits;
@@ -402,19 +403,7 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
 
         {read?.staple ? <FitsStapleNote name={name} role={role} /> : null}
 
-        {load.state === "loading" ? (
-          <div
-            role="status"
-            className="flex flex-col items-center justify-center text-center min-h-[230px] px-[20px] py-[24px] rounded-[10px]"
-            style={{ background: "radial-gradient(380px 200px at 50% 70%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%)" }}
-          >
-            <Crown pulse />
-            <h3 className="m-0 mt-[20px] w-full font-display font-bold text-[18px] leading-[1.25] [text-wrap:balance]" style={{ color: "var(--fg)" }}>
-              {copy.loadingHeading}
-            </h3>
-            <p className="m-0 mt-[8px] font-mono text-[12px]" style={{ color: "var(--fg-faint)" }}>{copy.loadingStatus}</p>
-          </div>
-        ) : null}
+        {load.state === "loading" ? <SheetLoading heading={copy.loadingHeading} status={copy.loadingStatus} compact /> : null}
 
         {load.state === "failed" ? (
           <div

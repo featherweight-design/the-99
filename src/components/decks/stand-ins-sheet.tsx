@@ -28,6 +28,7 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
 import { CardDetailTrigger, useCardDetail, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
 import { Crown } from "../ui/crown";
+import { SheetLoading } from "../ui/sheet-loading";
 import { PendingLabel } from "../ui/pending-mark";
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { BuyTag } from "./buy-tag";
@@ -662,6 +663,8 @@ export function StandInsSheet({
       closeLabel={hasSpares ? spareCopy.close : copy.closeAria}
       onClose={onClose}
       width={640}
+      // Desktop stands at its cap, loading and loaded, so the answer landing never resizes the sheet (Hugh, 2026-10-27).
+      stand
       // Fixed: a label that moved when the spares landed would re-register the sheet under an open card.
       backLabel={copy.backLabel}
       // Named while the title waits, or the dialog would open with no accessible name.
@@ -703,21 +706,7 @@ export function StandInsSheet({
         {/* Friends first (O1): the copy a friend could hand over comes before any card to buy instead. */}
         {settled && hasSpares ? <FriendSpareSection spares={spares} card={card} /> : null}
 
-        {!settled ? (
-          <div
-            role="status"
-            className="flex flex-col items-center justify-center text-center min-h-[250px] px-[20px] py-[28px] rounded-[10px]"
-            style={{ background: "radial-gradient(420px 220px at 50% 70%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%)" }}
-          >
-            <Crown pulse />
-            <h3 className="m-0 mt-[20px] w-full font-display font-bold text-[18px] leading-[1.25] [text-wrap:balance]" style={{ color: "var(--fg)" }}>
-              {copy.loadingHeading}
-            </h3>
-            {status ? (
-              <p className="m-0 mt-[8px] font-mono text-[12px]" style={{ color: "var(--fg-faint)" }}>{status}</p>
-            ) : null}
-          </div>
-        ) : null}
+        {!settled ? <SheetLoading heading={copy.loadingHeading} status={status} /> : null}
 
         {settled && load.state === "failed" ? (
           <div
