@@ -53,7 +53,9 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
   const heldLead = useHeldLead();
   const displaced = displaceLead(served, heldLead?.key ?? null);
   // A row hidden this visit (✕) leaves the list and, while unseen, the count, before the refresh redraws both.
-  const dismissed = useFeedDismiss(() => document.getElementById(HOME_HEADING_ID));
+  // The last row's ✕ lands on the section's own head while the section stays (Copilot round 4); Home's heading only when
+  // it leaves (the lead alone left standing).
+  const dismissed = useFeedDismiss(() => document.getElementById("home-whats-new") ?? document.getElementById(HOME_HEADING_ID));
   const feed = withoutHidden(displaced, dismissed.hidden, heldLead?.gone ?? null);
   const chosen = feed.chosen;
   const count = chosen && feed.unseen > 0 ? feed.unseen : 0;
@@ -62,7 +64,7 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
 
   return (
     <section aria-labelledby="home-whats-new" data-dismiss-scope data-whats-new={chosen ? (feed.items.length > 0 ? "items" : "quiet") : "opt-in"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
-      <h2 id="home-whats-new" className={HEAD}>
+      <h2 id="home-whats-new" tabIndex={-1} className={HEAD}>
         {c.head}
         {count > 0 && <em className="tracking-[.14em] text-[color:var(--fg-locked)] not-italic lowercase">{c.newCount(count)}</em>}
         {chosen && (
