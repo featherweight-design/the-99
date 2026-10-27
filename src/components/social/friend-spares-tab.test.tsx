@@ -58,9 +58,12 @@ beforeEach(() => {
   read = READ;
   window.history.replaceState(null, "", "/friends/x");
 });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   vi.unstubAllGlobals();
+  // A sheet's close goes back through history (the dialog's own entry); let that POP land here, before the next test
+  // sets its address, or it restores an earlier test's `?spare=` into the next one.
+  await new Promise((r) => setTimeout(r, 0));
 });
 
 const AS_OF = new Date("2026-10-26T00:00:00Z");

@@ -252,6 +252,7 @@ function SpareLanding({ asks, find }: {
     const found = find(asks.spare);
     if (!found) {
       // A spare gone since: the toast, and no modal.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the address is read only after mount, and decides the toast
       if (asks.goneName) setToast({ id: 1, text: p.spares.gone(asks.friend.displayName, asks.goneName) });
       return;
     }
