@@ -131,8 +131,10 @@ export function LeadStory({
           </span>
         )}
       </div>
-      <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
-        <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${onDismiss && !receipt ? "pr-[24px] md:pr-[16px]" : ""} ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
+      <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className={`relative flex min-w-0 flex-1 flex-col gap-[6px] ${onDismiss && !receipt ? "pr-[28px] md:pr-[20px]" : ""}`}>
+        {/* The ✕'s 44px coarse hit reaches 44px in from the story's edge: 28px past its 16px padding on a phone, 20px past
+            its 24px from desktop. The whole column keeps clear, since a long title runs beside it. */}
+        <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
           <span className="min-w-0">{receipt ? receipt.kind : feedCopy.home.kicker[item.kind]}</span>
           <small className="ml-auto flex-none whitespace-nowrap text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
         </p>

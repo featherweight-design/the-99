@@ -215,8 +215,10 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
       className="relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px]"
     >
       <Picture item={item} face={face} />
-      <div className="flex min-w-0 flex-col gap-[3px]">
-        <div className={`flex min-w-0 items-center gap-[7px] ${onDismiss ? "pr-[30px]" : ""}`}>
+      {/* With a ✕ the whole text column keeps clear of its 44px coarse hit (row padding 14 + 30), not the kicker alone: a
+          long title's first line runs beside it. From desktop the right column holds the reserve instead. */}
+      <div className={`flex min-w-0 flex-col gap-[3px] ${onDismiss ? "pr-[30px] md:pr-0" : ""}`}>
+        <div className="flex min-w-0 items-center gap-[7px]">
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
           <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : c.kicker[item.kind]}</span>
           <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)] md:hidden">{feedAge(item.at, now)}</small>

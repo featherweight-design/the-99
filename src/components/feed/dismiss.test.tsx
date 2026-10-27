@@ -55,11 +55,22 @@ describe("the ✕ itself", () => {
     expect(onDismiss).toHaveBeenCalledWith(x);
   });
 
-  it("is not drawn without a dismiss, and keeps the kicker and the desktop column clear of it when drawn", () => {
+  it("is not drawn without a dismiss, and keeps the whole text column and the desktop column clear of it when drawn", () => {
     const { container, rerender } = render(<ul><FeedItemRow item={view(1)} now={NOW} /></ul>);
     expect(container.querySelector("[data-feed-dismiss]")).toBeNull();
     rerender(<ul><FeedItemRow item={view(1)} now={NOW} onDismiss={() => {}} /></ul>);
     expect(container.querySelector("[data-feed-age-desktop]")!.parentElement!.className).toMatch(/md:pr-\[34px\]/);
+    // The title's own column, not the kicker alone (Copilot round 3): a long title's first line runs beside the ✕.
+    const column = screen.getByText(titleOf(1)).parentElement!.className.split(/\s+/);
+    expect(column).toContain("pr-[30px]");
+    expect(column).toContain("md:pr-0");
+  });
+
+  it("keeps the lead's whole text column clear of its ✕", () => {
+    render(<LeadSlot lead={view(9, { key: "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f" })} now={NOW} />);
+    const lead = screen.getByRole("heading", { level: 3 }).parentElement!.className.split(/\s+/);
+    expect(lead).toContain("pr-[28px]");
+    expect(lead).toContain("md:pr-[20px]");
   });
 });
 
@@ -171,5 +182,12 @@ describe("Waiting on you", () => {
     await act(async () => { fireEvent.click(within(screen.getAllByTestId("waiting-row")[0]).getByRole("button", { name: /^Hide/ })); });
     expect(m.dismiss).toHaveBeenLastCalledWith("ask:bbbbbbbb-1d2a-4c3b-8e5f-6a7b8c9d0e1f");
     expect(screen.queryAllByTestId("waiting-row")).toHaveLength(0);
+  });
+
+  it("keeps each row's whole text column clear of its ✕ on a phone", () => {
+    render(<WaitingOnYou rows={[ask, trade]} now={NOW_D} />);
+    for (const title of [feedCopy.home.title.spareRequest("Ana", "Sol Ring"), w.tradeTitle("Colin", "Ghalta, Primal Hunger")]) {
+      expect(screen.getByText(title).parentElement!.className.split(/\s+/)).toContain("pr-[30px]");
+    }
   });
 });

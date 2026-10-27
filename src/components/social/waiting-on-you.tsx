@@ -148,8 +148,8 @@ function AskRow({ row, now, busy, locked, onAnswer, onDismiss }: {
   return (
     <li data-testid="waiting-row" data-kind="spare-request" data-unseen="" className={ASK_ROW}>
       <Picture imageUri={ask.card.imageUri} friend={ask.asker} className="row-span-2 self-start md:row-span-1 md:self-center" />
-      <div className="flex min-w-0 flex-col gap-[3px]">
-        <p className="m-0 flex min-w-0 items-center gap-[7px] pr-[30px]">
+      <div className="flex min-w-0 flex-col gap-[3px] pr-[30px] md:pr-0">
+        <p className="m-0 flex min-w-0 items-center gap-[7px]">
           <Unseen />
           <span className={`${KIND} text-[color:var(--accent-text)]`}>{w.kind["spare-request"]}</span>
           <small className={TIME}>{ago(row.createdAt, now)}</small>
@@ -203,8 +203,8 @@ function TradeRow({ row: r, now, onDismiss }: { row: TradeMatchRow; now: Date; o
       className={`relative grid grid-cols-[46px_minmax(0,1fr)] gap-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-[14px] md:px-[16px] ${ROW}`}
     >
       <Picture imageUri={r.card.imageUri} friend={r.friend} />
-      <div className="flex min-w-0 flex-col gap-[3px]">
-        <p className="m-0 flex min-w-0 items-center gap-[7px] pr-[30px]">
+      <div className="flex min-w-0 flex-col gap-[3px] pr-[30px] md:pr-0">
+        <p className="m-0 flex min-w-0 items-center gap-[7px]">
           {r.unseen && <Unseen />}
           <span className={`${KIND} text-[color:var(--fg-faint)]`}>{w.kind[r.kind]}</span>
           <small className={`${TIME} md:hidden`}>{ago(r.createdAt, now)}</small>
