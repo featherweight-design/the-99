@@ -97,7 +97,8 @@ describe("the pinned Node version", () => {
   it("every job that runs node sets it up from .nvmrc, never the runner's own", () => {
     const offenders = workflows.flatMap((w) =>
       jobsOf(w.text)
-        .filter((j) => runsNode(j.body) && !/- uses: actions\/setup-node@/.test(j.body))
+        // Only an ACTIVE step counts: `setupNodeSteps` matches a step line, never one commented out.
+        .filter((j) => runsNode(j.body) && setupNodeSteps(j.body).length === 0)
         .map((j) => `${w.file}:${j.name}`),
     );
     expect(offenders).toEqual([]);
