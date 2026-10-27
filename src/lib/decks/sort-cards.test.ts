@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { compareDeckCards, deckCardComparator, type SortableCard } from "./sort-cards";
+import type { compareDeckCards} from "./sort-cards";
+import { deckCardComparator, type SortableCard } from "./sort-cards";
 import type { PriceFact } from "./price";
 
 const NEWEST = new Date("2026-09-01T09:00:00.000Z");

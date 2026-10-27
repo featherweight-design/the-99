@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { NeonDatabase } from "drizzle-orm/neon-serverless";
-import * as schema from "../../db/schema";
+import type * as schema from "../../db/schema";
 import { catalogBuilds } from "../../db/schema";
 import { fingerprintKey, readCatalogFingerprint } from "./fingerprint";
 

@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildFitsReadPrompt, fitsReadCandidates, FITS_READ_SENTENCE_MAX_CHARS, FITS_READ_TOP, validFitsRead,
-  type FitsDeckBlock, type FitsReadInputs, type FitsReadReply,
+  type FitsReadInputs, type FitsReadReply,
 } from "./fits-read";
 import { leadingThemes, planText } from "./fits-read-load";
 import type { FitDeck, FitsRead } from "./fits";
 import type { Job } from "../labels/types";
-import { id, SUBJECT, KRENKO, KRATOS, card, deck, goblins, kratos, omnath, subject, inputs } from "./fits-read.fixture";
+import { id, SUBJECT, KRENKO, card, deck, goblins, kratos, omnath, subject, inputs } from "./fits-read.fixture";
 
 const pick = (over: Partial<FitsReadReply["picks"][number]> = {}): FitsReadReply["picks"][number] => ({
   deck: "D1", sentence: "Every loyalty turn adds a body for {C1} to double.", cut: "C3", cites: [{ key: "C1", job: "tokens" }], ...over,

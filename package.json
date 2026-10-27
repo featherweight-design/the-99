@@ -379,6 +379,8 @@
   },
   "devDependencies": {
     "@clerk/testing": "^2.2.19",
+    "@fwd-stack/eslint-config": "github:HartiganHM/fwd-stack#61b1e22a47b908f1401dd26c22ded37d99a9fd2e&path:/packages/eslint-config",
+    "@fwd-stack/tsconfig": "github:HartiganHM/fwd-stack#path:/packages/tsconfig",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",

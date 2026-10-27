@@ -8,7 +8,7 @@ import {
   overlapCount,
   thingsToGo,
 } from "./upgrade-view";
-import type { ComboRef, FlagSource } from "../profile/types";
+import type { ComboRef } from "../profile/types";
 
 const combo = (a: string, b: string): ComboRef => ({
   variantId: `${a}-${b}`,

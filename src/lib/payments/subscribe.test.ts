@@ -16,7 +16,6 @@ const db = vi.hoisted(() => ({
 
 vi.mock("../../db", async () => {
   const schema = await vi.importActual<typeof import("../../db/schema")>("../../db/schema");
-  const live = (l: Lot) => l.revokedUnits < l.units && (l.expiresAt === null || l.expiresAt.getTime() > db.now.getTime());
   const insert = (table: unknown) => ({
     values: (v: Record<string, unknown>) => {
       const run = (): unknown[] => {

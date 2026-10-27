@@ -23,7 +23,6 @@ import { STEP_BODY, STEP_FRAME } from "./review-parts";
 import { effectivePick, followUpShown, syncNext, syncNote } from "./sync-choice-view";
 import { syncBar, syncFigures, type SyncConflictsHandle, type SyncReviewControls } from "./sync-review";
 import { isFirstImport, plainSyncPick, type SyncAnswers, type SyncPick } from "../../lib/collection/sync";
-import { GhostButton } from "../ui/button";
 import { ConfirmModal } from "./confirm-modal";
 import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";

@@ -14,7 +14,6 @@ vi.mock("next/navigation", async (importOriginal) => ({
 const { CreatePreFilled } = await import("./create-pre-filled");
 
 const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
-const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const base = { oracleId: COMMANDER, name: "Gishath, Sun's Avatar", typeLine: "Legendary Creature", colorIdentity: ["R", "G", "W"], imageUri: null };
 const RESULTS = "/decks/new/choose?t=dinosaurs&b=150&v=results";
 const handOff = (drawBlock = true) => ({

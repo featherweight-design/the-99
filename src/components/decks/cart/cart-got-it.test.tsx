@@ -166,7 +166,7 @@ describe("CartGotItProvider", () => {
     const held = useCartGotIt()!.held.get(ORACLE);
     return <output data-testid="held">{held ? `${held.added}|${[...held.deckIds].sort().join(",")}` : "none"}</output>;
   }
-  const oneDeck = (deckId: string, id: string): SelectedLine => ({
+  const oneDeck = (deckId: string, _id: string): SelectedLine => ({
     ...line, copies: 1, cents: 150, pricedCopies: 1, selectedRows: line.selectedRows.filter((r) => r.deckId === deckId),
   });
   function Press({ of, label }: { of: SelectedLine; label: string }) {

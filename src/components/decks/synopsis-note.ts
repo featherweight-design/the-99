@@ -1,4 +1,4 @@
-import { creditsCopy, monthName } from "../../lib/copy/credits";
+import { monthName } from "../../lib/copy/credits";
 import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";

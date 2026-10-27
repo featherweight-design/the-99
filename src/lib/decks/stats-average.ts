@@ -12,7 +12,7 @@
 
 import type { CompositionTargets } from "../profile/types";
 import type { JobTally } from "./job-tally";
-import { CARD_TYPES, CURVE_MAX, type CardType, type ManaCurve, type TypeCurve } from "./stats";
+import { CARD_TYPES, type CardType, type ManaCurve, type TypeCurve } from "./stats";
 
 export type AverageBasisOf = "commander" | "pair" | "identity" | "count" | "baseline";
 

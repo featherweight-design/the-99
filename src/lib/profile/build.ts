@@ -3,7 +3,6 @@ import { manaCurve, type CurveCard } from "../decks/stats";
 import { classifyRoles, LABEL_ROLE_TARGETS, ROLE_TARGETS, type Role } from "../recs/roles";
 import type { LabelTargetRole } from "../labels/role-sets";
 import type {
-  Bracket,
   BracketPopulation,
   CardRef,
   ComboRef,

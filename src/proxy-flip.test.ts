@@ -8,7 +8,8 @@
 // The same walk in a browser, against a server restarted with the switch on, is
 // `probe:about`'s flip walk.
 
-import { NextRequest, NextResponse } from "next/server";
+import type { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ABOUT_VERSION } from "./lib/copy/about";
 import { sheetCookieIsCurrent, sheetCookieValue } from "./lib/about/gate";

@@ -11,7 +11,6 @@
 // `unattributedNonland` and appears in no `sources` list.
 
 import { castFaceText, isLandFace } from "../cards/facet";
-import { frontFaceOracle } from "../recs/faces";
 import { activatedFinds, BASIC_TYPES, CONDITIONAL_GRANT, fetchFinds, PICKED_COLOR, sacrificesItself, searchFinds, type Finds, type LandText } from "../swaps/land";
 import type { RampKind } from "../labels/types";
 import { manaNeeds } from "../profile/build";

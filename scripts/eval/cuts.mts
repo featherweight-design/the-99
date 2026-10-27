@@ -20,7 +20,7 @@ const { values: args } = parseArgs({ options: { gishathOver: { type: "string", d
 if (!/^\d+$/.test(args.gishathOver ?? "")) throw new Error("--gishathOver must be a non-negative integer");
 
 import { connectStaging } from "./lib/staging.mjs";
-import { CUT_DECKS, GISHATH_DECK, loadCutTruth, pairedSwaps, type Head } from "./lib/cuts-truth.mjs";
+import { GISHATH_DECK, loadCutTruth, pairedSwaps, type Head } from "./lib/cuts-truth.mjs";
 // No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const db = await connectStaging();

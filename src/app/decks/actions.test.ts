@@ -1628,7 +1628,6 @@ const { cachedDeckProfile } = await import("../../lib/profile/load");
 const { pinAnalysisToVersion, requestProfileDeps } = await import("../../lib/profile/stored");
 const { requestSwitchEnv } = await import("../../lib/switches/request");
 const { pinSynopsisToVersion } = await import("../../lib/synopsis/pin");
-const { slotDeck } = await import("../../lib/bracket/slot");
 
 describe("commitDeckVersion", () => {
   beforeEach(() => {
