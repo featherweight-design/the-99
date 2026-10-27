@@ -1447,7 +1447,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/friends',
     opens: 'opens Add a friend',
     caption:
-      'The 99 is invite-only, so new players arrive through the people already in it. On Friends, press “Add a friend”, then “Invite someone new”. At the table, show an invite QR: they scan it, type their own email, and confirm it with a code. Or type their email here, and The 99 sends the invitation.\n\nOnce they make their account, you’re friends. Adding someone who already plays? Pick “They’re on The 99” and send a friend link: it uses no invite.',
+      'The 99 is invite-only, so new players arrive through the people already in it. On Friends, press “Add a friend”, then “Invite someone new”. At the table, show an invite QR: they scan it, type their own email, and confirm it with a code. Or type their email here, and The 99 sends the invitation.\n\nOnce they make their account, you’re friends. Adding someone who already plays? Pick “They’re on The 99” and send a friend link: it works once and uses no invite.',
     keys: [
       'An invite is used only when someone makes an account. One that isn’t used within 7 days comes back.',
       'An invite QR holds one invite for its 15 minutes, and gives it back if nobody uses it.',

@@ -28,7 +28,7 @@ export const inviteCopy = {
     /** (new, for /copy-review) */
     onTitle: "They’re on The 99",
     /** (new, for /copy-review) */
-    onBody: "Send a friend link, or show its QR code. Uses no invite.",
+    onBody: "Send a friend link, or show its QR code. It works once and uses no invite.",
     /** Card 1's title while its link is being made: the head press's shipped words. */
     onPending: "Making a link…",
     /** (new, for /copy-review) */
