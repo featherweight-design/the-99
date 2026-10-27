@@ -34,7 +34,7 @@ import { CommanderThumb } from "../ui/commander-thumb";
 import { HelpMeChooseDoor } from "../intake/help-me-choose-door";
 import { PreconDoor } from "./precons/precon-door";
 import { ArrivalOrder } from "../ui/arrival-queue";
-import { noteAppScroll } from "../../lib/ui/reveal";
+import { noteAppScroll, reveal } from "../../lib/ui/reveal";
 import { useDockClearance } from "../shell/dock-clearance";
 
 const copy = deckImportCopy.commander;
@@ -288,6 +288,7 @@ export function CreatePicker(props: CreatePickerProps) {
     if (pairing) {
       setPartnerId(oracleId);
       setPairingMode(false);
+      revealSlotRef.current = true;
       return;
     }
     // A partner belongs to the commander it was chosen for, so changing or
@@ -303,6 +304,7 @@ export function CreatePicker(props: CreatePickerProps) {
       setQuery("");
       revealRef.current = oracleId;
     }
+    if (picking) revealSlotRef.current = true;
   }
 
   const revealRef = useRef<string | null>(null);
@@ -313,6 +315,31 @@ export function CreatePicker(props: CreatePickerProps) {
     // The app's scroll, not the reader's (quick return).
     noteAppScroll();
     document.querySelector(`[data-picker-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "center" });
+  });
+
+  // A pick that draws the partner slot, or fills it, brings the slot into view when it is not. On a
+  // phone the slot sits in the scrolling flow above the list (partners handoff decision 20), so a
+  // commander picked far down the list drew "Add a partner" thousands of pixels above the window,
+  // where nothing said a partner could be added. Centered, so the name field above it shows too; the
+  // band ends at the dock, which covers the foot of the window. Desktop draws the slot in the sticky
+  // Selected sidebar and its phone copy has no box, so `reveal` does nothing there. Runs after the
+  // row reveal above, so the slot is where a pick from a search lands.
+  const revealSlotRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!revealSlotRef.current) return;
+    revealSlotRef.current = false;
+    const slot = document.querySelector("[data-partner-slot]");
+    if (!slot || slot.getClientRects().length === 0) return;
+    // A dock with no box (a desktop, where it is hidden) covers nothing.
+    const bottom = () => {
+      const dock = footerRef.current?.getBoundingClientRect();
+      return dock && dock.height > 0 ? dock.top : window.innerHeight;
+    };
+    // The page's scroll padding is the returned phone header's room, which `reveal` also keeps clear.
+    const top = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    const r = slot.getBoundingClientRect();
+    if (r.top >= top && r.bottom <= bottom()) return;
+    reveal(slot, "center", undefined, () => ({ top, bottom: bottom() }));
   });
 
   const canCreate =
@@ -511,7 +538,7 @@ export function CreatePicker(props: CreatePickerProps) {
               field — never in the dock, whose own comment says nothing else may
               live there or its height moves under a thumb. */}
           {selected && primaryAbility && (
-            <div className="md:hidden mb-[16px]">
+            <div data-partner-slot className="md:hidden mb-[16px]">
               <PartnerSlot
                 primaryName={commanderDisplayName(selected)}
                 ability={primaryAbility}
