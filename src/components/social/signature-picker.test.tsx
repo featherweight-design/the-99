@@ -112,7 +112,24 @@ describe("SignaturePicker", () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it("goes back to the search with the query standing", async () => {
+  it("cannot be closed while a save is in flight, and loads the printing tiles lazily", async () => {
+    a.searchFaceCardsAction.mockResolvedValue({ ok: true, hits: [TUTOR_HIT] });
+    a.listFacePrintingsAction.mockResolvedValue({ ok: true, card: TUTOR_PRINTINGS });
+    const onClose = vi.fn();
+    render(<SignaturePicker current={null} onSave={() => new Promise<boolean>(() => {})} onClose={onClose} />);
+    await type("tutor");
+    fireEvent.click(screen.getByRole("button", { name: s.printingsAria("Mystical Tutor", 3) }));
+    await screen.findByRole("dialog", { name: "Mystical Tutor" });
+    await act(async () => {});
+    const tileImg = document.querySelector(`[data-face-printing="${P_EMA}"] img`);
+    expect(tileImg?.getAttribute("loading")).toBe("lazy");
+    fireEvent.click(screen.getByRole("button", { name: s.tileAria(s.tileName("Eternal Masters", "EMA", "1"), false) }));
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.page.close }));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+    it("goes back to the search with the query standing", async () => {
     a.searchFaceCardsAction.mockResolvedValue({ ok: true, hits: [TUTOR_HIT] });
     a.listFacePrintingsAction.mockResolvedValue({ ok: true, card: TUTOR_PRINTINGS });
     render(<SignaturePicker current={null} onSave={async () => true} onClose={() => {}} />);

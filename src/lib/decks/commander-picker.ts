@@ -119,8 +119,14 @@ export async function listOwnDeckFaces(viewerId: string, env: NodeJS.ProcessEnv)
       .where(sql`(${printings.oracleId}, ${printings.setCode}, ${printings.collectorNumber}) in (${sql.join(
         wanted.map((w) => sql`(${w.oracleId}::uuid, ${w.setCode}, ${w.collectorNumber})`), sql`, `,
       )})`);
-    // Only a printing with a crop can be a face's art; one without stays the usual art.
-    for (const r of found) if (r.artCropUri !== null) picks.set(r.oracleId, { scryfallId: r.scryfallId, artCropUri: r.artCropUri });
+    // A set, code and number can name more than one printing (variants: `price-query.ts` handles the same case), and
+    // the resolver hands back no printing id. Only a tuple that names exactly one printing is saved; any other lead keeps
+    // the usual art rather than one variant picked at random. Only a printing with a crop can be a face's art.
+    const named = new Map<string, number>();
+    for (const r of found) named.set(r.oracleId, (named.get(r.oracleId) ?? 0) + 1);
+    for (const r of found) {
+      if (named.get(r.oracleId) === 1 && r.artCropUri !== null) picks.set(r.oracleId, { scryfallId: r.scryfallId, artCropUri: r.artCropUri });
+    }
   }
   return tiles.map((t) => {
     const pick = picks.get(t.oracleId);

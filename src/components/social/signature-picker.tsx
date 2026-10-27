@@ -181,7 +181,9 @@ export function SignaturePicker({
       title={onPrintings ? cardName : s.title}
       sub={onPrintings ? s.printingsSub(count) : s.sub}
       closeLabel={socialCopy.page.close}
-      onClose={onClose}
+      // Held while a save is in flight (P4, P6): the picker closes when the write lands, and a picker closed and opened
+      // again meanwhile would be the one that answer closes.
+      onClose={saving ? () => {} : onClose}
       initialFocusRef={search}
       returnFocusRef={returnFocusRef}
       tall
@@ -432,7 +434,8 @@ function PrintingsScreen({
                     outlineOffset: 3,
                   }}
                 >
-                  {t.imageUri ? <FadingImg src={t.imageUri} alt="" className="block h-full w-full object-cover" /> : null}
+                  {/* Lazy: a card can have dozens of printings below the fold; the preview above stays eager. */}
+                  {t.imageUri ? <FadingImg src={t.imageUri} alt="" loading="lazy" decoding="async" className="block h-full w-full object-cover" /> : null}
                   {mine ? (
                     <span className="absolute inset-0 flex items-center justify-center bg-[rgba(10,8,6,.45)]"><Spinner size={26} thick /></span>
                   ) : isShown || nowGone ? (

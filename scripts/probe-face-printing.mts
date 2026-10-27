@@ -41,6 +41,7 @@ async function main() {
   const { NON_GAME_LAYOUTS } = await import("../src/lib/cards/game-card");
 
   const FIXTURE_PRINTING = "00000000-0000-4000-8000-0000000fa0ce";
+  const FIXTURE_VARIANT = "00000000-0000-4000-8000-0000000fa0cf";
   let fixtureCard: string | null = null;
   try {
     // A card that can NOT lead a deck: a basic land with art, and two printings of it (one inserted, with its own art).
@@ -144,6 +145,13 @@ async function main() {
       // A printing with no full image first: the deck's own art then falls back to another printing's, and the tile
       // must still draw the crop the face will.
       check("the deck row saves the printing its deck holds, drawn in that printing's own crop", tile?.printingId === L.id && tile.artCropUri === L.art, JSON.stringify(tile));
+      // A variant sharing that set, code and number: the deck's holding no longer names one printing, so the tile keeps
+      // the usual art rather than saving whichever variant the lookup returned.
+      await db.execute(sql`
+        insert into printings (scryfall_id, oracle_id, set_code, collector_number, finishes, art_crop_uri)
+        values (${FIXTURE_VARIANT}::uuid, ${L.oracle_id}::uuid, ${L.set_code}, ${L.num}, array['nonfoil']::text[], ${`https://probe.invalid/${run}/variant.jpg`})`);
+      const twin = (await picker.listOwnDeckFaces(A, process.env)).find((x) => x.oracleId === L.oracle_id);
+      check("a holding two variants share saves no printing", twin?.printingId === null, JSON.stringify(twin));
     } else console.log("skip  no legendary creature with a second art in this catalog");
 
     // 4. The raw-SQL readers take the same chain.
@@ -189,7 +197,7 @@ async function main() {
     await db.execute(sql`delete from user_prefs where user_id in (${A}, ${B})`);
     await db.execute(sql`delete from decks where user_id in (${A}, ${B})`);
     await db.execute(sql`delete from collection_items where user_id in (${A}, ${B})`);
-    await db.execute(sql`delete from printings where scryfall_id = ${FIXTURE_PRINTING}::uuid`);
+    await db.execute(sql`delete from printings where scryfall_id in (${FIXTURE_PRINTING}::uuid, ${FIXTURE_VARIANT}::uuid)`);
     // Last: the friend_links writes above fire user_data_touch, which upserts a stamp row for each account.
     await db.execute(sql`delete from user_data_stamps where user_id in (${A}, ${B})`);
   }
