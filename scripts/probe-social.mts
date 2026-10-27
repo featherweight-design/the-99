@@ -405,6 +405,8 @@ async function main() {
     await db.execute(sql`delete from pod_members where user_id in ${who}`);
     await db.execute(sql`delete from friend_invites where inviter_user_id in ${who}`);
     await db.execute(sql`delete from social_profiles where user_id in ${who}`);
+    // A face pick stamps `user_prefs.face_prompt_done_at` (G4), so a run leaves a prefs row per account that picked.
+    await db.execute(sql`delete from user_prefs where user_id in ${who}`);
     await db.execute(sql`delete from user_data_stamps where user_id in ${who}`);
   }
   if (failed > 0) {
