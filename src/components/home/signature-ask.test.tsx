@@ -14,6 +14,17 @@ vi.mock("../../app/friends/actions", () => a);
 
 import { SignatureRow, SignatureStrip } from "./signature-ask";
 import { socialCopy } from "../../lib/copy/social";
+import { HOME_HEADING_ID } from "./arrivals-banner";
+
+/** Home's heading, as the page draws it: where focus goes when the ask leaves. */
+function withHeading(ui: React.ReactElement) {
+  return (
+    <>
+      <h1 id={HOME_HEADING_ID} tabIndex={-1}>Home</h1>
+      {ui}
+    </>
+  );
+}
 
 const s = socialCopy.signature;
 const FACE = { oracleId: "o-poly", name: "Polyraptor", artCropUri: "https://x/poly.jpg", printingId: null, printingGone: false };
@@ -33,10 +44,13 @@ describe("SignatureRow", () => {
     expect(await screen.findByRole("dialog", { name: s.title })).toBeTruthy();
   });
 
-  it("Skip takes the row away and stops asking", async () => {
-    render(<SignatureRow face={null} name="Sam" />);
-    fireEvent.click(screen.getByRole("button", { name: s.skipAria }));
+  it("Skip takes the row away, puts focus on Home's heading, and stops asking", async () => {
+    render(withHeading(<SignatureRow face={null} name="Sam" />));
+    const skip = screen.getByRole("button", { name: s.skipAria });
+    skip.focus();
+    fireEvent.click(skip);
     expect(document.querySelector("[data-signature-row]")).toBeNull();
+    expect(document.activeElement?.id).toBe(HOME_HEADING_ID);
     await act(async () => {});
     expect(a.skipFacePromptAction).toHaveBeenCalledTimes(1);
   });
@@ -61,10 +75,11 @@ describe("SignatureStrip", () => {
     expect(await screen.findByRole("dialog", { name: s.title })).toBeTruthy();
   });
 
-  it("✕ hides it at once and writes the flag", async () => {
-    render(<SignatureStrip name={null} />);
+  it("✕ hides it at once, puts focus on Home's heading, and writes the flag", async () => {
+    render(withHeading(<SignatureStrip name={null} />));
     fireEvent.click(screen.getByRole("button", { name: s.stripDismiss }));
     expect(screen.queryByRole("region", { name: s.stripRegion })).toBeNull();
+    expect(document.activeElement?.id).toBe(HOME_HEADING_ID);
     await act(async () => {});
     expect(a.skipFacePromptAction).toHaveBeenCalledTimes(1);
   });

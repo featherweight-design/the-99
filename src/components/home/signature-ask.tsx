@@ -18,11 +18,15 @@ import { setSignatureCardAction, skipFacePromptAction } from "../../app/friends/
 import { socialCopy } from "../../lib/copy/social";
 import type { OwnCommander } from "../../lib/social/friends";
 import { Face, faceInitials } from "../social/face";
+import { HOME_HEADING_ID } from "./arrivals-banner";
 import { SignaturePicker, type SignaturePick } from "../social/signature-picker";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 
 const s = socialCopy.signature;
 const RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
+
+/** Home's heading takes focus when the control holding it leaves, as the welcome strip's ✕ does. */
+const focusHomeHeading = () => document.getElementById(HOME_HEADING_ID)?.focus();
 
 /** The picker as Home opens it, with its save and its toast. Returns the opener's props and the overlay to draw. */
 function useHomePicker(face: OwnCommander | null, returnFocusRef: React.RefObject<HTMLElement | null>) {
@@ -39,6 +43,11 @@ function useHomePicker(face: OwnCommander | null, returnFocusRef: React.RefObjec
       return false;
     }
     setOpen(false);
+    // The pick's redraw can take the opener away (the strip leaves; the row's press is a new element once done): once
+    // the dialog has put focus back, a focus with no opener left goes to Home's heading rather than the body.
+    setTimeout(() => {
+      if (!returnFocusRef.current?.isConnected) focusHomeHeading();
+    }, 0);
     return true;
   }
 
@@ -67,6 +76,7 @@ export function SignatureRow({ face, name }: { face: OwnCommander | null; name: 
 
   const skip = () => {
     setSkipped(true);
+    focusHomeHeading();
     // Gone on the press; a write that fails leaves the row for the next load.
     void skipFacePromptAction().catch(() => undefined);
   };
@@ -128,6 +138,7 @@ export function SignatureStrip({ name }: { name: string | null }) {
 
   const close = () => {
     setClosed(true);
+    focusHomeHeading();
     // Hidden on the press; a write that fails leaves the strip for the next load.
     void skipFacePromptAction().catch(() => undefined);
   };
