@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { answerColumnsFor, validateCreateAnswers } from "./answers";
+import { answerColumnsFor, retryAnswersOf, validateCreateAnswers } from "./answers";
 
 const ok = { themes: ["Dinosaurs"], cardOracleId: null, budgetDollars: 150, bracket: 3, bracketBuys: false };
 const UUID = "6ad8011d-3471-4369-9d68-b264cc027487";
@@ -30,7 +30,7 @@ describe("validateCreateAnswers", () => {
 describe("answerColumnsFor", () => {
   it("stores the budget in cents, with no intent written any more (H35)", () => {
     expect(answerColumnsFor(validateCreateAnswers(ok), { oracleId: UUID, name: "Doubling Season" })).toEqual({
-      answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID, answerOwnedOnly: false, answerBracketBuys: false,
+      answerAsked: true, answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID, answerOwnedOnly: false, answerBracketBuys: false,
     });
   });
 
@@ -52,5 +52,37 @@ describe("answerColumnsFor", () => {
 
   it("records no card when the create refused it", () => {
     expect(answerColumnsFor(validateCreateAnswers({ ...ok, cardOracleId: UUID }), null).answerCardOracleId).toBeNull();
+  });
+});
+
+describe("retryAnswersOf", () => {
+  const none = {
+    answerAsked: false, answerBudgetCents: null, answerBracket: null, answerCardOracleId: null,
+    answerBracketBuys: false, answerBudgetRaised: false,
+  };
+
+  it("is null for a deck started any other way, so the retry is the plain build", () => {
+    expect(retryAnswersOf(none)).toBeNull();
+  });
+
+  it("keeps an answers object for a Help me choose deck that answered nothing gated", () => {
+    expect(retryAnswersOf({ ...none, answerAsked: true }))
+      .toEqual({ budgetCents: null, bracket: null, cardOracleId: null, bracketBuys: false, budgetRaised: false });
+  });
+
+  it("round-trips what a create stores, unanswered included", () => {
+    const unanswered = validateCreateAnswers({ ...ok, budgetDollars: null, bracket: null });
+    expect(retryAnswersOf({ ...none, ...answerColumnsFor(unanswered, null) })).not.toBeNull();
+  });
+
+  it("counts a deck from before the marker as asked when it stored any answer", () => {
+    expect(retryAnswersOf({ ...none, answerBracket: 2 })).toMatchObject({ bracket: 2, budgetCents: null });
+    expect(retryAnswersOf({ ...none, answerCardOracleId: UUID })).toMatchObject({ cardOracleId: UUID });
+    expect(retryAnswersOf({ ...none, answerBudgetCents: 5_000, answerBracketBuys: true, answerBudgetRaised: true }))
+      .toEqual({ budgetCents: 5_000, bracket: null, cardOracleId: null, bracketBuys: true, budgetRaised: true });
+  });
+
+  it("reads an out-of-range stored bracket as no bracket", () => {
+    expect(retryAnswersOf({ ...none, answerAsked: true, answerBracket: 9 })?.bracket).toBeNull();
   });
 });

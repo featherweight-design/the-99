@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
+import type { CreateAnswers } from "../../lib/intake/answers";
 
 // *Hit bracket N* through `createDeck` and its retry (bracket reach PR 3b): what reaches the plan,
 // and what `decks.answer_bracket_buys` and `answer_budget_cents` store. The plan is stubbed, so what
@@ -73,7 +74,7 @@ const shortPlan = (over: Record<string, unknown> = {}) => ({
   bracketReach: { target: 3, kind: "short", collectionPermits: [1, 2], collectionRaisers: [], buy: { raisers: ["rhystic"], buyCents: 5800, overBudget: true } },
   ...over,
 });
-const run = async (a: typeof asked) => {
+const run = async (a: CreateAnswers) => {
   try {
     await createDeck(COMMANDER, "Sai’s Workshop", [], null, a);
   } catch (err) {
@@ -164,5 +165,34 @@ describe("fillDeck: the retry reads the pick back", () => {
     await fillDeck("deck-1");
     expect(planAnswers().bracketBuys).toBe(false);
     expect(m.updates.find((u) => u.table === "decks")!.values).toEqual({ filled: true });
+  });
+});
+
+// A Help me choose create that answered nothing gated (no budget, no bracket, no build-around card)
+// is still a Help me choose fill: "Any cards" buys from the commander's best-played list. Its
+// failed create's retry must run that fill, not the plain build.
+describe("fillDeck: a Help me choose deck with no gated answer", () => {
+  const unanswered = { themes: ["Artifacts"], cardOracleId: null, budgetDollars: null, bracket: null, bracketBuys: false };
+
+  it("marks the empty deck a failed fill leaves as asked", async () => {
+    m.failTransaction = true;
+    await run(unanswered);
+    expect(deckInsert()).toMatchObject({ filled: false, answerAsked: true, answerBudgetCents: null, answerBracket: null });
+  });
+
+  it("retries with the answers, so the fill is Help me choose's and not the plain build", async () => {
+    m.deck = { id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER, partnerOracleId: null,
+      answerAsked: true, answerBudgetCents: null, answerBracket: null, answerCardOracleId: null,
+      answerOwnedOnly: false, answerBracketBuys: false, answerBudgetRaised: false };
+    await fillDeck("deck-1");
+    expect(planAnswers()).toEqual({ budgetCents: null, bracket: null, cardOracleId: null, bracketBuys: false, budgetRaised: false });
+  });
+
+  it("fills a deck started any other way as the plain build", async () => {
+    m.deck = { id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER, partnerOracleId: null,
+      answerAsked: false, answerBudgetCents: null, answerBracket: null, answerCardOracleId: null,
+      answerOwnedOnly: false, answerBracketBuys: false, answerBudgetRaised: false };
+    await fillDeck("deck-1");
+    expect(planAnswers()).toBeUndefined();
   });
 });

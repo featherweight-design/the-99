@@ -674,6 +674,11 @@ export const decks = pgTable("decks", {
    */
   answerBudgetCents: integer("answer_budget_cents"),
   answerBracket: integer("answer_bracket"),
+  /** The deck was started from Help me choose, whatever was answered. Every gated answer can be
+   *  null (no budget, no bracket, no build-around card), and a fill under "Any cards" still buys
+   *  from the commander's best-played list where the plain build does not, so a retry
+   *  (`fillDeck`) needs this to fill as the create would have. False for every other deck. */
+  answerAsked: boolean("answer_asked").notNull().default(false),
   answerCardOracleId: uuid("answer_card_oracle_id").references(() => cards.oracleId),
   /** Help me choose's *Only cards I own* (three answers §3): the 99 is filled from the player's
    *  own cards, at the create and again by a retry. False for every other deck. */

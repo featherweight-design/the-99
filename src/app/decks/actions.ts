@@ -55,9 +55,8 @@ import {
   capToBody, isResidual, type FillRow, type FillShortfall,
 } from "../../lib/decks/fill";
 import { buildFillPlan } from "../../lib/decks/fill-plan";
-import { type DeckAnswers } from "../../lib/intake/fill-facts";
 import { bracketReachEnabled } from "../../lib/intake/bracket-reach-flag";
-import { answerColumnsFor, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
+import { answerColumnsFor, retryAnswersOf, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
@@ -552,16 +551,10 @@ export async function fillDeck(deckId: string): Promise<void> {
   // THE ANSWERS A HELP ME CHOOSE CREATE STORED (F1), so a fill that failed at creation is retried
   // to what was asked: the same budget and bracket gates, and the build-around card placed first,
   // exactly as the create would have placed it.
-  const buildAround = deck.answerCardOracleId ?? null;
-  const budgetCents = deck.answerBudgetCents ?? null;
-  const bracket = bracketOf(deck.answerBracket ?? null);
-  const answers: DeckAnswers | null = budgetCents === null && bracket === null && buildAround === null
-    ? null
-    // *Hit bracket N*, as the create stored it, so the retry places the same set to buy.
-    : {
-      budgetCents, bracket, cardOracleId: buildAround, bracketBuys: deck.answerBracketBuys === true,
-      budgetRaised: deck.answerBudgetRaised === true,
-    };
+  // A deck started from Help me choose keeps its answers object even when every gated answer is
+  // null (`answer_asked`), so the retry is Help me choose's fill and not the plain build.
+  const answers = retryAnswersOf(deck);
+  const buildAround = answers?.cardOracleId ?? null;
   const plan = await buildFillPlan(
     userId,
     partner ? [commander, partner] : [commander],

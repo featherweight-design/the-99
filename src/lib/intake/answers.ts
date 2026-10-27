@@ -1,4 +1,6 @@
 import { isUuid } from "../uuid";
+import type { DeckAnswers } from "./fill-facts";
+import { bracketOf } from "../bracket/rules";
 import type { Bracket } from "./rank";
 
 /**
@@ -83,6 +85,7 @@ export function validateCreateAnswers(raw: CreateAnswers): ValidAnswers {
 }
 
 export type AnswerColumns = {
+  answerAsked?: boolean;
   answerBudgetCents?: number | null;
   answerBracket?: number | null;
   answerCardOracleId?: string | null;
@@ -103,11 +106,42 @@ export function answerColumnsFor(
   card: { oracleId: string; name: string } | null,
 ): AnswerColumns {
   return {
+    answerAsked: true,
     answerBudgetCents: asked.budgetDollars === null ? null : asked.budgetDollars * 100,
     answerBracket: asked.bracket,
     answerCardOracleId: card?.oracleId ?? null,
     answerOwnedOnly: asked.pool === "own",
     // The ask as validated; `createDeck` writes what it honored on the filled path.
     answerBracketBuys: asked.bracketBuys,
+  };
+}
+
+/** What a deck stored of its answers, as `fillDeck` reads them back. */
+export type StoredAnswers = {
+  answerAsked: boolean;
+  answerBudgetCents: number | null;
+  answerBracket: number | null;
+  answerCardOracleId: string | null;
+  answerBracketBuys: boolean;
+  answerBudgetRaised: boolean;
+};
+
+/**
+ * The answers a retry fills to (F1): exactly what the create handed the plan, or null for a deck
+ * started any other way. A Help me choose deck that answered nothing gated still gets an answers
+ * object, because the plan reads its presence as Help me choose ("Any cards" buys from the
+ * commander's best-played list). A deck made before `answer_asked` existed counts as asked when it
+ * stored any answer, which is the rule the retry used before the column.
+ */
+export function retryAnswersOf(deck: StoredAnswers): DeckAnswers | null {
+  const budgetCents = deck.answerBudgetCents ?? null;
+  const bracket = bracketOf(deck.answerBracket ?? null);
+  const cardOracleId = deck.answerCardOracleId ?? null;
+  if (!deck.answerAsked && budgetCents === null && bracket === null && cardOracleId === null) return null;
+  return {
+    budgetCents, bracket, cardOracleId,
+    // *Hit bracket N*, as the create stored it, so the retry places the same set to buy.
+    bracketBuys: deck.answerBracketBuys === true,
+    budgetRaised: deck.answerBudgetRaised === true,
   };
 }
