@@ -1639,11 +1639,44 @@ describe("DecklistRow, folding the marks", () => {
     expect(tokens(wrapperOf(cardMarkCopy.gameChanger)).some((c) => c.includes("sr-only"))).toBe(false);
   });
 
-  it("folds a fifth mark at every width, into the wide tier's +1", () => {
+  // ONE HIDDEN MARK SHOWS ITSELF (Hugh, 2026-10-27): a tier that would fold exactly one mark draws it instead of a `+1`.
+  it("draws a fifth mark itself at the wide tier rather than a +1, and folds it with the rest below", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...four, comboPartner: { oracleId: "scepter", name: "Isochron Scepter" } } as DeckDetailCard} newestAsOf={null} />);
     const glyphWrap = screen.getAllByTestId("combo-glyph")[0].closest("span.inline-flex.flex-none")!;
-    expect(glyphWrap.className.split(/\s+/)).toContain("sr-only");
-    expect(plusSpans().map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
+    expect(tokens(glyphWrap)).not.toContain("sr-only");
+    expect(tokens(glyphWrap)).toContain("@max-[480px]:sr-only");
+    expect(plusSpans().map((p) => p.textContent)).toEqual(["+3", "+4"]);
+  });
+
+  it("at the tight tier's boundary: two marks draw both and no +1; three draw the first and +2", () => {
+    const two = { ...four, facts: ["gameChanger", "tutor"] } as DeckDetailCard;
+    renderRow(<DecklistRow deckId="d1" card={two} newestAsOf={null} />);
+    for (const n of [cardMarkCopy.gameChanger, cardMarkCopy.tutor]) {
+      expect(tokens(wrapperOf(n)).some((c) => c.includes("sr-only"))).toBe(false);
+    }
+    expect(plusSpans()).toHaveLength(0);
+    cleanup();
+
+    const three = { ...four, facts: ["gameChanger", "massLandDenial", "tutor"] } as DeckDetailCard;
+    renderRow(<DecklistRow deckId="d1" card={three} newestAsOf={null} />);
+    // The middle tier would fold the third alone, so it draws all three; the tight tier folds two, behind a +2.
+    expect(tokens(wrapperOf(cardMarkCopy.tutor))).toContain("@max-[360px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.tutor))).not.toContain("@max-[480px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).toContain("@max-[360px]:sr-only");
+    expect(plusSpans().map((p) => p.textContent)).toEqual(["+2"]);
+    expect(tokens(plusSpans()[0])).toContain("@max-[360px]:inline");
+  });
+
+  it("draws a Shopping row's one mark itself at every width, and +2 from two", () => {
+    const one = { ...four, owned: false, facts: ["tutor"] } as DeckDetailCard;
+    renderRow(<DecklistRow deckId="d1" card={one} shoppingFigure={24} inShopping newestAsOf={null} />);
+    expect(tokens(wrapperOf(cardMarkCopy.tutor)).some((c) => c.includes("sr-only"))).toBe(false);
+    expect(plusSpans()).toHaveLength(0);
+    cleanup();
+
+    renderRow(<DecklistRow deckId="d1" card={{ ...one, facts: ["gameChanger", "tutor"] } as DeckDetailCard} shoppingFigure={24} inShopping newestAsOf={null} />);
+    for (const n of [cardMarkCopy.gameChanger, cardMarkCopy.tutor]) expect(tokens(wrapperOf(n))).toContain("@max-[480px]:sr-only");
+    expect(plusSpans().map((p) => p.textContent)).toEqual(["+2"]);
   });
 
   it("draws one +N per tier, aria-hidden, counting what that tier folds", () => {

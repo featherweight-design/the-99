@@ -104,7 +104,7 @@ const SHOPPING_SLOTS: LineSlots = {
  */
 const FOLD = {
   // All: the 5th mark and beyond at every width, every mark after the second at the middle tier, every mark after the first in
-  // the tight one. One more than Shopping's rhythm at each tier: an All row draws a bare `$` where it drew a price (Hugh,
+  // the tight one, unless a tier would fold exactly one mark, when it folds none (`foldsFrom`). One more than Shopping's rhythm at each tier: an All row draws a bare `$` where it drew a price (Hugh,
   // 2026-10-16), and the room that frees goes to the marks.
   all: {
     fifth: "sr-only",
@@ -121,6 +121,15 @@ const FOLD = {
     plus: "hidden @max-[480px]:inline",
   },
 } as const;
+/** The index each tier starts folding at: All keeps four marks wide, two in the middle and one tight; Shopping keeps none narrow. */
+const FOLD_FROM = { all: { wide: 4, mid: 2, tight: 1 }, shopping: 0 } as const;
+/**
+ * Where a tier really starts folding, given how many marks the row has: a tier that would fold exactly ONE mark folds none, so
+ * the reader sees that mark rather than a `+1` standing in for it (Hugh, 2026-10-27). A `+N` therefore always counts two or more.
+ */
+export function foldsFrom(count: number, from: number): number {
+  return count - from === 1 ? count : from;
+}
 /**
  * The availability marker's word drops to its glyph (and its count) at the middle tier, in All and Shopping alike (d9, 2026-10-16:
  * All kept it to the tight tier, and at 900 a row reading `1 in a draft` cut a 20-character name); the wide tier keeps it.
@@ -290,8 +299,20 @@ export function DecklistRow({
     ...(card.facts ?? []).map((fact) => ({ kind: "fact" as const, fact })),
     ...(comboSentence ? [{ kind: "combo" as const, sentence: comboSentence }] : []),
   ];
+  // ONE HIDDEN MARK SHOWS ITSELF (Hugh, 2026-10-27): a tier that would fold exactly one mark folds none, and the `+N` appears
+  // only from two. The mark is 16px where the `+1` it replaces was about 13px of 11px mono, and both sit in the name block,
+  // whose name truncates (`min-w-0`), so the difference comes out of the name and never moves the fixed right-hand columns.
+  const from = (tier: number) => foldsFrom(marks.length, tier);
   const markFold = (i: number): string =>
-    inShopping ? FOLD.shopping.all : i >= 4 ? FOLD.all.fifth : i >= 2 ? FOLD.all.afterSecond : i >= 1 ? FOLD.all.afterFirst : "";
+    inShopping
+      ? i >= from(FOLD_FROM.shopping) ? FOLD.shopping.all : ""
+      : i >= from(FOLD_FROM.all.wide)
+        ? FOLD.all.fifth
+        : i >= from(FOLD_FROM.all.mid)
+          ? FOLD.all.afterSecond
+          : i >= from(FOLD_FROM.all.tight)
+            ? FOLD.all.afterFirst
+            : "";
   // The whole row is the preview's trigger (#351), so the handlers go on the
   // shell rather than on the name — the name is the modal's trigger, and a
   // preview that only opened over it would be a second, smaller target for a
@@ -351,8 +372,12 @@ export function DecklistRow({
       </span>
     )),
     ...(inShopping
-      ? [plusN(0, FOLD.shopping.plus)]
-      : [plusN(4, FOLD.all.plusWide), plusN(2, FOLD.all.plusMid), plusN(1, FOLD.all.plusTight)]),
+      ? [plusN(from(FOLD_FROM.shopping), FOLD.shopping.plus)]
+      : [
+          plusN(from(FOLD_FROM.all.wide), FOLD.all.plusWide),
+          plusN(from(FOLD_FROM.all.mid), FOLD.all.plusMid),
+          plusN(from(FOLD_FROM.all.tight), FOLD.all.plusTight),
+        ]),
   ];
 
   // Multi-copy count (addendum C5): one row per card, the count inline after
