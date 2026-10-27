@@ -1,0 +1,20 @@
+{
+  "feature": "A price drop's press opens the card on Mana Pool in a new tab (Hugh's ruling, 2026-10-27; menu-home product call 7)",
+  "clearAbout": true,
+  "note": "Needs a server with HOME_FEED_ENABLED=true and SOCIAL_WISHLIST_ENABLED=true, signed in as an account holding two standing price-drop feed items (a scratch branch: one leads Home's story, the other sits in What's new's rows). Shot on 2026-10-27 as swaptools-v2+clerk_test@example.com with Sai, Master Thopterist ($6.40 to $3.10, the lead) and Ghalta, Primal Hunger ($24.50 to $18.90, a row). Both presses read `Buy any printing at Mana Pool ↗`. Writes nothing.",
+  "shares": {
+    "module": "src/components/feed/feed-item.tsx",
+    "binding": "FeedPress",
+    "note": "One press for the lead and the rows: a lead that drew its own would keep opening card details."
+  },
+  "rows": [
+    {
+      "id": "home-price-drops",
+      "label": "Home: the lead story's press and a What's new row's press, each `Buy any printing at Mana Pool ↗`",
+      "view": "src/components/home/lead-story.tsx",
+      "steps": [
+        { "goto": "/", "wait": "a[data-feed-press][target=_blank]", "settle": 1500 }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
+import { manapoolCardUrl } from "../manapool/links";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { type Answer } from "../social/spare-request-rules";
 import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
@@ -45,10 +46,16 @@ export type FeedView = {
   card: FeedCard | null;
   /** The friend who is the news (trade match, spare request), by public id. */
   friend: { publicId: string; displayName: string } | null;
-  /** Where the press goes, or null when it opens a card's detail (`opens`) or has no press yet (spare request). */
+  /** Where the press goes in the app, or null when it opens a card's detail (`opens`), goes off the app (`outbound`), or has no press yet (spare request). */
   href: string | null;
-  /** The card whose shipped detail the press opens: a price drop's card, a combo's first piece. */
+  /** The card whose shipped detail the press opens: a combo's first piece. */
   opens: string | null;
+  /**
+   * An address OFF the app the press opens in a new tab: a price drop's card on Mana Pool, by the card details link's
+   * own builder (`manapoolCardUrl`; Hugh's ruling 2026-10-27, the menu-home plan's product call 7, over the boards'
+   * "Open the card"). Null on every other item.
+   */
+  outbound: string | null;
   /** A new set's or precon's name. */
   name: string | null;
   /** A new set's card count. */
@@ -181,6 +188,7 @@ export function toViews(
       friend: null,
       href: null,
       opens: null,
+      outbound: null,
       name: null,
       setSize: null,
       owned: null,
@@ -202,7 +210,10 @@ export function toViews(
       case "price-drop": {
         const from = num(item.data.fromCents);
         const to = num(item.data.toCents);
-        return { ...base, card, opens: item.oracleId, drop: from !== null && to !== null ? { fromCents: from, toCents: to } : null };
+        const drop = from !== null && to !== null ? { fromCents: from, toCents: to } : null;
+        // The card on Mana Pool, every printing (the card details link). A card the catalog no longer holds has no name
+        // to send, and draws no press.
+        return { ...base, card, outbound: card ? manapoolCardUrl(card.name) : null, drop };
       }
       case "trade-match":
         // The card's modal opens on landing (signature card call 9): `?spare=` names it.

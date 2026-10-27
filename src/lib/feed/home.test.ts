@@ -95,13 +95,19 @@ describe("loadHomeFeed", () => {
     expect(feed.lead?.href).toBe("/friends/p1?spare=c2");
     expect(feed.items.map((i) => i.key)).toEqual(["item:1", "set:sos"]);
     expect(feed.unseen).toBe(2);
-    expect(feed.items[0]).toMatchObject({ card: { name: "Sai", image: "sai-owned.jpg" }, opens: "c1", drop: { fromCents: 640, toCents: 310 } });
+    // A price drop opens the card on Mana Pool (Hugh, 2026-10-27), by the card details link's builder, never its detail.
+    expect(feed.items[0]).toMatchObject({
+      card: { name: "Sai", image: "sai-owned.jpg" },
+      outbound: "https://manapool.com/cards?q=Sai",
+      opens: null,
+      drop: { fromCents: 640, toCents: 310 },
+    });
     expect(feed.items[1]).toMatchObject({ card: { name: "Mythic", image: "set.jpg" }, setSize: 288, href: "/collection/sets/sos", unseen: false });
   });
 });
 
 const view = (o: Partial<FeedView>): FeedView => ({
-  key: "k", kind: "new-set", at: "2026-10-22T00:00:00Z", unseen: true, card: null, friend: null, href: null, opens: null,
+  key: "k", kind: "new-set", at: "2026-10-22T00:00:00Z", unseen: true, card: null, friend: null, href: null, opens: null, outbound: null,
   name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...o,
 });
 
@@ -159,7 +165,7 @@ describe("toViews", () => {
 
   it("gives a spare request (a later round) no press", () => {
     const item = { kind: "spare-request", key: "item:s", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: "Peter" }, data: {} } as FeedItem;
-    expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, friend: { displayName: "Peter" }, answer: null });
+    expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, outbound: null, friend: { displayName: "Peter" }, answer: null });
   });
 
   it("gives an answer to the reader's own ask its answer and a press to Your requests", () => {

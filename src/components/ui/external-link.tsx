@@ -7,7 +7,7 @@ import { TOUCH_HIT_INLINE } from "./touch-hit";
 
 /** Lives here rather than in a copy file because every instance renders it and
  *  no call site may vary it. */
-const NEW_TAB_SUFFIX = " (opens in a new tab)";
+export const NEW_TAB_SUFFIX = " (opens in a new tab)";
 
 const LINK =
   "inline rounded-[6px] text-[14px] font-medium leading-[1.45] text-[color:var(--accent-hover)] " +

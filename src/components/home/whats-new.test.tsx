@@ -14,7 +14,7 @@ import { feedCopy } from "../../lib/copy/feed";
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (n: number, hoursAgo: number, o: Partial<FeedView> = {}): FeedView => ({
   key: `k${n}`, kind: "new-set", at: new Date(Date.parse(NOW) - hoursAgo * 3_600_000).toISOString(), unseen: false,
-  card: null, friend: null, href: `/collection/sets/s${n}`, opens: null, name: `Set ${n}`, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...o,
+  card: null, friend: null, href: `/collection/sets/s${n}`, opens: null, outbound: null, name: `Set ${n}`, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...o,
 });
 const chosen = (items: FeedView[], o: Partial<Extract<HomeFeed, { chosen: true }>> = {}): HomeFeed => ({ chosen: true, on: ["new-set"], items, unseen: 0, lead: null, ...o });
 

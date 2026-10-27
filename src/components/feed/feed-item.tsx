@@ -19,6 +19,7 @@ import { usePreviewRow } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { CommanderThumb } from "../ui/commander-thumb";
+import { NEW_TAB_SUFFIX } from "../ui/external-link";
 import { feedAge } from "../../lib/feed/age";
 
 const c = feedCopy.home;
@@ -51,7 +52,8 @@ export function feedText(item: FeedView): { title: string; line: ReactNode; pres
             {c.line.priceDrop}
           </>
         ) : null,
-        press: c.press.priceDrop,
+        // Only with somewhere to go: a card the catalog no longer holds has no name to send to Mana Pool.
+        press: item.outbound ? c.press.priceDrop : null,
       };
     case "trade-match":
       return { title: c.title.tradeMatch(friend, card), line: c.line.tradeMatch, press: item.askable ? c.press.tradeMatchAsk(friend) : c.press.tradeMatch(friend) };
@@ -94,6 +96,21 @@ export function FeedPress({
   describedBy?: string;
 }) {
   const detail = useCardDetailIfAny();
+  // Off the app (a price drop's card on Mana Pool): a new tab, drawn and named as card details' link out is, the ↗ and
+  // the spoken new-tab suffix (`ExternalLink`'s), never a router link.
+  if (item.outbound) {
+    return (
+      <a href={item.outbound} target="_blank" rel="noopener" data-feed-press className={`${className} ${stretch}`} aria-describedby={describedBy}>
+        {/* One inline run, so a press that wraps (the lead's button on a phone) keeps the ↗ on the label's last word,
+            bound by a no-break space as `ExternalLink` binds it, rather than standing alone as a flex item. */}
+        <span>
+          {label}
+          <span aria-hidden="true">{"\u00a0↗"}</span>
+        </span>
+        <span className="sr-only">{NEW_TAB_SUFFIX}</span>
+      </a>
+    );
+  }
   if (item.href) {
     return (
       <Link href={item.href} data-feed-press className={`${className} ${stretch}`} aria-describedby={describedBy}>
@@ -151,6 +168,13 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   // A linked row's picture is a real link to the same place (out of the tab order, hidden from readers: the press is
   // the named link), so a modified or middle press behaves natively. A row that opens the card's detail passes the
   // press on to its button.
+  if (item.outbound) {
+    return (
+      <a href={item.outbound} target="_blank" rel="noopener" aria-hidden tabIndex={-1} data-feed-picture {...hover} className={box}>
+        {art}
+      </a>
+    );
+  }
   if (item.href) {
     return (
       <Link href={item.href} aria-hidden tabIndex={-1} data-feed-picture {...hover} className={box}>
@@ -201,7 +225,8 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
         {text.press && (
           <FeedPress
             item={item}
-            label={`${text.press} ›`}
+            // An outbound press ends in its ↗ (`FeedPress`), not the in-app ›.
+            label={item.outbound ? text.press : `${text.press} ›`}
             describedBy={titleId}
             stretch="after:absolute after:inset-0 after:content-['']"
             className="flex min-h-[32px] min-w-0 items-center font-sans text-[13px] font-medium [overflow-wrap:anywhere] text-[color:var(--accent-text)]"
