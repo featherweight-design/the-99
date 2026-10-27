@@ -26,7 +26,7 @@ import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
 import { ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
-import { facePromptDone } from "../lib/discovery/face-prompt";
+import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
 import { loadHomeTables } from "../lib/social/rule-zero-home";
 import { HomeTableCard } from "../components/rule-zero/home-table-card";
@@ -358,8 +358,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     : null;
   // The first-run row: to do until picked or skipped, and once picked it stays, done. The strip: no face and never
   // asked, past first run (a profile made before the checklist asked, or an import before a collection).
-  const signatureRow = ask && (ask.face || !ask.done) ? <SignatureRow face={ask.face} name={ask.name} /> : null;
-  const signatureStrip = ask && !ask.face && !ask.done ? <SignatureStrip name={ask.name} /> : null;
+  const places = faceAskPlaces(ask && { hasFace: ask.face !== null, done: ask.done });
+  const signatureRow = ask && places.row ? <SignatureRow face={ask.face} name={ask.name} /> : null;
+  const signatureStrip = ask && places.strip ? <SignatureStrip name={ask.name} /> : null;
 
   // The tour taken again (R3·2, plan decision 6): with the switch on, `/?tour=1` starts it whatever `tour_seen_at` says.
   // Decided per request, outside the cached payload; the client reads and strips the parameter itself.

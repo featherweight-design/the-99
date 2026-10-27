@@ -32,6 +32,15 @@ export function facePromptDoneWrite(userId: string, q: Writer = db) {
     .returning({ at: userPrefs.facePromptDoneAt });
 }
 
+/**
+ * Where Home asks (calls 4, 5), pure. The first-run row: to do until a pick or Skip, and once picked it stays, done.
+ * The dashboard strip: no face and never asked. Neither with no ask at all (the switch off, or a read that failed).
+ */
+export function faceAskPlaces(ask: { hasFace: boolean; done: boolean } | null): { row: boolean; strip: boolean } {
+  if (!ask) return { row: false, strip: false };
+  return { row: ask.hasFace || !ask.done, strip: !ask.hasFace && !ask.done };
+}
+
 /** Skip, or the strip's ✕: true only for the call that stamped it. */
 export async function skipFacePrompt(userId: string): Promise<boolean> {
   return (await facePromptDoneWrite(userId)).length === 1;
