@@ -82,7 +82,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   one timing row per session as it closes (`src/lib/scan/timing.ts`: frame to guess, add, mode press to the next
   read, Review to the list, the median read; no id, no card name) to `POST /api/card-scan/timing`, which logs one
   `[scan-timing]` line only while `SCAN_LAB_ENABLED` is on for the reader (staging); find them with
-  `vercel logs -p the-99-staging -q "scan-timing"`.
+  `vercel logs --scope featherweight-design -p the-99-staging -q "scan-timing"`.
   **A card is asked about early** (`server-scan.ts`): once it has held `EARLY_DWELL_MS` (300ms, its second agreeing
   frame on a phone), and that answer is shown only when it is sure (`SURE_MARGIN`, 0.10, below); under it the card is
   asked again once it has held the full `DWELL_MS` (700ms) from the start of its run, and that answer is shown whatever it is. An

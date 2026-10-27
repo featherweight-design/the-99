@@ -15,7 +15,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   check takes the overlay down. An `orphan` line is a defect in the provider, and its `at`/`elapsed` say where and
   how long. A press that hangs pending and then in its own fallback reports once; any other
   loading screen (a route that commits its loading boundary at once, a change of query, a Back) is a navigation of
-  its own. Find them with `vercel logs -p the-99-staging -q "nav-stall"` (staging, where the switch is on; `-p the-99` is production, where it is off), and read a line by field:
+  its own. Find them with `vercel logs --scope featherweight-design -p the-99-staging -q "nav-stall"` (staging, where the switch is on; `-p the-99` is production, where it is off), and read a line by field:
 
   - `moved=true` means the address bar already shows the target: the router committed and the PAGE is what never
     arrived. `moved=false`: the press itself never committed.
@@ -59,7 +59,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   workspace; `org_cap_usd`, the org) are typed in on the page from Anthropic's console, because Spend Limits are
   Enterprise-only and cannot be read. Never put the key in `.env` (`scripts/lib/env.mjs` loads it with
   `override: true`); `pnpm probe:anthropic-cost` reads it from the shell. Find the reads with
-  `vercel logs -p the-99 -q "[costs]"`: one line per read, `ok days=‹n› keys=‹n›` or `unread kind=‹k›`.
+  `vercel logs --scope featherweight-design -p the-99 -q "[costs]"`: one line per read, `ok days=‹n› keys=‹n›` or `unread kind=‹k›`.
 
 ## Anonymous reads (launch epic F3 groundwork, PR 2)
 
