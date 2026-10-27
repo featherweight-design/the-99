@@ -82,8 +82,9 @@ const RESTATES_OFF_TOP = /\bon none of (them|the top|its top|the deck's top|the 
 type Line = { addOracleId: string | null; cutOracleId: string | null; evidence: TuningCitation[] };
 
 /**
- * The two chips the app writes after validation (the model is never offered the `focus` kind, and the validator's
- * denominator rule would drop either from it). An ADDITION on the focus leads with `focus · Tokens 11 → 12`: the
+ * The two chips the app writes after validation. The model may cite the focus by name with no figure (prompt version 10),
+ * never its count, which the validator's denominator rule would drop; this chip carries the figure, so it replaces the
+ * model's. An ADDITION on the focus leads with `focus · Tokens 11 → 12`: the
  * figure before and after that ONE addition, never chained across additions, since a player applies them in any order.
  * A nonland CUT on none of the top strategies nor the focus leads with `list · on none of the top 5`. `adds` are the
  * kept additions' catalog cards; a land or an unknown card gets no chip.
@@ -93,9 +94,13 @@ export function strategyChips<T extends Line>(lines: readonly T[], run: RunStrat
   return lines.map((line) => {
     if (line.addOracleId) {
       const card = adds.get(line.addOracleId);
-      if (!card || !onStrategy(card, run.key)) return line;
+      // The model's own focus citation names the focus with no figure (`validate.ts`). On a card that counts toward it, the
+      // app's chip says the same with its figure, so the model's goes; on one that does not, the claim is false and goes
+      // too, even when it is all the line cites: the suggestion stands, with no chip claiming what the card does not do.
+      const rest = line.evidence.filter((c) => c.kind !== "focus");
+      if (!card || !onStrategy(card, run.key)) return rest.length < line.evidence.length ? { ...line, evidence: rest } : line;
       const chip: TuningCitation = { kind: "focus", value: deckTuningCopy.card.focusChip(run.name, run.copies, run.copies + 1) };
-      return { ...line, evidence: [chip, ...line.evidence] };
+      return { ...line, evidence: [chip, ...rest] };
     }
     if (line.cutOracleId && run.top.length > 0) {
       const card = deck.get(line.cutOracleId);

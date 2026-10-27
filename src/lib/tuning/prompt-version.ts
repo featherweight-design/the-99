@@ -33,4 +33,7 @@
 // (`TUNING_MODEL`), whose answers differ in length and in what they choose, so a deck with a successful
 // run stored at version 8 reopens the gate and can run again on the model now in use. The model is
 // recorded per run but is not what the gate compares; this number is.
-export const PROMPT_VERSION = 9;
+// 10 (2026-10-27, the lopsided run): the reply schema's citation kinds gain `focus`, for every deck, and a deck with a focus
+// is told to cite it as `focus`, never as `intent`. With no kind for it the model filed the focus under `intent`, which a deck
+// with no intent fails, and HD - Goblins lost all five additions. A deck with a run stored at version 9 reopens the gate.
+export const PROMPT_VERSION = 10;

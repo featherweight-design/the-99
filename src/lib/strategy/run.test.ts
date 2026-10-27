@@ -29,6 +29,17 @@ describe("strategyChips", () => {
     expect(off.evidence).toHaveLength(1);
   });
 
+  // The model may cite the focus itself (prompt version 10), naming it with no figure: the app's chip says it once.
+  it("replaces the model's focus citation with its own chip, and drops it from an addition off the focus", () => {
+    const named: TuningCitation = { kind: "focus", value: "Tokens" };
+    const [on, off] = strategyChips([line("x", null, [named, { kind: "games", value: "Lost 3 of 5 games" }]), line("y", null, [named, { kind: "games", value: "Lost 3 of 5 games" }])], run, adds);
+    expect(on.evidence).toEqual([{ kind: "focus", value: "Tokens 11 → 12" }, { kind: "games", value: "Lost 3 of 5 games" }]);
+    expect(off.evidence).toEqual([{ kind: "games", value: "Lost 3 of 5 games" }]);
+    // All it cites, and false: the suggestion stands with no chip, never a focus chip the card does not earn.
+    const [only] = strategyChips([line("y", null, [named])], run, adds);
+    expect(only.evidence).toEqual([]);
+  });
+
   it("never chains the figure across two additions", () => {
     const both = strategyChips([line("x", null), line("x", null)], run, adds);
     expect(both.map((l) => l.evidence[0].value)).toEqual(["Tokens 11 → 12", "Tokens 11 → 12"]);

@@ -109,6 +109,9 @@ export type ValidationReport = {
   /** The strategy focus THIS run aimed at (`StrategyKey`), which the panel's `ReadFrom` names (strategy focus PR 4b).
    *  Absent with no focus. */
   focus?: string;
+  /** Ungroundable citations removed (`stripUngroundable`): an `intent` on a deck with no intent, a `focus` on a deck with
+   *  no focus or on a cut. Each from a line that kept others. Absent when none were. */
+  strippedCites?: number;
   /** Every drop `validateSuggestions` produced, per candidate — the same list `chooseRefusal`
    *  reads to pick the one-line `refusal`, kept here in full rather than discarded once that
    *  choice is made. No cost to persist (already computed, pure data); lets an "every candidate
@@ -162,7 +165,7 @@ export function validateSuggestions(args: {
   response: TuningResponse;
   pack: EvidencePack;
   resolveName: (name: string) => ResolvedCard | null;
-}): { kept: ValidatedSuggestion[]; droppedCount: number; drops: Drop[] } {
+}): { kept: ValidatedSuggestion[]; droppedCount: number; drops: Drop[]; /** Ungroundable citations removed (`stripUngroundable`), each from a line that kept others. */ strippedCites: number } {
   const { response, pack, resolveName } = args;
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
   const keyCards = new Set((pack.strategy?.keyCards ?? []).map((k) => k.oracleId));
@@ -212,7 +215,25 @@ export function validateSuggestions(args: {
     });
     return changed ? { ...line, evidence } : line;
   };
-  const sides = [["add", response.additions.map(relabel)], ["cut", response.cuts.map(relabel)]] as const;
+  // An `intent` citation on a deck with NO intent quotes nothing the player wrote, and a `focus` one on a deck with no focus
+  // names nothing, so each is ungroundable by construction. So is a `focus` citation on a CUT: the focus is what an addition
+  // moves toward, and on a cut the app writes its own off-plan chip, which a model focus chip would contradict. With a strategy focus the model filed the focus under `intent`
+  // (HD - Goblins, 2026-10-27: all five additions dropped as `citation`, 20 of 21 dropped additions across production's focus
+  // runs), and one bad citation dropped a line whose other citations held. The citation goes, never the line, and a line left
+  // with no citation still drops.
+  let strippedCites = 0;
+  const ungroundable = (kind: string, side: "add" | "cut") =>
+    (kind === "intent" && pack.intent === null) || (kind === "focus" && (pack.focus == null || side === "cut"));
+  const stripUngroundable = (line: TuningLine, side: "add" | "cut"): TuningLine => {
+    const evidence = line.evidence.filter((c) => !ungroundable(c.kind, side));
+    if (evidence.length === line.evidence.length || evidence.length === 0) return line;
+    strippedCites += line.evidence.length - evidence.length;
+    return { ...line, evidence };
+  };
+  const sides = [
+    ["add", response.additions.map((l) => stripUngroundable(relabel(l), "add"))],
+    ["cut", response.cuts.map((l) => stripUngroundable(relabel(l), "cut"))],
+  ] as const;
   for (const [side, lines] of sides) {
     lines.forEach((line, position) => {
       const reason = firstFailure(side, line);
@@ -238,7 +259,7 @@ export function validateSuggestions(args: {
   // A `neverCut` drop is NOT counted (Locked, F4): the lead's "we dropped N" describes suggestions
   // the model got wrong, and a cut of a card the player locked is the player's rule working, not a
   // failed suggestion. Still listed in `drops`, so a run whose every drop is one can say so (F10).
-  return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops };
+  return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops, strippedCites };
 
   function firstFailure(side: "add" | "cut", s: TuningLine): { rule: Drop["rule"]; name?: string; cite?: Drop["cite"] } | null {
     const card = resolveName(s.card);
@@ -276,8 +297,10 @@ export function validateSuggestions(args: {
       if (pack.limits.ownedOnly && !card.owned) return { rule: "notOwned" };
     }
 
+    // A line left with ONLY ungroundable citations reaches here whole (`stripUngroundable` never empties one), and each of
+    // them fails here, whatever `citationHolds` would say: a focus-only cut stands on nothing the cut list may cite.
     for (const c of s.evidence) {
-      if (!citationHolds(c, s)) return { rule: "citation", cite: { kind: c.kind } };
+      if (ungroundable(c.kind, side) || !citationHolds(c, s)) return { rule: "citation", cite: { kind: c.kind } };
     }
 
     const rationaleCheck = presentationFailures(s.rationale, quotable);
@@ -377,9 +400,13 @@ export function validateSuggestions(args: {
       // run's own notes text rather than the deck's standing description.
       case "notes":
         return citationQuotesPlayerText(pack.notes, c.value);
-      // The app writes a focus chip after validation; the model is never offered the kind, so one from it is dropped.
-      case "focus":
-        return false;
+      // A focus citation names the deck's own focus, as the pack writes it, and states no figure: how far an addition moves
+      // the focus is the app's chip (`strategyChips`), written after validation. Every deck's schema carries the kind; only
+      // a deck with a focus is told to use it. The figure check looks past the name, which can hold digits ("+1/+1 counters").
+      case "focus": {
+        const name = pack.focus?.name.toLowerCase();
+        return name !== undefined && text.includes(name) && !/\d/.test(text.replace(name, ""));
+      }
       case "mix": {
         // A target and its figure, as the targets list writes it: `draw 4 of 10`. The cell the
         // citation names must carry exactly that have and target.
