@@ -466,7 +466,7 @@ def ITEMS():
         "price": dict(kind="price", vis=("card", "sai.jpg", None), kick="Price drop",
                       title="Sai, Master Thopterist is cheaper",
                       detail='<span class="mo"><s>$6.40</s> <span class="dn">↓ $3.10</span></span> at the cheapest printing.',
-                      stamp="yesterday", act='<span class="lnk">Open the card ›</span>', unseen=True),
+                      stamp="yesterday", act='<span class="lnk">Buy at Mana Pool&nbsp;↗</span>', unseen=True),
         "combo": dict(kind="combo", vis=("combo",), kick="Combo",
                       title="Thassa’s Oracle + Demonic Consultation",
                       detail="Your last upload added Demonic Consultation. Neither is in a deck yet.",
@@ -490,7 +490,7 @@ def ITEMS():
         "price2": dict(kind="price", vis=("card", "zada.jpg", None), kick="Price drop",
                        title="Zada, Hedron Grinder is cheaper",
                        detail='<span class="mo"><s>$2.80</s> <span class="dn">↓ $1.45</span></span> at the cheapest printing.',
-                       stamp="2d ago", act='<span class="lnk">Open the card ›</span>', unseen=False),
+                       stamp="2d ago", act='<span class="lnk">Buy at Mana Pool&nbsp;↗</span>', unseen=False),
     }
 
 
