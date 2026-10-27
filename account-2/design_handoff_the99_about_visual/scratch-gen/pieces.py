@@ -67,7 +67,8 @@ CSS = r"""
 .showme{display:inline-block;margin-top:4px;font:500 12px 'IBM Plex Mono';color:var(--accent-text)}
 
 /* good to know */
-.gk-h{display:flex;align-items:center;gap:9px;font:500 10.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-muted)}
+.gk-h,.try-h{display:flex;align-items:center;gap:10px;font:600 16px 'Cinzel',serif;letter-spacing:.02em;color:var(--fg);padding-top:14px;border-top:1px solid var(--border)}
+.dk .gk-h,.dk .try-h{font-size:18px;padding-top:18px}
 .mark{box-sizing:border-box;display:flex;flex:none;width:22px;height:22px;align-items:center;justify-content:center;border-radius:6px;background:rgba(207,135,69,.16);border:1px solid rgba(207,135,69,.45)}
 .mark i{width:7px;height:7px;background:var(--accent);transform:rotate(45deg);display:block}
 .gk-row{display:flex;gap:12px;overflow:hidden;margin-right:-16px}
@@ -130,7 +131,6 @@ CSS = r"""
 .pend{display:flex;align-items:center;justify-content:center}
 .pend .pt{position:relative;z-index:2;font:500 12px 'IBM Plex Mono';letter-spacing:.06em;color:var(--fg-muted);background:rgba(20,17,14,.85);border:1px dashed var(--border-strong);border-radius:8px;padding:10px 14px}
 .dk .blk{display:flex;flex-direction:column;gap:14px}
-.try-h{font:500 10.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-muted)}
 
 /* canvas-only annotations */
 .gap{outline:1.5px dashed rgba(143,166,190,.85);outline-offset:3px;border-radius:8px;position:relative}

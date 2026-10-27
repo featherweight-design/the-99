@@ -22,11 +22,11 @@ SECTIONS = {
         dict(id="your-decks", name="Your decks", sub="Every deck, with what it needs next.",
              phone="p-decks", desk="d-decks", labels=[
                  ("new-deck", "New deck", " starts from a commander. “Import a deck” brings in a list you already play.",
-                  (0.04, 0.165, 0.92, 0.058), (0.858, 0.018, 0.124, 0.035), None),
+                  (0.04, 0.165, 0.92, 0.058), (0.918, 0.018, 0.065, 0.036), None),
                  ("deck-status", "A deck’s status", " says what to do next. “To buy” is a full deck you can’t sleeve yet, and “Draft” is one you’ve never committed.",
-                  (0.077, 0.852, 0.153, 0.026), (0.385, 0.68, 0.045, 0.025), None),
+                  (0.077, 0.852, 0.153, 0.026), (0.075, 0.682, 0.057, 0.027), None),
                  ("decks-stats", "Stats", " puts every deck side by side: when each was last played, and how it went.",
-                  (0.04, 0.322, 0.30, 0.045), None, "LINEUP_ENABLED"),
+                  (0.04, 0.322, 0.30, 0.045), (0.065, 0.186, 0.091, 0.04), "LINEUP_ENABLED"),
              ], rules=[], tools=["lineup"]),
         dict(id="your-deck", name="Your deck", sub="The list, and what each row is telling you.",
              phone="p-deck-your-deck", desk="d-deck", labels=[
@@ -57,9 +57,9 @@ SECTIONS = {
         dict(id="versions", name="Versions", sub="Every commit, kept.",
              phone="p-deck-versions", desk="d-versions", labels=[
                  ("version", "Each commit", " saves a version with its date, card count and average mana value. Open one to see which of its new cards you own today.",
-                  (0.036, 0.09, 0.928, 0.31), (0.068, 0.605, 0.912, 0.18), None),
+                  (0.036, 0.09, 0.928, 0.31), (0.068, 0.657, 0.912, 0.18), None),
                  ("precon-link", "Built from a precon?", " Link it, and the deck’s history starts from the box as v0.",
-                  (0.04, 0.53, 0.92, 0.15), None, "PRECONS_ENABLED"),
+                  (0.04, 0.53, 0.92, 0.15), (0.068, 0.848, 0.912, 0.076), "PRECONS_ENABLED"),
              ], rules=["commit"], tools=[]),
         dict(id="games", name="Games", sub="What happened at the table.",
              phone="p-deck-games", desk="d-games", labels=[
@@ -96,13 +96,13 @@ SECTIONS = {
     "collection": [
         dict(id="cards", name="Cards", sub="Everything you own, card by card.", phone="p-collection", desk="d-collection", labels=[
             ("tabs", "Cards, Sets, Proxies, History and Wishlist", " are your Collection’s tabs.",
-             (0.03, 0.105, 0.82, 0.045), (0.075, 0.13, 0.15, 0.035), None),
+             (0.03, 0.105, 0.82, 0.045), (0.048, 0.121, 0.27, 0.044), None),
             ("add", "The +", " adds cards by name, by scanning them, or from a file.",
-             (0.887, 0.1, 0.092, 0.043), None, "COLLECTION_EDIT_ENABLED"),
+             (0.887, 0.1, 0.092, 0.043), (0.889, 0.062, 0.084, 0.044), "COLLECTION_EDIT_ENABLED"),
             ("key", "The key", " explains every mark a card can carry, from Game Changer to In use.",
-             (0.031, 0.293, 0.938, 0.104), (0.065, 0.348, 0.92, 0.03), None),
+             (0.031, 0.293, 0.938, 0.104), (0.074, 0.353, 0.9, 0.018), None),
             ("taken", "“none free”", " means committed decks hold every copy you own.",
-             (0.43, 0.508, 0.2, 0.024), None, None),
+             (0.43, 0.508, 0.2, 0.024), (0.234, 0.674, 0.056, 0.022), None),
         ], rules=["one-copy", "never-decklist"], tools=["find-a-deck", "wishlist"]),
         dict(id="upload", name="Upload a file", sub="Bring in an export from another app.", phone="p-upload", desk="d-upload", labels=[
             ("drop", "Drop in a CSV", " from ManaBox, Moxfield, Archidekt or Deckbox, or paste a list. Nothing changes until you confirm.",
@@ -138,7 +138,7 @@ SECTIONS = {
         ], rules=["own-it", "prices", "proxy"], tools=["stand-ins", "friend-spares"]),
         dict(id="all-decks", name="Shopping for all decks", sub="Every deck’s missing cards in one cart.", phone="p-decks", desk="d-decks", labels=[
             ("cart", "Shop all decks", " puts every deck’s missing cards in one cart, so you check out at Mana Pool once.",
-             (0.04, 0.232, 0.45, 0.065), (0.065, 0.09, 0.917, 0.06), "ALL_DECKS_CART_ENABLED"),
+             (0.04, 0.232, 0.45, 0.065), (0.064, 0.089, 0.917, 0.067), "ALL_DECKS_CART_ENABLED"),
         ], rules=[], tools=[]),
     ],
     "friends": [
@@ -201,8 +201,8 @@ TOOL_DESK = {
     "suggested-changes": ("d-analysis", (0.071, 0.628, 0.449, 0.12)),
     "proposed-cuts": ("d-analysis", (0.528, 0.628, 0.449, 0.12)),
     "matchups": ("d-games", (0.795, 0.478, 0.18, 0.042)),
-    "find-a-deck": ("d-collection", (0.075, 0.39, 0.135, 0.36)),
-    "wishlist": ("d-collection", (0.075, 0.13, 0.15, 0.035)),
+    "find-a-deck": ("d-collection", (0.074, 0.394, 0.138, 0.346)),
+    "wishlist": ("d-collection", (0.262, 0.121, 0.055, 0.044)),
     "collection-sync": ("d-upload", (0.268, 0.243, 0.512, 0.243)),
     "help-me-choose": ("d-discover", (0.19, 0.13, 0.085, 0.035)),
     "stand-ins": ("d-shopping", (0.068, 0.158, 0.115, 0.028)),

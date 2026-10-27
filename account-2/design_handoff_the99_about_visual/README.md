@@ -8,7 +8,7 @@ Replaces About's 83 text entries, the ? panel and the release banner's wording. 
 
 Canvas: https://claude.ai/artifact/2xkvoZtTrCqsXYRg5RPhV9
 
-**Status: R2, awaiting Hugh's audit.** R2 (Hugh, 2026-10-27): a reader sees captures of the device they are on, never the other width; on desktop each screen is three separate blocks, the labelled screen, then Good to know, then Try it, so Good to know sits right under the screen. Every picture is a real capture: phone from `public/about/shots/amonkhet`,
+**Status: R3 in the generator, canvas not yet republished.** R3 (Hugh, 2026-10-27): "Good to know" and "Try it" are now section heads (Cinzel 16px, 18px desktop, full ink, a hairline above), and three desktop captures were re-shot with every label of their screen in frame, boxes measured in the browser: Decks (Stats, the status chip), Versions (Built from a precon?) and Collection (the +, "none free"). The source (`scratch-gen/`, `art/`) carries R3; the `.dc.html` exports and the canvas are still R2 until the three new images are uploaded to the canvas and the boards rebuilt with `build.py blob`. **Was: R2, awaiting Hugh's audit.** R2 (Hugh, 2026-10-27): a reader sees captures of the device they are on, never the other width; on desktop each screen is three separate blocks, the labelled screen, then Good to know, then Try it, so Good to know sits right under the screen. Every picture is a real capture: phone from `public/about/shots/amonkhet`,
 desktop 1300 from the contact sheets. Every string is a draft for `/copy-review` (`copy-strings.ts`).
 
 ## Boards
