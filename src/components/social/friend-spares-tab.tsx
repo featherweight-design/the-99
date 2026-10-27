@@ -238,20 +238,23 @@ function SpareLanding({ asks, find }: {
 }) {
   const ctx = usePageSpares();
   const done = useRef(false);
-  // A spare gone since: the toast is there from the first render, and no modal opens.
-  const [toast, setToast] = useState<SocialToastState | null>(() =>
-    asks.spare && asks.goneName && !find(asks.spare) ? { id: 1, text: p.spares.gone(asks.friend.displayName, asks.goneName) } : null);
+  const [toast, setToast] = useState<SocialToastState | null>(null);
   useEffect(() => {
     if (done.current) return;
     done.current = true;
     const url = new URL(window.location.href);
-    if (url.searchParams.has("spare")) {
-      url.searchParams.delete("spare");
-      mirrorUrl(url);
-    }
+    // Only a parameter still in the address lands: Back can restore this payload and remount the tab after the strip,
+    // and that remount must neither reopen the sheet nor replay the toast.
+    if (!url.searchParams.has("spare")) return;
+    url.searchParams.delete("spare");
+    mirrorUrl(url);
     if (!asks.spare) return;
     const found = find(asks.spare);
-    if (!found) return;
+    if (!found) {
+      // A spare gone since: the toast, and no modal.
+      if (asks.goneName) setToast({ id: 1, text: p.spares.gone(asks.friend.displayName, asks.goneName) });
+      return;
+    }
     found.tile?.focus();
     ctx?.open(found.card);
   }, [asks, find, ctx]);

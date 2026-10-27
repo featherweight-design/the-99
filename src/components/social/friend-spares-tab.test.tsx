@@ -188,6 +188,17 @@ describe("the ?spare= landing", () => {
   });
 });
 
+describe("a remount after the landing", () => {
+  it("neither reopens the sheet nor replays the toast once ?spare= has left the address", async () => {
+    await mount(ON({ spare: SAI }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    cleanup();
+    await mount(ON({ spare: GONE, goneName: "Ghalta, Primal Hunger" }));
+    expect(screen.queryByText(p.gone("Colin", "Ghalta, Primal Hunger"))).toBeNull();
+    expect(m.mirrorUrl).not.toHaveBeenCalled();
+  });
+});
+
 describe("the tab, spare requests off", () => {
   it("is as shipped: the line alone, a tile opens card details, no ask on the count line, ?spare= ignored", async () => {
     window.history.replaceState(null, "", `/friends/x?spare=${SAI}`);
