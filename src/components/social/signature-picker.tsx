@@ -70,6 +70,8 @@ export function SignaturePicker({
   const [printings, setPrintings] = useState<Printings | null>(null);
   const [saving, setSaving] = useState<Saving>(null);
   const asked = useRef(0);
+  /** The printings screen's request: an answer lands only for the open asked last (‹ and the same card again ask anew). */
+  const printingsAsked = useRef(0);
 
   useEffect(() => {
     let live = true;
@@ -147,11 +149,18 @@ export function SignaturePicker({
   }
 
   function openPrintings(hit: FaceCardHit) {
+    const ask = ++printingsAsked.current;
     setPrintings({ k: "loading", hit });
     listFacePrintingsAction(hit.oracleId).then(
-      (r) => setPrintings((was) => (was?.k === "loading" && was.hit.oracleId === hit.oracleId ? (r.ok ? { k: "done", card: r.card } : { k: "failed", hit }) : was)),
-      () => setPrintings((was) => (was?.k === "loading" && was.hit.oracleId === hit.oracleId ? { k: "failed", hit } : was)),
+      (r) => ask === printingsAsked.current && setPrintings(r.ok ? { k: "done", card: r.card } : { k: "failed", hit }),
+      () => ask === printingsAsked.current && setPrintings({ k: "failed", hit }),
     );
+  }
+
+  function back() {
+    // An answer for the screen being left lands nowhere.
+    printingsAsked.current++;
+    setPrintings(null);
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -189,7 +198,7 @@ export function SignaturePicker({
       tall
       width={520}
       screen={onPrintings ? "printings" : "search"}
-      onBack={onPrintings && !saving ? () => setPrintings(null) : undefined}
+      onBack={onPrintings && !saving ? back : undefined}
       backLabel={s.back}
       overlay={toast}
     >
@@ -266,7 +275,8 @@ export function SignaturePicker({
               <h3 className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{c.fromDecks}</h3>
               <ul className="m-0 mt-[10px] grid list-none grid-cols-2 gap-[12px] p-0 md:grid-cols-4 md:gap-[10px]">
                 {deckTiles.map((t) => {
-                  const cur = t.oracleId === current?.oracleId;
+                  // The face now is this card in this printing: a pick that is gone is drawn in the usual art (a null pick).
+                  const cur = t.oracleId === current?.oracleId && (current.printingGone ? null : current.printingId) === t.printingId;
                   const mine = saving?.kind === "card" && saving.oracleId === t.oracleId;
                   return (
                     <li key={t.oracleId} className={saving && !mine ? "opacity-45" : undefined}>

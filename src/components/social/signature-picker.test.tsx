@@ -176,6 +176,35 @@ describe("SignaturePicker", () => {
     expect(tiles).toEqual(["usual", many[11].scryfallId]);
   });
 
+  it("an answer for a printings screen left and opened again lands only on the newest", async () => {
+    a.searchFaceCardsAction.mockResolvedValue({ ok: true, hits: [TUTOR_HIT] });
+    let failFirst!: (e: unknown) => void;
+    a.listFacePrintingsAction
+      .mockReturnValueOnce(new Promise((_, reject) => (failFirst = reject)))
+      .mockResolvedValueOnce({ ok: true, card: TUTOR_PRINTINGS });
+    render(<SignaturePicker current={null} onSave={async () => true} onClose={() => {}} />);
+    await type("tutor");
+    fireEvent.click(screen.getByRole("button", { name: s.printingsAria("Mystical Tutor", 3) }));
+    fireEvent.click(await screen.findByRole("button", { name: s.back }));
+    fireEvent.click(screen.getByRole("button", { name: s.printingsAria("Mystical Tutor", 3) }));
+    await act(async () => {});
+    await act(async () => failFirst(new Error("late")));
+    expect(screen.queryByText(s.printingsFailed)).toBeNull();
+    expect(document.querySelectorAll("[data-face-printing]").length).toBe(4);
+  });
+
+  it("marks a deck tile current only in the printing the face is", async () => {
+    a.listDeckFacesAction.mockResolvedValue({
+      ok: true, tiles: [{ oracleId: TUTOR, name: "Mystical Tutor", artCropUri: "https://x/STA-crop.jpg", colorIdentity: ["U"], printingId: P_STA }],
+    });
+    const other = { oracleId: TUTOR, name: "Mystical Tutor", artCropUri: "https://x/EMA-crop.jpg", printingId: P_EMA, printingGone: false };
+    const { unmount } = render(<SignaturePicker current={other} onSave={async () => true} onClose={() => {}} />);
+    expect((await screen.findByRole("button", { name: "Mystical Tutor" })).getAttribute("aria-pressed")).toBe("false");
+    unmount();
+    render(<SignaturePicker current={{ ...other, printingId: P_STA }} onSave={async () => true} onClose={() => {}} />);
+    expect((await screen.findByRole("button", { name: "Mystical Tutor" })).getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("saves a deck tile in the printing its deck holds", async () => {
     a.listDeckFacesAction.mockResolvedValue({
       ok: true, tiles: [{ oracleId: TUTOR, name: "Mystical Tutor", artCropUri: "https://x/STA-crop.jpg", colorIdentity: ["U"], printingId: P_STA }],
