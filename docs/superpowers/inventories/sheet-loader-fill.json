@@ -29,7 +29,7 @@
         { "goto": "/decks/${SHEET_DECK}", "wait": "[role=tablist]", "settle": 1500 },
         { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 600 },
         { "clickRole": "button", "name": "^Cheaper stand-ins for Polyraptor,", "settle": 400 },
-        { "wait": "[data-testid='stand-ins-sheet'] p", "settle": 1500 }
+        { "wait": "[data-testid='stand-ins-sheet']:not(:has([role=status])):not(:has([role=alert]))", "settle": 600 }
       ]
     }
   ]
