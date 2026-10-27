@@ -31,7 +31,8 @@ export default async function FriendSparesPage({
   if (!friend) notFound();
   if (!spareRequestsEnabled(env)) return <FriendSparesTab name={friend.displayName} spares={spares} />;
   const raw = (await searchParams)?.spare;
-  const spare = isUuid(raw) ? raw : null;
+  // Lowercased: the catalog's ids are, and both lookups below compare as strings.
+  const spare = isUuid(raw) ? raw.toLowerCase() : null;
   // A card the friend still offers opens its modal; any other names the card for the toast (the catalog's name).
   const offered = spare !== null && (spares?.lines.some((l) => l.oracleId === spare) ?? false);
   // The modal's buy tag prices the card as Shopping does (`loadPrices`: one printing per card, cheapest live first).

@@ -28,13 +28,13 @@ async function reader(): Promise<{ userId: string; env: NodeJS.ProcessEnv }> {
 /** A client's argument as a record; anything else reads as empty, so the library refuses each missing field. */
 const fields = (v: unknown): Record<string, unknown> => (v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 
-export type AskInput = { friendPublicId: string; oracleId: string; copies?: number; deckId?: string | null };
+export type AskInput = { friendPublicId: string; oracleId: string; copies?: number; deckId?: string | null; standalone?: boolean };
 
 /** Ask a friend for a spare of one card (Shopping, the cart's By friend). */
 export async function askSpareAction(input: AskInput): Promise<AskOutcome> {
   const { userId, env } = await reader();
   const i = fields(input);
-  return askForSpare(userId, i.friendPublicId, i.oracleId, env, new Date(), { copies: i.copies, deckId: i.deckId });
+  return askForSpare(userId, i.friendPublicId, i.oracleId, env, new Date(), { copies: i.copies, deckId: i.deckId, standalone: i.standalone });
 }
 
 export type AskInsteadInput = AskInput & { fromRequestId: string };
@@ -43,7 +43,7 @@ export type AskInsteadInput = AskInput & { fromRequestId: string };
 export async function askInsteadAction(input: AskInsteadInput): Promise<AskOutcome> {
   const { userId, env } = await reader();
   const i = fields(input);
-  return askInsteadForSpare(userId, i.fromRequestId, i.friendPublicId, i.oracleId, env, new Date(), { copies: i.copies, deckId: i.deckId });
+  return askInsteadForSpare(userId, i.fromRequestId, i.friendPublicId, i.oracleId, env, new Date(), { copies: i.copies, deckId: i.deckId, standalone: i.standalone });
 }
 
 /** ✕ on one of the reader's asks: withdraws it while open, else clears it from their list. */

@@ -12,10 +12,10 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { FriendSparesTab, type FriendSparesAsks } from "./friend-spares-tab";
 import { SparesSheet } from "./spare-markers";
 
-const m = vi.hoisted(() => ({ mirrorUrl: vi.fn(), refresh: vi.fn() }));
+const m = vi.hoisted(() => ({ mirrorUrl: vi.fn(), refresh: vi.fn(), ask: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh, push: vi.fn(), replace: vi.fn() }) }));
 vi.mock("../../lib/url/mirror", () => ({ mirrorUrl: m.mirrorUrl }));
-vi.mock("../../app/friends/spare-actions", () => ({ askSpareAction: vi.fn(), askInsteadAction: vi.fn() }));
+vi.mock("../../app/friends/spare-actions", () => ({ askSpareAction: m.ask, askInsteadAction: vi.fn() }));
 
 const p = socialCopy.friendPage.spares;
 const GHALTA = "00000000-0000-4000-8000-0000000000c1";
@@ -43,15 +43,19 @@ const ask = (oracleId: string, holder: string, state: AskStateLine["state"]): As
 
 const fetchMock = vi.fn();
 let asks: AskStateLine[] = [];
+let read: typeof READ = READ;
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   fetchMock.mockImplementation(async (url: string) =>
     url.startsWith("/api/spare-requests")
       ? { ok: true, json: async () => ({ asks }) }
-      : { ok: true, json: async () => ({ spares: READ }) });
+      : { ok: true, json: async () => ({ spares: read }) });
   m.mirrorUrl.mockReset();
+  m.ask.mockReset();
+  m.ask.mockResolvedValue({ ok: true, id: "req-new" });
   asks = [];
+  read = READ;
   window.history.replaceState(null, "", "/friends/x");
 });
 afterEach(() => {
@@ -100,6 +104,21 @@ describe("the tab, spare requests on", () => {
     await act(async () => { fireEvent.click(press); });
     await act(async () => { fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /close/i })); });
     expect(document.activeElement).toBe(press);
+  });
+
+  it("sends an Ask from the tab as standalone, for no deck", async () => {
+    await mount(ON());
+    await act(async () => { fireEvent.click(screen.getAllByTestId("spare-tile-press")[0]); });
+    const dialog = within(screen.getByRole("dialog"));
+    await act(async () => { fireEvent.click(dialog.getAllByRole("button", { name: /^Ask/ })[0]); });
+    expect(m.ask).toHaveBeenCalledWith(expect.objectContaining({ oracleId: GHALTA, deckId: null, standalone: true }));
+  });
+
+  it("draws what the read returned, not the page's offer, once a read for the card lands empty", async () => {
+    read = [];
+    await mount(ON());
+    await act(async () => { fireEvent.click(screen.getAllByTestId("spare-tile-press")[0]); });
+    expect(within(screen.getByRole("dialog")).queryAllByTestId("friend-spare")).toHaveLength(0);
   });
 
   it("draws no kicker on a card not on the reader's wishlist", async () => {

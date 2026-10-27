@@ -17,6 +17,8 @@ const m = vi.hoisted(() => ({
   unfriendAction: vi.fn(),
   replace: vi.fn(),
   openCard: vi.fn(),
+  catalogCardName: vi.fn(),
+  loadPrices: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => m.pathname,
@@ -28,6 +30,10 @@ vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: m.request
 vi.mock("../../../../lib/social/access", () => ({ loadFriend: m.loadFriend }));
 vi.mock("../../../../lib/social/wishlist", () => ({ loadFriendWishlist: m.loadFriendWishlist }));
 vi.mock("../../../../lib/social/spares", () => ({ loadFriendSpareList: m.loadFriendSpareList }));
+vi.mock("../../../../lib/social/friend-page-data", async (orig) => ({
+  ...(await orig<typeof import("../../../../lib/social/friend-page-data")>()), catalogCardName: m.catalogCardName,
+}));
+vi.mock("../../../../lib/decks/price-query", () => ({ loadPrices: m.loadPrices }));
 vi.mock("../../../../lib/social/decks", () => ({ loadFriendDecks: m.loadFriendDecks }));
 vi.mock("../../../../components/shell/pending-reporter", () => ({ PendingReporter: () => null }));
 vi.mock("../../actions", () => ({ unfriendAction: m.unfriendAction }));
@@ -341,5 +347,14 @@ describe("FriendHead and the wishlist tab", () => {
     await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: socialCopy.friends.removeConfirm }).at(-1)!); });
     expect(m.replace).not.toHaveBeenCalled();
     expect(screen.getByText(socialCopy.friends.removeFailed)).toBeTruthy();
+  });
+
+  it("opens an offered card from a ?spare= written in upper case, never calling it gone", async () => {
+    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+    m.loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null });
+    m.catalogCardName.mockReset();
+    const page = await FriendSparesPage({ params: params(), searchParams: Promise.resolve({ spare: SPARE.oracleId.toUpperCase() }) });
+    expect(m.catalogCardName).not.toHaveBeenCalled();
+    expect((page as { props: { asks: { spare: string } } }).props.asks.spare).toBe(SPARE.oracleId);
   });
 });

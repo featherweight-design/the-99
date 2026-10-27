@@ -173,7 +173,7 @@ describe("pressing Ask", () => {
     await mount(<Press />);
     const d = await openModal();
     await act(async () => { fireEvent.click(within(rowOf(d, "Colin")).getByTestId("friend-spare-ask")); });
-    expect(actions.askSpareAction).toHaveBeenCalledWith({ friendPublicId: "p-Colin", oracleId: JACE.oracleId, copies: 2, deckId: "deck-1" });
+    expect(actions.askSpareAction).toHaveBeenCalledWith({ friendPublicId: "p-Colin", oracleId: JACE.oracleId, copies: 2, deckId: "deck-1", standalone: false });
     expect(within(rowOf(d, "Colin")).getByTestId("friend-spare-status").textContent).toBe(r.requested);
     expect(within(rowOf(d, "Colin")).getByTestId("friend-spare-sub").textContent).toBe("2 spares · 14 days left");
     expect(within(rowOf(d, "Max")).getByTestId("friend-spare-ask").textContent).toBe(r.askInstead);

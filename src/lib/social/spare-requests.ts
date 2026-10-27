@@ -49,7 +49,7 @@ export type AnswerOutcome = { ok: true } | { ok: false; reason: "off" | "gone" }
 export type CloseOutcome = { ok: true; closed: "withdrawn" | "cleared" } | { ok: false; reason: "off" | "gone" };
 
 /** What an ask may carry beyond the card (G2): both re-validated on the server, both display only. */
-export type AskExtras = { copies?: unknown; deckId?: unknown };
+export type AskExtras = { copies?: unknown; deckId?: unknown; standalone?: unknown };
 
 /**
  * One asker's asks for one card are decided one at a time: the expire, the read, the rules and the insert all run under
@@ -100,7 +100,9 @@ async function lockOwnDeck(tx: Tx, a: Asking): Promise<string | null> {
 }
 
 /** One ask, decided: who asks whom for what, with the copies already capped. */
-export type Asking = { askerId: string; holderId: string; oracleId: string; copies: number; deckId: unknown; now: Date };
+export type Asking = {
+  askerId: string; holderId: string; oracleId: string; copies: number; deckId: unknown; standalone?: boolean; now: Date;
+};
 
 /**
  * The ask's transaction body, for `askForSpare` and Ask instead (`askInsteadForSpare`), which runs it after its own
@@ -125,7 +127,10 @@ export async function askIn(tx: Tx, a: Asking): Promise<AskOutcome> {
   if (refusal) return { ok: false, reason: refusal };
   const [row] = await tx
     .insert(spareRequests)
-    .values({ askerUserId: a.askerId, holderUserId: a.holderId, oracleId: a.oracleId, createdAt: a.now, copies: a.copies, deckId })
+    .values({
+      askerUserId: a.askerId, holderUserId: a.holderId, oracleId: a.oracleId, createdAt: a.now, copies: a.copies, deckId,
+      standalone: a.standalone === true,
+    })
     .returning({ id: spareRequests.id });
   await recordFeedItem(tx, { userId: a.holderId, kind: "spare-request", dedupeKey: row.id, oracleId: a.oracleId, friendUserId: a.askerId, now: a.now });
   return { ok: true, id: row.id };
@@ -144,7 +149,7 @@ async function prepareAsk(
   if (!holderId) return { ok: false, reason: "not-friend" };
   const offered = (await loadFriendSpares(askerId, [oracleId])).find((s) => s.oracleId === oracleId && s.friend.publicId === friendPublicId);
   if (!offered) return { ok: false, reason: "not-spare" };
-  return { askerId, holderId, oracleId, copies: capCopies(extras.copies, offered.spare), deckId: extras.deckId, now };
+  return { askerId, holderId, oracleId, copies: capCopies(extras.copies, offered.spare), deckId: extras.deckId, standalone: extras.standalone === true, now };
 }
 
 /** Thrown inside a transaction to roll it back while handing its refusal out. */
@@ -396,7 +401,7 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
     : sql`msr.asker_cleared_at is null`;
   return sql`select msr.id, msr.oracle_id, msr.status, msr.created_at, msr.answered_at, msr.copies,
       msp.public_id::text as public_id, msp.display_name, mc.name as card_name, mc.image_uri as card_image, mdk.name as deck_name,
-      mdk.id as deck_id, msr.asker_cleared_at is not null as cleared,
+      mdk.id as deck_id, msr.asker_cleared_at is not null as cleared, msr.standalone,
       mcc.oracle_id as commander_oracle_id, mcc.name as commander_name, coalesce(mfp.art_crop_uri, mcc.art_crop_uri) as commander_art
     from ${spareRequests} msr
     join ${friendLinks} mfl on mfl.user_id = msr.asker_user_id and mfl.friend_user_id = msr.holder_user_id
@@ -414,6 +419,8 @@ type MyRow = Face & {
   id: string; oracle_id: string; status: StoredStatus; created_at: Date | string; answered_at: Date | string | null;
   copies: number; public_id: string; display_name: string; card_name: string; card_image: string | null; deck_name: string | null;
   deck_id: string | null; cleared: boolean;
+  /** Asked for no list (a friend's Spares tab): never reads `unneeded`. */
+  standalone?: boolean;
 };
 
 export type MyAsksOptions = {
@@ -462,7 +469,7 @@ export function deriveMyAsks(
   return shown.map(({ r, a }) => {
     const state = askerState(a, now, {
       offered: offered.has(offerKey(r.oracle_id, r.public_id)),
-      needed: stillNeeded ? stillNeeded.has(r.oracle_id) : true,
+      needed: r.standalone === true || !stillNeeded || stillNeeded.has(r.oracle_id),
     });
     const open = state === "open" || state === "unavailable" || state === "unneeded";
     return {

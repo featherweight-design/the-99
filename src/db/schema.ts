@@ -3743,6 +3743,11 @@ export const spareRequests = pgTable("spare_requests", {
    * cleared No still holds the holder back for the cooldown (`askRefusal`).
    */
   askerClearedAt: timestamp("asker_cleared_at", { withTimezone: true }),
+  /**
+   * Asked for no list (a friend's Spares tab, signature card call 8): Your requests never reads it as no longer needed,
+   * since no deck's Shopping list held it to begin with. Shopping's and the cart's asks are false.
+   */
+  standalone: boolean("standalone").notNull().default(false),
 }, (t) => [
   uniqueIndex("spare_requests_one_open").on(t.askerUserId, t.oracleId).where(sql`${t.status} = 'open'`),
   index("spare_requests_holder_idx").on(t.holderUserId, t.status),

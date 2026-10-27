@@ -22,7 +22,7 @@ const ago = (days: number) => new Date(NOW.getTime() - days * DAY);
 
 /** One stored ask as `readShownAsks` returns it. */
 const stored = (id: string, status: ShownAsk["a"]["status"], o: {
-  card?: string; holder?: string; createdAt?: Date; answeredAt?: Date | null; cleared?: boolean;
+  card?: string; holder?: string; createdAt?: Date; answeredAt?: Date | null; cleared?: boolean; standalone?: boolean;
 } = {}): ShownAsk => {
   const holder = o.holder ?? "Colin";
   const createdAt = o.createdAt ?? ago(2);
@@ -31,7 +31,7 @@ const stored = (id: string, status: ShownAsk["a"]["status"], o: {
     r: {
       id, oracle_id: o.card ?? "jace", status, created_at: createdAt, answered_at: answeredAt, copies: 1,
       public_id: `pub-${holder.toLowerCase()}`, display_name: holder, card_name: "Jace", card_image: null, deck_name: null,
-      deck_id: null, cleared: o.cleared ?? false, commander_oracle_id: null, commander_name: null, commander_art: null,
+      deck_id: null, cleared: o.cleared ?? false, standalone: o.standalone ?? false, commander_oracle_id: null, commander_name: null, commander_art: null,
     } as ShownAsk["r"],
     a: { status, createdAt, answeredAt },
   };
@@ -90,6 +90,14 @@ describe("loadYourRequests", () => {
     expect(m.buyRows).toHaveBeenCalledWith("u1", undefined, undefined, ON);
     // Colin still offers Sol but no deck buys it: unneeded. Max no longer offers Bolt: unavailable (before unneeded).
     expect(rows.map((r) => [r.id, r.state])).toEqual([["open", "unneeded"], ["gone", "unavailable"], ["no", "no"], ["old", "expired"]]);
+  });
+
+  it("never reads an ask from a friend's Spares tab (standalone) as no longer needed", async () => {
+    m.shown.mockResolvedValue([stored("tab", "open", { card: "sol", standalone: true }), stored("shop", "open", { card: "sol" })]);
+    m.spares.mockResolvedValue([{ oracleId: "sol", friend: friend("Colin"), spare: 1 }]);
+    m.buyRows.mockResolvedValue([]);
+    const rows = await loadYourRequests("u1", ON, NOW);
+    expect(rows.map((r) => [r.id, r.state])).toEqual([["tab", "open"], ["shop", "unneeded"]]);
   });
 
   it("marks answers newer than the Friends cursor", async () => {
