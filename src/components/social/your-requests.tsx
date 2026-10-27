@@ -113,7 +113,7 @@ export function YourRequests({ rows, now, canBuy = true }: { rows: readonly Your
     const from = document.activeElement;
     setBusy(a.id);
     setHeld({ rows, done: false });
-    const out = await askSpareAction({ friendPublicId: a.holder.publicId, oracleId: a.oracleId, copies: a.copies, deckId: a.deckId })
+    const out = await askSpareAction({ friendPublicId: a.holder.publicId, oracleId: a.oracleId, copies: a.copies, deckId: a.deckId, standalone: a.standalone })
       .catch(() => null);
     if (!out?.ok) {
       setHeld(null);

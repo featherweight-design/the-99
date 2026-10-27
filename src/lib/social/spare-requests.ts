@@ -376,6 +376,8 @@ export type MyAsk = {
   id: string; oracleId: string; card: AskCard; copies: number; deckName: string | null;
   /** The asker's own deck the ask was for (their own id, so Ask again can carry it), or null. */
   deckId: string | null;
+  /** Asked for no list (a friend's Spares tab): Ask again sends it back, so the new ask is standalone too. */
+  standalone: boolean;
   holder: OtherSide;
   state: AskerState;
   /** Days left on an open (or unavailable, or unneeded) ask; null once answered or expired. */
@@ -476,7 +478,7 @@ export function deriveMyAsks(
       id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies),
       deckName: r.deck_name, deckId: r.deck_id, holder: { publicId: r.public_id, displayName: r.display_name, commander: faceOf(r) },
       state, daysLeft: open ? daysLeft(a.createdAt, now) : null, createdAt: a.createdAt, answeredAt: a.answeredAt,
-      cleared: r.cleared === true,
+      cleared: r.cleared === true, standalone: r.standalone === true,
     };
   });
 }

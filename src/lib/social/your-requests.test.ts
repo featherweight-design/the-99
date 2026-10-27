@@ -98,6 +98,7 @@ describe("loadYourRequests", () => {
     m.buyRows.mockResolvedValue([]);
     const rows = await loadYourRequests("u1", ON, NOW);
     expect(rows.map((r) => [r.id, r.state])).toEqual([["tab", "open"], ["shop", "unneeded"]]);
+    expect(rows.map((r) => [r.id, r.standalone])).toEqual([["tab", true], ["shop", false]]);
   });
 
   it("marks answers newer than the Friends cursor", async () => {
