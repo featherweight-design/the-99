@@ -46,6 +46,16 @@ export async function askInsteadAction(input: AskInsteadInput): Promise<AskOutco
   return askInsteadForSpare(userId, i.fromRequestId, i.friendPublicId, i.oracleId, env, new Date(), { copies: i.copies, deckId: i.deckId, standalone: i.standalone });
 }
 
+/**
+ * Redraws /friends after an Ask from its own spares sheet (Ask in place, product call 8), so Your requests lists it. The
+ * ask actions revalidate nothing, since Shopping and the cart ask too and their pages draw no request list; the sheet
+ * on /friends calls this after its ask lands. Signed in only; writes nothing.
+ */
+export async function refreshFriendsAction(): Promise<void> {
+  await reader();
+  revalidatePath("/friends");
+}
+
 /** ✕ on one of the reader's asks: withdraws it while open, else clears it from their list. */
 export async function closeSpareAction(requestId: string): Promise<CloseOutcome> {
   const { userId, env } = await reader();

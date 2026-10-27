@@ -143,6 +143,7 @@ export function FriendSparesProvider({
   standalone = false,
   sparesOnOpen = false,
   asksVersion,
+  onAsk,
   children,
 }: {
   /** The cards the deck is buying: one read covers every row that can carry a marker. */
@@ -161,6 +162,8 @@ export function FriendSparesProvider({
   /** Moves when the page's own asks changed outside this provider (a Your requests ✕ on /friends): every card's asks are
    *  read again, the ones this visit's presses moved since the read was sent kept as pressed (`mergeRead`). */
   asksVersion?: string;
+  /** Called after an Ask or Ask instead lands, for a page that draws the reader's asks elsewhere (Your requests). */
+  onAsk?: () => void;
   /** Draw the spares-only modal here. False where it must sit inside a card-detail provider mounted lower (the cart),
    *  which then renders `SparesSheetHost` itself. */
   hostSheet?: boolean;
@@ -202,6 +205,11 @@ export function FriendSparesProvider({
     };
   }, []);
   const readVersion = useRef(asksVersion);
+  // Each card's newest read (Copilot round 2, #2288): a read sent before an `asksVersion` move can land after the one sent
+  // for it, and would put back an ask withdrawn in between. A response is applied only for the cards it is still the
+  // newest read of; a card that left the list keeps its read, as before.
+  const readSeq = useRef(0);
+  const newestRead = useRef(new Map<string, number>());
   useEffect(() => {
     if (!requests || !key) return;
     if (readVersion.current !== asksVersion) {
@@ -211,11 +219,15 @@ export function FriendSparesProvider({
     const ids = key.split(",").filter((id) => !read.current.has(id));
     if (ids.length === 0) return;
     for (const id of ids) read.current.add(id);
+    const seq = ++readSeq.current;
+    for (const id of ids) newestRead.current.set(id, seq);
     const sentAt = new Map(ids.map((id) => [id, presses.current.get(id) ?? 0]));
     void fetchAsks(ids).then((rows) => {
       if (!mounted.current) return;
-      const pressed = new Set(ids.filter((id) => (presses.current.get(id) ?? 0) !== sentAt.get(id)));
-      setAsks((now) => mergeRead(now, rows, pressed, new Set(ids)));
+      const current = new Set(ids.filter((id) => newestRead.current.get(id) === seq));
+      if (current.size === 0) return;
+      const pressed = new Set([...current].filter((id) => (presses.current.get(id) ?? 0) !== sentAt.get(id)));
+      setAsks((now) => mergeRead(now, rows.filter((r) => current.has(r.oracleId)), pressed, current));
     });
   }, [key, requests, asksVersion]);
   const ask = useCallback(
@@ -231,9 +243,10 @@ export function FriendSparesProvider({
       presses.current.set(press.oracleId, (presses.current.get(press.oracleId) ?? 0) + 1);
       const now = new Date();
       setAsks((prev) => [...afterAsk(prev.filter((a) => a.oracleId === press.oracleId), press, out.id, now), ...prev.filter((a) => a.oracleId !== press.oracleId)]);
+      onAsk?.();
       return true;
     },
-    [deckId, standalone],
+    [deckId, standalone, onAsk],
   );
   const value = useMemo<Ctx>(() => {
     // Only the cards asked for NOW: a card that left the list (bought, cut, proxied) drops its spare at once, the

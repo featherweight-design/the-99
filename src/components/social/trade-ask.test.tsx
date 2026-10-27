@@ -16,9 +16,9 @@ import { WaitingOnYou } from "./waiting-on-you";
 import { useState } from "react";
 import { TradeAskFrame, TradeAskProvider } from "./trade-ask";
 
-const m = vi.hoisted(() => ({ ask: vi.fn() }));
+const m = vi.hoisted(() => ({ ask: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }), usePathname: () => "/" }));
-vi.mock("../../app/friends/spare-actions", () => ({ askSpareAction: m.ask, askInsteadAction: vi.fn(), answerSpareAction: vi.fn() }));
+vi.mock("../../app/friends/spare-actions", () => ({ askSpareAction: m.ask, askInsteadAction: vi.fn(), answerSpareAction: vi.fn(), refreshFriendsAction: m.refresh }));
 vi.mock("../../app/feed-dismiss-actions", () => ({ dismissFeedItemAction: vi.fn() }));
 
 const GHALTA = "00000000-0000-4000-8000-0000000000c1";
@@ -58,6 +58,8 @@ beforeEach(() => {
   });
   m.ask.mockReset();
   m.ask.mockResolvedValue({ ok: true, id: "req-new" });
+  m.refresh.mockReset();
+  m.refresh.mockResolvedValue(undefined);
   asks = [];
   window.history.replaceState(null, "", "/");
 });
@@ -179,5 +181,46 @@ describe("the frame (Copilot round 1, #2288)", () => {
     await act(async () => { rerender(page("")); });
     expect(document.querySelector("[data-trade-ask=requested]")).toBeNull();
     expect(screen.getByRole("button", { name: `${feedCopy.home.press.tradeMatchAsk("Colin")} ›` })).toBeInTheDocument();
+  });
+});
+
+describe("/friends' redraw and a late read (Copilot round 2, #2288)", () => {
+  const payload = { cards: CARDS, prices: PRICES, newestAsOf: AS_OF };
+  async function askColin(refreshFriends: boolean) {
+    await act(async () => {
+      render(<CardDetailProvider><TradeAskFrame payload={payload} refreshFriends={refreshFriends}><ul><FeedItemRow item={item} now={NOW} /></ul></TradeAskFrame></CardDetailProvider>);
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Ask Colin/ })); });
+    await act(async () => { releaseSpares(); });
+    await act(async () => { fireEvent.click(within(sheet()).getAllByRole("button", { name: /^Ask/ })[0]); });
+  }
+
+  it("redraws /friends after an Ask there, so Your requests lists it", async () => {
+    await askColin(true);
+    expect(m.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("redraws nothing after an Ask on Home", async () => {
+    await askColin(false);
+    expect(m.refresh).not.toHaveBeenCalled();
+  });
+
+  it("drops a read that lands after a newer one, so a withdrawn ask is not put back", async () => {
+    const pending: Array<(rows: AskStateLine[]) => void> = [];
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.startsWith("/api/spare-requests")) {
+        const rows = await new Promise<AskStateLine[]>((ok) => pending.push(ok));
+        return { ok: true, json: async () => ({ asks: rows }) };
+      }
+      return { ok: true, json: async () => ({ spares: READ }) };
+    });
+    const page = (v: string) => <CardDetailProvider><TradeAskFrame payload={payload} asksVersion={v}><ul><FeedItemRow item={item} now={NOW} /></ul></TradeAskFrame></CardDetailProvider>;
+    const { rerender } = render(page("a"));
+    await act(async () => {});
+    await act(async () => { rerender(page("b")); });
+    expect(pending).toHaveLength(2);
+    await act(async () => { pending[1]([]); });
+    await act(async () => { pending[0]([open("open")]); });
+    expect(document.querySelector("[data-trade-ask=requested]")).toBeNull();
   });
 });

@@ -12,6 +12,7 @@ import type { TradeAskCard, TradeAskPayload } from "../../lib/social/trade-ask";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { rowAsk } from "./friend-spares";
 import { FriendSparesProvider, SparesSheetHost, usePageSpares } from "./spare-markers";
+import { refreshFriendsAction } from "../../app/friends/spare-actions";
 
 
 /** The row's state for its friend, in the sheet's words: Requested while the ask is open, Accepted after a yes. */
@@ -34,9 +35,12 @@ export function TradeAskProvider({
   prices,
   newestAsOf,
   asksVersion,
+  refreshFriends = false,
   children,
 }: {
   cards: readonly TradeAskCard[];
+  /** /friends: an Ask redraws the page, so Your requests lists it (`refreshFriendsAction`). */
+  refreshFriends?: boolean;
   /** `FriendSparesProvider`'s: moves when the page's asks changed outside the sheet (Your requests on /friends). */
   asksVersion?: string;
   /** The page's prices for the cards (`loadPrices`), for the sheet's buy tag; a card without one draws the bare tag. */
@@ -46,11 +50,13 @@ export function TradeAskProvider({
 }) {
   const ids = useMemo(() => cards.map((c) => c.oracleId), [cards]);
   return (
-    <FriendSparesProvider oracleIds={ids} newestAsOf={newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false} asksVersion={asksVersion}>
+    <FriendSparesProvider oracleIds={ids} newestAsOf={newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false} asksVersion={asksVersion} onAsk={refreshFriends ? refresh : undefined}>
       <Inner cards={cards} prices={prices}>{children}</Inner>
     </FriendSparesProvider>
   );
 }
+
+const refresh = () => void refreshFriendsAction().catch(() => {});
 
 const NONE: TradeAskPayload = { cards: [], prices: {}, newestAsOf: null };
 
@@ -60,10 +66,12 @@ const NONE: TradeAskPayload = { cards: [], prices: {}, newestAsOf: null };
  * the page under it, dropping what the visit holds (an answer's receipt, Show all). With no card the provider reads
  * nothing and every press stays its link (`has` is false).
  */
-export function TradeAskFrame({ payload, asksVersion, children }: { payload: TradeAskPayload | null; asksVersion?: string; children: ReactNode }) {
+export function TradeAskFrame({ payload, asksVersion, refreshFriends, children }: {
+  payload: TradeAskPayload | null; asksVersion?: string; refreshFriends?: boolean; children: ReactNode;
+}) {
   const p = payload ?? NONE;
   return (
-    <TradeAskProvider cards={p.cards} prices={p.prices} newestAsOf={p.newestAsOf} asksVersion={asksVersion}>
+    <TradeAskProvider cards={p.cards} prices={p.prices} newestAsOf={p.newestAsOf} asksVersion={asksVersion} refreshFriends={refreshFriends}>
       {children}
     </TradeAskProvider>
   );

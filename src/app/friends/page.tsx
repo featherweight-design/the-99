@@ -115,7 +115,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
             stay mounted with no trade match, so a redraw that drops the last one keeps Waiting on you's visit state. A
             Your requests ✕ moves `asksVersion`, so a trade match's press stops saying Requested for a withdrawn ask. */}
         <CardDetailProvider>
-          <TradeAskFrame payload={tradeAsk} asksVersion={mine.map((r) => `${r.id}:${r.state}:${r.cleared ? 1 : 0}`).join(",")}>
+          <TradeAskFrame payload={tradeAsk} refreshFriends asksVersion={mine.map((r) => `${r.id}:${r.state}:${r.cleared ? 1 : 0}`).join(",")}>
             <WaitingOnYou rows={waiting} now={now} />
           </TradeAskFrame>
         </CardDetailProvider>
