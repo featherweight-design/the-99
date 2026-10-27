@@ -230,7 +230,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const t = Date.now();
     const o = await callModel<Reply>({ model: app.model, system, user, maxTokens: ceilingFor(ask.adds + ask.cuts), schema, deadlineMs: 300_000, effort: TUNING_EFFORT, stream: true });
     const ms = Date.now() - t;
-    const usd = o.usage ? costMicroUsd(app.model, o.usage) / 1e6 : 0;
+    // A failed call that brought back no usage meter (a streamed reply that failed its parse) may still have been billed,
+    // so it settles at its worst case: the cap stays an upper bound on what was spent, never an under-count.
+    const usd = o.usage ? costMicroUsd(app.model, o.usage) / 1e6 : o.ok ? 0 : worst;
     record(LEDGER, { at: new Date().toISOString(), runId: `count-mechanism-${label}`, source: "realtime:1", usd, requests: 1, settles: id, note: label });
     log(`${label}: ${o.ok ? "ok" : `failed (${o.errorClass})`} in ${(ms / 1000).toFixed(1)}s, $${usd.toFixed(4)}; ledger $${spent(readLedger(LEDGER)).toFixed(2)}`);
     return { o, ms, usd };
