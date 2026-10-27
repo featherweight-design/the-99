@@ -142,6 +142,7 @@ export function FriendSparesProvider({
   deckId = null,
   standalone = false,
   sparesOnOpen = false,
+  asksVersion,
   children,
 }: {
   /** The cards the deck is buying: one read covers every row that can carry a marker. */
@@ -157,6 +158,9 @@ export function FriendSparesProvider({
   /** Read a card's spares only when its sheet opens, once per visit (a friend's Spares tab: the page already drew every
    *  tile, and the sheet draws the page's offer until the read lands). The asks are still read for every card. */
   sparesOnOpen?: boolean;
+  /** Moves when the page's own asks changed outside this provider (a Your requests ✕ on /friends): every card's asks are
+   *  read again, the ones this visit's presses moved since the read was sent kept as pressed (`mergeRead`). */
+  asksVersion?: string;
   /** Draw the spares-only modal here. False where it must sit inside a card-detail provider mounted lower (the cart),
    *  which then renders `SparesSheetHost` itself. */
   hostSheet?: boolean;
@@ -197,8 +201,13 @@ export function FriendSparesProvider({
       mounted.current = false;
     };
   }, []);
+  const readVersion = useRef(asksVersion);
   useEffect(() => {
     if (!requests || !key) return;
+    if (readVersion.current !== asksVersion) {
+      readVersion.current = asksVersion;
+      read.current.clear();
+    }
     const ids = key.split(",").filter((id) => !read.current.has(id));
     if (ids.length === 0) return;
     for (const id of ids) read.current.add(id);
@@ -208,7 +217,7 @@ export function FriendSparesProvider({
       const pressed = new Set(ids.filter((id) => (presses.current.get(id) ?? 0) !== sentAt.get(id)));
       setAsks((now) => mergeRead(now, rows, pressed, new Set(ids)));
     });
-  }, [key, requests]);
+  }, [key, requests, asksVersion]);
   const ask = useCallback(
     async (press: AskPress): Promise<boolean> => {
       const input = { friendPublicId: press.friend.publicId, oracleId: press.oracleId, copies: press.copies, deckId, standalone };

@@ -13,7 +13,8 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { FeedItemRow } from "../feed/feed-item";
 import { LeadStory } from "../home/lead-story";
 import { WaitingOnYou } from "./waiting-on-you";
-import { TradeAskProvider } from "./trade-ask";
+import { useState } from "react";
+import { TradeAskFrame, TradeAskProvider } from "./trade-ask";
 
 const m = vi.hoisted(() => ({ ask: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }), usePathname: () => "/" }));
@@ -145,5 +146,38 @@ describe("Waiting on you", () => {
   it("keeps its link without the provider", () => {
     render(<WaitingOnYou rows={[trade]} now={new Date(NOW)} />);
     expect(screen.getAllByRole("link", { name: /Ask Colin/ })[0]).toHaveAttribute("href", `/friends/${COLIN.publicId}?spare=${GHALTA}`);
+  });
+});
+
+describe("the frame (Copilot round 1, #2288)", () => {
+  function Held() {
+    const [n, setN] = useState(0);
+    return <button type="button" onClick={() => setN(n + 1)}>{`held ${n}`}</button>;
+  }
+
+  it("keeps the page under it mounted when the payload goes, so the visit's state survives", async () => {
+    const payload = { cards: CARDS, prices: PRICES, newestAsOf: AS_OF };
+    const { rerender } = render(<CardDetailProvider><TradeAskFrame payload={payload}><Held /></TradeAskFrame></CardDetailProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "held 0" }));
+    await act(async () => { rerender(<CardDetailProvider><TradeAskFrame payload={null}><Held /></TradeAskFrame></CardDetailProvider>); });
+    expect(screen.getByRole("button", { name: "held 1" })).toBeInTheDocument();
+  });
+
+  it("with no payload, a trade match's press stays its link", async () => {
+    await act(async () => { render(<CardDetailProvider><TradeAskFrame payload={null}><ul><FeedItemRow item={item} now={NOW} /></ul></TradeAskFrame></CardDetailProvider>); });
+    expect(screen.getByRole("link", { name: /Ask Colin/ })).toHaveAttribute("href", item.href);
+  });
+
+  it("reads the asks again when asksVersion moves, so a withdrawn ask stops saying Requested", async () => {
+    asks = [open("open")];
+    const payload = { cards: CARDS, prices: PRICES, newestAsOf: AS_OF };
+    const page = (v: string) => <CardDetailProvider><TradeAskFrame payload={payload} asksVersion={v}><ul><FeedItemRow item={item} now={NOW} /></ul></TradeAskFrame></CardDetailProvider>;
+    const { rerender } = render(page("req-1:open:0"));
+    await act(async () => {});
+    expect(document.querySelector("[data-trade-ask=requested]")).not.toBeNull();
+    asks = [];
+    await act(async () => { rerender(page("")); });
+    expect(document.querySelector("[data-trade-ask=requested]")).toBeNull();
+    expect(screen.getByRole("button", { name: `${feedCopy.home.press.tradeMatchAsk("Colin")} ›` })).toBeInTheDocument();
   });
 });

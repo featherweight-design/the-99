@@ -110,10 +110,17 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     <ToolLandingMount landing={landing} request={request} />
     <FriendsView
       profile={profile}
-      waiting={<>{tradeAsk ? (
-        // The sheet's name opens card details, so its provider sits around it here, as on a friend's Spares tab.
-        <CardDetailProvider><TradeAskFrame payload={tradeAsk}><WaitingOnYou rows={waiting} now={now} /></TradeAskFrame></CardDetailProvider>
-      ) : <WaitingOnYou rows={waiting} now={now} />}<YourRequests rows={mine} now={now} canBuy={shoppingMarkBoughtEnabled(env)} /></>}
+      waiting={<>
+        {/* The sheet's name opens card details, so its provider sits around it here, as on a friend's Spares tab. Both
+            stay mounted with no trade match, so a redraw that drops the last one keeps Waiting on you's visit state. A
+            Your requests ✕ moves `asksVersion`, so a trade match's press stops saying Requested for a withdrawn ask. */}
+        <CardDetailProvider>
+          <TradeAskFrame payload={tradeAsk} asksVersion={mine.map((r) => `${r.id}:${r.state}:${r.cleared ? 1 : 0}`).join(",")}>
+            <WaitingOnYou rows={waiting} now={now} />
+          </TradeAskFrame>
+        </CardDetailProvider>
+        <YourRequests rows={mine} now={now} canBuy={shoppingMarkBoughtEnabled(env)} />
+      </>}
       pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} ruleZero={tables ? { tables, now } : null} />}
       friends={friends}
       links={links}

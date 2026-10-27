@@ -33,9 +33,12 @@ export function TradeAskProvider({
   cards,
   prices,
   newestAsOf,
+  asksVersion,
   children,
 }: {
   cards: readonly TradeAskCard[];
+  /** `FriendSparesProvider`'s: moves when the page's asks changed outside the sheet (Your requests on /friends). */
+  asksVersion?: string;
   /** The page's prices for the cards (`loadPrices`), for the sheet's buy tag; a card without one draws the bare tag. */
   prices: Readonly<Record<string, PriceFact | null>>;
   newestAsOf: Date | null;
@@ -43,17 +46,24 @@ export function TradeAskProvider({
 }) {
   const ids = useMemo(() => cards.map((c) => c.oracleId), [cards]);
   return (
-    <FriendSparesProvider oracleIds={ids} newestAsOf={newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false}>
+    <FriendSparesProvider oracleIds={ids} newestAsOf={newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false} asksVersion={asksVersion}>
       <Inner cards={cards} prices={prices}>{children}</Inner>
     </FriendSparesProvider>
   );
 }
 
-/** The provider over a page's payload; with none (spare requests off, no trade match drawn), the children as they are. */
-export function TradeAskFrame({ payload, children }: { payload: TradeAskPayload | null; children: ReactNode }) {
-  if (!payload) return <>{children}</>;
+const NONE: TradeAskPayload = { cards: [], prices: {}, newestAsOf: null };
+
+/**
+ * The provider over a page's payload, mounted whether or not there is one (Copilot round 1, #2288): a payload that goes
+ * (the last trade match hidden, the refresh after an answer) would otherwise swap the provider for a fragment and remount
+ * the page under it, dropping what the visit holds (an answer's receipt, Show all). With no card the provider reads
+ * nothing and every press stays its link (`has` is false).
+ */
+export function TradeAskFrame({ payload, asksVersion, children }: { payload: TradeAskPayload | null; asksVersion?: string; children: ReactNode }) {
+  const p = payload ?? NONE;
   return (
-    <TradeAskProvider cards={payload.cards} prices={payload.prices} newestAsOf={payload.newestAsOf}>
+    <TradeAskProvider cards={p.cards} prices={p.prices} newestAsOf={p.newestAsOf} asksVersion={asksVersion}>
       {children}
     </TradeAskProvider>
   );
