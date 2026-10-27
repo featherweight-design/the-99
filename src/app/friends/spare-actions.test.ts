@@ -44,6 +44,12 @@ describe("askSpareAction", () => {
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 
+  it("passes a Spares tab ask's standalone mark on", async () => {
+    m.askForSpare.mockResolvedValue({ ok: true, id: REQ });
+    await askSpareAction({ friendPublicId: FRIEND, oracleId: CARD, deckId: null, standalone: true });
+    expect(m.askForSpare).toHaveBeenCalledWith("user_1", FRIEND, CARD, ENV, expect.any(Date), expect.objectContaining({ standalone: true }));
+  });
+
   it("hands a malformed input on as missing fields, so the library refuses it", async () => {
     m.askForSpare.mockResolvedValue({ ok: false, reason: "not-spare" });
     expect(await askSpareAction(null as never)).toEqual({ ok: false, reason: "not-spare" });
