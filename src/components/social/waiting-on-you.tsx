@@ -22,7 +22,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { faceInitials } from "./face";
-import { TradeAskLabel, useTradeAsk } from "./trade-ask";
+import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
 
 const w = socialCopy.waiting;
@@ -239,7 +239,7 @@ function WaitingLink({ row, className }: { row: TradeMatchRow; className: string
           type="button"
           data-trade-ask-press
           aria-haspopup="dialog"
-          aria-label={state ? `${w.askFriend(row.friend.displayName)}, ${state === "requested" ? spareCopy.request.requested : spareCopy.request.accepted}` : undefined}
+          aria-label={state ? tradeAskAria(w.askFriend(row.friend.displayName), state) : undefined}
           onClick={(e) => trade.open(row.card.oracleId, row.friend.publicId, e.currentTarget)}
           className={`${press} cursor-pointer border-0 bg-transparent p-0 text-left`}
         >

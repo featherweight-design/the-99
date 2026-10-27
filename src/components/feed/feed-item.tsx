@@ -21,7 +21,7 @@ import { Face } from "../social/face";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { NEW_TAB_SUFFIX } from "../ui/external-link";
 import { DismissButton } from "./dismiss";
-import { TradeAskLabel, useTradeAsk } from "../social/trade-ask";
+import { TradeAskLabel, tradeAskAria, useTradeAsk } from "../social/trade-ask";
 import { feedAge } from "../../lib/feed/age";
 
 const c = feedCopy.home;
@@ -113,6 +113,7 @@ export function FeedPress({
         data-feed-press
         data-trade-ask-press
         aria-haspopup="dialog"
+        aria-label={state ? tradeAskAria(c.press.tradeMatchAsk(asking.friendName), state) : undefined}
         onClick={(e) => trade.open(asking.oracleId, asking.friendPublicId, e.currentTarget)}
         className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
         aria-describedby={describedBy}
@@ -160,9 +161,9 @@ export function FeedPress({
 }
 
 /** A trade match whose Ask opens in place: the card and the friend, else null (the press keeps its link). */
-function tradeAskOf(item: FeedView, held: boolean): { oracleId: string; friendPublicId: string } | null {
+function tradeAskOf(item: FeedView, held: boolean): { oracleId: string; friendPublicId: string; friendName: string } | null {
   if (item.kind !== "trade-match" || !item.askable || !held || !item.card || !item.friend) return null;
-  return { oracleId: item.card.oracleId, friendPublicId: item.friend.publicId };
+  return { oracleId: item.card.oracleId, friendPublicId: item.friend.publicId, friendName: item.friend.displayName };
 }
 
 /** The 46x64 picture: the card at card shape with the friend's face on its corner, or the combo mark. */

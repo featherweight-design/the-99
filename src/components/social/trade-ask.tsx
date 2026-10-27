@@ -90,6 +90,11 @@ function Inner({ cards, prices, children }: { cards: readonly TradeAskCard[]; pr
   );
 }
 
+/** The asked press's name: the Ask it was, then its state, so a reader hears the friend as well as Requested. */
+export function tradeAskAria(ask: string, state: Exclude<TradeAskState, null>): string {
+  return `${ask}, ${state === "requested" ? spareCopy.request.requested : spareCopy.request.accepted}`;
+}
+
 /**
  * The press's words once this friend has been asked: the tab's caption, as a label. On the lead's filled button
  * (`filled`) the dot and the words take the button's own ink, since the accent dot and the success green would not read

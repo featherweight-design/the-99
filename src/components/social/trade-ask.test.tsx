@@ -125,6 +125,8 @@ describe("the lead story", () => {
     await act(async () => { render(inProvider(<LeadStory item={item} now={NOW} />)); });
     const press = document.querySelector<HTMLElement>("[data-trade-ask-press]")!;
     expect(press.querySelector("[data-trade-ask=requested] i")!.className).toMatch(/bg-current/);
+    // Named for the friend as well as the state (pre-open pass): the lead's button has no title to describe it.
+    expect(press).toHaveAccessibleName(`${feedCopy.home.press.tradeMatchAsk("Colin")}, ${spareCopy.request.requested}`);
     await act(async () => { fireEvent.click(press); });
     expect(sheet()).toBeInTheDocument();
   });
