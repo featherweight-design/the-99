@@ -18,6 +18,7 @@ import { nameList } from "../../lib/copy/deck-analysis";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { FeedKind } from "../../lib/feed/kinds";
 import { FeedItemRow, type FeedFaces } from "../feed/feed-item";
+import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Checkbox } from "../ui/checkbox";
@@ -25,8 +26,7 @@ import { PrimaryButton } from "../ui/button";
 
 const c = feedCopy.home;
 
-/** How many rows show before "Show all N" (the board: "five shown, then Show all N"). */
-export const FEED_SHOWN = 5;
+export { FEED_SHOWN };
 
 const DAY_MS = 86_400_000;
 
@@ -46,7 +46,7 @@ const ROWS = "m-0 list-none p-0 [&>li+li]:[border-top:1px_solid_var(--border)]";
 const DAY = "m-0 px-[14px] pt-[9px] font-mono text-[9px] font-medium tracking-[.14em] text-[color:var(--fg-locked)] uppercase";
 
 export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; className?: string }) {
-  const [expanded, setExpanded] = useState(false);
+  const { expanded, root, expand } = useShowAll();
   // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
   const feed = displaceLead(served, useHeldLead()?.key ?? null);
   const chosen = feed.chosen;
@@ -67,14 +67,14 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
           </Link>
         )}
       </h2>
-      <div className="flex flex-col overflow-hidden rounded-[14px] [border:1px_solid_var(--border)] bg-[color:var(--surface-inset)]">
+      <div ref={root} className="flex flex-col overflow-hidden rounded-[14px] [border:1px_solid_var(--border)] bg-[color:var(--surface-inset)]">
         {!chosen ? (
           <OptIn key={feed.offer.join(",")} offer={feed.offer} alsoOn={feed.alsoOn} />
         ) : feed.items.length === 0 ? (
           <Quiet on={feed.on} />
         ) : (
           <HoverPreviewProvider className="flex flex-col">
-            <Rows items={feed.items} now={now} faces={faces} expanded={expanded} onExpand={() => setExpanded(true)} />
+            <Rows items={feed.items} now={now} faces={faces} expanded={expanded} onExpand={expand} />
           </HoverPreviewProvider>
         )}
       </div>
@@ -92,18 +92,7 @@ function Rows({ items, now, faces, expanded, onExpand }: { items: FeedView[]; no
       {today.length > 0 && <ul className={ROWS}>{today.map(row)}</ul>}
       {labelled && <p className={`${DAY} [border-top:1px_solid_var(--border)]`}>{c.earlier}</p>}
       {earlier.length > 0 && <ul className={`${ROWS} ${!labelled && today.length > 0 ? "[border-top:1px_solid_var(--border)]" : ""}`}>{earlier.map(row)}</ul>}
-      {hidden > 0 && (
-        <div data-feed-footer className="flex items-center justify-between gap-[10px] [border-top:1px_solid_var(--border)] py-[4px] pr-[6px] pl-[14px]">
-          <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{c.more(hidden)}</small>
-          <button
-            type="button"
-            onClick={onExpand}
-            className="flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] md:min-h-[36px]"
-          >
-            {c.showAll(items.length)}
-          </button>
-        </div>
-      )}
+      <ShowAllFooter hidden={hidden} total={items.length} onExpand={onExpand} />
     </>
   );
 }

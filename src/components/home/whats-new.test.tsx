@@ -36,6 +36,24 @@ describe("WhatsNew, kinds on", () => {
     expect(screen.queryByRole("button", { name: /Show all/ })).toBeNull();
   });
 
+  it("moves focus to the first row Show all reveals, since the press itself leaves", () => {
+    const items = Array.from({ length: 7 }, (_, i) => view(i, i + 1));
+    render(<WhatsNew feed={chosen(items)} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show all 7" }));
+    const sixth = screen.getAllByRole("listitem")[FEED_SHOWN];
+    // The row's named press, never its picture link (aria-hidden, out of the tab order).
+    expect(document.activeElement).toBe(sixth.querySelector("[data-feed-press]"));
+  });
+
+  it("focuses the row Show all REVEALED when the groups put it ahead of a row already shown", () => {
+    // Feed order: an older item first, then five from today. Cut to five: the older one (Earlier) and four of today.
+    // Expanded, the fifth of today lands before the older row, which was shown all along.
+    const items = [view(9, 48), ...Array.from({ length: 5 }, (_, i) => view(i, i + 1))];
+    render(<WhatsNew feed={chosen(items)} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show all 6" }));
+    expect(document.activeElement?.closest("li")?.textContent).toContain("Set 4");
+  });
+
   it("draws no footer at five or fewer, and no count with nothing unseen", () => {
     render(<WhatsNew feed={chosen([view(1, 2), view(2, 3)])} now={NOW} />);
     expect(screen.queryByRole("button", { name: /Show all/ })).toBeNull();

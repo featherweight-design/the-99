@@ -171,8 +171,19 @@ describe("By friend's panels", () => {
       "Brainstorm", "Jace, Multiverse Architect",
     ]);
     expect(panel("Max").getAllByRole("listitem")).toHaveLength(1);
-    // The shipped line: the count and the decks.
-    expect(within(lineIn("Colin", "Brainstorm")).getByText("2 · HD - Wizards, Dragons of Tarkir")).toBeTruthy();
+    // The shipped line: the count and the decks, then this friend's spares of the card (Hugh, 2026-10-27).
+    expect(within(lineIn("Colin", "Brainstorm")).getByText((_, el) => el?.textContent === "2 · HD - Wizards, Dragons of Tarkir · 1 spare")).toBeTruthy();
+  });
+
+  it("names each friend's own spares of the line's card, not the panel's total", async () => {
+    served = { spares: [spare(JACE, "Colin", 3), spare(BRAIN, "Colin"), spare(JACE, "Max", 2, ["Cube night"])], asks: [] };
+    await mount({ initialView: "friend" });
+    expect(within(lineIn("Colin", "Jace, Multiverse Architect")).getByTestId("cart-line-spare").textContent).toBe("3 spares");
+    // The separator wraps with the count: never a "·" hanging at the end of a phone line.
+    expect(within(lineIn("Colin", "Jace, Multiverse Architect")).getByTestId("cart-line-spare").parentElement?.className).toContain("whitespace-nowrap");
+    expect(within(lineIn("Colin", "Jace, Multiverse Architect")).getByTestId("cart-line-spare").parentElement?.textContent).toBe("· 3 spares");
+    expect(within(lineIn("Colin", "Brainstorm")).getByTestId("cart-line-spare").textContent).toBe("1 spare");
+    expect(within(lineIn("Max", "Jace, Multiverse Architect")).getByTestId("cart-line-spare").textContent).toBe("2 spares");
   });
 
   it("orders by spares in copies, then by name", () => {
@@ -180,6 +191,8 @@ describe("By friend's panels", () => {
     const byCard = new Map([[JACE, [spare(JACE, "Zed", 3), spare(JACE, "Ana", 1)]], [BRAIN, [spare(BRAIN, "Bo", 1), spare(BRAIN, "Ana", 1)]]]);
     const groups = groupByFriend([line(JACE), line(BRAIN)] as never, byCard);
     expect(groups.map((g) => [g.friend.displayName, g.spares])).toEqual([["Zed", 3], ["Ana", 2], ["Bo", 1]]);
+    expect(Object.fromEntries(groups[1].spareOf)).toEqual({ [JACE]: 1, [BRAIN]: 1 });
+    expect(Object.fromEntries(groups[0].spareOf)).toEqual({ [JACE]: 3 });
   });
 
   it("draws no spare glyph on a line and keeps only the buy item in the key", async () => {

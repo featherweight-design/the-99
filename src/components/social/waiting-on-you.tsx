@@ -19,6 +19,7 @@ import { refreshCopy } from "../../lib/copy/refresh";
 import { shortName } from "../../lib/cards/short-name";
 import { FadingImg } from "../ui/hydrated-art";
 import { PendingReporter } from "../shell/pending-reporter";
+import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { faceInitials } from "./face";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
 
@@ -52,6 +53,7 @@ const DETAIL = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [ove
 
 export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: Date }) {
   const [receipts, setReceipts] = useState<ReadonlyMap<string, Receipt>>(() => new Map());
+  const { expanded, root, expand } = useShowAll();
   const listRef = useRef<HTMLUListElement | null>(null);
   const land = useLandFocus(listRef);
   const { busy, answer, toast } = useSpareAnswer();
@@ -59,7 +61,9 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
   const waiting = rows.filter((row) => !receipts.has(row.key));
   // The last row can leave while its answer is out (the friend's spare went): the failure toast still shows.
   if (waiting.length === 0 && receipts.size === 0) return toast;
-  const shown = placeReceipts(waiting, receipts);
+  const placed = placeReceipts(waiting, receipts);
+  // Five shown, then Home's "Show all N" (Hugh, 2026-10-27): the cut keeps the list's order, so a receipt keeps its place.
+  const shown = expanded ? placed : placed.slice(0, FEED_SHOWN);
   async function press(row: SpareRequestRow, a: Answer, index: number, from: Element) {
     if (!(await answer(row.ask.id, a))) return;
     setReceipts((prev) => new Map(prev).set(row.key, { row, answer: a, index }));
@@ -73,7 +77,8 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
       >
         {w.head(waiting.length)}
       </h2>
-      <ul ref={listRef} className="m-0 mt-[12px] flex list-none flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-0 [border:1px_solid_var(--border)]">
+      <div ref={root} className="mt-[12px] flex flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] [border:1px_solid_var(--border)]">
+      <ul ref={listRef} className="m-0 flex list-none flex-col p-0">
         {shown.map((item, index) =>
           item.kind === "receipt" ? (
             <ReceiptRow key={item.receipt.row.key} receipt={item.receipt} />
@@ -86,6 +91,10 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
           ),
         )}
       </ul>
+      {/* "Show all N" names what the head counts: the rows still waiting, never the visit's receipts. Every hidden row is
+          one (a receipt holds a place its row had among the shown five). */}
+      <ShowAllFooter hidden={placed.length - shown.length} total={waiting.length} onExpand={expand} />
+      </div>
       {toast}
     </section>
   );

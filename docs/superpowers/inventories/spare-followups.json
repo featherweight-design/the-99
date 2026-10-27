@@ -1,0 +1,47 @@
+{
+  "feature": "Spare follow-ups: the By friend cart line's friend spare count (\" · N spares\", cart-line.tsx via cart-by-friend.tsx), /friends' Waiting on you cut to five rows with the shared \"N more · Show all N\" footer (feed/show-all.tsx) that expands in place, and Home's What's new on the same footer (a regression check: it must draw as before)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED, SPARE_REQUESTS_ENABLED, HOME_FEED_ENABLED, ALL_DECKS_CART_ENABLED, SOCIAL_WISHLIST_ENABLED, COLLECTION_EDIT_ENABLED and COMMANDERS_PLACE_ENABLED on for the reader, MOMENTS_ENABLED off. FIXTURES ON A SCRATCH BRANCH OFF local-dev ONLY (social, collection and spare-request rows): the reader (the audit account) in one pod with four friends, every member sharing spares; two of those friends holding spares of cards on the reader's Shopping lists at 1, 2 and 3 copies (one card held by both); at least six open asks from friends for the reader's own spares, so Waiting on you has rows past the fifth and Home's What's new (the asks' feed items, less the one that leads) has a footer. No clearAbout: its helper writes the About row to the DATABASE_URL `.env` names, so mark the account's About entries seen on the scratch branch while seeding. The Show all row presses only the footer, which writes nothing.",
+  "out": "contact-sheets/spare-followups",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "cart-by-friend-spares",
+      "label": "/decks/shopping?view=friend: each line in a friend's panel ends its decks line with \" · N spares\", that friend's copies",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "fullPage": true,
+      "steps": [
+        { "goto": "/decks/shopping?view=friend", "wait": "[data-testid=cart-line-spare]", "settle": 2000 }
+      ]
+    },
+    {
+      "id": "waiting-collapsed",
+      "label": "/friends: Waiting on you, five rows, then \"N more · Show all N\"",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "fullPage": true,
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=waiting-on-you] [data-feed-footer]", "settle": 2000 }
+      ]
+    },
+    {
+      "id": "waiting-expanded",
+      "label": "/friends: Waiting on you after Show all, every row in place, no footer",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "fullPage": true,
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=waiting-on-you] [data-feed-footer]", "settle": 2000 },
+        { "clickRole": "button", "name": "^Show all \\d+$", "settle": 1000 }
+      ]
+    },
+    {
+      "id": "home-whats-new",
+      "label": "Home: What's new with its \"N more · Show all N\" footer, as before the extraction",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        { "goto": "/", "wait": "[data-feed-footer]", "settle": 2000, "scrollTo": "[data-feed-footer]" }
+      ]
+    }
+  ]
+}
