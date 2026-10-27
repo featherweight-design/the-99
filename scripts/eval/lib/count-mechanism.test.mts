@@ -2,9 +2,9 @@
 // count, what the refill asks, and how the blind board hides its arms. A drift in any of them measures something else.
 import { describe, expect, it } from "vitest";
 
-import { lettersFor, quantile } from "../count-mechanism-report.mjs";
+import { lettersFor, quantile, VARIANTS } from "../count-mechanism-report.mjs";
 import { parseMoxfield } from "../count-mechanism-seed.mjs";
-import { ceilingFor, overAsk, patchCount, reasonFor, refillBlock } from "../count-mechanism.mjs";
+import { ceilingFor, comingInBlock, overAsk, patchFlow, reasonFor, refillBlock } from "../count-mechanism.mjs";
 import { buildPrompt } from "../../../src/lib/tuning/prompt";
 import { buildPlayGroup } from "../../../src/lib/profile/play";
 import type { EvidencePack } from "../../../src/lib/tuning/evidence";
@@ -37,25 +37,38 @@ describe("parseMoxfield", () => {
   });
 });
 
-describe("patchCount", () => {
+describe("patchFlow", () => {
   const { system } = buildPrompt(pack);
 
-  it("replaces the app's 'up to six' and 'offer fewer' with the count, once each", () => {
-    const patched = patchCount(system, 30, 30, 20);
-    expect(patched).toContain("Propose exactly 30 cards to add and exactly 30 cards to cut, as two separate lists.");
-    expect(patched).toContain("The player asked for 20 additions and 20 cuts");
+  it("asks the additions stage for additions alone, first, for the request and the deck's weaknesses", () => {
+    const patched = patchFlow(system, { adds: 30, cuts: 0 }, 20);
+    expect(patched).toContain("Propose exactly 30 cards to add, and leave the cuts list empty.");
+    expect(patched).toContain("The player wants 20 cards in. Choose the additions first");
     expect(patched).not.toMatch(/up to \d+ cards|offer fewer of either/);
   });
 
+  it("asks the cuts stage for cuts that make room for what is coming in", () => {
+    const patched = patchFlow(system, { adds: 0, cuts: 20 }, 20);
+    expect(patched).toContain("Propose exactly 20 cards to cut, and leave the additions list empty.");
+    expect(patched).toContain('listed under "Coming in"');
+    expect(comingInBlock(["Mesmeric Orb", "Hedron Crab"])).toBe("\nComing in (2): Mesmeric Orb; Hedron Crab.");
+  });
+
+  it("asks one reply for both, additions first and then the cuts that make room", () => {
+    const patched = patchFlow(system, { adds: 15, cuts: 15 }, 10);
+    expect(patched).toContain("Propose exactly 15 cards to add and exactly 15 cards to cut, as two separate lists.");
+    expect(patched).toMatch(/Choose the additions first.*Then choose the cuts that make room for them/);
+  });
+
   it("refuses a prompt whose sentences moved, rather than measuring it unchanged", () => {
-    expect(() => patchCount(system.replace("Aim for as many cuts", "Aim for"), 3, 3, 3)).toThrow(/aim sentence/);
-    expect(() => patchCount("no size here", 3, 3, 3)).toThrow(/size sentence/);
+    expect(() => patchFlow(system.replace("Aim for as many cuts", "Aim for"), { adds: 3, cuts: 3 }, 3)).toThrow(/aim sentence/);
+    expect(() => patchFlow("no size here", { adds: 3, cuts: 3 }, 3)).toThrow(/size sentence/);
   });
 });
 
 describe("the refill's question", () => {
   it("names what was kept, what fell and why, and asks for exactly the shortfall", () => {
-    const block = refillBlock({ adds: ["Mesmeric Orb"], cuts: [] }, [{ card: "Lightning Bolt", side: "add", reason: reasonFor({ rule: "colourIdentity" }) }], 4, 5);
+    const block = refillBlock({ adds: ["Mesmeric Orb"], cuts: [] }, [{ card: "Lightning Bolt", side: "add", reason: reasonFor({ rule: "colourIdentity" }) }], { adds: 4, cuts: 5 });
     expect(block).toContain("Kept, additions: Mesmeric Orb.");
     expect(block).toContain("Kept, cuts: none.");
     expect(block).toContain("- Lightning Bolt (addition): it is outside the commander's colors");
@@ -76,10 +89,10 @@ describe("sizes", () => {
 });
 
 describe("the blind board", () => {
-  it("gives every case a permutation of the three arms, not the same order each time", () => {
+  it("gives every case a permutation of the six variants, not the same order each time", () => {
     const orders = [0, 1, 2, 3, 4, 5].map((i) => lettersFor(i));
-    for (const o of orders) expect(new Set(Object.values(o))).toEqual(new Set(["A", "B", "C"]));
-    expect(new Set(orders.map((o) => o.X + o.Y + o.Z)).size).toBeGreaterThan(1);
+    for (const o of orders) expect(new Set(Object.values(o))).toEqual(new Set(VARIANTS));
+    expect(new Set(orders.map((o) => Object.values(o).join(","))).size).toBeGreaterThan(1);
   });
 
   it("reads a quantile off the sorted values", () => {
