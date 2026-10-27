@@ -82,8 +82,9 @@ const RESTATES_OFF_TOP = /\bon none of (them|the top|its top|the deck's top|the 
 type Line = { addOracleId: string | null; cutOracleId: string | null; evidence: TuningCitation[] };
 
 /**
- * The two chips the app writes after validation (the model is never offered the `focus` kind, and the validator's
- * denominator rule would drop either from it). An ADDITION on the focus leads with `focus · Tokens 11 → 12`: the
+ * The two chips the app writes after validation. The model may cite the focus by name with no figure (prompt version 10),
+ * never its count, which the validator's denominator rule would drop; this chip carries the figure, so it replaces the
+ * model's. An ADDITION on the focus leads with `focus · Tokens 11 → 12`: the
  * figure before and after that ONE addition, never chained across additions, since a player applies them in any order.
  * A nonland CUT on none of the top strategies nor the focus leads with `list · on none of the top 5`. `adds` are the
  * kept additions' catalog cards; a land or an unknown card gets no chip.

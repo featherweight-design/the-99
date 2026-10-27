@@ -158,7 +158,7 @@ describe("validateSuggestions", () => {
     expect(out.drops).toEqual([]);
     expect(out.kept).toHaveLength(1);
     expect(out.kept[0].evidence).toEqual([{ kind: "games", value: "Mana hurt in 3 of 5 games" }]);
-    expect(out.strippedIntent).toBe(1);
+    expect(out.strippedCites).toBe(1);
   });
 
   it("holds a focus citation that names the deck's focus with no figure, and only on a deck with one", () => {
@@ -175,6 +175,26 @@ describe("validateSuggestions", () => {
     expect(none.kept[0].evidence).toEqual([{ kind: "games", value: "Mana hurt in 3 of 5 games" }]);
   });
 
+  it("reads a figure past the focus's own name, so a name with digits in it still holds", () => {
+    const counters: EvidencePack = { ...pack, focus: { name: "+1/+1 counters", copies: 12, nonland: 60, on: [], top: [], offTop: [], candidates: [] } };
+    const cite = (value: string) => validateSuggestions({
+      response: { additions: [{ ...good, evidence: [{ kind: "focus", value }, { kind: "games", value: "Mana hurt in 3 of 5 games" }] }], cuts: [] }, pack: counters, resolveName,
+    });
+    expect(cite("+1/+1 counters").drops).toEqual([]);
+    expect(cite("+1/+1 counters: 12 of 60").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "focus" } });
+  });
+
+  it("removes a focus citation from a cut, where the app writes its own off-plan chip", () => {
+    const focused: EvidencePack = { ...pack, focus: { name: "Goblin typal", copies: 30, nonland: 60, on: [], top: [], offTop: [], candidates: [] } };
+    const out = validateSuggestions({
+      response: { additions: [], cuts: [{ ...goodCut, evidence: [{ kind: "focus", value: "Goblin typal" }, { kind: "games", value: "Mana hurt in 3 of 5 games" }] }] },
+      pack: focused, resolveName,
+    });
+    expect(out.drops).toEqual([]);
+    expect(out.kept[0].evidence).toEqual([{ kind: "games", value: "Mana hurt in 3 of 5 games" }]);
+    expect(out.strippedCites).toBe(1);
+  });
+
   // The regression, in the shape production stored (run 53f5457c): a focus, no intent, five additions each citing the
   // focus under `intent` beside a citation that held. Every one dropped then; every one stands now.
   it("keeps every addition in HD - Goblins' shape", () => {
@@ -187,13 +207,13 @@ describe("validateSuggestions", () => {
     });
     expect(out.drops).toEqual([]);
     expect(out.kept.filter((k) => k.addOracleId !== null)).toHaveLength(adds.length);
-    expect(out.strippedIntent).toBe(adds.length);
+    expect(out.strippedCites).toBe(adds.length);
   });
 
   it("still drops a line whose only citation is an ungroundable intent, and keeps an intent check on a deck that has one", () => {
     const only = run({ ...good, evidence: [{ kind: "intent", value: "Goblin typal" }] });
     expect(only.drops[0]).toMatchObject({ rule: "citation", cite: { kind: "intent" } });
-    expect(only.strippedIntent).toBe(0);
+    expect(only.strippedCites).toBe(0);
     const withIntent = validateSuggestions({
       response: { additions: [{ ...good, evidence: [{ kind: "intent", value: "go wide" }, { kind: "games", value: "Mana hurt in 3 of 5 games" }] }], cuts: [] },
       pack: { ...pack, intent: "grind it out" }, resolveName,
