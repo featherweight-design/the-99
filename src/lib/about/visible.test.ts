@@ -793,7 +793,7 @@ describe("push (close-out): each line follows the kind's own availability (`feed
 describe("the friends entry under the signature card", () => {
   const friends = aboutEntries.find((e) => e.id === "friends")!;
   const env = (decks: boolean, signature: boolean) =>
-    ({ SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: decks ? "true" : "", SIGNATURE_CARD_ENABLED: signature ? "true" : "" }) as NodeJS.ProcessEnv;
+    ({ SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: decks ? "true" : "", SIGNATURE_CARD_ENABLED: signature ? "true" : "" }) as unknown as NodeJS.ProcessEnv;
   it.each([
     [false, false, "your name and your commander,", "Pick a commander and its art"],
     [true, false, "your name, your commander and the decks", "Pick a commander and its art"],
