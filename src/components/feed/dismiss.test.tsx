@@ -29,7 +29,7 @@ const NOW = "2026-10-22T12:00:00.000Z";
 const view = (n: number, o: Partial<FeedView> = {}): FeedView => ({
   key: `set:s${n}`, kind: "new-set", at: new Date(Date.parse(NOW) - (n + 1) * 3_600_000).toISOString(), unseen: true,
   card: null, friend: null, href: `/collection/sets/s${n}`, opens: null, name: `Set ${n}`, setSize: null, owned: null, drop: null, combo: null,
-  answer: null, askable: false, ...o,
+  answer: null, askable: false, outbound: null, ...o,
 });
 const feed = (items: FeedView[], lead: FeedView | null = null): HomeFeed => ({
   chosen: true, on: ["new-set"], items, unseen: items.filter((i) => i.unseen).length + (lead?.unseen ? 1 : 0), lead,
