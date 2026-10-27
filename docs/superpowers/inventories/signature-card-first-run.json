@@ -1,7 +1,7 @@
 {
   "feature": "Signature card (handoff design_handoff_the99_avatar, R1b; plan 2026-10-27-signature-card.md) PR 3: the first-run checklist row (O1, D1), before Add your friends.",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED and SIGNATURE_CARD_ENABLED on, and the audit account in first run (no collection) with a profile, no face and user_prefs.face_prompt_done_at null. On a SCRATCH branch only, move its collection_items to a holding user id for the run and back afterwards. Read-only: nothing is pressed but the row.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SIGNATURE_CARD_ENABLED on, and the audit account in first run (no collection) with a profile, no face and user_prefs.face_prompt_done_at null. On a SCRATCH branch only, move its collection_items AND its decks to a holding user id for the run and back afterwards (Home's first run is no cards and no decks). Read-only: nothing is pressed but the row.",
   "out": "contact-sheets/signature-card-first-run",
   "rows": [
     {
