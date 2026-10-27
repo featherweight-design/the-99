@@ -108,7 +108,6 @@ export function encodeCollection(
     cards: cards.map((card) => {
       // The list never carries an availability of its own (the page reads it alongside), so the
       // one on `card`, if a caller set it, is dropped rather than shipped twice.
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured to drop it
       const { availability: _own, price, added, since, ...rest } = card;
       const wire: WireCard = { ...rest, imageUri: card.imageUri === null ? null : stemImage(card.imageUri) };
       if (price !== undefined) wire.p = price;

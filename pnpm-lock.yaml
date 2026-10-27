@@ -68,11 +68,11 @@ importers:
         specifier: ^2.2.19
         version: 2.2.19(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@fwd-stack/eslint-config':
-        specifier: github:HartiganHM/fwd-stack#61b1e22a47b908f1401dd26c22ded37d99a9fd2e&path:/packages/eslint-config
-        version: https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/61b1e22a47b908f1401dd26c22ded37d99a9fd2e#path:/packages/eslint-config(eslint-config-next@16.3.4(@typescript-eslint/parser@8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+        specifier: github:HartiganHM/fwd-stack#path:/packages/eslint-config
+        version: https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/93bc69ced2c49779a8446bfa85c85f3c5323dcd6#path:/packages/eslint-config(eslint-config-next@16.3.4(@typescript-eslint/parser@8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
       '@fwd-stack/tsconfig':
         specifier: github:HartiganHM/fwd-stack#path:/packages/tsconfig
-        version: https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/d5f8f65fab783d3b53f562b6c69f52fbf583fa04#path:/packages/tsconfig
+        version: https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/93bc69ced2c49779a8446bfa85c85f3c5323dcd6#path:/packages/tsconfig
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -739,8 +739,8 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@fwd-stack/eslint-config@https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/61b1e22a47b908f1401dd26c22ded37d99a9fd2e#path:/packages/eslint-config':
-    resolution: {path: /packages/eslint-config, tarball: https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/61b1e22a47b908f1401dd26c22ded37d99a9fd2e}
+  '@fwd-stack/eslint-config@https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/93bc69ced2c49779a8446bfa85c85f3c5323dcd6#path:/packages/eslint-config':
+    resolution: {path: /packages/eslint-config, tarball: https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/93bc69ced2c49779a8446bfa85c85f3c5323dcd6}
     version: 0.1.0
     peerDependencies:
       eslint: ^9.0.0
@@ -749,8 +749,8 @@ packages:
       eslint-config-next:
         optional: true
 
-  '@fwd-stack/tsconfig@https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/d5f8f65fab783d3b53f562b6c69f52fbf583fa04#path:/packages/tsconfig':
-    resolution: {path: /packages/tsconfig, tarball: https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/d5f8f65fab783d3b53f562b6c69f52fbf583fa04}
+  '@fwd-stack/tsconfig@https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/93bc69ced2c49779a8446bfa85c85f3c5323dcd6#path:/packages/tsconfig':
+    resolution: {path: /packages/tsconfig, tarball: https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/93bc69ced2c49779a8446bfa85c85f3c5323dcd6}
     version: 0.1.0
 
   '@humanfs/core@0.19.2':
@@ -4441,7 +4441,7 @@ snapshots:
 
   '@exodus/bytes@1.15.1': {}
 
-  '@fwd-stack/eslint-config@https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/61b1e22a47b908f1401dd26c22ded37d99a9fd2e#path:/packages/eslint-config(eslint-config-next@16.3.4(@typescript-eslint/parser@8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)':
+  '@fwd-stack/eslint-config@https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/93bc69ced2c49779a8446bfa85c85f3c5323dcd6#path:/packages/eslint-config(eslint-config-next@16.3.4(@typescript-eslint/parser@8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)':
     dependencies:
       '@eslint/js': 9.39.5
       eslint: 9.39.5(jiti@2.7.0)
@@ -4453,7 +4453,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@fwd-stack/tsconfig@https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/d5f8f65fab783d3b53f562b6c69f52fbf583fa04#path:/packages/tsconfig': {}
+  '@fwd-stack/tsconfig@https://codeload.github.com/HartiganHM/fwd-stack/tar.gz/93bc69ced2c49779a8446bfa85c85f3c5323dcd6#path:/packages/tsconfig': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -5217,8 +5217,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.64.0(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.64.0(typescript@5.9.3)
-      '@typescript-eslint/types': 8.64.0
+      '@typescript-eslint/tsconfig-utils': 8.72.1(typescript@5.9.3)
+      '@typescript-eslint/types': 8.72.1
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:
