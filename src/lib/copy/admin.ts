@@ -759,6 +759,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   RULE_ZERO_ENABLED: { label: "Rule 0 check", description: "Seat tonight's pod players and compare their decks' brackets." },
   SCAN_LAB_ENABLED: { label: "Card-scan lab", description: "A camera page at /lab/scan that tries the card scanner and records whether each guess was right. Not linked anywhere." },
   SHOPPING_MARK_BOUGHT_ENABLED: { label: "Mark bought", description: "Mark a shopping line bought and add it to the collection." },
+  SIGNATURE_CARD_ENABLED: { label: "Signature card", description: "Any card in any printing as a player's face, and asking for one once. Needs Friends." },
   SOCIAL_FRIENDS_ENABLED: { label: "Friends", description: "Friends, invites and pods. Opponents needs it." },
   SOCIAL_GAMES_ENABLED: { label: "Opponents", description: "Opponents in the game log." },
   SOCIAL_INVITES_ENABLED: { label: "Invites", description: "Inviting someone new, and invite counts." },

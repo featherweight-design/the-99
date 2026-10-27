@@ -12,6 +12,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, printings, socialProfiles } from "../../db/schema";
+import { isGameCard } from "../cards/game-card";
+import { facePromptDoneWrite } from "./face-prompt";
 import { isUuid } from "./rules";
 
 export type ProfileCommander = { oracleId: string; name: string; artCropUri: string | null };
@@ -53,10 +55,12 @@ function isForeignKeyViolation(e: unknown): boolean {
 }
 
 /**
- * Set the viewer's face, or clear it with a null card. Any card the catalog lists is allowed. `printingId` is the
+ * Set the viewer's face, or clear it with a null card. Any GAME card the catalog lists is allowed (`isGameCard`: no
+ * token, emblem or art card, G1). `printingId` is the
  * printing to draw it from, or null/undefined for the card's default art; a printing that is not OF that card is
  * refused, so a client cannot show another card's art by naming its printing. Every write sets both columns, so
- * changing the card without a printing drops the old pick.
+ * changing the card without a printing drops the old pick. A card picked (not a clear) also stamps the reader done
+ * being asked for one (`facePromptDoneWrite`, G4), in the same transaction, so Home's ask leaves with the pick.
  */
 export async function setCommander(viewerId: string, oracleId: unknown, printingId: unknown = null): Promise<SetCommanderResult> {
   let card: string | null = null;
@@ -64,8 +68,11 @@ export async function setCommander(viewerId: string, oracleId: unknown, printing
   if (printingId !== null && printingId !== undefined && !isUuid(printingId)) return { ok: false, reason: "badPrinting" };
   if (oracleId !== null) {
     if (!isUuid(oracleId)) return { ok: false, reason: "noCard" };
-    const [found] = await db.select({ oracleId: cards.oracleId }).from(cards).where(eq(cards.oracleId, oracleId));
-    if (!found) return { ok: false, reason: "noCard" };
+    const [found] = await db
+      .select({ oracleId: cards.oracleId, layout: cards.layout, typeLine: cards.typeLine })
+      .from(cards)
+      .where(eq(cards.oracleId, oracleId));
+    if (!found || !isGameCard(found)) return { ok: false, reason: "noCard" };
     card = found.oracleId;
     if (printingId !== null && printingId !== undefined) {
       const [p] = await db
@@ -79,12 +86,16 @@ export async function setCommander(viewerId: string, oracleId: unknown, printing
     return { ok: false, reason: "badPrinting" };
   }
   try {
-    const written = await db
-      .update(socialProfiles)
-      .set({ commanderOracleId: card, commanderPrintingId: printing })
-      .where(eq(socialProfiles.userId, viewerId))
-      .returning({ userId: socialProfiles.userId });
-    return written.length > 0 ? { ok: true } : { ok: false, reason: "noProfile" };
+    return await db.transaction(async (tx) => {
+      const written = await tx
+        .update(socialProfiles)
+        .set({ commanderOracleId: card, commanderPrintingId: printing })
+        .where(eq(socialProfiles.userId, viewerId))
+        .returning({ userId: socialProfiles.userId });
+      if (written.length === 0) return { ok: false, reason: "noProfile" } as const;
+      if (card !== null) await facePromptDoneWrite(viewerId, tx);
+      return { ok: true } as const;
+    });
   } catch (e) {
     // The card or the printing left the catalog between the check and the write.
     if (!isForeignKeyViolation(e)) throw e;
