@@ -7,6 +7,8 @@
 // nobody and holds nothing, and a clear that keeps a No's cooldown), Ask instead as one transaction, copies capped at
 // the spare count and a deck stored only when it is the asker's, "no longer spare" on both sides, the spare-request
 // kind on by default (a holder with no prefs row is told), and the Shopping read's payload.
+// Section 6c: an answer tells the asker in its own transaction (a feed item marked with the answer, its push queued
+// when the asker has a device), once, and nothing with the asker's spare-request ticks off.
 //
 // It WRITES, so it fails closed on its target, as `probe:feed-writers` does: the URL comes from `SPARE_PROBE_URL`
 // (never `DATABASE_URL`, which `scripts/lib/env.mjs` would override from `.env`), and `SPARE_PROBE_BRANCH` must equal
@@ -211,6 +213,29 @@ async function main() {
     check("... the count is zero", (await sr.unseenAnswersCount(A, FEED)) === 0);
     check("... and a second visit writes nothing", !(await prefs.markFriendsSeen(A, FEED)));
 
+    console.log("\n6c. the answer tells the asker (feed item and push, in the answer's transaction)");
+    type Told = { id: string; kind: string; friend_user_id: string | null; oracle_id: string; data: { answer?: string } };
+    const toldOf = async (asker: string, requestId: string) =>
+      (await db.execute<Told>(sql`select id, kind, friend_user_id, oracle_id, data from feed_items
+        where user_id = ${asker} and kind = 'spare-request' and dedupe_key = ${requestId}`)).rows;
+    const outboxOf = async (asker: string, itemId: string) =>
+      (await db.execute<{ n: number }>(sql`select count(*)::int as n from push_outbox
+        where user_id = ${asker} and kind = 'spare-request' and item_key = ${`item:${itemId}`}`)).rows[0].n;
+    const vTold = v.ok ? await toldOf(A, v.id) : [];
+    check("Hope's Yes wrote Ann ONE spare-request item, keyed on the request, marked yes, naming Hope and the card",
+      vTold.length === 1 && vTold[0].data.answer === "yes" && vTold[0].friend_user_id === H2 && vTold[0].oracle_id === V, JSON.stringify(vTold));
+    check("... with no device, no push was queued", vTold.length === 1 && (await outboxOf(A, vTold[0].id)) === 0);
+    const annFeed = await read.loadFeed(A, FEED);
+    const vItem = annFeed.find((i) => i.key === `item:${vTold[0]?.id}`);
+    check("... Ann's feed reads it as an answer, never naming Hope's Clerk id", vItem?.kind === "spare-request" && "answer" in vItem && vItem.answer === "yes"
+      && !JSON.stringify(vItem).includes(H2));
+    check("... it never leads Home and does not wait on Ann", (await import("../src/lib/feed/kinds")).leadStory(annFeed.filter((i) => i.key === vItem?.key)) === null);
+    check("... and Home's badge counts it", (await read.unseenCount(A, FEED)) >= 1);
+    check("a second answer to the same ask is gone, and writes Ann nothing more", v.ok
+      && ((r) => !r.ok)(await sr.answerSpareRequest(H2, v.id, "no", FEED)) && (await toldOf(A, v.id)).length === 1);
+    await db.execute(sql`insert into push_subscriptions (user_id, endpoint, p256dh, auth)
+      values (${A}, ${`https://push.example.invalid/${run}`}, 'p', 'a')`);
+
     console.log("\n6a. withdraw and clear (G1)");
     const FEEDU = { ...ENV, HOME_FEED_ENABLED: "true" } as NodeJS.ProcessEnv;
     const hasAsk = async (u: string, card: string) =>
@@ -231,6 +256,9 @@ async function main() {
     check("a withdrawn ask holds nothing: Ann may ask Hal again at once", u2.ok);
     const u2Id = u2.ok ? u2.id : "";
     check("Hal answers No", (await sr.answerSpareRequest(H1, u2Id, "no", FEEDU)).ok);
+    const u2Told = await toldOf(A, u2Id);
+    check("... Ann is told the No, and with a device now, its push is queued in the same write",
+      u2Told.length === 1 && u2Told[0].data.answer === "no" && (await outboxOf(A, u2Told[0].id)) === 1, JSON.stringify(u2Told));
     check("Ann's ✕ on the answered ask clears it", JSON.stringify(await sr.closeSpareRequest(A, u2Id, FEEDU)) === JSON.stringify({ ok: true, closed: "cleared" }));
     check("... it leaves her list", !(await sr.loadMyAsks(A, FEEDU)).some((m) => m.id === u2Id));
     check("... the row stays, a No, cleared", await (async () => {
@@ -243,7 +271,17 @@ async function main() {
 
     console.log("\n6b. Ask instead (G1, one transaction)");
     const tNo = await sr.askForSpare(A, h2.publicId, T, FEEDU);
+    // Ann turns the kind off for both the feed and push: the answer still lands, and tells her nothing.
+    const { setPushKinds } = await import("../src/lib/push/prefs");
+    await prefs.setFeedKinds(A, []);
+    await setPushKinds(A, []);
+    const annOutbox = async () => (await db.execute<{ n: number }>(sql`select count(*)::int as n from push_outbox where user_id = ${A}`)).rows[0].n;
+    const outboxBefore = await annOutbox();
     check("Ann asks Hope for T and Hope says No", tNo.ok && (await sr.answerSpareRequest(H2, tNo.id, "no", FEEDU)).ok);
+    check("... with Ann's spare-request tick off on both, no item and no push", tNo.ok && (await toldOf(A, tNo.id)).length === 0
+      && (await annOutbox()) === outboxBefore);
+    await prefs.setFeedKinds(A, ["spare-request"]);
+    await setPushKinds(A, ["spare-request"]);
     const t1 = await sr.askForSpare(A, h1.publicId, T, FEEDU);
     check("Ann asks Hal for T", t1.ok);
     const t1Id = t1.ok ? t1.id : "";

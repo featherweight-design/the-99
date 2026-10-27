@@ -6,7 +6,7 @@ import { toPushItem } from "./to-push-item";
 const card = { oracleId: "o1", name: "Jace, Multiverse Architect", image: "img", art: null, colorIdentity: null };
 const view = (over: Partial<FeedView>): FeedView => ({
   key: "k1", kind: "price-drop", at: "2026-10-22T00:00:00.000Z", unseen: true, card, friend: null, href: null, opens: null,
-  name: null, setSize: null, owned: null, drop: null, combo: null, ...over,
+  name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, ...over,
 });
 const friend = { publicId: "p-colin", displayName: "Colin" };
 
@@ -21,6 +21,10 @@ describe("a feed view as a push item", () => {
   });
   it("spare request: the friend and the card", () => {
     expect(toPushItem(view({ kind: "spare-request", friend }), "b")).toMatchObject({ kind: "spare-request", friend: "Colin", card: card.name });
+    expect(toPushItem(view({ kind: "spare-request", friend }), "b")).not.toHaveProperty("answer");
+  });
+  it("spare request answer: carries the answer", () => {
+    expect(toPushItem(view({ kind: "spare-request", friend, answer: "no" }), "b")).toMatchObject({ kind: "spare-request", answer: "no" });
   });
   it("combo: the two pieces, the piece added and the piece Home opens", () => {
     expect(toPushItem(view({ kind: "combo", opens: "o9", combo: { pieces: ["A", "B"], added: "B" } }), "b")).toMatchObject({

@@ -21,7 +21,7 @@ export function HeldLeadProvider({ children }: { children: ReactNode }) {
 /** The held story's key and its setter; null outside a provider (the slot then holds alone). */
 export const useHeldLead = (): Held | null => useContext(HeldLeadContext);
 
-const asItem = (v: FeedView) => ({ kind: v.kind, key: v.key, createdAt: new Date(v.at) });
+const asItem = (v: FeedView) => ({ kind: v.kind, key: v.key, createdAt: new Date(v.at), answer: v.answer });
 
 /**
  * The feed What's new draws while the lead slot holds `heldKey`: a server lead that is NOT the held story is no longer

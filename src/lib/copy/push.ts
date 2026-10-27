@@ -3,6 +3,7 @@
 // it: a price drop spells was and now, a combo names its kind, a spare request says where to answer. Money arrives
 // formatted (`formatCents`); this module formats nothing but counts.
 import { feedCopy } from "./feed";
+import { spareCopy } from "./social";
 
 const t = feedCopy.home.title;
 
@@ -15,6 +16,11 @@ export const pushCopy = {
     priceDrop: { title: t.priceDrop, body: (was: string, now: string) => `Was ${was}, now ${now} at the cheapest printing.` },
     tradeMatch: { title: t.tradeMatch, body: feedCopy.home.line.tradeMatch },
     spareRequest: { title: t.spareRequest, body: feedCopy.home.line.spareRequest },
+    /** A friend's answer to the reader's own spare request: Your requests' title, and where it is listed. */
+    spareAnswer: {
+      yes: { title: spareCopy.request.mine.canSpare, body: "The handover is between you." },
+      no: { title: spareCopy.request.mine.keeping, body: "Your requests are in Friends." },
+    },
     combo: { title: "You can make a combo", body: (a: string, b: string, added: string) => `${a} + ${b}. ${feedCopy.home.line.combo(added)}` },
   },
   /** Several of one kind from one job, or what waited the night, as one notification. */

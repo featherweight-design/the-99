@@ -33,6 +33,12 @@ describe("leadStory", () => {
     expect(lead?.createdAt.toISOString()).toBe("2026-10-21T10:00:00.000Z");
     expect(leadStory([item("combo", "2026-10-20T10:00:00Z", false)])).toBeNull();
   });
+
+  it("never leads with an answer to the reader's own spare request, however new", () => {
+    const answer = { ...item("spare-request", "2026-10-22T11:00:00Z"), answer: "yes" };
+    expect(leadStory([answer, item("new-set", "2026-10-20T10:00:00Z")])?.kind).toBe("new-set");
+    expect(leadStory([answer])).toBeNull();
+  });
 });
 
 describe("feedOrder", () => {
@@ -44,6 +50,14 @@ describe("feedOrder", () => {
       item("new-precon", "2026-10-20T10:00:00Z", true, "a"),
     ].sort(feedOrder);
     expect(list.map((i) => i.kind)).toEqual(["spare-request", "combo", "new-precon", "new-set"]);
+  });
+
+  it("files an answer to the reader's own ask by time: it waits on nothing", () => {
+    const list = [
+      { ...item("spare-request", "2026-10-01T10:00:00Z", true, "ans"), answer: "no" },
+      item("combo", "2026-10-21T10:00:00Z"),
+    ].sort(feedOrder);
+    expect(list.map((i) => i.key)).toEqual(["combo:2026-10-21T10:00:00Z", "ans"]);
   });
 });
 

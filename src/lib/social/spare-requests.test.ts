@@ -83,7 +83,56 @@ describe("answerQuery", () => {
   });
   it("only while the holder still holds the friendship, read on the row's own two ids", () => {
     expect(q).toMatch(/exists \(select 1 from "friend_links" afl where afl\.user_id = asr\.holder_user_id and afl\.friend_user_id = asr\.asker_user_id for share\)/);
-    expect(q).toMatch(/returning asr\.id$/);
+    expect(q).toMatch(/returning asr\.id, asr\.asker_user_id, asr\.oracle_id$/);
+  });
+});
+
+describe("answerSpareRequest tells the asker", () => {
+  const ROW = { id: REQ, asker_user_id: "a", oracle_id: CARD };
+  const run = async (rows: unknown[]) => {
+    const { db } = await import("../../db");
+    const { recordFeedItem } = await import("./feed-write");
+    const tx = { execute: vi.fn(async () => ({ rows, rowCount: rows.length })) };
+    vi.mocked(db.transaction).mockImplementation((async (f: (t: typeof tx) => unknown) => f(tx)) as never);
+    vi.mocked(recordFeedItem).mockClear();
+    return { tx, recordFeedItem };
+  };
+  it("an answer that lands writes the asker's item in the same transaction, marked with the answer, keyed on the request", async () => {
+    const { tx, recordFeedItem } = await run([ROW]);
+    expect(await answerSpareRequest("h", REQ, "yes", ON, NOW)).toEqual({ ok: true });
+    expect(recordFeedItem).toHaveBeenCalledTimes(1);
+    expect(recordFeedItem).toHaveBeenCalledWith(tx, {
+      userId: "a", kind: "spare-request", dedupeKey: REQ, oracleId: CARD, friendUserId: "h", data: { answer: "yes" }, now: NOW,
+    });
+  });
+  it("locks both friendship rows in the purge's order BEFORE the answer, as every ask path does", async () => {
+    const { tx } = await run([ROW]);
+    await answerSpareRequest("h", REQ, "yes", ON, NOW);
+    const sent = tx.execute.mock.calls.map((c) => render((c as unknown as [SQL])[0]).q);
+    expect(sent[0]).toMatch(/^select aar\.asker_user_id from "spare_requests" aar where aar\.id = \$1 and aar\.holder_user_id = \$2$/);
+    expect(sent[1]).toBe(render(lockFriendshipQuery("h", "a")).q);
+    expect(sent[2]).toMatch(/^update "spare_requests" asr set status/);
+  });
+  it("a No is marked no", async () => {
+    const { recordFeedItem } = await run([ROW]);
+    await answerSpareRequest("h", REQ, "no", ON, NOW);
+    expect(vi.mocked(recordFeedItem).mock.calls[0][1].data).toEqual({ answer: "no" });
+  });
+  it("a request that is not the holder's tells nobody, and takes no lock", async () => {
+    const { tx, recordFeedItem } = await run([]);
+    expect(await answerSpareRequest("h", REQ, "yes", ON, NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(tx.execute).toHaveBeenCalledTimes(1);
+    expect(recordFeedItem).not.toHaveBeenCalled();
+  });
+  it("an answer whose conditional UPDATE changed no row (answered, expired or withdrawn meanwhile) tells nobody", async () => {
+    const { tx, recordFeedItem } = await run([ROW]);
+    tx.execute
+      .mockResolvedValueOnce({ rows: [ROW], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [{}, {}], rowCount: 2 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    expect(await answerSpareRequest("h", REQ, "yes", ON, NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(tx.execute).toHaveBeenCalledTimes(3);
+    expect(recordFeedItem).not.toHaveBeenCalled();
   });
 });
 

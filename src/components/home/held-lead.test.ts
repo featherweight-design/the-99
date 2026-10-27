@@ -6,7 +6,7 @@ import { displaceLead } from "./held-lead";
 
 const view = (key: string, at: string, o: Partial<FeedView> = {}): FeedView => ({
   key, kind: "new-set", at, unseen: true, card: null, friend: null, href: null, opens: null, name: null, setSize: null,
-  owned: null, drop: null, combo: null, ...o,
+  owned: null, drop: null, combo: null, answer: null, ...o,
 });
 const A = view("a", "2026-10-22T10:00:00Z");
 const B = view("b", "2026-10-22T08:00:00Z");
@@ -19,6 +19,12 @@ describe("displaceLead", () => {
     expect(out.chosen && out.items.map((i) => i.key)).toEqual(["a", "lead", "b"]);
     expect(out.chosen && out.lead).toBeNull();
     expect(out.chosen && out.unseen).toBe(3);
+  });
+
+  it("re-sorts an answer to the reader's own ask by time, never as waiting", () => {
+    const answer = view("ans", "2026-10-12T08:00:00Z", { kind: "spare-request", answer: "yes" });
+    const out = displaceLead({ ...feed, items: [A, answer] }, "held");
+    expect(out.chosen && out.items.map((i) => i.key)).toEqual(["a", "lead", "ans"]);
   });
 
   it("leaves the feed alone with nothing held, or while the held story is still the lead", () => {

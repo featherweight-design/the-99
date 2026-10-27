@@ -13,7 +13,7 @@ vi.mock("../social/spare-requests", async (importOriginal) => ({
 // The reader owns Sai in another printing: the row draws the chain's picture, the one card details opens.
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
-import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, withLeadAsk, type FeedView, type HomeFeed } from "./home";
+import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, withAnswerDetails, withLeadAsk, type FeedView, type HomeFeed } from "./home";
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 
@@ -102,7 +102,7 @@ describe("loadHomeFeed", () => {
 
 const view = (o: Partial<FeedView>): FeedView => ({
   key: "k", kind: "new-set", at: "2026-10-22T00:00:00Z", unseen: true, card: null, friend: null, href: null, opens: null,
-  name: null, setSize: null, owned: null, drop: null, combo: null, ...o,
+  name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, ...o,
 });
 
 describe("splitLead (the lead-story pick)", () => {
@@ -140,7 +140,7 @@ describe("toViews", () => {
   const empty = { sets: new Map(), precons: new Map(), owned: new Map(), cards: new Map() };
   it("names a combo by its pieces and the one the write added, and opens the first piece", () => {
     const item = {
-      kind: "combo", key: "item:c", createdAt: NOW, unseen: true, oracleId: "b", variantId: "v", friend: null,
+      kind: "combo", key: "item:c", createdAt: NOW, unseen: true, oracleId: "b", variantId: "v", friend: null, answer: null,
       data: { cards: [{ oracleId: "a", name: "Thassa’s Oracle" }, { oracleId: "b", name: "Demonic Consultation" }], added: ["b"] },
     } as FeedItem;
     expect(toViews([item], empty)[0]).toMatchObject({ opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation" } });
@@ -152,7 +152,34 @@ describe("toViews", () => {
 
   it("gives a spare request (a later round) no press", () => {
     const item = { kind: "spare-request", key: "item:s", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: "Peter" }, data: {} } as FeedItem;
-    expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, friend: { displayName: "Peter" } });
+    expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, friend: { displayName: "Peter" }, answer: null });
+  });
+
+  it("gives an answer to the reader's own ask its answer and a press to Your requests", () => {
+    const item = { kind: "spare-request", key: "item:a", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: "Colin" }, data: { answer: "yes" }, answer: "yes" } as FeedItem;
+    expect(toViews([item], empty)[0]).toMatchObject({ href: "/friends", answer: "yes", friend: { displayName: "Colin" } });
+  });
+});
+
+describe("withAnswerDetails", () => {
+  const card = { oracleId: "jace", name: "Jace", image: null, art: null, colorIdentity: null };
+  const colin = { publicId: "p_colin", displayName: "Colin" };
+  const spare = (publicId: string, displayName: string, n: number, oracleId = "jace") => ({ oracleId, spare: n, friend: { publicId, displayName } as never });
+  const feed = (...items: FeedView[]): HomeFeed => ({ chosen: true, on: ["spare-request"], lead: null, items, unseen: items.length });
+  it("a Yes carries whether Shopping has the buy press; a No names the OTHER friends offering the card, most spares first", () => {
+    const out = withAnswerDetails(
+      feed(view({ key: "y", kind: "spare-request", card, friend: colin, answer: "yes" }), view({ key: "n", kind: "spare-request", card, friend: colin, answer: "no" })),
+      [spare("p_colin", "Colin", 9), spare("p_ann", "Ann", 1), spare("p_max", "Max", 3), spare("p_zed", "Zed", 5, "other")],
+      false,
+    );
+    if (!out.chosen) throw new Error("chosen");
+    expect(out.items[0].answerDetail).toEqual({ canBuy: false, others: [] });
+    expect(out.items[1].answerDetail).toEqual({ canBuy: false, others: ["Max", "Ann"] });
+  });
+  it("leaves every other item as it was", () => {
+    const plain = view({ key: "s", kind: "new-set" });
+    const out = withAnswerDetails(feed(plain), [], true);
+    expect(out.chosen && out.items[0]).toBe(plain);
   });
 });
 

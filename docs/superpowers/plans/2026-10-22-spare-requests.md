@@ -13,7 +13,7 @@ the orchestrator on 2026-10-22. Starting point: `2026-10-22-menu-home.md` (G5 ou
 - An unanswered ask expires after 14 days; the asker may ask again.
 - One friend per card: other holders show as "also has one"; after a No or an expiry the next can be asked.
 - After a No, that friend is not asked for that card again for 14 days; the next holder may be asked at once (Hugh).
-- The answer reaches the asker as the Friends badge and its state in their asks list. No new feed kind (Hugh).
+- The answer reaches the asker as the Friends badge and its state in their asks list. No new feed kind (Hugh). *Amended 2026-10-27 (d9, approved): an answer also writes the asker a `spare-request` feed item marked with the answer, so it reaches Home and push; still no new kind.*
 - The friend is told through the `spare-request` feed kind ("Friends asking for your spares", on by default in the
   workshop's list), which governs the feed item and Home's badge only. Waiting on you and the Friends badge show an
   incoming ask regardless of the opt-in: they are the only place to answer it.

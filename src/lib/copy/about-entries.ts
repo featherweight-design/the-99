@@ -1089,7 +1089,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       switch: 'SPARE_REQUESTS_ENABLED',
       title: 'When a friend has a spare',
       caption:
-        'Before you buy a card, check whether a friend has one sitting idle. On a deck’s “Shopping” list, a card a friend can spare gets the friends mark beside its price. Press it to see who has one, the pod they share it with, and how many.\n\nA spare is a copy none of their decks uses, drafts included. Press “Ask” beside a friend to ask for one, and they answer yes or no in “Friends”. A request with no answer lapses after 14 days, and the trade itself still happens at the table.\n\nYour own spares stay private until you tick “Share my spares with this pod” on one of your pods in “Friends”.',
+        'Before you buy a card, check whether a friend has one sitting idle. On a deck’s “Shopping” list, a card a friend can spare gets the friends mark beside its price. Press it to see who has one, the pod they share it with, and how many.\n\nA spare is a copy none of their decks uses, drafts included. Press “Ask” beside a friend to ask for one, and they answer yes or no in “Friends”. Their answer reaches you on Home. A request with no answer lapses after 14 days, and the trade itself still happens at the table.\n\nYour own spares stay private until you tick “Share my spares with this pod” on one of your pods in “Friends”.',
       keys: [
         'You only see spares from friends who share them with a pod you’re both in.',
         'When cheaper stand-ins exist too, the same window opens as “Before you buy”, friends first.',
@@ -1969,7 +1969,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'Only a friend asking for your spare starts ticked. Nothing is sent until you allow it on a device.',
       'Nothing is sent until you allow it on a device.',
-      'Nothing comes between 9pm and 9am; it waits for the morning. Several of one kind arrive as one, except a friend’s ask.',
+      'Nothing comes between 9pm and 9am; it waits for the morning. Several of one kind arrive as one, except a friend’s ask or answer.',
       'A tap opens what it’s about. Opening Home marks your news seen.',
       'No push while The 99 is open in front of you, except in Safari and on iPhone. No email, ever.',
     ],
