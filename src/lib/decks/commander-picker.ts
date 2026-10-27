@@ -12,8 +12,18 @@ import { db } from "../../db";
 import { cards, decks } from "../../db/schema";
 import { nameSearch } from "../cards/name-search";
 import { isCommanderCandidate } from "../recs/score";
-import { canBeFace } from "../social/commander";
+import { isGameCard } from "../cards/game-card";
 import { commanderSearchOrder, commanderSupersetWhere } from "./opponent-commanders";
+
+/**
+ * A card can lead a deck: the rule the commander search offers by (E2). The face itself is no longer held to it
+ * (any card, 2026-10-27), so this stays the picker's own filter until the picker is redrawn.
+ */
+export function canLeadADeck(card: {
+  commanderLegal: boolean; typeLine: string; oracleText: string | null; manaCost: string | null; layout: string | null;
+}): boolean {
+  return card.commanderLegal && isGameCard(card) && isCommanderCandidate(card);
+}
 
 export type CommanderTile = { oracleId: string; name: string; artCropUri: string | null; colorIdentity: string[] };
 
@@ -65,8 +75,8 @@ export function deckTiles(rows: readonly DeckCommanderRow[]): CommanderTile[] {
   };
   for (const r of rows) {
     push(r.leadId, r.leadName, r.leadArt, r.leadIdentity,
-      canBeFace({ commanderLegal: r.leadLegal, typeLine: r.leadType, oracleText: r.leadText, manaCost: r.leadCost, layout: r.leadLayout }));
-    push(r.partnerId, r.partnerName, r.partnerArt, r.partnerIdentity, r.partnerType !== null && canBeFace({
+      canLeadADeck({ commanderLegal: r.leadLegal, typeLine: r.leadType, oracleText: r.leadText, manaCost: r.leadCost, layout: r.leadLayout }));
+    push(r.partnerId, r.partnerName, r.partnerArt, r.partnerIdentity, r.partnerType !== null && canLeadADeck({
       commanderLegal: r.partnerLegal ?? false, typeLine: r.partnerType, oracleText: r.partnerText,
       manaCost: r.partnerCost, layout: r.partnerLayout,
     }));

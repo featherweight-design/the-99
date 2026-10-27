@@ -137,11 +137,12 @@ describe("your name and face", () => {
   });
 
   it("passes the commander's refusal through", async () => {
-    m.setCommander.mockResolvedValue({ ok: false, reason: "notCommander" });
-    expect(await actions.setCommanderAction("o")).toEqual({ ok: false, reason: "notCommander" });
+    m.setCommander.mockResolvedValue({ ok: false, reason: "badPrinting" });
+    expect(await actions.setCommanderAction("o", "p")).toEqual({ ok: false, reason: "badPrinting" });
+    expect(m.setCommander).toHaveBeenLastCalledWith("user_1", "o", "p");
     m.setCommander.mockResolvedValue({ ok: true });
     expect(await actions.setCommanderAction(null)).toEqual({ ok: true });
-    expect(m.setCommander).toHaveBeenLastCalledWith("user_1", null);
+    expect(m.setCommander).toHaveBeenLastCalledWith("user_1", null, null);
   });
 });
 

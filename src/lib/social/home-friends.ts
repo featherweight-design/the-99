@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { socialProfiles } from "../../db/schema";
 import { listFriends, type Friend } from "./access";
-import { commanderCard, commanderColumns, toCommander } from "./commander";
+import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander } from "./commander";
 import { listOpenInvites, type OpenInvite, type OwnProfile } from "./friends";
 
 /** What Home's Friends section draws. `you` is null until the viewer's profile exists. */
@@ -22,6 +22,7 @@ export async function loadHomeFriends(viewerId: string, now = new Date()): Promi
       .select({ displayName: socialProfiles.displayName, ...commanderColumns })
       .from(socialProfiles)
       .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+      .leftJoin(facePrinting, faceJoin)
       .where(eq(socialProfiles.userId, viewerId));
     const friends = await listFriends(viewerId, tx);
     const links = await listOpenInvites(viewerId, now, tx);

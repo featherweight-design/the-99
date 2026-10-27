@@ -25,7 +25,7 @@ import { loadAvailability } from "../decks/availability-query";
 // friend's override flip moves no key there, so such a page must first key on the friends' resolved switches.
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { resolveFriend, type Reader } from "./access";
-import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
+import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { isUuid } from "./rules";
 import { isOffered, spareCount } from "./spare-rules";
 import { spareSettingsIn, type SpareSettings } from "./spare-settings";
@@ -74,10 +74,11 @@ export function spareGrantDetailsQuery(viewerId: string, q: Reader = db) {
     .innerJoin(viewerIn, and(eq(viewerIn.podId, podSpareShares.podId), eq(viewerIn.userId, viewerId)))
     .innerJoin(pods, eq(pods.id, podSpareShares.podId))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
     .where(eq(friendLinks.userId, viewerId))
     .groupBy(
       friendLinks.friendUserId, socialProfiles.publicId, socialProfiles.displayName,
-      commanderCard.oracleId, commanderCard.name, commanderCard.artCropUri,
+      commanderCard.oracleId, commanderCard.name, commanderCard.artCropUri, facePrinting.artCropUri,
     )
     .orderBy(asc(friendLinks.friendUserId));
 }

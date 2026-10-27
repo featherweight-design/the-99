@@ -27,7 +27,7 @@
  */
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, decks, friendLinks, socialProfiles, spareRequests, userPrefs } from "../../db/schema";
+import { cards, decks, friendLinks, printings, socialProfiles, spareRequests, userPrefs } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
@@ -301,13 +301,14 @@ function faceOf(r: { commander_oracle_id: string | null; commander_name: string 
 export function incomingAsksQuery(holderId: string, now: Date): SQL {
   return sql`select isr.id, isr.oracle_id, isr.created_at, isr.copies, isp.public_id::text as public_id, isp.display_name,
       ic.name as card_name, ic.image_uri as card_image, idk.name as deck_name,
-      icc.oracle_id as commander_oracle_id, icc.name as commander_name, icc.art_crop_uri as commander_art
+      icc.oracle_id as commander_oracle_id, icc.name as commander_name, coalesce(ifp.art_crop_uri, icc.art_crop_uri) as commander_art
     from ${spareRequests} isr
     join ${friendLinks} ifl on ifl.user_id = isr.holder_user_id and ifl.friend_user_id = isr.asker_user_id
     join ${socialProfiles} isp on isp.user_id = isr.asker_user_id
     join ${cards} ic on ic.oracle_id = isr.oracle_id
     left join ${decks} idk on idk.id = isr.deck_id and idk.user_id = isr.asker_user_id
     left join ${cards} icc on icc.oracle_id = isp.commander_oracle_id
+    left join ${printings} ifp on ifp.scryfall_id = isp.commander_printing_id and ifp.oracle_id = isp.commander_oracle_id
     where isr.holder_user_id = ${holderId} and isr.status = 'open'
       and isr.created_at > ${openFloor(now).toISOString()}::timestamptz
     order by isr.created_at desc, isr.id`;
@@ -371,13 +372,14 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
   return sql`select msr.id, msr.oracle_id, msr.status, msr.created_at, msr.answered_at, msr.copies,
       msp.public_id::text as public_id, msp.display_name, mc.name as card_name, mc.image_uri as card_image, mdk.name as deck_name,
       mdk.id as deck_id, msr.asker_cleared_at is not null as cleared,
-      mcc.oracle_id as commander_oracle_id, mcc.name as commander_name, mcc.art_crop_uri as commander_art
+      mcc.oracle_id as commander_oracle_id, mcc.name as commander_name, coalesce(mfp.art_crop_uri, mcc.art_crop_uri) as commander_art
     from ${spareRequests} msr
     join ${friendLinks} mfl on mfl.user_id = msr.asker_user_id and mfl.friend_user_id = msr.holder_user_id
     join ${socialProfiles} msp on msp.user_id = msr.holder_user_id
     join ${cards} mc on mc.oracle_id = msr.oracle_id
     left join ${decks} mdk on mdk.id = msr.deck_id and mdk.user_id = msr.asker_user_id
     left join ${cards} mcc on mcc.oracle_id = msp.commander_oracle_id
+    left join ${printings} mfp on mfp.scryfall_id = msp.commander_printing_id and mfp.oracle_id = msp.commander_oracle_id
     where msr.asker_user_id = ${askerId} and msr.created_at > ${shownFloor(now).toISOString()}::timestamptz
       and msr.status <> 'withdrawn' and ${cleared}${only}
     order by msr.created_at desc, msr.id`;

@@ -1,17 +1,17 @@
 /**
- * A player's face: the commander they chose to show (Social R1, plan `2026-10-15-social-r1.md` PR A; audit
- * E1, G11, G12). The face's art is the catalog's own art crop for that oracle id (`cards.art_crop_uri`, G12):
- * no printing choice this round.
+ * A player's face (Social R1, plan `2026-10-15-social-r1.md` PR A; audit E1, G11, G12; widened by Hugh's ruling of
+ * 2026-10-27): ANY catalog card, in any of its printings. The art is the chosen printing's art crop, else the
+ * card's own (`cards.art_crop_uri`, G12), else nothing (initials).
  *
- * Every read that draws a face joins `commanderCard` (an alias of `cards`) to the profile it belongs to, in
- * the read's own statement, so the grant that read joins decides whose commander it may show (D1, D2).
+ * Every read that draws a face joins `commanderCard` (an alias of `cards`) AND `facePrinting` (an alias of
+ * `printings`, on `faceJoin`) to the profile it belongs to, in the read's own statement, so the grant that read
+ * joins decides whose face it may show (D1, D2). `face-reads.test.ts` fails when a reader takes the columns
+ * without the join.
  */
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, socialProfiles } from "../../db/schema";
-import { isGameCard } from "../cards/game-card";
-import { isCommanderCandidate } from "../recs/score";
+import { cards, printings, socialProfiles } from "../../db/schema";
 import { isUuid } from "./rules";
 
 export type ProfileCommander = { oracleId: string; name: string; artCropUri: string | null };
@@ -19,11 +19,24 @@ export type ProfileCommander = { oracleId: string; name: string; artCropUri: str
 /** The card a face is drawn from. An alias, so a read that also joins `cards` cannot mix the two up. */
 export const commanderCard = alias(cards, "commander_card");
 
+/** The printing a player chose for their face. Left-joined on `faceJoin`; null when none was chosen. */
+export const facePrinting = alias(printings, "face_printing");
+
+/**
+ * The join condition for `facePrinting`: the pick AND the card it must belong to. A pick that no longer matches the
+ * profile's card (the card was changed, or cleared) joins nothing, so the art falls back to the card's own.
+ */
+export const faceJoin = and(
+  eq(facePrinting.scryfallId, socialProfiles.commanderPrintingId),
+  eq(facePrinting.oracleId, socialProfiles.commanderOracleId),
+);
+
 /** The three columns a face needs, for a read's projection. All null when the face is initials. */
 export const commanderColumns = {
   commanderOracleId: commanderCard.oracleId,
   commanderName: commanderCard.name,
-  commanderArt: commanderCard.artCropUri,
+  // The chain: the chosen printing's crop, else the card's. A printing from before the crop column existed has none.
+  commanderArt: sql<string | null>`coalesce(${facePrinting.artCropUri}, ${commanderCard.artCropUri})`,
 };
 
 export function toCommander(r: { commanderOracleId: string | null; commanderName: string | null; commanderArt: string | null }): ProfileCommander | null {
@@ -31,35 +44,50 @@ export function toCommander(r: { commanderOracleId: string | null; commanderName
   return { oracleId: r.commanderOracleId, name: r.commanderName, artCropUri: r.commanderArt };
 }
 
-/** A card can be a face when it can lead a deck: the rule the commander search offers by (E2). */
-export function canBeFace(card: {
-  commanderLegal: boolean; typeLine: string; oracleText: string | null; manaCost: string | null; layout: string | null;
-}): boolean {
-  return card.commanderLegal && isGameCard(card) && isCommanderCandidate(card);
+export type SetCommanderResult = { ok: true } | { ok: false; reason: "noCard" | "badPrinting" | "noProfile" };
+
+/** Postgres's foreign_key_violation, on the error or the cause the driver wrapped it in. */
+function isForeignKeyViolation(e: unknown): boolean {
+  const x = e as { code?: unknown; cause?: { code?: unknown } } | null;
+  return x?.code === "23503" || x?.cause?.code === "23503";
 }
 
-export type SetCommanderResult = { ok: true } | { ok: false; reason: "notCommander" | "noProfile" };
-
 /**
- * Set the viewer's face, or clear it with null. Refuses an id that is not a commander the catalog lists,
- * so a client cannot make a face of a land or a token by naming its id (E1).
+ * Set the viewer's face, or clear it with a null card. Any card the catalog lists is allowed. `printingId` is the
+ * printing to draw it from, or null/undefined for the card's default art; a printing that is not OF that card is
+ * refused, so a client cannot show another card's art by naming its printing. Every write sets both columns, so
+ * changing the card without a printing drops the old pick.
  */
-export async function setCommander(viewerId: string, oracleId: unknown): Promise<SetCommanderResult> {
+export async function setCommander(viewerId: string, oracleId: unknown, printingId: unknown = null): Promise<SetCommanderResult> {
+  let card: string | null = null;
+  let printing: string | null = null;
+  if (printingId !== null && printingId !== undefined && !isUuid(printingId)) return { ok: false, reason: "badPrinting" };
   if (oracleId !== null) {
-    if (!isUuid(oracleId)) return { ok: false, reason: "notCommander" };
-    const [card] = await db
-      .select({
-        commanderLegal: cards.commanderLegal, typeLine: cards.typeLine, oracleText: cards.oracleText,
-        manaCost: cards.manaCost, layout: cards.layout,
-      })
-      .from(cards)
-      .where(eq(cards.oracleId, oracleId));
-    if (!card || !canBeFace(card)) return { ok: false, reason: "notCommander" };
+    if (!isUuid(oracleId)) return { ok: false, reason: "noCard" };
+    const [found] = await db.select({ oracleId: cards.oracleId }).from(cards).where(eq(cards.oracleId, oracleId));
+    if (!found) return { ok: false, reason: "noCard" };
+    card = found.oracleId;
+    if (printingId !== null && printingId !== undefined) {
+      const [p] = await db
+        .select({ scryfallId: printings.scryfallId })
+        .from(printings)
+        .where(and(eq(printings.scryfallId, printingId as string), eq(printings.oracleId, card)));
+      if (!p) return { ok: false, reason: "badPrinting" };
+      printing = p.scryfallId;
+    }
+  } else if (printingId !== null && printingId !== undefined) {
+    return { ok: false, reason: "badPrinting" };
   }
-  const written = await db
-    .update(socialProfiles)
-    .set({ commanderOracleId: oracleId })
-    .where(eq(socialProfiles.userId, viewerId))
-    .returning({ userId: socialProfiles.userId });
-  return written.length > 0 ? { ok: true } : { ok: false, reason: "noProfile" };
+  try {
+    const written = await db
+      .update(socialProfiles)
+      .set({ commanderOracleId: card, commanderPrintingId: printing })
+      .where(eq(socialProfiles.userId, viewerId))
+      .returning({ userId: socialProfiles.userId });
+    return written.length > 0 ? { ok: true } : { ok: false, reason: "noProfile" };
+  } catch (e) {
+    // The card or the printing left the catalog between the check and the write.
+    if (!isForeignKeyViolation(e)) throw e;
+    return { ok: false, reason: printing === null ? "noCard" : "badPrinting" };
+  }
 }

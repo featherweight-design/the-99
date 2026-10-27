@@ -306,7 +306,7 @@ async function main() {
     const f = await friends.ensureProfile(F, "Finn");
     const g = await friends.ensureProfile(G, "Ada");
     check("a new profile has no face", e.commander === null);
-    check("setCommander refuses a card that cannot lead a deck", (await commander.setCommander(E, lands[0].oracle_id)).ok === false);
+    check("setCommander accepts any card, a basic land included (2026-10-27)", (await commander.setCommander(E, lands[0].oracle_id)).ok);
     check("and a malformed id", (await commander.setCommander(E, "nope")).ok === false);
     check("setCommander saves a commander", (await commander.setCommander(E, L1.oracle_id)).ok);
     const eNow = await friends.ensureProfile(E, "ignored");
