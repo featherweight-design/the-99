@@ -161,7 +161,9 @@ export type AboutSwitch =
   // Strategy focus (handoff design_handoff_the99_strategy_focus): the strategy ring on Analysis and its focus pick.
   | 'STRATEGY_FOCUS_ENABLED'
   // Push notifications (close-out, handoff design_handoff_the99_push): its own entry, and `whats-new`'s news key.
-  | 'PUSH_ENABLED';
+  | 'PUSH_ENABLED'
+  // Signature card (close-out, handoff design_handoff_the99_avatar): the friends caption's face sentence follows it.
+  | 'SIGNATURE_CARD_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is

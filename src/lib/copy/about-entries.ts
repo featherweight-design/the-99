@@ -1388,13 +1388,16 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     // Launch-end batch (E4): with invites on, Add a friend opens a chooser, so the link path names its choice.
     // With the Commanders place on, Friends has its own slot in the bar (menu and Home PR 2): the sentence names the bar, not the account menu.
+    // With the signature card on (handoff 20), the face is any card in any printing, so the face sentence's opening swaps.
     captionLineSwitches: {
       ' pick “They’re on The 99”,': 'SOCIAL_INVITES_ENABLED',
       'Open “Friends” from your account menu, ': '!COMMANDERS_PLACE_ENABLED',
       'Press “Friends” in the bar, ': 'COMMANDERS_PLACE_ENABLED',
+      'commander and ': '!SIGNATURE_CARD_ENABLED',
+      'signature card, any card in any printing, and ': 'SIGNATURE_CARD_ENABLED',
     },
     caption:
-      'Playing with the same people every week? Make them friends in The 99. Open “Friends” from your account menu, Press “Friends” in the bar, press “Add a friend”, pick “They’re on The 99”, and send them the link, or let them scan the QR code off your screen. Once they accept, you’re friends.\n\nPick a commander and its art becomes your face, beside your name everywhere a friend sees you. Then gather the friends you play with into a pod, and choose, pod by pod, who gets to see your spare cards.',
+      'Playing with the same people every week? Make them friends in The 99. Open “Friends” from your account menu, Press “Friends” in the bar, press “Add a friend”, pick “They’re on The 99”, and send them the link, or let them scan the QR code off your screen. Once they accept, you’re friends.\n\nPick a commander and signature card, any card in any printing, and its art becomes your face, beside your name everywhere a friend sees you. Then gather the friends you play with into a pod, and choose, pod by pod, who gets to see your spare cards.',
     keys: [
       'Nobody can find you by searching. A friend link works once and lasts 7 days, and you can revoke one that’s still open.',
       'Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.',
