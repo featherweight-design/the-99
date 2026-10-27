@@ -112,8 +112,8 @@ async function measure(page, oracleId) {
       (b) => b.getBoundingClientRect().width > 0,
     );
     const r = visible.getBoundingClientRect();
-    const header = document.querySelector("header");
-    const headerBottom = header && getComputedStyle(header).position === "fixed" ? header.getBoundingClientRect().bottom : 0;
+    // The returned phone header's room is the page's scroll padding, as the picker reads it.
+    const headerBottom = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
     const dock = document.querySelector("[data-testid='create-picker-dock']");
     const dockTop = dock && dock.getBoundingClientRect().height > 0 ? dock.getBoundingClientRect().top : window.innerHeight;
     return { drawn: true, top: Math.round(r.top), bottom: Math.round(r.bottom), headerBottom: Math.round(headerBottom), dockTop: Math.round(dockTop), scrollY: Math.round(window.scrollY), innerHeight: window.innerHeight };
@@ -163,7 +163,7 @@ async function run() {
         const r = el.getBoundingClientRect();
         const dock = document.querySelector("[data-testid='create-picker-dock']");
         const dockTop = dock && dock.getBoundingClientRect().height > 0 ? dock.getBoundingClientRect().top : window.innerHeight;
-        return { drawn: true, top: Math.round(r.top), bottom: Math.round(r.bottom), headerBottom: 0, dockTop: Math.round(dockTop), scrollY: Math.round(window.scrollY) };
+        return { drawn: true, top: Math.round(r.top), bottom: Math.round(r.bottom), headerBottom: Math.round(parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0), dockTop: Math.round(dockTop), scrollY: Math.round(window.scrollY) };
       });
       judge(`${label} /decks/new, the filled slot after picking a partner`, filled);
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/new-filled-${label}.png` });
