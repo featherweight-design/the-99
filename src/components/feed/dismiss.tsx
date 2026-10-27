@@ -35,11 +35,26 @@ export function DismissButton({ title, onPress, disabled = false }: { title: str
 }
 
 /**
- * The keys this visit hid, and the press. Focus lands on the next row's ✕ (else the one before, else `fallback`), since
+ * Where focus goes when `from` leaves with its row: the next enabled ✕ in its scope (`data-dismiss-scope`, the section
+ * that holds every row it could move to, across Today and Earlier), else the one before; null when there is none. A ✕
+ * disabled while an answer is out cannot take focus, so it is passed over.
+ */
+export function nextDismiss(from: HTMLElement): HTMLElement | null {
+  const scope = from.closest("[data-dismiss-scope]");
+  if (!scope) return null;
+  const all = [...scope.querySelectorAll<HTMLButtonElement>("[data-feed-dismiss]")];
+  const at = all.indexOf(from as HTMLButtonElement);
+  const enabled = (b: HTMLButtonElement) => b !== from && !b.disabled;
+  return all.slice(at + 1).find(enabled) ?? all.slice(0, Math.max(at, 0)).reverse().find(enabled) ?? null;
+}
+
+/**
+ * The keys this visit hid, and the press. Focus lands on the next enabled ✕ in the scope (`nextDismiss`, else `fallback`); `onChange` reports each hide and
+ * its undo, for a count kept elsewhere (the lead's, in What's new's head), since
  * the pressed one leaves with its row. The action revalidates Home and /friends, so the page it was pressed on is
  * redrawn with the shell's counts; on a refusal or a throw the row comes back and the toast says so.
  */
-export function useFeedDismiss(fallback?: () => HTMLElement | null): {
+export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (key: string, on: boolean) => void): {
   hidden: ReadonlySet<string>;
   dismiss: (key: string, from: HTMLElement) => void;
   toast: ReactNode;
@@ -47,17 +62,17 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null): {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const seq = useRef(0);
-  const put = (key: string, on: boolean) =>
+  const put = (key: string, on: boolean) => {
     setHidden((prev) => {
       const next = new Set(prev);
       if (on) next.add(key);
       else next.delete(key);
       return next;
     });
+    onChange?.(key, on);
+  };
   function dismiss(key: string, from: HTMLElement) {
-    const row = from.closest("li, section");
-    const sibling = (el: Element | null | undefined) => el?.querySelector<HTMLElement>("[data-feed-dismiss]") ?? null;
-    const next = sibling(row?.nextElementSibling) ?? sibling(row?.previousElementSibling);
+    const next = nextDismiss(from);
     put(key, true);
     requestAnimationFrame(() => (next ?? fallback?.())?.focus());
     void dismissFeedItemAction(key)

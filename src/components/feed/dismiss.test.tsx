@@ -14,6 +14,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: 
 
 import { WhatsNew } from "../home/whats-new";
 import { LeadSlot } from "../home/lead-story";
+import { HeldLeadProvider } from "../home/held-lead";
+import { nextDismiss } from "./dismiss";
 import { WaitingOnYou } from "../social/waiting-on-you";
 import { FeedItemRow } from "./feed-item";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
@@ -89,6 +91,58 @@ describe("the lead story", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(9)) })); });
     expect(m.dismiss).toHaveBeenCalledWith(lead.key);
     expect(screen.queryByText(titleOf(9))).toBeNull();
+  });
+});
+
+describe("where focus goes (Copilot round 1, #2285)", () => {
+  const scope = (html: string) => {
+    document.body.innerHTML = `<section data-dismiss-scope>${html}</section>`;
+    return [...document.querySelectorAll<HTMLButtonElement>("[data-feed-dismiss]")];
+  };
+  afterEach(() => { document.body.innerHTML = ""; });
+
+  it("crosses from Today's last row into Earlier's first", () => {
+    const [, last, first] = scope(`<ul><li><button data-feed-dismiss></button></li><li><button data-feed-dismiss></button></li></ul>
+      <ul><li><button data-feed-dismiss></button></li></ul>`);
+    expect(nextDismiss(last)).toBe(first);
+  });
+
+  it("passes over a ✕ disabled while an answer is out, and goes back when nothing follows", () => {
+    const [a, b, c] = scope(`<ul><li><button data-feed-dismiss></button></li><li><button data-feed-dismiss></button></li>
+      <li><button data-feed-dismiss disabled></button></li></ul>`);
+    expect(nextDismiss(a)).toBe(b);
+    expect(nextDismiss(b)).toBe(a);
+    expect(nextDismiss(c)).toBe(b);
+  });
+
+  it("finds nothing outside a scope, or with no other ✕ in it", () => {
+    const [only] = scope(`<button data-feed-dismiss></button>`);
+    expect(nextDismiss(only)).toBeNull();
+    document.body.innerHTML = `<button data-feed-dismiss></button>`;
+    expect(nextDismiss(document.querySelector<HTMLElement>("button")!)).toBeNull();
+  });
+});
+
+describe("the lead and the count (Copilot round 1, #2285)", () => {
+  it("takes an unseen lead off What's new's count with the story, and puts it back when the write fails", async () => {
+    const lead = view(9, { key: "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f" });
+    const both = () => (
+      <HeldLeadProvider>
+        <LeadSlot lead={lead} now={NOW} />
+        <WhatsNew feed={feed([view(1)], lead)} now={NOW} />
+      </HeldLeadProvider>
+    );
+    const { unmount } = render(both());
+    expect(screen.getByText(feedCopy.home.newCount(2), { exact: false })).toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(9)) })); });
+    expect(screen.getByText(feedCopy.home.newCount(1), { exact: false })).toBeInTheDocument();
+    unmount();
+
+    m.dismiss.mockResolvedValue({ ok: false, reason: "off" });
+    render(both());
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(9)) })); });
+    expect(screen.getByText(titleOf(9))).toBeInTheDocument();
+    expect(screen.getByText(feedCopy.home.newCount(2), { exact: false })).toBeInTheDocument();
   });
 });
 

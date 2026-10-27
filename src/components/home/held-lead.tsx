@@ -9,13 +9,20 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import { feedOrder } from "../../lib/feed/kinds";
 
-type Held = { key: string | null; setKey: (key: string | null) => void };
+type Held = {
+  key: string | null;
+  setKey: (key: string | null) => void;
+  /** The lead hidden with its ✕ this visit, so What's new's count drops it with the story (Copilot round 1, #2285). */
+  gone: string | null;
+  setGone: (key: string | null) => void;
+};
 
 const HeldLeadContext = createContext<Held | null>(null);
 
 export function HeldLeadProvider({ children }: { children: ReactNode }) {
   const [key, setKey] = useState<string | null>(null);
-  return <HeldLeadContext.Provider value={{ key, setKey }}>{children}</HeldLeadContext.Provider>;
+  const [gone, setGone] = useState<string | null>(null);
+  return <HeldLeadContext.Provider value={{ key, setKey, gone, setGone }}>{children}</HeldLeadContext.Provider>;
 }
 
 /** The held story's key and its setter; null outside a provider (the slot then holds alone). */

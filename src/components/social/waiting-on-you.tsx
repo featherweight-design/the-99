@@ -73,7 +73,7 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
     land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`, from);
   }
   return (
-    <section aria-labelledby="waiting-on-you" data-testid="waiting-on-you" className="mt-[26px] md:mt-[34px]">
+    <section aria-labelledby="waiting-on-you" data-dismiss-scope data-testid="waiting-on-you" className="mt-[26px] md:mt-[34px]">
       <h2
         id="waiting-on-you"
         tabIndex={-1}

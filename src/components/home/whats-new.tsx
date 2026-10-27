@@ -50,17 +50,18 @@ const DAY = "m-0 px-[14px] pt-[9px] font-mono text-[9px] font-medium tracking-[.
 export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; className?: string }) {
   const { expanded, root, expand } = useShowAll();
   // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
-  const displaced = displaceLead(served, useHeldLead()?.key ?? null);
+  const heldLead = useHeldLead();
+  const displaced = displaceLead(served, heldLead?.key ?? null);
   // A row hidden this visit (✕) leaves the list and, while unseen, the count, before the refresh redraws both.
   const dismissed = useFeedDismiss(() => document.getElementById(HOME_HEADING_ID));
-  const feed = withoutHidden(displaced, dismissed.hidden);
+  const feed = withoutHidden(displaced, dismissed.hidden, heldLead?.gone ?? null);
   const chosen = feed.chosen;
   const count = chosen && feed.unseen > 0 ? feed.unseen : 0;
   // The lead alone and nothing more: the head stands over no box, since the quiet line would contradict the lead.
   if (chosen && feed.items.length === 0 && feed.lead) return dismissed.toast;
 
   return (
-    <section aria-labelledby="home-whats-new" data-whats-new={chosen ? (feed.items.length > 0 ? "items" : "quiet") : "opt-in"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
+    <section aria-labelledby="home-whats-new" data-dismiss-scope data-whats-new={chosen ? (feed.items.length > 0 ? "items" : "quiet") : "opt-in"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
       <h2 id="home-whats-new" className={HEAD}>
         {c.head}
         {count > 0 && <em className="tracking-[.14em] text-[color:var(--fg-locked)] not-italic lowercase">{c.newCount(count)}</em>}
@@ -88,12 +89,17 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
   );
 }
 
-/** The feed less the rows hidden this visit, its unseen count less those that were unseen. */
-function withoutHidden(feed: HomeFeed, hidden: ReadonlySet<string>): HomeFeed {
-  if (!feed.chosen || hidden.size === 0) return feed;
+/**
+ * The feed less what this visit hid: its rows, and the lead when the slot's ✕ hid it (`goneLead`), the unseen count less
+ * those that were unseen.
+ */
+function withoutHidden(feed: HomeFeed, hidden: ReadonlySet<string>, goneLead: string | null): HomeFeed {
+  if (!feed.chosen) return feed;
   const gone = feed.items.filter((i) => hidden.has(i.key));
-  if (gone.length === 0) return feed;
-  return { ...feed, items: feed.items.filter((i) => !hidden.has(i.key)), unseen: feed.unseen - gone.filter((i) => i.unseen).length };
+  const lead = feed.lead && feed.lead.key === goneLead ? feed.lead : null;
+  if (gone.length === 0 && !lead) return feed;
+  const unseen = gone.filter((i) => i.unseen).length + (lead?.unseen ? 1 : 0);
+  return { ...feed, items: feed.items.filter((i) => !hidden.has(i.key)), lead: lead ? null : feed.lead, unseen: feed.unseen - unseen };
 }
 
 function Rows({ items, now, faces, expanded, onExpand, onDismiss }: {

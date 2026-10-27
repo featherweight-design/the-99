@@ -40,7 +40,8 @@ export function LeadSlot({ lead, now, face }: { lead: FeedView | null; now: stri
   // then be replaced or gone (the server's lead moved on while the answer was out).
   const toast = useSpareToast();
   // Hidden with its ✕, the story leaves the slot at once; the refresh that follows draws Home without it.
-  const dismissed = useFeedDismiss(() => document.getElementById(HOME_HEADING_ID));
+  const dismissed = useFeedDismiss(() => document.getElementById(HOME_HEADING_ID), (key, on) =>
+    publish?.setGone(on ? key : null));
   const shown = held ?? (lead && !dismissed.hidden.has(lead.key) ? { item: lead, face: face ?? null } : null);
   if (!shown) return <>{toast.node}{dismissed.toast}</>;
   const hold = (on: boolean) => {

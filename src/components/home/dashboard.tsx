@@ -253,7 +253,8 @@ export function Dashboard(props: DashboardProps) {
             build, Friends, the resume block, Commitments (Friends on Home, R2b; readiness gap 3). Friends is drawn ONCE,
             in the right column, so there is one invite watch and one dialog. A screen reader reads the DOM order at
             every width, which this layout already accepts for Commitments. */}
-        <div className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
+        {/* The lead's ✕ hands focus on to What's new's first row (`nextDismiss`); the rows keep their own section's scope. */}
+        <div data-dismiss-scope className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
           {props.signature}
           {props.welcome}
           {/* Direction B: the lead story where Ready to build stood, which leaves Home. */}
