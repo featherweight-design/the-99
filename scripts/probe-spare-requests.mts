@@ -375,8 +375,11 @@ async function main() {
       !!lines && lines.length > 0 && lines.every((l) => JSON.stringify(Object.keys(l).sort()) === JSON.stringify(keys)
         && JSON.stringify(Object.keys(l.holder).sort()) === JSON.stringify(["displayName", "publicId"])), JSON.stringify(lines?.[0]));
     check("... never a Clerk id", !!lines && ![A, H1, H2, H3].some((u) => JSON.stringify(lines).includes(u)));
-    check("... no withdrawn or cleared ask, and open asks with their days left", !!lines
-      && !lines.some((l) => l.id === u1Id || l.id === u2Id || l.id === t1Id)
+    // A cleared No inside its cooldown STAYS in this read (`keepClearedDeclines`, #2221): the modal draws Declined, not an
+    // Ask the write would refuse. Only Your requests leaves it out.
+    check("... no withdrawn ask, a cleared No kept as Declined while it holds the friend back, and open asks with their days left", !!lines
+      && !lines.some((l) => l.id === u1Id || l.id === t1Id)
+      && lines.find((l) => l.id === u2Id)?.state === "no"
       && lines.filter((l) => l.state === "open").every((l) => typeof l.daysLeft === "number")
       && lines.some((l) => l.oracleId === R && l.state === "open"), JSON.stringify(lines?.map((l) => [l.oracleId.slice(0, 4), l.state])));
     check("... refuses a batch past the cap before reading", (await sr.loadAskStates(A, Array(201).fill(U), FEEDU)) === null);

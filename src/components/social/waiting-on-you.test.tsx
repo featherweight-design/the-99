@@ -4,6 +4,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { placeReceipts, WaitingOnYou, type Receipt } from "./waiting-on-you";
+import { FEED_SHOWN } from "../feed/show-all";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { feedCopy } from "../../lib/copy/feed";
 import type { SpareRequestRow, WaitingRow } from "../../lib/social/waiting";
@@ -32,6 +33,23 @@ describe("WaitingOnYou", () => {
     render(<WaitingOnYou rows={[ROW, { ...ROW, key: "item:2", unseen: false }]} now={NOW} />);
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(2));
     expect(screen.getAllByTestId("waiting-row")).toHaveLength(2);
+  });
+
+  it("shows the five newest, then Home's Show all N, which shows every row in place; the head counts them all", () => {
+    const rows = Array.from({ length: 7 }, (_, i) => ({ ...ROW, key: `item:${i}`, createdAt: new Date(NOW.getTime() - (i + 1) * 3_600_000) }));
+    render(<WaitingOnYou rows={rows} now={NOW} />);
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(7));
+    expect(screen.getAllByTestId("waiting-row")).toHaveLength(5);
+    expect(screen.getByText(feedCopy.home.more(2))).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: feedCopy.home.showAll(7) }));
+    expect(screen.getAllByTestId("waiting-row")).toHaveLength(7);
+    expect(screen.queryByRole("button", { name: feedCopy.home.showAll(7) })).toBeNull();
+  });
+
+  it("draws no footer at five or fewer", () => {
+    render(<WaitingOnYou rows={Array.from({ length: 5 }, (_, i) => ({ ...ROW, key: `item:${i}` }))} now={NOW} />);
+    expect(screen.queryByText(feedCopy.home.more(0))).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("draws a trade match: title, detail with the pods, time, and a link to the friend's Spares tab", () => {
@@ -119,6 +137,24 @@ describe("WaitingOnYou, spare requests", () => {
     // The receipt keeps the row's place, first; the head counts the one ask still waiting.
     expect(screen.getByTestId("waiting-on-you").querySelector("li")).toBe(receipt);
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(1));
+  });
+
+  it("Show all names what the head counts, never the visit's receipts", async () => {
+    actions.answerSpareAction.mockResolvedValue({ ok: true });
+    const asks = Array.from({ length: 7 }, (_, i): SpareRequestRow => ({ ...ASK, key: `req-${i}`, ask: { ...ASK.ask, id: `req-${i}` } }));
+    render(<WaitingOnYou rows={asks} now={NOW} />);
+    await act(async () => fireEvent.click(screen.getAllByRole("button", { name: /^Yes,/ })[0]));
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(6));
+    expect(screen.getByRole("button", { name: feedCopy.home.showAll(6) })).toBeTruthy();
+    expect(screen.getByText(feedCopy.home.more(2))).toBeTruthy();
+  });
+
+  it("moves focus to the first row Show all reveals", () => {
+    const asks = Array.from({ length: 7 }, (_, i): SpareRequestRow => ({ ...ASK, key: `req-${i}`, ask: { ...ASK.ask, id: `req-${i}` } }));
+    render(<WaitingOnYou rows={asks} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: feedCopy.home.showAll(7) }));
+    const sixth = screen.getAllByTestId("waiting-row")[FEED_SHOWN];
+    expect(document.activeElement).toBe(within(sixth).getByRole("button", { name: /^Yes,/ }));
   });
 
   it("keeps the receipt in place when the action's redraw drops the answered ask", async () => {

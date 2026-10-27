@@ -20,7 +20,8 @@ import { SocialToast, type SocialToastState } from "../../social/social-toast";
 import { CartHeldSlot, CartLine } from "./cart-line";
 
 /** One friend's panel: who they are, the spares they hold of the drawn lines, and those lines in the cart's order. */
-export type FriendGroup = { friend: SpareFriend; spares: number; lines: SelectedLine[] };
+/** `spareOf`: this friend's spare copies of each line's card, so the line can say how many before an Ask (Hugh, 2026-10-27). */
+export type FriendGroup = { friend: SpareFriend; spares: number; lines: SelectedLine[]; spareOf: Map<string, number> };
 
 /** Lines bought this visit that the read no longer lists, by card, with the copies the press added (S3's held slot). */
 export type HeldLines = ReadonlyMap<string, number>;
@@ -38,9 +39,10 @@ export function groupByFriend(
   for (const line of lines) {
     // A held line has left the list, so its spares are the ones read for it this visit: it keeps its place under them.
     for (const s of byCard.get(line.oracleId) ?? (held.has(line.oracleId) ? seen.get(line.oracleId) : undefined) ?? []) {
-      const g = groups.get(s.friend.publicId) ?? { friend: s.friend, spares: 0, lines: [] };
+      const g: FriendGroup = groups.get(s.friend.publicId) ?? { friend: s.friend, spares: 0, lines: [], spareOf: new Map() };
       if (!g.lines.includes(line)) g.lines.push(line);
       g.spares += s.spare;
+      g.spareOf.set(line.oracleId, s.spare);
       groups.set(s.friend.publicId, g);
     }
   }
@@ -153,6 +155,7 @@ export function ByFriendList({
                     deckNames={deckNames}
                     newestAsOf={newestAsOf}
                     inPanel
+                    spare={g.spareOf.get(line.oracleId)}
                     end={
                       <RowEnd
                         size="line"

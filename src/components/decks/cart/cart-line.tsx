@@ -48,6 +48,7 @@ export function CartLine({
   newestAsOf,
   end,
   inPanel = false,
+  spare,
   data,
 }: {
   line: SelectedLine;
@@ -60,6 +61,11 @@ export function CartLine({
   end?: React.ReactNode;
   /** Inside a By friend panel (`.fg .cl`): inset 14px, ruled between lines, the right side centred on the line. */
   inPanel?: boolean;
+  /**
+   * By friend: the panel's friend's spare copies of this card, after the decks line in the modal row's figure ("2
+   * spares"), so a reader can see how many before asking. Absent elsewhere.
+   */
+  spare?: number;
   /** Data attributes for the line's `<li>`: By friend marks its friend and state, for the focus landing and probes. */
   data?: Record<`data-${string}`, string>;
 }) {
@@ -107,6 +113,16 @@ export function CartLine({
         </div>
         <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">
           {copy.list.decks(line.copies, names)}
+          {/* The separator and the count wrap as one, so a narrow line never leaves a hanging "·". */}
+          {spare !== undefined ? (
+            <>
+            {" "}
+            <span className="whitespace-nowrap">
+              {"· "}
+              <em data-testid="cart-line-spare" className="not-italic text-[color:var(--fact)]">{copy.byFriend.spares(spare)}</em>
+            </span>
+            </>
+          ) : null}
         </span>
         {/* Why a card the player owns is on a buy list, said without a verdict or a warning colour
             (lock 4): the other decks hold the copies. */}
