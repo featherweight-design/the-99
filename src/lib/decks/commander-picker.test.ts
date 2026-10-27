@@ -1,7 +1,7 @@
 // The face picker's reads (Social R1 PR A, E2, G13). The deck row's query reads the viewer's own decks,
 // newest first; `deckTiles` turns them into tiles; `probe:social` proves both, and the search, on a database.
 import { describe, expect, it } from "vitest";
-import { DECK_COMMANDER_TILES, deckCommandersQuery, deckTiles, searchFaceCommanders } from "./commander-picker";
+import { canLeadADeck, DECK_COMMANDER_TILES, deckCommandersQuery, deckTiles, searchFaceCommanders } from "./commander-picker";
 
 const VIEWER = "user_viewer";
 
@@ -72,5 +72,26 @@ describe("searchFaceCommanders", () => {
   it("asks for nothing on a query too short to run, or not a string", async () => {
     await expect(searchFaceCommanders("a")).resolves.toEqual([]);
     await expect(searchFaceCommanders(7)).resolves.toEqual([]);
+  });
+});
+
+const legend = { commanderLegal: true, typeLine: "Legendary Creature — Elf Druid", oracleText: "", manaCost: "{G}", layout: "normal" };
+
+describe("canLeadADeck", () => {
+  it("takes a commander-legal legendary creature", () => {
+    expect(canLeadADeck(legend)).toBe(true);
+  });
+  it("refuses a card that is not commander-legal", () => {
+    expect(canLeadADeck({ ...legend, commanderLegal: false })).toBe(false);
+  });
+  it("refuses a card that cannot lead a deck", () => {
+    expect(canLeadADeck({ ...legend, typeLine: "Basic Land — Forest" })).toBe(false);
+    expect(canLeadADeck({ ...legend, typeLine: "Legendary Land" })).toBe(false);
+  });
+  it("refuses a token", () => {
+    expect(canLeadADeck({ ...legend, layout: "token" })).toBe(false);
+  });
+  it("takes a card whose text says it can be your commander", () => {
+    expect(canLeadADeck({ ...legend, typeLine: "Planeswalker — Teferi", oracleText: "Teferi can be your commander." })).toBe(true);
   });
 });

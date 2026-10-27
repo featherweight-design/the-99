@@ -12,7 +12,7 @@ import { and, asc, eq, isNotNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { friendLinks, podMembers, pods, socialProfiles } from "../../db/schema";
-import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
+import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { isUuid, nextPodOwner } from "./rules";
 
 export type Reader = Pick<typeof db, "select" | "selectDistinct">;
@@ -52,6 +52,7 @@ function friendRows(q: Reader) {
     .from(friendLinks)
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
     .$dynamic();
 }
 
@@ -159,6 +160,8 @@ export function podMembersQuery(viewerId: string, q: Reader = db) {
       eq(commanderCard.oracleId, socialProfiles.commanderOracleId),
       or(eq(podMembers.userId, viewerId), isNotNull(viewerFriend.userId)),
     ))
+    // The printing is shown only where the card is, so the grant above decides both.
+    .leftJoin(facePrinting, and(faceJoin, isNotNull(commanderCard.oracleId)))
     .orderBy(asc(podMembers.joinedAt), asc(podMembers.userId));
 }
 

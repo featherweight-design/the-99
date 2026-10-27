@@ -64,6 +64,7 @@
     "probe:admin-payments": "node scripts/probe-admin-payments.mjs",
     "seed:admin-pii-fixture": "node scripts/seed-admin-pii-fixture.mjs",
     "probe:social": "tsx scripts/probe-social.mts",
+    "probe:face-printing": "tsx scripts/probe-face-printing.mts",
     "probe:spare-settings": "tsx scripts/probe-spare-settings.mts",
     "probe:friend-decks": "tsx scripts/probe-friend-decks.mts",
     "probe:purge": "tsx scripts/probe-purge.mts",

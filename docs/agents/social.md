@@ -159,3 +159,13 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
 - **Writes.** `writeFriendDeckPrefs` and `setDeckHiddenFromFriends` write only on a change, because the stamp trigger
   fires on any UPDATE and the stamp is what moves a friend's `friendGeneration`. Hiding never writes `last_edited_at`
   and never touches Tonight's table or a logged game, which keep a hidden deck's name (G4, Hugh 2026-10-22).
+
+## The face: any card, any printing (backend, 2026-10-27)
+
+Behind `SOCIAL_FRIENDS_ENABLED` and no switch of its own: the column is nullable and every existing row reads null, so an unchanged profile draws exactly what it drew; the relaxed rule is reachable only through `setCommanderAction`, which is gated already. The picker UI waits for Design's handoff (prompt 20), so no surface offers a non-commander yet.
+
+- **`social_profiles.commander_oracle_id`** is any catalog card (the "must be able to lead a deck" refusal is gone; `canBeFace` moved to `lib/decks/commander-picker.ts` as `canLeadADeck`, which the existing picker still filters by). **`commander_printing_id`** is the player's chosen printing, a FK to `printings.scryfall_id` with `ON DELETE SET NULL`.
+- **`setCommander(viewer, oracleId, printingId?)`** is the one writer. Refusals: `noCard` (not a catalog card), `badPrinting` (not a uuid, not a printing OF that card, or a printing with no card), `noProfile`. Every write sets both columns, so changing the card drops the old pick. A card or printing deleted between the check and the write comes back as the same refusal (FK violation), not a 500.
+- **The art chain**, in `commanderColumns.commanderArt`: `coalesce(face_printing.art_crop_uri, commander_card.art_crop_uri)`. The printing joins on `faceJoin`, which names BOTH ids (`scryfall_id = commander_printing_id AND oracle_id = commander_oracle_id`), so a pick that no longer matches its card draws the card's own art. In `members` (access.ts) the printing joins only where the card does, so the pod grant decides both.
+- **Readers.** Five modules spread `commanderColumns` (`friends`, `access`, `home-friends`, `rule-zero`, `spares`) and join `facePrinting`; `spare-requests.ts` writes the same chain in raw SQL (`ifp`, `mfp`). `face-reads.test.ts` fails when a reader joins the card without the printing. No cached page draws a face today (`friendGeneration` does not key it); a page that starts to must key the printing.
+- **Not here:** the picker, the onboarding step, an any-card search and the About edit. The own-profile read does not return the pick yet; the picker's PR adds it with its consumer. Proof: `pnpm probe:face-printing`.

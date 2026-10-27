@@ -19,7 +19,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles } from "../../db/schema";
 import type { Reader } from "./access";
-import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
+import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { friendDecksIn } from "./games";
 import { isUuid } from "./rules";
 
@@ -352,6 +352,7 @@ export function tableFacesQuery(viewerId: string, tableIds: readonly string[], q
     .innerJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroSeats.userId))
     .leftJoin(viewerFriend, and(eq(viewerFriend.userId, viewerId), eq(viewerFriend.friendUserId, ruleZeroSeats.userId)))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
     .where(inArray(ruleZeroSeats.tableId, [...tableIds]))
     .orderBy(asc(ruleZeroSeats.tableId), asc(ruleZeroSeats.seat));
 }
@@ -463,6 +464,7 @@ async function podSetupIn(tx: Tx, viewerId: string, podId: string): Promise<PodS
     .innerJoin(socialProfiles, eq(socialProfiles.userId, podMembers.userId))
     .leftJoin(viewerFriend, and(eq(viewerFriend.userId, viewerId), eq(viewerFriend.friendUserId, podMembers.userId)))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
     .where(eq(podMembers.podId, podId))
     .orderBy(asc(podMembers.joinedAt), asc(podMembers.userId));
   const { rows: deckRows } = await tx.execute<SetupDeckRow>(setupDecksQuery(viewerId, podId));

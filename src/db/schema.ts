@@ -3478,10 +3478,16 @@ export const socialProfiles = pgTable("social_profiles", {
   /** Player-typed: 1 to 30 code points, validated by `rules.ts` before every write. */
   displayName: text("display_name").notNull(),
   /**
-   * The commander a player shows as their face (Social R1, G11): null draws initials. Written only by
-   * `setCommander`, which refuses a card that cannot lead a deck. A card leaving the catalog clears it.
+   * The card a player shows as their face (Social R1, G11): null draws initials. ANY catalog card, not only one
+   * that can lead a deck. Written only by `setCommander`. A card leaving the catalog clears it.
    */
   commanderOracleId: uuid("commander_oracle_id").references(() => cards.oracleId, { onDelete: "set null" }),
+  /**
+   * The printing of that card the player chose for the face, or null for the card's default art. Written by
+   * `setCommander` alone, which refuses a printing that is not of `commander_oracle_id`; a printing leaving the
+   * catalog clears it. Every read joins it on BOTH ids, so a pick that no longer matches its card draws the default.
+   */
+  commanderPrintingId: uuid("commander_printing_id").references(() => printings.scryfallId, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
   check("social_profiles_display_name_check", sql`char_length(${t.displayName}) between 1 and 30`),

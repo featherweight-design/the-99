@@ -11,7 +11,7 @@ import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { listFriends, resolveFriend, type Friend, type Reader } from "./access";
-import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
+import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import {
   cleanDisplayName, friendshipRows, INVITE_TTL_MS, inviteState, MAX_OPEN_INVITES, newInviteToken, type InviteState,
 } from "./rules";
@@ -32,6 +32,7 @@ export async function ensureProfile(viewerId: string, offeredName: unknown): Pro
     .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName, ...commanderColumns })
     .from(socialProfiles)
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
     .where(eq(socialProfiles.userId, viewerId));
   return { publicId: row.publicId, displayName: row.displayName, commander: toCommander(row) };
 }
@@ -135,6 +136,7 @@ export function inviteQuery(viewerId: string, token: string, q: Reader = db) {
     .from(friendInvites)
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendInvites.inviterUserId))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
     .where(eq(friendInvites.token, token));
 }
 
@@ -256,6 +258,7 @@ export async function readInviteSender(senderId: string): Promise<InviteSender |
     .select({ displayName: socialProfiles.displayName, ...commanderColumns })
     .from(socialProfiles)
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
     .where(eq(socialProfiles.userId, senderId));
   return row ? { displayName: row.displayName, commander: toCommander(row) } : null;
 }

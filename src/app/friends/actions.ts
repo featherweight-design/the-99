@@ -57,13 +57,16 @@ export async function setDisplayNameAction(name: unknown): Promise<SetNameOutcom
   return { ok: true, displayName };
 }
 
-export type SetCommanderOutcome = { ok: true } | Off | { ok: false; reason: "notCommander" | "noProfile" };
+export type SetCommanderOutcome = { ok: true } | Off | { ok: false; reason: "noCard" | "badPrinting" | "noProfile" };
 
-/** Null clears the face back to initials (`Use initials instead`). */
-export async function setCommanderAction(oracleId: unknown): Promise<SetCommanderOutcome> {
+/**
+ * Any card, in a printing of the player's choice (none: the card's default art). A null card clears the face back to
+ * initials (`Use initials instead`).
+ */
+export async function setCommanderAction(oracleId: unknown, printingId: unknown = null): Promise<SetCommanderOutcome> {
   const userId = await socialReader();
   if (!userId) return OFF;
-  const result = await setCommander(userId, oracleId);
+  const result = await setCommander(userId, oracleId, printingId);
   if (!result.ok) return result;
   refreshFriends();
   return { ok: true };
