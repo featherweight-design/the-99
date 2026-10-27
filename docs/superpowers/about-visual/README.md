@@ -8,7 +8,7 @@ These three documents are the input to Design prompt 21, which redraws About as 
 
 ## Known errata in the audit
 
-The audit is copied as written. Two counts in it are off, and the conclusions it draws from them do not change:
+The audit is copied as written. Three points in it are off. The two counts do not change a conclusion; the third is a caveat on option B:
 
 - §"Folded lines lose their announcement" says seven of the 43 switched entries are off in production. Two of those seven, `COMMANDERS_PLACE_ENABLED` and `SPARE_REQUESTS_ENABLED`, switch a caption line or a variant, not a whole entry. The true count is five: friend decks, push, near combos, strategy focus and upcoming precons.
 - "All 23 places (17 screens and 7 deck views)" adds up to 24. The test counts `ABOUT_SCREENS.length - 1 + DECK_VIEWS.length`, because the deck screen is replaced by its views, so 23 is right: 16 non-deck screens plus 7 views.
