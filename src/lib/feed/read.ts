@@ -20,7 +20,7 @@
 import { sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
-import { catalogFirstSeen, precons, sets, userPrefs } from "../../db/schema";
+import { catalogFirstSeen, feedDismissals, precons, sets, userPrefs } from "../../db/schema";
 import { RELEASE_SET_TYPES } from "../catalog/index-due";
 import { storedFeedBranch } from "../social/feed-items";
 import { unseenAnswersCount } from "../social/spare-requests";
@@ -66,6 +66,7 @@ export function catalogBranch(kind: CatalogKind, viewerId: string, now: Date, ga
       where sf.baseline = false and s.digital = false
         and s.set_type = any(${sql.param([...RELEASE_SET_TYPES])}::text[])
         and s.released_at <= ${today}::date
+        and not exists (select 1 from ${feedDismissals} sfd where sfd.user_id = ${viewerId} and sfd.key = 'set:' || s.code)
         and ${gate({ moment, prefs: sql`sup`, id: sql`s.code` })}`;
   }
   const moment = sql`greatest(pf.first_seen_at at time zone 'UTC', p.release_date::timestamp at time zone 'UTC')`;
@@ -79,6 +80,7 @@ export function catalogBranch(kind: CatalogKind, viewerId: string, now: Date, ga
     join ${userPrefs} pup on pup.user_id = ${viewerId}
     where pf.baseline = false and p.twin_of is null
       and p.release_date <= ${today}::date
+      and not exists (select 1 from ${feedDismissals} pfd where pfd.user_id = ${viewerId} and pfd.key = 'precon:' || p.file_name)
       and ${gate({ moment, prefs: sql`pup`, id: sql`p.file_name` })}`;
 }
 
