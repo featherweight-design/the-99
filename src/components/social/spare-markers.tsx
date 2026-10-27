@@ -140,6 +140,7 @@ export function FriendSparesProvider({
   requests = false,
   deckId = null,
   standalone = false,
+  sparesOnOpen = false,
   children,
 }: {
   /** The cards the deck is buying: one read covers every row that can carry a marker. */
@@ -152,6 +153,9 @@ export function FriendSparesProvider({
   deckId?: string | null;
   /** An Ask here is for no list (a friend's Spares tab), so Your requests never reads it as no longer needed. */
   standalone?: boolean;
+  /** Read a card's spares only when its sheet opens, once per visit (a friend's Spares tab: the page already drew every
+   *  tile, and the sheet draws the page's offer until the read lands). The asks are still read for every card. */
+  sparesOnOpen?: boolean;
   /** Draw the spares-only modal here. False where it must sit inside a card-detail provider mounted lower (the cart),
    *  which then renders `SparesSheetHost` itself. */
   hostSheet?: boolean;
@@ -162,10 +166,12 @@ export function FriendSparesProvider({
   const [loaded, setLoaded] = useState<ReadonlySet<string>>(() => new Set());
   const [opened, setOpened] = useState<SpareCard | null>(null);
   const [asks, setAsks] = useState<AskStateLine[]>([]);
+  // On open, the read is the opened card alone, skipped once it has landed this visit.
+  const sparesKey = sparesOnOpen ? (opened && !loaded.has(opened.oracleId) ? opened.oracleId : "") : key;
   useEffect(() => {
-    if (!key) return;
+    if (!sparesKey) return;
     let live = true;
-    const ids = new Set(key.split(","));
+    const ids = new Set(sparesKey.split(","));
     void fetchSpares([...ids]).then((rows) => {
       // A read replaces only the cards it asked about: a card that left the list keeps what was read for it.
       if (!live) return;
@@ -175,7 +181,7 @@ export function FriendSparesProvider({
     return () => {
       live = false;
     };
-  }, [key]);
+  }, [sparesKey]);
   // The asks land after the page, as the spares do. Each card is read ONCE per visit, when it first joins the list, and
   // no read is ever thrown away: a card leaving the list (a stand-in taken, its sheet left open) neither cancels its
   // read nor drops what it held, so its sheet keeps Requested or Declined. After that read, a card's state is moved by

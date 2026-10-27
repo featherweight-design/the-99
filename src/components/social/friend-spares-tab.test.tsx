@@ -114,6 +114,20 @@ describe("the tab, spare requests on", () => {
     expect(m.ask).toHaveBeenCalledWith(expect.objectContaining({ oracleId: GHALTA, deckId: null, standalone: true }));
   });
 
+  it("reads a card's spares only when its sheet opens, and once a visit", async () => {
+    const sparesReads = () => fetchMock.mock.calls.map(([u]) => String(u)).filter((u) => u.startsWith("/api/friend-spares"));
+    await mount(ON());
+    expect(sparesReads()).toEqual([]);
+    const press = screen.getAllByTestId("spare-tile-press")[0];
+    await act(async () => { fireEvent.click(press); });
+    expect(sparesReads()).toHaveLength(1);
+    expect(sparesReads()[0]).toContain(GHALTA);
+    expect(sparesReads()[0]).not.toContain(SAI);
+    await act(async () => { fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /close/i })); });
+    await act(async () => { fireEvent.click(press); });
+    expect(sparesReads()).toHaveLength(1);
+  });
+
   it("draws what the read returned, not the page's offer, once a read for the card lands empty", async () => {
     read = [];
     await mount(ON());

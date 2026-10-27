@@ -129,7 +129,7 @@ function AskTab({ spares, asks, onWishlistWrite }: {
         {p.spares.line(spares.pods, spares.wishlist)}{p.spares.pressToAsk}
       </p>
       <CardDetailProvider onWishlistWrite={onWishlistWrite}>
-        <FriendSparesProvider oracleIds={ids} newestAsOf={asks.newestAsOf} requests deckId={null} standalone hostSheet={false}>
+        <FriendSparesProvider oracleIds={ids} newestAsOf={asks.newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false}>
           <SparesSheetHost first={friend.publicId} kickerFor={kickerFor} fallback={fallback} />
           {/* Four columns until xl: at md's narrow end six leave a tile too narrow for its one-line Requested caption. */}
           <ul className="m-0 mt-[12px] grid list-none grid-cols-2 gap-x-[8px] gap-y-[12px] p-0 md:grid-cols-4 md:gap-[20px] xl:grid-cols-6">
