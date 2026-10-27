@@ -188,13 +188,17 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
         <div className="flex min-w-0 items-center gap-[7px]">
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
           <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : c.kicker[item.kind]}</span>
-          <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)]">{feedAge(item.at, now)}</small>
+          <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)] md:hidden">{feedAge(item.at, now)}</small>
         </div>
         <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]">{text.title}</p>
         {text.line && <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{text.line}</p>}
       </div>
-      {text.press && (
-        <div className="col-start-2 mt-[9px] flex min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end">
+      {/* From desktop the time leaves the kicker line for the right column, on the press's baseline and before it, in the
+          phone's reading order (Hugh's ruling, 2026-10-27: the menu-home plan's product call 5). A row with no press keeps its
+          time there alone. */}
+      <div className={`${text.press ? "col-start-2 mt-[9px] flex" : "hidden"} min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:flex md:flex-nowrap md:items-baseline md:justify-end md:gap-[12px]`}>
+        <small data-feed-age-desktop className="hidden flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)] md:inline">{feedAge(item.at, now)}</small>
+        {text.press && (
           <FeedPress
             item={item}
             label={`${text.press} ›`}
@@ -202,8 +206,8 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
             stretch="after:absolute after:inset-0 after:content-['']"
             className="flex min-h-[32px] min-w-0 items-center font-sans text-[13px] font-medium [overflow-wrap:anywhere] text-[color:var(--accent-text)]"
           />
-        </div>
-      )}
+        )}
+      </div>
     </li>
   );
 }

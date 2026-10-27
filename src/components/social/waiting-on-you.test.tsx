@@ -58,7 +58,14 @@ describe("WaitingOnYou", () => {
     const row = screen.getByTestId("waiting-row");
     expect(within(row).getByText(w.tradeTitle("Colin", "Ghalta, Primal Hunger"))).toBeTruthy();
     expect(within(row).getByText(w.tradeDetail("Colin", ["Thursday pod"]))).toBeTruthy();
-    expect(within(row).getByText("5h ago")).toBeTruthy();
+    // The age twice, one per width: the kicker line on a phone, the link's baseline from desktop, before the link.
+    const ages = within(row).getAllByText("5h ago");
+    expect(ages).toHaveLength(2);
+    expect(ages[0].className).toMatch(/(^|\s)md:hidden(\s|$)/);
+    const line = row.querySelector("[data-waiting-age-desktop]")!.parentElement!;
+    expect(line.className).toMatch(/md:items-baseline/);
+    expect(line.className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(line.lastElementChild?.textContent).toContain(w.seeSpares("Colin"));
     const links = within(row).getAllByRole("link", { name: w.seeSpares("Colin") });
     expect(links.length).toBeGreaterThan(0);
     for (const l of links) expect(l.getAttribute("href")).toBe("/friends/pub-colin?spare=ghalta");
