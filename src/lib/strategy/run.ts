@@ -95,10 +95,10 @@ export function strategyChips<T extends Line>(lines: readonly T[], run: RunStrat
     if (line.addOracleId) {
       const card = adds.get(line.addOracleId);
       // The model's own focus citation names the focus with no figure (`validate.ts`). On a card that counts toward it, the
-      // app's chip says the same with its figure, so the model's goes; on one that does not, the claim is false and goes too,
-      // unless it is all the line cites.
+      // app's chip says the same with its figure, so the model's goes; on one that does not, the claim is false and goes
+      // too, even when it is all the line cites: the suggestion stands, with no chip claiming what the card does not do.
       const rest = line.evidence.filter((c) => c.kind !== "focus");
-      if (!card || !onStrategy(card, run.key)) return rest.length > 0 && rest.length < line.evidence.length ? { ...line, evidence: rest } : line;
+      if (!card || !onStrategy(card, run.key)) return rest.length < line.evidence.length ? { ...line, evidence: rest } : line;
       const chip: TuningCitation = { kind: "focus", value: deckTuningCopy.card.focusChip(run.name, run.copies, run.copies + 1) };
       return { ...line, evidence: [chip, ...rest] };
     }
