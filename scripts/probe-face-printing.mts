@@ -115,6 +115,8 @@ async function main() {
     await db.execute(sql`delete from friend_links where user_id in (${A}, ${B})`);
     await db.execute(sql`delete from social_profiles where user_id in (${A}, ${B})`);
     await db.execute(sql`delete from printings where scryfall_id = ${FIXTURE_PRINTING}::uuid`);
+    // Last: the friend_links writes above fire user_data_touch, which upserts a stamp row for each account.
+    await db.execute(sql`delete from user_data_stamps where user_id in (${A}, ${B})`);
   }
   if (failed > 0) {
     console.error(`${failed} check(s) failed`);
