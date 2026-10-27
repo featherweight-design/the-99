@@ -28,6 +28,10 @@ jobs:
       cases: ${{ steps.cases.outputs.cases }}
     steps:
       - uses: actions/checkout@v4
+      # Every job that runs node gets the pinned, patched build from .nvmrc, never the runner's own.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
       - id: cases
         env:
           ONLY: ${{ inputs.only }}
