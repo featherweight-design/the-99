@@ -18,13 +18,36 @@ describe("FeedItemRow", () => {
   it("draws the kicker, the age, the title and the line, with the accent diamond while unseen", () => {
     const { container } = list(<FeedItemRow item={view({ name: "Secrets of Strixhaven", setSize: 288, href: "/collection/sets/sos" })} now={NOW} />);
     expect(screen.getByText("New set")).toBeInTheDocument();
-    expect(screen.getByText("5h ago")).toBeInTheDocument();
+    // The age twice, one per width: on the kicker line on a phone, beside the press from desktop.
+    const ages = screen.getAllByText("5h ago");
+    expect(ages).toHaveLength(2);
+    expect(ages[0].className).toMatch(/(^|\s)md:hidden(\s|$)/);
+    expect(ages[1].className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(ages[1].className).toMatch(/(^|\s)md:inline(\s|$)/);
     expect(screen.getByText("Secrets of Strixhaven is out")).toBeInTheDocument();
     expect(screen.getByText("288 cards.")).toBeInTheDocument();
     expect(container.querySelector("[data-feed-unseen]")).not.toBeNull();
     expect(screen.getByRole("link", { name: "See the set ›" })).toHaveAttribute("href", "/collection/sets/sos");
     // The card at card shape, never the art crop.
     expect(container.querySelector('[data-commander-thumb="feed"]')).not.toBeNull();
+  });
+
+  it("puts the desktop age on the press's line, before it, on one baseline", () => {
+    const { container } = list(<FeedItemRow item={view({ href: "/x" })} now={NOW} />);
+    const age = container.querySelector("[data-feed-age-desktop]")!;
+    const line = age.parentElement!;
+    expect(line.className).toMatch(/md:items-baseline/);
+    expect(line.className).toMatch(/md:col-start-3/);
+    expect(line.className).toMatch(/md:flex-nowrap/);
+    expect(age.nextElementSibling?.textContent).toBe("See the set ›");
+  });
+
+  it("keeps the desktop age in the right column for a row with no press", () => {
+    const { container } = list(<FeedItemRow item={view({ kind: "spare-request", friend: { publicId: "p", displayName: "Peter" } })} now={NOW} />);
+    const age = container.querySelector("[data-feed-age-desktop]")!;
+    expect(age.parentElement!.className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(age.parentElement!.className).toMatch(/md:flex(\s|$)/);
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("drops the diamond and steps the kicker down once seen", () => {
@@ -142,7 +165,7 @@ describe("FeedItemRow", () => {
 
   it("reads 'just now' for an item under an hour old", () => {
     list(<FeedItemRow item={view({ at: "2026-10-22T11:30:00Z", href: "/x" })} now={NOW} />);
-    expect(screen.getByText("just now")).toBeInTheDocument();
+    expect(screen.getAllByText("just now")).toHaveLength(2);
     expect(screen.queryByText(/0h ago/)).toBeNull();
   });
 

@@ -196,13 +196,17 @@ function TradeRow({ row: r, now }: { row: TradeMatchRow; now: Date }) {
         <p className="m-0 flex min-w-0 items-center gap-[7px]">
           {r.unseen && <Unseen />}
           <span className={`${KIND} text-[color:var(--fg-faint)]`}>{w.kind[r.kind]}</span>
-          <small className={TIME}>{ago(r.createdAt, now)}</small>
+          <small className={`${TIME} md:hidden`}>{ago(r.createdAt, now)}</small>
         </p>
         <p className={TITLE}>{w.tradeTitle(r.friend.displayName, r.card.name)}</p>
         <p className={DETAIL}>{w.tradeDetail(r.friend.displayName, r.pods)}</p>
         <WaitingLink row={r} className="mt-[6px] md:hidden" />
       </div>
-      <WaitingLink row={r} className="hidden md:flex md:justify-end" />
+      {/* From desktop the time sits on the link's baseline, before it (Hugh's ruling, 2026-10-27: the menu-home plan's product call 5), as on What's new. */}
+      <div className="hidden md:flex md:items-baseline md:justify-end md:gap-[12px]">
+        <small data-waiting-age-desktop className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{ago(r.createdAt, now)}</small>
+        <WaitingLink row={r} className="flex" />
+      </div>
     </li>
   );
 }
