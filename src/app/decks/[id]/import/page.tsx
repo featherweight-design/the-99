@@ -6,6 +6,7 @@
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { getDeckDetail } from "../../../../lib/decks/read";
+import { deckBodySize } from "../../../../lib/decks/deck-size";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { UpdateEntry } from "../../../../components/decks/update-entry";
 import { isUuid } from "../../../../lib/uuid";
@@ -23,5 +24,5 @@ export default async function UpdateDeckPage({ params }: { params: Promise<{ id:
   // from it — reaching this URL by hand is the same non-state.
   if (detail.cards.length === 0) notFound();
 
-  return <UpdateEntry deckId={id} deckName={detail.name} />;
+  return <UpdateEntry deckId={id} deckName={detail.name} bodySize={deckBodySize(detail.partner !== null)} />;
 }

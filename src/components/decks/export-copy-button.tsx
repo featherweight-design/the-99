@@ -4,6 +4,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { PrimaryButton } from "@/components/ui/button";
+import { exportDialogCopy } from "../../lib/copy/decks-builder";
 
 interface ExportCopyButtonProps {
   /** The text to copy to clipboard. */
@@ -23,7 +24,7 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
     const lineCount = text === "" ? 0 : text.split("\n").length;
 
     function onSuccess() {
-      const msg = `Copied · ${lineCount} ${lineCount === 1 ? "line" : "lines"}`;
+      const msg = exportDialogCopy.copiedAnnounce(lineCount);
       onStatus(msg);
       setCopied(true);
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -53,7 +54,7 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
       if (ok) {
         onSuccess();
       } else {
-        onStatus("Couldn’t copy. Select the text and copy it yourself.");
+        onStatus(exportDialogCopy.copyFailed);
       }
     }
 
@@ -69,7 +70,7 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
       onClick={handleCopy}
       className="w-full md:w-auto text-[14px] py-[12px] px-[0] md:py-[11px] md:px-[22px]"
     >
-      {copied ? "Copied ✓" : "Copy to clipboard"}
+      {copied ? exportDialogCopy.copied : exportDialogCopy.copy}
     </PrimaryButton>
   );
 }

@@ -23,7 +23,7 @@ import { useId, useState } from "react";
 
 import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { removeCardFromDeck } from "../../app/decks/actions";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, ownedStateCopy } from "../../lib/copy/decks-builder";
 import { cardTileCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
 import { printedNameOf } from "../../lib/collection/browse";
 import { deckRowName } from "../../lib/decks/row-name";
@@ -421,7 +421,7 @@ export function DeckCardTile({
                 owned={card.owned && !proxied}
                 committed={availState === "hard" || availState === "over"}
                 className="w-[8px] h-[8px] flex-none"
-                label={card.owned && !proxied ? "Owned" : "Not owned"}
+                label={card.owned && !proxied ? ownedStateCopy.owned : ownedStateCopy.notOwned}
               />
               {/* The foil glint, right after the dot (foil mark addendum R2): it reads with "you own this" and never
                   among the fact marks, and `flex-none` keeps it when a long meta line drops those. Where the line still

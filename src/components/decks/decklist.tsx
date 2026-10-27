@@ -1453,6 +1453,7 @@ export function Decklist({
         <UnresolvedGroup
           mix={mix}
           deckId={deckId}
+          bodySize={bodySize}
           rows={visibleUnresolved}
           cards={cards}
           deckOracleIds={deckOracleIds}

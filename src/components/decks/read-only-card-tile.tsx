@@ -14,7 +14,7 @@
 
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { preconsCopy } from "../../lib/copy/precons";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, ownedStateCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailTrigger, cardDetailCopy, type Sibling } from "../cards/card-detail-provider";
 import { CardTileCaption, TILE_ART_CLIP_SCALED, TILE_ART_RATIO, TILE_FIELD, TILE_SHELL_SCALED } from "../ui/card-tile-caption";
@@ -107,7 +107,7 @@ export function ReadOnlyCardTile({
                 <OwnershipDot
                   owned={card.owned}
                   className="w-[8px] h-[8px] flex-none"
-                  label={card.owned ? "Owned" : "Not owned"}
+                  label={card.owned ? ownedStateCopy.owned : ownedStateCopy.notOwned}
                 />
                 {foilFinish && <FoilGlint finish={foilFinish} precon={{ quantity: card.quantity }} />}
                 {!card.owned && (

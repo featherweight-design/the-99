@@ -58,7 +58,7 @@ const preview = {
 };
 
 function renderEntry() {
-  render(<UpdateEntry deckId="deck-1" deckName="Kykar, Wind's Fury" />);
+  render(<UpdateEntry deckId="deck-1" deckName="Kykar, Wind's Fury" bodySize={99} />);
 }
 
 function paste(text = "1 Sol Ring\n1 Cultivate") {
