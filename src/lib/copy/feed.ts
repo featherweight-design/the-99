@@ -95,6 +95,14 @@ export const feedCopy = {
     },
     /** The kicker of an answer to the reader's own spare request (spare requests handoff, board `Asker-States`). */
     answerKicker: "Your request",
+    /**
+     * The ✕ on a What's new item, its lead story and a Waiting on you row (Hugh's ruling 2026-10-27): it hides the item
+     * for good and answers nothing. Placeholders for `/copy-review`.
+     */
+    dismiss: {
+      aria: (title: string) => `Hide “${title}”`,
+      failed: "We couldn’t hide that. Try again.", // toast, role alert
+    },
   },
   /** First-run Home's last checklist row, to Settings (`.frw.new`). */
   firstRun: {

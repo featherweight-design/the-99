@@ -20,6 +20,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { NEW_TAB_SUFFIX } from "../ui/external-link";
+import { DismissButton } from "./dismiss";
 import { feedAge } from "../../lib/feed/age";
 
 const c = feedCopy.home;
@@ -196,7 +197,13 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   );
 }
 
-export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; face?: Pick<ProfileCommander, "artCropUri"> | null }) {
+export function FeedItemRow({ item, now, face, onDismiss }: {
+  item: FeedView;
+  now: string;
+  face?: Pick<ProfileCommander, "artCropUri"> | null;
+  /** The ✕ (Hugh's ruling 2026-10-27): hides the item for good. Absent, the row draws none. */
+  onDismiss?: (from: HTMLElement) => void;
+}) {
   const titleId = useId();
   const text = feedText(item);
   const waiting = item.kind === "spare-request" && !item.answer;
@@ -209,7 +216,7 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
     >
       <Picture item={item} face={face} />
       <div className="flex min-w-0 flex-col gap-[3px]">
-        <div className="flex min-w-0 items-center gap-[7px]">
+        <div className={`flex min-w-0 items-center gap-[7px] ${onDismiss ? "pr-[30px]" : ""}`}>
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
           <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : c.kicker[item.kind]}</span>
           <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)] md:hidden">{feedAge(item.at, now)}</small>
@@ -220,7 +227,7 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
       {/* From desktop the time leaves the kicker line for the right column, on the press's baseline and before it, in the
           phone's reading order (Hugh's ruling, 2026-10-27: the menu-home plan's product call 5). A row with no press keeps its
           time there alone. */}
-      <div className={`${text.press ? "col-start-2 mt-[9px] flex" : "hidden"} min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:flex md:flex-nowrap md:items-baseline md:justify-end md:gap-[12px]`}>
+      <div className={`${text.press ? "col-start-2 mt-[9px] flex" : "hidden"} min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:flex md:flex-nowrap md:items-baseline md:justify-end md:gap-[12px] ${onDismiss ? "md:pr-[34px]" : ""}`}>
         <small data-feed-age-desktop className="hidden flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)] md:inline">{feedAge(item.at, now)}</small>
         {text.press && (
           <FeedPress
@@ -233,6 +240,7 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
           />
         )}
       </div>
+      {onDismiss && <DismissButton title={text.title} onPress={onDismiss} />}
     </li>
   );
 }

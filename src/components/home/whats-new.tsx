@@ -19,6 +19,8 @@ import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { FeedKind } from "../../lib/feed/kinds";
 import { FeedItemRow, type FeedFaces } from "../feed/feed-item";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
+import { useFeedDismiss } from "../feed/dismiss";
+import { HOME_HEADING_ID } from "./arrivals-banner";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Checkbox } from "../ui/checkbox";
@@ -48,11 +50,14 @@ const DAY = "m-0 px-[14px] pt-[9px] font-mono text-[9px] font-medium tracking-[.
 export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; className?: string }) {
   const { expanded, root, expand } = useShowAll();
   // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
-  const feed = displaceLead(served, useHeldLead()?.key ?? null);
+  const displaced = displaceLead(served, useHeldLead()?.key ?? null);
+  // A row hidden this visit (✕) leaves the list and, while unseen, the count, before the refresh redraws both.
+  const dismissed = useFeedDismiss(() => document.getElementById(HOME_HEADING_ID));
+  const feed = withoutHidden(displaced, dismissed.hidden);
   const chosen = feed.chosen;
   const count = chosen && feed.unseen > 0 ? feed.unseen : 0;
   // The lead alone and nothing more: the head stands over no box, since the quiet line would contradict the lead.
-  if (chosen && feed.items.length === 0 && feed.lead) return null;
+  if (chosen && feed.items.length === 0 && feed.lead) return dismissed.toast;
 
   return (
     <section aria-labelledby="home-whats-new" data-whats-new={chosen ? (feed.items.length > 0 ? "items" : "quiet") : "opt-in"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
@@ -74,18 +79,31 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
           <Quiet on={feed.on} />
         ) : (
           <HoverPreviewProvider className="flex flex-col">
-            <Rows items={feed.items} now={now} faces={faces} expanded={expanded} onExpand={expand} />
+            <Rows items={feed.items} now={now} faces={faces} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} />
           </HoverPreviewProvider>
         )}
       </div>
+      {dismissed.toast}
     </section>
   );
 }
 
-function Rows({ items, now, faces, expanded, onExpand }: { items: FeedView[]; now: string; faces?: FeedFaces; expanded: boolean; onExpand: () => void }) {
+/** The feed less the rows hidden this visit, its unseen count less those that were unseen. */
+function withoutHidden(feed: HomeFeed, hidden: ReadonlySet<string>): HomeFeed {
+  if (!feed.chosen || hidden.size === 0) return feed;
+  const gone = feed.items.filter((i) => hidden.has(i.key));
+  if (gone.length === 0) return feed;
+  return { ...feed, items: feed.items.filter((i) => !hidden.has(i.key)), unseen: feed.unseen - gone.filter((i) => i.unseen).length };
+}
+
+function Rows({ items, now, faces, expanded, onExpand, onDismiss }: {
+  items: FeedView[]; now: string; faces?: FeedFaces; expanded: boolean; onExpand: () => void; onDismiss: (key: string, from: HTMLElement) => void;
+}) {
   const { today, earlier, hidden } = feedGroups(items, now, expanded);
   const labelled = today.length > 0 && earlier.length > 0;
-  const row = (i: FeedView) => <FeedItemRow key={i.key} item={i} now={now} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} />;
+  const row = (i: FeedView) => (
+    <FeedItemRow key={i.key} item={i} now={now} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
+  );
   return (
     <>
       {labelled && <p className={DAY}>{c.today}</p>}

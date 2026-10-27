@@ -26,6 +26,8 @@ import { ArtLayer } from "../ui/art-layer";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, useSpareToast, type Answer, type SpareToast } from "../social/spare-answer";
 import { useHeldLead } from "./held-lead";
+import { HOME_HEADING_ID } from "./arrivals-banner";
+import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 
 type Face = Pick<ProfileCommander, "artCropUri"> | null;
 
@@ -37,16 +39,20 @@ export function LeadSlot({ lead, now, face }: { lead: FeedView | null; now: stri
   // The failure toast lives here, not in the story: a failed answer releases the hold, and the story that showed it may
   // then be replaced or gone (the server's lead moved on while the answer was out).
   const toast = useSpareToast();
-  const shown = held ?? (lead ? { item: lead, face: face ?? null } : null);
-  if (!shown) return toast.node;
+  // Hidden with its ✕, the story leaves the slot at once; the refresh that follows draws Home without it.
+  const dismissed = useFeedDismiss(() => document.getElementById(HOME_HEADING_ID));
+  const shown = held ?? (lead && !dismissed.hidden.has(lead.key) ? { item: lead, face: face ?? null } : null);
+  if (!shown) return <>{toast.node}{dismissed.toast}</>;
   const hold = (on: boolean) => {
     setHeld(on ? shown : null);
     publish?.setKey(on ? shown.item.key : null);
   };
   return (
     <>
-      <LeadStory key={shown.item.key} item={shown.item} now={now} face={shown.face} onHold={hold} toast={toast} />
+      <LeadStory key={shown.item.key} item={shown.item} now={now} face={shown.face} onHold={hold} toast={toast}
+        onDismiss={held ? undefined : (from) => dismissed.dismiss(shown.item.key, from)} />
       {toast.node}
+      {dismissed.toast}
     </>
   );
 }
@@ -58,6 +64,7 @@ export function LeadStory({
   className = "",
   onHold,
   toast: shared,
+  onDismiss,
 }: {
   item: FeedView;
   now: string;
@@ -67,6 +74,8 @@ export function LeadStory({
   onHold?: (on: boolean) => void;
   /** A toast owned by the slot, which outlives this story; without one the story keeps its own. */
   toast?: SpareToast;
+  /** The ✕ (Hugh's ruling 2026-10-27): hides the story's item for good. Absent (an answer under way or answered), none. */
+  onDismiss?: (from: HTMLElement) => void;
 }) {
   const feed = feedText(item);
   const ask = item.ask ?? null;
@@ -122,7 +131,7 @@ export function LeadStory({
         )}
       </div>
       <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
-        <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
+        <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${onDismiss && !receipt ? "pr-[24px] md:pr-[16px]" : ""} ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
           <span className="min-w-0">{receipt ? receipt.kind : feedCopy.home.kicker[item.kind]}</span>
           <small className="ml-auto flex-none whitespace-nowrap text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
         </p>
@@ -148,6 +157,7 @@ export function LeadStory({
           </div>
         )}
       </div>
+      {onDismiss && !receipt && !busy && <DismissButton title={text.title} onPress={onDismiss} />}
       {!shared && toast}
     </section>
   );
