@@ -168,6 +168,13 @@ export function orderSpares(spares: readonly FriendSpare[]): FriendSpare[] {
     || (a.friend.publicId < b.friend.publicId ? -1 : 1));
 }
 
+/** `orderSpares`, with one friend (the page's own, signature card call 8) lifted to the head when given. */
+export function orderSparesFirst(spares: readonly FriendSpare[], first?: string): FriendSpare[] {
+  const rows = orderSpares(spares);
+  if (!first) return rows;
+  return [...rows.filter((s) => s.friend.publicId === first), ...rows.filter((s) => s.friend.publicId !== first)];
+}
+
 /** The two-people glyph the spare marker and count chip draw (R3 `.spm`, `.sp2`). */
 export function SpareGlyph({ size }: { size: number }) {
   return (
@@ -187,10 +194,10 @@ export type SectionCard = Pick<DeckDetailCard, "oracleId" | "name" | "printedNam
  * The section: its head with `view only`, a row per friend, and the foot line saying what a spare is. With spare
  * requests on (and the card given), the rows ask instead (`RequestSection`).
  */
-export function FriendSpareSection({ spares, card }: { spares: readonly FriendSpare[]; card?: SectionCard }) {
+export function FriendSpareSection({ spares, card, first }: { spares: readonly FriendSpare[]; card?: SectionCard; first?: string }) {
   const requests = useContext(SpareRequestsContext);
-  if (requests && card) return <RequestSection spares={spares} card={card} requests={requests} />;
-  const rows = orderSpares(spares);
+  if (requests && card) return <RequestSection spares={spares} card={card} requests={requests} first={first} />;
+  const rows = orderSparesFirst(spares, first);
   return (
     <section aria-label={spareCopy.modalTitleSpares} data-testid="friend-spares" className="flex flex-col">
       <div className="flex items-center justify-between gap-[12px] pb-[6px]">
@@ -235,9 +242,9 @@ const ASK_ALT_INK = "font-medium text-[color:var(--fg-body)] [border:1px_solid_v
 const STATUS = "inline-flex flex-none items-center gap-[6px] whitespace-nowrap font-sans text-[13px] font-medium";
 
 /** The rows with Ask (`.fsx2`, `.fsr`): one sub line and one thing on the right per friend, the ⓘ, the state line. */
-function RequestSection({ spares, card, requests }: { spares: readonly FriendSpare[]; card: SectionCard; requests: RequestsCtx }) {
+function RequestSection({ spares, card, requests, first }: { spares: readonly FriendSpare[]; card: SectionCard; requests: RequestsCtx; first?: string }) {
   const tipId = useId();
-  const rows = orderSpares(spares).map((s) => ({ s, name: s.friend.displayName, ask: rowAsk(requests.asksFor(card.oracleId), s.friend.publicId) }));
+  const rows = orderSparesFirst(spares, first).map((s) => ({ s, name: s.friend.displayName, ask: rowAsk(requests.asksFor(card.oracleId), s.friend.publicId) }));
   // Both providers mount only with mark-bought on (the deck page's and the cart's), so either one means a buy press.
   const deckGotIt = useGotIt();
   const cartGotIt = useCartGotIt();

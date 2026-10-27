@@ -210,15 +210,17 @@ function TradeRow({ row: r, now }: { row: TradeMatchRow; now: Date }) {
 /** The board's `.lnk`: in the text column on a phone, where a long name wraps rather than clip, and the row's third
  * column from desktop, on one line. */
 function WaitingLink({ row, className }: { row: TradeMatchRow; className: string }) {
+  // The card's modal opens on landing (signature card call 9), or the tab says the spare has gone.
+  const href = `/friends/${encodeURIComponent(row.friend.publicId)}?spare=${encodeURIComponent(row.card.oracleId)}`;
   return (
     <span className={className}>
       <Link
-        href={`/friends/${row.friend.publicId}`}
+        href={href}
         className="flex min-h-[32px] items-center gap-[4px] text-[13px] [overflow-wrap:anywhere] md:whitespace-nowrap font-medium text-[color:var(--accent-text)] no-underline"
       >
         {w.seeSpares(row.friend.displayName)}
         <span aria-hidden>›</span>
-        <PendingReporter href={`/friends/${row.friend.publicId}`} />
+        <PendingReporter href={href} />
       </Link>
     </span>
   );

@@ -1,0 +1,1 @@
+ALTER TABLE "spare_requests" ADD COLUMN "standalone" boolean DEFAULT false NOT NULL;

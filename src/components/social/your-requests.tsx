@@ -30,7 +30,8 @@ export const daysAgo = (createdAt: Date, now: Date): number => Math.floor((now.g
 const isOpen = (a: YourRequest) => a.state === "open" || a.state === "unavailable" || a.state === "unneeded";
 
 /** What one row says: its kicker and ink, its time, its title and its line. Pure, for the tests. */
-/** `canBuy`: Shopping rows carry the buy press (mark-bought on), so Accepted may point at it. */
+/** `canBuy`: Shopping rows carry the buy press (mark-bought on), so Accepted may point at it; never for a standalone
+ *  ask (a friend's Spares tab), whose card may be on no deck's list. */
 export function requestText(a: YourRequest, now: Date, canBuy = true): { kind: string; ink: string; at: Date; title: string; detail: string } {
   const friend = a.holder.displayName;
   const card = a.card.name;
@@ -39,7 +40,7 @@ export function requestText(a: YourRequest, now: Date, canBuy = true): { kind: s
     case "open":
       return { kind: m.kind.open, ink: "text-[color:var(--accent-text)]", at: a.createdAt, title: m.asked(friend, card), detail: m.openDetail(a.deckName, days) };
     case "yes":
-      return { kind: m.kind.yes, ink: "text-[color:var(--success)]", at: a.answeredAt ?? a.createdAt, title: m.canSpare(friend, card), detail: canBuy ? m.acceptedDetail : m.acceptedDetailNoBuy };
+      return { kind: m.kind.yes, ink: "text-[color:var(--success)]", at: a.answeredAt ?? a.createdAt, title: m.canSpare(friend, card), detail: canBuy && !a.standalone ? m.acceptedDetail : m.acceptedDetailNoBuy };
     case "no":
       return {
         kind: m.kind.no, ink: "text-[color:var(--fg-faint)]", at: a.answeredAt ?? a.createdAt, title: m.keeping(friend, card),
@@ -113,7 +114,7 @@ export function YourRequests({ rows, now, canBuy = true }: { rows: readonly Your
     const from = document.activeElement;
     setBusy(a.id);
     setHeld({ rows, done: false });
-    const out = await askSpareAction({ friendPublicId: a.holder.publicId, oracleId: a.oracleId, copies: a.copies, deckId: a.deckId })
+    const out = await askSpareAction({ friendPublicId: a.holder.publicId, oracleId: a.oracleId, copies: a.copies, deckId: a.deckId, standalone: a.standalone })
       .catch(() => null);
     if (!out?.ok) {
       setHeld(null);

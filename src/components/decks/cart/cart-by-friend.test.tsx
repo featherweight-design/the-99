@@ -256,7 +256,7 @@ describe("By friend's line", () => {
     const press = within(lineIn("Colin", "Brainstorm")).getByTestId("friend-spare-ask");
     expect(press.getAttribute("aria-label")).toBe(r.askAria("Colin", "Brainstorm"));
     await act(async () => { fireEvent.click(press); });
-    expect(actions.askSpareAction).toHaveBeenCalledWith({ friendPublicId: "p-Colin", oracleId: BRAIN, copies: 2, deckId: null });
+    expect(actions.askSpareAction).toHaveBeenCalledWith({ friendPublicId: "p-Colin", oracleId: BRAIN, copies: 2, deckId: null, standalone: false });
     expect(within(lineIn("Colin", "Brainstorm")).getByTestId("friend-spare-status").textContent).toBe(r.requested);
     expect(document.activeElement).toBe(within(lineIn("Colin", "Brainstorm")).getByTestId("friend-spare-status"));
   });
@@ -267,7 +267,7 @@ describe("By friend's line", () => {
     await mount({ initialView: "friend" });
     await act(async () => { fireEvent.click(within(lineIn("Max", "Jace")).getByTestId("friend-spare-ask")); });
     expect(actions.askInsteadAction).toHaveBeenCalledWith({
-      friendPublicId: "p-Max", oracleId: JACE, copies: 1, deckId: null, fromRequestId: `req-Colin-11-open`,
+      friendPublicId: "p-Max", oracleId: JACE, copies: 1, deckId: null, standalone: false, fromRequestId: `req-Colin-11-open`,
     });
     expect(within(lineIn("Max", "Jace")).getByTestId("friend-spare-status").textContent).toBe(r.requested);
     expect(within(lineIn("Colin", "Jace")).getByTestId("friend-spare-ask").textContent).toBe(r.askInstead);

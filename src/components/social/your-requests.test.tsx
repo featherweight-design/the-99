@@ -20,7 +20,7 @@ const req = (id: string, state: YourRequest["state"], over: Partial<YourRequest>
   id, oracleId: `card-${id}`, card: { name: "Jace, Multiverse Architect", imageUri: null }, copies: 1,
   deckName: "Thopter Works", deckId: "deck-1", holder: { publicId: "pub-colin", displayName: "Colin", commander: null },
   state, daysLeft: state === "open" || state === "unavailable" || state === "unneeded" ? 12 : null,
-  createdAt: new Date(NOW.getTime() - 2 * DAY), answeredAt: null, cleared: false, unseen: false, othersWithSpare: [],
+  createdAt: new Date(NOW.getTime() - 2 * DAY), answeredAt: null, cleared: false, standalone: false, unseen: false, othersWithSpare: [],
   canAskAgain: state === "expired", ...over,
 });
 
@@ -44,6 +44,8 @@ describe("requestText", () => {
     expect([t.kind, t.title, t.detail]).toEqual(["Accepted", "Colin can spare Jace, Multiverse Architect", m.acceptedDetail]);
     // No buy press on the rows (mark-bought off): the line points at the collection instead.
     expect(requestText(req("a", "yes", { answeredAt }), NOW, false).detail).toBe(m.acceptedDetailNoBuy);
+    // A standalone ask (a friend's Spares tab) may be for a card on no deck's list: never pointed at Shopping.
+    expect(requestText(req("a", "yes", { answeredAt, standalone: true }), NOW, true).detail).toBe(m.acceptedDetailNoBuy);
     expect(t.at).toBe(answeredAt);
   });
 
@@ -136,6 +138,13 @@ describe("YourRequests", () => {
     title.remove();
   });
 
+  it("asks again as standalone when the expired ask came from a friend's Spares tab", async () => {
+    actions.askSpareAction.mockResolvedValue({ ok: true, id: "new" });
+    render(<YourRequests rows={[req("a", "expired", { deckId: null, deckName: null, standalone: true })]} now={NOW} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: r.askAgainAria("Colin", "Jace, Multiverse Architect") })));
+    expect(actions.askSpareAction).toHaveBeenCalledWith(expect.objectContaining({ deckId: null, standalone: true }));
+  });
+
   it("Ask again asks the same friend for the same copies and deck, refreshes, and lands on the new Requested", async () => {
     actions.askSpareAction.mockResolvedValue({ ok: true, id: "new" });
     const expired = req("a", "expired", { copies: 2 });
@@ -143,7 +152,7 @@ describe("YourRequests", () => {
     const again = screen.getByRole("button", { name: r.askAgainAria("Colin", "Jace, Multiverse Architect") });
     again.focus();
     await act(async () => fireEvent.click(again));
-    expect(actions.askSpareAction).toHaveBeenCalledWith({ friendPublicId: "pub-colin", oracleId: "card-a", copies: 2, deckId: "deck-1" });
+    expect(actions.askSpareAction).toHaveBeenCalledWith({ friendPublicId: "pub-colin", oracleId: "card-a", copies: 2, deckId: "deck-1", standalone: false });
     expect(actions.refresh).toHaveBeenCalledTimes(1);
     rerender(<YourRequests rows={[req("new", "open", { oracleId: "card-a" }), expired]} now={NOW} />);
     const fresh = screen.getAllByTestId("your-request")[0];

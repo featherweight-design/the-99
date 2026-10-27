@@ -18,7 +18,7 @@ export type PushItem =
   | { kind: "new-set"; key: string; batch: string; name: string; cards: number | null; href: string }
   | { kind: "new-precon"; key: string; batch: string; name: string; owned: number; of: number; href: string }
   | { kind: "price-drop"; key: string; batch: string; oracleId: string; card: string; wasCents: number; nowCents: number; image: string | null }
-  | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; card: string; image: string | null }
+  | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; oracleId: string; card: string; image: string | null }
   | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; image: string | null; answer?: "yes" | "no" }
   | { kind: "combo"; key: string; batch: string; oracleId: string; a: string; b: string; added: string; image: string | null };
 
@@ -87,7 +87,7 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
     case "trade-match": {
       const matches = group as (typeof first)[];
       const friends = distinct(matches.map((m) => m.publicId));
-      if (n === 1) return home("trade-match", keys, c.one.tradeMatch.title(first.friend, first.card), c.one.tradeMatch.body, { route: friendRoute(first.publicId), image: first.image });
+      if (n === 1) return home("trade-match", keys, c.one.tradeMatch.title(first.friend, first.card), c.one.tradeMatch.body, { route: friendRoute(first.publicId, first.oracleId), image: first.image });
       if (friends.length === 1) return home("trade-match", keys, c.many.tradeMatchOne.title(first.friend, n), c.many.tradeMatchOne.body, { route: friendRoute(first.publicId), image: first.image });
       const names = distinct(matches.map((m) => m.friend));
       return home("trade-match", keys, c.many.tradeMatchMany.title(n), c.many.tradeMatchMany.body(c.names(names)), { route: "/friends" });
@@ -104,8 +104,9 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
   }
 }
 
-/** A friend's page, on the Spares tab (the route's default). */
-export const friendRoute = (publicId: string): string => `/friends/${encodeURIComponent(publicId)}`;
+/** A friend's page, on the Spares tab (the route's default); with `spare`, that card's modal opens on landing (call 9). */
+export const friendRoute = (publicId: string, spare?: string): string =>
+  `/friends/${encodeURIComponent(publicId)}${spare ? `?spare=${encodeURIComponent(spare)}` : ""}`;
 
 /** The messages for items due now, in the order their first item arrived. */
 export function messagesFor(items: readonly PushItem[], mode: CollapseMode): PushMessage[] {

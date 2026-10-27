@@ -110,6 +110,10 @@ export const socialCopy = {
         `Shared with ${pods.join(", ")}.${wishlist ? " Cards on your wishlist first." : ""}`,
       count: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
       onWishlist: "on your wishlist",
+      /** Appended to the line with spare requests on (signature card call 8): a tile press opens the card's modal, with Ask. */
+      pressToAsk: " Press one to ask for it.",
+      /** A landing on a spare the friend no longer offers (call 9): the shared toast, and no modal. */
+      gone: (name: string, card: string) => `${name} no longer has a spare ${card}.`,
       emptyTitle: (name: string) => `${name} has no spares to show`,
       emptyBody: (name: string) => `When ${name} has a copy no deck of theirs is asking for, it shows here.`,
       noneTitle: (name: string) => `${name} isn’t sharing spares with you`,

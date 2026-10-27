@@ -268,7 +268,8 @@ describe("Ask instead (G1: one transaction)", () => {
     const ran = await scripted([{ rows: [] }, FRIENDS, DECK, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, DECK, { rows: [] }]);
     expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 7, deckId: CARD })).toEqual({ ok: true, id: "new" });
     expect(ran.seen.rolledBack).toBe(false);
-    expect(ran.seen.inserted[0]).toMatchObject({ copies: 2, deckId: CARD });
+    // Shopping's and the cart's asks are stored for a list: never standalone.
+    expect(ran.seen.inserted[0]).toMatchObject({ copies: 2, deckId: CARD, standalone: false });
     // One lock order: friendship (the purge's order), then the deck, then request rows (a deck delete's order).
     const qs = ran.map((q) => render(q).q);
     expect(qs[2]).toBe(`select odk.id from "decks" odk where odk.id = $1 and odk.user_id = $2 for key share`);
@@ -284,6 +285,16 @@ describe("Ask instead (G1: one transaction)", () => {
     const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [] }, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [] }]);
     expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: CARD })).toEqual({ ok: true, id: "new" });
     expect(ran.seen.inserted[0]).toMatchObject({ copies: 1, deckId: null });
+  });
+
+  it("stores an ask from a friend's Spares tab as standalone, and nothing but a literal true as one", async () => {
+    const tab = () => scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }]);
+    let ran = await tab();
+    expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: null, standalone: true })).toEqual({ ok: true, id: "new" });
+    expect(ran.seen.inserted[0]).toMatchObject({ deckId: null, standalone: true });
+    ran = await tab();
+    expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: null, standalone: "yes" })).toEqual({ ok: true, id: "new" });
+    expect(ran.seen.inserted[0]).toMatchObject({ standalone: false });
   });
 });
 

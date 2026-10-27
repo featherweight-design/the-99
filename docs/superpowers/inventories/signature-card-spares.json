@@ -1,0 +1,41 @@
+{
+  "feature": "Signature card PR 4 (handoff design_handoff_the99_avatar, R1b, calls 8 and 9): a friend's Spares tab with Ask. A tile press opens the spares-only modal with the page's friend first and the wishlist kicker; the count line carries Requested or ✓ Accepted; a ?spare= landing opens the card's modal by itself, or the shared toast when the spare is gone.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SPARE_REQUESTS_ENABLED on, and a friend of the audit account who shares spares with a pod both are in: FRIEND_ID is their public id; SPARE_CARD the oracle id of a card they offer (best one on the audit account's wishlist, so the kicker shows), SPARE_GONE the oracle id of a card they do not offer. For the captions, the audit account holds an open ask of one of the friend's cards and an accepted ask of another. Built on a scratch branch by a throwaway seed, never committed. Read-only: no Ask is pressed.",
+  "clearAbout": true,
+  "out": "contact-sheets/signature-card-spares",
+  "rows": [
+    {
+      "id": "spares-tab",
+      "label": "/friends/[publicId]: the line adds Press one to ask for it., captions carry Requested and ✓ Accepted (call 8)",
+      "view": "src/components/social/friend-spares-tab.tsx",
+      "steps": [
+        { "goto": "/friends/${FRIEND_ID}", "wait": "[data-testid='spare-tile']", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "spares-tile-pressed",
+      "label": "a tile pressed: the modal, this friend first, kicker on your wishlist, the tile ringed behind (call 8)",
+      "view": "src/components/social/friend-spares-tab.tsx",
+      "steps": [
+        { "goto": "/friends/${FRIEND_ID}", "wait": "[data-testid='spare-tile']", "settle": 3000 },
+        { "click": "[data-testid='spare-tile-press']", "waitDialog": "Friends with a spare", "settle": 2000 }
+      ]
+    },
+    {
+      "id": "spares-landing",
+      "label": "a ?spare= landing: the card's modal opens by itself, the tile ringed behind (call 9)",
+      "view": "src/components/social/friend-spares-tab.tsx",
+      "steps": [
+        { "goto": "/friends/${FRIEND_ID}?spare=${SPARE_CARD}", "waitDialog": "Friends with a spare", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "spares-landing-gone",
+      "label": "a ?spare= landing on a spare gone since: no modal, the toast (call 9)",
+      "view": "src/components/social/friend-spares-tab.tsx",
+      "steps": [
+        { "goto": "/friends/${FRIEND_ID}?spare=${SPARE_GONE}", "wait": "[role='alert']", "settle": 1000 }
+      ]
+    }
+  ]
+}

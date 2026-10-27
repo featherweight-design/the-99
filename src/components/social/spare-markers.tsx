@@ -90,6 +90,8 @@ type Ctx = {
   close: () => void;
   newestAsOf: Date | null;
   requests: RequestsCtx | null;
+  /** The cards whose spares read has landed this visit: a card here with no row has no spare now. */
+  loaded: ReadonlySet<string>;
 };
 
 /** The asks after an ask landed: Ask instead's withdrawn ask leaves (a withdrawn ask is never shown), the new one leads. */
@@ -137,6 +139,8 @@ export function FriendSparesProvider({
   hostSheet = true,
   requests = false,
   deckId = null,
+  standalone = false,
+  sparesOnOpen = false,
   children,
 }: {
   /** The cards the deck is buying: one read covers every row that can carry a marker. */
@@ -147,6 +151,11 @@ export function FriendSparesProvider({
   requests?: boolean;
   /** The deck an Ask is for: the deck page's Shopping names it, the cart sends null (G2). */
   deckId?: string | null;
+  /** An Ask here is for no list (a friend's Spares tab), so Your requests never reads it as no longer needed. */
+  standalone?: boolean;
+  /** Read a card's spares only when its sheet opens, once per visit (a friend's Spares tab: the page already drew every
+   *  tile, and the sheet draws the page's offer until the read lands). The asks are still read for every card. */
+  sparesOnOpen?: boolean;
   /** Draw the spares-only modal here. False where it must sit inside a card-detail provider mounted lower (the cart),
    *  which then renders `SparesSheetHost` itself. */
   hostSheet?: boolean;
@@ -154,20 +163,25 @@ export function FriendSparesProvider({
 }) {
   const key = useMemo(() => [...new Set(oracleIds)].sort().join(","), [oracleIds]);
   const [spares, setSpares] = useState<FriendSpare[]>([]);
+  const [loaded, setLoaded] = useState<ReadonlySet<string>>(() => new Set());
   const [opened, setOpened] = useState<SpareCard | null>(null);
   const [asks, setAsks] = useState<AskStateLine[]>([]);
+  // On open, the read is the opened card alone, skipped once it has landed this visit.
+  const sparesKey = sparesOnOpen ? (opened && !loaded.has(opened.oracleId) ? opened.oracleId : "") : key;
   useEffect(() => {
-    if (!key) return;
+    if (!sparesKey) return;
     let live = true;
-    const ids = new Set(key.split(","));
+    const ids = new Set(sparesKey.split(","));
     void fetchSpares([...ids]).then((rows) => {
       // A read replaces only the cards it asked about: a card that left the list keeps what was read for it.
-      if (live) setSpares((prev) => [...prev.filter((s) => !ids.has(s.oracleId)), ...rows]);
+      if (!live) return;
+      setSpares((prev) => [...prev.filter((s) => !ids.has(s.oracleId)), ...rows]);
+      setLoaded((prev) => new Set([...prev, ...ids]));
     });
     return () => {
       live = false;
     };
-  }, [key]);
+  }, [sparesKey]);
   // The asks land after the page, as the spares do. Each card is read ONCE per visit, when it first joins the list, and
   // no read is ever thrown away: a card leaving the list (a stand-in taken, its sheet left open) neither cancels its
   // read nor drops what it held, so its sheet keeps Requested or Declined. After that read, a card's state is moved by
@@ -196,7 +210,7 @@ export function FriendSparesProvider({
   }, [key, requests]);
   const ask = useCallback(
     async (press: AskPress): Promise<boolean> => {
-      const input = { friendPublicId: press.friend.publicId, oracleId: press.oracleId, copies: press.copies, deckId };
+      const input = { friendPublicId: press.friend.publicId, oracleId: press.oracleId, copies: press.copies, deckId, standalone };
       let out: Awaited<ReturnType<typeof askSpareAction>>;
       try {
         out = press.fromRequestId ? await askInsteadAction({ ...input, fromRequestId: press.fromRequestId }) : await askSpareAction(input);
@@ -209,7 +223,7 @@ export function FriendSparesProvider({
       setAsks((prev) => [...afterAsk(prev.filter((a) => a.oracleId === press.oracleId), press, out.id, now), ...prev.filter((a) => a.oracleId !== press.oracleId)]);
       return true;
     },
-    [deckId],
+    [deckId, standalone],
   );
   const value = useMemo<Ctx>(() => {
     // Only the cards asked for NOW: a card that left the list (bought, cut, proxied) drops its spare at once, the
@@ -226,8 +240,8 @@ export function FriendSparesProvider({
     const asksByCard = new Map<string, AskStateLine[]>();
     for (const a of asks) asksByCard.set(a.oracleId, [...(asksByCard.get(a.oracleId) ?? []), a]);
     const req: RequestsCtx | null = requests ? { asksFor: (id) => asksByCard.get(id) ?? [], ask } : null;
-    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req };
-  }, [spares, asks, opened, key, newestAsOf, requests, ask]);
+    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req, loaded };
+  }, [spares, asks, opened, key, newestAsOf, requests, ask, loaded]);
   return (
     <SparesContext.Provider value={value}>
       <SpareRequestsContext.Provider value={value.requests}>
@@ -238,12 +252,32 @@ export function FriendSparesProvider({
   );
 }
 
-/** The spares-only modal for the card the press opened, where it is mounted; nothing while none is open. */
-export function SparesSheetHost() {
+/**
+ * The spares-only modal for the card the press opened, where it is mounted; nothing while none is open. A friend's
+ * Spares tab (signature card call 8) passes its friend `first`, the box's kicker per card, and `fallback`: what the page
+ * already knows of the card's spares, drawn until the read lands (a read that lands empty replaces it). Shopping and the cart pass none of them.
+ */
+export function SparesSheetHost({
+  first,
+  kickerFor,
+  fallback,
+}: {
+  first?: string;
+  kickerFor?: (oracleId: string) => string | null;
+  fallback?: (oracleId: string) => FriendSpare[];
+} = {}) {
   const ctx = usePageSpares();
   if (!ctx?.opened) return null;
+  const id = ctx.opened.oracleId;
   return (
-    <SparesSheet card={ctx.opened} spares={ctx.byCard.get(ctx.opened.oracleId) ?? []} newestAsOf={ctx.newestAsOf} onClose={ctx.close} />
+    <SparesSheet
+      card={ctx.opened}
+      spares={ctx.byCard.get(id) ?? (ctx.loaded.has(id) ? [] : fallback?.(id) ?? [])}
+      newestAsOf={ctx.newestAsOf}
+      onClose={ctx.close}
+      {...(kickerFor ? { kicker: kickerFor(id) } : {})}
+      {...(first ? { first } : {})}
+    />
   );
 }
 
@@ -263,7 +297,7 @@ export function StaticSparesProvider({
   const value = useMemo<Ctx>(() => {
     const byCard = new Map<string, FriendSpare[]>();
     for (const s of spares) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
-    return { byCard, seen: byCard, opened: null, open: () => {}, close: () => {}, newestAsOf, requests: null };
+    return { byCard, seen: byCard, opened: null, open: () => {}, close: () => {}, newestAsOf, requests: null, loaded: new Set(byCard.keys()) };
   }, [spares, newestAsOf]);
   return <SparesContext.Provider value={value}>{children}</SparesContext.Provider>;
 }
@@ -394,16 +428,22 @@ export function SparesSheet({
   spares,
   newestAsOf,
   onClose,
+  kicker,
+  first,
 }: {
   card: SpareCard;
   spares: readonly FriendSpare[];
   newestAsOf: Date | null;
   onClose: () => void;
+  /** The box's kicker: the shipped `replacing` when absent, none when null (a friend's tab: `on your wishlist` or nothing). */
+  kicker?: string | null;
+  /** A friend's public id listed first, then the shipped order (the friend whose page the modal opened on). */
+  first?: string;
 }) {
   return (
     <HoverPreviewProvider waitForMove>
       <ModalChrome title={spareCopy.modalTitleSpares} closeLabel={spareCopy.close} onClose={onClose} width={640}>
-        <SparesSheetBody card={card} spares={spares} newestAsOf={newestAsOf} />
+        <SparesSheetBody card={card} spares={spares} newestAsOf={newestAsOf} kicker={kicker} first={first} />
       </ModalChrome>
     </HoverPreviewProvider>
   );
@@ -417,10 +457,14 @@ export function SparesSheetBody({
   card,
   spares,
   newestAsOf,
+  kicker = spareCopy.replacing,
+  first,
 }: {
   card: SpareCard;
   spares: readonly FriendSpare[];
   newestAsOf: Date | null;
+  kicker?: string | null;
+  first?: string;
 }) {
   const name = printedFaceName(card);
   return (
@@ -429,9 +473,11 @@ export function SparesSheetBody({
         className="flex flex-col gap-[6px] rounded-[10px] border border-[color:var(--border)] px-[13px] pb-[12px] pt-[11px]"
         style={{ background: "var(--bg)" }}
       >
-        <span className="font-mono text-[9.5px] uppercase tracking-[0.12em]" style={{ color: "var(--fg-faint)" }}>
-          {spareCopy.replacing}
-        </span>
+        {kicker === null ? null : (
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em]" style={{ color: "var(--fg-faint)" }}>
+            {kicker}
+          </span>
+        )}
         <ReplacingLine imageUri={card.imageUri ?? null}>
           <Thumb imageUri={card.imageUri ?? null} side="head" />
           <span aria-hidden="true" className="h-[7px] w-[7px] flex-none rounded-full" style={{ border: "1px dashed var(--fg-faint)" }} />
@@ -446,7 +492,7 @@ export function SparesSheetBody({
           <BuyTag variant="row" price={card.price ?? null} newestAsOf={newestAsOf} />
         </ReplacingLine>
       </section>
-      <FriendSpareSection spares={spares} card={card} />
+      <FriendSpareSection spares={spares} card={card} first={first} />
     </div>
   );
 }

@@ -23,7 +23,7 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
       return { ...base, kind: "price-drop", oracleId: card.oracleId, card: card.name, wasCents: view.drop.fromCents, nowCents: view.drop.toCents, image: card.image };
     case "trade-match":
       if (!card || !view.friend) return null;
-      return { ...base, kind: "trade-match", friend: view.friend.displayName, publicId: view.friend.publicId, card: card.name, image: card.image };
+      return { ...base, kind: "trade-match", friend: view.friend.displayName, publicId: view.friend.publicId, oracleId: card.oracleId, card: card.name, image: card.image };
     case "spare-request":
       if (!card || !view.friend) return null;
       return { ...base, kind: "spare-request", friend: view.friend.displayName, card: card.name, image: card.image, ...(view.answer ? { answer: view.answer } : {}) };

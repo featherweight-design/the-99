@@ -60,7 +60,7 @@ describe("WaitingOnYou", () => {
     expect(within(row).getByText("5h ago")).toBeTruthy();
     const links = within(row).getAllByRole("link", { name: w.seeSpares("Colin") });
     expect(links.length).toBeGreaterThan(0);
-    for (const l of links) expect(l.getAttribute("href")).toBe("/friends/pub-colin");
+    for (const l of links) expect(l.getAttribute("href")).toBe("/friends/pub-colin?spare=ghalta");
   });
 
   // A 30-character name must not clip the phone's link: it wraps there, and holds one line only from desktop.
