@@ -54,7 +54,7 @@ export function feedText(item: FeedView): { title: string; line: ReactNode; pres
         press: c.press.priceDrop,
       };
     case "trade-match":
-      return { title: c.title.tradeMatch(friend, card), line: c.line.tradeMatch, press: c.press.tradeMatch(friend) };
+      return { title: c.title.tradeMatch(friend, card), line: c.line.tradeMatch, press: item.askable ? c.press.tradeMatchAsk(friend) : c.press.tradeMatch(friend) };
     case "spare-request":
       if (item.answer) return { ...answerText(item, friend, card), press: c.press.answer };
       return { title: c.title.spareRequest(friend, card), line: c.line.spareRequest, press: null };

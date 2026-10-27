@@ -19,6 +19,7 @@ const ROW: WaitingRow = {
   card: { oracleId: "ghalta", name: "Ghalta, Primal Hunger", imageUri: null },
   friend: { publicId: "pub-colin", displayName: "Colin", commander: null },
   pods: ["Thursday pod"],
+  askable: false,
 };
 
 afterEach(cleanup);
@@ -61,6 +62,15 @@ describe("WaitingOnYou", () => {
     const links = within(row).getAllByRole("link", { name: w.seeSpares("Colin") });
     expect(links.length).toBeGreaterThan(0);
     for (const l of links) expect(l.getAttribute("href")).toBe("/friends/pub-colin?spare=ghalta");
+  });
+
+  it("names the link Ask {friend} when the landing opens the card's sheet with Ask (spare requests on)", () => {
+    render(<WaitingOnYou rows={[{ ...ROW, askable: true }]} now={NOW} />);
+    const row = screen.getByTestId("waiting-row");
+    const links = within(row).getAllByRole("link", { name: w.askFriend("Colin") });
+    expect(links.length).toBeGreaterThan(0);
+    for (const l of links) expect(l.getAttribute("href")).toBe("/friends/pub-colin?spare=ghalta");
+    expect(within(row).queryByRole("link", { name: w.seeSpares("Colin") })).toBeNull();
   });
 
   // A 30-character name must not clip the phone's link: it wraps there, and holds one line only from desktop.

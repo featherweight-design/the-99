@@ -218,7 +218,7 @@ function WaitingLink({ row, className }: { row: TradeMatchRow; className: string
         href={href}
         className="flex min-h-[32px] items-center gap-[4px] text-[13px] [overflow-wrap:anywhere] md:whitespace-nowrap font-medium text-[color:var(--accent-text)] no-underline"
       >
-        {w.seeSpares(row.friend.displayName)}
+        {(row.askable ? w.askFriend : w.seeSpares)(row.friend.displayName)}
         <span aria-hidden>›</span>
         <PendingReporter href={href} />
       </Link>

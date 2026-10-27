@@ -178,6 +178,8 @@ export const socialCopy = {
     tradeDetail: (friend: string, pods: readonly string[]) => `It’s on your wishlist. ${friend} shares spares with ${pods.join(", ")}.`,
     /** The link to the friend's Spares tab; the board's trailing `›` is drawn apart, hidden from a screen reader. */
     seeSpares: (friend: string) => `See ${friend}’s spares`,
+    /** With spare requests on, the link opens that card's spares sheet with Ask (signature card call 9). */
+    askFriend: (friend: string) => `Ask ${friend}`,
   },
 
   invites: {
