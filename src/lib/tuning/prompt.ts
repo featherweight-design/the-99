@@ -109,6 +109,7 @@ function focusRules(focus: EvidencePack["focus"], roles: EvidencePack["targets"]
       ]
       : []),
     ...(focus.offTop.length > 0 ? ["Prefer cuts from the cards listed as on none of the top strategies. Never cut a card listed as counting toward the focus unless a game or a note gives a reason."] : []),
+    `An addition that counts toward the focus may cite it with a focus citation: name the focus as it is written under "${FOCUS_HEADING}" ("${focus.name}"), with no figure. Never cite the focus as an intent citation: intent is only the player's own words.`,
     "The app shows how far each addition moves the focus, and marks each cut that is on none of the top strategies: never state either in a rationale or a citation.",
   ];
 }

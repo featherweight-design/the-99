@@ -161,6 +161,35 @@ describe("validateSuggestions", () => {
     expect(out.strippedIntent).toBe(1);
   });
 
+  it("holds a focus citation that names the deck's focus with no figure, and only on a deck with one", () => {
+    const focused: EvidencePack = { ...pack, focus: { name: "Goblin typal", copies: 30, nonland: 60, on: [], top: [], offTop: [], candidates: [] } };
+    const cite = (value: string, p: EvidencePack = focused) => validateSuggestions({
+      response: { additions: [{ ...good, evidence: [{ kind: "focus", value }, { kind: "games", value: "Mana hurt in 3 of 5 games" }] }], cuts: [] }, pack: p, resolveName,
+    });
+    expect(cite("Goblin typal").drops).toEqual([]);
+    expect(cite("Goblin typal 30 of 60").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "focus" } });
+    expect(cite("Elf typal").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "focus" } });
+    // No focus: the citation names nothing, so it goes and the line stands on its other one.
+    const none = cite("Goblin typal", pack);
+    expect(none.drops).toEqual([]);
+    expect(none.kept[0].evidence).toEqual([{ kind: "games", value: "Mana hurt in 3 of 5 games" }]);
+  });
+
+  // The regression, in the shape production stored (run 53f5457c): a focus, no intent, five additions each citing the
+  // focus under `intent` beside a citation that held. Every one dropped then; every one stands now.
+  it("keeps every addition in HD - Goblins' shape", () => {
+    const goblins: EvidencePack = { ...pack, intent: null, focus: { name: "Goblin typal", copies: 30, nonland: 60, on: [], top: [], offTop: [], candidates: [] } };
+    // Every legal addition this fixture's catalog holds, in the run's shape.
+    const adds = ["Cultivate", "Rampant Growth", "Not In Deck"];
+    const out = validateSuggestions({
+      response: { additions: adds.map((card) => ({ ...good, card, evidence: [{ kind: "intent", value: "Goblin typal" }, { kind: "games", value: "Mana hurt in 3 of 5 games" }] })), cuts: [goodCut] },
+      pack: goblins, resolveName,
+    });
+    expect(out.drops).toEqual([]);
+    expect(out.kept.filter((k) => k.addOracleId !== null)).toHaveLength(adds.length);
+    expect(out.strippedIntent).toBe(adds.length);
+  });
+
   it("still drops a line whose only citation is an ungroundable intent, and keeps an intent check on a deck that has one", () => {
     const only = run({ ...good, evidence: [{ kind: "intent", value: "Goblin typal" }] });
     expect(only.drops[0]).toMatchObject({ rule: "citation", cite: { kind: "intent" } });

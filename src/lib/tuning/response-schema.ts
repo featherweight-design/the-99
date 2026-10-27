@@ -14,7 +14,7 @@ import { ASK_PER_LIST } from "./limits";
  * outcome, not a schema failure.
  */
 export const citationSchema = z.object({
-  kind: z.enum(["games", "note", "decklist", "intent", "mix", "notes"]),
+  kind: z.enum(["games", "note", "decklist", "intent", "mix", "notes", "focus"]),
   value: z.string().min(1).max(160),
 });
 

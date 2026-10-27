@@ -215,14 +215,15 @@ export function validateSuggestions(args: {
     });
     return changed ? { ...line, evidence } : line;
   };
-  // An `intent` citation on a deck with NO intent quotes nothing the player wrote, so it is ungroundable by construction. With
-  // a strategy focus the model filed the focus under it (HD - Goblins, 2026-10-27: all five additions dropped as `citation`,
-  // 20 of 21 dropped additions across production's focus runs), and one bad citation dropped a line whose other citations held.
-  // The citation goes, never the line: the app writes the focus chip itself, and a line left with no citation still drops.
+  // An `intent` citation on a deck with NO intent quotes nothing the player wrote, and a `focus` one on a deck with no focus
+  // names nothing, so each is ungroundable by construction. With a strategy focus the model filed the focus under `intent`
+  // (HD - Goblins, 2026-10-27: all five additions dropped as `citation`, 20 of 21 dropped additions across production's focus
+  // runs), and one bad citation dropped a line whose other citations held. The citation goes, never the line, and a line left
+  // with no citation still drops.
   let strippedIntent = 0;
+  const ungroundable = (kind: string) => (kind === "intent" && pack.intent === null) || (kind === "focus" && pack.focus == null);
   const stripUngroundable = (line: TuningLine): TuningLine => {
-    if (pack.intent !== null) return line;
-    const evidence = line.evidence.filter((c) => c.kind !== "intent");
+    const evidence = line.evidence.filter((c) => !ungroundable(c.kind));
     if (evidence.length === line.evidence.length || evidence.length === 0) return line;
     strippedIntent += line.evidence.length - evidence.length;
     return { ...line, evidence };
@@ -393,9 +394,10 @@ export function validateSuggestions(args: {
       // run's own notes text rather than the deck's standing description.
       case "notes":
         return citationQuotesPlayerText(pack.notes, c.value);
-      // The app writes a focus chip after validation; the model is never offered the kind, so one from it is dropped.
+      // A focus citation names the deck's own focus, as the pack writes it, and states no figure: how far an addition moves
+      // the focus is the app's chip (`strategyChips`), written after validation. Offered only to a deck with a focus.
       case "focus":
-        return false;
+        return pack.focus != null && text.includes(pack.focus.name.toLowerCase()) && !/\d/.test(text);
       case "mix": {
         // A target and its figure, as the targets list writes it: `draw 4 of 10`. The cell the
         // citation names must carry exactly that have and target.
