@@ -29,6 +29,7 @@ import { BuyTag } from "../decks/buy-tag";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { ModalChrome } from "../decks/receipt-modal";
 import { ReplacingLine, Thumb } from "../decks/stand-ins-sheet";
+import { SheetLoading } from "../ui/sheet-loading";
 import { askInsteadAction, askSpareAction } from "../../app/friends/spare-actions";
 import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
 import {
@@ -269,10 +270,13 @@ export function SparesSheetHost({
   const ctx = usePageSpares();
   if (!ctx?.opened) return null;
   const id = ctx.opened.oracleId;
+  // Null until the card's read lands when the page knows nothing of its spares (a trade match opened in place): the
+  // sheet draws its loader, never an empty list that the read then fills.
+  const spares = ctx.byCard.get(id) ?? (ctx.loaded.has(id) ? [] : fallback ? fallback(id) : null);
   return (
     <SparesSheet
       card={ctx.opened}
-      spares={ctx.byCard.get(id) ?? (ctx.loaded.has(id) ? [] : fallback?.(id) ?? [])}
+      spares={spares}
       newestAsOf={ctx.newestAsOf}
       onClose={ctx.close}
       {...(kickerFor ? { kicker: kickerFor(id) } : {})}
@@ -432,7 +436,8 @@ export function SparesSheet({
   first,
 }: {
   card: SpareCard;
-  spares: readonly FriendSpare[];
+  /** Null while the card's spares are being read: the loader fills the body under the card. */
+  spares: readonly FriendSpare[] | null;
   newestAsOf: Date | null;
   onClose: () => void;
   /** The box's kicker: the shipped `replacing` when absent, none when null (a friend's tab: `on your wishlist` or nothing). */
@@ -461,7 +466,7 @@ export function SparesSheetBody({
   first,
 }: {
   card: SpareCard;
-  spares: readonly FriendSpare[];
+  spares: readonly FriendSpare[] | null;
   newestAsOf: Date | null;
   kicker?: string | null;
   first?: string;
@@ -492,7 +497,7 @@ export function SparesSheetBody({
           <BuyTag variant="row" price={card.price ?? null} newestAsOf={newestAsOf} />
         </ReplacingLine>
       </section>
-      <FriendSpareSection spares={spares} card={card} first={first} />
+      {spares === null ? <SheetLoading heading={spareCopy.loadingHeading} /> : <FriendSpareSection spares={spares} card={card} first={first} />}
     </div>
   );
 }

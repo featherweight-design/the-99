@@ -54,6 +54,7 @@ import { WelcomeStrip } from "../components/welcome/welcome-strip";
 import { after } from "next/server";
 import { homeFeedEnabled } from "../lib/feed/flag";
 import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
+import { loadTradeAsk } from "../lib/social/trade-ask";
 import { commandersPlaceEnabled } from "../lib/commanders/place-flag";
 import { pushEnabled } from "../lib/push/flag";
 import { PushLanding } from "../components/push/push-landing";
@@ -382,6 +383,14 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       console.error("home: the feed could not be read", error instanceof Error ? error.message : "");
     }
   }
+  // A trade match's Ask opens its spares sheet over Home (product call 8): the cards it can open and their prices, read
+  // per request beside the feed. `askable` is spare requests on for this reader; without it nothing is read.
+  const tradeAsk = feed?.chosen
+    ? await loadTradeAsk(
+        [...(feed.lead ? [feed.lead] : []), ...feed.items]
+          .flatMap((i) => (i.kind === "trade-match" && i.askable && i.card && i.friend ? [{ oracleId: i.card.oracleId, name: i.card.name, imageUri: i.card.image }] : [])),
+      )
+    : null;
   // Not after a failed read: the cursor would clear items that were never drawn.
   if (feedOn && !feedFailed) after(homeFeedAfter(userId, env, now));
   // Push (plan `2026-10-22-push.md`, PR 5): with this reader's PUSH_ENABLED on (`pushEnabled`;
@@ -447,6 +456,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       helpMeChoose={helpMeChooseEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
       feed={feed}
+      tradeAsk={tradeAsk}
       pushVisit={pushVisit}
       commandersPlace={commandersPlaceEnabled(env)}
       tables={homeTables}

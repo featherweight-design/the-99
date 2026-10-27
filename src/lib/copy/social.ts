@@ -412,6 +412,8 @@ export const spareCopy = {
   pressBothAria: (card: string, limit: string) => `Cheaper stand-ins and friends with a spare of ${card}, over your ${limit} limit`,
   /** The spares-only modal's Replacing box: no deck line, since it can open where no one deck is meant (the cart). */
   replacing: "replacing",
+  /** The sheet's loader while a card's spares are read on open (a trade match's Ask in place, product call 8). */
+  loadingHeading: "Checking your friends’ spares",
   /**
    * Spare requests in the same modal and on the same row (plan `2026-10-22-spare-requests.md` PR 3b; handoff
    * `design_handoff_the99_spare_requests`, `Shopping` and `Asker-States`, calls 4 and 6). Placeholders for

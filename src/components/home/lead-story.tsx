@@ -148,6 +148,7 @@ export function LeadStory({
               item={item}
               label={text.press}
               stretch=""
+              filled
               className="inline-flex min-h-[40px] max-w-full min-w-0 items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] py-[6px] text-center font-sans text-[13.5px] font-semibold [overflow-wrap:anywhere] text-[color:var(--bg)] md:min-h-[36px] md:text-[13px]"
             />
           </div>

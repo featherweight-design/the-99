@@ -82,6 +82,9 @@ export const PER_REQUEST_READS = {
   // job, a friend's spare or a collection write adds an item without moving Home's key), and the catalog kinds arrive
   // with a catalog stamp, so the feed is read fresh beside the welcome strip; its visit writes run through \`after()\`.
   "src/lib/feed/home.ts": "Home's What's new and lead story read feed_items and the catalog kinds fresh on every request; a new item moves no key Home has",
+  // Ask in place (the menu-home plan's product call 8): the feed's trade-match cards priced for their spares sheet,
+  // beside the feed it is drawn from, so read fresh on every request with it.
+  "src/lib/social/trade-ask.ts": "Home's trade matches price their spares sheet fresh per request, beside the feed they come from",
   // Friend decks (README 4): /decks reads the reader's OWN two Settings rules (`loadFriendDeckPrefs`) for the ⋯ menu's
   // Hidden from friends row, beside the payload. The module also holds the friend deck writes and is where the cross-user
   // reads draw their rule, so reaching it from the payload would key /decks on every friend's stamp for one prefs row.

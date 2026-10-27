@@ -196,3 +196,13 @@ Hugh's ruling (the menu-home plan's product call 6). No switch of its own: the �
   So Home's rows, the lead story, the unseen count, Waiting on you, both badges and push all agree. Your requests keeps its own ✕ and is not covered.
 - **The table**: purged with the account (`PURGE_ORDER`). It needs no stamp trigger, because the feed and /friends are read per request and no cached payload holds a feed item.
 - Proof: `pnpm probe:feed-dismiss`.
+
+## Ask in place (2026-10-27)
+
+Hugh's ruling (the menu-home plan's product call 8). No switch of its own: it follows `SPARE_REQUESTS_ENABLED`, read as each trade match's `askable`.
+
+- **The page's read**: `loadTradeAsk` (`src/lib/social/trade-ask.ts`) takes the trade-match cards the page draws with an Ask (Home's lead and rows, /friends' Waiting on you) and prices them through `loadPrices`. A failed price read draws the sheet's bare tag, never an error. No card, no read.
+- **The provider**: `TradeAskFrame` / `TradeAskProvider` (`src/components/social/trade-ask.tsx`) mount `FriendSparesProvider` with the friend's Spares tab's settings (`requests`, `standalone`, `sparesOnOpen`) and host the sheet with the pressed row's friend `first`. Home mounts it inside the feed's `CardDetailProvider`; /friends wraps Waiting on you in its own, since the sheet's name opens card details.
+- **The presses**: `FeedPress` (rows and the lead), the row's picture and `WaitingLink` become buttons inside the provider and stay links outside it. Once asked they read the tab's caption (`TradeAskLabel`: Requested or ✓ Accepted; on the lead's filled button, in the button's ink).
+- **Loading**: `SparesSheetHost` passes `spares: null` while a card's read is pending and the page holds no fallback, and `SparesSheetBody` draws `SheetLoading` in its place.
+- Inventory: `docs/superpowers/inventories/ask-in-place.json`.
