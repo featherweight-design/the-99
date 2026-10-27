@@ -580,6 +580,11 @@ export const exportDialogCopy = {
   ready: "Moxfield · Archidekt ready",
   downloadShort: ".txt",
   download: "Download .txt",
+  copy: "Copy to clipboard",
+  copied: "Copied ✓",
+  /** The live region's line after a copy. */
+  copiedAnnounce: (lines: number) => `Copied · ${lines} ${lines === 1 ? "line" : "lines"}`,
+  copyFailed: "Couldn’t copy. Select the text and copy it yourself.",
   /** The preview's first line, a comment in the file the player will get. */
   previewHeader: (deckName: string, totalCards: number) => `// ${deckName} — ${totalCards} cards`,
 } as const;

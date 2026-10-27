@@ -9,7 +9,7 @@ import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { useId, useState } from "react";
 import { removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, ownedStateCopy } from "../../lib/copy/decks-builder";
 import { printedNameOf } from "../../lib/collection/browse";
 import { deckRowName } from "../../lib/decks/row-name";
 import { availabilityState } from "../../lib/decks/availability";
@@ -490,7 +490,7 @@ export function DecklistRow({
     : null;
   // Where the glint takes the dot's place from `md` (L5): the dot would be filled, and the row is not a stepper or a read-only list.
   const glintForDot = foilFinish !== undefined && card.owned && !proxied && !basicRow && !readOnly;
-  const availabilityWord = card.owned && !proxied ? "Owned" : "Not owned";
+  const availabilityWord = card.owned && !proxied ? ownedStateCopy.owned : ownedStateCopy.notOwned;
   const availabilityDescriptionId = useId();
   // Locked (PR 4a). `null` with the switch off, and then nothing below draws a lock: the row is the
   // row it was. `locked` is the drawn answer, a press on this visit included (`useCardLocks`).

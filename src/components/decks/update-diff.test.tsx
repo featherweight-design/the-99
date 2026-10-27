@@ -48,13 +48,14 @@ function preview(over: Partial<DeckUpdatePreview> = {}): DeckUpdatePreview {
   };
 }
 
-function renderDiff(over: Partial<DeckUpdatePreview> = {}, props: Partial<{ applying: boolean }> = {}) {
+function renderDiff(over: Partial<DeckUpdatePreview> = {}, props: Partial<{ applying: boolean; bodySize: number }> = {}) {
   const onApply = vi.fn();
   const onCancel = vi.fn();
   const onImportAsNew = vi.fn();
   const { container } = render(
     <UpdateDiff
       preview={preview(over)}
+      bodySize={props.bodySize ?? 99}
       applying={props.applying ?? false}
       onApply={onApply}
       onCancel={onCancel}
@@ -112,11 +113,19 @@ describe("UpdateDiff", () => {
 
   // The landing figure is the sentence the player checks before the one
   // irreversible click, so it has to move with each Keep rather than after.
+  // A pair's body is 98: the figure the player checks must not read against a 99 the deck cannot hold.
+  it("reads the landing count against a partner deck's 98", () => {
+    renderDiff({}, { bodySize: 98 });
+    expect(screen.getByText(copy.summary("0", "90", 98))).toBeInTheDocument();
+    expect(screen.getByText(/lands at 90 \/ 98/)).toBeInTheDocument();
+    expect(screen.queryByText(/\/ 99/)).toBeNull();
+  });
+
   it("recomputes the landing count as removals are kept", () => {
     renderDiff();
-    expect(screen.getByText(copy.summary("0", "90"))).toBeInTheDocument();
+    expect(screen.getByText(copy.summary("0", "90", 99))).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: copy.keepAria("Card out-1") }));
-    expect(screen.getByText(copy.summary("1", "91"))).toBeInTheDocument();
+    expect(screen.getByText(copy.summary("1", "91", 99))).toBeInTheDocument();
   });
 
   // `applying` is only true on the render after the transition starts, so the
@@ -438,7 +447,7 @@ describe("UpdateDiff provenance", () => {
 
   it("prints where the deck stands and where it lands", () => {
     renderDiff();
-    expect(screen.getByText(copy.landing("91", "90"))).toBeInTheDocument();
+    expect(screen.getByText(copy.landing("91", "90", 99))).toBeInTheDocument();
   });
 
   // `built` is a sum of quantities, so the landing figure has to be one too.
@@ -451,7 +460,7 @@ describe("UpdateDiff provenance", () => {
       in: [row("in-1", { quantity: 4, sourceLine: 4 })],
       unchanged: [],
     });
-    expect(screen.getByText(copy.landing("91", "83"))).toBeInTheDocument();
+    expect(screen.getByText(copy.landing("91", "83", 99))).toBeInTheDocument();
   });
 
   // Hugh, 2026-10-15: Plains 6 → 3 beside three cards going in read `3 in, 0 out` over a deck
@@ -461,7 +470,7 @@ describe("UpdateDiff provenance", () => {
 
   it("counts a dropped count as copies out, in the chips, the heading and the button", () => {
     renderDiff({ built: 99, out: [], in: goingIn, fewer: [plains] });
-    expect(screen.getByText(copy.landing("99", "99"))).toBeInTheDocument();
+    expect(screen.getByText(copy.landing("99", "99", 99))).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: copy.outHeading("3") })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: copy.inHeading("3") })).toBeInTheDocument();
     expect(screen.getByText(copy.apply("3", "3"))).toBeInTheDocument();
@@ -487,7 +496,7 @@ describe("UpdateDiff provenance", () => {
     const group = screen.getByRole("heading", { name: copy.inHeading("2") }).parentElement
       ?.parentElement as HTMLElement;
     expect(within(group).getByText(copy.recountedItem("", "7", "9").trim())).toBeInTheDocument();
-    expect(screen.getByText(copy.landing("91", "93"))).toBeInTheDocument();
+    expect(screen.getByText(copy.landing("91", "93", 99))).toBeInTheDocument();
     expect(screen.getByText(copy.apply("2", "0"))).toBeInTheDocument();
   });
 
@@ -495,7 +504,7 @@ describe("UpdateDiff provenance", () => {
     const { onApply } = renderDiff({ built: 99, out: [], in: goingIn, fewer: [plains] });
     fireEvent.click(screen.getByRole("button", { name: copy.keepAria("Plains") }));
     expect(screen.getByText(copy.apply("3", "0"))).toBeInTheDocument();
-    expect(screen.getByText(copy.summary("1", "102"))).toBeInTheDocument();
+    expect(screen.getByText(copy.summary("1", "102", 99))).toBeInTheDocument();
     fireEvent.click(screen.getByText(copy.apply("3", "0")));
     expect(onApply).toHaveBeenCalledWith(["plains"]);
   });

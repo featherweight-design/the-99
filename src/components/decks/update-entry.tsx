@@ -67,7 +67,7 @@ function formatBytes(bytes: number): string {
   return `${bytes} byte${bytes === 1 ? "" : "s"}`;
 }
 
-export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: string }) {
+export function UpdateEntry({ deckId, deckName, bodySize }: { deckId: string; deckName: string; bodySize: number }) {
   const router = useRouter();
   // The two routes out of here that are not kept report their press (`/decks/[id]` is kept: its
   // own screen commits at press).
@@ -239,6 +239,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
     return (
       <UpdateDiff
         preview={step.preview}
+        bodySize={bodySize}
         applying={applying}
         onApply={(keep) => apply(keep, step.preview.lockedOut ?? [])}
         onCancel={() => router.push(`/decks/${deckId}`)}

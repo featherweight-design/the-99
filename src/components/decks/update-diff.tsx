@@ -183,12 +183,15 @@ function Chip({ figure, label, labelMobile }: { figure: number; label: string; l
 
 export function UpdateDiff({
   preview,
+  bodySize,
   applying,
   onApply,
   onCancel,
   onImportAsNew,
 }: {
   preview: DeckUpdatePreview;
+  /** The deck's body (99, or 98 under a pair), the figure the landing count is read against. */
+  bodySize: number;
   applying: boolean;
   onApply: (keep: string[]) => void;
   onCancel: () => void;
@@ -302,7 +305,7 @@ export function UpdateDiff({
             labelMobile={copy.chipUnchangedMobile}
           />
           <span className="font-mono text-[11px] md:text-[12px] ml-auto text-[color:var(--fg-muted)]">
-            {copy.landing(String(preview.built), String(landing))}
+            {copy.landing(String(preview.built), String(landing), bodySize)}
           </span>
         </div>
 
@@ -434,7 +437,7 @@ export function UpdateDiff({
             <span className="hidden md:inline">{copy.apply(inN, outN)}</span>
           </PrimaryButton>
           <span className="font-mono text-[11.5px] md:text-[12px] text-[color:var(--fg-muted)]">
-            {copy.summary(String(kept.size), String(landing))}
+            {copy.summary(String(kept.size), String(landing), bodySize)}
           </span>
           <GhostButton
             onClick={onCancel}

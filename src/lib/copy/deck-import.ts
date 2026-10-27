@@ -408,10 +408,10 @@ export const deckImportCopy = {
     // group header beside it in the builder rather than the banner's lines.
     deckCardBadge: (n: number) =>
       n === 1 ? "1 card we couldn’t name" : `${n} cards we couldn’t name`,
-    footnote: (n: number) =>
+    footnote: (n: number, body: number) =>
       n === 1
-        ? "That line is still in the deck’s total of 99. It’s a card the deck wants. It just isn’t a card we can name yet, so it doesn’t count as built or owned, and it stays out of the shopping list."
-        : `All ${n} lines are still in the deck’s total of 99. They’re cards the deck wants. They just aren’t cards we can name yet, so they don’t count as built or owned, and they stay out of the shopping list.`,
+        ? `That line is still in the deck’s total of ${body}. It’s a card the deck wants. It just isn’t a card we can name yet, so it doesn’t count as built or owned, and it stays out of the shopping list.`
+        : `All ${n} lines are still in the deck’s total of ${body}. They’re cards the deck wants. They just aren’t cards we can name yet, so they don’t count as built or owned, and they stay out of the shopping list.`,
   },
 
   // ---- Resolution ----------------------------------------------------------
@@ -556,7 +556,7 @@ export const deckImportCopy = {
       chipUnnamedMobile: "unnamed",
       chipUnchanged: "unchanged",
       chipUnchangedMobile: "same",
-      landing: (from: string, to: string) => `${from} → ${to} / 99`,
+      landing: (from: string, to: string, body: number) => `${from} → ${to} / ${body}`,
 
       outHeading: (n: string) => `Coming out · ${n}`,
       // One sentence, with no hand-added variant. Nothing records who placed a
@@ -614,12 +614,12 @@ export const deckImportCopy = {
       applyAria: (inN: string, outN: string, deckName: string) =>
         `Update ${deckName}: add ${inN} cards, remove ${outN}`,
       cancel: "Cancel",
-      summary: (kept: string, to: string) =>
+      summary: (kept: string, to: string, body: number) =>
         kept === "0"
-          ? `lands at ${to} / 99`
+          ? `lands at ${to} / ${body}`
           : kept === "1"
-            ? `1 kept · lands at ${to} / 99`
-            : `${kept} kept · lands at ${to} / 99`,
+            ? `1 kept · lands at ${to} / ${body}`
+            : `${kept} kept · lands at ${to} / ${body}`,
       // One message per settle, debounced — six fast toggles is one
       // announcement, the contract the synergy selection already uses.
       liveKept: (kept: string, inN: string, outN: string) =>
