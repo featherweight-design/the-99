@@ -5,7 +5,7 @@
 // chain. Four of the six reads of the face are exercised by value; see face-reads.test.ts for the rest by shape.
 //
 // It WRITES, so it fails closed on its target: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL` reports,
-// and never staging, production or local-dev. Run it on a scratch branch off local-dev migrated to 0174 with a
+// and never staging, production or local-dev. Run it on a scratch branch off local-dev migrated to 0176 with a
 // 0.25 CU compute, then delete the branch. Its two accounts are made-up ids, and it removes every row it wrote,
 // in a finally, including the one printing it inserts (a fixture row, deleted last).
 //
@@ -36,6 +36,8 @@ async function main() {
   const friends = await import("../src/lib/social/friends");
   const { setCommander } = await import("../src/lib/social/commander");
   const requests = await import("../src/lib/social/spare-requests");
+  const prompt = await import("../src/lib/social/face-prompt");
+  const { NON_GAME_LAYOUTS } = await import("../src/lib/cards/game-card");
 
   const FIXTURE_PRINTING = "00000000-0000-4000-8000-0000000fa0ce";
   let fixtureCard: string | null = null;
@@ -63,6 +65,24 @@ async function main() {
     const noPick = await setCommander(A, land.oracle_id);
     check("a basic land, which cannot lead a deck, is accepted as a face", noPick.ok, JSON.stringify(noPick));
     check("an unknown card id is refused", JSON.stringify(await setCommander(A, "00000000-0000-4000-8000-000000000001")) === JSON.stringify({ ok: false, reason: "noCard" }));
+    // A card that is not a game card (G1): a token, an emblem, an art card.
+    const layouts = sql.join([...NON_GAME_LAYOUTS].map((l) => sql`${l}`), sql`, `);
+    const { rows: nonGame } = await db.execute<{ oracle_id: string }>(sql`select oracle_id::text from cards where layout in (${layouts}) limit 1`);
+    if (nonGame[0]) {
+      const refused = await setCommander(B, nonGame[0].oracle_id);
+      check("a card that is not a game card is refused", !refused.ok && refused.reason === "noCard", JSON.stringify(refused));
+    } else console.log("skip  no non-game card in this catalog to refuse");
+
+    // 1b. Asked once (G4): the pick stamped the flag, and a later pick leaves the stamp where it was.
+    const doneAt = async (u: string) =>
+      (await db.execute<{ at: string | null }>(sql`select face_prompt_done_at::text as at from user_prefs where user_id = ${u}`)).rows[0]?.at ?? null;
+    const firstAt = await doneAt(A);
+    check("a pick stamps the reader done being asked", firstAt !== null && (await prompt.facePromptDone(A)));
+    await setCommander(A, land.oracle_id);
+    check("a second pick leaves the stamp as it was", (await doneAt(A)) === firstAt, `${firstAt} -> ${await doneAt(A)}`);
+    check("a reader never asked is not done", !(await prompt.facePromptDone(B)));
+    check("Skip stamps once", (await prompt.skipFacePrompt(B)) && (await prompt.facePromptDone(B)));
+    check("a second Skip writes nothing", !(await prompt.skipFacePrompt(B)));
 
     // 2. Art with no pick: the card's own.
     const seen = async () => (await friends.loadFriendsAndLinks(B)).friends.find((f) => f.displayName === "Alice")?.commander ?? null;
@@ -114,6 +134,7 @@ async function main() {
     await db.execute(sql`delete from spare_requests where asker_user_id in (${A}, ${B})`);
     await db.execute(sql`delete from friend_links where user_id in (${A}, ${B})`);
     await db.execute(sql`delete from social_profiles where user_id in (${A}, ${B})`);
+    await db.execute(sql`delete from user_prefs where user_id in (${A}, ${B})`);
     await db.execute(sql`delete from printings where scryfall_id = ${FIXTURE_PRINTING}::uuid`);
     // Last: the friend_links writes above fire user_data_touch, which upserts a stamp row for each account.
     await db.execute(sql`delete from user_data_stamps where user_id in (${A}, ${B})`);

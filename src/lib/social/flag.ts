@@ -54,3 +54,13 @@ export function spareRequestsEnabled(env: NodeJS.ProcessEnv): boolean {
 export function friendDecksEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.FRIEND_DECKS_ENABLED === "true" && socialFriendsEnabled(env);
 }
+
+/**
+ * `SIGNATURE_CARD_ENABLED`: the face as any card in any printing, and asking for it once (avatar handoff, plan
+ * `2026-10-27-signature-card.md`). Unset on production until the line closes. It requires `SOCIAL_FRIENDS_ENABLED`,
+ * checked here so an override of this one never raises its parent. Off, the picker searches commanders as shipped and
+ * Home asks for nothing.
+ */
+export function signatureCardEnabled(env: NodeJS.ProcessEnv): boolean {
+  return env.SIGNATURE_CARD_ENABLED === "true" && socialFriendsEnabled(env);
+}

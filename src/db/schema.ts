@@ -2139,6 +2139,12 @@ export const userPrefs = pgTable(
      */
     welcomeStripDismissedAt: timestamp("welcome_strip_dismissed_at", { withTimezone: true }),
     /**
+     * When this reader was done being asked for a signature card (avatar handoff G4, `lib/social/face-prompt.ts`): a
+     * pick, Skip on the first-run row or ✕ on Home's strip. Written once, only while null, because of the stamp trigger
+     * above. Null is a reader still to be asked (when they have no face).
+     */
+    facePromptDoneAt: timestamp("face_prompt_done_at", { withTimezone: true }),
+    /**
      * The fewest spare copies of a card this reader offers to friends (menu and Home G3, Settings' Spares
      * stepper, 1 to 9). 1 is every spare, the behavior before the setting existed. Read for a FRIEND only
      * through `src/lib/social/` (`loadFriendSpares`), and written only when it changes, because of the
