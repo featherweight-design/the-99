@@ -151,6 +151,27 @@ describe("validateSuggestions", () => {
     expect(run({ ...good, evidence: [{ kind: "intent", value: "go wide" }] }).drops[0].rule).toBe("citation");
   });
 
+  // HD - Goblins, 2026-10-27: a deck with a focus and no intent, every addition citing the focus as `intent` beside citations
+  // that held, and all five dropped. The ungroundable citation goes, never the line.
+  it("on a deck with no intent, removes an intent citation from a line that keeps others, and counts it", () => {
+    const out = run({ ...good, evidence: [{ kind: "intent", value: "Goblin typal" }, { kind: "games", value: "Mana hurt in 3 of 5 games" }] });
+    expect(out.drops).toEqual([]);
+    expect(out.kept).toHaveLength(1);
+    expect(out.kept[0].evidence).toEqual([{ kind: "games", value: "Mana hurt in 3 of 5 games" }]);
+    expect(out.strippedIntent).toBe(1);
+  });
+
+  it("still drops a line whose only citation is an ungroundable intent, and keeps an intent check on a deck that has one", () => {
+    const only = run({ ...good, evidence: [{ kind: "intent", value: "Goblin typal" }] });
+    expect(only.drops[0]).toMatchObject({ rule: "citation", cite: { kind: "intent" } });
+    expect(only.strippedIntent).toBe(0);
+    const withIntent = validateSuggestions({
+      response: { additions: [{ ...good, evidence: [{ kind: "intent", value: "go wide" }, { kind: "games", value: "Mana hurt in 3 of 5 games" }] }], cuts: [] },
+      pack: { ...pack, intent: "grind it out" }, resolveName,
+    });
+    expect(withIntent.drops[0]).toMatchObject({ rule: "citation", cite: { kind: "intent" } });
+  });
+
   it("keeps an intent citation only when it cites the intent's own words", () => {
     const withIntent = { ...pack, intent: "grind it out" };
     const cite = (value: string) => validateSuggestions({

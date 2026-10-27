@@ -109,6 +109,9 @@ export type ValidationReport = {
   /** The strategy focus THIS run aimed at (`StrategyKey`), which the panel's `ReadFrom` names (strategy focus PR 4b).
    *  Absent with no focus. */
   focus?: string;
+  /** `intent` citations removed because the deck has no intent (`stripUngroundable`), each from a line that kept others.
+   *  Absent when none were. */
+  strippedIntent?: number;
   /** Every drop `validateSuggestions` produced, per candidate — the same list `chooseRefusal`
    *  reads to pick the one-line `refusal`, kept here in full rather than discarded once that
    *  choice is made. No cost to persist (already computed, pure data); lets an "every candidate
@@ -162,7 +165,7 @@ export function validateSuggestions(args: {
   response: TuningResponse;
   pack: EvidencePack;
   resolveName: (name: string) => ResolvedCard | null;
-}): { kept: ValidatedSuggestion[]; droppedCount: number; drops: Drop[] } {
+}): { kept: ValidatedSuggestion[]; droppedCount: number; drops: Drop[]; /** Ungroundable `intent` citations removed (a deck with no intent), each from a line that kept others. */ strippedIntent: number } {
   const { response, pack, resolveName } = args;
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
   const keyCards = new Set((pack.strategy?.keyCards ?? []).map((k) => k.oracleId));
@@ -212,7 +215,20 @@ export function validateSuggestions(args: {
     });
     return changed ? { ...line, evidence } : line;
   };
-  const sides = [["add", response.additions.map(relabel)], ["cut", response.cuts.map(relabel)]] as const;
+  // An `intent` citation on a deck with NO intent quotes nothing the player wrote, so it is ungroundable by construction. With
+  // a strategy focus the model filed the focus under it (HD - Goblins, 2026-10-27: all five additions dropped as `citation`,
+  // 20 of 21 dropped additions across production's focus runs), and one bad citation dropped a line whose other citations held.
+  // The citation goes, never the line: the app writes the focus chip itself, and a line left with no citation still drops.
+  let strippedIntent = 0;
+  const stripUngroundable = (line: TuningLine): TuningLine => {
+    if (pack.intent !== null) return line;
+    const evidence = line.evidence.filter((c) => c.kind !== "intent");
+    if (evidence.length === line.evidence.length || evidence.length === 0) return line;
+    strippedIntent += line.evidence.length - evidence.length;
+    return { ...line, evidence };
+  };
+  const prepare = (line: TuningLine) => stripUngroundable(relabel(line));
+  const sides = [["add", response.additions.map(prepare)], ["cut", response.cuts.map(prepare)]] as const;
   for (const [side, lines] of sides) {
     lines.forEach((line, position) => {
       const reason = firstFailure(side, line);
@@ -238,7 +254,7 @@ export function validateSuggestions(args: {
   // A `neverCut` drop is NOT counted (Locked, F4): the lead's "we dropped N" describes suggestions
   // the model got wrong, and a cut of a card the player locked is the player's rule working, not a
   // failed suggestion. Still listed in `drops`, so a run whose every drop is one can say so (F10).
-  return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops };
+  return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops, strippedIntent };
 
   function firstFailure(side: "add" | "cut", s: TuningLine): { rule: Drop["rule"]; name?: string; cite?: Drop["cite"] } | null {
     const card = resolveName(s.card);

@@ -339,13 +339,14 @@ export async function runTuning(
         if (!retryable(billed, resolved.drops, Date.now() - startedAt)) break;
         asked = 2;
       }
-      const { kept, droppedCount, drops, askedCount } = resolved;
+      const { kept, droppedCount, drops, askedCount, strippedIntent } = resolved;
       // An answer too thin to charge for still shows what held up, and gives the credit back. Never an
       // empty one: that is a failure below, refunded the same way, with no suggestions to show.
       const refunded = sized.length > 0 && asked === 1 && refundsCredit(sized.length, askedCount);
       const report: ValidationReport = {
         askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops,
         ...(focus ? { focus } : {}),
+        ...(strippedIntent > 0 ? { strippedIntent } : {}),
         ...(ownedNone ? { ownedNone: true as const } : {}),
         ...(refunded ? { refunded: true as const } : {}),
       };
