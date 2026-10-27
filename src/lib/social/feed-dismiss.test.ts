@@ -8,7 +8,10 @@ import { incomingAsksQuery, waitingAsksCountQuery } from "./spare-requests";
 import { storedFeedBranch, storedItemsByKeyQuery } from "./feed-items";
 import { catalogBranch } from "../feed/read";
 
-const render = (q: SQL) => new PgDialect().sqlToQuery(q);
+const render = (q: SQL) => {
+  const { sql, params } = new PgDialect().sqlToQuery(q);
+  return { sql: sql.replace(/\s+/g, " ").trim(), params };
+};
 const ID = "0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f";
 const NOW = new Date("2026-10-27T12:00:00Z");
 
@@ -38,10 +41,12 @@ describe("dismissQuery", () => {
     expect(sql).toContain("where dfi.user_id = $1 and dfi.id = $2::uuid");
     expect(params).toEqual(["u1", ID]);
   });
-  it("writes an ask through the holder's own unanswered feed item for that request", () => {
+  it("writes an ask the reader holds under its own key, and its holder's unanswered feed item when there is one", () => {
     const { sql, params } = render(dismissQuery("u1", { kind: "ask", requestId: ID }));
-    expect(sql).toContain("where dfi.user_id = $1 and dfi.kind = 'spare-request' and dfi.dedupe_key = $2 and dfi.data ->> 'answer' is null");
-    expect(params).toEqual(["u1", ID]);
+    expect(sql).toContain(`select dsr.holder_user_id, 'ask:' || dsr.id::text from "spare_requests" dsr where dsr.id = $1::uuid and dsr.holder_user_id = $2 union all`);
+    expect(sql).toContain(`join "spare_requests" dsr on dsr.id = $3::uuid and dsr.holder_user_id = dfi.user_id`);
+    expect(sql).toContain("where dfi.user_id = $4 and dfi.kind = 'spare-request' and dfi.dedupe_key = dsr.id::text and dfi.data ->> 'answer' is null");
+    expect(params).toEqual([ID, "u1", ID, "u1"]);
   });
 });
 
@@ -60,6 +65,7 @@ describe("every read leaves a dismissed key out", () => {
   it("the incoming asks and their count, through the holder's feed item for the ask", () => {
     for (const [q, a] of [[incomingAsksQuery("u1", NOW), "isr"], [waitingAsksCountQuery("u1", NOW), "wsr"]] as const) {
       const { sql } = render(q);
+      expect(sql).toContain(`select 1 from "feed_dismissals" dad where dad.user_id = ${a}.holder_user_id and dad.key = 'ask:' || ${a}.id::text)`);
       expect(sql).toContain(`join "feed_dismissals" dfd on dfd.user_id = dfi.user_id and dfd.key = 'item:' || dfi.id::text`);
       expect(sql).toContain(`where dfi.user_id = ${a}.holder_user_id and dfi.kind = 'spare-request' and dfi.dedupe_key = ${a}.id::text`);
     }

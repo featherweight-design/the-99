@@ -19,8 +19,10 @@ import { FeedItemRow } from "./feed-item";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { WaitingRow } from "../../lib/social/waiting";
 import { feedCopy } from "../../lib/copy/feed";
+import { socialCopy } from "../../lib/copy/social";
 
 const d = feedCopy.home.dismiss;
+const w = socialCopy.waiting;
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (n: number, o: Partial<FeedView> = {}): FeedView => ({
   key: `set:s${n}`, kind: "new-set", at: new Date(Date.parse(NOW) - (n + 1) * 3_600_000).toISOString(), unseen: true,
@@ -107,14 +109,13 @@ describe("Waiting on you", () => {
 
   it("hides a trade match under its feed key and an ask under ask:<request id>, the head counting what is left", async () => {
     render(<WaitingOnYou rows={[ask, trade]} now={NOW_D} />);
-    const head = screen.getByRole("heading", { level: 2 });
-    const before = head.textContent;
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(2));
     const rows = screen.getAllByTestId("waiting-row");
     await act(async () => { fireEvent.click(within(rows[1]).getByRole("button", { name: /^Hide/ })); });
     expect(m.dismiss).toHaveBeenCalledWith(trade.key);
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(w.head(1));
     await act(async () => { fireEvent.click(within(screen.getAllByTestId("waiting-row")[0]).getByRole("button", { name: /^Hide/ })); });
     expect(m.dismiss).toHaveBeenLastCalledWith("ask:bbbbbbbb-1d2a-4c3b-8e5f-6a7b8c9d0e1f");
     expect(screen.queryAllByTestId("waiting-row")).toHaveLength(0);
-    expect(before).not.toBe(screen.queryByRole("heading", { level: 2 })?.textContent ?? "");
   });
 });

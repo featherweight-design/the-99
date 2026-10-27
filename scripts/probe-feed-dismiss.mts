@@ -4,7 +4,8 @@
 //      and released, and the matches noticed again, write no second row and bring nothing back;
 //   2. an incoming ask: dismissed by its request id, it leaves the holder's asks, the waiting count and Home's feed,
 //      and the ask itself stays OPEN for the asker (dismissing answers nothing);
-//   3. the purge deletes the reader's dismissals.
+//   3. an ask to a holder with the spare-request kind off (no feed item for it): its ✕ still hides it;
+//   4. the purge deletes the reader's dismissals.
 // Its accounts are made-up per-run ids, purged in a finally.
 //
 //   FEED_DISMISS_PROBE_URL=<scratch branch URL> FEED_DISMISS_PROBE_BRANCH=br-… pnpm probe:feed-dismiss
@@ -75,9 +76,9 @@ async function main() {
   try {
     const { rows: picked } = await db.execute<{ oracle_id: string }>(sql`
       select c.oracle_id from cards c where exists (select 1 from printings p where p.oracle_id = c.oracle_id)
-      order by c.oracle_id limit 2 offset 1200`);
-    if (picked.length < 2) throw new Error("fewer than two cards with a printing on this branch");
-    const [X, Y] = picked.map((r) => r.oracle_id);
+      order by c.oracle_id limit 3 offset 1200`);
+    if (picked.length < 3) throw new Error("fewer than three cards with a printing on this branch");
+    const [X, Y, Z] = picked.map((r) => r.oracle_id);
 
     await friends.ensureProfile(R, "Rae");
     const f = await friends.ensureProfile(F, "Fin");
@@ -130,7 +131,25 @@ async function main() {
     const status = (await db.execute<{ status: string }>(sql`select status from spare_requests where id = ${asked.id}`)).rows[0]?.status;
     check("the ask itself stays open for the asker: dismissing answers nothing", status === "open", status);
 
-    console.log("\n3. purge");
+    console.log("\n3. an ask to a holder with the spare-request kind off");
+    await prefs.setFeedKinds(R, FEED_KINDS.filter((k) => k !== "spare-request"), new Date());
+    await add(R, Z, 2);
+    const quiet = await sr.askForSpare(F, r.publicId, Z, ENV);
+    check("the friend asks for another spare", quiet.ok);
+    if (!quiet.ok) throw new Error("ask refused");
+    const itemFor = async (id: string) => (await db.execute<{ n: number }>(sql`select count(*)::int as n from feed_items
+      where user_id = ${R} and kind = 'spare-request' and dedupe_key = ${id}`)).rows[0].n;
+    check("... which writes the holder no feed item", (await itemFor(quiet.id)) === 0, `${await itemFor(quiet.id)}`);
+    check("... yet Waiting on you lists it", (await sr.loadIncomingAsks(R, ENV)).some((a) => a.id === quiet.id));
+    await dismiss(R, `ask:${quiet.id}`);
+    check("its ✕ still hides it from the holder's asks", !(await sr.loadIncomingAsks(R, ENV)).some((a) => a.id === quiet.id));
+    check("... and from the waiting count", (await sr.waitingAsksCount(R, ENV)) === 0);
+    check("... and only the holder can hide it: the asker's ✕ on it writes nothing", await (async () => {
+      await dismiss(F, `ask:${quiet.id}`);
+      return (await db.execute<{ n: number }>(sql`select count(*)::int as n from feed_dismissals where user_id = ${F}`)).rows[0].n === 0;
+    })());
+
+    console.log("\n4. purge");
     await purgeAccount(R, { stripe: () => null });
     check("the reader's purge deletes their dismissals", (await db.execute<{ n: number }>(sql`select count(*)::int as n from feed_dismissals where user_id = ${R}`)).rows[0].n === 0);
   } finally {

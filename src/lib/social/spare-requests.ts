@@ -346,12 +346,14 @@ export function incomingAsksQuery(holderId: string, now: Date): SQL {
 }
 
 /**
- * The holder has not pressed ✕ on the ask (`feed_dismissals`): its Waiting row and its Home item are one dismissal, kept
- * on the holder's own feed item for it (dedupe key = the request id). Hiding answers nothing: the ask stays open for
+ * The holder has not pressed ✕ on the ask (`feed_dismissals`): not on its Waiting row (`ask:<id>`) and not on its Home
+ * item (the holder's own feed item for it, dedupe key = the request id). Hiding answers nothing: the ask stays open for
  * the asker. On the ask's alias.
  */
 function notDismissedAsk(r: SQL): SQL {
   return sql`and not exists (
+        select 1 from ${feedDismissals} dad where dad.user_id = ${r}.holder_user_id and dad.key = 'ask:' || ${r}.id::text)
+      and not exists (
         select 1 from ${feedItems} dfi
         join ${feedDismissals} dfd on dfd.user_id = dfi.user_id and dfd.key = 'item:' || dfi.id::text
         where dfi.user_id = ${r}.holder_user_id and dfi.kind = 'spare-request' and dfi.dedupe_key = ${r}.id::text

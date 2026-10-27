@@ -5808,7 +5808,7 @@
       "checkConstraints": {
         "feed_dismissals_key_check": {
           "name": "feed_dismissals_key_check",
-          "value": "\"feed_dismissals\".\"key\" ~ '^(item:[0-9a-f-]{36}|set:.+|precon:.+)$'"
+          "value": "\"feed_dismissals\".\"key\" ~ '^((item|ask):[0-9a-f-]{36}|set:.+|precon:.+)$'"
         }
       },
       "isRLSEnabled": false

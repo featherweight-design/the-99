@@ -58,7 +58,8 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
   const listRef = useRef<HTMLUListElement | null>(null);
   const land = useLandFocus(listRef);
   const { busy, answer, toast } = useSpareAnswer();
-  const dismissed = useFeedDismiss(() => document.getElementById("waiting-on-you"));
+  // The section's heading, or the page's when the last row's leave takes the section with it.
+  const dismissed = useFeedDismiss(() => document.getElementById("waiting-on-you") ?? document.getElementById("friends-title"));
   // An answered ask stays out even before the action's redraw drops it from the server's rows; so does one hidden (✕).
   const waiting = rows.filter((row) => !receipts.has(row.key) && !dismissed.hidden.has(dismissKey(row)));
   // The last row can leave while its answer is out (the friend's spare went): the failure toast still shows.

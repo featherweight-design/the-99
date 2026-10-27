@@ -4,7 +4,7 @@
 // item's key is resolved through `feed_items`, a social table (`check:social-reads`). Never answers an ask.
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { feedDismissals, feedItems } from "../../db/schema";
+import { feedDismissals, feedItems, spareRequests } from "../../db/schema";
 import { isUuid } from "./rules";
 
 /** What the ✕ names: Home's opaque key for an item, or a Waiting on you ask by its request id. */
@@ -25,19 +25,27 @@ export function parseDismissKey(raw: unknown): DismissTarget | null {
 }
 
 /**
- * The one write. A stored item is dismissed only when it is the reader's own row; an ask through the reader's own
- * (holder's) feed item for it, so its Waiting row and its Home item go together. Idempotent. Apart for a test.
+ * The one write. A stored item is dismissed only when it is the reader's own row. An ask only when the reader holds
+ * it: under its own `ask:<id>` key, which Waiting on you reads (a holder with the kind off has no feed item for it),
+ * and under the holder's feed item for it when there is one, so its Home item goes too. Idempotent. Apart for a test.
  */
 export function dismissQuery(userId: string, t: DismissTarget): SQL {
   if (t.kind === "catalog") {
     return sql`insert into ${feedDismissals} (user_id, key) values (${userId}, ${t.key}) on conflict do nothing`;
   }
-  const which = t.kind === "item"
-    ? sql`dfi.id = ${t.id}::uuid`
-    : sql`dfi.kind = 'spare-request' and dfi.dedupe_key = ${t.requestId} and dfi.data ->> 'answer' is null`;
+  if (t.kind === "ask") {
+    return sql`insert into ${feedDismissals} (user_id, key)
+    select dsr.holder_user_id, 'ask:' || dsr.id::text from ${spareRequests} dsr
+    where dsr.id = ${t.requestId}::uuid and dsr.holder_user_id = ${userId}
+    union all
+    select dfi.user_id, 'item:' || dfi.id::text from ${feedItems} dfi
+    join ${spareRequests} dsr on dsr.id = ${t.requestId}::uuid and dsr.holder_user_id = dfi.user_id
+    where dfi.user_id = ${userId} and dfi.kind = 'spare-request' and dfi.dedupe_key = dsr.id::text and dfi.data ->> 'answer' is null
+    on conflict do nothing`;
+  }
   return sql`insert into ${feedDismissals} (user_id, key)
     select dfi.user_id, 'item:' || dfi.id::text from ${feedItems} dfi
-    where dfi.user_id = ${userId} and ${which}
+    where dfi.user_id = ${userId} and dfi.id = ${t.id}::uuid
     on conflict do nothing`;
 }
 
