@@ -17,7 +17,7 @@ import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
 import { nearCombosEnabled } from "../combos/flag";
 import {
-  friendDecksEnabled, ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled,
+  friendDecksEnabled, ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled,
 } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
@@ -112,6 +112,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // switch alone, as its flag reads it: the VAPID check (`pushAvailable`) parses keys with `node:crypto`, and this module
   // is imported by `proxy.ts`.
   PUSH_ENABLED: pushEnabled,
+  // Signature card (close-out): a CAPTION line only, the friends entry's face sentence. Already needs SOCIAL_FRIENDS_ENABLED.
+  SIGNATURE_CARD_ENABLED: signatureCardEnabled,
 };
 
 /**

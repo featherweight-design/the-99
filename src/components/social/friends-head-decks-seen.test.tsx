@@ -1,6 +1,6 @@
 // /friends' privacy line (friend decks handoff, `Privacy.dc.html`): with friend decks on, one of three sentences by the
 // reader's own rules, each ending in a link to Settings; off, the shipped sentence.
-import { render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { FriendsHead } from "./friends-head";
 import { socialCopy } from "../../lib/copy/social";
@@ -46,5 +46,18 @@ describe("the privacy line", () => {
       expect(el.textContent).toBe("Friends can’t see your decks. Change this in Settings.");
       el.closest("div")?.remove();
     }
+  });
+});
+
+describe("the name field's hint", () => {
+  it.each([
+    [false, p.nameField.hint],
+    [true, p.nameField.hintSignature],
+  ])("names the face as the switch has it (signature card %s)", async (signature, hint) => {
+    const { getByRole, getByText } = render(
+      <FriendsHead name="Hugh" commander={null} onRename={vi.fn()} onOpenPicker={vi.fn()} invitePending={false} held={false} onInvite={vi.fn()} signature={signature} />,
+    );
+    await act(async () => { fireEvent.click(getByRole("button", { name: p.nameLine("Hugh").action })); });
+    expect(getByText(hint)).toBeTruthy();
   });
 });

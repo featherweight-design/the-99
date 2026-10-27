@@ -128,15 +128,13 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * but the About `push` entry and the `whats-new` key follow the switch alone (`pushEnabled`: `visible.ts` sits on the proxy's
  * path, where the key parsing may not), so they would describe a column that is not there. Both Vercel projects carry the
  * keys (Production scope) and previews are not built, so that only happens on a local server run without them.
- * It holds what is listed below, each with its reason.
+ * `SIGNATURE_CARD_ENABLED` held it from 2026-10-27 and left it with the `friends` entry's signature-card caption line.
+ * It holds what is listed below, each with its reason (none today).
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
-export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
-  SIGNATURE_CARD_ENABLED:
-    "the signature card line (plan 2026-10-27-signature-card.md) lands over five PRs; it leaves at close-out with its About edit",
-};
+export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {};
 
 /**
  * What All features raises: every `feature` and `model` switch not excluded, and every parent those

@@ -789,3 +789,22 @@ describe("push (close-out): each line follows the kind's own availability (`feed
     expect(key(env({}))).toBe("News shows on Home, and as push where you turn it on. No email, ever.");
   });
 });
+
+describe("the friends entry under the signature card", () => {
+  const friends = aboutEntries.find((e) => e.id === "friends")!;
+  const env = (decks: boolean, signature: boolean) =>
+    ({ SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: decks ? "true" : "", SIGNATURE_CARD_ENABLED: signature ? "true" : "" }) as unknown as NodeJS.ProcessEnv;
+  it.each([
+    [false, false, "your name and your commander,", "Pick a commander and its art"],
+    [true, false, "your name, your commander and the decks", "Pick a commander and its art"],
+    [false, true, "your name and your signature card,", "Pick a signature card, any card in any printing, and its art"],
+    [true, true, "your name, your signature card and the decks", "Pick a signature card, any card in any printing, and its art"],
+  ])("draws one privacy key and one face sentence (friend decks %s, signature card %s)", (decks, signature, key, face) => {
+    const e = resolveEntry(friends, env(decks, signature));
+    const privacy = e.keys.filter((k) => k.startsWith("Friends see your name"));
+    expect(privacy).toHaveLength(1);
+    expect(privacy[0]).toContain(key);
+    expect(e.caption).toContain(face);
+    expect(e.caption).not.toMatch(/commander and signature card/);
+  });
+});

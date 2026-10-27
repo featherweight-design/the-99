@@ -85,7 +85,11 @@ tree, 2026-10-27: **Yellow**, with no substantive design gap. Every open item is
 
    Shopping's and the cart's callers are unchanged.
 5. **Close-out.** The About edit to the `friends` entry (with the `keySwitches` pair) and the batched `ABOUT_VERSION`
-   bump. Fix the entry's shipped "account menu, Press" defect. `docs/agents/social.md` and the AGENTS.md line. Turn the
+   bump. Fix the entry's shipped "account menu, Press" defect.
+   *Done:* the sentence is a `captionLineSwitches` pair (it lives in the caption, not a key); no bump, it rides the next
+   batched one as the handoff says. "account menu, Press" is not a defect: the two openings are a pair, one drawn,
+   and "Press" follows a full stop. Out of `ALL_FEATURES_EXCLUDED`. Staging is read-only for this lane, so turning the
+   switch on there goes to d9/Hugh. `docs/agents/social.md` and the AGENTS.md line. Turn the
    switch on for staging, dispatch Staging sync, walk both widths, and run `feature-acceptance` at line close.
 
 ## Inventory (feature-acceptance)

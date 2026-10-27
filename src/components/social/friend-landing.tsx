@@ -31,14 +31,17 @@ type Shown = LandingView | { kind: "declined"; name: string };
 /** The turn's length, for the column to wait on before it changes (README 23). */
 const turnMs = () => (prefersReducedMotion() ? 120 : 520);
 
-function faceOf(v: LandingView, since: (d: Date) => string): CardFace | null {
+function faceOf(v: LandingView, since: (d: Date) => string, signature: boolean): CardFace | null {
   switch (v.kind) {
     case "open":
-      return { name: v.name, commander: v.commander, type: copy.typeRequest, rules: copy.openRules(v.name) };
+      return { name: v.name, commander: v.commander, type: copy.typeRequest, rules: (signature ? copy.openRulesSignature : copy.openRules)(v.name) };
     case "self":
-      return { name: v.name, commander: v.commander, type: copy.typeOwn, rules: copy.ownRules };
+      return { name: v.name, commander: v.commander, type: copy.typeOwn, rules: signature ? copy.ownRulesSignature : copy.ownRules };
     case "friends":
-      return { name: v.name, commander: v.commander, type: copy.typeFriend(since(v.since)), rules: copy.friendRules(v.name) };
+      return {
+        name: v.name, commander: v.commander, type: copy.typeFriend(since(v.since)),
+        rules: (signature ? copy.friendRulesSignature : copy.friendRules)(v.name),
+      };
     default:
       return null;
   }
@@ -93,7 +96,11 @@ export function LandingColumn({
   );
 }
 
-export function FriendLanding({ token, view, nowMs }: { token: string; view: LandingView; nowMs: number }) {
+export function FriendLanding({ token, view, nowMs, signature = false }: {
+  token: string; view: LandingView; nowMs: number;
+  /** `SIGNATURE_CARD_ENABLED` for the reader: the card names the face a signature card. */
+  signature?: boolean;
+}) {
   // The friendship's `since` as /friends draws it (`sinceDay`): in UTC until hydrated, as the server drew it, and
   // in the reader's own zone after, so "since today" means the reader's today.
   const hydrated = useHydrated();
@@ -103,7 +110,7 @@ export function FriendLanding({ token, view, nowMs }: { token: string; view: Lan
   const { go } = usePendingPush();
   const [shown, setShown] = useState<Shown>(view);
   // The face the card was drawn with stays on its front once it turns back down, so the turn has a front to hide.
-  const [face, setFace] = useState(() => faceOf(view, since));
+  const [face, setFace] = useState(() => faceOf(view, since, signature));
   const named = face !== null;
   const [up, setUp] = useState(false);
   const [arrival, setArrival] = useState(true);
@@ -143,7 +150,7 @@ export function FriendLanding({ token, view, nowMs }: { token: string; view: Lan
   }
   function becomeSelf(v: { name: string; commander: ProfileCommander | null }) {
     const self: LandingView = { kind: "self", ...v };
-    setFace(faceOf(self, since));
+    setFace(faceOf(self, since, signature));
     setShown(self);
     setUp(true);
   }
@@ -285,7 +292,7 @@ export function FriendLanding({ token, view, nowMs }: { token: string; view: Lan
 
   return (
     <LandingStage>
-      <FriendCard face={face && shown.kind === "friends" ? { ...face, type: copy.typeFriend(since(shown.since)) } : face} up={up && named} arrival={arrival} dim={shown.kind === "expired"} />
+      <FriendCard face={face && shown.kind === "friends" ? { ...face, type: copy.typeFriend(since(shown.since)) } : face} up={up && named} arrival={arrival} dim={shown.kind === "expired"} signature={signature} />
       {column}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </LandingStage>

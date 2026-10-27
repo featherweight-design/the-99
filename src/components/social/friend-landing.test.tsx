@@ -73,6 +73,18 @@ describe("the arrival", () => {
     expect(screen.getByRole("img", { name: L.cardAria("Jo Bloggs", null, L.typeRequest) })).toBeTruthy();
   });
 
+  it("names the face a signature card with the switch on: each card's rules and an empty credit", () => {
+    render(<FriendLanding token={TOKEN} nowMs={NOW} signature view={{ kind: "open", name: "Jo Bloggs", commander: null }} />);
+    arrive();
+    expect(screen.getByText(L.openRulesSignature("Jo Bloggs"))).toBeTruthy();
+    expect(screen.getByText(L.noSignature)).toBeTruthy();
+    expect(screen.queryByText(L.noCommander)).toBeNull();
+    cleanup();
+    render(<FriendLanding token={TOKEN} nowMs={NOW} signature view={{ kind: "self", name: "Jo", commander: SOL }} />);
+    arrive();
+    expect(screen.getByText(L.ownRulesSignature)).toBeTruthy();
+  });
+
   it.each([
     ["expired", { kind: "expired" as const }, L.expiredTitle, true],
     ["ended", { kind: "ended" as const }, L.endedTitle, false],
