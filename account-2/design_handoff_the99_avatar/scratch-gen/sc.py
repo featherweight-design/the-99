@@ -117,6 +117,7 @@ kit.CSS += r"""
 .tile .tcap2 .rq{display:inline-flex;align-items:center;gap:6px;color:var(--accent-text)}
 .tile .tcap2 .rq i{width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .tile .tcap2 .ac2{color:var(--success)}
+.tile .tcap2 .cl1{display:flex;align-items:center;gap:5px;white-space:nowrap}
 .tile .ti.lit{outline:2px solid var(--accent);outline-offset:3px}
 .tile .tap{position:absolute;width:30px;height:30px;border-radius:50%;background:rgba(240,230,210,.22);border:1.5px solid rgba(240,230,210,.75);left:50%;top:44%;transform:translate(-50%,-50%);z-index:2}
 /* push banner */
@@ -324,13 +325,14 @@ def spares_tab(desk=False, states=None, lit=None, tap=None, n=None, skip=None):
     t = []
     for i, (k, nm, s, w) in enumerate(cards):
         st = states.get(i)
-        cap = f'{s} spare{"" if s == 1 else "s"}'
+        line = f'{s} spare{"" if s == 1 else "s"}'
+        if st == "asked":
+            line += ' · <span class="rq new"><i></i>Requested</span>'
+        elif st == "yes":
+            line += ' · <span class="ac2 new">✓ Accepted</span>'
+        cap = f'<span class="cl1">{line}</span>'
         if w:
             cap += f'<span class="wl">{P.BOOKMARK} on your wishlist</span>'
-        if st == "asked":
-            cap += '<span class="rq new"><i></i>Requested</span>'
-        elif st == "yes":
-            cap += '<span class="ac2 new">✓ Accepted</span>'
         tp = '<span class="tap"></span>' if tap == i else ""
         t.append(f'<div class="tile"><span class="ti{" lit" if lit == i else ""}" style="position:relative">{tp}<img src="{img(k)}" alt="{nm}"></span>'
                  f'<span class="tcap2">{cap}</span></div>')

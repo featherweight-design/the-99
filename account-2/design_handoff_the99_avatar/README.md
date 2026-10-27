@@ -8,7 +8,7 @@ Goes to main as `design/design_handoff_the99_avatar/` (mirroring `design_handoff
 
 Canvas: https://claude.ai/artifact/KC5YqYATfjhEwYLtFdYozK
 
-**Status: R1, awaiting Hugh's audit.** Every string is a placeholder for `/copy-review`. Orange dashed outlines mark
+**Status: R1b, awaiting Hugh's audit.** Every string is a placeholder for `/copy-review`. Orange dashed outlines mark
 what is new against the shipped page. Art is cut from the design folder (the canvas can't load Scryfall), so the
 Mystical Tutor printing tiles share one picture; in the app each tile is its own printing.
 

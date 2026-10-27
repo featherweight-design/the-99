@@ -62,7 +62,7 @@ CALLS = [
      "A tile press opens the shipped <b>Friends with a spare</b> modal for that card, with Ask. Two changes: the friend whose page "
      "you’re on is <b>first</b> (then the rest, most spares first), and the box’s kicker reads <b>on your wishlist</b> (or nothing) "
      "instead of “replacing”, since nothing is being replaced here. Card details are still one press away: the card’s name in the "
-     "box. The tile’s caption carries <b>Requested</b> or <b>Accepted</b>, in the modal’s words."),
+     "box. The tile’s count line carries <b>Requested</b> or <b>Accepted</b> after the count, in the modal’s words, so no tile gains a line."),
     ("9", "A notification opens the modal by itself",
      "The trade-match push, its Home item (See Colin’s spares) and its Waiting on you row all land on Colin’s Spares tab "
      "<b>with that card’s modal already open</b>, the tile ringed behind it. You came for that card, so it’s one press to Ask. "
@@ -187,7 +187,7 @@ def spares_board():
     s3 = frame("<b>S3 · Asked</b> · 390", ph(C.spares_tab(False, lit=0), over=C.spares_modal(False, "asked", top=300)),
                "The shipped request states: Colin reads Requested, Max’s row Ask instead.")
     s4 = frame("<b>S4 · Back on the tab</b> · 390", ph(C.spares_tab(False, states={0: "asked"}, lit=0)),
-               "✕ returns focus to the tile. Its caption says <b>Requested</b> (then Accepted), in the modal’s words.")
+               "✕ returns focus to the tile. Its count line reads <b>1 spare · Requested</b> (then Accepted): same line, so the grid stays even.")
     n1 = frame("<b>N1 · The push</b> · 390", ph(C.spares_tab(False, lit=0), over=C.push_banner()),
                "The shipped trade-match push. A tap opens the app on Colin’s Spares tab…")
     n2 = frame("<b>N2 · Landed</b> · 390", ph(C.spares_tab(False, lit=0), over=C.spares_modal(False, "ask", top=300)),
