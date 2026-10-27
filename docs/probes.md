@@ -2922,6 +2922,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   checks pass, and with the row lock on the deck removed from `insertNote` the race check fails on every run
   (both adds land, the deck holds 101).
 
+- `pnpm probe:hmc-retry-answers` proves a failed Help me choose create's retry fills as Help me choose
+  when no answer was gated (no budget, no bracket, no build-around card, "Any cards"). It writes the
+  empty deck the create's fallback writes, reads `answer_asked` back, runs `retryAnswersOf` (what
+  `fillDeck` calls) and checks the retry's plan equals the create's and differs from the plain build.
+  One deck row, deleted in a `finally`; no model call. Scratch branch only (`assertScratchBranch`),
+  named by `PROBE_DB_URL`. Measured 2026-10-27 on a scratch branch of local-dev with Atraxa: all checks
+  pass, 21 cards apart from the plain build; with the marker dropped from `retryAnswersOf` (the rule
+  before it) the retry reads null and its plan IS the plain build, failing three checks.
+
 - `pnpm probe:help-me-choose-screens` walks Help me choose's results at 1300x900 and 390x844:
   the first page's candidates, every trial settling, the separators, overflow and animation, the
   three presses (Find commanders, Change answers, Start over), the row's box, the five-color drop
