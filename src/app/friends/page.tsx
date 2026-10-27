@@ -32,6 +32,9 @@ import { loadWaitingOnYou } from "../../lib/social/waiting";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
 import { markFriendsSeen } from "../../lib/feed/prefs";
 import { WaitingOnYou } from "../../components/social/waiting-on-you";
+import { TradeAskFrame } from "../../components/social/trade-ask";
+import { CardDetailProvider } from "../../components/cards/card-detail-provider";
+import { loadTradeAsk } from "../../lib/social/trade-ask";
 import { loadYourRequests } from "../../lib/social/your-requests";
 import { YourRequests } from "../../components/social/your-requests";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
@@ -98,12 +101,26 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // Drawn only when THIS request consumed it: two renders can both read the pending inviter, and one update wins.
   const consumed = pendingInviter !== null && (await takeReceipt(userId)) !== null;
   const invites = await invitesRead;
+  // A trade match's Ask opens its spares sheet over this page (product call 8): the rows' cards and their prices.
+  const tradeAsk = await loadTradeAsk(
+    waiting.flatMap((r) => (r.kind === "trade-match" && r.askable ? [{ oracleId: r.card.oracleId, name: r.card.name, imageUri: r.card.imageUri }] : [])),
+  );
   return (
     <>
     <ToolLandingMount landing={landing} request={request} />
     <FriendsView
       profile={profile}
-      waiting={<><WaitingOnYou rows={waiting} now={now} /><YourRequests rows={mine} now={now} canBuy={shoppingMarkBoughtEnabled(env)} /></>}
+      waiting={<>
+        {/* The sheet's name opens card details, so its provider sits around it here, as on a friend's Spares tab. Both
+            stay mounted with no trade match, so a redraw that drops the last one keeps Waiting on you's visit state. A
+            Your requests ✕ moves `asksVersion`, so a trade match's press stops saying Requested for a withdrawn ask. */}
+        <CardDetailProvider>
+          <TradeAskFrame payload={tradeAsk} refreshFriends asksVersion={mine.map((r) => `${r.id}:${r.state}:${r.cleared ? 1 : 0}`).join(",")}>
+            <WaitingOnYou rows={waiting} now={now} />
+          </TradeAskFrame>
+        </CardDetailProvider>
+        <YourRequests rows={mine} now={now} canBuy={shoppingMarkBoughtEnabled(env)} />
+      </>}
       pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} ruleZero={tables ? { tables, now } : null} />}
       friends={friends}
       links={links}

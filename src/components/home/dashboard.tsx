@@ -34,6 +34,8 @@ import { LeadSlot } from "./lead-story";
 import { HeldLeadProvider } from "./held-lead";
 import { WhatsNew } from "./whats-new";
 import { PushLanding } from "../push/push-landing";
+import { TradeAskFrame } from "../social/trade-ask";
+import type { TradeAskPayload } from "../../lib/social/trade-ask";
 
 export type DashboardProps = {
   stats: { totalCards: number; uniqueCards: number };
@@ -55,6 +57,8 @@ export type DashboardProps = {
    */
   /** This server visit's token while push is on for the reader (`PushLanding`); null otherwise. */
   pushVisit?: string | null;
+  /** The feed's trade matches that open their spares sheet in place (product call 8); null or absent, the presses link. */
+  tradeAsk?: TradeAskPayload | null;
   /** Keyed by commander oracleId, and only for the commanders shown. */
   inUse: Map<string, ReceiptCounts>;
   decks: DeckListItem[];
@@ -247,6 +251,7 @@ export function Dashboard(props: DashboardProps) {
           third layout, one column wide with desktop padding. */}
       <Frame>
       {feed && props.pushVisit && <PushLanding visit={props.pushVisit} />}
+      <TradeAskFrame payload={props.tradeAsk ?? null}>
       <HeldLeadProvider>
       <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         {/* Below 1180 both columns are `display: contents`, so their blocks are one list and `order` places them: Ready to
@@ -322,6 +327,7 @@ export function Dashboard(props: DashboardProps) {
         )}
       </div>
             </HeldLeadProvider>
+      </TradeAskFrame>
       </Frame>
     </div>
   );

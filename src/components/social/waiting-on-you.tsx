@@ -22,6 +22,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { faceInitials } from "./face";
+import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
 
 const w = socialCopy.waiting;
@@ -226,13 +227,34 @@ function TradeRow({ row: r, now, onDismiss }: { row: TradeMatchRow; now: Date; o
 /** The board's `.lnk`: in the text column on a phone, where a long name wraps rather than clip, and the row's third
  * column from desktop, on one line. */
 function WaitingLink({ row, className }: { row: TradeMatchRow; className: string }) {
+  const trade = useTradeAsk();
+  const press = "flex min-h-[32px] items-center gap-[4px] text-[13px] [overflow-wrap:anywhere] md:whitespace-nowrap font-medium text-[color:var(--accent-text)] no-underline";
+  // Ask in place (product call 8): the card's sheet over this page, the friend first, and Requested or Accepted once
+  // asked, as the friend's tab says it.
+  if (trade && row.askable && trade.has(row.card.oracleId)) {
+    const state = trade.stateFor(row.card.oracleId, row.friend.publicId);
+    return (
+      <span className={className}>
+        <button
+          type="button"
+          data-trade-ask-press
+          aria-haspopup="dialog"
+          aria-label={state ? tradeAskAria(w.askFriend(row.friend.displayName), state) : undefined}
+          onClick={(e) => trade.open(row.card.oracleId, row.friend.publicId, e.currentTarget)}
+          className={`${press} cursor-pointer border-0 bg-transparent p-0 text-left`}
+        >
+          {state ? <TradeAskLabel state={state} /> : <>{w.askFriend(row.friend.displayName)}<span aria-hidden>›</span></>}
+        </button>
+      </span>
+    );
+  }
   // The card's modal opens on landing (signature card call 9), or the tab says the spare has gone.
   const href = `/friends/${encodeURIComponent(row.friend.publicId)}?spare=${encodeURIComponent(row.card.oracleId)}`;
   return (
     <span className={className}>
       <Link
         href={href}
-        className="flex min-h-[32px] items-center gap-[4px] text-[13px] [overflow-wrap:anywhere] md:whitespace-nowrap font-medium text-[color:var(--accent-text)] no-underline"
+        className={press}
       >
         {(row.askable ? w.askFriend : w.seeSpares)(row.friend.displayName)}
         <span aria-hidden>›</span>

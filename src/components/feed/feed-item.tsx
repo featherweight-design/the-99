@@ -21,6 +21,7 @@ import { Face } from "../social/face";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { NEW_TAB_SUFFIX } from "../ui/external-link";
 import { DismissButton } from "./dismiss";
+import { TradeAskLabel, tradeAskAria, useTradeAsk } from "../social/trade-ask";
 import { feedAge } from "../../lib/feed/age";
 
 const c = feedCopy.home;
@@ -88,15 +89,39 @@ export function FeedPress({
   className,
   stretch,
   describedBy,
+  filled = false,
 }: {
   item: FeedView;
   label: string;
   className: string;
+  /** The lead's filled button: a Requested or Accepted label takes the button's ink (`TradeAskLabel`). */
+  filled?: boolean;
   /** Classes that stretch the press over its row (an `::after` over the positioned row). */
   stretch: string;
   describedBy?: string;
 }) {
   const detail = useCardDetailIfAny();
+  const trade = useTradeAsk();
+  // A trade match the page can open in place (product call 8): its sheet over this page, that friend first; once asked,
+  // the press says Requested or Accepted, as the friend's tab does, and still opens the sheet.
+  const asking = tradeAskOf(item, trade !== null && trade.has(item.card?.oracleId ?? ""));
+  if (trade && asking) {
+    const state = trade.stateFor(asking.oracleId, asking.friendPublicId);
+    return (
+      <button
+        type="button"
+        data-feed-press
+        data-trade-ask-press
+        aria-haspopup="dialog"
+        aria-label={state ? tradeAskAria(c.press.tradeMatchAsk(asking.friendName), state) : undefined}
+        onClick={(e) => trade.open(asking.oracleId, asking.friendPublicId, e.currentTarget)}
+        className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
+        aria-describedby={describedBy}
+      >
+        {state ? <TradeAskLabel state={state} filled={filled} /> : label}
+      </button>
+    );
+  }
   // Off the app (a price drop's card on Mana Pool): a new tab, drawn as card details' link out is (its own label), the ↗ and
   // the spoken new-tab suffix (`ExternalLink`'s), never a router link.
   if (item.outbound) {
@@ -135,6 +160,12 @@ export function FeedPress({
   );
 }
 
+/** A trade match whose Ask opens in place: the card and the friend, else null (the press keeps its link). */
+function tradeAskOf(item: FeedView, held: boolean): { oracleId: string; friendPublicId: string; friendName: string } | null {
+  if (item.kind !== "trade-match" || !item.askable || !held || !item.card || !item.friend) return null;
+  return { oracleId: item.card.oracleId, friendPublicId: item.friend.publicId, friendName: item.friend.displayName };
+}
+
 /** The 46x64 picture: the card at card shape with the friend's face on its corner, or the combo mark. */
 function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, "artCropUri"> | null | undefined }) {
   // Every card row previews its card on hover (Hugh, 2026-10-12), on the picture, since the row carries prose; from
@@ -142,6 +173,8 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   // row (an `::after` later in the DOM), so the picture sits ABOVE it (`z-[1]`) to be hovered at all, and a press on
   // it is the row's press (a link when the row links, else passed to its button).
   const hover = usePreviewRow(item.kind === "combo" ? null : item.card?.image ?? null);
+  const trade = useTradeAsk();
+  const inPlace = tradeAskOf(item, trade !== null && trade.has(item.card?.oracleId ?? "")) !== null;
   if (item.kind === "combo") {
     return (
       <span
@@ -176,7 +209,7 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
       </a>
     );
   }
-  if (item.href) {
+  if (item.href && !inPlace) {
     return (
       <Link href={item.href} aria-hidden tabIndex={-1} data-feed-picture {...hover} className={box}>
         {art}

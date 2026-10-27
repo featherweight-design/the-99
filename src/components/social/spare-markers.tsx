@@ -29,6 +29,7 @@ import { BuyTag } from "../decks/buy-tag";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { ModalChrome } from "../decks/receipt-modal";
 import { ReplacingLine, Thumb } from "../decks/stand-ins-sheet";
+import { SheetLoading } from "../ui/sheet-loading";
 import { askInsteadAction, askSpareAction } from "../../app/friends/spare-actions";
 import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
 import {
@@ -141,6 +142,8 @@ export function FriendSparesProvider({
   deckId = null,
   standalone = false,
   sparesOnOpen = false,
+  asksVersion,
+  onAsk,
   children,
 }: {
   /** The cards the deck is buying: one read covers every row that can carry a marker. */
@@ -156,6 +159,11 @@ export function FriendSparesProvider({
   /** Read a card's spares only when its sheet opens, once per visit (a friend's Spares tab: the page already drew every
    *  tile, and the sheet draws the page's offer until the read lands). The asks are still read for every card. */
   sparesOnOpen?: boolean;
+  /** Moves when the page's own asks changed outside this provider (a Your requests ✕ on /friends): every card's asks are
+   *  read again, the ones this visit's presses moved since the read was sent kept as pressed (`mergeRead`). */
+  asksVersion?: string;
+  /** Called after an Ask or Ask instead lands, for a page that draws the reader's asks elsewhere (Your requests). */
+  onAsk?: () => void;
   /** Draw the spares-only modal here. False where it must sit inside a card-detail provider mounted lower (the cart),
    *  which then renders `SparesSheetHost` itself. */
   hostSheet?: boolean;
@@ -196,18 +204,32 @@ export function FriendSparesProvider({
       mounted.current = false;
     };
   }, []);
+  const readVersion = useRef(asksVersion);
+  // Each card's newest read (Copilot round 2, #2288): a read sent before an `asksVersion` move can land after the one sent
+  // for it, and would put back an ask withdrawn in between. A response is applied only for the cards it is still the
+  // newest read of; a card that left the list keeps its read, as before.
+  const readSeq = useRef(0);
+  const newestRead = useRef(new Map<string, number>());
   useEffect(() => {
     if (!requests || !key) return;
+    if (readVersion.current !== asksVersion) {
+      readVersion.current = asksVersion;
+      read.current.clear();
+    }
     const ids = key.split(",").filter((id) => !read.current.has(id));
     if (ids.length === 0) return;
     for (const id of ids) read.current.add(id);
+    const seq = ++readSeq.current;
+    for (const id of ids) newestRead.current.set(id, seq);
     const sentAt = new Map(ids.map((id) => [id, presses.current.get(id) ?? 0]));
     void fetchAsks(ids).then((rows) => {
       if (!mounted.current) return;
-      const pressed = new Set(ids.filter((id) => (presses.current.get(id) ?? 0) !== sentAt.get(id)));
-      setAsks((now) => mergeRead(now, rows, pressed, new Set(ids)));
+      const current = new Set(ids.filter((id) => newestRead.current.get(id) === seq));
+      if (current.size === 0) return;
+      const pressed = new Set([...current].filter((id) => (presses.current.get(id) ?? 0) !== sentAt.get(id)));
+      setAsks((now) => mergeRead(now, rows.filter((r) => current.has(r.oracleId)), pressed, current));
     });
-  }, [key, requests]);
+  }, [key, requests, asksVersion]);
   const ask = useCallback(
     async (press: AskPress): Promise<boolean> => {
       const input = { friendPublicId: press.friend.publicId, oracleId: press.oracleId, copies: press.copies, deckId, standalone };
@@ -221,9 +243,10 @@ export function FriendSparesProvider({
       presses.current.set(press.oracleId, (presses.current.get(press.oracleId) ?? 0) + 1);
       const now = new Date();
       setAsks((prev) => [...afterAsk(prev.filter((a) => a.oracleId === press.oracleId), press, out.id, now), ...prev.filter((a) => a.oracleId !== press.oracleId)]);
+      onAsk?.();
       return true;
     },
-    [deckId, standalone],
+    [deckId, standalone, onAsk],
   );
   const value = useMemo<Ctx>(() => {
     // Only the cards asked for NOW: a card that left the list (bought, cut, proxied) drops its spare at once, the
@@ -269,10 +292,13 @@ export function SparesSheetHost({
   const ctx = usePageSpares();
   if (!ctx?.opened) return null;
   const id = ctx.opened.oracleId;
+  // Null until the card's read lands when the page knows nothing of its spares (a trade match opened in place): the
+  // sheet draws its loader, never an empty list that the read then fills.
+  const spares = ctx.byCard.get(id) ?? (ctx.loaded.has(id) ? [] : fallback ? fallback(id) : null);
   return (
     <SparesSheet
       card={ctx.opened}
-      spares={ctx.byCard.get(id) ?? (ctx.loaded.has(id) ? [] : fallback?.(id) ?? [])}
+      spares={spares}
       newestAsOf={ctx.newestAsOf}
       onClose={ctx.close}
       {...(kickerFor ? { kicker: kickerFor(id) } : {})}
@@ -432,7 +458,8 @@ export function SparesSheet({
   first,
 }: {
   card: SpareCard;
-  spares: readonly FriendSpare[];
+  /** Null while the card's spares are being read: the loader fills the body under the card. */
+  spares: readonly FriendSpare[] | null;
   newestAsOf: Date | null;
   onClose: () => void;
   /** The box's kicker: the shipped `replacing` when absent, none when null (a friend's tab: `on your wishlist` or nothing). */
@@ -461,7 +488,7 @@ export function SparesSheetBody({
   first,
 }: {
   card: SpareCard;
-  spares: readonly FriendSpare[];
+  spares: readonly FriendSpare[] | null;
   newestAsOf: Date | null;
   kicker?: string | null;
   first?: string;
@@ -492,7 +519,7 @@ export function SparesSheetBody({
           <BuyTag variant="row" price={card.price ?? null} newestAsOf={newestAsOf} />
         </ReplacingLine>
       </section>
-      <FriendSpareSection spares={spares} card={card} first={first} />
+      {spares === null ? <SheetLoading heading={spareCopy.loadingHeading} /> : <FriendSpareSection spares={spares} card={card} first={first} />}
     </div>
   );
 }
