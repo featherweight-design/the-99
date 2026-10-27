@@ -38,6 +38,15 @@ export const MAX_COPIES = 99;
 export type Answer = "yes" | "no";
 export const isAnswer = (v: unknown): v is Answer => v === "yes" || v === "no";
 
+/**
+ * An ANSWER item is a `spare-request` feed item on the asker, told the holder's Yes or No (handoff call 10, the Home
+ * "Your request" item). It shares the kind, and so the tick, the default and the push rules, and is told apart from an
+ * incoming ask by this marker in its `data` alone.
+ */
+export const answerData = (answer: Answer): { answer: Answer } => ({ answer });
+/** The answer a `spare-request` item's `data` carries, or null for an incoming ask. */
+export const answerOf = (data: Record<string, unknown> | null | undefined): Answer | null => (isAnswer(data?.answer) ? data.answer : null);
+
 /** An ask created AT or before this has expired. */
 export const openFloor = (now: Date): Date => new Date(now.getTime() - SPARE_REQUEST_DAYS * DAY_MS);
 /** A No answered AFTER this still holds the holder back. */

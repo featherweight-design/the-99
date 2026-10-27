@@ -24,6 +24,7 @@ import { catalogFirstSeen, precons, sets, userPrefs } from "../../db/schema";
 import { RELEASE_SET_TYPES } from "../catalog/index-due";
 import { storedFeedBranch } from "../social/feed-items";
 import { unseenAnswersCount } from "../social/spare-requests";
+import { answerOf, type Answer } from "../social/spare-request-rules";
 import { availableFeedKinds } from "./flag";
 import { CATALOG_KINDS, feedOrder, isStoredKind, windowFloor, type CatalogKind, type FeedKind, type StoredKind } from "./kinds";
 
@@ -157,6 +158,8 @@ export type FeedItem =
       /** The friend the item is about, by public id: never a Clerk id. */
       friend: { publicId: string; displayName: string } | null;
       data: Record<string, unknown>;
+      /** A spare request's answer to the reader's OWN ask (`answerOf`), or null: an incoming ask, or another kind. */
+      answer: Answer | null;
     });
 
 export type FeedRow = {
@@ -188,6 +191,7 @@ export function toFeedItem(r: FeedRow): FeedItem {
     variantId: r.variant_id,
     friend: r.friend_public_id ? { publicId: r.friend_public_id, displayName: r.friend_name ?? "" } : null,
     data: r.data ?? {},
+    answer: r.kind === "spare-request" ? answerOf(r.data) : null,
   };
 }
 

@@ -10,7 +10,7 @@ import type { FeedView } from "../../lib/feed/home";
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (o: Partial<FeedView>): FeedView => ({
   key: "k", kind: "new-set", at: "2026-10-22T07:00:00Z", unseen: true, card: { oracleId: "c", name: "Sai, Master Thopterist", image: "sai.jpg", art: null, colorIdentity: ["U"] },
-  friend: null, href: null, opens: null, name: null, setSize: null, owned: null, drop: null, combo: null, ...o,
+  friend: null, href: null, opens: null, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, ...o,
 });
 const list = (node: React.ReactNode) => render(<ul>{node}</ul>);
 
@@ -69,6 +69,25 @@ describe("FeedItemRow", () => {
     expect(screen.getByText("Spare request").className).toContain("--accent-text");
     expect(screen.queryByRole("link")).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("draws an answer to the reader's own ask as Your request: who spares it, the buy line, a press to Your requests, no accent", () => {
+    const colin = { publicId: "p3", displayName: "Colin" };
+    list(<FeedItemRow item={view({ kind: "spare-request", friend: colin, answer: "yes", href: "/friends", answerDetail: { canBuy: true, others: [] } })} now={NOW} />);
+    expect(screen.getByText("Your request").className).not.toContain("--accent-text");
+    expect(screen.getByText("Colin can spare Sai, Master Thopterist")).toBeTruthy();
+    expect(screen.getByText("The handover is between you. Once it’s yours, press buy on it in Shopping.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Your requests ›" }).getAttribute("href")).toBe("/friends");
+  });
+
+  it("a No names who else has a spare, or nobody", () => {
+    const chris = { publicId: "p4", displayName: "Chris" };
+    const { unmount } = list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { canBuy: true, others: ["Max", "Ann"] } })} now={NOW} />);
+    expect(screen.getByText("Chris is keeping Sai, Master Thopterist")).toBeTruthy();
+    expect(screen.getByText("Max and 1 more have a spare too.")).toBeTruthy();
+    unmount();
+    list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { canBuy: true, others: [] } })} now={NOW} />);
+    expect(screen.getByText("Nobody else you know has a spare of it.")).toBeTruthy();
   });
 
   it("lifts the picture above the stretched press so it can be hovered, and passes a press on it to the row's press", () => {

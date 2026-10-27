@@ -86,7 +86,11 @@ export const feedCopy = {
       priceDrop: "Open the card",
       tradeMatch: (friend: string) => `See ${friend}’s spares`,
       combo: "See the combo",
+      /** An answer to the reader's own spare request: to Your requests on Friends. */
+      answer: "Your requests",
     },
+    /** The kicker of an answer to the reader's own spare request (spare requests handoff, board `Asker-States`). */
+    answerKicker: "Your request",
   },
   /** First-run Home's last checklist row, to Settings (`.frw.new`). */
   firstRun: {

@@ -18,7 +18,7 @@ const NOW = "2026-10-22T12:00:00.000Z";
 const LEAD: FeedView = {
   key: "item:1", kind: "spare-request", at: "2026-10-22T10:00:00.000Z", unseen: true,
   card: { oracleId: "lathliss", name: "Lathliss, Dragon Queen", image: "l.jpg", art: "l-art.jpg", colorIdentity: ["R"] },
-  friend: { publicId: "pub-peter", displayName: "Peter" }, href: null, opens: null, name: null, setSize: null, owned: null, drop: null, combo: null,
+  friend: { publicId: "pub-peter", displayName: "Peter" }, href: null, opens: null, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null,
   ask: { id: "req-1", spare: 2, copies: 1, deckName: "Dragons of Tarkir", daysLeft: 13 },
 };
 

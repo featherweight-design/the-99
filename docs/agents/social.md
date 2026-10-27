@@ -95,7 +95,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   friendship rows FOR SHARE in (user_id, friend_user_id) order, the purge's order, and writes the holder's
   `spare-request` feed item (`recordFeedItem`, keyed on the request id; nothing for a holder with that kind off) in
   the same transaction. An answer is one conditional UPDATE on the holder's own open, unexpired ask while the
-  friendship row stands. Every read joins the live friendship and names the other side by `public_id`. The purge
+  friendship row stands; when it lands, the SAME transaction writes the ASKER a `spare-request` item marked with the
+  answer (`data.answer`, `answerData`/`answerOf`; keyed on the request id, which is unique on the asker), so its push
+  queues through `recordFeedItem` under the asker's own spare-request ticks. It stands while the ask still holds that
+  answer, never leads Home and never waits (`leadStory`, `feedOrder`), draws as "Your request" with Your requests' words
+  (`withAnswerDetails` reads who else offers a declined card), and its push lands on `/friends`, never collapsed. Every read joins the live friendship and names the other side by `public_id`. The purge
   deletes both sides (`SOCIAL_PURGED`). PR 2: the feed keeps a `spare-request` item only while its ask is open
   (`storedFeedBranch`), and the Friends badge has two halves (`NavBadges.friends`, cleared by a `/friends` visit: unseen
   trade matches plus unseen answers to the reader's asks, `unseenAnswersCount` / `markAnswersSeen`, an upsert so a

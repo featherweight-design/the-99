@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useId, type ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 import { feedCopy } from "../../lib/copy/feed";
+import { spareCopy } from "../../lib/copy/social";
 import { formatCents } from "../../lib/decks/price";
 import type { FeedView } from "../../lib/feed/home";
 import type { ProfileCommander } from "../../lib/social/commander";
@@ -55,6 +56,7 @@ export function feedText(item: FeedView): { title: string; line: ReactNode; pres
     case "trade-match":
       return { title: c.title.tradeMatch(friend, card), line: c.line.tradeMatch, press: c.press.tradeMatch(friend) };
     case "spare-request":
+      if (item.answer) return { ...answerText(item, friend, card), press: c.press.answer };
       return { title: c.title.spareRequest(friend, card), line: c.line.spareRequest, press: null };
     case "combo":
       return {
@@ -63,6 +65,17 @@ export function feedText(item: FeedView): { title: string; line: ReactNode; pres
         press: c.press.combo,
       };
   }
+}
+
+/** An answer to the reader's own ask: Your requests' own words for it (`spareCopy.request.mine`). */
+function answerText(item: FeedView, friend: string, card: string): { title: string; line: string | null } {
+  const m = spareCopy.request.mine;
+  const d = item.answerDetail;
+  if (item.answer === "yes") return { title: m.canSpare(friend, card), line: d ? (d.canBuy ? m.acceptedDetail : m.acceptedDetailNoBuy) : null };
+  return {
+    title: m.keeping(friend, card),
+    line: d ? (d.others.length === 0 ? m.nobodyElse : m.othersHave(d.others[0], d.others.length - 1)) : null,
+  };
 }
 
 /** The press: a link to the item's place, or a button opening the shipped card detail. Stretched over the row. */
@@ -162,7 +175,7 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
 export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; face?: Pick<ProfileCommander, "artCropUri"> | null }) {
   const titleId = useId();
   const text = feedText(item);
-  const waiting = item.kind === "spare-request";
+  const waiting = item.kind === "spare-request" && !item.answer;
   const kickerInk = !item.unseen ? "text-[color:var(--fg-locked)]" : waiting ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]";
   return (
     <li
@@ -174,7 +187,7 @@ export function FeedItemRow({ item, now, face }: { item: FeedView; now: string; 
       <div className="flex min-w-0 flex-col gap-[3px]">
         <div className="flex min-w-0 items-center gap-[7px]">
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
-          <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{c.kicker[item.kind]}</span>
+          <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : c.kicker[item.kind]}</span>
           <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)]">{feedAge(item.at, now)}</small>
         </div>
         <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]">{text.title}</p>

@@ -142,6 +142,15 @@ describe("toFeedItem", () => {
     expect(item).toMatchObject({ kind: "trade-match", friend: { publicId: "p_1", displayName: "Colin" }, data: {} });
     expect(JSON.stringify(item)).not.toContain("user_");
   });
+
+  it("reads a spare request's answer marker, and nothing on an incoming ask or another kind", () => {
+    const base = { ...row, key: "item:1", created_at: NOW, oracle_id: "o", friend_public_id: "p_1", friend_name: "Colin" };
+    expect(toFeedItem({ ...base, kind: "spare-request", data: { answer: "yes" } })).toMatchObject({ answer: "yes" });
+    expect(toFeedItem({ ...base, kind: "spare-request", data: { answer: "no" } })).toMatchObject({ answer: "no" });
+    expect(toFeedItem({ ...base, kind: "spare-request", data: null })).toMatchObject({ answer: null });
+    expect(toFeedItem({ ...base, kind: "spare-request", data: { answer: "maybe" } })).toMatchObject({ answer: null });
+    expect(toFeedItem({ ...base, kind: "trade-match", data: { answer: "yes" } })).toMatchObject({ answer: null });
+  });
 });
 
 describe("a trade match a friend kept back", () => {

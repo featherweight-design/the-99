@@ -49,11 +49,21 @@ export const FEED_WINDOW_DAYS = 14;
  */
 export const WAITING_KINDS: readonly FeedKind[] = ["spare-request"];
 
-/** The lead story: the first unseen item by `LEAD_PRIORITY`, newest first within a kind; null when nothing is unseen. */
-export function leadStory<T extends { kind: FeedKind; unseen: boolean; createdAt: Date }>(items: readonly T[]): T | null {
+/**
+ * An item of a waiting kind that waits on nothing: the answer to the reader's OWN spare request (`answer` set, the
+ * `answerOf` marker). It reads as an ordinary item, newest first, and never leads (the board draws it as a row).
+ */
+type MaybeAnswer = { answer?: string | null };
+const waits = (i: { kind: FeedKind } & MaybeAnswer): boolean => WAITING_KINDS.includes(i.kind) && !i.answer;
+
+/**
+ * The lead story: the first unseen item by `LEAD_PRIORITY`, newest first within a kind; null when nothing is unseen.
+ * An answer item never leads.
+ */
+export function leadStory<T extends { kind: FeedKind; unseen: boolean; createdAt: Date } & MaybeAnswer>(items: readonly T[]): T | null {
   let best: T | null = null;
   for (const item of items) {
-    if (!item.unseen) continue;
+    if (!item.unseen || item.answer) continue;
     if (!best) {
       best = item;
       continue;
@@ -66,9 +76,9 @@ export function leadStory<T extends { kind: FeedKind; unseen: boolean; createdAt
 }
 
 /** The feed's order: waiting on you first, then newest, then by key so equal times never shuffle. */
-export function feedOrder<T extends { kind: FeedKind; createdAt: Date; key: string }>(a: T, b: T): number {
-  const wa = WAITING_KINDS.includes(a.kind) ? 0 : 1;
-  const wb = WAITING_KINDS.includes(b.kind) ? 0 : 1;
+export function feedOrder<T extends { kind: FeedKind; createdAt: Date; key: string } & MaybeAnswer>(a: T, b: T): number {
+  const wa = waits(a) ? 0 : 1;
+  const wb = waits(b) ? 0 : 1;
   if (wa !== wb) return wa - wb;
   const t = b.createdAt.getTime() - a.createdAt.getTime();
   if (t !== 0) return t;

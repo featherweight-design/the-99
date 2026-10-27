@@ -18,7 +18,11 @@ describe("storedFeedBranch", () => {
   });
 
   it("keeps a spare request only while its ask is open and inside its fourteen days, by the request id it was keyed on (a uuid, so the primary key is used) and the reader as holder", () => {
-    expect(q).toContain(`and (fi.kind <> 'spare-request' or exists ( select 1 from "spare_requests" fsr where fsr.id = (case when fi.kind = 'spare-request' then fi.dedupe_key::uuid end) and fsr.holder_user_id = fi.user_id and fsr.status = 'open' and fsr.created_at > $4::timestamptz))`);
+    expect(q).toContain(`and (fi.kind <> 'spare-request' or exists ( select 1 from "spare_requests" fsr where fsr.id = (case when fi.kind = 'spare-request' then fi.dedupe_key::uuid end) and (case when fi.data ->> 'answer' is not null then fsr.asker_user_id = fi.user_id and fsr.status = fi.data ->> 'answer' and fsr.asker_cleared_at is null else fsr.holder_user_id = fi.user_id and fsr.status = 'open' and fsr.created_at > $4::timestamptz end)))`);
+  });
+
+  it("keeps an ANSWER to the reader's own ask while that ask still holds the answer it reports and is not cleared, the reader as asker", () => {
+    expect(q).toContain(`then fsr.asker_user_id = fi.user_id and fsr.status = fi.data ->> 'answer' and fsr.asker_cleared_at is null else`);
   });
 
   it("re-joins the live spare grant for a trade match: the friendship, the friend's share, both in that pod", () => {

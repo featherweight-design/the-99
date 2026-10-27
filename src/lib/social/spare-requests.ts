@@ -36,7 +36,7 @@ import { recordFeedItem } from "./feed-write";
 import { spareRequestsEnabled } from "./flag";
 import { isUuid } from "./rules";
 import {
-  askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, isAnswer, openFloor, requestState, shownFloor,
+  answerData, askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, isAnswer, openFloor, requestState, shownFloor,
   type AskRefusal, type AskerState, type PriorAsk, type StoredStatus,
 } from "./spare-request-rules";
 import { loadFriendSpares, loadOwnOffered } from "./spares";
@@ -254,6 +254,11 @@ export async function closeSpareRequest(
   return { ok: false, reason: "gone" };
 }
 
+/** Who asked: the holder's own request's asker, read before the answer so both friendship rows lock in order first. */
+export function answerAskerQuery(holderId: string, requestId: string): SQL {
+  return sql`select aar.asker_user_id from ${spareRequests} aar where aar.id = ${requestId} and aar.holder_user_id = ${holderId}`;
+}
+
 /** The answer, apart so a test can render it: one row back means it landed. */
 export function answerQuery(holderId: string, requestId: string, answer: "yes" | "no", now: Date): SQL {
   return sql`update ${spareRequests} asr set status = ${answer}, answered_at = ${now.toISOString()}::timestamptz
@@ -261,17 +266,37 @@ export function answerQuery(holderId: string, requestId: string, answer: "yes" |
       and asr.created_at > ${openFloor(now).toISOString()}::timestamptz
       and exists (select 1 from ${friendLinks} afl
         where afl.user_id = asr.holder_user_id and afl.friend_user_id = asr.asker_user_id for share)
-    returning asr.id`;
+    returning asr.id, asr.asker_user_id, asr.oracle_id`;
 }
 
-/** The holder answers their own open ask. Yes changes nothing else in the app (round 8, Q4). */
+/**
+ * The holder answers their own open ask. Yes changes nothing else in the app (round 8, Q4). An answer that lands tells
+ * the asker in the SAME transaction: a `spare-request` feed item on the asker, marked with the answer (`answerData`),
+ * which queues its push through `recordFeedItem` like every item (the asker's own tick, quiet hours, never collapsed).
+ * Its dedupe key is the request id: unique on the asker, who never holds an ask item for their own request. Nothing is
+ * written for an answer that changed no row.
+ */
 export async function answerSpareRequest(
-  holderId: string, requestId: unknown, answer: unknown, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db,
+  holderId: string, requestId: unknown, answer: unknown, env: NodeJS.ProcessEnv, now = new Date(),
 ): Promise<AnswerOutcome> {
   if (!spareRequestsEnabled(env)) return { ok: false, reason: "off" };
   if (!isUuid(requestId) || !isAnswer(answer)) return { ok: false, reason: "gone" };
-  const done = await q.execute(answerQuery(holderId, requestId, answer, now));
-  return (done.rowCount ?? done.rows.length) > 0 ? { ok: true } : { ok: false, reason: "gone" };
+  return db.transaction(async (tx) => {
+    // Both friendship rows first, in the purge's order (`lockFriendshipQuery`), as every ask path takes them: the answer
+    // and the asker's item each lock one of them FOR SHARE, holder's row first, which an unfriend deleting them in id
+    // order could otherwise deadlock against.
+    const [who] = (await tx.execute<{ asker_user_id: string }>(answerAskerQuery(holderId, requestId))).rows;
+    if (!who) return { ok: false, reason: "gone" } as const;
+    await tx.execute(lockFriendshipQuery(holderId, who.asker_user_id));
+    const done = await tx.execute<{ id: string; asker_user_id: string; oracle_id: string }>(answerQuery(holderId, requestId, answer, now));
+    const row = done.rows[0];
+    if (!row) return { ok: false, reason: "gone" } as const;
+    await recordFeedItem(tx, {
+      userId: row.asker_user_id, kind: "spare-request", dedupeKey: row.id, oracleId: row.oracle_id, friendUserId: holderId,
+      data: answerData(answer), now,
+    });
+    return { ok: true } as const;
+  });
 }
 
 /** The other side of an ask: never a Clerk id. `commander` is their face, or null for initials. */

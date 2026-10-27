@@ -18,7 +18,10 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
+import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
+import { type Answer } from "../social/spare-request-rules";
 import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
+import { loadFriendSpares, type FriendSpare } from "../social/spares";
 import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds, homeFeedEnabled } from "./flag";
 import { leadStory, type FeedKind } from "./kinds";
@@ -61,7 +64,17 @@ export type FeedView = {
    * every other item, and on a request no longer answerable, which stays a line.
    */
   ask?: LeadAsk;
+  /**
+   * A spare request that ANSWERS the reader's own ask (handoff call 10, Home's "Your request"): the holder's Yes or No.
+   * Null on every other item, an incoming ask included. Its press goes to `/friends`, where Your requests lists it.
+   */
+  answer: Answer | null;
+  /** Home only (`withAnswerDetails`): what the answer's line says. Absent on a push. */
+  answerDetail?: AnswerDetail;
 };
+
+/** An answer's line: Yes points at the buy press while Shopping has it; No names who else has a spare now. */
+export type AnswerDetail = { canBuy: boolean; others: string[] };
 
 /** What the lead story's Yes and No need: the request, the holder's spare count, the copies and deck the ask names. */
 export type LeadAsk = { id: string; spare: number; copies: number; deckName: string | null; daysLeft: number };
@@ -165,6 +178,7 @@ export function toViews(
       owned: null,
       drop: null,
       combo: null,
+      answer: null,
     } satisfies Omit<FeedView, "card">;
     if (item.kind === "new-set") {
       const s = found.sets.get(item.code) ?? null;
@@ -188,7 +202,7 @@ export function toViews(
         return { ...base, card, opens: c?.first ?? item.oracleId, combo: c && { pieces: c.pieces, added: c.added } };
       }
       case "spare-request":
-        return { ...base, card, friend };
+        return item.answer ? { ...base, card, friend, answer: item.answer, href: "/friends" } : { ...base, card, friend };
     }
   });
 }
@@ -248,8 +262,38 @@ export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: 
   const feed = splitLead(views, on);
   // Only a spare request that leads is answered on Home; its ask is read only then. The ask waits on the friend's
   // side whatever the feed shows, so the match is by card and asker: one open ask per asker and card (the index).
-  if (feed.chosen && feed.lead?.kind === "spare-request") return withLeadAsk(feed, await loadIncomingAsks(userId, env, now, q));
-  return feed;
+  const answered = await answerDetails(userId, feed, env);
+  if (answered.chosen && answered.lead?.kind === "spare-request") return withLeadAsk(answered, await loadIncomingAsks(userId, env, now, q));
+  return answered;
+}
+
+/**
+ * Each answer item's line (`AnswerDetail`). Who else offers the card is read only for a No, in ONE friend-spares read
+ * over those cards (the grant rule every spares surface reads), and never on a feed with no answer in it.
+ */
+async function answerDetails(userId: string, feed: HomeFeed, env: NodeJS.ProcessEnv): Promise<HomeFeed> {
+  if (!feed.chosen) return feed;
+  const views = [...(feed.lead ? [feed.lead] : []), ...feed.items];
+  if (!views.some((v) => v.answer)) return feed;
+  const noCards = [...new Set(views.flatMap((v) => (v.answer === "no" && v.card ? [v.card.oracleId] : [])))];
+  const spares = noCards.length === 0 ? [] : await loadFriendSpares(userId, noCards);
+  return withAnswerDetails(feed, spares, shoppingMarkBoughtEnabled(env));
+}
+
+/** The answers' lines, given the friends' spares of the declined cards. Pure, for the tests. */
+export function withAnswerDetails(
+  feed: HomeFeed, spares: readonly Pick<FriendSpare, "oracleId" | "spare" | "friend">[], canBuy: boolean,
+): HomeFeed {
+  if (!feed.chosen) return feed;
+  const detail = (v: FeedView): FeedView => {
+    if (!v.answer) return v;
+    const others = v.answer !== "no" || !v.card ? [] : spares
+      .filter((s) => s.oracleId === v.card!.oracleId && s.friend.publicId !== v.friend?.publicId)
+      .sort((x, y) => y.spare - x.spare || x.friend.displayName.localeCompare(y.friend.displayName))
+      .map((s) => s.friend.displayName);
+    return { ...v, answerDetail: { canBuy, others } };
+  };
+  return { ...feed, lead: feed.lead && detail(feed.lead), items: feed.items.map(detail) };
 }
 
 /** The lead with its ask attached, when one of `asks` is the lead's (its card and its asker). Pure, for the tests. */
