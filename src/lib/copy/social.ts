@@ -250,6 +250,16 @@ export const socialCopy = {
     // Not drawn: a card's printings that could not be read, in the grid's place, role alert. ‹ goes back.
     printingsFailed: "We couldn’t load its printings. Go back and try again.",
     failed: "We couldn’t save your signature card. Try again.", // toast, role alert
+    // Asked once (calls 4, 5): Home's first-run row and its strip. The row's title and the strip's link are `choose`.
+    rowSub: "Any card, any printing. Friends see its art beside your name.",
+    skip: "Skip",
+    skipAria: "Skip choosing a signature card",
+    /** The row once picked: the title is `title`, the line names the card. */
+    doneLine: (card: string) => `${card}. Change it any time on Friends.`,
+    doneAria: (card: string) => `Your signature card: ${card}. Change it any time on Friends`,
+    stripLead: "Friends see your initials.",
+    stripRegion: "Your signature card",
+    stripDismiss: "Don’t ask again",
   },
 
   dialog: {

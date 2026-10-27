@@ -13,7 +13,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, printings, socialProfiles } from "../../db/schema";
 import { isGameCard } from "../cards/game-card";
-import { facePromptDoneWrite } from "./face-prompt";
+import { facePromptDoneWrite } from "../discovery/face-prompt";
 import { isUuid } from "./rules";
 
 export type ProfileCommander = { oracleId: string; name: string; artCropUri: string | null };

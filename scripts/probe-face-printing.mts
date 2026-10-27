@@ -36,7 +36,7 @@ async function main() {
   const friends = await import("../src/lib/social/friends");
   const { setCommander } = await import("../src/lib/social/commander");
   const requests = await import("../src/lib/social/spare-requests");
-  const prompt = await import("../src/lib/social/face-prompt");
+  const prompt = await import("../src/lib/discovery/face-prompt");
   const picker = await import("../src/lib/decks/commander-picker");
   const { NON_GAME_LAYOUTS } = await import("../src/lib/cards/game-card");
 

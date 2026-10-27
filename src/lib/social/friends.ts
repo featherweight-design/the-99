@@ -28,6 +28,18 @@ export type OwnCommander = ProfileCommander & { printingId: string | null; print
 
 export type OwnProfile = { publicId: string; displayName: string; commander: OwnCommander | null };
 
+/** The pick behind the player's own face, for an own read's projection beside `commanderColumns` (G2, P8). */
+export const ownPickColumns = {
+  printingId: socialProfiles.commanderPrintingId,
+  printingGone: sql<boolean>`(${socialProfiles.commanderPrintingId} is not null and ${facePrinting.artCropUri} is null)`,
+};
+
+/** The player's own face from an own read, or null for initials. */
+export function toOwnCommander(r: Parameters<typeof toCommander>[0] & { printingId: string | null; printingGone: boolean | null }): OwnCommander | null {
+  const face = toCommander(r);
+  return face && { ...face, printingId: r.printingId, printingGone: Boolean(r.printingGone) };
+}
+
 /**
  * The viewer's profile, created on first use with the name the caller offers (the Clerk first name,
  * which the player can edit). A name that does not pass `cleanDisplayName` falls back to "Player", so a
@@ -41,19 +53,13 @@ export async function ensureProfile(viewerId: string, offeredName: unknown): Pro
       publicId: socialProfiles.publicId,
       displayName: socialProfiles.displayName,
       ...commanderColumns,
-      printingId: socialProfiles.commanderPrintingId,
-      printingGone: sql<boolean>`(${socialProfiles.commanderPrintingId} is not null and ${facePrinting.artCropUri} is null)`,
+      ...ownPickColumns,
     })
     .from(socialProfiles)
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .leftJoin(facePrinting, faceJoin)
     .where(eq(socialProfiles.userId, viewerId));
-  const face = toCommander(row);
-  return {
-    publicId: row.publicId,
-    displayName: row.displayName,
-    commander: face && { ...face, printingId: row.printingId, printingGone: Boolean(row.printingGone) },
-  };
+  return { publicId: row.publicId, displayName: row.displayName, commander: toOwnCommander(row) };
 }
 
 /**

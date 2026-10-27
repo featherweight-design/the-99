@@ -32,6 +32,7 @@ import {
   type CommanderTile, type FaceCardHit, type FacePrintings, type FaceTile,
 } from "../../lib/decks/commander-picker";
 import { isUuid } from "../../lib/social/rules";
+import { skipFacePrompt } from "../../lib/discovery/face-prompt";
 
 type Off = { ok: false; reason: "off" };
 const OFF: Off = { ok: false, reason: "off" };
@@ -128,6 +129,39 @@ export async function listFacePrintingsAction(oracleId: unknown): Promise<FacePr
   if (!isUuid(oracleId)) return { ok: false, reason: "noCard" };
   const card = await listFacePrintings(oracleId);
   return card ? { ok: true, card } : { ok: false, reason: "noCard" };
+}
+
+export type SkipFacePromptOutcome = { ok: true } | Off;
+
+/**
+ * Skip on the first-run row, or ✕ on Home's strip (calls 4, 5): stops asking, for good. Done when already done. Made
+ * from Home, so Home redraws in the reply: the flag moves the reader's stamp and retires Home's cached payload.
+ */
+export async function skipFacePromptAction(): Promise<SkipFacePromptOutcome> {
+  const reader = await signatureReader();
+  if (!reader) return OFF;
+  await skipFacePrompt(reader.userId);
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export type SetSignatureOutcome = SetCommanderOutcome;
+
+/**
+ * A pick made from Home's row or strip (calls 4, 5, 6): the picker opened in place. A reader asked there may have no
+ * profile yet (an imported deck before /friends), so one is made first, as Add a friend does; then the pick saves as
+ * on /friends, which stamps the ask done. Home redraws in the reply; /friends is deferred, as a write made away from it.
+ */
+export async function setSignatureCardAction(oracleId: unknown, printingId: unknown = null): Promise<SetSignatureOutcome> {
+  const reader = await signatureReader();
+  if (!reader) return OFF;
+  if (oracleId === null) return { ok: false, reason: "noCard" };
+  await ensureSenderProfile(reader.userId);
+  const result = await setCommander(reader.userId, oracleId, printingId);
+  if (!result.ok) return result;
+  revalidatePath("/");
+  refreshFriendsLater();
+  return { ok: true };
 }
 
 // --- Friend links ----------------------------------------------------------------------------------

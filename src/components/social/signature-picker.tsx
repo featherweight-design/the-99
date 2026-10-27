@@ -49,6 +49,7 @@ export function SignaturePicker({
   onClose,
   returnFocusRef,
   toast,
+  clearable = true,
 }: {
   /** The face now, with the pick behind it: outlined in the deck row and on its printings screen. */
   current: OwnCommander | null;
@@ -59,6 +60,8 @@ export function SignaturePicker({
   returnFocusRef?: RefObject<HTMLElement | null>;
   /** The page's toast, drawn inside the dialog so its Try again stays in the Tab trap. */
   toast?: ReactNode;
+  /** "Use initials instead" with a face: /friends' to offer. Home opens the picker to ask for a card, not to clear one. */
+  clearable?: boolean;
 }) {
   const search = useRef<HTMLInputElement>(null);
   const listId = useId();
@@ -302,7 +305,7 @@ export function SignaturePicker({
 
           <div className="mt-auto flex min-h-[44px] items-center justify-between gap-[12px] pt-[14px] font-mono text-[11px] text-[color:var(--fg-faint)]">
             <span>{searching || deckTiles.length === 0 ? s.anyNote : c.savedNote}</span>
-            {current ? (
+            {current && clearable ? (
               <button
                 type="button"
                 disabled={saving !== null}

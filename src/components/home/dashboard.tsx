@@ -81,6 +81,8 @@ export type DashboardProps = {
    * column, over Ready to build; the right column keeps Friends alone.
    */
   welcome?: React.ReactNode;
+  /** Asking once for a signature card (avatar handoff 20, call 5), or null: the left column's first block. */
+  signature?: React.ReactNode;
   /** `ALL_DECKS_CART_ENABLED`, resolved for this reader: the card links to /decks/shopping only when it is on. */
   cartEnabled?: boolean;
   /** `HELP_ME_CHOOSE_ENABLED`, resolved for this reader: `No decks yet` carries Help me choose's door (discovery R3 E1). */
@@ -252,6 +254,7 @@ export function Dashboard(props: DashboardProps) {
             in the right column, so there is one invite watch and one dialog. A screen reader reads the DOM order at
             every width, which this layout already accepts for Commitments. */}
         <div className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
+          {props.signature}
           {props.welcome}
           {/* Direction B: the lead story where Ready to build stood, which leaves Home. */}
           {feed ? (

@@ -2139,7 +2139,7 @@ export const userPrefs = pgTable(
      */
     welcomeStripDismissedAt: timestamp("welcome_strip_dismissed_at", { withTimezone: true }),
     /**
-     * When this reader was done being asked for a signature card (avatar handoff G4, `lib/social/face-prompt.ts`): a
+     * When this reader was done being asked for a signature card (avatar handoff G4, `lib/discovery/face-prompt.ts`): a
      * pick, Skip on the first-run row or ✕ on Home's strip. Written once, only while null, because of the stamp trigger
      * above. Null is a reader still to be asked (when they have no face).
      */

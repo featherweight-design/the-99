@@ -131,6 +131,7 @@ export function FirstRunChecklist({
   ways = null,
   scan = false,
   friends = null,
+  signature = null,
   tables = null,
   tour = false,
   tourAgain = false,
@@ -155,6 +156,8 @@ export function FirstRunChecklist({
   ways?: { precons: boolean } | null;
   /** SOCIAL_FRIENDS_ENABLED, read: the Friends row after step 3 (Discovery R3·3). Null: no row. */
   friends?: FirstRunFriendsProps | null;
+  /** The signature card row (avatar handoff 20, call 4), or null: unnumbered, after step 3 and before Add your friends. */
+  signature?: React.ReactNode;
   /** Rule 0's `Tonight's table` cards: a reader with no cards and no decks can still be seated (their seat waits). */
   tables?: React.ReactNode;
 }) {
@@ -213,6 +216,7 @@ export function FirstRunChecklist({
         <LockedStep n={3} title={c.step3Title} reason={c.step3Locked} />
         {/* Friends (Discovery R3·3, addendum-friends-home §3): last, under step 3, and never numbered, so the kicker
             stays Step 1 of 3. Live from the first visit while the steps above it are locked, and it stays once done. */}
+        {signature}
         {friends && <FirstRunFriendsRow {...friends} />}
         {news && <FirstRunNewsRow />}
         {/* The tour's precon line follows the ways group: off with it, and with PRECONS_ENABLED. */}

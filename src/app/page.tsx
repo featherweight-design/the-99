@@ -25,7 +25,9 @@ import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
-import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
+import { ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
+import { facePromptDone } from "../lib/discovery/face-prompt";
+import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
 import { loadHomeTables } from "../lib/social/rule-zero-home";
 import { HomeTableCard } from "../components/rule-zero/home-table-card";
 import { loadInviteCount } from "../lib/invites/read";
@@ -340,6 +342,25 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       })
     : null;
 
+  // Asked once for a signature card (avatar handoff 20, calls 4 and 5; SIGNATURE_CARD_ENABLED). Decided per request
+  // beside the friends read it draws from, never inside the cached payload: the face is a friends-table read the
+  // stamp does not cover. The flag is `user_prefs`, so Skip, ✕ and a pick all move the stamp too. A failed friends read
+  // asks nothing, as it draws no Friends row; a flag that cannot be read asks nothing either.
+  const ask = homeFriends && signatureCardEnabled(env)
+    ? await facePromptDone(userId).then(
+        (done) => ({ face: homeFriends.you?.commander ?? null, name: homeFriends.you?.displayName ?? null, done }),
+        (error: unknown) => {
+          // not a fallback: read after the cached load and never stored.
+          console.warn("[signature] ask flag unreadable; asking nothing", error instanceof Error ? error.message : "");
+          return null;
+        },
+      )
+    : null;
+  // The first-run row: to do until picked or skipped, and once picked it stays, done. The strip: no face and never
+  // asked, past first run (a profile made before the checklist asked, or an import before a collection).
+  const signatureRow = ask && (ask.face || !ask.done) ? <SignatureRow face={ask.face} name={ask.name} /> : null;
+  const signatureStrip = ask && !ask.face && !ask.done ? <SignatureStrip name={ask.name} /> : null;
+
   // The tour taken again (R3·2, plan decision 6): with the switch on, `/?tour=1` starts it whatever `tour_seen_at` says.
   // Decided per request, outside the cached payload; the client reads and strips the parameter itself.
   const tourAgain = firstRunTourEnabled(env);
@@ -381,6 +402,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         ways={noCollectionEntry ? { precons: preconsEnabled(env) } : null}
         scan={cardScanEnabled(env)}
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
+        signature={signatureRow}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
         tour={data.tourDue}
         tourAgain={tourAgain}
@@ -419,6 +441,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       arrivals={data.arrivals}
       about={about}
       welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="dashboard" />}
+      signature={signatureStrip}
       cartEnabled={allDecksCartEnabled(env)}
       helpMeChoose={helpMeChooseEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}

@@ -33,6 +33,7 @@ const m = vi.hoisted(() => ({
   listOwnDeckFaces: vi.fn(),
   searchFaceCards: vi.fn(),
   listFacePrintings: vi.fn(),
+  skipFacePrompt: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
@@ -55,6 +56,7 @@ vi.mock("../../lib/decks/commander-picker", () => ({
   listOwnDeckCommanders: m.listOwnDeckCommanders, searchFaceCommanders: m.searchFaceCommanders,
   listOwnDeckFaces: m.listOwnDeckFaces, searchFaceCards: m.searchFaceCards, listFacePrintings: m.listFacePrintings,
 }));
+vi.mock("../../lib/discovery/face-prompt", () => ({ skipFacePrompt: m.skipFacePrompt }));
 
 import * as actions from "./actions";
 
@@ -99,6 +101,8 @@ describe("the switch", () => {
     ["listDeckFacesAction", () => actions.listDeckFacesAction()],
     ["searchFaceCardsAction", () => actions.searchFaceCardsAction("plains")],
     ["listFacePrintingsAction", () => actions.listFacePrintingsAction(FRIEND)],
+    ["skipFacePromptAction", () => actions.skipFacePromptAction()],
+    ["setSignatureCardAction", () => actions.setSignatureCardAction(FRIEND)],
   ];
 
   it("covers every exported action", () => {
@@ -315,12 +319,14 @@ describe("the signature card (SIGNATURE_CARD_ENABLED)", () => {
     ["listDeckFacesAction", () => actions.listDeckFacesAction()],
     ["searchFaceCardsAction", () => actions.searchFaceCardsAction("plains")],
     ["listFacePrintingsAction", () => actions.listFacePrintingsAction(CARD)],
+    ["skipFacePromptAction", () => actions.skipFacePromptAction()],
+    ["setSignatureCardAction", () => actions.setSignatureCardAction(CARD)],
   ];
 
   it.each(signatureCalls)("%s refuses as off with friends on but the signature card off, reading nothing", async (_n, call) => {
     m.requestSwitchEnv.mockResolvedValue(ON);
     expect(await call()).toEqual({ ok: false, reason: "off" });
-    for (const fn of [m.listOwnDeckFaces, m.searchFaceCards, m.listFacePrintings]) expect(fn).not.toHaveBeenCalled();
+    for (const fn of [m.listOwnDeckFaces, m.searchFaceCards, m.listFacePrintings, m.skipFacePrompt, m.setCommander, m.ensureProfile]) expect(fn).not.toHaveBeenCalled();
   });
 
   it("reads the deck row for the session's reader, under the reader's switches", async () => {
@@ -344,5 +350,37 @@ describe("the signature card (SIGNATURE_CARD_ENABLED)", () => {
     m.listFacePrintings.mockResolvedValue(null);
     expect(await actions.listFacePrintingsAction(CARD)).toEqual({ ok: false, reason: "noCard" });
     expect(m.listFacePrintings).toHaveBeenCalledWith(CARD);
+  });
+
+  it("stops asking for the session's reader, and redraws Home", async () => {
+    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
+    m.skipFacePrompt.mockResolvedValue(false);
+    expect(await actions.skipFacePromptAction()).toEqual({ ok: true });
+    expect(m.skipFacePrompt).toHaveBeenCalledWith("user_1");
+    expect(m.revalidatePath).toHaveBeenCalledWith("/");
+  });
+
+  it("makes a profile before a pick from Home, then saves it and redraws Home, /friends after the response", async () => {
+    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
+    m.profileAgeMs.mockResolvedValue(null);
+    m.currentUser.mockResolvedValue({ firstName: "Sam", publicMetadata: {} });
+    m.setCommander.mockResolvedValue({ ok: true });
+    expect(await actions.setSignatureCardAction(CARD, null)).toEqual({ ok: true });
+    expect(m.ensureProfile).toHaveBeenCalledWith("user_1", "Sam");
+    expect(m.ensureProfile.mock.invocationCallOrder[0]).toBeLessThan(m.setCommander.mock.invocationCallOrder[0]);
+    expect(m.setCommander).toHaveBeenCalledWith("user_1", CARD, null);
+    expect(m.revalidatePath).toHaveBeenCalledWith("/");
+    expect(m.after).toHaveBeenCalled();
+    expect(m.revalidatePath).toHaveBeenCalledWith("/friends");
+  });
+
+  it("refuses a null card from Home without writing, and passes a refusal through", async () => {
+    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
+    expect(await actions.setSignatureCardAction(null)).toEqual({ ok: false, reason: "noCard" });
+    expect(m.setCommander).not.toHaveBeenCalled();
+    m.profileAgeMs.mockResolvedValue(1e12);
+    m.setCommander.mockResolvedValue({ ok: false, reason: "badPrinting" });
+    expect(await actions.setSignatureCardAction(CARD, "x")).toEqual({ ok: false, reason: "badPrinting" });
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 });
