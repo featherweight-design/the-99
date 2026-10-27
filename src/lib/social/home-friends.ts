@@ -6,11 +6,12 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { socialProfiles } from "../../db/schema";
 import { listFriends, type Friend } from "./access";
-import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
-import { listOpenInvites, type OpenInvite } from "./friends";
+import { commanderCard, commanderColumns, facePrinting, faceJoin } from "./commander";
+import { listOpenInvites, ownPickColumns, toOwnCommander, type OpenInvite, type OwnCommander } from "./friends";
 
 /** What Home's Friends section draws. `you` is null until the viewer's profile exists. */
-export type HomeFriends = { you: { displayName: string; commander: ProfileCommander | null } | null; friends: Friend[]; links: OpenInvite[] };
+/** `you.commander` carries the pick behind the face, so Home can open the signature card picker on it (PR 3). */
+export type HomeFriends = { you: { displayName: string; commander: OwnCommander | null } | null; friends: Friend[]; links: OpenInvite[] };
 
 /**
  * The viewer's own face, their friends and their open links, from ONE snapshot, as /friends reads them. Read-only, unlike `ensureProfile`: Home never creates a profile, so a viewer who has none draws
@@ -19,14 +20,14 @@ export type HomeFriends = { you: { displayName: string; commander: ProfileComman
 export async function loadHomeFriends(viewerId: string, now = new Date()): Promise<HomeFriends> {
   return db.transaction(async (tx) => {
     const [row] = await tx
-      .select({ displayName: socialProfiles.displayName, ...commanderColumns })
+      .select({ displayName: socialProfiles.displayName, ...commanderColumns, ...ownPickColumns })
       .from(socialProfiles)
       .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
       .leftJoin(facePrinting, faceJoin)
       .where(eq(socialProfiles.userId, viewerId));
     const friends = await listFriends(viewerId, tx);
     const links = await listOpenInvites(viewerId, now, tx);
-    return { you: row ? { displayName: row.displayName, commander: toCommander(row) } : null, friends, links };
+    return { you: row ? { displayName: row.displayName, commander: toOwnCommander(row) } : null, friends, links };
   // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
   }, { isolationLevel: "repeatable read" });
 }

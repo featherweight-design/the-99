@@ -1,0 +1,22 @@
+{
+  "feature": "Signature card (handoff design_handoff_the99_avatar, R1b; plan 2026-10-27-signature-card.md) PR 3: the first-run checklist row (O1, D1), before Add your friends.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SIGNATURE_CARD_ENABLED on, and the audit account in first run (no collection) with a profile, no face and user_prefs.face_prompt_done_at null. On a SCRATCH branch only, move its collection_items to a holding user id for the run and back afterwards. Read-only: nothing is pressed but the row.",
+  "out": "contact-sheets/signature-card-first-run",
+  "rows": [
+    {
+      "id": "first-run-row",
+      "label": "First-run Home: Choose your signature card, unnumbered, after step 3 and before Add your friends, with Skip (O1, D1)",
+      "view": "src/components/home/signature-ask.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-signature-row]", "settle": 2500 }]
+    },
+    {
+      "id": "first-run-picker",
+      "label": "The row's press opens the picker over Home (call 4)",
+      "view": "src/components/home/signature-ask.tsx",
+      "steps": [
+        { "goto": "/", "wait": "[data-signature-row]", "settle": 2000 },
+        { "clickRole": "button", "name": "^Choose your signature card", "waitDialog": "Your signature card", "settle": 2500 }
+      ]
+    }
+  ]
+}
