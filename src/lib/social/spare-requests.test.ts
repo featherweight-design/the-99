@@ -118,9 +118,20 @@ describe("answerSpareRequest tells the asker", () => {
     await answerSpareRequest("h", REQ, "no", ON, NOW);
     expect(vi.mocked(recordFeedItem).mock.calls[0][1].data).toEqual({ answer: "no" });
   });
-  it("an answer that changed no row tells nobody", async () => {
-    const { recordFeedItem } = await run([]);
+  it("a request that is not the holder's tells nobody, and takes no lock", async () => {
+    const { tx, recordFeedItem } = await run([]);
     expect(await answerSpareRequest("h", REQ, "yes", ON, NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(tx.execute).toHaveBeenCalledTimes(1);
+    expect(recordFeedItem).not.toHaveBeenCalled();
+  });
+  it("an answer whose conditional UPDATE changed no row (answered, expired or withdrawn meanwhile) tells nobody", async () => {
+    const { tx, recordFeedItem } = await run([ROW]);
+    tx.execute
+      .mockResolvedValueOnce({ rows: [ROW], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [{}, {}], rowCount: 2 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    expect(await answerSpareRequest("h", REQ, "yes", ON, NOW)).toEqual({ ok: false, reason: "gone" });
+    expect(tx.execute).toHaveBeenCalledTimes(3);
     expect(recordFeedItem).not.toHaveBeenCalled();
   });
 });
