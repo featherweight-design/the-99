@@ -1,0 +1,1 @@
+ALTER TABLE "decks" ADD COLUMN "answer_asked" boolean DEFAULT false NOT NULL;
