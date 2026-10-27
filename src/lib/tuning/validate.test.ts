@@ -195,6 +195,16 @@ describe("validateSuggestions", () => {
     expect(out.strippedCites).toBe(1);
   });
 
+  it("drops a cut whose only citation is a focus one, which a cut may not use", () => {
+    const focused: EvidencePack = { ...pack, focus: { name: "Goblin typal", copies: 30, nonland: 60, on: [], top: [], offTop: [], candidates: [] } };
+    const out = validateSuggestions({
+      response: { additions: [], cuts: [{ ...goodCut, evidence: [{ kind: "focus", value: "Goblin typal" }] }] },
+      pack: focused, resolveName,
+    });
+    expect(out.kept).toEqual([]);
+    expect(out.drops[0]).toMatchObject({ side: "cut", rule: "citation", cite: { kind: "focus" } });
+  });
+
   // The regression, in the shape production stored (run 53f5457c): a focus, no intent, five additions each citing the
   // focus under `intent` beside a citation that held. Every one dropped then; every one stands now.
   it("keeps every addition in HD - Goblins' shape", () => {

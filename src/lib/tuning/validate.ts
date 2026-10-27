@@ -297,8 +297,10 @@ export function validateSuggestions(args: {
       if (pack.limits.ownedOnly && !card.owned) return { rule: "notOwned" };
     }
 
+    // A line left with ONLY ungroundable citations reaches here whole (`stripUngroundable` never empties one), and each of
+    // them fails here, whatever `citationHolds` would say: a focus-only cut stands on nothing the cut list may cite.
     for (const c of s.evidence) {
-      if (!citationHolds(c, s)) return { rule: "citation", cite: { kind: c.kind } };
+      if (ungroundable(c.kind, side) || !citationHolds(c, s)) return { rule: "citation", cite: { kind: c.kind } };
     }
 
     const rationaleCheck = presentationFailures(s.rationale, quotable);

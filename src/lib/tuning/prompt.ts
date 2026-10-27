@@ -152,7 +152,7 @@ const SYSTEM = [
   `Propose up to ${ASK_PER_LIST} cards to add and up to ${ASK_PER_LIST} cards to cut, as two separate lists. Each card stands alone: never pair an addition with a cut, and never refer to a card in the other list.`,
   "Aim for as many cuts as additions, so the deck stays its size, but offer fewer of either when the evidence is thin. Give every card its own rationale and its own citations.",
   "Ground every card in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
-  "Cite with one of six kinds: games, note, decklist, intent, mix, notes. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.",
+  "Cite with one of seven kinds: games, note, decklist, intent, mix, notes, and focus, which only a deck with a focus may use. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.",
   "A games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\".",
   "A note citation names the date of the note you quote, as the notes list writes it: \"26 Aug\". Quote that note in the rationale.",
   "An intent citation uses the player's own words. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.",
