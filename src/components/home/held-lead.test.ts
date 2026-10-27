@@ -5,7 +5,7 @@ import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import { displaceLead } from "./held-lead";
 
 const view = (key: string, at: string, o: Partial<FeedView> = {}): FeedView => ({
-  key, kind: "new-set", at, unseen: true, card: null, friend: null, href: null, opens: null, name: null, setSize: null,
+  key, kind: "new-set", at, unseen: true, card: null, friend: null, href: null, opens: null, outbound: null, name: null, setSize: null,
   owned: null, drop: null, combo: null, answer: null, askable: false, ...o,
 });
 const A = view("a", "2026-10-22T10:00:00Z");

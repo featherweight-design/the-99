@@ -10,7 +10,7 @@ import type { FeedView } from "../../lib/feed/home";
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (o: Partial<FeedView>): FeedView => ({
   key: "k", kind: "new-set", at: "2026-10-22T07:00:00Z", unseen: true, card: { oracleId: "c", name: "Sai, Master Thopterist", image: "sai.jpg", art: null, colorIdentity: ["U"] },
-  friend: null, href: null, opens: null, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...o,
+  friend: null, href: null, opens: null, outbound: null, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...o,
 });
 const list = (node: React.ReactNode) => render(<ul>{node}</ul>);
 
@@ -119,20 +119,35 @@ describe("FeedItemRow", () => {
     expect(screen.getByText("Nobody else you know has a spare of it.")).toBeTruthy();
   });
 
-  it("lifts the picture above the stretched press so it can be hovered, and passes a press on it to the row's press", () => {
-    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
-    open.mockClear();
-    const picture = container.querySelector<HTMLElement>("[data-feed-picture]")!;
-    expect(picture.className).toContain("z-[1]");
-    fireEvent.click(picture);
-    expect(open).toHaveBeenCalledTimes(1);
+  it("lifts the picture above the stretched press so it can be hovered", () => {
+    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", outbound: "https://manapool.com/cards?q=Sai", drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
+    expect(container.querySelector<HTMLElement>("[data-feed-picture]")!.className).toContain("z-[1]");
   });
 
-  it("hints the art only for the card that opens", () => {
+  // Hugh, 2026-10-27: a price drop opens the card on Mana Pool in a new tab, named as card details' link out is.
+  it("opens a price drop's card on Mana Pool in a new tab, never its detail", () => {
     open.mockClear();
-    list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
-    fireEvent.click(screen.getByRole("button", { name: /Open the card/ }));
-    expect(open).toHaveBeenCalledWith("c", undefined, undefined, expect.objectContaining({ art: "sai.jpg" }));
+    const url = "https://manapool.com/cards?q=Sai";
+    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", outbound: url, drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
+    const press = screen.getByRole("link", { name: /^Buy any printing at Mana Pool\s*\(opens in a new tab\)$/ });
+    expect(press.getAttribute("href")).toBe(url);
+    expect(press.getAttribute("target")).toBe("_blank");
+    expect(press.getAttribute("rel")).toBe("noopener");
+    expect(press.textContent).not.toContain("›");
+    // Bound to the label by a no-break space: a plain one collapses at the flex press's edge (shot 2026-10-27).
+    expect(press.textContent).toContain("Mana Pool\u00a0↗");
+    const picture = container.querySelector("[data-feed-picture]")!;
+    expect(picture.getAttribute("href")).toBe(url);
+    expect(picture.getAttribute("target")).toBe("_blank");
+    fireEvent.click(press);
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it("draws no press for a price drop whose card the catalog no longer holds", () => {
+    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", card: null, outbound: null, drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
+    expect(document.querySelector("[data-feed-press]")).toBeNull();
+    // No press text, so the press column is not drawn either (no empty, spaced wrapper under the line on a phone).
+    expect(container.querySelector("[data-feed-age-desktop]")!.parentElement!.className).toMatch(/^hidden /);
   });
 
   it("makes a linked row's picture a real link to the same place, out of the tab order", () => {
@@ -157,10 +172,7 @@ describe("FeedItemRow", () => {
     const { unmount } = list(<FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation" } })} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: /See the combo/ }));
     expect(open).toHaveBeenLastCalledWith("a", undefined, undefined, expect.objectContaining({ combo: true }));
-    unmount();
-    list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
-    fireEvent.click(screen.getByRole("button", { name: /Open the card/ }));
-    expect(open.mock.lastCall?.[3]).not.toHaveProperty("combo");
+    expect(open).toHaveBeenLastCalledWith("a", undefined, undefined, expect.objectContaining({ art: null }));
   });
 
   it("reads 'just now' for an item under an hour old", () => {
