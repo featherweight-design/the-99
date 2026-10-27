@@ -4,7 +4,8 @@ and Home's banner (components/home/arrivals-banner.tsx)."""
 import json
 import kit
 from kit import img, ico
-from data import AREAS, SECTIONS, RULES, TOOLS
+import os
+from data import AREAS, SECTIONS, RULES, TOOLS, TOOL_DESK
 
 HALOS = json.load(open("halos.json"))
 PH_RATIO = 844 / 390
@@ -124,6 +125,11 @@ CSS = r"""
 .tc .ft .sm{font:400 12px 'IBM Plex Mono';color:var(--fg-muted);padding:10px 0;white-space:nowrap}
 .tc .ft .go{margin-left:auto;font-size:13.5px;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tc .ft .ar{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--accent);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-size:15px}
+.tc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.tc.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(207,135,69,.45)}
+.pend{display:flex;align-items:center;justify-content:center}
+.pend .pt{position:relative;z-index:2;font:500 12px 'IBM Plex Mono';letter-spacing:.06em;color:var(--fg-muted);background:rgba(20,17,14,.85);border:1px dashed var(--border-strong);border-radius:8px;padding:10px 14px}
+.dk .blk{display:flex;flex-direction:column;gap:14px}
 .try-h{font:500 10.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-muted)}
 
 /* canvas-only annotations */
@@ -265,13 +271,42 @@ def number_of(labels, lid, hidden=()):
     return None
 
 
-def tool_card(tid, w=None):
+def have(key):
+    return f"{key}.webp" in kit.BLOB if kit.MODE["blob"] else os.path.exists(f"art/{key}.webp")
+
+
+def desk_pic(key, box):
+    """A 3:2 desktop crop around box, positioned in % so it fills a fluid card; the region haloed."""
+    cw, ch = 380.0, 253.3
+    ratio = DK_RATIO
+    x, y, bw, bh = box
+    s = max(min(cw / (bw * 2.2), ch / (bh * ratio * 2.2), cw * 2.6), cw * 1.7)
+    W, H = s, s * ratio
+    cx = (x + bw / 2) * W; cy = (y + bh / 2) * H
+    left = min(max(cw / 2 - cx, cw - W), 0); top = min(max(ch / 2 - cy, ch - H), 0)
+    pad = 6
+    hx, hy = left + x * W - pad, top + y * H - pad
+    hw, hh = bw * W + 2 * pad, bh * H + 2 * pad
+    pc = lambda v, d: f"{v / d * 100:.2f}%"
+    return (f'<img src="{img(key + ".webp")}" alt="" style="left:{pc(left, cw)};top:{pc(top, ch)};width:{pc(W, cw)};height:{pc(H, ch)};object-fit:fill">'
+            f'<span class="halo" style="left:{pc(hx, cw)};top:{pc(hy, ch)};width:{pc(hw, cw)};height:{pc(hh, ch)}"></span>')
+
+
+def tool_card(tid, w=None, kind="ph", on=False):
     name, line, credit, footer = TOOLS[tid]
-    hx, hy, hw, hh = HALOS["tool-" + tid]
-    halo = f'<span class="halo" style="left:{hx*100:.1f}%;top:{hy*100:.1f}%;width:{hw*100:.1f}%;height:{hh*100:.1f}%"></span>'
+    if kind == "dk":
+        key, box = TOOL_DESK[tid]
+        if have(key) and box:
+            pic = desk_pic(key, box)
+        else:
+            pic = '<div class="skel"></div>'
+    else:
+        hx, hy, hw, hh = HALOS["tool-" + tid]
+        pic = (f'<img src="{img("p-tool-" + tid + ".webp")}" alt="">'
+               f'<span class="halo" style="left:{hx*100:.1f}%;top:{hy*100:.1f}%;width:{hw*100:.1f}%;height:{hh*100:.1f}%"></span>')
     cp = f'<span class="cp">{credit}</span>' if credit else ""
     style = f' style="width:{w}px"' if w else ""
-    return (f'<article class="tc"{style}><div class="pic"><img src="{img("p-tool-" + tid + ".webp")}" alt="">{halo}</div>'
+    return (f'<article class="tc{" on" if on else ""}"{style}><div class="pic">{pic}</div>'
             f'<div class="bd"><div class="hd"><h3>{name}</h3>{cp}</div><p class="ln">{line}</p>'
             f'<div class="ft"><span class="sm">Show me ›</span><span class="go">{footer}</span><span class="ar">→</span></div></div></article>')
 
@@ -289,18 +324,18 @@ def gk_block(rules, kind):
         cards = "".join(gk_card(r) for r in rules)
         dots = "" if len(rules) < 2 else '<div class="dots">' + "".join(f'<i class="{"on" if i == 0 else ""}"></i>' for i in range(len(rules))) + "</div>"
         return f'{head}<div class="gk-row">{cards}</div>{dots}'
-    cols = min(3, max(len(rules), 2))
-    return f'{head}<div class="gk-grid" style="grid-template-columns:repeat({cols},minmax(0,1fr))">' + "".join(gk_card(r) for r in rules) + "</div>"
+    return f'<div class="blk">{head}<div class="gk-grid">' + "".join(gk_card(r) for r in rules) + "</div></div>"
 
 
-def tools_block(tools, kind, skip=()):
+def tools_block(tools, kind, skip=(), on=None):
     tools = [t for t in tools if t not in skip]
     if not tools:
         return ""
     if kind == "ph":
         return '<div class="try-h">Try it</div>' + "".join(tool_card(t) for t in tools[:1]) + (
             f'<div class="mono" style="text-align:center">{len(tools) - 1} more below</div>' if len(tools) > 1 else "")
-    return '<div class="try-h">Try it</div>' + "".join(tool_card(t) for t in tools)
+    return ('<div class="blk"><div class="try-h">Try it</div><div class="tc-grid">'
+            + "".join(tool_card(t, kind="dk", on=(t == on)) for t in tools) + "</div></div>")
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -448,25 +483,25 @@ DIAGRAMS = {
 # a section, an area page, at either width
 def section(area, sec, kind, hl=None, hidden=(), loading=False, tool_hl=None, gaps=True, short=None):
     labels = sec["labels"]
-    key = sec["phone"] if kind == "ph" else (sec["desk"] or sec["phone"])
-    stand_in = kind == "dk" and not sec["desk"]
-    pins = pins_for(labels, "ph" if stand_in else kind, hidden)
+    key = sec["phone"] if kind == "ph" else sec["desk"]
+    pins = pins_for(labels, kind, hidden)
     hln = number_of(labels, hl, hidden) if hl else None
-    sk = "ph" if (kind == "ph" or stand_in) else "dk"
-    w = 268 if kind == "ph" else (300 if stand_in else 700)
-    hf = short
-    pic = shot(key, w, sk, pins, hln, loading=loading, hfrac=hf)
-    if stand_in:
-        pic = f'<div style="display:flex;flex-direction:column;gap:8px;align-items:center;width:700px;flex:none">{pic}<span class="gapnote" style="margin:0">phone capture: no 1300 capture of this screen yet</span></div>'
-    tl = tool_card(tool_hl) if tool_hl else None
-    labs = label_list(labels, "ph" if stand_in else kind, hl, hidden, tl, gaps)
+    w = 268 if kind == "ph" else 700
+    if kind == "dk" and not have(key):
+        pic = (f'<div class="shot dkf pend" style="width:{w}px;height:{w * DK_RATIO:.0f}px"><div class="skel"></div>'
+               f'<span class="pt">1300 capture of {sec["name"]} on its way</span></div>')
+    else:
+        pic = shot(key, w, kind, pins, hln, loading=loading, hfrac=short)
+    tl = tool_card(tool_hl) if (tool_hl and kind == "ph") else None
+    labs = label_list(labels, kind, hl, hidden, tl, gaps and (kind == "ph" or have(key)))
     head = (f'<div class="sh2"><span class="k">{dict((a, n) for a, n, _ in AREAS)[area]} · {sec["name"]}</span>'
             f'<h2>{sec["name"]}</h2><p>{sec["sub"]}</p></div>')
-    tools = tools_block(sec["tools"], kind, skip=(tool_hl,) if tool_hl else ())
     if kind == "ph":
+        tools = tools_block(sec["tools"], kind, skip=(tool_hl,) if tool_hl else ())
         body = f'<div class="sbody">{pic}{labs}{gk_block(sec["rules"], kind)}{tools}</div>'
     else:
-        body = f'<div class="sbody">{pic}<div class="lc">{labs}{tools}</div></div>{gk_block(sec["rules"], kind)}'
+        tools = tools_block(sec["tools"], kind, on=tool_hl)
+        body = f'<div class="sbody">{pic}<div class="lc">{labs}</div></div>{gk_block(sec["rules"], kind)}{tools}'
     return f'<section class="sec" id="{sec["id"]}">{head}{body}</section>'
 
 

@@ -52,10 +52,13 @@ def main_board():
         ("5 · The ? opens its page, at its screen",
          "The ? on any screen opens that area’s page scrolled to that screen, with a “‹ Back to …” bar that stays at the top while you read. "
          "The ? panel and its search go: one source, as ruled, and six short pages need no search."),
+        ("0 · The picture matches the device",
+         "A phone reader sees phone captures and a desktop reader desktop captures, everywhere: the pages, the tool card pictures, the index tiles and the banner crop. "
+         "Each screen is captured at both widths, and its labels are anchored on each capture separately."),
         ("6 · Tool cards stay, with Show me on them",
          "The shipped tool card, unchanged but for its left link: “How it works ›” pointed at the Reference, which is gone, so it becomes "
          "<b>Show me ›</b> (the panel’s shipped Show me: opens the screen and lights the control). The card’s press is still Try it. "
-         "A section shows its tools under its labels."),
+         "Each screen is three blocks, in order: the labelled screen, Good to know, then Try it."),
         ("7 · The banner names the launch, with a crop",
          "Home’s shipped banner, its diamond mark swapped for a crop of the new label’s region from its screen’s capture. "
          "“New on Decks: Matchups splits …” and Show me. Two or more launches use the shipped band, one line and crop each. "
@@ -67,7 +70,7 @@ def main_board():
         ("9 · What the captures need (engineering)",
          "Today’s captures don’t all hold every label’s region, and there are no 1300 captures of most screens. "
          "<span class='gapnote'>not in today’s capture</span> marks each label the capture has to bring into frame; "
-         "<span class='gapnote'>phone capture</span> marks a desktop section drawn with the phone shot. The canvas uses today’s real captures as they are."),
+         "The canvas uses today’s real captures as they are."),
     ]
     cards = "".join(f'<div class="note"><h4>{t}</h4>{b}</div>' for t, b in calls)
     gaps = [
@@ -81,7 +84,7 @@ def main_board():
     rows = "".join(f'<tr><td><b>{a}</b></td><td>{b}</td></tr>' for a, b in gaps)
     pages = "".join(f'<tr><td><b>{n}</b></td><td>{len(SECTIONS[a])}</td><td>{sum(len(s["labels"]) for s in SECTIONS[a])}</td>'
                     f'<td>{sum(len(s["rules"]) for s in SECTIONS[a])}</td><td>{sum(len(s["tools"]) for s in SECTIONS[a])}</td><td>{l}</td></tr>' for a, n, l in AREAS)
-    body = (board_head("About, the visual redo · round 1 · account 2 · 2026-10-27",
+    body = (board_head("About, the visual redo · round 2 · account 2 · 2026-10-27",
                        "About as six pages of real screenshots",
                        "From 83 text entries to six pages, each a stack of the app’s own screens with numbered labels, the hidden rules drawn as "
                        "<b>Good to know</b> cards, and the shipped tool cards. Source: Hugh’s six workshop rulings, the audit’s keep list and the "
@@ -122,8 +125,9 @@ def deck_desk_board():
     c = pdesk(area_page("decks", "dk", from_sec=4, head=False), active="Decks")
     body = (board_head("2 · the densest page, in full · desktop 1300",
                        "Decks at 1300",
-                       "The same page: capture on the left at 700, labels and tools in the column beside it, Good to know cards in a row of three "
-                       "under both. Your deck and Analysis use real 1300 captures; the other five screens have none yet, so their phone capture stands in (G2).")
+                       "Desktop shows desktop captures only. Each screen is three blocks, in order: the labelled screen (capture at 700, its labels beside it), "
+                       "then Good to know (a row of three), then Try it (a row of three tool cards, each picture a crop of the desktop screen with its control lit). "
+                       "Good to know sits straight under the screen, so the tools never push it below the fold.")
             + frames(frame("<b>A</b> · head, Your decks, Your deck", a),
                      frame("<b>B</b> · Analysis, Versions", b),
                      frame("<b>C</b> · Games, Stats, Notes", c), gap=60))
@@ -174,6 +178,18 @@ def sketches_board():
     return D("About visual · other pages", body, 5 * 390 + 4 * 44 + 112)
 
 
+def sketches_desk_board():
+    fs = []
+    for area, act in [("home", "Home"), ("collection", "Collection"), ("commanders", "Commanders"), ("shopping", "Decks"), ("friends", "Friends")]:
+        name = next(n for a, n, _ in AREAS if a == area)
+        fs.append(frame(f"<b>{name}</b> · desktop", pdesk(area_page(area, "dk", on=SECTIONS[area][0]["id"]), active=act)))
+    body = (board_head("4b · the other five pages · desktop 1300 · layout sketches",
+                       "Home, Collection, Commanders, Shopping, Friends at 1300",
+                       "The same pages a desktop reader sees: desktop captures only, each screen as the labelled screen, Good to know, then Try it.")
+            + frames(*fs[:3], gap=60) + frames(*fs[3:], gap=60))
+    return D("About visual · other pages desktop", body, 3 * DK_W + 2 * 60 + 112)
+
+
 # ---------------------------------------------------------------------------------------------------------------
 def home_with(kind, band):
     """Home's real capture, opened between its header and Ready to build for the banner, as dashboard.tsx places it."""
@@ -215,11 +231,11 @@ def ways_board():
         ts = []
         for a, n, l in AREAS:
             s0 = SECTIONS[a][0]
-            k = s0["phone"]
+            k = s0["phone"] if kind == "ph" else s0["desk"]
             nr = sum(len(s["rules"]) for s in SECTIONS[a])
             meta = f'{len(SECTIONS[a])} screens' + (f' · {nr} good to know' if nr else "")
             ln = f"<p>{l}</p>" if kind == "dk" else ""
-            ts.append(f'<div class="it"><div class="pv"><img src="{img(k + ".webp")}" alt="" style="top:-14%"></div><div class="tx"><h3>{n}</h3>{ln}<span class="mt">{meta}</span></div></div>')
+            ts.append(f'<div class="it"><div class="pv"><img src="{img(k + ".webp")}" alt="" style="top:{"-14%" if kind == "ph" else "0"}"></div><div class="tx"><h3>{n}</h3>{ln}<span class="mt">{meta}</span></div></div>')
         return f'<div class="ix">{"".join(ts)}</div>'
     ihead = ('<div class="ap-head"><span class="kk">About The 99</span><h1>About The 99</h1>'
              '<p>One page for each part of the app, drawn from the app itself. The ? on any screen opens its page.</p>'
@@ -253,7 +269,7 @@ def ways_board():
                      frame("<b>Banner</b> · two launches · phone", bp2, "The shipped two-or-more band: one line and a crop each, “and N more” past four as today."),
                      frame("<b>Banner</b> · one launch · desktop", bd, "One line at 1300, the crop 56x38."), gap=60)
             + frames(frame("<b>Landing</b> · phone · Show me on Matchups", lp, "Decks, scrolled to Games. The label is lit and marked New, its region haloed on the capture, its tool card right under it. Opening the page marks it seen."),
-                     frame("<b>Landing</b> · desktop · Show me on Proposed cuts", ld, "Analysis, with the label lit and Proposed cuts’ card beside it in the label column."), gap=60)
+                     frame("<b>Landing</b> · desktop · Show me on Proposed cuts", ld, "Analysis, with the label lit and marked New, and Proposed cuts’ card lit in Try it, under Good to know."), gap=60)
             + frames(frame("<b>?</b> · pressed on Upload a file", qa, "The shipped header ?."),
                      frame("<b>?</b> · lands on Collection, at Upload a file", qb, "The back bar stays at the top while you read; ‹ returns to the screen you came from."),
                      frame("<b>?</b> · desktop · pressed on a deck’s Analysis", qd, "The rail’s ? does the same at 1300."), gap=60))
@@ -311,7 +327,8 @@ BOARDS = [
     ("Decks-Phone", deck_phone_board, "1 · Decks in full · phone"),
     ("Decks-Desktop", deck_desk_board, "2 · Decks in full · desktop"),
     ("Labels", labels_board, "3 · How a label points"),
-    ("Other-Pages", sketches_board, "4 · The other five pages"),
+    ("Other-Pages", sketches_board, "4 · The other five pages · phone"),
+    ("Other-Pages-Desktop", sketches_desk_board, "4b · The other five pages · desktop"),
     ("Ways-In", ways_board, "5 · Index, banner, landing, ?"),
     ("States", states_board, "6 · States"),
     ("Copy", copy_board, "7 · Copy"),

@@ -8,7 +8,7 @@ Replaces About's 83 text entries, the ? panel and the release banner's wording. 
 
 Canvas: https://claude.ai/artifact/2xkvoZtTrCqsXYRg5RPhV9
 
-**Status: R1, awaiting Hugh's audit.** Every picture is a real capture: phone from `public/about/shots/amonkhet`,
+**Status: R2, awaiting Hugh's audit.** R2 (Hugh, 2026-10-27): a reader sees captures of the device they are on, never the other width; on desktop each screen is three separate blocks, the labelled screen, then Good to know, then Try it, so Good to know sits right under the screen. Every picture is a real capture: phone from `public/about/shots/amonkhet`,
 desktop 1300 from the contact sheets. Every string is a draft for `/copy-review` (`copy-strings.ts`).
 
 ## Boards
@@ -19,12 +19,15 @@ desktop 1300 from the contact sheets. Every string is a draft for `/copy-review`
 | 1 · Decks in full · phone | The densest page top to bottom at 390, seven screens, in three frames |
 | 2 · Decks in full · desktop | The same at 1300 |
 | 3 · How a label points | Pin anchoring, a pressed label, the 3 / 5 / 8 crowding study |
-| 4 · The other five pages | Home, Collection, Commanders, Shopping, Friends at 390, labels and rules placed |
+| 4 · The other five pages · phone | Home, Collection, Commanders, Shopping, Friends at 390, labels and rules placed |
+| 4b · The other five pages · desktop | The same five at 1300, desktop captures only |
 | 5 · Index, banner, landing, ? | The /about index, the banner (one and two launches, phone and desktop), the landing with the new label lit, the ? |
 | 6 · States | A label switched off, a capture loading, a page with no hidden rules |
 | 7 · Copy | Every label and rule with its region and switch |
 
 ## Calls (the four Hugh left to Design, plus what follows from them)
+
+0. **The picture matches the device (Hugh, R2).** Phone readers see phone captures and desktop readers see desktop captures: the pages, the tool card pictures (a desktop tool card crops its screen's desktop capture around the control, lit with the halo), the index tiles and the banner crop. Desktop sections are three blocks in order: labelled screen (capture 700 wide, labels beside it), Good to know (row of three), Try it (row of three tool cards).
 
 1. **How a label points: numbered pins, words in a list.** A pin (24px accent disc, its number) sits on its
    region's top-left corner, nudged 14px inside the picture; the list is beside the shot on desktop, under it on a
@@ -55,8 +58,10 @@ desktop 1300 from the contact sheets. Every string is a draft for `/copy-review`
   shots are taken with the tabs at the top (no Recommended mix, no commit band), the desktop deck shot predates Lock
   cards, and the two Analysis captures are different decks. The canvas marks each such label
   "not in today's capture".
-- **G2 · Desktop captures.** `capture:about` shoots 390x844 only. Each section adds 1300x900, all six themes. Sections
-  without one are drawn with the phone capture and marked.
+- **G2 · Desktop captures.** `capture:about` shoots 390x844 only. Each section adds 1300x900, all six themes, plus a
+  desktop crop per tool. The canvas's desktop frames come from contact sheets and three fresh 1300 shots
+  (`captures-desktop/`). Note: at desktop the drop zone reads "Drop your new collection CSV here"; the phone reads
+  "Drop your new CSV".
 - **G3 · Anchors.** Each label names a region (`data-about-region`, or today's locator in `about-locators.mjs`) measured
   per capture into `shots.generated.ts`, as the locator boxes are now. A visible label with no box fails readiness.
 - **G4 · Seen and launches.** The announced unit becomes the label or rule (audit option B), each with its switch and
