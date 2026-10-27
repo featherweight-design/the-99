@@ -229,7 +229,8 @@ export function SignaturePicker({
                       <button
                         type="button"
                         tabIndex={-1}
-                        disabled={saving !== null}
+                        // A row from a query typed before the field's is not this query's answer: it is held, as Enter is.
+                        disabled={saving !== null || !fresh}
                         onClick={() => pressHit(h)}
                         onPointerMove={() => setHl(i)}
                         aria-label={many ? s.printingsAria(h.name, h.printings) : undefined}
@@ -403,7 +404,7 @@ function PrintingsScreen({
               <button
                 type="button"
                 aria-pressed={isShown}
-                aria-label={s.tileAria(t.id === "" ? s.usualArt : `${t.label} ${t.code}`, isShown)}
+                aria-label={s.tileAria(t.id === "" ? s.usualArt : s.tileName(t.label, t.code, numberOf(card, t.id)), isShown)}
                 aria-busy={mine || undefined}
                 disabled={savingId !== null}
                 data-face-printing={t.id || "usual"}

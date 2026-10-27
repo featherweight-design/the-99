@@ -11,6 +11,9 @@ const a = vi.hoisted(() => ({
   unfriendAction: vi.fn(),
   listDeckCommandersAction: vi.fn(),
   searchFaceCommandersAction: vi.fn(),
+  listDeckFacesAction: vi.fn(),
+  searchFaceCardsAction: vi.fn(),
+  listFacePrintingsAction: vi.fn(),
 }));
 vi.mock("../../app/friends/actions", () => a);
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
@@ -317,6 +320,23 @@ describe("the head", () => {
     await act(async () => answer({ ok: true }));
     expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(AANG.name) })).toBeTruthy();
     expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
+  });
+
+  it("with the signature card on, names it so, and a save that answers after a newer redraw keeps the redraw", async () => {
+    const AANG = { oracleId: "o-aang", name: "Avatar Aang", artCropUri: "https://x/aang.jpg", colorIdentity: ["W", "U", "B", "R", "G"] };
+    let answer: (v: unknown) => void = () => {};
+    a.listDeckFacesAction.mockResolvedValue({ ok: true, tiles: [{ ...SOKKA, printingId: null }] });
+    a.setCommanderAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    const { rerender } = draw({ signature: true });
+    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.signature.choose })[0]);
+    expect(await screen.findByRole("dialog", { name: socialCopy.signature.title })).toBeTruthy();
+    await act(async () => fireEvent.click(await screen.findByRole("button", { name: SOKKA.name })));
+    expect(a.setCommanderAction).toHaveBeenCalledWith(SOKKA.oracleId, null);
+    rerender(view({ signature: true, profile: { publicId: "p-me", displayName: "Hugh", commander: { ...AANG, printingId: null, printingGone: false } } }));
+    await act(async () => answer({ ok: true }));
+    expect(screen.queryByRole("dialog", { name: socialCopy.signature.title })).toBeNull();
+    expect(screen.getByRole("button", { name: socialCopy.signature.changeAria(AANG.name) })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: socialCopy.signature.changeAria(SOKKA.name) })).toBeNull();
   });
 
   it("follows the server's redraw of the name and the face, keeping a pending name only until it lands", async () => {

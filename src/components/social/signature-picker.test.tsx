@@ -95,9 +95,21 @@ describe("SignaturePicker", () => {
     expect(tiles).toEqual(["usual", P_STA, P_EMA, P_MIR]);
     // Three printings and the usual art: no set search under twelve tiles.
     expect(screen.queryByLabelText(s.setSearch)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: s.tileAria("Eternal Masters EMA", false) }));
+    fireEvent.click(screen.getByRole("button", { name: s.tileAria(s.tileName("Eternal Masters", "EMA", "1"), false) }));
     expect(onSave).toHaveBeenCalledWith({ oracleId: TUTOR, printingId: P_EMA, face: expect.objectContaining({ artCropUri: "https://x/EMA-crop.jpg" }) });
     await act(async () => {});
+  });
+
+  it("holds a row from an earlier query until the field's own answer lands", async () => {
+    a.searchFaceCardsAction.mockResolvedValueOnce({ ok: true, hits: [BOLT_HIT] }).mockReturnValueOnce(new Promise(() => {}));
+    const onSave = vi.fn(async () => true);
+    render(<SignaturePicker current={null} onSave={onSave} onClose={() => {}} />);
+    await type("bo");
+    fireEvent.change(screen.getByRole("combobox", { name: s.search }), { target: { value: "bol" } });
+    const stale = screen.getByText("Lightning Bolt").closest("button")!;
+    expect(stale).toBeDisabled();
+    fireEvent.click(stale);
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   it("goes back to the search with the query standing", async () => {

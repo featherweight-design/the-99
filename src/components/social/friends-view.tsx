@@ -48,7 +48,7 @@ const QR_EXPIRY_REFRESH_SLACK_MS = 500;
 /** What a redraw is compared by: the fields the head draws. */
 function drawnKey(p: OwnProfile): string {
   const c = p.commander;
-  return JSON.stringify([p.displayName, c?.oracleId ?? null, c?.name ?? null, c?.artCropUri ?? null]);
+  return JSON.stringify([p.displayName, c?.oracleId ?? null, c?.name ?? null, c?.artCropUri ?? null, c?.printingId ?? null, c?.printingGone ?? null]);
 }
 
 /**
@@ -332,12 +332,15 @@ export function FriendsView({
    * there is no optimistic face to roll back. A failure toasts inside the picker, which stays open.
    */
   async function saveFace(next: SignaturePick | null): Promise<boolean> {
+    // The face drawn as the save began: a redraw that lands while it is in flight (its own, or another tab's) replaces
+    // it, and a newer redraw wins over this pick.
+    const before = commander;
     const out = await setCommanderAction(next?.oracleId ?? null, next?.printingId ?? null).catch(() => null);
     if (!out?.ok) {
       say(socialCopy.signature.failed);
       return false;
     }
-    setCommander(next?.face ?? null);
+    setCommander((now) => (now === before ? next?.face ?? null : now));
     setPicking(false);
     return true;
   }

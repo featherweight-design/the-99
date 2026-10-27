@@ -241,8 +241,10 @@ export const socialCopy = {
     previewLine: (set: string, code: string) => `${set} · ${code}`,
     setSearch: "Search sets, codes or numbers",
     setNoResults: (q: string) => `No printing matches “${q}”.`,
-    /** A tile, spoken: its set and code, and whether it is the face now. */
-    tileAria: (set: string, current: boolean) => (current ? `${set}, your signature card now` : set),
+    /** A printing tile's name, spoken: set, code and collector number, so two printings of one set differ. */
+    tileName: (set: string, code: string, number: string) => (number ? `${set} ${code} #${number}` : `${set} ${code}`),
+    /** A tile, spoken: its name, and whether it is the face now. */
+    tileAria: (name: string, current: boolean) => (current ? `${name}, your signature card now` : name),
     /** P8: a pick that can no longer be drawn (its printing lost its art), on that card's printing screen only. */
     gone: "The printing you picked can’t be shown now, so friends see the usual art. Pick another any time.",
     // Not drawn: a card's printings that could not be read, in the grid's place, role alert. ‹ goes back.
