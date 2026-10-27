@@ -1,7 +1,6 @@
 // The news feed (menu and Home handoff; plan `2026-10-22-menu-home.md` PR 4). `news` is Settings' "What's new on
 // Home" section (`Settings.dc.html`), placeholder copy from the board.
 import type { FeedKind } from "../feed/kinds";
-import { cardLinkOutCopy } from "./collection-browse";
 
 export const feedCopy = {
   news: {
@@ -84,8 +83,9 @@ export const feedCopy = {
     press: {
       newSet: "See the set",
       newPrecon: "Open in Precons",
-      /** The card on Mana Pool, labelled as card details' own link out is (Hugh, 2026-10-27). */
-      priceDrop: cardLinkOutCopy.card,
+      /** The card on Mana Pool, in a new tab (Hugh, 2026-10-27). Its own words, shorter than card details' link out; the
+       *  ↗ and the spoken new-tab suffix are `FeedPress`'s, as `ExternalLink` draws them. */
+      priceDrop: "Buy at Mana Pool",
       tradeMatch: (friend: string) => `See ${friend}’s spares`,
       /** With spare requests on, the press opens that card's spares sheet with Ask (signature card call 9). */
       tradeMatchAsk: (friend: string) => `Ask ${friend}`,

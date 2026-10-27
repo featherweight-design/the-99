@@ -96,7 +96,7 @@ export function FeedPress({
   describedBy?: string;
 }) {
   const detail = useCardDetailIfAny();
-  // Off the app (a price drop's card on Mana Pool): a new tab, drawn and named as card details' link out is, the ↗ and
+  // Off the app (a price drop's card on Mana Pool): a new tab, drawn as card details' link out is (its own label), the ↗ and
   // the spoken new-tab suffix (`ExternalLink`'s), never a router link.
   if (item.outbound) {
     return (
