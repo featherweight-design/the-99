@@ -52,7 +52,10 @@ describe("feedUnion", () => {
     expect(q).toMatch(/join "user_prefs" sup on sup\.user_id = \$\d+/);
     expect(q).toMatch(/join "user_prefs" pup on pup\.user_id = \$\d+/);
     expect(q).toMatch(/where fi\.user_id = \$\d+ and fi\.kind = any\(\$\d+::text\[\]\)/);
-    expect(params.filter((p) => p === "user_1")).toHaveLength(3);
+    // Three prefs joins, and each catalog branch's own dismissals (✕) read by the same reader.
+    expect(params.filter((p) => p === "user_1")).toHaveLength(5);
+    expect(q).toMatch(/not exists \(select 1 from "feed_dismissals" sfd where sfd\.user_id = \$\d+ and sfd\.key = 'set:' \|\| s\.code\)/);
+    expect(q).toMatch(/not exists \(select 1 from "feed_dismissals" pfd where pfd\.user_id = \$\d+ and pfd\.key = 'precon:' \|\| p\.file_name\)/);
   });
 
   it("reads only the stored kinds asked for, and only the branches asked for", () => {

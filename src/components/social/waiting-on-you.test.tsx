@@ -50,7 +50,7 @@ describe("WaitingOnYou", () => {
   it("draws no footer at five or fewer", () => {
     render(<WaitingOnYou rows={Array.from({ length: 5 }, (_, i) => ({ ...ROW, key: `item:${i}` }))} now={NOW} />);
     expect(screen.queryByText(feedCopy.home.more(0))).toBeNull();
-    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("button", { name: /show all/i })).toBeNull();
   });
 
   it("draws a trade match: title, detail with the pods, time, and a link to the friend's Spares tab", () => {

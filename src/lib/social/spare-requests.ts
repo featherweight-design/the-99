@@ -27,7 +27,7 @@
  */
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, decks, friendLinks, printings, socialProfiles, spareRequests, userPrefs } from "../../db/schema";
+import { cards, decks, feedDismissals, feedItems, friendLinks, printings, socialProfiles, spareRequests, userPrefs } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
@@ -341,7 +341,23 @@ export function incomingAsksQuery(holderId: string, now: Date): SQL {
     left join ${printings} ifp on ifp.scryfall_id = isp.commander_printing_id and ifp.oracle_id = isp.commander_oracle_id
     where isr.holder_user_id = ${holderId} and isr.status = 'open'
       and isr.created_at > ${openFloor(now).toISOString()}::timestamptz
+      ${notDismissedAsk(sql`isr`)}
     order by isr.created_at desc, isr.id`;
+}
+
+/**
+ * The holder has not pressed ✕ on the ask (`feed_dismissals`): not on its Waiting row (`ask:<id>`) and not on its Home
+ * item (the holder's own feed item for it, dedupe key = the request id). Hiding answers nothing: the ask stays open for
+ * the asker. On the ask's alias.
+ */
+function notDismissedAsk(r: SQL): SQL {
+  return sql`and not exists (
+        select 1 from ${feedDismissals} dad where dad.user_id = ${r}.holder_user_id and dad.key = 'ask:' || ${r}.id::text)
+      and not exists (
+        select 1 from ${feedItems} dfi
+        join ${feedDismissals} dfd on dfd.user_id = dfi.user_id and dfd.key = 'item:' || dfi.id::text
+        where dfi.user_id = ${r}.holder_user_id and dfi.kind = 'spare-request' and dfi.dedupe_key = ${r}.id::text
+          and dfi.data ->> 'answer' is null)`;
 }
 
 type Face = { commander_oracle_id: string | null; commander_name: string | null; commander_art: string | null };
@@ -552,7 +568,8 @@ export function waitingAsksCountQuery(holderId: string, now: Date): SQL {
     from ${spareRequests} wsr
     join ${friendLinks} wfl on wfl.user_id = wsr.holder_user_id and wfl.friend_user_id = wsr.asker_user_id
     where wsr.holder_user_id = ${holderId} and wsr.status = 'open'
-      and wsr.created_at > ${openFloor(now).toISOString()}::timestamptz`;
+      and wsr.created_at > ${openFloor(now).toISOString()}::timestamptz
+      ${notDismissedAsk(sql`wsr`)}`;
 }
 
 /** Answers newer than the asker's Friends cursor (none read is every answer unseen), to current friends, still shown. */

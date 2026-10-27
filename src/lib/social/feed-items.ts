@@ -22,7 +22,7 @@
  * Friends count are each one statement.
  */
 import { sql, type SQL } from "drizzle-orm";
-import { feedItems, friendLinks, podMembers, podSpareShares, socialProfiles, spareKeep, spareRequests, userPrefs } from "../../db/schema";
+import { feedDismissals, feedItems, friendLinks, podMembers, podSpareShares, socialProfiles, spareKeep, spareRequests, userPrefs } from "../../db/schema";
 import { openFloor } from "./spare-request-rules";
 import { kindEnabledAt } from "../feed/kind-gate";
 import type { StoredKind } from "../feed/kinds";
@@ -30,11 +30,12 @@ import type { StoredKind } from "../feed/kinds";
 /**
  * The conditions that make a stored item STAND, on `fi` (the item), `sp` (the friend's profile) and the grant tables: a
  * spare request while its ask is open and unexpired, an item naming a friend while the friendship (and, for a trade
- * match, the shared spares) still holds. Shared by the feed's branch and the push resolver, so a push is made only for
- * what Home would still show.
+ * match, the shared spares) still holds, and the reader has not dismissed it (✕, `feed_dismissals`). Shared by the
+ * feed's branch and the push resolver, so a push is made only for what Home would still show.
  */
 function standing(now: Date): SQL {
   return sql`
+      and not exists (select 1 from ${feedDismissals} ffd where ffd.user_id = fi.user_id and ffd.key = 'item:' || fi.id::text)
       and (fi.kind <> 'spare-request' or exists (
         select 1 from ${spareRequests} fsr
         where fsr.id = (case when fi.kind = 'spare-request' then fi.dedupe_key::uuid end)

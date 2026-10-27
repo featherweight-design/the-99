@@ -20,6 +20,7 @@ import { shortName } from "../../lib/cards/short-name";
 import { FadingImg } from "../ui/hydrated-art";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
+import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { faceInitials } from "./face";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
 
@@ -45,7 +46,7 @@ export function placeReceipts(
 const ROW = "[&+&]:[border-top:1px_solid_var(--border)]";
 /** A spare request's row and its receipt: the picture spans the text and the presses on a phone, which sit in the
  *  text column (`.fi .ac`, 6px under the detail); from desktop the presses are the row's third column. */
-const ASK_ROW = `grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px] ${ROW}`;
+const ASK_ROW = `relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px] ${ROW}`;
 const KIND = "truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em]";
 const TIME = "ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]";
 const TITLE = "m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]";
@@ -57,10 +58,12 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
   const listRef = useRef<HTMLUListElement | null>(null);
   const land = useLandFocus(listRef);
   const { busy, answer, toast } = useSpareAnswer();
-  // An answered ask stays out even before the action's redraw drops it from the server's rows.
-  const waiting = rows.filter((row) => !receipts.has(row.key));
+  // The section's heading, or the page's when the last row's leave takes the section with it.
+  const dismissed = useFeedDismiss(() => document.getElementById("waiting-on-you") ?? document.getElementById("friends-title"));
+  // An answered ask stays out even before the action's redraw drops it from the server's rows; so does one hidden (✕).
+  const waiting = rows.filter((row) => !receipts.has(row.key) && !dismissed.hidden.has(dismissKey(row)));
   // The last row can leave while its answer is out (the friend's spare went): the failure toast still shows.
-  if (waiting.length === 0 && receipts.size === 0) return toast;
+  if (waiting.length === 0 && receipts.size === 0) return <>{toast}{dismissed.toast}</>;
   const placed = placeReceipts(waiting, receipts);
   // Five shown, then Home's "Show all N" (Hugh, 2026-10-27): the cut keeps the list's order, so a receipt keeps its place.
   const shown = expanded ? placed : placed.slice(0, FEED_SHOWN);
@@ -70,10 +73,11 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
     land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`, from);
   }
   return (
-    <section aria-labelledby="waiting-on-you" data-testid="waiting-on-you" className="mt-[26px] md:mt-[34px]">
+    <section aria-labelledby="waiting-on-you" data-dismiss-scope data-testid="waiting-on-you" className="mt-[26px] md:mt-[34px]">
       <h2
         id="waiting-on-you"
-        className="m-0 flex min-h-[44px] items-center font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]"
+        tabIndex={-1}
+        className="m-0 flex outline-none min-h-[44px] items-center font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]"
       >
         {w.head(waiting.length)}
       </h2>
@@ -85,9 +89,10 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
           ) : item.row.kind === "spare-request" ? (
             <AskRow key={item.row.key} row={item.row} now={now}
               busy={busy?.id === item.row.ask.id ? busy.answer : null} locked={busy !== null}
-              onAnswer={(a, from) => void press(item.row as SpareRequestRow, a, index, from)} />
+              onAnswer={(a, from) => void press(item.row as SpareRequestRow, a, index, from)}
+              onDismiss={(from) => dismissed.dismiss(dismissKey(item.row as SpareRequestRow), from)} />
           ) : (
-            <TradeRow key={item.row.key} row={item.row} now={now} />
+            <TradeRow key={item.row.key} row={item.row} now={now} onDismiss={(from) => dismissed.dismiss(item.row.key, from)} />
           ),
         )}
       </ul>
@@ -96,9 +101,13 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
       <ShowAllFooter hidden={placed.length - shown.length} total={waiting.length} onExpand={expand} />
       </div>
       {toast}
+      {dismissed.toast}
     </section>
   );
 }
+
+/** What the ✕ names: an ask by its request id (its Home item goes with it), a trade match by its feed key. */
+const dismissKey = (row: WaitingRow): string => (row.kind === "spare-request" ? `ask:${row.ask.id}` : row.key);
 
 /** The card at card shape, 46x64, with the friend's face on its corner. */
 function Picture({ imageUri, friend, className = "" }: {
@@ -130,15 +139,16 @@ function Unseen() {
 }
 
 /** A spare request: "Peter asks for your spare Lathliss", the spare count and the copies, Yes, No and the days left. */
-function AskRow({ row, now, busy, locked, onAnswer }: {
+function AskRow({ row, now, busy, locked, onAnswer, onDismiss }: {
   row: SpareRequestRow; now: Date; busy: Answer | null; locked: boolean; onAnswer: (a: Answer, from: Element) => void;
+  onDismiss: (from: HTMLElement) => void;
 }) {
   const { ask } = row;
   const friend = ask.asker.displayName;
   return (
     <li data-testid="waiting-row" data-kind="spare-request" data-unseen="" className={ASK_ROW}>
       <Picture imageUri={ask.card.imageUri} friend={ask.asker} className="row-span-2 self-start md:row-span-1 md:self-center" />
-      <div className="flex min-w-0 flex-col gap-[3px]">
+      <div className="flex min-w-0 flex-col gap-[3px] pr-[30px] md:pr-0">
         <p className="m-0 flex min-w-0 items-center gap-[7px]">
           <Unseen />
           <span className={`${KIND} text-[color:var(--accent-text)]`}>{w.kind["spare-request"]}</span>
@@ -147,9 +157,10 @@ function AskRow({ row, now, busy, locked, onAnswer }: {
         <p className={TITLE}>{feedCopy.home.title.spareRequest(friend, ask.card.name)}</p>
         <p className={DETAIL}>{r.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)}</p>
       </div>
-      <div className="col-start-2 mt-[6px] min-w-0 md:col-start-3 md:row-start-1 md:mt-0">
+      <div className="col-start-2 mt-[6px] min-w-0 md:col-start-3 md:row-start-1 md:mt-0 md:pr-[34px]">
         <AnswerPresses friend={friend} card={ask.card.name} daysLeft={ask.daysLeft} busy={busy} locked={locked} onAnswer={onAnswer} size="row" />
       </div>
+      <DismissButton title={feedCopy.home.title.spareRequest(friend, ask.card.name)} onPress={onDismiss} disabled={locked} />
     </li>
   );
 }
@@ -183,16 +194,16 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
 }
 
 /** A trade match: "Colin has a spare Ghalta", the pods, and the link to Colin's Spares tab. */
-function TradeRow({ row: r, now }: { row: TradeMatchRow; now: Date }) {
+function TradeRow({ row: r, now, onDismiss }: { row: TradeMatchRow; now: Date; onDismiss: (from: HTMLElement) => void }) {
   return (
     <li
       data-testid="waiting-row"
       data-kind="trade-match"
       data-unseen={r.unseen ? "" : undefined}
-      className={`grid grid-cols-[46px_minmax(0,1fr)] gap-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-[14px] md:px-[16px] ${ROW}`}
+      className={`relative grid grid-cols-[46px_minmax(0,1fr)] gap-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-[14px] md:px-[16px] ${ROW}`}
     >
       <Picture imageUri={r.card.imageUri} friend={r.friend} />
-      <div className="flex min-w-0 flex-col gap-[3px]">
+      <div className="flex min-w-0 flex-col gap-[3px] pr-[30px] md:pr-0">
         <p className="m-0 flex min-w-0 items-center gap-[7px]">
           {r.unseen && <Unseen />}
           <span className={`${KIND} text-[color:var(--fg-faint)]`}>{w.kind[r.kind]}</span>
@@ -203,10 +214,11 @@ function TradeRow({ row: r, now }: { row: TradeMatchRow; now: Date }) {
         <WaitingLink row={r} className="mt-[6px] md:hidden" />
       </div>
       {/* From desktop the time sits on the link's baseline, before it (Hugh's ruling, 2026-10-27: the menu-home plan's product call 5), as on What's new. */}
-      <div className="hidden md:flex md:items-baseline md:justify-end md:gap-[12px]">
+      <div className="hidden md:flex md:items-baseline md:justify-end md:gap-[12px] md:pr-[34px]">
         <small data-waiting-age-desktop className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{ago(r.createdAt, now)}</small>
         <WaitingLink row={r} className="flex" />
       </div>
+      <DismissButton title={w.tradeTitle(r.friend.displayName, r.card.name)} onPress={onDismiss} />
     </li>
   );
 }

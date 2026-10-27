@@ -389,7 +389,9 @@ describe("the Friends badge's spare-request queries", () => {
   it("waiting: the holder's open, unexpired asks from current friends", () => {
     const { q, params } = render(waitingAsksCountQuery("h", NOW));
     expect(q).toMatch(/join "friend_links" wfl on wfl\.user_id = wsr\.holder_user_id and wfl\.friend_user_id = wsr\.asker_user_id/);
-    expect(q).toMatch(/where wsr\.holder_user_id = \$1 and wsr\.status = 'open' and wsr\.created_at > \$2::timestamptz$/);
+    expect(q).toMatch(/where wsr\.holder_user_id = \$1 and wsr\.status = 'open' and wsr\.created_at > \$2::timestamptz and not exists \(/);
+    // A hidden ask (✕) is not counted: the holder's own feed item for it carries the dismissal.
+    expect(q).toMatch(/where dfi\.user_id = wsr\.holder_user_id and dfi\.kind = 'spare-request' and dfi\.dedupe_key = wsr\.id::text and dfi\.data ->> 'answer' is null\)$/);
     expect(params).toEqual(["h", openFloor(NOW).toISOString()]);
   });
 

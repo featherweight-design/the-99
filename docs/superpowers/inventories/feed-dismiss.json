@@ -1,0 +1,20 @@
+{
+  "feature": "The ✕ on What's new (Home's rows and lead story) and Waiting on you (/friends), Hugh's ruling 2026-10-27 (the menu-home plan's product call 6)",
+  "clearAbout": true,
+  "note": "Needs HOME_FEED_ENABLED, SOCIAL_FRIENDS_ENABLED, SOCIAL_WISHLIST_ENABLED, SPARE_REQUESTS_ENABLED and COMMANDERS_PLACE_ENABLED on, on a SCRATCH branch seeded with a friend who shares a wishlist card as a spare with a pod the reader is in (a trade match), an open ask from that friend for one of the reader's offered spares (Home's lead and a Waiting row), and every feed kind on for the reader. Read-only: no ✕ is pressed.",
+  "out": "contact-sheets/feed-dismiss",
+  "rows": [
+    {
+      "id": "home",
+      "label": "Home: the lead story and What's new rows, each with its ✕ at the top right",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-feed-dismiss]", "settle": 2500 }]
+    },
+    {
+      "id": "friends-waiting",
+      "label": "/friends: Waiting on you, the ask row and the trade-match row, each with its ✕",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "steps": [{ "goto": "/friends", "wait": "[data-testid=waiting-on-you] [data-feed-dismiss]", "settle": 2500 }]
+    }
+  ]
+}

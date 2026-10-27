@@ -182,3 +182,17 @@ Needs `SOCIAL_FRIENDS_ENABLED`; unset in production until Hugh turns it on. Off,
 - **The ask, once** (Home's first-run row and the strip, `src/components/home/signature-ask.tsx`): decided per request from `loadHomeFriends`, never from the cached payload. `user_prefs.face_prompt_done_at` (migration 0176) is set by a pick or by Skip, written only while null (the stamp trigger); the rule is `faceAskPlaces` in `src/lib/discovery/face-prompt.ts`, which sits there, not in `lib/social`, so the cached Home payload does not read a social table.
 - **Spares outside Shopping** (shipped in this line, but behind `SPARE_REQUESTS_ENABLED` alone, not this switch; off, a tile opens card details): a friend's Spares tile opens `SparesSheet` for that card with the page's friend first (`orderSparesFirst`), the wishlist kicker and the card's price; the tile's count line carries THIS friend's ask. An ask from the tab is stored `standalone` (it is for no deck's list), so Your requests never reads it as no longer needed. `?spare=<oracle id>` opens the sheet on landing or, for a spare gone since, draws a toast; either way it is stripped through `mirrorUrl`. A single-card trade-match push, its Home feed item and its Waiting row link there. With spare requests on for the reader each of them is marked `askable` (`lookups` and `loadWaitingOnYou` decide it), so the press reads "Ask {friend}" and the push body adds "Ask {friend} for it."; off, they read as shipped and the tab opens card details.
 - **About:** the `friends` entry's face sentence is a `captionLineSwitches` pair on this switch, riding the next batched `ABOUT_VERSION` bump with no halo; key 2 names the face the same way in four forms, one per (`FRIEND_DECKS_ENABLED`, `SIGNATURE_CARD_ENABLED`) pair. The `/friends` name hint and the friend link landing's rules and empty credit follow the switch too (READINESS call 1).
+
+## Hiding a feed item (✕, 2026-10-27)
+
+Hugh's ruling (the menu-home plan's product call 6). No switch of its own: the ✕ shows wherever its row does.
+
+- **The write**: `dismissFeedItemAction` → `dismissFeedTarget` (`src/lib/social/feed-dismiss.ts`) writes one `feed_dismissals` row per reader and key. The key is Home's own `FeedView.key`: `item:<feed_items id>`, `set:<code>` or `precon:<file>`. It is never a writer's dedupe key, because a trade match's names another account. A stored item is written once, guarded by its dedupe key, and only the purge deletes one, so a hidden item cannot come back under another key. A Waiting on you ask the reader holds is hidden under its own `ask:<request id>` key, and under the holder's feed item for it when there is one (a holder with the `spare-request` kind off has none), so its Home item goes too. Hiding answers nothing: the ask stays open for the asker.
+- **The reads**: every read leaves a hidden key out:
+  - `standing` in `feed-items.ts`, shared by the stored feed branch and the push resolver;
+  - both catalog branches in `lib/feed/read.ts`, shared by the feed and the push enqueue;
+  - `notDismissedAsk` in `spare-requests.ts`, for the incoming asks and the waiting count.
+
+  So Home's rows, the lead story, the unseen count, Waiting on you, both badges and push all agree. Your requests keeps its own ✕ and is not covered.
+- **The table**: purged with the account (`PURGE_ORDER`). It needs no stamp trigger, because the feed and /friends are read per request and no cached payload holds a feed item.
+- Proof: `pnpm probe:feed-dismiss`.
