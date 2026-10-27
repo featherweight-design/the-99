@@ -249,6 +249,16 @@ describe("a card opened from the receipt", () => {
     expect(within(receipt).getByTestId("receipt-grid").className).toContain("md:grid-cols-4");
   });
 
+  // The sheet's body grows its only child to the phone sheet's height (2026-10-27): the grid's rows stay at the top
+  // rather than stretching to share that height out.
+  it("keeps the receipt's tile rows at the top of a sheet taller than them", () => {
+    mount();
+    fireEvent.click(within(item("gameChangers")).getByRole("button"));
+    const grid = within(screen.getByTestId("receipt-modal")).getByTestId("receipt-grid");
+    expect(grid.className).toMatch(/(^| )content-start( |$)/);
+    expect(grid.parentElement!.className).toMatch(/(^| )\[&>:only-child\]:grow( |$)/);
+  });
+
   // The registration is withdrawn on unmount. Left standing, every card opened anywhere on the
   // page after a receipt had closed would draw offset and without a backdrop.
   it("is not stacked once the receipt has closed", async () => {

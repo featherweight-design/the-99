@@ -153,6 +153,18 @@ async function run(page, steps) {
       await page.unroute(step.mock);
       await page.route(step.mock, (route) => route.fulfill(reply));
     }
+    // `hold` delays every request matching a URL glob by `ms` (default 6000) from this step on, then lets it through: a
+    // loading state that Slow 4G alone races past (the stand-ins sheet's read lands under it) stays up to be
+    // photographed, and the real answer still arrives after. `unhold` takes it away again.
+    if (step.hold !== undefined) {
+      const ms = step.ms ?? 6000;
+      await page.unroute(step.hold);
+      await page.route(step.hold, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, ms));
+        await route.fallback().catch(() => {});
+      });
+    }
+    if (step.unhold !== undefined) await page.unroute(step.unhold);
     if (step.goto !== undefined) {
       const url = expand(step.goto, step.goto);
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });

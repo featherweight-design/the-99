@@ -1,0 +1,36 @@
+{
+  "feature": "The stand-ins sheet's loader fills the sheet, and the desktop sheet stands at its cap (Hugh's bug, 2026-10-27)",
+  "clearAbout": true,
+  "note": "Needs a server with SWAP_TOOLS_ENABLED=true, signed in as swaptools-v2+clerk_test@example.com (on local-dev today that address is user_3HdjdocERCjunk0zJQFDWyHkTd4), with SHEET_DECK its HD - Gishath (441286bb-f632-4d1e-af0f-aa7282bbb40f: an $8 limit, Polyraptor over it on Shopping). The loading row puts the page on Slow 4G before the press and holds the page's own requests (the read is a server action POST to the deck path) for 8s, so the loader is photographed rather than raced; the loaded row takes both away. Only the stand-ins sheet (and the Fits picker over a card) has a loading state: the cart's By friend view, a friend's Spares tab and a ?spare= landing open the spares-only sheet, which draws at once. This inventory writes nothing.",
+  "shares": {
+    "module": "src/components/ui/sheet-loading.tsx",
+    "binding": "SheetLoading",
+    "note": "One loading block for every sheet that waits on a read: the stand-ins sheet and the Fits picker. A sheet that drew its own would stop filling the body again."
+  },
+  "rows": [
+    {
+      "id": "stand-ins-loading",
+      "label": "/decks/[id] Shopping: Polyraptor's ⇄ under Slow 4G, the sheet loading: the loader fills the sheet's body",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/${SHEET_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 600 },
+        { "throttle": "slow", "hold": "**/decks/*", "ms": 8000 },
+        { "clickRole": "button", "name": "^Cheaper stand-ins for Polyraptor,", "settle": 0 },
+        { "wait": "[data-testid='stand-ins-sheet'] [role=status]", "settle": 300 }
+      ]
+    },
+    {
+      "id": "stand-ins-loaded",
+      "label": "/decks/[id] Shopping: the same sheet once its answer lands, at the same height",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        { "throttle": "off", "unhold": "**/decks/*" },
+        { "goto": "/decks/${SHEET_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "^Shopping \\d+", "settle": 600 },
+        { "clickRole": "button", "name": "^Cheaper stand-ins for Polyraptor,", "settle": 400 },
+        { "wait": "[data-testid='stand-ins-sheet']:not(:has([role=status])):not(:has([role=alert]))", "settle": 600 }
+      ]
+    }
+  ]
+}

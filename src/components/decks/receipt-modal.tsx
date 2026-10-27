@@ -84,7 +84,9 @@ export function ReceiptModal({
         ))
       ) : (
         <ul
-          className="m-0 list-none grid grid-cols-2 md:grid-cols-4 gap-x-[11px] gap-y-[14px] md:gap-x-[12px] md:gap-y-[18px] px-[16px] py-[14px] md:px-[20px] md:pt-[18px] md:pb-[22px]"
+          // `content-start`: the sheet's body grows its only child to the phone sheet's height, and a grid's auto rows
+          // would stretch to share that height out between them.
+          className="m-0 list-none grid content-start grid-cols-2 md:grid-cols-4 gap-x-[11px] gap-y-[14px] md:gap-x-[12px] md:gap-y-[18px] px-[16px] py-[14px] md:px-[20px] md:pt-[18px] md:pb-[22px]"
           data-testid="receipt-grid"
         >
           {finding.cards.map((card) => (
@@ -130,6 +132,7 @@ export function ModalChrome({
   lead,
   foot,
   fit = false,
+  stand = false,
   back,
   children,
 }: {
@@ -147,6 +150,13 @@ export function ModalChrome({
    * sheet is as shipped.
    */
   fit?: boolean;
+  /**
+   * Desktop: the sheet stands at its cap (85dvh, or the over-a-card cap) whether its body is loading or loaded, rather
+   * than hugging its content, so the answer arriving moves nothing (Hugh, 2026-10-27, the stand-ins sheet: its loader
+   * is a fixed block and its answer anything from one sentence to every group). The phone sheet already stands at its
+   * full height. Unset, the sheet hugs its content as shipped.
+   */
+  stand?: boolean;
   /** A mono kicker over the title, and a sentence under it (the pass sheet's head, `Pass Sheet.dc.html`
    *  `.hd2`): the header then grows with them rather than holding the 43px line. */
   eyebrow?: string;
@@ -247,9 +257,12 @@ export function ModalChrome({
           // it no longer steps down to 52, so neither does this sheet to 96). Desktop: centered.
           "flex flex-col w-full border-t "
           + (fit ? "rounded-t-[18px] max-h-[calc(100%-52px)] " : "rounded-t-[14px] h-[calc(100%-52px)] ")
-          + "md:h-auto md:rounded-[14px] md:border overflow-hidden "
-          // Over a card its top is pushed down, so its height is capped to end 20px above the fold.
-          + (onCard ? "md:max-h-[calc((100dvh+min(620px,85dvh))/2-60px)] " : "md:max-h-[85dvh] ")
+          + "md:rounded-[14px] md:border overflow-hidden "
+          // Over a card its top is pushed down, so its height is capped to end 20px above the fold. A sheet that
+          // `stand`s is that cap tall; any other hugs its content up to it.
+          + (onCard
+            ? (stand ? "md:h-[calc((100dvh+min(620px,85dvh))/2-60px)] " : "md:h-auto ") + "md:max-h-[calc((100dvh+min(620px,85dvh))/2-60px)] "
+            : (stand ? "md:h-[85dvh] " : "md:h-auto ") + "md:max-h-[85dvh] ")
           + WIDTH_CLASS[width]
           // Behind a card its edge steps down with its ground, as the addendum's §5a draws it.
           + (behind ? "border-[color:var(--border)]" : "border-[color:var(--border-strong)]")
@@ -389,7 +402,9 @@ export function ModalPanel({
           // Focusable by script, never by Tab: where the control a reader was on is gone (a
           // stand-in's Take replaces its own row), focus lands on the sheet's name.
           tabIndex={-1}
-          className={"m-0 min-w-0 font-display font-bold outline-none " + titleClassName}
+          // At least one line tall while its title waits (`pendingName`), so the header does not grow 4px when the
+          // title lands over a sheet that stands at its height (Hugh, 2026-10-27).
+          className={"m-0 min-h-[1lh] min-w-0 font-display font-bold outline-none " + titleClassName}
           style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
         >
           {title || (pendingName ? <span className="sr-only">{pendingName}</span> : null)}
@@ -427,8 +442,13 @@ export function ModalPanel({
       {/* Behind a card the body steps down further than the header (0.35 against 0.55): the
           header is the strip that says where a dismissal lands, and the body is only context.
           `overscroll-contain` (Hugh, 2026-10-03) stops a scroll of this body at either end
-          from chaining into the page behind the modal. */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ opacity: behind ? 0.35 : undefined }}>
+          from chaining into the page behind the modal.
+          A column whose ONE child grows (Hugh, 2026-10-27): on the phone the sheet stands at its full height, so the
+          sheet's own column fills the body and a loading block in it (`SheetLoading`, `flex-1`) fills what is left,
+          rather than standing at its minimum over empty sheet. The flex chain #2234 continued for a place tab's
+          loading screen. A sheet taller than the body still scrolls: growing never shrinks a child below its content. Only
+          an only child: a body of several children would otherwise share the free height out between them. */}
+      <div className="flex flex-1 min-h-0 flex-col overflow-y-auto overscroll-contain [&>:only-child]:grow" style={{ opacity: behind ? 0.35 : undefined }}>
         {children}
       </div>
       {foot != null ? <div className="flex-none" style={{ opacity: behind ? 0.55 : undefined }}>{foot}</div> : null}
