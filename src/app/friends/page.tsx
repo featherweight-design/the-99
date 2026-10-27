@@ -11,7 +11,7 @@ import { after } from "next/server";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
-import { friendDecksEnabled, ruleZeroEnabled, socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
+import { friendDecksEnabled, ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadInviteCount } from "../../lib/invites/read";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -119,6 +119,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       friendPages
       invites={invites}
       decksSeen={deckPrefs}
+      signature={signatureCardEnabled(env)}
     />
     </>
   );

@@ -1,0 +1,55 @@
+{
+  "feature": "Signature card (handoff design_handoff_the99_avatar, R1b; plan 2026-10-27-signature-card.md): the /friends head with a face (P7), the any-card search (P2, P3) and the printings screen (P5, P8, D2). PR 3 adds Home's first-run row and strip; PR 4 the Spares tab.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SIGNATURE_CARD_ENABLED on. The audit account's face is Mystical Tutor, picked in a printing whose art crop was nulled on a SCRATCH branch, so the pick reads as gone (P8). Seed it with SQL on the scratch branch only, never local-dev or staging. Read-only: no row saves.",
+  "out": "contact-sheets/signature-card",
+  "rows": [
+    {
+      "id": "head-face",
+      "label": "/friends head with a face: Your signature card: Mystical Tutor. Change (P7, call 1)",
+      "view": "src/components/social/friends-head.tsx",
+      "steps": [{ "goto": "/friends", "wait": "h1:visible", "settle": 2500 }]
+    },
+    {
+      "id": "picker-search",
+      "label": "Search any card: type line under the name, N printings › (P2, D1)",
+      "view": "src/components/social/signature-picker.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "h1:visible", "settle": 2500 },
+        { "clickRole": "button", "name": "^Your signature card: Mystical Tutor", "waitDialog": "Your signature card", "settle": 800 },
+        { "fill": "[role=combobox]", "text": "sol", "settle": 2500 }
+      ]
+    },
+    {
+      "id": "picker-no-match",
+      "label": "No card matches (P3)",
+      "view": "src/components/social/signature-picker.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "h1:visible", "settle": 2500 },
+        { "clickRole": "button", "name": "^Your signature card: Mystical Tutor", "waitDialog": "Your signature card", "settle": 800 },
+        { "fill": "[role=combobox]", "text": "xqzv", "settle": 2500 }
+      ]
+    },
+    {
+      "id": "picker-printings",
+      "label": "A card's printings: preview, set search, Usual art first (P5, D2)",
+      "view": "src/components/social/signature-picker.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "h1:visible", "settle": 2500 },
+        { "clickRole": "button", "name": "^Your signature card: Mystical Tutor", "waitDialog": "Your signature card", "settle": 800 },
+        { "fill": "[role=combobox]", "text": "sol ring", "settle": 2500 },
+        { "clickRole": "button", "name": "^Sol Ring, \\d+ printings", "waitDialog": "Sol Ring", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "picker-gone",
+      "label": "The picked printing is gone: the note, and Usual art reads Shown now (P8)",
+      "view": "src/components/social/signature-picker.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "h1:visible", "settle": 2500 },
+        { "clickRole": "button", "name": "^Your signature card: Mystical Tutor", "waitDialog": "Your signature card", "settle": 800 },
+        { "fill": "[role=combobox]", "text": "mystical tutor", "settle": 2500 },
+        { "clickRole": "button", "name": "^Mystical Tutor, \\d+ printings", "waitDialog": "Mystical Tutor", "settle": 3000 }
+      ]
+    }
+  ]
+}

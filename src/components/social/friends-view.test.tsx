@@ -11,6 +11,9 @@ const a = vi.hoisted(() => ({
   unfriendAction: vi.fn(),
   listDeckCommandersAction: vi.fn(),
   searchFaceCommandersAction: vi.fn(),
+  listDeckFacesAction: vi.fn(),
+  searchFaceCardsAction: vi.fn(),
+  listFacePrintingsAction: vi.fn(),
 }));
 vi.mock("../../app/friends/actions", () => a);
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
@@ -24,6 +27,8 @@ import type { Friend } from "../../lib/social/access";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
 const SOKKA = { oracleId: "o-sokka", name: "Sokka, Tenacious Tactician", artCropUri: "https://x/sokka.jpg", colorIdentity: ["W", "U"] };
+/** SOKKA as the player's own face: the own read also carries the pick behind it. */
+const OWN_SOKKA = { ...SOKKA, printingId: null, printingGone: false };
 const DAVE: Friend = { publicId: "p-dave", displayName: "Dave", since: new Date("2026-10-02T12:00:00Z"), commander: SOKKA };
 const JO: Friend = { publicId: "p-jo", displayName: "Jo", since: new Date("2026-09-14T12:00:00Z"), commander: null };
 const link = (i: number, expiresAt = new Date("2026-10-22T21:41:00Z")) => ({
@@ -68,7 +73,7 @@ describe("the head", () => {
   });
 
   it("draws your face with its Change label once one is set, and no Choose", () => {
-    draw({ profile: { publicId: "p-me", displayName: "Hugh", commander: SOKKA } });
+    draw({ profile: { publicId: "p-me", displayName: "Hugh", commander: OWN_SOKKA } });
     expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeTruthy();
     expect(screen.queryByRole("button", { name: socialCopy.commander.choose })).toBeNull();
   });
@@ -311,10 +316,27 @@ describe("the head", () => {
     fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
     const tile = await screen.findByRole("button", { name: SOKKA.name });
     await act(async () => fireEvent.click(tile));
-    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh", commander: AANG } }));
+    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh", commander: { ...AANG, printingId: null, printingGone: false } } }));
     await act(async () => answer({ ok: true }));
     expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(AANG.name) })).toBeTruthy();
     expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
+  });
+
+  it("with the signature card on, names it so, and a save that answers after a newer redraw keeps the redraw", async () => {
+    const AANG = { oracleId: "o-aang", name: "Avatar Aang", artCropUri: "https://x/aang.jpg", colorIdentity: ["W", "U", "B", "R", "G"] };
+    let answer: (v: unknown) => void = () => {};
+    a.listDeckFacesAction.mockResolvedValue({ ok: true, tiles: [{ ...SOKKA, printingId: null }] });
+    a.setCommanderAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    const { rerender } = draw({ signature: true });
+    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.signature.choose })[0]);
+    expect(await screen.findByRole("dialog", { name: socialCopy.signature.title })).toBeTruthy();
+    await act(async () => fireEvent.click(await screen.findByRole("button", { name: SOKKA.name })));
+    expect(a.setCommanderAction).toHaveBeenCalledWith(SOKKA.oracleId, null);
+    rerender(view({ signature: true, profile: { publicId: "p-me", displayName: "Hugh", commander: { ...AANG, printingId: null, printingGone: false } } }));
+    await act(async () => answer({ ok: true }));
+    expect(screen.queryByRole("dialog", { name: socialCopy.signature.title })).toBeNull();
+    expect(screen.getByRole("button", { name: socialCopy.signature.changeAria(AANG.name) })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: socialCopy.signature.changeAria(SOKKA.name) })).toBeNull();
   });
 
   it("follows the server's redraw of the name and the face, keeping a pending name only until it lands", async () => {
@@ -328,7 +350,7 @@ describe("the head", () => {
     rerender(view({ profile: { publicId: "p-me", displayName: "Hugh", commander: null } }));
     expect(screen.getByText("New").tagName).toBe("B");
     // The redraw lands, from this write or another tab's: the head takes it.
-    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh H.", commander: SOKKA } }));
+    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh H.", commander: OWN_SOKKA } }));
     expect(screen.getByText("Hugh H.").tagName).toBe("B");
     expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeTruthy();
   });

@@ -1,13 +1,14 @@
 // The face picker's reads (Social R1 PR A, E2, G13). The deck row's query reads the viewer's own decks,
 // newest first; `deckTiles` turns them into tiles; `probe:social` proves both, and the search, on a database.
 import { describe, expect, it } from "vitest";
-import { canLeadADeck, DECK_COMMANDER_TILES, deckCommandersQuery, deckTiles, searchFaceCommanders } from "./commander-picker";
+import { canLeadADeck, DECK_COMMANDER_TILES, deckCommandersQuery, deckTiles, faceCardsQuery, searchFaceCommanders } from "./commander-picker";
 
 const VIEWER = "user_viewer";
 
 const LEGEND = { type: "Legendary Creature — Elf Druid", text: "", cost: "{G}", layout: "normal" };
 /** A deck row; `banned` names a commander of it that is no longer commander-legal. */
 const deck = (lead: string, partner: string | null = null, banned: string[] = []) => ({
+  deckId: `deck-${lead}`,
   leadId: lead, leadName: `Name ${lead}`, leadArt: `art/${lead}`, leadIdentity: ["G"],
   leadLegal: !banned.includes(lead), leadType: LEGEND.type, leadText: LEGEND.text, leadCost: LEGEND.cost, leadLayout: LEGEND.layout,
   partnerId: partner, partnerName: partner === null ? null : `Name ${partner}`, partnerArt: partner === null ? null : `art/${partner}`,
@@ -93,5 +94,22 @@ describe("canLeadADeck", () => {
   });
   it("takes a card whose text says it can be your commander", () => {
     expect(canLeadADeck({ ...legend, typeLine: "Planeswalker — Teferi", oracleText: "Teferi can be your commander." })).toBe(true);
+  });
+});
+
+describe("faceCardsQuery (the signature card search)", () => {
+  it("asks for nothing on a query too short to run", () => {
+    expect(faceCardsQuery("a")).toBeNull();
+  });
+
+  it("counts each card's printings with art in a subquery qualified on both sides", () => {
+    const q = faceCardsQuery("plains")!.toSQL();
+    expect(q.sql).toContain(`fp.oracle_id = "cards".oracle_id and fp.art_crop_uri is not null`);
+  });
+
+  it("offers game cards only, by the rule setCommander saves by", () => {
+    const q = faceCardsQuery("plains")!.toSQL();
+    expect(q.sql).toContain(`"cards"."layout" not in (`);
+    expect(q.sql).toContain(`limit $`);
   });
 });

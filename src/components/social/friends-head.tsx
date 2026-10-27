@@ -23,7 +23,6 @@ import { PendingReporter } from "../shell/pending-reporter";
 import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 
 const p = socialCopy.page;
-const c = socialCopy.commander;
 
 export const ACCENT_BUTTON =
   "inline-flex h-[44px] cursor-pointer items-center justify-center rounded-[8px] border-0 bg-[color:var(--accent)] px-[20px] font-sans text-[14px] font-semibold text-[color:var(--bg)]";
@@ -41,6 +40,7 @@ export function FriendsHead({
   inviteRef,
   inviteCount,
   decksSeen = null,
+  signature = false,
 }: {
   name: string;
   commander: ProfileCommander | null;
@@ -67,7 +67,10 @@ export function FriendsHead({
    * rules let a friend open, and links to Settings. Null (off): the shipped line.
    */
   decksSeen?: FriendDeckPrefs | null;
+  /** `SIGNATURE_CARD_ENABLED` on for the reader: the face is named their signature card, not their commander. */
+  signature?: boolean;
 }) {
+  const c = signature ? socialCopy.signature : socialCopy.commander;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const form = useRef<HTMLFormElement>(null);

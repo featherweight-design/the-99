@@ -213,6 +213,45 @@ export const socialCopy = {
     failed: "We couldn’t save your commander. Try again.", // toast, role alert
   },
 
+  // The signature card (avatar handoff 20, `SIGNATURE_CARD_ENABLED`): the face as any card in any printing. Drawn in
+  // place of `commander` while the switch is on; `commander` is what ships with it off.
+  signature: {
+    choose: "Choose your signature card", // the head's press, the empty tile's aria-label, and the ask's
+    changeAria: (card: string) => `Your signature card: ${card}. Change`,
+    title: "Your signature card",
+    sub: "Friends see its art beside your name. Any card, any printing, owned or not.",
+    search: "Search cards",
+    anyNote: "Any card in the catalog, owned or not.",
+    noResults: (q: string) => `No card matches “${q}”.`,
+    // Not drawn (as E15): a search that failed, in the list's place, role alert. Typing asks again.
+    searchFailed: "We couldn’t search cards. Try again.",
+    /** A result with more than one printing: its trailing `N printings ›`, the chevron drawn apart. */
+    printings: (n: number) => `${n} printings`,
+    /** The same row, spoken: it opens a screen rather than saving. */
+    printingsAria: (card: string, n: number) => `${card}, ${n} printings. Choose one`,
+    /** A row or tile whose save is in flight. */
+    saving: "Saving",
+    back: "Back",
+    printingsSub: (n: number) => `${n} printings. Press one to use its art.`,
+    previewNote: "Friends see this, cropped to its art.",
+    previewSaving: "Saving…",
+    previewNow: "What friends see now.",
+    usualArt: "Usual art",
+    /** The preview's printing line: "Eternal Masters · EMA". */
+    previewLine: (set: string, code: string) => `${set} · ${code}`,
+    setSearch: "Search sets, codes or numbers",
+    setNoResults: (q: string) => `No printing matches “${q}”.`,
+    /** A printing tile's name, spoken: set, code and collector number, so two printings of one set differ. */
+    tileName: (set: string, code: string, number: string) => (number ? `${set} ${code} #${number}` : `${set} ${code}`),
+    /** A tile, spoken: its name, and whether it is the face now. */
+    tileAria: (name: string, current: boolean) => (current ? `${name}, your signature card now` : name),
+    /** P8: a pick that can no longer be drawn (its printing lost its art), on that card's printing screen only. */
+    gone: "The printing you picked can’t be shown now, so friends see the usual art. Pick another any time.",
+    // Not drawn: a card's printings that could not be read, in the grid's place, role alert. ‹ goes back.
+    printingsFailed: "We couldn’t load its printings. Go back and try again.",
+    failed: "We couldn’t save your signature card. Try again.", // toast, role alert
+  },
+
   dialog: {
     title: "Add a friend",
     // C2 (copy review): opening a link does not spend it; accepting does.
