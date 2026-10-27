@@ -1,0 +1,20 @@
+{
+  "feature": "What's new rows on Home and Waiting on you on /friends: the time and the press at desktop, and the trade-match press label (d9, 2026-10-27)",
+  "clearAbout": true,
+  "note": "Needs HOME_FEED_ENABLED, SOCIAL_FRIENDS_ENABLED, SOCIAL_WISHLIST_ENABLED, SPARE_REQUESTS_ENABLED and COMMANDERS_PLACE_ENABLED on, on a SCRATCH branch seeded with a friend who shares a wishlist card as a spare with a pod the reader is in, and every feed kind on for the reader (enabled 30 days back, so new sets arrive). Visit /friends once first: it notices the trade matches after its response. Read-only: nothing is pressed.",
+  "out": "contact-sheets/whats-new-rows",
+  "rows": [
+    {
+      "id": "home-whats-new",
+      "label": "Home: What's new rows, the kicker line's time and the press",
+      "view": "src/components/feed/feed-item.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-feed-press]", "settle": 2500 }]
+    },
+    {
+      "id": "friends-waiting",
+      "label": "/friends: Waiting on you, the trade-match row's time and press",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "steps": [{ "goto": "/friends", "wait": "[data-testid=waiting-on-you]", "settle": 2500 }]
+    }
+  ]
+}

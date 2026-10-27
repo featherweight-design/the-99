@@ -44,7 +44,7 @@ const BASE = {
 
 const view = (n: number, o: Partial<FeedView> = {}): FeedView => ({
   key: `k${n}`, kind: "new-set", at: new Date(Date.parse(NOW) - (n + 1) * 3_600_000).toISOString(), unseen: false,
-  card: null, friend: null, href: `/collection/sets/s${n}`, opens: null, name: `Set ${n}`, setSize: null, owned: null, drop: null, combo: null, answer: null, ...o,
+  card: null, friend: null, href: `/collection/sets/s${n}`, opens: null, name: `Set ${n}`, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...o,
 });
 const LEAD = view(0, {
   kind: "trade-match", unseen: true, key: "lead", name: null, href: "/friends/p1",

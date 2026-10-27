@@ -85,6 +85,8 @@ export const feedCopy = {
       newPrecon: "Open in Precons",
       priceDrop: "Open the card",
       tradeMatch: (friend: string) => `See ${friend}’s spares`,
+      /** With spare requests on, the press opens that card's spares sheet with Ask (signature card call 9). */
+      tradeMatchAsk: (friend: string) => `Ask ${friend}`,
       combo: "See the combo",
       /** An answer to the reader's own spare request: to Your requests on Friends. */
       answer: "Your requests",

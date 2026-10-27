@@ -6,7 +6,7 @@ import { toPushItem } from "./to-push-item";
 const card = { oracleId: "o1", name: "Jace, Multiverse Architect", image: "img", art: null, colorIdentity: null };
 const view = (over: Partial<FeedView>): FeedView => ({
   key: "k1", kind: "price-drop", at: "2026-10-22T00:00:00.000Z", unseen: true, card, friend: null, href: null, opens: null,
-  name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, ...over,
+  name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...over,
 });
 const friend = { publicId: "p-colin", displayName: "Colin" };
 
@@ -18,6 +18,10 @@ describe("a feed view as a push item", () => {
   });
   it("trade match: the friend and the card", () => {
     expect(toPushItem(view({ kind: "trade-match", friend }), "b")).toMatchObject({ kind: "trade-match", friend: "Colin", publicId: "p-colin", oracleId: card.oracleId, card: card.name });
+  });
+  it("trade match: carries whether its tap asks", () => {
+    expect(toPushItem(view({ kind: "trade-match", friend, askable: true }), "b")).toMatchObject({ kind: "trade-match", askable: true });
+    expect(toPushItem(view({ kind: "trade-match", friend }), "b")).toMatchObject({ kind: "trade-match", askable: false });
   });
   it("spare request: the friend and the card", () => {
     expect(toPushItem(view({ kind: "spare-request", friend }), "b")).toMatchObject({ kind: "spare-request", friend: "Colin", card: card.name });

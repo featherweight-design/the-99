@@ -14,7 +14,12 @@ export const pushCopy = {
     newSet: { title: t.newSet, body: (cards: number | null) => (cards === null ? "See the set." : `${feedCopy.home.line.newSet(cards)} See the set.`) },
     newPrecon: { title: t.newPrecon, body: feedCopy.home.line.newPrecon },
     priceDrop: { title: t.priceDrop, body: (was: string, now: string) => `Was ${was}, now ${now} at the cheapest printing.` },
-    tradeMatch: { title: t.tradeMatch, body: feedCopy.home.line.tradeMatch },
+    tradeMatch: {
+      title: t.tradeMatch,
+      body: feedCopy.home.line.tradeMatch,
+      /** With spare requests on, a tap opens that card's spares sheet with Ask, so the body says so. */
+      bodyAsk: (friend: string) => `${feedCopy.home.line.tradeMatch} Ask ${friend} for it.`,
+    },
     spareRequest: { title: t.spareRequest, body: feedCopy.home.line.spareRequest },
     /** A friend's answer to the reader's own spare request: Your requests' title, and where it is listed. */
     spareAnswer: {

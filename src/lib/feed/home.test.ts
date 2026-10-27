@@ -102,7 +102,7 @@ describe("loadHomeFeed", () => {
 
 const view = (o: Partial<FeedView>): FeedView => ({
   key: "k", kind: "new-set", at: "2026-10-22T00:00:00Z", unseen: true, card: null, friend: null, href: null, opens: null,
-  name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, ...o,
+  name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...o,
 });
 
 describe("splitLead (the lead-story pick)", () => {
@@ -148,6 +148,13 @@ describe("toViews", () => {
 
   it("refuses a combo whose data is not two named pieces", () => {
     expect(comboPieces({ cards: [{ oracleId: "a", name: "A" }] })).toBeNull();
+  });
+
+  it("marks a trade match askable only with spare requests on for the reader, and no other kind", () => {
+    const trade = { kind: "trade-match", key: "item:t", createdAt: NOW, unseen: true, oracleId: "g", variantId: null, friend: { publicId: "p", displayName: "Colin" }, data: {} } as FeedItem;
+    const price = { kind: "price-drop", key: "item:p", createdAt: NOW, unseen: true, oracleId: "g", variantId: null, friend: null, data: {} } as FeedItem;
+    expect(toViews([trade, price], { ...empty, askable: true }).map((v) => v.askable)).toEqual([true, false]);
+    expect(toViews([trade], empty)[0].askable).toBe(false);
   });
 
   it("gives a spare request (a later round) no press", () => {

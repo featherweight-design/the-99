@@ -24,6 +24,7 @@ import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
 import { loadFriendSpares, type FriendSpare } from "../social/spares";
 import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds, homeFeedEnabled } from "./flag";
+import { spareRequestsEnabled } from "../social/flag";
 import { leadStory, type FeedKind } from "./kinds";
 import { effectiveKinds, markFeedSeen, readFeedPrefs } from "./prefs";
 import { loadFeed, type FeedItem } from "./read";
@@ -69,6 +70,11 @@ export type FeedView = {
    * Null on every other item, an incoming ask included. Its press goes to `/friends`, where Your requests lists it.
    */
   answer: Answer | null;
+  /**
+   * A trade match whose press opens the card's spares sheet with Ask: `SPARE_REQUESTS_ENABLED` for the reader. False on
+   * every other item, and on a trade match with spare requests off (the press then opens the friend's Spares tab).
+   */
+  askable: boolean;
   /** Home only (`withAnswerDetails`): what the answer's line says. Absent on a push. */
   answerDetail?: AnswerDetail;
 };
@@ -162,6 +168,8 @@ export function toViews(
     precons: Map<string, FeedCard>;
     owned: Map<string, { owned: number; of: number }>;
     cards: Map<string, FeedCard>;
+    /** `SPARE_REQUESTS_ENABLED` for the reader: a trade match's press asks. */
+    askable?: boolean;
   },
 ): FeedView[] {
   return items.map((item): FeedView => {
@@ -179,6 +187,7 @@ export function toViews(
       drop: null,
       combo: null,
       answer: null,
+      askable: false,
     } satisfies Omit<FeedView, "card">;
     if (item.kind === "new-set") {
       const s = found.sets.get(item.code) ?? null;
@@ -197,7 +206,7 @@ export function toViews(
       }
       case "trade-match":
         // The card's modal opens on landing (signature card call 9): `?spare=` names it.
-        return { ...base, card, friend, href: friend ? `/friends/${encodeURIComponent(friend.publicId)}${item.oracleId ? `?spare=${encodeURIComponent(item.oracleId)}` : ""}` : null };
+        return { ...base, card, friend, askable: found.askable === true, href: friend ? `/friends/${encodeURIComponent(friend.publicId)}${item.oracleId ? `?spare=${encodeURIComponent(item.oracleId)}` : ""}` : null };
       case "combo": {
         const c = comboPieces(item.data);
         return { ...base, card, opens: c?.first ?? item.oracleId, combo: c && { pieces: c.pieces, added: c.added } };
@@ -238,6 +247,7 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
     precons: new Map(preconRows.map((r) => [r.file_name, toCard(r)])),
     owned: new Map(ownedRows.map((r) => [r.file_name, { owned: Number(r.owned), of: Number(r.total) }])),
     cards: new Map(cardRows.map((r) => [r.oracle_id, { ...toCard(r), image: art.get(r.oracle_id) ?? r.image }])),
+    askable: spareRequestsEnabled(env),
   };
 }
 

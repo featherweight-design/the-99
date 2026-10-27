@@ -10,7 +10,7 @@ import type { FeedView } from "../../lib/feed/home";
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (o: Partial<FeedView>): FeedView => ({
   key: "k", kind: "new-set", at: "2026-10-22T07:00:00Z", unseen: true, card: { oracleId: "c", name: "Sai, Master Thopterist", image: "sai.jpg", art: null, colorIdentity: ["U"] },
-  friend: null, href: null, opens: null, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, ...o,
+  friend: null, href: null, opens: null, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false, ...o,
 });
 const list = (node: React.ReactNode) => render(<ul>{node}</ul>);
 
@@ -56,6 +56,12 @@ describe("FeedItemRow", () => {
     expect(screen.getByText("Colin has a spare Ghalta, Primal Hunger")).toBeInTheDocument();
     expect(container.querySelector("[data-feed-face] [data-face=art]")).not.toBeNull();
     expect(screen.getByRole("link", { name: "See Colin’s spares ›" })).toHaveAttribute("href", "/friends/p1");
+  });
+
+  it("names a trade match's press Ask {friend} when it opens the card's sheet with Ask", () => {
+    list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: "Colin" }, href: "/friends/p1?spare=g", askable: true })} now={NOW} />);
+    expect(screen.getByRole("link", { name: "Ask Colin ›" })).toHaveAttribute("href", "/friends/p1?spare=g");
+    expect(screen.queryByRole("link", { name: "See Colin’s spares ›" })).toBeNull();
   });
 
   it("writes a price drop as the struck old price and the new one", () => {

@@ -5,7 +5,7 @@ import { collapse, messagesFor, toMessage, type PushItem } from "./message";
 const set = (key: string, name: string, batch = "run-1"): PushItem => ({ kind: "new-set", key, batch, name, cards: 281, href: `/collection/sets/${key}` });
 const precon = (key: string, name: string, batch = "run-1"): PushItem => ({ kind: "new-precon", key, batch, name, owned: 31, of: 100, href: `/decks/precons/${key}` });
 const drop = (key: string, card: string, batch = "run-1"): PushItem => ({ kind: "price-drop", key, batch, oracleId: `o-${key}`, card, wasCents: 840, nowCents: 510, image: `img-${key}` });
-const match = (key: string, friend: string, publicId: string, card = "Ghoulcaller Gisa", batch = "w-1"): PushItem => ({ kind: "trade-match", key, batch, friend, publicId, oracleId: `o-${key}`, card, image: `img-${key}` });
+const match = (key: string, friend: string, publicId: string, card = "Ghoulcaller Gisa", batch = "w-1"): PushItem => ({ kind: "trade-match", key, batch, friend, publicId, oracleId: `o-${key}`, card, image: `img-${key}`, askable: false });
 const ask = (key: string, friend = "Peter"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card: "Lathliss, Dragon Queen", image: null });
 const answer = (key: string, friend: string, said: "yes" | "no"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card: "Lathliss, Dragon Queen", image: null, answer: said });
 const combo = (key: string, batch = "u-1"): PushItem => ({ kind: "combo", key, batch, oracleId: `o-${key}`, a: "Thassa's Oracle", b: "Demonic Consultation", added: "Demonic Consultation", image: `img-${key}` });
@@ -29,6 +29,11 @@ describe("one item of each kind (the handoff's table)", () => {
   });
   it("trade match: the friend's page", () => {
     expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: "It’s on your wishlist.", route: "/friends/p-colin?spare=o-m1" });
+  });
+  it("trade match with spare requests on: the body says to ask, and the tap opens the card's sheet", () => {
+    expect(toMessage([{ ...match("m1", "Colin", "p-colin"), askable: true } as PushItem])).toMatchObject({
+      body: "It’s on your wishlist. Ask Colin for it.", route: "/friends/p-colin?spare=o-m1",
+    });
   });
   it("spare request: says where to answer, lands on Friends", () => {
     expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: "Answer in Friends.", route: "/friends", tag: "spare-request:r1" });
