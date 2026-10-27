@@ -124,18 +124,19 @@ describe("FeedItemRow", () => {
     expect(container.querySelector<HTMLElement>("[data-feed-picture]")!.className).toContain("z-[1]");
   });
 
-  // Hugh, 2026-10-27: a price drop opens the card on Mana Pool in a new tab, named as card details' link out is.
+  // Hugh, 2026-10-27: a price drop opens the card on Mana Pool in a new tab, drawn as card details' link out is, under its own
+  // label (Hugh's follow-up the same day: "Buy at Mana Pool").
   it("opens a price drop's card on Mana Pool in a new tab, never its detail", () => {
     open.mockClear();
     const url = "https://manapool.com/cards?q=Sai";
     const { container } = list(<FeedItemRow item={view({ kind: "price-drop", outbound: url, drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
-    const press = screen.getByRole("link", { name: /^Buy any printing at Mana Pool\s*\(opens in a new tab\)$/ });
+    const press = screen.getByRole("link", { name: /^Buy at Mana Pool\s*\(opens in a new tab\)$/ });
     expect(press.getAttribute("href")).toBe(url);
     expect(press.getAttribute("target")).toBe("_blank");
     expect(press.getAttribute("rel")).toBe("noopener");
     expect(press.textContent).not.toContain("›");
     // Bound to the label by a no-break space: a plain one collapses at the flex press's edge (shot 2026-10-27).
-    expect(press.textContent).toContain("Mana Pool\u00a0↗");
+    expect(press.textContent).toBe("Buy at Mana Pool\u00a0↗ (opens in a new tab)");
     const picture = container.querySelector("[data-feed-picture]")!;
     expect(picture.getAttribute("href")).toBe(url);
     expect(picture.getAttribute("target")).toBe("_blank");
