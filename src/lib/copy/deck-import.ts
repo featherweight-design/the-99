@@ -384,7 +384,7 @@ export const deckImportCopy = {
     bannerActionAria: "Take a look at the unresolved lines",
 
     groupLabel: "Couldn’t identify",
-    groupNote: "counted in the 99, not in what’s built",
+    groupNote: (body: number) => `counted in the ${body}, not in what’s built`,
     rowTag: "unmatched",
     /** Said aloud beside the row's `?`, which is the only visual sign of what the row is. */
     rowSpoken: "unmatched line",
@@ -395,7 +395,7 @@ export const deckImportCopy = {
       quantity > 1
         ? `Unmatched line: “${raw}”, quantity ${quantity}. Choose the card this was meant to be.`
         : `Unmatched line: “${raw}”. Choose the card this was meant to be.`,
-    footnoteMobile: "These count toward the 99 but not toward what’s built.",
+    footnoteMobile: (body: number) => `These count toward the ${body} but not toward what’s built.`,
     // The second half of Design's mobile footnote, held back until the rows are
     // actually tappable. Promising a gesture the surface does not yet offer is
     // worse than saying less.

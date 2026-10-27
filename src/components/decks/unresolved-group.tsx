@@ -191,7 +191,7 @@ export function UnresolvedGroup({
             // `groupNote` and the footnote are for.
             count={ordered.length}
             countColor="var(--warning)"
-            note={copy.groupNote}
+            note={copy.groupNote(bodySize)}
             headingId="unresolved-h"
           />
 
@@ -272,7 +272,7 @@ export function UnresolvedGroup({
           style={{ color: "var(--fg-faint)" }}
         >
           <span className="md:hidden">
-            {copy.footnoteMobile} {copy.footnoteMobileResolve}
+            {copy.footnoteMobile(bodySize)} {copy.footnoteMobileResolve}
           </span>
           <span className="hidden md:inline">
             {copy.footnote(ordered.length, bodySize)}
