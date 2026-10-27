@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Three small items</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+*{box-sizing:border-box}
+p{margin:0}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--surface-inset:#1B1712;--elevated:#29241F;--elevated-hover:#201C17;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--accent:#CF8745;--accent-text:#CF8745;--accent-shadow:#6B482A;--success:#6FA368;--warning:#DEAA29;--fact:#8FA6BE;--danger:#C6533F;--w:#F4E9C4;--u:#3A6AA5;--b:#98748F;--r:#C05A3E;--g:#4B7A46;
+ padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:34px}
+.m{font-family:'IBM Plex Mono',monospace}
+.bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.bh h2{margin:0;font:700 30px 'Cinzel',serif}
+.bh p{font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.bh p b{color:var(--fg)}
+code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
+.frames{display:flex;flex-wrap:nowrap;gap:44px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none}
+.fr>.lab{width:0;min-width:100%;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.fr>.lab b{color:var(--accent);font-weight:600}
+.fr>.cap{width:0;min-width:100%;font-size:13px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty}
+.fr>.cap b{color:var(--fg);font-weight:600}
+.note{border:1px solid var(--border-strong);border-radius:12px;background:#15120F;padding:16px 18px;font-size:13px;line-height:1.6;color:var(--fg-body)}
+.note b{color:var(--fg)}
+.note h4{margin:0 0 4px;font:600 13px 'IBM Plex Sans';color:var(--fg)}
+.note ul,.note ol{margin:6px 0 0;padding-left:18px}
+.note li{margin:4px 0}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:1500px}
+.new{outline:1.5px dashed rgba(207,135,69,.8);outline-offset:3px;border-radius:8px}
+.later{outline:1.5px dashed rgba(143,166,190,.85);outline-offset:3px;border-radius:8px;position:relative}
+.later::after{content:'later round';position:absolute;right:-2px;top:-17px;font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;white-space:nowrap}
+.fold{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed rgba(143,166,190,.85);z-index:30;pointer-events:none}
+.fold span{position:absolute;left:10px;top:-19px;font:600 9.5px 'IBM Plex Mono',monospace;color:#0D0B09;background:#8FA6BE;border-radius:4px;padding:2px 6px}
+.tbl{border-collapse:collapse;font-size:12.5px;color:var(--fg-body);width:100%}
+.tbl th{text-align:left;font:500 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint);padding:8px 10px;border-bottom:1px solid var(--border-strong)}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+.tbl td b{color:var(--fg)}
+
+/* ---------------- shell: phone ---------------- */
+.ph{width:390px;flex:none;border-radius:34px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;position:relative;display:flex;flex-direction:column;color:var(--fg)}
+.ph .pb{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.mhd{height:79px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);background:var(--bg)}
+.wm{display:flex;align-items:flex-end;gap:4px}
+.wm .the{font:9px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:var(--accent);padding-bottom:4px}
+.wm .mk{display:flex;flex-direction:column;align-items:center;gap:2px}
+.wm .nn{font:800 24px/22px 'Cinzel',serif;color:var(--fg)}
+.dia{display:flex;gap:3px;align-items:center}.dia i{width:5px;height:5px;background:var(--accent);transform:rotate(45deg);display:block}.dia i:nth-child(2){width:7px;height:7px}
+.clu{display:flex;align-items:center;gap:6px;color:var(--fg-body)}
+.clu .ib{width:38px;height:38px;display:flex;align-items:center;justify-content:center}
+.clu .q{font:500 16px 'IBM Plex Sans';color:var(--fg-body)}
+.av{width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);color:var(--accent);font:500 13px 'IBM Plex Sans';display:flex;align-items:center;justify-content:center}
+.av.on{box-shadow:0 0 0 3px rgba(207,135,69,.25)}
+.tbar{height:74px;flex:none;display:flex;align-items:center;padding:8px 8px 14px;background:var(--surface-rail);border-top:1px solid var(--border)}
+.tbar .t{flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:12px;color:var(--fg-faint);font:9px 'IBM Plex Mono';letter-spacing:.06em;position:relative}
+.tbar .t.on{background:var(--surface-inset);color:var(--fg)}
+.tbar .t.lk{color:var(--fg-locked)}
+.tbar.lock{flex-direction:column;align-items:stretch;padding:7px 8px 14px;height:88px}
+.tbar.lock .row{display:flex;align-items:center}
+.brk{position:relative;height:14px;flex:none}
+.brk i{position:absolute;top:7px;left:8px;right:8px;height:6px;border:1px solid var(--border-strong);border-bottom:0;border-radius:3px 3px 0 0}
+.brk em{position:absolute;top:0;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:5px;white-space:nowrap;background:var(--surface-rail);padding:0 7px;font:normal 9px/14px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--fg-locked)}
+.bdg{position:absolute;top:3px;left:calc(50% + 4px);min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--accent);color:#14110E;font:600 9.5px/16px 'IBM Plex Mono';text-align:center;letter-spacing:0;box-shadow:0 0 0 2px var(--surface-rail)}
+.bdg.dot{min-width:8px;width:8px;height:8px;padding:0;top:6px;left:calc(50% + 6px)}
+
+/* ---------------- shell: desktop ---------------- */
+.dk{width:1300px;flex:none;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;position:relative}
+.rail{width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px}
+.rail.touch{width:88px}
+.rail .mk{display:flex;flex-direction:column;align-items:center;gap:3px;margin-bottom:20px}
+.rail .mk .nn{font:800 19px/18px 'Cinzel',serif}
+.rail .sl{width:38px;height:38px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--fg-faint);position:relative;flex:none}
+.rail.touch .sl{width:72px;height:52px;border-radius:12px;gap:3px}
+.rail .sl em{display:none;font:normal 9px/12px 'IBM Plex Mono';letter-spacing:.06em}
+.rail.touch .sl em{display:block}
+.rail .sl.on{background:var(--elevated);color:var(--fg)}
+.rail .sl.lk{color:var(--fg-locked)}
+.rail .sep{width:24px;height:1px;background:var(--border-strong);margin:6px 0;flex:none}
+.rail .well{width:48px;border-radius:12px;border:1px solid var(--border);background:var(--surface-sunken);display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0 9px}
+.rail.touch .well{width:80px;border-radius:14px}
+.rail .well small{font:normal 8px 'IBM Plex Mono';letter-spacing:.08em;color:var(--fg-locked);display:flex;flex-direction:column;align-items:center;gap:3px}
+.rail .foot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:10px}
+.rail .rav{width:30px;height:30px;border-radius:50%;border:1px solid var(--accent);color:var(--accent);font:500 11px 'IBM Plex Sans';display:flex;align-items:center;justify-content:center}
+.rail .rav.on{box-shadow:0 0 0 3px rgba(207,135,69,.25)}
+.rail .hq{width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font:500 14px 'IBM Plex Sans'}
+.rail .bdg{top:2px;left:calc(50% + 3px);box-shadow:0 0 0 2px var(--surface-rail)}
+.rail.touch .bdg{top:4px;left:calc(50% + 5px)}
+.rtag{position:absolute;z-index:20;height:28px;display:flex;align-items:center;padding:0 10px;border-radius:7px;background:var(--surface-raised);border:1px solid var(--border-strong);font:500 12.5px 'IBM Plex Sans';color:var(--fg);white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* buttons */
+.bp{display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--fg);color:var(--bg);font:500 14px 'IBM Plex Sans';height:44px;padding:0 16px;white-space:nowrap}
+.bg{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font:400 14px 'IBM Plex Sans';height:44px;padding:0 14px;white-space:nowrap}
+.ba{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--accent);color:var(--bg);font:600 14px 'IBM Plex Sans';height:44px;padding:0 20px;white-space:nowrap}
+.dk .bp,.dk .bg{height:32px;border-radius:8px;font-size:12.5px;padding:0 14px}
+.lnk{color:var(--accent-text);font:500 13.5px 'IBM Plex Sans';white-space:nowrap}
+.sh{margin:0;font:400 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);display:flex;align-items:baseline;gap:8px}
+.sh em{font-style:normal;color:var(--fg-locked);letter-spacing:.14em;text-transform:lowercase}
+.sh .r{margin-left:auto;text-transform:none;letter-spacing:0;font:400 12.5px 'IBM Plex Sans';color:var(--fg-muted);display:flex;align-items:center;gap:4px}
+.sh .r i{font-style:normal;color:var(--fg-faint);font-size:15px;line-height:1}
+.sh .r.acc{color:var(--accent-text)}
+
+.calls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1500px}
+.call{border:1px solid var(--border-strong);border-radius:12px;background:#15120F;padding:18px 20px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.6;color:var(--fg-body)}
+.call .n{font:600 10.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.call h3{margin:0;font:700 19px 'Cinzel',serif;color:var(--fg)}
+.call b{color:var(--fg)}
+.call ul{margin:0;padding-left:18px}.call li{margin:3px 0}
+.call .bd2{font:10.5px 'IBM Plex Mono';color:var(--fg-faint);border-top:1px solid var(--border);padding-top:10px}
+</style>
+</helmet>
+<div class="board" style="width:1612px"><div class="bh"><div class="kick"><span class="tag">R1</span>Three small items · 27 Oct 2026</div><h2>Three calls, one board each</h2><p>A light addendum: three unrelated items, each drawn over the shipped surface it changes. Your new rule (give the player a choice, never lock them in) drives the first. Copy is shipped where it exists; new strings are placeholders for /copy-review.</p></div><div class="calls"><div class="call"><span class="n">1 · Proposed cuts</span><h3>Three alternatives on each cut</h3><p>Each pending cut gets a strip, <b>Or cut one of these instead</b>, with <b>three card tiles</b> under its reason and figures. A tile is one press: it swaps that card into the row with its own reason, and the card it replaced takes the tile’s slot, so switching back is one press too. <b>Cut</b> and <b>Keep</b> are unchanged and still the only way a card leaves the list.</p><ul><li>Phone: three 72 × 100 card tiles across the row. Desktop: a row of three on the reason’s indent, card, name and type line, with the shipped hover preview.</li><li>Three because three card-size tiles fit the phone row without scrolling. Fewer when the run can’t back three; none and the row is as shipped.</li><li>Engineering: the same Look deeper run names the runners-up (same credit, same checks). A pick is remembered, so History shows the card you chose.</li></ul><span class="bd2">Board: Cuts-Alternatives</span></div><div class="call"><span class="n">2 · Deck toolbar</span><h3>No draft note on the phone</h3><p><b>Leave it off.</b> On a phone the draft is said four times before the first row: the to-do card’s Review row, the mix strip’s <i>reading pending changes</i>, the list caption directly under the toolbar (<i>the brass rule marks the 6 rows you have changed</i>), and each group’s heading and brass rules. The note would repeat the caption’s count one line above it.</p><ul><li>The toolbar’s three phone rows are full; any spot for the note costs a line or crowds Lock cards and the view well.</li><li>No change to ship. A test pinning the phone’s caption and group notes during a draft would keep it settled.</li></ul><span class="bd2">Board: Draft-Note-Phone</span></div><div class="call"><span class="n">3 · Spare requests</span><h3>The answer opens a sheet over Home</h3><p><b>Engineering’s proposal, ratified:</b> ModalChrome at 560 (the phone sheet hugs its row), titled <b>Your request</b>, the shipped row for this one request with its ✕ moved to a <b>Clear</b> text button at the row’s foot, and <b>All your requests ›</b> in the foot.</p><ul><li>The sheet’s ✕ is the only ✕; Clear is words, under the text, far from it.</li><li>Clear removes the request for good, closes the sheet and takes the Home item with it. A failure keeps the sheet and shows the shared toast.</li><li>The Home item’s press reads <b>Your request ›</b> (was <i>Your requests ›</i>). The item’s own ✕ still only hides it.</li></ul><span class="bd2">Board: Spare-Answer-Sheet</span></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1612,"height":1200}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

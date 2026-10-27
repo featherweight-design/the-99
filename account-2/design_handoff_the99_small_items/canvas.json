@@ -1,0 +1,50 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-27T23:55:00Z"
+ },
+ "title": "The 99 · Three small items",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 696,
+   "title": "R1 · the three calls"
+  },
+  "Cuts-Alternatives.dc.html": {
+   "x": 0,
+   "y": 816,
+   "w": 2160,
+   "h": 5029,
+   "title": "1 · Proposed cuts · three alternatives per cut"
+  },
+  "Draft-Note-Phone.dc.html": {
+   "x": 2240,
+   "y": 816,
+   "w": 2330,
+   "h": 1833,
+   "title": "2 · Deck toolbar · the draft note on a phone"
+  },
+  "Spare-Answer-Sheet.dc.html": {
+   "x": 2240,
+   "y": 2769,
+   "w": 1876,
+   "h": 1991,
+   "title": "3 · Spare requests · the answer over Home"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Cuts-Alternatives.dc.html",
+  "Draft-Note-Phone.dc.html",
+  "Spare-Answer-Sheet.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
