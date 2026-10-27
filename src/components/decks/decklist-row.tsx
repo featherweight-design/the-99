@@ -104,7 +104,7 @@ const SHOPPING_SLOTS: LineSlots = {
  */
 const FOLD = {
   // All: the 5th mark and beyond at every width, every mark after the second at the middle tier, every mark after the first in
-  // the tight one. One more than Shopping's rhythm at each tier: an All row draws a bare `$` where it drew a price (Hugh,
+  // the tight one, unless a tier would fold exactly one mark, when it folds none (`foldsFrom`). One more than Shopping's rhythm at each tier: an All row draws a bare `$` where it drew a price (Hugh,
   // 2026-10-16), and the room that frees goes to the marks.
   all: {
     fifth: "sr-only",
