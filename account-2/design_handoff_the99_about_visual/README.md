@@ -1,4 +1,4 @@
-# The 99 — About as six visual pages (design handoff · R1)
+# The 99 — About as six visual pages (design handoff · R3)
 
 Account 2, 2026-10-27. Source of truth: Hugh's prompt in the project chat, and the three files on
 `docs-about-visual` (PR #2283), `docs/superpowers/about-visual/`: `workshop-2026-10-27.md` (Hugh's six rulings),
@@ -8,7 +8,9 @@ Replaces About's 83 text entries, the ? panel and the release banner's wording. 
 
 Canvas: https://claude.ai/artifact/2xkvoZtTrCqsXYRg5RPhV9
 
-**Status: R3 in the generator, canvas not yet republished.** R3 (Hugh, 2026-10-27): "Good to know" and "Try it" are now section heads (Cinzel 16px, 18px desktop, full ink, a hairline above), and three desktop captures were re-shot with every label of their screen in frame, boxes measured in the browser: Decks (Stats, the status chip), Versions (Built from a precon?) and Collection (the +, "none free"). The source (`scratch-gen/`, `art/`) carries R3; the `.dc.html` exports and the canvas are still R2 until the three new images are uploaded to the canvas and the boards rebuilt with `build.py blob`. **Was: R2, awaiting Hugh's audit.** R2 (Hugh, 2026-10-27): a reader sees captures of the device they are on, never the other width; on desktop each screen is three separate blocks, the labelled screen, then Good to know, then Try it, so Good to know sits right under the screen. Every picture is a real capture: phone from `public/about/shots/amonkhet`,
+**Status: R3, awaiting Hugh's audit.** R3 (Hugh, 2026-10-27): Good to know and Try it headings carry more weight (a ruled line above, Cinzel 18, the mark, a muted sub-line). Most "not in today's capture" flags are gone: fresh captures at both widths (`captures-r3/`, taken on Hugh's Mac against his local server, nothing written), and a screen may now use a second shot of itself, `(captureKey, box)` in `data.py`, numbered on in reading order. Two flags remain because they need data the audit account lacks: phone Analysis "What is in this deck" (no stored analysis) and desktop Friends "Rule 0 check" (no pod). Engineering's capture fixtures (G1) cover both.
+
+Earlier, R2: R2 (Hugh, 2026-10-27): a reader sees captures of the device they are on, never the other width; on desktop each screen is three separate blocks, the labelled screen, then Good to know, then Try it, so Good to know sits right under the screen. Every picture is a real capture: phone from `public/about/shots/amonkhet`,
 desktop 1300 from the contact sheets. Every string is a draft for `/copy-review` (`copy-strings.ts`).
 
 ## Boards

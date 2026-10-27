@@ -67,8 +67,10 @@ CSS = r"""
 .showme{display:inline-block;margin-top:4px;font:500 12px 'IBM Plex Mono';color:var(--accent-text)}
 
 /* good to know */
-.gk-h,.try-h{display:flex;align-items:center;gap:10px;font:600 16px 'Cinzel',serif;letter-spacing:.02em;color:var(--fg);padding-top:14px;border-top:1px solid var(--border)}
-.dk .gk-h,.dk .try-h{font-size:18px;padding-top:18px}
+.gk-h,.try-h{display:flex;align-items:center;gap:10px;padding-top:14px;border-top:1px solid var(--border)}
+.gk-h b,.try-h b{font:600 18px 'Cinzel',serif;color:var(--fg);letter-spacing:.01em}
+.gk-h em,.try-h em{font-style:normal;font-size:13px;color:var(--fg-muted);margin-left:2px}
+.try-h .ring{box-sizing:border-box;display:flex;flex:none;width:22px;height:22px;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--accent);color:var(--accent-text);font-size:12px}
 .mark{box-sizing:border-box;display:flex;flex:none;width:22px;height:22px;align-items:center;justify-content:center;border-radius:6px;background:rgba(207,135,69,.16);border:1px solid rgba(207,135,69,.45)}
 .mark i{width:7px;height:7px;background:var(--accent);transform:rotate(45deg);display:block}
 .gk-row{display:flex;gap:12px;overflow:hidden;margin-right:-16px}
@@ -132,6 +134,7 @@ CSS = r"""
 .pend .pt{position:relative;z-index:2;font:500 12px 'IBM Plex Mono';letter-spacing:.06em;color:var(--fg-muted);background:rgba(20,17,14,.85);border:1px dashed var(--border-strong);border-radius:8px;padding:10px 14px}
 .dk .blk{display:flex;flex-direction:column;gap:14px}
 
+
 /* canvas-only annotations */
 .gap{outline:1.5px dashed rgba(143,166,190,.85);outline-offset:3px;border-radius:8px;position:relative}
 .gapnote{display:inline-flex;align-items:center;gap:6px;font:600 9.5px 'IBM Plex Mono';letter-spacing:.04em;color:#0D0B09;background:#8FA6BE;border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:1px;white-space:nowrap}
@@ -171,6 +174,9 @@ CSS = r"""
 .bn2 li b{color:var(--fg);font-weight:400}
 .bn2 li a{color:var(--fg);text-decoration:underline;text-decoration-color:rgba(207,135,69,.55);text-underline-offset:3px;white-space:nowrap}
 """
+
+
+TRY_H = '<div class="try-h"><span class="ring">→</span><b>Try it</b><em>Each card opens the tool for real</em></div>'
 
 
 def mark():
@@ -319,7 +325,7 @@ def gk_card(rid):
 def gk_block(rules, kind):
     if not rules:
         return ""
-    head = f'<div class="gk-h">{mark()}Good to know</div>'
+    head = f'<div class="gk-h">{mark()}<b>Good to know</b><em>What the screen can’t show</em></div>'
     if kind == "ph":
         cards = "".join(gk_card(r) for r in rules)
         dots = "" if len(rules) < 2 else '<div class="dots">' + "".join(f'<i class="{"on" if i == 0 else ""}"></i>' for i in range(len(rules))) + "</div>"
@@ -332,9 +338,9 @@ def tools_block(tools, kind, skip=(), on=None):
     if not tools:
         return ""
     if kind == "ph":
-        return '<div class="try-h">Try it</div>' + "".join(tool_card(t) for t in tools[:1]) + (
+        return TRY_H + "".join(tool_card(t) for t in tools[:1]) + (
             f'<div class="mono" style="text-align:center">{len(tools) - 1} more below</div>' if len(tools) > 1 else "")
-    return ('<div class="blk"><div class="try-h">Try it</div><div class="tc-grid">'
+    return ('<div class="blk">' + TRY_H + '<div class="tc-grid">'
             + "".join(tool_card(t, kind="dk", on=(t == on)) for t in tools) + "</div></div>")
 
 
@@ -481,27 +487,65 @@ DIAGRAMS = {
 
 # ---------------------------------------------------------------------------------------------------------------
 # a section, an area page, at either width
+def shot_groups(sec, kind, hidden=()):
+    """Each width's shots in order of first use, each with its numbered labels. A label's box is a box on the
+    section's main capture, (key, box) on another capture of the same screen, or None (not in frame)."""
+    main = sec["phone"] if kind == "ph" else sec["desk"]
+    order, groups, n = [], {}, 0
+    for lab in sec["labels"]:
+        if lab[0] in hidden:
+            continue
+        n += 1
+        b = lab[3] if kind == "ph" else lab[4]
+        key, box = (b[0], b[1]) if (b and isinstance(b[0], str)) else (main, b)
+        if key not in groups:
+            groups[key] = []; order.append(key)
+        groups[key].append((n, lab, box))
+    out, n = [], 0
+    for k in order:  # numbers run in reading order, shot by shot
+        items = []
+        for _, lab, box in groups[k]:
+            n += 1; items.append((n, lab, box))
+        out.append((k, items))
+    return out or [(main, [])]
+
+
+def label_items(items, kind, hl=None, tool_after=None, gaps=True):
+    out = []
+    for n, lab, box in items:
+        lid, lead, rest = lab[0], lab[1], lab[2]
+        flag = "" if box or not gaps else '<span class="gapnote">not in today’s capture</span>'
+        new = '<span class="newtag">New</span>' if hl == lid else ""
+        sm = '<br><span class="showme">Show me ›</span>' if hl == lid else ""
+        out.append(f'<li class="{"hl" if hl == lid else ""}"><span class="n">{n}</span><p><b>{lead}</b>{rest}{new}{flag}{sm}</p></li>')
+        if tool_after and hl == lid:
+            out.append(f'<li style="display:block;padding:4px 0 8px;margin:0">{tool_after}</li>')
+    return f'<ol class="lbl">{"".join(out)}</ol>'
+
+
 def section(area, sec, kind, hl=None, hidden=(), loading=False, tool_hl=None, gaps=True, short=None):
-    labels = sec["labels"]
-    key = sec["phone"] if kind == "ph" else sec["desk"]
-    pins = pins_for(labels, kind, hidden)
-    hln = number_of(labels, hl, hidden) if hl else None
     w = 268 if kind == "ph" else 700
-    if kind == "dk" and not have(key):
-        pic = (f'<div class="shot dkf pend" style="width:{w}px;height:{w * DK_RATIO:.0f}px"><div class="skel"></div>'
-               f'<span class="pt">1300 capture of {sec["name"]} on its way</span></div>')
-    else:
-        pic = shot(key, w, kind, pins, hln, loading=loading, hfrac=short)
     tl = tool_card(tool_hl) if (tool_hl and kind == "ph") else None
-    labs = label_list(labels, kind, hl, hidden, tl, gaps and (kind == "ph" or have(key)))
+    parts = []
+    for key, items in shot_groups(sec, kind, hidden):
+        pins = [(n, box) for n, lab, box in items if box]
+        hln = next((n for n, lab, box in items if lab[0] == hl), None)
+        if not have(key):
+            pic = (f'<div class="shot {"ph" if kind == "ph" else "dkf"} pend" style="width:{w}px;height:{w * (PH_RATIO if kind == "ph" else DK_RATIO):.0f}px"><div class="skel"></div>'
+                   f'<span class="pt">capture of {sec["name"]} on its way</span></div>')
+        else:
+            pic = shot(key, w, kind, pins, hln, loading=loading, hfrac=short)
+        labs = label_items(items, kind, hl, tl, gaps and have(key))
+        parts.append(f'<div class="sbody">{pic}{labs}</div>' if kind == "ph" else f'<div class="sbody">{pic}<div class="lc">{labs}</div></div>')
     head = (f'<div class="sh2"><span class="k">{dict((a, n) for a, n, _ in AREAS)[area]} · {sec["name"]}</span>'
             f'<h2>{sec["name"]}</h2><p>{sec["sub"]}</p></div>')
+    shots = "".join(parts)
     if kind == "ph":
         tools = tools_block(sec["tools"], kind, skip=(tool_hl,) if tool_hl else ())
-        body = f'<div class="sbody">{pic}{labs}{gk_block(sec["rules"], kind)}{tools}</div>'
+        body = f'{shots}<div class="sbody">{gk_block(sec["rules"], kind)}{tools}</div>'
     else:
         tools = tools_block(sec["tools"], kind, on=tool_hl)
-        body = f'<div class="sbody">{pic}<div class="lc">{labs}</div></div>{gk_block(sec["rules"], kind)}{tools}'
+        body = f'{shots}{gk_block(sec["rules"], kind)}{tools}'
     return f'<section class="sec" id="{sec["id"]}">{head}{body}</section>'
 
 

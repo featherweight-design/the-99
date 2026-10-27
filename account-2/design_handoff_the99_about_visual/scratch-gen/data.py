@@ -20,26 +20,26 @@ AREAS = [
 SECTIONS = {
     "decks": [
         dict(id="your-decks", name="Your decks", sub="Every deck, with what it needs next.",
-             phone="p-decks", desk="d-decks", labels=[
+             phone="p-decks", desk="d-decks2", labels=[
                  ("new-deck", "New deck", " starts from a commander. “Import a deck” brings in a list you already play.",
-                  (0.04, 0.165, 0.92, 0.058), (0.918, 0.018, 0.065, 0.036), None),
+                  (0.04, 0.165, 0.92, 0.058), (0.858, 0.018, 0.124, 0.035), None),
                  ("deck-status", "A deck’s status", " says what to do next. “To buy” is a full deck you can’t sleeve yet, and “Draft” is one you’ve never committed.",
-                  (0.077, 0.852, 0.153, 0.026), (0.075, 0.682, 0.057, 0.027), None),
+                  (0.077, 0.852, 0.153, 0.026), (0.075, 0.683, 0.057, 0.025), None),
                  ("decks-stats", "Stats", " puts every deck side by side: when each was last played, and how it went.",
-                  (0.04, 0.322, 0.30, 0.045), (0.065, 0.186, 0.091, 0.04), "LINEUP_ENABLED"),
+                  (0.04, 0.322, 0.30, 0.045), (0.065, 0.19, 0.09, 0.035), "LINEUP_ENABLED"),
              ], rules=[], tools=["lineup"]),
         dict(id="your-deck", name="Your deck", sub="The list, and what each row is telling you.",
-             phone="p-deck-your-deck", desk="d-deck", labels=[
-                 ("row", "A row’s dot", " shows whether you own the card: filled green is in your Collection, hollow and dashed is not. A bright edge marks a row you changed since your last commit.",
-                  (0.041, 0.392, 0.918, 0.04), (0.068, 0.648, 0.45, 0.04), None),
-                 ("bracket-marks", "The marks after a name", " flag what matters for your bracket: Game Changers, mass land denial, extra turns and tutors. Exhibition and Core allow no Game Changers, so count them before the rule zero chat.",
-                  (0.041, 0.3198, 0.42, 0.0184), (0.068, 0.548, 0.11, 0.024), "ANALYSIS_TAB_ENABLED"),
-                 ("lock", "Lock cards", " protects the cards you pick. No tool will offer to cut a locked card.",
-                  (0.041, 0.1598, 0.2974, 0.0521), None, "NEVER_CUT_ENABLED"),
-                 ("mix", "Recommended mix", " counts ramp, draw, removal, wipes and lands against what decks like yours run. “consider →” shows cards that fill a gap.",
-                  None, (0.068, 0.205, 0.912, 0.13), None),
+             phone="p-deck-your-deck", desk="d-deck-list", labels=[
                  ("commit", "Your changes", " wait here until you commit. “Commit as v2” saves them as the deck’s next version.",
-                  None, (0.068, 0.035, 0.912, 0.15), None),
+                  ("p-deck-top", (0.54, 0.015, 0.28, 0.05)), ("d-deck-top", (0.862, 0.26, 0.09, 0.04)), None),
+                 ("mix", "Recommended mix", " counts ramp, draw, removal, wipes and lands against what decks like yours run. “consider →” shows cards that fill a gap.",
+                  ("p-deck-top", (0.04, 0.345, 0.92, 0.115)), ("d-deck-top", (0.068, 0.527, 0.912, 0.145)), None),
+                 ("lock", "Lock cards", " protects the cards you pick. No tool will offer to cut a locked card.",
+                  ("p-deck-top", (0.04, 0.675, 0.29, 0.045)), ("d-deck-top", (0.596, 0.805, 0.088, 0.035)), "NEVER_CUT_ENABLED"),
+                 ("row", "A row’s dot", " shows whether you own the card: filled green is in your Collection, hollow and dashed is not. A bright edge marks a row you changed since your last commit.",
+                  (0.041, 0.392, 0.918, 0.04), (0.068, 0.88, 0.447, 0.037), None),
+                 ("bracket-marks", "The marks after a name", " flag what matters for your bracket: Game Changers, mass land denial, extra turns and tutors. Exhibition and Core allow no Game Changers, so count them before the rule zero chat.",
+                  (0.041, 0.3198, 0.42, 0.0184), (0.535, 0.248, 0.17, 0.025), "ANALYSIS_TAB_ENABLED"),
              ], rules=["autofill", "lock", "targets"], tools=["top-off"]),
         dict(id="analysis", name="Analysis", sub="Where your deck sits, and the tools that tune it.",
              phone="p-deck-analysis", desk="d-analysis", labels=[
@@ -48,18 +48,18 @@ SECTIONS = {
                  ("findings", "What is in this deck", " counts Game Changers, mass land denial, extra turns, two-card infinites and tutors. Each count opens to show its cards.",
                   None, (0.071, 0.40, 0.906, 0.135), "ANALYSIS_TAB_ENABLED"),
                  ("suggested", "Suggested changes", " offers up to five cards to add and five to cut, each with its reason. Each run uses a credit.",
-                  None, (0.071, 0.628, 0.449, 0.12), "TUNING_ENABLED"),
+                  ("p-analysis-tuning", (0.04, 0.108, 0.92, 0.10)), (0.071, 0.628, 0.449, 0.12), "TUNING_ENABLED"),
                  ("cuts", "Proposed cuts", " counts where a deck over 100 runs long, for free. “Look deeper” names the cards for a credit.",
-                  None, (0.528, 0.628, 0.449, 0.12), "PROPOSED_CUTS_ENABLED"),
+                  ("p-analysis-tuning", (0.04, 0.385, 0.92, 0.10)), (0.528, 0.628, 0.449, 0.12), "PROPOSED_CUTS_ENABLED"),
                  ("describe", "Describe your deck", " in a sentence or two. Suggested changes uses it to understand what the deck is for.",
-                  (0.04, 0.578, 0.92, 0.152), None, "TUNING_ENABLED"),
+                  (0.04, 0.578, 0.92, 0.152), ("d-analysis-describe", (0.35, 0.1, 0.42, 0.13)), "TUNING_ENABLED"),
              ], rules=["intent", "credits"], tools=["suggested-changes", "proposed-cuts"]),
         dict(id="versions", name="Versions", sub="Every commit, kept.",
-             phone="p-deck-versions", desk="d-versions", labels=[
+             phone="p-deck-versions", desk="d-versions-precon", labels=[
                  ("version", "Each commit", " saves a version with its date, card count and average mana value. Open one to see which of its new cards you own today.",
-                  (0.036, 0.09, 0.928, 0.31), (0.068, 0.657, 0.912, 0.18), None),
+                  (0.036, 0.09, 0.928, 0.31), (0.068, 0.495, 0.912, 0.18), None),
                  ("precon-link", "Built from a precon?", " Link it, and the deck’s history starts from the box as v0.",
-                  (0.04, 0.53, 0.92, 0.15), (0.068, 0.848, 0.912, 0.076), "PRECONS_ENABLED"),
+                  (0.04, 0.53, 0.92, 0.15), (0.068, 0.685, 0.912, 0.075), "PRECONS_ENABLED"),
              ], rules=["commit"], tools=[]),
         dict(id="games", name="Games", sub="What happened at the table.",
              phone="p-deck-games", desk="d-games", labels=[
@@ -82,11 +82,11 @@ SECTIONS = {
     "home": [
         dict(id="home", name="Home", sub="Where every visit starts.", phone="p-home", desk="d-home", labels=[
             ("help", "The ?", " on any screen opens that screen’s part of these pages.",
-             (0.708, 0.024, 0.113, 0.052), None, "HELP_PANEL_ENABLED"),
+             (0.708, 0.024, 0.113, 0.052), ("d-home2", (0.012, 0.905, 0.022, 0.025)), "HELP_PANEL_ENABLED"),
             ("ready", "Ready to build", " shows two commanders you could build today from cards you own. They change every day.",
              (0.044, 0.281, 0.913, 0.34), (0.065, 0.13, 0.655, 0.42), None),
             ("in-use", "Cards in use", " counts only committed decks. “Spoken for twice” is cards your decks want more copies of than you own.",
-             None, (0.73, 0.105, 0.245, 0.175), None),
+             ("p-home-in-use", (0.05, 0.52, 0.9, 0.115)), (0.73, 0.105, 0.245, 0.175), None),
         ], rules=[], tools=[]),
         dict(id="whats-new", name="What’s new", sub="News for you, newest first.", phone="p-home-feed", desk="d-home-feed", labels=[
             ("lead", "The top story", " is the newest thing for you: a set, a precon, a price drop on your wishlist, or a combo you can now make.",
@@ -94,15 +94,15 @@ SECTIONS = {
         ], rules=[], tools=[]),
     ],
     "collection": [
-        dict(id="cards", name="Cards", sub="Everything you own, card by card.", phone="p-collection", desk="d-collection", labels=[
+        dict(id="cards", name="Cards", sub="Everything you own, card by card.", phone="p-collection", desk="d-collection2", labels=[
             ("tabs", "Cards, Sets, Proxies, History and Wishlist", " are your Collection’s tabs.",
-             (0.03, 0.105, 0.82, 0.045), (0.048, 0.121, 0.27, 0.044), None),
+             (0.03, 0.105, 0.82, 0.045), (0.068, 0.13, 0.27, 0.035), None),
             ("add", "The +", " adds cards by name, by scanning them, or from a file.",
-             (0.887, 0.1, 0.092, 0.043), (0.889, 0.062, 0.084, 0.044), "COLLECTION_EDIT_ENABLED"),
+             (0.887, 0.1, 0.092, 0.043), (0.888, 0.062, 0.085, 0.045), "COLLECTION_EDIT_ENABLED"),
             ("key", "The key", " explains every mark a card can carry, from Game Changer to In use.",
-             (0.031, 0.293, 0.938, 0.104), (0.074, 0.353, 0.9, 0.018), None),
+             (0.031, 0.293, 0.938, 0.104), (0.065, 0.348, 0.92, 0.03), None),
             ("taken", "“none free”", " means committed decks hold every copy you own.",
-             (0.43, 0.508, 0.2, 0.024), (0.234, 0.674, 0.056, 0.022), None),
+             (0.43, 0.508, 0.2, 0.024), (0.233, 0.675, 0.058, 0.022), None),
         ], rules=["one-copy", "never-decklist"], tools=["find-a-deck", "wishlist"]),
         dict(id="upload", name="Upload a file", sub="Bring in an export from another app.", phone="p-upload", desk="d-upload", labels=[
             ("drop", "Drop in a CSV", " from ManaBox, Moxfield, Archidekt or Deckbox, or paste a list. Nothing changes until you confirm.",
@@ -136,9 +136,9 @@ SECTIONS = {
             ("buy", "buy", " shows the price. Press it when you’ve bought the card, and it goes into your Collection.",
              (0.632, 0.623, 0.214, 0.018), (0.31, 0.158, 0.095, 0.028), "SHOPPING_MARK_BOUGHT_ENABLED"),
         ], rules=["own-it", "prices", "proxy"], tools=["stand-ins", "friend-spares"]),
-        dict(id="all-decks", name="Shopping for all decks", sub="Every deck’s missing cards in one cart.", phone="p-decks", desk="d-decks", labels=[
+        dict(id="all-decks", name="Shopping for all decks", sub="Every deck’s missing cards in one cart.", phone="p-decks", desk="d-decks2", labels=[
             ("cart", "Shop all decks", " puts every deck’s missing cards in one cart, so you check out at Mana Pool once.",
-             (0.04, 0.232, 0.45, 0.065), (0.064, 0.089, 0.917, 0.067), "ALL_DECKS_CART_ENABLED"),
+             (0.04, 0.232, 0.45, 0.065), (0.065, 0.09, 0.457, 0.06), "ALL_DECKS_CART_ENABLED"),
         ], rules=[], tools=[]),
     ],
     "friends": [
@@ -196,13 +196,13 @@ TOOLS = {
 
 # A tool card's picture at desktop: a crop of that screen's desktop capture around the tool's control.
 TOOL_DESK = {
-    "lineup": ("d-decks-tiles", (0.065, 0.19, 0.09, 0.035)),
-    "top-off": ("d-deck", (0.178, 0.315, 0.072, 0.026)),
+    "lineup": ("d-decks2", (0.065, 0.19, 0.09, 0.035)),
+    "top-off": ("d-deck-top", (0.91, 0.637, 0.06, 0.026)),
     "suggested-changes": ("d-analysis", (0.071, 0.628, 0.449, 0.12)),
     "proposed-cuts": ("d-analysis", (0.528, 0.628, 0.449, 0.12)),
     "matchups": ("d-games", (0.795, 0.478, 0.18, 0.042)),
-    "find-a-deck": ("d-collection", (0.074, 0.394, 0.138, 0.346)),
-    "wishlist": ("d-collection", (0.262, 0.121, 0.055, 0.044)),
+    "find-a-deck": ("d-collection2", (0.228, 0.39, 0.135, 0.36)),
+    "wishlist": ("d-collection2", (0.265, 0.13, 0.07, 0.035)),
     "collection-sync": ("d-upload", (0.268, 0.243, 0.512, 0.243)),
     "help-me-choose": ("d-discover", (0.19, 0.13, 0.085, 0.035)),
     "stand-ins": ("d-shopping", (0.068, 0.158, 0.115, 0.028)),
