@@ -54,5 +54,5 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   only adds a warning that the build will jump majors on its own, and a floor above what Vercel has rolled out
   would refuse the build. Read what a deployment actually runs from its logs: `src/instrumentation.ts` logs
   `[runtime] node vX.Y.Z` once per server start, never in a response
-  (`vercel logs --scope featherweight-design --project the-99 --since 1h -q "runtime"`, `--project the-99-staging` for staging; the repository is not `vercel link`ed, so the scope is required. Or the dashboard's Logs with that text). The first reading, 2026-10-27 after #2278: v24.21.0 on BOTH projects, so Vercel had not yet rolled 24.22.1 out. Below the patched
+  (`vercel logs --scope featherweight-design --project the-99 --since 1h -q "[runtime]"`, `--project the-99-staging` for staging; the repository is not `vercel link`ed, so every `vercel logs` here names the scope. Or the dashboard's Logs with that text). The first reading, 2026-10-27 after #2278: v24.21.0 on BOTH projects, so Vercel had not yet rolled 24.22.1 out. Below the patched
   floor, redeploy; Vercel's own rollout is the fix.

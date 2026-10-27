@@ -35,7 +35,7 @@ import { monthOf, monthParam, type MonthKey } from "./costs-rule";
  * Never put `ANTHROPIC_ADMIN_KEY` in `.env`: `scripts/lib/env.mjs` loads it with `override: true`.
  */
 
-/** The one server line a read leaves, found by `vercel logs -q "[costs]"`. Never the key, a body or a URL. */
+/** The one server line a read leaves, found by `vercel logs --scope featherweight-design -p the-99 -q "[costs]"`. Never the key, a body or a URL. */
 export const COST_LOG = "[costs] anthropic cost_report";
 /** One timeout for the whole read: all three lists, every page. */
 export const ANTHROPIC_TIMEOUT_MS = 8_000;
