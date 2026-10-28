@@ -55,9 +55,8 @@ describe("each sentence follows its own switch", () => {
     units(visibleSections(env(e))).find((u) => u.key === key)?.text;
   it.each([
     ["Ready to build leaves with the feed on", { HOME_FEED_ENABLED: "true" }, "home/home/ready", undefined, undefined],
-    ["the feed's lead without precons or a wishlist", { HOME_FEED_ENABLED: "true" }, "home/whats-new/lead", "like a new set", "precon"],
-    ["the feed's lead with precons", { HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true" }, "home/whats-new/lead", "A new precon", "wishlist"],
-    ["the + without scanning", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "by name or from a file", "scan"],
+    ["the feed's lead names no kind a switch can hide", { HOME_FEED_ENABLED: "true" }, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
+    ["the + without scanning", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "by name.", "scan"],
     ["the + with scanning", { COLLECTION_EDIT_ENABLED: "true", CARD_SCAN_ENABLED: "true" }, "collection/cards/add", "scan them", undefined],
     ["the place strip without Help me choose", { COMMANDERS_PLACE_ENABLED: "true" }, "commanders/for-you/places", "two ways", "Help me choose"],
     ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
@@ -66,9 +65,12 @@ describe("each sentence follows its own switch", () => {
     ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", "Overview"],
     ["credits with nothing on", {}, "rule/credits", "Anything written just for you", "never expire"],
     ["a proxy without tokens", {}, "rule/proxy", "uses no copy", "token"],
-    ["a fill without Help me choose", {}, "rule/autofill", "Collection first", "Help me choose"],
+    ["a fill without Help me choose", {}, "rule/autofill", "then uses your Collection", "Help me choose"],
     ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
     ["friends see a wishlist only with the wishlist", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "spares you offer", "wishlist"],
+    ["friends see each deck's status before friend decks", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "names, status", "can open"],
+    ["friends open decks with friend decks", { SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" }, "rule/friends-see", "can open the decks", "names, status"],
+    ["bracket marks are explained with the Analysis tab off, as they are drawn", {}, "decks/your-deck/bracket-marks", "Game Changers", undefined],
   ] as const)("%s", (_name, e, key, has, lacks) => {
     const text = textOf(e as Record<string, string>, key);
     if (has === undefined) {
