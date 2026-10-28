@@ -680,8 +680,11 @@ const PhonePeek = React.forwardRef<
     covered: boolean;
     /** The card just left, on a page: it shrinks into this peek from where it stood (`--enter-*`). */
     enter: React.CSSProperties | null;
+    /** The turned face it was showing as the card, kept until the shrink lands. */
+    enterFace: string | null;
   }
->(function PhonePeek({ sibling, direction, onPress, covered, enter }, ref) {
+>(function PhonePeek({ sibling, direction, onPress, covered, enter, enterFace }, ref) {
+  const [landed, setLanded] = React.useState(false);
   const left = direction === "previous"
     ? "calc(50% - var(--card-w) / 2 - 12px - var(--card-w) * 0.7375)"
     : "calc(50% + var(--card-w) / 2 + 12px)";
@@ -693,6 +696,8 @@ const PhonePeek = React.forwardRef<
       // Withheld with paging under the full sheet, which covers it.
       inert={covered}
       onClick={onPress}
+      // Its own shrink only: the art's arrival fade inside it bubbles here too.
+      onAnimationEnd={enter ? (e) => { if (e.target === e.currentTarget) setLanded(true); } : undefined}
       aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
       // `phone-peek` holds its .5 opacity; `swipe-in-*` grows and lights it as a swipe brings it in.
       className={"card-grow phone-peek absolute overflow-hidden rounded-[11px] cursor-pointer border-0 p-0 "
@@ -713,6 +718,7 @@ const PhonePeek = React.forwardRef<
     >
       {sibling.imageUri ? <ArtLayer src={sibling.imageUri} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} /> : null}
       <SiblingFilm sibling={sibling} />
+      {enter && enterFace && !landed ? <ArtLayer src={enterFace} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} /> : null}
     </button>
   );
 });
@@ -744,6 +750,7 @@ export function CardModal({
   enterFrom = null,
   enterOffset = 0,
   enterProgress = 0,
+  enterLeftFace = null,
   startMinimized = false,
   openCombo = false,
   onOpenCombo = null,
@@ -896,14 +903,15 @@ export function CardModal({
   onClose: () => void;
   /** Called with the phone band's offset when a swipe paged (carousel R2), and with nothing for
    *  every other way of paging, so the next card enters from wherever the reader let go. */
-  onPrev: ((offset?: number, progress?: number) => void) | null;
-  onNext: ((offset?: number, progress?: number) => void) | null;
+  /** `leftFace`: the back the card being left was showing, when it was turned (see `enterLeftFace`). */
+  onPrev: ((offset?: number, progress?: number, leftFace?: string | null) => void) | null;
+  onNext: ((offset?: number, progress?: number, leftFace?: string | null) => void) | null;
   /** The neighbor plate's own press (handoff decision 2), separate from `onPrev`/`onNext` so the
    *  provider can tell a peek from the footer button or an arrow key and restore focus to the
    *  same role across the remount (handoff "Notes for engineering" §3). Null exactly when
    *  `onPrev`/`onNext` is: the plate draws nothing at an end either. */
-  onPrevPeek?: (() => void) | null;
-  onNextPeek?: (() => void) | null;
+  onPrevPeek?: ((leftFace?: string | null) => void) | null;
+  onNextPeek?: ((leftFace?: string | null) => void) | null;
   /** An arrow key pressed at the start or end of the list (decision 8): announced, nothing else
    *  moves. Undefined where there is no carousel to have an end (a list of zero or one). */
   onAtStart?: () => void;
@@ -923,6 +931,9 @@ export function CardModal({
   /** How far that swipe had carried the swap, 0 to 1 (0 for any other page): the card enters at the
    *  size and opacity the finger left it, and the card left behind shrinks on from where it was. */
   enterProgress?: number;
+  /** The back the card left behind was showing, when the reader had turned it: it keeps that face while it
+   *  shrinks into its peek, which then rests on the front (m8). Null for a front. */
+  enterLeftFace?: string | null;
   /** The phone's sheet opens at its min snap: the reader minimized it on the card before this one
    *  and paged here. Captured once at construction, like `enterOffset`. */
   startMinimized?: boolean;
@@ -1043,6 +1054,7 @@ export function CardModal({
   const [enteredFrom] = useState(enterFrom);
   const [enteredOffset] = useState(enterOffset);
   const [enteredProgress] = useState(enterProgress);
+  const [enteredLeftFace] = useState(enterLeftFace);
   /**
    * The phone's sheet (carousel R2): the teaser on every open and every page, which a remount
    * per card gives by construction, or the full details column. Set only by the phone's own
@@ -1592,7 +1604,7 @@ export function CardModal({
     teaserHeight,
     canPrev: onPrev !== null && !viewOpen,
     canNext: onNext !== null && !viewOpen,
-    onPage: (dir, offset, progress) => (dir === "next" ? onNext?.(offset, progress) : onPrev?.(offset, progress)),
+    onPage: (dir, offset, progress) => (dir === "next" ? onNext?.(offset, progress, leftFace) : onPrev?.(offset, progress, leftFace)),
     onSnap: setSnap,
     bodyRef: sheetBodyRef,
     // Every card that has a teaser, stacked or not: since stacked sheets R1 a card opened from a sheet
@@ -1861,6 +1873,8 @@ export function CardModal({
   //
   // The reader's intent stays in `flipped`; every drawn decision reads this instead.
   const showingBack = twoFaced && flipped;
+  // Handed to the page, so the card being left keeps a turned face while it shrinks into its peek.
+  const leftFace = showingBack ? backImage : null;
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.
@@ -2328,7 +2342,7 @@ export function CardModal({
             } as React.CSSProperties}
           >
             {narrow && prevSibling && onPrevPeek ? (
-              <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={onPrevPeek} covered={full} enter={leftPeek === "prev" ? leftPeekVars : null} />
+              <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek(leftFace)} covered={full} enter={leftPeek === "prev" ? leftPeekVars : null} enterFace={enteredLeftFace} />
             ) : null}
             <div
               // Under the full sheet the card and its turn plate are covered, and paging is
@@ -2369,7 +2383,7 @@ export function CardModal({
               )}
             </div>
             {narrow && nextSibling && onNextPeek ? (
-              <PhonePeek ref={nextPhonePeekRef} sibling={nextSibling} direction="next" onPress={onNextPeek} covered={full} enter={leftPeek === "next" ? leftPeekVars : null} />
+              <PhonePeek ref={nextPhonePeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek(leftFace)} covered={full} enter={leftPeek === "next" ? leftPeekVars : null} enterFace={enteredLeftFace} />
             ) : null}
           </div>
         </div>

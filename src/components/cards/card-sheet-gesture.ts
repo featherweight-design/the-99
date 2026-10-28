@@ -452,7 +452,14 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         // still see it.
       }
       if (d.axis === "y" && sheetRef.current) sheetRef.current.dataset.dragging = "";
-      if (d.axis === "x" && !d.dead) d.pitch = peekPitch(opts.current.tiltRef?.current?.offsetWidth ?? 0);
+      if (d.axis === "x" && !d.dead) {
+        d.pitch = peekPitch(opts.current.tiltRef?.current?.offsetWidth ?? 0);
+        // A swipe mid-glide finishes the glide and starts the next (carousel README decision 7): the
+        // entrance would otherwise own the transform and opacity the swipe now writes.
+        for (const a of opts.current.stageRef?.current?.getAnimations?.({ subtree: true }) ?? []) {
+          if (a instanceof CSSAnimation && /^phone-(card|peek)-enter$/.test(a.animationName)) a.finish();
+        }
+      }
     }
     if (d.dead) return;
     if (d.axis === "x") {
