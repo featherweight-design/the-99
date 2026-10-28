@@ -184,6 +184,10 @@ async function workV2(args: {
       adds: STUB_ADDITIONS.filter((n) => !pack.cards.some((c) => c.name === n)),
       cuts: pack.cards.filter((c) => !commanders.has(c.oracleId) && !locked.includes(c.oracleId)).map((c) => c.name),
     });
+    // A catalog read failing inside a call's stream is the APP's failure, not the model's: the engine would read a throw
+    // from `next()` as the stream failing (malformed, refunded as the model's shortfall). So it is held here, the stream
+    // ends, and the run fails through `failV2Run` once the engine returns.
+    let appError: unknown = null;
     const sideOf = (stage: string): V2Side => (stage.startsWith("additions") ? "add" : "cut");
     const callModel: V2CallModel = (req) => {
       const refill = req.stage.endsWith("Refill");
@@ -201,7 +205,12 @@ async function workV2(args: {
             const card = (l as { card?: unknown } | null)?.card;
             return typeof card === "string" ? [card] : [];
           });
-          await ensure(names);
+          try {
+            await ensure(names);
+          } catch (err) {
+            appError ??= err;
+            return;
+          }
           yield delta;
         }
       })();
@@ -226,6 +235,7 @@ async function workV2(args: {
       onLine: async (_side, line) => { await insertV2Line(run.runId, line); },
       onListIn: (side) => markV2Progress(run.runId, "in", side, true),
     });
+    if (appError !== null) throw appError;
     const { outcome, validationReport, settleAs } = v2Outcome(report, args.startReport, limits.capCents);
     if (await persistV2(run, outcome, validationReport, settleAs, billed)) args.revalidate();
   } catch (err) {

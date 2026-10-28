@@ -15,6 +15,7 @@ const s = vi.hoisted(() => ({
   persisted: [] as unknown[][],
   failed: [] as unknown[][],
   failInsert: false,
+  failResolve: false,
   reaped: 0,
   streamed: 0,
 }));
@@ -43,9 +44,12 @@ vi.mock("../../intake/fill-facts", () => ({
 vi.mock("../../model/client", () => ({ streamModel: () => { s.streamed += 1; throw new Error("the stub answers here"); } }));
 vi.mock("../reap-runs", () => ({ reapReaderRuns: async () => { s.reaped += 1; } }));
 vi.mock("../answer", () => ({
-  readResolvedRows: async ({ names }: { names: string[] }) => names.map((name) => ({
-    name, oracleId: name, colorIdentity: [], commanderLegal: true, priceCents: null, printedInSelectedSets: true, owned: false,
-  })),
+  readResolvedRows: async ({ names }: { names: string[] }) => {
+    if (s.failResolve) throw new Error("catalog read failed");
+    return names.map((name) => ({
+      name, oracleId: name, colorIdentity: [], commanderLegal: true, priceCents: null, printedInSelectedSets: true, owned: false,
+    }));
+  },
 }));
 vi.mock("../evidence", () => ({ buildEvidencePack: () => structuredClone(pack) }));
 vi.mock("../run-store", () => ({
@@ -102,6 +106,7 @@ beforeEach(() => {
   s.persisted = [];
   s.failed = [];
   s.failInsert = false;
+  s.failResolve = false;
   s.reaped = 0;
   s.streamed = 0;
 });
@@ -202,6 +207,15 @@ describe("the v2 run's work", () => {
     expect(s.events).not.toContain(`line add ${STUB_ADDITIONS[1]}`);
     const report = (s.persisted[0] as [unknown, unknown, { drops: { rule: string }[] }])[2];
     expect(report.drops.map((d) => d.rule)).toContain("bracketAim");
+  });
+
+  it("a failed catalog read fails the run as the app's error, never as the model's malformed reply (pre-open review)", async () => {
+    s.failResolve = true;
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await run();
+    log.mockRestore();
+    expect(s.persisted).toEqual([]);
+    expect(s.failed).toHaveLength(1);
   });
 
   it("a failed line save fails the run the P4 way, never charging, never throwing", async () => {
