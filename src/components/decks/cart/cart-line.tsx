@@ -246,8 +246,18 @@ export function CartCardLine({
             items={friends}
             head={copy.facts.fromFriends(friends.length)}
             moreAria={copy.facts.moreFriendsAria}
-            // S5: the shipped glyph press, opening the spares-only modal where Ask lives.
-            lead={<OtherWaysPress card={spareCardOf(line, fact)} standIn={false} standInAria="" limitFigure="" oneLine />}
+            // S5: the shipped glyph press, opening the spares-only modal where Ask lives. Its coarse hit stays 44px across
+            // but only 2px above and below, as the pill's does: a 44px-tall hit would reach the need line's pill above it.
+            lead={
+              <OtherWaysPress
+                card={spareCardOf(line, fact)}
+                standIn={false}
+                standInAria=""
+                limitFigure=""
+                oneLine
+                className="pointer-coarse:after:!h-[calc(100%+4px)]"
+              />
+            }
             className="xl:col-start-3 xl:row-start-1"
           />
         ) : null}

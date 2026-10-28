@@ -521,10 +521,10 @@ describe("CartView, friends' spares", () => {
       const tower = items.find((li) => li.textContent?.startsWith("Command Tower"))!;
       expect(within(tower).getByRole("button", { name: spareCopy.markerAria("Command Tower") })).toBeTruthy();
       expect(list().getAllByTestId("other-ways")).toHaveLength(1);
-      // v2: the press leads the spare fact at the one-line 26px size, its coarse pointer's 44px hit drawn past it, so it
-      // never makes the fact line taller; the friend's name and count follow it.
+      // v2: the press leads the spare fact at the one-line 26px size, its coarse pointer's hit 44px across but clamped to
+      // its own line (2px above and below), so it never reaches the need pill above; the friend's name and count follow.
       const classes = within(tower).getByTestId("other-ways").className.split(/\s+/);
-      expect(classes).toEqual(expect.arrayContaining(["relative", "pointer-coarse:after:h-[max(44px,100%)]"]));
+      expect(classes).toEqual(expect.arrayContaining(["relative", "pointer-coarse:after:w-[max(44px,100%)]", "pointer-coarse:after:!h-[calc(100%+4px)]"]));
       expect(classes).not.toContain("h-[44px]");
       const spare = factOf(tower, "spare")!;
       expect(spare.contains(within(tower).getByTestId("other-ways"))).toBe(true);
