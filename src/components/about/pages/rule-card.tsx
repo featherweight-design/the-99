@@ -4,12 +4,13 @@
 // `design/design_handoff_the99_about_visual/`, call 2 and R3, boards Decks-Phone, Decks-Desktop, Other-Pages; the
 // boards' `.gk-h`, `.gk-row`, `.gk-grid`, `.gk` and `.dots`).
 //
-// A section's rules the reader is drawn, each a card: its diagram on a 150px plate, then the rule's words, which are the
-// VISIBLE text (`visibleSections` has already cut every sentence whose switch is off). The heading carries a ruled line
-// above it, the release banner's mark, "Good to know" in the display face at 18 and a muted sub-line (R3). On a phone the
-// cards are a swipe row with dots; from `md` a grid of three, as the 1300 boards draw it, once `xl` gives each card the
-// plate its diagram needs (a 250px diagram clips in a third of a 768px page), and of two below that. A section with no
-// rules for this reader draws nothing at all, not even the heading (call 8).
+// A section's rules the reader is drawn, each a card: its diagram on a plate at least 150px tall (a diagram whose
+// switched parts wrap grows the plate rather than being clipped), then the rule's words, which are the VISIBLE text
+// (`visibleSections` has already cut every sentence whose switch is off). The heading carries a ruled line above it,
+// the release banner's mark, "Good to know" in the display face at 18 and a muted sub-line (R3). On a phone the cards
+// are a swipe row with dots; from `md` a grid of three, as the 1300 boards draw it, once `xl` gives each card the plate
+// its diagram needs (a 250px diagram clips in a third of a 768px page), and of two below that. A section with no rules
+// for this reader draws nothing at all, not even the heading (call 8).
 
 import { useState } from "react";
 import { ABOUT_PAGE_STRINGS, type AboutRuleDiagram } from "../../../lib/copy/about-pages";
@@ -45,7 +46,7 @@ export function RuleCard({ rule }: { rule: RuleCardModel }) {
     >
       <div
         aria-hidden="true"
-        className="relative flex h-[150px] flex-none items-center justify-center overflow-hidden border-b border-b-[color:var(--border)] bg-[color:var(--bg)] p-[12px]"
+        className="relative flex min-h-[150px] flex-none items-center justify-center overflow-hidden border-b border-b-[color:var(--border)] bg-[color:var(--bg)] p-[12px]"
       >
         <RuleDiagram diagram={rule.diagram} />
       </div>

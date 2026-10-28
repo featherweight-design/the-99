@@ -186,7 +186,7 @@ function Stack({ column: { parts, w, gap = 6, center = false } }: { column: Abou
   );
 }
 
-/** One rule's diagram, centred in its card's 150px plate. */
+/** One rule's diagram, centred in its card's plate (150px at least). */
 export function RuleDiagram({ diagram }: { diagram: AboutRuleDiagram }) {
   const { head = [], columns, foot = [], gap = 10 } = diagram;
   return (
