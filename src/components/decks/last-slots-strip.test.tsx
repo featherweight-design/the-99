@@ -153,6 +153,44 @@ describe("LastSlotsStrip", () => {
     expect(onInflight).toHaveBeenLastCalledWith(false);
   });
 
+  // Suggested changes v2's `Top off on Your deck →` asks for the list open from another tab: the strip opens it once per
+  // request, on arrival, and answers each one so the shell can drop it.
+  it("opens the list once for each request from elsewhere, and answers it", async () => {
+    const onOpenChange = vi.fn();
+    const answered = vi.fn();
+    const { rerender } = await act(async () =>
+      render(<LastSlotsStrip {...base} onOpenChange={onOpenChange} openRequest={1} onOpenRequestAnswered={answered} />),
+    );
+    expect(answered).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    // The same request again opens nothing more; a new one is answered too.
+    const opens = onOpenChange.mock.calls.length;
+    await act(async () => {
+      rerender(<LastSlotsStrip {...base} onOpenChange={onOpenChange} openRequest={1} onOpenRequestAnswered={answered} />);
+    });
+    expect(onOpenChange.mock.calls.length).toBe(opens);
+    expect(answered).toHaveBeenCalledTimes(1);
+    // A new value is a new request: answered too, and the list, already open, stays open.
+    await act(async () => {
+      rerender(<LastSlotsStrip {...base} onOpenChange={onOpenChange} openRequest={2} onOpenRequestAnswered={answered} />);
+    });
+    expect(answered).toHaveBeenCalledTimes(2);
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+  });
+
+  it("answers a request with nothing to offer without opening", async () => {
+    const onOpenChange = vi.fn();
+    const answered = vi.fn();
+    await act(async () => {
+      render(<LastSlotsStrip {...base} candidates={[]} onOpenChange={onOpenChange} openRequest={2} onOpenRequestAnswered={answered} />);
+    });
+    expect(answered).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    // The link that asked unmounted with its tab: focus lands on the row, never on the document.
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement?.getAttribute("tabindex")).toBe("-1");
+  });
+
   it("titles the row for the open slots and names the press in full", () => {
     render(<LastSlotsStrip {...base} />);
     expect(screen.getByText(topOffCopy.strip.open("3"))).toBeInTheDocument();

@@ -1,0 +1,89 @@
+{
+  "feature": "Suggested changes v2, UI PR 5a: the at-99 tile",
+  "note": "Handoff design/design_handoff_the99_suggested_changes_v2, boards Not-At-99 (A, B) and the Landing tile (the intake arrives with PR 5b). Needs ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED and SUGGESTED_CHANGES_V2_ENABLED all 'true', a database at migration 0182 or later (a scratch branch of local-dev), and three READ decks the audit account owns: SCV2_DECK at 99 (local-dev HD - Elves d9345373\u2026), SCV2_UNDER_DECK at 96 (HD - Brago d3f9ccb4\u2026 with Island 10 set to 7 for the run), SCV2_OVER_DECK at 102 (HD Tune - Blood Rites cb877695\u2026 with Swamp 13 set to 16 for the run); put them back after.",
+  "rows": [
+    {
+      "id": "tile-under",
+      "label": "Not-At-99 A: a read deck at 96, the Suggested changes tile inert with `Top off on Your deck \u2192`",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_UNDER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "wait": "[data-tool-tile='suggested'][data-inert]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "tile-over",
+      "label": "Not-At-99 B: a read deck 3 over, the tile inert with `Proposed cuts \u2192`",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_OVER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "wait": "[data-tool-tile='suggested'][data-inert]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "tile-ready",
+      "label": "Landing, a read deck at 99: the live tile with the v2 purpose line",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    }
+  ]
+}

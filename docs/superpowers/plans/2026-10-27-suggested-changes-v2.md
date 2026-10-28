@@ -205,6 +205,8 @@ rather than grown.
 - **PR 5: intake.** The three steps (count 1 to 20, the request box never pre-filled, the restrictions box); the suggestion
   chips beside the box, from a new read of what the app knows (two short on removal, the focus, a recent game note, a role
   gap); the bracket choice; a deck not at 99 pointed to Top-off or Proposed cuts; the same-request confirm; the credit line.
+  PR 5a: the switch reaches the deck page; the Suggested changes tile at 99 (inert under or over with its Top off /
+  Proposed cuts link, the v2 purpose line). PR 5b: the intake (everything else listed here).
 - **PR 6: running and results.** The wait and the incremental arrival (additions, then cuts) and the "taking a while"
   fallback, per the addendum; the two lists of about 1.5N; picking N from each; the equal-counts rule and the one apply;
   undo the set; a short run's count and the restriction that bound it; a refunded run; P4's run with no cuts; an open v10 run read-only once the switch is on (the cutover, spec §10).
