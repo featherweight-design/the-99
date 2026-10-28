@@ -21,6 +21,9 @@ export type ListOutcome = {
   target: number;
   /** Every drop on this list, across its first ask and its refill. */
   drops: readonly Pick<Drop, "rule">[];
+  /** Any call on this list returned fewer lines than it asked for. Aggregate counts cannot tell this apart from
+   *  restriction drops (7 kept with 8 over the cap, then a refill of 3 that returned 2), so the engine says it. */
+  underProduced?: boolean;
 };
 
 export type Charge =
@@ -34,7 +37,7 @@ export function chargeFor(run: { additions: ListOutcome; cuts: ListOutcome; cuts
     if (list.kept >= list.target) continue;
     const restriction = list.drops.filter((d) => RESTRICTION_RULES.has(d.rule)).length;
     const model = list.drops.length - restriction;
-    if (model > 0 || list.target - list.kept > restriction) return { outcome: "refunded", why: "shortByModel" };
+    if (model > 0 || list.underProduced || list.target - list.kept > restriction) return { outcome: "refunded", why: "shortByModel" };
   }
   return { outcome: "spent" };
 }

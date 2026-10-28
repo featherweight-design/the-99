@@ -24,6 +24,14 @@ describe("chargeFor", () => {
     expect(chargeFor({ additions: { kept: 8, target: 10, drops: [] }, cuts: full(8) }).outcome).toBe("refunded");
   });
 
+  it("refunds a short list whose refill under-produced, even when restriction drops outnumber the shortfall", () => {
+    // N=10: 7 kept with 8 over the cap, then the refill returned 2 of the 3 asked (Copilot round 3).
+    const mixed = { kept: 9, target: 10, drops: drops(...Array(8).fill("overCap")), underProduced: true };
+    expect(chargeFor({ additions: mixed, cuts: full(9) })).toEqual({ outcome: "refunded", why: "shortByModel" });
+    // A list that still reached its target is charged whatever its calls returned.
+    expect(chargeFor({ additions: { ...full(10), underProduced: true }, cuts: full(10) })).toEqual({ outcome: "spent" });
+  });
+
   it("refunds a short list with any model-caused drop, even beside restriction drops", () => {
     const mixed = { kept: 8, target: 10, drops: drops("overCap", "overCap", "citation") };
     expect(chargeFor({ additions: mixed, cuts: full(8) })).toEqual({ outcome: "refunded", why: "shortByModel" });
