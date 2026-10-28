@@ -46,7 +46,7 @@ This plan follows the audit at https://github.com/HartiganHM/the-99/pull/2308#is
 
 ## For Design
 
-These three items go back to Design as one batch. B1, the Ask size, turned out to be specified in README call 3 and is now A16. The handoff is `design/design_handoff_the99_all_decks_cart_v2/`. PRs 4 to 7 wait for the answers.
+These three items went back to Design as one batch; the answers are under Design answers below. B1, the Ask size, turned out to be specified in README call 3 and is now A16. The handoff is `design/design_handoff_the99_all_decks_cart_v2/`. PRs 4 to 7 wait for the answers.
 
 ### B2: A failed spares read
 
@@ -78,6 +78,26 @@ These three items go back to Design as one batch. B1, the Ask size, turned out t
 - **What's missing:** G6 covers dropping whole names. It does not cover a FIRST name that is wider than the cell on its own, where there is no whole name left to drop.
 - **Recommendation:** truncate that one name with an ellipsis and always show `+N` after it. This is the only place a name is cut.
 
+## Design answers (addendum R2, #2331)
+
+Design answered B2, B3 and B4, and the chassis question PR 8's gap report raised, in `design/design_handoff_the99_all_decks_cart_v2/addendum-r2/` (approved by Hugh, 2026-10-28). Where the addendum and the v2 handoff disagree, the addendum wins.
+
+- **B2, a failed spares read → PR 7.**
+  - By card and By deck: the shared `SocialToast` with **Try again**, which re-runs the read and goes back to the reading state. The spare column closes until a retry lands, the Friend trigger and the spare key item are hidden, and the result line drops its "with a friend's spare" clause.
+  - By friend: the dashed empty-state block with **Try again** in its list place, and no toast. The segment still shows.
+  - One failure is said once across the views: switching views does not repeat the toast.
+- **B3, the sticky By friend panel header → PR 6.**
+  - Desktop: `position: sticky; top: 0` inside the list box, under the column header, which sits above the box and never scrolls. Stuck, it looks exactly as at rest (its `--elevated` fill and its own `--border-strong` rule), with no added edge or shadow.
+  - Stickiness is scoped per panel, so the next friend's header pushes the stuck one out. The panel clips its corners with `overflow: clip`, not `hidden`, which would make it a scroll container and stop sticky working.
+  - Phone: headers do not stick.
+- **B4, a first deck name wider than its cell → PR 4.** Fit whole names with room for the pill, dropping whole names from the end. If the first name alone does not fit beside its pill, cut that one name with an ellipsis. The pill shows whenever anything is hidden: `+N` for names left out, or **more** when the only thing hidden is the end of a cut name. It opens the inline list, and `less` folds it; the opened list never truncates. The own fact and By card's friend names follow the same rule, and the accessible name always carries every name in full.
+- **The chassis (#2330) → folded into PR 9.** The shipped `FilterChassis`, `OrderMenu`, `FilterPanel` trigger and `DeckSearchField` win as they are; the v2 mock's chassis values are void. The cart's phone sort sheet (`cart-sort-sheet.tsx`) is retired in favour of `OrderMenu`'s dropdown, which the phone's 44px ⇅ button opens, as /decks does. The cart's Filters sheet (A6) stays.
+
+## Shipped so far
+
+- PR 8 shipped as #2327 and its follow-up #2330.
+- d9 ruled that PRs 4 to 9 land live under `ALL_DECKS_CART_ENABLED`, with no new switch.
+
 ## The PRs
 
 There are no stacked PRs: each one merges before the next starts. Each stays under ~20 files and ~800 lines, and each ships on its own behind the switch.
@@ -102,7 +122,7 @@ Every UI PR runs the design-review property table and draws both widths in the s
    - Proof: the contact sheets of the other chassis routes are unchanged.
 4. **Row facts, and By card.**
    - Files: new `cart-facts.tsx` and `cart-columns.tsx`, plus `cart-line.tsx`, `cart-view.tsx`, copy, and the committed design table.
-   - Covers the column header, the labelled fact line, the `+N`/`less` inline list and `useNameFit` (B4 once ruled).
+   - Covers the column header, the labelled fact line, the `+N`/`less` inline list and `useNameFit` (B4, as ruled in addendum R2).
 5. **By deck.**
    - Files: `cart-deck-group.tsx` and the facts variant.
    - The "This deck · also" column, with the deck's own name excluded from "also".
@@ -110,13 +130,13 @@ Every UI PR runs the design-review property table and draws both widths in the s
    - Ask above the tag, at the cart's Ask size (A16).
    - The panel figure.
    - Fold state, kept for the visit.
-   - The sticky header (B3 once ruled).
+   - The sticky header (B3, as ruled in addendum R2).
    - The single-spare state (Empty-One A).
    - The spare key shown while reading.
 7. **Reading, empty and failed states.**
    - Loading A–D: skeleton cells and panels, with buy and checkout live from first paint.
    - Empty-One B and C (A11).
-   - The failed state (B2 once ruled).
+   - The failed state (B2, as ruled in addendum R2).
 8. **The chassis frame, search and sort.**
    - Files: `cart-sort.ts` and `cart-chassis.tsx`.
    - `ResultLine` replaces `ListHead`.
@@ -146,6 +166,5 @@ Every PR mutation-checks its tests: a named mutation fails each test before it i
 ## Sequencing against (b)
 
 - PRs 1, 2, 3 and 8 touch no (b) item and can start at once.
-- B4 gates PR 4, and PR 5 follows PR 4 because it reuses `cart-facts.tsx`.
-- B2 and B3 gate PRs 6 and 7.
-- If any (b) item goes to Design, I build PRs 1, 2, 3 and 8 while it is out.
+- B2, B3 and B4 are answered (addendum R2, #2331; see Design answers): B4 in PR 4, B3 in PR 6, B2 in PR 7. Nothing in (b) is still out with Design.
+- PR 5 follows PR 4 because it reuses `cart-facts.tsx`.

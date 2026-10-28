@@ -128,6 +128,39 @@ export function inUseIn(line: CartLine, selected: ReadonlySet<string>, rank: Rea
   return [...unselected, ...line.heldBy].sort((a, b) => at(a) - at(b));
 }
 
+/**
+ * Where EVERY owned copy of a selected line is in use (v2's own fact): the selected decks on the line that hold some of
+ * their own copies, in the selections' order, then `inUseIn` (unselected line decks, then decks outside the cart). Its
+ * copies sum to `owned` when the read is whole; the own fact names them only then.
+ */
+export function ownHoldings(line: SelectedLine, selected: ReadonlySet<string>, rank: ReadonlyMap<string, number>): CartHolding[] {
+  const at = (h: CartHolding) => rank.get(h.deckId) ?? Number.POSITIVE_INFINITY;
+  const onLine = line.selectedRows.filter((r) => r.held > 0).map((r) => ({ deckId: r.deckId, held: r.held })).sort((a, b) => at(a) - at(b));
+  return [...onLine, ...inUseIn(line, selected, rank)];
+}
+
+/**
+ * The own fact for a selected line: its holding decks by name when every one is named and their copies account for all
+ * `owned`; otherwise the shipped row's facts, `elsewhere` copies held by decks not on the line (all of them when it
+ * equals `owned`). Null when nothing is owned.
+ */
+export type OwnFact =
+  | { kind: "named"; owned: number; decks: { name: string; held: number }[] }
+  | { kind: "elsewhere"; owned: number; elsewhere: number };
+
+export function ownFact(
+  line: SelectedLine, selected: ReadonlySet<string>, rank: ReadonlyMap<string, number>, names: ReadonlyMap<string, string>,
+): OwnFact | null {
+  if (line.owned <= 0) return null;
+  const holdings = ownHoldings(line, selected, rank);
+  const decks = holdings.map((h) => ({ name: names.get(h.deckId), held: h.held }));
+  const sum = holdings.reduce((n, h) => n + h.held, 0);
+  if (decks.length > 0 && sum === line.owned && decks.every((d) => d.name !== undefined)) {
+    return { kind: "named", owned: line.owned, decks: decks.map((d) => ({ name: d.name ?? "", held: d.held })) };
+  }
+  return { kind: "elsewhere", owned: line.owned, elsewhere: line.heldElsewhere };
+}
+
 export function figuresOf(rows: readonly CartRow[]): CartFigures {
   let copies = 0;
   let cents = 0;

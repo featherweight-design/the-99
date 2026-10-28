@@ -1,11 +1,15 @@
-// CartLine — one card on the cart, by card (handoff S0): its name, the decks that need it with
-// their copies (`3 · HD - Gishath, HD - Kratos, HD -Thorin`, full names, wrapped, never truncated),
-// the owned fact when the player owns it, and the buy tag at the line's total.
+// CartLine — one card on the cart (handoff S0): its name, the decks that need it with their copies
+// (`3 · HD - Gishath, HD - Kratos, HD -Thorin`, full names, wrapped, never truncated), the owned fact
+// when the player owns it, and the buy tag at the line's total. By friend draws it until v2's PR 6.
+// CartCardLine — By card's v2 row (call 1): the card, then need, spare and own as facts.
 
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { PriceFact } from "../../../lib/decks/price";
-import type { SelectedLine } from "../../../lib/decks/cart";
+import type { OwnFact, SelectedLine } from "../../../lib/decks/cart";
+import type { FriendSpare } from "../../../lib/social/spares";
+import { CartFact } from "./cart-facts";
+import { BY_CARD_GRID } from "./cart-columns";
 import { BuyTag } from "../buy-tag";
 import { useCartGotIt } from "./cart-got-it";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
@@ -42,6 +46,31 @@ export function lineFact(line: SelectedLine, newestAsOf: Date | null): PriceFact
   return null;
 }
 
+/**
+ * I got it (cart PR 6): the tag is the press, when buying is on (the provider is mounted), and what was added this
+ * visit (S4).
+ */
+function useLinePress(line: SelectedLine) {
+  const gotIt = useCartGotIt();
+  const id = line.oracleId;
+  const added = gotIt?.held.get(id)?.added ?? 0;
+  const press = gotIt
+    ? {
+        onPress: (trigger: HTMLElement) => gotIt.open(line, trigger),
+        state: gotIt.openFor === id
+          ? (gotIt.pending ? "pending" as const : "open" as const)
+          : gotIt.undoing.has(id) ? "disabled" as const : "rest" as const,
+        cardName: line.name,
+      }
+    : undefined;
+  return { added, press };
+}
+
+/** What the spares-only modal draws of a line: its card, art and figure. A cart line carries the oracle name and no printing. */
+function spareCardOf(line: SelectedLine, fact: PriceFact | null) {
+  return { oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact, quantity: line.copies };
+}
+
 export function CartLine({
   line,
   deckNames,
@@ -71,22 +100,8 @@ export function CartLine({
 }) {
   const names = line.selectedRows.map((r) => deckNames.get(r.deckId) ?? "");
   const fact = lineFact(line, newestAsOf);
-  // What the spares-only modal draws of the line: its card, art and the line's figure.
-  // A cart line carries the oracle name and no printing, so no printed name stands in for it.
-  const spareCard = { oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact, quantity: line.copies };
-  // I got it (cart PR 6): the tag is the press, when buying is on (the provider is mounted).
-  const gotIt = useCartGotIt();
-  const id = line.oracleId;
-  const added = gotIt?.held.get(id)?.added ?? 0;
-  const press = gotIt
-    ? {
-        onPress: (trigger: HTMLElement) => gotIt.open(line, trigger),
-        state: gotIt.openFor === id
-          ? (gotIt.pending ? "pending" as const : "open" as const)
-          : gotIt.undoing.has(id) ? "disabled" as const : "rest" as const,
-        cardName: line.name,
-      }
-    : undefined;
+  const spareCard = spareCardOf(line, fact);
+  const { added, press } = useLinePress(line);
   return (
     <li {...data} className={inPanel
       ? "flex items-center gap-[12px] border-t border-[color:var(--border)] px-[14px] py-[11px] first:border-t-0"
@@ -145,6 +160,127 @@ export function CartLine({
           <OtherWaysPress card={spareCard} standIn={false} standInAria="" limitFigure="" className="-my-[9px] md:my-0" />
         )}
         <BuyTag variant="row" reserveSlot price={fact} newestAsOf={newestAsOf} press={press} />
+      </span>
+    </li>
+  );
+}
+
+/**
+ * By card's row (v2 call 1): the card, then its three facts, then the action stack, which By card holds the tag alone
+ * (call 3: Ask lives in the spares modal). Phone: the facts are labelled lines under the name, the tag at the right.
+ * Desktop: the facts are columns under `CartColumns`, the name cell and the facts dissolving into the row's grid.
+ */
+export function CartCardLine({
+  line,
+  deckNames,
+  own,
+  spares,
+  newestAsOf,
+}: {
+  line: SelectedLine;
+  /** The cart's decks by id: the need fact's names. */
+  deckNames: ReadonlyMap<string, string>;
+  /** The own fact (`ownFact`): where every owned copy is in use, or the shipped row's fallback; null with none owned. */
+  own: OwnFact | null;
+  /** Friends' spares of this card (S5), or none. */
+  spares: readonly FriendSpare[];
+  newestAsOf: Date | null;
+}) {
+  const fact = lineFact(line, newestAsOf);
+  const { added, press } = useLinePress(line);
+  const need = line.selectedRows.map((r) => ({ name: deckNames.get(r.deckId) ?? "", count: r.quantity }));
+  // Most spares first, then by name, so the name that leads is the friend most likely to have one to give.
+  const friends = [...spares]
+    .sort((a, b) => b.spare - a.spare || a.friend.displayName.localeCompare(b.friend.displayName))
+    .map((s) => ({ name: s.friend.displayName, count: s.spare }));
+  const spareCount = friends.reduce((n, f) => n + f.count, 0);
+  // G1: the decks holding the copies, by name, only when they account for every copy. Otherwise the shipped row's facts:
+  // `in other decks` while other decks hold them all, the count elsewhere while a deck on the line holds some.
+  const fallback = own?.kind === "elsewhere"
+    ? (own.elsewhere === own.owned ? copy.facts.inOther : own.elsewhere > 0 ? copy.facts.someInOther(own.elsewhere) : "")
+    : undefined;
+  const ownItems = own?.kind === "named" ? own.decks.map((d) => ({ name: d.name, count: d.held })) : [];
+  return (
+    <li
+      data-cart-row
+      className={`flex items-start gap-[12px] border-t border-[color:var(--border)] py-[12px] first:border-t-0 xl:grid xl:min-h-[64px] xl:items-center xl:px-[14px] xl:has-[[data-fact-open]]:items-start ${BY_CARD_GRID}`}
+    >
+      <div className="flex min-w-0 flex-1 flex-col gap-[4px] xl:contents">
+        <div className="flex min-w-0 flex-col gap-[3px] xl:col-start-1 xl:row-start-1">
+          <span className="flex min-w-0 items-baseline gap-[8px]">
+            <CardDetailTrigger
+              oracleId={line.oracleId}
+              name={line.name}
+              imageUri={line.imageUri ?? null}
+              preview
+              // One line (the board's `.nm2`): the ellipsis is on the inner text, since clipping the press itself would
+              // clip the coarse pointer's 44px hit drawn past it.
+              className={`${TOUCH_HIT} min-w-0 max-w-full text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]`}
+            >
+              <span className="block truncate">{frontFaceName(line.name, line.layout)}</span>
+            </CardDetailTrigger>
+            <TwoFacedMark layout={line.layout} />
+          </span>
+          {line.commander ? (
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{copy.list.commander}</span>
+          ) : null}
+          {/* S4: bought this visit and still listed, at the count the read gives it now. */}
+          {added > 0 ? (
+            <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.list.addedThisVisit(added)}</span>
+          ) : null}
+        </div>
+        <CartFact
+          testId="need"
+          label={copy.facts.need}
+          count={line.copies}
+          items={need}
+          head={copy.facts.forDecks(need.length)}
+          moreAria={copy.facts.moreDecksAria}
+          className="xl:col-start-2 xl:row-start-1"
+        />
+        {friends.length > 0 ? (
+          <CartFact
+            testId="spare"
+            label={copy.facts.spare}
+            count={spareCount}
+            items={friends}
+            head={copy.facts.fromFriends(friends.length)}
+            moreAria={copy.facts.moreFriendsAria}
+            // S5: the shipped glyph press, opening the spares-only modal where Ask lives. Its coarse hit stays 44px across
+            // but only 2px above and below, as the pill's does: a 44px-tall hit would reach the need line's pill above it.
+            lead={
+              <OtherWaysPress
+                card={spareCardOf(line, fact)}
+                standIn={false}
+                standInAria=""
+                limitFigure=""
+                oneLine
+                className="pointer-coarse:after:h-[calc(100%+4px)]!"
+              />
+            }
+            className="xl:col-start-3 xl:row-start-1"
+          />
+        ) : null}
+        {own ? (
+          <CartFact
+            testId="own"
+            label={copy.facts.own}
+            count={own.owned}
+            items={ownItems}
+            prefix={copy.facts.in}
+            fallback={fallback}
+            head={copy.facts.inDecks(ownItems.length)}
+            moreAria={copy.facts.moreDecksAria}
+            dim
+            className="xl:col-start-4 xl:row-start-1"
+          />
+        ) : null}
+      </div>
+      <span className="flex flex-none flex-col items-end gap-[10px] xl:col-start-5 xl:row-start-1 xl:gap-[7px]">
+        {/* The tag's row in the stack: 22px on a phone, 20 on desktop, the shipped tag centred in it. */}
+        <span className="flex h-[22px] items-center xl:h-[20px]">
+          <BuyTag variant="row" reserveSlot price={fact} newestAsOf={newestAsOf} press={press} />
+        </span>
       </span>
     </li>
   );

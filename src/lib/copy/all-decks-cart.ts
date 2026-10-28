@@ -76,6 +76,40 @@ export const allDecksCartCopy = {
     added: (q: number) => `${n(q)} added`,
   },
 
+  /** The desktop column header over By card's rows (v2 call 1, PR 4). The actions column has no label. */
+  columns: {
+    card: "Card",
+    need: "You need · for",
+    spares: "Friends’ spares",
+    own: "You own · in use in",
+  },
+
+  /** A row's facts (v2 call 1): the phone's labels (uppercase by style), and the words inside a fact. */
+  facts: {
+    need: "need",
+    spare: "spare",
+    own: "own",
+    /** The own fact, before the decks holding the copies (G1). */
+    in: "in",
+    /** G1's fallback, when the decks holding the copies are not known and other decks hold every one. */
+    inOther: "in other decks",
+    /** G1's fallback when a deck on the line holds some of its own copies: `list.ownedSome`'s tail, after the count. */
+    someInOther: (held: number) => `· ${n(held)} in other decks`,
+    /** The press after the names that fit (call 2), and its words once the list is open. */
+    more: (rest: number) => `+${n(rest)}`,
+    /** The press when the only thing hidden is the end of one cut name (addendum R2, ruling 3). */
+    moreName: "more",
+    less: "less",
+    moreDecksAria: (rest: number) => `Show ${n(rest)} more ${rest === 1 ? "deck" : "decks"}`,
+    moreFriendsAria: (rest: number) => `Show ${n(rest)} more ${rest === 1 ? "friend" : "friends"}`,
+    moreNameAria: "Show the full name",
+    lessAria: "Show fewer",
+    /** The open list's head, in place of the names: `for 4 decks`, `in 2 decks`, `from 2 friends`. */
+    forDecks: (x: number) => `for ${decks(x)}`,
+    inDecks: (x: number) => `in ${decks(x)}`,
+    fromFriends: (x: number) => `from ${x === 1 ? "1 friend" : `${n(x)} friends`}`,
+  },
+
   /** The chassis's controls (v2, PR 8). Friend and Owned arrive with PR 9. */
   filters: {
     search: "Search cards",

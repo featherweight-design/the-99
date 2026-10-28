@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCart } from "./cart-read";
-import { cartTotal, checkoutLines, checkoutLinks, figuresOf, inUseIn, selectLine } from "./cart";
+import { cartTotal, checkoutLines, checkoutLinks, figuresOf, inUseIn, ownFact, ownHoldings, selectLine } from "./cart";
 import { rollupBuyRows } from "./shopping-rollup";
 import type { PriceFact } from "./price";
 import type { PriceRead } from "./price-query";
@@ -202,5 +202,51 @@ describe("where owned copies are in use (v2's own fact, G1)", () => {
   it("leaves out a deck on the line that holds none", () => {
     const noneHeld = { ...tower, rows: tower.rows.map((r) => ({ ...r, held: 0 })) };
     expect(inUseIn(noneHeld, new Set(["omnath"]), rank).map((h) => h.deckId)).toEqual(["kratos", "zeta", "alpha"]);
+  });
+});
+
+describe("where EVERY owned copy is in use (v2's own fact, PR 4)", () => {
+  // Tower again: six owned; Gishath (on the line) holds one, Kratos one, two decks outside the cart four.
+  const ownership = new Map([[TOWER, {
+    owned: 6,
+    heldByDeck: new Map([["kratos", 1], ["zeta", 3], ["alpha", 1], ["gishath", 1]]),
+  }]]);
+  const holders = [{ id: "zeta", name: "Zeta Tokens" }, { id: "alpha", name: "Alpha Stompy" }];
+  const cart = buildCart(rows, read, deckRows, names, ownership, holders);
+  const tower = cart.lines.find((l) => l.oracleId === TOWER)!;
+  const rank = new Map(cart.decks.map((d, i) => [d.id, i]));
+  const all = new Set(cart.decks.map((d) => d.id));
+  const named = new Map([...cart.decks.map((d) => [d.id, d.name] as const), ...holders.map((h) => [h.id, h.name] as const)]);
+  const line = selectLine(tower, all)!;
+
+  it("leads with the selected decks on the line that hold copies, then inUseIn, and sums to owned", () => {
+    const held = ownHoldings(line, all, rank);
+    expect(held.map((h) => h.deckId)).toEqual(["gishath", "kratos", "zeta", "alpha"]);
+    expect(held.reduce((n, h) => n + h.held, 0)).toBe(line.owned);
+  });
+
+  it("names every deck when they account for every copy", () => {
+    expect(ownFact(line, all, rank, named)).toEqual({
+      kind: "named", owned: 6,
+      decks: [
+        { name: named.get("gishath"), held: 1 }, { name: named.get("kratos"), held: 1 },
+        { name: "Zeta Tokens", held: 3 }, { name: "Alpha Stompy", held: 1 },
+      ],
+    });
+  });
+
+  it("falls back to the shipped row's facts when a deck has no name", () => {
+    const unnamed = new Map([...named].filter(([id]) => id !== "zeta"));
+    expect(ownFact(line, all, rank, unnamed)).toEqual({ kind: "elsewhere", owned: 6, elsewhere: line.heldElsewhere });
+    expect(line.heldElsewhere).toBe(5);
+  });
+
+  it("falls back when the holdings do not account for every copy", () => {
+    const short = { ...line, owned: 7 };
+    expect(ownFact(short, all, rank, named)?.kind).toBe("elsewhere");
+  });
+
+  it("is null with nothing owned", () => {
+    expect(ownFact({ ...line, owned: 0 }, all, rank, named)).toBeNull();
   });
 });
