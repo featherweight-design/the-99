@@ -172,7 +172,7 @@ describe("FeedItemRow", () => {
 
   it("opens a combo item for its combo, and no other kind", () => {
     open.mockClear();
-    const { unmount } = list(<FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation" } })} now={NOW} />);
+    list(<FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation" } })} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: /See the combo/ }));
     expect(open).toHaveBeenLastCalledWith("a", undefined, undefined, expect.objectContaining({ combo: true }));
     expect(open).toHaveBeenLastCalledWith("a", undefined, undefined, expect.objectContaining({ art: null }));

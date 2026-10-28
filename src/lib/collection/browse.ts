@@ -376,10 +376,10 @@ export type BrowseListCard = Omit<
 export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
   return cards.map((card) => {
     const {
-      /* eslint-disable @typescript-eslint/no-unused-vars -- destructured to drop them from `rest` */
+
       printings, oracleText, backImageUri, prices, keywords, cmc, preferredPrinting, setCodes,
       availability, comboPartner,
-      /* eslint-enable @typescript-eslint/no-unused-vars */
+
       ...rest
     } = card;
     const counts = new Map<string, number>();

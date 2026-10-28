@@ -1,5 +1,5 @@
 import { modelOwnerUserId } from "../model/allowance";
-import { listAccounts, type Account } from "./accounts";
+import { listAccounts } from "./accounts";
 import { inListOrder } from "./account-page";
 import { readEveryInvite } from "./invites";
 import { buildInviteTree, type InviteTree } from "./invite-tree-rule";

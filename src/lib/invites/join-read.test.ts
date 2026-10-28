@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inviteReservations } from "../../db/schema";
+import type { inviteReservations } from "../../db/schema";
 import { joinStep } from "./join-read";
 import { CODE_MAX_TRIES, CODE_RESEND_MS, CODE_TTL_MS, HOLD_MS, QR_TTL_MS } from "./rules";
 import { secretHash } from "./tokens";

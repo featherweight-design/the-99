@@ -7,7 +7,7 @@ import type { BracketLean } from "../../lib/bracket/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { CardRef } from "../../lib/profile/types";
 import { ComboGlyph } from "../cards/combo-glyph";
-import { CardDetailTrigger, type Sibling } from "../cards/card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { ModalChrome, type FindingArt } from "./receipt-modal";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";

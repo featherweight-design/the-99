@@ -1,6 +1,6 @@
 import { and, eq, lt } from "drizzle-orm";
 
-import { db } from "../../db";
+import type { db } from "../../db";
 import { deckSynopses } from "../../db/schema";
 import { settleModelCall } from "../model/allowance";
 import { SYNOPSIS_REAPER_CUTOFF_MS } from "./limits";

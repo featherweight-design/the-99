@@ -42,7 +42,7 @@
 //     writer for the same instant.
 
 import { and, eq, sql } from "drizzle-orm";
-import { db } from "../../db";
+import type { db } from "../../db";
 import { deckProfiles, decks } from "../../db/schema";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];

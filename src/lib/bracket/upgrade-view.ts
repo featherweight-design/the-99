@@ -1,7 +1,7 @@
 import type { DeckProfile } from "../profile/types";
 import { GAME_CHANGER_LIMIT } from "./rules";
 import type { Bracket } from "./types";
-import { upgradePath, type UpgradeItem, type UpgradePath } from "./upgrade";
+import type { UpgradeItem, UpgradePath } from "./upgrade";
 
 /**
  * The figures the upgrade path DRAWS that `upgradePath` does not return, derived here once so no

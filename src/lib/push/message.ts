@@ -12,7 +12,6 @@
  */
 import { formatCents } from "../decks/price";
 import { pushCopy } from "../copy/push";
-import type { FeedKind } from "../feed/kinds";
 
 export type PushItem =
   | { kind: "new-set"; key: string; batch: string; name: string; cards: number | null; href: string }

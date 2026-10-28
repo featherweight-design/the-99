@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { gotItCopy } from "../../../lib/copy/i-got-it";
 
 const { loadPrintingChoices, markBoughtForDecks } = vi.hoisted(() => ({
   loadPrintingChoices: vi.fn(),
@@ -32,10 +31,7 @@ vi.mock("../../cards/card-detail-provider", async () => {
 
 const { CartView } = await import("./cart-view");
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
-import { exportLinkOutCopy } from "../../../lib/copy/decks-builder";
-import { priceCopy } from "../../../lib/copy/price";
 import type { CartPayload } from "../../../lib/decks/cart";
-import { spareCopy } from "../../../lib/copy/social";
 
 vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),

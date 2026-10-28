@@ -9,7 +9,7 @@
 // why this fits.
 //
 // Writes NO database rows. Reads the catalog, writes files under out/.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 
 import "./lib/env.mjs";
 

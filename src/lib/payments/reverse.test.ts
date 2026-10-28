@@ -4,7 +4,6 @@ import type Stripe from "stripe";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { reverseCharge, type DisputeRow, type GrantRow, type ReverseStore, type ReverseTx } from "./reverse";
-import type { DisputeStatus } from "./refund-rule";
 import type { LedgerRow } from "../model/allowance-rule";
 
 const NOW = new Date("2026-10-17T12:00:00Z");

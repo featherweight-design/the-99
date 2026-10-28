@@ -7,7 +7,7 @@ import { fitsReads } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import { recordLate, RunSupersededError } from "../tuning/run-store";
-import { FITS_READ_PROMPT_VERSION, FITS_READ_REAP_MS, type FitsDropReason, type FitsPick, type FitsReadInputs, type ReadCardFacts } from "./fits-read";
+import { FITS_READ_PROMPT_VERSION, FITS_READ_REAP_MS, type FitsDropReason, type FitsReadInputs, type ReadCardFacts } from "./fits-read";
 import type { FitsReadRow, StoredFitsPick } from "./fits-read-state";
 
 /**

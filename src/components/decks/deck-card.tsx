@@ -12,7 +12,6 @@ import type { DeckShopping } from "../../lib/decks/shopping-rollup";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { formatWhen } from "../../lib/format/when";
-import { INK_SHADOW } from "../ui/art-wash";
 import { DeckTileArt } from "./deck-tile-art";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";

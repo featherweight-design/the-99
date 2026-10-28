@@ -1,27 +1,16 @@
 import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
+import next from "@fwd-stack/eslint-config/next";
 
 const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
+  // The shared preset: eslint-config-next's core-web-vitals and typescript configs, the rules
+  // every fwd-stack project shares (unused vars with the `_` escape, type-only imports, `any` as a
+  // warning), and the ignores: build output, `next-env.d.ts`, `.worktrees/` and `.claude/worktrees/`.
+  ...next,
   globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
     "out/**",
     "build/**",
-    "next-env.d.ts",
     // Vendored design-handoff assets — not app code.
     "design/**",
-    // Feature worktrees live inside the repo. The ".next/**" pattern above is
-    // anchored to the root, so without this, linting the main checkout also
-    // lints every worktree's src/ and its .next/ build output. Both places
-    // worktrees are made: `.worktrees/` by hand, `.claude/worktrees/` by Claude
-    // Code's own worktree tool — whose Turbopack chunks put 1,265 errors on the
-    // main checkout's lint before this second line existed.
-    ".worktrees/**",
-    ".claude/worktrees/**",
   ]),
   {
     files: ["src/**/*.tsx"],

@@ -34,7 +34,7 @@ import type { ModelOutcome } from "../src/lib/model/client";
 import { retrySynopsisFor, writeSynopsisFor, type GenerateDeps } from "../src/lib/synopsis/generate";
 import { pinSynopsisToVersion } from "../src/lib/synopsis/pin";
 import { readSynopsisState, readVersionSynopsis } from "../src/lib/synopsis/read";
-import type { SynopsisReply, SynopsisResponse } from "../src/lib/synopsis/response-schema";
+import type { SynopsisReply } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
 import type { SynopsisFacts } from "../src/lib/synopsis/facts";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
