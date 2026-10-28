@@ -66,6 +66,7 @@ export const CALLERS = {
   "scripts/eval/tuning-focus.mts": { builders: ["src/lib/tuning/prompt.ts"] },
   "scripts/eval/tuning-model-arms.mts": { builders: ["src/lib/tuning/prompt.ts"] },
   "scripts/eval/count-mechanism.mts": { builders: ["src/lib/tuning/prompt.ts"] },
+  "scripts/eval/tuning-v2.mts": { builders: ["src/lib/tuning/prompt.ts"] },
   "scripts/eval/tuning-blind-judge.mts": { builders: ["src/lib/tuning/prompt.ts"], note: "adds the two candidate lists: card names" },
   "scripts/eval/cuts-model.mts": { builders: ["src/lib/tuning/cuts-prompt.ts"] },
   "scripts/eval/cuts-plan.mts": { builders: ["src/lib/tuning/cuts-prompt.ts"], note: "the deck's name stays in its local output" },
