@@ -131,7 +131,12 @@ export function prefillFrom(rows: readonly TableSeatRow[], viewerId: string, tab
  */
 export async function tablePrefill(viewerId: string, tableId: unknown, deckId: string): Promise<TablePrefill | null> {
   if (!isUuid(tableId) || !isUuid(deckId)) return null;
-  return prefillFrom(await tableSeatsQuery(viewerId, tableId, db, await ruledSeatOwnersOf(viewerId, tableId, db)), viewerId, tableId, deckId);
+  // One snapshot for the owners and the seats, so a reseat between the two reads cannot draw a deck its owner's rules hide.
+  const rows = await db.transaction(
+    async (tx) => tableSeatsQuery(viewerId, tableId, tx, await ruledSeatOwnersOf(viewerId, tableId, tx)),
+    { isolationLevel: "repeatable read" },
+  );
+  return prefillFrom(rows, viewerId, tableId, deckId);
 }
 
 /** What a table seat becomes: a friend ask `resolveFriendSeatsIn` resolves, or anyone by the deck's commanders. */
@@ -186,5 +191,7 @@ export async function resolveTableSeatsIn(
   seats: readonly number[],
 ): Promise<TableSeatResolution[] | null> {
   if (!isUuid(table.id)) return null;
+  // The owners and the seats are two reads in the game's transaction: a reseat between them changes the seating, so
+  // `resolveSeatsFrom` refuses the save against the prefill's hash rather than logging a deck the owner hides.
   return resolveSeatsFrom(await tableSeatsQuery(viewerId, table.id, tx, await ruledSeatOwnersOf(viewerId, table.id, tx)), viewerId, table, seats);
 }
