@@ -179,6 +179,20 @@ describe("LabelLanding", () => {
     section.remove();
   });
 
+  it("cancels the landing's pending scroll when the page goes away (a Back mid-scroll)", () => {
+    const section = document.createElement("section");
+    section.id = "analysis";
+    document.body.appendChild(section);
+    const cancel = vi.fn();
+    scroll.reveal.mockImplementationOnce(() => cancel);
+    at(`/about/decks?lit=${encodeURIComponent(LIT)}#analysis`);
+    const { unmount } = draw(TOLD);
+    expect(cancel).not.toHaveBeenCalled();
+    unmount();
+    expect(cancel).toHaveBeenCalledTimes(1);
+    section.remove();
+  });
+
   it("lands with a malformed fragment instead of throwing", () => {
     at(`/about/decks?lit=${encodeURIComponent(LIT)}#%E0`);
     const { container } = draw(TOLD);

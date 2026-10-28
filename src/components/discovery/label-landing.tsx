@@ -20,7 +20,7 @@
 // nothing.
 // Nothing is written here: recording the visit is PR 6b's.
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
 import { ABOUT_PAGE_STRINGS } from "../../lib/copy/about-pages";
 import type { PageWidth } from "../../lib/about/page-shots";
 import { useLiveQuery } from "../../lib/commanders/live-query";
@@ -108,7 +108,8 @@ export function LabelLanding({
         // A malformed fragment names no section.
       }
     }
-    if (id) reveal(document.getElementById(id), "start");
+    // Cancelled on cleanup, so a Back during the eased scroll never scrolls the page left for.
+    return id ? reveal(document.getElementById(id), "start") : undefined;
   }, [arrival, section]);
   return <LandingContext.Provider value={{ landing, request: arrival.n }}>{children}</LandingContext.Provider>;
 }
@@ -128,6 +129,9 @@ export function NewTag({ landing }: { landing: Landing }) {
 
 /** Under a new label's words, Show me: scrolls to its tool card, under the label or lit in Try it (Ways-In `.showme`). */
 export function LandingShowMe({ landing, width }: { landing: Landing; width: PageWidth }) {
+  // The pending scroll's cancel, run on unmount so a Back mid-scroll leaves the next page alone.
+  const cancel = useRef<(() => void) | null>(null);
+  useEffect(() => () => cancel.current?.(), []);
   if (!landing.isNew || landing.card === null) return null;
   const tool = landing.card.card.id;
   return (
@@ -135,7 +139,10 @@ export function LandingShowMe({ landing, width }: { landing: Landing; width: Pag
       type="button"
       data-about-landing-show-me
       // `reveal`, the app's own eased scroll, so quick return reads it as the app's and not the reader's.
-      onClick={() => reveal(document.getElementById(landingCardAnchor(tool, width)), "nearest")}
+      onClick={() => {
+        cancel.current?.();
+        cancel.current = reveal(document.getElementById(landingCardAnchor(tool, width)), "nearest");
+      }}
       className={`${TOUCH_HIT} cursor-pointer border-0 bg-transparent p-0 font-mono text-[12px] font-medium text-[color:var(--accent-text)] hover:underline`}
     >
       {ABOUT_PAGE_STRINGS.toolShowMe}
