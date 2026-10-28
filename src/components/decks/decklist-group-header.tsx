@@ -17,6 +17,13 @@ interface DecklistGroupHeaderProps {
   note?: string;
   /** The draft note is brass; every other note is the quiet default. */
   noteColor?: string;
+  /**
+   * Draw the note on a phone too (small items 2, `Draft-Note-Phone`'s 390 frame): on the heading's line
+   * right after the count, 8px from it, at the same mono 10.5px; from `md` it moves to the right edge as
+   * before. Only the draft's `n changed, not yet committed` note asks for it: every other note (a precon's
+   * commander, the unresolved group, tokens) stays desktop only, as shipped.
+   */
+  noteEveryWidth?: boolean;
   /** Promotes the label to an h3 so a group can be a labelled landmark. */
   headingId?: string;
   /** Gives the heading a −1 tabindex so a write can hand focus to it. The review
@@ -51,6 +58,7 @@ export function DecklistGroupHeader({
   countColor = "var(--fg-faint)",
   note,
   noteColor = "var(--fg-locked)",
+  noteEveryWidth = false,
   headingId,
   focusable = false,
   gapClause,
@@ -67,7 +75,7 @@ export function DecklistGroupHeader({
   const labelColor = gapClause ? "var(--accent-text)" : "var(--fg)";
 
   return (
-    <div className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-b-[color:var(--border)] md:border-[color:var(--border)]">
+    <div className={`flex items-baseline ${note && noteEveryWidth ? "justify-start md:justify-between" : "justify-between"} mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-b-[color:var(--border)] md:border-[color:var(--border)]`}>
       <div className="flex items-baseline gap-[6px] md:gap-[10px]">
         {headingId ? (
           // Labelled rather than left to its text content, so the count is part
@@ -123,8 +131,8 @@ export function DecklistGroupHeader({
 
       {note && (
         <span
-          className="hidden md:block font-mono text-[10.5px]"
-          style={{ color: noteColor, marginLeft: "auto" }}
+          className={noteEveryWidth ? "ml-[8px] font-mono text-[10.5px] md:ml-auto" : "hidden md:block font-mono text-[10.5px]"}
+          style={noteEveryWidth ? { color: noteColor } : { color: noteColor, marginLeft: "auto" }}
         >
           {note}
         </span>

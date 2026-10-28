@@ -1445,6 +1445,9 @@ export function Decklist({
               // unresolved group's note, which describes rows rather than
               // pointing at them.
               noteColor="var(--accent-text)"
+              // On a phone too, as `Draft-Note-Phone`'s 390 frame draws it (small items 2): the
+              // toolbar's own draft note stays desktop only, so this and the caption say it there.
+              noteEveryWidth
             />
           );
         })}

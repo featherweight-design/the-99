@@ -32,6 +32,8 @@ interface DecklistGroupProps {
   note?: string;
   /** Passed straight to the header — the draft note is brass, others quiet. */
   noteColor?: string;
+  /** Passed straight to the header: the draft note shows on a phone too (small items 2). */
+  noteEveryWidth?: boolean;
   /**
    * The newest `as_of` in the price table, for measuring a row's liveness.
    *
@@ -66,6 +68,7 @@ export function DecklistGroup({
   siblings,
   note,
   noteColor,
+  noteEveryWidth = false,
   newestAsOf,
   readOnly = false,
   footer = null,
@@ -94,6 +97,7 @@ export function DecklistGroup({
         count={count}
         note={note}
         noteColor={noteColor}
+        noteEveryWidth={noteEveryWidth}
         autoCount={autoCount}
       />
 

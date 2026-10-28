@@ -201,6 +201,19 @@ describe("GroupToggle's auto cluster at zero", () => {
   });
 });
 
+// Small items 2 (`Draft-Note-Phone`, 2026-10-27): the toolbar's draft note stays off the phone. The
+// list's caption, directly under the toolbar, already says it there, and the phone's three toolbar rows
+// are full. Pinned so the question is not asked again.
+describe("GroupToggle's draft note on a phone", () => {
+  it("is desktop only: hidden below md, inline from it", () => {
+    render(<GroupToggle {...props} filter="all" draftNote="6 rows differ from v3" />);
+    const note = screen.getByText("6 rows differ from v3");
+    expect(note.tagName).toBe("SPAN");
+    expect(note.classList.contains("hidden")).toBe(true);
+    expect(note.classList.contains("md:inline")).toBe(true);
+  });
+});
+
 // `Lock cards` / `Done` is exported for the About page's Locked cards figure. The export is only
 // honest while the toolbar draws exactly what a standalone mount draws, in both states.
 describe("LockModeButton", () => {
