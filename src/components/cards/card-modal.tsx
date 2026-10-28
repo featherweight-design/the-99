@@ -673,8 +673,15 @@ function SiblingFilm({ sibling }: { sibling: SiblingCard }) {
  */
 const PhonePeek = React.forwardRef<
   HTMLButtonElement,
-  { sibling: SiblingCard; direction: "previous" | "next"; onPress: () => void; covered: boolean }
->(function PhonePeek({ sibling, direction, onPress, covered }, ref) {
+  {
+    sibling: SiblingCard;
+    direction: "previous" | "next";
+    onPress: () => void;
+    covered: boolean;
+    /** The card just left, on a page: it shrinks into this peek from where it stood (`--enter-*`). */
+    enter: React.CSSProperties | null;
+  }
+>(function PhonePeek({ sibling, direction, onPress, covered, enter }, ref) {
   const left = direction === "previous"
     ? "calc(50% - var(--card-w) / 2 - 12px - var(--card-w) * 0.7375)"
     : "calc(50% + var(--card-w) / 2 + 12px)";
@@ -687,8 +694,12 @@ const PhonePeek = React.forwardRef<
       inert={covered}
       onClick={onPress}
       aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
-      className="card-grow absolute overflow-hidden rounded-[11px] cursor-pointer border-0 p-0"
+      // `phone-peek` holds its .5 opacity; `swipe-in-*` grows and lights it as a swipe brings it in.
+      className={"card-grow phone-peek absolute overflow-hidden rounded-[11px] cursor-pointer border-0 p-0 "
+        + (direction === "previous" ? "swipe-in-prev" : "swipe-in-next")
+        + (enter ? " anim-phone-peek-enter" : "")}
       style={{
+        ...enter,
         left,
         // (447 - 330) / 2 at the drawn size: the gap between the two heights, halved, as a share
         // of the card's width (88/63 x 0.2625 / 2). From the card's own top, which the min snap
@@ -696,7 +707,6 @@ const PhonePeek = React.forwardRef<
         top: "calc(var(--card-top) + var(--card-w) * 0.18333)",
         width: "calc(var(--card-w) * 0.7375)",
         aspectRatio: "63/88",
-        opacity: 0.5,
         ...siblingGround(sibling),
         boxShadow: "0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
       }}
@@ -733,6 +743,7 @@ export function CardModal({
   nextSibling = null,
   enterFrom = null,
   enterOffset = 0,
+  enterProgress = 0,
   startMinimized = false,
   openCombo = false,
   onOpenCombo = null,
@@ -885,8 +896,8 @@ export function CardModal({
   onClose: () => void;
   /** Called with the phone band's offset when a swipe paged (carousel R2), and with nothing for
    *  every other way of paging, so the next card enters from wherever the reader let go. */
-  onPrev: ((offset?: number) => void) | null;
-  onNext: ((offset?: number) => void) | null;
+  onPrev: ((offset?: number, progress?: number) => void) | null;
+  onNext: ((offset?: number, progress?: number) => void) | null;
   /** The neighbor plate's own press (handoff decision 2), separate from `onPrev`/`onNext` so the
    *  provider can tell a peek from the footer button or an arrow key and restore focus to the
    *  same role across the remount (handoff "Notes for engineering" §3). Null exactly when
@@ -909,6 +920,9 @@ export function CardModal({
   /** Where the phone's card band stood when the swipe that led here committed, in px (0 for any
    *  other page). Captured once at construction, like `enterFrom`. */
   enterOffset?: number;
+  /** How far that swipe had carried the swap, 0 to 1 (0 for any other page): the card enters at the
+   *  size and opacity the finger left it, and the card left behind shrinks on from where it was. */
+  enterProgress?: number;
   /** The phone's sheet opens at its min snap: the reader minimized it on the card before this one
    *  and paged here. Captured once at construction, like `enterOffset`. */
   startMinimized?: boolean;
@@ -1028,6 +1042,7 @@ export function CardModal({
   // ever arrives with a new instance.
   const [enteredFrom] = useState(enterFrom);
   const [enteredOffset] = useState(enterOffset);
+  const [enteredProgress] = useState(enterProgress);
   /**
    * The phone's sheet (carousel R2): the teaser on every open and every page, which a remount
    * per card gives by construction, or the full details column. Set only by the phone's own
@@ -1577,7 +1592,7 @@ export function CardModal({
     teaserHeight,
     canPrev: onPrev !== null && !viewOpen,
     canNext: onNext !== null && !viewOpen,
-    onPage: (dir, offset) => (dir === "next" ? onNext?.(offset) : onPrev?.(offset)),
+    onPage: (dir, offset, progress) => (dir === "next" ? onNext?.(offset, progress) : onPrev?.(offset, progress)),
     onSnap: setSnap,
     bodyRef: sheetBodyRef,
     // Every card that has a teaser, stacked or not: since stacked sheets R1 a card opened from a sheet
@@ -2169,6 +2184,25 @@ export function CardModal({
     : enteredFrom === "prev" || enteredFrom === "prevPeek"
     ? `calc(-86.875% - 12px + ${enteredOffset}px)`
     : null;
+  // ...and the swap is one motion, not a slide and a snap (Hugh, 2026-10-28): the arriving card
+  // starts at the size and opacity the swipe had grown its peek to, and the card being left (now
+  // the peek on the side the reader came from) shrinks on from where the finger let it go, its
+  // centre the band's offset from the screen's. A tap or a key is a swipe of 0: the card left
+  // behind starts at full size, centred. Scales are of each element's own box (the peek is 0.7375
+  // of the card). Reduced motion draws both in place (`globals.css`).
+  const leftPeek = enteredFrom === "next" || enteredFrom === "nextPeek" ? "prev"
+    : enteredFrom === "prev" || enteredFrom === "prevPeek" ? "next"
+    : null;
+  const phoneEnterVars = phoneEnterX === null ? null : ({
+    "--enter-x": phoneEnterX,
+    "--enter-scale": String(0.7375 + 0.2625 * enteredProgress),
+    "--enter-opacity": String(0.5 + 0.5 * enteredProgress),
+  } as React.CSSProperties);
+  const leftPeekVars = leftPeek === null ? null : ({
+    "--enter-x": `calc(${leftPeek === "prev" ? "" : "-"}1 * (var(--card-w) * 0.86875 + 12px) + ${enteredOffset}px)`,
+    "--enter-scale": String((1 - 0.2625 * enteredProgress) / 0.7375),
+    "--enter-opacity": String(1 - 0.5 * enteredProgress),
+  } as React.CSSProperties);
 
   return (
     // One reading order for the neighbors' art, plates and peeks alike (`ArrivalOrder`): a pair fades in together.
@@ -2294,7 +2328,7 @@ export function CardModal({
             } as React.CSSProperties}
           >
             {narrow && prevSibling && onPrevPeek ? (
-              <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={onPrevPeek} covered={full} />
+              <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={onPrevPeek} covered={full} enter={leftPeek === "prev" ? leftPeekVars : null} />
             ) : null}
             <div
               // Under the full sheet the card and its turn plate are covered, and paging is
@@ -2302,13 +2336,13 @@ export function CardModal({
               // cannot see. The band itself stays live for the tap that returns to the teaser.
               inert={full}
               data-testid="modal-art-mobile"
-              className={"card-grow absolute rounded-[14px]" + (phoneEnterX !== null ? " anim-phone-card-enter" : "")}
+              className={"card-grow swipe-out absolute rounded-[14px]" + (phoneEnterX !== null ? " anim-phone-card-enter" : "")}
               style={{
                 top: "var(--card-top)",
                 left: "calc(50% - var(--card-w) / 2)",
                 width: "var(--card-w)",
                 aspectRatio: "63/88",
-                ...(phoneEnterX !== null ? ({ "--enter-x": phoneEnterX } as React.CSSProperties) : null),
+                ...phoneEnterVars,
               }}
             >
               {/* THE TILT HOST (foil R2, G2): inside, as the entry animation owns this box's `transform`. Its shadow is
@@ -2335,7 +2369,7 @@ export function CardModal({
               )}
             </div>
             {narrow && nextSibling && onNextPeek ? (
-              <PhonePeek ref={nextPhonePeekRef} sibling={nextSibling} direction="next" onPress={onNextPeek} covered={full} />
+              <PhonePeek ref={nextPhonePeekRef} sibling={nextSibling} direction="next" onPress={onNextPeek} covered={full} enter={leftPeek === "next" ? leftPeekVars : null} />
             ) : null}
           </div>
         </div>

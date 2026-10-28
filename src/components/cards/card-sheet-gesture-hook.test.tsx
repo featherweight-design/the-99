@@ -11,7 +11,7 @@ type HarnessProps = {
   canPrev?: boolean;
   canNext?: boolean;
   startFull?: boolean;
-  onPage?: (dir: "prev" | "next", offset: number) => void;
+  onPage?: (dir: "prev" | "next", offset: number, progress: number) => void;
   onPeek?: () => void;
   onTurn?: () => void;
   /** Where the full sheet's body is scrolled to. */
@@ -23,13 +23,17 @@ type HarnessProps = {
   onSnap?: (to: "full" | "teaser" | "min") => void;
   /** A press on the card's own box (the tilt host) clicks this. */
   onCard?: () => void;
+  /** The card's laid-out width (jsdom lays nothing out), which sets the swap's pitch. */
+  cardWidth?: number;
 };
 
 function Harness({
   canPrev = true, canNext = true, startFull = false, onPage = () => {}, onPeek = () => {}, onTurn = () => {},
   bodyScrollTop = 0, canCollapse = true, disabled = false, startMin = false, onSnap = () => {}, onCard = () => {},
+  cardWidth,
 }: HarnessProps) {
   const tiltRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const bandRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -37,6 +41,7 @@ function Harness({
   const g = useCardSheetGestures({
     bandRef,
     sheetRef,
+    stageRef,
     full,
     teaserHeight: 280,
     canPrev,
@@ -56,9 +61,19 @@ function Harness({
   return (
     <div onClickCapture={g.onClickCapture}>
       <div ref={bandRef} data-testid="band" onPointerDown={g.onBandPointerDown}>
-        <div ref={tiltRef} data-testid="card" data-tilt="" onClick={onCard} />
-        <button type="button" onClick={onPeek}>peek</button>
-        <button type="button" onClick={onTurn}>turn</button>
+        <div ref={stageRef} data-testid="stage">
+          <div
+            ref={(el) => {
+              tiltRef.current = el;
+              if (el && cardWidth !== undefined) Object.defineProperty(el, "offsetWidth", { configurable: true, value: cardWidth });
+            }}
+            data-testid="card"
+            data-tilt=""
+            onClick={onCard}
+          />
+          <button type="button" onClick={onPeek}>peek</button>
+          <button type="button" onClick={onTurn}>turn</button>
+        </div>
       </div>
       <div ref={sheetRef} data-testid="sheet" data-sheet={full ? "full" : "teaser"} onPointerDown={g.onSheetPointerDown}>
         <button type="button" data-sheet-grip="">grip</button>
@@ -101,7 +116,37 @@ describe("useCardSheetGestures", () => {
     const onPage = vi.fn();
     render(<Harness onPage={onPage} />);
     drag(screen.getByTestId("band"), [700, 300], [250, 305]);
-    expect(onPage).toHaveBeenCalledWith("next", -450);
+    expect(onPage).toHaveBeenCalledWith("next", -450, 1);
+  });
+
+  it("carries the swap with the finger: the card's share out, the neighbor's in, and how far at release", () => {
+    const onPage = vi.fn();
+    // A 320px card: the peek stands 290px off (0.86875 x 320 + 12).
+    render(<Harness onPage={onPage} cardWidth={320} />);
+    const band = screen.getByTestId("band");
+    const stage = screen.getByTestId("stage");
+    fireEvent.pointerDown(band, { pointerId: 1, clientX: 700, clientY: 300, button: 0, pointerType: "touch" });
+    // 145px left is half the 290px pitch.
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 555, clientY: 301, pointerType: "touch" });
+    expect(stage.hasAttribute("data-swiping")).toBe(true);
+    expect(stage.style.getPropertyValue("--swipe-out")).toBe("0.5");
+    expect(stage.style.getPropertyValue("--swipe-next")).toBe("0.5");
+    expect(stage.style.getPropertyValue("--swipe-prev")).toBe("0");
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 555, clientY: 301, pointerType: "touch" });
+    expect(onPage).toHaveBeenCalledWith("next", -145, 0.5);
+    // Held where the finger left it until the next card arrives.
+    expect(stage.style.getPropertyValue("--swipe-out")).toBe("0.5");
+  });
+
+  it("lets the swap go home with the band on a release that does not page", () => {
+    const onPage = vi.fn();
+    render(<Harness onPage={onPage} cardWidth={320} />);
+    const stage = screen.getByTestId("stage");
+    // 20px locks the axis but is short of a flick's 24 and a quarter of the band.
+    drag(screen.getByTestId("band"), [300, 300], [320, 301]);
+    expect(onPage).not.toHaveBeenCalled();
+    expect(stage.hasAttribute("data-swiping")).toBe(false);
+    expect(stage.style.getPropertyValue("--swipe-out")).toBe("");
   });
 
   it("hands over the offset at the release, not at the last move", () => {
@@ -112,7 +157,7 @@ describe("useCardSheetGestures", () => {
     fireEvent.pointerMove(window, { pointerId: 1, clientX: 400, clientY: 302, pointerType: "touch" });
     // The finger travels on past its last move event before it lifts.
     fireEvent.pointerUp(window, { pointerId: 1, clientX: 250, clientY: 303, pointerType: "touch" });
-    expect(onPage).toHaveBeenCalledWith("next", -450);
+    expect(onPage).toHaveBeenCalledWith("next", -450, 1);
     expect(band.style.transform).toBe("translateX(-450px)");
   });
 
@@ -400,7 +445,7 @@ describe("the hold", () => {
     expect(lifted()).toBe(false);
     moveTo(250, 305);
     up(250, 305);
-    expect(onPage).toHaveBeenCalledWith("next", expect.any(Number));
+    expect(onPage).toHaveBeenCalledWith("next", expect.any(Number), expect.any(Number));
   });
 
   it("swallows the release's tap: no snap to the teaser from min, and no click", () => {

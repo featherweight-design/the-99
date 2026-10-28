@@ -797,6 +797,8 @@ export function CardDetailProvider({
   // led to enters from the spot the reader let go of rather than from its resting peek. Zero for
   // every page that was not a swipe. Set inside `load`, beside `enterFrom`, for the same reason.
   const [enterOffset, setEnterOffset] = useState(0);
+  // How far that swipe had carried the swap (0 to 1), so the card enters at the size it had grown to.
+  const [enterProgress, setEnterProgress] = useState(0);
   // The phone sheet's min snap, carried from card to card while the reader pages (Hugh, 2026-10-13:
   // paging still works there). A fresh open and a close drop it: every open starts at the teaser.
   const [minimized, setMinimized] = useState(false);
@@ -993,13 +995,15 @@ export function CardDetailProvider({
       // intent (or declares none), so the latest call standing is always the one the arrival effect
       // believes.
       page?: "prev" | "next" | "prevPeek" | "nextPeek",
-      // The band's offset at a swipe's release; see `enterOffset`.
+      // The band's offset at a swipe's release, and how far it had carried the swap; see `enterOffset`.
       offset?: number,
+      progress?: number,
     ) => {
       const request = ++latest.current;
       enterTargetId.current = page ? oracleId : null;
       setEnterFrom(page ?? null);
       setEnterOffset(page ? offset ?? 0 : 0);
+      setEnterProgress(page ? progress ?? 0 : 0);
       // EVERY read decides the pending printing, including the reads that have none: paging,
       // a re-read and an owed re-read all pass nothing, which clears whatever an earlier
       // open left behind. That is what binds the value to a read rather than to an oracle
@@ -1819,11 +1823,11 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={selectPartner}
           onPrev={paging && index > 0
-            ? (offset?: number) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset); }
+            ? (offset?: number, progress?: number) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset, progress); }
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? (offset?: number) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next", offset); }
+              ? (offset?: number, progress?: number) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next", offset, progress); }
               : null
           }
           onPrevPeek={paging && index > 0
@@ -1838,6 +1842,7 @@ export function CardDetailProvider({
           nextSibling={nextSibling}
           enterFrom={enterFrom}
           enterOffset={enterOffset}
+          enterProgress={enterProgress}
           // Only a page carries the min snap (Prev, Next, a peek, a swipe): `enterFrom` is set for
           // those alone. A step back to a partner or any other remount opens at the teaser.
           startMinimized={minimized && enterFrom !== null}
@@ -1907,11 +1912,11 @@ export function CardDetailProvider({
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={selectPartner}
           onPrev={paging && index > 0
-            ? (offset?: number) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset); }
+            ? (offset?: number, progress?: number) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset, progress); }
             : null}
           onNext={
             paging && index < siblings.length - 1
-              ? (offset?: number) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next", offset); }
+              ? (offset?: number, progress?: number) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next", offset, progress); }
               : null
           }
           onPrevPeek={paging && index > 0
@@ -1926,6 +1931,7 @@ export function CardDetailProvider({
           nextSibling={nextSibling}
           enterFrom={enterFrom}
           enterOffset={enterOffset}
+          enterProgress={enterProgress}
           // Only a page carries the min snap (Prev, Next, a peek, a swipe): `enterFrom` is set for
           // those alone. A step back to a partner or any other remount opens at the teaser.
           startMinimized={minimized && enterFrom !== null}

@@ -180,6 +180,8 @@ type Drag = {
   height: number;
   teaserHeight: number;
   bandX: number;
+  /** Centre to centre, card to peek, in px: read once at the axis lock, so a move lays nothing out. */
+  pitch: number;
   sheetTop: number;
   /** A pull down the full sheet's body from its top, which the body's own scroll would take. */
   pull: boolean;
@@ -205,8 +207,11 @@ export type CardSheetGestureOptions = {
   teaserHeight: number;
   canPrev: boolean;
   canNext: boolean;
-  /** A committed page, with the band's offset at release so the next card can enter from it. */
-  onPage: (dir: "prev" | "next", offset: number) => void;
+  /**
+   * A committed page, with the band's offset at release and how far the swap had got (0 to 1), so
+   * the next card enters at exactly the place, size and opacity the finger left it.
+   */
+  onPage: (dir: "prev" | "next", offset: number, progress: number) => void;
   onSnap: (to: SheetSnap) => void;
   /** The full sheet's scrolling body: a downward drag from its top returns to the teaser. */
   bodyRef?: RefObject<HTMLElement | null>;
@@ -224,6 +229,39 @@ export type CardSheetGestureOptions = {
 // The release spring: the same length and curve as `.sheet-snap` (`--motion-quick`, `--motion-ease-out`), which it hands to;
 // `motion-tokens.test.ts` holds the two together.
 const SPRING = "transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1)";
+
+/**
+ * How far a horizontal drag has carried the swap (Hugh, 2026-10-28): 0 at rest, 1 when the
+ * neighbor stands where the card stood. The stylesheet reads it (`.swipe-out`, `.swipe-in-*`) to
+ * shrink and dim the card as it leaves and grow the neighbor as it comes, only where motion is
+ * welcome; under reduced motion the band still slides with the finger and nothing scales.
+ */
+export function swipeProgress(bandX: number, pitch: number): number {
+  if (pitch <= 0) return 0;
+  return Math.max(-1, Math.min(1, bandX / pitch));
+}
+
+/** Centre to centre, the card to its peek: half the card, the 12px gap and half the peek (0.7375 of the card). */
+export function peekPitch(cardWidth: number): number {
+  return cardWidth * 0.86875 + 12;
+}
+
+function writeSwipe(stage: HTMLElement | null | undefined, p: number) {
+  if (!stage) return;
+  stage.setAttribute("data-swiping", "");
+  stage.style.setProperty("--swipe-out", String(Math.abs(p)));
+  stage.style.setProperty("--swipe-next", String(Math.max(0, -p)));
+  stage.style.setProperty("--swipe-prev", String(Math.max(0, p)));
+}
+
+/** Lets the swap go back to rest; without `data-swiping` the stylesheet eases it there with the band's spring. */
+function clearSwipe(stage: HTMLElement | null | undefined) {
+  if (!stage) return;
+  stage.removeAttribute("data-swiping");
+  stage.style.removeProperty("--swipe-out");
+  stage.style.removeProperty("--swipe-next");
+  stage.style.removeProperty("--swipe-prev");
+}
 
 /** Hands the card back to its snap's own CSS, which then eases to it (`card-grow`). */
 function clearCardDrag(stage: HTMLElement | null | undefined) {
@@ -284,6 +322,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     detach.current = null;
     const { bandRef, sheetRef } = opts.current;
     if (bandRef.current) springBack(bandRef.current);
+    clearSwipe(opts.current.stageRef?.current);
     const sheet = sheetRef.current;
     if (sheet) {
       sheet.style.removeProperty("--sheet-drag-top");
@@ -301,6 +340,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     const { bandRef, sheetRef, canPrev, canNext, onPage, onSnap, full, min = false } = opts.current;
     const band = bandRef.current;
     const sheet = sheetRef.current;
+    const stage = opts.current.stageRef?.current;
     // The release itself is a sample. Touch sends no move while a finger rests, so without it a
     // drag that stopped and then lifted would still read as the flick it was before it stopped.
     if (!cancelled) d.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
@@ -331,13 +371,18 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         // springs back after a beat.
         d.bandX = bandOffset(dx, canPrev, canNext);
         band.style.transform = `translateX(${d.bandX}px)`;
-        onPage(dir, d.bandX);
+        const progress = swipeProgress(d.bandX, d.pitch);
+        writeSwipe(stage, progress);
+        onPage(dir, d.bandX, Math.abs(progress));
         setTimeout(() => {
-          if (band.isConnected) springBack(band);
+          if (!band.isConnected) return;
+          springBack(band);
+          clearSwipe(stage);
         }, 1000);
         return;
       }
       springBack(band);
+      clearSwipe(stage);
       return;
     }
     if (d.axis === "y" && !d.dead && sheet) {
@@ -406,6 +451,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         // still see it.
       }
       if (d.axis === "y" && sheetRef.current) sheetRef.current.dataset.dragging = "";
+      if (d.axis === "x" && !d.dead) d.pitch = peekPitch(opts.current.tiltRef?.current?.offsetWidth ?? 0);
     }
     if (d.dead) return;
     if (d.axis === "x") {
@@ -414,6 +460,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       d.bandX = bandOffset(dx, canPrev, canNext);
       band.style.transition = "none";
       band.style.transform = `translateX(${d.bandX}px)`;
+      writeSwipe(opts.current.stageRef?.current, swipeProgress(d.bandX, d.pitch));
       return;
     }
     const sheet = sheetRef.current;
@@ -473,6 +520,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         height,
         teaserHeight,
         bandX: 0,
+        pitch: 0,
         sheetTop: startTop,
         pull,
         hold: null,

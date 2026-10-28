@@ -997,11 +997,42 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 /* The phone's card, arriving from where its peek stood (H23 PR 3, STATES §Motion "Phone commit"):
    at the peek's 236/320 scale and .5 opacity, from `--enter-x` (the peek's slot plus wherever a
    swipe let go of the band), settling after the beat on the same curve as the flip and the sheet's snap (`--motion-ease-out`). Reduced motion: a swap. */
+/* From the size and opacity a swipe had grown its peek to (`--enter-scale`, `--enter-opacity`; a tap's are the peek's own).
+   `backwards`, not `both`: the end state is the card's own, and a held `to` would own `scale` and `opacity` after the
+   glide, where the next swipe writes them. */
 @keyframes phone-card-enter {
-  from { opacity: 0.5; transform: translateX(var(--enter-x, 0)) scale(0.7375); }
+  from { opacity: var(--enter-opacity, 0.5); transform: translateX(var(--enter-x, 0)) scale(var(--enter-scale, 0.7375)); }
   to { opacity: 1; transform: none; }
 }
-.anim-phone-card-enter { animation: phone-card-enter var(--motion-duration) var(--motion-ease-out) var(--motion-delay) both; }
+.anim-phone-card-enter { animation: phone-card-enter var(--motion-duration) var(--motion-ease-out) var(--motion-delay) backwards; }
+/* The card just left shrinks into its peek from where the swipe let it go, on the same glide (Hugh, 2026-10-28). No
+   `to`: it settles at the peek's own .5. */
+@keyframes phone-peek-enter {
+  from { opacity: var(--enter-opacity, 1); transform: translateX(var(--enter-x, 0)) scale(var(--enter-scale, 1)); }
+}
+.anim-phone-peek-enter { animation: phone-peek-enter var(--motion-duration) var(--motion-ease-out) var(--motion-delay) backwards; }
+
+/* THE SWIPE IS ONE MOTION (Hugh, 2026-10-28). As a horizontal drag carries the band, the gesture writes how far the swap
+   has got on the stage (`--swipe-out` 0 to 1; `--swipe-next`, `--swipe-prev` for the side coming in): the card shrinks
+   to the peek's size and opacity as it leaves, and the neighbor grows to the card's as it comes, so at 1 each stands
+   exactly as the other did. The individual `scale` property, not `transform`, which the entrance owns. Transform and
+   opacity only. While the finger is down it tracks frame for frame; on a release that springs back it eases home on
+   the band's own spring (`SPRING`, 200ms). Reduced motion: the band slides and nothing scales (below). */
+.phone-peek { opacity: 0.5; }
+@media (prefers-reduced-motion: no-preference) {
+  .swipe-out {
+    scale: calc(1 - 0.2625 * var(--swipe-out, 0));
+    opacity: calc(1 - 0.5 * var(--swipe-out, 0));
+  }
+  .swipe-in-next {
+    scale: calc(1 + 0.35593 * var(--swipe-next, 0));
+    opacity: calc(0.5 + 0.5 * var(--swipe-next, 0));
+  }
+  .swipe-in-prev {
+    scale: calc(1 + 0.35593 * var(--swipe-prev, 0));
+    opacity: calc(0.5 + 0.5 * var(--swipe-prev, 0));
+  }
+}
 
 /* A chart's bar draws once when it mounts (motion plan E3): it grows from its own baseline on the
    shared tokens, so a figure arriving reads as measured out rather than stamped on. Transform
@@ -1348,13 +1379,16 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 [data-settling] .sheet-snap,
 [data-settling] .card-grow,
 [data-settling] .band-dim { transition: none; }
-/* While a drag sizes the card it tracks the finger; the ease is for the settle after release. */
-[data-card-dragging] .card-grow { transition: none; }
+/* While a drag sizes the card, or swipes it, it tracks the finger; the ease is for the settle after release. */
+[data-card-dragging] .card-grow,
+[data-swiping] .card-grow { transition: none; }
 .card-grow {
   transition:
     width var(--motion-duration) var(--motion-ease) var(--motion-delay),
     left var(--motion-duration) var(--motion-ease) var(--motion-delay),
-    top var(--motion-duration) var(--motion-ease) var(--motion-delay);
+    top var(--motion-duration) var(--motion-ease) var(--motion-delay),
+    scale var(--motion-quick) var(--motion-ease-out),
+    opacity var(--motion-quick) var(--motion-ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1388,6 +1422,7 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   .anim-carousel-prev,
   .anim-carousel-next,
   .anim-phone-card-enter,
+  .anim-phone-peek-enter,
   /* The hub's tool and its tiles appear in place, opaque. */
   .anim-gentle-in,
   /* A chart's bars are drawn at their size. */
