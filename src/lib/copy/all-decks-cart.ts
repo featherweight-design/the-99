@@ -60,13 +60,8 @@ export const allDecksCartCopy = {
   },
 
   list: {
-    headByDeck: (deckN: number, copiesN: number) => `${decks(deckN)} · ${copies(copiesN)} · largest first`,
     /** A card in a deck's group that other selected decks need too. */
     also: (names: string[]) => `also ${names.join(", ")}`,
-    headByCard: (lines: number) => `${n(lines)} ${lines === 1 ? "card" : "cards"} · commanders first, then most decks`,
-    /** By friend's list head: the friends drawn and the spares they hold of the selected lines, most first. */
-    headByFriend: (friendsN: number, sparesN: number) =>
-      `${n(friendsN)} ${friendsN === 1 ? "friend" : "friends"} · ${n(sparesN)} ${sparesN === 1 ? "spare" : "spares"} · most first`,
     /** The list scroller's name on a phone, where it is a focusable box of its own. */
     regionAria: "Cards in this cart",
     decks: (qty: number, names: string[]) => `${n(qty)} · ${names.join(", ")}`,
@@ -82,6 +77,53 @@ export const allDecksCartCopy = {
   },
 
   /** By friend (spare requests PR 3c; handoff `Cart-By-Friend`): one panel per friend holding a spare of a line. */
+  /** The chassis's controls (v2, PR 8). Friend and Owned arrive with PR 9. */
+  filters: {
+    search: "Search cards",
+    /** The chip for a search: the term itself, since "Search" would name the field rather than the filter. */
+    chipSearch: (term: string) => `“${term}”`,
+  },
+
+  /** Sort, per view (call 5). The first of each is the shipped default; the keys are `lib/decks/cart-sort`'s. */
+  sort: {
+    label: "Sort",
+    /** The trigger's words and its accessible name: `Sort · Most decks`. */
+    trigger: (current: string) => `Sort · ${current}`,
+    sheetAria: "Sort",
+    close: "Close sort",
+    byCard: {
+      decks: "Most decks",
+      "price-high": "Price, high first",
+      "price-low": "Price, low first",
+      spare: "Most spares",
+      name: "Name",
+    },
+    byDeck: { largest: "Largest first", cost: "Cost, high first", name: "Name" },
+    byFriend: { spare: "Most spares", cards: "Most cards", name: "Name" },
+    /** The phone sheet's sub-line: which view's orders these are. */
+    viewOf: { card: "By card", deck: "By deck", friend: "By friend" },
+  },
+
+  /** Row 3, the chassis's result line. */
+  result: {
+    byCard: (lines: number, spare: number) => `${lines === 1 ? "1 card" : `${n(lines)} cards`} · ${n(spare)} with a friend’s spare`,
+    byCardNoSpare: (lines: number) => (lines === 1 ? "1 card" : `${n(lines)} cards`),
+    byDeck: (deckN: number, copiesN: number) => `${decks(deckN)} · ${copies(copiesN)}`,
+    byFriend: (friendsN: number, sparesN: number) =>
+      `${friendsN === 1 ? "1 friend" : `${n(friendsN)} friends`} · ${sparesN === 1 ? "1 spare" : `${n(sparesN)} spares`}`,
+    /** A search leaves some of the cards: By card's count against the selected lines. */
+    filtered: (shown: number, of: number) => `${n(shown)} of ${of === 1 ? "1 card" : `${n(of)} cards`}`,
+    /** The trailing slot while friends' spares are still being read. */
+    reading: "reading friends’ spares",
+  },
+
+  /** A search that leaves nothing: the chassis's no-match shape, naming the one fix. */
+  noMatch: {
+    title: "No card matches",
+    body: (term: string, of: number) => `Drop “${term}” and you get ${of === 1 ? "1 card" : `${n(of)} cards`}.`,
+    drop: (term: string) => `Drop “${term}”`,
+  },
+
   byFriend: {
     /** The panel head's pods line, comma-joined as the board draws it. */
     via: (pods: readonly string[]) => `shares with ${pods.join(", ")}`,
