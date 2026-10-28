@@ -717,13 +717,14 @@ const PhonePeek = React.forwardRef<
       }}
     >
       {sibling.imageUri ? <ArtLayer src={sibling.imageUri} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} /> : null}
-      <SiblingFilm sibling={sibling} />
-      {/* Hidden under reduced motion, where no shrink runs and so no end would ever take it away. */}
+      {/* Hidden under reduced motion, where no shrink runs and so no end would ever take it away. Under the
+          film, so the card's finish stays on it through the shrink. */}
       {enter && enterFace && !landed ? (
         <span className="peek-enter-face absolute inset-0 rounded-[inherit]">
           <ArtLayer src={enterFace} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} />
         </span>
       ) : null}
+      <SiblingFilm sibling={sibling} />
     </button>
   );
 });
