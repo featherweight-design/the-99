@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 
+import { preconsCopy } from "../../lib/copy/precons";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import { basedOnIds, type EvidenceKind } from "../../lib/synopsis/based-on";
 import { normalizeName } from "../../lib/synopsis/facts";
@@ -134,6 +135,43 @@ export function VersionSynopsisModal({
         <p data-testid="synopsis-version-record" className="m-0 border-b border-b-[color:var(--border)] border-[var(--border)] pb-[14px] text-[12.5px] leading-[1.55] text-[var(--fg-muted)]">
           {synopsisCopy.version.record(versionNumber)}
         </p>
+        <SynopsisSections content={content} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
+      </div>
+    </ModalChrome>
+  );
+}
+
+/**
+ * A precon's pre-written overview, opened from its page (small items 5, `Precon-Overview`): the same
+ * chrome and sections, read only. The aside names the precon and that it was written for its list;
+ * there is no write control, no retry and no credit, and it is never stale on that page, which shows
+ * only an overview current for the precon's list.
+ */
+export function PreconSynopsisModal({
+  preconName,
+  content,
+  art,
+  evidenceNames,
+  onClose,
+}: {
+  preconName: string;
+  content: CheckedSynopsis;
+  art: FindingArt;
+  evidenceNames: Record<string, string>;
+  onClose: () => void;
+}) {
+  const aside = preconsCopy.open.overview.modalAside(preconName);
+  return (
+    <ModalChrome
+      title={synopsisCopy.modal.title}
+      // Desktop only in the header, as the draft's sheet: the phone's 43px header holds the title.
+      aside={<span className="hidden md:inline">{aside}</span>}
+      closeLabel={synopsisCopy.modal.close}
+      onClose={onClose}
+      width={700}
+    >
+      <div className="flex flex-col gap-[18px] px-[16px] pt-[16px] pb-[28px] md:gap-[20px] md:px-[22px] md:pt-[20px] md:pb-[26px]">
+        <span className="md:hidden font-mono text-[11px] text-[var(--fg-faint)]" data-testid="synopsis-aside">{aside}</span>
         <SynopsisSections content={content} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
       </div>
     </ModalChrome>

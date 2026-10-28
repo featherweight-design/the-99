@@ -110,6 +110,15 @@ export const preconsCopy = {
     ownLead: "You own",
     own: (owned: number, of: number) => `${n(owned)} of ${n(of)}`,
     ownTail: "of its cards",
+    /**
+     * The precon's pre-written Overview, under "You own" (small items 5, `Precon-Overview`): the label
+     * is the Overview's own (`synopsisCopy.label`), the entry is the tab's (`synopsisCopy.entry`).
+     */
+    overview: {
+      aside: "written for this precon’s list",
+      /** The shipped modal's aside, opened from this page: the precon's name, then this. */
+      modalAside: (precon: string) => `${precon} · written for the precon list`,
+    },
     builtSame: (deck: string, shared: number, pair: boolean) =>
       `Your deck ${deck} has the same ${pair ? "commanders" : "commander"} and ${n(shared)} of its cards.`,
     builtAny: (deck: string, shared: number) => `Your deck ${deck} shares ${n(shared)} of its cards.`,

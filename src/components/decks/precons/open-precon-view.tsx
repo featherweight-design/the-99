@@ -31,6 +31,8 @@ import { ViewToggle } from "../../ui/view-toggle";
 import { useState } from "react";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { EditionSwitch } from "./edition-switch";
+import { PreconOverview } from "./precon-overview";
+import type { PreconOverview as PreconOverviewData } from "../../../lib/precons/overview-read";
 import { parseEdition, type PreconEdition } from "../../../lib/precons/edition";
 import { useLiveQuery } from "../../../lib/commanders/live-query";
 
@@ -81,8 +83,10 @@ export function byCard(cards: OpenPreconCard[]): ByCard[] {
   return [...merged.values()];
 }
 
-export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initialEdition = "regular" }: {
+export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initialEdition = "regular", overview = null }: {
   precon: Loaded;
+  /** The precon's pre-written Overview (`loadPreconOverview`); null draws no block (small items 5). */
+  overview?: PreconOverviewData | null;
   fromNew: boolean;
   /** Collection editing is on for this reader: the Start dialog offers "I own this precon". */
   canOwn?: boolean;
@@ -252,6 +256,13 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
               <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.open.pair(bodyCount, total)}</p>
             )}
           </section>
+          {overview ? (
+            <PreconOverview
+              overview={overview}
+              preconName={row.name}
+              listArt={new Map(cards.map((c) => [c.oracleId, { name: c.name, imageUri: c.imageUri }]))}
+            />
+          ) : null}
           {/* The switch sits at the right end of the list-note line, under everything that must not
               move between views (STATES must-not). */}
           <div className="flex items-center justify-between gap-[12px]">

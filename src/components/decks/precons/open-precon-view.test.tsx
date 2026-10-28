@@ -9,7 +9,8 @@ vi.mock("../../cards/card-detail-provider", () => ({
     providerProps.views = viewPrintings;
     return children;
   },
-  useCardDetail: () => ({ open: vi.fn() }),
+  // `registerSheet` for the Overview modal (`ModalChrome`), which registers itself with the provider.
+  useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false }),
   cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
   CardDetailTrigger: ({ children, name, siblings }: { children: React.ReactNode; name: string; siblings?: readonly string[] }) => (
     <button type="button" aria-label={name} data-siblings={(siblings ?? []).join(",")}>{children}</button>
@@ -427,5 +428,52 @@ describe("OpenPreconView foil key", () => {
     unmount();
     render(<OpenPreconView precon={precon({}, [card("Sol Ring", { typeLine: "Artifact", imageUri: null, foil: 1 })])} fromNew={false} />);
     expect(key()).toBeNull();
+  });
+});
+
+// Small items 5 (`Precon-Overview` §1): the precon's pre-written Overview under "You own", above the
+// list-note line, with its aside and `View full overview →` opening the shipped modal read only. No
+// credit and no write press; no Overview, no block.
+describe("the precon's Overview", () => {
+  const content = {
+    verdicts: (["overview", "primer", "keyCards", "weaknesses"] as const).map((section) => ({ section, status: "ok" as const, failed: 0 as const, total: 1 })),
+    overview: "Ramp with [[Sol Ring]] and swing wide.",
+    primer: { strategy: ["Go wide."], mulligan: { keep: ["Two lands."], sendBack: ["No lands."] }, tips: [] },
+    keyCards: [{ card: "Sol Ring", claims: ["ramp" as const], job: "Fast mana." }],
+    weaknesses: ["Soft to a board wipe."],
+    cards: { "sol ring": { oracleId: "Sol Ring", name: "Sol Ring" } },
+  };
+  const overview = { content, art: {}, evidenceNames: {} };
+
+  it("sits under You own and above the list note, with its label, aside, paragraph and entry", () => {
+    render(<OpenPreconView precon={precon()} fromNew={false} overview={overview} />);
+    const block = screen.getByTestId("precon-overview");
+    expect(within(block).getByText("Overview")).toBeInTheDocument();
+    expect(within(block).getByText("written for this precon’s list")).toBeInTheDocument();
+    expect(block.textContent).toContain("Ramp with Sol Ring and swing wide.");
+    expect(within(block).getByRole("button", { name: /View full overview/ })).toBeInTheDocument();
+    // Order in the header: the own box, then the block, then the list note.
+    const own = screen.getByText("1 of 2").closest("section")!;
+    const note = screen.getAllByText(/By type/)[0];
+    expect(own.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(block.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // No credit and no write press.
+    expect(within(block).queryByText(/credit/i)).toBeNull();
+    expect(within(block).queryByRole("button", { name: /Write/ })).toBeNull();
+  });
+
+  it("opens the shipped Overview modal, read only, named for the precon", () => {
+    render(<OpenPreconView precon={precon()} fromNew={false} overview={overview} />);
+    fireEvent.click(screen.getByRole("button", { name: /View full overview/ }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getAllByText("Eldrazi Unbound · written for the precon list").length).toBeGreaterThan(0);
+    expect(within(dialog).getByText("Soft to a board wipe.")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: /Write|Re-analyze|Try again/ })).toBeNull();
+  });
+
+  it("draws no block, and no placeholder, for a precon with no Overview", () => {
+    render(<OpenPreconView precon={precon()} fromNew={false} overview={null} />);
+    expect(screen.queryByTestId("precon-overview")).toBeNull();
+    expect(screen.queryByText("written for this precon’s list")).toBeNull();
   });
 });
