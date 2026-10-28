@@ -7,14 +7,15 @@ import { PAGE_MANIFEST } from "./page-shots.generated";
 
 const labels = ABOUT_SECTIONS.flatMap((s) => s.labels);
 /** The captures land one width at a time (Copilot reviews no file of a PR that carries both, the-99#2320): a width is
- *  checked once every theme has it. The desktop captures' PR removes this, so both widths are then always checked. */
-const captured = (width: (typeof PAGE_WIDTHS)[number]) => THEMES.every(({ key }) => Object.keys(PAGE_SHOTS[key]?.[width] ?? {}).length > 0);
+ *  checked once ANY theme has it, so a theme missing from it fails. The desktop captures' PR removes this, so both
+ *  widths are then always checked. */
+const captured = (width: (typeof PAGE_WIDTHS)[number]) => THEMES.some(({ key }) => Object.keys(PAGE_SHOTS[key]?.[width] ?? {}).length > 0);
 const WIDTHS = PAGE_WIDTHS.filter(captured);
 const EMPTY = WIDTHS.length === 0;
 
 describe("the pages' captures are ready (G3)", () => {
   // The capture server runs with every switch on, so every label is visible on its capture.
-  it.skipIf(EMPTY)("measures a box for every label region, in every theme, at both widths", () => {
+  it.skipIf(EMPTY)("measures a box for every label region, in every theme, at every captured width", () => {
     for (const { key: theme } of THEMES) {
       for (const width of WIDTHS) {
         for (const l of labels) {
