@@ -86,6 +86,8 @@ export async function openAnswerAction(key: string): Promise<OpenAnswerOutcome> 
   const now = new Date();
   const request = typeof key === "string" ? await loadAnsweredRequest(userId, key, env, now) : null;
   if (!request) return { ok: false };
-  if (request.unseen && (await markAnswerSeen(userId, request.id, env, now))) revalidatePath("/friends");
+  // Marked whatever the Friends cursor says: Home reads its own cursor, so an answer a /friends visit already covered can
+  // still be unseen on Home. The write lands only on a change (`markAnswerSeenQuery`).
+  if (await markAnswerSeen(userId, request.id, env, now)) revalidatePath("/friends");
   return { ok: true, request: { ...request, unseen: false } };
 }

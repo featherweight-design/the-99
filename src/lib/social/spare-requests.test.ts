@@ -426,7 +426,7 @@ describe("markAnswerSeenQuery (small items item 3)", () => {
     const { sql, params } = new PgDialect().sqlToQuery(markAnswerSeenQuery("a", "44444444-4444-4444-8444-444444444444", NOW));
     const q = sql.replace(/\s+/g, " ");
     expect(q).toBe(
-      "update \"spare_requests\" asr set asker_seen_at = $1::timestamptz where asr.id = $2::uuid and asr.asker_user_id = $3 and asr.status in ('yes', 'no') and (asr.asker_seen_at is null or asr.asker_seen_at < asr.answered_at)",
+      "update \"spare_requests\" asr set asker_seen_at = $1::timestamptz where asr.id = $2::uuid and asr.asker_user_id = $3 and asr.status in ('yes', 'no') and asr.asker_seen_at is null",
     );
     expect(params).toEqual([NOW.toISOString(), "44444444-4444-4444-8444-444444444444", "a"]);
   });

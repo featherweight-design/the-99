@@ -24,6 +24,7 @@ const ago = (days: number) => new Date(NOW.getTime() - days * DAY);
 /** One stored ask as `readShownAsks` returns it. */
 const stored = (id: string, status: ShownAsk["a"]["status"], o: {
   card?: string; holder?: string; createdAt?: Date; answeredAt?: Date | null; cleared?: boolean; standalone?: boolean;
+  seenAt?: Date | null;
 } = {}): ShownAsk => {
   const holder = o.holder ?? "Colin";
   const createdAt = o.createdAt ?? ago(2);
@@ -33,6 +34,7 @@ const stored = (id: string, status: ShownAsk["a"]["status"], o: {
       id, oracle_id: o.card ?? "jace", status, created_at: createdAt, answered_at: answeredAt, copies: 1,
       public_id: `pub-${holder.toLowerCase()}`, display_name: holder, card_name: "Jace", card_image: null, deck_name: null,
       deck_id: null, cleared: o.cleared ?? false, standalone: o.standalone ?? false, commander_oracle_id: null, commander_name: null, commander_art: null,
+      asker_seen_at: o.seenAt ?? null,
     } as ShownAsk["r"],
     a: { status, createdAt, answeredAt },
   };
@@ -59,8 +61,6 @@ describe("answerUnseen", () => {
   it("is seen once the answer itself was opened after it landed, whatever the cursor (small items item 3)", () => {
     expect(answerUnseen({ state: "yes", answeredAt: at, seenAt: new Date("2026-10-21T01:00:00Z") }, null)).toBe(false);
     expect(answerUnseen({ state: "no", answeredAt: at, seenAt: at }, new Date("2026-10-20T00:00:00Z"))).toBe(false);
-    // Opened before a NEWER answer landed (a later No over an earlier ask): unseen again.
-    expect(answerUnseen({ state: "yes", answeredAt: at, seenAt: new Date("2026-10-20T00:00:00Z") }, null)).toBe(true);
   });
 });
 
@@ -114,6 +114,13 @@ describe("loadYourRequests", () => {
     m.shown.mockResolvedValue([stored("new", "yes", { answeredAt: ago(0.5) }), stored("old", "yes", { answeredAt: ago(2) })]);
     const rows = await loadYourRequests("u1", ON, NOW);
     expect(rows.map((r) => [r.id, r.unseen])).toEqual([["new", true], ["old", false]]);
+  });
+
+  it("reads an answer opened one by one as seen, whatever the cursor (the stored asker_seen_at, small items item 3)", async () => {
+    m.prefs.mockResolvedValue([]);
+    m.shown.mockResolvedValue([stored("opened", "yes", { answeredAt: ago(1), seenAt: ago(0.5) }), stored("not", "no", { answeredAt: ago(1) })]);
+    const rows = await loadYourRequests("u1", ON, NOW);
+    expect(rows.map((r) => [r.id, r.unseen])).toEqual([["opened", false], ["not", true]]);
   });
 
   it("after a No, names the OTHER friends with a spare of that card, most spares first", async () => {

@@ -9,7 +9,8 @@
  *   cards (Ask again needs the holder to offer it still) AND the declined asks' cards (who else has one), in one call,
  *   so each friend's availability is read once per render.
  * - `unseen`: an answer newer than the reader's Friends cursor (`friends_seen_at`), read before the visit's own
- *   `markAnswersSeen` moves it in `after()`; the badge counts the same answers (`unseenAnswersCount`).
+ *   `markAnswersSeen` moves it in `after()`, and not opened one by one over Home (`asker_seen_at`); the badge counts the
+ *   same answers (`unseenAnswersCount`).
  * - `canAskAgain`: whether Ask again would be taken (`canAskAgain`, the write's `askRefusal`), counting a No the reader
  *   cleared, which still holds that friend back, and only while the holder still offers the card.
  * A cleared ask is read for that rule and never returned. Every read is the reader's own or goes through the friend

@@ -59,18 +59,6 @@ function standing(now: Date): SQL {
 }
 
 /**
- * The stored branch of the feed union, for `viewerId`, of `kinds` (non-empty; already the kinds available to the
- * reader). Each row is newer than its kind's own `enabledAt` (`kindEnabledAt`: its `user_prefs.feed_kinds` stamp, or
- * always for a default-on kind the reader has not declined), so a kind turned off and on again never brings back what
- * it held before; a kind that is off has no `enabledAt` and reads nothing. The prefs row is LEFT JOINED: a reader
- * with none still reads a default-on kind (G4).
- *
- * Columns, in the union's order: kind, key, created_at, code, name, file_name, oracle_id, variant_id,
- * friend_public_id, friend_name, data. Every column is written out by alias (AGENTS.md, alias and qualify), and typed
- * as the catalog branches type it: `public_id` is a uuid and the union's other branches give `null::text`, which
- * Postgres refuses to match ("UNION types text and uuid cannot be matched"), so it is cast to text.
- */
-/**
  * True for a feed row (`key`, the union's `item:<id>`) that ANSWERS the reader's own spare request the reader has
  * opened one by one since it landed (`asker_seen_at`, the answer sheet over Home): it reads seen whatever the cursor
  * says, as the Friends badge's `unseenAnswers` does. Every other row is false. On the feed union's alias.
@@ -83,6 +71,18 @@ export function answerOpened(viewerId: string, key: SQL): SQL {
       and osr.asker_seen_at is not null and osr.asker_seen_at >= osr.answered_at)`;
 }
 
+/**
+ * The stored branch of the feed union, for `viewerId`, of `kinds` (non-empty; already the kinds available to the
+ * reader). Each row is newer than its kind's own `enabledAt` (`kindEnabledAt`: its `user_prefs.feed_kinds` stamp, or
+ * always for a default-on kind the reader has not declined), so a kind turned off and on again never brings back what
+ * it held before; a kind that is off has no `enabledAt` and reads nothing. The prefs row is LEFT JOINED: a reader
+ * with none still reads a default-on kind (G4).
+ *
+ * Columns, in the union's order: kind, key, created_at, code, name, file_name, oracle_id, variant_id,
+ * friend_public_id, friend_name, data. Every column is written out by alias (AGENTS.md, alias and qualify), and typed
+ * as the catalog branches type it: `public_id` is a uuid and the union's other branches give `null::text`, which
+ * Postgres refuses to match ("UNION types text and uuid cannot be matched"), so it is cast to text.
+ */
 export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[], now: Date): SQL {
   return sql`select fi.kind as kind, 'item:' || fi.id::text as key, fi.created_at as created_at,
       null::text as code, null::text as name, null::text as file_name,

@@ -214,7 +214,7 @@ export async function unseenCount(userId: string, env: NodeJS.ProcessEnv, now = 
 /**
  * The Friends badge's SEEN half: unseen trade matches (by `friends_seen_at`, the grant re-joined; 0 while the kind is
  * unavailable) and answers to the reader's spare requests not yet seen (`unseenAnswersCount`). Both clear on a `/friends`
- * visit. The asks waiting on the reader's own answer are the other half (`waitingAsksCount`), cleared by answering.
+ * visit; an answer also clears alone when it is opened over Home (`markAnswerSeen`). The asks waiting on the reader's own answer are the other half (`waitingAsksCount`), cleared by answering.
  */
 export async function unseenFriendsCount(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
   const [matches, answers] = await Promise.all([

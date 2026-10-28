@@ -564,8 +564,9 @@ export async function loadAskStates(
  *   the asker withdrawing), never by a visit.
  * Until PR 3 draws the asks and answers on `/friends`, nothing can answer an ask or show an answer, so the switch stays
  * OFF everywhere, staging included (plan `2026-10-22-spare-requests.md`, "Switch").
- * - UNSEEN ANSWERS: the asker's asks answered after `friends_seen_at` and still shown (`askShown`), to current friends.
- *   Cleared by a `/friends` visit, like a trade match (`markAnswersSeenQuery`).
+ * - UNSEEN ANSWERS: the asker's asks answered after `friends_seen_at` and not opened one by one (`asker_seen_at`), still
+ *   shown (`askShown`), to current friends. Cleared by a `/friends` visit, like a trade match (`markAnswersSeenQuery`),
+ *   or one at a time by opening it over Home (`markAnswerSeenQuery`).
  */
 export function waitingAsksCountQuery(holderId: string, now: Date): SQL {
   return sql`select count(*)::int as n
@@ -610,13 +611,13 @@ export function markAnswersSeenQuery(askerId: string, now: Date): SQL {
 
 /**
  * Marks ONE answer seen: the asker opened it (small items item 3, the answer sheet over Home). Only the asker's own
- * answered request, and only while it is unseen by this mark, so a repeat open writes nothing (the stamp trigger moves
+ * answered request, and only once (an answer is written once, `answerQuery`), so a repeat open writes nothing (the stamp trigger moves
  * on any UPDATE). Apart for a test.
  */
 export function markAnswerSeenQuery(askerId: string, requestId: string, now: Date): SQL {
   return sql`update ${spareRequests} asr set asker_seen_at = ${now.toISOString()}::timestamptz
     where asr.id = ${requestId}::uuid and asr.asker_user_id = ${askerId} and asr.status in ('yes', 'no')
-      and (asr.asker_seen_at is null or asr.asker_seen_at < asr.answered_at)`;
+      and asr.asker_seen_at is null`;
 }
 
 /** Marks one answer seen; whether it wrote. Nothing while the switch is off. */

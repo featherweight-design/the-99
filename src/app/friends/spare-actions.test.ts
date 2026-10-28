@@ -106,9 +106,15 @@ describe("openAnswerAction (small items item 3)", () => {
     expect(out).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "yes" } });
   });
 
-  it("writes nothing for an answer already seen, and refuses a key that names none of the reader's", async () => {
+  it("marks an answer the Friends cursor already covers (Home reads its own), revalidating only on a write", async () => {
     m.loadAnsweredRequest.mockResolvedValueOnce({ id: REQ, unseen: false, state: "no" });
+    m.markAnswerSeen.mockResolvedValueOnce(false);
     expect(await openAnswerAction(KEY)).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "no" } });
+    expect(m.markAnswerSeen).toHaveBeenCalledWith("user_1", REQ, ENV, expect.any(Date));
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("refuses a key that names none of the reader's, writing nothing", async () => {
     m.loadAnsweredRequest.mockResolvedValueOnce(null);
     expect(await openAnswerAction(KEY)).toEqual({ ok: false });
     expect(m.markAnswerSeen).not.toHaveBeenCalled();
