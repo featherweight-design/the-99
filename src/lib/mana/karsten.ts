@@ -13,8 +13,6 @@
 // falls as generic mana rises, so the last published row is a ceiling, and it is shown as one. A
 // pattern with five or more pips has no row and no ceiling and is `unknown`.
 
-import type { ManaColor } from "./supply";
-
 /** [generic mana, colored pips of the one color, sources required in a 99-card deck]. Karsten's
  *  notation: `1CC` is one generic plus two of the color; `CC` is two of the color and nothing else. */
 const ROWS: readonly (readonly [number, number, number])[] = [

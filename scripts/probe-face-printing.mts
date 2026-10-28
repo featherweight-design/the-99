@@ -42,7 +42,6 @@ async function main() {
 
   const FIXTURE_PRINTING = "00000000-0000-4000-8000-0000000fa0ce";
   const FIXTURE_VARIANT = "00000000-0000-4000-8000-0000000fa0cf";
-  let fixtureCard: string | null = null;
   try {
     // A card that can NOT lead a deck: a basic land with art, and two printings of it (one inserted, with its own art).
     const { rows: lands } = await db.execute<{ oracle_id: string; name: string; art: string }>(sql`
@@ -50,7 +49,6 @@ async function main() {
        where type_line like 'Basic Land%' and art_crop_uri is not null order by name limit 2`);
     if (lands.length < 2) throw new Error("no two basic lands with art in this catalog");
     const [land, other] = lands;
-    fixtureCard = land.oracle_id;
     const PICK_ART = `https://probe.invalid/${run}/pick.jpg`;
     await db.execute(sql`
       insert into printings (scryfall_id, oracle_id, set_code, collector_number, finishes, art_crop_uri)

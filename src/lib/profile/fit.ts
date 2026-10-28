@@ -3,7 +3,6 @@ import { curveBucket } from "../decks/stats";
 import type {
   CompositionTargets,
   DeckProfile,
-  ProfileCard,
   StapleRef,
 } from "./types";
 

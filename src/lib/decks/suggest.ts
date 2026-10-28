@@ -1,7 +1,8 @@
 import type { Availability } from "./availability";
 import type { DeckDetailCard } from "./grouping";
 import type { PriceFact } from "./price";
-import { classifyRoles, rolesByLabelElseText } from "../recs/roles";
+import type { classifyRoles } from "../recs/roles";
+import { rolesByLabelElseText } from "../recs/roles";
 import type { MixRole, RecommendedMix } from "./mix";
 import { deckBodySize } from "./deck-size";
 import type { PoolCard } from "../recs/score";

@@ -4,7 +4,7 @@
  * rows that make it the list it was built from. Not a "use server" module: every export of one is
  * an endpoint, and this takes a user id.
  */
-import { db } from "../../db";
+import type { db } from "../../db";
 import { deckCards, deckPrintings, deckUnresolvedRows, decks } from "../../db/schema";
 import type { ImportPrintingPick } from "./import-printings";
 

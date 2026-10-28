@@ -339,7 +339,6 @@ export async function loadDeckProfileFromHead(head: ProfileHead, env: NodeJS.Pro
     ? (byId.get(head.partnerOracleId)?.colorIdentity ?? [])
     : [];
   const combinedIdentity = [...new Set([...identity, ...partnerIdentity])];
-  const exactCondition = identityCondition(combinedIdentity);
 
   const [flags, combos, pairRow, commanderRow] = await Promise.all([
     loadBracketFlags(allIds),

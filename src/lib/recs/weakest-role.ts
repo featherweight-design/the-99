@@ -1,4 +1,4 @@
-import { ROLE_TARGETS } from "./roles";
+import type { ROLE_TARGETS } from "./roles";
 import { wholeTarget } from "./score";
 
 export type NonLandRole = keyof typeof ROLE_TARGETS;

@@ -322,7 +322,6 @@ describe("every switched line names text its entry carries", () => {
 });
 
 describe("an entry's variant: `upload-choice`'s Sync form (collection sync ruling 5)", () => {
-  const entry = aboutEntries.find((e) => e.id === "upload-choice")!;
   const post = aboutEntries.find((e) => e.id === "post-import")!;
   const EDIT = { COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const SYNC = { COLLECTION_EDIT_ENABLED: "true", COLLECTION_SYNC_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
