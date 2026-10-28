@@ -23,11 +23,13 @@ SECTIONS = {
              phone="p-decks", desk="d-decks2", labels=[
                  ("new-deck", "New deck", " starts from a commander. “Import a deck” brings in a list you already play.",
                   (0.04, 0.165, 0.92, 0.058), (0.858, 0.018, 0.124, 0.035), None),
+                 ("precons", "Precons", " lists every Commander precon, with how many of its cards you already own. Start a deck from one just as it comes in the box.",
+                  (0.513, 0.233, 0.444, 0.064), (0.529, 0.091, 0.453, 0.066), "PRECONS_ENABLED"),
                  ("deck-status", "A deck’s status", " says what to do next. “To buy” is a full deck you can’t sleeve yet, and “Draft” is one you’ve never committed.",
                   (0.077, 0.852, 0.153, 0.026), (0.075, 0.683, 0.057, 0.025), None),
                  ("decks-stats", "Stats", " puts every deck side by side: when each was last played, and how it went.",
                   (0.04, 0.322, 0.30, 0.045), (0.065, 0.19, 0.09, 0.035), "LINEUP_ENABLED"),
-             ], rules=[], tools=["lineup"]),
+             ], rules=[], tools=["lineup", "precons"]),
         dict(id="your-deck", name="Your deck", sub="The list, and what each row is telling you.",
              phone="p-deck-your-deck", desk="d-deck-list", labels=[
                  ("commit", "Your changes", " wait here until you commit. “Commit as v2” saves them as the deck’s next version.",
@@ -49,11 +51,13 @@ SECTIONS = {
                   None, (0.071, 0.40, 0.906, 0.135), "ANALYSIS_TAB_ENABLED"),
                  ("suggested", "Suggested changes", " offers up to five cards to add and five to cut, each with its reason. Each run uses a credit.",
                   ("p-analysis-tuning", (0.04, 0.108, 0.92, 0.10)), (0.071, 0.628, 0.449, 0.12), "TUNING_ENABLED"),
+                 ("mana", "Mana Balance", " counts every source of each color against what your spells ask for. It’s free to run.",
+                  ("p-analysis-tuning", (0.042, 0.233, 0.915, 0.143)), ("d-analysis-describe", (0.528, 0.486, 0.448, 0.121)), "MANA_BALANCE_ENABLED"),
                  ("cuts", "Proposed cuts", " counts where a deck over 100 runs long, for free. “Look deeper” names the cards for a credit.",
                   ("p-analysis-tuning", (0.04, 0.385, 0.92, 0.10)), (0.528, 0.628, 0.449, 0.12), "PROPOSED_CUTS_ENABLED"),
                  ("describe", "Describe your deck", " in a sentence or two. Suggested changes uses it to understand what the deck is for.",
                   (0.04, 0.578, 0.92, 0.152), ("d-analysis-describe", (0.35, 0.1, 0.42, 0.13)), "TUNING_ENABLED"),
-             ], rules=["intent", "credits"], tools=["suggested-changes", "proposed-cuts"]),
+             ], rules=["intent", "credits"], tools=["suggested-changes", "proposed-cuts", "mana-balance"]),
         dict(id="versions", name="Versions", sub="Every commit, kept.",
              phone="p-deck-versions", desk="d-versions-precon", labels=[
                  ("version", "Each commit", " saves a version with its date, card count and average mana value. Open one to see which of its new cards you own today.",
@@ -189,6 +193,7 @@ TOOLS = {
     "find-a-deck": ("Find a deck", "Reads your decks for the one a card you own fits best.", "1 credit", "Try it on a card you own"),
     "wishlist": ("Wishlist", "Cards you want that no deck is asking for. A card leaves once you have enough.", None, "Open your wishlist"),
     "collection-sync": ("Collection Sync", "Merges a new file with what you changed here, card by card, and asks only where both moved.", None, "Upload a file"),
+    "precons": ("Precons", "Any Commander precon, with how many of its cards you already own.", None, "Browse precons"),
     "help-me-choose": ("Help me choose", "Say what you want, and we’ll rank commanders by how well they fit it, owned or not.", None, "Open Help me choose"),
     "friends": ("Friends and pods", "Add the people you play with, then seat them when you log a game.", None, "Open Friends"),
 }
@@ -197,6 +202,8 @@ TOOLS = {
 # A tool card's picture at desktop: a crop of that screen's desktop capture around the tool's control.
 TOOL_DESK = {
     "lineup": ("d-decks2", (0.065, 0.19, 0.09, 0.035)),
+    "precons": ("d-decks2", (0.529, 0.091, 0.453, 0.066)),
+    "mana-balance": ("d-analysis-describe", (0.528, 0.486, 0.448, 0.121)),
     "top-off": ("d-deck-top", (0.91, 0.637, 0.06, 0.026)),
     "suggested-changes": ("d-analysis", (0.071, 0.628, 0.449, 0.12)),
     "proposed-cuts": ("d-analysis", (0.528, 0.628, 0.449, 0.12)),

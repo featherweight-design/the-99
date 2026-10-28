@@ -13,6 +13,37 @@ Canvas: https://claude.ai/artifact/2xkvoZtTrCqsXYRg5RPhV9
 Earlier, R2: R2 (Hugh, 2026-10-27): a reader sees captures of the device they are on, never the other width; on desktop each screen is three separate blocks, the labelled screen, then Good to know, then Try it, so Good to know sits right under the screen. Every picture is a real capture: phone from `public/about/shots/amonkhet`,
 desktop 1300 from the contact sheets. Every string is a draft for `/copy-review` (`copy-strings.ts`).
 
+## Addendum A1 · tools and ? landings (2026-10-28, drawn, awaiting Hugh)
+
+Engineering's readiness audit (Yellow) left two placements undrawn. Board **8 · Addendum A1** draws both.
+
+1. **Both tools stay.** Each goes on the screen that already shows its control.
+   - **Precons**: a new label on Decks › Your decks, on the shipped Precons button (phone) / "Commander precons" box
+     (desktop). The Precons card joins Your decks' Try it, after Stats for your decks.
+   - **Mana Balance**: a new label on Decks › Analysis, on the Tuning tile (phone: the Tuning shot; desktop: the second
+     Analysis shot, beside Describe). Its card makes Analysis' Try it a full row of three.
+2. **Every ? still lands on a page section, never the index.** It lands on the section that answers that screen's
+   question, with one label or rule lit (the halo, no New tag), under "‹ Back to {screen}":
+
+   | Screen | Lands on | Lit |
+   |---|---|---|
+   | Card details (`?card=`) | Collection › Cards | The key. Desktop only: at 390 card details covers the header's ? |
+   | Sets, Wishlist | Collection › Cards | the tabs label |
+   | Proxies | Shopping › A deck's Shopping | the proxy rule |
+   | History | Collection › Upload a file | the Replace and Add rule |
+   | New deck (`/decks/new`, `/decks/import`) | Decks › Your decks | New deck |
+   | New deck (`/decks/precons/**`) | Decks › Your decks | Precons |
+   | New deck (`/commanders/choose`) | Commanders › For you | For you, Discover and Help me choose |
+   | Settings | Home › What's new | The top story |
+   | Credits | Decks › Analysis | the credits rule (where `CREDITS_HREF` already goes) |
+   | Account | no landing | the menu never names a screen; a ? pressed with it open answers for the page under it |
+
+   On a phone, a lit rule's swipe row arrives scrolled to it. The table is also `ABOUT_Q_LANDINGS` in `copy-strings.ts`.
+3. **How it works and the one-time About sheet retire**, as Hugh ruled. Nothing drawn.
+
+Mana Balance's label copy says it is free and nothing more: the shipped panel gives no verdict on a color
+(`src/lib/copy/mana-balance.ts`, Hugh 2026-10-10).
+
 ## Boards
 
 | Board | What it shows |
@@ -26,6 +57,7 @@ desktop 1300 from the contact sheets. Every string is a draft for `/copy-review`
 | 5 · Index, banner, landing, ? | The /about index, the banner (one and two launches, phone and desktop), the landing with the new label lit, the ? |
 | 6 · States | A label switched off, a capture loading, a page with no hidden rules |
 | 7 · Copy | Every label and rule with its region and switch |
+| 8 · Addendum A1 | Precons and Mana Balance placed; where the ? lands on the nine screens with no section |
 
 ## Calls (the four Hugh left to Design, plus what follows from them)
 

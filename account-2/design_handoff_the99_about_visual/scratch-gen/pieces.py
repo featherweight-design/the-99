@@ -77,6 +77,7 @@ CSS = r"""
 .gk-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .gk{flex:none;width:292px;display:flex;flex-direction:column;border-radius:14px;border:1px solid var(--border);background:var(--surface);overflow:hidden}
 .gk-grid .gk{width:auto}
+.gk.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(207,135,69,.45)}
 .gk .dg{height:150px;flex:none;border-bottom:1px solid var(--border);background:var(--bg);position:relative;display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden}
 .gk>p{padding:13px 14px 15px;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
 .dots{display:flex;gap:6px;justify-content:center;padding-top:2px}
@@ -317,20 +318,22 @@ def tool_card(tid, w=None, kind="ph", on=False):
             f'<div class="ft"><span class="sm">Show me ›</span><span class="go">{footer}</span><span class="ar">→</span></div></div></article>')
 
 
-def gk_card(rid):
+def gk_card(rid, on=False):
     text, sw = RULES[rid]
-    return f'<div class="gk"><div class="dg">{DIAGRAMS[rid]()}</div><p>{text}</p></div>'
+    return f'<div class="gk{" on" if on else ""}"><div class="dg">{DIAGRAMS[rid]()}</div><p>{text}</p></div>'
 
 
-def gk_block(rules, kind):
+def gk_block(rules, kind, hl=None):
+    """hl: a rule a ? landing lights. On a phone the swipe row arrives scrolled to it."""
     if not rules:
         return ""
     head = f'<div class="gk-h">{mark()}<b>Good to know</b><em>What the screen can’t show</em></div>'
     if kind == "ph":
-        cards = "".join(gk_card(r) for r in rules)
-        dots = "" if len(rules) < 2 else '<div class="dots">' + "".join(f'<i class="{"on" if i == 0 else ""}"></i>' for i in range(len(rules))) + "</div>"
+        at = rules.index(hl) if hl in rules else 0
+        cards = "".join(gk_card(r, r == hl) for r in rules[at:])
+        dots = "" if len(rules) < 2 else '<div class="dots">' + "".join(f'<i class="{"on" if i == at else ""}"></i>' for i in range(len(rules))) + "</div>"
         return f'{head}<div class="gk-row">{cards}</div>{dots}'
-    return f'<div class="blk">{head}<div class="gk-grid">' + "".join(gk_card(r) for r in rules) + "</div></div>"
+    return f'<div class="blk">{head}<div class="gk-grid">' + "".join(gk_card(r, r == hl) for r in rules) + "</div></div>"
 
 
 def tools_block(tools, kind, skip=(), on=None):
@@ -510,20 +513,20 @@ def shot_groups(sec, kind, hidden=()):
     return out or [(main, [])]
 
 
-def label_items(items, kind, hl=None, tool_after=None, gaps=True):
+def label_items(items, kind, hl=None, tool_after=None, gaps=True, quiet=False):
     out = []
     for n, lab, box in items:
         lid, lead, rest = lab[0], lab[1], lab[2]
         flag = "" if box or not gaps else '<span class="gapnote">not in today’s capture</span>'
-        new = '<span class="newtag">New</span>' if hl == lid else ""
-        sm = '<br><span class="showme">Show me ›</span>' if hl == lid else ""
+        new = '<span class="newtag">New</span>' if hl == lid and not quiet else ""
+        sm = '<br><span class="showme">Show me ›</span>' if hl == lid and not quiet else ""
         out.append(f'<li class="{"hl" if hl == lid else ""}"><span class="n">{n}</span><p><b>{lead}</b>{rest}{new}{flag}{sm}</p></li>')
         if tool_after and hl == lid:
             out.append(f'<li style="display:block;padding:4px 0 8px;margin:0">{tool_after}</li>')
     return f'<ol class="lbl">{"".join(out)}</ol>'
 
 
-def section(area, sec, kind, hl=None, hidden=(), loading=False, tool_hl=None, gaps=True, short=None):
+def section(area, sec, kind, hl=None, hidden=(), loading=False, tool_hl=None, gaps=True, short=None, quiet=False, rule_hl=None):
     w = 268 if kind == "ph" else 700
     tl = tool_card(tool_hl) if (tool_hl and kind == "ph") else None
     parts = []
@@ -535,17 +538,17 @@ def section(area, sec, kind, hl=None, hidden=(), loading=False, tool_hl=None, ga
                    f'<span class="pt">capture of {sec["name"]} on its way</span></div>')
         else:
             pic = shot(key, w, kind, pins, hln, loading=loading, hfrac=short)
-        labs = label_items(items, kind, hl, tl, gaps and have(key))
+        labs = label_items(items, kind, hl, tl, gaps and have(key), quiet)
         parts.append(f'<div class="sbody">{pic}{labs}</div>' if kind == "ph" else f'<div class="sbody">{pic}<div class="lc">{labs}</div></div>')
     head = (f'<div class="sh2"><span class="k">{dict((a, n) for a, n, _ in AREAS)[area]} · {sec["name"]}</span>'
             f'<h2>{sec["name"]}</h2><p>{sec["sub"]}</p></div>')
     shots = "".join(parts)
     if kind == "ph":
         tools = tools_block(sec["tools"], kind, skip=(tool_hl,) if tool_hl else ())
-        body = f'{shots}<div class="sbody">{gk_block(sec["rules"], kind)}{tools}</div>'
+        body = f'{shots}<div class="sbody">{gk_block(sec["rules"], kind, rule_hl)}{tools}</div>'
     else:
         tools = tools_block(sec["tools"], kind, on=tool_hl)
-        body = f'{shots}{gk_block(sec["rules"], kind)}{tools}'
+        body = f'{shots}{gk_block(sec["rules"], kind, rule_hl)}{tools}'
     return f'<section class="sec" id="{sec["id"]}">{head}{body}</section>'
 
 

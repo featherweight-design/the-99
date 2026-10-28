@@ -99,7 +99,8 @@ def main_board():
               '<li><b>Decks, desktop</b>: the same page at 1300.</li><li><b>Labels</b>: how a pin anchors, and how many a picture holds.</li>'
               '<li><b>The other five</b>: Home, Collection, Commanders, Shopping and Friends at phone width, with their labels and rules placed.</li>'
               '<li><b>Ways in</b>: the index, the banner with a crop, the landing with the new label lit, and the ?.</li>'
-              '<li><b>States</b>: a label switched off, a capture loading, a page with no rules.</li><li><b>Copy</b>: every label and rule, with its region and switch.</li></ol></div>')
+              '<li><b>States</b>: a label switched off, a capture loading, a page with no rules.</li><li><b>Copy</b>: every label and rule, with its region and switch.</li>'
+              '<li><b>Addendum A1</b> (2026-10-28): Precons and Mana Balance placed, and where the ? lands on the nine screens with no section.</li></ol></div>')
     return D("About visual · main", body, 1610)
 
 
@@ -333,3 +334,99 @@ BOARDS = [
     ("States", states_board, "6 · States"),
     ("Copy", copy_board, "7 · Copy"),
 ]
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Addendum A1 (2026-10-28): the two tools with no section, and where the ? lands on the nine screens with none.
+def _sec(area, sid):
+    return next(s for s in SECTIONS[area] if s["id"] == sid)
+
+
+QBOX = (0.708, 0.024, 0.113, 0.052)
+
+
+def q_pressed(key):
+    return (f'<div class="ph" style="height:844px;position:relative">{shot(key, 390, "ph", [], None).replace("border-radius:20px", "")}'
+            f'<span class="tap" style="left:{(QBOX[0] + QBOX[2] / 2) * 390:.0f}px;top:{(QBOX[1] + QBOX[3] / 2) * 844:.0f}px"></span></div>')
+
+
+def q_land(area, sid, back, active, kind="ph", hl=None, rule_hl=None):
+    s = section(area, _sec(area, sid), kind, hl=hl, quiet=True, rule_hl=rule_hl).replace('class="sec"', 'class="sec" style="margin-top:0;border-top:0"', 1)
+    if kind == "ph":
+        return pphone(f'<div class="sticky"><span class="back">‹ Back to {back}</span></div><div class="ap">{s}</div>', active=active)
+    return pdesk(f'<div class="sticky"><span class="back">‹ Back to {back}</span></div><div class="ap" style="padding:0 30px"><div style="max-width:1180px">{s}</div></div>', active=active)
+
+
+LANDINGS = [
+    # (screen, its route, pressed capture, area, section, back, tab, lit label, lit rule, why)
+    ("Wishlist", "/collection/wishlist", "p-src-wishlist", "collection", "cards", "Wishlist", "Collection", "tabs", None,
+     "Collection, at Cards, with the tabs label lit: Wishlist is one of the five. Sets lands the same way."),
+    ("Proxies", "/collection/proxies", "p-src-proxies", "shopping", "deck-shopping", "Proxies", "Decks", None, "proxy",
+     "Shopping, at a deck’s Shopping, with the proxy rule lit: what a proxy does to a deck and its list is the question this screen raises."),
+    ("History", "/collection/history", "p-src-history", "collection", "upload", "History", "Collection", None, "replace",
+     "Collection, at Upload a file, with Replace and Add lit: History lists what each upload did, and that rule says why."),
+    ("New deck", "/decks/new", "p-src-new-deck", "decks", "your-decks", "New deck", "Decks", "new-deck", None,
+     "Decks, at Your decks, with New deck lit. From /decks/precons the Precons label is lit instead; /decks/import lights New deck too."),
+    ("Settings", "/settings", "p-src-settings", "home", "whats-new", "Settings", "Home", "lead", None,
+     "Home, at What’s new, with the top story lit: Settings is where you pick what reaches it, and push."),
+    ("Credits", "/credits", "p-src-credits", "decks", "analysis", "Credits", "Decks", None, "credits",
+     "Decks, at Analysis, with the credits rule lit. The same place engineering already points the old Reference link to."),
+]
+
+
+def addendum_board():
+    yd, an = _sec("decks", "your-decks"), _sec("decks", "analysis")
+    tp = frames(
+        frame("<b>Precons</b> · Decks › Your decks · phone",
+              pphone('<div class="ap">' + section("decks", yd, "ph", hl="precons", quiet=True, tool_hl="precons") + "</div>", active="Decks"),
+              "A new label, 2, on the shipped Precons button, and the Precons tool card joins Your decks’ Try it. Drawn as its Show me lands: label lit, card right under it."),
+        frame("<b>Mana Balance</b> · Decks › Analysis · phone",
+              pphone('<div class="ap">' + section("decks", an, "ph", hl="mana", quiet=True, tool_hl="mana-balance") + "</div>", active="Decks"),
+              "A new label on the Tuning shot, where the Mana Balance tile already sits, between Suggested changes and Proposed cuts. Its card joins Analysis’ Try it, the third."),
+        gap=60)
+    td = frames(
+        frame("<b>Precons</b> · desktop", pdesk('<div class="ap" style="padding:0 30px"><div style="max-width:1180px">' + section("decks", yd, "dk", hl="precons", quiet=True, tool_hl="precons") + "</div></div>", active="Decks"),
+              "The “Commander precons” box beside Shopping for all decks. Try it is now Stats for your decks and Precons."),
+        frame("<b>Mana Balance</b> · desktop", pdesk('<div class="ap" style="padding:0 30px"><div style="max-width:1180px">' + section("decks", an, "dk", hl="mana", quiet=True, tool_hl="mana-balance") + "</div></div>", active="Decks"),
+              "Its pin sits on the second Analysis shot, beside Describe, where the 1300 Tuning grid shows the tile. Try it becomes a full row of three."),
+        gap=60)
+    rows = []
+    for i in range(0, len(LANDINGS), 3):
+        fs = []
+        for scr, route, key, area, sid, back, tab, hl, rh, why in LANDINGS[i:i + 3]:
+            name = next(n for a, n, _ in AREAS if a == area)
+            fs.append(frame(f"<b>{scr}</b> · ? pressed · <code>{route}</code>", q_pressed(key)))
+            fs.append(frame(f"<b>{scr}</b> · lands on {name}", q_land(area, sid, back, tab, hl=hl, rule_hl=rh), why))
+        rows.append(frames(*fs))
+    dk = frames(
+        frame("<b>Card details</b> · desktop · lands on Collection", q_land("collection", "cards", "Aberrant Manawurm", "Collection", "dk", hl="key"),
+              "Only at 1280 and up: the rail’s ? is lifted over card details there. At 390 card details covers the header’s ?, so a phone never asks. Lands on Cards with the key lit, the marks a card carries; ‹ goes back to the open card."),
+        frame("<b>Credits</b> · desktop · lands on Decks", q_land("decks", "analysis", "Credits", "Decks", "dk", rule_hl="credits"),
+              "The same landing at 1300: Analysis, its credits rule lit in Good to know."),
+        gap=60)
+    table = "".join(
+        f"<tr><td><b>{a}</b></td><td><code>{b}</code></td><td>{c}</td><td>{d}</td></tr>" for a, b, c, d in [
+            ("Card details", "?card= on a Collection list", "Collection › Cards", "label: The key (desktop only; the phone’s ? is under the card)"),
+            ("Sets", "/collection/sets, a set’s page", "Collection › Cards", "label: the tabs"),
+            ("Proxies", "/collection/proxies", "Shopping › A deck’s Shopping", "rule: proxy"),
+            ("History", "/collection/history", "Collection › Upload a file", "rule: Replace and Add"),
+            ("Wishlist", "/collection/wishlist", "Collection › Cards", "label: the tabs"),
+            ("New deck", "/decks/new, /decks/import", "Decks › Your decks", "label: New deck"),
+            ("New deck", "/decks/precons/**", "Decks › Your decks", "label: Precons"),
+            ("New deck", "/commanders/choose", "Commanders › For you", "label: For you, Discover and Help me choose"),
+            ("Settings", "/settings", "Home › What’s new", "label: The top story"),
+            ("Credits", "/credits", "Decks › Analysis", "rule: credits"),
+            ("Account", "the account menu", "no landing", "the menu never names a screen (screen-for-path); a ? pressed with it open answers for the page under it"),
+        ])
+    body = (board_head("8 · addendum A1 · 2026-10-28", "Two tools placed, and nine ? landings",
+                       "Engineering’s readiness audit found two Tools cards no section lists, and nine screens whose ? has no section to scroll to. "
+                       "<b>Both tools stay</b>, each placed on the screen that already shows its control. <b>Every ? still lands on a page section</b>, never the index: "
+                       "the section that answers that screen’s question, with the item that answers it lit (the label or rule gets the halo, no New tag). "
+                       "How it works and the one-time About sheet retire, as Hugh ruled.", tag="A1")
+            + '<div class="note" style="max-width:1500px"><h4>Where each ? lands</h4><table class="tbl"><tr><th>Screen</th><th>Route</th><th>Lands on</th><th>Lit</th></tr>'
+            + table + "</table></div>"
+            + tp + td + "".join(rows) + dk)
+    return D("About visual · addendum A1", body, 2 * DK_W + 60 + 112)
+
+
+BOARDS.append(("Addendum-A1", addendum_board, "8 · Addendum A1 · tools and ? landings"))

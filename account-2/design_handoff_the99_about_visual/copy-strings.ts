@@ -240,6 +240,13 @@ export const ABOUT_SECTIONS = [
         "switch": null
       },
       {
+        "id": "precons",
+        "region": "decks/your-decks/precons",
+        "lead": "Precons",
+        "rest": " lists every Commander precon, with how many of its cards you already own. Start a deck from one just as it comes in the box.",
+        "switch": "PRECONS_ENABLED"
+      },
+      {
         "id": "deck-status",
         "region": "decks/your-decks/deck-status",
         "lead": "A deck’s status",
@@ -256,7 +263,8 @@ export const ABOUT_SECTIONS = [
     ],
     "rules": [],
     "tools": [
-      "lineup"
+      "lineup",
+      "precons"
     ]
   },
   {
@@ -346,6 +354,13 @@ export const ABOUT_SECTIONS = [
         "switch": "TUNING_ENABLED"
       },
       {
+        "id": "mana",
+        "region": "decks/analysis/mana",
+        "lead": "Mana Balance",
+        "rest": " counts every source of each color against what your spells ask for. It’s free to run.",
+        "switch": "MANA_BALANCE_ENABLED"
+      },
+      {
         "id": "cuts",
         "region": "decks/analysis/cuts",
         "lead": "Proposed cuts",
@@ -366,7 +381,8 @@ export const ABOUT_SECTIONS = [
     ],
     "tools": [
       "suggested-changes",
-      "proposed-cuts"
+      "proposed-cuts",
+      "mana-balance"
     ]
   },
   {
@@ -677,4 +693,20 @@ export const ABOUT_STRINGS = {
   bannerMulti: "New in the app",
   back: (screen: string) => `‹ Back to ${screen}`,
   toolShowMe: "Show me ›", // replaces "How it works ›"
+} as const;
+
+// Addendum A1 (2026-10-28): where the ? lands on the screens with no section of their own. Each lands on a page section
+// with one label or rule lit (the halo, no New tag), under the "‹ Back to {screen}" bar. Never the /about index.
+export const ABOUT_Q_LANDINGS = {
+  "card-details": { lands: "collection/cards", lit: { label: "key" }, note: "desktop only: at 390 card details covers the ?" },
+  sets: { lands: "collection/cards", lit: { label: "tabs" } },
+  proxies: { lands: "shopping/deck-shopping", lit: { rule: "proxy" } },
+  history: { lands: "collection/upload", lit: { rule: "replace" } },
+  wishlist: { lands: "collection/cards", lit: { label: "tabs" } },
+  "new-deck": { lands: "decks/your-decks", lit: { label: "new-deck" } }, // /decks/new, /decks/import
+  "new-deck@precons": { lands: "decks/your-decks", lit: { label: "precons" } }, // /decks/precons/**
+  "new-deck@choose": { lands: "commanders/for-you", lit: { label: "places" } }, // /commanders/choose
+  settings: { lands: "home/whats-new", lit: { label: "lead" } },
+  credits: { lands: "decks/analysis", lit: { rule: "credits" } },
+  // account: no landing. The menu never names a screen; a ? pressed while it is open answers for the page under it.
 } as const;
