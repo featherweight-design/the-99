@@ -10,7 +10,6 @@
 
 import { createContext, useContext, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
-import { TOUCH_HIT } from "../../ui/touch-hit";
 
 /** The pill after the names: `+N` names left out, or `more` when the only thing hidden is the end of one cut name. */
 export type FitPill = { kind: "count"; rest: number } | { kind: "more" } | null;
@@ -44,6 +43,16 @@ export function fitNames(input: {
 const PILL =
   "inline-flex h-[19px] flex-none items-center rounded-[5px] border border-[color:var(--border-strong)] font-mono text-[10.5px] font-medium leading-none";
 const GAP = 7;
+
+/**
+ * The pill's coarse-pointer hit: 44px WIDE, as `TOUCH_HIT` draws it, but only 2px past the pill above and below (23px
+ * tall), so it stays in its own fact line's band. Stacked facts sit about 23.5px apart, so a centred 44px-tall hit
+ * reached over the next fact's pill, and a tap on one pill could open the other's list. The card row's rule (a coarse
+ * pointer keeps a 44px hit) is kept across the line and given up up and down, where the next target is closer than 22px;
+ * growing every fact line to 44px on a coarse pointer was the alternative, and would nearly double a phone row.
+ */
+const PILL_HIT =
+  "relative pointer-coarse:after:absolute pointer-coarse:after:left-1/2 pointer-coarse:after:top-1/2 pointer-coarse:after:h-[calc(100%+4px)] pointer-coarse:after:w-[max(44px,100%)] pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:-translate-y-1/2 pointer-coarse:after:content-['']";
 
 type Measure = () => void;
 
@@ -184,7 +193,9 @@ export function CartFact({
   const shown = names.slice(0, fit.shown).join(", ");
   const line = (
     <span
-      className={`flex min-w-0 items-baseline gap-[7px] whitespace-nowrap font-mono text-[11.5px] leading-[1.5] ${
+      // Beside a lead the line takes the rest of the row (`flex-1`): shrunk to the names it shows, its slot would never
+      // grow back when the cell widens, and names hidden at a narrow width would never return.
+      className={`flex min-w-0 items-baseline gap-[7px] whitespace-nowrap font-mono text-[11.5px] leading-[1.5] ${lead ? "flex-1" : ""} ${
         dim ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-body)]"
       }`}
     >
@@ -222,9 +233,9 @@ export function CartFact({
     <div
       data-fact={testId}
       data-fact-open={open ? "" : undefined}
-      className={`grid min-w-0 grid-cols-[44px_minmax(0,1fr)] items-baseline md:flex md:flex-col md:items-stretch ${className}`}
+      className={`grid min-w-0 grid-cols-[44px_minmax(0,1fr)] items-baseline xl:flex xl:flex-col xl:items-stretch ${className}`}
     >
-      <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)] md:sr-only">{label}</span>
+      <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)] xl:sr-only">{label}</span>
       {lead ? <span className="flex min-w-0 items-center gap-[8px]">{lead}{line}</span> : line}
       {open ? (
         <ul
@@ -263,7 +274,7 @@ function PillPress({
       aria-label={aria}
       onClick={onPress}
       // `more` is a word, so it takes a pixel more each side (R2's `.mo.word`).
-      className={`${TOUCH_HIT} ${PILL} cursor-pointer self-center bg-transparent ${!open && pill?.kind === "more" ? "px-[7px]" : "px-[6px]"} ${open ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-body)]"}`}
+      className={`${PILL_HIT} ${PILL} cursor-pointer self-center bg-transparent ${!open && pill?.kind === "more" ? "px-[7px]" : "px-[6px]"} ${open ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-body)]"}`}
     >
       {words}
     </button>

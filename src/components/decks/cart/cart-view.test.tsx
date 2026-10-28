@@ -700,8 +700,13 @@ describe("CartView, By card's row facts (v2 PR 4)", () => {
       copy.columns.card, copy.columns.need, copy.columns.spares, copy.columns.own, "",
     ]);
     expect(screen.getByRole("region", { name: copy.list.regionAria }).contains(columns)).toBe(false);
+    // The header, the rows' grid and the facts' sr-only labels switch together, at xl (the list is too narrow below it).
+    expect(columns.className.split(/\s+/)).toEqual(expect.arrayContaining(["hidden", "xl:grid"]));
+    const row = list().getAllByRole("listitem")[0];
+    expect(row.className.split(/\s+/)).toEqual(expect.arrayContaining(["xl:grid", "xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.55fr)_minmax(0,1.1fr)_minmax(0,1.15fr)_100px]"]));
+    expect(`${columns.className} ${row.className}`).not.toMatch(/(^|\s)md:/);
     // Both keep a scrollbar's gutter, so a classic scrollbar narrows the rows and their columns alike.
-    expect(columns.className.split(/\s+/)).toEqual(expect.arrayContaining(["md:overflow-y-hidden", "md:[scrollbar-gutter:stable]"]));
+    expect(columns.className.split(/\s+/)).toEqual(expect.arrayContaining(["xl:overflow-y-hidden", "xl:[scrollbar-gutter:stable]"]));
     expect(screen.getByRole("region", { name: copy.list.regionAria }).className.split(/\s+/)).toContain("md:[scrollbar-gutter:stable]");
     unmount();
     render(<CartView cart={held} provenance={provenance} initialView="deck" />);

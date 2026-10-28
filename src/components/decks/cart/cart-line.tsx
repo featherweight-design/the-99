@@ -203,10 +203,10 @@ export function CartCardLine({
   return (
     <li
       data-cart-row
-      className={`flex items-start gap-[12px] border-t border-[color:var(--border)] py-[12px] first:border-t-0 md:grid md:min-h-[64px] md:items-center md:px-[14px] md:has-[[data-fact-open]]:items-start ${BY_CARD_GRID}`}
+      className={`flex items-start gap-[12px] border-t border-[color:var(--border)] py-[12px] first:border-t-0 xl:grid xl:min-h-[64px] xl:items-center xl:px-[14px] xl:has-[[data-fact-open]]:items-start ${BY_CARD_GRID}`}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-[4px] md:contents">
-        <div className="flex min-w-0 flex-col gap-[3px] md:col-start-1 md:row-start-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-[4px] xl:contents">
+        <div className="flex min-w-0 flex-col gap-[3px] xl:col-start-1 xl:row-start-1">
           <span className="flex min-w-0 items-baseline gap-[8px]">
             <CardDetailTrigger
               oracleId={line.oracleId}
@@ -236,7 +236,7 @@ export function CartCardLine({
           items={need}
           head={copy.facts.forDecks(need.length)}
           moreAria={copy.facts.moreDecksAria}
-          className="md:col-start-2 md:row-start-1"
+          className="xl:col-start-2 xl:row-start-1"
         />
         {friends.length > 0 ? (
           <CartFact
@@ -248,7 +248,7 @@ export function CartCardLine({
             moreAria={copy.facts.moreFriendsAria}
             // S5: the shipped glyph press, opening the spares-only modal where Ask lives.
             lead={<OtherWaysPress card={spareCardOf(line, fact)} standIn={false} standInAria="" limitFigure="" oneLine />}
-            className="md:col-start-3 md:row-start-1"
+            className="xl:col-start-3 xl:row-start-1"
           />
         ) : null}
         {own ? (
@@ -262,13 +262,13 @@ export function CartCardLine({
             head={copy.facts.inDecks(ownItems.length)}
             moreAria={copy.facts.moreDecksAria}
             dim
-            className="md:col-start-4 md:row-start-1"
+            className="xl:col-start-4 xl:row-start-1"
           />
         ) : null}
       </div>
-      <span className="flex flex-none flex-col items-end gap-[10px] md:col-start-5 md:row-start-1 md:gap-[7px]">
+      <span className="flex flex-none flex-col items-end gap-[10px] xl:col-start-5 xl:row-start-1 xl:gap-[7px]">
         {/* The tag's row in the stack: 22px on a phone, 20 on desktop, the shipped tag centred in it. */}
-        <span className="flex h-[22px] items-center md:h-[20px]">
+        <span className="flex h-[22px] items-center xl:h-[20px]">
           <BuyTag variant="row" reserveSlot price={fact} newestAsOf={newestAsOf} press={press} />
         </span>
       </span>

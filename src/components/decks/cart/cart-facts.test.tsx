@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { CartFact, NameFitProvider, fitNames } from "./cart-facts";
 
@@ -139,6 +139,50 @@ describe("CartFact", () => {
     expect(screen.getByText(copy.facts.inOther)).toBeTruthy();
     expect(screen.queryByText(copy.facts.in)).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("brings hidden names back when the cell widens", () => {
+    let notify: (entries: { target: Element }[]) => void = () => {};
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(cb: (entries: { target: Element }[]) => void) { notify = cb; }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+    const { container } = render(need(190));
+    expect(drawnNames()).toBe("HD - Gishath");
+    container.querySelector("[data-test-width]")!.setAttribute("data-test-width", "400");
+    act(() => notify([{ target: document.querySelector("[data-fact-slot]")! }]));
+    expect(drawnNames()).toBe("HD - Gishath, HD - Kratos, HD - Thorin");
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("lets the value line take the rest of the row beside a lead, so its slot can grow back", () => {
+    render(
+      <NameFitProvider>
+        <div data-test-width={200}>
+          <CartFact label={copy.facts.spare} count={4} items={decks} head="" moreAria={copy.facts.moreFriendsAria} lead={<button type="button">glyph</button>} />
+        </div>
+      </NameFitProvider>,
+    );
+    // The line is the slot's parent: shrunk to the names it shows, the slot would never measure wider again.
+    const line = document.querySelector("[data-fact-slot]")!.parentElement!;
+    expect(line.className.split(/\s+/)).toEqual(expect.arrayContaining(["flex-1", "min-w-0"]));
+  });
+
+  it("keeps the pill's coarse hit in its own fact line: 44px across, 2px above and below", () => {
+    render(need(200));
+    const classes = screen.getByRole("button", { name: copy.facts.moreDecksAria(1) }).className.split(/\s+/);
+    expect(classes).toEqual(expect.arrayContaining(["pointer-coarse:after:w-[max(44px,100%)]", "pointer-coarse:after:h-[calc(100%+4px)]"]));
+    expect(classes).not.toContain("pointer-coarse:after:h-[max(44px,100%)]");
+  });
+
+  it("switches to columns at xl, the label to sr-only with it", () => {
+    render(need(400));
+    const fact = document.querySelector("[data-fact]")!;
+    expect(fact.className.split(/\s+/)).toEqual(expect.arrayContaining(["xl:flex", "xl:flex-col"]));
+    expect(screen.getByText(copy.facts.need).className.split(/\s+/)).toContain("xl:sr-only");
+    expect(fact.className).not.toMatch(/(^|\s)md:/);
   });
 
   it("watches a whole list with one ResizeObserver, not one a row", () => {

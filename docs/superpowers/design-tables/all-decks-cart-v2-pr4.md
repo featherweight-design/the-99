@@ -1,7 +1,7 @@
 # Design table: Cart v2 PR 4, By card's row facts
 
 Sources (design files only): `design/design_handoff_the99_all_decks_cart_v2/` README.md (calls 1, 2, 3; G1, G6), STATES-all-decks-cart-v2.md (Row rest, Row +N open), design-tables/all-decks-cart-v2.md (Row desktop, Row phone), Row.dc.html (C1 +2 opened 1300, C2 +3 opened 390), By-Card-Deck.dc.html (A By card 1300, B By card 390), and addendum R2 (#2331, branch `design-handoff-all-decks-cart-v2-r2`) `addendum-r2/README.md` ruling 3 and `R2-Long-Name.dc.html` (A 1300, B 390). Where the addendum and v2 disagree, the addendum wins.
-Values are read from the canvases' inline CSS classes (`.colh .nrw .cn .nm2 .cmd .fv .mo .dl .prw .f .spc .sgp .act .cut`). Copy: each element names its copy key, never its text (wording is /copy-review's). "—" = not drawn. Mobile = 390, desktop = 1300; the cart's own desktop breakpoint is `md` (768), the shipped cart's, and the board draws only 390 and 1300.
+Values are read from the canvases' inline CSS classes (`.colh .nrw .cn .nm2 .cmd .fv .mo .dl .prw .f .spc .sgp .act .cut`). Copy: each element names its copy key, never its text (wording is /copy-review's). "—" = not drawn. Mobile = 390, desktop = 1300; the board draws only those two. The columns start at `xl` (1280), not the cart's `md`: measured signed in (62px rail), the list is 616px at 1000 and 640 at 1024, where the spare and own headings overflow their 87 to 96px columns; at 1280 it is 896 (855 with the 88px touch rail and a 15px scrollbar) and every heading fits. Below `xl` a row draws the phone's labelled lines.
 
 ## 1. Column header (`.colh`), By card
 
@@ -152,5 +152,6 @@ Decided where the boards are silent (not gaps):
 - The open own list's head reads `facts.inDecks(n)` and the open friend list's `facts.fromFriends(n)`, the need list's `for N decks` in their own facts' words.
 - Friend names in the spare fact are ordered most spares first, then by name.
 - The own fact's count is every copy owned (`owned`); its names are where EVERY copy is in use (`ownHoldings`: the selected decks on the line that hold some, in the selections' order, then `inUseIn`). They are drawn only when every deck is named and the copies sum to `owned`; otherwise the fact falls back to the shipped row's facts, never naming some decks and not others: `in other decks` when other decks hold every copy, else `· N in other decks` (`list.ownedSome`'s tail).
+- The pill's coarse-pointer hit is 44px across but only 2px past the pill above and below, so stacked facts' pills (about 23.5px apart) have disjoint targets; measured on a coarse pointer at 390, 60 of 60 taps on visible pills land on their own pill and no other control in the row loses a tap.
 - The column header keeps the list box's scrollbar gutter (`scrollbar-gutter: stable` on both), so a classic scrollbar narrows the header's grid and the rows' alike. Checked in a browser with a forced 15px scrollbar: the header's columns and the row's land on the same x, and both right edges at the same x.
 - The phone labels stay on desktop as `sr-only`, so each cell names itself to a screen reader; the column header is `aria-hidden`.
