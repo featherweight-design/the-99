@@ -49,20 +49,22 @@ async function main() {
   const files = (await db.select({ f: precons.fileName }).from(precons).where(sql`${precons.twinOf} is null`).orderBy(precons.fileName).limit(2)).map((r) => r.f);
   const mine = and(eq(preconSynopses.contractVersion, 12), eq(preconSynopses.roleBasis, "classifier"), inArray(preconSynopses.preconFile, files));
   await db.delete(preconSynopses).where(mine);
-  // A deck data change published BEFORE the build checks its rows: one the carried Overview has seen.
-  const [anyCard] = await db.select({ id: cards.oracleId }).from(cards).limit(1);
-  const [prior] = await db.insert(deckDataChanges).values({ kind: "gameChanger", direction: "added", oracleIds: [anyCard.id], detail: { probe: USER } }).returning({ seq: deckDataChanges.seq });
-  execFileSync("pnpm", ["-s", "db:build:precon-overviews", "--stub", "--limit", "2"], {
-    encoding: "utf8", env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, PRECON_OVERVIEW_ROLE_BASIS: "classifier" },
-  });
+  // The cleanup's trackers come first, so a setup or build that fails is cleaned up too.
   const made: string[] = [];
-  const logged: number[] = [prior.seq];
+  const logged: number[] = [];
   const start = async (file: string) => {
     const id = await startPreconDeck(USER, file, `probe:carry ${file}`, ON);
     made.push(id);
     return id;
   };
   try {
+    // A deck data change published BEFORE the build checks its rows: one the carried Overview has seen.
+    const [anyCard] = await db.select({ id: cards.oracleId }).from(cards).limit(1);
+    const [prior] = await db.insert(deckDataChanges).values({ kind: "gameChanger", direction: "added", oracleIds: [anyCard.id], detail: { probe: USER } }).returning({ seq: deckDataChanges.seq });
+    logged.push(prior.seq);
+    execFileSync("pnpm", ["-s", "db:build:precon-overviews", "--stub", "--limit", "2"], {
+      encoding: "utf8", env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, PRECON_OVERVIEW_ROLE_BASIS: "classifier" },
+    });
     const deckId = await start(files[0]);
     const r = await carryOverPreconOverview(deckId, USER, ON);
     check("a started deck carries over its precon's Overview", r.attached, JSON.stringify(r));

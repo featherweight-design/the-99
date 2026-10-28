@@ -64,8 +64,8 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
   const contract = synopsisContractVersion(overviewV2Enabled(env), deckBenchmarksEnabled(env));
   // At the OWNER's contract AND role basis: the reading's roles reach the prompt, so an Overview built at
   // the other basis is not what this owner's Analyze would write, and none is attached.
-  const [row] = await db.select().from(preconSynopses)
-    .where(and(eq(preconSynopses.preconFile, deck.precon), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, roleBasisFromEnv(env))));
+  const key = and(eq(preconSynopses.preconFile, deck.precon), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, roleBasisFromEnv(env)));
+  const [row] = await db.select().from(preconSynopses).where(key);
   const decision = carryOverDecision({ analysisTab: true, row: row ?? null, liveFingerprint: list });
   if (!decision.attach) return { attached: false, reason: decision.reason };
 
@@ -80,6 +80,11 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
     const [stored] = await tx.select({ list: deckProfiles.fingerprint, dirty: deckProfiles.dirty, seenSeq: deckProfiles.seenSeq })
       .from(deckProfiles).where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
     if (!stored || stored.dirty || stored.list !== list) return { attached: false, reason: "no_reading" };
+    // ONE REVISION OF THE SOURCE ROW: re-read under a shared lock, so a build or copy cannot rewrite it
+    // between the decision, the content and the check time this transaction writes from it.
+    const [src] = await tx.select().from(preconSynopses).where(key).for("share");
+    const held = carryOverDecision({ analysisTab: true, row: src ?? null, liveFingerprint: list });
+    if (!held.attach) return { attached: false, reason: held.reason };
     // THE OVERVIEW HAS SEEN THE DATA ONLY AS OF ITS LAST CHECK, not as of this reading: a deck data
     // change published after the build or copy last verified the row's inputs (`checked_at`) is one
     // it never read, even while the row still says current (the next build or copy has not re-checked
@@ -88,12 +93,12 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
     const [log] = await tx.select({ head: sql<number>`coalesce(max(${deckDataChanges.seq}), 0)::bigint` })
       .from(deckDataChanges).where(sql`${deckDataChanges.publishedAt} <= (
         select ps.checked_at from ${preconSynopses} ps
-        where ps.precon_file = ${row!.preconFile} and ps.contract_version = ${row!.contractVersion} and ps.role_basis = ${row!.roleBasis}
+        where ps.precon_file = ${src.preconFile} and ps.contract_version = ${src.contractVersion} and ps.role_basis = ${src.roleBasis}
       )`);
     const seenSeq = Math.min(stored.seenSeq, Number(log?.head ?? 0));
     const [written] = await tx.insert(deckSynopses).values({
-      deckId, userId, fingerprint: list, contractVersion: row!.contractVersion, model: row!.model,
-      modelCallId: null, preconFile: deck.precon!, status: "done", outcome: "survived", content: row!.content,
+      deckId, userId, fingerprint: list, contractVersion: src.contractVersion, model: src.model,
+      modelCallId: null, preconFile: deck.precon!, status: "done", outcome: "survived", content: src.content,
       seenSeq,
     }).returning({ id: deckSynopses.id });
     if (v0) {
