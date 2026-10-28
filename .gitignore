@@ -55,3 +55,6 @@ next-env.d.ts
 # screenshots written by the scripts/probe-*.mjs gate runners
 /probe-out/
 contact-sheets/
+
+# The count-mechanism eval board key stays out of the repository, so the board is read blind.
+docs/superpowers/eval/count-mechanism/board-key.json

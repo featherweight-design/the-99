@@ -17,8 +17,12 @@ export type OverlayDeck = {
   games: { result: "win" | "loss" | "draw"; podSize: number; daysAgo: number; worked: string[]; hurt: string[]; note: string | null }[];
 };
 
-export async function openTuning() {
-  const db = await connectStaging();
+/**
+ * `connect` and `userId` let an eval read a scratch branch instead (the count-mechanism eval, `scratch.mts`), with its
+ * account named rather than inferred. Omitted, it is staging and the inference below, as every earlier eval ran.
+ */
+export async function openTuning(opts: { connect?: () => Promise<Awaited<ReturnType<typeof connectStaging>>>; userId?: string } = {}) {
+  const db = await (opts.connect ?? connectStaging)();
   const { sql, inArray } = await import("drizzle-orm");
   const { cards } = await import("../../../src/db/schema");
   const { tuningInputs, readOwnedOracleIds } = await import("../../../src/lib/decks/tuning-read");
@@ -47,7 +51,7 @@ export async function openTuning() {
   // every arm of the model-tiering eval used. The deck rows below are narrowed to that account.
   const hd = deckRows.filter((d) => d.name.startsWith("HD"));
   const users = [...new Set(hd.map((d) => d.user_id))].sort();
-  const named = process.env.TUNING_EVAL_USER_ID;
+  const named = opts.userId ?? process.env.TUNING_EVAL_USER_ID;
   if (named !== undefined && !users.includes(named)) throw new Error(`eval: TUNING_EVAL_USER_ID names no account that holds an "HD" deck`);
   if (users.length === 0) throw new Error(`eval: no "HD" decks on staging`);
   const userId = named ?? users[0];
@@ -106,7 +110,7 @@ export async function openTuning() {
   /** The real accept contract over parsed replies, with one catalog read for every name. Two lists
    *  (sub-project 8): each is validated on its own side's rules and sized to the first
    *  MAX_SUGGESTIONS survivors, exactly as `runTuning` does. */
-  async function score(items: readonly { pack: EvidencePack; value: TuningResponse }[]) {
+  async function score(items: readonly { pack: EvidencePack; value: TuningResponse }[], max: number = limits.MAX_SUGGESTIONS) {
     const names = [...new Set(items.flatMap((a) => [...a.value.additions, ...a.value.cuts].map((l) => l.card)))];
     const catalogRows = names.length === 0 ? [] : await db
       .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal })
@@ -125,7 +129,7 @@ export async function openTuning() {
           const cut = resolve(l.card);
           return n + (cut === null || !inDeck.has(cut.oracleId) ? 1 : 0);
         }, 0);
-      const sized = sizeLists(kept, limits.MAX_SUGGESTIONS);
+      const sized = sizeLists(kept, max);
       const keptAdditions = sized.filter((k) => k.addOracleId !== null).length;
       return {
         outcome: sized.length > 0 ? "survived" : "ungrounded",
@@ -137,6 +141,7 @@ export async function openTuning() {
         keptCuts: sized.length - keptAdditions,
         droppedCount,
         drops: drops.map((d) => `${d.side}:${d.rule}`),
+        dropList: drops,
         keptSuggestions: sized,
         outsideNames: outside,
       };
