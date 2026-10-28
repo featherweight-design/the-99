@@ -173,6 +173,8 @@ describe("the cart's chassis (v2 PR 8)", () => {
     expect(radios.map((r) => r.tabIndex)).toEqual([0, -1, -1, -1, -1]);
     fireEvent.keyDown(radios[0], { key: "ArrowDown" });
     expect(document.activeElement).toBe(radios[1]);
+    // The Tab stop follows the focus, so Shift+Tab from here leaves the group instead of returning to the checked order.
+    expect(radios.map((r) => r.tabIndex)).toEqual([-1, 0, -1, -1, -1]);
     fireEvent.keyDown(radios[1], { key: "ArrowUp" });
     fireEvent.keyDown(radios[0], { key: "ArrowUp" });
     expect(document.activeElement).toBe(radios[4]);

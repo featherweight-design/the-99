@@ -4,7 +4,7 @@
 // Below the chassis's 1000px the sort is this; from there up it is the `OrderMenu` the other chassis routes draw. A
 // pick applies and closes, since there is nothing to undo and nothing else in the sheet to set.
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import type { CartView } from "../../../lib/decks/cart-sort";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
@@ -29,6 +29,8 @@ function SheetBody({ open, view, value, order, labels, onPick, onDismiss }: Cart
   const dialog = useRef<HTMLDivElement>(null);
   const selected = useRef<HTMLButtonElement | null>(null);
   const items = useRef<(HTMLButtonElement | null)[]>([]);
+  // The roving Tab stop: the option holding focus, so Shift+Tab from it leaves the group rather than returning to it.
+  const [stop, setStop] = useState(() => Math.max(0, order.indexOf(value)));
   // Landing on the order already in force, so a keyboard or screen reader starts from where the list is.
   useDialogA11y(dialog, onDismiss, { initialFocusRef: selected });
   return (
@@ -56,7 +58,8 @@ function SheetBody({ open, view, value, order, labels, onPick, onDismiss }: Cart
               role="radio"
               aria-checked={on}
               // Roving focus: one Tab stop, the arrows move between the orders, as a radiogroup promises.
-              tabIndex={on ? 0 : -1}
+              tabIndex={stop === i ? 0 : -1}
+              onFocus={() => setStop(i)}
               ref={(el) => { items.current[i] = el; if (on) selected.current = el; }}
               onKeyDown={(e) => {
                 const to = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
