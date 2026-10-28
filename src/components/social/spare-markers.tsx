@@ -418,11 +418,16 @@ export function OtherWaysPress({
  * The key's item, drawn only while a spare is (S2: none in S1): among `among` when given, the cards a view draws. Then
  * `requested` and `accepted`, each only while a row draws that mark (E1: after the spare item, in the shipped order).
  */
-export function SpareKeyItem({ className, among }: { className: string; among?: ReadonlySet<string> }) {
+export function SpareKeyItem({ className, among, reading = false }: {
+  className: string;
+  among?: ReadonlySet<string>;
+  /** The all-decks cart while friends' spares are read: the plain item draws before any spare has landed. */
+  reading?: boolean;
+}) {
   const ctx = usePageSpares();
-  if (!ctx || ctx.byCard.size === 0) return null;
+  if (!ctx) return null;
   const drawn = [...ctx.byCard.keys()].filter((id) => !among || among.has(id));
-  if (drawn.length === 0) return null;
+  if (drawn.length === 0 && !reading) return null;
   const marks = new Set(ctx.requests ? drawn.map((id) => cardMark(ctx.requests!.asksFor(id))) : []);
   return (
     <>

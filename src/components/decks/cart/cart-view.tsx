@@ -176,6 +176,13 @@ export function CartView({
     if (next.has(id)) next.delete(id); else next.add(id);
     return next;
   });
+  // By friend's folded panels (call 7): every panel starts open, and a fold is kept for the visit, across view switches.
+  const [friendShut, setFriendShut] = useState<ReadonlySet<string>>(() => new Set());
+  const foldFriend = (publicId: string) => setFriendShut((prev) => {
+    const next = new Set(prev);
+    if (next.has(publicId)) next.delete(publicId); else next.add(publicId);
+    return next;
+  });
   const newestAsOf = useMemo(() => (cart.newestAsOf ? new Date(cart.newestAsOf) : null), [cart.newestAsOf]);
   const deckNames = useMemo(() => new Map(cart.decks.map((d) => [d.id, d.name])), [cart.decks]);
   const holders = useMemo<Holders>(() => ({
@@ -393,8 +400,11 @@ export function CartView({
                 role="region"
                 aria-label={copy.list.regionAria}
                 // The scrollbar's gutter is kept whether or not the list overflows, and the column header keeps the same one, so a
-                // classic scrollbar narrows both alike and the rows stay under their columns.
-                className="md:-mx-[13px] md:min-h-[120px] md:flex-1 md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] md:border-b md:border-b-[color:var(--border)] md:px-[13px]"
+                // classic scrollbar narrows both alike and the rows stay under their columns. By friend reserves its
+                // sticky panel header's 53px (52 tall plus its rule) so focus scrolling never parks a control under it.
+                className={`md:-mx-[13px] md:min-h-[120px] md:flex-1 md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] md:border-b md:border-b-[color:var(--border)] md:px-[13px] ${
+                  view === "friend" ? "md:scroll-pt-[53px]" : ""
+                }`}
               >
                 <HoverPreviewProvider>
                 {byDeck ? (
@@ -429,6 +439,8 @@ export function CartView({
                     deckNames={deckNames}
                     holders={holders}
                     newestAsOf={newestAsOf}
+                    friendShut={friendShut}
+                    onFoldFriend={foldFriend}
                   />
                 )}
                 </HoverPreviewProvider>
@@ -455,8 +467,8 @@ export function CartView({
 }
 
 /**
- * By card's column header (v2 call 1), above the list's scroll box, while By card draws rows: not over By friend's
- * panels, and not over the no-match block.
+ * The column header (v2 call 1) above the list's scroll box: By card's while By card draws rows, By friend's while it
+ * draws panels, and none over the no-match block.
  */
 function ByCardColumns({
   view, lines, read, selected, query,
@@ -469,7 +481,9 @@ function ByCardColumns({
 }) {
   const drawn = useWithHeld(lines, read, selected, { query });
   const byFriend = friendGroups(useByFriend(drawn.lines, drawn.held));
-  if (shown(view, byFriend !== null) !== "card" || drawn.lines.length === 0) return null;
+  const v = shown(view, byFriend !== null);
+  if (v === "friend") return <CartColumns view="friend" />;
+  if (v !== "card" || drawn.lines.length === 0) return null;
   return <CartColumns />;
 }
 
@@ -549,7 +563,7 @@ function NoMatch({ query, of, onDrop }: { query: string; of: number; onDrop: () 
 
 /** By card, or By friend while it has something to draw. */
 function CardOrFriendList({
-  view, lines, of, read, selected, query, onDrop, sorts, deckNames, holders, newestAsOf,
+  view, lines, of, read, selected, query, onDrop, sorts, deckNames, holders, newestAsOf, friendShut, onFoldFriend,
 }: {
   view: CartViewMode;
   lines: SelectedLine[];
@@ -562,6 +576,8 @@ function CardOrFriendList({
   deckNames: Map<string, string>;
   holders: Holders;
   newestAsOf: Date | null;
+  friendShut: ReadonlySet<string>;
+  onFoldFriend: (publicId: string) => void;
 }) {
   const spares = usePageSpares();
   // By friend's lines keep the By card order whatever By card is sorted by (call 5): the panels are what it sorts.
@@ -573,7 +589,18 @@ function CardOrFriendList({
   );
   const panels = useMemo(() => (byFriend ? sortGroups(byFriend.groups, sorts.friend) : null), [byFriend, sorts.friend]);
   if (view === "friend" && byFriend && panels) {
-    return <ByFriendList groups={panels} requests={byFriend.requests} held={drawn.held} deckNames={deckNames} newestAsOf={newestAsOf} />;
+    return (
+      <ByFriendList
+        groups={panels}
+        requests={byFriend.requests}
+        held={drawn.held}
+        deckNames={deckNames}
+        ownOf={(line) => ownFact(line, selected, holders.rank, holders.names)}
+        shut={friendShut}
+        onFold={onFoldFriend}
+        newestAsOf={newestAsOf}
+      />
+    );
   }
   // The held slot a purchase left counts: a search matching only the card just bought still draws it.
   if (drawn.lines.length === 0) return <NoMatch query={query} of={of} onDrop={onDrop} />;
@@ -608,14 +635,17 @@ function CartKeyRow({
     // An explicit `?view=deck` with one deck keeps its own segment, so the switch always shows the view it is on.
     ? <ViewSwitch view={v} onView={onView} deck={byDeckView || v === "deck"} friend={byFriend !== null} />
     : null;
-  const showSpare = v !== "friend" && spares !== null && [...drawn].some((id) => spares.byCard.has(id));
+  // While a drawn line's spares are still being read, the item shows ahead of them (v2 Loading A, plan A4): the glyph is
+  // about to appear on the rows.
+  const reading = spares !== null && [...drawn].some((id) => !spares.loaded.has(id));
+  const showSpare = v !== "friend" && spares !== null && (reading || [...drawn].some((id) => spares.byCard.has(id)));
   if (!viewSwitch && !showBuy && !showSpare) return null;
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-[14px] gap-y-[10px]">
       {viewSwitch ?? <span />}
       {showBuy || showSpare ? (
         <span className="flex flex-wrap items-center gap-x-[14px] gap-y-[6px]">
-          {showSpare ? <ShoppingKeySpare among={drawn} /> : null}
+          {showSpare ? <ShoppingKeySpare among={drawn} reading={reading} /> : null}
           {showBuy ? <ShoppingKeyBuy /> : null}
         </span>
       ) : null}

@@ -1,7 +1,8 @@
 // The cart's column header (v2 call 1, D1): one row on desktop naming each fact's column, so a row carries its figures
 // without a label on each. By card: `Card · You need · for · Friends' spares · You own · in use in`, above the list. By
-// deck: the need column is `This deck · also`, and each open group draws its own header over its rows. The action
-// stack's column is unlabelled. The phone has no header; its facts carry their labels.
+// deck: the need column is `This deck · also`, and each open group draws its own header over its rows. By friend: the
+// spare column is `Spare`, this friend's copies alone, in a fixed 64px column. The action stack's column is unlabelled.
+// The phone has no header; its facts carry their labels.
 
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 
@@ -15,6 +16,10 @@ import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 export const FACTS_GRID =
   "xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.55fr)_minmax(0,1.1fr)_minmax(0,1.15fr)_100px] xl:gap-x-[18px]";
 
+/** By friend's grid (the board's `.colh` and `.nrw` there): a wider need, a 64px spare count and a wider own. */
+export const FRIEND_GRID =
+  "xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.7fr)_64px_minmax(0,1.25fr)_100px] xl:gap-x-[18px]";
+
 /**
  * Hidden from a screen reader: each fact names itself (its phone label, kept as `sr-only` on desktop).
  *
@@ -23,22 +28,25 @@ export const FACTS_GRID =
  * (`scrollbar-gutter: stable`, which needs an overflow other than visible), so a classic scrollbar narrows its grid as
  * much as the rows'.
  *
+ * By friend's sits there too, at 15px across rather than 14: its rows sit inside a panel's 1px border.
+ *
  * By deck's sits inside an open group, at the group body's inset (the board's `.dg .bd2 .colh`, no padding across), and
  * scrolls with it.
  */
-export function CartColumns({ view = "card" }: { view?: "card" | "deck" }) {
+export function CartColumns({ view = "card" }: { view?: "card" | "deck" | "friend" }) {
   const byDeck = view === "deck";
+  const byFriend = view === "friend";
   return (
     <div
       aria-hidden
       data-cart-columns={view}
       className={`hidden whitespace-nowrap border-b border-b-[color:var(--border-strong)] pb-[7px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)] xl:grid ${
-        byDeck ? "" : "px-[14px] xl:-mb-[12px] xl:overflow-y-hidden xl:[scrollbar-gutter:stable]"
-      } ${FACTS_GRID}`}
+        byDeck ? "" : `${byFriend ? "px-[15px]" : "px-[14px]"} xl:-mb-[12px] xl:overflow-y-hidden xl:[scrollbar-gutter:stable]`
+      } ${byFriend ? FRIEND_GRID : FACTS_GRID}`}
     >
       <span>{copy.columns.card}</span>
       <span>{byDeck ? copy.columns.needByDeck : copy.columns.need}</span>
-      <span>{copy.columns.spares}</span>
+      <span>{byFriend ? copy.columns.spare : copy.columns.spares}</span>
       <span>{copy.columns.own}</span>
       <span className="text-right" />
     </div>
