@@ -16,7 +16,7 @@ import { reveal } from "../../lib/ui/reveal";
 import { visitBaseline } from "../../lib/decks/visit";
 import type { HubTileRun, HubTiles } from "../../lib/tuning/hub-tiles";
 import { historyPress, type HistoryRow, type HistoryTool } from "../../lib/tuning/history";
-import { ReviewRunProvider, type ReviewRun } from "./review-run";
+import { OpenHistoryProvider, OpenRunProvider, ReviewRunProvider, type OpenRun, type ReviewRun } from "./review-run";
 import { historyDate, summaryText, TuningHistory } from "./tuning-history";
 import { TuningToolMark, type TuningTool } from "./tuning-tool-mark";
 import { useTarget } from "../discovery/targets-provider";
@@ -387,6 +387,17 @@ export function TuningHub({
     setReview({ run, row, left: false });
     setOpening((prev) => ({ tool: row.tool, focus: true, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
   };
+  // A tool reopening one of its own runs in place, as a History press does (Suggested changes v2's same-request confirm,
+  // `Open Oct 26’s run`): the run read-only under the hub's note, with the way back to History.
+  const openRun: OpenRun = useCallback((tool, runId, at) => {
+    setPast(null);
+    setReturnRow(null);
+    const row: HistoryRow = { id: `run:${runId}`, tool, tier: "credit", outcome: "ok", at, summary: { kind: "none" } };
+    setReview({ run: { tool, runId }, row, left: false });
+    setOpening((prev) => ({ tool, focus: true, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
+  }, []);
+  // A tool's own way to History (Suggested changes v2's footer link): the History tab, as its tab press opens it.
+  const openHistory = useCallback(() => open("history", { focus: true, scroll: false }), [open]);
   const backToHistory = () => {
     const from = review?.row.id ?? null;
     setReview(null);
@@ -510,7 +521,11 @@ export function TuningHub({
                 {reviewing ? <ReviewNote row={reviewing.row} counted={reviewing.run.runId === null} onBack={backToHistory} /> : null}
                 {/* Keyed on the run, so a tool reopened on another run, or back on its own read, reads afresh. */}
                 <Fragment key={reviewed ? reviewed.row.id : "live"}>
-                  <ReviewRunProvider value={reviewing ? { ...reviewing.run, leave: leaveReview } : null}>{opened.panel}</ReviewRunProvider>
+                  <ReviewRunProvider value={reviewing ? { ...reviewing.run, leave: leaveReview } : null}>
+                    <OpenRunProvider value={openRun}>
+                      <OpenHistoryProvider value={openHistory}>{opened.panel}</OpenHistoryProvider>
+                    </OpenRunProvider>
+                  </ReviewRunProvider>
                 </Fragment>
               </>
             ) : null}
