@@ -79,7 +79,8 @@ export type V2List = {
   /** What the list had to reach: N for additions, min(N, kept additions) for cuts. */
   target: number;
   refilled: boolean;
-  /** Lines that passed but came past the list's ask (spec §5.2), ignored. */
+  /** Lines that arrived once the list already held its ask (spec §5.2), ignored. Most are not validated (the list was
+   *  full when they arrived), so this counts arrivals past the ask, not lines that would have passed. */
   overAsk: number;
   /** Some call on this list returned fewer lines than it asked for (`charge.ts`: a short list with it is refunded). */
   underProduced: boolean;

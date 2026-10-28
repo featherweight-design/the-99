@@ -95,7 +95,7 @@ function dryRun() {
       buildPromptV2(withRequest, { list: "cuts", n: p.n, ask: p.n, aim: null, comingIn: names, refill: { kept: names.slice(1), rejected: [{ card: "x", reason: "it is the commander" }] } }),
     ];
     const worst = calls.reduce((s, m) => s + worstUsd(m.system, m.user, replyCeilingFor(ask)), 0);
-    perN.set(p.n, worst);
+    perN.set(p.n, Math.max(perN.get(p.n) ?? 0, worst));
     total += worst;
   }
   log(`${PLAN.length} runs planned (N ${COUNTS.join(", ")} x ${DECKS.length} decks x ${REPS} reps), ${PLAN.length - done.size} not yet written`);
