@@ -21,7 +21,7 @@
    "x": 1690,
    "y": 0,
    "w": 1370,
-   "h": 4782,
+   "h": 4896,
    "title": "1 \u00b7 Decks in full \u00b7 phone"
   },
   "Decks-Desktop.dc.html": {
@@ -70,8 +70,15 @@
    "x": 4336,
    "y": 10913,
    "w": 1610,
-   "h": 3487,
+   "h": 3563,
    "title": "7 \u00b7 Copy"
+  },
+  "Addendum-A1.dc.html": {
+   "x": 0,
+   "y": 17927,
+   "w": 2772,
+   "h": 13727,
+   "title": "8 \u00b7 Addendum A1 \u00b7 tools and ? landings"
   }
  },
  "order": [
@@ -83,7 +90,8 @@
   "Other-Pages-Desktop.dc.html",
   "Ways-In.dc.html",
   "States.dc.html",
-  "Copy.dc.html"
+  "Copy.dc.html",
+  "Addendum-A1.dc.html"
  ],
  "notes": {},
  "designSystems": []
