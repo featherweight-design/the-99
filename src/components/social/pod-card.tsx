@@ -202,7 +202,7 @@ export function PodCard({
       <ul
         // An explicit list role: Safari drops a list's semantics once its marker is gone (`list-none`).
         role="list"
-        className="relative m-0 mr-[10px] mt-[8px] grid list-none grid-cols-3 gap-x-[10px] gap-y-[12px] p-0 md:mr-[12px] md:grid-cols-[repeat(5,116px)] md:gap-x-[12px] md:gap-y-[14px] min-[1180px]:grid-cols-[repeat(3,116px)] min-[1180px]:gap-y-[12px]"
+        className="relative m-0 mr-[10px] mt-[8px] grid list-none grid-cols-3 gap-x-[10px] gap-y-[12px] p-0 md:mr-[12px] md:grid-cols-[repeat(5,116px)] md:gap-x-[12px] md:gap-y-[14px] min-[73.75rem]:grid-cols-[repeat(3,116px)] min-[73.75rem]:gap-y-[12px]"
         aria-label={pod.name}
       >
         {pod.members.map((m) => (

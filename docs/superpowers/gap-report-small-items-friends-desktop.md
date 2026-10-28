@@ -101,4 +101,11 @@ Note (not a table row): with no friends and no pods, PodsPane returns null and, 
 - (c) Shipped bottom padding (`pb-[60px]`) kept instead of the board's 50px.
 
 ## Verdict
-One MISMATCH (Pods head height breaks the first-head rule alignment). Everything else matches or is an accepted deviation. Not ready until the Pods head is 32px at ≥1180.
+One MISMATCH (Pods head height breaks the first-head rule alignment). Everything else matches or is an accepted deviation. Not ready until the Pods head is 32px at ≥1180. (Fixed: see Confirm below.)
+
+## Confirm (Agent 3), after the fixes
+
+1. First-head alignment: **FIXED.** From 1180px the "New pod" press drops its own minimum (`min-[73.75rem]:min-h-0`), so the head's 32px governs. The walk measures the Pods head at 32px at 1180 and 1300, with its tops level with the Waiting head (y=159 both).
+2. Found by the walk, not by the table: every 1180 override lost to its `md:` counterpart. Tailwind orders an arbitrary `min-[1180px]` ahead of `md` (48rem) because the units differ, so the seat grid stayed five columns and the page scrolled sideways (99px over at 1180, 60px at 1300). **FIXED** by writing this PR's breakpoint in rem (`min-[73.75rem]`). The walk now measures no horizontal page scroll at 390, 1179, 1180 and 1300, with a three-column seat grid in the 420px right column.
+
+VERDICT: 0 gaps remain.
