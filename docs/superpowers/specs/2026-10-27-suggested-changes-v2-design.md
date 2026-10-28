@@ -27,7 +27,7 @@ The rethink goes further than the bug. v10 treats the model's answer as somethin
 - **Give the player a choice.** Every recommendation surface offers a pool larger than the need, and the player picks. **(Hugh)**
 - **Ask, don't limit.** Ask the player refinement questions rather than limit the output. More context gives better results; with none, do our best. **(Hugh)**
 
-The eval (#2291) showed the new shape works on Hugh's own decks. Over 141 runs, the chosen mechanism filled the count every time. On Mutant Menace's original list with his request, 15 of 20 suggested cuts were cards he had cut himself.
+The eval (#2291) showed the new shape works on Hugh's own decks. The chosen mechanism (two calls, arm C) filled the count in all 24 of its runs; across all 141 runs of every arm and flow, 20 missed. On Mutant Menace's original list with his request, 15 of 20 suggested cuts were cards he had cut himself.
 
 ## 2. Goals, non-goals, anti-goals
 
@@ -97,7 +97,7 @@ The prompt states this order. The app's reads feed in "when they help answer the
 - Measured cost: $0.104 at N=20, $0.074 at N=10, $0.042 at N=3.
 - p50 latency: 56s at 20, 40s at 10, 14s at 3.
 
-One-call was 10–25% cheaper but missed the count 13 times in 69 runs.
+One-call was cheaper (within arm C: 36% at N=3, 22% at 10, 3% at 20) but missed the count 13 times in 69 runs.
 
 The cut call sees the additions call 1 KEPT. Those are the cards the player can pick from; they are not yet chosen. **(a2)** This means the cuts make room for the pool, not for the player's final picks. §12 Q3 asks whether the cut list should be re-asked after the player picks additions.
 
@@ -143,9 +143,9 @@ After the refill, a list can still hold fewer than N. Examples: a strict price c
 
 - shows every valid suggestion it found;
 - states the count it reached ("Found 14 additions under your $2 cap");
-- names the restriction that limited it, from the drops it recorded. `chooseRefusal` already picks that sentence for an empty run.
+- names the restriction that limited it, from the drops it recorded. **(a2)** `chooseRefusal` picks a sentence for an empty run today, but `RefusalDetail` (`validate.ts`) only tells `commander`, `locked`, `overCap` and `nothingLeft` apart: a run bound by `offSet` or `notOwned` falls to `nothingLeft`. v2 adds `offSet` and `notOwned` details so the sentence can name them.
 
-It never pads with invalid cards and never silently shows fewer than asked. **(Hugh: "fulfilled or explicitly negotiated")** Whether a short run refunds its credit is §8.
+It never pads with invalid cards and never silently shows fewer than asked. **(Hugh: "fulfilled or explicitly negotiated")** Whether a short run refunds its credit is §9.
 
 ## 6. Validation rules: keep, relax or drop
 
@@ -177,7 +177,7 @@ These check whether the reason is grounded and fit to show.
 | `citation` | One unsupported citation drops the line | **Relaxed in #2289**, kept that way: an ungroundable citation costs itself. Every other unsupported citation still drops its line. |
 | `noPercentage` | A percentage anywhere | **Keep.** |
 | `noNet` | A signed integer or "net" | **Keep.** |
-| `denominator` | A count without its "of M" | **Keep.** It drops a few lines per run, and the refill now names it in the rule's words. |
+| `denominator` | A count without its "of M" | **Keep.** It dropped 24 lines across 141 runs (23 additions, 1 cut), and the refill now names it in the rule's words. |
 | `quotedNote` | A misquoted game note | **Keep.** |
 | `noBracketClaim` | The model naming a bracket | **Keep.** The app shows the move (§5.4). |
 | `noResultClaim` | A promised result | **Relax, on the word "stronger" only.** See below. |
@@ -204,7 +204,7 @@ These are the v10 drop points that are not validation rules.
 | Keep the first 5 per list (`sizeLists`, `MAX_SUGGESTIONS`) | Keep every valid line, up to the ask (§5.2) |
 | A strict per-list schema cap | Loose, at twice the ask (§5.2) |
 | A second ask only when NOTHING was kept | A refill per list whenever it is short of N (§5.1) |
-| The refund rule (`refundsCredit`: fewer than 3 kept, or under a third of asked) | Re-decided against the count (§8) |
+| The refund rule (`refundsCredit`: fewer than 3 kept, or fewer than a third of the lines the model returned, on a single-ask run) | Re-decided against the count (§9) |
 
 ## 7. Results (Hugh, with presentation left to Design)
 
@@ -245,7 +245,7 @@ This replaces today's per-card apply and undo for v2 runs. It changes how a play
 
 **Running again (a2).**
 - v2 drops today's "unchanged deck" gate (`gateReason`) and its "Suggest again anyway" state. Every run starts from an explicit intake that spends a credit, so the player's press is the consent.
-- The fingerprint gains N, the request and the restrictions, so history can show what changed between runs.
+- The fingerprint already hashes the restrictions (`tuningFingerprint`); it gains N and the request, so history can show what changed between runs.
 - Identical inputs on an unchanged deck ask once before spending ("Same request as your last run: run again?"). Design words it.
 
 **History.**
@@ -270,7 +270,7 @@ v10 asks for 6 + 6 and keeps 5 + 5, whatever the player wants. v2 at N=20 costs 
 
 This is §12 Q2.
 
-**Refunds (a2, pending Q2).** v10 refunds a run that kept under 3 lines or under a third of what it asked. In v2:
+**Refunds (a2, pending Q2).** v10 refunds a single-ask run that kept under 3 lines or under a third of the lines the model returned (`refundsCredit`). In v2:
 - A run whose two lists BOTH reach N is charged.
 - A short run is charged only when every drop on each short list was one of the player's own restrictions (`overCap`, `offSet`, `notOwned`). The restriction cost those cards, not the pipeline, and the run says so (§5.5).
 - Any other short run is refunded whole: a model-caused drop on a short list, a malformed reply, a skipped call 2.
@@ -283,13 +283,22 @@ This is §12 Q2.
   - The size and aim sentences are replaced by the count and the two-call wording.
   - `notes` becomes `request`.
   - The signal-trust order is added.
-  Every deck's gate reopens. A run stored at v10 stays readable in history, drawn as it was.
+  v2 has no unchanged-deck gate to reopen (§8). A run stored at v10 stays readable in history, drawn as it was.
 - **Constants:** `ASK_PER_LIST` and `MAX_SUGGESTIONS` stop governing Suggested changes, and the count drives the ask instead. **(a2)** Proposed cuts keeps its own constants until its own redesign (Hugh's pool shape applies there too, in a separate spec).
 - **Schema:**
   - two new nullable columns on `deck_suggestion_runs` (`requested_count`, `request_text`);
   - the report fields in the existing `validation_report` jsonb;
   - no backfill: a v10 run has no N, and history shows it as "5 + 5".
-- **The run action:** `runTuning` becomes two-call with the refill. The prototype that proved it is `scripts/eval/count-mechanism.mts`, built on the app's own pack, prompt, model and validator.
+- **The run action:** `runTuning` becomes two-call with the refill. The prototype that proved it is `scripts/eval/count-mechanism.mts`, built on the app's own pack, prompt, model and validator, but under looser limits than `runTuning` has today. The build must carry them across or re-measure:
+
+  | | Eval | `runTuning` today |
+  |---|---|---|
+  | Deadline per call | 300,000 ms | `MODEL_TIMEOUT_MS` 110,000 |
+  | Reply ceiling | max(8,000, 600 per line + 4,000): 22,000 tokens at 30 lines | `TUNING_MAX_TOKENS` 8,000 |
+  | Streaming | on | off |
+  | Reservation | none | `FEATURE_CALLS.tuning`, one 8,000-token call (two attempts) |
+
+  **(a2)** The reservation grows to cover two calls and up to two refills at the scaled ceiling, so a run never spends past what it reserved. The ceiling scales with N, as in the eval. Streaming is needed for a reply that large inside the deadline.
 - **The switch.** **(a2)** v2 ships behind the existing Suggested changes surface's own switch, or a new one only if Hugh asks for one (no new switches without him). Production keeps v10 until v2 is approved and shipped.
 - **Open v10 runs at cutover (a2).** A v10 run with pending items becomes read-only history. Its per-card apply would move the deck off 99, which v2 never does. An item already applied keeps its undo until the deck's next version, as today.
 - **Proposed cuts keeps its rules (a2).** The `noResultClaim` narrowing (§6.2) applies to Suggested changes only, through a parameter on the shared check (`presentation.ts`). Proposed cuts keeps today's rule until its own redesign; its citation kinds are its own (`cuts-schema.ts`), so the `notes` to `request` rename does not reach it.
@@ -308,7 +317,7 @@ Design owns these, under Hugh's rule that results presentation is a UI call:
    - How about 1.5N suggestions per list read, grouped or flat ("grouped vs lists", open in the rethink).
    - How a player picks N from each, and how the equal-counts rule is shown.
    - How a short run states its count and its reason (§5.5).
-3. **The running state.** Two calls take 15–60s at p50, up to 2.5 minutes at p90 with a refill. The wait needs a design.
+3. **The running state.** Two calls take 15–60s at p50, up to 114s at p90 at N=20. The wait needs a design.
 4. **History.** The run list, an old run's pool and picks, and a read-only stale run.
 5. **The About entry**, rewritten for v2.
 
@@ -317,11 +326,11 @@ Design owns these, under Hugh's rule that results presentation is a UI call:
 1. **How applying works.** Today each suggestion applies, and undoes, one card at a time, so the deck can leave 99. Proposal: one action applies the picked N + N together, with one undo for the set (§7a). Agree, or keep per-card apply?
 2. **The credit price.** A v2 run costs about 3× a v10 run at N=20, and 2× at 10. Keep 1 credit at any N, price by N, or cap N per credit? Pricing by N touches the payments ledger (`reserveModelCall`). (§9)
 3. **Cuts made for the pool, or for the picks?** The cut call makes room for every addition call 1 kept. Should the cuts be re-asked once the player has picked their N additions? That's a second, smaller paid call and a new run state, with cuts that fit the actual picks better. (§5.1)
-4. **The time limit.** Runs execute after the response, inside the deck page's 120-second function limit. Two calls at N=20 take 56s at p50, and a refill can push past 120s. Raise the limit for this action (function time costs money, against the 2026-10-23 cost audit), or skip a refill that would overrun, so the run returns short and refunded? My lean: skip the refill and keep 120s.
+4. **The time limit.** Runs execute after the response, inside the deck page's 120-second function limit. Two calls at N=20 took 56s at p50 and 114s at p90 in the eval, so a refill can push past 120s. Raise the limit for this action (function time costs money, against the 2026-10-23 cost audit), or skip a refill that would overrun, so the run returns short and refunded? My lean: skip the refill and keep 120s.
 5. **Storing the request text.** History needs it to show what was asked, and it's the first time a player's typed request is kept. Store it (purged with the account), or show history without it? (§8)
 6. **The count's ceiling.** 20 is measured. Allow more (untested, about 1.5× the tokens per extra card), or cap at 20? (§4)
 7. **The bracket move in release 1.** Offer a structured "move to bracket N" choice beside the request box now, or ship the count and the request first and add the bracket goal after? (§5.4)
-8. **The request's length.** Today's notes cap is 240 characters. Keep it, or allow a longer request? (§4)
+8. **The request's length.** Today's "Additional notes" cap is 500 characters (`deckDescriptionCopy.notes.maxLength`). Keep it, or change it for a request? (§4)
 9. **`noResultClaim` on cuts.** Narrow "stronger" to the deck as its subject (my proposal, measured first), or drop the rule on cuts entirely? (§6.2)
 
 ## 13. Decision log
