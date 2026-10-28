@@ -1055,7 +1055,8 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["friend-decks"],
     diagram: {
       kind: "deck-tile",
-      gap: 12,
+      // Two 84px tiles and a 104px column fit the phone card's 290px inside only at an 8px gap (288px).
+      gap: 8,
       columns: [
         { parts: [{ part: "tile", name: "Ghalta", status: "Complete", colors: ["G"] }] },
         { parts: [{ part: "void", text: "hidden: no tile" }] },
