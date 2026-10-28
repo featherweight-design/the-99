@@ -187,7 +187,7 @@ export function PodCard({
     focusNext.current = null;
     if (next.kind === "edit") return void editPress.current?.focus();
     const presses = card.current?.querySelectorAll<HTMLButtonElement>("[data-pod-remove]") ?? [];
-    (presses[Math.min(next.index, presses.length - 1)] ?? donePress.current)?.focus();
+    (presses[next.index] ?? donePress.current)?.focus();
   });
   const startEditing = () => {
     focusNext.current = { kind: "remove", index: 0 };

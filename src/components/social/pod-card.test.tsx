@@ -66,6 +66,14 @@ describe("the pod card's edit state", () => {
     expect(document.activeElement).toBe(screen.getByRole("button", { name: P.edit }));
   });
 
+  it("after removing the last ✕ in the row, focus goes to Done, not back to an earlier ✕", () => {
+    const { redraw } = draw(pod());
+    fireEvent.click(screen.getByRole("button", { name: P.edit }));
+    fireEvent.click(removes()[1]);
+    act(() => redraw(pod({ members: [ME, DAVE] })));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: P.done }));
+  });
+
   it("removes at once through onRemove, focus on the next ✕, and ends once you are the only member left", () => {
     const { onRemove, redraw } = draw(pod());
     fireEvent.click(screen.getByRole("button", { name: P.edit }));
