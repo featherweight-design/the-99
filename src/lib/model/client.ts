@@ -221,6 +221,9 @@ async function streamOnce<T>(
   let usage: ModelUsage | undefined;
   let stopReason: string | null = null;
   let text = "";
+  // `message_start`'s output count is provisional; only `message_delta` carries the final meter. A stream cut off before it
+  // is billed conservatively from what arrived (`conservativeUsage`), never at the provisional figure.
+  let metered = false;
   let format: ReturnType<typeof zodOutputFormat<z.ZodType<T>>>;
   try {
     format = zodOutputFormat(req.schema);
@@ -238,6 +241,7 @@ async function streamOnce<T>(
       if (ev.type === "message_start") usage = usageOf(ev.message.usage);
       else if (ev.type === "message_delta") {
         usage = { ...(usage ?? usageOf({ input_tokens: 0, output_tokens: 0 })), outputTokens: ev.usage.output_tokens };
+        metered = true;
         stopReason = ev.delta.stop_reason ?? stopReason;
       } else if (ev.type === "content_block_delta" && ev.delta.type === "text_delta") {
         text += ev.delta.text;
@@ -246,11 +250,11 @@ async function streamOnce<T>(
     }
   } catch (err) {
     const a = classify<T>(err, controller.signal.aborted, log) as Exclude<Attempt<T>, { kind: "ok" }>;
-    return failed(a.errorClass, usage ?? a.usage, a.status) as StreamOutcome;
+    return failed(a.errorClass, metered ? usage : conservativeUsage(usage ?? a.usage, text), a.status) as StreamOutcome;
   } finally {
     clearTimeout(timer);
   }
-  const billed = usage ?? usageOf({ input_tokens: 0, output_tokens: 0 });
+  const billed = metered ? usage! : (conservativeUsage(usage, text) ?? usageOf({ input_tokens: 0, output_tokens: 0 }));
   try {
     req.onResponse?.({ stopReason, outputTokens: billed.outputTokens });
   } catch (err) {
@@ -263,6 +267,16 @@ async function streamOnce<T>(
     return { ok: false, errorClass: "malformed", usage: billed };
   }
   return { ok: true, usage: billed };
+}
+
+/**
+ * A streamed reply's usage when the final output meter never arrived: the text that did arrive, at a generous three
+ * characters a token, so the ledger overstates rather than understates what was billed. Exported for its test.
+ */
+export function conservativeUsage(usage: ModelUsage | undefined, text: string): ModelUsage | undefined {
+  if (!usage && text.length === 0) return usage;
+  const base = usage ?? usageOf({ input_tokens: 0, output_tokens: 0 });
+  return { ...base, outputTokens: Math.max(base.outputTokens, Math.ceil(text.length / 3)) };
 }
 
 /** An unbounded buffer read as an async iterable: `push` never waits for the reader. */

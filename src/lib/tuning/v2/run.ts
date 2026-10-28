@@ -241,8 +241,9 @@ async function workV2(args: {
       // About 0.36s a line measured from a laptop against local-dev, and it overlaps the stream: the reply keeps
       // arriving into `streamModel`'s buffer while a line is checked.
       bracketAfter: async (_side, line) => (await withBracketAfter(head, profile, declared, [line], env))[0].bracketAfter,
+      // Only Down reads a card's floor (`aimDrops`); Keep and Up have what they need from `bracketAfter`.
       cardFloor: async (side, line) =>
-        side === "add" && line.addOracleId ? cardFloorOf(line.addOracleId, await loadBracketGateFacts([line.addOracleId])) : null,
+        wire.bracket?.choice === "down" && side === "add" && line.addOracleId ? cardFloorOf(line.addOracleId, await loadBracketGateFacts([line.addOracleId])) : null,
       budgetMs: V2_RUN_BUDGET_MS,
       // AFTER validation, as v10 does (`runTuning`): the focus chips are the app's figures, which the validator would drop
       // from the model. A line's own addition is read for its chip, so each line is chipped as it is saved.
