@@ -59,7 +59,7 @@ export const suggestedChangesV2Copy = {
       down: (b: number, name: string) => `Down to ${b} · ${name}`,
       up: (b: number, name: string) => `Up to ${b} · ${name}`,
       noteKeep: (b: number, name: string) => `Nothing it suggests moves the deck out of ${b} · ${name}. A card that would is left out.`,
-      noteDown: (b: number, name: string) => `Cuts lead with what keeps the deck out of ${b} · ${name}; additions stay inside it.`,
+      noteDown: (b: number, name: string) => `Cuts lead with what holds the deck above ${b} · ${name}. Additions stay inside it.`,
       noteUp: (b: number, name: string) => `Additions lean toward what takes the deck to ${b} · ${name}, and each one that does says so.`,
       // PLACEHOLDER for /copy-review: a deck read as a range ("Exhibition or Core"). The board draws a single bracket only.
       nowRange: (low: number, high: number, face: string) => `now ${low} or ${high} · ${face}`,
