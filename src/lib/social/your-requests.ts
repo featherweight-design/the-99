@@ -9,15 +9,17 @@
  *   cards (Ask again needs the holder to offer it still) AND the declined asks' cards (who else has one), in one call,
  *   so each friend's availability is read once per render.
  * - `unseen`: an answer newer than the reader's Friends cursor (`friends_seen_at`), read before the visit's own
- *   `markAnswersSeen` moves it in `after()`; the badge counts the same answers (`unseenAnswersCount`).
+ *   `markAnswersSeen` moves it in `after()`, and not opened one by one over Home (`asker_seen_at`); the badge counts the
+ *   same answers (`unseenAnswersCount`).
  * - `canAskAgain`: whether Ask again would be taken (`canAskAgain`, the write's `askRefusal`), counting a No the reader
  *   cleared, which still holds that friend back, and only while the holder still offers the card.
  * A cleared ask is read for that rule and never returned. Every read is the reader's own or goes through the friend
  * grant on the reader; nothing names a Clerk id.
  */
-import { eq } from "drizzle-orm";
+import { eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { userPrefs } from "../../db/schema";
+import { feedItems, spareRequests, userPrefs } from "../../db/schema";
+import { parseDismissKey } from "./feed-dismiss";
 import { loadDeckBuyRows } from "../decks/availability-query";
 import { canAskAgain, deriveMyAsks, offerKey, openAskCards, readShownAsks, type MyAsk } from "./spare-requests";
 import { spareRequestsEnabled } from "./flag";
@@ -33,10 +35,15 @@ export type YourRequest = MyAsk & {
   canAskAgain: boolean;
 };
 
-/** Unseen: answered after the cursor; no cursor yet is every answer unseen. */
-export function answerUnseen(a: Pick<MyAsk, "state" | "answeredAt">, seenAt: Date | null): boolean {
+/**
+ * Unseen: answered after the Friends cursor (no cursor yet is every answer unseen) AND after the answer was opened one
+ * by one (`seenAt`, the answer sheet over Home); the badge's SQL reads the same two (`unseenAnswers`).
+ */
+export function answerUnseen(a: Pick<MyAsk, "state" | "answeredAt"> & { seenAt?: Date | null }, cursor: Date | null): boolean {
   if (a.state !== "yes" && a.state !== "no") return false;
-  return a.answeredAt !== null && (seenAt === null || a.answeredAt.getTime() > seenAt.getTime());
+  if (a.answeredAt === null) return false;
+  const after = (at: Date | null | undefined) => at == null || a.answeredAt!.getTime() > at.getTime();
+  return after(cursor) && after(a.seenAt);
 }
 
 /** The reader's Your requests, newest first; empty with spare requests off. */
@@ -70,4 +77,31 @@ export async function loadYourRequests(userId: string, env: NodeJS.ProcessEnv, n
       .map((s) => s.friend.displayName),
     canAskAgain: canAskAgain(a, all, now, offered.has(offerKey(a.oracleId, a.holder.publicId))),
   }));
+}
+
+/**
+ * The spare request an ANSWER item on Home names (`item:<feed id>`, the key the row already carries): the reader's own
+ * stored answer item, whose `dedupe_key` is the request it answers (`answerSpare`'s `recordFeedItem`), joined to that
+ * request as the reader's own ask. An incoming ask's item, another reader's item, or another kind names nothing.
+ * Apart for a test.
+ */
+export function answeredRequestIdQuery(userId: string, feedItemId: string): SQL {
+  return sql`select asr.id from ${feedItems} afi
+    join ${spareRequests} asr on asr.id::text = afi.dedupe_key and asr.asker_user_id = afi.user_id
+    where afi.user_id = ${userId} and afi.id = ${feedItemId}::uuid and afi.kind = 'spare-request'
+      and afi.data ->> 'answer' is not null`;
+}
+
+/**
+ * The one Your requests row a Home answer item opens over Home (small items item 3, board `Spare-Answer-Sheet`), read
+ * through the same rule as `/friends` so the two say the same thing; null when the key names no answer of the reader's,
+ * or the request was cleared since.
+ */
+export async function loadAnsweredRequest(userId: string, key: string, env: NodeJS.ProcessEnv, now: Date): Promise<YourRequest | null> {
+  const target = parseDismissKey(key);
+  if (target?.kind !== "item" || !spareRequestsEnabled(env)) return null;
+  const { rows } = await db.execute<{ id: string }>(answeredRequestIdQuery(userId, target.id));
+  const id = rows[0]?.id;
+  if (!id) return null;
+  return (await loadYourRequests(userId, env, now)).find((r) => r.id === id) ?? null;
 }

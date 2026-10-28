@@ -2625,6 +2625,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   repeat or a cold instance's full read, and the feed names the friend by public id. Same target rules as
   `probe:feed-store` (`FEED_PROBE_URL`, `FEED_PROBE_BRANCH`, protected branches refused by id); two per-run accounts purged
   in a finally. The price job it runs reads every reader on the branch whose price-drop kind is on.
+- `pnpm probe:answer-seen` proves an answer to the reader's own spare request is seen ONE BY ONE (small items item 3,
+  `spare_requests.asker_seen_at`): two friends answer two asks, both are unseen on Your requests, the Friends badge and
+  Home's count; opening one by its Home key (`loadAnsweredRequest`, then `markAnswerSeen`) leaves the other's diamond and
+  takes exactly one off each count; a repeat writes nothing, a stranger's key names nothing, and the purge leaves none.
+  Its accounts are per-run ids, purged in a `finally`. Point `ANSWER_SEEN_PROBE_URL`/`ANSWER_SEEN_PROBE_BRANCH` at a
+  scratch branch of local-dev migrated to 0180; it refuses staging, production and local-dev by id. First run
+  2026-10-28: 18 checks passed.
+
 - `pnpm probe:spare-requests` proves spare requests (G5, `src/lib/social/spare-requests.ts`) against a real schema and
   the real catalog: an ask is refused with the switch or friends off, for a stranger and for a card the friend holds no
   spare of, writing nothing; a landed ask is one open row and tells a holder whose kind is on (keyed on the request, naming

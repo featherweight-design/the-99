@@ -84,13 +84,13 @@ describe("feedQuery", () => {
   });
 
   it("marks unseen against feed_seen_at, null being never seen", () => {
-    expect(q).toContain("f.created_at > coalesce(up.feed_seen_at, '-infinity'::timestamptz) as unseen");
+    expect(q).toContain("(f.created_at > coalesce(up.feed_seen_at, '-infinity'::timestamptz) and not exists (select 1 from \"feed_items\" ofi");
     expect(q).not.toContain("friends_seen_at");
   });
 
   it("marks unseen against friends_seen_at for /friends, never Home's cursor", () => {
     const friends = flat(render(feedQuery("user_1", ["trade-match"], NOW, "friends_seen_at")).sql);
-    expect(friends).toContain("f.created_at > coalesce(up.friends_seen_at, '-infinity'::timestamptz) as unseen");
+    expect(friends).toContain("(f.created_at > coalesce(up.friends_seen_at, '-infinity'::timestamptz) and not exists (select 1 from \"feed_items\" ofi");
     expect(friends).not.toContain("feed_seen_at");
   });
 });
@@ -203,5 +203,17 @@ describe("the reads with the feed off", () => {
     ];
     const q = { execute: async () => ({ rows }) } as never;
     expect((await loadFeed("u", env({ HOME_FEED_ENABLED: "true" }), NOW, q)).map((i) => i.key)).toEqual(["item:2", "set:a"]);
+  });
+});
+
+describe("an answer opened one by one reads seen (small items item 3)", () => {
+  it("the row's unseen and the badge's count both leave out an answer whose request was opened since it landed", () => {
+    const row = flat(render(feedQuery("user_1", FEED_KINDS, NOW)).sql);
+    const count = flat(render(unseenCountQuery("user_1", FEED_KINDS, NOW, "feed_seen_at")).sql);
+    for (const q of [row, count]) {
+      expect(q).toContain("join \"spare_requests\" osr on osr.id::text = ofi.dedupe_key and osr.asker_user_id = ofi.user_id");
+      expect(q).toContain("where 'item:' || ofi.id::text = f.key and ofi.user_id = $");
+      expect(q).toContain("ofi.data ->> 'answer' is not null and osr.asker_seen_at is not null and osr.asker_seen_at >= osr.answered_at)");
+    }
   });
 });

@@ -59,6 +59,19 @@ function standing(now: Date): SQL {
 }
 
 /**
+ * True for a feed row (`key`, the union's `item:<id>`) that ANSWERS the reader's own spare request the reader has
+ * opened one by one since it landed (`asker_seen_at`, the answer sheet over Home): it reads seen whatever the cursor
+ * says, as the Friends badge's `unseenAnswers` does. Every other row is false. On the feed union's alias.
+ */
+export function answerOpened(viewerId: string, key: SQL): SQL {
+  return sql`exists (select 1 from ${feedItems} ofi
+    join ${spareRequests} osr on osr.id::text = ofi.dedupe_key and osr.asker_user_id = ofi.user_id
+    where 'item:' || ofi.id::text = ${key} and ofi.user_id = ${viewerId} and ofi.kind = 'spare-request'
+      and ofi.data ->> 'answer' is not null
+      and osr.asker_seen_at is not null and osr.asker_seen_at >= osr.answered_at)`;
+}
+
+/**
  * The stored branch of the feed union, for `viewerId`, of `kinds` (non-empty; already the kinds available to the
  * reader). Each row is newer than its kind's own `enabledAt` (`kindEnabledAt`: its `user_prefs.feed_kinds` stamp, or
  * always for a default-on kind the reader has not declined), so a kind turned off and on again never brings back what

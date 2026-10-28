@@ -74,6 +74,7 @@
     "probe:push-flush": "tsx scripts/probe-push-flush.mts",
     "probe:push-subscriptions": "tsx scripts/probe-push-subscriptions.mts",
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
+    "probe:answer-seen": "tsx scripts/probe-answer-seen.mts",
     "probe:feed-dismiss": "tsx scripts/probe-feed-dismiss.mts",
     "probe:feed-store": "tsx scripts/probe-feed-store.mts",
     "probe:feed-writers": "tsx scripts/probe-feed-writers.mts",

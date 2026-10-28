@@ -1,0 +1,1 @@
+ALTER TABLE "spare_requests" ADD COLUMN "asker_seen_at" timestamp with time zone;

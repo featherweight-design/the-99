@@ -12,16 +12,19 @@ const m = vi.hoisted(() => ({
   askInsteadForSpare: vi.fn(),
   closeSpareRequest: vi.fn(),
   answerSpareRequest: vi.fn(),
+  markAnswerSeen: vi.fn(),
+  loadAnsweredRequest: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("../../lib/social/spare-requests", () => ({
   askForSpare: m.askForSpare, askInsteadForSpare: m.askInsteadForSpare,
-  closeSpareRequest: m.closeSpareRequest, answerSpareRequest: m.answerSpareRequest,
+  closeSpareRequest: m.closeSpareRequest, answerSpareRequest: m.answerSpareRequest, markAnswerSeen: m.markAnswerSeen,
 }));
+vi.mock("../../lib/social/your-requests", () => ({ loadAnsweredRequest: m.loadAnsweredRequest }));
 
-import { answerSpareAction, askInsteadAction, askSpareAction, closeSpareAction } from "./spare-actions";
+import { answerSpareAction, askInsteadAction, askSpareAction, closeSpareAction, openAnswerAction } from "./spare-actions";
 
 const ENV = { SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" };
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -87,6 +90,34 @@ describe("closeSpareAction and answerSpareAction", () => {
     m.answerSpareRequest.mockResolvedValue({ ok: false, reason: "off" });
     expect(await closeSpareAction(REQ)).toEqual({ ok: false, reason: "gone" });
     expect(await answerSpareAction(REQ, "no")).toEqual({ ok: false, reason: "off" });
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("openAnswerAction (small items item 3)", () => {
+  const KEY = "item:66666666-6666-4666-8666-666666666666";
+  it("opens the reader's own answer by its Home key, marks it seen, and revalidates /friends alone", async () => {
+    m.loadAnsweredRequest.mockResolvedValue({ id: REQ, unseen: true, state: "yes" });
+    m.markAnswerSeen.mockResolvedValue(true);
+    const out = await openAnswerAction(KEY);
+    expect(m.loadAnsweredRequest).toHaveBeenCalledWith("user_1", KEY, ENV, expect.any(Date));
+    expect(m.markAnswerSeen).toHaveBeenCalledWith("user_1", REQ, ENV, expect.any(Date));
+    expect(m.revalidatePath.mock.calls).toEqual([["/friends"]]);
+    expect(out).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "yes" } });
+  });
+
+  it("marks an answer the Friends cursor already covers (Home reads its own), revalidating only on a write", async () => {
+    m.loadAnsweredRequest.mockResolvedValueOnce({ id: REQ, unseen: false, state: "no" });
+    m.markAnswerSeen.mockResolvedValueOnce(false);
+    expect(await openAnswerAction(KEY)).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "no" } });
+    expect(m.markAnswerSeen).toHaveBeenCalledWith("user_1", REQ, ENV, expect.any(Date));
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("refuses a key that names none of the reader's, writing nothing", async () => {
+    m.loadAnsweredRequest.mockResolvedValueOnce(null);
+    expect(await openAnswerAction(KEY)).toEqual({ ok: false });
+    expect(m.markAnswerSeen).not.toHaveBeenCalled();
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 });

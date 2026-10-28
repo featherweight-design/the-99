@@ -8,15 +8,17 @@
 //
 // Revalidation: the ✕ and the answer are pressed on `/friends`, which redraws from the reply, so they revalidate it
 // when they land. An ask is pressed from Shopping or the cart, which draw it from `GET /api/spare-requests`, so it
-// revalidates nothing. Never Home or `/decks`.
+// revalidates nothing. Opening an answer over Home marks it seen and revalidates `/friends` alone, where its diamond
+// and the badge's count are drawn. Never Home or `/decks`.
 // Nothing here names a social table: the writes live in `lib/social/spare-requests.ts`.
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import {
-  answerSpareRequest, askForSpare, askInsteadForSpare, closeSpareRequest,
+  answerSpareRequest, askForSpare, askInsteadForSpare, closeSpareRequest, markAnswerSeen,
   type AnswerOutcome, type AskOutcome, type CloseOutcome,
 } from "../../lib/social/spare-requests";
+import { loadAnsweredRequest, type YourRequest } from "../../lib/social/your-requests";
 import { requestSwitchEnv } from "../../lib/switches/request";
 
 /** The signed-in reader and their resolved switches. */
@@ -70,4 +72,22 @@ export async function answerSpareAction(requestId: string, answer: "yes" | "no")
   const out = await answerSpareRequest(userId, requestId, answer, env);
   if (out.ok) revalidatePath("/friends");
   return out;
+}
+
+export type OpenAnswerOutcome = { ok: true; request: YourRequest } | { ok: false };
+
+/**
+ * An answer item on Home, opened over Home (small items item 3, board `Spare-Answer-Sheet`): the one Your requests row
+ * its key names, and that answer marked seen as it opens (the diamond goes; the badge drops by it alone). `key` is the
+ * item's own Home key; the server resolves it to the reader's own request, so a stranger's or a non-answer names nothing.
+ */
+export async function openAnswerAction(key: string): Promise<OpenAnswerOutcome> {
+  const { userId, env } = await reader();
+  const now = new Date();
+  const request = typeof key === "string" ? await loadAnsweredRequest(userId, key, env, now) : null;
+  if (!request) return { ok: false };
+  // Marked whatever the Friends cursor says: Home reads its own cursor, so an answer a /friends visit already covered can
+  // still be unseen on Home. The write lands only on a change (`markAnswerSeenQuery`).
+  if (await markAnswerSeen(userId, request.id, env, now)) revalidatePath("/friends");
+  return { ok: true, request: { ...request, unseen: false } };
 }

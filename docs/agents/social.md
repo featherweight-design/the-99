@@ -99,7 +99,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   answer (`data.answer`, `answerData`/`answerOf`; keyed on the request id, which is unique on the asker), so its push
   queues through `recordFeedItem` under the asker's own spare-request ticks. It stands while the ask still holds that
   answer, never leads Home and never waits (`leadStory`, `feedOrder`), draws as "Your request" with Your requests' words
-  (`withAnswerDetails` reads who else offers a declined card), and its push lands on `/friends`, never collapsed. Every read joins the live friendship and names the other side by `public_id`. The purge
+  (`withAnswerDetails` reads who else offers a declined card), and its push lands on `/friends`, never collapsed. An answer is SEEN by the asker's Friends cursor (`friends_seen_at`, a `/friends` visit) or one by one (`spare_requests.asker_seen_at`, small items item 3: `openAnswerAction` resolves the Home item's own key to the request through `answeredRequestIdQuery`, then `markAnswerSeen`), and `unseenAnswers`, `answerUnseen` and the feed's unseen tests (`answerOpened`) all read both, so opening one answer leaves another's diamond and takes one off each badge (`pnpm probe:answer-seen`). Every read joins the live friendship and names the other side by `public_id`. The purge
   deletes both sides (`SOCIAL_PURGED`). PR 2: the feed keeps a `spare-request` item only while its ask is open
   (`storedFeedBranch`), and the Friends badge has two halves (`NavBadges.friends`, cleared by a `/friends` visit: unseen
   trade matches plus unseen answers to the reader's asks, `unseenAnswersCount` / `markAnswersSeen`, an upsert so a
