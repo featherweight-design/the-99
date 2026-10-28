@@ -241,7 +241,7 @@ describe("ArrivalsBanner, About's line", () => {
     const r = region()!;
     expect(r.tagName).toBe("SECTION");
     expect(r).toHaveTextContent("2 new in About: Commander sets on the way, and Organizing decks into folders.");
-    expect(within(r).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about?tab=reference#new");
+    expect(within(r).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
     expect(within(r).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
     expect(within(r).queryByRole("heading")).toBeNull();
   });
@@ -272,7 +272,7 @@ describe("ArrivalsBanner, About's line", () => {
     const items = within(r).getAllByRole("listitem");
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveTextContent("2 new in About: Commander sets on the way, and Folders. Show me");
-    expect(within(items[0]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about?tab=reference#new");
+    expect(within(items[0]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
     expect(items[1]).toHaveTextContent("Star Trek Commander is announced, with 15 commanders revealed. See it in Precons");
     expect(within(items[1]!).getByRole("link")).toHaveAttribute("href", "/decks/precons?sort=newest#announced");
     expect(within(r).getAllByRole("button", { name: "Dismiss" })).toHaveLength(1);
@@ -286,7 +286,7 @@ describe("ArrivalsBanner, About's line", () => {
   });
 
   it("aboutHref: the Reference at what's new for a returning reader, Tools for a new account (E14)", () => {
-    expect(aboutHref(behind(["Folders"]))).toBe("/about?tab=reference#new");
+    expect(aboutHref(behind(["Folders"]))).toBe("/about");
     expect(aboutHref(FIRST)).toBe("/about");
   });
 

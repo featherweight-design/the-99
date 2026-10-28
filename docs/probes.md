@@ -606,19 +606,6 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   switches off too, where every page landing must draw no halo and write nothing (a route gone for the reader is its
   not-found page).
 
-- `pnpm probe:help-panel` presses the ? (discovery R2·8, C4, E13) in a real browser at 390 (the header's) and 1300
-  (the rail's), on `/collection`, a deck and then each page in turn until one draws a Show me. It asserts the ? holds
-  `aria-expanded` while open; the panel non-modal at 1300 and a modal sheet over a scrim at 390; focus into the panel
-  on open and back to the ? on close, by Escape and by ✕; a row opening in place with its Reference link; an Elsewhere
-  chip swapping the list; a search drawing hits, the none line, and the list back on clear; a deck's title naming the
-  builder's view; and Show me closing the panel, landing its halo (`data-target-halo`), pressing nothing and drawing no
-  bubble. A row, chip or Show me the account cannot draw is SKIP, never PASS. It WRITES NOTHING and holds no database
-  connection (the deck is read off `/decks`), so it needs no scratch branch. Run against `next start` with
-  `HELP_PANEL_ENABLED=true`. Then card details (R2·9, readiness gap 5), opened from `/collection` or, with an empty
-  collection, a deck's row: at 1300 the rail's ? is lifted above the backdrop (the element at its own centre, at its
-  slot's place), is the one Tab stop outside the dialog, and opens the panel as a stacked dialog that holds Tab;
-  Escape closes the panel (focus back on the ?), then card details. At 390 no ? is lifted and Tab stays in the card.
-
 - `pnpm probe:tour` runs the first-run tour (discovery R3·1b) in a real browser at 1300x900 and 390x844, signed in as
   the dedicated first-run account (`onboard-probe+clerk_test@the99.app`) against a server with
   `FIRST_RUN_TOUR_ENABLED=true` and `ABOUT_SHEET_ENABLED=true` (off, the proxy sends an account with unread About to
@@ -1942,6 +1929,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   clears the ids as well as lowering the version: with an entry's switch on, a stale id would
   mark that entry seen and the sheet would never draw. Point it at
   `local-dev`, **never production**.
+
+  **`pnpm probe:about --ways-in` walks About's ways in** (About visual PR 6a), at 390 and 1300, and WRITES NOTHING:
+  the index's tiles open their pages (W1); `?tab=tools` draws the index, no Tools tab (W2); the ? pressed on Upload a
+  file lands on `/about/collection#upload` with `from`, its back bar names the screen, stays at the top while the page
+  scrolls, and goes back (W3); the ? on History lights the Replace and Add rule card with no New tag, `lit` stripped and
+  `from` kept (W4); the ? on New deck lights the New deck label (W5); and the ? on an About page opens the index (W6).
+  Every check presses the control and reads the URL and the lit state. Run against a server with `HELP_PANEL_ENABLED`
+  on. The sheet walk and `--flip` now open the Reference at `?tab=reference`, which `/about` no longer is.
 
   **`pnpm probe:about --flip` walks a real switch flip**, and it OWNS its server: a switch is read
   when the server starts, so the walk starts `next dev` itself (port `PROBE_FLIP_PORT`, default

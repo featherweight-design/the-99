@@ -73,7 +73,6 @@ export const SHELLS: Shell[] = [
   // App-wide by reach: one provider mounts each. The card modal is the desktop card dialog and, below md, the phone
   // card-details sheet (the same box, full height).
   { name: "Card modal / card-details sheet", file: "src/components/cards/card-modal.tsx", box: 'role="dialog"' },
-  { name: "Help panel", file: "src/components/help/help-panel.tsx", box: 'role="dialog"' },
 ];
 
 /** A height token: its variant chain, the property, and the value. */
@@ -277,7 +276,6 @@ export const KEYBOARD_SHELLS: { name: string; file: string; constFiles?: string[
   { name: "StartPrecon", file: "src/components/decks/precons/start-precon.tsx", why: "the deck name" },
   { name: "PreconLinkDialogs", file: "src/components/decks/precons/precon-link-dialogs.tsx", why: "its deck search" },
   { name: "FolderCreateDialog", file: "src/components/decks/folder-create-dialog.tsx", why: "the folder name" },
-  { name: "Help panel (phone sheet)", file: "src/components/help/help-panel.tsx", why: "its search" },
   { name: "Card search (phone sheet)", file: "src/components/card-search/card-search.tsx", why: "the app's search field, up whenever the sheet is" },
 ];
 

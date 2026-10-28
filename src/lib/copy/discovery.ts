@@ -47,13 +47,8 @@ export function screenName(place: { screen: AboutScreen; view?: DeckView }): str
 
 export const aboutShapeCopy = {
   title: 'About The 99',
-  toolsSub: 'What each tool is for, shown on the screen it lives on.',
   referenceSub: 'Every entry, by the screen it lives on.',
-  tabs: { label: 'About', tools: 'Tools', reference: 'Reference' },
-  /** From `md`, beside the tabs, and only with the ? drawn (`HELP_PANEL_ENABLED`). Split around the ? glyph. */
-  helpHint: { before: 'Every screen has a', after: 'for its own entries' },
-  toReference: 'Everything else the app does is in the Reference, by screen.',
-  toReferencePress: 'Open the Reference →',
+  reference: 'Reference',
 } as const;
 
 export type ToolCopy = {
@@ -72,16 +67,6 @@ const NEEDS_A_DECK = 'Needs a deck, and you have none yet.';
 const NEEDS_A_FULL_DECK = 'Needs a full deck. None of yours is full yet.';
 
 export const showcaseCopy = {
-  groups: {
-    start: { label: 'Start a deck', sub: 'before there is a list' },
-    tune: { label: 'Tune it', sub: 'once there is a list' },
-    buy: { label: 'Buy smarter', sub: 'for what you don’t own' },
-    own: { label: 'Use what you own', sub: 'your Collection' },
-    play: { label: 'Play', sub: 'after the game' },
-  },
-  /** The 390 group count: the cards run sideways. */
-  swipe: (n: number) => `${n} · swipe`,
-  howItWorks: 'How it works ›',
   /** A tool card's picture. */
   pictureAlt: (name: string) => `${name}, on a real screen of the app`,
   /** Every tool that reads the reader's decks, when they have none. */
@@ -115,9 +100,6 @@ export const showcaseCopy = {
  * stands for, so a row is drawn only while its line survives `captionLineSwitches` (decision 3).
  */
 export const writtenForYouCopy = {
-  title: 'Written for you',
-  sub: 'uses credits',
-  intro: (allowance: string) => `These write something just for you, so each uses a credit. You get ${allowance}, and each comes back 24 hours after you use it.`,
   rows: [
     { id: 'overview', line: '- Writing a deck’s Overview', name: 'Overview', where: 'A deck’s Analysis tab', what: 'Reads the whole list and says what the deck does and how it wins.', cost: '1 credit each', short: 'each' },
     { id: 'suggested', line: '- Each “Suggested changes” run', name: 'Suggested changes', where: 'A deck’s Analysis tab', what: 'Up to five swaps, read from your games, your notes and the list.', cost: '1 credit per run', short: 'per run' },
@@ -129,7 +111,6 @@ export const writtenForYouCopy = {
   historyLine: 'Opening a past “Help me choose” run from History is free.',
   free: 'Finding a deck’s bracket is free, and so is reopening a past Help me choose.',
   freeBracket: 'Finding a deck’s bracket is free.',
-  how: 'How credits work ›',
 } as const;
 
 // ---- R2·6a · the Reference tab (README-r2 C5, R2b's note). /copy-review 2026-10-17: the search's none and note lines
@@ -178,34 +159,12 @@ export const creatorNoteCopy = {
   close: 'Close',
 } as const;
 
-// ---- R2·8 · the ? and its panel and sheet (README-r2 C4, C6, E8, G21; design table `discovery-r2-8-help.md`).
+// ---- R2·8 · the ? (README-r2 C4; design table `discovery-r2-8-help.md`). Its panel retired with About visual PR 6a:
+// the ? now opens its screen's About page.
 
 export const helpPanelCopy = {
-  /** The aria-label of the ? in the rail and the header, and of the panel itself. */
+  /** The aria-label of the ? in the rail and the header. */
   button: 'About this screen',
-  eyebrow: 'About this screen',
-  /** `A deck · Shopping`. */
-  screenName: (screen: string, view?: string) => (view ? `${screen} · ${view}` : screen),
-  search: 'Search all of About',
-  clear: 'Clear search',
-  /** Drawn uppercase. */
-  here: (view: string) => `On ${view}`,
-  count: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
-  elsewhere: { deck: 'Elsewhere on this deck', collection: 'Elsewhere in Collection' },
-  /** The Your deck chip while Shopping is in view (the table's row 115): the deck control's own name for it. */
-  all: 'All',
-  showMe: 'Show me',
-  readWhole: 'Read the whole entry ›',
-  hits: (n: number, q: string) =>
-    n === 1 ? `1 entry mentions “${q}”, on every screen` : `${n} entries mention “${q}”, on every screen`,
-  none: (q: string) => `Nothing in About mentions “${q}”.`,
-  noneNote: 'Search reads every entry’s title and text, on every screen.',
-  noneOut: 'See every entry →',
-  /** G21: a screen no visible entry lives on. */
-  empty: 'Nothing in About is about this screen yet.',
-  footTools: 'Tools ›',
-  footAll: 'All of About ›',
-  close: 'Close',
 } as const;
 
 /**

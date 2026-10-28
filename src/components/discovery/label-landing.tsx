@@ -18,6 +18,10 @@
 // landed label's section (Next can double it on a same-page push), and that section brought into view. A `?lit=` the
 // page could not land on (a label switched off, another page's, anything else) is stripped the same way and lights
 // nothing.
+//
+// The ? lands here too (PR 6a, Addendum A1), with `from` beside `lit`: its landing lights the label or rule and draws
+// NO New tag and no tool card, only the halo, whatever the reader has been told. A rule's landing lights its Good to
+// know card (`rule-card.tsx`). Stripping `lit` keeps `from`, so the back bar stays.
 // Nothing is written here: recording the visit is PR 6b's.
 
 import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
@@ -25,7 +29,7 @@ import { ABOUT_PAGE_STRINGS } from "../../lib/copy/about-pages";
 import type { PageWidth } from "../../lib/about/page-shots";
 import { useLiveQuery } from "../../lib/commanders/live-query";
 import {
-  LIT_PARAM, landingFor, landingSectionId, type Landable, type Landing, type PageCard, type PageToolCard,
+  FROM_PARAM, LIT_PARAM, landingFor, type Landable, type Landing, type PageCard, type PageToolCard,
 } from "../../lib/discovery/page-tools";
 import { reveal } from "../../lib/ui/reveal";
 import { mirrorUrl } from "../../lib/url/mirror";
@@ -66,34 +70,47 @@ export function stripLit(section: string | null = null): void {
 }
 
 /** The `lit` a query string carries: null with none, "" (lands nowhere, still stripped) for a repeated one. */
-function litOf(query: string): string | null {
-  const all = new URLSearchParams(query).getAll(LIT_PARAM);
+function litOf(params: URLSearchParams): string | null {
+  const all = params.getAll(LIT_PARAM);
   if (all.length === 0) return null;
   return all.length === 1 ? all[0] : "";
 }
 
 export function LabelLanding({
-  landable, initialLit, cards, children,
+  landable, initialLit, initialFrom = false, cards, children,
 }: {
   /** The labels this page can land on, and whether each is New to the reader (`landableIn`). */
   landable: Landable;
   /** The request's `?lit=` when it names a landable label: the server render and first paint are lit with it. */
   initialLit: string | null;
+  /** The request also carried `from`: the first paint is the ?'s landing, with no New tag. */
+  initialFrom?: boolean;
   /** The page's tool cards, for the landed label's own. */
   cards: readonly PageCard[];
   children: ReactNode;
 }) {
-  const live = litOf(useLiveQuery(initialLit === null ? "" : new URLSearchParams({ [LIT_PARAM]: initialLit }).toString()));
+  const server = new URLSearchParams(initialLit === null ? {} : { [LIT_PARAM]: initialLit });
+  if (initialLit !== null && initialFrom) server.set(FROM_PARAM, "");
+  const params = new URLSearchParams(useLiveQuery(server.toString()));
+  const live = litOf(params);
+  const viaQuestion = params.has(FROM_PARAM);
   // Each arrival of `lit` in the address, adjusted during render: a change to a value is an arrival, and the strip's
-  // change back to none is not. The landing outlives the strip, so the label stays lit with its New mark.
-  const [arrival, setArrival] = useState<{ n: number; lit: string | null }>(() => ({ n: live === null ? 0 : 1, lit: live }));
+  // change back to none is not. The landing outlives the strip, so the label stays lit with its New mark. Whether it
+  // came by the ? is read with the arrival, so a later move that drops `from` never turns a New mark on.
+  const [arrival, setArrival] = useState<{ n: number; lit: string | null; question: boolean }>(() => ({
+    n: live === null ? 0 : 1,
+    lit: live,
+    question: viaQuestion,
+  }));
   const [last, setLast] = useState<string | null>(live);
   if (live !== last) {
     setLast(live);
-    if (live !== null) setArrival((a) => ({ n: a.n + 1, lit: live }));
+    if (live !== null) setArrival((a) => ({ n: a.n + 1, lit: live, question: viaQuestion }));
   }
-  const landing = landingFor(arrival.lit, landable, cards);
-  const section = landing === null ? null : landingSectionId(landing.key);
+  const found = landingFor(arrival.lit, landable, cards);
+  // The ? draws the halo alone (Addendum A1): never New, so never its tool card either.
+  const landing = found !== null && arrival.question ? { ...found, isNew: false } : found;
+  const section = landing === null ? null : landing.section;
   useEffect(() => {
     if (arrival.n === 0) return;
     stripLit(section);

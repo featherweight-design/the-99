@@ -13,7 +13,14 @@ import type { DeckPanel } from "./group-toggle";
 // provider is already above the builder, and only the ?'s root re-renders when the view moves (the builder never
 // reads anything back). With the ? off there is no provider, and publishing does nothing.
 
-export const BuilderScreenContext = createContext<((view: DeckView | null) => void) | null>(null);
+/**
+ * What the builder publishes: the About screen it shows (`view`), and the tab it is on (`tab`). The two differ on
+ * Consider, which has no About screen of its own and reads as Your deck, but which "‹ Back to {deck}" must still return
+ * to (`?tab=consider`).
+ */
+export type BuilderScreen = { view: DeckView; tab: BuilderView };
+
+export const BuilderScreenContext = createContext<((screen: BuilderScreen | null) => void) | null>(null);
 
 /** The deck view the builder's state shows. The Consider tab has no screen of its own, so it reads as Your deck. */
 export function deckViewOf(view: BuilderView, filter: "all" | "shopping", panel: DeckPanel): DeckView {
@@ -30,12 +37,12 @@ export function deckViewOf(view: BuilderView, filter: "all" | "shopping", panel:
   }
 }
 
-/** Publishes the builder's view while it is mounted, and takes it back when the builder leaves. */
-export function usePublishBuilderScreen(view: DeckView) {
+/** Publishes the builder's view and tab while it is mounted, and takes them back when the builder leaves. */
+export function usePublishBuilderScreen(view: DeckView, tab: BuilderView) {
   const publish = useContext(BuilderScreenContext);
   useEffect(() => {
-    publish?.(view);
-  }, [publish, view]);
+    publish?.({ view, tab });
+  }, [publish, view, tab]);
   useEffect(() => {
     if (!publish) return;
     return () => publish(null);

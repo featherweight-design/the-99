@@ -69,7 +69,7 @@ import { Decklist } from "./decklist";
 import { TokensGroup } from "./tokens-group";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
-import { initialBuilderView } from "../../lib/decks/builder-view";
+import { initialBuilderView, type DeckBody } from "../../lib/decks/builder-view";
 import { DeckPanelContext } from "./deck-panel";
 import { deckViewOf, usePublishBuilderScreen } from "./builder-screen";
 import { EmptyDeckNotes } from "./notes/empty-deck-notes";
@@ -266,6 +266,8 @@ interface BuilderShellProps {
   /** The tab this visit lands on, read off the URL by the route. Only the
       arrival: switching tabs stays component state, so nothing writes it back. */
   initialView?: BuilderView;
+  /** The body Your deck opens on (`?panel=`, the ?'s way back): applied only when the builder opens on the deck tab. */
+  initialBody?: DeckBody | null;
   /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab. Off is
    *  today's layout, exactly. */
   analysisEnabled?: boolean;
@@ -373,6 +375,7 @@ export function BuilderShell({
   labelQueried = null,
   versions = [],
   initialView = "deck",
+  initialBody = null,
   analysisEnabled = false,
   statsEnabled = false,
   notesEnabled = false,
@@ -399,8 +402,15 @@ export function BuilderShell({
   // The table's log prefill (Rule 0 PR 8), held here because the Games panel remounts on every tab change.
   const [offeredPrefill, spendPrefill] = useHeldPrefill(gamePrefill);
   // UI state. A landing on Cheaper stand-ins or Friends' spares opens on Shopping, where their press is.
+  // `?panel=` (the ?'s way back) opens Your deck on the body the ? was pressed on, on the deck tab only, and only on a
+  // panel this reader is drawn: Stats or Notes behind a switch that is off opens on the list, so the ? and the phone
+  // dock read the list too. Shopping has no switch.
+  const body =
+    initialView !== "deck" || (initialBody === "stats" && !statsEnabled) || (initialBody === "notes" && !notesEnabled)
+      ? null
+      : initialBody;
   const [filter, setFilter] = useState<"all" | "shopping">(
-    landing?.lands.kind === "deck" && landing.lands.view === "shopping" ? "shopping" : "all",
+    (landing?.lands.kind === "deck" && landing.lands.view === "shopping") || body === "shopping" ? "shopping" : "all",
   );
   // A nudge's press (discovery R3, N1 to N3) lands as Try it does: it writes `?tool=` and hands the hook its own landing,
   // so the halo, the visit and the moment follow one rule. Newer than the page's landing, so it wins until the next one.
@@ -416,7 +426,7 @@ export function BuilderShell({
   const grouping = storedGrouping ?? "type";
   // Which body the deck list shows (list or Stats). Held here, not in the list: the list remounts on
   // a tab switch, and a deck opened afresh must open on its list.
-  const deckPanel = useState<DeckPanel>("list");
+  const deckPanel = useState<DeckPanel>(body === "stats" || body === "notes" ? body : "list");
   // v0 drawn as a row of its own: a linked deck's, unless the deck was started from the precon and its
   // first version IS v0 (`startVersionId`).
   const originApart = preconOrigin !== null && preconOrigin.startVersionId === null;
@@ -429,7 +439,7 @@ export function BuilderShell({
   // during render, so no frame draws an empty rail under no selected tab.
   if (view === "versions" && versions.length === 0 && !originApart) setView("deck");
   // The ? in the shell reads which of the deck's screens this is from here, never the URL (discovery R2·8).
-  usePublishBuilderScreen(deckViewOf(view, filter, deckPanel[0]));
+  usePublishBuilderScreen(deckViewOf(view, filter, deckPanel[0]), view);
   const [statsFocus, setStatsFocus] = useState<{ card: "curve" | "jobs"; n: number } | null>(null);
   const clearStatsFocus = useCallback(() => setStatsFocus(null), []);
   const openStatsAt = useCallback((card: "curve" | "jobs") => {

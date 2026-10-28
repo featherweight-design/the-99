@@ -18,7 +18,7 @@ describe("the lines that once named what shares the credits", () => {
 
   it("links to the About entry that lists them", () => {
     expect(creditsCopy.link).toBe("What uses credits?");
-    expect(CREDITS_HREF).toBe("/about?tab=reference#credits");
+    expect(CREDITS_HREF).toBe("/about/decks#analysis");
   });
 });
 

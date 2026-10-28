@@ -39,13 +39,22 @@ vi.mock("../../../lib/discovery/showcase-input", async () => {
     }),
   };
 });
+vi.mock("../../../lib/about/back-read", () => ({
+  ownDeckName: vi.fn(async (_userId: string, deckId: string | null) => (deckId === "0b6c2f4e-1111-4222-8333-444455556666" ? "Sai" : null)),
+}));
 vi.mock("next/navigation", () => ({ notFound: m.notFound, usePathname: () => "/about/decks", useRouter: () => ({ refresh: () => {} }) }));
 
 import AboutAreaRoute from "./page";
 import { AreaPage, type AreaSection } from "../../../components/about/pages/area-page";
 import type { Landable } from "../../../lib/discovery/page-tools";
 
-type El = ReactElement<{ area: string; sections: AreaSection[]; landable: Landable; initialLit: string | null }>;
+type El = ReactElement<{
+  area: string;
+  sections: AreaSection[];
+  landable: Landable;
+  initialLit: string | null;
+  back: { from: string; screen: string } | null;
+}>;
 const draw = async (area: string, query: Record<string, string | string[]> = {}) =>
   (await AboutAreaRoute({ params: Promise.resolve({ area }), searchParams: Promise.resolve(query) })) as El;
 
@@ -157,15 +166,15 @@ describe("/about/[area]", () => {
     const lit = "decks/analysis/cuts";
     const fresh = await draw("decks", { lit });
     expect(fresh.props.initialLit).toBe(lit);
-    expect(fresh.props.landable[lit]).toEqual({ isNew: true });
-    const drawn = fresh.props.sections.flatMap((s) => [...s.desktop.labels, ...s.phone.labels].map((l) => l.key));
+    expect(fresh.props.landable[lit]).toEqual({ isNew: true, section: "analysis" });
+    const drawn = fresh.props.sections.flatMap((s) => [...s.desktop.labels, ...s.phone.labels, ...s.rules].map((l) => l.key));
     expect(Object.keys(fresh.props.landable).sort()).toEqual([...new Set(drawn)].sort());
     const freshHtml = renderToStaticMarkup(fresh);
     expect(freshHtml).toContain("data-about-new");
     expect(freshHtml).toContain('data-about-landing-card="proposed-cuts"');
     m.seen = { version: 16, ids: [lit] };
     const told = await draw("decks", { lit });
-    expect(told.props.landable[lit]).toEqual({ isNew: false });
+    expect(told.props.landable[lit]).toEqual({ isNew: false, section: "analysis" });
     const html = renderToStaticMarkup(told);
     expect(html).not.toContain("data-about-new");
     expect(html).not.toContain("data-about-landing-card");
@@ -181,5 +190,51 @@ describe("/about/[area]", () => {
     expect(off.props.initialLit).toBeNull();
     expect(off.props.landable).not.toHaveProperty(["decks/analysis/cuts"]);
     expect((await draw("decks")).props.initialLit).toBeNull();
+  });
+});
+
+describe("/about/[area], reached by the ? (PR 6a)", () => {
+  it("draws the back bar for a validated from, named for its screen", async () => {
+    expect((await draw("collection", { from: "/collection/replace" })).props.back).toEqual({ from: "/collection/replace", screen: "Upload a file" });
+    expect((await draw("decks", { from: "/credits", lit: "rule/credits" })).props.back).toEqual({ from: "/credits", screen: "Credits" });
+    expect((await draw("decks")).props.back).toBeNull();
+  });
+
+  it("names a deck by the reader's own deck's name, else by its section", async () => {
+    const own = "/decks/0b6c2f4e-1111-4222-8333-444455556666";
+    expect((await draw("decks", { from: own })).props.back).toEqual({ from: own, screen: "Sai" });
+    const other = "/decks/7a0e0000-0000-4000-8000-000000000001";
+    expect((await draw("decks", { from: other })).props.back).toEqual({ from: other, screen: "Your deck" });
+  });
+
+  it("draws no bar for a from that could leave the app, or names nothing", async () => {
+    for (const from of ["//evil.example", "https://evil.example/x", "/\\evil", "javascript:alert(1)", "/admin", ["/a", "/b"]]) {
+      expect((await draw("collection", { from })).props.back, JSON.stringify(from)).toBeNull();
+    }
+  });
+
+  it("lands a rule the ? names, lit, with no New tag", async () => {
+    const el = await draw("decks", { from: "/credits", lit: "rule/credits" });
+    expect(el.props.initialLit).toBe("rule/credits");
+    expect(el.props.landable["rule/credits"]).toEqual({ isNew: false, section: "analysis" });
+    const html = renderToStaticMarkup(el);
+    expect(html).toMatch(/data-rule="rule\/credits" data-lit=""/);
+    expect(html).not.toContain("data-about-new");
+  });
+
+  it("a label the ? names that the reader is not told about draws no New tag and no card under it (A1)", async () => {
+    const html = renderToStaticMarkup(await draw("decks", { from: "/decks/new", lit: "decks/your-decks/new-deck" }));
+    expect(html).toContain('data-about-label="decks/your-decks/new-deck"');
+    expect(html).not.toContain("data-about-new");
+    expect(html).not.toContain("data-about-landing-card");
+  });
+
+  it("a unit switched off for the reader lands on its section with nothing lit (Review Focus 2)", async () => {
+    m.env = env({ ...ALL_ON, HOME_FEED_ENABLED: "" });
+    const el = await draw("home", { from: "/settings", lit: "home/whats-new/lead" });
+    expect(el.props.initialLit).toBeNull();
+    expect(el.props.landable).not.toHaveProperty(["home/whats-new/lead"]);
+    expect(el.props.sections.map((s) => s.id)).toContain("whats-new");
+    expect(el.props.back).toEqual({ from: "/settings", screen: "Settings" });
   });
 });

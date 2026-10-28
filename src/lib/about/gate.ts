@@ -151,9 +151,9 @@ export function gateDecision(args: {
   if (args.seen >= version) return { kind: "pass", cookie };
   // The destination is encoded WHOLE, query included, so a `&` inside it
   // cannot read as the end of the `next` parameter.
-  // `tab=reference` in the address itself: the page opens on the Reference for a reader the gate sent, and the
-  // tabs read the live URL after hydration, so a server-only default would flip back to Tools.
-  const to = `/about?tab=reference&next=${encodeURIComponent(args.pathname + args.search)}`;
+  // `/about` draws the Reference for a reader the gate sent (`next=` while they are behind), with its Got it; it is
+  // the one tab left (About visual PR 6a), so nothing in the address has to hold it. No link names the Reference.
+  const to = `/about?next=${encodeURIComponent(args.pathname + args.search)}`;
   return { kind: "redirect", to, cookie };
 }
 

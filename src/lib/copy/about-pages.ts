@@ -1099,4 +1099,22 @@ export const ABOUT_PAGE_STRINGS = {
   bannerMulti: "New in the app",
   back: (screen: string) => `‹ Back to ${screen}`,
   toolShowMe: "Show me ›",
+  /** An index tile's count line (Ways-In `.it .mt`): its page's screens, then its rules, the rules' half left off at 0. */
+  indexCount: (screens: number, rules: number) =>
+    [screens === 1 ? "1 screen" : `${screens} screens`, ...(rules > 0 ? [`${rules} good to know`] : [])].join(" · "),
 } as const;
+
+/**
+ * The back bar's name for a screen with no section of its own (Addendum A1): the ? there lands on another page's section,
+ * and the bar names the screen the reader left. A sectioned screen is named by its section.
+ */
+export const ABOUT_BACK_SCREENS = {
+  "card-details": "Card details",
+  sets: "Sets",
+  proxies: "Proxies",
+  history: "History",
+  wishlist: "Wishlist",
+  "new-deck": "New deck",
+  settings: "Settings",
+  credits: "Credits",
+} as const satisfies Partial<Record<AboutScreen, string>>;

@@ -98,7 +98,7 @@ import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 import { changeCommanderEnabled } from "../../../lib/commander-change/flag";
 import { ChangeCommanderProvider } from "../../../components/decks/change-commander-context";
 import { readShoppingLimit } from "../../../lib/swaps/read";
-import { initialBuilderView, readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
+import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { SWITCH_FLAGS } from "../../../lib/switches/flags";
@@ -802,6 +802,8 @@ export default async function DeckBuilderPage({
       landing={landing}
       landingRequest={landingRequest}
       nearCombos={nearCombos}
+      // `?panel=`: the ?'s way back to Shopping, Stats or Notes (About PR 6a); the builder reads it on the deck tab only.
+      initialBody={readDeckBody(query[BODY_PARAM])}
       initialView={initialBuilderView(
         landing?.lands.tab ?? readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.

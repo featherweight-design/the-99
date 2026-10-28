@@ -22,6 +22,8 @@
 // them (gated per line by switch; the list is owed Proposed cuts and Find a deck's read). A
 // surface draws the line through `CreditsText`, which turns the phrase into that link.
 
+import { legacyHref } from "../about/legacy-href";
+
 /** A time in the reader's clock, 12-hour: `2:20 PM`. Client-side only, where the clock is theirs. */
 export function clockTime(at: Date): string {
   return at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
@@ -37,8 +39,8 @@ export function monthName(at: Date): string {
 const link = "What uses credits?";
 /** L4's own line under the spent line, a link to `/credits`. */
 const getMore = "Get more credits";
-/** The About entry that lists every feature spending credits, in the Reference tab (entries carry their own anchors). */
-export const CREDITS_HREF = "/about?tab=reference#credits";
+/** Where the credits rule lives: its old Reference entry's new home, Decks › Analysis (`legacyHref`, Review Focus 3). */
+export const CREDITS_HREF = legacyHref("/about?tab=reference#credits");
 
 /** The count and, when one is out, when the next comes back. "reset at", not "next one at"
  *  (H35, engineering note 11). */

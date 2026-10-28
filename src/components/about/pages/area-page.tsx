@@ -4,7 +4,8 @@
 // The head (About The 99, the area's name and line), the six pages in the shipped place strip, On this page, then each
 // section the reader is drawn, in order, at `#<section id>`: its labelled screen, then Good to know (PR 4: the rules the
 // reader is drawn, none and no heading when there are none), then Try it (PR 5: the section's tool cards, none and no
-// heading when there are none). A Show me landing (`?lit=`) lights its label through `LabelLanding`.
+// heading when there are none). A Show me landing (`?lit=`) lights its label through `LabelLanding`. Reached by the ?
+// (PR 6a), the page holds "‹ Back to {screen}" at its top (`BackBar`) while `from` is in the address.
 
 import { PlaceStrip, type PlaceTab } from "../../place/place-strip";
 import { ABOUT_AREAS, type AboutArea } from "../../../lib/copy/about-pages";
@@ -16,6 +17,7 @@ import { GoodToKnow, type RuleCardModel } from "./rule-card";
 import { TryIt } from "./try-it";
 import { LabelLanding, type Landable, type PageCard } from "../../discovery/label-landing";
 import { ThemeRefresh } from "./theme-refresh";
+import { BackBar } from "./back-bar";
 
 export type AreaSection = {
   id: string;
@@ -29,11 +31,11 @@ export type AreaSection = {
   tools: readonly PageCard[];
 };
 
-// The strip links the six pages to each other, the only links to them until PR 6a swaps every way in at once.
+// The strip links the six pages to each other. Its links carry no `from`, so moving between pages ends the ?'s trip.
 const TABS: readonly PlaceTab[] = ABOUT_AREAS.map((a) => ({ place: a.id, href: `/about/${a.id}`, label: a.name }));
 
 export function AreaPage({
-  area, sections, theme, landable = {}, initialLit = null,
+  area, sections, theme, landable = {}, initialLit = null, back = null,
 }: {
   area: AboutArea;
   sections: readonly AreaSection[];
@@ -43,10 +45,18 @@ export function AreaPage({
   landable?: Landable;
   /** The request's `?lit=` when it names a landable label, so the first paint is already lit. */
   initialLit?: string | null;
+  /** The ?'s way back: the validated `from` and the screen it names, or null when the request carried none. */
+  back?: { from: string; screen: string } | null;
 }) {
   const copy = ABOUT_AREAS.find((a) => a.id === area)!;
   return (
-    <div className="flex flex-col pb-[30px] md:px-[30px] md:pb-[64px]">
+    <div
+      className={`flex flex-col pb-[30px] md:px-[30px] md:pb-[64px] ${
+        // The back bar's height, so a section brought into view starts under it, not behind it.
+        back ? "[--about-back-h:47px] md:[--about-back-h:51px]" : ""
+      }`}
+    >
+      {back && <BackBar from={back.from} screen={back.screen} />}
       <div className="w-full max-w-[1180px]">
         <header className="flex flex-col gap-[6px] px-[16px] pt-[18px] md:px-0 md:pt-[30px]">
           <span className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">
@@ -66,13 +76,15 @@ export function AreaPage({
         />
         <ThemeRefresh drawnIn={theme} />
         <OnThisPage sections={sections.map((s) => ({ id: s.id, name: s.name }))} />
-        <LabelLanding landable={landable} initialLit={initialLit} cards={sections.flatMap((s) => s.tools)}>
+        <LabelLanding landable={landable} initialLit={initialLit} initialFrom={back !== null} cards={sections.flatMap((s) => s.tools)}>
           {sections.map((s, i) => (
             <section
               key={s.id}
               id={s.id}
               aria-labelledby={`${s.id}-name`}
-              className={`flex scroll-mt-[16px] flex-col gap-[16px] border-t border-t-[color:var(--border)] px-[16px] pb-[30px] pt-[26px] md:gap-[20px] md:px-0 md:pb-[40px] md:pt-[34px] ${
+              // Under the back bar a section is brought in with its top rule tucked under the bar's own (Ways-In: the
+              // section's head sits right under the bar, one rule between them); with no bar, 16px clear.
+              className={`flex ${back ? "scroll-mt-[calc(var(--about-back-h)-1px)]" : "scroll-mt-[16px]"} flex-col gap-[16px] border-t border-t-[color:var(--border)] px-[16px] pb-[30px] pt-[26px] md:gap-[20px] md:px-0 md:pb-[40px] md:pt-[34px] ${
                 i === 0 ? "mt-[18px]" : ""
               }`}
             >

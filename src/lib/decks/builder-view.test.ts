@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialBuilderView, readBuilderView } from "./builder-view";
+import { deckViewSearch, initialBuilderView, readBuilderView, readDeckBody } from "./builder-view";
 
 describe("readBuilderView", () => {
   it("takes the tab a URL names", () => {
@@ -40,5 +40,26 @@ describe("initialBuilderView", () => {
     expect(initialBuilderView("consider", 0)).toBe("consider");
     expect(initialBuilderView("games", 0)).toBe("games");
     expect(initialBuilderView("deck", 3)).toBe("deck");
+  });
+});
+
+describe("readDeckBody (?panel=, About PR 6a)", () => {
+  it("takes Shopping, Stats or Notes and nothing else", () => {
+    expect(readDeckBody("shopping")).toBe("shopping");
+    expect(readDeckBody("stats")).toBe("stats");
+    expect(readDeckBody("notes")).toBe("notes");
+    for (const v of [undefined, "", "list", "analysis", ["stats", "notes"]]) expect(readDeckBody(v)).toBeNull();
+  });
+});
+
+describe("deckViewSearch", () => {
+  it("names a tab by ?tab=, a body by ?panel=, Your deck by neither, keeping every other parameter", () => {
+    expect(deckViewSearch("", "analysis")).toBe("?tab=analysis");
+    expect(deckViewSearch("?tab=games&table=t1", "versions")).toBe("?table=t1&tab=versions");
+    expect(deckViewSearch("?tab=analysis", "notes")).toBe("?panel=notes");
+    expect(deckViewSearch("?panel=stats&tab=games", "your-deck")).toBe("");
+    expect(deckViewSearch("?x=1", "shopping")).toBe("?x=1&panel=shopping");
+    // Consider reads as Your deck but is its own tab.
+    expect(deckViewSearch("?panel=stats", "your-deck", "consider")).toBe("?tab=consider");
   });
 });

@@ -2,10 +2,11 @@ import type { AboutScreen } from "../copy/about";
 
 /**
  * The About screen a reader stands on, read from the path the ? is pressed on (discovery R2·8, README-r2 E8). Pure. The
- * routes are the ones `SCREEN_WHERE` prints. `null` is a page no entry lives on (the all-decks cart, About itself, admin): the ? then draws G21's empty line.
+ * routes are the ones `SCREEN_WHERE` prints. `null` is a page no entry lives on (the all-decks cart, About itself,
+ * admin): the ? then opens the `/about` index (`questionHref`).
  *
  * - `card-details` is the open card dialog on a Collection list, which the list mirrors as `?card=`.
- * - `account` never resolves from a path: the menu is on every screen, and its entries are found by search.
+ * - `account` never resolves from a path: the menu is on every screen, and it has no landing.
  * - `deck` is every view of a deck; which view is the builder's live state (`BuilderScreenContext`), never the URL.
  */
 const COLLECTION_LISTS: Record<string, AboutScreen> = {

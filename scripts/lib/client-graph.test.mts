@@ -88,8 +88,9 @@ describe("the About page's client bundle stays off the database", () => {
 });
 
 describe("the About entry list ships only with /about", () => {
-  // `about-entries.ts` is ~1,500 lines of copy (discovery plan R2·1b, R2 gap 6). The "?" fetches the entries it needs
-  // from `GET /api/about/entries`, so no page but `/about` may carry the list in its bundle. The rule names the entry
+  // `about-entries.ts` is ~1,500 lines of copy (discovery plan R2·1b, R2 gap 6). The "?" in the shell reads no About
+  // copy (`question-landing.ts` carries its own small tables; About visual PR 6a), so no page but `/about` may carry
+  // the list in its bundle. The rule names the entry
   // list, not `about.ts`, whose other copy the shell's account menu and the Analysis tab import on purpose.
   it("no route file outside /about reaches about-entries.ts", { timeout: 60_000 }, () => {
     // Every file the router renders, not only pages: a nested layout (or a loading or error boundary) ships its own
@@ -112,3 +113,28 @@ describe("the About entry list ships only with /about", () => {
   });
 });
 
+
+describe("the About pages' copy ships only with /about", () => {
+  // `about-pages.ts` is the About pages' whole content model (~1,100 lines). The ? (`question-landing.ts`) and the
+  // links into the retired Reference (`legacy-href.ts`, which Home's arrivals banner and the credits copy import) carry
+  // their own light tables for that reason (About visual PR 6a, Copilot round 1), so no page but `/about` may carry it.
+  const LIGHT = ["src/lib/about/question-landing.ts", "src/lib/about/legacy-href.ts"];
+
+  it("no route file outside /about reaches about-pages.ts", { timeout: 60_000 }, () => {
+    const routeFile = /\/(page|layout|template|loading|error|not-found|default)\.tsx$/;
+    const roots = (fs.readdirSync("src/app", { recursive: true }) as string[])
+      .map((f) => `src/app/${f.split("\\").join("/")}`)
+      .filter((p) => routeFile.test(p) && !p.startsWith("src/app/about/"));
+    expect(roots.filter((p) => p.endsWith("/page.tsx")).length, "the guard found no pages, so it checks nothing").toBeGreaterThan(10);
+    const { files, via } = clientGraph([LAYOUT, ...roots]);
+    for (const light of LIGHT) expect(files.has(light), `${light} is in the client graph, or this guard walks nothing`).toBe(true);
+    const found = [...files].filter((f) => importsCopy(f, "src/lib/copy/about-pages.ts"));
+    expect(found.map((f) => chainTo(f, via).join(" > "))).toEqual([]);
+  });
+
+  it("the light modules import no About copy by value", () => {
+    for (const light of LIGHT) expect(importsCopy(light, "src/lib/copy/about-pages.ts"), light).toBe(false);
+    // The matcher fires on a module that does import it.
+    expect(importsCopy("src/lib/about/back.ts", "src/lib/copy/about-pages.ts")).toBe(true);
+  });
+});

@@ -11,11 +11,15 @@
 // are a swipe row with dots; from `md` a grid of three, as the 1300 boards draw it, once `xl` gives each card the plate
 // its diagram needs (a 250px diagram clips in a third of a 768px page), and of two below that. A section with no rules
 // for this reader draws nothing at all, not even the heading (call 8).
+//
+// A landing on a rule (the ? on a screen whose question a rule answers, Addendum A1: `?lit=rule/<id>`) lights its card
+// (Addendum-A1 `.gk.on`: an accent border and ring) and, on a phone, scrolls the swipe row to it.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ABOUT_PAGE_STRINGS, type AboutRuleDiagram } from "../../../lib/copy/about-pages";
 import { Mark } from "../../home/banner-mark";
 import { RuleDiagram } from "./rule-diagrams";
+import { useLabelLanding, useLandingRequest } from "../../discovery/label-landing";
 
 /** A rule as the page hands it over: its key, its visible text and its switch-resolved diagram. */
 export interface RuleCardModel {
@@ -38,11 +42,16 @@ export function currentCard(row: { scrollLeft: number; scrollWidth: number; clie
   return Math.min(count - 1, Math.round(row.scrollLeft / (CARD_W + GAP)));
 }
 
-export function RuleCard({ rule }: { rule: RuleCardModel }) {
+export function RuleCard({ rule, lit = false }: { rule: RuleCardModel; lit?: boolean }) {
   return (
     <article
       data-rule={rule.key}
-      className="flex h-full flex-col overflow-hidden rounded-[14px] border border-[color:var(--border)] bg-[color:var(--surface)]"
+      data-lit={lit ? "" : undefined}
+      className={`flex h-full flex-col overflow-hidden rounded-[14px] border bg-[color:var(--surface)] ${
+        lit
+          ? "border-[color:var(--accent)] shadow-[0_0_0_2px_color-mix(in_oklab,var(--accent)_45%,transparent)]"
+          : "border-[color:var(--border)]"
+      }`}
     >
       <div
         aria-hidden="true"
@@ -59,6 +68,18 @@ export function RuleCard({ rule }: { rule: RuleCardModel }) {
 
 export function GoodToKnow({ sectionId, rules }: { sectionId: string; rules: readonly RuleCardModel[] }) {
   const [current, setCurrent] = useState(0);
+  const landing = useLabelLanding();
+  const request = useLandingRequest();
+  const row = useRef<HTMLUListElement>(null);
+  const litAt = landing === null ? -1 : rules.findIndex((r) => r.key === landing.key);
+  // Each landing on one of these rules brings its card into the swipe row's view; from `md` the row is a grid and
+  // does not scroll, so this moves nothing there.
+  useEffect(() => {
+    const el = row.current;
+    if (litAt < 0 || el === null || el.scrollWidth <= el.clientWidth) return;
+    el.scrollTo({ left: litAt * (CARD_W + GAP), behavior: "instant" });
+    setCurrent(currentCard(el, rules.length));
+  }, [request, litAt, rules.length]);
   if (rules.length === 0) return null;
   const headingId = `${sectionId}-good-to-know`;
   return (
@@ -71,6 +92,7 @@ export function GoodToKnow({ sectionId, rules }: { sectionId: string; rules: rea
         <span className="ml-[2px] text-[13px] text-[color:var(--fg-muted)]">{ABOUT_PAGE_STRINGS.goodToKnowSub}</span>
       </div>
       <ul
+        ref={row}
         aria-labelledby={headingId}
         // Below md the row scrolls sideways and no card holds a focus target, so the row itself takes focus for the arrow keys.
         tabIndex={0}
@@ -79,7 +101,7 @@ export function GoodToKnow({ sectionId, rules }: { sectionId: string; rules: rea
       >
         {rules.map((r) => (
           <li key={r.key} className="w-[292px] flex-none snap-start md:w-auto">
-            <RuleCard rule={r} />
+            <RuleCard rule={r} lit={landing !== null && landing.key === r.key} />
           </li>
         ))}
       </ul>

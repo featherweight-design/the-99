@@ -241,7 +241,7 @@ Before `gh pr create`: design-review property table against Decks-Phone, Decks-D
 ## PR 6a: Ways in
 
 **Files:**
-- Modify: `src/app/about/page.tsx` (the index: six tiles, each its page's first capture at the reader's width; "Take the tour →" stays; `?tab=tools` still renders today's Tools tab), `src/components/help/help-root.tsx` and `nav.tsx` (the ?), `src/lib/about/screen-for-path.ts`, `src/lib/about/help-panel.ts` (its Reference links), `src/components/about/tools/tool-card.tsx` and `tools-tab.tsx` (their Reference links), `src/lib/copy/credits.ts`, the probes `probe-about.mjs` and `probe-help-panel.mjs`, the inventories and copy-drift tables that quote what changes
+- Modify: `src/app/about/page.tsx` (the index: six tiles, each its page's first capture at the reader's width; "Take the tour →" stays; the Tools tab retires, and `?tab=tools` goes to `/about` through `legacyHref`), `src/components/help/help-root.tsx` and `nav.tsx` (the ?), `src/lib/about/screen-for-path.ts`, `src/lib/about/help-panel.ts` (its Reference links), `src/components/about/tools/tool-card.tsx` and `tools-tab.tsx` (their Reference links), `src/lib/copy/credits.ts`, the probes `probe-about.mjs` and `probe-help-panel.mjs`, the inventories and copy-drift tables that quote what changes
 - Create: `src/lib/about/legacy-href.ts`, `src/components/about/pages/back-bar.tsx`, tests
 
 **Interfaces:**
@@ -268,7 +268,7 @@ Delete `how-it-works.tsx`, `how-rows.tsx`, `how-it-works-links.ts`, `how-it-work
 
 ## PR 7b: Retire the Reference
 
-Delete the Reference tab and its files, `about-tabs.tsx`, `reference.ts`, `caption.ts`, `reveal-entry.ts`, and the probes, inventories and design tables that quote them. Delete `about-entries.ts` and the entry model with it, once 6b's seen translation is the only reader of the legacy ids (it keeps a frozen list of legacy id, switch and `since` in `src/lib/about/legacy-entries.ts`). `ENTRY_TARGETS` and `TOOLS.entry` retire. Delete the 390-only shots no remaining surface draws, and shrink `REQUIRED_SHOTS` and `shots.test.ts` to what remains; the tour's `tour-*.webp` stay.
+Delete the Reference tab and its files, `about-tabs.tsx`, `reference.ts`, `caption.ts`, `reveal-entry.ts`, and the probes, inventories and design tables that quote them. When the Reference tab is deleted, `/about?tab=reference#<entry>` bookmarks get a client-side hash redirect through `legacyHref` (the hash never reaches the server, so no server redirect is possible). Delete `about-entries.ts` and the entry model with it, once 6b's seen translation is the only reader of the legacy ids (it keeps a frozen list of legacy id, switch and `since` in `src/lib/about/legacy-entries.ts`). `ENTRY_TARGETS` and `TOOLS.entry` retire. Delete the 390-only shots no remaining surface draws, and shrink `REQUIRED_SHOTS` and `shots.test.ts` to what remains; the tour's `tour-*.webp` stay.
 
 ## PR 8: Close-out
 

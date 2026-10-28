@@ -9,7 +9,7 @@ Enumerated from the design files only (no `src/`):
 - `.../r2/ReferenceDesk.dc.html` (1280), `.../r2/ReferencePhone.dc.html` (390), `.../r2/Reference.dc.html` (R1), `.../r2/Reference-Search.dc.html` (R2 results `combo`, R3 none `sideboard`), `.../r2/Note.dc.html` (N1 dialog / sheet, N2 placement)
 - Binding readiness resolutions: `docs/superpowers/readiness/discovery-r2.md` gap 9 (the screenshot replaces the specimen; one frame per screen, each entry's halo box as fractions of its screen's frame; a visible entry with no frame or box fails a test; until the last capture lands an entry keeps its specimen), gap 10 (visit recording, out of scope here), gap 12 (`?tab=reference`).
 
-Out of scope: the Tools tab, About's title and tab row (R2·5 covered them), recording the visit (gap 10), copy wording. Each copy row names the copy element that renders, not its text.
+Out of scope: the Tools tab (retired, About visual PR 6a: the Reference draws under one static `Reference N` label, no tab row, until PR 7b retires it), About's title, recording the visit (gap 10), copy wording. Each copy row names the copy element that renders, not its text.
 
 Token map: `#14110E` `--bg`, `#18140F` `--surface-sunken`, `#1A1611` `--surface-rail`, `#1E1A15` `--surface`, `#2B241B` `--border`, `#3A3229` `--border-strong`, `#494037` `--border-dashed`, `#EDE6D8` `--fg`, `#C0B8A6` `--fg-body`, `#A59C89` `--fg-muted`, `#8B8270` `--fg-faint`, `#CF8745` `--accent`, `#6B482A` `--accent-dim`. Scrim `rgba(10,8,6,.62)` (as the ? sheet's). Cinzel = `font-display`, IBM Plex Mono = `font-mono`, IBM Plex Sans = body.
 

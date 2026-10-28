@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { dismissArrivals } from "../../app/arrivals-actions";
+import { legacyHref } from "../../lib/about/legacy-href";
 import type { AboutLine } from "../../lib/about/notice";
 import { arrivalsCopy as copy } from "../../lib/copy/arrivals";
 import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
@@ -29,12 +30,12 @@ import { Mark } from "./banner-mark";
 /** Home's `<h1>`, where focus goes once ✕ has closed the banner (H8). */
 export const HOME_HEADING_ID = "home-heading";
 /**
- * Where About's Show me goes (discovery R2·6b, E14, README-r2 G18): a returning reader to the Reference at what's new,
- * a brand-new account to Tools. The words stay as they are. The page records the visit itself (`RecordVisit`), on the
- * Reference only (R2 gap 10), so a new account's line stands until they open the Reference or press ✕.
+ * Where About's Show me goes (discovery R2·6b, E14, README-r2 G18): the `/about` index, for a returning reader and a
+ * brand-new account alike. The Reference's what's new (`#new`) goes there too, through `legacyHref` (About visual
+ * PR 6a); the banner's own landings are PR 6b's. The words stay as they are.
  */
 export function aboutHref(line: Pick<AboutLine, "kind">): string {
-  return line.kind === "firstRun" ? "/about" : "/about?tab=reference#new";
+  return line.kind === "firstRun" ? "/about" : legacyHref("/about?tab=reference#new");
 }
 /** The close: a height collapse this long, instant under reduced motion. */
 export const COLLAPSE_MS = 160;
