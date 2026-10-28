@@ -50,6 +50,7 @@ export function OwnershipDot({
   const skin = !owned ? UNOWNED : committed ? COMMITTED : OWNED;
   return (
     <span
+      data-ownership-dot=""
       className={twMerge(BASE, skin, className)}
       {...(size === undefined ? {} : { style: { width: size, height: size } })}
       {...(label ? { "aria-label": label } : { "aria-hidden": true })}

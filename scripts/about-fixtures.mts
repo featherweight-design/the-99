@@ -8,11 +8,17 @@
 //   - Over 99: six cards over (Proposed cuts);
 //   - Played: whole and COMMITTED (version 1, through `commitVersion`), carrying an unowned card over the stand-in
 //     limit, the card a friend has spare, five games with opponents (Matchups) played on that version, and two notes.
+//     For the About pages (plan `2026-10-27-about-visual.md`, PR 2, G1) it also holds a Game Changer or tutor the
+//     account owns (a bracket mark on a row), one locked card, a pending change after v1 (a basic swapped for a card,
+//     through the app's own writes, so the to-do card draws its commit row) and a STORED analysis
+//     (`computeAndStoreProfile`, which computes and calls no model): the findings and the live tuning tiles;
+//   - Fresh: whole and never analyzed, with no description: the Analyze press and the Describe field.
 // Each deck is named after its commander, as a reader names a deck (`deckNames`), never after its role.
 // Each is built from cards the account owns that no other deck claims, under its own commander (three of disjoint
 // colors), so no row is contested and no list matches a precon: the frames look like an ordinary player's decks.
 // The reader's own social name is `Sam` (its face the Played deck's commander, three invites in hand); the capture puts a neutral name and email over Clerk's in the page.
-//   - a friend, `Alex`, in a pod with the account, sharing a spare of a card Played buys;
+//   - a friend, `Alex`, in a pod with the account, sharing a spare of a card Played buys (one friend keeps the pod's
+//     Rule 0 check row on the phone's Friends frame; the row draws for any pod, at both widths);
 //   - a wishlist want, so Wishlist draws a row.
 // An earlier upload is the snapshot's own: the script refuses an account with none rather than writing a fake one.
 //
@@ -197,7 +203,7 @@ async function buildList(commander: Commander, spells: number, size: number): Pr
 }
 
 async function writeDeck(
-  role: "under" | "over" | "played",
+  role: "under" | "over" | "played" | "fresh",
   name: string,
   commander: string,
   rows: Map<string, number>,
@@ -244,7 +250,57 @@ const over = await writeDeck("over", nameOver, forOver.oracle_id, await buildLis
 const playedRows = await buildList(forPlayed, 60, 97);
 playedRows.set(dear, 1);
 playedRows.set(spare, 1);
+// A bracket mark on a row (About pages, Your deck's "The marks after a name"): a Game Changer or tutor the account owns,
+// in Played's colors. `buildList` may have placed one already; if not, one replaces a basic, so the deck stays whole.
+const [alreadyMarked] = (await sql`select c.name from cards c left join card_bracket_flags f on f.oracle_id = c.oracle_id
+  where c.oracle_id::text = any(${[...playedRows.keys()]}) and c.type_line not like '%Land%'
+    and (c.game_changer or coalesce(f.tutor, false)) limit 1`) as { name: string }[];
+if (!alreadyMarked) {
+  const marked = (await sql`select c.oracle_id::text, c.name from cards c left join card_bracket_flags f on f.oracle_id = c.oracle_id
+    where c.oracle_id::text = any(${freeIds}) and c.commander_legal and c.color_identity <@ ${forPlayed.color_identity}::text[]
+      and c.type_line not like '%Land%' and c.oracle_id::text <> ${forPlayed.oracle_id} and (c.game_changer or coalesce(f.tutor, false))
+    order by c.name`) as { oracle_id: string; name: string }[];
+  const card = marked.find((m) => !playedRows.has(m.oracle_id) && take(m.oracle_id));
+  const basic = [...playedRows].filter(([id]) => [...basics.values()].includes(id)).sort((a, b) => b[1] - a[1])[0];
+  if (card && basic) {
+    playedRows.set(card.oracle_id, 1);
+    if (basic[1] > 1) playedRows.set(basic[0], basic[1] - 1);
+    else playedRows.delete(basic[0]);
+    console.log(`bracket mark: ${card.name}`);
+  } else {
+    console.log("WARNING: the account owns no free Game Changer or tutor in Played's colors: no row will carry a bracket mark");
+  }
+}
 const played = await writeDeck("played", namePlayed, forPlayed.oracle_id, playedRows);
+// One locked card (About pages, Your deck's Lock cards), the row the action's own write would make (`setCardLocked`,
+// which needs a signed-in request). A lock edits no list, so the version and the reading below are untouched by it.
+const [lockable] = (await sql`select c.oracle_id::text from cards c where c.oracle_id::text = any(${[...playedRows.keys()]})
+  and c.type_line not like '%Land%' and c.oracle_id::text <> all(${[dear, spare]}) order by c.name limit 1`) as { oracle_id: string }[];
+if (lockable) {
+  await sql`insert into deck_locks (deck_id, oracle_id) values (${played}, ${lockable.oracle_id})
+    on conflict (deck_id, oracle_id) do update set removed_at = null`;
+}
+
+// Fresh: a fourth whole deck, never analyzed and with no description (About pages, Analysis: the Analyze press and the
+// Describe field draw only on such a deck). Its commander need not be of colors disjoint from the other three: every
+// copy still comes from the free pool. A commander whose colors hold too few free cards is passed over, with the copies
+// it took put back.
+let fresh: string | null = null;
+for (const c of candidates) {
+  if (picked.some((p) => p.oracle_id === c.oracle_id) || (pool.get(c.oracle_id) ?? 0) <= 0) continue;
+  const before = new Map(pool);
+  try {
+    take(c.oracle_id);
+    const rows = await buildList(c, 60, 99);
+    const [nameFresh] = deckNames([...picked.map((p) => p.name), c.name]).slice(3);
+    fresh = await writeDeck("fresh", nameFresh, c.oracle_id, rows);
+    console.log(`fresh deck: ${c.name} (${c.color_identity.join("")})`);
+    break;
+  } catch {
+    for (const [k, v] of before) pool.set(k, v);
+  }
+}
+if (!fresh) throw new Error("the account owns no fourth free commander with a whole deck's worth of free cards");
 // Played is COMMITTED, as a deck that gets played is: through `commitVersion`, the write the app's own commit action
 // (`commitDeckVersion`) makes. No declared bracket, so no snapshot, as the action finds for such a deck. It is then
 // dated as a deck sleeved before its five games were played: the deck made 23 days ago, the version committed 22 days
@@ -258,6 +314,22 @@ await sql`update decks set created_at = ${new Date(committedAt.getTime() - DAY)}
 await sql`update deck_versions set committed_at = ${committedAt}, commander_since = ${committedAt}
   where id = ${version.id}`;
 await sql`update deck_version_cards set since = ${committedAt} where version_id = ${version.id}`;
+
+// A pending change after v1 (About pages, Your deck's commit row): one basic swapped for a card the account owns free,
+// through the app's own writes (the basics stepper's, then the Add panel's), so the deck stays whole and its to-do card
+// draws "Commit as v2".
+const { setBasicQuantityFor } = await import("../src/lib/decks/set-basic-quantity");
+const { addCardToDeckFor } = await import("../src/lib/decks/add-card");
+const swapOut = [...playedRows].filter(([id]) => [...basics.values()].includes(id)).sort((a, b) => b[1] - a[1])[0];
+const swapIn = ((await sql`select c.oracle_id::text from cards c
+  where c.oracle_id::text = any(${freeIds}) and c.commander_legal and c.color_identity <@ ${forPlayed.color_identity}::text[]
+    and c.type_line not like '%Land%' and c.oracle_id::text <> ${forPlayed.oracle_id}
+  order by c.name`) as { oracle_id: string }[]).find((c) => !playedRows.has(c.oracle_id) && take(c.oracle_id));
+if (!swapOut || !swapIn) throw new Error("Played has no basic to swap, or the account owns no free card to swap in");
+const down = await setBasicQuantityFor(viewer, played, swapOut[0], swapOut[1] - 1, swapOut[1]);
+if (!down.ok) throw new Error(`setBasicQuantityFor refused: ${down.reason}`);
+const added = await addCardToDeckFor(viewer, played, swapIn.oracle_id, { relock: false });
+if (!added.result.ok) throw new Error("addCardToDeckFor refused the pending card");
 console.log(`commanders: ${picked.map((c) => `${c.name} (${c.color_identity.join("")}, ${c.support} free support cards)`).join(" · ")}`);
 
 // The friend, the pod, the spare.
@@ -316,8 +388,22 @@ await sql`delete from feed_items where user_id = ${viewer}`;
 await sql`insert into feed_items (user_id, kind, dedupe_key, oracle_id, data, created_at)
   values (${viewer}, 'price-drop', ${`${dear}:fixture`}, ${dear}, ${JSON.stringify({ fromCents: 1200, toCents: 700 })}::jsonb, now() - interval '2 hours')`;
 
+// Played's STORED analysis (About pages: the findings and the live tuning tiles), taken last, over the list as it stands
+// with its pending change: the app's own compute and store (`computeAndStoreProfile`, the Analyze press's write), with
+// the uncached builds (`unstable_cache` raises outside a request). Free: it computes and calls no model.
+const { readCatalogGeneration } = await import("../src/lib/cache/catalog-generation");
+const { loadDeckProfile } = await import("../src/lib/profile/load");
+const { computeAndStoreProfile } = await import("../src/lib/profile/stored");
+const reading = await computeAndStoreProfile(played, viewer, {
+  generation: readCatalogGeneration,
+  compute: (deckId: string, userId: string) => loadDeckProfile(deckId, userId, process.env),
+  env: process.env,
+});
+if (reading?.kind !== "ok") throw new Error(`Played was not analyzed: ${reading ? `${reading.kind}, ${reading.built} of ${reading.size}` : "not the account's deck"}`);
+
 console.log(`ABOUT_DECK_UNDER=${under}`);
 console.log(`ABOUT_DECK_OVER=${over}`);
 console.log(`ABOUT_DECK_PLAYED=${played}`);
-console.log(`seeded: Alex (a spare, in About pod), five games with opponents, two notes, one want · ${uploads} earlier uploads`);
+console.log(`ABOUT_DECK_FRESH=${fresh}`);
+console.log(`seeded: Alex (a spare, in About pod), five games with opponents, two notes, one want, a locked card, a pending change and a stored analysis on Played · ${uploads} earlier uploads`);
 process.exit(0);

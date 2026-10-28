@@ -487,6 +487,8 @@ export function AvailabilityMarker({
 
   return (
     <span
+      // Inert: an About capture's hook (`scripts/lib/about-locators.mjs`), styling and behavior read nothing of it.
+      data-availability={state}
       className={twMerge(
         "inline-flex items-center min-w-0",
         chip && plate

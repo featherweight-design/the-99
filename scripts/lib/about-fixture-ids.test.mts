@@ -64,6 +64,12 @@ describe("about fixture decks", () => {
     expect(readDeckMarks(null)).toEqual({ byRole: {}, ids: [] });
   });
 
+  it("records the About pages' never-analyzed deck as its own role, beside Played", () => {
+    const { byRole, ids } = readDeckMarks([deckMark("played", P), deckMark("fresh", U)]);
+    expect(byRole).toEqual({ played: P, fresh: U });
+    expect(ids).toEqual([P, U]);
+  });
+
   it("refuses an unknown role, a non-uuid id, and two different decks for one role", () => {
     expect(() => deckMark("brew", U)).toThrow();
     expect(() => deckMark("under", "About · Under 99")).toThrow();

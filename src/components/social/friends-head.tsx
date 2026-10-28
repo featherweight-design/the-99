@@ -109,6 +109,7 @@ export function FriendsHead({
       onClick={onOpenPicker}
       aria-label={commander ? c.changeAria(commander.name) : c.choose}
       data-picking={picking ? "" : undefined}
+      data-face-button=""
       className={`relative row-start-1 flex h-[56px] w-[56px] flex-none cursor-pointer items-center justify-center self-center rounded-[13px] border-0 bg-transparent p-0 md:row-span-2 md:self-start md:h-[64px] md:w-[64px] md:rounded-[14px] ${picking ? "outline-2 outline-offset-[3px] outline-[color:var(--accent)] [outline-style:solid]" : ""}`}
     >
       {commander ? (

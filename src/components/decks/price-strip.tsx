@@ -95,6 +95,7 @@ export function PriceStrip({
     // provenance/link on the left, easily missed. No `md:` override changes
     // this order; the only `md:` classes left are comfort padding.
     <div
+      data-price-strip=""
       // The bottom padding is zero: the 44px link row below supplies it, and
       // 10px on top of a 44px target would read as a gap rather than as the
       // row's own height.
