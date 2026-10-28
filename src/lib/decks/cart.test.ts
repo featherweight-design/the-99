@@ -170,7 +170,7 @@ describe("where owned copies are in use (v2's own fact, G1)", () => {
   // outside the cart; Gishath holds one of its own.
   const ownership = new Map([[TOWER, {
     owned: 6,
-    heldByDeck: new Map([["kratos", 1], ["zeta", 2], ["alpha", 2], ["gishath", 1]]),
+    heldByDeck: new Map([["kratos", 1], ["zeta", 3], ["alpha", 1], ["gishath", 1]]),
   }]]);
   const holders = [{ id: "zeta", name: "Zeta Tokens" }, { id: "alpha", name: "Alpha Stompy" }];
   const cart = buildCart(rows, read, deckRows, names, ownership, holders);
@@ -178,7 +178,7 @@ describe("where owned copies are in use (v2's own fact, G1)", () => {
   const rank = new Map(cart.decks.map((d, i) => [d.id, i]));
 
   it("lists the decks off the line: the cart's in the selections' order, then outside by copies, then by name", () => {
-    expect(tower.heldBy).toEqual([{ deckId: "kratos", held: 1 }, { deckId: "alpha", held: 2 }, { deckId: "zeta", held: 2 }]);
+    expect(tower.heldBy).toEqual([{ deckId: "kratos", held: 1 }, { deckId: "zeta", held: 3 }, { deckId: "alpha", held: 1 }]);
     expect(tower.heldBy.reduce((n, h) => n + h.held, 0)).toBe(tower.heldElsewhere);
   });
 
@@ -194,13 +194,13 @@ describe("where owned copies are in use (v2's own fact, G1)", () => {
     const order = cart.decks.map((d) => d.id);
     expect(used.map((h) => h.deckId)).toEqual([
       ...order.filter((id) => id === "gishath" || id === "kratos"),
-      "alpha", "zeta",
+      "zeta", "alpha",
     ]);
     expect(used.reduce((n, h) => n + h.held, 0)).toBe(selectLine(tower, selected)!.heldElsewhere);
   });
 
   it("leaves out a deck on the line that holds none", () => {
     const noneHeld = { ...tower, rows: tower.rows.map((r) => ({ ...r, held: 0 })) };
-    expect(inUseIn(noneHeld, new Set(["omnath"]), rank).map((h) => h.deckId)).toEqual(["kratos", "alpha", "zeta"]);
+    expect(inUseIn(noneHeld, new Set(["omnath"]), rank).map((h) => h.deckId)).toEqual(["kratos", "zeta", "alpha"]);
   });
 });
