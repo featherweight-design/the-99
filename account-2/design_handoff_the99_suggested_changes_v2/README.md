@@ -1,7 +1,7 @@
 # The 99 · Suggested changes v2 · R2 (account 2, 2026-10-28)
 
 Canvas: https://claude.ai/artifact/QY9JsqnZvEcQNWvaAQ9QcJ
-Status: R2, awaiting Hugh's audit. Goes to main only on approval, as `design/design_handoff_the99_suggested_changes_v2/`.
+Status: R2b, awaiting Hugh's audit. Goes to main only on approval, as `design/design_handoff_the99_suggested_changes_v2/`.
 
 Source of truth: `docs/superpowers/specs/2026-10-27-suggested-changes-v2-design.md` (PR #2295, §3, §4, §5.5, §7, §7a, §11); eval in `scripts/eval/` (#2291) and `docs/superpowers/eval/count-mechanism/`.
 Extends `design_handoff_the99_tuning_hub/` and `design_handoff_the99_deck_tuning/`; the pick pattern follows prompt 22's Proposed cuts list (`design_handoff_the99_small_items/` item 1); the About change is in prompt 21's visual system (`design_handoff_the99_about_visual/`).
@@ -14,6 +14,11 @@ Drawn over the shipped Tuning hub and Suggested changes (two lists) at 390 and 1
 3. **Apply, confirm, Undo** (new board `Apply`): Apply N + N opens a confirmation (ModalChrome eyebrow head, 560; sheet on a phone) listing what comes in and goes out with the bracket outcome; one button applies the set as one change; ✕ closes with nothing changed. Applied: the bar holds **Undo all 2N** until the next commit. Undone: all back, picks kept. Failure: the shared toast, nothing half-applied.
 4. **History** (board `History`): an opened run shows *You asked* beside its outcome on desktop, stacked on a phone; the run list quotes the request.
 5. **N runs 1 to 20**, 20 the launch maximum (unchanged). Picks stay capped at N per side (Hugh 2026-10-28).
+
+## R2b · Hugh's feedback on Apply (2026-10-28)
+- The button reads **Apply 2N changes** (Apply 6 changes, Apply 40 changes), in the bar and the confirmation; the bar already says +N in −N out.
+- The confirmation has a max height: **min(640px, 100dvh − 96px)** on desktop, **88%** of the screen as a sheet. Head and Apply stay; the two lists scroll inside with a bottom fade. Drawn at 20 + 20 (board `Apply`, A2).
+- Cut "One change. One Undo puts all N back." from the confirmation, and "One Undo puts all N back." from the bar.
 
 ## R1b · Hugh's feedback (2026-10-28)
 - What we noticed moves under the box on desktop too (beside it left a tall gap). Chips wrap in a row; the bracket piece sits under them.

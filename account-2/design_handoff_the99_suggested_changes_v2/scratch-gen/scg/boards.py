@@ -103,7 +103,7 @@ CALLS = [
      "(<i>you have 6 of 10</i>). Either way a heading says where your picks take it (<i>8 with your picks</i>), and inside a group the run’s order holds."),
     ("6", "One Apply for the set, one Undo (to the spec’s Q1 proposal)",
      "A bar pinned under the lists keeps the tally: <i>+10 in · −7 out · the deck would go to 102</i>. Unequal: Apply stays off and the bar names the "
-     "fix (<i>Pick 3 more cuts</i>). Equal: <b>Apply 10 + 10</b>, with the set’s bracket outcome. Fewer than N of each is fine. After applying: "
+     "fix (<i>Pick 3 more cuts</i>). Equal: <b>Apply 20 changes</b>, with the set’s bracket outcome. Fewer than N of each is fine. After applying: "
      "<i>Undo all 20</i>; the rest of the pool stays pickable for another equal set."),
     ("7", "The wait: the lists fill in as cards arrive",
      "A run is never cut short. Additions stream in first, then cuts, each landing at the end of its list (marked new for a beat) and grouping once its side is in. "
@@ -122,7 +122,7 @@ QUESTIONS = [
      "A first-class <b>Bracket</b> card beside the request box (under it on a phone): Keep at 2 · Core (the default), Down to 1, Up to 3, Up to 4. "
      "Results say the aim, flag each addition that reaches it, and the bar says whether the picked set gets there. Boards 1 and 5."),
     ("3", "One Apply, a confirmation, one Undo",
-     "Apply N + N opens a confirmation listing what comes in and goes out, then applies as one change; <b>Undo all</b> takes the set back and keeps the picks. Board 9."),
+     "Apply 2N changes opens a confirmation listing what comes in and goes out, then applies as one change; <b>Undo all</b> takes the set back and keeps the picks. Board 9."),
     ("4", "History puts the request beside the results",
      "An opened run shows <i>You asked</i> beside its outcome on desktop (stacked on a phone); the run list quotes it. Board 8."),
     ("5", "N runs 1 to 20", "Unchanged from R1: the stepper stops at 20 (shown greyed + at 20, board 1). Picks stay capped at N per side."),
@@ -212,7 +212,7 @@ def notat_board():
     pa, pc = K(A[:3]), K(C[:3])
     res = S.results(False, 3, A[:5], C[:5], pa, pc, req=S.REQ3)
     res = res.replace(S.abar(3, 3, 3), '<div class="abar"><div class="tl"><span class="a"><span class="g">+3 in</span><span class="r">−3 out</span><span class="q">the deck is at 98</span></span>'
-                      '<span class="w warn"><b>The deck changed since this run.</b> It’s at 98 now; applying needs it at 99. <span class="lk">Top off →</span></span></div><span class="ab2 dis">Apply 3 + 3</span></div>')
+                      '<span class="w warn"><b>The deck changed since this run.</b> It’s at 98 now; applying needs it at 99. <span class="lk">Top off →</span></span></div><span class="ab2 dis">Apply 6 changes</span></div>')
     c2 = tool_dk(res)
     c = frames(frame("<b>390</b> · the deck moved off 99 with the intake open", c1), frame("<b>1300</b> · …or with picks made", c2))
     body = (board_head("2 · a deck not at 99", "Pointed to the right tool",
@@ -241,14 +241,14 @@ def r3_board():
                frame("<b>390</b> · 3 added, 2 cut: the Cuts half", vp_ph(p1, 1180)),
                frame("<b>390</b> · applied", vp_ph(p3, 1180)))
     b = frames(frame("<b>1300</b> · 3 in, 2 out: Apply waits", tool_dk(d1)))
-    c = frames(frame("<b>1300</b> · 3 and 3: Apply 3 + 3", tool_dk(d2)))
+    c = frames(frame("<b>1300</b> · 3 and 3: Apply 6 changes", tool_dk(d2)))
     d = frames(frame("<b>1300</b> · applied, one Undo", tool_dk(d3)))
     body = (board_head("3 · results at N = 3 (5 a side)", "Five of each, pick three",
                        "Flat: five rows a side read in the run’s order. Each row is the shipped two-list line (sign, card, ownership dot, name, reason, citation chips) "
                        "with one Pick. The count chip on each side turns green at N. Apply is one press for the set.")
             + sec("A · Phone", "One half at a time, under the segmented control. The bar is pinned above the fold with the tally and Apply.", a)
             + sec("B · Unequal", "3 in and 2 out would take the deck to 100. Apply stays off, and the bar says what fixes it. Picks are never undone for you.", b)
-            + sec("C · Equal", "Both at 3: Apply 3 + 3. The bar adds the set’s bracket outcome. 2 + 2 would apply too.", c)
+            + sec("C · Equal", "Both at 3: Apply 6 changes. The bar adds the set’s bracket outcome. 2 + 2 would apply too.", c)
             + sec("D · Applied", "One change, one Undo for all six. Applied rows read <b>✓ Added</b> / <b>✓ Cut</b> (R1b: a bigger mark, sentence case); the four unpicked stay pickable for another equal set.", d))
     return doc("Suggested changes v2 · results at 3", body, 3 * 390 + 2 * 44 + 112 + 0)
 
@@ -412,15 +412,19 @@ def apply_board():
     toast = ('<div class="toast" style="bottom:96px"><div class="tt"><span class="t1">Couldn’t apply. Nothing changed, and your picks are kept.</span>'
              '<span class="t2">Try Apply again in a moment.</span></div><span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted)">✕</span></div>')
     body = (board_head("9 · apply, confirm, undo", "One change in, one Undo out",
-                       "R2: applying is one action for the picked additions and cuts. Apply N + N opens a confirmation that lists both sides and the bracket outcome; "
+                       "R2: applying is one action for the picked additions and cuts. Apply 2N changes opens a confirmation that lists both sides and the bracket outcome; "
                        "its one button applies the set as a single change on the deck’s draft. <b>Undo all</b> takes the whole set back and keeps the picks. "
                        "The ✕ closes the confirmation with nothing changed.")
             + sec("A · Confirm", "The shipped ModalChrome (eyebrow head, 560 wide) on desktop; the shipped sheet on a phone. Three in, three out, by name, with the card.",
                   frames(frame("<b>390</b>", overlay(vp_ph(eqP, 844), S.confirm(ina, outc, True))),
                          frame("<b>1300</b>", overlay(vp_dk(eqD, 900), S.confirm(ina, outc)))))
+            + sec("A2 · Twenty and twenty: a max height", "The confirmation never grows past <b>min(640px, 100dvh − 96px)</b> on desktop, or <b>88%</b> of the screen as a sheet. "
+                  "The head and the Apply button stay put; the two lists scroll inside, with a fade at the bottom edge.",
+                  frames(frame("<b>390</b> · 20 + 20", overlay(vp_ph(S.results(True, 20, A, C, K(A[:20]), K(C[:20]), grouped=True, req=S.REQ20, tab="cut"), 844), S.confirm(A[:20], C[:20], True, big=True))),
+                         frame("<b>1300</b> · 20 + 20", overlay(vp_dk(S.results(False, 20, A, C, K(A[:20]), K(C[:20]), grouped=True, req=S.REQ20), 900), S.confirm(A[:20], C[:20], big=True)))))
             + sec("B · Applied", "The bar turns to the set’s Undo and stays until the deck is committed. Applied rows read Added / Cut; the unpicked four stay pickable.",
                   frames(frame("<b>390</b>", vp_ph(doneP, 1000)), frame("<b>1300</b>", tool_dk(doneD))))
-            + sec("C · Undone", "One press puts all six back. The picks stay, so Apply 3 + 3 is one press away again.",
+            + sec("C · Undone", "One press puts all six back. The picks stay, so Apply 6 changes is one press away again.",
                   frames(frame("<b>390</b>", vp_ph(undP, 1000)), frame("<b>1300</b>", tool_dk(undD))))
             + sec("D · Apply fails", "The shared toast (ToastFrame) over the bar. Nothing is half-applied: the write is one transaction.",
                   frames(frame("<b>390</b>", overlay(vp_ph(eqP, 844), toast)))))

@@ -1008,7 +1008,14 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .mdl .mb .k{font:500 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;display:block}
 .mdl .mb .cr2{display:flex;align-items:center;gap:8px;min-height:30px;font-size:13px;color:var(--fg-body)}
 .mdl .mb .cr2 img{width:20px;height:28px;border-radius:2px;border:1px solid var(--border-strong);object-fit:cover}
-.mdl .mf{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--border)}
+.mdl .mf{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:12px 18px;border-top:1px solid var(--border);flex:none}
+/* max height: min(640px, 100dvh − 96px) on desktop, 88% of the screen as a sheet; head and foot stay, the lists scroll */
+.mdl{max-height:min(640px,calc(100% - 96px))}
+.ph .mdl{max-height:88%}
+.mdl .mh{flex:none}
+.mdl .mb{overflow:hidden;min-height:0;flex:1 1 auto;position:relative}
+.mdl.big .mb:after{content:'';position:sticky;grid-column:1/-1;bottom:0;height:0;box-shadow:0 -34px 28px 10px var(--bg)}
+.mdl.big .sbar{position:absolute;right:4px;top:8px;width:4px;height:34%;border-radius:2px;background:var(--border-dashed)}
 .ph .mdl .mf{flex-direction:column;align-items:stretch;padding-bottom:24px}
 .mdl .mf span.n{flex:1;font-size:12px;color:var(--fg-muted);line-height:1.5}
 .mdl .mf .ab2{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;border-radius:8px;background:var(--accent);color:#14110E;font:600 13.5px 'IBM Plex Sans'}

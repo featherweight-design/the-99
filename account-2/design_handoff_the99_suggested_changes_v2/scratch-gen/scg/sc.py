@@ -659,8 +659,8 @@ def abar(na, nc, n, ph=False, bracket=None, done=False, maxn=None):
                 f'<span class="w">Applied as one change. The rest stay here: pick another equal set to take more.</span></div><span class="ub2">Undo all {na + nc}</span></div>')
     if na == nc and na > 0:
         br = (f' · bracket goes to <b style="color:var(--bracket-3)">Upgraded</b>' if bracket else " · bracket stays Core")
-        lab = f'Apply {na} + {nc}'
-        w = f'Nothing moves until you apply. One Undo puts all {na + nc} back.'
+        lab = f'Apply {na + nc} changes'
+        w = 'Nothing moves until you apply.'
         if bracket == "reached":
             br = ' · bracket 2 → <b style="color:var(--bracket-3)">3 · Upgraded</b>, as asked'
         elif bracket == "missed":
@@ -871,7 +871,14 @@ CSS2 = r"""
 .mdl .mb .k{font:500 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;display:block}
 .mdl .mb .cr2{display:flex;align-items:center;gap:8px;min-height:30px;font-size:13px;color:var(--fg-body)}
 .mdl .mb .cr2 img{width:20px;height:28px;border-radius:2px;border:1px solid var(--border-strong);object-fit:cover}
-.mdl .mf{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--border)}
+.mdl .mf{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:12px 18px;border-top:1px solid var(--border);flex:none}
+/* max height: min(640px, 100dvh − 96px) on desktop, 88% of the screen as a sheet; head and foot stay, the lists scroll */
+.mdl{max-height:min(640px,calc(100% - 96px))}
+.ph .mdl{max-height:88%}
+.mdl .mh{flex:none}
+.mdl .mb{overflow:hidden;min-height:0;flex:1 1 auto;position:relative}
+.mdl.big .mb:after{content:'';position:sticky;grid-column:1/-1;bottom:0;height:0;box-shadow:0 -34px 28px 10px var(--bg)}
+.mdl.big .sbar{position:absolute;right:4px;top:8px;width:4px;height:34%;border-radius:2px;background:var(--border-dashed)}
 .ph .mdl .mf{flex-direction:column;align-items:stretch;padding-bottom:24px}
 .mdl .mf span.n{flex:1;font-size:12px;color:var(--fg-muted);line-height:1.5}
 .mdl .mf .ab2{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;border-radius:8px;background:var(--accent);color:#14110E;font:600 13.5px 'IBM Plex Sans'}
@@ -938,13 +945,13 @@ def stream(ph, at, n, adds_in, cuts_in, pa=(), pc=(), adds_total=None, cuts_tota
     return f'<div class="sc">{top}<div class="cols"><div class="lcol">{hA}{A}</div><div class="lcol">{hC}{C}</div></div>{bar}</div>'
 
 
-def confirm(adds, cuts, ph=False, bracket="Bracket stays 2 · Core."):
+def confirm(adds, cuts, ph=False, bracket="Bracket stays 2 · Core.", big=False):
     def li(sign, it):
         c = "var(--accent)" if sign == "+" else "var(--fg-faint)"
         return f'<div class="cr2"><span style="color:{c};font:600 13px IBM Plex Mono;width:10px">{sign}</span><img src="{P.card(it[0])}" alt="">{it[1]}</div>'
     n = len(adds)
-    return (f'<div class="scrim"><div class="mdl"><div class="mh"><div><p class="ey">Suggested changes</p><h4>Apply {n} in, {n} out</h4>'
+    return (f'<div class="scrim"><div class="mdl{" big" if big else ""}"><div class="mh"><div><p class="ey">Suggested changes</p><h4>Apply {n} in, {n} out</h4>'
             f'<p>The deck stays at 99. {bracket}</p></div><span class="x">✕</span></div>'
-            f'<div class="mb"><div><span class="k">Coming in · {n}</span>{"".join(li("+", a) for a in adds)}</div>'
+            f'<div class="mb">{'<span class="sbar"></span>' if big else ""}<div><span class="k">Coming in · {n}</span>{"".join(li("+", a) for a in adds)}</div>'
             f'<div><span class="k">Going out · {n}</span>{"".join(li("−", c) for c in cuts)}</div></div>'
-            f'<div class="mf"><span class="n">One change. One Undo puts all {2 * n} back.</span><span class="ab2">Apply {n} + {n}</span></div></div></div>')
+            f'<div class="mf"><span class="ab2">Apply {2 * n} changes</span></div></div></div>')
