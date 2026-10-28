@@ -179,7 +179,8 @@ function LabelList({
                 </span>
               </button>
               {landed && landed.isNew && landed.card && (
-                <div className="-mt-[5px] pb-[9px] pl-[44px] pr-[10px]">
+                // On a coarse pointer Show me gets its own 44px row, so its touch target never covers the label above.
+                <div className="-mt-[5px] pb-[9px] pl-[44px] pr-[10px] pointer-coarse:mt-0 pointer-coarse:flex pointer-coarse:min-h-[44px] pointer-coarse:items-center pointer-coarse:pb-0">
                   <LandingShowMe landing={landed} width={width} />
                 </div>
               )}

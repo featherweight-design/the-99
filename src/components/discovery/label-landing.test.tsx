@@ -81,6 +81,10 @@ describe("LabelLanding", () => {
       expect(line.getAttribute("aria-pressed")).toBe("true");
       expect(width(container, w).querySelector(`[data-about-label='${LIT}'] [data-about-new]`)?.textContent).toBe("New");
       expect(width(container, w).querySelector(`[data-about-label='${LIT}'] [data-about-landing-show-me]`)?.textContent).toBe("Show me ›");
+      // A coarse pointer gives Show me its own 44px row, so its touch target cannot cover the label above.
+      const row = width(container, w).querySelector(`[data-about-label='${LIT}'] [data-about-landing-show-me]`)!.parentElement!;
+      expect(row.className).toMatch(/pointer-coarse:min-h-\[44px\]/);
+      expect(row.className).toMatch(/pointer-coarse:mt-0/);
       // No other label is marked.
       expect(width(container, w).querySelectorAll("[data-about-new]")).toHaveLength(1);
     }
