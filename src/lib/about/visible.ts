@@ -127,8 +127,9 @@ export function drawnEntry(id: string, visible: readonly AboutEntry[]): AboutEnt
 /** The credits entry this reader is drawn: `buying-credits` with payments on, else the shipped `credits`. */
 export const creditsEntryOf = (visible: readonly AboutEntry[]) => drawnEntry("credits", visible);
 
-/** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off; a list keeps it only while every one holds. */
-function lineKept(sw: AboutLineSwitch, env: NodeJS.ProcessEnv): boolean {
+/** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off; a list keeps it only while every one holds.
+ *  Exported for the About pages (`pages-visible.ts`), which gate labels, rules and sentences the same way. */
+export function lineKept(sw: AboutLineSwitch, env: NodeJS.ProcessEnv): boolean {
   if (Array.isArray(sw)) return (sw as readonly AboutLineSwitchOne[]).every((one) => lineKept(one, env));
   const one = sw as AboutLineSwitchOne;
   return one.startsWith("!") ? !SWITCHES[one.slice(1) as AboutSwitch](env) : SWITCHES[one as AboutSwitch](env);

@@ -1,0 +1,284 @@
+import { describe, expect, it } from "vitest";
+import { ABOUT_RULES, ABOUT_SECTIONS } from "../copy/about-pages";
+import { aboutEntries } from "../copy/about-entries";
+import { SWITCHES, SWITCH_NAMES } from "../switches/registry";
+import { TOOLS } from "../discovery/tools";
+import { resolveEnv, type SwitchSnapshot } from "../switches/resolve";
+import {
+  afterVisit, labelKey, showMeLabel, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
+} from "./pages-visible";
+import { NEVER_SEEN, switchedIds, visibleEntries, type SeenState } from "./visible";
+
+const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
+const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
+const OFF = env({});
+const units = (v: readonly VisibleSection[]) => v.flatMap((s) => [...s.labels, ...s.rules]);
+const keys = (v: readonly VisibleSection[]) => units(v).map((u) => u.key);
+
+/** What a reader at `floor` who visited About with every switch on was written: the floor, and every switched entry
+ *  (and variant) drawn to them that had arrived by then. */
+function readerAt(floor: number, e = ALL_ON): SeenState {
+  const met = visibleEntries(e).filter((x) => x.since <= floor);
+  return { version: floor, ids: switchedIds(met) };
+}
+
+describe("visibleSections", () => {
+  it("drops a label whose switch is off and keeps its section, never greyed", () => {
+    const off = visibleSections(OFF);
+    const lock = off.find((s) => s.id === "your-deck")!;
+    expect(lock.labels.map((l) => l.key)).not.toContain("decks/your-deck/lock");
+    expect(off.find((s) => s.id === "notes")!.labels).toEqual([]);
+    expect(off.map((s) => s.id)).toEqual(ABOUT_SECTIONS.map((s) => s.id));
+  });
+
+  it("cuts a sentence whose switch is off, and keeps a negated one only while its switch is off", () => {
+    const replace = (e: NodeJS.ProcessEnv) => visibleSections(e).flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
+    expect(replace(OFF).text).toBe("An upload replaces your whole Collection with the file.");
+    const on = replace(ALL_ON).text;
+    expect(on).not.toContain("An upload replaces your whole Collection");
+    expect(on).toContain("With Sync");
+    const editOnly = replace(env({ COLLECTION_EDIT_ENABLED: "true" })).text;
+    expect(editOnly).toContain("With Add");
+    expect(editOnly).not.toContain("With Sync");
+  });
+
+  it("announces a kept positive sentence on its own key, and never a negated one", () => {
+    const replace = visibleSections(ALL_ON).flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
+    expect(replace.sentenceSwitches).toContain("COLLECTION_SYNC_ENABLED");
+    const off = visibleSections(OFF).flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
+    expect(off.sentenceSwitches).toEqual([]);
+  });
+});
+
+describe("each sentence follows its own switch", () => {
+  const textOf = (e: Record<string, string>, key: string) =>
+    units(visibleSections(env(e))).find((u) => u.key === key)?.text;
+  it.each([
+    ["Ready to build leaves with the feed on", { HOME_FEED_ENABLED: "true" }, "home/home/ready", undefined, undefined],
+    ["the feed's lead names no kind a switch can hide", { HOME_FEED_ENABLED: "true" }, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
+    ["the + without scanning", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "by name.", "scan"],
+    ["the + with scanning", { COLLECTION_EDIT_ENABLED: "true", CARD_SCAN_ENABLED: "true" }, "collection/cards/add", "scan them", undefined],
+    ["the place strip without Help me choose", { COMMANDERS_PLACE_ENABLED: "true" }, "commanders/for-you/places", "two ways", "Help me choose"],
+    ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
+    ["credits with Suggested changes and not Proposed cuts", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" }, "rule/credits", "Suggested changes run", "Look deeper"],
+    ["credits with Proposed cuts and not Suggested changes", { ANALYSIS_TAB_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }, "rule/credits", "Look deeper", "Suggested changes"],
+    ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", "Overview"],
+    ["credits with nothing on", {}, "rule/credits", "Anything written just for you", "never expire"],
+    ["a proxy without tokens", {}, "rule/proxy", "uses no copy", "token"],
+    ["a fill without Help me choose", {}, "rule/autofill", "then uses your Collection", "Help me choose"],
+    ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
+    ["friends see a wishlist only with the wishlist", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "spares you offer", "wishlist"],
+    ["friends see each deck's status before friend decks", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "names, status", "can open"],
+    ["friends open decks with friend decks", { SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" }, "rule/friends-see", "can open the decks", "names, status"],
+    ["bracket marks are explained with the Analysis tab off, as they are drawn", {}, "decks/your-deck/bracket-marks", "Game Changers", undefined],
+  ] as const)("%s", (_name, e, key, has, lacks) => {
+    const text = textOf(e as Record<string, string>, key);
+    if (has === undefined) {
+      expect(text).toBeUndefined();
+      return;
+    }
+    expect(text).toContain(has);
+    if (lacks) expect(text).not.toContain(lacks);
+  });
+});
+
+describe("Show me", () => {
+  /** A switch with every parent it needs, and nothing else on. */
+  const withNeeds = (name: string): Record<string, string> => {
+    const out: Record<string, string> = {};
+    for (let n: string | undefined = name; n; n = (SWITCHES.find((s) => s.name === n) as { needs?: string } | undefined)?.needs) out[n] = "true";
+    return out;
+  };
+
+  it.each(TOOLS.map((t) => [t.id, t] as const))("%s has a label the reader is drawn whenever the tool is on", (_id, t) => {
+    const envs = [ALL_ON, env(t.switch ? withNeeds(t.switch) : {})];
+    for (const e of envs) expect(showMeLabel(t.labels, visibleSections(e)), t.id).not.toBeNull();
+  });
+
+  it("falls back to New deck for Help me choose with the Commanders place off", () => {
+    const hmc = TOOLS.find((t) => t.id === "help-me-choose")!;
+    expect(showMeLabel(hmc.labels, visibleSections(env(withNeeds("HELP_ME_CHOOSE_ENABLED"))))).toBe("decks/your-decks/new-deck");
+    expect(showMeLabel(hmc.labels, visibleSections(ALL_ON))).toBe("commanders/for-you/places");
+  });
+});
+
+describe("seen translation", () => {
+  it("tells a reader at every floor exactly what the old entries would not have", () => {
+    const visible = visibleSections(ALL_ON);
+    for (let floor = 1; floor <= 16; floor++) {
+      const seen = readerAt(floor);
+      const metIds = new Set(seen.ids);
+      const unswitchedSince = (leg: readonly string[]) =>
+        leg.flatMap((id) => {
+          const e = aboutEntries.find((x) => x.id === id);
+          return e && !e.switch ? [e.since] : [];
+        });
+      const expected = units(visible).filter((u) => {
+        if (u.legacy.some((id) => metIds.has(id))) return false;
+        const own = typeof u.switch === "string" ? u.switch : null;
+        const isAnnouncement = own !== null && u.legacy.some((id) => id.endsWith(`@${own}`) || aboutEntries.find((x) => x.id === id)?.switch === own);
+        if (isAnnouncement) return true;
+        return u.since > floor;
+      }).map((u) => u.key);
+      const got = unseenUnits(visible, seen).filter((u) => !u.key.includes("@")).map((u) => u.key);
+      expect(got, `floor ${floor}`).toEqual(expected);
+      // Nothing the reader met is told again: every unit told at this floor has no unswitched source at or under it.
+      for (const k of got) {
+        const u = units(visible).find((x) => x.key === k)!;
+        // Told only when part of it is a source they have not met: an unswitched entry newer than the floor, or the
+        // switched entry this unit announces, which they have not been written.
+        const unmetSwitched = u.legacy.some((id) => !metIds.has(id) && (id.includes("@") || aboutEntries.find((x) => x.id === id)?.switch));
+        expect(unswitchedSince(u.legacy).some((s) => s > floor) || unmetSwitched || unswitchedSince(u.legacy).length === 0, k).toBe(true);
+      }
+    }
+  });
+
+  it("tells a reader who saw everything at version 16 nothing at all", () => {
+    expect(unseenUnits(visibleSections(ALL_ON), readerAt(16))).toEqual([]);
+  });
+
+  it("treats a switch on only through an app-wide override as heard, as production resolves it", () => {
+    const snapshot: SwitchSnapshot = {
+      overrides: [{ switchName: "COMMANDERS_PLACE_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
+      groupOf: new Map(),
+    };
+    const reader = resolveEnv(OFF, snapshot, "u1");
+    const visible = visibleSections(reader);
+    const places = units(visible).find((u) => u.key === "commanders/for-you/places");
+    expect(places).toBeDefined();
+    expect(unitSeen(places!, readerAt(16, reader))).toBe(true);
+    expect(unitSeen(places!, { version: places!.since - 1, ids: ["anything"] })).toBe(false);
+  });
+
+  it("carries a legacy variant to the sentence it became", () => {
+    const visible = visibleSections(ALL_ON);
+    const withSync: SeenState = { version: 16, ids: ["upload-choice", "upload-choice@COLLECTION_SYNC_ENABLED"] };
+    const withoutSync: SeenState = { version: 16, ids: ["upload-choice"] };
+    const sync = sentenceKey("rule/replace", "COLLECTION_SYNC_ENABLED");
+    expect(unseenUnits(visible, withSync).map((u) => u.key)).not.toContain(sync);
+    expect(unseenUnits(visible, withoutSync).map((u) => u.key)).toContain(sync);
+  });
+
+  it("tells a first-run reader nothing, and a written key is seen", () => {
+    const visible = visibleSections(ALL_ON);
+    expect(unseenUnits(visible, NEVER_SEEN)).toEqual([]);
+    const lock = units(visible).find((u) => u.key === "decks/your-deck/lock")!;
+    expect(unitSeen(lock, { version: 16, ids: [] })).toBe(false);
+    expect(unitSeen(lock, { version: 16, ids: [lock.key] })).toBe(true);
+  });
+
+  it("a visit to one page writes that page's keys alone", () => {
+    const all = visibleSections(ALL_ON);
+    const decks = all.filter((s) => s.area === "decks");
+    const written = seenKeysOf(all, "decks");
+    expect(written.every((k) => k.startsWith("decks/") || k.startsWith("rule/"))).toBe(true);
+    const friendsRules = ABOUT_SECTIONS.filter((s) => s.area === "friends").flatMap((s) => s.rules.map(ruleKey));
+    expect(written.some((k) => friendsRules.some((r) => k.startsWith(r)))).toBe(false);
+    expect(written).toEqual(expect.arrayContaining(keys(decks)));
+  });
+
+  it("tells each new thing once: a new unit carries its sentences, and no key repeats", () => {
+    const visible = visibleSections(ALL_ON);
+    const fresh: SeenState = { version: 5, ids: ["placeholder"] };
+    const told = unseenUnits(visible, fresh).map((u) => u.key);
+    expect(new Set(told).size).toBe(told.length);
+    expect(told).toContain("rule/friends-see");
+    expect(told.filter((k) => k.startsWith("rule/friends-see@"))).toEqual([]);
+    const spare: SeenState = { version: 16, ids: ["friend-spares"] };
+    expect(unseenUnits(visible, spare).map((u) => u.key)).toContain(sentenceKey("shopping/deck-shopping/spare", "SPARE_REQUESTS_ENABLED"));
+    const writes = seenKeysOf(visible, "collection");
+    expect(new Set(writes).size).toBe(writes.length);
+  });
+
+  it("keeps a label's opening space and drops the one a cut first sentence leaves", () => {
+    const editOnly = visibleSections(env({ COLLECTION_EDIT_ENABLED: "true" }));
+    const replace = editOnly.flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
+    expect(replace.text.startsWith("With Replace")).toBe(true);
+    const help = editOnly.flatMap((s) => s.labels).find((l) => l.key === "collection/cards/tabs")!;
+    expect(help.text).toBe(" are your Collection’s tabs. History lists your changes from the last 90 days.");
+  });
+
+  it("never lets the floor answer for a unit whose every source was switched", () => {
+    const face = units(visibleSections(ALL_ON)).find((u) => u.key === "friends/friends/face")!;
+    expect(unitSeen(face, { version: 16, ids: [] })).toBe(false);
+    expect(unitSeen(face, { version: 16, ids: ["friends"] })).toBe(true);
+  });
+
+  it("announces a new unit's switched sentence when its switch turns on after a visit", () => {
+    const base = ABOUT_SECTIONS.find((s) => s.id === "home")!;
+    const section = { ...base, labels: [{ ...base.labels[0], id: "fresh", region: "home/home/fresh", rest: " a. b.", switch: null, sentences: { " b.": "PUSH_ENABLED" as const }, since: 16, legacy: [] }] };
+    const off = visibleSections(OFF, [section]);
+    const seen = { version: 16, ids: seenKeysOf(off, "home") };
+    const on = visibleSections(env({ PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true" }), [section]);
+    expect(unseenUnits(on, seen).map((u) => u.key)).toEqual([sentenceKey("home/home/fresh", "PUSH_ENABLED")]);
+  });
+
+  it("keeps a Help me choose acknowledgement when the fill rule's sentence turns on", () => {
+    const hmcOn = env({ HELP_ME_CHOOSE_ENABLED: "true" });
+    const told = (ids: string[]) => unseenUnits(visibleSections(hmcOn), { version: 16, ids }).map((u) => u.key);
+    expect(told(["x"])).toContain(sentenceKey("rule/autofill", "HELP_ME_CHOOSE_ENABLED"));
+    expect(told(["help-me-choose"])).not.toContain(sentenceKey("rule/autofill", "HELP_ME_CHOOSE_ENABLED"));
+  });
+
+  it("lets the floor answer for a switched sentence only where it was a switched line of an unswitched entry", () => {
+    // Each was a \`captionLineSwitches\` line of the unswitched entry named, shown with it and seen by the floor.
+    const floorSeen = new Set([
+      "decks/games/log@TUNING_ENABLED", // log-a-game: "reads your games the next time it runs"
+      "rule/credits@ANALYSIS_TAB_ENABLED", "rule/credits@TUNING_ENABLED", "rule/credits@PROPOSED_CUTS_ENABLED", // credits
+    ]);
+    const switchOf = new Map(aboutEntries.map((e) => [e.id, e.switch ?? null]));
+    const units2 = [
+      ...ABOUT_SECTIONS.flatMap((s) => s.labels.map((l) => [`${s.area}/${s.id}/${l.id}`, l] as const)),
+      ...Object.entries(ABOUT_RULES).map(([k, r]) => [`rule/${k}`, r] as const),
+    ];
+    for (const [key, u] of units2) for (const sw of Object.values(u.sentences ?? {})) {
+      for (const one of (Array.isArray(sw) ? sw : [sw]) as string[]) {
+        if (one.startsWith("!")) continue;
+        const carried = u.legacy.some((id) => id.endsWith(`@${one}`) || switchOf.get(id) === one);
+        if (!carried) expect(floorSeen, `${key}@${one}`).toContain(`${key}@${one}`);
+      }
+    }
+  });
+
+  it("announces a new switched label when its switch turns on, whatever the floor", () => {
+    const fresh = { key: "x/y/z", since: 16, legacy: [] as string[], switch: "PUSH_ENABLED" as const };
+    expect(unitSeen(fresh, { version: 16, ids: ["a"] })).toBe(false);
+    expect(unitSeen({ ...fresh, switch: null }, { version: 16, ids: ["a"] })).toBe(true);
+  });
+
+  it("introduces a first-run reader on their first visit, then announces only what arrives later", () => {
+    const visible = visibleSections(ALL_ON);
+    const after = afterVisit(visible, "home", NEVER_SEEN);
+    expect(after.version).toBe(16);
+    expect(unseenUnits(visible, after)).toEqual([]);
+    const later = visibleSections(ALL_ON, ABOUT_SECTIONS.map((s) => s.id !== "home" ? s : {
+      ...s, labels: [...s.labels, { ...s.labels[0], id: "later", region: "home/home/later", since: 17, legacy: [] }],
+    }));
+    expect(unseenUnits(later, after).map((u) => u.key)).toEqual(["home/home/later"]);
+    const returning: SeenState = { version: 9, ids: ["x"] };
+    expect(afterVisit(visible, "home", returning).version).toBe(9);
+  });
+
+  it("acknowledging an announcement leaves nothing of it to announce next", () => {
+    const visible = visibleSections(ALL_ON);
+    let seen: SeenState = { version: 16, ids: ["placeholder"] };
+    const first = unseenUnits(visible, seen);
+    const spare = first.find((u) => u.key === "shopping/deck-shopping/spare")!;
+    expect(spare.ack).toEqual(["shopping/deck-shopping/spare", sentenceKey("shopping/deck-shopping/spare", "SPARE_REQUESTS_ENABLED")]);
+    seen = { version: 16, ids: [...seen.ids, ...first.flatMap((u) => u.ack)] };
+    expect(unseenUnits(visible, seen)).toEqual([]);
+    const spareOff = visibleSections(env({ ...ALL_ON, SPARE_REQUESTS_ENABLED: "off" } as Record<string, string>));
+    const offAck = unseenUnits(spareOff, { version: 16, ids: ["placeholder"] }).find((u) => u.key === "shopping/deck-shopping/spare")!;
+    expect(offAck.ack).toEqual(["shopping/deck-shopping/spare"]);
+  });
+
+  it("names every switched legacy entry in some unit, so no announced entry is lost", () => {
+    const named = new Set([
+      ...ABOUT_SECTIONS.flatMap((s) => s.labels.flatMap((l) => l.legacy)),
+      ...Object.values(ABOUT_RULES).flatMap((r) => r.legacy),
+    ]);
+    const kept = ["upload-choice", "availability", "deck-analysis", "auto-fill", "decklist-marks", "locked-cards", "roles", "versions", "shopping", "friends", "credits", "buying-credits", "statuses", "getting-help"];
+    for (const id of kept) expect(named, id).toContain(id);
+    expect(labelKey({ area: "home", id: "home" }, { id: "help" })).toBe("home/home/help");
+  });
+});

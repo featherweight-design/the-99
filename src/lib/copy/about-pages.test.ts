@@ -1,0 +1,102 @@
+import { describe, expect, it } from "vitest";
+import { SWITCH_NAMES } from "../switches/registry";
+import { TOOLS } from "../discovery/tools";
+import { ABOUT_SCREENS, DECK_VIEWS, type AboutLineSwitch } from "./about";
+import { aboutEntries } from "./about-entries";
+import { ABOUT_AREAS, ABOUT_AREA_IDS, ABOUT_RULE_IDS, ABOUT_RULES, ABOUT_SECTIONS } from "./about-pages";
+
+/** The nine screens with no section until Design places them (plan PR 9); they keep the ? panel. */
+const UNSECTIONED = ["card-details", "sets", "proxies", "history", "wishlist", "new-deck", "account", "settings", "credits"];
+const labels = ABOUT_SECTIONS.flatMap((s) => s.labels);
+const switchesOf = (sw: AboutLineSwitch): string[] =>
+  (Array.isArray(sw) ? sw : [sw]).map((one: string) => one.replace(/^!/, ""));
+const ENTRY = new Map(aboutEntries.map((e) => [e.id, e]));
+
+describe("about pages copy model", () => {
+  it("has the six areas in the handoff's order, every section in one of them", () => {
+    expect(ABOUT_AREAS.map((a) => a.id)).toEqual([...ABOUT_AREA_IDS]);
+    for (const s of ABOUT_SECTIONS) expect(ABOUT_AREA_IDS).toContain(s.area);
+  });
+
+  it("gives every label a unique region and every section a unique id", () => {
+    const regions = labels.map((l) => l.region);
+    expect(new Set(regions).size).toBe(regions.length);
+    const ids = ABOUT_SECTIONS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("lists every rule in exactly one section", () => {
+    const listed = ABOUT_SECTIONS.flatMap((s) => s.rules);
+    expect([...listed].sort()).toEqual([...ABOUT_RULE_IDS].sort());
+  });
+
+  it("names only registered switches, on units and sentences", () => {
+    const named = [
+      ...labels.flatMap((l) => [l.switch, ...Object.values(l.sentences ?? {})]),
+      ...Object.values(ABOUT_RULES).flatMap((r) => [r.switch, ...Object.values(r.sentences ?? {})]),
+    ].filter((x): x is AboutLineSwitch => x != null).flatMap(switchesOf);
+    for (const n of named) expect(SWITCH_NAMES, n).toContain(n);
+  });
+
+  it("keeps every gated sentence verbatim inside its unit's text", () => {
+    for (const l of labels) for (const s of Object.keys(l.sentences ?? {})) expect(l.rest, l.id).toContain(s);
+    for (const [id, r] of Object.entries(ABOUT_RULES)) for (const s of Object.keys(r.sentences ?? {})) expect(r.text, id).toContain(s);
+  });
+
+  it("puts at most five labels on a capture (call 1)", () => {
+    for (const s of ABOUT_SECTIONS) {
+      const shots = Math.max(s.captures.phone.length, s.captures.desktop.length, 1);
+      expect(s.labels.length, s.id).toBeLessThanOrEqual(5 * shots);
+    }
+  });
+
+  it("covers every screen and deck view but the nine unsectioned screens", () => {
+    const covered = new Set(ABOUT_SECTIONS.flatMap((s) => s.screens.map((r) => ("view" in r ? `deck:${r.view}` : r.screen))));
+    for (const screen of ABOUT_SCREENS) {
+      if (screen === "deck" || UNSECTIONED.includes(screen)) continue;
+      expect(covered, screen).toContain(screen);
+    }
+    for (const view of DECK_VIEWS) expect(covered, view).toContain(`deck:${view}`);
+    for (const screen of UNSECTIONED) expect(covered, screen).not.toContain(screen);
+  });
+
+  it("names only real entries as legacy sources", () => {
+    const sources = [...labels.flatMap((l) => l.legacy), ...Object.values(ABOUT_RULES).flatMap((r) => r.legacy)];
+    for (const id of sources) {
+      const [base, sw] = id.split("@");
+      expect(ENTRY.has(base), id).toBe(true);
+      if (sw) expect(ENTRY.get(base)!.variant?.switch, id).toBe(sw);
+    }
+  });
+
+  it("dates every unit by the newest unswitched entry it came from, or 16", () => {
+    const sinceOf = (legacy: readonly string[]) => {
+      const u = legacy.filter((id) => !id.includes("@") && !ENTRY.get(id)!.switch).map((id) => ENTRY.get(id)!.since);
+      return u.length ? Math.max(...u) : 16;
+    };
+    for (const l of labels) expect(l.since, l.region).toBe(sinceOf(l.legacy));
+    for (const [id, r] of Object.entries(ABOUT_RULES)) expect(r.since, id).toBe(sinceOf(r.legacy));
+  });
+
+  it("aims every tool's first Show me label at a section that lists the tool (the handoff's placement)", () => {
+    for (const t of TOOLS) {
+      const s = ABOUT_SECTIONS.find((x) => x.labels.some((l) => `${x.area}/${x.id}/${l.id}` === t.labels[0]));
+      expect(s, t.id).toBeDefined();
+      expect(s!.tools, t.id).toContain(t.id);
+    }
+  });
+
+  it("lists only shipped tools", () => {
+    const ids = new Set<string>(TOOLS.map((t) => t.id));
+    for (const s of ABOUT_SECTIONS) for (const t of s.tools) expect(ids, t).toContain(t);
+  });
+
+  it("carries no em dash in any string", () => {
+    const strings = [
+      ...ABOUT_AREAS.flatMap((a) => [a.name, a.line]),
+      ...ABOUT_SECTIONS.flatMap((s) => [s.name, s.sub, ...s.labels.flatMap((l) => [l.lead, l.rest])]),
+      ...Object.values(ABOUT_RULES).map((r) => r.text),
+    ];
+    for (const s of strings) expect(s).not.toContain("—");
+  });
+});
