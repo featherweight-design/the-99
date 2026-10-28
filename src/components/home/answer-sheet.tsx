@@ -57,13 +57,16 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
     setPending(item.key);
     const out = await openAnswerAction(item.key).catch(() => null);
     setPending(null);
+    // The server marked the answer seen whatever happens next, so the diamond, the count and the Friends badge follow it.
+    if (out?.ok) {
+      onSeen(item.key);
+      if (out.counted) announceAnswerSeen();
+    }
     // The item was dismissed while the open was out (its press is gone), or the reader opened another sheet meanwhile:
     // either way they moved on, so the late reply opens nothing and goes nowhere.
     if (!from.isConnected || dialogsUp().length > 0) return;
     // Refused (cleared since, or the switch off) or failed: /friends, where the press went as it shipped.
     if (!out?.ok) return router.push("/friends");
-    onSeen(item.key);
-    if (out.counted) announceAnswerSeen();
     setOpen({ item, request: out.request, from });
   }
   return (

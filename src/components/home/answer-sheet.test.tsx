@@ -153,12 +153,17 @@ describe("the answer sheet's edges", () => {
     spy.mockRestore();
   });
 
-  it("an open that returns while another sheet is up opens nothing and goes nowhere", async () => {
+  it("an open that returns while another sheet is up opens nothing and goes nowhere, but the answer still reads seen", async () => {
     const up = vi.spyOn(dialogs, "dialogsUp").mockReturnValue([document.body]);
-    render(<WhatsNew feed={feed([answer(A)])} now={NOW} />);
+    const announced = vi.spyOn(seen, "announceAnswerSeen");
+    const { container } = render(<WhatsNew feed={feed([answer(A)])} now={NOW} />);
     await act(async () => { fireEvent.click(press()); });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(m.push).not.toHaveBeenCalled();
+    // The server marked it seen all the same, so the diamond and the Friends badge still drop.
+    expect(container.querySelectorAll("[data-feed-unseen]")).toHaveLength(0);
+    expect(announced).toHaveBeenCalledTimes(1);
+    announced.mockRestore();
     up.mockRestore();
   });
 });
