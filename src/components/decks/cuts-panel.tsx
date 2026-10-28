@@ -331,7 +331,9 @@ export function CutsPanelView({
       className="mt-[18px] md:mt-6"
     >
       <CutsFreeCount
-        panel={panel}
+        // The count reads the list as the presses have left it (a Cut or Undo answers before the redraw that moves
+        // `over`), so an Undo back over the line shows the over lead at once, never the closing box.
+        panel={pressedSinceRead === 0 ? panel : { ...panel, over: Math.max(0, liveOver), total: panel.total - pressedSinceRead }}
         lead={lead}
         headline={headline}
         cutCount={madeCuts}

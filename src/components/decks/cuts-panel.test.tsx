@@ -752,5 +752,20 @@ describe("a result with more named than the deck needs (pick N)", () => {
     expect(screen.getByText(/Back at 99/)).toBeTruthy();
     expect(screen.queryByText(/under the ninety-nine/)).toBeNull();
   });
+  it("an Undo after enough are cut shows the over lead at once, never the closing box", async () => {
+    let answer!: (r: { ok: true }) => void;
+    const p = pick();
+    // Three of six cut, the list read at the line.
+    p.items = [cutItem(1), cutItem(2), cutItem(3), item(4), item(5), item(6)];
+    p.over = 0;
+    p.total = 100;
+    await mount(deps(p, { undo: vi.fn(() => new Promise<{ ok: true }>((r) => { answer = r; })) }));
+    expect(screen.getByText(/Back at 99/)).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: /^Undo/ })[0]);
+    await waitFor(() => expect(screen.queryByText(/Back at 99/)).toBeNull());
+    expect(screen.queryByText(copy.done.body)).toBeNull();
+    expect(screen.getByText(/One over the ninety-nine/)).toBeTruthy();
+    await act(async () => { answer({ ok: true }); });
+  });
 });
 
