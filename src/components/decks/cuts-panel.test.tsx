@@ -6,6 +6,13 @@ import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/
 import { MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { CutsPanelView, type CutsDeps } from "./cuts-panel";
+import * as awaitRun from "./await-run";
+import { CUTS_MODEL_TIMEOUT_MS } from "../../lib/tuning/limits";
+
+vi.mock("./await-run", async (orig) => {
+  const m = await orig<typeof import("./await-run")>();
+  return { ...m, awaitRunSettled: vi.fn(m.awaitRunSettled) };
+});
 import { ReviewRunProvider } from "./review-run";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -121,6 +128,10 @@ describe("CutsPanelView", () => {
       await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
       expect(await screen.findByText("Card 1")).toBeTruthy();
       expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(4);
+      // A cuts run has its own 170s deadline, so the wait outlasts it (not the shared 130s default).
+      const opts = vi.mocked(awaitRun.awaitRunSettled).mock.calls.at(-1)?.[2];
+      expect(opts?.maxMs).toBe(awaitRun.awaitRunMaxFor(CUTS_MODEL_TIMEOUT_MS));
+      expect(opts!.maxMs!).toBeGreaterThan(CUTS_MODEL_TIMEOUT_MS);
     } finally {
       vi.useRealTimers();
     }

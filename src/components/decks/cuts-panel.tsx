@@ -20,7 +20,8 @@ import { cutChips, type Chip } from "../../lib/tuning/cuts-count";
 import { cutStands, type CutItem, type CutsPanel } from "../../lib/tuning/cuts-state";
 import { pickState, type PickState } from "../../lib/tuning/pick-n";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
-import { awaitRunSettled } from "./await-run";
+import { awaitRunMaxFor, awaitRunSettled } from "./await-run";
+import { CUTS_MODEL_TIMEOUT_MS } from "../../lib/tuning/limits";
 import { MutationError } from "./mutation-error";
 import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
@@ -256,7 +257,8 @@ export function CutsPanelView({
     // The action returns once the run is reserved; the server finishes it after the response. Read
     // until it settles (each read also redraws the panel's running state).
     // A panel left behind stops polling; the run is the server's and finishes regardless.
-    const waited = result.ok ? await awaitRunSettled(reread, runId, { aborted: () => token.current !== mine || !mounted.current }) : null;
+    // A cuts run has its own 170s deadline (G2), so the wait outlasts it rather than the shared 110s one.
+    const waited = result.ok ? await awaitRunSettled(reread, runId, { aborted: () => token.current !== mine || !mounted.current, maxMs: awaitRunMaxFor(CUTS_MODEL_TIMEOUT_MS) }) : null;
     if (token.current !== mine) return;
     const next = waited ?? await reread();
     if (token.current !== mine) return;
