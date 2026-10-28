@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { suggestedChangesV2Copy } from "../../copy/suggested-changes-v2";
-import { appendSentence, bracketCard, GAME_NOTE_MAX, hasOverviewContent, noticedChips, usualFor, type NoticedFacts, type NoticedRole } from "./intake";
+import { appendSentence, bracketCard, GAME_NOTE_MAX, pickIndex, hasOverviewContent, noticedChips, usualFor, type NoticedFacts, type NoticedRole } from "./intake";
 
 const copy = suggestedChangesV2Copy.intake;
 
@@ -107,5 +107,17 @@ describe("usualFor", () => {
     expect([1, 6].map(usualFor)).toEqual([copy.usual[3], copy.usual[3]]);
     expect([7, 15].map(usualFor)).toEqual([copy.usual[10], copy.usual[10]]);
     expect([16, 20].map(usualFor)).toEqual([copy.usual[20], copy.usual[20]]);
+  });
+});
+
+describe("pickIndex", () => {
+  it("holds a choice by identity across readings, and falls back to Keep when it is gone", () => {
+    const at2 = bracketCard([2])!;
+    const at3 = bracketCard([3])!;
+    const down1 = { choice: "down" as const, target: 1 as const };
+    expect(at2.options[pickIndex(at2, down1)]).toMatchObject(down1);
+    expect(at3.options[pickIndex(at3, down1)]).toMatchObject(down1);
+    expect(pickIndex(at3, null)).toBe(0);
+    expect(pickIndex(bracketCard([4])!, { choice: "up", target: 3 })).toBe(0);
   });
 });

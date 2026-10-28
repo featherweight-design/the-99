@@ -90,6 +90,15 @@ export function appendSentence(request: string, sentence: string, room: number):
 /** The Bracket card's head, choices and what the press sends for each (README item 2; plan H3). */
 export type BracketOption = { choice: BracketChoice; target: Bracket; label: string; note: string; mark: Bracket };
 export type BracketCard = { now: string; options: BracketOption[] };
+/** A Bracket card choice held by identity (null is Keep), so a new reading cannot move it to a different target. */
+export type BracketPick = { choice: BracketChoice; target: Bracket } | null;
+
+/** Where `pick` sits in `card`: Keep first; a Down or Up the new reading no longer offers falls back to Keep. */
+export function pickIndex(card: BracketCard, pick: BracketPick): number {
+  if (pick === null) return 0;
+  const i = card.options.findIndex((o) => o.choice === pick.choice && o.target === pick.target);
+  return i < 0 ? 0 : i;
+}
 
 /** The highest bracket Up offers: cEDH is not a bracket the run aims a deck at (the handoff's four choices stop at 4). */
 const UP_MAX = 4;

@@ -42,7 +42,7 @@ import { useOpenHistory, useOpenRun, useReviewRun } from "./review-run";
 import { clampCount, DriftLine, IntakeReads, SameRequestConfirm, SuggestedChangesIntake } from "./suggested-changes-intake";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { localDay } from "../../lib/copy/credits";
-import { bracketCard, noticedChips, usualFor, type NoticedFacts } from "../../lib/tuning/v2/intake";
+import { bracketCard, noticedChips, pickIndex, usualFor, type BracketPick, type NoticedFacts } from "../../lib/tuning/v2/intake";
 import { useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { MutationError } from "./mutation-error";
@@ -258,15 +258,21 @@ export function TuningPanel({
   // before it reads them, and the intake stays editable the whole time. A drift off 99 keeps every one.
   const [count, setCount] = useState(V2_DEFAULT_COUNT);
   const [request, setRequest] = useState("");
-  const [bracketIndex, setBracketIndex] = useState(0);
-  const intakeRef = useRef({ count: V2_DEFAULT_COUNT, request: "", bracketIndex: 0 });
+  // The Bracket card's choice by identity, never by position: a new reading reorders the options, and "Down to 1" must
+  // stay "Down to 1" (review round 1). Null is Keep, the default, whatever bracket the deck reads at.
+  const [bracketPick, setBracketPick] = useState<BracketPick>(null);
+  const intakeCard = bracketCard(permits);
+  const intakeRef = useRef<{ count: number; request: string; bracketPick: BracketPick }>({ count: V2_DEFAULT_COUNT, request: "", bracketPick: null });
+  // Moves on every intake edit, so a "same request" answer to a press made before the edit is dropped (review round 1).
+  const intakeRev = useRef(0);
   // The last press answered "Same request as your Oct 26 run" (G4): nothing was reserved, and the action row asks.
   const [same, setSame] = useState<{ runId: string; at: string } | null>(null);
-  function changeIntake(next: Partial<{ count: number; request: string; bracketIndex: number }>) {
+  function changeIntake(next: Partial<{ count: number; request: string; bracketPick: BracketPick }>) {
     intakeRef.current = { ...intakeRef.current, ...next };
+    intakeRev.current += 1;
     if (next.count !== undefined) setCount(next.count);
     if (next.request !== undefined) setRequest(next.request);
-    if (next.bracketIndex !== undefined) setBracketIndex(next.bracketIndex);
+    if (next.bracketPick !== undefined) setBracketPick(next.bracketPick);
     // The inputs moved, so the request is no longer the one the confirm named.
     setSame(null);
   }
@@ -842,7 +848,7 @@ export function TuningPanel({
       // Snapshotted after every await, as v10's notes are: what the intake shows as the press runs.
       const typed = intakeRef.current;
       const card = bracketCard(permits);
-      const option = card ? card.options[Math.min(typed.bracketIndex, card.options.length - 1)] : null;
+      const option = card ? card.options[pickIndex(card, typed.bracketPick)] : null;
       const opts: V2RunOpts = {
         requestedCount: clampCount(typed.count),
         ...(typed.request.trim() !== "" ? { request: typed.request } : {}),
@@ -865,11 +871,14 @@ export function TuningPanel({
     // (nothing reserved, the action row asks) or refused, and neither flashes the reading state.
     let answered: DeckMutationResult | null = null;
     if (v2Opts) {
+      const rev = intakeRev.current;
       const answer = await deps.run(deckId, { ...v2Opts, runId }).catch(
         (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
       );
       if (token.current !== mine) return;
       if (isSameRequest(answer)) {
+        // The player edited the intake while the press was out: the answer names a request no longer on screen.
+        if (intakeRev.current !== rev) return;
         setSame({ runId: answer.runId, at: answer.at });
         setAnnounced(v2Copy.intake.same.body(localDay(new Date(answer.at))));
         return;
@@ -1318,9 +1327,12 @@ export function TuningPanel({
             request={request}
             onRequest={(next) => changeIntake({ request: next })}
             chips={noticedChips(v2.noticed)}
-            bracket={bracketCard(permits)}
-            bracketIndex={bracketIndex}
-            onBracket={(i) => changeIntake({ bracketIndex: i })}
+            bracket={intakeCard}
+            bracketIndex={intakeCard ? pickIndex(intakeCard, bracketPick) : 0}
+            onBracket={(i) => {
+              const o = intakeCard?.options[i];
+              changeIntake({ bracketPick: o && o.choice !== "keep" ? { choice: o.choice, target: o.target } : null });
+            }}
             restrictions={limitsBox}
           />
         </div>

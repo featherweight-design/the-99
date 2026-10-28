@@ -248,6 +248,19 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     expect(document.querySelector("[data-sc-last-run]")).toBeNull();
   });
 
+  it("drops a same-request answer to a press made before the intake changed", async () => {
+    const same = { ok: false, confirm: "same_request", runId: "11111111-1111-4111-8111-111111111111", at: at.toISOString() };
+    let answer!: (r: unknown) => void;
+    const d = deps();
+    d.run = vi.fn(() => new Promise((resolve) => { answer = resolve; })) as unknown as typeof d.run;
+    await draw(d, v2At());
+    await act(async () => { fireEvent.click(send()); });
+    // Edited while the press is out: the answer names a request no longer on screen.
+    fireEvent.change(screen.getByPlaceholderText(sc.intake.request.placeholder), { target: { value: "Cut the legends." } });
+    await act(async () => { answer(same); });
+    expect(document.querySelector("[data-sc-same]")).toBeNull();
+  });
+
   it("asks first: draws no reading state while the press is out, and none for a refusal", async () => {
     let answer!: (r: unknown) => void;
     const d = deps();
