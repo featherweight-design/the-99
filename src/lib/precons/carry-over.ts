@@ -15,14 +15,15 @@
  *     and an Overview with no fresh reading reads as stale (`read.ts`);
  *   - a deck holding a card illegal in Commander gets no Overview while notices are on, as a press would;
  *   - the Overview is a `deck_synopses` row with `precon_file` set and NO allowance unit, at the
- *     reading's own `seen_seq`, and v0's `deck_version_synopses` names it.
+ *     deck data log's head as of the row's last check (never past the reading's `seen_seq`), and v0's
+ *     `deck_version_synopses` names it.
  * The first edit dirties the reading and moves the list, so today's rules mark it stale. A deck that
  * already has a synopsis, or whose list moved before this ran, gets nothing. Failure is logged and
  * swallowed: the start has already answered the player, and a deck without it is as every deck is.
  */
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, preconSynopses } from "../../db/schema";
+import { deckDataChanges, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, preconSynopses } from "../../db/schema";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import { roleBasisFromEnv } from "../decks/label-counts-flag";
@@ -52,8 +53,10 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
   // the Analyze press's own call (deterministic, no model). A press finds the version holding its list
   // (`versionHolding`), so the reading is v0's, the box's own list the start committed. Not a commit's
   // `pinTo`: a pin never computes a reading that is not already stored. The header's bracket shows at
-  // once, and an Overview needs a fresh reading to be fresh.
-  const reading = await computeAndStoreProfile(deckId, userId, requestProfileDeps(env));
+  // once, and an Overview needs a fresh reading to be fresh. As a FIRST reading (rule 0's own guard):
+  // it writes nothing over a row of any kind, so a replayed start, or a press landing first, never has
+  // its reading (or an edit's dirty mark) replaced by one nobody pressed for.
+  const reading = await computeAndStoreProfile(deckId, userId, requestProfileDeps(env), { firstReading: true });
   if (reading?.kind !== "ok" || !reading.reading.fresh) return { attached: false, reason: "no_reading" };
 
   // The same withhold a press makes before an Overview (`generate.ts`'s `run`): an illegal deck's is not shown.
@@ -77,10 +80,21 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
     const [stored] = await tx.select({ list: deckProfiles.fingerprint, dirty: deckProfiles.dirty, seenSeq: deckProfiles.seenSeq })
       .from(deckProfiles).where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
     if (!stored || stored.dirty || stored.list !== list) return { attached: false, reason: "no_reading" };
+    // THE OVERVIEW HAS SEEN THE DATA ONLY AS OF ITS LAST CHECK, not as of this reading: a deck data
+    // change published after the build or copy last verified the row's inputs (`checked_at`) is one
+    // it never read, even while the row still says current (the next build or copy has not re-checked
+    // it yet). So its `seen_seq` is the log's head at that check, and every such change reaches the
+    // deck's own data-moved rule (`overviewDataMovedFor`) exactly as it would a press's Overview.
+    const [log] = await tx.select({ head: sql<number>`coalesce(max(${deckDataChanges.seq}), 0)::bigint` })
+      .from(deckDataChanges).where(sql`${deckDataChanges.publishedAt} <= (
+        select ps.checked_at from ${preconSynopses} ps
+        where ps.precon_file = ${row!.preconFile} and ps.contract_version = ${row!.contractVersion} and ps.role_basis = ${row!.roleBasis}
+      )`);
+    const seenSeq = Math.min(stored.seenSeq, Number(log?.head ?? 0));
     const [written] = await tx.insert(deckSynopses).values({
       deckId, userId, fingerprint: list, contractVersion: row!.contractVersion, model: row!.model,
       modelCallId: null, preconFile: deck.precon!, status: "done", outcome: "survived", content: row!.content,
-      seenSeq: stored.seenSeq,
+      seenSeq,
     }).returning({ id: deckSynopses.id });
     if (v0) {
       await tx.insert(deckVersionSynopses)
