@@ -5,19 +5,38 @@ import { ABOUT_BACK_SCREENS, ABOUT_SECTIONS } from "../copy/about-pages";
 import { questionLanding } from "./question-landing";
 import { screenForPath } from "./screen-for-path";
 
+const BASE = "https://the99.invalid";
+
+/** Leaves the app, or could once a browser or a later decode reads it: `//host`, `/\host`, a backslash, a control. */
+function unsafePath(path: string): boolean {
+  return path.startsWith("//") || path.startsWith("/\\") || /[\u0000-\u001f\u007f\\]/.test(path);
+}
+
 /**
  * `from` as the back bar may use it: a same-origin relative path, or null. Anything that could leave the app is
  * refused: a scheme (`https:`, `javascript:`), a protocol-relative `//host` or `/\host` (browsers read a backslash
- * as a slash), a repeated parameter, a control character.
+ * as a slash), a repeated parameter, a control character. The checks run on the NORMALIZED path too, and on its
+ * decoded forms: `/.//host` resolves to `//host`, and `/%2F%2Fhost` or `/%5Chost` decode to one.
  */
 export function safeFrom(raw: unknown): string | null {
   if (typeof raw !== "string" || raw.length === 0 || raw.length > 2048) return null;
-  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return null;
-  if (/[\u0000-\u001f\u007f\\]/.test(raw)) return null;
+  if (!raw.startsWith("/") || unsafePath(raw)) return null;
   try {
-    const base = "https://the99.invalid";
-    const url = new URL(raw, base);
-    return url.origin === base ? url.pathname + url.search : null;
+    const url = new URL(raw, BASE);
+    if (url.origin !== BASE) return null;
+    // Every decoding of the normalized path, until it stops changing (double encoding included).
+    let path = url.pathname;
+    for (let i = 0; i < 5; i++) {
+      if (unsafePath(path)) return null;
+      const next = decodeURIComponent(path);
+      if (next === path) break;
+      path = next;
+    }
+    if (unsafePath(path)) return null;
+    const out = url.pathname + url.search;
+    // The value handed on must itself resolve back to this origin, at the same path.
+    const again = new URL(out, BASE);
+    return again.origin === BASE && again.pathname === url.pathname ? out : null;
   } catch {
     return null;
   }

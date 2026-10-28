@@ -4,7 +4,7 @@
 // or held in a bookmark. Parsing it is covered in
 // `builder-view.test.ts`; what is only answerable through the shell is whether
 // the parsed value actually decides which tab is selected on the first render.
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
@@ -30,6 +30,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { BuilderShell } = await import("./builder-shell");
 const { LandingKeyed } = await import("./landing-keyed");
+const { BuilderScreenContext } = await import("./builder-screen");
 
 const DECK = {
   id: "deck-1",
@@ -215,5 +216,50 @@ describe("BuilderShell — the grouping it opens on", () => {
     await mount("deck");
     expect(screen.getByRole("radio", { name: "By role" })).toHaveAttribute("aria-checked", "true");
     window.localStorage.removeItem("the99:deck-grouping");
+  });
+});
+
+// `?panel=` (About visual PR 6a): the ?'s "Back to {deck}" returns to Shopping, Stats or Notes, which are builder state.
+// What the builder publishes to the ? is the view it opened on, read through the same `deckViewOf` the ? reads.
+describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
+  async function opened(initialView: BuilderView, initialBody: "shopping" | "stats" | "notes" | null) {
+    const publish = vi.fn();
+    await act(async () => {
+      render(
+        <BuilderScreenContext.Provider value={publish}>
+          <BuilderShell mix={TEST_MIX}
+            deck={DECK}
+            suggestions={[]}
+            degraded={false}
+            firstRun={false}
+            commanderIdentity={["B", "R", "G"]}
+            arrivedFromImport={false}
+            initialView={initialView}
+            initialBody={initialBody}
+            statsEnabled
+            statsData={{ commanders: [] }}
+            newestAsOf={null}/>
+        </BuilderScreenContext.Provider>,
+      );
+    });
+    return publish;
+  }
+  const last = (publish: ReturnType<typeof vi.fn>) => publish.mock.calls.at(-1)?.[0];
+
+  it("opens on the body the address names", async () => {
+    expect(last(await opened("deck", "shopping"))).toBe("shopping");
+    cleanup();
+    expect(last(await opened("deck", "stats"))).toBe("stats");
+    cleanup();
+    expect(last(await opened("deck", "notes"))).toBe("notes");
+    cleanup();
+    expect(last(await opened("deck", null))).toBe("your-deck");
+  });
+
+  it("ignores it on any other tab: the deck tab, once chosen, opens on its list", async () => {
+    const publish = await opened("games", "stats");
+    expect(last(publish)).toBe("games");
+    fireEvent.click(screen.getByRole("tab", { name: new RegExp(addPanelCopy.tabs.deck) }));
+    expect(last(publish)).toBe("your-deck");
   });
 });

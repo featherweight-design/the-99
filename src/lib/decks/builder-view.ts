@@ -11,6 +11,8 @@
 // `/decks/[id]/versions` redirect used to carry it). It is read on arrival
 // only, and never written back as the reader switches.
 
+import type { DeckView } from "../copy/about";
+
 export type BuilderView = "deck" | "analysis" | "consider" | "games" | "versions";
 
 export const TAB_PARAM = "tab";
@@ -43,4 +45,34 @@ export function initialBuilderView(
   if (view === "versions" && versionCount === 0) return "deck";
   if (view === "analysis" && !analysisEnabled) return "deck";
   return view;
+}
+
+/** Your deck's bodies other than its list: the Shopping view and the Stats and Notes panels. */
+export type DeckBody = "shopping" | "stats" | "notes";
+
+// The one URL that names a body: the ?'s `from` on a deck (About visual build, PR 6a), so "‹ Back to {deck}" returns to
+// the view the ? was pressed on. Read on arrival only, on the deck tab only, and never written back as the reader moves:
+// Shopping, Stats and Notes stay component state, as the tabs do.
+export const BODY_PARAM = "panel";
+
+const BODIES: readonly DeckBody[] = ["shopping", "stats", "notes"];
+
+/** The body a URL asks for, or null for anything else (absent, repeated, unknown). */
+export function readDeckBody(value: string | string[] | undefined): DeckBody | null {
+  if (typeof value !== "string") return null;
+  return (BODIES as readonly string[]).includes(value) ? (value as DeckBody) : null;
+}
+
+/**
+ * A deck page's query, rewritten to open on `view` (the builder's live view, as the ? reads it): a tab by `?tab=`,
+ * a body by `?panel=`, Your deck by neither. Every other parameter is kept as it was. Returns `""` or `?…`.
+ */
+export function deckViewSearch(search: string, view: DeckView): string {
+  const q = new URLSearchParams(search);
+  q.delete(TAB_PARAM);
+  q.delete(BODY_PARAM);
+  if (view === "analysis" || view === "games" || view === "versions") q.set(TAB_PARAM, view);
+  else if (view !== "your-deck") q.set(BODY_PARAM, view);
+  const out = q.toString();
+  return out ? `?${out}` : "";
 }

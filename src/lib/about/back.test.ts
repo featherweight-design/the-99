@@ -24,10 +24,36 @@ describe("safeFrom", () => {
       "/a\nb",
       "/%0a",
     ]) {
-      const kept = safeFrom(raw);
-      if (raw === "/%0a") expect(kept).toBe("/%0a");
-      else expect(kept, JSON.stringify(raw)).toBeNull();
+      expect(safeFrom(raw), JSON.stringify(raw)).toBeNull();
     }
+  });
+
+  it("refuses a path that only becomes protocol-relative once normalized or decoded (Copilot round 1)", () => {
+    for (const raw of [
+      "/.//collection/replace",
+      "/./evil.example/..//evil.example",
+      "/a/..//evil.example",
+      "/..//evil.example",
+      "/%2E%2E//evil.example",
+      "/%2F%2Fevil.example",
+      "/%2f%2fevil.example/decks",
+      "/%2F/evil.example",
+      "/%252F%252Fevil.example",
+      "/%5Cevil.example",
+      "/%5c%5cevil.example",
+      "/a%5Cb",
+      "/%00",
+      "/%7F",
+      "/%E0%A4%A",
+    ]) {
+      expect(safeFrom(raw), JSON.stringify(raw)).toBeNull();
+    }
+  });
+
+  it("keeps a dot segment or an encoded character that stays on the app's own path", () => {
+    expect(safeFrom("/collection/./replace")).toBe("/collection/replace");
+    expect(safeFrom("/decks/../collection")).toBe("/collection");
+    expect(safeFrom("/collection?q=a%2Fb")).toBe("/collection?q=a%2Fb");
   });
 
   it("refuses a repeated or missing parameter", () => {

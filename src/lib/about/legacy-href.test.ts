@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { ABOUT_RULES, ABOUT_SECTIONS } from "../copy/about-pages";
-import { legacyHref, legacySection } from "./legacy-href";
+import { LEGACY_SECTIONS, legacyHref, legacySection } from "./legacy-href";
 
 describe("legacyHref (Review Focus 3)", () => {
   it("sends a Reference entry to the page section that now holds it", () => {
@@ -28,6 +28,21 @@ describe("legacyHref (Review Focus 3)", () => {
     for (const href of ["/about", "/about/decks#analysis", "/decks?tab=reference", "/credits", "https://example.com/about?tab=reference"]) {
       expect(legacyHref(href)).toBe(href);
     }
+  });
+
+  it("holds exactly the table the About pages derive, so the light copy cannot drift (Copilot round 1)", () => {
+    // A label's own section, or the first section in page order listing a rule that holds the id.
+    const derived: Record<string, string> = {};
+    for (const s of ABOUT_SECTIONS) {
+      const here = [...s.labels.flatMap((l) => l.legacy), ...s.rules.flatMap((id) => ABOUT_RULES[id].legacy)];
+      for (const id of here) if (!Object.hasOwn(derived, id)) derived[id] = `${s.area}/${s.id}`;
+    }
+    expect(LEGACY_SECTIONS).toEqual(derived);
+  });
+
+  it("imports no About copy, so the banner and the credits copy ship none of it", () => {
+    const text = fs.readFileSync("src/lib/about/legacy-href.ts", "utf8");
+    expect(text).not.toMatch(/^import\s(?!type\b)/m);
   });
 
   it("maps every id in every unit's legacy list to a page section that exists", () => {
