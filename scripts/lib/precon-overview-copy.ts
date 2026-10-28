@@ -11,6 +11,8 @@
  * target's own request is marked not current, so a deck started there never carries over an
  * Overview of inputs the target no longer has. Nothing is ever deleted.
  */
+import { preconReadingWrite, type PreconReadingColumns } from "../../src/lib/precons/reading-rule";
+
 export type SourceRow<C> = { file: string; listFingerprint: string; inputHash: string; model: string; content: C; inputTokens: number | null; outputTokens: number | null; costMicroUsd: number | null };
 export type TargetRow = { file: string; inputHash: string; current: boolean };
 /** The target's own request for a precon, or why it has none (`buildPreconRequest`). */
@@ -66,4 +68,37 @@ export function planPreconOverviewCopy<C>(input: {
     else plan.drifted.push(req.file);
   }
   return plan;
+}
+
+/**
+ * Which target rows get the TARGET's own reading written (small items 5, PR 6a). Never the source's: a
+ * reading's change log marks (`seen_seq`) are positions in its own database's log, which the target's
+ * never shares. The copy already builds every precon's request from the target's catalog, and the
+ * reading is that request's input, so it costs no extra compute and no model.
+ *
+ * A row the publish leaves on the target (one already there, or one it installs) whose reading is
+ * missing, not current for the target's list and this code, or whose data moved there since
+ * (`preconReadingDue`) is written,
+ * whatever its Overview's fate: the reading is judged by its own key, never by `current`. A precon the
+ * target cannot build is left as it is, its own key judging what it holds.
+ */
+export function planReadingCopy(input: {
+  plan: Pick<CopyPlan<unknown>, "install">;
+  target: readonly { file: string; reading: PreconReadingColumns | null }[];
+  requests: readonly TargetRequest[];
+  /** Target precons whose stored reading's data moved since it was computed (`preconColumnsMoved`). */
+  moved: ReadonlySet<string>;
+  /** The columns each buildable precon gets now (`preconReadingColumns`): empty for a short list. */
+  next: ReadonlyMap<string, PreconReadingColumns>;
+}): string[] {
+  const target = new Map(input.target.map((r) => [r.file, r.reading]));
+  const installs = new Set(input.plan.install.map((r) => r.file));
+  const out: string[] = [];
+  for (const req of input.requests) {
+    if (!req.ok || (!target.has(req.file) && !installs.has(req.file))) continue;
+    const held = target.get(req.file) ?? null;
+    const next = input.next.get(req.file);
+    if (next && preconReadingWrite(held, next, input.moved.has(req.file))) out.push(req.file);
+  }
+  return out;
 }

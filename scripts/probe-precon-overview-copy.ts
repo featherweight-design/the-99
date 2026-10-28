@@ -7,6 +7,8 @@
 //   THE RE-CHECK: a target row whose source and target no longer agree with the target's request is
 //   marked not current, and is not overwritten by the source's row that does not fit either.
 //   THE RESTAMP: once the target's row fits again, the next copy marks it current again.
+//   THE READING (small items 5, PR 6a): each installed row carries the TARGET's own reading, never the
+//   source's (a source reading made unmistakable is not what lands), current for the target's list.
 // It deletes the rows it wrote on both branches. Both branches must be scratch branches
 // (`assertScratchBranch`), named by `PROBE_SOURCE_URL` and `PROBE_TARGET_URL`.
 //
@@ -57,10 +59,14 @@ async function main() {
     run("db:build:precon-overviews", { PRECON_OVERVIEW_DB_URL: env.PROBE_SOURCE_URL, PRECON_OVERVIEW_TARGET_BRANCH: sourceBranch! });
     // The copy carries no stub: these stand in for a real model's rows.
     await source.db.update(preconSynopses).set({ model: "probe-model" }).where(mine);
+    // A source reading no target could compute: what lands must be the target's own.
+    await source.db.update(preconSynopses).set({ readingPermits: [5], readingSeenSeq: -1 }).where(mine);
     const sourceRows = await source.db.select().from(preconSynopses).where(mine);
 
     copy();
     const installed = await targetRows();
+    const { preconReadingCurrent, preconReadingOf } = await import("../src/lib/precons/reading-rule");
+    check("each installed row carries the target's own reading, current for its list", installed.every((r) => preconReadingCurrent(preconReadingOf(r), { list: r.listFingerprint }) && r.readingSeenSeq !== -1), JSON.stringify(installed.map((r) => [r.preconFile, r.readingPermits, r.readingSeenSeq])));
     check("both rows are installed on the target, current", installed.length === 2 && installed.every((r) => r.current), JSON.stringify(installed.map((r) => [r.preconFile, r.current])));
     check("each carries the source's hash", installed.every((r) => r.inputHash === sourceRows.find((s) => s.preconFile === r.preconFile)?.inputHash), "");
 

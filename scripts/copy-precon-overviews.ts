@@ -10,6 +10,11 @@
 // installed row its inputs no longer fit is marked not current, so no deck there carries it over.
 // Nothing is deleted, and no model is called.
 //
+// THE READING (small items 5, PR 6a) is the TARGET's own, never copied: each request above is built
+// from the precon's reading on the target's catalog, so every row the publish leaves there whose stored
+// reading is missing, not current for the target's list, or whose data moved there since gets that
+// reading (`planReadingCopy`), with the target's change log head read before the requests were built.
+//
 // The target's requests are built before the publish transaction, through `src/db`, which this
 // points at the target, at the run's role basis (`PRECON_OVERVIEW_ROLE_BASIS`). The target's catalog
 // generation is read before they are built and again under the target's lock, and a moved one refuses
@@ -30,7 +35,11 @@ async function main() {
   const { CopyRefused } = await import("./lib/catalog-copy");
   const { catalogRefreshes } = await import("../src/db/schema");
   const { sql } = await import("drizzle-orm");
-  const { planPreconOverviewCopy } = await import("./lib/precon-overview-copy");
+  const { planPreconOverviewCopy, planReadingCopy } = await import("./lib/precon-overview-copy");
+  const { preconReadingColumns } = await import("../src/lib/precons/reading-rule");
+  const { generationKey } = await import("../src/lib/cache/catalog-generation");
+  const { readLogHead } = await import("../src/lib/notices/log");
+  type DeckProfile = import("../src/lib/profile/types").DeckProfile;
   type TargetRequest = import("./lib/precon-overview-copy").TargetRequest;
   type Content = typeof preconSynopses.$inferSelect["content"];
 
@@ -53,16 +62,40 @@ async function main() {
     const generationOf = async (q: Pick<typeof target, "select">) => (await q.select({ at: sql<string>`(extract(epoch from ${catalogRefreshes.refreshedAt}) * 1000)::bigint` })
       .from(catalogRefreshes))[0]?.at ?? "none";
     const generation = await generationOf(target);
+    // The generation stored with a reading (`reading_catalog`, kept as `deck_profiles.catalog` keeps it; freshness never
+    // reads it, see `reading-rule.ts`), and the target's log head, the mark freshness DOES read, both before any reading is built.
+    const catalogKey = generationKey(generation === "none" ? null : generation);
+    const seenSeq = await readLogHead(target);
 
     const plain = (await target.select({ file: precons.fileName }).from(precons).where(isNull(precons.twinOf)).orderBy(precons.fileName)).map((r) => r.file);
-    const targetRows = await target.select({ file: preconSynopses.preconFile, inputHash: preconSynopses.inputHash, current: preconSynopses.current })
-      .from(preconSynopses).where(and(eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
+    const targetRows = await target.select({
+      file: preconSynopses.preconFile, inputHash: preconSynopses.inputHash, current: preconSynopses.current,
+      reading: preconSynopses.reading, readingPermits: preconSynopses.readingPermits, readingList: preconSynopses.readingList,
+      readingCatalog: preconSynopses.readingCatalog, readingProfileVersion: preconSynopses.readingProfileVersion,
+      readingRulesVersion: preconSynopses.readingRulesVersion, readingAnalyzedOracleIds: preconSynopses.readingAnalyzedOracleIds,
+      readingSeenSeq: preconSynopses.readingSeenSeq, readingAt: preconSynopses.readingAt,
+    }).from(preconSynopses).where(and(eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
     const requests: TargetRequest[] = [];
+    const built = new Map<string, { list: string; profile: DeckProfile; analyzedOracleIds: string[]; head: { partnerOracleId: string | null; cards: { oracleId: string; quantity: number }[] } }>();
     for (const file of plain) {
       const r = await buildPreconRequest(file, basis);
       requests.push(r.ok ? { file, ok: true, list: r.list, hash: r.hash } : { file, ok: false, why: r.why });
+      if (r.ok) built.set(file, { list: r.list, profile: r.profile, analyzedOracleIds: r.analyzedOracleIds, head: r.head });
     }
     const plan = planPreconOverviewCopy<Content>({ source: sourceRows, target: targetRows, requests });
+    // An unreadable log head is never guessed: no reading is written this run.
+    const { preconColumnsMoved } = await import("../src/lib/precons/reading");
+    const moved = new Set<string>();
+    for (const r of targetRows) {
+      const b = built.get(r.file);
+      if (b && (await preconColumnsMoved(r, b.list))) moved.add(r.file);
+    }
+    // The columns each precon gets now, decided before the publish (none for a short list, `deckLegality`).
+    const next = new Map([...built].map(([file, b]) => [file, preconReadingColumns({ ...b, catalog: catalogKey, seenSeq: seenSeq ?? 0, at: new Date() })]));
+    const readingFiles = seenSeq === null ? [] : planReadingCopy({
+      plan, requests, moved, next,
+      target: targetRows.map((r) => ({ file: r.file, reading: r })),
+    });
 
     if (!dryRun) {
       await publishOnTarget(target, async (tx) => {
@@ -81,6 +114,11 @@ async function main() {
         const at = (files: string[]) => and(eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis), inArray(preconSynopses.preconFile, files));
         if (plan.stale.length > 0) await tx.update(preconSynopses).set({ current: false, checkedAt: now }).where(at(plan.stale));
         if (plan.restamp.length > 0) await tx.update(preconSynopses).set({ current: true, checkedAt: now }).where(at(plan.restamp));
+        // After the installs, so a row this publish created takes its reading in the same transaction.
+        for (const file of readingFiles) {
+          const b = built.get(file)!;
+          await tx.update(preconSynopses).set(preconReadingColumns({ ...b, catalog: catalogKey, seenSeq: seenSeq!, at: now })).where(at([file]));
+        }
       });
     }
 
@@ -88,7 +126,8 @@ async function main() {
     console.log(
       `${verb} ${plan.install.length}; ${plan.fresh} already current; ${plan.restamp.length} current again; ` +
       `${plan.stale.length} marked not current; ${plan.missing.length} with no source row; ${plan.drifted.length} built from inputs the target no longer has; ` +
-      `${plan.unbuildable.length} the target cannot build.`,
+      `${plan.unbuildable.length} the target cannot build. ${dryRun ? "Would write" : "Wrote"} ${readingFiles.length} reading(s) ` +
+      `at the target's catalog generation ${catalogKey}${seenSeq === null ? " (none: the target's change log head was unreadable)" : ""}.`,
     );
     for (const u of plan.unbuildable) console.log(`  cannot build ${u.file}: ${u.why}`);
     if (plan.missing.length + plan.drifted.length > 0) {

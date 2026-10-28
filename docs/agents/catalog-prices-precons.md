@@ -83,6 +83,20 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   2. Locally name the database with `PRECON_OVERVIEW_DB_URL` (the env import overrides `DATABASE_URL`). `--dry-run` builds,
   hashes and prices every request and calls and writes nothing (input tokens estimated there). `--stub` answers with the
   synopsis stub and refuses anything but a scratch branch (`assertScratchBranch`); a stub row is never current for a live run.
+- **The precon's READING** (small items 5, PR 6a) rides the same row: `reading`, `reading_permits`, `reading_list`,
+  `reading_catalog`, `reading_profile_version`, `reading_rules_version`, `reading_analyzed_oracle_ids`, `reading_seen_seq`,
+  `reading_at` (migration 0185, all nullable): exactly the `deck_profiles` row an Analyze press writes for a deck holding the
+  precon's list (`preconReadingColumns`, `src/lib/precons/reading-rule.ts`), the profile with a placeholder `deckId`. It is
+  the request's own input (`loadDeckProfileFromHead`), so it costs no model and no extra compute. It is judged by ITS OWN
+  rule, never by `current` (the Overview's): its list, this code's `PROFILE_VERSION` and `BRACKET_RULES_VERSION`
+  (`preconReadingCurrent`), and no change log entry touching its cards past its `reading_seen_seq` (`readingMoved`, H1;
+  `preconReadingFresh` in `reading.ts`). NOT the catalog generation: every ingest and every copy (this one included) stamps
+  it, and a deck's stored reading is never judged by it either. The build writes a row's reading, before anything is sent,
+  whenever none is stored or it is not fresh (`preconReadingDue`), WHATEVER the Overview's hash says; a newly stored Overview
+  takes the reading of the request rebuilt at its write. ONLY A WHOLE LIST HAS A READING: a precon the ingest kept with unmapped copies left out can be short, and Analyze's own size gate (`deckLegality`) refuses it, so its `reading_*` columns stay empty and a stale reading is cleared (`preconReadingWrite`); its Overview is handled exactly as before. `--readings-only` runs that step alone: no model, no key, no
+  Overview touched (a backfill, or a scratch branch's seed). `readPreconCarry` is the read a start will make once the arrival copy lands (small items PR 6;
+  until then it has no caller outside its tests, and a start still computes its reading in `after()`): a precon's
+  Overview and its reading in one row, current or not.
 - **A carried-over Overview** is a `deck_synopses` row with `precon_file` set and `model_call_id` NULL (a check constraint
   makes the two exclusive). It holds no allowance unit and no `model_calls` row, so the allowance, credits, `freeRunsFor` and
   the Costs page never count it (`src/lib/synopsis/carried-over.test.ts`, `pnpm probe:precon-overview-ledger`).
@@ -93,7 +107,10 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   hashes to it, on the same list. It is also the target's re-check: an installed row the target's inputs no longer fit, or
   whose request it cannot build, is marked not current; one that fits again is stamped current again. Nothing is deleted.
   The target's catalog generation (`catalog_refreshes`) is read before its requests are built and again under its lock;
-  a moved one refuses the publish (exit 2, nothing written): run the copy again.
+  a moved one refuses the publish (exit 2, nothing written): run the copy again. The READING is the target's own, never the
+  source's (a `seen_seq` is a position in its own database's log): every row the publish leaves on the target whose reading
+  is missing or not fresh there gets the one its request was just built from (`planReadingCopy`), in the same transaction,
+  with the target's log head read before the requests were built.
 - **The `Precon overviews` workflow** (`.github/workflows/precon-overviews.yml`) chains on a successful SCHEDULED
   `Catalog refresh` behind `PRECON_OVERVIEWS_ENABLED='true'`: `generate` on `catalog-staging` (`staging-deployed`, the
   `ANTHROPIC_API_KEY` secret, `PRECON_OVERVIEW_TARGET_BRANCH` staging's branch), then `copy` in `catalog-production`. A
