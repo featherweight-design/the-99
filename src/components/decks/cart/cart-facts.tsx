@@ -69,7 +69,12 @@ class FitRegistry {
    *  so attaching one measures every fact again, still before paint. */
   attach(ruler: HTMLElement | null) {
     this.ruler = ruler;
-    if (ruler) for (const measure of this.fits.values()) measure();
+    if (ruler) this.measureAll();
+  }
+
+  /** Every fact again: for a change no slot's size reports (a web font arriving narrows or widens the NAMES). */
+  measureAll() {
+    for (const measure of this.fits.values()) measure();
   }
 
   watch(el: Element, measure: Measure): () => void {
@@ -106,6 +111,20 @@ export function NameFitProvider({ children }: { children: ReactNode }) {
     registry.attach(ruler.current);
     return () => registry.attach(null);
   }, [registry]);
+  // The names and the pill are measured in the page's font: one that loads after the first fit changes their widths
+  // while every slot keeps its own, so the observer never hears of it.
+  useLayoutEffect(() => {
+    const fonts = typeof document === "undefined" ? undefined : document.fonts;
+    if (!fonts) return;
+    let live = true;
+    const again = () => { if (live) registry.measureAll(); };
+    void fonts.ready.then(again);
+    fonts.addEventListener?.("loadingdone", again);
+    return () => {
+      live = false;
+      fonts.removeEventListener?.("loadingdone", again);
+    };
+  }, [registry]);
   return (
     <FitContext.Provider value={registry}>
       {children}
@@ -133,18 +152,27 @@ function useNameFit(names: readonly string[]) {
   // Bumped by every measurement, even one that leaves the fit as it was, so a reader can tell a fresh measurement apart.
   const [measured, setMeasured] = useState(0);
   const key = names.join("\u0000");
+  // The measurement itself, kept for `remeasure`: a fold changes what is drawn without changing the slot's size.
+  const measureRef = useRef<(() => void) | null>(null);
   useLayoutEffect(() => {
     const el = slot.current;
     if (!registry || !el) return;
-    return registry.watch(el, () => {
+    const measure = () => {
       const parts = ruler.current ? [...ruler.current.children].map(width) : [];
       const sep = parts.pop() ?? 0;
       const next = fitNames({ avail: width(el), names: parts, sep, gap: GAP, pill: (rest) => registry.pill(rest) });
       setFit((prev) => (prev.shown === next.shown && prev.cut === next.cut && pillKey(prev.pill) === pillKey(next.pill) ? prev : next));
       setMeasured((n) => n + 1);
-    });
+    };
+    measureRef.current = measure;
+    const stop = registry.watch(el, measure);
+    return () => {
+      measureRef.current = null;
+      stop();
+    };
   }, [registry, key]);
-  return { fit, measured, slot, ruler };
+  const remeasure = () => measureRef.current?.();
+  return { fit, measured, slot, ruler, remeasure };
 }
 
 const pillKey = (p: FitPill) => (p === null ? "" : p.kind === "more" ? "more" : `+${p.rest}`);
@@ -189,7 +217,7 @@ export function CartFact({
   testId?: string;
 }) {
   const names = items.map((i) => i.name);
-  const { fit, measured, slot, ruler } = useNameFit(fallback === undefined ? names : []);
+  const { fit, measured, slot, ruler, remeasure } = useNameFit(fallback === undefined ? names : []);
   const [open, setOpen] = useState(false);
   // The pill the fact showed while shut, held from the press that opens it until the first measurement taken shut
   // again. Open, the prefix (`in`) and the names give way to the head, the slot widens, and a refit can find that
@@ -200,6 +228,24 @@ export function CartFact({
     setSeen(measured);
     if (!open && held !== null) setHeld(null);
   }
+  // Folding redraws the names, and the prefix with them, but a fact with no prefix keeps its slot's size, so no
+  // observer reports it: measure the shut layout once it commits. That measurement lets the hold go. If everything
+  // fits now the press leaves, and focus, when it was on the press, moves to the fact itself rather than the page.
+  const cell = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(open);
+  const refocus = useRef(false);
+  useLayoutEffect(() => {
+    if (wasOpen.current && !open) {
+      refocus.current = cell.current?.contains(document.activeElement) ?? false;
+      remeasure();
+    }
+    wasOpen.current = open;
+  });
+  useLayoutEffect(() => {
+    if (!refocus.current || held !== null) return;
+    refocus.current = false;
+    if (!cell.current?.querySelector("[data-fact-pill]")) cell.current?.focus({ preventScroll: true });
+  });
   const listId = useId();
   const pill: FitPill = fallback !== undefined ? null : (held ?? fit.pill);
   const shown = names.slice(0, fit.shown).join(", ");
@@ -246,9 +292,12 @@ export function CartFact({
   );
   return (
     <div
+      ref={cell}
+      // Focusable from script only: where focus lands when the folded press leaves (see the fold effect above).
+      tabIndex={-1}
       data-fact={testId}
       data-fact-open={open ? "" : undefined}
-      className={`grid min-w-0 grid-cols-[44px_minmax(0,1fr)] items-baseline xl:flex xl:flex-col xl:items-stretch ${className}`}
+      className={`grid min-w-0 grid-cols-[44px_minmax(0,1fr)] items-baseline outline-none xl:flex xl:flex-col xl:items-stretch ${className}`}
     >
       <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)] xl:sr-only">{label}</span>
       {lead ? <span className="flex min-w-0 items-center gap-[8px]">{lead}{line}</span> : line}

@@ -179,19 +179,18 @@ describe("CartFact", () => {
     const frame = container.querySelector("[data-test-width]")!;
     frame.setAttribute("data-test-width", "400");
     act(() => notify([{ target: document.querySelector("[data-fact-slot]")! }]));
+    // Folding brings `in` back, and the slot is as narrow as before it opened. No observer is told: the fold measures.
+    frame.setAttribute("data-test-width", "190");
     fireEvent.click(press);
-    // Folded, the same press is still there and still focused, showing what it showed before it opened.
+    // The same press is still there and still focused, showing what it showed before it opened.
     expect(press.isConnected).toBe(true);
     expect(document.activeElement).toBe(press);
     expect(press.getAttribute("aria-expanded")).toBe("false");
     expect(press.textContent).toBe(copy.facts.more(2));
-    // The first measurement taken shut lets the hold go: `in` is back and the cell narrow again, so the pill stays.
-    frame.setAttribute("data-test-width", "190");
-    act(() => notify([{ target: document.querySelector("[data-fact-slot]")! }]));
-    expect(screen.getByRole("button", { name: copy.facts.moreDecksAria(2) })).toBe(press);
+    expect(drawnNames()).toBe("HD - Gishath");
   });
 
-  it("lets the hold go at the first measurement shut, once every name truly fits", () => {
+  it("measures on folding: widened while open, the fold draws every name with no stale pill and keeps focus in the fact", () => {
     let notify: (entries: { target: Element }[]) => void = () => {};
     vi.stubGlobal("ResizeObserver", class {
       constructor(cb: (entries: { target: Element }[]) => void) { notify = cb; }
@@ -201,15 +200,41 @@ describe("CartFact", () => {
     });
     const { container } = render(need(190));
     const press = screen.getByRole("button", { name: copy.facts.moreDecksAria(2) });
+    press.focus();
     fireEvent.click(press);
-    const frame = container.querySelector("[data-test-width]")!;
-    frame.setAttribute("data-test-width", "400");
+    // Widened while open: the one notification the observer gives.
+    container.querySelector("[data-test-width]")!.setAttribute("data-test-width", "400");
     act(() => notify([{ target: document.querySelector("[data-fact-slot]")! }]));
+    // Folded, with no notification after it: a need fact has no prefix, so its slot does not change size.
     fireEvent.click(press);
-    expect(press.isConnected).toBe(true);
-    act(() => notify([{ target: document.querySelector("[data-fact-slot]")! }]));
-    expect(screen.queryByRole("button")).toBeNull();
     expect(drawnNames()).toBe("HD - Gishath, HD - Kratos, HD - Thorin");
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(press.isConnected).toBe(false);
+    // The press left with focus on it: focus moves to the fact, never to the page.
+    expect(document.activeElement).toBe(document.querySelector("[data-fact=need]"));
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it("measures every fact again when a web font finishes loading", async () => {
+    const listeners: (() => void)[] = [];
+    const fonts = { ready: Promise.resolve(), addEventListener: (_: string, f: () => void) => listeners.push(f), removeEventListener: () => {} };
+    Object.defineProperty(document, "fonts", { configurable: true, value: fonts });
+    try {
+      render(need(190));
+      await act(async () => {});
+      expect(drawnNames()).toBe("HD - Gishath");
+      // The font arrives narrower: every name now fits, though no slot changed size.
+      const saved = Element.prototype.getBoundingClientRect;
+      const narrower = function (this: Element) {
+        const r = saved.call(this);
+        return this.hasAttribute("data-fact-slot") ? r : ({ ...r, width: r.width / 2 } as DOMRect);
+      };
+      Element.prototype.getBoundingClientRect = narrower;
+      act(() => listeners.forEach((f) => f()));
+      expect(drawnNames()).toBe("HD - Gishath, HD - Kratos, HD - Thorin");
+    } finally {
+      delete (document as { fonts?: unknown }).fonts;
+    }
   });
 
   it("lets the value line take the rest of the row beside a lead, so its slot can grow back", () => {
