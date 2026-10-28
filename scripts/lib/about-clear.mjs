@@ -25,6 +25,28 @@ import { readFileSync } from "node:fs";
 import { neon } from "@neondatabase/serverless";
 import { requireEnv } from "./env.mjs";
 
+/**
+ * The database every About write here goes to: `.env`'s `DATABASE_URL`, the one each probe's own branch guard checks.
+ * A walk whose dev server should read a scratch branch points the worktree's `.env` at it, never `.env.local`, or the
+ * server and this write disagree (2026-10-28: a walk wrote local-dev's About row while its server read a scratch
+ * branch). The branch written is printed before the first write, so a mismatch shows. Opened once per run.
+ */
+let shared = null;
+export function aboutSql() {
+  shared ??= neon(requireEnv(["DATABASE_URL"]).DATABASE_URL);
+  return shared;
+}
+
+let announced = false;
+/** Prints the Neon branch the shared connection writes on, once, before its first write. A caller passing its own
+ *  connection already named where it writes. */
+async function announce(sql) {
+  if (sql !== shared || announced) return;
+  announced = true;
+  const [row] = await sql`select current_setting('neon.branch_id', true) as branch`;
+  console.log(`about-clear: the About row is written on ${row?.branch || "an unnamed database"} (.env DATABASE_URL)`);
+}
+
 const VERSION_FILE = new URL("../../src/lib/copy/about.version.json", import.meta.url);
 
 /**
@@ -78,11 +100,12 @@ export function variantIds(source = readFileSync(CATALOG_FILE, "utf8")) {
  */
 export async function markEveryEntrySeen(
   userId,
-  sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL),
+  sql = aboutSql(),
   version = JSON.parse(readFileSync(VERSION_FILE, "utf8")).version,
 ) {
   // Every entry's variant id too: an entry drawn in its variant is seen by that id alone (`isSeen`).
   const ids = [...catalogIds(), ...variantIds()];
+  await announce(sql);
   await sql`insert into user_prefs (user_id, about_version_seen, about_seen_ids) values (${userId}, ${version}, ${ids})
     on conflict (user_id) do update set
       about_version_seen = greatest(user_prefs.about_version_seen, ${version}),
@@ -135,7 +158,7 @@ export function gateReturn(url) {
  * The account's About row as it stands, for `restoreAboutSeen` to put back: both columns, or
  * `existed: false` when there is no row. Taken BEFORE the probe's first write to it.
  */
-export async function captureAboutSeen(userId, sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL)) {
+export async function captureAboutSeen(userId, sql = aboutSql()) {
   const [row] = await sql`select about_version_seen, about_seen_ids from user_prefs where user_id = ${userId}`;
   return row
     ? { userId, existed: true, version: row.about_version_seen, ids: row.about_seen_ids }
@@ -146,7 +169,8 @@ export async function captureAboutSeen(userId, sql = neon(requireEnv(["DATABASE_
  * Puts back exactly what `captureAboutSeen` read: both columns as they were, or no row at all
  * when there was none.
  */
-export async function restoreAboutSeen(capture, sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL)) {
+export async function restoreAboutSeen(capture, sql = aboutSql()) {
+  await announce(sql);
   if (!capture.existed) {
     await sql`delete from user_prefs where user_id = ${capture.userId}`;
     return;

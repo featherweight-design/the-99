@@ -58,7 +58,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
 ## `"signedOut": true`: photographing a public surface
 
-An inventory with `"signedOut": true` skips the Clerk sign-in, so a page that answers a reader with no session (`/privacy`, `/terms`) is photographed as that reader sees it, with the shell's bare signed-out branch around it. It cannot be combined with `clearAbout` (the run refuses). `legal-pages.json` (signed in) and `legal-pages-signed-out.json` are the pair for the legal pages (launch epic B1); the notice after the article is outside `<main>`, so a sheet cannot reach it and `pnpm probe:fan-content-notice` measures it on both pages.
+An inventory with `"signedOut": true` skips the Clerk sign-in, so a page that answers a reader with no session (`/privacy`, `/terms`) is photographed as that reader sees it, with the shell's bare signed-out branch around it. It cannot be combined with `clearAbout` (the run refuses). A `clearAbout` run writes the account's About row (captured first, restored in the `finally`) through `scripts/lib/about-clear.mjs`, on `.env`'s `DATABASE_URL`, printing the branch first. A walk whose dev server should read a scratch branch points the worktree's `.env` `DATABASE_URL` at it, never `.env.local`, or the server and the About write disagree. A walk on 2026-10-28 wrote local-dev's About row while its server read a scratch branch through `.env.local`; its restore put it back. `legal-pages.json` (signed in) and `legal-pages-signed-out.json` are the pair for the legal pages (launch epic B1); the notice after the article is outside `<main>`, so a sheet cannot reach it and `pnpm probe:fan-content-notice` measures it on both pages.
 
 ## Browser state per width, and portalled sheets
 
