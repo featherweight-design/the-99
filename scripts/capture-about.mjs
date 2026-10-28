@@ -40,7 +40,7 @@
 // tool card's desktop crop (`TOOL_REGIONS`) in `…/desktop/tools/<toolId>.webp`, and writes
 // `src/lib/about/page-shots.generated.ts`. The 390 set above, its manifest and `REQUIRED_SHOTS` are written exactly as
 // before, in the same run. A page image is written only when its pixels changed against the file on disk (decoded and
-// compared, never by bytes), at one WebP quality (`CAPTURE_PAGE_QUALITY`, default 70); the bytes written are printed at
+// compared, never by bytes), at one WebP quality (`CAPTURE_PAGE_QUALITY`, default 60); the bytes written are printed at
 // the end. `CAPTURE_QUALITY_TRIAL=<dir>` also writes the first three captures at q60, q70 and q80 into that directory,
 // with their sizes, for the legibility check that picks the quality. `CAPTURE_WIDTHS=phone|desktop` limits the pages
 // to one width; `CAPTURE_IDS` takes capture names as well as the 390 set's ids.
@@ -60,7 +60,7 @@ import { applyPairs, identityLeftovers, identityOf, identityPlan } from "./lib/a
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { ownedFixturePattern, readDeckMarks } from "./lib/about-fixture-ids.mjs";
 import { ABOUT_LOCATORS, ABOUT_REGIONS, TOOL_REGIONS, fromPage } from "./lib/about-locators.mjs";
-import { PAGE_FRAMES, PAGE_VIEWPORTS, samePixels, toolCrop } from "./lib/about-page-frames.mjs";
+import { PAGE_FRAMES, PAGE_VIEWPORTS, samePixels, toolCrop, visibleRegion } from "./lib/about-page-frames.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -102,7 +102,9 @@ const MANIFEST = new URL("../src/lib/about/shots.generated.ts", import.meta.url)
 // The pages' captures (PR 2).
 const PAGE_OUT_DIR = new URL("../public/about/pages/", import.meta.url);
 const PAGE_MANIFEST_FILE = new URL("../src/lib/about/page-shots.generated.ts", import.meta.url);
-const PAGE_QUALITY = Number(process.env.CAPTURE_PAGE_QUALITY ?? 70);
+// q60, measured by the trial on amonkhet (2026-10-27): p-collection 35.0/37.8/45.1KB, p-home-feed 59.0/64.9/78.4KB and
+// p-upload 25.0/26.7/31.7KB at q60/q70/q80, and 11px mono text reads cleanly at q60 (2x phone).
+const PAGE_QUALITY = Number(process.env.CAPTURE_PAGE_QUALITY ?? 60);
 if (!Number.isInteger(PAGE_QUALITY) || PAGE_QUALITY < 30 || PAGE_QUALITY > 95) throw new Error(`CAPTURE_PAGE_QUALITY ${PAGE_QUALITY}: 30 to 95`);
 const TRIAL_DIR = process.env.CAPTURE_QUALITY_TRIAL ?? null;
 const TRIAL_QUALITIES = [60, 70, 80];
@@ -265,10 +267,12 @@ function screens(f) {
     "deck-shopping": deck("shopping"),
     "deck-stats": deck("stats"),
     "deck-notes": deck("notes"),
-    "deck-analysis": deck("analysis"),
+    // The un-analyzed deck: Played carries a stored analysis for the pages, and this frame's entries are the Analyze
+    // press and what follows one.
+    "deck-analysis": deck("analysis", f.fresh),
     "deck-games": deck("games"),
     "deck-versions": deck("versions", f.versioned),
-    friends: { path: "/friends" },
+    friends: { path: "/friends", steps: (page) => revealBottom(page, "[data-testid='pod-rule-zero']") },
     account: {
       path: "/",
       steps: async (page) => {
@@ -547,11 +551,40 @@ const REQUIRED_ON_FRAME = {
   settings: [["[data-push-device='not-on']", "the push device row reading Not on yet (PUSH_ENABLED and HOME_FEED_ENABLED on, the VAPID keys set, `next start`)"]],
 };
 
-/** True when some match of `selector` has a box inside the frame (390x844 unless `view` says): where the photograph sees it. */
+/**
+ * An element's box and what the photograph shows of it (`visibleRegion`): the fixed or sticky chrome drawn over the page
+ * (a tab bar, an add dock, a sticky header) is read off the page as occluders, less any that hold the element or that it
+ * holds. Null when the element draws no box.
+ */
+async function regionOf(el, view) {
+  const m = await el
+    .evaluate((e) => {
+      const b = e.getBoundingClientRect();
+      if (b.width === 0 || b.height === 0) return null;
+      const area = innerWidth * innerHeight;
+      const occ = [];
+      for (const o of document.querySelectorAll("body *")) {
+        const cs = getComputedStyle(o);
+        if (cs.position !== "fixed" && cs.position !== "sticky") continue;
+        if (o.contains(e) || e.contains(o) || cs.visibility === "hidden" || cs.display === "none" || cs.opacity === "0") continue;
+        const r = o.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0 || r.width * r.height > 0.6 * area) continue;
+        occ.push({ x: r.left, y: r.top, width: r.width, height: r.height });
+      }
+      return { rect: { x: b.left, y: b.top, width: b.width, height: b.height }, occ };
+    })
+    .catch(() => null);
+  return m ? { ...m, v: visibleRegion(m.rect, view, m.occ) } : null;
+}
+
+/**
+ * True when some match of `selector` is SHOWN on the frame (390x844 unless `view` says): enough of it on the frame and
+ * clear of the chrome drawn over it (`visibleRegion`), never a sliver at the edge or behind the tab bar.
+ */
 async function inFrame(page, selector, view = VIEW) {
   for (const el of await page.locator(selector).all()) {
-    const r = await el.boundingBox().catch(() => null);
-    if (r && r.width > 0 && r.height > 0 && r.x < view.width && r.y < view.height && r.x + r.width > 0 && r.y + r.height > 0) return true;
+    const r = await regionOf(el, view);
+    if (r?.v.ok) return true;
   }
   return false;
 }
@@ -559,11 +592,42 @@ async function inFrame(page, selector, view = VIEW) {
 async function requireOnFrame(page, id) {
   // A deck's views are shot with its tabs at the top (`scrollToTabs`), which scrolls the phone header and its ? off the
   // frame by design; every other screen in the same run proves the ? is drawn.
-  for (const key of id.startsWith("deck-") ? [id] : ["*", id]) {
+  for (const key of id.startsWith("deck-") || SCROLLED_SCREENS.has(id) ? [id] : ["*", id]) {
     for (const [selector, what] of REQUIRED_ON_FRAME[key] ?? []) {
       if (!(await inFrame(page, selector))) throw new Error(`the frame does not show ${what}`);
     }
   }
+}
+
+/**
+ * Screens shot scrolled down, so their header's ? is off the frame by design (every other screen proves it is drawn):
+ * Friends, scrolled just far enough that the pod's Rule 0 check row clears the phone's tab bar.
+ */
+const SCROLLED_SCREENS = new Set(["friends"]);
+
+/** Scrolls the page the least that brings the first drawn `selector` in `<main>` fully above the bottom chrome. */
+async function revealBottom(page, selector) {
+  const found = await page.evaluate(
+    ([scope, sel]) => {
+      const el = [...document.querySelectorAll(`${scope} ${sel}`)].find((e) => e.getClientRects().length > 0);
+      if (!el) return false;
+      const vh = innerHeight;
+      // The chrome pinned to the frame's foot (the phone's tab bar, a dock): its top is the frame's usable bottom.
+      let floor = vh;
+      for (const o of document.querySelectorAll("body *")) {
+        const cs = getComputedStyle(o);
+        if (cs.position !== "fixed" && cs.position !== "sticky") continue;
+        const r = o.getBoundingClientRect();
+        if (r.height > 0 && r.width > 0 && r.bottom >= vh - 2 && r.top > vh / 2 && !o.contains(el)) floor = Math.min(floor, r.top);
+      }
+      const over = el.getBoundingClientRect().bottom + 12 - floor;
+      if (over > 0) window.scrollTo({ top: window.scrollY + over, behavior: "instant" });
+      return true;
+    },
+    [PAGE, selector],
+  );
+  if (!found) throw new Error(`the frame's reveal target ${selector} is not drawn`);
+  await page.waitForTimeout(300);
 }
 
 /** A Home visit moves `feed_seen_at`, and a lead story needs an unseen item (menu and Home PR 8): null is never seen. */
@@ -743,15 +807,18 @@ async function writeIfChanged(file, data) {
   return { written: true, bytes: data.length };
 }
 
-/** The first match of `locator` that is drawn (a box with area), its box in CSS px of the viewport; null when none is. */
-async function firstDrawn(page, locator) {
+/** The first match of `locator` that is drawn (a box with area), with what the frame shows of it; null when none is. */
+async function firstDrawn(page, locator, view) {
   const scope = fromPage(locator) ? page : page.locator(PAGE);
   for (const el of (await scope.locator(locator).all()).slice(0, 25)) {
-    const r = await el.boundingBox().catch(() => null);
-    if (r && r.width > 0 && r.height > 0) return r;
+    const r = await regionOf(el, view);
+    if (r) return r;
   }
   return null;
 }
+
+/** Why a region is not labelled: nothing drawn, or too little of it shown. */
+const notShown = (r) => (r ? `only ${Math.round(r.v.share * 100)}% of it is shown on the frame (a sliver, or behind chrome)` : "its locator draws nothing on the frame");
 
 /** `r` clipped to the frame, as fractions of it; null when nothing of it is on the frame. */
 function fractionOf(r, view) {
@@ -789,7 +856,7 @@ async function deckView(page, view) {
 /** What the switch set must draw on a page frame: the ? on a frame shot from the top, and each surface's own rows. */
 async function requirePage(page, capture, frame, view) {
   const keys = [];
-  if (!frame.deck && !frame.scroll) keys.push("*");
+  if (!frame.deck && !frame.scroll && !frame.reveal) keys.push("*");
   if (frame.path === "/friends") keys.push("friends");
   if (frame.rearm) keys.push("home-feed");
   for (const key of keys) {
@@ -857,6 +924,7 @@ async function shootPages(page, theme, width, f) {
       if (frame.deck) await deckView(page, frame.view);
       if (frame.scroll === "tabs") await scrollToTabs(page);
       else if (frame.scroll) await scrollToElement(page, frame.scroll);
+      if (frame.reveal) await revealBottom(page, frame.reveal);
       await settle(page);
       await requirePage(page, capture, frame, view);
       const png = await shot(page);
@@ -864,24 +932,24 @@ async function shootPages(page, theme, width, f) {
       for (const [region, r] of Object.entries(ABOUT_REGIONS)) {
         const at = r[width];
         if (!at || at.capture !== capture) continue;
-        const rect = await firstDrawn(page, at.locator);
-        const b = rect ? fractionOf(rect, view) : null;
+        const got = await firstDrawn(page, at.locator, view);
+        const b = got?.v.ok ? fractionOf(got.v.box, view) : null;
         if (b) regions[region] = b;
-        else missed.push(`${theme}/${width}/${capture}#${region}: its locator draws nothing on the frame`);
+        else missed.push(`${theme}/${width}/${capture}#${region}: ${notShown(got)}`);
       }
       const tools = {};
       const crops = [];
       if (width === "desktop") {
         for (const [tool, t] of Object.entries(TOOL_REGIONS)) {
           if (t.capture !== capture) continue;
-          const rect = await firstDrawn(page, t.locator);
-          const b = rect ? fractionOf(rect, view) : null;
+          const r = await firstDrawn(page, t.locator, view);
+          const b = r?.v.ok ? fractionOf(r.v.box, view) : null;
           if (!b) {
-            missed.push(`${theme}/desktop/tools/${tool}: its control is not drawn on ${capture}`);
+            missed.push(`${theme}/desktop/tools/${tool} on ${capture}: ${notShown(r)}`);
             continue;
           }
           tools[tool] = b;
-          crops.push([tool, rect]);
+          crops.push([tool, r.v.box]);
         }
       }
       await savePage(theme, width, capture, png, regions, tools);

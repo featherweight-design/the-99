@@ -397,7 +397,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Analysis",
     sub: "Where your deck sits, and the tools that tune it.",
     screens: [{ screen: "deck", view: "analysis" }],
-    captures: { phone: ["p-deck-analysis", "p-deck-analysis-read", "p-analysis-tuning"], desktop: ["d-analysis", "d-analysis-describe"] },
+    captures: { phone: ["p-deck-analysis", "p-deck-analysis-read", "p-analysis-tuning"], desktop: ["d-analysis", "d-analysis-tuning", "d-analysis-describe"] },
     labels: [
       {
         id: "bracket",

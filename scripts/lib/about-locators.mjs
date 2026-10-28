@@ -387,8 +387,10 @@ export const ABOUT_REGIONS = {
     desktop: { capture: "d-analysis", locator: "#panel-analysis [data-testid='verdict-cell']" },
   },
   "decks/analysis/findings": both("p-deck-analysis-read", "d-analysis", "[data-testid='findings-block']"),
-  "decks/analysis/suggested": both("p-analysis-tuning", "d-analysis", "[data-tool-tile='suggested'] >> nth=0"),
-  "decks/analysis/cuts": both("p-analysis-tuning", "d-analysis", "[data-tool-tile='cuts'] >> nth=0"),
+  // At 1300 the analyzed deck's head, findings and tuning hub do not share a 900px frame (the overview, How it plays,
+  // Dependencies and the strategy ring sit between them), so the hub has its own shot, as at 390.
+  "decks/analysis/suggested": both("p-analysis-tuning", "d-analysis-tuning", "[data-tool-tile='suggested'] >> nth=0"),
+  "decks/analysis/cuts": both("p-analysis-tuning", "d-analysis-tuning", "[data-tool-tile='cuts'] >> nth=0"),
   "decks/analysis/describe": both("p-deck-analysis", "d-analysis-describe", "#deck-description-field"),
   "decks/analysis/mana": both("p-analysis-tuning", "d-analysis-describe", "[data-tool-tile='mana'] >> nth=0"),
 
@@ -420,7 +422,7 @@ export const ABOUT_REGIONS = {
   "friends/friends/add": both("p-friends", "d-friends", "[data-about-invite] button:has-text('Add a friend'):visible >> nth=0"),
   "friends/friends/friend": both("p-friends", "d-friends", "[data-friend-row] a >> nth=0"),
   "friends/friends/pod": both("p-friends", "d-friends", "[data-testid='pod-card'] >> nth=0"),
-  // A pod of two fixture friends and the reader, so the row draws at both widths (about-fixtures, G1).
+  // About pod's own row; the phone frame is scrolled just far enough that it clears the tab bar (`reveal`).
   "friends/friends/rule0": both("p-friends", "d-friends", "[data-testid='pod-rule-zero'] >> nth=0"),
 };
 
@@ -436,8 +438,8 @@ export const TOOL_REGIONS = {
   lineup: { capture: "d-decks2", locator: ABOUT_REGIONS["decks/your-decks/decks-stats"].desktop.locator },
   precons: { capture: "d-decks2", locator: ABOUT_REGIONS["decks/your-decks/precons"].desktop.locator },
   "top-off": { capture: "d-deck-top", locator: ABOUT_REGIONS["decks/your-deck/mix"].desktop.locator },
-  "suggested-changes": { capture: "d-analysis", locator: ABOUT_REGIONS["decks/analysis/suggested"].desktop.locator },
-  "proposed-cuts": { capture: "d-analysis", locator: ABOUT_REGIONS["decks/analysis/cuts"].desktop.locator },
+  "suggested-changes": { capture: "d-analysis-tuning", locator: ABOUT_REGIONS["decks/analysis/suggested"].desktop.locator },
+  "proposed-cuts": { capture: "d-analysis-tuning", locator: ABOUT_REGIONS["decks/analysis/cuts"].desktop.locator },
   "mana-balance": { capture: "d-analysis-describe", locator: ABOUT_REGIONS["decks/analysis/mana"].desktop.locator },
   matchups: { capture: "d-games", locator: ABOUT_REGIONS["decks/games/matchups"].desktop.locator },
   "find-a-deck": { capture: "d-collection2", locator: ABOUT_REGIONS["collection/cards/taken"].desktop.locator },

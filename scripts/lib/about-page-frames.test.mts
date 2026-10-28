@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_REGIONS, TOOL_REGIONS } from "./about-locators.mjs";
-import { PAGE_FRAMES, PAGE_VIEWPORTS, samePixels, toolCrop } from "./about-page-frames.mjs";
+import { PAGE_FRAMES, PAGE_VIEWPORTS, samePixels, toolCrop, visibleRegion } from "./about-page-frames.mjs";
 
 describe("the About pages' frames", () => {
   const named = new Map<string, "phone" | "desktop">();
@@ -79,5 +79,41 @@ describe("samePixels: an unchanged screen is not written again", () => {
     expect(samePixels(img(100), b)).toBe(false);
     expect(samePixels(img(100), img(100, 99))).toBe(false);
     expect(samePixels(null, img(100))).toBe(false);
+  });
+});
+
+describe("visibleRegion: a sliver is not in frame", () => {
+  const phone = { width: 390, height: 844 };
+  const tabBar = { x: 0, y: 770, width: 390, height: 74 };
+  it("passes a region wholly on the frame, its box the region's", () => {
+    const r = visibleRegion({ x: 20, y: 100, width: 350, height: 120 }, phone, [tabBar]);
+    expect(r.ok).toBe(true);
+    expect(r.share).toBe(1);
+    expect(r.box!.y).toBeCloseTo(100, 5);
+    expect(r.box!.height).toBeCloseTo(120, 5);
+  });
+  it("fails a region whose most part sits behind the tab bar (p-deck-analysis-read's findings)", () => {
+    const r = visibleRegion({ x: 16, y: 805, width: 358, height: 200 }, phone, [tabBar]);
+    expect(r.ok).toBe(false);
+  });
+  it("fails a region on the frame but mostly covered by the tab bar", () => {
+    const r = visibleRegion({ x: 16, y: 760, width: 358, height: 80 }, phone, [tabBar]);
+    expect(r.ok).toBe(false);
+    expect(r.share).toBeLessThan(0.2);
+  });
+  it("fails a region mostly below the frame's edge, though its top shows", () => {
+    expect(visibleRegion({ x: 16, y: 700, width: 358, height: 300 }, phone, []).ok).toBe(false);
+  });
+  it("clips the box to what shows, and passes a region taller than the frame that fills much of it", () => {
+    const tall = visibleRegion({ x: 16, y: 120, width: 358, height: 1400 }, phone, [tabBar]);
+    expect(tall.ok).toBe(true);
+    expect(tall.box!.y + tall.box!.height).toBeLessThanOrEqual(tabBar.y + 1400 / 20);
+  });
+  it("passes a region with only an edge under chrome", () => {
+    expect(visibleRegion({ x: 16, y: 700, width: 358, height: 90 }, phone, [tabBar]).ok).toBe(true);
+  });
+  it("has nothing to show for a region off the frame or with no box", () => {
+    expect(visibleRegion({ x: 0, y: 900, width: 100, height: 40 }, phone, []).box).toBeNull();
+    expect(visibleRegion(null, phone, []).ok).toBe(false);
   });
 });

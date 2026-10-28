@@ -17,8 +17,8 @@
 // Each is built from cards the account owns that no other deck claims, under its own commander (three of disjoint
 // colors), so no row is contested and no list matches a precon: the frames look like an ordinary player's decks.
 // The reader's own social name is `Sam` (its face the Played deck's commander, three invites in hand); the capture puts a neutral name and email over Clerk's in the page.
-//   - a friend, `Alex`, in a pod with the account, sharing a spare of a card Played buys, and a second, `Jordan`, in the
-//     same pod, so the pod draws its Rule 0 check at both widths;
+//   - a friend, `Alex`, in a pod with the account, sharing a spare of a card Played buys (one friend keeps the pod's
+//     Rule 0 check row on the phone's Friends frame; the row draws for any pod, at both widths);
 //   - a wishlist want, so Wishlist draws a row.
 // An earlier upload is the snapshot's own: the script refuses an account with none rather than writing a fake one.
 //
@@ -358,16 +358,6 @@ const pod = await pods.createPod(viewer, "About pod");
 if (!pod) throw new Error("createPod refused");
 if (!(await pods.addMember(viewer, pod.id, colin.publicId))) throw new Error("addMember refused");
 if (!(await spares.shareSparesWith(colinId, pod.id, true))) throw new Error("shareSparesWith refused");
-// A second fixture friend in the same pod (About pages, G1): the pod's Rule 0 check row at both widths. Its id is in
-// this account's namespace, so the next run's cleanup purges it with Alex.
-const jordanId = fixtureFriendId(viewer, Number(colinId.slice(colinId.lastIndexOf("-") + 1)) + 1);
-const jordan = await friends.ensureProfile(jordanId, "Jordan");
-await sql`insert into user_prefs (user_id) values (${jordanId}) on conflict (user_id) do nothing`;
-const invite2 = await friends.createInvite(viewer);
-if (!invite2.ok) throw new Error("createInvite refused: the account holds too many open invites");
-await friends.redeemInvite(jordanId, invite2.token);
-await setCommander(jordanId, faces[2].oracle_id);
-if (!(await pods.addMember(viewer, pod.id, jordan.publicId))) throw new Error("addMember refused Jordan");
 
 // Five games with opponents, oldest first: enough for Matchups' finding (three or more).
 const results = ["win", "loss", "win", "loss", "win"] as const;
@@ -415,5 +405,5 @@ console.log(`ABOUT_DECK_UNDER=${under}`);
 console.log(`ABOUT_DECK_OVER=${over}`);
 console.log(`ABOUT_DECK_PLAYED=${played}`);
 console.log(`ABOUT_DECK_FRESH=${fresh}`);
-console.log(`seeded: Alex (a spare) and Jordan in About pod, five games with opponents, two notes, one want, a locked card, a pending change and a stored analysis on Played · ${uploads} earlier uploads`);
+console.log(`seeded: Alex (a spare, in About pod), five games with opponents, two notes, one want, a locked card, a pending change and a stored analysis on Played · ${uploads} earlier uploads`);
 process.exit(0);
