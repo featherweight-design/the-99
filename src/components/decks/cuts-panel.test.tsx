@@ -767,5 +767,15 @@ describe("a result with more named than the deck needs (pick N)", () => {
     expect(screen.getByText(/One over the ninety-nine/)).toBeTruthy();
     await act(async () => { answer({ ok: true }); });
   });
+  it("a run reopened after cards left elsewhere reaches the line with fewer cuts than it needed", async () => {
+    // One of six cut, two cards taken out by hand since: the list is at 100.
+    const p = pick();
+    p.items = [cutItem(1), item(2), item(3), item(4), item(5), item(6)];
+    p.over = 0;
+    p.total = 100;
+    await mount(deps(p));
+    expect(screen.getByText(/Back at 99/)).toBeTruthy();
+    expect(screen.queryByText(copy.done.body)).toBeNull();
+  });
 });
 

@@ -300,7 +300,10 @@ export function CutsPanelView({
   const pressedSinceRead = cutCount - items.filter((i) => i.verdict === "accepted").length;
   // A legal deck is 100 cards, commanders included (99 + one, or 98 + a partner pair).
   const liveOver = panel.total - pressedSinceRead - 100;
-  const pick = counted.phase !== "enough" && counted.phase !== "past" ? counted
+  // Every pick run with a cut made reads its phase from the list, wherever the cuts stand against the run's need: a run
+  // reopened after cards left elsewhere can reach the line with fewer cuts than it needed.
+  const pick = counted.phase !== "enough" && counted.phase !== "past" && counted.phase !== "choosing" ? counted
+    : counted.chosen === 0 ? counted
     : liveOver > 0 ? { ...counted, phase: "choosing" as const }
     : liveOver === 0 ? { ...counted, phase: "enough" as const, past: 0 }
     : { ...counted, phase: "past" as const, past: -liveOver };
