@@ -17,6 +17,9 @@ import { DeckSearchField } from "../deck-filter-column";
 import { OrderMenu } from "../deck-sort-menu";
 import { CartSortSheet } from "./cart-sort-sheet";
 
+/** The longest search a chip draws before it ends in an ellipsis. */
+const CHIP_TERM_MAX = 24;
+
 const LABELS: Record<CartView, Readonly<Record<string, string>>> = {
   card: copy.sort.byCard,
   deck: copy.sort.byDeck,
@@ -40,10 +43,16 @@ export function CartChassis({
 }) {
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
   const [sheet, setSheet] = useState(false);
+  // The sheet belongs to the compact form: crossing into the wide one closes it, so it cannot reopen on the way back.
+  if (wide && sheet) setSheet(false);
   const order = CART_SORTS[view];
   const labels = LABELS[view];
   const term = query.trim();
-  const chips: FilterChip[] = term ? [{ key: "q", label: copy.filters.chipSearch(term), onRemove: () => onQuery("") }] : [];
+  // A long term is cut for the eye and spoken whole, so the chip and its ✕ stay inside a phone's width.
+  const shortTerm = term.length > CHIP_TERM_MAX ? `${term.slice(0, CHIP_TERM_MAX)}…` : term;
+  const chips: FilterChip[] = term ? [{
+    key: "q", label: copy.filters.chipSearch(shortTerm), spoken: shortTerm === term ? undefined : copy.filters.chipSearch(term), onRemove: () => onQuery(""),
+  }] : [];
   const trigger = copy.sort.trigger(labels[sort]);
   return (
     <FilterChassis

@@ -40,7 +40,9 @@ function SheetBody({ open, view, value, order, labels, onPick, onDismiss }: Cart
       ariaLabel={copy.sort.sheetAria}
       panelRef={dialog}
       portal
-      frameClassName="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex max-[999px]:bottom-auto max-[999px]:top-[var(--vv-top,0px)] max-[999px]:h-[var(--vv-h,100%)]"
+      // Compact is everything under the chassis's 1000px, which `min-[1000px]:hidden` states without a 999px edge a
+      // fractional width could fall through.
+      frameClassName="fixed inset-0 z-50 flex flex-col justify-end min-[1000px]:hidden bottom-auto top-[var(--vv-top,0px)] h-[var(--vv-h,100%)]"
       scrimClassName="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
       panelClassName="relative z-10 flex max-h-[86dvh] flex-col rounded-t-[16px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)]"
     >
@@ -48,14 +50,14 @@ function SheetBody({ open, view, value, order, labels, onPick, onDismiss }: Cart
       <p className="m-0 px-[16px] pb-[8px] font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
         {copy.sort.viewOf[view]}
       </p>
-      <div role="radiogroup" aria-label={copy.sort.sheetAria} className="flex flex-col pb-[16px]">
+      <div role="menu" aria-label={copy.sort.sheetAria} className="flex flex-col pb-[16px]">
         {order.map((option, i) => {
           const on = option === value;
           return (
             <button
               key={option}
               type="button"
-              role="radio"
+              role="menuitemradio"
               aria-checked={on}
               // Roving focus: one Tab stop, the arrows move between the orders, as a radiogroup promises.
               tabIndex={stop === i ? 0 : -1}

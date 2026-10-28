@@ -519,7 +519,7 @@ function CardOrFriendList({
   const drawn = useWithHeld(lines, read, selected, { query });
   const byFriend = friendGroups(useByFriend(drawn.lines, drawn.held));
   const compare = useMemo(
-    () => cardCompare(sorts.card, (id) => spares?.byCard.get(id)?.reduce((n, s) => n + s.spare, 0) ?? 0),
+    () => cardCompare(sorts.card, (id) => (spares?.byCard.get(id) ?? spares?.seen.get(id))?.reduce((n, s) => n + s.spare, 0) ?? 0),
     [sorts.card, spares],
   );
   const panels = useMemo(() => (byFriend ? sortGroups(byFriend.groups, sorts.friend) : null), [byFriend, sorts.friend]);

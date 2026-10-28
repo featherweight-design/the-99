@@ -134,22 +134,22 @@ describe("the cart's chassis (v2 PR 8)", () => {
     render(<CartView cart={cart()} provenance={provenance} />);
     expect(cardNames()).toEqual(["Sol Ring", "Mox Amber", "Smothering Tithe", "Swiftfoot Boots"]);
     fireEvent.click(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) }));
-    const sheet = screen.getByRole("radiogroup", { name: copy.sort.sheetAria });
-    expect(within(sheet).getAllByRole("radio").map((r) => r.textContent)).toEqual(Object.values(copy.sort.byCard).map((l) => `${l}${l === copy.sort.byCard.decks ? "✓" : ""}`));
-    fireEvent.click(within(sheet).getByRole("radio", { name: copy.sort.byCard["price-high"] }));
+    const sheet = screen.getByRole("menu", { name: copy.sort.sheetAria });
+    expect(within(sheet).getAllByRole("menuitemradio").map((r) => r.textContent)).toEqual(Object.values(copy.sort.byCard).map((l) => `${l}${l === copy.sort.byCard.decks ? "✓" : ""}`));
+    fireEvent.click(within(sheet).getByRole("menuitemradio", { name: copy.sort.byCard["price-high"] }));
     // Closed on a pick; an unpriced line goes last.
-    expect(screen.queryByRole("radiogroup", { name: copy.sort.sheetAria })).toBeNull();
+    expect(screen.queryByRole("menu", { name: copy.sort.sheetAria })).toBeNull();
     expect(cardNames()).toEqual(["Smothering Tithe", "Swiftfoot Boots", "Sol Ring", "Mox Amber"]);
     expect(live()).toBe("?sort=price-high");
     // Low first keeps the unpriced line last too.
     fireEvent.click(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard["price-high"]) }));
-    fireEvent.click(screen.getByRole("radio", { name: copy.sort.byCard["price-low"] }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: copy.sort.byCard["price-low"] }));
     expect(cardNames()).toEqual(["Sol Ring", "Swiftfoot Boots", "Smothering Tithe", "Mox Amber"]);
     // By deck has its own sort, and the address names it, not the card's.
     fireEvent.click(screen.getByRole("radio", { name: copy.view.byDeck }));
     expect(live()).toBe("?view=deck");
     fireEvent.click(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byDeck.largest) }));
-    fireEvent.click(screen.getByRole("radio", { name: copy.sort.byDeck.cost }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: copy.sort.byDeck.cost }));
     expect(screen.getAllByRole("region", { name: /HD - / }).map((r) => r.textContent?.match(/HD - [A-Za-z]+/)?.[0])).toEqual(["HD - Kratos", "HD - Gishath", "HD - Omnath"]);
     expect(live()).toBe("?view=deck&sort=cost");
     // Back on By card, its own sort is still there.
@@ -169,7 +169,7 @@ describe("the cart's chassis (v2 PR 8)", () => {
   it("moves between the sheet's orders with the arrows and keeps one Tab stop", () => {
     render(<CartView cart={cart()} provenance={provenance} />);
     fireEvent.click(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) }));
-    const radios = screen.getAllByRole("radio").filter((r) => r.closest("[role=radiogroup]")?.getAttribute("aria-label") === copy.sort.sheetAria);
+    const radios = within(screen.getByRole("menu", { name: copy.sort.sheetAria })).getAllByRole("menuitemradio");
     expect(radios.map((r) => r.tabIndex)).toEqual([0, -1, -1, -1, -1]);
     fireEvent.keyDown(radios[0], { key: "ArrowDown" });
     expect(document.activeElement).toBe(radios[1]);
@@ -185,6 +185,15 @@ describe("the cart's chassis (v2 PR 8)", () => {
     fireEvent.change(search(), { target: { value: `sol${" ".repeat(120)}` } });
     expect((search() as HTMLInputElement).value).toHaveLength(80);
     expect(new URLSearchParams(live()).get("q")).toHaveLength(80);
+  });
+
+  it("cuts a long search for the chip's eye and speaks it whole", () => {
+    render(<CartView cart={cart()} provenance={provenance} />);
+    const term = "a".repeat(60);
+    fireEvent.change(search(), { target: { value: term } });
+    expect(screen.getByText(copy.filters.chipSearch(`${"a".repeat(24)}…`))).toBeTruthy();
+    const chip = document.querySelector("[data-chassis-row='chips']") as HTMLElement;
+    expect(within(chip).getByRole("button", { name: new RegExp(term) })).toBeTruthy();
   });
 
   it("draws the desktop sort as the labelled menu past the hairline", () => {
