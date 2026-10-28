@@ -62,7 +62,7 @@ async function isMemberIn(tx: Tx, podId: string, userId: string): Promise<boolea
 }
 
 /** The owners (of those given) whose `FRIEND_DECKS_ENABLED` is on: their deck rules apply to a friend's read. */
-async function ruledOwnersOf(userIds: readonly string[]): Promise<string[]> {
+export async function ruledOwnersOf(userIds: readonly string[]): Promise<string[]> {
   const on = await Promise.all([...new Set(userIds)].map(async (u) => ((friendDecksEnabled(await resolveSwitchEnv(u))) ? u : null)));
   return on.filter((u): u is string => u !== null);
 }
