@@ -72,10 +72,10 @@ Hugh asked whether /friends needs sub-nav tabs; the call (accepted 2026-10-28) i
 
 Hugh (2026-10-28): the owner's ✕ disc on every member's art is distracting on so small an image.
 - At rest the seats carry **no control**. The owner's pod head gets **Edit**, a text press before `···` (44px phone, 32 desktop). A member who isn't the owner sees neither, as shipped.
-- **Editing:** the card's edge goes accent; **Done** (filled) replaces Edit and `···`; every seat but yours shows **Remove** under the name in `--danger` (44px hit on a phone, 28px line on desktop with the coarse pointer's 44px). Add friends and the spares box work as usual.
+- **Editing:** the card's edge goes accent; **Done** (filled) replaces Edit and `···`; every seat but yours shows the **shipped ✕ disc** on its art (28px, 44px press). R1b (Hugh, 2026-10-28): the ✕ rather than a Remove line, so the seats never grow. Add friends and the spares box work as usual.
 - Remove acts at once, no confirm, nobody told (as shipped); a failed write puts the seat back with the shared toast. Editing ends on Done, Escape, leaving the page, or when you're the only member left.
-- Focus: Edit → first Remove; Done → Edit; after a Remove, the next Remove, else Done.
-- Engineering: `pod-card.tsx` gets an `editing` state; `Seat` loses the absolute ✕ disc and renders a text button after the name while editing (same `removeMemberAria`, `onRemove`). Rename, Leave, Delete stay in `pod-menu.tsx`. Copy for /copy-review: Edit, Done, Remove.
+- Focus: Edit → first ✕; Done → Edit; after a removal, the next ✕, else Done.
+- Engineering: `pod-card.tsx` gets an `editing` state; `Seat` renders its shipped ✕ disc only while editing (same `removeMemberAria`, `onRemove`). Rename, Leave, Delete stay in `pod-menu.tsx`. Copy for /copy-review: Edit, Done.
 
 ## Files
 - `Main.dc.html`, `Cuts-Alternatives.dc.html`, `Draft-Note-Phone.dc.html`, `Spare-Answer-Sheet.dc.html`, `Dismiss-X.dc.html`, `Eng-Rulings.dc.html`, `Precon-Overview.dc.html`, `Friends-Desktop.dc.html`, `Pod-Edit.dc.html`: the canvas artboards (images as `/_blob/` urls). `canvas.json`: the canvas index.

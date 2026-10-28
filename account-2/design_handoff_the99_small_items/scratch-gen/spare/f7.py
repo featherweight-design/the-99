@@ -1,6 +1,6 @@
 """Item 7 (account 2, 2026-10-28): an edit state for a pod. The shipped pod card (pod-card.tsx) puts the owner's ✕ disc
 over every member's art; Hugh: distracting on so small an image. Seats show no control until the owner presses Edit;
-editing, each removable seat gets a Remove press under its name, off the art. Drawn with the item-6 page."""
+editing, the shipped ✕ disc shows on each removable seat (R1b, Hugh: the ✕ keeps the seats from growing). Drawn with the item-6 page."""
 import kit
 import parts as P
 import w4
@@ -32,13 +32,13 @@ SEATS = f6.SEATS
 
 
 def pod(mode="rest", desk=False, gone=None):
-    """mode: shipped (✕ on the art) | rest (no control on the seats, Edit in the header) | edit (Done, Remove under names)."""
+    """mode: shipped (✕ on the art) | rest (no control on the seats, Edit in the header) | edit (Done, ✕ on the art; names)."""
     seats = []
     for n, a, me in SEATS:
         if n == gone:
             continue
-        x = '<span class="f6x">✕</span>' if (mode == "shipped" and not me) else ""
-        rm = '<span class="f7rm">Remove</span>' if (mode == "edit" and not me) else ""
+        x = '<span class="f6x">✕</span>' if (mode in ("shipped", "edit") and not me) else ""
+        rm = ""
         seats.append(f'<span class="f6se{" me" if me else ""}"><img src="{img(a)}" alt="">{x}{n}{rm}</span>')
     n = len(seats)
     if mode == "shipped":
@@ -69,29 +69,29 @@ def dk_page(mode, gone=None):
 
 
 def board():
-    body = (board_head("Item 7 · pods · an edit state", "Remove members from Edit, not from the art",
+    body = (board_head("Item 7 · pods · an edit state", "The ✕ only while editing",
                        "Shipped, the owner sees a ✕ disc on every member’s art, all the time, for an action they rarely take. <b>Redrawn: the seats carry "
                        "no control.</b> The pod’s head gets <b>Edit</b> (owner only, beside the ··· menu). Pressed, the card takes an accent edge, Edit "
-                       "becomes <b>Done</b>, and each member’s seat shows <b>Remove</b> under the name, off the art. A member who isn’t the owner sees "
-                       "neither, as today.", tag="R1")
+                       "becomes <b>Done</b>, and the shipped ✕ discs appear on the members’ art. <b>R1b:</b> the ✕, not a Remove line, so the seats never grow. A member who isn’t the owner sees "
+                       "neither, as today.", tag="R1b")
             + frames(frame("<b>As shipped</b> · 390 · for reference", ph_page("shipped"), "A ✕ on four of five tiles, each 28px on a 74px picture."),
                      frame("<b>Redrawn</b> · 390", ph_page("rest"), "No control on the art. <b>Edit</b> sits in the head, beside ···."),
-                     frame("<b>Redrawn</b> · 390 · editing", ph_page("edit"), "Remove under each name, 44px tall. Done ends it; ··· is hidden while editing."),
+                     frame("<b>Redrawn</b> · 390 · editing", ph_page("edit"), "The shipped ✕ (28px, 44px press) on every seat but yours. Done ends it; ··· is hidden while editing."),
                      frame("<b>Redrawn</b> · 390 · Max removed", ph_page("edit", "Max"), "Removed at once, no confirm (as shipped); still editing."))
             + frames(frame("<b>Redrawn</b> · 1300 · editing", dk_page("edit"),
-                           "Item 6’s right column. Remove is a 28px line under the name (coarse pointer: 44px hit). The head reads Done alone."),
+                           "Item 6’s right column. The same ✕ discs; the seats keep their size. The head reads Done alone."),
                      '<div style="display:flex;flex-direction:column;gap:14px;width:440px;flex:none">'
                      '<div class="note"><b>The rule</b><ul>'
                      '<li><b>Edit</b>: owner only, a text press in the head before ···. Rename, Leave and Delete stay in ···.</li>'
                      '<li><b>Editing</b>: the card’s edge goes accent; <b>Done</b> (filled) replaces Edit and ···; every seat but yours shows '
-                     '<b>Remove</b> under the name in the danger ink. Add friends and the spares box work as usual.</li>'
+                     'the shipped ✕ disc on its art (28px, 44px press). Add friends and the spares box work as usual.</li>'
                      '<li><b>Remove</b> removes at once, no confirm, as shipped; the member is not told. A failed write puts the seat back with the shared toast.</li>'
                      '<li>Editing ends on Done, Escape, or leaving the page; it also ends by itself when you are the only one left.</li>'
-                     '<li>Focus: Edit moves focus to the first Remove; Done returns it to Edit. After a Remove, focus goes to the next Remove, else Done.</li></ul></div>'
+                     '<li>Focus: Edit moves focus to the first ✕; Done returns it to Edit. After a Remove, focus goes to the next ✕, else Done.</li></ul></div>'
                      '<div class="note"><b>For engineering</b><ul>'
-                     '<li><code>pod-card.tsx</code>: an <code>editing</code> state on <code>PodCard</code>; <code>Seat</code> loses the absolute ✕ disc and '
-                     'renders a text button after the name when <code>editing</code> (same <code>removeMemberAria</code>, same <code>onRemove</code>).</li>'
-                     '<li>Copy for /copy-review: <i>Edit</i>, <i>Done</i>, <i>Remove</i>.</li></ul></div></div>'))
+                     '<li><code>pod-card.tsx</code>: an <code>editing</code> state on <code>PodCard</code>; <code>Seat</code> renders its shipped ✕ disc only while <code>editing</code> '
+                     '(same <code>removeMemberAria</code>, same <code>onRemove</code>).</li>'
+                     '<li>Copy for /copy-review: <i>Edit</i>, <i>Done</i>.</li></ul></div></div>'))
     return doc("Pod edit state", body, 390 * 4 + 44 * 3 + 112 if 390 * 4 + 44 * 3 > 1300 + 44 + 440 else 1300 + 44 + 440 + 112)
 
 

@@ -54,9 +54,9 @@ CALLS = [
      "<ul><li>No tabs for now; nothing new, nothing hidden, phone unchanged.</li>"
      "<li>Engineering: a grid in <code>friends-view.tsx</code>; DOM order stays phone order.</li></ul>",
      "Board: Friends-Desktop"),
-    ("7 · Pods · an edit state", "Remove members from Edit, not from the art",
+    ("7 · Pods · an edit state", "The ✕ only while editing",
      "<p>The ✕ discs leave the seats. The owner’s pod head gets <b>Edit</b> beside ···; pressed, the card takes an accent edge, "
-     "Edit becomes <b>Done</b>, and each member shows <b>Remove</b> under the name.</p>"
+     "Edit becomes <b>Done</b>, and the shipped ✕ shows on each member’s art (R1b: the ✕ keeps the seats from growing).</p>"
      "<ul><li>Remove works as shipped: at once, no confirm, nobody told.</li><li>Rename, Leave and Delete stay in ···.</li></ul>",
      "Board: Pod-Edit"),
 ]
