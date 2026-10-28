@@ -132,12 +132,13 @@ const SUGGESTIONS_KEY = ["deck-suggestions", "2"];
 // The ranked support list's key and cache live with its reader, `readDeckSynergy`, which the bulk
 // controls' allow-list reads too.
 
-// Suggested changes and Proposed cuts run as Server Actions invoked from this page, so the page's
-// limit bounds them: a model call's deadline plus the reads and writes either side of it. 180 for
-// Proposed cuts' 170s deadline (CUTS_MODEL_TIMEOUT_MS, small items G2), which names up to 20 cuts;
-// Suggested changes keeps its 110s (MODEL_TIMEOUT_MS). `src/lib/tuning/limits.test.ts` fails if
-// either deadline stops fitting under this figure with ~10s to spare.
-export const maxDuration = 180;
+// Suggested changes and Proposed cuts run as Server Actions invoked from this page, so the page's limit bounds them, and
+// their `after()` work too: Next runs `after` for the route's configured limit. 600s is Suggested changes v2's (plan
+// 2026-10-27, P2): a run of up to four streamed calls inside `V2_RUN_BUDGET_MS`, several times the prototype's p90 at
+// N=20, with the writes in the margin. Proposed cuts' 170s deadline (CUTS_MODEL_TIMEOUT_MS, small items G2) and v10's
+// 110s (MODEL_TIMEOUT_MS) fit well under it, and a function bills only while it runs. `src/lib/tuning/limits.test.ts`
+// fails if any of them stops fitting under this figure.
+export const maxDuration = 600;
 
 export default async function DeckBuilderPage({
   params,

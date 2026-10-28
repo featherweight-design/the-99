@@ -3,20 +3,49 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { ANSWER_TOKENS_WORST_CASE, ASK_PER_LIST, CUTS_MAX_TOKENS, CUTS_MODEL_TIMEOUT_MS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong } from "./limits";
+import { RESERVATION_TTL_MS } from "../model/allowance-rule";
+import {
+  ANSWER_TOKENS_WORST_CASE, ASK_PER_LIST, CUTS_MAX_TOKENS, CUTS_MODEL_TIMEOUT_MS, MODEL_TIMEOUT_MS, REAPER_CUTOFF_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS,
+  TUNING_RETRY_FLOOR_MS, V2_REAPER_CUTOFF_MS, V2_RUN_BUDGET_MS, intentTooLong,
+} from "./limits";
+
+/** The deck page's `maxDuration`, in ms. Read from the page's source: Next requires the export to be a literal, and
+ *  importing the page would pull in the server. import.meta.url, not __dirname: Vitest runs tests as ESM. */
+function pageLimitMs(): number {
+  const page = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/decks/[id]/page.tsx"), "utf8");
+  const match = page.match(/export const maxDuration = (\d+);/);
+  expect(match).not.toBeNull();
+  return Number(match![1]) * 1000;
+}
 
 // The deck page's maxDuration bounds the run's Server Action, so the model deadline must fit
-// under it with room for the reads and writes around the call. Read from the page's source:
-// Next requires the export to be a literal, and importing the page would pull in the server.
+// under it with room for the reads and writes around the call.
 describe("MODEL_TIMEOUT_MS", () => {
   it("fits under the deck page's maxDuration, leaving time for the rest of the run", () => {
-    // import.meta.url, not __dirname: Vitest runs tests as ESM.
-    const page = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/decks/[id]/page.tsx"), "utf8");
-    const match = page.match(/export const maxDuration = (\d+);/);
-    expect(match).not.toBeNull();
-    const maxDurationMs = Number(match![1]) * 1000;
+    const maxDurationMs = pageLimitMs();
     expect(MODEL_TIMEOUT_MS).toBeLessThan(maxDurationMs);
     expect(maxDurationMs - MODEL_TIMEOUT_MS).toBeGreaterThanOrEqual(10_000);
+  });
+
+  it("is v10's 110s, unchanged by v2's limit (plan P1)", () => {
+    expect(MODEL_TIMEOUT_MS).toBe(110_000);
+    expect(REAPER_CUTOFF_MS).toBe(5 * 60 * 1000);
+  });
+});
+
+// Plan P2: the page's limit is v2's, the run's budget sits under it with room for the writes, and the v2 reaper never
+// reaps a run the platform could still be running.
+describe("V2_RUN_BUDGET_MS", () => {
+  it("is 600s's budget, less a margin for the writes", () => {
+    const limit = pageLimitMs();
+    expect(limit).toBe(600_000);
+    expect(V2_RUN_BUDGET_MS).toBeLessThan(limit);
+    expect(limit - V2_RUN_BUDGET_MS).toBeGreaterThanOrEqual(20_000);
+  });
+
+  it("is reaped only past the limit, and the unit is settled no later than its reservation stops counting", () => {
+    expect(V2_REAPER_CUTOFF_MS).toBeGreaterThan(pageLimitMs());
+    expect(V2_RUN_BUDGET_MS + 20_000).toBeLessThanOrEqual(RESERVATION_TTL_MS);
   });
 });
 
@@ -26,9 +55,8 @@ describe("CUTS_MODEL_TIMEOUT_MS", () => {
   const SLOWEST_TOKENS_PER_SECOND = 79; // measured on Sonnet 5 (TUNING_RETRY_FLOOR_MS); Sonnet 5.5's is unmeasured
 
   it("fits under the deck page's maxDuration with the same ~10s for the rest of the run", () => {
-    const page = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/decks/[id]/page.tsx"), "utf8");
-    const maxDurationMs = Number(page.match(/export const maxDuration = (\d+);/)![1]) * 1000;
-    expect(maxDurationMs).toBe(180_000);
+    // 600s since Suggested changes v2 (plan P2); the cuts deadline keeps its ~10s and more.
+    const maxDurationMs = pageLimitMs();
     expect(maxDurationMs - CUTS_MODEL_TIMEOUT_MS).toBeGreaterThanOrEqual(10_000);
   });
 

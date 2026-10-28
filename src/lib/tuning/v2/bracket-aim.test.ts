@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { aimDrops, reachesAim } from "./bracket-aim";
+import type { GateFacts } from "../../intake/fill-gate";
+import { aimDrops, cardFloorOf, reachesAim } from "./bracket-aim";
 
 describe("the bracket choice", () => {
   it("never drops a line that moves nothing", () => {
@@ -30,5 +31,23 @@ describe("the bracket choice", () => {
     expect(reachesAim({ choice: "up", target: 4 }, "add", [3])).toBe(false);
     expect(reachesAim({ choice: "up", target: 4 }, "cut", [4])).toBe(false);
     expect(reachesAim({ choice: "keep", target: 4 }, "add", [4])).toBe(false);
+  });
+});
+
+describe("cardFloorOf (H3's Down rule, plan PR 3)", () => {
+  const facts = (flags: Partial<Record<"gameChanger" | "massLandDenial" | "extraTurn", boolean>>): GateFacts => ({
+    flagsOf: () => ({ gameChanger: false, massLandDenial: false, extraTurn: false, ...flags }),
+    combosOf: () => [], searches: () => false, reaches: () => false,
+  });
+
+  it("floors a plain card at 1, and a Game Changer, mass land denial or an extra turn above the low brackets", () => {
+    expect(cardFloorOf("plain", facts({}))).toBe(1);
+    expect(cardFloorOf("gc", facts({ gameChanger: true }))).toBe(3);
+    expect(cardFloorOf("mld", facts({ massLandDenial: true }))).toBeGreaterThan(2);
+    expect(cardFloorOf("turns", facts({ extraTurn: true }))).toBeGreaterThan(1);
+  });
+
+  it("drops a second Game Changer on the way down, though the deck's permits do not move", () => {
+    expect(aimDrops({ choice: "down", target: 2 }, "add", null, cardFloorOf("gc", facts({ gameChanger: true })))).toBe(true);
   });
 });

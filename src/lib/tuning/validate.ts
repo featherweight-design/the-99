@@ -120,6 +120,35 @@ export type ValidationReport = {
    *  dropped" run be read back without re-running the model to see WHY. Absent for a run
    *  persisted before this field existed. */
   drops?: Drop[];
+  /** Suggested changes v2's own record (plan 2026-10-27, PR 3). Absent on every v10 run. */
+  v2?: V2RunReport;
+};
+
+/**
+ * What a v2 run records about itself (spec §8). Written in part when the run starts (the request hash, the restrictions
+ * snapshot, the per-list progress the wait draws) and completed by `persistV2`, or by the reaper (`interrupted`).
+ */
+export type V2RunReport = {
+  /** `requestHash` of N, the request and the bracket choice: half of "same request as your last run" (G4). */
+  requestHash: string;
+  /** The deck's limits as this run read them, so history shows what bound an old run. */
+  restrictions: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  /** A list is in when its last call ended (H1). */
+  in: { add: boolean; cut: boolean };
+  /** A refill call is out for the list (the wait's 45-second note). */
+  refilling: { add: boolean; cut: boolean };
+  callCount?: number;
+  refilled?: { add: boolean; cut: boolean };
+  underProduced?: { add: boolean; cut: boolean };
+  /** What each list had to reach: N, and min(N, additions kept). */
+  target?: { add: number; cut: number };
+  /** The restriction that bound a short list (§5.5), or null when none did. */
+  shortReason?: { add: ShortReason | null; cut: ShortReason | null };
+  cutsFailed?: { errorClass: string } | null;
+  budgetReached?: boolean;
+  charge?: { outcome: "spent" } | { outcome: "refunded"; why: string };
+  /** Settled with its saved lines when it did not finish: the reaper, or a failed line save (plan P4). */
+  interrupted?: true;
 };
 
 export type RefusalDetail =

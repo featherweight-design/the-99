@@ -1,3 +1,5 @@
+import { permitsOf, type GateFacts } from "../../intake/fill-gate";
+
 /**
  * The bracket choice beside a Suggested changes v2 request (Hugh, spec 2026-10-27 §5.4, §12 Q7; the handoff's Bracket
  * card: Keep at N, the default; Down to N; Up to N). Pure.
@@ -34,4 +36,14 @@ export function aimDrops(
 /** An addition that brings the deck within reach of an Up aim: the deck permits the target with it. */
 export function reachesAim(aim: BracketAim, side: "add" | "cut", bracketAfter: readonly number[] | null): boolean {
   return aim.choice === "up" && side === "add" && bracketAfter !== null && bracketAfter.includes(aim.target);
+}
+
+/**
+ * `cardFloor` for `aimDrops`' Down rule (H3): the lowest bracket ANY deck holding this card can be, by the analysis's own
+ * arithmetic (`permitsOf`, `fill-gate.ts`) over a list of the card alone. A Game Changer floors at 3 however many the deck
+ * already holds, which `bracketAfter` cannot see when the deck's permits do not move; a card's combos need a partner, so
+ * they are `bracketAfter`'s question, not this one. `facts` is `loadBracketGateFacts([oracleId])`.
+ */
+export function cardFloorOf(oracleId: string, facts: GateFacts): number {
+  return Math.min(...permitsOf([], [oracleId], facts));
 }

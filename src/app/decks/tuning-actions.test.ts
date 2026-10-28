@@ -160,6 +160,17 @@ vi.mock("../../lib/model/client", () => ({
     };
   },
 }));
+// Suggested changes v2's run (plan 2026-10-27, PR 3): its start is stood in for, so these tests pin the ACTION's branch
+// (which presses reach v2, what reaches it, what comes back); the run itself is `v2/run.test.ts`'s. Its pure wire check
+// is the real one.
+const v2 = vi.hoisted(() => ({ starts: [] as unknown[], next: { kind: "started" } as Record<string, unknown>, worked: 0 }));
+vi.mock("../../lib/tuning/v2/run", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/tuning/v2/run")>()),
+  startTuningV2: async (args: unknown) => {
+    v2.starts.push(args);
+    return v2.next.kind === "started" ? { kind: "started", runId: "run_v2", work: async () => { v2.worked += 1; } } : v2.next;
+  },
+}));
 vi.mock("../../lib/tuning/verdicts", () => ({
   applyItem: async (_i: string, _u: string, env?: unknown) => { sawEnv("applyItem", env); calls.applied += 1; return "deck"; },
   undoItem: async (_i: string, _u: string, env?: unknown) => { sawEnv("undoItem", env); return "deck"; },
@@ -180,6 +191,7 @@ import {
   saveDeckDescription,
   saveDeckHeader,
   saveDeckLimits,
+  type V2RunOpts,
 } from "./tuning-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
@@ -227,6 +239,9 @@ beforeEach(() => {
   calls.tuningEnabled = true;
   calls.stateOpts = undefined;
   later.queue.length = 0;
+  v2.starts = [];
+  v2.next = { kind: "started" };
+  v2.worked = 0;
 });
 
 describe("runTuning after the call returned", () => {
@@ -1079,5 +1094,66 @@ describe("with TUNING_ENABLED off", () => {
     const itemId = "11111111-1111-4111-8111-111111111113";
     expect(await applySuggestion(itemId)).toEqual({ ok: false, message: expect.any(String) });
     expect(calls.applied).toBe(0);
+  });
+});
+
+/** A v2 press (the first overload), then its `after()` work. */
+async function press(opts: V2RunOpts) {
+  const result = await runTuningRequest(DECK, opts);
+  await Promise.all(later.queue.splice(0).map((f) => f()));
+  return result;
+}
+
+describe("runTuning's v2 branch (plan 2026-10-27, P1 and PR 3)", () => {
+  it("never reaches v2 without a count: every v10 press is as it was", async () => {
+    await runTuning(DECK, { anyway: true });
+    await runTuning(DECK, { notes: "more ramp" });
+    await runTuning(DECK);
+    expect(v2.starts).toEqual([]);
+    expect(calls.inputs).toBeGreaterThan(0);
+  });
+
+  it("takes a press with a count to v2, with its request resolved and its wire checked, and runs the work after the response", async () => {
+    const result = await press({ requestedCount: 7, request: "  more card draw ", bracket: { choice: "down", target: 2 }, runId: "22222222-2222-4222-8222-222222222222" });
+    expect(result).toEqual({ ok: true });
+    expect(v2.starts).toEqual([expect.objectContaining({
+      deckId: DECK, userId: "user_1", env: ENV, runId: "22222222-2222-4222-8222-222222222222", request: "more card draw",
+      wire: { requestedCount: 7, request: "  more card draw ", bracket: { choice: "down", target: 2 }, confirmed: false },
+    })]);
+    expect(v2.worked).toBe(1);
+    // v10's own reads never ran for it: no gate, no `unchanged`.
+    expect(calls.inputs).toBe(0);
+    expect(calls.started).toBe(0);
+  });
+
+  it.each([
+    ["a count of 0", { requestedCount: 0 }],
+    ["a count of 21", { requestedCount: 21 }],
+    ["a count that is text", { requestedCount: "5" }],
+    ["a request that is not text", { requestedCount: 5, request: 5 }],
+    ["a bracket choice off the closed set", { requestedCount: 5, bracket: { choice: "sideways", target: 3 } }],
+    ["a bracket target off 1 to 5", { requestedCount: 5, bracket: { choice: "up", target: 6 } }],
+    ["a run id that is not a uuid", { requestedCount: 5, runId: "r" }],
+    ["a request over its 500-character cap", { requestedCount: 5, request: "x".repeat(NOTES_RAW_MAX + 1) }],
+  ])("refuses %s before anything is reserved", async (_label, opts) => {
+    expect(await press(opts as never)).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    expect(v2.starts).toEqual([]);
+  });
+
+  it("answers the same-request check with the matching run's id and date, and runs nothing", async () => {
+    v2.next = { kind: "confirm", runId: "run_old", at: "2026-10-27T10:00:00.000Z" };
+    expect(await press({ requestedCount: 5 })).toEqual({ ok: false, confirm: "same_request", runId: "run_old", at: "2026-10-27T10:00:00.000Z" });
+    expect(later.queue).toEqual([]);
+  });
+
+  it("passes `confirmed` only as the literal true", async () => {
+    await press({ requestedCount: 5, confirmed: "true" } as never);
+    await press({ requestedCount: 5, confirmed: true });
+    expect(v2.starts.map((s) => (s as { wire: { confirmed: boolean } }).wire.confirmed)).toEqual([false, true]);
+  });
+
+  it("says a refusal in the start's own words", async () => {
+    v2.next = { kind: "refused", message: deckTuningCopy.allowance.spent };
+    expect(await press({ requestedCount: 5 })).toEqual({ ok: false, message: deckTuningCopy.allowance.spent });
   });
 });

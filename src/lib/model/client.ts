@@ -169,6 +169,123 @@ export async function callModel<T>(req: ModelRequest<T>, deps: ModelDeps = {}): 
   return failed(last, usage, lastStatus);
 }
 
+/** A streamed call's outcome: `ok` only for a reply that came back whole and parsed against the schema. */
+export type StreamOutcome =
+  | { ok: true; usage: ModelUsage }
+  | { ok: false; errorClass: ModelErrorClass; usage?: ModelUsage; status?: number };
+
+/** The reply's text as it arrives, and its outcome once the call ends. */
+export type StreamedCall = { deltas: AsyncIterable<string>; outcome: Promise<StreamOutcome> };
+
+/**
+ * One STREAMED call whose text the caller reads as it arrives (Suggested changes v2, plan 2026-10-27 H1: each line is
+ * validated and saved the moment it completes). The same contract as `callModel` in every other respect: one deadline,
+ * the SDK's own retries off, and it never throws or rejects; a fault is an outcome.
+ *
+ * NO RETRY, deliberately. `callModel` may make a second attempt; here the caller has already acted on the first
+ * attempt's text by the time it fails (a line saved and shown), so a second attempt would hand the same lines over
+ * again, and a dropped connection halfway through would duplicate what was kept. A failure ends the call: the caller
+ * keeps what arrived and decides (`runV2` marks the list under-produced, and a short list it touched is refunded).
+ *
+ * The deltas are PUMPED, not pulled: the stream is read into a buffer at the network's pace whether or not the caller
+ * has taken the last delta, so a caller that pauses per line (a bracket check, a database write) never slows the read.
+ * `outcome` settles once the stream has ended, and does not wait for the caller to drain the buffer. Usage is taken
+ * from the stream's own events, so a call cut off mid-reply still reports what it was billed for up to the cut.
+ */
+export function streamModel<T>(
+  req: Omit<ModelRequest<T>, "stream" | "retryFloorMs">,
+  deps: ModelDeps = {},
+): StreamedCall {
+  const log = deps.log ?? ((line: string) => console.error(line));
+  const buffer = deltaBuffer();
+  const outcome = (async (): Promise<StreamOutcome> => {
+    try {
+      return await streamOnce(req, deps.messages ?? realMessages(log), buffer.push, log);
+    } finally {
+      buffer.end();
+    }
+  })();
+  return { deltas: buffer.iterable, outcome };
+}
+
+async function streamOnce<T>(
+  req: Omit<ModelRequest<T>, "stream" | "retryFloorMs">,
+  messages: Messages | null,
+  push: (text: string) => void,
+  log: (line: string) => void,
+): Promise<StreamOutcome> {
+  // No key is a configuration fault: nothing was sent.
+  if (!messages) return { ok: false, errorClass: "upstream_rejected" };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), req.deadlineMs);
+  let usage: ModelUsage | undefined;
+  let stopReason: string | null = null;
+  let text = "";
+  let format: ReturnType<typeof zodOutputFormat<z.ZodType<T>>>;
+  try {
+    format = zodOutputFormat(req.schema);
+    const params = {
+      model: req.model,
+      max_tokens: req.maxTokens,
+      system: req.cacheSystem
+        ? [{ type: "text" as const, text: req.system, cache_control: { type: "ephemeral" as const } }]
+        : req.system,
+      messages: [{ role: "user" as const, content: req.user }],
+      output_config: req.effort ? { format, effort: req.effort } : { format },
+    };
+    const stream = messages.stream(params, { signal: controller.signal, timeout: req.deadlineMs, maxRetries: 0 });
+    for await (const ev of stream) {
+      if (ev.type === "message_start") usage = usageOf(ev.message.usage);
+      else if (ev.type === "message_delta") {
+        usage = { ...(usage ?? usageOf({ input_tokens: 0, output_tokens: 0 })), outputTokens: ev.usage.output_tokens };
+        stopReason = ev.delta.stop_reason ?? stopReason;
+      } else if (ev.type === "content_block_delta" && ev.delta.type === "text_delta") {
+        text += ev.delta.text;
+        push(ev.delta.text);
+      }
+    }
+  } catch (err) {
+    const a = classify<T>(err, controller.signal.aborted, log) as Exclude<Attempt<T>, { kind: "ok" }>;
+    return failed(a.errorClass, usage ?? a.usage, a.status) as StreamOutcome;
+  } finally {
+    clearTimeout(timer);
+  }
+  const billed = usage ?? usageOf({ input_tokens: 0, output_tokens: 0 });
+  try {
+    req.onResponse?.({ stopReason, outputTokens: billed.outputTokens });
+  } catch (err) {
+    log(`[model] onResponse threw: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  try {
+    if (text.length === 0 || format.parse(text) == null) throw new Error("no parsed output");
+  } catch (err) {
+    log(`[model] malformed: ${err instanceof Error ? err.message : String(err)} (stop_reason ${stopReason}, ${billed.outputTokens}/${req.maxTokens} output tokens, streamed)`);
+    return { ok: false, errorClass: "malformed", usage: billed };
+  }
+  return { ok: true, usage: billed };
+}
+
+/** An unbounded buffer read as an async iterable: `push` never waits for the reader. */
+function deltaBuffer(): { push: (text: string) => void; end: () => void; iterable: AsyncIterable<string> } {
+  const queued: string[] = [];
+  let ended = false;
+  let wake: (() => void) | null = null;
+  const poke = () => { wake?.(); wake = null; };
+  return {
+    push: (text) => { queued.push(text); poke(); },
+    end: () => { ended = true; poke(); },
+    iterable: {
+      async *[Symbol.asyncIterator]() {
+        for (;;) {
+          if (queued.length > 0) yield queued.shift()!;
+          else if (ended) return;
+          else await new Promise<void>((r) => { wake = r; });
+        }
+      },
+    },
+  };
+}
+
 function realMessages(log: (line: string) => void): Messages | null {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
