@@ -27,6 +27,19 @@ describe("BackBar", () => {
     expect(back.closest("[data-about-back]")!.className).toContain("sticky");
   });
 
+  it("holds a long deck name to one line in the pill, keeping the whole of it (Copilot round 2)", () => {
+    const name = "Sai, Master Thopterist and the Endless Parade of Very Small Flying Constructs ".repeat(2).trim();
+    render(<BackBar from={FROM} screen={name} />);
+    const back = screen.getByRole("link", { name: `‹ Back to ${name}` });
+    expect(back.getAttribute("title")).toBe(`‹ Back to ${name}`);
+    expect(back.className).toMatch(/\bmin-w-0\b/);
+    expect(back.className).toMatch(/\bmax-w-full\b/);
+    const label = back.querySelector("[data-about-back-label]")!;
+    expect(label.textContent).toBe(`‹ Back to ${name}`);
+    expect(label.className).toMatch(/\btruncate\b/);
+    expect(label.className).toMatch(/\bmin-w-0\b/);
+  });
+
   it("draws nothing once the address no longer carries that from", () => {
     const { container } = render(<BackBar from={FROM} screen="Upload a file" />);
     act(() => window.history.replaceState(null, "", "/about/collection#upload"));

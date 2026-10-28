@@ -59,5 +59,7 @@ describe("deckViewSearch", () => {
     expect(deckViewSearch("?tab=analysis", "notes")).toBe("?panel=notes");
     expect(deckViewSearch("?panel=stats&tab=games", "your-deck")).toBe("");
     expect(deckViewSearch("?x=1", "shopping")).toBe("?x=1&panel=shopping");
+    // Consider reads as Your deck but is its own tab.
+    expect(deckViewSearch("?panel=stats", "your-deck", "consider")).toBe("?tab=consider");
   });
 });

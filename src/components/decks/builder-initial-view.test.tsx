@@ -222,7 +222,7 @@ describe("BuilderShell — the grouping it opens on", () => {
 // `?panel=` (About visual PR 6a): the ?'s "Back to {deck}" returns to Shopping, Stats or Notes, which are builder state.
 // What the builder publishes to the ? is the view it opened on, read through the same `deckViewOf` the ? reads.
 describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
-  async function opened(initialView: BuilderView, initialBody: "shopping" | "stats" | "notes" | null) {
+  async function opened(initialView: BuilderView, initialBody: "shopping" | "stats" | "notes" | null, on = true) {
     const publish = vi.fn();
     await act(async () => {
       render(
@@ -236,15 +236,16 @@ describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
             arrivedFromImport={false}
             initialView={initialView}
             initialBody={initialBody}
-            statsEnabled
-            statsData={{ commanders: [] }}
+            statsEnabled={on}
+            notesEnabled={on}
+            statsData={on ? { commanders: [] } : null}
             newestAsOf={null}/>
         </BuilderScreenContext.Provider>,
       );
     });
     return publish;
   }
-  const last = (publish: ReturnType<typeof vi.fn>) => publish.mock.calls.at(-1)?.[0];
+  const last = (publish: ReturnType<typeof vi.fn>) => publish.mock.calls.at(-1)?.[0]?.view;
 
   it("opens on the body the address names", async () => {
     expect(last(await opened("deck", "shopping"))).toBe("shopping");
@@ -254,6 +255,19 @@ describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
     expect(last(await opened("deck", "notes"))).toBe("notes");
     cleanup();
     expect(last(await opened("deck", null))).toBe("your-deck");
+  });
+
+  it("opens on the list when the panel it names is switched off (Copilot round 2)", async () => {
+    expect(last(await opened("deck", "stats", false))).toBe("your-deck");
+    cleanup();
+    expect(last(await opened("deck", "notes", false))).toBe("your-deck");
+    cleanup();
+    expect(last(await opened("deck", "shopping", false))).toBe("shopping");
+  });
+
+  it("publishes Consider as its own tab, reading as Your deck (Copilot round 2)", async () => {
+    const publish = await opened("consider", null);
+    expect(publish.mock.calls.at(-1)?.[0]).toEqual({ view: "your-deck", tab: "consider" });
   });
 
   it("ignores it on any other tab: the deck tab, once chosen, opens on its list", async () => {

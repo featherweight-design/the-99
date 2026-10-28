@@ -6,9 +6,8 @@ import { HELP_STOP_ID, useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/he
 import { questionHref, questionLanding } from "../../lib/about/question-landing";
 import { screenForPath } from "../../lib/about/screen-for-path";
 import { deckViewSearch } from "../../lib/decks/builder-view";
-import type { DeckView } from "../../lib/copy/about";
 import { helpPanelCopy } from "../../lib/copy/discovery";
-import { BuilderScreenContext } from "../decks/builder-screen";
+import { BuilderScreenContext, type BuilderScreen } from "../decks/builder-screen";
 import { usePendingPush } from "../shell/pending-push";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
@@ -39,29 +38,30 @@ export function HelpRoot({ on, children }: { on: boolean; children: ReactNode })
 function HelpOn({ children }: { children: ReactNode }) {
   // A code-started navigation that reports its press as a link does (the 400ms screen, the stall watch).
   const { go: push } = usePendingPush();
-  const [deckView, setDeckView] = useState<DeckView | null>(null);
+  const [deck, setDeck] = useState<BuilderScreen | null>(null);
   const go = useCallback(() => {
     // The live address, never a render's: card details mirrors `?card=` without a navigation, and a deck's view is the
     // builder's own state.
     const { pathname, search } = window.location;
     const desktop = typeof window.matchMedia === "function" && window.matchMedia(DESKTOP).matches;
-    push(questionHref(questionLanding(pathname, search, { deckView, desktop }), backFrom(pathname, search, deckView)));
-  }, [push, deckView]);
+    push(questionHref(questionLanding(pathname, search, { deckView: deck?.view ?? null, desktop }), backFrom(pathname, search, deck)));
+  }, [push, deck]);
   const ctx = useMemo<HelpCtx>(() => ({ go }), [go]);
   return (
     <HelpContext.Provider value={ctx}>
-      <BuilderScreenContext.Provider value={setDeckView}>{children}</BuilderScreenContext.Provider>
+      <BuilderScreenContext.Provider value={setDeck}>{children}</BuilderScreenContext.Provider>
     </HelpContext.Provider>
   );
 }
 
 /**
  * The address "‹ Back to {screen}" returns to: the live one, and on a deck the view the builder shows, which the URL
- * does not carry (`?tab=` for a tab, `?panel=` for Shopping, Stats or Notes, both read on arrival only).
+ * does not carry (`?tab=` for a tab, Consider included, `?panel=` for Shopping, Stats or Notes, both read on arrival
+ * only). The landing reads the About screen (`deck.view`); the way back reads the tab too (`deck.tab`).
  */
-export function backFrom(pathname: string, search: string, deckView: DeckView | null): string {
-  if (deckView === null || screenForPath(pathname, search) !== "deck") return pathname + search;
-  return pathname + deckViewSearch(search, deckView);
+export function backFrom(pathname: string, search: string, deck: BuilderScreen | null): string {
+  if (deck === null || screenForPath(pathname, search) !== "deck") return pathname + search;
+  return pathname + deckViewSearch(search, deck.view, deck.tab);
 }
 
 const PLACE = {

@@ -64,14 +64,16 @@ export function readDeckBody(value: string | string[] | undefined): DeckBody | n
 }
 
 /**
- * A deck page's query, rewritten to open on `view` (the builder's live view, as the ? reads it): a tab by `?tab=`,
- * a body by `?panel=`, Your deck by neither. Every other parameter is kept as it was. Returns `""` or `?…`.
+ * A deck page's query, rewritten to open on `view` (the builder's live view, as the ? reads it) on `tab`: a tab by
+ * `?tab=`, a body by `?panel=`, Your deck by neither. Consider is its own tab though it reads as Your deck, so it is
+ * named by `?tab=consider`. Every other parameter is kept as it was. Returns `""` or `?…`.
  */
-export function deckViewSearch(search: string, view: DeckView): string {
+export function deckViewSearch(search: string, view: DeckView, tab: BuilderView = "deck"): string {
   const q = new URLSearchParams(search);
   q.delete(TAB_PARAM);
   q.delete(BODY_PARAM);
-  if (view === "analysis" || view === "games" || view === "versions") q.set(TAB_PARAM, view);
+  if (tab === "consider") q.set(TAB_PARAM, tab);
+  else if (view === "analysis" || view === "games" || view === "versions") q.set(TAB_PARAM, view);
   else if (view !== "your-deck") q.set(BODY_PARAM, view);
   const out = q.toString();
   return out ? `?${out}` : "";

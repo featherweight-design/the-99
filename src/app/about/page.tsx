@@ -33,6 +33,7 @@ import { HowItWorks } from "../../components/about/how-it-works";
 import { RecordVisit } from "../../components/about/record-visit";
 import { GateDismiss } from "../../components/about/gate-dismiss";
 import { LegalLinks } from "../../components/legal/legal-links";
+import { ThemeRefresh } from "../../components/about/pages/theme-refresh";
 
 /**
  * A repeated query key arrives as an array — `/about?next=/decks&next=/collection`
@@ -97,6 +98,8 @@ export default async function AboutRoute({
     const theme = await resolveTheme();
     return (
       <div className="flex flex-col pb-[30px] md:pb-[64px]">
+        {/* The tiles are captures chosen in `theme`: a theme picked from the account menu asks the server again. */}
+        <ThemeRefresh drawnIn={theme} />
         <AboutIndex tiles={indexTiles(env, theme)} tour={firstRunTourEnabled(env)} />
         {/* Launch A2: the same quiet line /credits and /sign-up carry. */}
         <LegalLinks className="mt-[32px] px-[16px] md:px-[30px]" />
@@ -127,6 +130,8 @@ export default async function AboutRoute({
   // the 74px tab bar the shell's main column already reserves (`--tabbar-h`), so 30px is the page's own.
   return (
     <div className="flex flex-col pb-[30px] pt-[24px] md:px-[56px] md:pb-[64px] md:pt-[40px]">
+      {/* The Reference's entry shots are captures chosen in `theme` too. */}
+      <ThemeRefresh drawnIn={theme} />
       <AboutTabs
         count={screens.reduce((n, s) => n + s.entries.length, 0)}
         tour={firstRunTourEnabled(env)}

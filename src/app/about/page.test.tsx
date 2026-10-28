@@ -42,6 +42,7 @@ import { GateDismiss } from "../../components/about/gate-dismiss";
 import { LegalLinks } from "../../components/legal/legal-links";
 import { AboutIndex, type IndexTile } from "../../components/about/pages/about-index";
 import { TOOLS } from "../../lib/discovery/tools";
+import { ThemeRefresh } from "../../components/about/pages/theme-refresh";
 
 type El = ReactElement<Record<string, unknown>>;
 
@@ -86,6 +87,16 @@ describe("/about, the legal links (launch A2)", () => {
       const kids = root.props.children as ReactNode[];
       const order = kids.filter(isValidElement).map((k) => (k as El).type);
       expect(order.indexOf(LegalLinks)).toBeGreaterThan(order.indexOf(type));
+    }
+  });
+});
+
+describe("/about, its captures follow a theme picked on the page (Copilot round 2)", () => {
+  it("mounts ThemeRefresh with the drawn theme beside the index and beside the Reference", async () => {
+    for (const query of [{}, { tab: "reference" }] as Record<string, string>[]) {
+      const refresh = find(await draw(query), ThemeRefresh);
+      expect(refresh, JSON.stringify(query)).not.toBeNull();
+      expect(refresh!.props.drawnIn).toBe("amonkhet");
     }
   });
 });

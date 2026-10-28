@@ -402,8 +402,13 @@ export function BuilderShell({
   // The table's log prefill (Rule 0 PR 8), held here because the Games panel remounts on every tab change.
   const [offeredPrefill, spendPrefill] = useHeldPrefill(gamePrefill);
   // UI state. A landing on Cheaper stand-ins or Friends' spares opens on Shopping, where their press is.
-  // `?panel=` (the ?'s way back) opens Your deck on the body the ? was pressed on, on the deck tab only.
-  const body = initialView === "deck" ? initialBody : null;
+  // `?panel=` (the ?'s way back) opens Your deck on the body the ? was pressed on, on the deck tab only, and only on a
+  // panel this reader is drawn: Stats or Notes behind a switch that is off opens on the list, so the ? and the phone
+  // dock read the list too. Shopping has no switch.
+  const body =
+    initialView !== "deck" || (initialBody === "stats" && !statsEnabled) || (initialBody === "notes" && !notesEnabled)
+      ? null
+      : initialBody;
   const [filter, setFilter] = useState<"all" | "shopping">(
     (landing?.lands.kind === "deck" && landing.lands.view === "shopping") || body === "shopping" ? "shopping" : "all",
   );
@@ -434,7 +439,7 @@ export function BuilderShell({
   // during render, so no frame draws an empty rail under no selected tab.
   if (view === "versions" && versions.length === 0 && !originApart) setView("deck");
   // The ? in the shell reads which of the deck's screens this is from here, never the URL (discovery R2·8).
-  usePublishBuilderScreen(deckViewOf(view, filter, deckPanel[0]));
+  usePublishBuilderScreen(deckViewOf(view, filter, deckPanel[0]), view);
   const [statsFocus, setStatsFocus] = useState<{ card: "curve" | "jobs"; n: number } | null>(null);
   const clearStatsFocus = useCallback(() => setStatsFocus(null), []);
   const openStatsAt = useCallback((card: "curve" | "jobs") => {
