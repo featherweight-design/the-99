@@ -1,14 +1,14 @@
 "use client";
 // One pod on /friends, as a table (Social R1 PR E1; handoff R2 `R2 - Pods`, option B; design table
 // `social-r1-pods.md` §3). The members sit as art tiles over a wash of their own art, the viewer outlined in the
-// accent; the owner removes a member with the ✕ disc on its tile, and adds friends with the empty seat at the end of
-// the row. The spares checkbox under the seats is the viewer's own grant to this pod (E5), seen by nobody else.
+// accent; the owner removes a member with the ✕ disc on its tile, shown only while editing (small items item 7, board
+// `Pod-Edit`: Edit before the `…`, Done in their place), and adds friends with the empty seat at the end of the row. The spares checkbox under the seats is the viewer's own grant to this pod (E5), seen by nobody else.
 //
 // A member's art is drawn only for the viewer and the viewer's friends (D2): the read hands a non-friend member over
 // with no commander, so their tile is initials whatever they chose. The header carries the `…` menu (E2,
 // `pod-menu.tsx`), and Rename swaps the header for its field (§7).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Pod, PodMember } from "../../lib/social/access";
 import { socialCopy } from "../../lib/copy/social";
 import { capName, POD_NAME_MAX } from "../../lib/social/client-rules";
@@ -36,8 +36,8 @@ function Wash({ members }: { members: readonly PodMember[] }) {
   );
 }
 
-/** A member's seat: art (or initials), the name, and a tag; the owner's ✕ over the art (§3d, §3e). */
-function Seat({ member, podName, onRemove }: { member: PodMember; podName: string; onRemove: (() => void) | null }) {
+/** A member's seat: art (or initials), the name, and a tag; the owner's ✕ over the art while editing (§3d, §3e). */
+function Seat({ member, podName, onRemove }: { member: PodMember; podName: string; onRemove: ((from: HTMLButtonElement) => void) | null }) {
   const art = member.commander?.artCropUri ?? null;
   // The owner tag wins over not-a-friend: a member is one or the other on the tile (d9, 2026-10-15).
   const tag = member.isYou ? null : member.isOwner ? copy.ownerTag : !member.isFriend ? copy.notFriendTag : null;
@@ -52,7 +52,8 @@ function Seat({ member, podName, onRemove }: { member: PodMember; podName: strin
         <button
           type="button"
           aria-label={copy.removeMemberAria(member.displayName, podName)}
-          onClick={onRemove}
+          data-pod-remove
+          onClick={(e) => onRemove(e.currentTarget)}
           // 28px as drawn, with a 44px press (C-3): the pseudo-element takes the 8px around it.
           className="absolute right-[4px] top-[4px] flex h-[28px] w-[28px] cursor-pointer items-center justify-center rounded-full border-0 bg-[color-mix(in_oklab,var(--bg)_78%,transparent)] p-0 text-[11px] text-[color:var(--fg)] after:absolute after:-inset-[8px] after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
         >
@@ -170,7 +171,61 @@ export function PodCard({
   const n = pod.members.length;
   const owner = pod.members.find((m) => m.isOwner);
   const [renaming, setRenaming] = useState(false);
+  // The owner's edit state: the seats' ✕ discs show only while it is on (board `Pod-Edit`, R1b). It ends on Done, on
+  // Escape, on leaving the page (it is never stored) and once the owner is the only member left.
+  const [editingState, setEditing] = useState(false);
+  const editing = editingState && pod.isOwner && n > 1;
+  // Ended for good when the owner is left alone (or loses the pod), so a friend added later does not reopen it.
+  // Adjusted during render, as for state that follows a prop.
+  if (editingState && !editing) setEditing(false);
+  const card = useRef<HTMLDivElement>(null);
+  const editPress = useRef<HTMLButtonElement>(null);
+  const donePress = useRef<HTMLButtonElement>(null);
+  // Where focus goes next: the first ✕ once editing starts, Edit once it ends, and after a removal the ✕ that took the
+  // removed seat's place, else Done.
+  const focusNext = useRef<{ kind: "remove"; index: number } | { kind: "edit" } | null>(null);
+  useLayoutEffect(() => {
+    const next = focusNext.current;
+    if (!next) return;
+    focusNext.current = null;
+    if (next.kind === "edit") return void editPress.current?.focus();
+    const presses = card.current?.querySelectorAll<HTMLButtonElement>("[data-pod-remove]") ?? [];
+    // Left alone, neither Done nor Edit is drawn, so focus goes to the card's menu.
+    (presses[next.index] ?? donePress.current ?? card.current?.querySelector<HTMLElement>("[aria-haspopup='menu']"))?.focus();
+  });
+  const startEditing = () => {
+    focusNext.current = { kind: "remove", index: 0 };
+    setEditing(true);
+  };
+  const stopEditing = () => {
+    focusNext.current = { kind: "edit" };
+    setEditing(false);
+  };
+  const removeSeat = (m: PodMember, from: HTMLButtonElement) => {
+    const presses = [...(card.current?.querySelectorAll<HTMLButtonElement>("[data-pod-remove]") ?? [])];
+    focusNext.current = { kind: "remove", index: Math.max(presses.indexOf(from), 0) };
+    onRemove(m);
+  };
   const menuTrigger = useRef<HTMLButtonElement>(null);
+  const [menuBusy, setMenuBusy] = useState(false);
+  const busyWhile = async (write: () => Promise<boolean>) => {
+    setMenuBusy(true);
+    try {
+      return await write();
+    } finally {
+      setMenuBusy(false);
+    }
+  };
+  // Editing that ends on its own (the last other member left, seen on a redraw) takes the focused ✕ or Done with it:
+  // focus goes to the card's menu rather than the page.
+  const wasEditing = useRef(false);
+  useLayoutEffect(() => {
+    const ended = wasEditing.current && !editing;
+    wasEditing.current = editing;
+    if (!ended || focusNext.current) return;
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (lost) (editPress.current ?? menuTrigger.current)?.focus();
+  }, [editing]);
   // Leaving the field by its own controls hands focus back to the `…` it was opened from, which the field replaced.
   const refocus = useRef(false);
   useEffect(() => {
@@ -179,7 +234,19 @@ export function PodCard({
     menuTrigger.current?.focus();
   }, [renaming]);
   return (
-    <div data-testid="pod-card" className="relative mt-[12px] rounded-[12px] bg-[color:var(--surface-rail)] pb-[6px] pl-[14px] pr-[4px] pt-[4px] [border:1px_solid_var(--border-strong)] md:pb-[8px] md:pl-[18px] md:pr-[6px] md:pt-[6px]">
+    <div
+      ref={card}
+      data-testid="pod-card"
+      data-editing={editing ? "" : undefined}
+      onKeyDown={editing ? (e) => {
+        // Only an Escape from the card itself: one from a sheet opened over the page bubbles here through its portal,
+        // and that sheet closes on it.
+        if (e.key !== "Escape" || !card.current?.contains(e.target as Node)) return;
+        e.stopPropagation();
+        stopEditing();
+      } : undefined}
+      className={`${editing ? "shadow-[inset_0_0_0_1px_var(--accent)] " : ""}relative mt-[12px] rounded-[12px] bg-[color:var(--surface-rail)] pb-[6px] pl-[14px] pr-[4px] pt-[4px] [border:1px_solid_var(--border-strong)] md:pb-[8px] md:pl-[18px] md:pr-[6px] md:pt-[6px]`}
+    >
       <Wash members={pod.members} />
       {renaming ? (
         <PodRename
@@ -196,7 +263,33 @@ export function PodCard({
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
             {pod.isOwner || !owner ? copy.metaOwn(n) : copy.metaOther(n, owner.displayName)}
           </span>
-          <PodMenu pod={pod} leaveHeld={leaveHeld} triggerRef={menuTrigger} onRename={() => setRenaming(true)} onLeave={onLeave} onDelete={onDelete} />
+          {editing ? (
+            <button
+              ref={donePress}
+              type="button"
+              onClick={stopEditing}
+              className="relative ml-auto min-h-[36px] cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] px-[14px] font-sans text-[13.5px] font-semibold text-[color:var(--bg)] pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:top-1/2 pointer-coarse:after:h-[44px] pointer-coarse:after:-translate-y-1/2 pointer-coarse:after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:mr-[6px] md:min-h-[32px] md:rounded-[6px] md:text-[13px]"
+            >
+              {copy.done}
+            </button>
+          ) : (
+            // Edit and the `…` as one trailing group (`.f7hd-e`: margin-left auto, 2px apart).
+            <span className="ml-auto flex flex-none items-center gap-[2px]">
+              {pod.isOwner && n > 1 ? (
+                <button
+                  ref={editPress}
+                  type="button"
+                  onClick={startEditing}
+                  // A Leave or Delete in flight keeps the menu (and its pane) where it is until it lands.
+                  disabled={menuBusy}
+                  className="min-h-[44px] cursor-pointer disabled:cursor-default disabled:opacity-50 border-0 bg-transparent px-[10px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:min-h-[32px] md:text-[13px]"
+                >
+                  {copy.edit}
+                </button>
+              ) : null}
+              <PodMenu pod={pod} leaveHeld={leaveHeld} triggerRef={menuTrigger} onRename={() => setRenaming(true)} onLeave={() => busyWhile(onLeave)} onDelete={() => busyWhile(onDelete)} />
+            </span>
+          )}
         </div>
       )}
       <ul
@@ -206,7 +299,7 @@ export function PodCard({
         aria-label={pod.name}
       >
         {pod.members.map((m) => (
-          <Seat key={m.publicId} member={m} podName={pod.name} onRemove={pod.isOwner && !m.isYou ? () => onRemove(m) : null} />
+          <Seat key={m.publicId} member={m} podName={pod.name} onRemove={editing && !m.isYou ? (from) => removeSeat(m, from) : null} />
         ))}
         {pod.isOwner ? (
           // A list item of its own, so the list holds nothing but items (C-9).
