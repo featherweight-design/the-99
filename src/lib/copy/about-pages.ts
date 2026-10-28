@@ -251,7 +251,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "fit",
         region: "commanders/for-you/fit",
         lead: "The fit score",
-        rest: " out of 100 says how well your cards suit a commander.",
+        rest: " says how well your cards suit a commander, out of 100, or out of 40 for one EDHREC has no decks for yet.",
         switch: null,
         since: 1,
         legacy: ["fit-score"],
@@ -710,8 +710,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
 
 export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   autofill: {
-    text: "When The 99 fills a deck, it uses your Collection first. It picks cards to buy only where you run short, and then it picks the ones your commander’s decks play most.",
+    text: "When The 99 fills a deck, it uses your Collection first. It picks cards to buy only where you run short, and then it picks the ones your commander’s decks play most. Tell Help me choose that any cards will do, and it can pick a much-played card to buy over a rarely played one of yours.",
     switch: null,
+    sentences: {
+      " Tell Help me choose that any cards will do, and it can pick a much-played card to buy over a rarely played one of yours.": "HELP_ME_CHOOSE_ENABLED",
+    },
     since: 1,
     legacy: ["auto-fill"],
   },

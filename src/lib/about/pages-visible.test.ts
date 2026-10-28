@@ -65,6 +65,8 @@ describe("each sentence follows its own switch", () => {
     ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", "Overview"],
     ["credits with nothing on", {}, "rule/credits", "Anything written just for you", "never expire"],
     ["a proxy without tokens", {}, "rule/proxy", "uses no copy", "token"],
+    ["a fill without Help me choose", {}, "rule/autofill", "Collection first", "Help me choose"],
+    ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
     ["friends see a wishlist only with the wishlist", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "spares you offer", "wishlist"],
   ] as const)("%s", (_name, e, key, has, lacks) => {
     const text = textOf(e as Record<string, string>, key);
@@ -177,6 +179,12 @@ describe("seen translation", () => {
     const face = units(visibleSections(ALL_ON)).find((u) => u.key === "friends/friends/face")!;
     expect(unitSeen(face, { version: 16, ids: [] })).toBe(false);
     expect(unitSeen(face, { version: 16, ids: ["friends"] })).toBe(true);
+  });
+
+  it("announces a new switched label when its switch turns on, whatever the floor", () => {
+    const fresh = { key: "x/y/z", since: 16, legacy: [] as string[], switch: "PUSH_ENABLED" as const };
+    expect(unitSeen(fresh, { version: 16, ids: ["a"] })).toBe(false);
+    expect(unitSeen({ ...fresh, switch: null }, { version: 16, ids: ["a"] })).toBe(true);
   });
 
   it("introduces a first-run reader on their first visit, then announces only what arrives later", () => {

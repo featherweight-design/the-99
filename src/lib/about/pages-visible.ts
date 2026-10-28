@@ -111,8 +111,9 @@ export function unitSeen(u: Pick<VisibleUnit, "key" | "since" | "legacy" | "swit
   // as that entry was: the floor says nothing about whether the switch was on when the reader passed it.
   const own = u.switch ? positiveSwitches(u.switch) : [];
   if (u.legacy.some((id) => own.some((sw) => carries(id, sw)))) return false;
-  // The floor speaks only for unswitched entries: a unit whose every source was switched was seen by id or not at all.
-  if (u.legacy.length > 0 && !u.legacy.some(isUnswitchedEntry)) return false;
+  // The floor speaks only for unswitched entries: a unit whose every source was switched was seen by id or not at all,
+  // and a switched unit with no source at all is new, so its switch turning on announces it.
+  if (u.legacy.length > 0 ? !u.legacy.some(isUnswitchedEntry) : u.switch !== null) return false;
   return u.since <= seen.version;
 }
 
