@@ -2608,7 +2608,7 @@ export const modelCalls = pgTable("model_calls", {
   // whether it still counts against its lot. No `on delete`: the purge deletes calls before lots.
   creditGrantId: uuid("credit_grant_id").references(() => creditGrants.id),
 }, (t) => [
-  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose', 'precon_overview')`),
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose', 'precon_overview', 'suggested_changes_v2')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // WHY a call was refunded, and only a refunded call has a reason. Written by `settleModelCall`; null

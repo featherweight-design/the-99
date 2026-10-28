@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { askFor, cutPlanFor, dropAcross, isCount, keepUpTo, MAX_COUNT, schemaCapFor } from "./count";
+import { askFor, cutPlanFor, dropAcross, isCount, keepUpTo, MAX_COUNT, replyCeilingFor, schemaCapFor } from "./count";
 
 describe("the v2 count", () => {
   it("runs from 1 to 20 (Hugh, Q6)", () => {
@@ -28,5 +28,12 @@ describe("the v2 count", () => {
   it("drops a refill line naming a card already kept, or named twice in the refill", () => {
     const refill = [{ id: "x" }, { id: "y" }, { id: "x" }, { id: "z" }];
     expect(dropAcross(refill, new Set(["y"]), (l) => l.id)).toEqual([{ id: "x" }, { id: "z" }]);
+  });
+});
+
+describe("replyCeilingFor", () => {
+  it("is 8,000 for a small ask and 600 a line plus 4,000 above it: 22,000 at N=20's ask of 30", () => {
+    expect(replyCeilingFor(askFor(3))).toBe(8_000);
+    expect(replyCeilingFor(askFor(20))).toBe(22_000);
   });
 });

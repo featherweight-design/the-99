@@ -17,6 +17,12 @@ export function askFor(n: number): number {
   return Math.ceil(1.5 * n);
 }
 
+/** A call's reply ceiling, scaled with what it asks for: about 450 tokens a line measured on v9 answers, plus room to think
+ *  (the count-mechanism eval's figure, spec §10). 22,000 tokens at 30 lines, N=20's ask. */
+export function replyCeilingFor(ask: number): number {
+  return Math.max(8_000, 600 * ask + 4_000);
+}
+
 /** The reply schema's per-list cap: LOOSE, twice the ask (§5.2), so one card too many never rejects a whole reply. */
 export function schemaCapFor(ask: number): number {
   return 2 * ask;

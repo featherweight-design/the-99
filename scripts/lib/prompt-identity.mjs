@@ -20,7 +20,7 @@ import ts from "typescript";
 
 /** Each builder: the module and the exported functions whose output becomes a prompt. */
 export const BUILDERS = [
-  { file: "src/lib/tuning/prompt.ts", fns: ["buildPrompt"] },
+  { file: "src/lib/tuning/prompt.ts", fns: ["buildPrompt", "buildPromptV2"] },
   { file: "src/lib/tuning/cuts-prompt.ts", fns: ["buildCutsPrompt"] },
   { file: "src/lib/swaps/fits-read.ts", fns: ["buildFitsReadPrompt"] },
   { file: "src/lib/intake/the-read.ts", fns: ["shortlistRequest", "judgeRequest"] },
@@ -44,6 +44,7 @@ export const CALLERS = {
   "src/lib/model/client.ts": { note: "the one client: sends what its caller built" },
   "src/app/decks/tuning-actions.ts": { builders: ["src/lib/tuning/prompt.ts"] },
   "src/app/decks/cuts-actions.ts": { builders: ["src/lib/tuning/cuts-prompt.ts"] },
+  "src/lib/tuning/v2/engine.ts": { builders: ["src/lib/tuning/prompt.ts"], note: "sends through the callModel its caller injects" },
   "src/lib/swaps/fits-read-run.ts": { builders: ["src/lib/swaps/fits-read.ts"] },
   "src/lib/intake/the-read-run.ts": { builders: ["src/lib/intake/the-read.ts", "src/lib/intake/the-read-run.ts"] },
   "src/lib/synopsis/generate.ts": { builders: ["src/lib/synopsis/prompt.ts", "src/lib/synopsis/generate.ts"] },

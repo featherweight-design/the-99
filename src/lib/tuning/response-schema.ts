@@ -44,7 +44,7 @@ export const citationSchemaV2 = z.object({
   value: z.string().min(1).max(160),
 });
 
-const lineSchemaV2 = lineSchema.extend({ evidence: z.array(citationSchemaV2).min(1).max(4) });
+export const lineSchemaV2 = lineSchema.extend({ evidence: z.array(citationSchemaV2).min(1).max(4) });
 
 /** One list of a v2 reply: the two-call flow asks for additions and cuts in separate calls (§5.1). */
 export function suggestedChangesV2Schema<L extends "additions" | "cuts">(cap: number, list: L) {

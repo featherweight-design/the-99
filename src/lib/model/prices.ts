@@ -4,6 +4,7 @@ import { SYNOPSIS_MODEL } from "../synopsis/model";
 import { STUB_MODEL } from "../synopsis/stub";
 import { FITS_READ_INPUT_CEILING, FITS_READ_MAX_TOKENS, FITS_READ_MODEL } from "../swaps/fits-read-limits";
 import { TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
+import { askFor, MAX_COUNT, replyCeilingFor } from "../tuning/v2/count";
 import type { ModelFeature } from "./allowance-rule";
 import type { ModelUsage } from "./client";
 
@@ -190,6 +191,17 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // call. MEASURED 63,360 input tokens at most on the eval (21 candidates) and 4,257 output; the
   // press refuses a prompt over `FITS_READ_INPUT_CEILING`, so this prices the worst it can settle at.
   fits_read: { model: FITS_READ_MODEL, inputCeilingTokens: FITS_READ_INPUT_CEILING, maxTokens: FITS_READ_MAX_TOKENS, callsPerWrite: 1 },
+  // Suggested changes v2 (plan 2026-10-27, P1): its own key, so v10's `tuning` row above is untouched. A run is at most FOUR
+  // streamed calls (additions, cuts, and one refill each; `runV2`), each priced at N=20's ceiling: ask 30, reply 22,000
+  // tokens (`replyCeilingFor`). INPUT: `buildPromptV2` on the two fixture decks (`scripts/fixtures/tuning-pack.json`, 82
+  // cards; `tuning-v2-round4.json`, 92) with a 500-character request, measured 2026-10-27 in characters: 10,991 for the
+  // first ask, 20,301 for the worst one, a cut refill told 30 additions coming in and 45 rejections (about 7,000 tokens at
+  // the eval's 3 characters a token). v10's same decks run 10,331 characters, and staging's largest v10 prompt measured
+  // 5,116 tokens against the fixture's ~3,700, so 16,000 holds the worst v2 call on a large deck with room to spare.
+  suggested_changes_v2: {
+    model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)), callsPerWrite: 4,
+    steps: Array.from({ length: 4 }, () => ({ model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)) })),
+  },
 };
 
 /**
