@@ -21,7 +21,7 @@ const m = vi.hoisted(() => ({
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../../lib/theme/server", () => ({ resolveTheme: async () => m.theme }));
-vi.mock("next/navigation", () => ({ notFound: m.notFound, usePathname: () => "/about/decks" }));
+vi.mock("next/navigation", () => ({ notFound: m.notFound, usePathname: () => "/about/decks", useRouter: () => ({ refresh: () => {} }) }));
 
 import AboutAreaRoute from "./page";
 import { AreaPage, type AreaSection } from "../../../components/about/pages/area-page";
@@ -84,7 +84,10 @@ describe("/about/[area]", () => {
 
   it("draws the reader's theme's captures, phone and desktop, never one width's in the other's place", async () => {
     m.theme = "kamigawa";
-    const [s] = (await draw("decks")).props.sections;
+    const el = await draw("decks");
+    // The page is told the theme it was drawn in, so a theme picked later asks the server again (ThemeRefresh).
+    expect((el.props as { theme?: string }).theme).toBe("kamigawa");
+    const [s] = el.props.sections;
     expect(s.phone.shots[0].shot.src).toMatch(/^\/about\/pages\/kamigawa\/phone\//);
     expect(s.desktop.shots[0].shot.src).toMatch(/^\/about\/pages\/kamigawa\/desktop\//);
   });

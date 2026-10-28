@@ -10,13 +10,21 @@ import { aboutMenuCopy } from "../../../lib/copy/about";
 import type { ScreenModel } from "../../../lib/about/pins";
 import { LabelledScreen } from "./labelled-screen";
 import { OnThisPage } from "./on-this-page";
+import { ThemeRefresh } from "./theme-refresh";
 
 export type AreaSection = { id: string; name: string; sub: string; phone: ScreenModel; desktop: ScreenModel };
 
 // The strip links the six pages to each other, the only links to them until PR 6a swaps every way in at once.
 const TABS: readonly PlaceTab[] = ABOUT_AREAS.map((a) => ({ place: a.id, href: `/about/${a.id}`, label: a.name }));
 
-export function AreaPage({ area, sections }: { area: AboutArea; sections: readonly AreaSection[] }) {
+export function AreaPage({
+  area, sections, theme,
+}: {
+  area: AboutArea;
+  sections: readonly AreaSection[];
+  /** The theme the captures were chosen in: a theme picked after it asks the server again. */
+  theme: string;
+}) {
   const copy = ABOUT_AREAS.find((a) => a.id === area)!;
   return (
     <div className="flex flex-col pb-[30px] md:px-[30px] md:pb-[64px]">
@@ -37,6 +45,7 @@ export function AreaPage({ area, sections }: { area: AboutArea; sections: readon
           testIdPrefix="about-page"
           frame="mt-[14px] px-[8px] md:mt-[22px] md:px-0"
         />
+        <ThemeRefresh drawnIn={theme} />
         <OnThisPage sections={sections.map((s) => ({ id: s.id, name: s.name }))} />
         {sections.map((s, i) => (
           <section

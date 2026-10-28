@@ -29,5 +29,5 @@ export default async function AboutAreaRoute({ params }: { params: Promise<{ are
       phone: screenModel(s, theme, "phone"),
       desktop: screenModel(s, theme, "desktop"),
     }));
-  return <AreaPage area={area} sections={sections} />;
+  return <AreaPage area={area} sections={sections} theme={theme} />;
 }
