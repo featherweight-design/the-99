@@ -37,6 +37,7 @@ import { listDeckGames, type DeckGame } from "./games";
 import { loadPrices } from "./price-query";
 import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
+import { labelRoleCountsEnabled } from "./label-counts-flag";
 import { neverCutEnabled } from "./never-cut-flag";
 import { liveLockedIds } from "./locks";
 import { strategyFocusEnabled } from "../strategy/flag";
@@ -299,7 +300,7 @@ export async function readTuningState(
     : { items: [], newestPriceAsOf: null };
   // A v2 run still being made (plan P3): the lines it has saved so far, drawn by the panel's poll beside the last set.
   const live = run?.status === "pending" && newest?.requestedCount != null
-    ? liveOf(run.id, newest.validationReport, (await readItems(run.id, deckId, userId, env, true)).items)
+    ? liveOf(run.id, newest.validationReport, await readItems(run.id, deckId, userId, env, true))
     : null;
 
   return {
@@ -328,7 +329,9 @@ export function promptVersionFor(requestedCount: number | null): number {
 }
 
 /** A pending v2 run as the panel draws it, from its report's progress flags. */
-export function liveOf(runId: string, report: ValidationReport | null, items: TuningItem[]): TuningLive {
+export function liveOf(
+  runId: string, report: ValidationReport | null, read: { items: TuningItem[]; newestPriceAsOf: Date | null },
+): TuningLive {
   const v2 = report?.v2;
   const added = v2?.in.add ?? false;
   return {
@@ -336,7 +339,9 @@ export function liveOf(runId: string, report: ValidationReport | null, items: Tu
     phase: added ? "cuts" : "additions",
     in: { add: added, cut: v2?.in.cut ?? false },
     refilling: { add: v2?.refilling.add ?? false, cut: v2?.refilling.cut ?? false },
-    items,
+    items: read.items,
+    // The live lines' own price snapshot: the last set's `newestPriceAsOf` is another read, and null on a first run.
+    newestPriceAsOf: read.newestPriceAsOf,
   };
 }
 
@@ -449,8 +454,9 @@ async function readItems(
   // chain, not the catalog's arbitrary one (`chainArt`).
   const [art, jobRows] = await Promise.all([
     chainArt(userId, deckId, rows.rows.flatMap((r) => [r.add_oracle_id, r.cut_oracle_id]), env),
-    // The labels the strip counts by; a failed read falls back to the classifier, as the strip's does (null).
-    v2 && rows.rows.length > 0
+    // The labels the strip counts by, read only while the strip counts by them (`LABEL_ROLE_COUNTS_ENABLED`); off, or a
+    // failed read, falls back to the classifier, as the strip's does (null).
+    v2 && rows.rows.length > 0 && labelRoleCountsEnabled(env)
       ? loadJobRows(rows.rows.map((r) => ({ oracleId: (r.add_oracle_id ?? r.cut_oracle_id)!, typeLine: r.card_type_line ?? "" })))
         .catch(() => null)
       : null,

@@ -51,8 +51,12 @@ describe("Suggested changes v2 on the panel's read (plan P1, P3)", () => {
       askedCount: 0, survivedCount: 0, keptCount: 0,
       v2: { requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: false }, in: { add: inAdd, cut: false }, refilling: { add: false, cut: refillCut } },
     });
-    expect(liveOf("r", report(false, false), [])).toEqual({ runId: "r", phase: "additions", in: { add: false, cut: false }, refilling: { add: false, cut: false }, items: [] });
-    expect(liveOf("r", report(true, true), [])).toMatchObject({ phase: "cuts", in: { add: true, cut: false }, refilling: { cut: true } });
-    expect(liveOf("r", null, [])).toMatchObject({ phase: "additions" });
+    const none = { items: [], newestPriceAsOf: null };
+    expect(liveOf("r", report(false, false), none)).toEqual({ runId: "r", phase: "additions", in: { add: false, cut: false }, refilling: { add: false, cut: false }, items: [], newestPriceAsOf: null });
+    expect(liveOf("r", report(true, true), none)).toMatchObject({ phase: "cuts", in: { add: true, cut: false }, refilling: { cut: true } });
+    expect(liveOf("r", null, none)).toMatchObject({ phase: "additions" });
+    // The live lines carry their own read's price snapshot, not the last set's (null on a first run).
+    const at = new Date("2026-10-28T09:00:00Z");
+    expect(liveOf("r", null, { items: [], newestPriceAsOf: at }).newestPriceAsOf).toBe(at);
   });
 });

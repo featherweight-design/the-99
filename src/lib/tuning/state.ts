@@ -170,4 +170,6 @@ export type TuningLive = {
   in: { add: boolean; cut: boolean };
   refilling: { add: boolean; cut: boolean };
   items: TuningItem[];
+  /** When the prices on `items` were read, as `TuningState.newestPriceAsOf` is for the last set's. */
+  newestPriceAsOf: Date | null;
 };
