@@ -141,7 +141,7 @@ export function TuningHub({
   // What is open, and how it was opened: a tile or a shortcut moves focus to the tool's heading,
   // a shortcut also brings the Tuning heading to the top, and a tab keeps focus on the tab row so
   // the arrow keys keep working. `seq` makes every opening its own event.
-  const [opening, setOpening] = useState<{ tool: TuningTool; focus: boolean; scroll: boolean; seq: number } | null>(null);
+  const [opening, setOpening] = useState<{ tool: TuningTool; focus: boolean; scroll: boolean; early?: boolean; seq: number } | null>(null);
   const openTool = opening?.tool ?? null;
   const [tiles, setTiles] = useState<HubTiles | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -149,7 +149,9 @@ export function TuningHub({
   const toolRef = useRef<HTMLDivElement>(null);
   // The tool's arrival plays when its content lands, on a tab press as on a tile press (Hugh,
   // 2026-10-12): most tools draw nothing until their first read answers.
-  useArrival(toolRef, openTool);
+  // A shortcut's opening has already moved the page here, so it shows the tool's own counting state
+  // while the read is out rather than holding blank.
+  useArrival(toolRef, openTool, opening?.early === true);
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
 
   // A tool opened before the hub's first read lands (a shortcut opens one in the first render, and
@@ -269,7 +271,7 @@ export function TuningHub({
       setOpening(null);
     } else if (tools.some((t) => t.tool === asked)) {
       setReview(null);
-      setOpening((prev) => ({ tool: asked, focus: true, scroll: true, seq: (prev?.seq ?? 0) + 1 }));
+      setOpening((prev) => ({ tool: asked, focus: true, scroll: true, early: true, seq: (prev?.seq ?? 0) + 1 }));
     }
   }
 
@@ -284,14 +286,30 @@ export function TuningHub({
     // A shortcut lands on the tab while its opening loader still hides the body under a `hidden`
     // ancestor (`analysis-panel`), and a hidden box can be neither scrolled to nor focused; and both
     // tools draw nothing until their own first read lands, so their heading arrives later still.
-    // So wait for the section to be shown AND the tool's heading to exist, then scroll and focus:
+    // So wait for the section to be shown AND the tool's heading to exist, then scroll and focus (a
+    // shortcut's first scroll, below, goes as soon as the section is shown):
     // scrolled any sooner, the page is not yet tall enough to bring the hub to the top, and the
     // tool then grows below the fold (measured: the hub stopped 508px down at 1300). A tool whose
     // heading draws before its first rows (History) marks that wait `data-hub-pending`, and the scroll
     // waits for it too; past the wait the scroll and focus happen anyway rather than never.
     const shown = () => !!sectionRef.current && !sectionRef.current.closest("[hidden]");
+    let movedEarly = false;
+    let held: HTMLElement | null = null;
     const step = (late = false) => {
       if (!shown()) return false;
+      // A shortcut's press moves the page at once, to the hub the tool is opening in, and the tool's
+      // own loading state (or nothing, for a tool that draws none yet) fills in under it. The page is
+      // not yet tall enough to bring the hub to the top (Hugh, 2026-10-12), so the section holds a
+      // screen's height for as long as the tool stays open (it lets go when another tool, the tiles
+      // or another tab is opened): the first scroll then reaches the top and the tool fills in under
+      // it, where it used to stop short and make a second, visible scroll once the content landed.
+      // A tool shorter than a screen leaves blank space under it, which is what keeps the hub put.
+      if (opening.early && opening.scroll && !movedEarly) {
+        movedEarly = true;
+        held = sectionRef.current;
+        if (held) held.style.minHeight = `${window.innerHeight}px`;
+        reveal(held);
+      }
       // The tool's own heading keeps its landmark (README, other decisions 2); focus moves to it.
       const id = HEADING_IDS[opening.tool];
       const heading = id ? toolRef.current?.querySelector<HTMLElement>(`#${id}`) : null;
@@ -302,20 +320,27 @@ export function TuningHub({
       // (Hugh, 2026-10-12: Mana Balance landed below the fold). A slow read gives way at the wait's
       // end, as above.
       if (!late && opening.scroll && !(toolRef.current && toolDrew(toolRef.current))) return false;
-      if (opening.scroll) reveal(sectionRef.current);
+      // A shortcut already moved the page and holds the room for it: a second reveal here would pull a
+      // reader who has scrolled on back, or restart the first one's animation.
+      if (opening.scroll && !movedEarly) reveal(sectionRef.current);
       if (!opening.focus || !heading) return true;
       if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
       heading.focus({ preventScroll: true });
       return true;
     };
-    if (step()) return;
     const giveUp = Date.now() + SHOWN_WAIT_MS;
-    let frame = requestAnimationFrame(function wait() {
-      if (step()) return;
-      if (Date.now() < giveUp) frame = requestAnimationFrame(wait);
-      else step(true);
-    });
-    return () => cancelAnimationFrame(frame);
+    let frame = 0;
+    if (!step()) {
+      frame = requestAnimationFrame(function wait() {
+        if (step()) return;
+        if (Date.now() < giveUp) frame = requestAnimationFrame(wait);
+        else step(true);
+      });
+    }
+    return () => {
+      cancelAnimationFrame(frame);
+      if (held) held.style.minHeight = "";
+    };
   }, [opening]);
 
   // A History row's press: its tool with that run loaded, its tool on the deck as it is now (a free
@@ -583,12 +608,15 @@ const ARRIVAL_CAP_MS = 2500;
  * loading state (`PENDING`), then takes the arrival class afresh. A read slower than
  * `ARRIVAL_CAP_MS` shows its loading state and then its content without a second fade. A panel
  * whose content is there at mount keeps the mount's own arrival. Classes, not state: the hold has
- * to land before the first paint, and nothing else reads it.
+ * to land before the first paint, and nothing else reads it. A shortcut's opening (`showLoading`) holds
+ * nothing: the page has already moved to the panel, so its loading state is what the reader sees.
  */
-function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
+function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null, showLoading: boolean) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || key === null || typeof ResizeObserver === "undefined") return;
+    // A shortcut pressed over a tool already open and still counting lets go of the hold it was given.
+    if (showLoading) { el.classList.remove("gentle-hold"); return; }
     // A box holding a control has content worth showing, busy or not: a held panel must never hide
     // something a reader can focus or press (a running Proposed cuts panel's Stop, say).
     const landed = () => el.getBoundingClientRect().height > 0 && toolDrew(el);
@@ -615,5 +643,5 @@ function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
       mo.disconnect();
       clearTimeout(cap);
     };
-  }, [ref, key]);
+  }, [ref, key, showLoading]);
 }
