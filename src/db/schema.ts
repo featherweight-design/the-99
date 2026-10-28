@@ -2923,6 +2923,11 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   requestedCount: smallint("requested_count"),
   /** The player's typed request, the same text that went to the model (Hugh, §12 Q5). Purged with the account. */
   requestText: text("request_text"),
+  /**
+   * Every set id (`actionId`) ever applied from this v2 run, kept after its Undo: a retried or delayed press of an
+   * applied-then-undone set finds its id here and writes nothing, while a fresh press can apply the same picks again.
+   */
+  spentSets: uuid("spent_sets").array().notNull().default(sql`'{}'::uuid[]`),
   /** The bracket choice beside the request (Hugh, §12 Q7; the handoff's Keep / Down / Up), and the bracket it aims at. */
   bracketChoice: text("bracket_choice"),
   bracketTarget: smallint("bracket_target"),

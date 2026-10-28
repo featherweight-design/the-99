@@ -198,6 +198,9 @@ async function main() {
   const undone = await undoSet({ applySet: actionId, userId: u, env });
   check("4 · undo the set", undone.ok && undone.itemIds.length, 6);
   check("4 · undo returns the exact list", await deckList(deckId), before);
+  const retried = await applyPicks({ runId, ...pick, actionId, userId: u, env });
+  check("4 · a delayed repeat of the undone press names no line", retried.ok && retried.itemIds.length, 0);
+  check("4 · and does not reverse the undo", await deckList(deckId), before);
   check("4 · the lines are open again and still picked",
     (await linesOf(runId)).filter((l) => [...pick.addIds, ...pick.cutIds].includes(l.id)).map((l) => [l.verdict, l.apply_set, l.picked]),
     Array(6).fill(["pending", null, true]));
@@ -248,6 +251,9 @@ async function main() {
   check("7b · and the deck keeps the set", await deckList(deckId), withC);
   const lateApply = await applyPicks({ runId, addIds: [adds[1].id], cutIds: [cuts[1].id], actionId: randomUUID(), userId: u, env });
   check("7b · apply after a commit is refused as stale", lateApply.ok ? "applied" : lateApply.refusal, { kind: "stale" });
+  // adds[2] is still picked from step 4 (an Undo keeps the picks): an unpick after the commit must not land.
+  check("7b · an unpick after a commit is refused", await setPicked(adds[2].id, u, false), null);
+  check("7b · and writes nothing", (await linesOf(runId)).find((l) => l.id === adds[2].id)?.picked, true);
 
   // 8 — owned-only: the stub's additions are owned by nobody here.
   const o = newUser();

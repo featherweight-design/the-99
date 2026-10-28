@@ -1,0 +1,1 @@
+ALTER TABLE "deck_suggestion_runs" ADD COLUMN "spent_sets" uuid[] DEFAULT '{}'::uuid[] NOT NULL;

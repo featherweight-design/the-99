@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull, max, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, max, ne, sql } from "drizzle-orm";
 
 import { db } from "../../../db";
 import { deckSuggestionItems, deckSuggestionRuns, decks, deckVersions } from "../../../db/schema";
@@ -48,6 +48,7 @@ async function lockRunDeck(tx: Tx, runId: string, userId: string) {
     status: deckSuggestionRuns.status,
     requestedCount: deckSuggestionRuns.requestedCount,
     readVersion: deckSuggestionRuns.readVersion,
+    spentSets: deckSuggestionRuns.spentSets,
   }).from(deckSuggestionRuns)
     .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.userId, userId)));
   if (!run) return null;
@@ -97,6 +98,9 @@ export async function applyPicks(args: {
       const lines = await lockedLines(tx, runId);
       const done = lines.filter((l) => l.applySet === actionId);
       if (done.length > 0) return { ok: true as const, deckId: run.deckId, applySet: actionId, itemIds: done.map((l) => l.id) };
+      // Applied once and undone since: a retried or delayed press of that set must not reverse the Undo. It writes nothing
+      // and names no line; a fresh press (a new `actionId`) can apply the same picks again.
+      if (run.spentSets.includes(actionId)) return { ok: true as const, deckId: run.deckId, applySet: actionId, itemIds: [] };
       if (run.status !== "ok" || run.requestedCount === null) throw new Refused({ kind: "notV2" });
 
       const plan = planPicks({ requestedCount: run.requestedCount, lines, addIds: args.addIds, cutIds: args.cutIds });
@@ -117,6 +121,9 @@ export async function applyPicks(args: {
           .where(eq(deckSuggestionItems.id, line.id));
         await applySwap(tx, run.deckId, line.cutOracleId, line.addOracleId, swap.snapshot);
       }
+      await tx.update(deckSuggestionRuns)
+        .set({ spentSets: sql`array_append(${deckSuggestionRuns.spentSets}, ${actionId}::uuid)` })
+        .where(eq(deckSuggestionRuns.id, runId));
       await touchDeck(tx, run.deckId);
       return { ok: true as const, deckId: run.deckId, applySet: actionId, itemIds: [...plan.cuts, ...plan.adds].map((l) => l.id) };
     });
@@ -168,30 +175,41 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
 }
 
 /**
- * Mark or unmark one open line of a finished v2 run as picked (H4: picks survive leaving and coming back). Free, and
- * written only on a change. The deck id when the line is an open v2 line of the reader's (picked or not), else null.
+ * Mark or unmark one open line of a v2 run as picked (H4: picks survive leaving mid-run, a return and an Undo), so a line
+ * of a run still making its cuts can be picked as soon as it arrives; applying still needs a finished run. Free, and
+ * written only on a change. Refused (null) for a retired run (spec §8: a commit since the run read the deck), checked
+ * under the deck lock a commit also takes. The deck id when the line is an open v2 line of the reader's, else null.
  */
 export async function setPicked(itemId: string, userId: string, picked: boolean): Promise<string | null> {
-  const [line] = await db.select({ deckId: deckSuggestionRuns.deckId })
-    .from(deckSuggestionItems)
-    .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckSuggestionItems.runId))
-    .where(and(
-      eq(deckSuggestionItems.id, itemId),
-      eq(deckSuggestionRuns.userId, userId),
-      eq(deckSuggestionRuns.status, "ok"),
-      isNotNull(deckSuggestionRuns.requestedCount),
-      eq(deckSuggestionItems.verdict, "pending"),
-      isNull(deckSuggestionItems.applySet),
-    ));
-  if (!line) return null;
-  // The change test is in the UPDATE itself, against the row as it is now, so two overlapping presses cannot both read
-  // the old value and lose one of them; a press that changes nothing still writes nothing.
-  await db.update(deckSuggestionItems).set({ picked })
-    .where(and(
-      eq(deckSuggestionItems.id, itemId),
-      eq(deckSuggestionItems.verdict, "pending"),
-      isNull(deckSuggestionItems.applySet),
-      ne(deckSuggestionItems.picked, picked),
-    ));
-  return line.deckId;
+  return db.transaction(async (tx) => {
+    const [line] = await tx.select({ deckId: deckSuggestionRuns.deckId, readVersion: deckSuggestionRuns.readVersion })
+      .from(deckSuggestionItems)
+      .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckSuggestionItems.runId))
+      .where(and(
+        eq(deckSuggestionItems.id, itemId),
+        eq(deckSuggestionRuns.userId, userId),
+        inArray(deckSuggestionRuns.status, ["pending", "ok"]),
+        isNotNull(deckSuggestionRuns.requestedCount),
+        eq(deckSuggestionItems.verdict, "pending"),
+        isNull(deckSuggestionItems.applySet),
+      ));
+    if (!line) return null;
+    await lockDeck(tx, line.deckId);
+    try {
+      await refuseIfRetired(tx, line);
+    } catch (error) {
+      if (error instanceof Refused) return null;
+      throw error;
+    }
+    // The change test is in the UPDATE itself, against the row as it is now, so two overlapping presses cannot both read
+    // the old value and lose one of them; a press that changes nothing still writes nothing.
+    await tx.update(deckSuggestionItems).set({ picked })
+      .where(and(
+        eq(deckSuggestionItems.id, itemId),
+        eq(deckSuggestionItems.verdict, "pending"),
+        isNull(deckSuggestionItems.applySet),
+        ne(deckSuggestionItems.picked, picked),
+      ));
+    return line.deckId;
+  });
 }
