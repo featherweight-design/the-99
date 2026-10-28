@@ -13,6 +13,7 @@
 // Nothing here names a social table: the writes live in `lib/social/spare-requests.ts`.
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requireUserId } from "../../lib/auth";
 import {
   answerSpareRequest, askForSpare, askInsteadForSpare, closeSpareRequest, markAnswerSeen,
@@ -87,7 +88,9 @@ export async function openAnswerAction(key: string): Promise<OpenAnswerOutcome> 
   const request = typeof key === "string" ? await loadAnsweredRequest(userId, key, env, now) : null;
   if (!request) return { ok: false };
   // Marked whatever the Friends cursor says: Home reads its own cursor, so an answer a /friends visit already covered can
-  // still be unseen on Home. The write lands only on a change (`markAnswerSeenQuery`).
-  if (await markAnswerSeen(userId, request.id, env, now)) revalidatePath("/friends");
+  // still be unseen on Home. The write lands only on a change (`markAnswerSeenQuery`). `/friends` is revalidated after
+  // the response: revalidating inside the action would redraw the page it was pressed on (Home), whose visit has already
+  // moved its own cursor, and every diamond there would go at once.
+  if (await markAnswerSeen(userId, request.id, env, now)) after(() => revalidatePath("/friends"));
   return { ok: true, request: { ...request, unseen: false } };
 }

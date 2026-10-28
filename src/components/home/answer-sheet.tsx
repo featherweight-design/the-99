@@ -16,6 +16,7 @@ import { spareCopy } from "../../lib/copy/social";
 import type { FeedView } from "../../lib/feed/home";
 import type { YourRequest } from "../../lib/social/your-requests";
 import { ModalChrome } from "../decks/receipt-modal";
+import { PendingReporter } from "../shell/pending-reporter";
 import { useSpareToast } from "../social/spare-answer";
 import { RequestPicture, RequestText, requestText } from "../social/your-requests";
 
@@ -99,6 +100,7 @@ function AnswerSheet({ item, request, now, onClose, onCleared }: Open & { now: s
           <div className="flex min-h-[52px] items-center px-[16px] pb-[8px] [border-top:1px_solid_var(--border)] md:min-h-[46px] md:justify-end md:px-[18px] md:pb-0">
             <Link href="/friends#your-requests" className="flex min-h-[44px] items-center font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] no-underline">
               {m.sheet.all}
+              <PendingReporter href="/friends#your-requests" />
             </Link>
           </div>
         }
@@ -106,7 +108,7 @@ function AnswerSheet({ item, request, now, onClose, onCleared }: Open & { now: s
         <div
           data-testid="answer-sheet-row"
           data-state={request.state}
-          className="m-[12px] grid grid-cols-[46px_minmax(0,1fr)] items-center gap-x-[12px] rounded-[14px] bg-[color:var(--surface-inset)] px-[14px] pb-[6px] pt-[12px] [border:1px_solid_var(--border)] md:m-[16px] md:gap-x-[14px] md:px-[16px]"
+          className="mx-[16px] mb-[16px] mt-[14px] grid grid-cols-[46px_minmax(0,1fr)] items-center gap-x-[12px] rounded-[14px] bg-[color:var(--surface-inset)] px-[14px] pb-[6px] pt-[12px] [border:1px_solid_var(--border)] md:mx-[18px] md:mb-[18px] md:mt-[16px] md:gap-x-[14px] md:px-[16px]"
         >
           {/* The picture spans the words and Clear, centred on both (R1b). */}
           <RequestPicture a={request} className="row-span-2 self-center" />

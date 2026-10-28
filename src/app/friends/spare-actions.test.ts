@@ -8,6 +8,7 @@ const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   requestSwitchEnv: vi.fn(),
   revalidatePath: vi.fn(),
+  after: vi.fn(),
   askForSpare: vi.fn(),
   askInsteadForSpare: vi.fn(),
   closeSpareRequest: vi.fn(),
@@ -18,6 +19,8 @@ const m = vi.hoisted(() => ({
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
+// `after` runs its callback after the response; here at once, but recorded, so a test can tell deferred from inline.
+vi.mock("next/server", () => ({ after: (fn: () => void) => { m.after(); fn(); } }));
 vi.mock("../../lib/social/spare-requests", () => ({
   askForSpare: m.askForSpare, askInsteadForSpare: m.askInsteadForSpare,
   closeSpareRequest: m.closeSpareRequest, answerSpareRequest: m.answerSpareRequest, markAnswerSeen: m.markAnswerSeen,
@@ -103,6 +106,8 @@ describe("openAnswerAction (small items item 3)", () => {
     expect(m.loadAnsweredRequest).toHaveBeenCalledWith("user_1", KEY, ENV, expect.any(Date));
     expect(m.markAnswerSeen).toHaveBeenCalledWith("user_1", REQ, ENV, expect.any(Date));
     expect(m.revalidatePath.mock.calls).toEqual([["/friends"]]);
+    // After the response, so Home (where it was pressed) is not redrawn with the visit's moved cursor.
+    expect(m.after).toHaveBeenCalledTimes(1);
     expect(out).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "yes" } });
   });
 
