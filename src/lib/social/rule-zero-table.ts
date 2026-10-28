@@ -14,7 +14,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, deckGames, deckProfiles, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles } from "../../db/schema";
+import { cards, deckGames, deckProfiles, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 import { declarationAsk, type DeclarationAsk } from "../bracket/declaration-ask";
 import { findings, type FindingId } from "../bracket/findings";
 import { slotDeck } from "../bracket/slot";
@@ -26,7 +26,7 @@ import {
   type Drivers, type ReadSeat, type SeatState, type SeatValue, type TableRead,
 } from "../rule-zero/rules";
 import { resolveSwitchEnv } from "../switches/snapshot";
-import { SEATS_MAX } from "./rule-zero";
+import { ruledSeatOwnersOf, SEATS_MAX, seatDeckVisible } from "./rule-zero";
 import { isUuid } from "./rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -121,7 +121,9 @@ const commanderOf = alias(cards, "seat_commander");
 const partnerOf = alias(cards, "seat_partner");
 
 /** The table's seats whose players are still in its pod, in seat order. Read only after the grant. */
-function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select">) {
+export function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select">, ruledOwners: readonly string[] = []) {
+  // Another player's deck is drawn only while their deck rules let friends see it, under the OWNER's switch.
+  const visible = seatDeckVisible(viewerId, ruledOwners);
   return q
     .select({
       seat: ruleZeroSeats.seat,
@@ -142,12 +144,19 @@ function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "selec
     .innerJoin(podMembers, and(eq(podMembers.podId, ruleZeroTables.podId), eq(podMembers.userId, ruleZeroSeats.userId)))
     .innerJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroSeats.userId))
     .leftJoin(viewerFriend, and(eq(viewerFriend.userId, viewerId), eq(viewerFriend.friendUserId, ruleZeroSeats.userId)))
+    // The seat player's deck rules, joined ahead of the deck that reads them (the seat's player is the deck's owner).
+    .leftJoin(userPrefs, eq(userPrefs.userId, ruleZeroSeats.userId))
     // The seat's deck only while it is the seat player's own: `setSeatDeck` and setup write nothing else.
-    .leftJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId)))
+    .leftJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId), visible))
     .leftJoin(commanderOf, eq(commanderOf.oracleId, decks.commanderOracleId))
     .leftJoin(partnerOf, eq(partnerOf.oracleId, decks.partnerOracleId))
     .where(eq(ruleZeroSeats.tableId, tableId))
     .orderBy(asc(ruleZeroSeats.seat));
+}
+
+/** The seats, with each owner's `FRIEND_DECKS_ENABLED` decided first (the seats' players are read ahead of it). */
+async function readSeats(viewerId: string, tableId: string, q: Tx) {
+  return seatsQuery(viewerId, tableId, q, await ruledSeatOwnersOf(viewerId, tableId, q));
 }
 
 type Verdict = ReturnType<typeof slotDeck>;
@@ -303,7 +312,7 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
   return db.transaction(async (tx) => {
     const [table] = await tableGrantQuery(viewerId, tableId, tx);
     if (!table) return null;
-    const rows = await seatsQuery(viewerId, tableId, tx);
+    const rows = await readSeats(viewerId, tableId, tx);
     const [seen] = await tx.execute<{ seen_at: Date }>(sql`
       select seen_at from rule_zero_seen where table_id = ${tableId} and user_id = ${viewerId}`).then((r) => r.rows);
     const built: (TableSeat & { verdict: Verdict | null })[] = [];
@@ -461,7 +470,7 @@ export async function loadClosedTable(viewerId: string, tableId: unknown): Promi
   return db.transaction(async (tx) => {
     const [table] = await tableGrantQuery(viewerId, tableId, tx, true);
     if (!table) return null;
-    const rows = await seatsQuery(viewerId, tableId, tx);
+    const rows = await readSeats(viewerId, tableId, tx);
     return {
       podName: table.podName,
       setBy: table.setBy === viewerId ? null : table.setByName,

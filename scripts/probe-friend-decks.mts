@@ -48,7 +48,7 @@ async function main() {
   };
 
   try {
-    await friends.ensureProfile(V, "Vera");
+    const v = await friends.ensureProfile(V, "Vera");
     const f = await friends.ensureProfile(F, "Finn");
     await friends.ensureProfile(S, "Sam");
     const t = await friends.createInvite(V);
@@ -111,8 +111,57 @@ async function main() {
     await vis.writeFriendDeckPrefs(F, { seeDecks: false, seeUnfinished: true });
     check("decks off: the tab is empty", JSON.stringify(await tab()) === "[]");
     check("decks off: the page is nothing", (await read.loadFriendDeck(V, f.publicId, shown)) === null);
+
+    // Rule 0 setup follows the same owner rules as the game log's picker (never a second rule).
+    const pods = await import("../src/lib/social/pods");
+    const rz = await import("../src/lib/social/rule-zero");
+    const pod = await pods.createPod(V, "Probe pod");
+    if (!pod || !(await pods.addMember(V, pod.id, f.publicId))) throw new Error("pod setup refused");
+    await db.execute(sql`insert into decks (user_id, name, commander_oracle_id) values (${V}, 'Probe Mine', ${C})`);
+    const listed = async () => (await rz.podSetup(V, pod.id))?.members.find((m) => m.publicId === f.publicId)?.decks.map((d) => d.name).sort();
+    const mine = async () => (await rz.podSetup(V, pod.id))?.members.find((m) => m.publicId === v.publicId)?.decks.map((d) => d.name);
+    const seat = (deck: string | null) => [{ member: v.publicId, deck: null }, { member: f.publicId, deck }];
+    await vis.writeFriendDeckPrefs(F, { seeDecks: true, seeUnfinished: true });
+    check("rule 0 setup: a hidden deck is not listed, a shown one is", JSON.stringify(await listed()) === JSON.stringify(["Probe Shown"]), JSON.stringify(await listed()));
+    check("rule 0 setup: the viewer's own deck is listed", JSON.stringify(await mine()) === JSON.stringify(["Probe Mine"]));
+    check("rule 0 setTable refuses a hidden deck id", JSON.stringify(await rz.setTable(V, pod.id, seat(hidden))) === JSON.stringify({ kind: "refused", reason: "deck" }));
+    await vis.writeFriendDeckPrefs(F, { seeDecks: false, seeUnfinished: true });
+    check("rule 0 setup: friends_see_decks off lists none", JSON.stringify(await listed()) === "[]", JSON.stringify(await listed()));
+    check("rule 0 setup: the owner's own decks stay listed with it off", JSON.stringify(await mine()) === JSON.stringify(["Probe Mine"]));
+    check("rule 0 setTable refuses a shown deck while sharing is off", JSON.stringify(await rz.setTable(V, pod.id, seat(shown))) === JSON.stringify({ kind: "refused", reason: "deck" }));
+    await vis.writeFriendDeckPrefs(F, { seeDecks: true, seeUnfinished: true });
+    const okSeat = await rz.setTable(V, pod.id, seat(shown));
+    check("rule 0 setTable seats a deck the friend lets friends see", okSeat.kind !== "refused", JSON.stringify(okSeat));
+
+    // The table page and the reopened setup: a deck seated while shown, hidden since, reads as no deck.
+    const tz = await import("../src/lib/social/rule-zero-table");
+    const tableId = okSeat.kind === "set" || okSeat.kind === "open" ? okSeat.tableId : "";
+    const friendSeat = async () => (await tz.loadTable(V, tableId))?.seats.find((s) => s.publicId === f.publicId)?.deck?.name ?? null;
+    const setupSeat = async () => (await rz.tableSetup(V, tableId))?.seated.find((s) => s.publicId === f.publicId)?.deck?.name ?? null;
+    check("rule 0 table: the seated friend's shown deck is drawn", (await friendSeat()) === "Probe Shown", String(await friendSeat()));
+    await vis.setDeckHiddenFromFriends(F, shown, true);
+    check("rule 0 table: hidden since the pick, it reads as no deck", (await friendSeat()) === null, String(await friendSeat()));
+    check("rule 0 table setup: hidden since the pick, the seat has no deck", (await setupSeat()) === null, String(await setupSeat()));
+    await vis.setDeckHiddenFromFriends(F, shown, false);
+    await vis.writeFriendDeckPrefs(F, { seeDecks: false, seeUnfinished: true });
+    check("rule 0 table: sharing off since the pick, it reads as no deck", (await friendSeat()) === null, String(await friendSeat()));
+    await vis.writeFriendDeckPrefs(F, { seeDecks: true, seeUnfinished: true });
+
+    // The game log's prefill from that table (the viewer's own seat holds the page's deck) follows the same rule.
+    const lg = await import("../src/lib/social/rule-zero-log");
+    const { rows: [myDeck] } = await db.execute<{ id: string }>(sql`select id from decks where user_id = ${V} and name = 'Probe Mine'`);
+    await db.execute(sql`update rule_zero_seats set deck_id = ${myDeck.id} where table_id = ${tableId} and user_id = ${V}`);
+    const prefillSeat = async () => {
+      const p = await lg.tablePrefill(V, tableId, myDeck.id);
+      return p === null ? "no prefill" : (p.seats.find((s) => s.name === "Finn")?.deckName ?? null);
+    };
+    check("rule 0 log prefill: the seated friend's shown deck is prefilled", (await prefillSeat()) === "Probe Shown", String(await prefillSeat()));
+    await vis.setDeckHiddenFromFriends(F, shown, true);
+    check("rule 0 log prefill: hidden since the pick, it prefills as no deck", (await prefillSeat()) === null, String(await prefillSeat()));
+    await vis.setDeckHiddenFromFriends(F, shown, false);
   } finally {
     const who = sql`(${V}, ${F}, ${S})`;
+    await db.execute(sql`delete from pods where owner_user_id in ${who}`);
     await db.execute(sql`delete from friend_links where user_id in ${who} or friend_user_id in ${who}`);
     await db.execute(sql`delete from user_prefs where user_id in ${who}`);
     await db.execute(sql`delete from decks where user_id in ${who}`);

@@ -14,13 +14,15 @@
  * Nothing returned carries a Clerk id or another player's deck id (decision 5). Setup addresses every pod member by
  * `publicId`, the client-safe id, because it seats them; a player's face here is a display name and a commander.
  */
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles } from "../../db/schema";
+import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
+import { resolveSwitchEnv } from "../switches/snapshot";
 import type { Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
-import { friendDecksIn } from "./games";
+import { friendDecksEnabled } from "./flag";
+import { friendDecksIn, pickerSeesDeck } from "./games";
 import { isUuid } from "./rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -57,6 +59,42 @@ async function isMemberIn(tx: Tx, podId: string, userId: string): Promise<boolea
     .from(podMembers)
     .where(and(eq(podMembers.podId, podId), eq(podMembers.userId, userId)));
   return row !== undefined;
+}
+
+/** The owners (of those given) whose `FRIEND_DECKS_ENABLED` is on: their deck rules apply to a friend's read. */
+export async function ruledOwnersOf(userIds: readonly string[]): Promise<string[]> {
+  const on = await Promise.all([...new Set(userIds)].map(async (u) => ((friendDecksEnabled(await resolveSwitchEnv(u))) ? u : null)));
+  return on.filter((u): u is string => u !== null);
+}
+
+/** A table's seated players other than the viewer whose deck rules apply (`ruledOwnersOf`). */
+export async function ruledSeatOwnersOf(viewerId: string, tableId: string, q: Pick<typeof db, "select">): Promise<string[]> {
+  const players = await q.select({ userId: ruleZeroSeats.userId }).from(ruleZeroSeats).where(eq(ruleZeroSeats.tableId, tableId));
+  return ruledOwnersOf(players.map((p) => p.userId).filter((u) => u !== viewerId));
+}
+
+/**
+ * The join condition that draws a seated deck only while its owner's rules let friends see it (the setup list's rule),
+ * so a deck hidden after it was seated reads as no deck. The viewer's own deck is always theirs. Needs `user_prefs`
+ * joined on the seat's player AHEAD of the deck join. Undefined when no owner's switch is on: drawn as shipped.
+ */
+export function seatDeckVisible(viewerId: string, ruledOwners: readonly string[]): SQL | undefined {
+  return ruledOwners.length === 0 ? undefined : or(eq(decks.userId, viewerId), notInArray(decks.userId, [...ruledOwners]), pickerSeesDeck);
+}
+
+/** Which of these friends' decks their owners' rules keep from friends (the picker's rule), under the owners' switches. */
+async function hiddenFriendDecksIn(tx: Tx, rows: readonly { id: string; userId: string }[]): Promise<Set<string>> {
+  if (rows.length === 0) return new Set();
+  const ruled = await ruledOwnersOf(rows.map((d) => d.userId));
+  const check = rows.filter((d) => ruled.includes(d.userId)).map((d) => d.id);
+  if (check.length === 0) return new Set();
+  const seen = await tx
+    .select({ id: decks.id })
+    .from(decks)
+    .leftJoin(userPrefs, eq(userPrefs.userId, decks.userId))
+    .where(and(inArray(decks.id, check), pickerSeesDeck));
+  const ok = new Set(seen.map((d) => d.id));
+  return new Set(check.filter((id) => !ok.has(id)));
 }
 
 type ResolvedSeat = { userId: string; deckId: string | null };
@@ -96,7 +134,10 @@ async function resolveSeatsIn(tx: Tx, viewerId: string, podId: string, asks: rea
     .where(and(inArray(decks.id, own), eq(decks.userId, viewerId)))
     .for("key share");
   const friendRows = theirs.length === 0 ? [] : await friendDecksIn(tx, viewerId, theirs);
-  const deckOwner = new Map([...ownRows, ...friendRows].map((d) => [d.id, d.userId]));
+  // A friend's deck their rules hide is refused as any foreign deck is, so a stale client cannot seat it (the setup
+  // list leaves it out; "A deck not listed" is the way to seat that friend).
+  const hidden = await hiddenFriendDecksIn(tx, friendRows);
+  const deckOwner = new Map([...ownRows, ...friendRows.filter((d) => !hidden.has(d.id))].map((d) => [d.id, d.userId]));
   const out: ResolvedSeat[] = [];
   for (const [i, ask] of asks.entries()) {
     const userId = seated[i];
@@ -415,7 +456,12 @@ export type PodSetup = {
 };
 
 /** The seatable members' decks: the viewer's and each friend's in the pod. Raw and aliased, so nothing resolves wrong. */
-export function setupDecksQuery(viewerId: string, podId: string) {
+export function setupDecksQuery(viewerId: string, podId: string, ruledOwners: readonly string[] = []) {
+  // A friend's deck follows the owner's rules while their FRIEND_DECKS_ENABLED is on, as the game log's picker does
+  // (`pickerSeesDeck`); the viewer's own decks are never filtered.
+  const ruled = ruledOwners.length === 0 ? sql`` : sql`
+      and (d.user_id = ${viewerId} or d.user_id not in (${sql.join(ruledOwners.map((u) => sql`${u}`), sql`, `)})
+        or (not d.hidden_from_friends and coalesce(up.friends_see_decks, true)))`;
   return sql`
     select sp.public_id as "publicId", d.id as "deckId", d.name, c.name as "commanderName", c.art_crop_uri as "artCropUri",
       (select max(g.played_at) from ${deckGames} g where g.deck_id = d.id) as "lastPlayed", d.last_edited_at as "lastEdited"
@@ -423,10 +469,11 @@ export function setupDecksQuery(viewerId: string, podId: string) {
     join ${socialProfiles} sp on sp.user_id = pm.user_id
     join ${decks} d on d.user_id = pm.user_id
     join ${cards} c on c.oracle_id = d.commander_oracle_id
+    left join ${userPrefs} up on up.user_id = d.user_id
     where pm.pod_id = ${podId}
       and exists (select 1 from ${podMembers} vi where vi.pod_id = pm.pod_id and vi.user_id = ${viewerId})
       and (pm.user_id = ${viewerId}
-        or exists (select 1 from ${friendLinks} fl where fl.user_id = ${viewerId} and fl.friend_user_id = pm.user_id))
+        or exists (select 1 from ${friendLinks} fl where fl.user_id = ${viewerId} and fl.friend_user_id = pm.user_id))${ruled}
     order by sp.public_id, d.created_at desc, d.id`;
 }
 
@@ -467,7 +514,8 @@ async function podSetupIn(tx: Tx, viewerId: string, podId: string): Promise<PodS
     .leftJoin(facePrinting, faceJoin)
     .where(eq(podMembers.podId, podId))
     .orderBy(asc(podMembers.joinedAt), asc(podMembers.userId));
-  const { rows: deckRows } = await tx.execute<SetupDeckRow>(setupDecksQuery(viewerId, podId));
+  const ruled = await ruledOwnersOf(rows.filter((r) => r.userId !== viewerId && r.friend !== null).map((r) => r.userId));
+  const { rows: deckRows } = await tx.execute<SetupDeckRow>(setupDecksQuery(viewerId, podId, ruled));
   const byMember = new Map<string, SetupDeckRow[]>();
   for (const d of deckRows) byMember.set(d.publicId, [...(byMember.get(d.publicId) ?? []), d]);
   // You first, as setup draws you already in (U1); the rest in join order.
@@ -522,8 +570,8 @@ export async function tableSetup(viewerId: string, tableId: unknown): Promise<Ta
     if (!table) return null;
     const setup = await podSetupIn(tx, viewerId, table.podId);
     if (!setup) return null;
-    const { rows: seated } = await tx.execute<{ publicId: string; name: string | null; commanderName: string | null; artCropUri: string | null }>(sql`
-      select sp.public_id as "publicId", d.name, c.name as "commanderName", c.art_crop_uri as "artCropUri"
+    const { rows: seated } = await tx.execute<{ publicId: string; deckId: string | null; ownerId: string | null; name: string | null; commanderName: string | null; artCropUri: string | null }>(sql`
+      select sp.public_id as "publicId", d.id as "deckId", d.user_id as "ownerId", d.name, c.name as "commanderName", c.art_crop_uri as "artCropUri"
       from ${ruleZeroSeats} s
       join ${socialProfiles} sp on sp.user_id = s.user_id
       join ${podMembers} m on m.user_id = s.user_id and m.pod_id = ${table.podId}
@@ -531,12 +579,14 @@ export async function tableSetup(viewerId: string, tableId: unknown): Promise<Ta
       left join ${cards} c on c.oracle_id = d.commander_oracle_id
       where s.table_id = ${tableId}
       order by s.seat`);
+    // A friend's deck chosen while it was listed and hidden since is no longer drawn (the setup list's own rule).
+    const hidden = await hiddenFriendDecksIn(tx, seated.flatMap((s) => (s.deckId !== null && s.ownerId !== null && s.ownerId !== viewerId ? [{ id: s.deckId, userId: s.ownerId }] : [])));
     return {
       ...setup,
       tableId,
       seated: seated.map((s) => ({
         publicId: s.publicId,
-        deck: s.name === null ? null : { name: s.name, commanderName: s.commanderName ?? "", artCropUri: s.artCropUri },
+        deck: s.name === null || (s.deckId !== null && hidden.has(s.deckId)) ? null : { name: s.name, commanderName: s.commanderName ?? "", artCropUri: s.artCropUri },
       })),
     };
   }, { isolationLevel: "repeatable read" });

@@ -39,6 +39,17 @@ describe("tableSeatsQuery", () => {
   it("reads a seat's deck only while it is that seat player's own", () => {
     expect(q.sql).toContain(`left join "decks" on ("decks"."id" = "rule_zero_seats"."deck_id" and "decks"."user_id" = "rule_zero_seats"."user_id")`);
   });
+
+  it("with an owner's switch on, reads a seated deck only while their rules let friends see it, prefs joined first", () => {
+    const ruled = tableSeatsQuery(VIEWER, TABLE, undefined, ["user_colin"]).toSQL();
+    expect(ruled.sql).toContain('not "decks"."hidden_from_friends" and coalesce("user_prefs"."friends_see_decks", true)');
+    expect(ruled.sql).toContain('"decks"."user_id" not in ($');
+    expect(ruled.params).toContain("user_colin");
+    const prefs = ruled.sql.indexOf('left join "user_prefs" on "user_prefs"."user_id" = "rule_zero_seats"."user_id"');
+    expect(prefs).toBeGreaterThan(-1);
+    expect(prefs).toBeLessThan(ruled.sql.indexOf('left join "decks"'));
+    expect(q.sql).not.toContain("hidden_from_friends");
+  });
 });
 
 describe("seatingHash", () => {
