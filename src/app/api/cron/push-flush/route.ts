@@ -5,6 +5,7 @@ import { flushPush } from "../../../../lib/push/flush";
 import { pushConfig } from "../../../../lib/push/config";
 import { sendWebPush } from "../../../../lib/push/send";
 import { captureServerError } from "../../../../lib/sentry/capture";
+import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 import { resolveSwitchEnvStrict } from "../../../../lib/switches/snapshot";
 
 // Pin to Node: the neon-serverless websocket driver and `web-push` do not run on Edge.
@@ -21,6 +22,8 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return new Response("Cron not configured", { status: 503 });
   if (!bearerMatches(req.headers.get("authorization"), secret)) return new Response("Unauthorized", { status: 401 });
+  // The staging project runs the same `vercel.json`; there the cron answers before it reads anything (`staging-pause.ts`).
+  if (cronPausedHere()) return pausedResponse();
   // Members only, never the env object itself (`check:switch-reads`).
   const config = pushConfig({
     VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,

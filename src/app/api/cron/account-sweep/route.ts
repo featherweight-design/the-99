@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { sweepTombstones } from "../../../../lib/account/sweep";
 import { captureServerError } from "../../../../lib/sentry/capture";
+import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -17,6 +18,8 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return new Response("Cron not configured", { status: 503 });
   if (!bearerMatches(req.headers.get("authorization"), secret)) return new Response("Unauthorized", { status: 401 });
+  // The staging project runs the same `vercel.json`; there the cron answers before it reads anything (`staging-pause.ts`).
+  if (cronPausedHere()) return pausedResponse();
   try {
     const report = await sweepTombstones();
     // Counts only, never an id.
