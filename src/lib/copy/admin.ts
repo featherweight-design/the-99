@@ -772,7 +772,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SPARE_REQUESTS_ENABLED: { label: "Spare requests", description: "Ask a friend for a spare, and their Yes or No. Needs Friends." },
   STRATEGY_FOCUS_ENABLED: { label: "Strategy focus", description: "A deck's top strategies and the focus a player picks for Suggested changes to aim at. Picking one is free. Needs the Analysis tab." },
   STAND_IN_LABELS_ENABLED: { label: "Stand-in labels", description: "Stand-in labels where a card has none yet." },
-  SUGGESTED_CHANGES_V2_ENABLED: { label: "Suggested changes v2", description: "The new Suggested changes: pick how many, ask for something, see each change as it arrives. Needs Suggested changes." },
+  SUGGESTED_CHANGES_V2_ENABLED: { label: "Suggested changes v2", description: "Pick how many changes, ask for something, and see each one as it arrives. Needs Suggested changes." },
   SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },
   TUNING_ENABLED: { label: "Suggested changes", description: "Suggested changes for a deck." },
   UPCOMING_PRECONS_ENABLED: { label: "Upcoming precons", description: "Announced Commander sets on Precons, and a Home banner when one arrives." },
