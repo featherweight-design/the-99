@@ -40,6 +40,75 @@ export interface AboutRule {
   sentences?: Partial<Record<string, AboutLineSwitch>>;
   since: number;
   legacy: readonly string[];
+  /** The rule card's small diagram (handoff call 2), drawn from the app's own shapes with these fixtures. */
+  diagram: AboutRuleDiagram;
+}
+
+/**
+ * The shape a rule's diagram is built around (call 2 names five; the boards also draw a split bar for the fill and a
+ * row of chips for what friends see). Each rule's kind and fixtures are transcribed from the boards (Decks-Phone,
+ * Other-Pages), with their fixtures moved to match the shipped rule text where /copy-review rewrote it.
+ */
+export type AboutRuleDiagramKind = "card-row" | "deck-tile" | "buy-tag" | "bracket-medal" | "role-cell" | "split" | "chips";
+
+/** A tag's ink: `short` is the availability marker's, the rest the theme's. */
+export type AboutDiagramTone = "muted" | "accent" | "success" | "short";
+
+/** A fixture price, drawn by the shipped buy tag: live, foil only, sold out (no live printing) or none at all. */
+export type AboutDiagramPrice =
+  | { state: "priced"; cents: number }
+  | { state: "foilOnly"; cents: number }
+  | { state: "soldOut" }
+  | { state: "absent" };
+
+/** One piece of a diagram. A piece with a `switch` is drawn only while it resolves on, as a sentence is. */
+export type AboutDiagramPart = { switch?: AboutLineSwitch } & (
+  /** A mono caption, set in capitals; a `muted` one is a lowercase note, as the boards set both. */
+  | { part: "caption"; text: string; muted?: boolean }
+  | {
+      part: "row";
+      name: string;
+      dot?: "owned" | "unowned";
+      lock?: boolean;
+      proxy?: boolean;
+      /** The row the draft changed (the decklist's bright edge). */
+      edge?: boolean;
+      /** Gone from the list: struck through and dimmed. */
+      gone?: boolean;
+      dim?: boolean;
+      /** The boards' small row, 22px, for a column of names. */
+      compact?: boolean;
+      tag?: { text: string; tone: AboutDiagramTone };
+      price?: AboutDiagramPrice;
+    }
+  | { part: "tile"; name: string; status: "Complete" | "To buy" | "Draft"; colors: readonly string[] }
+  /** Where a tile is not: a dashed plate the tile's size, holding a note. */
+  | { part: "void"; text: string }
+  | { part: "buy"; price: AboutDiagramPrice; note: string }
+  | { part: "medal"; bracket: 1 | 2 | 3 | 4 | 5 }
+  /** Between two columns: an arrow, an or, a not-equal, with an optional word under it. */
+  | { part: "between"; glyph: string; label?: string }
+  | { part: "cells"; cells: readonly { label: string; have: number; target: number }[] }
+  | { part: "split"; parts: readonly { label: string; n: number; tone: "success" | "fact" | "accent" }[] }
+  | { part: "chips"; chips: readonly { text: string; never?: boolean; switch?: AboutLineSwitch }[] }
+);
+
+/** A diagram: an optional head, its columns side by side (one column is a stack), and an optional foot. */
+export interface AboutRuleDiagram {
+  kind: AboutRuleDiagramKind;
+  head?: readonly AboutDiagramPart[];
+  columns: readonly AboutDiagramColumn[];
+  /** The space between columns, where the board sets one other than 10. */
+  gap?: number;
+  foot?: readonly AboutDiagramPart[];
+}
+
+/** One column of a diagram: its parts stacked, at the board's width and gap, centred or flush left. */
+export interface AboutDiagramColumn {
+  parts: readonly AboutDiagramPart[];
+  w?: number;
+  gap?: number;
+  center?: boolean;
 }
 
 export interface AboutSection {
@@ -713,24 +782,67 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     },
     since: 1,
     legacy: ["auto-fill", "help-me-choose"],
+    diagram: {
+      kind: "split",
+      columns: [{ w: 250, gap: 10, parts: [
+        { part: "caption", text: "Ghalta · 99 cards" },
+        { part: "split", parts: [
+          { label: "Your Collection", n: 86, tone: "success" },
+          { label: "Staples", n: 10, tone: "fact" },
+          { label: "To buy", n: 3, tone: "accent" },
+        ] },
+      ] }],
+    },
   },
   lock: {
     text: "A locked card is safe from every tool: none will offer to cut it, and updating the deck from a list starts it kept. The lock ends when you commit a version without the card.",
     switch: "NEVER_CUT_ENABLED",
     since: 16,
     legacy: ["locked-cards"],
+    diagram: {
+      kind: "card-row",
+      columns: [{ w: 256, gap: 10, parts: [
+        { part: "row", name: "Craterhoof Behemoth", dot: "owned", lock: true, tag: { text: "locked", tone: "accent" } },
+        { part: "caption", text: "Every tool skips it" },
+        { part: "chips", chips: [
+          { text: "Suggested changes", never: true, switch: "TUNING_ENABLED" },
+          { text: "Proposed cuts", never: true, switch: "PROPOSED_CUTS_ENABLED" },
+          { text: "Clear all auto", never: true },
+          { text: "Pull it", never: true },
+        ] },
+      ] }],
+    },
   },
   targets: {
     text: "Targets come from the closest decks EDHREC can measure: decks with your commander first, then decks in its colors. With nothing to measure, they start from standard figures. So a Kinnan deck asks for more ramp than most. Going over a target never counts against you, and a card’s role is read from its text, so one can be missed.",
     switch: null,
     since: 8,
     legacy: ["roles", "informed-build"],
+    diagram: {
+      kind: "role-cell",
+      head: [{ part: "caption", text: "Kinnan · targets from Kinnan decks" }],
+      columns: [{ parts: [{ part: "cells", cells: [
+        { label: "Ramp", have: 18, target: 16 },
+        { label: "Draw", have: 9, target: 10 },
+        { label: "Wipes", have: 1, target: 3 },
+      ] }] }],
+    },
   },
   intent: {
     text: "At either end of the scale, brackets come down to intent, so your cards can fit two. A Squirrel deck with no Game Changers, mass land denial, extra turns or two-card infinites passes at both Exhibition and Core. Only you know which, so you pick. Game Changers are Wizards’ own list.",
     switch: "ANALYSIS_TAB_ENABLED",
     since: 16,
     legacy: ["deck-analysis"],
+    diagram: {
+      kind: "bracket-medal",
+      gap: 30,
+      columns: [
+        { parts: [{ part: "medal", bracket: 1 }] },
+        { parts: [{ part: "between", glyph: "or" }] },
+        { parts: [{ part: "medal", bracket: 2 }] },
+      ],
+      foot: [{ part: "caption", text: "Squirrels · no Game Changers · you pick" }],
+    },
   },
   credits: {
     text: "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back. An Overview uses one. So does each Suggested changes run. So does each Look deeper. Pack and gift credits never expire. Plan credits end with the period after you cancel.",
@@ -745,24 +857,75 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     },
     since: 11,
     legacy: ["credits", "buying-credits"],
+    diagram: {
+      kind: "card-row",
+      columns: [{ w: 250, gap: 7, parts: [
+        { part: "row", name: "Read the bracket", tag: { text: "free", tone: "success" }, switch: "ANALYSIS_TAB_ENABLED" },
+        { part: "row", name: "Suggested changes run", tag: { text: "1 credit", tone: "accent" }, switch: "TUNING_ENABLED" },
+        { part: "row", name: "Look deeper", tag: { text: "1 credit", tone: "accent" }, switch: "PROPOSED_CUTS_ENABLED" },
+        { part: "row", name: "Came back empty-handed", dim: true, tag: { text: "credit back", tone: "success" } },
+      ] }],
+    },
   },
   commit: {
     text: "A card you add to a committed deck takes your copy only once you commit, so your other decks still count it free until then. “Put back” on Review changes brings back a cut before you do.",
     switch: null,
     since: 1,
     legacy: ["versions", "undo-removal"],
+    diagram: {
+      kind: "card-row",
+      gap: 6,
+      columns: [
+        { gap: 5, parts: [
+          { part: "caption", text: "Ghalta · pending" },
+          { part: "row", name: "Sol Ring", dot: "owned", edge: true, compact: true, tag: { text: "+", tone: "accent" } },
+          { part: "row", name: "Mind Stone", edge: true, compact: true, tag: { text: "cut", tone: "muted" } },
+        ] },
+        { parts: [{ part: "between", glyph: "→", label: "commit" }] },
+        { gap: 5, parts: [
+          { part: "caption", text: "Sai sees it" },
+          { part: "row", name: "Sol Ring", compact: true, tag: { text: "short", tone: "short" } },
+          { part: "caption", text: "v2 · today", muted: true },
+        ] },
+      ],
+    },
   },
   "one-copy": {
     text: "A copy you own can live in only one committed deck at a time. The deck that’s held it longest keeps it, unless you hand it to another, and drafts wait behind committed decks. Own one Sol Ring and run it in three decks, and two of them show it short.",
     switch: null,
     since: 1,
     legacy: ["availability", "commitments"],
+    diagram: {
+      kind: "card-row",
+      gap: 12,
+      columns: [
+        { w: 96, center: true, parts: [
+          { part: "row", name: "Sol Ring", dot: "owned" },
+          { part: "caption", text: "you own ×1", muted: true },
+        ] },
+        { parts: [{ part: "between", glyph: "→" }] },
+        { w: 150, gap: 5, parts: [
+          { part: "row", name: "Ghalta", tag: { text: "held longest ✓", tone: "muted" } },
+          { part: "row", name: "Sai", tag: { text: "short 1", tone: "short" } },
+          { part: "row", name: "Zimone", dim: true, tag: { text: "short 1 · draft", tone: "short" } },
+        ] },
+      ],
+    },
   },
   "never-decklist": {
     text: "Changing your Collection never changes a decklist. A deck that loses its copy keeps the card, shows it short and puts it on its shopping list.",
     switch: null,
     since: 1,
     legacy: ["availability", "remove-card", "post-import"],
+    diagram: {
+      kind: "card-row",
+      columns: [{ w: 250, gap: 8, parts: [
+        { part: "caption", text: "Collection" },
+        { part: "row", name: "Arcane Signet ×1", gone: true, tag: { text: "removed", tone: "muted" } },
+        { part: "caption", text: "Ghalta’s list" },
+        { part: "row", name: "Arcane Signet", dot: "unowned", tag: { text: "short", tone: "short" }, price: { state: "priced", cents: 89 } },
+      ] }],
+    },
   },
   replace: {
     text: "An upload replaces your whole Collection with the file. With Replace, any card that isn’t in the file leaves your Collection, and changes you made in the app are overwritten. With Add, your quantities go up and nothing leaves. With Sync, the file’s changes come in, including cards it no longer has, and the changes you made in the app stay. If you both changed the same card, it asks you which to keep.",
@@ -776,18 +939,69 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     },
     since: 1,
     legacy: ["upload-choice", "upload-choice@COLLECTION_SYNC_ENABLED", "import"],
+    diagram: {
+      kind: "card-row",
+      columns: [
+        { w: 78, gap: 4, parts: [
+          { part: "caption", text: "Now" },
+          { part: "row", name: "Sol Ring", compact: true },
+          { part: "row", name: "Swords", compact: true },
+          { part: "row", name: "Cultivate", compact: true },
+          { part: "row", name: "Thrasios", compact: true },
+        ] },
+        { w: 78, gap: 4, parts: [
+          { part: "caption", text: "File" },
+          { part: "row", name: "Sol Ring", compact: true },
+          { part: "row", name: "Swords", compact: true },
+          { part: "row", name: "Cultivate", compact: true },
+        ] },
+        { w: 84, gap: 4, parts: [
+          { part: "caption", text: "Replace", switch: "COLLECTION_EDIT_ENABLED" },
+          { part: "caption", text: "After", switch: "!COLLECTION_EDIT_ENABLED" },
+          { part: "row", name: "Sol Ring", compact: true },
+          { part: "row", name: "Swords", compact: true },
+          { part: "row", name: "Cultivate", compact: true },
+          { part: "row", name: "Thrasios", compact: true, gone: true },
+        ] },
+      ],
+    },
   },
   "own-it": {
     text: "A card you own can still be on Shopping. If your Ghalta deck already holds your only Sol Ring, your Sai deck needs another.",
     switch: null,
     since: 1,
     legacy: ["shopping", "availability"],
+    diagram: {
+      kind: "deck-tile",
+      gap: 8,
+      columns: [
+        { center: true, parts: [
+          { part: "tile", name: "Ghalta", status: "Complete", colors: ["G"] },
+          { part: "caption", text: "has Sol Ring", muted: true },
+        ] },
+        { parts: [{ part: "between", glyph: "≠" }] },
+        { gap: 5, parts: [
+          { part: "caption", text: "Sai · Shopping" },
+          { part: "row", name: "Sol Ring", dot: "owned", compact: true, price: { state: "priced", cents: 149 } },
+          { part: "caption", text: "your copy is in Ghalta", muted: true },
+        ] },
+      ],
+    },
   },
   prices: {
     text: "Prices are Mana Pool’s, and they refresh daily. A bare “buy” means Mana Pool has no price for any printing of that card.",
     switch: null,
     since: 1,
     legacy: ["shopping", "buy-tag"],
+    diagram: {
+      kind: "buy-tag",
+      columns: [{ gap: 7, parts: [
+        { part: "buy", price: { state: "priced", cents: 5416 }, note: "today’s price" },
+        { part: "buy", price: { state: "foilOnly", cents: 210 }, note: "only in foil" },
+        { part: "buy", price: { state: "soldOut" }, note: "none right now" },
+        { part: "buy", price: { state: "absent" }, note: "no price at all" },
+      ] }],
+    },
   },
   proxy: {
     text: "A proxy comes off the shopping list and uses no copy. A token you mark “I have one” leaves every deck’s list, since any printing counts.",
@@ -795,6 +1009,14 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     sentences: { " A token you mark “I have one” leaves every deck’s list, since any printing counts.": "DECK_TOKENS_ENABLED" },
     since: 1,
     legacy: ["proxies", "deck-tokens"],
+    diagram: {
+      kind: "card-row",
+      columns: [{ w: 250, gap: 7, parts: [
+        { part: "row", name: "Gaea’s Cradle", dot: "unowned", proxy: true, tag: { text: "no copy used", tone: "muted" } },
+        { part: "row", name: "Treasure token", dot: "owned", tag: { text: "I have one ✓", tone: "success" }, switch: "DECK_TOKENS_ENABLED" },
+      ] }],
+      foot: [{ part: "caption", text: "Both come off the shopping list", switch: "DECK_TOKENS_ENABLED" }],
+    },
   },
   "friends-see": {
     text: "Friends see your name and the spares you offer, never your collection, or a deck’s prices, buy list or notes. Your wishlist is theirs to read too. They can open the decks you let them. They see your decks’ names, status and how many cards each still needs.",
@@ -806,24 +1028,66 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     },
     since: 16,
     legacy: ["friends", "wishlist", "friend-decks"],
+    diagram: {
+      kind: "chips",
+      columns: [{ w: 262, gap: 7, parts: [
+        { part: "caption", text: "Friends see" },
+        { part: "chips", chips: [
+          { text: "Your name" },
+          { text: "Spares you offer" },
+          { text: "Wishlist", switch: "SOCIAL_WISHLIST_ENABLED" },
+          { text: "Decks you let them open", switch: "FRIEND_DECKS_ENABLED" },
+        ] },
+        { part: "caption", text: "Never" },
+        { part: "chips", chips: [
+          { text: "Your collection", never: true },
+          { text: "Prices", never: true },
+          { text: "Buy list", never: true },
+          { text: "Notes", never: true },
+        ] },
+      ] }],
+    },
   },
   "hidden-deck": {
     text: "A deck you hide looks deleted to friends: no tile, and its link stops working. Hiding it never frees its cards as spares.",
     switch: "FRIEND_DECKS_ENABLED",
     since: 16,
     legacy: ["friend-decks"],
+    diagram: {
+      kind: "deck-tile",
+      // Two 84px tiles and a 104px column fit the phone card's 290px inside only at an 8px gap (288px).
+      gap: 8,
+      columns: [
+        { parts: [{ part: "tile", name: "Ghalta", status: "Complete", colors: ["G"] }] },
+        { parts: [{ part: "void", text: "hidden: no tile" }] },
+        { w: 104, gap: 5, parts: [
+          { part: "caption", text: "Its cards" },
+          { part: "row", name: "Sol Ring", tag: { text: "in use", tone: "muted" } },
+          { part: "caption", text: "not spares", muted: true },
+        ] },
+      ],
+    },
   },
   invites: {
     text: "Invites are given out by The 99, never bought. Whatever email you type, you’re told “Invitation sent”, so nobody can use an invite to find out who’s on The 99.",
     switch: "SOCIAL_INVITES_ENABLED",
     since: 16,
     legacy: ["invites"],
+    diagram: {
+      kind: "card-row",
+      columns: [{ w: 250, gap: 9, parts: [
+        { part: "row", name: "colin@example.com", tag: { text: "Invitation sent", tone: "success" } },
+        { part: "row", name: "someone-already-here@…", tag: { text: "Invitation sent", tone: "success" } },
+      ] }],
+      foot: [{ part: "caption", text: "3 invites left · given, never bought" }],
+    },
   },
 };
 
 export const ABOUT_PAGE_STRINGS = {
   index: "One page for each part of the app, drawn from the app itself. The ? opens help for the screen you’re on.",
   goodToKnow: "Good to know",
+  goodToKnowSub: "What the screen can’t show",
   tryIt: "Try it",
   onThisPage: "On this page",
   bannerLead: (page: string) => `New on ${page}:`,

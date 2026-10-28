@@ -3,7 +3,7 @@
 //
 // The reader's switches decide what is drawn (`visibleSections`: a label switched off is gone, never greyed), and the
 // reader's theme picks the captures (`pageShotFor` falls back to the default theme at the same width). An unknown area
-// is a 404.
+// is a 404. Each section's Good to know rules are its visible rules, their switched sentences and diagram parts cut.
 
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
@@ -28,6 +28,7 @@ export default async function AboutAreaRoute({ params }: { params: Promise<{ are
       sub: s.sub,
       phone: screenModel(s, theme, "phone"),
       desktop: screenModel(s, theme, "desktop"),
+      rules: s.rules.flatMap((r) => (r.diagram ? [{ key: r.key, text: r.text, diagram: r.diagram }] : [])),
     }));
   return <AreaPage area={area} sections={sections} theme={theme} />;
 }

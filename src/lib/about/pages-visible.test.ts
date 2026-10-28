@@ -5,7 +5,7 @@ import { SWITCHES, SWITCH_NAMES } from "../switches/registry";
 import { TOOLS } from "../discovery/tools";
 import { resolveEnv, type SwitchSnapshot } from "../switches/resolve";
 import {
-  afterVisit, labelKey, showMeLabel, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
+  afterVisit, labelKey, resolveDiagram, showMeLabel, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
 } from "./pages-visible";
 import { NEVER_SEEN, switchedIds, visibleEntries, type SeenState } from "./visible";
 
@@ -280,5 +280,35 @@ describe("seen translation", () => {
     const kept = ["upload-choice", "availability", "deck-analysis", "auto-fill", "decklist-marks", "locked-cards", "roles", "versions", "shopping", "friends", "credits", "buying-credits", "statuses", "getting-help"];
     for (const id of kept) expect(named, id).toContain(id);
     expect(labelKey({ area: "home", id: "home" }, { id: "help" })).toBe("home/home/help");
+  });
+});
+
+describe("resolveDiagram", () => {
+  const parts = (d: ReturnType<typeof resolveDiagram>) => [...(d.head ?? []), ...d.columns.flatMap((c) => c.parts), ...(d.foot ?? [])];
+  const rule = (e: NodeJS.ProcessEnv, id: string) => visibleSections(e).flatMap((s) => s.rules).find((r) => r.key === ruleKey(id as never))!;
+
+  it("drops a part, a chip and an emptied column whose switch is off, as a sentence is cut", () => {
+    const off = env({ ...(ALL_ON as Record<string, string>), DECK_TOKENS_ENABLED: "off", SOCIAL_WISHLIST_ENABLED: "off" });
+    const names = (d: ReturnType<typeof resolveDiagram>) =>
+      parts(d).flatMap((p) => (p.part === "row" ? [p.name] : p.part === "caption" ? [p.text] : p.part === "chips" ? p.chips.map((c) => c.text) : []));
+    expect(names(rule(ALL_ON, "proxy").diagram!)).toContain("Treasure token");
+    expect(names(rule(off, "proxy").diagram!)).not.toContain("Treasure token");
+    expect(rule(off, "proxy").diagram!.foot).toEqual([]);
+    expect(names(rule(ALL_ON, "friends-see").diagram!)).toContain("Wishlist");
+    expect(names(rule(off, "friends-see").diagram!)).not.toContain("Wishlist");
+    const emptied = resolveDiagram(
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "DECK_TOKENS_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
+      off,
+    );
+    expect(emptied.columns).toHaveLength(1);
+  });
+
+  it("keeps a negated part only while its switch is off", () => {
+    const captions = (e: NodeJS.ProcessEnv) => parts(rule(e, "replace").diagram!).flatMap((p) => (p.part === "caption" ? [p.text] : []));
+    expect(captions(ALL_ON)).toContain("Replace");
+    expect(captions(ALL_ON)).not.toContain("After");
+    const noEdit = env({ ...(ALL_ON as Record<string, string>), COLLECTION_EDIT_ENABLED: "off" });
+    expect(captions(noEdit)).toContain("After");
+    expect(captions(noEdit)).not.toContain("Replace");
   });
 });

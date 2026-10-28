@@ -1,6 +1,6 @@
 {
-  "feature": "About visual PR 3: /about/[area], the strip, On this page and the labelled screen",
-  "note": "Dark route: nothing links here until PR 6a, so every row is a goto. Reads only; no clearAbout (the database is read-only for this walk). The decks rows press the Lock cards label (needs NEVER_CUT_ENABLED on for the account) and photograph its lit region, pin and line.",
+  "feature": "About visual PR 3 and PR 4: /about/[area], the strip, On this page, the labelled screen and Good to know",
+  "note": "Dark route: nothing links here until PR 6a, so every row is a goto. Reads only; no clearAbout (the database is read-only for this walk). The decks rows press the Lock cards label (needs NEVER_CUT_ENABLED on for the account) and photograph its lit region, pin and line. PR 4 rows scroll each section that carries rules to its Good to know block ([data-good-to-know=<section id>]): phone draws a swipe row (dots only with two or more cards), desktop a grid of three. The friends row scrolls to the bottom: every Friends rule follows a Friends switch that is off for the reader, so no Good to know heading should be drawn there.",
   "rows": [
     {
       "id": "about-home",
@@ -116,6 +116,132 @@
         },
         {
           "wait": "[data-about-width='desktop'] [data-about-halo='decks/your-deck/lock']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-gtk-collection-cards",
+      "label": "/about/collection#cards: Good to know",
+      "view": "src/components/about/pages/rule-card.tsx",
+      "steps": [
+        {
+          "goto": "/about/collection#cards",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-good-to-know='cards']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-gtk-collection-upload",
+      "label": "/about/collection#upload: Good to know",
+      "view": "src/components/about/pages/rule-card.tsx",
+      "steps": [
+        {
+          "goto": "/about/collection#upload",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-good-to-know='upload']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-gtk-decks-your-deck",
+      "label": "/about/decks#your-deck: Good to know",
+      "view": "src/components/about/pages/rule-card.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#your-deck",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-good-to-know='your-deck']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-gtk-decks-analysis",
+      "label": "/about/decks#analysis: Good to know",
+      "view": "src/components/about/pages/rule-card.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-good-to-know='analysis']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-gtk-decks-versions",
+      "label": "/about/decks#versions: Good to know",
+      "view": "src/components/about/pages/rule-card.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#versions",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-good-to-know='versions']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-gtk-shopping-deck-shopping",
+      "label": "/about/shopping#deck-shopping: Good to know",
+      "view": "src/components/about/pages/rule-card.tsx",
+      "steps": [
+        {
+          "goto": "/about/shopping#deck-shopping",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-good-to-know='deck-shopping']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-gtk-friends-none",
+      "label": "/about/friends: page foot, no Good to know (Friends switches off for the reader)",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/friends",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scroll": "bottom"
+        },
+        {
           "settle": 400
         }
       ]

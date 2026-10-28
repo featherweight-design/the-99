@@ -24,6 +24,7 @@ import { sheetTitles } from "../shell/about-sheet";
 import { aboutAcknowledged, arrivalsAcknowledged } from "./arrivals-seen";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useTarget } from "../discovery/targets-provider";
+import { Mark } from "./banner-mark";
 
 /** Home's `<h1>`, where focus goes once ✕ has closed the banner (H8). */
 export const HOME_HEADING_ID = "home-heading";
@@ -60,22 +61,6 @@ const LINE =
   "border-t border-solid border-[color:var(--border)] py-[9px] text-[14px] leading-[1.5] text-[color:var(--fg-body)] sm:py-[8px] sm:text-[13.5px]";
 const SHELL =
   "box-border rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)]";
-
-/** The sheet's mark, at 22 with a 7px diamond. */
-function Mark({ className = "" }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`box-border flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[6px] ${className}`}
-      style={{
-        background: "color-mix(in srgb, var(--accent) 16%, transparent)",
-        border: "1px solid color-mix(in srgb, var(--accent) 45%, transparent)",
-      }}
-    >
-      <span className="h-[7px] w-[7px] rotate-45 bg-[color:var(--accent)]" />
-    </span>
-  );
-}
 
 /** One arrival: the set's name in `--fg`, then the rest of its sentence. */
 function Sentence({ line }: { line: BannerLine }) {
