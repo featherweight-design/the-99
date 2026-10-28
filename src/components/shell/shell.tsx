@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { shellUserId } from "./shell-session";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
@@ -61,7 +61,7 @@ export default async function Shell({
   // anyway. Passing it down keeps the cookie read to one per request.
   theme: ThemeKey;
 }) {
-  const { userId } = await auth();
+  const userId = await shellUserId();
 
   if (!userId) {
     // The Fan Content notice follows every signed-out page, centered on the pages' own axis; none of them mounts it
