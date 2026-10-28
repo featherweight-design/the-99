@@ -15,6 +15,7 @@ describe("LEDGER_LIMITS", () => {
       "ledger-find-a-deck.jsonl": { hardCapUsd: 2, askAtUsd: null },
       "ledger-strategy-focus.jsonl": { hardCapUsd: 3, askAtUsd: 2.5 },
       "ledger-count-mechanism.jsonl": { hardCapUsd: 15, askAtUsd: null },
+      "ledger-tuning-v2.jsonl": { hardCapUsd: 4, askAtUsd: null },
     });
   });
 

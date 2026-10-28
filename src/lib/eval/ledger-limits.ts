@@ -33,6 +33,8 @@ export const LEDGER_LIMITS = {
   "ledger-find-a-deck.jsonl": { hardCapUsd: 2, askAtUsd: null },
   /** Suggested changes' count mechanism (`count-mechanism.mts`, Hugh's $15, 2026-10-27): a hard cap, no ask line. */
   "ledger-count-mechanism.jsonl": { hardCapUsd: 15, askAtUsd: null },
+  /** Suggested changes v2's engine, M1 (`tuning-v2.mts`; Hugh's HARD $4, plan 2026-10-27): a hard cap, no ask line. */
+  "ledger-tuning-v2.jsonl": { hardCapUsd: 4, askAtUsd: null },
 } as const satisfies Record<string, LedgerLimits>;
 
 export type LedgerFileName = keyof typeof LEDGER_LIMITS;
