@@ -89,6 +89,10 @@ export const PER_REQUEST_READS = {
   // Hidden from friends row, beside the payload. The module also holds the friend deck writes and is where the cross-user
   // reads draw their rule, so reaching it from the payload would key /decks on every friend's stamp for one prefs row.
   "src/lib/social/deck-visibility.ts": "/decks reads the reader's own friend deck rules fresh per request, beside the cached payload, for the menu's Hidden from friends row",
+  // The all-decks cart's By friend (v2 Empty-One B and C): whether the reader has a friend at all, which decides "No
+  // friends yet" from "no friend has a spare". A friend added or removed moves nothing in the cart's key, so it is read
+  // fresh beside the payload rather than keying the cart on every friend's stamp for one yes or no.
+  "src/lib/social/has-friend.ts": "the cart's By friend reads whether the reader has a friend fresh per request, beside the cached payload, for its empty block",
 };
 
 /** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */

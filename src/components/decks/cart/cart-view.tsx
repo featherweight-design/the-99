@@ -17,7 +17,7 @@ import {
 import { CartChassis } from "./cart-chassis";
 import { CartCheckout } from "./cart-checkout";
 import { CartCardLine, CartHeldSlot } from "./cart-line";
-import { CartColumns } from "./cart-columns";
+import { CartColumns, SpareColumnContext } from "./cart-columns";
 import { NameFitProvider } from "./cart-facts";
 import { CartGotItProvider, useCartGotIt } from "./cart-got-it";
 import { BackBand } from "./back-band";
@@ -26,7 +26,10 @@ import { FriendSparesProvider, SparesSheetHost, usePageSpares } from "../../soci
 import { CartDeckGroup } from "./cart-deck-group";
 import { DeckSelect } from "./deck-select";
 import { ViewSwitch, type CartViewMode } from "./view-switch";
-import { ByFriendList, friendGroups, useByFriend, type HeldLines } from "./cart-by-friend";
+import {
+  ByFriendEmpty, ByFriendList, ByFriendReading, friendGroups, spareReadStatus, useByFriend, type ByFriend, type HeldLines,
+} from "./cart-by-friend";
+import { SocialToast, type SocialToastState } from "../../social/social-toast";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { HoverPreviewProvider } from "../hover-preview";
@@ -113,6 +116,7 @@ export function CartView({
   buyEnabled = false,
   socialFriends = false,
   spareAsks = false,
+  hasFriends = true,
 }: {
   cart: CartPayload;
   provenance: ProvenanceForm | null;
@@ -122,8 +126,10 @@ export function CartView({
   socialFriends?: boolean;
   /** `SPARE_REQUESTS_ENABLED` for the reader: the lines' spares modal offers Ask (from the cart, for no one deck). */
   spareAsks?: boolean;
+  /** The reader has a friend (`hasFriend`): By friend with nothing to draw says "No friends yet" without one (Empty-One C). */
+  hasFriends?: boolean;
   /** From `?view=deck`, or any `?deck=`: the tile's link lands on that deck's group. `?view=friend` lands By friend
-   *  (the page sends it only with spare requests on), drawn as By card until a line has a friend's spare. */
+   *  (the page sends it only with spare requests on), which draws its reading state until the read lands (v2 G2). */
   initialView?: CartViewMode;
   /** `?deck=<id>` (A5): that deck's group starts open. Unselected or absent, everything folds (A5-t). */
   focusDeckId?: string | null;
@@ -167,8 +173,8 @@ export function CartView({
   const chooseSort = (drawn: CartViewMode, next: string) => {
     const nextSorts = { ...sorts, [drawn]: parseSort(drawn, next) };
     setSorts(nextSorts);
-    // The address names the view's sort only while the view on screen is the one asked for (a By friend that fell
-    // back to By card keeps its own sort for the visit and does not write the card's over it).
+    // The address names the view's sort only while the view on screen is the one asked for (a By friend drawn as By card,
+    // with spare requests off, keeps its own sort for the visit and does not write the card's over it).
     if (drawn === view) writeUrl({ view, query, sorts: nextSorts });
   };
   const fold = (id: string) => setOpen((prev) => {
@@ -230,6 +236,8 @@ export function CartView({
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [band]);
   const readIds = useMemo(() => new Set(cart.lines.map((l) => l.oracleId)), [cart.lines]);
+  // The selected cards: whether their spares read failed decides the spare column and the toast (B2), a search aside.
+  const sparesRead = useMemo(() => selectedLines.map((l) => l.oracleId), [selectedLines]);
   const total = cartTotal(cart.decks, selected);
   const links = useMemo(() => checkoutLinks(cart.lines, selected), [cart.lines, selected]);
   const deckCount = cart.decks.filter((d) => selected.has(d.id)).length;
@@ -316,6 +324,7 @@ export function CartView({
     ? "md:h-dvh"
     : "md:h-[calc(100dvh-var(--cart-top))]";
   const page = empty ?? (
+    <SpareReadState ids={sparesRead} view={view}>
     <div
       ref={pageRef}
       className={`flex min-w-0 flex-none flex-col bg-[color:var(--bg)] font-sans md:min-h-[420px] ${pageHeight}`}
@@ -373,6 +382,7 @@ export function CartView({
                   showBuy={showKey}
                   drawn={drawnIds}
                   query={query}
+                  sparesRead={sparesRead}
                 />
                 <CartChassisRow
                   view={view}
@@ -385,13 +395,14 @@ export function CartView({
                   sorts={sorts}
                   onSort={chooseSort}
                   deckGroups={deckGroups}
+                  sparesRead={sparesRead}
                 />
               </div>
               {/* Desktop: the list is its own scroll box, filling what the page leaves, so the controls above
                   it stay put; focusable and named, so a keyboard reader can scroll it. Phone: the page scrolls. */}
               {/* The provider sits OUTSIDE the scroll box: it draws the modal where it is mounted, and the dialog's
                   scroll lock looks for a scrollable ancestor, so mounted inside it would let the cart scroll behind. */}
-              {byDeck ? null : <ByCardColumns view={view} lines={lines} read={readIds} selected={selected} query={query} />}
+              {byDeck ? null : <ByCardColumns view={view} lines={lines} read={readIds} selected={selected} query={query} hasFriends={hasFriends} />}
               <CardDetailProvider>
               {/* The spares-only modal a line's spare press opens (S5): inside this provider, since it opens card details. */}
               <SparesSheetHost />
@@ -441,6 +452,7 @@ export function CartView({
                     newestAsOf={newestAsOf}
                     friendShut={friendShut}
                     onFoldFriend={foldFriend}
+                    hasFriends={hasFriends}
                   />
                 )}
                 </HoverPreviewProvider>
@@ -456,6 +468,7 @@ export function CartView({
         </section>
       </div>
     </div>
+    </SpareReadState>
   );
   // Friends' spares (S5): one read of every card the cart lists, both views, outside the scroll box with the rest.
   const withSpares = socialFriends ? (
@@ -471,25 +484,40 @@ export function CartView({
  * draws panels, and none over the no-match block.
  */
 function ByCardColumns({
-  view, lines, read, selected, query,
+  view, lines, read, selected, query, hasFriends,
 }: {
   view: CartViewMode;
   lines: SelectedLine[];
   read: ReadonlySet<string>;
   selected: ReadonlySet<string>;
   query: string;
+  hasFriends: boolean;
 }) {
   const drawn = useWithHeld(lines, read, selected, { query });
-  const byFriend = friendGroups(useByFriend(drawn.lines, drawn.held));
+  const byFriend = useByFriend(drawn.lines, drawn.held);
   const v = shown(view, byFriend !== null);
-  if (v === "friend") return <CartColumns view="friend" />;
-  if (v !== "card" || drawn.lines.length === 0) return null;
+  if (drawn.lines.length === 0) return null;
+  // By friend's header stands over its panels and their skeletons, never over a dashed block (Empty-One B, R2 C).
+  if (v === "friend") return friendBody(byFriend, hasFriends) === "panels" || friendBody(byFriend, hasFriends) === "reading" ? <CartColumns view="friend" /> : null;
+  if (v !== "card") return null;
   return <CartColumns />;
 }
 
-/** The view drawn: By friend falls back to By card while it has no panels to draw (`friendGroups` null). */
+/**
+ * The view drawn. By friend is a view from first paint whenever spare requests are on (v2 G2), whatever its read says;
+ * with them off (`useByFriend` null) it has no Ask to offer and draws as By card.
+ */
 function shown(view: CartViewMode, byFriend: boolean): CartViewMode {
   return view === "friend" && !byFriend ? "card" : view;
+}
+
+/** What By friend's list place holds: its panels, their skeleton, or one of the dashed blocks. */
+function friendBody(b: ByFriend | null, hasFriends: boolean): "panels" | "reading" | "none" | "noFriends" | "failed" {
+  if (!b) return "none";
+  if (b.status === "groups") return "panels";
+  // Without a friend there is nothing to wait for or to find (Empty-One C): the friend count read decides.
+  if (!hasFriends && b.status !== "failed") return "noFriends";
+  return b.status;
 }
 
 /**
@@ -498,7 +526,7 @@ function shown(view: CartViewMode, byFriend: boolean): CartViewMode {
  * set for the view DRAWN, since By friend draws as By card while it has no panels.
  */
 function CartChassisRow({
-  view, lines, of, read, selected, query, onQuery, sorts, onSort, deckGroups,
+  view, lines, of, read, selected, query, onQuery, sorts, onSort, deckGroups, sparesRead,
 }: {
   view: CartViewMode;
   lines: SelectedLine[];
@@ -510,11 +538,15 @@ function CartChassisRow({
   sorts: CartSorts;
   onSort: (drawn: CartViewMode, next: string) => void;
   deckGroups: { deck: CartPayload["decks"][number]; lines: CartPayload["lines"] }[];
+  /** The selected cards, whose read failing drops By card's spare clause (B2). */
+  sparesRead: readonly string[];
 }) {
   const drawn = useWithHeld(lines, read, selected, { query });
-  const byFriend = friendGroups(useByFriend(drawn.lines, drawn.held));
+  const friendView = useByFriend(drawn.lines, drawn.held);
+  const byFriend = friendGroups(friendView);
   const spares = usePageSpares();
-  const v = shown(view, byFriend !== null);
+  const v = shown(view, friendView !== null);
+  const failed = spares !== null && spareReadStatus(sparesRead, spares.loaded, spares.failed) === "failed";
   const sentence = (() => {
     if (v === "deck") {
       // The selected decks the search leaves, and the copies they still need of its lines.
@@ -523,11 +555,16 @@ function CartChassisRow({
       // A search says how many cards are left, in any view (Controls C).
       return query.trim() ? copy.result.filtered(lines.length, of) : copy.result.byDeck(kept.length, copies);
     }
-    if (v === "friend" && byFriend) {
-      return copy.result.byFriend(byFriend.groups.length, byFriend.groups.reduce((n, g) => n + g.spares, 0));
+    if (v === "friend" && friendView && drawn.lines.length > 0) {
+      // Loading C/D says what the view waits for, R2 C/D that it failed, Empty-One B/C `0 friends`.
+      if (friendView.status === "reading") return copy.result.readingByFriend;
+      if (friendView.status === "failed") return copy.result.failedByFriend;
+      const groups = byFriend?.groups ?? [];
+      return copy.result.byFriend(groups.length, groups.reduce((n, g) => n + g.spares, 0));
     }
     if (query.trim()) return copy.result.filtered(lines.length, of);
-    const withSpare = spares ? lines.filter((l) => (spares.byCard.get(l.oracleId)?.length ?? 0) > 0).length : 0;
+    // A failed read has no clause to give (R2 A): nothing may say how many cards have a spare.
+    const withSpare = spares && !failed ? lines.filter((l) => (spares.byCard.get(l.oracleId)?.length ?? 0) > 0).length : 0;
     return withSpare > 0 ? copy.result.byCard(lines.length, withSpare) : copy.result.byCardNoSpare(lines.length);
   })();
   return (
@@ -538,7 +575,8 @@ function CartChassisRow({
       sort={sorts[v]}
       onSort={(next) => onSort(v, next)}
       resultLine={sentence}
-      reading={spares !== null && lines.some((l) => !spares.loaded.has(l.oracleId))}
+      // By friend's own sentence says it is reading (Loading C), so the trailing clause is By card's and By deck's.
+      reading={v !== "friend" && spares !== null && lines.some((l) => !spares.loaded.has(l.oracleId))}
     />
   );
 }
@@ -561,9 +599,9 @@ function NoMatch({ query, of, onDrop }: { query: string; of: number; onDrop: () 
   );
 }
 
-/** By card, or By friend while it has something to draw. */
+/** By card, or By friend: its panels, their skeleton while the read is out, or a dashed block. */
 function CardOrFriendList({
-  view, lines, of, read, selected, query, onDrop, sorts, deckNames, holders, newestAsOf, friendShut, onFoldFriend,
+  view, lines, of, read, selected, query, onDrop, sorts, deckNames, holders, newestAsOf, friendShut, onFoldFriend, hasFriends,
 }: {
   view: CartViewMode;
   lines: SelectedLine[];
@@ -578,17 +616,25 @@ function CardOrFriendList({
   newestAsOf: Date | null;
   friendShut: ReadonlySet<string>;
   onFoldFriend: (publicId: string) => void;
+  hasFriends: boolean;
 }) {
   const spares = usePageSpares();
   // By friend's lines keep the By card order whatever By card is sorted by (call 5): the panels are what it sorts.
   const drawn = useWithHeld(lines, read, selected, { query });
-  const byFriend = friendGroups(useByFriend(drawn.lines, drawn.held));
+  const friendView = useByFriend(drawn.lines, drawn.held);
+  const byFriend = friendGroups(friendView);
   const compare = useMemo(
     () => cardCompare(sorts.card, (id) => (spares?.byCard.get(id) ?? spares?.seen.get(id))?.reduce((n, s) => n + s.spare, 0) ?? 0),
     [sorts.card, spares],
   );
   const panels = useMemo(() => (byFriend ? sortGroups(byFriend.groups, sorts.friend) : null), [byFriend, sorts.friend]);
-  if (view === "friend" && byFriend && panels) {
+  // The held slot a purchase left counts: a search matching only the card just bought still draws it.
+  if (drawn.lines.length === 0) return <NoMatch query={query} of={of} onDrop={onDrop} />;
+  const body = view === "friend" && friendView ? friendBody(friendView, hasFriends) : null;
+  if (body === "reading") return <ByFriendReading />;
+  if (body === "none" || body === "noFriends") return <ByFriendEmpty kind={body} lines={drawn.lines.length} />;
+  if (body === "failed") return <ByFriendEmpty kind="failed" onRetry={spares?.retry} />;
+  if (body === "panels" && byFriend && panels) {
     return (
       <ByFriendList
         groups={panels}
@@ -602,8 +648,6 @@ function CardOrFriendList({
       />
     );
   }
-  // The held slot a purchase left counts: a search matching only the card just bought still draws it.
-  if (drawn.lines.length === 0) return <NoMatch query={query} of={of} onDrop={onDrop} />;
   return <ByCardList lines={lines} read={read} selected={selected} deckNames={deckNames} holders={holders} newestAsOf={newestAsOf} compare={compare} query={query} />;
 }
 
@@ -614,7 +658,7 @@ function CardOrFriendList({
  * friend never does: its line's press is the Ask. Nothing at all with none of the three.
  */
 function CartKeyRow({
-  view, onView, byDeckView, lines, read, selected, showBuy, drawn, query,
+  view, onView, byDeckView, lines, read, selected, showBuy, drawn, query, sparesRead,
 }: {
   view: CartViewMode;
   onView: (v: CartViewMode) => void;
@@ -626,19 +670,23 @@ function CartKeyRow({
   drawn: ReadonlySet<string>;
   /** The search, so the switch agrees with the list about which held slots are drawn. */
   query: string;
+  /** The selected cards: after a failed read the spare item is hidden (B2). */
+  sparesRead: readonly string[];
 }) {
   const spares = usePageSpares();
   const withHeld = useWithHeld(lines, read, selected, { query });
-  const byFriend = friendGroups(useByFriend(withHeld.lines, withHeld.held));
-  const v = shown(view, byFriend !== null);
-  const viewSwitch = byDeckView || byFriend
+  // By friend's segment shows from first paint with spare requests on (v2 G2), reading, empty or failed alike.
+  const friendView = useByFriend(withHeld.lines, withHeld.held) !== null;
+  const v = shown(view, friendView);
+  const viewSwitch = byDeckView || friendView
     // An explicit `?view=deck` with one deck keeps its own segment, so the switch always shows the view it is on.
-    ? <ViewSwitch view={v} onView={onView} deck={byDeckView || v === "deck"} friend={byFriend !== null} />
+    ? <ViewSwitch view={v} onView={onView} deck={byDeckView || v === "deck"} friend={friendView} />
     : null;
   // While a drawn line's spares are still being read, the item shows ahead of them (v2 Loading A, plan A4): the glyph is
   // about to appear on the rows.
   const reading = spares !== null && [...drawn].some((id) => !spares.loaded.has(id));
-  const showSpare = v !== "friend" && spares !== null && (reading || [...drawn].some((id) => spares.byCard.has(id)));
+  const failed = spares !== null && spareReadStatus(sparesRead, spares.loaded, spares.failed) === "failed";
+  const showSpare = v !== "friend" && spares !== null && !failed && (reading || [...drawn].some((id) => spares.byCard.has(id)));
   if (!viewSwitch && !showBuy && !showSpare) return null;
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-[14px] gap-y-[10px]">
@@ -650,5 +698,35 @@ function CartKeyRow({
         </span>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * The selected cards' friends' spares read, for the whole page (addendum R2 B2). After a failure the spare column is
+ * closed for By card's and By deck's header and rows until Try again lands, and the shared toast says so once, with Try
+ * again, at its shipped place. By friend says it in its list place instead, so it draws no toast; and one failure is said
+ * once, so switching views never repeats it. A new failure, after a retry, is said again.
+ */
+function SpareReadState({ ids, view, children }: { ids: readonly string[]; view: CartViewMode; children: React.ReactNode }) {
+  const spares = usePageSpares();
+  const failed = spares !== null && spareReadStatus(ids, spares.loaded, spares.failed) === "failed";
+  const [said, setSaid] = useState(false);
+  const [toast, setToast] = useState<SocialToastState | null>(null);
+  const [seq, setSeq] = useState(0);
+  // Adjusted during render: the toast belongs to this failure, and leaves when it ends or By friend takes over saying it.
+  if (failed && !said) {
+    setSaid(true);
+    if (view !== "friend" && spares) {
+      setSeq(seq + 1);
+      setToast({ id: seq + 1, text: copy.failedRead.toast, retry: { label: copy.failedRead.retry, run: spares.retry } });
+    }
+  }
+  if (!failed && said) setSaid(false);
+  if (toast && (!failed || view === "friend")) setToast(null);
+  return (
+    <SpareColumnContext.Provider value={!failed}>
+      {children}
+      <SocialToast toast={toast} onDone={() => setToast(null)} />
+    </SpareColumnContext.Provider>
   );
 }

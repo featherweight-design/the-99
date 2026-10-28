@@ -16,6 +16,7 @@ import { parseQuery } from "../../../lib/decks/cart-sort";
 import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { socialFriendsEnabled, spareRequestsEnabled } from "../../../lib/social/flag";
+import { hasFriend } from "../../../lib/social/has-friend";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
 
@@ -39,7 +40,8 @@ export default async function AllDecksShoppingPage({
   const deck = typeof params.deck === "string" && isUuid(params.deck) ? params.deck.toLowerCase() : null;
   // `?view=friend` is By friend (spare requests PR 3c), a view only with spare requests on for the reader (which needs
   // friends on): off, it is By card. Any other value is By card too.
-  const friendView = params.view === "friend" && socialFriendsEnabled(env) && spareRequestsEnabled(env);
+  const byFriend = socialFriendsEnabled(env) && spareRequestsEnabled(env);
+  const friendView = params.view === "friend" && byFriend;
   const initialView = params.view === "deck" || deck ? "deck" : friendView ? "friend" : "card";
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
   // A cart whose prices could not be read is served and never stored: the next visit reads again.
@@ -47,6 +49,10 @@ export default async function AllDecksShoppingPage({
     const value = await loadCart(userId, keyed);
     return { value, store: value.priced };
   }, env);
+  // Whether the reader has a friend decides By friend's empty block (v2 Empty-One B or C). Read per request beside the
+  // cart (`PER_REQUEST_READS`) and only where By friend is a view, so the cached payload carries no friend data and its
+  // key no friend stamp. One row at most, on the viewer's own link rows.
+  const friends = byFriend ? await hasFriend(userId) : true;
   // The provenance line is built here, once, as PriceStrip's caller builds it: the locale and the
   // clock are the server's, so the client never re-derives a date that could hydrate differently.
   const newest = cart.newestAsOf ? new Date(cart.newestAsOf) : null;
@@ -65,6 +71,7 @@ export default async function AllDecksShoppingPage({
       socialFriends={socialFriendsEnabled(env)}
       // Ask in the lines' spares modal (spare requests PR 3b), re-checked by every action on the server.
       spareAsks={spareRequestsEnabled(env)}
+      hasFriends={friends}
     />
   );
 }

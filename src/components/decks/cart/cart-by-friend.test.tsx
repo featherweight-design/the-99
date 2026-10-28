@@ -1,7 +1,7 @@
 // By friend on the all-decks cart (spare requests PR 3c; handoff `design_handoff_the99_spare_requests`, board
 // `Cart-By-Friend`): the segment's presence rule, the panels and their order, the line's one element in each state
 // (the modal's own `rowAsk`), Ask and Ask instead through the provider's one action path, the failure toast, the key,
-// and the fallback to By card.
+// the fallback to By card with spare requests off, and v2's reading, empty and failed states (PR 7).
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AskStateLine } from "../../../lib/social/spare-requests";
@@ -28,9 +28,9 @@ vi.mock("../../cards/card-detail-provider", async () => {
 });
 
 const { CartView } = await import("./cart-view");
-const { byFriendStatus, groupByFriend } = await import("./cart-by-friend");
+const { byFriendStatus, groupByFriend, spareReadStatus } = await import("./cart-by-friend");
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
-import { spareCopy } from "../../../lib/copy/social";
+import { socialCopy, spareCopy } from "../../../lib/copy/social";
 import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { CartPayload } from "../../../lib/decks/cart";
 
@@ -79,14 +79,15 @@ const BOARD = [
 ];
 
 const fetchMock = vi.fn();
-let served: { spares: unknown[]; asks: AskStateLine[] } = { spares: [], asks: [] };
+/** `fail`: the spares route answers 500, a failed read (addendum R2 B2). */
+let served: { spares: unknown[]; asks: AskStateLine[]; fail?: boolean } = { spares: [], asks: [] };
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   fetchMock.mockImplementation(async (url: string) =>
     url.startsWith("/api/spare-requests")
       ? { ok: true, json: async () => ({ asks: served.asks }) }
-      : { ok: true, json: async () => ({ spares: served.spares }) });
+      : served.fail ? { ok: false, json: async () => null } : { ok: true, json: async () => ({ spares: served.spares }) });
   actions.askSpareAction.mockReset();
   actions.askInsteadAction.mockReset();
 });
@@ -116,10 +117,16 @@ describe("By friend's segment", () => {
     expect(screen.getByRole("radio", { name: copy.view.byFriend })).toBeTruthy();
   });
 
-  it("is not drawn while no line has a spare", async () => {
-    served = { spares: [], asks: [] };
+  it("is drawn from first paint, before the read lands and when it lands with no spare (v2 G2)", async () => {
+    fetchMock.mockImplementation((url: string) =>
+      url.startsWith("/api/spare-requests") ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) }) : new Promise(() => {}));
     await mount();
-    expect(screen.queryByRole("radio", { name: copy.view.byFriend })).toBeNull();
+    expect(screen.getByRole("radio", { name: copy.view.byFriend })).toBeTruthy();
+    cleanup();
+    fetchMock.mockImplementation(async (url: string) =>
+      url.startsWith("/api/spare-requests") ? { ok: true, json: async () => ({ asks: [] }) } : { ok: true, json: async () => ({ spares: [] }) });
+    await mount();
+    expect(screen.getByRole("radio", { name: copy.view.byFriend })).toBeTruthy();
     expect(screen.getByRole("radio", { name: copy.view.byDeck })).toBeTruthy();
   });
 
@@ -132,15 +139,15 @@ describe("By friend's segment", () => {
     expect(screen.queryByRole("radio", { name: copy.view.byFriend })).toBeNull();
   });
 
-  it("leaves with the last selected line that had a spare, and the view falls back to By card", async () => {
+  it("stays when the last selected line with a spare is unselected, and the view says none (Empty-One B)", async () => {
     served = { spares: [spare(GISA, "Peter")], asks: [] };
     await mount({ initialView: "friend" });
     expect(panels()).toHaveLength(1);
     // Gisa is Thopter Works' alone: unselecting it leaves no line with a spare.
     fireEvent.click(screen.getByRole("checkbox", { name: copy.selections.aria("Thopter Works", true) }));
-    expect(screen.queryByRole("radio", { name: copy.view.byFriend })).toBeNull();
+    expect(screen.getByRole("radio", { name: copy.view.byFriend }).getAttribute("aria-checked")).toBe("true");
     expect(panels()).toHaveLength(0);
-    expect(screen.getByRole("radio", { name: copy.view.byCard }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByTestId("cart-by-friend-empty").getAttribute("data-kind")).toBe("none");
   });
 
   it("is drawn with one deck too, beside By card alone", async () => {
@@ -413,12 +420,13 @@ describe("By friend's line", () => {
 });
 
 describe("a `?view=friend` arrival", () => {
-  it("draws By card until a line has a spare to draw", async () => {
-    served = { spares: [], asks: [] };
+  it("draws By friend's own reading state, never By card, before the read lands (Loading C)", async () => {
+    fetchMock.mockImplementation((url: string) =>
+      url.startsWith("/api/spare-requests") ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) }) : new Promise(() => {}));
     await mount({ initialView: "friend" });
-    expect(panels()).toHaveLength(0);
-    expect(screen.getByText(copy.result.byCardNoSpare(4))).toBeTruthy();
-    expect(list().getAllByRole("listitem")).toHaveLength(4);
+    expect(screen.getByRole("radio", { name: copy.view.byFriend }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getAllByTestId("friend-panel-skeleton")).toHaveLength(2);
+    expect(list().queryAllByText("Brainstorm")).toHaveLength(0);
   });
 
   it("draws By card with spare requests off", async () => {
@@ -443,5 +451,183 @@ describe("By friend's status (v2 G2, G5)", () => {
   });
   it("is none only when every read landed and none failed", () => {
     expect(byFriendStatus([], lines, new Set(["a", "b"]), new Set())).toBe("none");
+  });
+});
+
+// v2 PR 7: Loading A to D, Empty-One B and C, and addendum R2's failed read (B2), By card's, By deck's and By friend's.
+describe("reading, empty and failed states (PR 7)", () => {
+  /** The spares read never lands; the asks do. */
+  const hold = () => fetchMock.mockImplementation((url: string) =>
+    url.startsWith("/api/spare-requests") ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) }) : new Promise(() => {}));
+  const sparesCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).startsWith("/api/friend-spares")).length;
+  const rows = () => list().getAllByRole("listitem").filter((li) => li.hasAttribute("data-cart-row"));
+
+  it("By card while reading: every row's spare cell is the breathing bar, the column keeps its width, buy is live (Loading A, B)", async () => {
+    hold();
+    await mount();
+    expect(rows()).toHaveLength(4);
+    for (const li of rows()) {
+      const bar = within(li).getByTestId("spare-skeleton");
+      expect(bar.className.split(/\s+/)).toEqual(expect.arrayContaining(["anim-skeleton", "bg-[color:var(--elevated)]", "w-[74px]", "xl:w-[58px]"]));
+      expect(li.querySelector('[data-fact="spare"]')!.getAttribute("aria-hidden")).toBe("true");
+    }
+    expect(document.querySelector('[data-cart-columns="card"]')!.textContent).toContain(copy.columns.spares);
+    // The result line's reading clause, Loading A's `.rln .rd`: mono 11, a 7px gap, the 6px `--fact` dot at .8.
+    const cluster = screen.getByText(copy.result.reading);
+    expect(cluster.className.split(/\s+/)).toEqual(expect.arrayContaining(["gap-[7px]", "text-[11px]", "text-[color:var(--fg-faint)]"]));
+    expect(cluster.querySelector("[aria-hidden]")!.className.split(/\s+/)).toEqual(expect.arrayContaining(["h-[6px]", "bg-[color:var(--fact)]", "opacity-80"]));
+    // Buy works from the first paint: every row's tag is a press.
+    expect(screen.getAllByRole("button", { name: gotItCopy.row.tagAria("Brainstorm") })).toHaveLength(1);
+  });
+
+  it("By card: a row's bar gives way to its spare, or to nothing, as the read lands", async () => {
+    served = { spares: [spare(GISA, "Peter")], asks: [] };
+    await mount();
+    expect(screen.queryAllByTestId("spare-skeleton")).toHaveLength(0);
+    expect(rows().filter((li) => li.querySelector('[data-fact="spare"]'))).toHaveLength(1);
+    expect(screen.queryByText(copy.result.reading)).toBeNull();
+  });
+
+  it("By friend while reading: skeleton panels in the panel's shape, under its column header, the sentence its own (Loading C, D)", async () => {
+    hold();
+    await mount({ initialView: "friend" });
+    const skeletons = screen.getAllByTestId("friend-panel-skeleton");
+    expect(skeletons.map((p) => p.querySelectorAll("li").length)).toEqual([3, 2]);
+    expect(screen.getByTestId("cart-by-friend-reading").className).toContain("anim-skeleton");
+    expect(screen.getByTestId("cart-by-friend-reading").getAttribute("aria-hidden")).toBe("true");
+    expect(document.querySelector('[data-cart-columns="friend"]')).toBeTruthy();
+    expect(screen.getByText(copy.result.readingByFriend)).toBeTruthy();
+    expect(screen.queryByText(copy.result.reading)).toBeNull();
+  });
+
+  it("By friend, none: the dashed block says what a spare is, with no press and no column header (Empty-One B)", async () => {
+    served = { spares: [], asks: [] };
+    await mount({ initialView: "friend" });
+    const block = screen.getByTestId("cart-by-friend-empty");
+    expect(block.getAttribute("data-kind")).toBe("none");
+    expect(within(block.parentElement!).getByRole("heading", { name: copy.byFriend.noneTitle })).toBeTruthy();
+    expect(within(block.parentElement!).getByText(copy.byFriend.noneBody(4))).toBeTruthy();
+    expect(within(block.parentElement!).queryAllByRole("button")).toHaveLength(0);
+    expect(within(block.parentElement!).queryAllByRole("link")).toHaveLength(0);
+    expect(document.querySelector("[data-cart-columns]")).toBeNull();
+    expect(screen.getByText(copy.result.byFriend(0, 0))).toBeTruthy();
+  });
+
+  it("By friend with no friends: one press, Go to Friends, decided by the friend count, reading or not (Empty-One C)", async () => {
+    served = { spares: [], asks: [] };
+    await mount({ initialView: "friend", hasFriends: false });
+    const block = screen.getByTestId("cart-by-friend-empty").parentElement!;
+    expect(within(block).getByRole("heading", { name: socialCopy.friends.emptyTitle })).toBeTruthy();
+    expect(within(block).getByText(copy.byFriend.noFriendsBody)).toBeTruthy();
+    expect(within(block).getByRole("link", { name: copy.byFriend.toFriends }).getAttribute("href")).toBe("/friends");
+    cleanup();
+    hold();
+    await mount({ initialView: "friend", hasFriends: false });
+    expect(screen.queryAllByTestId("friend-panel-skeleton")).toHaveLength(0);
+    expect(screen.getByTestId("cart-by-friend-empty").getAttribute("data-kind")).toBe("noFriends");
+  });
+
+  it("By card, failed: the toast with Try again, the spare column closed, no key item, no spare clause (R2 A, B)", async () => {
+    served = { spares: [], asks: [], fail: true };
+    await mount();
+    expect(screen.getByRole("alert").textContent).toContain(copy.failedRead.toast);
+    expect(within(screen.getByRole("alert")).getByRole("button", { name: copy.failedRead.retry })).toBeTruthy();
+    const columns = document.querySelector('[data-cart-columns="card"]')!;
+    expect(columns.className).toContain("xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1.75fr)_0px_minmax(0,1.3fr)_100px]");
+    expect(columns.textContent).not.toContain(copy.columns.spares);
+    for (const li of rows()) {
+      expect(li.className).toContain("xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1.75fr)_0px_minmax(0,1.3fr)_100px]");
+      expect(li.querySelector('[data-fact="spare"]')).toBeNull();
+    }
+    expect(screen.queryByTestId("spare-key")).toBeNull();
+    expect(screen.getByText(copy.result.byCardNoSpare(4))).toBeTruthy();
+    expect(screen.queryByText(copy.result.reading)).toBeNull();
+  });
+
+  it("By card, one batch of the read failed: the column closes for every row, a landed spare included, and says nothing of it", async () => {
+    // Past one batch (200 cards): Gisa's batch lands with Peter's spare, the next one fails.
+    const extra = Array.from({ length: 201 }, (_, i) => ({
+      oracleId: `9${String(i).padStart(7, "0")}-0000-4000-8000-000000000000`, name: `Filler ${i}`, commander: false, owned: 0,
+      heldElsewhere: 0, heldBy: [], rows: [row("thopter", 10)],
+    }));
+    fetchMock.mockImplementation(async (url: string) =>
+      url.startsWith("/api/spare-requests")
+        ? { ok: true, json: async () => ({ asks: [] }) }
+        : url.includes(GISA) ? { ok: true, json: async () => ({ spares: [spare(GISA, "Peter")] }) } : { ok: false, json: async () => null });
+    await mount({}, cart({ lines: [...cart().lines, ...extra] }));
+    expect(screen.getByRole("alert").textContent).toContain(copy.failedRead.toast);
+    expect(rows().filter((li) => li.querySelector('[data-fact="spare"]'))).toHaveLength(0);
+    expect(screen.queryByTestId("spare-key")).toBeNull();
+    expect(screen.getByText(copy.result.byCardNoSpare(205))).toBeTruthy();
+    // 205 rows: past the suite's 5s under a full run's load.
+  }, 20_000);
+
+  it("By card, failed: Try again reads again, back to the bars, and the column returns once it lands", async () => {
+    served = { spares: [], asks: [], fail: true };
+    await mount();
+    const before = sparesCalls();
+    hold();
+    await act(async () => { fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: copy.failedRead.retry })); });
+    expect(sparesCalls()).toBe(before + 1);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getAllByTestId("spare-skeleton")).toHaveLength(4);
+    expect(document.querySelector('[data-cart-columns="card"]')!.textContent).toContain(copy.columns.spares);
+    cleanup();
+    served = { spares: [], asks: [], fail: true };
+    fetchMock.mockImplementation(async (url: string) =>
+      url.startsWith("/api/spare-requests")
+        ? { ok: true, json: async () => ({ asks: [] }) }
+        : served.fail ? { ok: false, json: async () => null } : { ok: true, json: async () => ({ spares: served.spares }) });
+    await mount();
+    served = { spares: [spare(GISA, "Peter")], asks: [] };
+    await act(async () => { fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: copy.failedRead.retry })); });
+    expect(rows().filter((li) => li.querySelector('[data-fact="spare"]'))).toHaveLength(1);
+    expect(screen.getByTestId("spare-key")).toBeTruthy();
+    expect(screen.getByText(copy.result.byCard(4, 1))).toBeTruthy();
+  });
+
+  it("By deck, failed: the same toast, and each open group's header and rows close the spare column", async () => {
+    served = { spares: [], asks: [], fail: true };
+    await mount({ initialView: "deck", focusDeckId: "thopter" });
+    expect(screen.getByRole("alert").textContent).toContain(copy.failedRead.toast);
+    expect(document.querySelector('[data-cart-columns="deck"]')!.className).toContain("xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1.75fr)_0px_minmax(0,1.3fr)_100px]");
+  });
+
+  it("By friend, failed: the dashed block with Try again in the list's place, and no toast (R2 C, D)", async () => {
+    served = { spares: [], asks: [], fail: true };
+    await mount({ initialView: "friend" });
+    expect(screen.queryByRole("alert")).toBeNull();
+    const block = screen.getByTestId("cart-by-friend-empty");
+    expect(block.getAttribute("data-kind")).toBe("failed");
+    expect(within(block.parentElement!).getByRole("heading", { name: copy.failedRead.title })).toBeTruthy();
+    expect(within(block.parentElement!).getByText(copy.failedRead.body)).toBeTruthy();
+    expect(screen.getByRole("radio", { name: copy.view.byFriend }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByText(copy.result.failedByFriend)).toBeTruthy();
+    // Try again goes back to the reading state, and the panels draw once the read lands.
+    served = { spares: BOARD, asks: [] };
+    await act(async () => { fireEvent.click(within(block.parentElement!).getByRole("button", { name: copy.failedRead.retry })); });
+    expect(panels()).toHaveLength(4);
+  });
+
+  it("says one failure once: the toast in By card is not repeated after By friend, nor raised by By friend's block", async () => {
+    served = { spares: [], asks: [], fail: true };
+    await mount();
+    expect(screen.getByRole("alert")).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byFriend }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byCard }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    cleanup();
+    await mount({ initialView: "friend" });
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byCard }));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
+
+describe("the spares read as a whole (B2)", () => {
+  it("is reading while any card's read is out, failed once all landed and one failed, landed otherwise", () => {
+    expect(spareReadStatus(["a", "b"], new Set(["a"]), new Set(["a"]))).toBe("reading");
+    expect(spareReadStatus(["a", "b"], new Set(["a", "b"]), new Set(["b"]))).toBe("failed");
+    expect(spareReadStatus(["a", "b"], new Set(["a", "b"]), new Set(["c"]))).toBe("landed");
   });
 });

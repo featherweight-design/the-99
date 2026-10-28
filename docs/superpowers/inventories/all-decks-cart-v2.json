@@ -1,7 +1,7 @@
 {
   "feature": "Shopping for all decks v2 (handoff design_handoff_the99_all_decks_cart_v2; plan 2026-10-28-all-decks-cart-v2.md)",
   "clearAbout": true,
-  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. PR 6 rows: By friend's panels (By friend's column header with `Spare` on desktop, the head's `N cards \u00b7 N spares`, the row's need, spare and own facts, the Ask or its status above the tag, a folded panel, and on desktop the open header stuck to the list box top while its rows scroll); they need a friend with a spare of a selected line, and the status row a request already sent. The single-spare panel (`1 card \u00b7 1 spare`) and the spare key while the read is out are proved in `cart-by-friend.test.tsx`, since neither holds still on a live account. Later PRs add the Friend and Owned filters and the reading, empty and failed states. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. PR 6 rows: By friend's panels (By friend's column header with `Spare` on desktop, the head's `N cards \u00b7 N spares`, the row's need, spare and own facts, the Ask or its status above the tag, a folded panel, and on desktop the open header stuck to the list box top while its rows scroll); they need a friend with a spare of a selected line, and the status row a request already sent. The single-spare panel (`1 card \u00b7 1 spare`) and the spare key while the read is out are proved in `cart-by-friend.test.tsx`, since neither holds still on a live account. PR 7 rows: the reading, empty and failed states, staged by holding or answering `/api/friend-spares` (a read held 8s draws Loading A to D; an empty answer draws Empty-One B; a 500 draws addendum R2's failed read: the toast in By card and By deck, the dashed block with Try again in By friend). Empty-One C (no friends yet) needs an account with no friends, decided on the server, so it and the said-once rule across view switches are proved in `cart-by-friend.test.tsx`. Later PRs add the Friend and Owned filters. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
   "rows": [
     {
       "id": "chassis-rest-card",
@@ -344,6 +344,110 @@
         },
         {
           "wait": "[data-friend-line] [data-testid=friend-spare-status]"
+        }
+      ]
+    },
+    {
+      "id": "reading-card",
+      "label": "/decks/shopping while friends' spares are read: every row's spare cell a breathing bar (desktop 58px in the kept column, phone a SPARE line with a 74px bar), the spare key item, the result line's `reading friends\u2019 spares`; buy and checkout live (Loading A, B)",
+      "view": "src/components/decks/cart/cart-line.tsx",
+      "steps": [
+        {
+          "hold": "**/api/friend-spares**",
+          "ms": 8000,
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=spare-skeleton]"
+        }
+      ]
+    },
+    {
+      "id": "reading-friend",
+      "label": "/decks/shopping?view=friend while friends' spares are read: two skeleton panels in the panel's shape under By friend's column header (desktop), `Reading friends\u2019 spares\u2026` (Loading C, D)",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "steps": [
+        {
+          "hold": "**/api/friend-spares**",
+          "ms": 8000,
+          "goto": "/decks/shopping?view=friend",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=cart-by-friend-reading]"
+        }
+      ]
+    },
+    {
+      "id": "none-friend",
+      "label": "/decks/shopping?view=friend, the read landed with no spare: the dashed block with the spare glyph, `No friend has a spare of these`, no press, `0 friends` (Empty-One B)",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "steps": [
+        {
+          "mock": "**/api/friend-spares**",
+          "json": {
+            "spares": []
+          },
+          "goto": "/decks/shopping?view=friend",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=cart-by-friend-empty][data-kind=none]"
+        }
+      ]
+    },
+    {
+      "id": "failed-card",
+      "label": "/decks/shopping, the spares read failed: the toast with Try again at its shipped place, the spare column closed (desktop) and no SPARE line (phone), no spare key item, no spare clause (R2 A, B)",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "steps": [
+        {
+          "mock": "**/api/friend-spares**",
+          "status": 500,
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "wait": "[role=alert]"
+        }
+      ]
+    },
+    {
+      "id": "failed-deck",
+      "label": "/decks/shopping?view=deck, the spares read failed: the same toast (R2: By deck is the same)",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "steps": [
+        {
+          "mock": "**/api/friend-spares**",
+          "status": 500,
+          "goto": "/decks/shopping?view=deck",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "wait": "[role=alert]"
+        }
+      ]
+    },
+    {
+      "id": "failed-friend",
+      "label": "/decks/shopping?view=friend, the spares read failed: the dashed block with Try again in the list's place, no toast, `Friends\u2019 spares didn\u2019t load`, the By friend segment kept (R2 C, D)",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "steps": [
+        {
+          "mock": "**/api/friend-spares**",
+          "status": 500,
+          "goto": "/decks/shopping?view=friend",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-testid=cart-by-friend-empty][data-kind=failed]"
         }
       ]
     }
