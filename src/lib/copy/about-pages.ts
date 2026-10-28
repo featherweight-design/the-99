@@ -8,7 +8,11 @@
 // reader who saw them is not told again (`src/lib/about/pages-visible.ts`). `sentences` gates a sentence of `rest` or
 // `text` on a switch of its own, matched by its exact text, as `captionLineSwitches` does for an entry.
 
+import { HISTORY_RETENTION_DAYS } from "../collection/retention";
 import type { AboutLineSwitch, AboutScreen, DeckView } from "./about";
+
+/** History keeps what its retention keeps, so its sentence says how far back, as the legacy entry did. */
+const HISTORY_LINE = ` History lists your changes from the last ${HISTORY_RETENTION_DAYS} days.`;
 
 export const ABOUT_AREA_IDS = ["home", "collection", "commanders", "decks", "shopping", "friends"] as const;
 export type AboutArea = (typeof ABOUT_AREA_IDS)[number];
@@ -105,7 +109,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "home/home/ready",
         lead: "Ready to build",
         rest: " shows two commanders you could build today from cards you own. They change every day.",
-        switch: null,
+        switch: "!HOME_FEED_ENABLED",
         since: 1,
         legacy: ["ready-to-build"],
       },
@@ -134,8 +138,12 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "lead",
         region: "home/whats-new/lead",
         lead: "The top story",
-        rest: " is the newest thing for you: a set, a precon, a price drop on your wishlist, or a combo you can now make.",
+        rest: " is the newest thing for you, like a new set or a combo you can now make. A new precon shows up here too. So does a price drop on a card on your wishlist.",
         switch: "HOME_FEED_ENABLED",
+        sentences: {
+          " A new precon shows up here too.": "PRECONS_ENABLED",
+          " So does a price drop on a card on your wishlist.": "SOCIAL_WISHLIST_ENABLED",
+        },
         since: 16,
         legacy: ["whats-new"],
       },
@@ -155,10 +163,10 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "tabs",
         region: "collection/cards/tabs",
         lead: "Cards, Sets and Proxies",
-        rest: " are your Collection’s tabs. History lists every change you’ve made to it. Wishlist holds the cards you’re after.",
+        rest: ` are your Collection’s tabs.${HISTORY_LINE} Wishlist holds the cards you’re after.`,
         switch: null,
         sentences: {
-          " History lists every change you’ve made to it.": "COLLECTION_EDIT_ENABLED",
+          [HISTORY_LINE]: "COLLECTION_EDIT_ENABLED",
           " Wishlist holds the cards you’re after.": "SOCIAL_WISHLIST_ENABLED",
         },
         since: 1,
@@ -168,8 +176,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "add",
         region: "collection/cards/add",
         lead: "The +",
-        rest: " adds cards by name, by scanning them, or from a file.",
+        rest: " adds cards by name or from a file. You can scan them in too.",
         switch: "COLLECTION_EDIT_ENABLED",
+        sentences: {
+          " You can scan them in too.": "CARD_SCAN_ENABLED",
+        },
         since: 16,
         legacy: ["collection-add", "card-scan", "card-search"],
       },
@@ -177,7 +188,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "key",
         region: "collection/cards/key",
         lead: "The key",
-        rest: " explains every mark a card can carry, from Game Changer to In use.",
+        rest: " explains every mark a card can carry.",
         switch: null,
         since: 1,
         legacy: ["availability", "decklist-marks"],
@@ -227,9 +238,12 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
       {
         id: "places",
         region: "commanders/for-you/places",
-        lead: "For you, Discover and Help me choose",
-        rest: " are three ways to find your next commander.",
+        lead: "For you and Discover",
+        rest: " are two ways to find your next commander. Help me choose asks a few questions and picks for you.",
         switch: "COMMANDERS_PLACE_ENABLED",
+        sentences: {
+          " Help me choose asks a few questions and picks for you.": "HELP_ME_CHOOSE_ENABLED",
+        },
         since: 1,
         legacy: ["commander-lane", "discover", "help-me-choose"],
       },
@@ -489,8 +503,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "log",
         region: "decks/games/log",
         lead: "Log a game",
-        rest: " after you play. It takes about fifteen seconds, and Suggested changes reads your games.",
+        rest: " after you play. It takes about fifteen seconds. Suggested changes reads your games.",
         switch: null,
+        sentences: {
+          " Suggested changes reads your games.": "TUNING_ENABLED",
+        },
         since: 1,
         legacy: ["log-a-game", "log-findings"],
       },
@@ -699,7 +716,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["auto-fill"],
   },
   lock: {
-    text: "A locked card is safe from every tool: Suggested changes, Proposed cuts, Clear all auto, Pull it and Update from a list all skip it. The lock ends when you commit a version without the card.",
+    text: "A locked card is safe from every tool: none will offer to cut it, and updating the deck from a list keeps it. The lock ends when you commit a version without the card.",
     switch: "NEVER_CUT_ENABLED",
     since: 16,
     legacy: ["locked-cards"],
@@ -717,9 +734,16 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["deck-analysis"],
   },
   credits: {
-    text: "Reading a bracket is free. Anything written just for you uses a credit: an Overview, a Suggested changes run, a Look deeper. A run that comes back empty-handed gives the credit back. Credits you buy never expire.",
+    text: "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back. An Overview uses one. So does each Suggested changes run. So does each Look deeper. Pack and gift credits never expire. Plan credits end with the period after you cancel.",
     switch: null,
-    sentences: { " Credits you buy never expire.": "PAYMENTS_ENABLED" },
+    sentences: {
+      "Reading a bracket is free. ": "ANALYSIS_TAB_ENABLED",
+      " An Overview uses one.": "ANALYSIS_TAB_ENABLED",
+      " So does each Suggested changes run.": "TUNING_ENABLED",
+      " So does each Look deeper.": "PROPOSED_CUTS_ENABLED",
+      " Pack and gift credits never expire.": "PAYMENTS_ENABLED",
+      " Plan credits end with the period after you cancel.": "PAYMENTS_ENABLED",
+    },
     since: 11,
     legacy: ["credits", "buying-credits"],
   },

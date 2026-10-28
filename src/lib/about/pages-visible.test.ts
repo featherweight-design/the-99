@@ -4,7 +4,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { SWITCH_NAMES } from "../switches/registry";
 import { resolveEnv, type SwitchSnapshot } from "../switches/resolve";
 import {
-  labelKey, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
+  afterVisit, labelKey, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
 } from "./pages-visible";
 import { NEVER_SEEN, switchedIds, visibleEntries, type SeenState } from "./visible";
 
@@ -46,6 +46,34 @@ describe("visibleSections", () => {
     expect(replace.sentenceSwitches).toContain("COLLECTION_SYNC_ENABLED");
     const off = visibleSections(OFF).flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
     expect(off.sentenceSwitches).toEqual([]);
+  });
+});
+
+describe("each sentence follows its own switch", () => {
+  const textOf = (e: Record<string, string>, key: string) =>
+    units(visibleSections(env(e))).find((u) => u.key === key)?.text;
+  it.each([
+    ["Ready to build leaves with the feed on", { HOME_FEED_ENABLED: "true" }, "home/home/ready", undefined, undefined],
+    ["the feed's lead without precons or a wishlist", { HOME_FEED_ENABLED: "true" }, "home/whats-new/lead", "like a new set", "precon"],
+    ["the feed's lead with precons", { HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true" }, "home/whats-new/lead", "A new precon", "wishlist"],
+    ["the + without scanning", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "by name or from a file", "scan"],
+    ["the + with scanning", { COLLECTION_EDIT_ENABLED: "true", CARD_SCAN_ENABLED: "true" }, "collection/cards/add", "scan them", undefined],
+    ["the place strip without Help me choose", { COMMANDERS_PLACE_ENABLED: "true" }, "commanders/for-you/places", "two ways", "Help me choose"],
+    ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
+    ["credits with Suggested changes and not Proposed cuts", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" }, "rule/credits", "Suggested changes run", "Look deeper"],
+    ["credits with Proposed cuts and not Suggested changes", { ANALYSIS_TAB_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }, "rule/credits", "Look deeper", "Suggested changes"],
+    ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", "Overview"],
+    ["credits with nothing on", {}, "rule/credits", "Anything written just for you", "never expire"],
+    ["a proxy without tokens", {}, "rule/proxy", "uses no copy", "token"],
+    ["friends see a wishlist only with the wishlist", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "spares you offer", "wishlist"],
+  ] as const)("%s", (_name, e, key, has, lacks) => {
+    const text = textOf(e as Record<string, string>, key);
+    if (has === undefined) {
+      expect(text).toBeUndefined();
+      return;
+    }
+    expect(text).toContain(has);
+    if (lacks) expect(text).not.toContain(lacks);
   });
 });
 
@@ -142,7 +170,39 @@ describe("seen translation", () => {
     const replace = editOnly.flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
     expect(replace.text.startsWith("With Replace")).toBe(true);
     const help = editOnly.flatMap((s) => s.labels).find((l) => l.key === "collection/cards/tabs")!;
-    expect(help.text).toBe(" are your Collection’s tabs. History lists every change you’ve made to it.");
+    expect(help.text).toBe(" are your Collection’s tabs. History lists your changes from the last 90 days.");
+  });
+
+  it("never lets the floor answer for a unit whose every source was switched", () => {
+    const face = units(visibleSections(ALL_ON)).find((u) => u.key === "friends/friends/face")!;
+    expect(unitSeen(face, { version: 16, ids: [] })).toBe(false);
+    expect(unitSeen(face, { version: 16, ids: ["friends"] })).toBe(true);
+  });
+
+  it("introduces a first-run reader on their first visit, then announces only what arrives later", () => {
+    const visible = visibleSections(ALL_ON);
+    const after = afterVisit(visible, "home", NEVER_SEEN);
+    expect(after.version).toBe(16);
+    expect(unseenUnits(visible, after)).toEqual([]);
+    const later = visibleSections(ALL_ON, ABOUT_SECTIONS.map((s) => s.id !== "home" ? s : {
+      ...s, labels: [...s.labels, { ...s.labels[0], id: "later", region: "home/home/later", since: 17, legacy: [] }],
+    }));
+    expect(unseenUnits(later, after).map((u) => u.key)).toEqual(["home/home/later"]);
+    const returning: SeenState = { version: 9, ids: ["x"] };
+    expect(afterVisit(visible, "home", returning).version).toBe(9);
+  });
+
+  it("acknowledging an announcement leaves nothing of it to announce next", () => {
+    const visible = visibleSections(ALL_ON);
+    let seen: SeenState = { version: 16, ids: ["placeholder"] };
+    const first = unseenUnits(visible, seen);
+    const spare = first.find((u) => u.key === "shopping/deck-shopping/spare")!;
+    expect(spare.ack).toEqual(["shopping/deck-shopping/spare", sentenceKey("shopping/deck-shopping/spare", "SPARE_REQUESTS_ENABLED")]);
+    seen = { version: 16, ids: [...seen.ids, ...first.flatMap((u) => u.ack)] };
+    expect(unseenUnits(visible, seen)).toEqual([]);
+    const spareOff = visibleSections(env({ ...ALL_ON, SPARE_REQUESTS_ENABLED: "off" } as Record<string, string>));
+    const offAck = unseenUnits(spareOff, { version: 16, ids: ["placeholder"] }).find((u) => u.key === "shopping/deck-shopping/spare")!;
+    expect(offAck.ack).toEqual(["shopping/deck-shopping/spare"]);
   });
 
   it("names every switched legacy entry in some unit, so no announced entry is lost", () => {

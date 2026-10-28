@@ -9,6 +9,7 @@
 //     `switchedIds` in `visible.ts`);
 //   - a unit that is a switched entry's own announcement (a legacy entry carries the unit's switch) is seen by id
 //     alone, as that entry was;
+//   - a unit every one of whose legacy entries was switched is seen by those ids alone, never by the floor;
 //   - else by the version floor (`since <= version`), for an unswitched unit AND for a switched unit none of whose
 //     legacy entries carried its switch. That second case was a switched line inside an unswitched entry, shown whenever its
 //     switch resolved on and seen with that entry by the floor; this unit is only drawn while its switch resolves on
@@ -18,7 +19,7 @@
 // A switched SENTENCE of a unit is announced on its own, as `<key>@<SWITCH>`, by the same rules over the legacy entries
 // carrying that switch: a variant (`upload-choice@COLLECTION_SYNC_ENABLED`) or a switched entry of that switch.
 
-import type { AboutLineSwitch, AboutLineSwitchOne, AboutSwitch } from "../copy/about";
+import { ABOUT_VERSION, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import {
   ABOUT_RULES, ABOUT_SECTIONS, type AboutArea, type AboutLabel, type AboutRule, type AboutRuleId, type AboutSection,
 } from "../copy/about-pages";
@@ -110,8 +111,12 @@ export function unitSeen(u: Pick<VisibleUnit, "key" | "since" | "legacy" | "swit
   // as that entry was: the floor says nothing about whether the switch was on when the reader passed it.
   const own = u.switch ? positiveSwitches(u.switch) : [];
   if (u.legacy.some((id) => own.some((sw) => carries(id, sw)))) return false;
+  // The floor speaks only for unswitched entries: a unit whose every source was switched was seen by id or not at all.
+  if (u.legacy.length > 0 && !u.legacy.some(isUnswitchedEntry)) return false;
   return u.since <= seen.version;
 }
+
+const isUnswitchedEntry = (id: string) => !id.includes("@") && ENTRY_SWITCH.has(id) && ENTRY_SWITCH.get(id) === null;
 
 /** Whether a legacy id carried a switch: a switched entry of it, or a variant drawn under it. */
 const carries = (id: string, sw: AboutSwitch) => id === `${id.split("@")[0]}@${sw}` || ENTRY_SWITCH.get(id) === sw;
@@ -124,7 +129,14 @@ export function sentenceSeen(u: Pick<VisibleUnit, "key" | "since" | "legacy">, s
   return carriers.length === 0 && u.since <= seen.version;
 }
 
-export interface UnseenUnit { key: string; area: AboutArea; section: string }
+export interface UnseenUnit {
+  key: string;
+  area: AboutArea;
+  section: string;
+  /** What acknowledging this announcement writes: a whole unit's key and the keys of the sentences drawn with it (so
+   *  they are not announced on their own next), or a sentence's key alone. A sentence not drawn is not acknowledged. */
+  ack: readonly string[];
+}
 
 const unitsOf = (visible: readonly VisibleSection[]) => visible.flatMap((s) => [...s.labels, ...s.rules]);
 
@@ -134,15 +146,28 @@ export function unseenUnits(visible: readonly VisibleSection[], seen: SeenState)
   if (isFirstRun(seen)) return [];
   return unitsOf(visible).flatMap((u) => {
     // A unit told as a whole carries its sentences with it; a sentence is told on its own only inside a seen unit.
-    if (!unitSeen(u, seen)) return [{ key: u.key, area: u.area, section: u.section }];
-    return u.sentenceSwitches.filter((sw) => !sentenceSeen(u, sw, seen))
-      .map((sw) => ({ key: sentenceKey(u.key, sw), area: u.area, section: u.section }));
+    if (!unitSeen(u, seen)) return [{ key: u.key, area: u.area, section: u.section, ack: unitKeys(u) }];
+    return u.sentenceSwitches.filter((sw) => !sentenceSeen(u, sw, seen)).map((sw) => {
+      const key = sentenceKey(u.key, sw);
+      return { key, area: u.area, section: u.section, ack: [key] };
+    });
   });
 }
 
 /** Every announce key of one page's units, which a visit to that page records. A visit never raises the floor, and
  *  never writes another page's keys: a visit to Decks must not mark a new unit on Friends seen. */
 export function seenKeysOf(visible: readonly VisibleSection[], area: AboutArea): string[] {
-  return unitsOf(visible.filter((s) => s.area === area))
-    .flatMap((u) => [u.key, ...u.sentenceSwitches.map((sw) => sentenceKey(u.key, sw))]);
+  return unitsOf(visible.filter((s) => s.area === area)).flatMap(unitKeys);
+}
+
+const unitKeys = (u: VisibleUnit) => [u.key, ...u.sentenceSwitches.map((sw) => sentenceKey(u.key, sw))];
+
+/**
+ * The seen state after a visit to one page. A first-run reader is being introduced to the pages, so their first visit
+ * takes everything they are drawn, on every page, as their baseline: this build's floor and every drawn key. Only what
+ * arrives later is ever announced to them. Anyone else keeps their floor, and gains only this page's keys.
+ */
+export function afterVisit(visible: readonly VisibleSection[], area: AboutArea, seen: SeenState): SeenState {
+  if (isFirstRun(seen)) return { version: ABOUT_VERSION, ids: unitsOf(visible).flatMap(unitKeys) };
+  return { version: seen.version, ids: [...new Set([...seen.ids, ...seenKeysOf(visible, area)])] };
 }
