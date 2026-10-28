@@ -234,9 +234,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const t = Date.now();
     const o = await callModel<Reply>({ model: app.model, system, user, maxTokens: ceilingFor(ask.adds + ask.cuts), schema, deadlineMs: 300_000, effort: TUNING_EFFORT, stream: true });
     const ms = Date.now() - t;
-    // A failed call that brought back no usage meter (a streamed reply that failed its parse) may still have been billed,
-    // so it settles at its worst case: the cap stays an upper bound on what was spent, never an under-count.
-    const usd = o.usage ? costMicroUsd(app.model, o.usage) / 1e6 : o.ok ? 0 : worst;
+    // A FAILED call settles at its worst case, metered or not: its usage can cover only some of `callModel`'s attempts (a
+    // metered first attempt, then an unmetered one), and an under-count would let later calls past the cap. A call that
+    // succeeded settles at its meter.
+    const usd = o.ok ? (o.usage ? costMicroUsd(app.model, o.usage) / 1e6 : 0) : worst;
     record(LEDGER, { at: new Date().toISOString(), runId: `count-mechanism-${label}`, source: "realtime:1", usd, requests: 1, settles: id, note: label });
     log(`${label}: ${o.ok ? "ok" : `failed (${o.errorClass})`} in ${(ms / 1000).toFixed(1)}s, $${usd.toFixed(4)}; ledger $${spent(readLedger(LEDGER)).toFixed(2)}`);
     return { o, ms, usd };
@@ -263,8 +264,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         return { call: callNo, side, rule: d.rule, cite: d.cite?.kind, card: (side === "add" ? value.additions : value.cuts)[d.position]?.card ?? "?" };
       }));
       const seen = new Set([...kept.adds, ...kept.cuts].map((l) => l.card.toLowerCase()));
-      const add = (side: "add" | "cut", lines: Line[], cap: number) =>
-        [...kept[side === "add" ? "adds" : "cuts"], ...lines.filter((l, i) => !dropped.has(`${side}:${i}`) && !seen.has(l.card.toLowerCase()))].slice(0, cap);
+      // A survivor carries the VALIDATED text (`keptSuggestions`: a part-quote repaired to bare, say), which is what the app
+      // would show. The validator keeps survivors in reply order per list, so the two line up one to one.
+      const add = (side: "add" | "cut", lines: Line[], cap: number) => {
+        const shown = s.keptSuggestions.filter((k) => (side === "add" ? k.addOracleId !== null : k.addOracleId === null));
+        const survivors = lines.filter((_, i) => !dropped.has(`${side}:${i}`))
+          .map((l, j) => ({ ...l, rationale: shown[j]?.rationale ?? l.rationale, rationaleShort: shown[j]?.rationaleShort ?? l.rationaleShort }));
+        return [...kept[side === "add" ? "adds" : "cuts"], ...survivors.filter((l) => !seen.has(l.card.toLowerCase()))].slice(0, cap);
+      };
       kept.adds = add("add", value.additions, want.adds);
       kept.cuts = add("cut", value.cuts, want.cuts);
     };

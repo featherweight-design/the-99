@@ -97,6 +97,15 @@ describe("the blind board", () => {
     expect(new Set(orders.map((o) => Object.values(o).join(","))).size).toBeGreaterThan(1);
   });
 
+  it("puts every variant in every position across many cases, so no letter is biased", () => {
+    const seen = new Map<string, Set<string>>();
+    for (let i = 0; i < 720; i++) for (const [letter, v] of Object.entries(lettersFor(i))) {
+      if (!seen.has(letter)) seen.set(letter, new Set());
+      seen.get(letter)!.add(v);
+    }
+    for (const vs of seen.values()) expect(vs.size).toBe(VARIANTS.length);
+  });
+
   it("reads a quantile off the sorted values", () => {
     expect(quantile([30, 10, 20], 0.5)).toBe(20);
     expect(quantile([], 0.9)).toBe(0);

@@ -36,13 +36,23 @@ export const LETTERS = ["P", "Q", "R", "S", "T", "U"] as const;
 export type Variant = `${Flow} ${Arm}`;
 export const VARIANTS: Variant[] = FLOWS.flatMap((f) => ARMS.map((a) => `${f} ${a}` as Variant));
 
-/** A per-case permutation of the six variants, fixed by the case's index (a seeded shuffle) so board and key agree. */
+/** Mulberry32: a seeded generator in 32-bit integer arithmetic (`Math.imul`), so no product leaves the safe range. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+  };
+}
+
+/** A per-case permutation of the six variants, a Fisher-Yates shuffle seeded by the case's index, so board and key agree. */
 export function lettersFor(caseIndex: number): Record<(typeof LETTERS)[number], Variant> {
   const order = [...VARIANTS];
-  let seed = caseIndex * 2_654_435_761 + 97;
+  const next = mulberry32(caseIndex + 1);
   for (let i = order.length - 1; i > 0; i--) {
-    seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
-    const j = seed % (i + 1);
+    const j = Math.floor(next() * (i + 1));
     [order[i], order[j]] = [order[j], order[i]];
   }
   return Object.fromEntries(LETTERS.map((l, i) => [l, order[i]])) as Record<(typeof LETTERS)[number], Variant>;
