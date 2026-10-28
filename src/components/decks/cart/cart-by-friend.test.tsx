@@ -643,3 +643,80 @@ describe("the spares read as a whole (B2)", () => {
     expect(spareReadStatus(["a", "b"], new Set(["a", "b"]), new Set(["c"]))).toBe("landed");
   });
 });
+
+// Copilot round 1 on #2349: a purchase while the read is out or after it failed, and a failure By friend's panels hide.
+describe("a purchase, a partial failure and a retry (PR 7, round 1)", () => {
+  const props = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true };
+  async function buyJace() {
+    bought.loadPrintingChoices.mockResolvedValue([{
+      scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+      collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+      finishes: ["nonfoil"], owned: { nonfoil: 0 },
+    }]);
+    bought.markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
+    fireEvent.click(list().getByRole("button", { name: gotItCopy.row.tagAria("Jace, Multiverse Architect") }));
+    const add = await screen.findByRole("button", { name: /^Add/ });
+    await act(async () => { fireEvent.click(add); });
+  }
+  const withoutJace = () => {
+    const after = cart();
+    after.lines = after.lines.filter((l) => l.oracleId !== JACE);
+    return after;
+  };
+
+  it("a card bought before the read lands never holds By friend on its skeleton", async () => {
+    // The first read (every card) never lands; the one after the purchase (the rest) lands with no spare.
+    let calls = 0;
+    fetchMock.mockImplementation((url: string) => {
+      if (url.startsWith("/api/spare-requests")) return Promise.resolve({ ok: true, json: async () => ({ asks: [] }) });
+      calls += 1;
+      return calls === 1 ? new Promise(() => {}) : Promise.resolve({ ok: true, json: async () => ({ spares: [] }) });
+    });
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(<CartView cart={cart()} {...props} />); });
+    await buyJace();
+    await act(async () => { view.rerender(<CartView cart={withoutJace()} {...props} />); });
+    expect(calls).toBe(2);
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byFriend }));
+    expect(screen.queryAllByTestId("friend-panel-skeleton")).toHaveLength(0);
+    expect(screen.getByTestId("cart-by-friend-empty").getAttribute("data-kind")).toBe("none");
+    expect(screen.queryByText(copy.result.readingByFriend)).toBeNull();
+  });
+
+  it("a failed card bought before Try again never holds By friend on its skeleton", async () => {
+    served = { spares: [], asks: [], fail: true };
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(<CartView cart={cart()} {...props} />); });
+    await buyJace();
+    await act(async () => { view.rerender(<CartView cart={withoutJace()} {...props} />); });
+    served = { spares: [], asks: [] };
+    await act(async () => { fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: copy.failedRead.retry })); });
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byFriend }));
+    expect(screen.queryAllByTestId("friend-panel-skeleton")).toHaveLength(0);
+    expect(screen.getByTestId("cart-by-friend-empty").getAttribute("data-kind")).toBe("none");
+  });
+
+  it("a partial failure behind By friend's panels is said by By card's toast, never marked said by the panels", async () => {
+    const extra = Array.from({ length: 201 }, (_, i) => ({
+      oracleId: `9${String(i).padStart(7, "0")}-0000-4000-8000-000000000000`, name: `Filler ${i}`, commander: false, owned: 0,
+      heldElsewhere: 0, heldBy: [], rows: [row("thopter", 10)],
+    }));
+    fetchMock.mockImplementation(async (url: string) =>
+      url.startsWith("/api/spare-requests")
+        ? { ok: true, json: async () => ({ asks: [] }) }
+        : url.includes(GISA) ? { ok: true, json: async () => ({ spares: [spare(GISA, "Peter")] }) } : { ok: false, json: async () => null });
+    await mount({ initialView: "friend" }, cart({ lines: [...cart().lines, ...extra] }));
+    expect(panels()).toHaveLength(1);
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byCard }));
+    expect(screen.getByRole("alert").textContent).toContain(copy.failedRead.toast);
+  }, 20_000);
+
+  it("a search that leaves nothing in By friend does not mark the failure said", async () => {
+    served = { spares: [], asks: [], fail: true };
+    await mount({ initialView: "friend", initialQuery: "zzzz" });
+    expect(screen.queryByTestId("cart-by-friend-empty")).toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byCard }));
+    expect(screen.getByRole("alert").textContent).toContain(copy.failedRead.toast);
+  });
+});

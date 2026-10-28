@@ -77,10 +77,15 @@ export type ByFriend =
 
 export function byFriendStatus(
   groups: readonly FriendGroup[], lines: readonly SelectedLine[], loaded: ReadonlySet<string>, failed: ReadonlySet<string>,
+  held: HeldLines = NO_HELD,
 ): "groups" | "reading" | "failed" | "none" {
   if (groups.length > 0) return "groups";
-  if (lines.some((l) => !loaded.has(l.oracleId))) return "reading";
-  return lines.some((l) => failed.has(l.oracleId)) ? "failed" : "none";
+  // A held slot's card left the read when it was bought: no read in flight or to come will land for it (the provider asks
+  // only for the cards listed now), so it is neither waited for nor counted as failed. It still sits under the friends
+  // read for it before, as a slot in their panels.
+  const listed = held.size === 0 ? lines : lines.filter((l) => !held.has(l.oracleId));
+  if (listed.some((l) => !loaded.has(l.oracleId))) return "reading";
+  return listed.some((l) => failed.has(l.oracleId)) ? "failed" : "none";
 }
 
 export function useByFriend(lines: readonly SelectedLine[], held: HeldLines = NO_HELD): ByFriend | null {
@@ -88,7 +93,7 @@ export function useByFriend(lines: readonly SelectedLine[], held: HeldLines = NO
   const requests = useContext(SpareRequestsContext);
   const groups = useMemo(() => (spares ? groupByFriend(lines, spares.byCard, held, spares.seen) : []), [lines, spares, held]);
   if (!spares || !requests) return null;
-  const status = byFriendStatus(groups, lines, spares.loaded, spares.failed);
+  const status = byFriendStatus(groups, lines, spares.loaded, spares.failed, held);
   return status === "groups" ? { status, groups, requests } : { status };
 }
 
@@ -316,7 +321,16 @@ export function ByFriendReading() {
  *   - `noFriends`: the reader has no friends. One press, to Friends.
  *   - `failed`: the read failed. Try again re-runs it, and the view goes back to its skeleton; no glyph and no toast.
  */
-export function ByFriendEmpty({ kind, lines = 0, onRetry }: { kind: "none" | "noFriends" | "failed"; lines?: number; onRetry?: () => void }) {
+export function ByFriendEmpty({ kind, lines = 0, onRetry, onShown }: {
+  kind: "none" | "noFriends" | "failed";
+  lines?: number;
+  onRetry?: () => void;
+  /** Called once the failed block is on screen: it has said the failure, so By card's toast will not say it again. */
+  onShown?: () => void;
+}) {
+  useEffect(() => {
+    if (kind === "failed") onShown?.();
+  }, [kind, onShown]);
   const title = kind === "none" ? copy.byFriend.noneTitle : kind === "noFriends" ? socialCopy.friends.emptyTitle : copy.failedRead.title;
   const body = kind === "none" ? copy.byFriend.noneBody(lines) : kind === "noFriends" ? copy.byFriend.noFriendsBody : copy.failedRead.body;
   const press = "mt-[4px] flex h-[44px] items-center justify-center gap-[8px] whitespace-nowrap rounded-[10px] border border-[color:var(--border-strong)] px-[14px] text-[14px] text-[color:var(--fg)]";

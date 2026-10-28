@@ -204,11 +204,13 @@ export function FriendSparesProvider({
     };
   }, [sparesKey, round]);
   const retry = useCallback(() => {
-    // The failed cards go back to reading (v2 Loading A) until the new read lands; the rest keep what they hold.
-    setLoaded((prev) => new Set([...prev].filter((id) => !failed.has(id))));
-    setFailed(new Set());
+    // Only the cards the read asks for again: its failed ones go back to reading (v2 Loading A) until it lands. A card
+    // that left the list keeps its history, since no read will land for it again.
+    const ids = new Set(sparesKey ? sparesKey.split(",") : []);
+    setLoaded((prev) => new Set([...prev].filter((id) => !(ids.has(id) && failed.has(id)))));
+    setFailed((prev) => new Set([...prev].filter((id) => !ids.has(id))));
     setRound((r) => r + 1);
-  }, [failed]);
+  }, [failed, sparesKey]);
   // The asks land after the page, as the spares do. Each card is read ONCE per visit, when it first joins the list, and
   // no read is ever thrown away: a card leaving the list (a stand-in taken, its sheet left open) neither cancels its
   // read nor drops what it held, so its sheet keeps Requested or Declined. After that read, a card's state is moved by

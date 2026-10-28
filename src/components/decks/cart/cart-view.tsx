@@ -6,7 +6,7 @@
 // a deck's number here is its tile's number.
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import type { ProvenanceForm } from "../../../lib/decks/price";
 import { cartTotal, checkoutLinks, ownFact, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
@@ -628,6 +628,7 @@ function CardOrFriendList({
   const drawn = useWithHeld(lines, read, selected, { query });
   const friendView = useByFriend(drawn.lines, drawn.held);
   const byFriend = friendGroups(friendView);
+  const failureShown = useContext(FailureShownContext);
   const compare = useMemo(
     () => cardCompare(sorts.card, (id) => (spares?.byCard.get(id) ?? spares?.seen.get(id))?.reduce((n, s) => n + s.spare, 0) ?? 0),
     [sorts.card, spares],
@@ -638,7 +639,7 @@ function CardOrFriendList({
   const body = view === "friend" && friendView ? friendBody(friendView, hasFriends) : null;
   if (body === "reading") return <ByFriendReading />;
   if (body === "none" || body === "noFriends") return <ByFriendEmpty kind={body} lines={drawn.lines.length} />;
-  if (body === "failed") return <ByFriendEmpty kind="failed" onRetry={spares?.retry} />;
+  if (body === "failed") return <ByFriendEmpty kind="failed" onRetry={spares?.retry} onShown={failureShown} />;
   if (body === "panels" && byFriend && panels) {
     return (
       <ByFriendList
@@ -715,23 +716,29 @@ function CartKeyRow({
 function SpareReadState({ ids, view, children }: { ids: readonly string[]; view: CartViewMode; children: React.ReactNode }) {
   const spares = usePageSpares();
   const failed = spares !== null && spareReadStatus(ids, spares.loaded, spares.failed) === "failed";
+  // Said only once something SAID it: the toast here, or By friend's failed block (`FailureShownContext`). By friend's
+  // panels that landed, or its no-match block, say nothing, so they leave the failure for By card's toast.
   const [said, setSaid] = useState(false);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const [seq, setSeq] = useState(0);
   // Adjusted during render: the toast belongs to this failure, and leaves when it ends or By friend takes over saying it.
-  if (failed && !said) {
+  if (failed && !said && view !== "friend" && spares) {
     setSaid(true);
-    if (view !== "friend" && spares) {
-      setSeq(seq + 1);
-      setToast({ id: seq + 1, text: copy.failedRead.toast, retry: { label: copy.failedRead.retry, run: spares.retry } });
-    }
+    setSeq(seq + 1);
+    setToast({ id: seq + 1, text: copy.failedRead.toast, retry: { label: copy.failedRead.retry, run: spares.retry } });
   }
   if (!failed && said) setSaid(false);
   if (toast && (!failed || view === "friend")) setToast(null);
+  const shown = useMemo(() => () => setSaid(true), []);
   return (
     <SpareColumnContext.Provider value={!failed}>
-      {children}
+      <FailureShownContext.Provider value={shown}>
+        {children}
+      </FailureShownContext.Provider>
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </SpareColumnContext.Provider>
   );
 }
+
+/** By friend's failed block reports that it is on screen, so the failure counts as said (`SpareReadState`). */
+const FailureShownContext = createContext<(() => void) | undefined>(undefined);
