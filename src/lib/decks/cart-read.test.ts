@@ -110,6 +110,23 @@ describe("loadCart", () => {
 // Admin adoption 6e: the cart is a cached page's load, keyed on the reader's resolved switches, and
 // every read it starts decides from that env: the claim model's rows and holders, the printing picks
 // behind the prices, and the art. Each requires its env, so the one handed in must be the one handed on.
+describe("loadCart names the decks holding owned copies (G1)", () => {
+  it("takes a holder outside the cart's name from the availability read's claims", async () => {
+    const { loadAvailability } = await import("./availability-query");
+    vi.mocked(loadAvailability).mockResolvedValueOnce(new Map([["sol", {
+      owned: 2,
+      claims: [
+        { id: "gishath", name: "HD - Gishath", quantity: 1, mature: false },
+        { id: "zeta", name: "Zeta Tokens", quantity: 2, mature: true },
+      ],
+    }]]) as never);
+    readBuyRowPrices.mockResolvedValue(null);
+    const cart = await loadCart("user", ENV_VIEW);
+    expect(cart.lines[0].heldBy).toEqual([{ deckId: "zeta", held: 2 }]);
+    expect(cart.holders).toEqual([{ id: "zeta", name: "Zeta Tokens" }]);
+  });
+});
+
 describe("loadCart threads the env it is handed", () => {
   it("hands the same env to every read it starts", async () => {
     const ENV = { NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;

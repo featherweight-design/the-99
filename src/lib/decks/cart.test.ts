@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCart } from "./cart-read";
-import { cartTotal, checkoutLines, checkoutLinks, figuresOf, selectLine } from "./cart";
+import { cartTotal, checkoutLines, checkoutLinks, figuresOf, inUseIn, selectLine } from "./cart";
 import { rollupBuyRows } from "./shopping-rollup";
 import type { PriceFact } from "./price";
 import type { PriceRead } from "./price-query";
@@ -106,15 +106,15 @@ describe("the owned fact (lock 4, audit finding 4)", () => {
     // 17 Sol Rings, every one held by committed decks that are not buying it.
     const ownership = new Map([[SOL, { owned: 17, heldByDeck: new Map([["a", 9], ["b", 8]]) }]]);
     const cart = buildCart(rows, read, deckRows, names, ownership);
-    expect(cart.lines.find((l) => l.oracleId === SOL)).toMatchObject({ owned: 17, heldElsewhere: 17 });
-    expect(cart.lines.find((l) => l.oracleId === TOWER)).toMatchObject({ owned: 0, heldElsewhere: 0 });
+    expect(cart.lines.find((l) => l.oracleId === SOL)).toMatchObject({ owned: 17, heldElsewhere: 17, heldBy: [{ deckId: "a", held: 9 }, { deckId: "b", held: 8 }] });
+    expect(cart.lines.find((l) => l.oracleId === TOWER)).toMatchObject({ owned: 0, heldElsewhere: 0, heldBy: [] });
   });
 
   it("leaves out copies a deck on the line holds itself, so the two counts differ", () => {
     // Thorin holds one of its own Rogue's Passages and buys the second; another deck holds two.
     const ownership = new Map([[PASSAGE, { owned: 3, heldByDeck: new Map([["thorin", 1], ["other", 2]]) }]]);
     const cart = buildCart(rows, read, deckRows, names, ownership);
-    expect(cart.lines.find((l) => l.oracleId === PASSAGE)).toMatchObject({ owned: 3, heldElsewhere: 2 });
+    expect(cart.lines.find((l) => l.oracleId === PASSAGE)).toMatchObject({ owned: 3, heldElsewhere: 2, heldBy: [{ deckId: "other", held: 2 }] });
   });
 });
 
@@ -162,5 +162,46 @@ describe("selections are a view", () => {
   it("checks out as one link here, and as none when nothing is selected", () => {
     expect(checkoutLinks(cart.lines, all)).toEqual([expect.objectContaining({ lineCount: 4 })]);
     expect(checkoutLinks(cart.lines, new Set())).toEqual([]);
+  });
+});
+
+describe("where owned copies are in use (v2's own fact, G1)", () => {
+  // Tower: Omnath and Gishath need it. Held by Kratos (in the cart, not on the line) and by two decks
+  // outside the cart; Gishath holds one of its own.
+  const ownership = new Map([[TOWER, {
+    owned: 6,
+    heldByDeck: new Map([["kratos", 1], ["zeta", 2], ["alpha", 2], ["gishath", 1]]),
+  }]]);
+  const holders = [{ id: "zeta", name: "Zeta Tokens" }, { id: "alpha", name: "Alpha Stompy" }];
+  const cart = buildCart(rows, read, deckRows, names, ownership, holders);
+  const tower = cart.lines.find((l) => l.oracleId === TOWER)!;
+  const rank = new Map(cart.decks.map((d, i) => [d.id, i]));
+
+  it("lists the decks off the line: the cart's in the selections' order, then outside by copies, then by name", () => {
+    expect(tower.heldBy).toEqual([{ deckId: "kratos", held: 1 }, { deckId: "alpha", held: 2 }, { deckId: "zeta", held: 2 }]);
+    expect(tower.heldBy.reduce((n, h) => n + h.held, 0)).toBe(tower.heldElsewhere);
+  });
+
+  it("names only the outside holders a line draws, by name", () => {
+    expect(cart.holders).toEqual([{ id: "alpha", name: "Alpha Stompy" }, { id: "zeta", name: "Zeta Tokens" }]);
+    const unused = buildCart(rows, read, deckRows, names, ownership, [...holders, { id: "nobody", name: "Unheld" }]);
+    expect(unused.holders.map((h) => h.id)).not.toContain("nobody");
+  });
+
+  it("adds an unselected deck on the line in its place, and sums to the selected heldElsewhere", () => {
+    const selected = new Set(["omnath", "kratos", "thorin"]);
+    const used = inUseIn(tower, selected, rank);
+    const order = cart.decks.map((d) => d.id);
+    expect(used.map((h) => h.deckId)).toEqual([
+      ...order.filter((id) => id === "gishath" || id === "kratos"),
+      "alpha", "zeta",
+    ]);
+    expect(used.reduce((n, h) => n + h.held, 0)).toBe(selectLine(tower, selected)!.heldElsewhere);
+  });
+
+  it("leaves out a deck on the line that holds none", () => {
+    expect(inUseIn(tower, new Set(["omnath"]), rank).map((h) => h.deckId)).not.toContain("gishath-none");
+    const noneHeld = { ...tower, rows: tower.rows.map((r) => ({ ...r, held: 0 })) };
+    expect(inUseIn(noneHeld, new Set(["omnath"]), rank).map((h) => h.deckId)).toEqual(["kratos", "alpha", "zeta"]);
   });
 });

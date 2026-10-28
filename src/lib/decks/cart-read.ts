@@ -4,7 +4,7 @@ import { recordSoftFailure } from "../cache/soft-failure";
 import { cards, decks } from "../../db/schema";
 import { allocateClaims } from "./allocate";
 import { loadAvailability, loadDeckBuyRows, type DeckBuyRow } from "./availability-query";
-import type { CartDeck, CartLine, CartPayload } from "./cart";
+import type { CartDeck, CartHolding, CartLine, CartPayload } from "./cart";
 import { priceOf, priceState } from "./price";
 import { priceFor, type PriceRead } from "./price-query";
 import { readBuyRowPrices, rollupBuyRows } from "./shopping-rollup";
@@ -32,7 +32,7 @@ export async function loadCart(
     loadDeckBuyRows(userId, undefined, undefined, env),
     db.select({ total: sql<number>`count(*)::int` }).from(decks).where(eq(decks.userId, userId)),
   ]);
-  if (rows.length === 0) return { totalDecks: total, decks: [], lines: [], priced: true, newestAsOf: null };
+  if (rows.length === 0) return { totalDecks: total, decks: [], lines: [], priced: true, newestAsOf: null, holders: [] };
 
   const deckIds = [...new Set(rows.map((r) => r.deckId))];
   const oracleIds = [...new Set(rows.map((r) => r.oracleId))];
@@ -56,14 +56,19 @@ export async function loadCart(
   ]);
 
   const ownership = new Map<string, Ownership>();
+  // Every holding deck's name, from the claims the availability read already carries (G1).
+  const claimNames = new Map<string, string>();
   for (const [oracleId, a] of availability) {
     // What each deck HOLDS: a committed deck its allocation, a brew only what it was given (its
     // soft share is not a held copy), the same reading I got it's receipt takes.
-    const heldByDeck = new Map(allocateClaims(a).map((c) => [c.deckId, c.brew ? c.granted : c.allocated]));
+    const claimants = allocateClaims(a);
+    for (const c of claimants) claimNames.set(c.deckId, c.deckName);
+    const heldByDeck = new Map(claimants.map((c) => [c.deckId, c.brew ? c.granted : c.allocated]));
     ownership.set(oracleId, { owned: a.owned, heldByDeck });
   }
 
-  const built = buildCart(rows, read, deckRows, new Map(cardRows.map((c) => [c.oracleId, c.name])), ownership);
+  const holderRows = [...claimNames].filter(([id]) => !deckIds.includes(id)).map(([id, name]) => ({ id, name }));
+  const built = buildCart(rows, read, deckRows, new Map(cardRows.map((c) => [c.oracleId, c.name])), ownership, holderRows);
   const catalogArt = new Map(cardRows.map((c) => [c.oracleId, c.imageUri]));
   const layouts = new Map(cardRows.map((c) => [c.oracleId, c.layout]));
   return {
@@ -113,6 +118,8 @@ export function buildCart(
   deckRows: DeckRow[],
   cardNames: Map<string, string>,
   ownership: Map<string, Ownership> = new Map(),
+  /** The holding decks outside the cart, named (from the availability read's claims). */
+  holderRows: { id: string; name: string }[] = [],
 ): Omit<CartPayload, "totalDecks"> {
   const rollup = read ? rollupBuyRows(rows, read) : null;
   const deckById = new Map(deckRows.map((d) => [d.id, d]));
@@ -143,6 +150,7 @@ export function buildCart(
       commander: false,
       owned: ownership.get(r.oracleId)?.owned ?? 0,
       heldElsewhere: 0,
+      heldBy: [],
       rows: [],
     };
     const commander = deck.commanderOracleId === r.oracleId || deck.partnerOracleId === r.oracleId;
@@ -171,12 +179,26 @@ export function buildCart(
   // A line's decks in the selections' order, so `3 · HD - Gishath, HD - Kratos, HD -Thorin` reads
   // in the same order as the list of decks above it.
   const rank = new Map(decksOut.map((d, i) => [d.id, i]));
+  const outsideName = new Map(holderRows.map((d) => [d.id, d.name]));
+  // The holders' order (G1, ruled 2026-10-28): the cart's decks in the selections' order, then decks
+  // outside it, most copies first, then by name.
+  const holderOrder = (a: CartHolding, b: CartHolding) => {
+    const ra = rank.get(a.deckId);
+    const rb = rank.get(b.deckId);
+    if (ra !== undefined || rb !== undefined) return (ra ?? Number.POSITIVE_INFINITY) - (rb ?? Number.POSITIVE_INFINITY);
+    return b.held - a.held || (outsideName.get(a.deckId) ?? "").localeCompare(outsideName.get(b.deckId) ?? "") || a.deckId.localeCompare(b.deckId);
+  };
   for (const l of lines) {
     l.rows.sort((a, b) => (rank.get(a.deckId) ?? 0) - (rank.get(b.deckId) ?? 0));
     const own = ownership.get(l.oracleId);
     if (!own) continue;
     const onLine = new Set(l.rows.map((r) => r.deckId));
-    for (const [deckId, held] of own.heldByDeck) if (!onLine.has(deckId)) l.heldElsewhere += held;
+    for (const [deckId, held] of own.heldByDeck) {
+      if (onLine.has(deckId) || held <= 0) continue;
+      l.heldElsewhere += held;
+      l.heldBy.push({ deckId, held });
+    }
+    l.heldBy.sort(holderOrder);
   }
 
   return {
@@ -184,5 +206,9 @@ export function buildCart(
     lines,
     priced: read !== null,
     newestAsOf: read?.newestAsOf?.toISOString() ?? null,
+    // Only the holders a line names, so the payload carries no deck it never draws.
+    holders: holderRows
+      .filter((d) => lines.some((l) => l.heldBy.some((h) => h.deckId === d.id)))
+      .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)),
   };
 }

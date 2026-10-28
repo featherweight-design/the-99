@@ -34,7 +34,7 @@ const choice: PrintingChoice = {
 };
 
 const line: SelectedLine = {
-  oracleId: ORACLE, name: "Sol Ring", commander: false, owned: 17, heldElsewhere: 17,
+  oracleId: ORACLE, name: "Sol Ring", commander: false, owned: 17, heldElsewhere: 17, heldBy: [],
   rows: [], selectedRows: [
     { deckId: G, quantity: 1, cents: 150, state: "priced", commander: false, held: 0, finish: null, printing: choice.scryfallId },
     { deckId: K, quantity: 1, cents: 150, state: "priced", commander: false, held: 0, finish: null, printing: choice.scryfallId },

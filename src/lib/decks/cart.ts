@@ -62,8 +62,16 @@ export type CartLine = {
    * what an unselected deck on the line holds, since that deck is then one of the others.
    */
   heldElsewhere: number;
+  /**
+   * The decks NOT on this line that hold its owned copies, each with how many (v2's own fact, G1): the
+   * cart's decks first in the selections' order, then decks outside the cart, most copies first, then
+   * by name. Their copies sum to `heldElsewhere`; a name is in `decks` or `CartPayload.holders`.
+   */
+  heldBy: CartHolding[];
   rows: CartRow[];
 };
+
+export type CartHolding = { deckId: string; held: number };
 
 export type CartDeck = {
   id: string;
@@ -84,6 +92,11 @@ export type CartPayload = {
   priced: boolean;
   /** The feed's newest `as_of`, ISO, for the provenance line. Null with no prices. */
   newestAsOf: string | null;
+  /**
+   * Names of the decks outside the cart that hold an owned copy of some line (G1), so the own fact
+   * can name them; the cart's own decks are named in `decks`.
+   */
+  holders: { id: string; name: string }[];
 };
 
 export type CartFigures = { copies: number; cents: number; pricedCopies: number };
@@ -100,6 +113,19 @@ export function selectLine(line: CartLine, selected: ReadonlySet<string>): Selec
   const heldElsewhere = line.heldElsewhere
     + line.rows.reduce((n, r) => n + (selected.has(r.deckId) ? 0 : r.held), 0);
   return { ...line, commander, heldElsewhere, selectedRows, ...figuresOf(selectedRows) };
+}
+
+/**
+ * Where a selected line's owned copies are in use (v2's own fact): an unselected deck on the line
+ * holding some, and every deck in `heldBy`. The cart's decks in the selections' order (`rank`, from
+ * `CartPayload.decks`), then decks outside the cart in `heldBy`'s order. The copies sum to the line's
+ * selected `heldElsewhere`.
+ */
+export function inUseIn(line: CartLine, selected: ReadonlySet<string>, rank: ReadonlyMap<string, number>): CartHolding[] {
+  const unselected = line.rows.filter((r) => !selected.has(r.deckId) && r.held > 0).map((r) => ({ deckId: r.deckId, held: r.held }));
+  const at = (h: CartHolding) => rank.get(h.deckId) ?? Number.POSITIVE_INFINITY;
+  // A stable sort: decks outside the cart tie at infinity and keep `heldBy`'s order.
+  return [...unselected, ...line.heldBy].sort((a, b) => at(a) - at(b));
 }
 
 export function figuresOf(rows: readonly CartRow[]): CartFigures {

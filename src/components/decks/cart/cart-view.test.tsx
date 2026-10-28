@@ -51,20 +51,21 @@ function cart(over: Partial<CartPayload> = {}): CartPayload {
     totalDecks: 21,
     priced: true,
     newestAsOf: NOW,
+    holders: [],
     decks: [
       { id: "gishath", name: "HD - Gishath", brew: true, copies: 2, cents: 180, pricedCopies: 2 },
       { id: "omnath", name: "HD - Omnath", brew: false, copies: 1, cents: 400, pricedCopies: 1 },
       { id: "kratos", name: "HD - Kratos", brew: true, copies: 1, cents: 150, pricedCopies: 1 },
     ],
     lines: [
-      { oracleId: "omn", name: "Omnath, Locus of All", commander: true, owned: 0, heldElsewhere: 0,
+      { oracleId: "omn", name: "Omnath, Locus of All", commander: true, owned: 0, heldElsewhere: 0, heldBy: [],
         rows: [{ deckId: "omnath", quantity: 1, cents: 400, state: "priced", commander: true, held: 0, finish: null }] },
-      { oracleId: "sol", name: "Sol Ring", commander: false, owned: 17, heldElsewhere: 17,
+      { oracleId: "sol", name: "Sol Ring", commander: false, owned: 17, heldElsewhere: 17, heldBy: [],
         rows: [
           { deckId: "gishath", quantity: 1, cents: 150, state: "priced", commander: false, held: 0, finish: null },
           { deckId: "kratos", quantity: 1, cents: 150, state: "priced", commander: false, held: 0, finish: null },
         ] },
-      { oracleId: "tower", name: "Command Tower", commander: false, owned: 0, heldElsewhere: 0,
+      { oracleId: "tower", name: "Command Tower", commander: false, owned: 0, heldElsewhere: 0, heldBy: [],
         rows: [{ deckId: "gishath", quantity: 1, cents: 30, state: "priced", commander: false, held: 0, finish: null }] },
     ],
     ...over,
@@ -235,7 +236,7 @@ describe("CartView", () => {
 
   it("splits a cart too long for one link into named parts (K3)", () => {
     const long = (id: string) => ({
-      oracleId: id, name: `${id} ${"x".repeat(13_000)}`, commander: false, owned: 0, heldElsewhere: 0,
+      oracleId: id, name: `${id} ${"x".repeat(13_000)}`, commander: false, owned: 0, heldElsewhere: 0, heldBy: [],
       rows: [{ deckId: "omnath", quantity: 1, cents: 100, state: "priced" as const, commander: false, held: 0, finish: null }],
     });
     render(<CartView cart={cart({ lines: [long("a"), long("b"), long("c")] })} provenance={provenance} />);
@@ -269,7 +270,7 @@ describe("CartView by deck (A5)", () => {
     // Kratos holds 3 Rats and buys 2 more; Gishath holds none. All 3 owned are in another deck.
     const rats = cart();
     rats.lines[1] = {
-      oracleId: "rats", name: "Relentless Rats", commander: false, owned: 3, heldElsewhere: 0,
+      oracleId: "rats", name: "Relentless Rats", commander: false, owned: 3, heldElsewhere: 0, heldBy: [],
       rows: [
         { deckId: "gishath", quantity: 1, cents: 50, state: "priced", commander: false, held: 0, finish: null },
         { deckId: "kratos", quantity: 2, cents: 100, state: "priced", commander: false, held: 3, finish: null },
@@ -567,7 +568,7 @@ describe("CartView, a two-faced card's line", () => {
   const mdfc = cart({
     lines: [
       { oracleId: "reidane", name: "Reidane, God of the Worthy // Valkmira, Protector's Shield", layout: "modal_dfc",
-        commander: false, owned: 0, heldElsewhere: 0,
+        commander: false, owned: 0, heldElsewhere: 0, heldBy: [],
         rows: [{ deckId: "gishath", quantity: 1, cents: 90, state: "priced", commander: false, held: 0, finish: null }] },
     ],
   });
