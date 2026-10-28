@@ -4,7 +4,7 @@ import type { DeckGame } from "../decks/games";
 import { buildPlayGroup } from "../profile/play";
 import type { EvidencePack } from "./evidence";
 import type { TuningLine } from "./response-schema";
-import { chooseRefusal, sizeLists, validateSuggestions, type Drop, type ResolvedCard } from "./validate";
+import { chooseRefusal, shortReason, sizeLists, validateSuggestions, type Drop, type ResolvedCard } from "./validate";
 
 const game = (id: string, over: Partial<DeckGame> = {}): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-09-01T20:00:00Z"),
@@ -267,6 +267,19 @@ describe("validateSuggestions", () => {
     // Already the right kind: untouched.
     expect(kinds("notes", "swap out Sol Ring")).toEqual(["notes"]);
     expect(kinds("intent", "grind it out")).toEqual(["intent"]);
+  });
+
+  // Suggested changes v2 (spec 2026-10-27 §5.3): the run's words are its REQUEST, cited as `request`, held to the same
+  // whole-or-part rule, and a misfiled `intent` is corrected to `request` rather than to the v10 name.
+  it("keeps a v2 request citation under the same rule, and corrects intent to request on a v2 run", () => {
+    const withBoth = { ...pack, intent: "grind it out", notes: "swap out Sol Ring" };
+    const v2 = (kind: "request" | "intent", value: string) => validateSuggestions({
+      response: { additions: [{ ...good, evidence: [{ kind, value }] }], cuts: [] }, pack: withBoth, resolveName, v2: true,
+    });
+    expect(v2("request", '"swap out Sol Ring"').droppedCount).toBe(0);
+    expect(v2("request", "go wide").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "request" } });
+    expect(v2("intent", "swap out Sol Ring").kept[0]?.evidence.map((c) => c.kind)).toEqual(["request"]);
+    expect(v2("request", "grind it out").kept[0]?.evidence.map((c) => c.kind)).toEqual(["intent"]);
   });
 
   it("drops a notes citation when this run carried no notes", () => {
@@ -681,5 +694,18 @@ describe("chooseRefusal: the empty-result sentence's own precedence (H35, PR 4a)
 
   it("falls back to nothingLeft when no named cause survives", () => {
     expect(chooseRefusal([drop("citation"), drop("duplicate")], null)).toEqual({ reason: "nothingLeft" });
+  });
+});
+
+describe("shortReason: what bound a short v2 list (spec 2026-10-27 §5.5)", () => {
+  const d = (...rules: Drop["rule"][]) => rules.map((rule) => ({ rule }));
+  it("names the restriction with the most drops, ties in the limits box's order", () => {
+    expect(shortReason(d("notOwned", "notOwned", "overCap"))).toBe("notOwned");
+    expect(shortReason(d("offSet", "overCap"))).toBe("overCap");
+    expect(shortReason(d("bracketAim", "citation"))).toBe("bracketAim");
+  });
+  it("is null when no restriction dropped anything", () => {
+    expect(shortReason(d("citation", "keyCard"))).toBeNull();
+    expect(shortReason([])).toBeNull();
   });
 });

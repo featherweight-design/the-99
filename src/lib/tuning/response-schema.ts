@@ -32,5 +32,25 @@ export const tuningResponseSchema = z.object({
 });
 
 export type TuningResponse = z.infer<typeof tuningResponseSchema>;
-/** One card the model named, to add or to cut. */
-export type TuningLine = z.infer<typeof lineSchema>;
+
+/**
+ * Suggested changes v2's reply shape (spec 2026-10-27 §5.2, §5.3). The ask scales with the player's count, so the
+ * schema is built per run: each list's cap is LOOSE, twice the ask (`schemaCapFor`), because a strict cap rejected the
+ * whole reply for one card too many (6 of 20 misses in the count-mechanism eval). The app keeps the first ask-many valid
+ * lines. The run's typed words are the REQUEST in v2, cited as `request`; the v10 schema above keeps `notes` unchanged.
+ */
+export const citationSchemaV2 = z.object({
+  kind: z.enum(["games", "note", "decklist", "intent", "mix", "request", "focus"]),
+  value: z.string().min(1).max(160),
+});
+
+const lineSchemaV2 = lineSchema.extend({ evidence: z.array(citationSchemaV2).min(1).max(4) });
+
+/** One list of a v2 reply: the two-call flow asks for additions and cuts in separate calls (§5.1). */
+export function suggestedChangesV2Schema<L extends "additions" | "cuts">(cap: number, list: L) {
+  return z.object({ [list]: z.array(lineSchemaV2).max(cap) } as { [K in L]: z.ZodArray<typeof lineSchemaV2> });
+}
+/** One card the model named, to add or to cut: either contract's line (v2 cites `request` where v10 cites `notes`). */
+export type TuningLine = Omit<z.infer<typeof lineSchema>, "evidence"> & {
+  evidence: (z.infer<typeof citationSchema> | z.infer<typeof citationSchemaV2>)[];
+};

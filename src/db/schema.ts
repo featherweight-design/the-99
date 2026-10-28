@@ -2918,7 +2918,22 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
    *  sentence needs. Null for every run from before this column, and additive — nothing reads it
    *  as a status. */
   validationReport: jsonb("validation_report").$type<ValidationReport>(),
+  // Suggested changes v2 (spec 2026-10-27 §8). Null on every v10 run and every Proposed cuts run: a run with a count is v2.
+  /** N, the cards in (and out) the player asked for, 1 to 20. */
+  requestedCount: smallint("requested_count"),
+  /** The player's typed request, the same text that went to the model (Hugh, §12 Q5). Purged with the account. */
+  requestText: text("request_text"),
+  /** The bracket choice beside the request (Hugh, §12 Q7; the handoff's Keep / Down / Up), and the bracket it aims at. */
+  bracketChoice: text("bracket_choice"),
+  bracketTarget: smallint("bracket_target"),
 }, (t) => [
+  check("deck_suggestion_runs_requested_count_check", sql`${t.requestedCount} is null or ${t.requestedCount} between 1 and 20`),
+  check("deck_suggestion_runs_request_text_check", sql`${t.requestText} is null or char_length(${t.requestText}) <= 500`),
+  check(
+    "deck_suggestion_runs_bracket_check",
+    // Both or neither, written out: a CHECK that evaluates to NULL passes, so `in` and `between` alone would let one half in.
+    sql`(${t.bracketChoice} is null and ${t.bracketTarget} is null) or (${t.bracketChoice} is not null and ${t.bracketTarget} is not null and ${t.bracketChoice} in ('keep', 'down', 'up') and ${t.bracketTarget} between 1 and 5)`,
+  ),
   check("deck_suggestion_runs_tool_check", sql`${t.tool} in ('suggested_changes', 'proposed_cuts')`),
   check(
     "deck_suggestion_runs_status_check",
@@ -2954,7 +2969,8 @@ export type TuningCitation = {
   // a per-game "note" and from the deck's standing "intent" (description).
   // "focus" (strategy focus): how far an addition moves the deck's focus, written by the app after validation, never
   // by the model (`strategyChips`).
-  kind: "games" | "note" | "decklist" | "intent" | "mix" | "notes" | "focus";
+  // "request" (Suggested changes v2): the run's typed request, the v2 name for "notes". A v10 run keeps "notes".
+  kind: "games" | "note" | "decklist" | "intent" | "mix" | "notes" | "request" | "focus";
   /** Rendered by the card. Never a percentage, never a net figure. */
   value: string;
 };
@@ -2982,6 +2998,10 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
   bracketAfter: integer("bracket_after").array(),
   // Written by the apply, read and cleared by the undo. Null until applied.
   undoSnapshot: jsonb("undo_snapshot").$type<ApplySnapshot>(),
+  // Suggested changes v2. The player's pick, kept across leaving the page and an Undo (the handoff: "picks kept").
+  picked: boolean("picked").notNull().default(false),
+  // The one apply this item was written by (spec §7a): one id per applied set, which its one Undo reverts.
+  applySet: uuid("apply_set"),
 }, (t) => [
   check(
     "deck_suggestion_items_verdict_check",
@@ -2992,6 +3012,7 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
     sql`${t.addOracleId} is not null or ${t.cutOracleId} is not null`,
   ),
   index("deck_suggestion_items_run_position_idx").on(t.runId, t.position),
+  index("deck_suggestion_items_run_apply_set_idx").on(t.runId, t.applySet).where(sql`${t.applySet} is not null`),
 ]);
 
 /**
