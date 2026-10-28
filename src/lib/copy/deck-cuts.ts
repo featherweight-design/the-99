@@ -137,9 +137,9 @@ export const deckCutsCopy = {
         cutHead: (cut: number) => `${cap(numberWord(cut))} cut.`,
         enoughLead: (bodySize: number, others: number) =>
           `Back at ${bodySize}. The other ${numberWord(others)} ${others === 1 ? "stays" : "stay"} here, so you can Undo one and cut another instead.`,
-        /** More cut than the deck needed: the deck is under its body, said as the count says over. Not drawn; for /copy-review. */
+        /** More cut than the deck needed: the deck is under its body, said as the count says over. Not on the board (kept at /copy-review). */
         pastLead: (under: number, bodySize: number) => `${cap(numberWord(under))} under the ${bodyWords(bodySize)}.`,
-        doneFoot: (cut: number, needed: number, others: number) => `${cut} of ${needed} cut${others > 0 ? ` \u00b7 ${others} more named` : ""}`,
+        doneFoot: (cut: number, needed: number, others: number) => `${cut > needed ? `${cut} cut` : `${cut} of ${needed} cut`}${others > 0 ? ` \u00b7 ${others} more named` : ""}`,
       },
       shortRow: (n: number) => `A ${ordinalWord(n)} wasn\u2019t named`,
       shortWhy: "it cited a figure the count doesn\u2019t have \u00b7 left out, not replaced",

@@ -15,7 +15,7 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
-import { cutsAsk, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
+import { cutsAsk, LEGACY_MAX_CUTS_PER_RUN, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import { cutChips, type Chip } from "../../lib/tuning/cuts-count";
 import { cutStands, type CutItem, type CutsPanel } from "../../lib/tuning/cuts-state";
 import { pickState, type PickState } from "../../lib/tuning/pick-n";
@@ -290,7 +290,11 @@ export function CutsPanelView({
 
   // The result's rows against the cuts the deck needed when it ran (small items R1b): a run names three
   // more than that, and the head, the lead and the foot all read this one state (`pickState`).
-  const pick = pickState({ named: items.length, needed: panel.asked, chosen: cutCount, answered });
+  const counted = pickState({ named: items.length, needed: panel.asked, chosen: cutCount, answered });
+  // "Back at 99" is said only of the list as it stands: a run reopened from History over a deck that has grown since
+  // reads as one still being chosen from, with the count's live over line. (This visit's own cuts move `over` only
+  // when the action answers, so the instant switch to enough is never held back by it.)
+  const pick = priorResult && (counted.phase === "enough" || counted.phase === "past") && over > 0 ? { ...counted, phase: "choosing" as const } : counted;
   const words = cutsPickWords(pick, { bodySize: panel.bodySize, asked: panel.itemsReport !== null ? panel.asked : items.length });
   // The lead: the over figure in --fg (never --warning), then what the state says next.
   const lead = (() => {
@@ -374,7 +378,9 @@ function ResultBlock({ panel, pick, words, deps, standing, onSettled }: {
   const { items, asked } = panel;
   const d = copy.deeper;
   // A run that hit the per-run cap leaves the rest of the overage for the next one.
-  const more = asked >= MAX_CUTS_PER_RUN ? Math.max(0, panel.over - items.filter((i) => i.verdict !== "accepted").length) : 0;
+  // A run from before prompt v5 (no `named` in its report) was capped at the old 15.
+  const cap = panel.itemsReport?.named === undefined ? LEGACY_MAX_CUTS_PER_RUN : MAX_CUTS_PER_RUN;
+  const more = asked >= cap ? Math.max(0, panel.over - items.filter((i) => i.verdict !== "accepted").length) : 0;
   // Only a run that named fewer than the deck needed leaves a slot: the three extra rows are a choice, not owed.
   const slots = Array.from({ length: Math.max(0, asked - items.length) }, (_, i) => items.length + i + 1);
   return (

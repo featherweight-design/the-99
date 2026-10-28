@@ -30,6 +30,8 @@ export const OUTPUT_CEILING_TOKENS = CUTS_MAX_TOKENS;
 export const WORST_TOKENS_PER_CUT = 440;
 export const OUTPUT_MARGIN = 0.15;
 export const MAX_CUTS_PER_RUN = Math.floor((OUTPUT_CEILING_TOKENS * (1 - OUTPUT_MARGIN)) / WORST_TOKENS_PER_CUT);
+/** The cap a run stored before prompt v5 was held to (an 8,000-token ceiling): its "more still over" line reads against it. */
+export const LEGACY_MAX_CUTS_PER_RUN = 15;
 
 /**
  * The cuts a deck `over` cards over 100 NEEDS from one run: the overage, up to the same cap a run can

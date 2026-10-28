@@ -109,7 +109,8 @@ export const tuningHubCopy = {
       },
       cutsDeeperOk: (named: number, asked: number, cut: number, kept: number) => {
         const answered = [...(cut ? [`${cut} cut`] : []), ...(kept ? [`${kept} kept`] : [])].join(", ");
-        return `${named} of ${asked} named${answered ? ` · ${answered}` : ""}`;
+        // A run that named more than the deck needed (prompt v5) says so as the result's foot does.
+        return `${named > asked ? `${named} named for ${asked} ${asked === 1 ? "cut" : "cuts"}` : `${named} of ${asked} named`}${answered ? ` · ${answered}` : ""}`;
       },
       cutsFree: (over: number, roles: readonly { label: string; over: number }[]) =>
         `${over} over${roles.length ? ` · ${roles.map((r) => `${r.label} ${r.over} over`).join(", ")}` : ""}`,

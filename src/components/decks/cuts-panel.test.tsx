@@ -642,7 +642,7 @@ describe("a result with more named than the deck needs (pick N)", () => {
     return p;
   };
   const cutItem = (n: number) => item(n, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 });
-  const foot = () => screen.getByText(/ named for | of 3 cut /).textContent ?? "";
+  const foot = () => screen.getByText(/ named for | of 3 cut |^4 cut · /).textContent ?? "";
 
   it("open: the head says how many to choose from, the lead how many to cut, the foot both", async () => {
     await mount(deps(pick()));
@@ -675,7 +675,8 @@ describe("a result with more named than the deck needs (pick N)", () => {
     expect(screen.getByText("Four cut.").tagName).toBe("B");
     expect(screen.getByText("One under the ninety-nine.", { exact: false })).toBeTruthy();
     expect(screen.getAllByRole("button", { name: copy.cut })).toHaveLength(2);
-    expect(foot()).toMatch(/^4 of 3 cut · 2 more named · /);
+    // Past the need the foot counts the cuts alone ("4 of 3" read oddly on the walk).
+    expect(foot()).toMatch(/^4 cut · 2 more named · /);
   });
 
   it("part cut: the shipped part lead under the live over line, the open foot", async () => {
@@ -706,4 +707,5 @@ describe("a result with more named than the deck needs (pick N)", () => {
     expect(screen.queryAllByTestId("short-slot")).toHaveLength(0);
     expect(foot()).toMatch(/^4 named for 3 cuts · /);
   });
+
 });
