@@ -103,9 +103,9 @@ describe("hasOverviewContent", () => {
 });
 
 describe("usualFor", () => {
-  it("names the nearest measured point: 3 up to 5, 10 up to 14, 20 past that", () => {
-    expect([1, 5].map(usualFor)).toEqual([copy.usual[3], copy.usual[3]]);
-    expect([6, 14].map(usualFor)).toEqual([copy.usual[10], copy.usual[10]]);
-    expect([15, 20].map(usualFor)).toEqual([copy.usual[20], copy.usual[20]]);
+  it("names the nearest measured point: 3 up to 6, 10 up to 15, 20 past that", () => {
+    expect([1, 6].map(usualFor)).toEqual([copy.usual[3], copy.usual[3]]);
+    expect([7, 15].map(usualFor)).toEqual([copy.usual[10], copy.usual[10]]);
+    expect([16, 20].map(usualFor)).toEqual([copy.usual[20], copy.usual[20]]);
   });
 });

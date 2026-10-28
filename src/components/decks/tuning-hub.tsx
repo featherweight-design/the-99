@@ -588,7 +588,7 @@ function ToolTile({ view, onOpen, onLink }: { view: TileView; onOpen: () => void
           type="button"
           data-tile-link={view.link.go}
           onClick={() => onLink(view.link!.go)}
-          className="mt-[4px] flex min-h-[44px] w-fit items-center font-mono text-[11px] text-[color:var(--accent-text)] underline underline-offset-[3px] md:min-h-0"
+          className="mt-[4px] flex min-h-[44px] w-fit items-center font-mono text-[11.5px] text-[color:var(--accent-text)] underline decoration-[color:var(--accent-shadow)] underline-offset-[4px] md:min-h-[32px]"
         >
           {view.link.label}
         </button>

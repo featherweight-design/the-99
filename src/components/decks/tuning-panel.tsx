@@ -1332,7 +1332,10 @@ export function TuningPanel({
       {!reading && v2 && same ? (
         <SameRequestConfirm
           at={same.at}
-          onAgain={() => void pressV2(true)}
+          // Off 99 (or with no credit) a run would be refused: held off with Send, the confirm kept so its question
+          // stands when the deck is back at 99.
+          onAgain={() => { if (!sendOff) void pressV2(true); }}
+          againOff={sendOff}
           onOpen={openRun ? () => openRun("suggested", same.runId, same.at) : null}
         />
       ) : (

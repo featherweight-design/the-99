@@ -21,6 +21,8 @@ const copy = deckDescriptionCopy.notes;
 /** Two rows' worth at this field's own line-height/padding — the review-specified starting
  *  height, and the floor `GROW_MIN_PX` keeps it from shrinking under its own placeholder. */
 const GROW_MIN_PX = 64;
+/** The framed request box's floor: three lines at its line-height and padding (the board's 112px frame, less its foot). */
+const FRAMED_MIN_PX = 72;
 
 /** The picker's lookup, module-level so its identity is stable across renders. */
 const searchNotesCards = (query: string) => searchTagCards("tuning", query);
@@ -66,9 +68,22 @@ export function TuningNotesField({
   // Grows with its content (review fix) rather than sitting fixed at two rows: measured off the
   // textarea's own `scrollHeight`, which only reflects real layout in a browser — jsdom reports
   // 0, so this is a no-op there and the field keeps its CSS floor.
+  // A `fill` box grows the same way, but as a FLOOR: it is measured at its own content height (out of the stretch) and
+  // given that as its minimum, so the frame still stretches to the Bracket card beside it on desktop and grows past it,
+  // never clipping, when the words run longer (500 characters on a phone has no card beside it at all).
   useEffect(() => {
     const el = ref.current;
-    if (!el || fill) return;
+    if (!el) return;
+    if (fill) {
+      el.style.flex = "none";
+      el.style.height = "auto";
+      el.style.minHeight = "";
+      const content = el.scrollHeight;
+      el.style.flex = "";
+      el.style.height = "";
+      if (content > 0) el.style.minHeight = `${Math.max(FRAMED_MIN_PX, content)}px`;
+      return;
+    }
     el.style.height = "auto";
     const next = el.scrollHeight;
     if (next > 0) el.style.height = `${next}px`;
@@ -119,7 +134,7 @@ export function TuningNotesField({
       // 16px below `md`, same iOS Safari zoom-on-focus reason as the description field.
       className={`w-full resize-none overflow-hidden font-sans text-[16px] leading-[1.5] [@media(pointer:fine)]:md:text-[13.5px] ${framed ? `bg-transparent outline-none ${fill ? "flex-1" : ""}` : "rounded-[8px]"}`}
       style={framed
-        ? { padding: "10px 12px 4px", color: "var(--fg)", minHeight: 72 }
+        ? { padding: "10px 12px 4px", color: "var(--fg)", minHeight: FRAMED_MIN_PX }
         : {
           background: "var(--surface)",
           border: "1px solid var(--border-strong)",
@@ -132,9 +147,10 @@ export function TuningNotesField({
   if (framed) {
     return (
       <div className={`relative flex flex-col ${fill ? "h-full" : ""}`}>
+        {/* The frame's border is a class, never inline, so the focus edge can take it (an inline border outranks it). */}
         <div
-          className={`flex flex-col rounded-[8px] focus-within:border-[color:var(--accent)] ${fill ? "flex-1" : ""}`}
-          style={{ background: "var(--surface)", border: "1px solid var(--border-strong)" }}
+          data-framed-box=""
+          className={`flex flex-col rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] focus-within:border-[color:var(--accent)] ${fill ? "flex-1" : ""}`}
         >
           {textarea}
           <span className="flex items-center gap-[8px] px-[12px] pt-[2px] pb-[8px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>

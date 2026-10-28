@@ -130,7 +130,8 @@ export function hasOverviewContent(content: Pick<CheckedSynopsis, "primer" | "ke
   return !!content && ((content.primer?.strategy.length ?? 0) > 0 || (content.keyCards?.length ?? 0) > 0);
 }
 
-/** The wait hint beside the credit line, by N: the handoff's three measured points (3, 10, 20), each N to the nearest. */
+/** The wait hint beside the credit line, by N: the handoff's three measured points (3, 10, 20), each N to the nearest
+ *  (6 is nearer 3 than 10; 15, halfway, takes the 10). */
 export function usualFor(n: number): string {
-  return n <= 5 ? copy.usual[3] : n <= 14 ? copy.usual[10] : copy.usual[20];
+  return n <= 6 ? copy.usual[3] : n <= 15 ? copy.usual[10] : copy.usual[20];
 }

@@ -7,7 +7,7 @@
 // step 3 the shipped Kept for this deck box, unchanged. Controlled: the panel holds every value, so its press reads what
 // is on screen, and a drift off 99 keeps all of it.
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { localDay } from "../../lib/copy/credits";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
@@ -18,7 +18,7 @@ import { askFor, MAX_COUNT, MIN_COUNT } from "../../lib/tuning/v2/count";
 import { appendSentence, type BracketCard, type NoticedChip } from "../../lib/tuning/v2/intake";
 import { CountStepper } from "../ui/count-stepper";
 import { BracketMark } from "./bracket-mark";
-import { TuningNotesField, type HighlightTail } from "./tuning-notes-field";
+import { HIGHLIGHT_MS, TuningNotesField, type HighlightTail } from "./tuning-notes-field";
 
 const copy = suggestedChangesV2Copy.intake;
 const REQUEST_MAX = deckDescriptionCopy.notes.maxLength;
@@ -53,12 +53,20 @@ export function SuggestedChangesIntake({
   restrictions: ReactNode;
 }) {
   const [tail, setTail] = useState<HighlightTail | null>(null);
+  // The chip just tapped wears the accent ring for the same beat its words stay highlighted in the box.
+  const [hot, setHot] = useState<string | null>(null);
+  useEffect(() => {
+    if (hot === null) return;
+    const off = setTimeout(() => setHot(null), HIGHLIGHT_MS);
+    return () => clearTimeout(off);
+  }, [hot, tail]);
   const tap = (chip: NoticedChip) => {
     const room = REQUEST_MAX - countCharacters(plainText(request));
     const appended = appendSentence(request, chip.sentence, room);
     if (!appended) return;
     onRequest(appended.next);
     setTail((t) => ({ length: chip.sentence.length, nonce: (t?.nonce ?? 0) + 1 }));
+    setHot(chip.id);
   };
   const line = copy.count.line(count, askFor(count));
   // The board sets the count's own sentence ("3 in, 3 out.") in the strong ink and the pool after it in the body's.
@@ -111,13 +119,13 @@ export function SuggestedChangesIntake({
               />
             </div>
             {chips.length > 0 ? (
-              <div data-sc-noticed="" className="flex flex-col gap-[6px] md:[grid-area:chips]">
-                <h4 className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{copy.noticed.head}</h4>
-                <p className="text-[12px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>{copy.noticed.help}</p>
-                <ul className="mt-[4px] flex flex-wrap gap-[8px]">
+              <div data-sc-noticed="" className="flex flex-col gap-[8px] md:[grid-area:chips]">
+                <h4 className="font-mono text-[10px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{copy.noticed.head}</h4>
+                <p className="text-[12px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>{copy.noticed.help}</p>
+                <ul className="flex flex-wrap gap-[6px]">
                   {chips.map((chip) => (
                     <li key={chip.id}>
-                      <Chip chip={chip} inBox={request.includes(chip.sentence)} onTap={() => tap(chip)} />
+                      <Chip chip={chip} inBox={request.includes(chip.sentence)} hot={hot === chip.id} onTap={() => tap(chip)} />
                     </li>
                   ))}
                 </ul>
@@ -126,8 +134,8 @@ export function SuggestedChangesIntake({
             {bracket && chosen ? (
               <div
                 data-sc-bracket=""
-                className="flex flex-col gap-[10px] rounded-[10px] px-[12px] py-[12px] md:[grid-area:bracket]"
-                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                className="flex flex-col gap-[9px] rounded-[10px] p-[12px] md:[grid-area:bracket]"
+                style={{ background: "var(--surface-rail)", border: "1px solid var(--border-strong)" }}
               >
                 <p className="flex items-baseline gap-[8px]">
                   <span id="sc-bracket-head" className="text-[13px] font-semibold" style={{ color: "var(--fg)" }}>{copy.bracket.head}</span>
@@ -143,19 +151,19 @@ export function SuggestedChangesIntake({
                         aria-pressed={on}
                         data-sc-bracket-choice={`${o.choice}:${o.target}`}
                         onClick={() => onBracket(i)}
-                        className={`flex min-h-[44px] items-center gap-[8px] rounded-[8px] border border-solid px-[9px] py-[6px] text-left text-[12px] leading-[1.3] md:min-h-[36px] ${
+                        className={`flex min-h-[44px] items-center gap-[7px] rounded-[8px] border border-solid py-[4px] pr-[10px] pl-[6px] text-left text-[12.5px] leading-[1.3] ${
                           on
-                            ? "border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_8%,transparent)] font-semibold text-[color:var(--fg)]"
-                            : "border-[color:var(--border)] bg-transparent font-medium text-[color:var(--fg-muted)] hover:text-[color:var(--fg-body)]"
+                            ? "border-[color:var(--accent)] bg-[color:var(--elevated)] font-semibold text-[color:var(--fg)]"
+                            : "border-[color:var(--border)] bg-[color:var(--surface-sunken)] font-normal text-[color:var(--fg-muted)] hover:text-[color:var(--fg-body)]"
                         }`}
                       >
-                        <BracketMark bracket={o.mark} px={22} />
+                        <BracketMark bracket={o.mark} px={20} />
                         <span>{o.label}</span>
                       </button>
                     );
                   })}
                 </div>
-                <p data-sc-bracket-note="" className="text-[12px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>{chosen.note}</p>
+                <p data-sc-bracket-note="" className="text-[12px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>{chosen.note}</p>
               </div>
             ) : null}
           </div>
@@ -171,12 +179,12 @@ export function SuggestedChangesIntake({
 function Step({ n, title, sub, children }: { n: number; title: string; sub?: string; children: ReactNode }) {
   return (
     <li className="flex flex-col gap-[10px]" data-sc-step={n}>
-      <div className="flex flex-col gap-[2px] md:flex-row md:items-baseline md:gap-[10px]">
-        <h3 className="flex items-baseline gap-[8px] text-[13.5px] font-semibold md:text-[14px]" style={{ color: "var(--fg)" }}>
-          <span aria-hidden="true" className="font-mono text-[11px]" style={{ color: "var(--accent-text)" }}>{n}</span>
+      <div className="flex flex-col gap-[2px] md:flex-row md:items-baseline md:gap-[9px]">
+        <h3 className="flex items-baseline gap-[9px] text-[14px] font-semibold" style={{ color: "var(--fg)" }}>
+          <span aria-hidden="true" className="font-mono text-[11px] font-semibold" style={{ color: "var(--accent)" }}>{n}</span>
           {title}
         </h3>
-        {sub ? <span className="pl-[18px] font-mono text-[10.5px] md:pl-0" style={{ color: "var(--fg-faint)" }}>{sub}</span> : null}
+        {sub ? <span className="pl-[20px] font-mono text-[10.5px] md:pl-0" style={{ color: "var(--fg-faint)" }}>{sub}</span> : null}
       </div>
       {children}
     </li>
@@ -190,9 +198,13 @@ function leadSentence(text: string, at: ". " | ", "): [string, string] {
   return i < 0 ? [text, ""] : [text.slice(0, i + 1), text.slice(i + 1)];
 }
 
-/** The warn-edged box both v2 boxes share (Intake board D, Not-At-99 C). */
-const WARN_BOX = "mt-[16px] flex flex-col gap-[8px] rounded-[10px] px-[14px] py-[12px] md:mt-[18px]";
-const warnBoxStyle = { background: "var(--surface)", border: "1px solid var(--border)", borderLeft: "3px solid var(--warning)" } as const;
+/** The two v2 notice boxes' shared skin (the board's `.drift` and `.same`): the drift line's edge is the warning, the
+ *  same-request confirm's the accent. */
+const NOTICE_BOX = "mt-[16px] flex flex-col rounded-[10px] md:mt-[18px]";
+const noticeStyle = (edge: "var(--warning)" | "var(--accent)") =>
+  ({ background: "var(--elevated-hover)", border: "1px solid var(--border-strong)", borderLeft: `3px solid ${edge}` }) as const;
+/** The board's `.lk`: an accent mono link with a quiet underline. */
+const LINK = "text-[color:var(--accent-text)] underline underline-offset-[4px] decoration-[color:var(--accent-shadow)]";
 
 /**
  * The deck drifted off 99 with the intake open (Not-At-99 C): Send is off, and this says the count and links the tool
@@ -203,13 +215,13 @@ export function DriftLine({ at, over, onTopOff, onProposedCuts }: { at: number; 
   const under = over < 0;
   const go = under ? onTopOff : onProposedCuts;
   return (
-    <div data-sc-drift="" className={WARN_BOX} style={warnBoxStyle}>
-      <p className="text-[12.5px] leading-[1.55] md:text-[13px]" style={{ color: "var(--fg-body)" }}>
+    <div data-sc-drift="" className={`${NOTICE_BOX} gap-[4px] px-[14px] py-[11px]`} style={noticeStyle("var(--warning)")}>
+      <p className="text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
         <span className="block font-semibold" style={{ color: "var(--fg)" }}>{title}</span>
         {rest.trim()}
       </p>
       {go ? (
-        <button type="button" onClick={go} className="flex min-h-[44px] w-fit items-center font-mono text-[11px] text-[color:var(--accent-text)] underline underline-offset-[3px] md:min-h-0">
+        <button type="button" onClick={go} className={`flex min-h-[44px] w-fit items-center font-mono text-[11px] md:min-h-0 ${LINK}`}>
           {under ? suggestedChangesV2Copy.tile.topOff : suggestedChangesV2Copy.tile.proposedCuts}
         </button>
       ) : null}
@@ -222,23 +234,36 @@ export function DriftLine({ at, over, onTopOff, onProposedCuts }: { at: number; 
  * that asked. `Run it again` presses with `confirmed`; `Open Oct 26’s run` reopens that run read-only as History does,
  * and is drawn only where History is (the Tuning hub).
  */
-export function SameRequestConfirm({ at, onAgain, onOpen }: { at: string; onAgain: () => void; onOpen: (() => void) | null }) {
+export function SameRequestConfirm({ at, onAgain, onOpen, againOff = false }: {
+  at: string; onAgain: () => void; onOpen: (() => void) | null;
+  /** The deck is off 99: a run would be refused, so `Run it again` is held off with Send (the drift line says why). */
+  againOff?: boolean;
+}) {
   const date = localDay(new Date(at));
   const same = copy.same;
   const [lead, rest] = leadSentence(same.body(date), ", ");
   const head = lead.replace(/,$/, "");
   return (
-    <div data-sc-same="" role="group" aria-label={head} className={WARN_BOX} style={warnBoxStyle}>
-      <p className="text-[12.5px] leading-[1.55] md:text-[13px]" style={{ color: "var(--fg-body)" }}>
+    <div data-sc-same="" role="group" aria-label={head} className={`${NOTICE_BOX} gap-[10px] px-[14px] py-[12px]`} style={noticeStyle("var(--accent)")}>
+      <p className="text-[13px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
         <span className="font-semibold" style={{ color: "var(--fg)" }}>{head}</span>
         {`,${rest}`}
       </p>
-      <div className="grid grid-cols-2 gap-[8px] md:flex md:gap-[10px]">
-        <button type="button" onClick={onAgain} className="h-[44px] rounded-[8px] border border-solid border-[color:var(--accent)] px-[16px] text-[13px] font-semibold text-[color:var(--accent-text)] transition-colors hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-[36px]">
+      <div className="grid grid-cols-2 gap-[8px] md:flex">
+        <button
+          type="button"
+          onClick={againOff ? undefined : onAgain}
+          aria-disabled={againOff || undefined}
+          className={`h-[44px] rounded-[8px] border border-solid px-[16px] text-[13px] font-semibold md:h-[40px] ${
+            againOff
+              ? "cursor-default border-[color:var(--border-strong)] text-[color:var(--fg-disabled)]"
+              : "border-[color:var(--accent)] text-[color:var(--accent-text)] transition-colors hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"
+          }`}
+        >
           {same.again}
         </button>
         {onOpen ? (
-          <button type="button" onClick={onOpen} className="h-[44px] rounded-[8px] border border-solid border-[color:var(--border-strong)] px-[16px] text-[13px] font-medium text-[color:var(--fg-body)] hover:text-[color:var(--fg)] md:h-[36px]">
+          <button type="button" onClick={onOpen} className="h-[44px] rounded-[8px] border border-solid border-[color:var(--border-strong)] px-[16px] text-[13px] font-medium text-[color:var(--fg-body)] hover:text-[color:var(--fg)] md:h-[40px]">
             {same.open(date)}
           </button>
         ) : null}
@@ -258,7 +283,7 @@ export function IntakeReads({ parts, lastRun, onHistory }: { parts: readonly str
   return (
     <p
       data-sc-reads=""
-      className="mt-[16px] pt-[12px] font-mono text-[9.5px] leading-[1.6] md:mt-[18px] md:text-[10.5px]"
+      className="mt-[16px] pt-[12px] font-mono text-[10.5px] leading-[1.6] md:mt-[18px]"
       style={{ color: "var(--fg-faint)", borderTop: "1px solid var(--border)" }}
     >
       {parts.length > 0 ? (
@@ -267,7 +292,7 @@ export function IntakeReads({ parts, lastRun, onHistory }: { parts: readonly str
           {parts.map((part, i) => (
             <span key={part}>
               {i > 0 ? " · " : null}
-              <strong className="font-semibold" style={{ color: "var(--fg-body)" }}>{part}</strong>
+              <strong className="font-medium" style={{ color: "var(--fg-muted)" }}>{part}</strong>
             </span>
           ))}
           {copy.reads2}
@@ -280,7 +305,7 @@ export function IntakeReads({ parts, lastRun, onHistory }: { parts: readonly str
             type="button"
             data-sc-last-run=""
             onClick={onHistory}
-            className="inline-flex min-h-[44px] items-center text-[color:var(--accent-text)] underline underline-offset-[3px] md:min-h-0"
+            className={`inline-flex min-h-[44px] items-center md:min-h-0 ${LINK}`}
           >
             {copy.lastRun(lastRun)}
           </button>
@@ -292,23 +317,24 @@ export function IntakeReads({ parts, lastRun, onHistory }: { parts: readonly str
 
 /** A "What we noticed" chip: its kind, its words and figure, and + until its own sentence is in the box, then dashed
  *  with ✓ (Intake board C). It tracks its own sentence and no other. */
-function Chip({ chip, inBox, onTap }: { chip: NoticedChip; inBox: boolean; onTap: () => void }) {
+function Chip({ chip, inBox, hot, onTap }: { chip: NoticedChip; inBox: boolean; hot: boolean; onTap: () => void }) {
   return (
     <button
       type="button"
       aria-pressed={inBox}
       data-sc-chip={chip.id}
       onClick={inBox ? undefined : onTap}
-      className={`flex min-h-[44px] items-center gap-[8px] rounded-[8px] border px-[10px] py-[6px] text-left text-[12.5px] text-[color:var(--fg)] md:min-h-[34px] ${
-        inBox ? "border-dashed border-[color:var(--border-dashed)] bg-transparent" : "border-solid border-[color:var(--border)] bg-[color:var(--surface)]"
-      }`}
+      data-hot={hot || undefined}
+      className={`flex min-h-[44px] items-center gap-[8px] rounded-[9px] border border-[color:var(--border-strong)] px-[10px] py-[6px] text-left text-[12.5px] leading-[1.35] md:min-h-[40px] ${
+        inBox ? "border-dashed bg-transparent text-[color:var(--fg-faint)]" : "border-solid bg-[color:var(--surface-sunken)] text-[color:var(--fg-body)]"
+      } ${hot ? "shadow-[0_0_0_2px_color-mix(in_oklab,var(--accent)_45%,transparent)]" : ""}`}
     >
-      <span className="font-mono text-[9.5px] uppercase tracking-[0.12em]" style={{ color: "var(--fg-faint)" }}>{copy.noticed.kinds[chip.kind]}</span>
+      <span className="flex-none font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>{copy.noticed.kinds[chip.kind]}</span>
       <span>
         {chip.text}
         {chip.meta ? <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{" · "}{chip.meta}</span> : null}
       </span>
-      <span aria-hidden="true" className="font-mono text-[13px]" style={{ color: inBox ? "var(--success)" : "var(--accent-text)" }}>{inBox ? "✓" : "+"}</span>
+      <span aria-hidden="true" className={`ml-auto flex-none pl-[4px] font-mono ${inBox ? "text-[12px]" : "text-[14px]"}`} style={{ color: inBox ? "var(--success)" : "var(--accent)" }}>{inBox ? "✓" : "+"}</span>
     </button>
   );
 }

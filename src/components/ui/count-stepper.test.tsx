@@ -31,7 +31,7 @@ describe("CountStepper on a coarse pointer", () => {
 });
 
 describe("CountStepper, the cell size", () => {
-  it("draws a bordered group of 44px cells on a phone and 36px ones from md, the figure's cell wider, and greys a bounded end", () => {
+  it("draws a bordered group of 44px cells on a phone and 40px ones from md, the figure's cell at least 44px, and greys a bounded end", () => {
     const onStep = vi.fn();
     render(<CountStepper layout="row" size="cell" {...props} onStep={onStep} moreOff />);
     const group = screen.getByTestId("count-stepper-row");
@@ -40,10 +40,10 @@ describe("CountStepper, the cell size", () => {
     for (const name of ["Fewer", "More"]) {
       const b = screen.getByRole("button", { name });
       expect(b.className).toContain("h-[44px] w-[44px]");
-      expect(b.className).toContain("md:w-[36px]");
+      expect(b.className).toContain("md:h-[40px] md:w-[40px]");
     }
     const figure = screen.getByRole("textbox", { name: "Count" }).closest("label")!;
-    expect(figure.className).toContain("w-[52px] md:w-[46px]");
+    expect(figure.className).toContain("min-w-[44px]");
     const more = screen.getByRole("button", { name: "More" });
     expect(more.getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(more);

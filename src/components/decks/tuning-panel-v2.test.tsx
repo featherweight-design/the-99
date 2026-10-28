@@ -140,6 +140,29 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     expect(d.run.mock.calls[1][1].runId).not.toBe(d.run.mock.calls[0][1].runId);
   });
 
+  it("holds Run it again off while the deck is off 99, keeping the confirm", async () => {
+    const same = { ok: false, confirm: "same_request", runId: "11111111-1111-4111-8111-111111111111", at: at.toISOString() };
+    const d = deps(() => same);
+    const { rerender } = await draw(d, v2At());
+    await act(async () => { fireEvent.click(send()); });
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[2]} facts={facts} onLogGame={vi.fn()} deps={d} v2={v2At(-1)} />);
+    });
+    const again = screen.getByRole("button", { name: sc.intake.same.again });
+    expect(again.getAttribute("aria-disabled")).toBe("true");
+    await act(async () => { fireEvent.click(again); });
+    expect(d.run).toHaveBeenCalledTimes(1);
+    expect(document.querySelector("[data-sc-same]")).not.toBeNull();
+    expect(document.querySelector("[data-sc-drift]")).not.toBeNull();
+    // Back at 99 it presses, confirmed.
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[2]} facts={facts} onLogGame={vi.fn()} deps={d} v2={v2At(0)} />);
+    });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: sc.intake.same.again })); });
+    expect(d.run).toHaveBeenCalledTimes(2);
+    expect(d.run.mock.calls[1][1]).toMatchObject({ confirmed: true });
+  });
+
   it("drops the confirm when an input changes, and draws no Open without History", async () => {
     const same = { ok: false, confirm: "same_request", runId: "11111111-1111-4111-8111-111111111111", at: at.toISOString() };
     await draw(deps(() => same), v2At());
@@ -225,10 +248,19 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     expect(document.querySelector("[data-sc-last-run]")).toBeNull();
   });
 
-  it("shows a refusal without drawing the reading state", async () => {
-    const d = deps(() => ({ ok: false, message: deckTuningCopy.run.refused }));
+  it("asks first: draws no reading state while the press is out, and none for a refusal", async () => {
+    let answer!: (r: unknown) => void;
+    const d = deps();
+    d.run = vi.fn(() => new Promise((resolve) => { answer = resolve; })) as unknown as typeof d.run;
     await draw(d, v2At());
     await act(async () => { fireEvent.click(send()); });
+    expect(d.run).toHaveBeenCalledTimes(1);
+    // The run is not reserved yet: no reading state, no busy panel, the intake still drawn.
+    expect(document.querySelector('[aria-busy="true"]')).toBeNull();
+    expect(screen.queryByText(deckTuningCopy.panel.loadingHeading)).toBeNull();
+    expect(document.querySelector("[data-sc-intake]")).not.toBeNull();
+    await act(async () => { answer({ ok: false, message: deckTuningCopy.run.refused }); });
+    expect(document.querySelector('[aria-busy="true"]')).toBeNull();
     expect(screen.getAllByText(deckTuningCopy.run.refused).length).toBeGreaterThan(0);
     expect(document.querySelector("[data-sc-intake]")).not.toBeNull();
     expect(d.read).toHaveBeenCalledTimes(1);

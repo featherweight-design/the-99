@@ -170,6 +170,12 @@ describe("LastSlotsStrip", () => {
     });
     expect(onOpenChange.mock.calls.length).toBe(opens);
     expect(answered).toHaveBeenCalledTimes(1);
+    // A new value is a new request: answered too, and the list, already open, stays open.
+    await act(async () => {
+      rerender(<LastSlotsStrip {...base} onOpenChange={onOpenChange} openRequest={2} onOpenRequestAnswered={answered} />);
+    });
+    expect(answered).toHaveBeenCalledTimes(2);
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 
   it("answers a request with nothing to offer without opening", async () => {

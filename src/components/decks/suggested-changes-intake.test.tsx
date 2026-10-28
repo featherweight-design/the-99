@@ -89,7 +89,8 @@ describe("SuggestedChangesIntake", () => {
     await act(async () => { fireEvent.click(chip(removal.id)); });
     expect(screen.getByTestId("request").textContent).toBe(`Cut the legends. ${removal.sentence}`);
     expect(chip(removal.id).getAttribute("aria-pressed")).toBe("true");
-    // The appended words are selected for a beat.
+    // The appended words are selected for a beat, and the chip wears the ring for the same beat.
+    expect(chip(removal.id).hasAttribute("data-hot")).toBe(true);
     expect(box().selectionStart).toBe(box().value.length - removal.sentence.length);
     expect(box().selectionEnd).toBe(box().value.length);
     // A chip only tracks its own words: the focus chip is still +.
@@ -100,6 +101,14 @@ describe("SuggestedChangesIntake", () => {
     // The player deletes the removal sentence: its chip comes back to +.
     fireEvent.change(box(), { target: { value: "Cut the legends.", selectionStart: 16 } });
     expect(chip(removal.id).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("gives the request box's frame its accent edge on focus: a class, never an inline border that would outrank it", () => {
+    render(<Harness />);
+    const frame = document.querySelector("[data-framed-box]") as HTMLElement;
+    expect(frame.className).toContain("focus-within:border-[color:var(--accent)]");
+    expect(frame.style.border).toBe("");
+    expect(frame.style.borderColor).toBe("");
   });
 
   it("draws no What we noticed block when there is nothing to say", () => {

@@ -45,7 +45,7 @@ export function CountStepper({
   moreOff?: boolean;
   /** `row` only. `line` (the default) is the decklist's bare 34px line, as shipped. `cell` is a bordered group of three
    *  cells, the form a count drawn as a field of its own takes (Suggested changes' How many cards?): 44px cells on a
-   *  phone, 36 by 34 from `md`, the figure's cell wider than the buttons'. */
+   *  phone, 40px from `md`, the figure's cell at least 44px wide and ruled off from the buttons. */
   size?: "line" | "cell";
 }) {
   const band = layout === "band";
@@ -53,10 +53,10 @@ export function CountStepper({
   const shell = band
     ? "absolute inset-x-0 bottom-0 z-20 flex h-[44px] items-center justify-between md:h-[32px] bg-[color:color-mix(in_oklab,var(--bg)_70%,transparent)]"
     : cell
-      ? "inline-flex flex-none items-stretch rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]"
+      ? "inline-flex flex-none items-stretch overflow-hidden rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]"
       : "flex-none flex items-center";
   const button = cell
-    ? "flex h-[44px] w-[44px] md:h-[34px] md:w-[36px] items-center justify-center font-mono text-[16px] md:text-[14px] leading-none text-[color:var(--fg-body)] hover:text-[color:var(--fg)]"
+    ? "flex h-[44px] w-[44px] md:h-[40px] md:w-[40px] items-center justify-center font-mono text-[16px] md:text-[15px] leading-none text-[color:var(--fg-body)] hover:text-[color:var(--fg)]"
     : band
     ? "flex h-[44px] w-[44px] md:h-[32px] md:w-[32px] items-center justify-center font-mono text-[15px] md:text-[13px] leading-none text-[color:var(--fg-body)] md:text-[color:var(--fg-faint)] md:group-hover:text-[color:var(--fg)] md:group-focus-within:text-[color:var(--fg)]"
     // A row is one 34px line at every width, so the row's buttons are the ✕'s 22x20 and a coarse pointer's 44px hit is
@@ -91,8 +91,8 @@ const OFF = "cursor-default text-[color:var(--fg-disabled)]! group-hover:text-[c
  *  under the digits. */
 const ROW_FIGURE_SLOT = "pointer-coarse:-my-[12px] pointer-coarse:py-[12px]";
 const ROW_FIGURE_COARSE = "pointer-coarse:min-w-[44px]!";
-/** The `cell` group's figure: 52px on a phone and 46px from `md`, ruled off from the buttons either side. */
-const CELL_FIGURE = "w-[52px] md:w-[46px] items-center border-x border-solid border-[color:var(--border-strong)]";
+/** The `cell` group's figure: at least 44px wide, ruled off from the buttons either side (the board's `.stpr b`). */
+const CELL_FIGURE = "min-w-[44px] px-[4px] items-center border-x border-solid border-[color:var(--border)]";
 
 function CountField({
   count,
