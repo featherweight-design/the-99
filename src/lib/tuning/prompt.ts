@@ -78,6 +78,9 @@ export function buildPromptV2(pack: EvidencePack, stage: PromptV2Stage): { syste
     [AIM_LINE, aimLineV2(stage)],
     [KINDS_LINE, KINDS_LINE.replace(" notes, ", " request, ")],
     [NOTES_LINE, REQUEST_LINE],
+    // `noResultClaim` is narrowed on v2 CUTS (Hugh, spec §6.2, Q9; `presentationFailures`' `allowStronger`), so the cut
+    // stage says what its validator allows; additions and v10 keep the rule as written.
+    ...(stage.list === "cuts" ? [[RESULT_CLAIM_LINE, CUT_RESULT_CLAIM_LINE] as const] : []),
   ]);
   const lines = v10.system.split("\n").flatMap((line) => {
     const swapped = swap.get(line) ?? line;
@@ -101,6 +104,8 @@ export function buildPromptV2(pack: EvidencePack, stage: PromptV2Stage): { syste
 
 const GROUND_PREFIX = "Ground every card in the evidence you are given";
 const FILL = "Fill the list: when the evidence thins, choose the soundest remaining cards rather than offering fewer.";
+const RESULT_CLAIM_LINE = `- ${deckTuningCopy.suggestionRules.noResultClaim}`;
+const CUT_RESULT_CLAIM_LINE = "- No rationale or citation may promise a game result: not that a change will win or lose games. A cut's rationale may say the deck gets stronger or more focused without the card.";
 const REQUEST_LINE = "A request citation uses the player's own words from what they asked for this run. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.";
 /** Spec §4: the request first, then the overview, the focus and the deck's description (Hugh). */
 const SIGNAL_TRUST_LINE = "Weigh what you are given in this order, strongest first: what the player is asking for this run, then how the deck plays (its overview), then the player's focus, then what the deck is for. Use the others where they help answer the request, never in place of it. With no request, work from the deck's own weaknesses.";

@@ -460,6 +460,15 @@ describe("buildPromptV2", () => {
     expect(user).toContain("Kept, additions: Cultivate.\nRejected, and why:\n- Bolt: it is outside the commander's colors\nPropose exactly 2 more additions, following every rule above. Name none of the cards listed here.");
   });
 
+  it("lets a v2 cut say stronger or more focused, as its validator does, and keeps the rule on additions and v10 (round 5)", () => {
+    const cuts = buildPromptV2(pack, { ...stage, list: "cuts" }).system;
+    const additions = buildPromptV2(pack, { ...stage, list: "additions" }).system;
+    expect(cuts).toContain("A cut's rationale may say the deck gets stronger or more focused without the card.");
+    expect(cuts).not.toContain("make the deck stronger.");
+    expect(additions).toContain("make the deck stronger.");
+    expect(buildPrompt(pack).system).toContain("make the deck stronger.");
+  });
+
   it("lets the request outrank the focus rules v10 states without exception, only in v2 and only with a focus", () => {
     const withFocus = { ...pack, focus: { name: "Tokens", copies: 11, nonland: 62, on: ["Anointed Procession"], top: ["Tokens"], offTop: ["Ponder"], candidates: [] } };
     const line = "When the player's request asks for something the focus rules above would prevent, the request wins";
