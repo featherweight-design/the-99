@@ -982,7 +982,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
         { parts: [{ part: "between", glyph: "≠" }] },
         { gap: 5, parts: [
           { part: "caption", text: "Sai · Shopping" },
-          { part: "row", name: "Sol Ring", dot: "unowned", compact: true, price: { state: "priced", cents: 149 } },
+          { part: "row", name: "Sol Ring", dot: "owned", compact: true, price: { state: "priced", cents: 149 } },
           { part: "caption", text: "your copy is in Ghalta", muted: true },
         ] },
       ],

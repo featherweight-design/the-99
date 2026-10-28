@@ -101,6 +101,11 @@ describe("GoodToKnow", () => {
     expect(currentCard({ scrollLeft: 0, scrollWidth: 292, clientWidth: 292 }, 1)).toBe(0);
   });
 
+  it("lets the keyboard reach the swipe row, since no card holds a focus target", () => {
+    const { getByRole } = render(<GoodToKnow sectionId="deck-shopping" rules={rulesOf(ALL_ON, "deck-shopping")} />);
+    expect(getByRole("list").getAttribute("tabindex")).toBe("0");
+  });
+
   it("draws no dots for a single card, as the boards draw Versions", () => {
     const { container } = render(<GoodToKnow sectionId="versions" rules={rulesOf(ALL_ON, "versions")} />);
     expect(container.querySelectorAll("article[data-rule]")).toHaveLength(1);

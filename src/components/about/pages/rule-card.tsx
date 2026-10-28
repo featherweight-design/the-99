@@ -71,8 +71,10 @@ export function GoodToKnow({ sectionId, rules }: { sectionId: string; rules: rea
       </div>
       <ul
         aria-labelledby={headingId}
+        // Below md the row scrolls sideways and no card holds a focus target, so the row itself takes focus for the arrow keys.
+        tabIndex={0}
         onScroll={(e) => setCurrent(currentCard(e.currentTarget, rules.length))}
-        className="m-0 -mr-[16px] flex list-none snap-x snap-mandatory gap-[12px] overflow-x-auto p-0 pr-[16px] [scrollbar-width:none] md:mr-0 md:grid md:grid-cols-2 md:gap-[16px] xl:grid-cols-3 md:overflow-visible md:pr-0 [&::-webkit-scrollbar]:hidden"
+        className="m-0 -mr-[16px] flex list-none rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] snap-x snap-mandatory gap-[12px] overflow-x-auto p-0 pr-[16px] [scrollbar-width:none] md:mr-0 md:grid md:grid-cols-2 md:gap-[16px] xl:grid-cols-3 md:overflow-visible md:pr-0 [&::-webkit-scrollbar]:hidden"
       >
         {rules.map((r) => (
           <li key={r.key} className="w-[292px] flex-none snap-start md:w-auto">
