@@ -11,14 +11,15 @@ export const BY_CARD_GRID =
 /**
  * Above the list's scroll box, so it never scrolls with the rows. Hidden from a screen reader: each fact names itself
  * (its phone label, kept as `sr-only` on desktop). The negative bottom margin takes back the section's gap, so the rule
- * sits on the list as the board draws it.
+ * sits on the list as the board draws it. It reserves the list box's scrollbar gutter (`scrollbar-gutter: stable`, which
+ * needs an overflow other than visible), so a classic scrollbar narrows its grid as much as the rows'.
  */
 export function CartColumns() {
   return (
     <div
       aria-hidden
       data-cart-columns
-      className={`hidden whitespace-nowrap border-b border-b-[color:var(--border-strong)] px-[14px] pb-[7px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)] md:-mb-[12px] md:grid ${BY_CARD_GRID}`}
+      className={`hidden whitespace-nowrap border-b border-b-[color:var(--border-strong)] px-[14px] pb-[7px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)] md:-mb-[12px] md:grid md:overflow-y-hidden md:[scrollbar-gutter:stable] ${BY_CARD_GRID}`}
     >
       <span>{copy.columns.card}</span>
       <span>{copy.columns.need}</span>

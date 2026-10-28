@@ -51,7 +51,7 @@ function cart(over: Partial<CartPayload> = {}): CartPayload {
     totalDecks: 21,
     priced: true,
     newestAsOf: NOW,
-    holders: [],
+    holders: [{ id: "thorin", name: "HD - Thorin" }],
     decks: [
       { id: "gishath", name: "HD - Gishath", brew: true, copies: 2, cents: 180, pricedCopies: 2 },
       { id: "omnath", name: "HD - Omnath", brew: false, copies: 1, cents: 400, pricedCopies: 1 },
@@ -60,7 +60,7 @@ function cart(over: Partial<CartPayload> = {}): CartPayload {
     lines: [
       { oracleId: "omn", name: "Omnath, Locus of All", commander: true, owned: 0, heldElsewhere: 0, heldBy: [],
         rows: [{ deckId: "omnath", quantity: 1, cents: 400, state: "priced", commander: true, held: 0, finish: null }] },
-      { oracleId: "sol", name: "Sol Ring", commander: false, owned: 17, heldElsewhere: 17, heldBy: [],
+      { oracleId: "sol", name: "Sol Ring", commander: false, owned: 17, heldElsewhere: 17, heldBy: [{ deckId: "thorin", held: 17 }],
         rows: [
           { deckId: "gishath", quantity: 1, cents: 150, state: "priced", commander: false, held: 0, finish: null },
           { deckId: "kratos", quantity: 1, cents: 150, state: "priced", commander: false, held: 0, finish: null },
@@ -97,11 +97,11 @@ describe("CartView", () => {
     const need = factOf(items[1], "need")!;
     expect(need.querySelector("b")?.textContent).toBe("2");
     expect(readNames(need)).toBe("HD - Gishath, HD - Kratos");
-    // Seventeen owned, held by decks the read did not name: G1's fallback, with no pill.
+    // Seventeen owned, every one held by Thorin, outside the cart.
     const own = factOf(items[1], "own")!;
     expect(own.querySelector("b")?.textContent).toBe("17");
-    expect(within(own).getByText(copy.facts.inOther)).toBeTruthy();
-    expect(own.querySelector("[data-fact-pill]")).toBeNull();
+    expect(within(own).getByText(copy.facts.in)).toBeTruthy();
+    expect(readNames(own)).toBe("HD - Thorin");
     expect(factOf(items[2], "own")).toBeNull();
   });
 
@@ -636,20 +636,51 @@ describe("CartView, By card's row facts (v2 PR 4)", () => {
   });
   const sol = () => list().getAllByRole("listitem").find((li) => li.textContent?.includes("Sol Ring"))!;
 
-  it("names where the owned copies are in use: the cart's decks first, then the decks outside it", () => {
+  it("names where every owned copy is in use: a selected deck on the line first, then the decks outside the cart", () => {
     render(<CartView cart={held} provenance={provenance} />);
     const own = factOf(sol(), "own")!;
     expect(own.querySelector("b")?.textContent).toBe("17");
     expect(within(own).getByText(copy.facts.in)).toBeTruthy();
-    expect(readNames(own)).toBe("HD - Thorin, HD - Elves");
-    // Unselect Kratos: its two copies are in use elsewhere now, and it leads as the cart's own deck.
+    // Kratos is on the line, selected, and holds 2 of the 17: it is named, so the list accounts for every copy.
+    expect(readNames(own)).toBe("HD - Kratos, HD - Thorin, HD - Elves");
+    // Unselected, Kratos is one of the other decks and keeps its place as the cart's own deck.
     fireEvent.click(screen.getByRole("checkbox", { name: copy.selections.aria("HD - Kratos", true) }));
     expect(readNames(factOf(sol(), "own"))).toBe("HD - Kratos, HD - Thorin, HD - Elves");
   });
 
-  it("falls back to `in other decks` when a holding deck has no name", () => {
+  it("names the selected deck that holds every copy, and never says they are in other decks", () => {
+    // Relentless Rats: Kratos holds all 3 owned and buys 2 more; no other deck holds one.
+    const rats = cart({ lines: [{
+      oracleId: "rats", name: "Relentless Rats", commander: false, owned: 3, heldElsewhere: 0, heldBy: [],
+      rows: [
+        { deckId: "gishath", quantity: 1, cents: 50, state: "priced", commander: false, held: 0, finish: null },
+        { deckId: "kratos", quantity: 2, cents: 100, state: "priced", commander: false, held: 3, finish: null },
+      ],
+    }] });
+    render(<CartView cart={rats} provenance={provenance} />);
+    const own = factOf(list().getAllByRole("listitem")[0], "own")!;
+    expect(own.querySelector("b")?.textContent).toBe("3");
+    expect(readNames(own)).toBe("HD - Kratos");
+    expect(within(own).queryByText(copy.facts.inOther)).toBeNull();
+  });
+
+  it("falls back to the count elsewhere when a deck has no name and a deck on the line holds some", () => {
     render(<CartView cart={{ ...held, holders: [held.holders[0]] }} provenance={provenance} />);
     const own = factOf(sol(), "own")!;
+    expect(own.querySelector("b")?.textContent).toBe("17");
+    expect(within(own).getByText(copy.facts.someInOther(15))).toBeTruthy();
+    expect(within(own).queryByText(copy.facts.inOther)).toBeNull();
+    expect(readNames(own)).toBeNull();
+    expect(own.querySelector("[data-fact-pill]")).toBeNull();
+  });
+
+  it("falls back to `in other decks` when a deck has no name and other decks hold every copy", () => {
+    const elsewhere = { ...held, holders: [held.holders[0]], lines: held.lines.map((l) => (l.oracleId === "sol"
+      ? { ...l, owned: 15, rows: l.rows.map((r) => ({ ...r, held: 0 })) }
+      : l)) };
+    render(<CartView cart={elsewhere} provenance={provenance} />);
+    const own = factOf(sol(), "own")!;
+    expect(own.querySelector("b")?.textContent).toBe("15");
     expect(within(own).getByText(copy.facts.inOther)).toBeTruthy();
     expect(readNames(own)).toBeNull();
   });
@@ -669,6 +700,9 @@ describe("CartView, By card's row facts (v2 PR 4)", () => {
       copy.columns.card, copy.columns.need, copy.columns.spares, copy.columns.own, "",
     ]);
     expect(screen.getByRole("region", { name: copy.list.regionAria }).contains(columns)).toBe(false);
+    // Both keep a scrollbar's gutter, so a classic scrollbar narrows the rows and their columns alike.
+    expect(columns.className.split(/\s+/)).toEqual(expect.arrayContaining(["md:overflow-y-hidden", "md:[scrollbar-gutter:stable]"]));
+    expect(screen.getByRole("region", { name: copy.list.regionAria }).className.split(/\s+/)).toContain("md:[scrollbar-gutter:stable]");
     unmount();
     render(<CartView cart={held} provenance={provenance} initialView="deck" />);
     expect(document.querySelector("[data-cart-columns]")).toBeNull();

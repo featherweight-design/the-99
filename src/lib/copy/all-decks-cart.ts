@@ -91,8 +91,10 @@ export const allDecksCartCopy = {
     own: "own",
     /** The own fact, before the decks holding the copies (G1). */
     in: "in",
-    /** G1's fallback, when the decks holding the copies are not known. */
+    /** G1's fallback, when the decks holding the copies are not known and other decks hold every one. */
     inOther: "in other decks",
+    /** G1's fallback when a deck on the line holds some of its own copies: `list.ownedSome`'s tail, after the count. */
+    someInOther: (held: number) => `· ${n(held)} in other decks`,
     /** The press after the names that fit (call 2), and its words once the list is open. */
     more: (rest: number) => `+${n(rest)}`,
     /** The press when the only thing hidden is the end of one cut name (addendum R2, ruling 3). */

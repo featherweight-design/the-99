@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import type { ProvenanceForm } from "../../../lib/decks/price";
-import { cartTotal, checkoutLinks, inUseIn, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
+import { cartTotal, checkoutLinks, ownFact, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
 import {
   DEFAULT_SORTS, MAX_QUERY, byCardOrder, cardCompare, matchesQuery, parseQuery, parseSort, searchLines, sortDecks, sortGroups,
   type CartSorts,
@@ -92,8 +92,7 @@ function ByCardList({
                 key={line.oracleId}
                 line={line}
                 deckNames={deckNames}
-                holdings={inUseIn(line, selected, holders.rank)}
-                holderNames={holders.names}
+                own={ownFact(line, selected, holders.rank, holders.names)}
                 spares={spares?.byCard.get(line.oracleId) ?? []}
                 newestAsOf={newestAsOf}
               />
@@ -393,7 +392,9 @@ export function CartView({
                 tabIndex={0}
                 role="region"
                 aria-label={copy.list.regionAria}
-                className="md:-mx-[13px] md:min-h-[120px] md:flex-1 md:overflow-y-auto md:overscroll-contain md:border-b md:border-b-[color:var(--border)] md:px-[13px]"
+                // The scrollbar's gutter is kept whether or not the list overflows, and the column header keeps the same one, so a
+                // classic scrollbar narrows both alike and the rows stay under their columns.
+                className="md:-mx-[13px] md:min-h-[120px] md:flex-1 md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] md:border-b md:border-b-[color:var(--border)] md:px-[13px]"
               >
                 <HoverPreviewProvider>
                 {byDeck ? (

@@ -6,7 +6,7 @@
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { PriceFact } from "../../../lib/decks/price";
-import type { CartHolding, SelectedLine } from "../../../lib/decks/cart";
+import type { OwnFact, SelectedLine } from "../../../lib/decks/cart";
 import type { FriendSpare } from "../../../lib/social/spares";
 import { CartFact } from "./cart-facts";
 import { BY_CARD_GRID } from "./cart-columns";
@@ -173,18 +173,15 @@ export function CartLine({
 export function CartCardLine({
   line,
   deckNames,
-  holdings,
-  holderNames,
+  own,
   spares,
   newestAsOf,
 }: {
   line: SelectedLine;
   /** The cart's decks by id: the need fact's names. */
   deckNames: ReadonlyMap<string, string>;
-  /** Where the owned copies are in use (`inUseIn`), in its order. */
-  holdings: readonly CartHolding[];
-  /** Every deck that can hold a copy by id, the cart's and those outside it (`CartPayload.holders`). */
-  holderNames: ReadonlyMap<string, string>;
+  /** The own fact (`ownFact`): where every owned copy is in use, or the shipped row's fallback; null with none owned. */
+  own: OwnFact | null;
   /** Friends' spares of this card (S5), or none. */
   spares: readonly FriendSpare[];
   newestAsOf: Date | null;
@@ -197,10 +194,12 @@ export function CartCardLine({
     .sort((a, b) => b.spare - a.spare || a.friend.displayName.localeCompare(b.friend.displayName))
     .map((s) => ({ name: s.friend.displayName, count: s.spare }));
   const spareCount = friends.reduce((n, f) => n + f.count, 0);
-  // G1: the decks holding the copies, by name. A deck the read could not name makes the list unknown, and the fact
-  // falls back to `in other decks` rather than naming some of them.
-  const held = holdings.map((h) => ({ name: holderNames.get(h.deckId), count: h.held }));
-  const heldKnown = held.length > 0 && held.every((h) => h.name !== undefined);
+  // G1: the decks holding the copies, by name, only when they account for every copy. Otherwise the shipped row's facts:
+  // `in other decks` while other decks hold them all, the count elsewhere while a deck on the line holds some.
+  const fallback = own?.kind === "elsewhere"
+    ? (own.elsewhere === own.owned ? copy.facts.inOther : own.elsewhere > 0 ? copy.facts.someInOther(own.elsewhere) : "")
+    : undefined;
+  const ownItems = own?.kind === "named" ? own.decks.map((d) => ({ name: d.name, count: d.held })) : [];
   return (
     <li
       data-cart-row
@@ -252,15 +251,15 @@ export function CartCardLine({
             className="md:col-start-3 md:row-start-1"
           />
         ) : null}
-        {line.owned > 0 ? (
+        {own ? (
           <CartFact
             testId="own"
             label={copy.facts.own}
-            count={line.owned}
-            items={heldKnown ? held.map((h) => ({ name: h.name ?? "", count: h.count })) : []}
+            count={own.owned}
+            items={ownItems}
             prefix={copy.facts.in}
-            fallback={heldKnown ? undefined : copy.facts.inOther}
-            head={copy.facts.inDecks(held.length)}
+            fallback={fallback}
+            head={copy.facts.inDecks(ownItems.length)}
             moreAria={copy.facts.moreDecksAria}
             dim
             className="md:col-start-4 md:row-start-1"
