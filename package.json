@@ -250,6 +250,7 @@
     "measure:facts-cost": "tsx scripts/measure-facts-cost.mts",
     "measure:profile-cost": "tsx scripts/measure-profile-cost.mts",
     "measure:load": "node scripts/measure-load.mjs",
+    "measure:cuts-notice": "node scripts/measure-cuts-notice.mjs",
     "measure:scan": "node scripts/measure-scan.mjs",
     "measure:scan-recall": "tsx scripts/measure-scan-recall.mts",
     "check:constraints": "node scripts/check-constraints.mjs",

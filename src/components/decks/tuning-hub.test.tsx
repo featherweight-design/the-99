@@ -368,6 +368,23 @@ describe("TuningHub opening a tool", () => {
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
   });
 
+  it("moves the page for a shortcut at once, while the tool is still counting, and holds a screen of height while it is open", async () => {
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
+    // The tool's panel is its counting frame: no heading, busy. It never draws content in this test.
+    const counting: HubToolSpec = { tool: "cuts", panel: <section aria-busy>Counting</section>, over: 6, total: 106 };
+    const { unmount } = render(<TuningHub deckId="d" drawn tools={[suggested(), counting]} request={{ tool: "cuts", nonce: 1 }} />);
+    const hub = document.querySelector("[data-tuning-hub]") as HTMLElement;
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith(hub));
+    expect(scroll).toHaveBeenCalledTimes(1);
+    // The page is not yet tall enough to bring the hub to the top, so the section holds a screen for the first scroll
+    // to reach it. (That the page then stays put once the content lands is the browser's: measure:cuts-notice.)
+    expect(hub.style.minHeight).toBe(`${window.innerHeight}px`);
+    // Leaving the hub lets go of it.
+    unmount();
+    expect(hub.style.minHeight).toBe("");
+  });
+
   it("returns an open tool to the tiles on a request with no tool, opening nothing (discovery R3, N1)", async () => {
     read.mockResolvedValue(empty);
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);

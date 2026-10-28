@@ -77,3 +77,41 @@ export const TAB_PROBE = () => {
   };
   requestAnimationFrame(tick);
 };
+
+/**
+ * Arms the deck page's Proposed cuts notice press, in the page: from the press's pointerdown to the
+ * first scroll movement (`scroll`), the first frame where the tool's panel (its counting frame or its
+ * content, `section[aria-label="Proposed cuts"]` / `[aria-labelledby="cuts-heading"]`) is inside the viewport
+ * (`shown`) and the first where it holds content rather than the counting frame (`drew`). `shownTop` and
+ * `drewTop` are the panel's distance from the viewport top at those two frames: their difference is the
+ * jump the fill makes. Read back as `window.__cuts`.
+ */
+export const CUTS_PRESS_PROBE = () => {
+  const stamps = { at: null, scroll: null, shown: null, shownTop: null, drew: null, drewTop: null };
+  window.__cuts = stamps;
+  window.addEventListener("pointerdown", () => { stamps.at ??= performance.now(); }, { capture: true, once: true });
+  document.addEventListener("scroll", () => { if (stamps.at != null) stamps.scroll ??= performance.now(); }, { capture: true, passive: true });
+  const inView = (el) => {
+    if (!el || el.closest("[hidden]")) return null;
+    const r = el.getBoundingClientRect();
+    return r.height > 0 && r.top < innerHeight && r.bottom > 0 ? r.top : null;
+  };
+  const tick = () => {
+    if (window.__cuts !== stamps) return;
+    if (stamps.at != null) {
+      const main = document.querySelector("main");
+      const counting = main?.querySelector('section[aria-label="Proposed cuts"][aria-busy]');
+      const content = main?.querySelector('section[aria-labelledby="cuts-heading"]');
+      const top = inView(content ?? counting);
+      if (top != null && stamps.shown == null) { stamps.shown = performance.now(); stamps.shownTop = top; }
+      const drewTop = inView(content);
+      if (drewTop != null && !content.hasAttribute("aria-busy") && stamps.drew == null) {
+        stamps.drew = performance.now();
+        stamps.drewTop = drewTop;
+        return;
+      }
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+};
