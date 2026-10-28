@@ -7,8 +7,9 @@
 // A section's rules the reader is drawn, each a card: its diagram on a 150px plate, then the rule's words, which are the
 // VISIBLE text (`visibleSections` has already cut every sentence whose switch is off). The heading carries a ruled line
 // above it, the release banner's mark, "Good to know" in the display face at 18 and a muted sub-line (R3). On a phone the
-// cards are a swipe row with dots; from `md` a grid of three. A section with no rules for this reader draws nothing at
-// all, not even the heading (call 8).
+// cards are a swipe row with dots; from `md` a grid of three, as the 1300 boards draw it, once `xl` gives each card the
+// plate its diagram needs (a 250px diagram clips in a third of a 768px page), and of two below that. A section with no
+// rules for this reader draws nothing at all, not even the heading (call 8).
 
 import { useState } from "react";
 import { ABOUT_PAGE_STRINGS, type AboutRuleDiagram } from "../../../lib/copy/about-pages";
@@ -25,6 +26,16 @@ export interface RuleCardModel {
 /** The phone card's width and the row's gap (`.gk`, `.gk-row`): one swipe moves one card. */
 const CARD_W = 292;
 const GAP = 12;
+
+/**
+ * The card a swipe row has reached. Snapping puts each card at the row's start, except the last ones: a row wider than
+ * one card stops scrolling before the last card can reach the start, so the end of the scroll IS the last card.
+ */
+export function currentCard(row: { scrollLeft: number; scrollWidth: number; clientWidth: number }, count: number): number {
+  if (count <= 1) return 0;
+  if (row.scrollLeft >= row.scrollWidth - row.clientWidth - 1) return count - 1;
+  return Math.min(count - 1, Math.round(row.scrollLeft / (CARD_W + GAP)));
+}
 
 export function RuleCard({ rule }: { rule: RuleCardModel }) {
   return (
@@ -60,8 +71,8 @@ export function GoodToKnow({ sectionId, rules }: { sectionId: string; rules: rea
       </div>
       <ul
         aria-labelledby={headingId}
-        onScroll={(e) => setCurrent(Math.round(e.currentTarget.scrollLeft / (CARD_W + GAP)))}
-        className="m-0 -mr-[16px] flex list-none snap-x snap-mandatory gap-[12px] overflow-x-auto p-0 pr-[16px] [scrollbar-width:none] md:mr-0 md:grid md:grid-cols-3 md:gap-[16px] md:overflow-visible md:pr-0 [&::-webkit-scrollbar]:hidden"
+        onScroll={(e) => setCurrent(currentCard(e.currentTarget, rules.length))}
+        className="m-0 -mr-[16px] flex list-none snap-x snap-mandatory gap-[12px] overflow-x-auto p-0 pr-[16px] [scrollbar-width:none] md:mr-0 md:grid md:grid-cols-2 md:gap-[16px] xl:grid-cols-3 md:overflow-visible md:pr-0 [&::-webkit-scrollbar]:hidden"
       >
         {rules.map((r) => (
           <li key={r.key} className="w-[292px] flex-none snap-start md:w-auto">

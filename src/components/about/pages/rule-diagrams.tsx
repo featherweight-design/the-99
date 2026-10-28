@@ -126,7 +126,7 @@ function Part({ p }: { p: AboutDiagramPart }) {
       );
     case "cells":
       return (
-        <div data-diagram-part="cells" className="flex w-[250px] gap-[8px]">
+        <div data-diagram-part="cells" className="flex w-[250px] max-w-full gap-[8px] md:w-[300px]">
           {p.cells.map((c) => (
             <RoleCounterCell key={c.label} label={c.label} have={c.have} target={c.target} advisory={false} />
           ))}

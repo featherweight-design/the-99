@@ -876,15 +876,15 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
       kind: "card-row",
       gap: 6,
       columns: [
-        { w: 108, gap: 5, parts: [
+        { gap: 5, parts: [
           { part: "caption", text: "Ghalta · pending" },
-          { part: "row", name: "Sol Ring", dot: "owned", edge: true, tag: { text: "+", tone: "accent" } },
-          { part: "row", name: "Mind Stone", edge: true, tag: { text: "cut", tone: "muted" } },
+          { part: "row", name: "Sol Ring", dot: "owned", edge: true, compact: true, tag: { text: "+", tone: "accent" } },
+          { part: "row", name: "Mind Stone", edge: true, compact: true, tag: { text: "cut", tone: "muted" } },
         ] },
         { parts: [{ part: "between", glyph: "→", label: "commit" }] },
-        { w: 106, gap: 5, parts: [
+        { gap: 5, parts: [
           { part: "caption", text: "Sai sees it" },
-          { part: "row", name: "Sol Ring", tag: { text: "short", tone: "short" } },
+          { part: "row", name: "Sol Ring", compact: true, tag: { text: "short", tone: "short" } },
           { part: "caption", text: "v2 · today", muted: true },
         ] },
       ],
@@ -907,7 +907,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
         { w: 150, gap: 5, parts: [
           { part: "row", name: "Ghalta", tag: { text: "held longest ✓", tone: "muted" } },
           { part: "row", name: "Sai", tag: { text: "short 1", tone: "short" } },
-          { part: "row", name: "Zimone", tag: { text: "in a draft", tone: "muted" } },
+          { part: "row", name: "Zimone", dim: true, tag: { text: "short 1 · draft", tone: "short" } },
         ] },
       ],
     },
@@ -973,15 +973,16 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["shopping", "availability"],
     diagram: {
       kind: "deck-tile",
+      gap: 8,
       columns: [
         { center: true, parts: [
           { part: "tile", name: "Ghalta", status: "Complete", colors: ["G"] },
-          { part: "caption", text: "has your Sol Ring", muted: true },
+          { part: "caption", text: "has Sol Ring", muted: true },
         ] },
         { parts: [{ part: "between", glyph: "≠" }] },
-        { w: 150, gap: 5, parts: [
+        { gap: 5, parts: [
           { part: "caption", text: "Sai · Shopping" },
-          { part: "row", name: "Sol Ring", dot: "unowned", price: { state: "priced", cents: 149 } },
+          { part: "row", name: "Sol Ring", dot: "unowned", compact: true, price: { state: "priced", cents: 149 } },
           { part: "caption", text: "your copy is in Ghalta", muted: true },
         ] },
       ],

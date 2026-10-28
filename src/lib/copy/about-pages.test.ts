@@ -135,6 +135,12 @@ describe("about pages copy model", () => {
     for (const id of ABOUT_RULE_IDS) expect(ABOUT_RULES[id].diagram.columns.length, id).toBeGreaterThan(0);
   });
 
+  it("shows the one-copy rule's two short decks, the committed one and the draft behind it (allocate.ts: a brew reads what committed decks leave)", () => {
+    const short = diagramParts("one-copy").filter((p) => p.part === "row" && p.tag?.tone === "short");
+    expect(ABOUT_RULES["one-copy"].text).toContain("two of them show it short");
+    expect(short.map((p) => (p.part === "row" ? p.name : ""))).toEqual(["Sai", "Zimone"]);
+  });
+
   it("gates diagram parts only on registered switches", () => {
     for (const id of ABOUT_RULE_IDS) {
       const named = diagramParts(id).flatMap((p) => [p.switch, ...(p.part === "chips" ? p.chips.map((c) => c.switch) : [])]);

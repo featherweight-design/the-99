@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ABOUT_PAGE_STRINGS, ABOUT_RULES, ABOUT_RULE_IDS } from "../../../lib/copy/about-pages";
 import { ruleKey, visibleSections } from "../../../lib/about/pages-visible";
 import { SWITCH_NAMES } from "../../../lib/switches/registry";
-import { GoodToKnow, RuleCard, type RuleCardModel } from "./rule-card";
+import { currentCard, GoodToKnow, RuleCard, type RuleCardModel } from "./rule-card";
 
 // Good to know (About visual PR 4; call 2, call 8 and R3): one card per visible rule, each with its own diagram and the
 // rule's visible words; no heading at all for a section with no rules; a phone dot per card.
@@ -77,9 +77,28 @@ describe("GoodToKnow", () => {
     expect(dots()).toHaveLength(rules.length);
     expect(dots().map((d) => d.hasAttribute("data-on"))).toEqual([true, false, false]);
     const row = container.querySelector("ul")!;
-    Object.defineProperty(row, "scrollLeft", { value: 304, configurable: true });
+    // A phone row: 360px wide over three cards, so a step of one card is not the end of the scroll.
+    for (const [k, v] of Object.entries({ scrollLeft: 304, scrollWidth: 932, clientWidth: 360 })) {
+      Object.defineProperty(row, k, { value: v, configurable: true });
+    }
     fireEvent.scroll(row);
     expect(dots().map((d) => d.hasAttribute("data-on"))).toEqual([false, true, false]);
+  });
+
+  it("lights the last dot at the end of the scroll, where a wide row stops before the last card reaches the start", () => {
+    // Three 292px cards at 12px gaps in a 600px row: the row scrolls 332px at most, which is not a whole card's step.
+    const rules = rulesOf(ALL_ON, "deck-shopping");
+    const { container } = render(<GoodToKnow sectionId="deck-shopping" rules={rules} />);
+    const row = container.querySelector("ul")!;
+    for (const [k, v] of Object.entries({ scrollLeft: 332, scrollWidth: 932, clientWidth: 600 })) {
+      Object.defineProperty(row, k, { value: v, configurable: true });
+    }
+    fireEvent.scroll(row);
+    expect([...container.querySelectorAll("[data-good-to-know-dots] i")].map((d) => d.hasAttribute("data-on"))).toEqual([false, false, true]);
+    expect(currentCard({ scrollLeft: 0, scrollWidth: 932, clientWidth: 600 }, 3)).toBe(0);
+    expect(currentCard({ scrollLeft: 150, scrollWidth: 932, clientWidth: 600 }, 3)).toBe(0);
+    expect(currentCard({ scrollLeft: 304, scrollWidth: 1300, clientWidth: 360 }, 3)).toBe(1);
+    expect(currentCard({ scrollLeft: 0, scrollWidth: 292, clientWidth: 292 }, 1)).toBe(0);
   });
 
   it("draws no dots for a single card, as the boards draw Versions", () => {
