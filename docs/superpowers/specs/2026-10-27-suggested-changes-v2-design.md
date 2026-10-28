@@ -27,7 +27,7 @@ The rethink goes further than the bug. v10 treats the model's answer as somethin
 - **Give the player a choice.** Every recommendation surface offers a pool larger than the need, and the player picks. **(Hugh)**
 - **Ask, don't limit.** Ask the player refinement questions rather than limit the output. More context gives better results; with none, do our best. **(Hugh)**
 
-The eval (#2291) showed the new shape works on Hugh's own decks. The chosen mechanism (two calls, arm C) filled the count in all 24 of its runs; across all 141 runs of every arm and flow, 20 missed. On Mutant Menace's original list with his request, 15 of 20 suggested cuts were cards he had cut himself.
+The eval (#2291) showed the new shape works on Hugh's own decks. The chosen mechanism (two calls, arm C) filled the count in all 24 of its runs in a prototype that trimmed additions to N before asking for cuts (§9); across all 141 runs of every arm and flow, 20 missed. On Mutant Menace's original list with his request, 15 of 20 suggested cuts were cards he had cut himself.
 
 ## 2. Goals, non-goals, anti-goals
 
@@ -72,7 +72,8 @@ Analysis unlocks at 99. Suggested changes is offered only when the deck is exact
    - Beside the box: suggestions drawn from what the app knows (two short on removal, the focus, a recent game note, a role gap). Tapping one adds its words to the box; it's a suggestion, not an assumption. **(Hugh)**
    - The text is player input reaching a prompt, so it goes through `playerText`, with the system rule naming its tags. That is AGENTS.md's rule. Its cap is §12 Q8.
    - Empty is allowed. With no request, the run works from the deck's own weaknesses. **(Hugh: "with none, do our best")**
-3. **Any restrictions?** A price cap, sets, owned cards only. These are the existing three limits, unchanged in meaning. **(Hugh)**
+3. **Any restrictions?** A price cap, sets, owned cards only. These are the existing three limits. **(Hugh)**
+   - **(a2)** One change in meaning: today `runTuning` clears `ownedOnly` when no owned card fits (`ownedNone`, `tuning-actions.ts`), so an owned-only run can come back with cards to buy. v2 removes that fallback. An owned-only run that can't fill the count returns short (or empty, refunded) and says owned-only bound it (§5.5).
 
 **Signal trust, strongest first** **(Hugh)**:
 1. The intake request (the player's stated intent for this run).
@@ -93,7 +94,7 @@ The prompt states this order. The app's reads feed in "when they help answer the
 
 **Arm C** **(Hugh, choosing the eval's recommendation)**: ask 1.5N. If fewer than N survive validation, make ONE refill call for that list. The refill is told what was kept, and what was rejected and why (in the rule's own words), and asks for exactly the shortfall. Measured results:
 
-- The count was filled in 24/24 runs.
+- The count was filled in 24/24 runs (prototype; it trimmed additions to N before the cut call, where v2 sends the whole pool, §9).
 - Measured cost: $0.104 at N=20, $0.074 at N=10, $0.042 at N=3.
 - p50 latency: 56s at 20, 40s at 10, 14s at 3.
 
@@ -162,7 +163,7 @@ These check whether the card can be suggested at all.
 | `cutInDeck` | Cutting a card not in the deck | **Keep.** |
 | `commander` | Cutting the commander | **Keep.** |
 | `neverCut` | Cutting a card the player locked | **Keep.** The player's rule, and not a model error. |
-| `keyCard` | Cutting a strategy key card | **Keep.** |
+| `keyCard` | Cutting a strategy key card | **Keep, as a stated exception to the signal order (a2).** Key cards come from the app's overview, so this filter can overrule a request that asks to cut one. The request is free text, never parsed for instructions (§5.4), so v2 cannot tell a request to cut that card apart from one that merely mentions it. The player can still cut it by hand. |
 | `universalStaple` | Cutting Sol Ring and its kin only to fix a role count | **Keep.** The request counts as player evidence, so a staple can go when the player asked. |
 | `colourIdentity` | An addition off the commander's colors | **Keep.** This was the top addition drop in the eval. The refill names the rule. |
 | `addNotLegal` | An illegal card, or one already in the deck | **Keep.** |
@@ -223,7 +224,7 @@ These are the v10 drop points that are not validation rules.
 Today each suggestion applies the moment it is pressed and undoes alone, so the deck can drift off 99. That contradicts §3's "99 to 99".
 
 **Proposal (a2):**
-- Applying is ONE action that writes the picked N additions and N cuts in one transaction. It refuses unequal counts and a deck no longer at size.
+- Applying is ONE action that writes M picked additions and M picked cuts in one transaction, where M is at most N and at most the shorter of the two lists (a short run, §5.1a, offers fewer than N on one side). It refuses unequal counts and a deck no longer at size.
 - Undo reverts the whole applied set, not single cards.
 - The pool stays readable after applying. Taking more from it later is a NEW apply of an equal-count set, allowed while the deck is at size and the run is not stale (`readVersion`).
 
@@ -255,7 +256,9 @@ This replaces today's per-card apply and undo for v2 runs. It changes how a play
 
 ## 9. Cost, and the credit question
 
-| N | v2 measured cost per run (two calls, arm C) | v10 today |
+**These are prototype measurements.** The eval trimmed each list's survivors to N before the cut call saw the additions; v2 sends the whole surviving pool (about 1.5N). The cut prompt is therefore longer in v2, so cost and latency here are a floor, not a validation of the pool-based flow. Pricing (Q2) and the time limit (Q4) should allow for that, and the build re-measures on the real flow before either is fixed.
+
+| N | Prototype measured cost per run (two calls, arm C) | v10 today |
 |---|---|---|
 | 3 | $0.042 | ~$0.035 |
 | 10 | $0.074 | ~$0.035 |
@@ -272,8 +275,8 @@ This is §12 Q2.
 
 **Refunds (a2, pending Q2).** v10 refunds a single-ask run that kept under 3 lines or under a third of the lines the model returned (`refundsCredit`). In v2:
 - A run whose two lists BOTH reach N is charged.
-- A short run is charged only when every drop on each short list was one of the player's own restrictions (`overCap`, `offSet`, `notOwned`). The restriction cost those cards, not the pipeline, and the run says so (§5.5).
-- Any other short run is refunded whole: a model-caused drop on a short list, a malformed reply, a skipped call 2.
+- A short run is charged only when, on each short list, the restriction drops (`overCap`, `offSet`, `notOwned`) account for the whole deficit: the list's shortfall below N is no larger than its restriction drops. The restriction cost those cards, not the pipeline, and the run says so (§5.5).
+- Any other short run is refunded whole. That includes the model returning too few lines after the refill (under-production, with no drops to explain it), a mix of under-production and restriction drops, a model-caused drop on a short list, a malformed reply, and a skipped call 2.
 - An empty run is refunded and fails as `ungrounded`, as today.
 - Credits are whole, so a run is charged or refunded, never split.
 
@@ -288,7 +291,7 @@ This is §12 Q2.
 - **Schema:**
   - two new nullable columns on `deck_suggestion_runs` (`requested_count`, `request_text`);
   - the report fields in the existing `validation_report` jsonb;
-  - no backfill: a v10 run has no N, and history shows it as "5 + 5".
+  - no backfill: a v10 run has no N. Its `requested_count` stays null, and history shows the addition and cut counts derived from its stored items. `sizeLists` only capped each list at five and short runs were kept, so "5 + 5" would misstate many of them.
 - **The run action:** `runTuning` becomes two-call with the refill. The prototype that proved it is `scripts/eval/count-mechanism.mts`, built on the app's own pack, prompt, model and validator, but under looser limits than `runTuning` has today. The build must carry them across or re-measure:
 
   | | Eval | `runTuning` today |
@@ -363,6 +366,9 @@ Design owns these, under Hugh's rule that results presentation is a UI call:
 | Short additions: call 2 asks ceil(1.5·K), skipped when K is 0 | a2 |
 | One apply for the picked set, with one undo | a2 (Q1) |
 | No "unchanged" gate; identical inputs ask once before spending | a2 |
-| Charged when both lists fill, or a short list's drops are all the player's restrictions; else refunded whole | a2 (Q2) |
+| Charged when both lists fill, or each short list's deficit is covered by restriction drops; else refunded whole | a2 (Q2) |
 | Open v10 runs become read-only at cutover | a2 |
 | Proposed cuts keeps today's rules; the narrowing is scoped to Suggested changes | a2 |
+| The owned-only fallback is removed; an owned-only run returns short rather than with cards to buy | a2 |
+| `keyCard` kept as a stated exception to the signal order | a2 |
+| Apply M + M, with M at most N and at most the shorter list | a2 (Q1) |
