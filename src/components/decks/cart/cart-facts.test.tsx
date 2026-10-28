@@ -157,6 +157,61 @@ describe("CartFact", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
+  it("keeps the own fact's press through the fold, though its names fit once `in` gives way to the head", () => {
+    let notify: (entries: { target: Element }[]) => void = () => {};
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(cb: (entries: { target: Element }[]) => void) { notify = cb; }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+    const { container } = render(
+      <NameFitProvider>
+        <div data-test-width={190}>
+          <CartFact testId="own" label={copy.facts.own} count={4} items={decks} prefix={copy.facts.in} head={copy.facts.inDecks(3)} moreAria={copy.facts.moreDecksAria} dim />
+        </div>
+      </NameFitProvider>,
+    );
+    const press = screen.getByRole("button", { name: copy.facts.moreDecksAria(2) });
+    press.focus();
+    fireEvent.click(press);
+    // Open, `in` is gone and the slot widens until every name fits: the refit finds no pill to draw.
+    const frame = container.querySelector("[data-test-width]")!;
+    frame.setAttribute("data-test-width", "400");
+    act(() => notify([{ target: document.querySelector("[data-fact-slot]")! }]));
+    fireEvent.click(press);
+    // Folded, the same press is still there and still focused, showing what it showed before it opened.
+    expect(press.isConnected).toBe(true);
+    expect(document.activeElement).toBe(press);
+    expect(press.getAttribute("aria-expanded")).toBe("false");
+    expect(press.textContent).toBe(copy.facts.more(2));
+    // The first measurement taken shut lets the hold go: `in` is back and the cell narrow again, so the pill stays.
+    frame.setAttribute("data-test-width", "190");
+    act(() => notify([{ target: document.querySelector("[data-fact-slot]")! }]));
+    expect(screen.getByRole("button", { name: copy.facts.moreDecksAria(2) })).toBe(press);
+  });
+
+  it("lets the hold go at the first measurement shut, once every name truly fits", () => {
+    let notify: (entries: { target: Element }[]) => void = () => {};
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(cb: (entries: { target: Element }[]) => void) { notify = cb; }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+    const { container } = render(need(190));
+    const press = screen.getByRole("button", { name: copy.facts.moreDecksAria(2) });
+    fireEvent.click(press);
+    const frame = container.querySelector("[data-test-width]")!;
+    frame.setAttribute("data-test-width", "400");
+    act(() => notify([{ target: document.querySelector("[data-fact-slot]")! }]));
+    fireEvent.click(press);
+    expect(press.isConnected).toBe(true);
+    act(() => notify([{ target: document.querySelector("[data-fact-slot]")! }]));
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(drawnNames()).toBe("HD - Gishath, HD - Kratos, HD - Thorin");
+  });
+
   it("lets the value line take the rest of the row beside a lead, so its slot can grow back", () => {
     render(
       <NameFitProvider>

@@ -130,6 +130,8 @@ function useNameFit(names: readonly string[]) {
   const slot = useRef<HTMLSpanElement>(null);
   const ruler = useRef<HTMLSpanElement>(null);
   const [fit, setFit] = useState<Fit>({ shown: names.length, cut: false, pill: null });
+  // Bumped by every measurement, even one that leaves the fit as it was, so a reader can tell a fresh measurement apart.
+  const [measured, setMeasured] = useState(0);
   const key = names.join("\u0000");
   useLayoutEffect(() => {
     const el = slot.current;
@@ -139,9 +141,10 @@ function useNameFit(names: readonly string[]) {
       const sep = parts.pop() ?? 0;
       const next = fitNames({ avail: width(el), names: parts, sep, gap: GAP, pill: (rest) => registry.pill(rest) });
       setFit((prev) => (prev.shown === next.shown && prev.cut === next.cut && pillKey(prev.pill) === pillKey(next.pill) ? prev : next));
+      setMeasured((n) => n + 1);
     });
   }, [registry, key]);
-  return { fit, slot, ruler };
+  return { fit, measured, slot, ruler };
 }
 
 const pillKey = (p: FitPill) => (p === null ? "" : p.kind === "more" ? "more" : `+${p.rest}`);
@@ -186,10 +189,19 @@ export function CartFact({
   testId?: string;
 }) {
   const names = items.map((i) => i.name);
-  const { fit, slot, ruler } = useNameFit(fallback === undefined ? names : []);
+  const { fit, measured, slot, ruler } = useNameFit(fallback === undefined ? names : []);
   const [open, setOpen] = useState(false);
+  // The pill the fact showed while shut, held from the press that opens it until the first measurement taken shut
+  // again. Open, the prefix (`in`) and the names give way to the head, the slot widens, and a refit can find that
+  // everything fits: without the hold, `less` would fold to a fit with no pill, unmounting the focused press.
+  const [held, setHeld] = useState<FitPill>(null);
+  const [seen, setSeen] = useState(measured);
+  if (seen !== measured) {
+    setSeen(measured);
+    if (!open && held !== null) setHeld(null);
+  }
   const listId = useId();
-  const pill: FitPill = fallback !== undefined ? null : fit.pill;
+  const pill: FitPill = fallback !== undefined ? null : (held ?? fit.pill);
   const shown = names.slice(0, fit.shown).join(", ");
   const line = (
     <span
@@ -222,7 +234,10 @@ export function CartFact({
               <span className="inline-block whitespace-pre">{", "}</span>
             </span>
             {open || pill !== null ? (
-              <PillPress key="pill" pill={pill} open={open} listId={listId} moreAria={moreAria} onPress={() => setOpen(!open)} />
+              <PillPress key="pill" pill={pill} open={open} listId={listId} moreAria={moreAria} onPress={() => {
+                if (!open) setHeld(pill);
+                setOpen(!open);
+              }} />
             ) : null}
           </span>
         </>
