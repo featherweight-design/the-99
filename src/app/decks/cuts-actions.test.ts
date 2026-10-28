@@ -296,12 +296,13 @@ describe("runProposedCuts, a run that answers", () => {
     expect((calls.persisted[0][1] as { oracleId: string }[])[0].oracleId).toBe("bear1");
   });
 
-  it("bounds the reply's array at the deck's over figure", async () => {
+  it("bounds the reply's array at the cuts named: the deck's two over, plus three", async () => {
     await runProposedCuts(DECK);
     const schema = calls.modelCalls[0].schema as { safeParse: (v: unknown) => { success: boolean } };
     const cut = { name: "bear1", reason: "x", cites: [{ kind: "offList" }] };
-    expect(schema.safeParse({ cuts: [cut, cut] }).success).toBe(true);
-    expect(schema.safeParse({ cuts: [cut, cut, cut] }).success).toBe(false);
+    const n = (k: number) => ({ cuts: Array.from({ length: k }, () => cut) });
+    expect(schema.safeParse(n(5)).success).toBe(true);
+    expect(schema.safeParse(n(6)).success).toBe(false);
   });
 
   it("does not throw when the run was superseded meanwhile", async () => {
