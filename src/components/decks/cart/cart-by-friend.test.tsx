@@ -687,13 +687,20 @@ describe("a purchase, a partial failure and a retry (PR 7, round 1)", () => {
     served = { spares: [], asks: [], fail: true };
     let view!: ReturnType<typeof render>;
     await act(async () => { view = render(<CartView cart={cart()} {...props} />); });
-    await buyJace();
-    await act(async () => { view.rerender(<CartView cart={withoutJace()} {...props} />); });
-    served = { spares: [], asks: [] };
-    await act(async () => { fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: copy.failedRead.retry })); });
-    fireEvent.click(screen.getByRole("radio", { name: copy.view.byFriend }));
-    expect(screen.queryAllByTestId("friend-panel-skeleton")).toHaveLength(0);
-    expect(screen.getByTestId("cart-by-friend-empty").getAttribute("data-kind")).toBe("none");
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    try {
+      await buyJace();
+      await act(async () => { view.rerender(<CartView cart={withoutJace()} {...props} />); });
+      served = { spares: [], asks: [] };
+      // The failure waits under the purchase's receipt (round 2): let the receipt close first.
+      await act(async () => { vi.advanceTimersByTime(9_000); });
+      await act(async () => { fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: copy.failedRead.retry })); });
+      fireEvent.click(screen.getByRole("radio", { name: copy.view.byFriend }));
+      expect(screen.queryAllByTestId("friend-panel-skeleton")).toHaveLength(0);
+      expect(screen.getByTestId("cart-by-friend-empty").getAttribute("data-kind")).toBe("none");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("a partial failure behind By friend's panels is said by By card's toast, never marked said by the panels", async () => {
@@ -718,5 +725,144 @@ describe("a purchase, a partial failure and a retry (PR 7, round 1)", () => {
     expect(screen.queryByTestId("cart-by-friend-empty")).toBeNull();
     fireEvent.click(screen.getByRole("radio", { name: copy.view.byCard }));
     expect(screen.getByRole("alert").textContent).toContain(copy.failedRead.toast);
+  });
+});
+
+// Copilot round 2 on #2349: the toast's Try again is the provider's live retry, and the failure waits for the receipt.
+describe("the failure toast beside a purchase (PR 7, round 2)", () => {
+  const props = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true };
+  const failure = () => screen.queryAllByRole("alert").find((el) => el.textContent?.includes(copy.failedRead.toast)) ?? null;
+  afterEach(() => { vi.useRealTimers(); });
+  async function buyJace() {
+    bought.loadPrintingChoices.mockResolvedValue([{
+      scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+      collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+      finishes: ["nonfoil"], owned: { nonfoil: 0 },
+    }]);
+    bought.markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
+    fireEvent.click(list().getByRole("button", { name: gotItCopy.row.tagAria("Jace, Multiverse Architect") }));
+    const add = await screen.findByRole("button", { name: /^Add/ });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    await act(async () => { fireEvent.click(add); });
+  }
+  const withoutJace = () => {
+    const after = cart();
+    after.lines = after.lines.filter((l) => l.oracleId !== JACE);
+    return after;
+  };
+
+  it("Try again is the provider's live retry: a card whose read failed after the toast went up reads again too", async () => {
+    // Past one batch (200 cards): Gisa's batch lands, the next one fails, and the toast goes up.
+    const extra = Array.from({ length: 201 }, (_, i) => ({
+      oracleId: `9${String(i).padStart(7, "0")}-0000-4000-8000-000000000000`, name: `Filler ${i}`, commander: false, owned: 0,
+      heldElsewhere: 0, heldBy: [], rows: [row("thopter", 10)],
+    }));
+    let reads = 0;
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.startsWith("/api/spare-requests")) return { ok: true, json: async () => ({ asks: [] }) };
+      reads += 1;
+      // The first read: Gisa's batch lands. Every read after it fails, Gisa's batch too.
+      return reads === 1 && url.includes(GISA) ? { ok: true, json: async () => ({ spares: [] }) } : { ok: false, json: async () => null };
+    });
+    const full = cart({ lines: [...cart().lines, ...extra] });
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(<CartView cart={full} {...props} />); });
+    expect(failure()).toBeTruthy();
+    // A card leaves the list: every card is read again, and this time Gisa's batch fails too, the toast still up.
+    await act(async () => { view.rerender(<CartView cart={{ ...full, lines: full.lines.filter((l) => l.oracleId !== JACE) }} {...props} />); });
+    expect(failure()).toBeTruthy();
+    fetchMock.mockImplementation((url: string) =>
+      url.startsWith("/api/spare-requests") ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) }) : new Promise(() => {}));
+    await act(async () => { fireEvent.click(within(failure()!).getByRole("button", { name: copy.failedRead.retry })); });
+    expect(screen.getAllByTestId("spare-skeleton")).toHaveLength(204);
+  }, 30_000);
+
+  it("a toast up when a purchase lands waits under the receipt, and shows again once the receipt closes", async () => {
+    served = { spares: [], asks: [], fail: true };
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(<CartView cart={cart()} {...props} />); });
+    expect(failure()).toBeTruthy();
+    await buyJace();
+    await act(async () => { view.rerender(<CartView cart={withoutJace()} {...props} />); });
+    const receipt = () => screen.queryAllByRole("status").find((el) => el.textContent?.includes("Jace, Multiverse Architect added")) ?? null;
+    expect(receipt()).toBeTruthy();
+    expect(failure()).toBeNull();
+    await act(async () => { vi.advanceTimersByTime(9_000); });
+    expect(receipt()).toBeNull();
+    expect(failure()).toBeTruthy();
+  });
+
+  it("a failure that landed under the receipt is not counted said by a view switch before it ever showed", async () => {
+    let calls = 0;
+    fetchMock.mockImplementation((url: string) => {
+      if (url.startsWith("/api/spare-requests")) return Promise.resolve({ ok: true, json: async () => ({ asks: [] }) });
+      calls += 1;
+      return calls === 1 ? new Promise(() => {}) : Promise.resolve({ ok: false, json: async () => null });
+    });
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(<CartView cart={cart()} {...props} />); });
+    await buyJace();
+    await act(async () => { view.rerender(<CartView cart={withoutJace()} {...props} />); });
+    // A search that leaves nothing, so By friend draws its no-match block and says nothing of the failure.
+    fireEvent.change(document.querySelector("input[type=search]")!, { target: { value: "zzzz" } });
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byFriend }));
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byCard }));
+    await act(async () => { vi.advanceTimersByTime(9_000); });
+    expect(failure()).toBeTruthy();
+  });
+
+  it("a failed ask in By friend waits under the receipt, and shows once it closes", async () => {
+    served = { spares: BOARD, asks: [] };
+    actions.askSpareAction.mockResolvedValue({ ok: false, reason: "gone" });
+    await act(async () => { render(<CartView cart={cart()} {...props} initialView="friend" />); });
+    bought.loadPrintingChoices.mockResolvedValue([{
+      scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+      collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+      finishes: ["nonfoil"], owned: { nonfoil: 0 },
+    }]);
+    bought.markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
+    fireEvent.click(within(lineIn("Chris", "Command Tower")).getByRole("button", { name: gotItCopy.row.tagAria("Command Tower") }));
+    const add = await screen.findByRole("button", { name: /^Add/ });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    await act(async () => { fireEvent.click(add); });
+    await act(async () => { fireEvent.click(within(lineIn("Peter", "Ghoulcaller")).getByTestId("friend-spare-ask")); });
+    const askFailed = () => screen.queryAllByRole("alert").find((el) => el.textContent?.includes(r.failed)) ?? null;
+    expect(askFailed()).toBeNull();
+    await act(async () => { vi.advanceTimersByTime(9_000); });
+    expect(askFailed()).toBeTruthy();
+  });
+
+  it("a failed ask in a line's spares modal waits under the receipt, and shows once it closes", async () => {
+    served = { spares: BOARD, asks: [] };
+    actions.askSpareAction.mockResolvedValue({ ok: false, reason: "gone" });
+    await act(async () => { render(<CartView cart={cart()} {...props} />); });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    await buyJace();
+    const brain = list().getAllByRole("listitem").find((li) => li.textContent?.startsWith("Brainstorm"))!;
+    await act(async () => { fireEvent.click(within(brain).getByTestId("other-ways")); });
+    const dialog = screen.getByRole("dialog");
+    await act(async () => { fireEvent.click(within(dialog).getAllByTestId("friend-spare-ask")[0]); });
+    const askFailed = () => screen.queryAllByRole("alert").find((el) => el.textContent?.includes(r.failed)) ?? null;
+    expect(askFailed()).toBeNull();
+    await act(async () => { vi.advanceTimersByTime(9_000); });
+    expect(askFailed()).toBeTruthy();
+  });
+
+  it("a failure that lands while the receipt is up is said only once the receipt closes", async () => {
+    // The first read (every card) never lands; the one after the purchase fails while the receipt is up.
+    let calls = 0;
+    fetchMock.mockImplementation((url: string) => {
+      if (url.startsWith("/api/spare-requests")) return Promise.resolve({ ok: true, json: async () => ({ asks: [] }) });
+      calls += 1;
+      return calls === 1 ? new Promise(() => {}) : Promise.resolve({ ok: false, json: async () => null });
+    });
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(<CartView cart={cart()} {...props} />); });
+    await buyJace();
+    await act(async () => { view.rerender(<CartView cart={withoutJace()} {...props} />); });
+    expect(calls).toBe(2);
+    expect(failure()).toBeNull();
+    await act(async () => { vi.advanceTimersByTime(9_000); });
+    expect(failure()).toBeTruthy();
   });
 });

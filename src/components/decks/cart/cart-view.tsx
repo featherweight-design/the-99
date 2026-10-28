@@ -715,6 +715,8 @@ function CartKeyRow({
  */
 function SpareReadState({ ids, view, children }: { ids: readonly string[]; view: CartViewMode; children: React.ReactNode }) {
   const spares = usePageSpares();
+  // A purchase's receipt holds the toast slot: the failure waits for it to close, and is said only once it shows.
+  const receiptOpen = useCartGotIt()?.receiptOpen ?? false;
   const failed = spares !== null && spareReadStatus(ids, spares.loaded, spares.failed) === "failed";
   // Said only once something SAID it: the toast here, or By friend's failed block (`FailureShownContext`). By friend's
   // panels that landed, or its no-match block, say nothing, so they leave the failure for By card's toast.
@@ -722,10 +724,10 @@ function SpareReadState({ ids, view, children }: { ids: readonly string[]; view:
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const [seq, setSeq] = useState(0);
   // Adjusted during render: the toast belongs to this failure, and leaves when it ends or By friend takes over saying it.
-  if (failed && !said && view !== "friend" && spares) {
+  if (failed && !said && view !== "friend" && spares && !receiptOpen) {
     setSaid(true);
     setSeq(seq + 1);
-    setToast({ id: seq + 1, text: copy.failedRead.toast, retry: { label: copy.failedRead.retry, run: spares.retry } });
+    setToast({ id: seq + 1, text: copy.failedRead.toast });
   }
   if (!failed && said) setSaid(false);
   if (toast && (!failed || view === "friend")) setToast(null);
@@ -735,7 +737,12 @@ function SpareReadState({ ids, view, children }: { ids: readonly string[]; view:
       <FailureShownContext.Provider value={shown}>
         {children}
       </FailureShownContext.Provider>
-      <SocialToast toast={toast} onDone={() => setToast(null)} />
+      {/* Try again is the provider's retry as it is NOW, never one kept from when the toast went up: the cards it reads
+          and the failures it clears are the live ones. Under an open receipt the toast waits, its clock paused. */}
+      <SocialToast
+        toast={toast && spares && !receiptOpen ? { ...toast, retry: { label: copy.failedRead.retry, run: spares.retry } } : null}
+        onDone={() => setToast(null)}
+      />
     </SpareColumnContext.Provider>
   );
 }
