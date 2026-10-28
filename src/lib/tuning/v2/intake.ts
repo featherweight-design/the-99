@@ -77,14 +77,14 @@ export function noticedChips(facts: NoticedFacts): NoticedChip[] {
 
 /**
  * A chip's tap: its sentence at the end of the request, after a space when the request has words. Never replaces what is
- * there. Returns the new request and where the appended words start, for the box's brief highlight; null when the
- * sentence is already there (the chip is ✓) or would take the box past its cap.
+ * there. Returns the new request; null when the sentence is already there (the chip is ✓) or would take the box past
+ * its cap. The box highlights the appended tail itself (`highlightTail`, the sentence's length).
  */
-export function appendSentence(request: string, sentence: string, room: number): { next: string; from: number } | null {
+export function appendSentence(request: string, sentence: string, room: number): { next: string } | null {
   if (request.includes(sentence)) return null;
   const sep = request === "" || /\s$/.test(request) ? "" : " ";
   if ([...sep, ...sentence].length > room) return null;
-  return { next: `${request}${sep}${sentence}`, from: request.length + sep.length };
+  return { next: `${request}${sep}${sentence}` };
 }
 
 /** The Bracket card's head, choices and what the press sends for each (README item 2; plan H3). */
@@ -97,10 +97,10 @@ const UP_MAX = 4;
 /**
  * The choices for a deck the analysis reads at `permits`: Keep at the current bracket (the default, first), Down to each
  * lower bracket from 1, Up to each higher one to 4. A deck read as a RANGE (`[1,2]`, `[4,5]`, the only two `permitsFor`
- * returns) keeps the range: Down offers the brackets below its lower member and Up those above its upper one, and Keep's
- * wire target is the UPPER member, so a line that takes the deck past the range is left out while one that settles it
- * inside the range is kept (the run's `aimDrops` reads one target; plan H3: "a deck read as a range keeps inside what it
- * permits now"). Null when there is no reading to aim from.
+ * returns) offers Down below its lower member and Up above its upper one, and Keep's wire target is the UPPER member
+ * (ruled by d9, 2026-10-28: "Keep" means don't pass the bracket the deck already reaches, and the top of a range is that
+ * bracket). The run's `aimDrops` reads one target and keeps only a line whose outcome still permits it, so a line that
+ * settles the deck lower in the range is left out too. Null when there is no reading to aim from.
  */
 export function bracketCard(permits: readonly Bracket[]): BracketCard | null {
   if (permits.length === 0) return null;

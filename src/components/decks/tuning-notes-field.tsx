@@ -21,7 +21,7 @@ const copy = deckDescriptionCopy.notes;
 /** Two rows' worth at this field's own line-height/padding — the review-specified starting
  *  height, and the floor `GROW_MIN_PX` keeps it from shrinking under its own placeholder. */
 const GROW_MIN_PX = 64;
-/** The framed request box's floor: three lines at its line-height and padding (the board's 112px frame, less its foot). */
+/** The framed request box's floor while it grows to its content; `rows={3}` already sizes the box above it. */
 const FRAMED_MIN_PX = 72;
 
 /** The picker's lookup, module-level so its identity is stable across renders. */

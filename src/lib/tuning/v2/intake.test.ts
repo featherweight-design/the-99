@@ -46,9 +46,9 @@ describe("noticedChips", () => {
 
 describe("appendSentence", () => {
   it("appends at the end, after a space, never replacing typed words", () => {
-    expect(appendSentence("", "More removal.", 500)).toEqual({ next: "More removal.", from: 0 });
-    expect(appendSentence("Cut the legends.", "More removal.", 500)).toEqual({ next: "Cut the legends. More removal.", from: 17 });
-    expect(appendSentence("Cut the legends. ", "More removal.", 500)).toEqual({ next: "Cut the legends. More removal.", from: 17 });
+    expect(appendSentence("", "More removal.", 500)).toEqual({ next: "More removal." });
+    expect(appendSentence("Cut the legends.", "More removal.", 500)).toEqual({ next: "Cut the legends. More removal." });
+    expect(appendSentence("Cut the legends. ", "More removal.", 500)).toEqual({ next: "Cut the legends. More removal." });
   });
 
   it("does nothing when the sentence is already there or would pass the cap", () => {
