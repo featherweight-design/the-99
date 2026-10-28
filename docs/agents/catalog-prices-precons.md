@@ -115,8 +115,11 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   `Catalog refresh` behind `PRECON_OVERVIEWS_ENABLED='true'`: `generate` on `catalog-staging` (`staging-deployed`, the
   `ANTHROPIC_API_KEY` secret, `PRECON_OVERVIEW_TARGET_BRANCH` staging's branch), then `copy` in `catalog-production`. A
   DISPATCH runs without the variable, and its `mode` picks `generate` alone, `generate+copy` or `copy-only`.
-- **The carry-over** (`carryOverPreconOverview`, `src/lib/precons/carry-over.ts`) runs in each start's `after()`:
-  `createDeckFromPrecon`, `startPreconOwned` and every deck `addPrecons` starts. With the OWNER's Analysis tab on, it first
+- **The carry-over** (`carryOverPreconOverview`, `src/lib/precons/carry-over.ts`) runs INLINE in the deck page's render
+  on the `?from=precon` landing that `createDeckFromPrecon` and `startPreconOwned` redirect to (`carryOnArrival`,
+  `arrival-carry.ts`; d9's ruling, small items 5), before the header's chip and the notices read the stored reading, so the
+  bracket shows at once; every deck `addPrecons` starts, which has no landing, keeps it in `after()`. A repeat (a
+  re-render, a refresh keeping the parameter, a double arrival) is a no-op. With the OWNER's Analysis tab on, it first
   stores the deck's bracket READING through the Analyze press's own call (`computeAndStoreProfile`, no model; a press finds
   the version holding its list, so the reading is v0's; as a FIRST reading, so it never replaces a row a replay or a
   press already wrote), whether or not an Overview follows. Then, unless the deck holds a

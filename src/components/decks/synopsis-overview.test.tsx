@@ -643,3 +643,38 @@ describe("the method-changed notice", () => {
     expect(within(notice()).getByRole("button", { name: copy.writeNew })).toBeTruthy();
   });
 });
+
+// Small items 5 (`Precon-Overview` §2 and §3): an Overview a precon start carried says so in its label
+// row, gains the stale tail when an edit stales the reading, and loses the aside after Re-analyze, where
+// ruling D's shipped line and write take over. Never a write control while the reading is stale.
+describe("a carried Overview's aside", () => {
+  const carried = (over: Partial<SynopsisState> = {}) => synopsisState({ synopsis: { ...synopsisRow(), fromPrecon: true }, ...over });
+  const aside = () => screen.queryByTestId("overview-carried-aside");
+
+  it("reads from the precon list beside the label, with nothing to press", () => {
+    draw(carried());
+    expect(aside()?.textContent).toBe("from the precon list");
+    expect(screen.queryByRole("button", { name: copy.writeNew })).toBeNull();
+    expect(screen.queryByRole("button", { name: copy.writeOne })).toBeNull();
+  });
+
+  it("gains before your changes after the first edit, whole and with no write control", () => {
+    draw(carried({ stale: true }), { readingFresh: false });
+    expect(aside()?.textContent).toBe("from the precon list, before your changes");
+    expect(screen.getByRole("button", { name: /Sol Ring/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: copy.writeNew })).toBeNull();
+    expect(screen.queryByText(copy.olderThanList)).toBeNull();
+  });
+
+  it("is gone after Re-analyze, where the shipped older-than-the-list line and its write stand", () => {
+    draw(carried({ stale: true }), { readingFresh: true });
+    expect(aside()).toBeNull();
+    expect(screen.getByText(copy.olderThanList)).toBeTruthy();
+    expect(screen.getByRole("button", { name: copy.writeNew })).toBeTruthy();
+  });
+
+  it("is never drawn over an Overview the deck wrote itself", () => {
+    draw(synopsisState());
+    expect(aside()).toBeNull();
+  });
+});

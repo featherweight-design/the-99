@@ -35,9 +35,8 @@ export async function createDeckFromPrecon(fileName: string, rawName: string): P
 
   const deckId = await startPreconDeck(userId, fileName, name, env);
   revalidateClaims(deckId, userId);
-  // The precon's pre-written Overview, after the response: the start has committed, and a deck
-  // without it is as every deck is (`carry-over.ts`).
-  after(() => carryOverAfterStart(deckId, userId, env));
+  // The precon's pre-written Overview and reading are carried over by the landing this redirect makes,
+  // inline in its render (`carryOnArrival`, small items 5), so the deck opens with them at once.
   redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}`);
 }
 
@@ -61,9 +60,9 @@ export async function startPreconOwned(fileName: string, rawName: string, action
   revalidateClaims(result.deckId, userId);
   // The add's entry rides the redirect so the deck page can draw its receipt; it is only a claim there (`readPreconAddReceipt`).
   // After the response, as every collection write does (`edit-actions.ts`, `settled`).
+  // The carry-over is the landing's, inline in its render (`carryOnArrival`), as the plain start's is.
   after(async () => {
     invalidateCollectionReaders(userId);
-    await carryOverAfterStart(result.deckId, userId, env);
     await warmCommanderScores(userId, env);
   });
   redirect(`/decks/${result.deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}&${PRECON_ADDED_PARAM}=${result.entryId}`);

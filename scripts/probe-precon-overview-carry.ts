@@ -3,7 +3,9 @@
 //   THE START: a deck started from that precon carries over its bracket reading (a fresh
 //   `deck_profiles` row with its permits) and its Overview: the deck's shown synopsis IS the carried
 //   row (`precon_file` set, no allowance unit), `readSynopsisState` calls it fresh, and v0 names it.
-//   ONCE: a second carry-over attaches nothing (`has_synopsis`).
+//   ONCE: a second carry-over attaches nothing (`has_synopsis`), and a double ARRIVAL (`carryOnArrival`,
+//   the landing's inline run, twice) writes nothing more: one reading as stored, one Overview.
+//   THE DATE LINE: the carried reading is v0's (number 0), which the verdict says is the precon list's.
 //   THE FIRST EDIT: one card added through `touchDeck` makes the same read call it stale.
 //   NOT CURRENT: a deck started from a precon whose row is not current gets the reading, no Overview.
 //   ANOTHER BASIS: an owner counting roles by the other basis gets no Overview built at this one.
@@ -41,6 +43,9 @@ async function main() {
   const { readSynopsisState } = await import("../src/lib/synopsis/read");
   const { touchDeck } = await import("../src/lib/decks/touch");
   const { overviewDataMovedFor } = await import("../src/lib/notices/overview");
+  const { carryOnArrival } = await import("../src/lib/precons/arrival-carry");
+  const { readStoredReading, requestProfileDeps } = await import("../src/lib/profile/stored");
+  const { analyzedLine } = await import("../src/components/decks/verdict-block");
 
   const { rows: [branch] } = await db.execute<{ id: string | null }>(sql`select current_setting('neon.branch_id', true) as id`);
   assertScratchBranch(branch?.id ?? null, "probe:precon-overview-carry");
@@ -82,6 +87,13 @@ async function main() {
     const again = await carryOverPreconOverview(deckId, USER, ON);
     const [readingAgain] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, deckId));
     check("a second carry-over attaches nothing and leaves the reading as it was", !again.attached && again.reason === "no_reading" && readingAgain?.computedAt.getTime() === reading?.computedAt.getTime(), `${JSON.stringify(again)}, computed ${reading?.computedAt.toISOString()} then ${readingAgain?.computedAt.toISOString()}`);
+    await carryOnArrival(true, deckId, USER, ON);
+    await carryOnArrival(true, deckId, USER, ON);
+    const [readingArrived] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, deckId));
+    const synopses = await db.select({ id: deckSynopses.id }).from(deckSynopses).where(eq(deckSynopses.deckId, deckId));
+    check("a double arrival is a no-op: one reading as stored, one Overview", synopses.length === 1 && synopses[0].id === row.id && readingArrived?.computedAt.getTime() === reading?.computedAt.getTime() && readingArrived?.dirty === false, `synopses ${synopses.length}, computed ${readingArrived?.computedAt.toISOString()}`);
+    const stored = await readStoredReading(deckId, USER, requestProfileDeps(ON));
+    check("the carried reading is v0's, and its date line says the precon list", stored?.versionNumber === 0 && analyzedLine(stored.analyzedAt, new Date(), stored.fresh, stored.versionNumber).startsWith("Analysis from the precon list · "), `version ${stored?.versionNumber}, fresh ${stored?.fresh}`);
 
     // One edit: a card the deck does not hold, added as every list edit is, through `touchDeck`.
     const [extra] = await db.select({ id: cards.oracleId }).from(cards)

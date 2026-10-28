@@ -10,7 +10,7 @@ vi.mock("../../lib/switches/request", async () => {
 const state = vi.hoisted(() => ({
   selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
   enabled: true, collectionEdit: true, addedCopy: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
-  invalidated: [] as string[], warmed: [] as string[], committed: [] as unknown[],
+  invalidated: [] as string[], warmed: [] as string[], committed: [] as unknown[], carried: [] as string[],
   line: true, picking: false, picks: [] as unknown[][], pickResult: ((): unknown => ({ ok: true, entryId: "e" })) as (f: string) => unknown,
 }));
 
@@ -49,6 +49,8 @@ vi.mock("../../lib/precons/added", async (importOriginal) => ({
 vi.mock("../../lib/collection/added-copy-flag", () => ({ addedCopyEnabled: () => state.addedCopy }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: (id: string) => state.invalidated.push(id) }));
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async (id: string) => { state.warmed.push(id); } }));
+// Which starts carry over in their own `after()`: only Precons I own, the one with no arrival (small items 5).
+vi.mock("../../lib/precons/carry-over", () => ({ carryOverAfterStart: async (deckId: string) => { state.carried.push(deckId); } }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { state.after.push(fn); } }));
 vi.mock("../../lib/decks/revalidate-claims", () => ({ revalidateClaims: (id: string) => state.revalidated.push(id) }));
 vi.mock("../../lib/decks/versions", () => ({
@@ -76,6 +78,7 @@ beforeEach(() => {
   state.line = true; state.picking = false; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}`, deckId: `deck-${f}` });
   committed.map = new Map(); committed.decks = new Map(); committed.asked = [];
   state.enabled = true; state.collectionEdit = true; state.addedCopy = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
+  state.carried = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
 
@@ -109,6 +112,10 @@ describe("createDeckFromPrecon", () => {
     expect(state.revalidated).toEqual(["deck-1"]);
     // The feed's order, so a pair's lead is the commander its page names first.
     expect(state.orders).toEqual([preconCards.position]);
+    // The carry-over is the landing's, inline (`carryOnArrival`): nothing is scheduled after this response.
+    for (const fn of state.after) await fn();
+    expect(state.after).toEqual([]);
+    expect(state.carried).toEqual([]);
   });
 
   it("starts a twin in its own printings, recorded as built from its plain edition", async () => {
@@ -184,6 +191,8 @@ describe("startPreconOwned", () => {
     await flush();
     expect(state.invalidated).toEqual(["user_1"]);
     expect(state.warmed).toEqual(["user_1"]);
+    // The carry-over is the landing's, inline (`carryOnArrival`), never this action's `after()`.
+    expect(state.carried).toEqual([]);
   });
 
   it("returns a refusal for the dialog to say, touching no reader", async () => {
@@ -220,6 +229,8 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
     expect(state.revalidated).toEqual(["deck-Abzan", "deck-Revival_CE"]);
     await Promise.all(state.after.map((f) => f()));
     expect(state.warmed).toEqual(["user_1"]);
+    // No arrival follows this start, so it keeps the carry-over in its `after()`, one per deck it started.
+    expect(state.carried).toEqual(["deck-Abzan", "deck-Revival_CE"]);
   });
 
   it("refuses with the line's switch, collection editing or precons off, and writes nothing", async () => {

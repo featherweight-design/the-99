@@ -25,6 +25,13 @@ export const synopsisCopy = {
   /** Ruling D: an older overview beside a fresh reading. */
   olderThanList: "This overview was written before your latest changes.",
   writeNew: "Write a new overview",
+  /**
+   * The label row's aside over an Overview a precon start carried (small items 5): while its list is
+   * the one the reading describes, and once an edit stales that reading. Gone after Re-analyze, where
+   * ruling D's line says the rest.
+   */
+  fromPrecon: "from the precon list",
+  fromPreconStale: "from the precon list, before your changes",
 
   /**
    * The overview's own loading (addendum_overview_loading, 2026-09-25). `writing` is the slot's

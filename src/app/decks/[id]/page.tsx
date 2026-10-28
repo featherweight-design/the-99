@@ -12,6 +12,7 @@ import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
 import { noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
+import { carryOnArrival } from "../../../lib/precons/arrival-carry";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
 import { readDeckOriginAndStart } from "../../../lib/precons/start-version";
 import { preconsEnabled } from "../../../lib/precons/flag";
@@ -163,6 +164,14 @@ export default async function DeckBuilderPage({
   // Read up front, beside the other switches below, because it gates a Stage A read
   // (`printedInSetsRead`) that must not start at all when Tuning is off.
   const tuned = tuningEnabled(env);
+  // THE PRECON CARRY-OVER, INLINE ON THE ARRIVAL VISIT (small items 5, d9's ruling): the start's own landing
+  // (`?from=precon`) stores the deck's first reading and attaches the precon's Overview before anything
+  // reads the stored reading, so the header's bracket shows at once and no pending state is drawn. Started
+  // now, beside Stage A, and awaited only by the reads of what it writes (the chip and the notices below).
+  // Every other visit runs nothing; a repeat is a no-op (`arrival-carry.ts`), and it never throws.
+  const carried = perf.timed("preconCarry", () => carryOnArrival(
+    preconsEnabled(env) && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]), id, userId, env,
+  ));
 
   // STAGE A: every read the next wave waits on starts NOW, beside the ownership guard rather than
   // after it. Each is owner-scoped in its own SQL — `getDeckDetail`, the draft's snapshot, the fill
@@ -329,14 +338,14 @@ export default async function DeckBuilderPage({
   // (see `readStoredPermits`), and a failed read draws no chip, which is what an unread deck draws
   // anyway.
   const storedPermits = analysisTabEnabled(env)
-    ? perf.timed("storedPermits", () => readStoredPermits(id, userId)).catch(() => undefined)
+    ? carried.then(() => perf.timed("storedPermits", () => readStoredPermits(id, userId))).catch(() => undefined)
     : Promise.resolve(null);
   // The header's notice tag, read WITH the page so it paints with the header rather than arriving
   // after it. A failed read draws no tag, as a deck with no notices does; the shell reads again
   // after mount in that case.
   const showNotices = analysisTabEnabled(env) && noticesEnabled(env);
   const initialNotices = showNotices
-    ? perf.timed("notices", () => loadDeckNotices(id, userId, env)).catch(() => null)
+    ? carried.then(() => perf.timed("notices", () => loadDeckNotices(id, userId, env))).catch(() => null)
     : Promise.resolve(null);
   // The swap tools read the flag once, here, and reach every surface through one provider: a row
   // that finds no provider draws nothing of them.
