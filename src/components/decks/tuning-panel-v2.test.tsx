@@ -11,7 +11,7 @@ import type { TuningState } from "../../lib/tuning/state";
 import { usualFor } from "../../lib/tuning/v2/intake";
 import type { Bracket } from "../../lib/profile/types";
 import { OpenHistoryProvider, OpenRunProvider, type OpenRun } from "./review-run";
-import { TuningPanel, type TuningDeps, type TuningFacts, type TuningV2 } from "./tuning-panel";
+import { resetIntakeDrafts, TuningPanel, type TuningDeps, type TuningFacts, type TuningV2 } from "./tuning-panel";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
   applySuggestion: vi.fn(), dismissSuggestion: vi.fn(),
@@ -74,6 +74,7 @@ const send = () => screen.getByRole("button", { name: sc.intake.send });
 const box = () => document.getElementById("sc-request-field") as HTMLTextAreaElement;
 
 beforeEach(() => {
+  resetIntakeDrafts();
   resetDeckVisitForTests();
   visitBaseline("d1", "suggested", { okKey: null, runId: null });
 });
@@ -258,6 +259,25 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     // Edited while the press is out: the answer names a request no longer on screen.
     fireEvent.change(screen.getByPlaceholderText(sc.intake.request.placeholder), { target: { value: "Cut the legends." } });
     await act(async () => { answer(same); });
+    expect(document.querySelector("[data-sc-same]")).toBeNull();
+  });
+
+  it("keeps the request, count and bracket choice when the panel leaves and comes back (a drift link)", async () => {
+    const d = deps();
+    const first = await draw(d, v2At());
+    fireEvent.change(box(), { target: { value: "Cut the legends." } });
+    first.unmount();
+    await draw(d, v2At());
+    expect(box().value).toBe("Cut the legends.");
+  });
+
+  it("drops the confirm when a restriction changes", async () => {
+    const same = { ok: false, confirm: "same_request", runId: "11111111-1111-4111-8111-111111111111", at: at.toISOString() };
+    const d = deps(() => same);
+    await draw(d, v2At());
+    await act(async () => { fireEvent.click(send()); });
+    expect(document.querySelector("[data-sc-same]")).not.toBeNull();
+    fireEvent.click(screen.getByText(deckDescriptionCopy.limits.ownOnly));
     expect(document.querySelector("[data-sc-same]")).toBeNull();
   });
 

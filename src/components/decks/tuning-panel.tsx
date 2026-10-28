@@ -116,6 +116,14 @@ export type TuningV2 = {
 /** The count a fresh intake opens on (Intake board A). */
 export const V2_DEFAULT_COUNT = 3;
 
+type IntakeDraft = { count: number; request: string; bracketPick: BracketPick };
+/** The intake's draft per deck, held above the panel's mount (review round 3): the drift links (Top off on Your deck,
+ *  Proposed cuts in place) unmount the panel, and the player's request, count and bracket choice must be there when they
+ *  come back to 99 (STATES: a drift never loses the request). For this page visit only; never persisted. */
+const intakeDrafts = new Map<string, IntakeDraft>();
+/** Tests only: each case starts from a fresh visit. */
+export const resetIntakeDrafts = () => intakeDrafts.clear();
+
 function isSameRequest(r: DeckMutationResult | SameRequest): r is SameRequest {
   return !r.ok && "confirm" in r && r.confirm === "same_request";
 }
@@ -256,23 +264,27 @@ export function TuningPanel({
   // Suggested changes v2's intake (UI PR 5): the count, the request (never pre-filled) and the Bracket card's choice,
   // held here and mirrored into a ref synchronously, for the reason `notesRef` is: the press awaits the limits flush
   // before it reads them, and the intake stays editable the whole time. A drift off 99 keeps every one.
-  const [count, setCount] = useState(V2_DEFAULT_COUNT);
-  const [request, setRequest] = useState("");
+  const draft = intakeDrafts.get(deckId);
+  const [count, setCount] = useState(draft?.count ?? V2_DEFAULT_COUNT);
+  const [request, setRequest] = useState(draft?.request ?? "");
   // The Bracket card's choice by identity, never by position: a new reading reorders the options, and "Down to 1" must
   // stay "Down to 1" (review round 1). Null is Keep, the default, whatever bracket the deck reads at.
-  const [bracketPick, setBracketPick] = useState<BracketPick>(null);
+  const [bracketPick, setBracketPick] = useState<BracketPick>(draft?.bracketPick ?? null);
   const intakeCard = bracketCard(permits);
   // The reading as of the latest render, for the press: it reads the card AFTER the limits flush, and a new analysis can
   // land during that wait (review round 2), so the closure's `permits` may be the one the press started from.
   const permitsRef = useRef(permits);
-  permitsRef.current = permits;
-  const intakeRef = useRef<{ count: number; request: string; bracketPick: BracketPick }>({ count: V2_DEFAULT_COUNT, request: "", bracketPick: null });
+  useEffect(() => {
+    permitsRef.current = permits;
+  });
+  const intakeRef = useRef<IntakeDraft>(draft ?? { count: V2_DEFAULT_COUNT, request: "", bracketPick: null });
   // Moves on every intake edit, so a "same request" answer to a press made before the edit is dropped (review round 1).
   const intakeRev = useRef(0);
   // The last press answered "Same request as your Oct 26 run" (G4): nothing was reserved, and the action row asks.
   const [same, setSame] = useState<{ runId: string; at: string } | null>(null);
   function changeIntake(next: Partial<{ count: number; request: string; bracketPick: BracketPick }>) {
     intakeRef.current = { ...intakeRef.current, ...next };
+    intakeDrafts.set(deckId, intakeRef.current);
     intakeRev.current += 1;
     if (next.count !== undefined) setCount(next.count);
     if (next.request !== undefined) setRequest(next.request);
@@ -528,6 +540,9 @@ export function TuningPanel({
   const saveLimits = useCallback(
     (patch: LimitsPatch) => {
       const keys = Object.keys(patch) as LimitField[];
+      // The restrictions are part of the request (round 3): an edit retires the confirm and any answer still out.
+      intakeRev.current += 1;
+      setSame(null);
       keys.forEach((key) => {
         limitFieldRevision.current[key] += 1;
       });
