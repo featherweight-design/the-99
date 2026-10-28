@@ -7,7 +7,7 @@ import { spareCopy } from "../../lib/copy/social";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { ShoppingKey } from "../decks/shopping-key";
-import { FriendSparesProvider, OtherWaysPress, SPARES_PAGE_BATCH, fetchSpares } from "./spare-markers";
+import { FriendSparesProvider, OtherWaysPress, SPARES_PAGE_BATCH, fetchSpares, usePageSpares } from "./spare-markers";
 import { SwapToolsProvider, useSwapTools } from "../../lib/swaps/context";
 
 const asOf = new Date("2026-09-20T00:00:00Z");
@@ -54,17 +54,19 @@ async function mount(ui: React.ReactNode, ids = ["poly"]) {
 }
 
 describe("fetchSpares", () => {
-  it("reads a long list in batches of the route's cap, and a batch that fails as none", async () => {
+  it("reads a long list in batches of the route's cap, and names the cards of a batch that fails", async () => {
     const ids = Array.from({ length: SPARES_PAGE_BATCH * 2 + 50 }, (_, i) => `id-${i}`);
     fetchMock
       .mockResolvedValueOnce(answer([{ oracleId: "id-1", friend: friend("Ana"), spare: 1 }]))
       .mockResolvedValueOnce({ ok: false, json: async () => ({ spares: [{ oracleId: "id-x", friend: friend("Zed"), spare: 9 }] }) })
       .mockRejectedValueOnce(new Error("down"));
-    const rows = await fetchSpares(ids);
+    const { spares: rows, failed } = await fetchSpares(ids);
     expect(fetchMock).toHaveBeenCalledTimes(3);
     const counts = fetchMock.mock.calls.map(([url]) => new URL(url as string, "http://x").searchParams.get("ids")!.split(",").length);
     expect(counts).toEqual([SPARES_PAGE_BATCH, SPARES_PAGE_BATCH, 50]);
     expect(rows.map((r) => r.oracleId)).toEqual(["id-1"]);
+    // The second batch answered not-ok and the third threw: their cards are not known, never "none".
+    expect(failed).toEqual(ids.slice(SPARES_PAGE_BATCH));
   });
 
   it("asks each card once, and reads again only when the set of cards changes, not its order", async () => {
@@ -82,6 +84,25 @@ describe("fetchSpares", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     await act(async () => { rerender(tree(["other", "poly", "new"])); });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("a failed read (v2 G5)", () => {
+  it("names a card whose read failed, and clears it when a later read of it lands", async () => {
+    function Spy() {
+      const ctx = usePageSpares();
+      return <output data-testid="spy">{JSON.stringify({ loaded: [...(ctx?.loaded ?? [])].sort(), failed: [...(ctx?.failed ?? [])].sort() })}</output>;
+    }
+    const seen = () => JSON.parse(screen.getByTestId("spy").textContent ?? "{}");
+    const tree = (ids: string[]) => <FriendSparesProvider oracleIds={ids} newestAsOf={asOf}><Spy /></FriendSparesProvider>;
+    fetchMock.mockResolvedValueOnce({ ok: false, json: async () => null });
+    let rerender!: (ui: React.ReactNode) => void;
+    await act(async () => { ({ rerender } = render(tree(["poly"]))); });
+    expect(seen()).toEqual({ loaded: ["poly"], failed: ["poly"] });
+    // The set moves, so both cards are read again, and this read lands.
+    fetchMock.mockResolvedValueOnce(answer(SPARES));
+    await act(async () => { rerender(tree(["poly", "other"])); });
+    expect(seen()).toEqual({ loaded: ["other", "poly"], failed: [] });
   });
 });
 

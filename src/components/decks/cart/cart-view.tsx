@@ -19,7 +19,7 @@ import { FriendSparesProvider, SparesSheetHost, usePageSpares } from "../../soci
 import { CartDeckGroup } from "./cart-deck-group";
 import { DeckSelect } from "./deck-select";
 import { ViewSwitch, type CartViewMode } from "./view-switch";
-import { ByFriendList, byFriendHead, useByFriend, type HeldLines } from "./cart-by-friend";
+import { ByFriendList, byFriendHead, friendGroups, useByFriend, type HeldLines } from "./cart-by-friend";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { HoverPreviewProvider } from "../hover-preview";
@@ -370,7 +370,7 @@ export function CartView({
   ) : withSpares;
 }
 
-/** The view drawn: By friend falls back to By card while it has nothing to draw (`useByFriend` null). */
+/** The view drawn: By friend falls back to By card while it has no panels to draw (`friendGroups` null). */
 function shown(view: CartViewMode, byFriend: boolean): CartViewMode {
   return view === "friend" && !byFriend ? "card" : view;
 }
@@ -380,7 +380,7 @@ function ListHead({ view, lines, read, selected, byDeck }: {
   view: CartViewMode; lines: SelectedLine[]; read: ReadonlySet<string>; selected: ReadonlySet<string>; byDeck: string;
 }) {
   const drawn = useWithHeld(lines, read, selected);
-  const byFriend = useByFriend(drawn.lines, drawn.held);
+  const byFriend = friendGroups(useByFriend(drawn.lines, drawn.held));
   const v = shown(view, byFriend !== null);
   return (
     <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
@@ -401,7 +401,7 @@ function CardOrFriendList({
   newestAsOf: Date | null;
 }) {
   const drawn = useWithHeld(lines, read, selected);
-  const byFriend = useByFriend(drawn.lines, drawn.held);
+  const byFriend = friendGroups(useByFriend(drawn.lines, drawn.held));
   if (view === "friend" && byFriend) {
     return <ByFriendList groups={byFriend.groups} requests={byFriend.requests} held={drawn.held} deckNames={deckNames} newestAsOf={newestAsOf} />;
   }
@@ -428,7 +428,7 @@ function CartKeyRow({
 }) {
   const spares = usePageSpares();
   const withHeld = useWithHeld(lines, read, selected);
-  const byFriend = useByFriend(withHeld.lines, withHeld.held);
+  const byFriend = friendGroups(useByFriend(withHeld.lines, withHeld.held));
   const v = shown(view, byFriend !== null);
   const viewSwitch = byDeckView || byFriend
     // An explicit `?view=deck` with one deck keeps its own segment, so the switch always shows the view it is on.
