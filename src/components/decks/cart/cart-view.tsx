@@ -396,6 +396,7 @@ export function CartView({
                   onSort={chooseSort}
                   deckGroups={deckGroups}
                   sparesRead={sparesRead}
+                  hasFriends={hasFriends}
                 />
               </div>
               {/* Desktop: the list is its own scroll box, filling what the page leaves, so the controls above
@@ -523,10 +524,10 @@ function friendBody(b: ByFriend | null, hasFriends: boolean): "panels" | "readin
 /**
  * Row 3 and the rest of the chassis for the view drawn (it replaced the list head): the search, the drawn view's sort and
  * the cart's sentence. `lines` are the lines the search leaves and `of` the selected lines before it. The sort is read and
- * set for the view DRAWN, since By friend draws as By card while it has no panels.
+ * set for the view DRAWN, since By friend draws as By card with spare requests off (and only then).
  */
 function CartChassisRow({
-  view, lines, of, read, selected, query, onQuery, sorts, onSort, deckGroups, sparesRead,
+  view, lines, of, read, selected, query, onQuery, sorts, onSort, deckGroups, sparesRead, hasFriends,
 }: {
   view: CartViewMode;
   lines: SelectedLine[];
@@ -540,6 +541,8 @@ function CartChassisRow({
   deckGroups: { deck: CartPayload["decks"][number]; lines: CartPayload["lines"] }[];
   /** The selected cards, whose read failing drops By card's spare clause (B2). */
   sparesRead: readonly string[];
+  /** No friend: By friend's sentence is `0 friends`, reading or not, as its block is Empty-One C (`friendBody`). */
+  hasFriends: boolean;
 }) {
   const drawn = useWithHeld(lines, read, selected, { query });
   const friendView = useByFriend(drawn.lines, drawn.held);
@@ -557,8 +560,10 @@ function CartChassisRow({
     }
     if (v === "friend" && friendView && drawn.lines.length > 0) {
       // Loading C/D says what the view waits for, R2 C/D that it failed, Empty-One B/C `0 friends`.
-      if (friendView.status === "reading") return copy.result.readingByFriend;
-      if (friendView.status === "failed") return copy.result.failedByFriend;
+      // The sentence follows the list's place (`friendBody`): No friends wins over reading.
+      const body = friendBody(friendView, hasFriends);
+      if (body === "reading") return copy.result.readingByFriend;
+      if (body === "failed") return copy.result.failedByFriend;
       const groups = byFriend?.groups ?? [];
       return copy.result.byFriend(groups.length, groups.reduce((n, g) => n + g.spares, 0));
     }
@@ -653,7 +658,7 @@ function CardOrFriendList({
 
 /**
  * The row above the list: the view switch and the key. The switch draws By deck with two decks or more (E1) and By friend
- * while a selected line has a friend's spare with spare requests on, and nothing with only By card. The key names the buy
+ * from first paint with spare requests on (v2 G2: reading, empty or failed alike), and nothing with only By card. The key names the buy
  * press while a line has one (I got it on, by card or by friend) and the spare glyph while a line draws it (S5), which By
  * friend never does: its line's press is the Ask. Nothing at all with none of the three.
  */

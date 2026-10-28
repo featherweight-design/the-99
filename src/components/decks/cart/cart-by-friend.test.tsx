@@ -525,6 +525,9 @@ describe("reading, empty and failed states (PR 7)", () => {
     await mount({ initialView: "friend", hasFriends: false });
     expect(screen.queryAllByTestId("friend-panel-skeleton")).toHaveLength(0);
     expect(screen.getByTestId("cart-by-friend-empty").getAttribute("data-kind")).toBe("noFriends");
+    // The sentence follows the block: `0 friends`, never the reading sentence over Empty-One C.
+    expect(screen.getByText(copy.result.byFriend(0, 0))).toBeTruthy();
+    expect(screen.queryByText(copy.result.readingByFriend)).toBeNull();
   });
 
   it("By card, failed: the toast with Try again, the spare column closed, no key item, no spare clause (R2 A, B)", async () => {
@@ -590,7 +593,16 @@ describe("reading, empty and failed states (PR 7)", () => {
     served = { spares: [], asks: [], fail: true };
     await mount({ initialView: "deck", focusDeckId: "thopter" });
     expect(screen.getByRole("alert").textContent).toContain(copy.failedRead.toast);
-    expect(document.querySelector('[data-cart-columns="deck"]')!.className).toContain("xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1.75fr)_0px_minmax(0,1.3fr)_100px]");
+    const closed = "xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1.75fr)_0px_minmax(0,1.3fr)_100px]";
+    expect(document.querySelector('[data-cart-columns="deck"]')!.className).toContain(closed);
+    // The open group's rows close it too: the closed grid, never the spare column's, and no spare cell.
+    const deckRows = [...document.querySelectorAll("[data-cart-row]")];
+    expect(deckRows.length).toBeGreaterThan(0);
+    for (const li of deckRows) {
+      expect(li.className).toContain(closed);
+      expect(li.className).not.toContain("xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.55fr)_minmax(0,1.1fr)_minmax(0,1.15fr)_100px]");
+      expect(li.querySelector('[data-fact="spare"]')).toBeNull();
+    }
   });
 
   it("By friend, failed: the dashed block with Try again in the list's place, and no toast (R2 C, D)", async () => {
