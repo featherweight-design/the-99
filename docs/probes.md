@@ -2296,7 +2296,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   with no unit held; that the additions are saved and readable while the run is pending, before any cut, and that the
   run settles ok and spent with each list at its ask; that the same request asks to confirm that run; that apply 3 + 3
   keeps the deck at 100, a repeat of the same press writes nothing, and undo returns the exact list with the lines open
-  and still picked; that unequal counts are refused; that a second set from the same pool undoes on its own; that a pick
+  and still picked; that unequal counts are refused; that a second set from the same pool undoes on its own; that per-card apply and dismiss refuse a v2 line; that a pick
   is saved only for its own reader; and that an owned-only run saves no addition the player does not own. Every charge
   and refund row of spec §9 and plan P4 is `charge.test.ts`'s and `engine.test.ts`'s, because the stub cannot fail a
   call. It preloads `scripts/lib/no-next-cache.cjs`. Its first run caught the stub answering N lines where each call

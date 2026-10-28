@@ -11,6 +11,7 @@
 //      undo returns the exact list, and the lines are open again and still picked
 //   5  unequal counts are refused and change nothing
 //   6  a second set from the same pool, and undoing it leaves the first applied
+//  6b  per-card apply and dismiss refuse a v2 line
 //   7  a pick is saved, only on an open v2 line of the reader's
 //   8  an owned-only run never saves an addition the player does not own
 //
@@ -32,6 +33,7 @@ import { PRODUCTION_BRANCH_ID, STAGING_BRANCH_ID } from "./lib/spend-target";
 
 import { db } from "../src/db";
 import { STUB_ADDITIONS } from "../src/lib/tuning/stub";
+import { applyItem, setDismissed } from "../src/lib/tuning/verdicts";
 import { applyPicks, setPicked, undoSet } from "../src/lib/tuning/v2/apply-set";
 import { startTuningV2, type V2Wire } from "../src/lib/tuning/v2/run";
 
@@ -211,6 +213,11 @@ async function main() {
   check("6 · the deck is what set A left", await deckList(deckId), withA);
   await undoSet({ applySet: setA, userId: u, env });
   check("6 · undoing both returns the exact list", await deckList(deckId), before);
+
+  // 6b — a v2 line is never applied or dismissed alone (plan P3): one line would move the deck off 99.
+  check("6b · per-card apply refuses a v2 line", await applyItem(adds[4].id, u, env), null);
+  check("6b · and so does dismiss", await setDismissed(adds[4].id, u, true), null);
+  check("6b · and the deck is unchanged", await deckList(deckId), before);
 
   // 7 — picks.
   check("7 · a pick is saved", await setPicked(adds[4].id, u, true), deckId);
