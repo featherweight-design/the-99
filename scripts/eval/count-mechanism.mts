@@ -93,9 +93,11 @@ const FILL = "Fill the list: when the evidence thins, choose the soundest remain
 
 /**
  * The system prompt for one call: ask exactly `ask` on each list, in place of the app's "up to six each way" and "offer
- * fewer". `n` is the player's count. Throws when either sentence moved.
+ * fewer". `n` is the player's count. `comingIn` is how many additions the two-call cut stage lists under "Coming in", and
+ * absent for a cuts-only one-call REFILL, whose additions are named in the refill's own "Kept" line instead. Throws when
+ * either sentence moved.
  */
-export function patchFlow(system: string, ask: Ask, n: number): string {
+export function patchFlow(system: string, ask: Ask, n: number, comingIn?: number): string {
   if ((system.match(new RegExp(SIZE_SENTENCE, "g")) ?? []).length !== 1) throw new Error("eval: the size sentence moved; re-read prompt.ts");
   if (system.split(AIM_SENTENCE).length !== 2) throw new Error("eval: the aim sentence moved; re-read prompt.ts");
   const size = ask.cuts === 0
@@ -108,7 +110,9 @@ export function patchFlow(system: string, ask: Ask, n: number): string {
   const aim = ask.cuts === 0
     ? `The player wants ${n} cards in. ${addAim} ${FILL}`
     : ask.adds === 0
-      ? `The player is adding ${n} cards, listed under "Coming in", and the deck must stay its size. Choose the cuts that make room: ${cutAim} ${FILL}`
+      ? comingIn !== undefined
+        ? `The player is adding ${comingIn} cards, listed under "Coming in", and the deck must stay its size. Choose the cuts that make room: ${cutAim} ${FILL}`
+        : `The player wants ${n} cards in, and the deck must stay its size. Choose the cuts that make room for the additions kept so far, named below: ${cutAim} ${FILL}`
       : `The player wants ${n} cards in, and the deck must stay its size. ${addAim} Then choose the cuts that make room for them: ${cutAim} ${FILL}`;
   return system.replace(SIZE_SENTENCE, size).replace(AIM_SENTENCE, aim);
 }
@@ -196,7 +200,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         const k = firstAsk(arm, p.count);
         // Every patch is exercised here, dry run or not, before a cent is spent.
         const asks: Ask[] = flow === "two-call" ? [{ adds: k, cuts: 0 }, { adds: 0, cuts: k }] : [{ adds: k, cuts: k }];
-        for (const a of asks) planWorst += worstOf(patchFlow(m.system, a, p.count), m.user, a.adds + a.cuts);
+        for (const a of asks) planWorst += worstOf(patchFlow(m.system, a, p.count, a.adds === 0 ? p.count : undefined), m.user, a.adds + a.cuts);
         planRuns += 1;
       }
     }
@@ -243,12 +247,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
    * on one list only each time); one-call runs it once, both lists together. Survivors keep the validator's order; a card
    * already kept is not taken twice.
    */
-  async function fill(label: string, arm: Arm, want: Ask, n: number, pack: Pack, system: string, user: string) {
+  async function fill(label: string, arm: Arm, want: Ask, n: number, pack: Pack, system: string, user: string, comingIn?: number) {
     const calls: { ok: boolean; ms: number; usd: number }[] = [];
     const drops: Drop[] = [];
     const kept = { adds: [] as Line[], cuts: [] as Line[] };
     const take = async (ask: Ask, u: string, callNo: number) => {
-      const r = await call(`${label}-${callNo}`, patchFlow(system, ask, n), u, ask);
+      const r = await call(`${label}-${callNo}`, patchFlow(system, ask, n, comingIn), u, ask);
       calls.push({ ok: r.o.ok, ms: r.ms, usd: r.usd });
       if (!r.o.ok) return;
       const value = r.o.value;
@@ -287,7 +291,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         let calls: { ok: boolean; ms: number; usd: number }[];
         if (flow === "two-call") {
           const a = await fill(`${label}-add`, arm, { adds: n, cuts: 0 }, n, m.pack, m.system, m.user);
-          const c = await fill(`${label}-cut`, arm, { adds: 0, cuts: n }, n, m.pack, m.system, m.user + comingInBlock(a.kept.adds.map((l) => l.card)));
+          const c = await fill(`${label}-cut`, arm, { adds: 0, cuts: n }, n, m.pack, m.system, m.user + comingInBlock(a.kept.adds.map((l) => l.card)), a.kept.adds.length);
           adds = a.kept.adds;
           cuts = c.kept.cuts;
           drops = [...a.drops, ...c.drops];

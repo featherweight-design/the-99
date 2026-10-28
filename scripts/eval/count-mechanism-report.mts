@@ -68,8 +68,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   lines.push("Flows: two-call asks for N additions, then shows them as coming in and asks for N cuts; one-call asks one reply for both.");
   lines.push("Arms (per stage, or per reply): A asks 1.5N and keeps the first N that pass; B asks N and refills a shortfall once; C asks 1.5N and refills only if still short.", "");
   lines.push("Requests: each deck ran with no request and with this one:", "", ...Object.entries(REQUESTS).map(([d, q]) => `- ${d}: "${q}"`), "");
-  lines.push("| Count | Flow | Arm | Runs | Hit (both lists full) | Mean adds / cuts kept | Mean $ / run | p50 s | p90 s | Calls / run | Top drop reasons |");
-  lines.push("|---|---|---|---|---|---|---|---|---|---|---|");
+  lines.push("A failed call that returned no usage meter is held at its worst case on the ledger, and its run's $ includes that hold. So `Mean $` is over the runs with no failed call only (measured spend), and `Failed` counts the runs left out of it.", "");
+  lines.push("| Count | Flow | Arm | Runs | Hit (both lists full) | Mean adds / cuts kept | Mean $ / run (measured) | Failed | p50 s | p90 s | Calls / run | Top drop reasons |");
+  lines.push("|---|---|---|---|---|---|---|---|---|---|---|---|");
   for (const count of [...new Set(rows.map((r) => r.count))].sort((a, b) => b - a)) for (const flow of FLOWS) {
     for (const arm of ARMS) {
       const rs = rows.filter((r) => r.count === count && r.flow === flow && r.arm === arm);
@@ -81,7 +82,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       }
       const top = [...tally].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k} ×${n}`).join(", ") || "none";
       const mean = (f: (r: Row) => number) => rs.reduce((s, r) => s + f(r), 0) / rs.length;
-      lines.push(`| ${count} | ${flow} | ${arm} | ${rs.length} | ${rs.filter((r) => r.hit).length} of ${rs.length} | ${mean((r) => r.keptAdds).toFixed(1)} / ${mean((r) => r.keptCuts).toFixed(1)} | $${mean((r) => r.usd).toFixed(3)} | ${(quantile(rs.map((r) => r.ms), 0.5) / 1000).toFixed(0)} | ${(quantile(rs.map((r) => r.ms), 0.9) / 1000).toFixed(0)} | ${mean((r) => r.calls).toFixed(2)} | ${top} |`);
+      const metered = rs.filter((r) => r.failedCalls === 0);
+      const measured = metered.length > 0 ? `$${(metered.reduce((s, r) => s + r.usd, 0) / metered.length).toFixed(3)}` : "n/a";
+      lines.push(`| ${count} | ${flow} | ${arm} | ${rs.length} | ${rs.filter((r) => r.hit).length} of ${rs.length} | ${mean((r) => r.keptAdds).toFixed(1)} / ${mean((r) => r.keptCuts).toFixed(1)} | ${measured} | ${rs.length - metered.length} | ${(quantile(rs.map((r) => r.ms), 0.5) / 1000).toFixed(0)} | ${(quantile(rs.map((r) => r.ms), 0.9) / 1000).toFixed(0)} | ${mean((r) => r.calls).toFixed(2)} | ${top} |`);
     }
   }
   lines.push("", `## The original Mutant Menace list against what Hugh changed`, "",
@@ -91,7 +94,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     lines.push(`| ${r.count} | ${r.request === "" ? "none" : "asked"} | ${r.flow} | ${r.arm} | ${matches(r.adds.map((a) => a.card), hughAdds)} of ${r.adds.length} | ${matches(r.cuts.map((c) => c.card), hughCuts)} of ${r.cuts.length} |`);
   }
   const total = rows.reduce((s, r) => s + r.usd, 0);
-  lines.push("", `${rows.length} runs, $${total.toFixed(2)} measured.`);
+  const held = rows.filter((r) => r.failedCalls > 0).reduce((s, r) => s + r.usd, 0);
+  lines.push("", `${rows.length} runs, $${total.toFixed(2)} in all, of which $${held.toFixed(2)} is the ${rows.filter((r) => r.failedCalls > 0).length} runs with a failed call (each failed call held at its worst case).`);
   writeFileSync(`${OUT}/summary.md`, `${lines.join("\n")}\n`);
 
   // The blind board, Mutant Menace first, each case with the deck's written request (the realistic run).
@@ -123,7 +127,7 @@ section{margin:0 0 32px}h2{font-size:16px;margin:0 0 10px}.n{color:var(--muted);
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}@media (max-width:900px){.cols{grid-template-columns:1fr}}
 .col{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px}h3{margin:0 0 6px;font-size:15px}h4{margin:10px 0 4px;font-size:13px}
 ol{margin:0;padding-left:20px}li{margin:0 0 4px}li span{display:block;color:var(--muted);font-size:12.5px}.miss{color:var(--muted)}
-</style></head><body><h1>Suggested changes: three ways to fill a count</h1><p class="lede">Each case shows six runs on the same deck, count and request, labelled P to U in an order shuffled per case. Which is which is in a separate key. Read each column as a player would: are these the changes you would make?</p>${sections}</body></html>\n`);
+</style></head><body><h1>Suggested changes: six ways to fill a count</h1><p class="lede">Each case shows six runs on the same deck, count and request, labelled P to U in an order shuffled per case. Which is which is in a separate key. Read each column as a player would: are these the changes you would make?</p>${sections}</body></html>\n`);
   // The key is written beside the board but never committed (`.gitignore`): the repository is where Hugh could read it.
   writeFileSync(`${OUT}/board-key.json`, `${JSON.stringify(key, null, 2)}\n`);
   console.log(`wrote ${OUT}/summary.md, board.html and board-key.json from ${rows.length} runs ($${total.toFixed(2)})`);

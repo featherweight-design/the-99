@@ -47,10 +47,12 @@ describe("patchFlow", () => {
     expect(patched).not.toMatch(/up to \d+ cards|offer fewer of either/);
   });
 
-  it("asks the cuts stage for cuts that make room for what is coming in", () => {
-    const patched = patchFlow(system, { adds: 0, cuts: 20 }, 20);
+  it("asks the cuts stage for cuts that make room for what is coming in, by the count that is", () => {
+    const patched = patchFlow(system, { adds: 0, cuts: 20 }, 20, 17);
     expect(patched).toContain("Propose exactly 20 cards to cut, and leave the additions list empty.");
-    expect(patched).toContain('listed under "Coming in"');
+    expect(patched).toContain('The player is adding 17 cards, listed under "Coming in"');
+    // A one-call refill short only on cuts has no "Coming in" list: it names the kept additions in its own Kept line.
+    expect(patchFlow(system, { adds: 0, cuts: 5 }, 20)).not.toContain("Coming in");
     expect(comingInBlock(["Mesmeric Orb", "Hedron Crab"])).toBe("\nComing in (2): Mesmeric Orb; Hedron Crab.");
   });
 
