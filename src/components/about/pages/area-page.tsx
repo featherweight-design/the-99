@@ -2,7 +2,8 @@
 // `design/design_handoff_the99_about_visual/`, call 3, boards Decks-Phone and Decks-Desktop `.ap`).
 //
 // The head (About The 99, the area's name and line), the six pages in the shipped place strip, On this page, then each
-// section the reader is drawn, in order, at `#<section id>`. Good to know (PR 4) and Try it (PR 5) are not drawn yet.
+// section the reader is drawn, in order, at `#<section id>`: its labelled screen, then Good to know (PR 4: the rules the
+// reader is drawn, none and no heading when there are none). Try it (PR 5) is not drawn yet.
 
 import { PlaceStrip, type PlaceTab } from "../../place/place-strip";
 import { ABOUT_AREAS, type AboutArea } from "../../../lib/copy/about-pages";
@@ -10,9 +11,18 @@ import { aboutMenuCopy } from "../../../lib/copy/about";
 import type { ScreenModel } from "../../../lib/about/pins";
 import { LabelledScreen } from "./labelled-screen";
 import { OnThisPage } from "./on-this-page";
+import { GoodToKnow, type RuleCardModel } from "./rule-card";
 import { ThemeRefresh } from "./theme-refresh";
 
-export type AreaSection = { id: string; name: string; sub: string; phone: ScreenModel; desktop: ScreenModel };
+export type AreaSection = {
+  id: string;
+  name: string;
+  sub: string;
+  phone: ScreenModel;
+  desktop: ScreenModel;
+  /** The section's Good to know rules this reader is drawn, in order. */
+  rules: readonly RuleCardModel[];
+};
 
 // The strip links the six pages to each other, the only links to them until PR 6a swaps every way in at once.
 const TABS: readonly PlaceTab[] = ABOUT_AREAS.map((a) => ({ place: a.id, href: `/about/${a.id}`, label: a.name }));
@@ -66,6 +76,7 @@ export function AreaPage({
               <p className="m-0 text-[13.5px] text-[color:var(--fg-muted)]">{s.sub}</p>
             </div>
             <LabelledScreen phone={s.phone} desktop={s.desktop} />
+            <GoodToKnow sectionId={s.id} rules={s.rules} />
           </section>
         ))}
       </div>

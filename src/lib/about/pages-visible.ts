@@ -21,7 +21,8 @@
 
 import { ABOUT_VERSION, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import {
-  ABOUT_RULES, ABOUT_SECTIONS, type AboutArea, type AboutLabel, type AboutRule, type AboutRuleId, type AboutSection,
+  ABOUT_RULES, ABOUT_SECTIONS, type AboutArea, type AboutDiagramPart, type AboutLabel, type AboutRule, type AboutRuleDiagram,
+  type AboutRuleId, type AboutSection,
 } from "../copy/about-pages";
 import { aboutEntries } from "../copy/about-entries";
 import { isFirstRun, lineKept, type SeenState } from "./visible";
@@ -46,6 +47,8 @@ export interface VisibleUnit {
   legacy: readonly string[];
   /** The switches of the kept sentences that announce on their own (a negated switch never announces). */
   sentenceSwitches: readonly AboutSwitch[];
+  /** A rule's diagram, with every part (and chip) whose switch is off removed, as its sentences are. */
+  diagram?: AboutRuleDiagram;
 }
 
 export interface VisibleSection extends Omit<AboutSection, "labels" | "rules"> {
@@ -83,6 +86,25 @@ function unit(
     key, area: section.area, section: section.id, kind, text,
     ...("lead" in u ? { lead: u.lead } : {}),
     switch: u.switch, since: u.since, legacy: u.legacy, sentenceSwitches,
+    ...("diagram" in u ? { diagram: resolveDiagram(u.diagram, env) } : {}),
+  };
+}
+
+/** A diagram as this reader is drawn it: a part or chip whose switch is off is gone, and an emptied column with it. */
+export function resolveDiagram(d: AboutRuleDiagram, env: NodeJS.ProcessEnv): AboutRuleDiagram {
+  const kept = (parts: readonly AboutDiagramPart[]) =>
+    parts.flatMap((p): AboutDiagramPart[] => {
+      if (p.switch && !lineKept(p.switch, env)) return [];
+      if (p.part !== "chips") return [p];
+      const chips = p.chips.filter((c) => !c.switch || lineKept(c.switch, env));
+      return chips.length ? [{ ...p, chips }] : [];
+    });
+  return {
+    kind: d.kind,
+    ...(d.gap === undefined ? {} : { gap: d.gap }),
+    ...(d.head ? { head: kept(d.head) } : {}),
+    columns: d.columns.map((c) => ({ ...c, parts: kept(c.parts) })).filter((c) => c.parts.length > 0),
+    ...(d.foot ? { foot: kept(d.foot) } : {}),
   };
 }
 

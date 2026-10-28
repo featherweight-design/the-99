@@ -3,7 +3,9 @@ import { SWITCH_NAMES } from "../switches/registry";
 import { TOOLS } from "../discovery/tools";
 import { ABOUT_SCREENS, DECK_VIEWS, type AboutLineSwitch } from "./about";
 import { aboutEntries } from "./about-entries";
-import { ABOUT_AREAS, ABOUT_AREA_IDS, ABOUT_RULE_IDS, ABOUT_RULES, ABOUT_SECTIONS } from "./about-pages";
+import {
+  ABOUT_AREAS, ABOUT_AREA_IDS, ABOUT_PAGE_STRINGS, ABOUT_RULE_IDS, ABOUT_RULES, ABOUT_SECTIONS, type AboutDiagramPart,
+} from "./about-pages";
 
 /** The nine screens with no section until Design places them (plan PR 9); they keep the ? panel. */
 const UNSECTIONED = ["card-details", "sets", "proxies", "history", "wishlist", "new-deck", "account", "settings", "credits"];
@@ -11,6 +13,26 @@ const labels = ABOUT_SECTIONS.flatMap((s) => s.labels);
 const switchesOf = (sw: AboutLineSwitch): string[] =>
   (Array.isArray(sw) ? sw : [sw]).map((one: string) => one.replace(/^!/, ""));
 const ENTRY = new Map(aboutEntries.map((e) => [e.id, e]));
+const diagramParts = (id: (typeof ABOUT_RULE_IDS)[number]): AboutDiagramPart[] => {
+  const d = ABOUT_RULES[id].diagram;
+  return [...(d.head ?? []), ...d.columns.flatMap((c) => c.parts), ...(d.foot ?? [])];
+};
+/** Every word a diagram draws. */
+const diagramStrings = (id: (typeof ABOUT_RULE_IDS)[number]): string[] =>
+  diagramParts(id).flatMap((p) => {
+    switch (p.part) {
+      case "caption": return [p.text];
+      case "row": return [p.name, ...(p.tag ? [p.tag.text] : [])];
+      case "tile": return [p.name];
+      case "void": return [p.text];
+      case "buy": return [p.note];
+      case "between": return [p.glyph, ...(p.label ? [p.label] : [])];
+      case "cells": return p.cells.map((c) => c.label);
+      case "split": return p.parts.map((x) => x.label);
+      case "chips": return p.chips.map((c) => c.text);
+      default: return [];
+    }
+  });
 
 describe("about pages copy model", () => {
   it("has the six areas in the handoff's order, every section in one of them", () => {
@@ -91,11 +113,42 @@ describe("about pages copy model", () => {
     for (const s of ABOUT_SECTIONS) for (const t of s.tools) expect(ids, t).toContain(t);
   });
 
+  it("gives every rule the diagram the boards draw for it (call 2: Decks-Phone, Other-Pages)", () => {
+    const kinds = Object.fromEntries(ABOUT_RULE_IDS.map((id) => [id, ABOUT_RULES[id].diagram.kind]));
+    expect(kinds).toEqual({
+      autofill: "split",
+      lock: "card-row",
+      targets: "role-cell",
+      intent: "bracket-medal",
+      credits: "card-row",
+      commit: "card-row",
+      "one-copy": "card-row",
+      "never-decklist": "card-row",
+      replace: "card-row",
+      "own-it": "deck-tile",
+      prices: "buy-tag",
+      proxy: "card-row",
+      "friends-see": "chips",
+      "hidden-deck": "deck-tile",
+      invites: "card-row",
+    });
+    for (const id of ABOUT_RULE_IDS) expect(ABOUT_RULES[id].diagram.columns.length, id).toBeGreaterThan(0);
+  });
+
+  it("gates diagram parts only on registered switches", () => {
+    for (const id of ABOUT_RULE_IDS) {
+      const named = diagramParts(id).flatMap((p) => [p.switch, ...(p.part === "chips" ? p.chips.map((c) => c.switch) : [])]);
+      for (const sw of named.filter((x): x is AboutLineSwitch => x != null).flatMap(switchesOf)) expect(SWITCH_NAMES, id).toContain(sw);
+    }
+  });
+
   it("carries no em dash in any string", () => {
     const strings = [
       ...ABOUT_AREAS.flatMap((a) => [a.name, a.line]),
       ...ABOUT_SECTIONS.flatMap((s) => [s.name, s.sub, ...s.labels.flatMap((l) => [l.lead, l.rest])]),
       ...Object.values(ABOUT_RULES).map((r) => r.text),
+      ...ABOUT_RULE_IDS.flatMap(diagramStrings),
+      ABOUT_PAGE_STRINGS.goodToKnowSub,
     ];
     for (const s of strings) expect(s).not.toContain("—");
   });
