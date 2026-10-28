@@ -40,23 +40,26 @@ import {
 export const SPARES_PAGE_BATCH = MAX_SPARES_BATCH;
 
 /**
- * Every asked card's spares, read in batches after the page. A batch that fails reads as none (G3): the marker is
- * absent on failure, never an error a row has to draw.
+ * Every asked card's spares, read in batches after the page. A batch that fails draws as none on a row (G3): the marker
+ * is absent on failure, never an error a row has to draw. Its cards are named in `failed`, so a reader that would
+ * otherwise SAY there is none (the cart's By friend, v2 G5) can tell a failed read from an empty one.
  */
-export async function fetchSpares(oracleIds: readonly string[]): Promise<FriendSpare[]> {
+export async function fetchSpares(oracleIds: readonly string[]): Promise<{ spares: FriendSpare[]; failed: string[] }> {
   const out: FriendSpare[] = [];
+  const failed: string[] = [];
   for (let i = 0; i < oracleIds.length; i += SPARES_PAGE_BATCH) {
     const ids = oracleIds.slice(i, i + SPARES_PAGE_BATCH);
     try {
       const res = await fetch(`/api/friend-spares?ids=${ids.map(encodeURIComponent).join(",")}`, { cache: "no-store" });
-      if (!res.ok) continue;
-      const body = (await res.json()) as { spares?: FriendSpare[] } | null;
+      const body = res.ok ? ((await res.json()) as { spares?: FriendSpare[] } | null) : null;
       if (Array.isArray(body?.spares)) out.push(...body.spares);
+      else failed.push(...ids);
     } catch {
       // Absent on failure: the next batch still reads.
+      failed.push(...ids);
     }
   }
-  return out;
+  return { spares: out, failed };
 }
 
 /**
@@ -91,8 +94,10 @@ type Ctx = {
   close: () => void;
   newestAsOf: Date | null;
   requests: RequestsCtx | null;
-  /** The cards whose spares read has landed this visit: a card here with no row has no spare now. */
+  /** The cards whose spares read has landed this visit: a card here with no row has no spare now, unless it is in `failed`. */
   loaded: ReadonlySet<string>;
+  /** The landed cards whose newest read failed: their spares are not known, so nothing may say they have none. */
+  failed: ReadonlySet<string>;
 };
 
 /** The asks after an ask landed: Ask instead's withdrawn ask leaves (a withdrawn ask is never shown), the new one leads. */
@@ -172,6 +177,7 @@ export function FriendSparesProvider({
   const key = useMemo(() => [...new Set(oracleIds)].sort().join(","), [oracleIds]);
   const [spares, setSpares] = useState<FriendSpare[]>([]);
   const [loaded, setLoaded] = useState<ReadonlySet<string>>(() => new Set());
+  const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
   const [opened, setOpened] = useState<SpareCard | null>(null);
   const [asks, setAsks] = useState<AskStateLine[]>([]);
   // On open, the read is the opened card alone, skipped once it has landed this visit.
@@ -180,11 +186,13 @@ export function FriendSparesProvider({
     if (!sparesKey) return;
     let live = true;
     const ids = new Set(sparesKey.split(","));
-    void fetchSpares([...ids]).then((rows) => {
+    void fetchSpares([...ids]).then(({ spares: rows, failed: miss }) => {
       // A read replaces only the cards it asked about: a card that left the list keeps what was read for it.
       if (!live) return;
       setSpares((prev) => [...prev.filter((s) => !ids.has(s.oracleId)), ...rows]);
       setLoaded((prev) => new Set([...prev, ...ids]));
+      // The newest read decides: a card read again after a failure leaves `failed` when that read lands.
+      setFailed((prev) => new Set([...[...prev].filter((id) => !ids.has(id)), ...miss]));
     });
     return () => {
       live = false;
@@ -263,8 +271,8 @@ export function FriendSparesProvider({
     const asksByCard = new Map<string, AskStateLine[]>();
     for (const a of asks) asksByCard.set(a.oracleId, [...(asksByCard.get(a.oracleId) ?? []), a]);
     const req: RequestsCtx | null = requests ? { asksFor: (id) => asksByCard.get(id) ?? [], ask } : null;
-    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req, loaded };
-  }, [spares, asks, opened, key, newestAsOf, requests, ask, loaded]);
+    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req, loaded, failed };
+  }, [spares, asks, opened, key, newestAsOf, requests, ask, loaded, failed]);
   return (
     <SparesContext.Provider value={value}>
       <SpareRequestsContext.Provider value={value.requests}>
@@ -323,7 +331,7 @@ export function StaticSparesProvider({
   const value = useMemo<Ctx>(() => {
     const byCard = new Map<string, FriendSpare[]>();
     for (const s of spares) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
-    return { byCard, seen: byCard, opened: null, open: () => {}, close: () => {}, newestAsOf, requests: null, loaded: new Set(byCard.keys()) };
+    return { byCard, seen: byCard, opened: null, open: () => {}, close: () => {}, newestAsOf, requests: null, loaded: new Set(byCard.keys()), failed: new Set() };
   }, [spares, newestAsOf]);
   return <SparesContext.Provider value={value}>{children}</SparesContext.Provider>;
 }

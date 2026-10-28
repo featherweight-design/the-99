@@ -53,19 +53,36 @@ export function groupByFriend(
 }
 
 /**
- * By friend for these lines, or null when the view has nothing to draw: spare requests off (no Ask to offer), the
- * spares not read yet, or no drawn line with a friend's spare. Null is what hides the switch's segment, and what
- * sends a `?view=friend` arrival to By card until the read lands.
+ * What By friend can say about these lines (v2 G2, G5), or null with spare requests off (no Ask to offer):
+ *   - `groups`: a drawn line has a friend's spare, so the panels draw;
+ *   - `reading`: none yet, and a drawn line's spares have not landed;
+ *   - `failed`: none, every read landed, and one of them failed, so nothing may say there is none;
+ *   - `none`: every read landed and no friend has a spare of any drawn line.
+ * Only `groups` draws the view today; the other three are v2's reading and empty states (plan PR 7).
  */
-export function useByFriend(
-  lines: readonly SelectedLine[], held: HeldLines = NO_HELD,
-): { groups: FriendGroup[]; requests: RequestsCtx } | null {
+export type ByFriend =
+  | { status: "groups"; groups: FriendGroup[]; requests: RequestsCtx }
+  | { status: "reading" | "failed" | "none" };
+
+export function byFriendStatus(
+  groups: readonly FriendGroup[], lines: readonly SelectedLine[], loaded: ReadonlySet<string>, failed: ReadonlySet<string>,
+): "groups" | "reading" | "failed" | "none" {
+  if (groups.length > 0) return "groups";
+  if (lines.some((l) => !loaded.has(l.oracleId))) return "reading";
+  return lines.some((l) => failed.has(l.oracleId)) ? "failed" : "none";
+}
+
+export function useByFriend(lines: readonly SelectedLine[], held: HeldLines = NO_HELD): ByFriend | null {
   const spares = usePageSpares();
   const requests = useContext(SpareRequestsContext);
   const groups = useMemo(() => (spares ? groupByFriend(lines, spares.byCard, held, spares.seen) : []), [lines, spares, held]);
-  if (!requests || groups.length === 0) return null;
-  return { groups, requests };
+  if (!spares || !requests) return null;
+  const status = byFriendStatus(groups, lines, spares.loaded, spares.failed);
+  return status === "groups" ? { status, groups, requests } : { status };
 }
+
+/** By friend's panels, while it has some: what the switch's segment and a `?view=friend` arrival wait for today. */
+export const friendGroups = (b: ByFriend | null) => (b?.status === "groups" ? b : null);
 
 /** The list head: `4 friends · 5 spares · most first`. */
 export function byFriendHead(groups: readonly FriendGroup[]): string {

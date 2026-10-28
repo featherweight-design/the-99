@@ -28,7 +28,7 @@ vi.mock("../../cards/card-detail-provider", async () => {
 });
 
 const { CartView } = await import("./cart-view");
-const { groupByFriend } = await import("./cart-by-friend");
+const { byFriendStatus, groupByFriend } = await import("./cart-by-friend");
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { spareCopy } from "../../../lib/copy/social";
 import { gotItCopy } from "../../../lib/copy/i-got-it";
@@ -298,5 +298,22 @@ describe("a `?view=friend` arrival", () => {
     await mount({ initialView: "friend", spareAsks: false });
     expect(panels()).toHaveLength(0);
     expect(list().getAllByTestId("other-ways").length).toBeGreaterThan(0);
+  });
+});
+
+describe("By friend's status (v2 G2, G5)", () => {
+  const lines = [{ oracleId: "a" }, { oracleId: "b" }] as never[];
+  const group = [{}] as never[];
+  it("is groups whenever a line has a spare, even with a read still out or failed", () => {
+    expect(byFriendStatus(group, lines, new Set(["a"]), new Set(["a"]))).toBe("groups");
+  });
+  it("is reading while a drawn line's spares have not landed", () => {
+    expect(byFriendStatus([], lines, new Set(["a"]), new Set())).toBe("reading");
+  });
+  it("is failed, never none, once every read landed and one failed", () => {
+    expect(byFriendStatus([], lines, new Set(["a", "b"]), new Set(["b"]))).toBe("failed");
+  });
+  it("is none only when every read landed and none failed", () => {
+    expect(byFriendStatus([], lines, new Set(["a", "b"]), new Set())).toBe("none");
   });
 });
