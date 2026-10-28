@@ -5,8 +5,8 @@
 // and fails on any drift.
 //
 // The ? on a screen some section lists in its `screens` lands on that section with nothing lit (`SCREEN_SECTIONS`).
-// The nine screens with no section of their own land on the section that answers their question, with one label or
-// rule lit (the halo, no New tag): `ABOUT_Q_LANDINGS`, transcribed from the handoff's `copy-strings.ts` (Addendum A1).
+// The eight screens with no section of their own (`account` aside) land on the section that answers their question,
+// with one label or rule lit (the halo, no New tag): `ABOUT_Q_LANDINGS`, transcribed from the handoff's `copy-strings.ts` (Addendum A1).
 // New deck splits by path, because `/decks/new`, `/decks/import`, `/decks/precons/**` and `/commanders/choose` are all
 // its screen. `account` and a path no screen answers for (About itself, admin) have no landing: the ? opens `/about`.
 //

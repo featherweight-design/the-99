@@ -78,8 +78,8 @@ export const SCROLL_LOCK_EVENT = "the99:scroll-lock";
 // one a reader is actually looking at, so it is the one ambiguous focus belongs to.
 const dialogStack: HTMLElement[] = [];
 
-/** The dialogs up now, bottom first (a copy). For a dialog closing over another, deciding whether the control it
- *  would hand focus back to sits under one that stays (the ? panel over card details, `help-root.tsx`). */
+/** The dialogs up now, bottom first (a copy). For a late reply deciding whether the reader has opened a dialog since
+ *  (Home's answer sheet, `answer-sheet.tsx`, opens nothing over one). */
 export function dialogsUp(): readonly HTMLElement[] {
   return [...dialogStack];
 }

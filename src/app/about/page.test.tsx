@@ -7,6 +7,7 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 const m = vi.hoisted(() => ({
   loadToolFits: vi.fn<(userId: string, env: NodeJS.ProcessEnv, tools: readonly string[]) => Promise<object>>(async () => ({})),
   hasSyncAnchor: vi.fn(async () => false),
+  dailyLimitFor: vi.fn(async () => 5),
   seen: { version: 14, ids: [] as string[] },
   everyEntry: false,
 }));
@@ -16,7 +17,7 @@ vi.mock("../../lib/switches/request", async () => {
   return { requestSwitchEnv: async () => ENV_VIEW };
 });
 vi.mock("../../lib/about/read", () => ({ aboutSeen: async () => m.seen, markAboutVisited: async () => {} }));
-vi.mock("../../lib/model/allowance", () => ({ dailyLimitFor: async () => 5 }));
+vi.mock("../../lib/model/allowance", () => ({ dailyLimitFor: m.dailyLimitFor }));
 vi.mock("../../lib/theme/server", () => ({ resolveTheme: async () => "amonkhet" }));
 vi.mock("../../lib/collection/sync-base", () => ({ hasSyncAnchor: m.hasSyncAnchor }));
 vi.mock("../../lib/discovery/fits", async (importOriginal) => ({
@@ -101,6 +102,7 @@ describe("/about, the index (call 3)", () => {
   it("reads no fits, no credit limit and no visit for the index", async () => {
     await draw();
     expect(m.loadToolFits).not.toHaveBeenCalled();
+    expect(m.dailyLimitFor).not.toHaveBeenCalled();
     expect(find(await draw(), RecordVisit)).toBeNull();
   });
 

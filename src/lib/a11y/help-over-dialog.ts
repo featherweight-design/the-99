@@ -5,8 +5,8 @@ import { useEffect, useSyncExternalStore } from "react";
 /**
  * The ? over card details at 1280 (discovery R2·9, readiness gap 5). Card details is modal over a fixed backdrop that
  * covers the rail, so its entries were out of reach while it was open. While it is up, the rail's ? is lifted above
- * the backdrop, joins the dialog's Tab cycle as one extra stop after its last control, and opens the panel as its own
- * dialog stacked over it, holding the trap while it is open (one trap live at a time).
+ * the backdrop and joins the dialog's Tab cycle as one extra stop after its last control; pressed, it navigates to the
+ * About page for the screen (About visual PR 6a), as it does everywhere else.
  *
  * Two facts cross the tree between the page's card details and the shell's ?, so they live here: whether a card
  * details dialog is up and in front (not covered by a sheet it opened), and which element is the ?'s Tab stop.
@@ -45,7 +45,6 @@ function counter() {
 
 const details = counter();
 const open = counter();
-const beside = counter();
 let stop: HTMLElement | null = null;
 
 /** Card details calls this: `active` while it is the dialog in front. */
@@ -63,15 +62,6 @@ export const useCardDetailsOpen = open.useHold;
 
 /** Whether a card details dialog is open, in front or covered by a surface it opened. */
 export const useCardDetailsIsOpen = open.useIsHeld;
-
-/**
- * The panel calls this while it is open stacked over card details, which then centres itself in the room between the
- * rail and the panel, so the panel opens beside it (H3's note) rather than over its right edge.
- */
-export const usePanelBeside = beside.useHold;
-
-/** Whether the panel is open beside card details. */
-export const usePanelIsBeside = beside.useIsHeld;
 
 /** The lifted ? registers itself as the extra stop while it is lifted; the cleanup clears only its own. */
 export function useHelpStop(el: HTMLElement | null) {
