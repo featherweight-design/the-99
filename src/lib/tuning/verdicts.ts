@@ -57,6 +57,14 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
 }
 
 /**
+ * Per-card apply is v10's alone (plan P3): a line of a run still being made is not the player's yet, and a v2 line is
+ * applied with its picked set (PR 4), never alone, since one line moves the deck off 99.
+ */
+export function appliesOneByOne(run: { status: string; requestedCount: number | null }): boolean {
+  return run.status === "ok" && run.requestedCount === null;
+}
+
+/**
  * Cut one copy and/or add one, in one transaction, with the verdict and the snapshot undo reads. A
  * line of the two lists does only its own half (a null side asks nothing); a pair from before them
  * does both. The change itself is `draft-swap.ts`, shared with the swap tools' Take (brief ruling 7:
@@ -67,14 +75,6 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
  * And refused when the player has LOCKED the cut (Locked, F4; `planSwap`'s `cutLocked`): the one
  * refusal where the cut is still in the deck.
  */
-/**
- * Per-card apply is v10's alone (plan P3): a line of a run still being made is not the player's yet, and a v2 line is
- * applied with its picked set (PR 4), never alone, since one line moves the deck off 99.
- */
-export function appliesOneByOne(run: { status: string; requestedCount: number | null }): boolean {
-  return run.status === "ok" && run.requestedCount === null;
-}
-
 export async function applyItem(itemId: string, userId: string, env: NodeJS.ProcessEnv): Promise<string | null> {
   return db.transaction(async (tx) => {
     const item = await lockedItem(tx, itemId, userId);

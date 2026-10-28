@@ -29,11 +29,17 @@ describe("reapIn (plan P4)", () => {
   it("settles a v2 run with saved lines ok and refunded FIRST, then fails what is left, refunding each unit", async () => {
     const updates: { set: Record<string, unknown>; where: string }[] = [];
     const returned = [[{ id: "v2run", callId: "call_v2" }], [{ callId: "call_old" }]];
+    const order: string[] = [];
     const tx = {
+      execute: async (q: Parameters<PgDialect["sqlToQuery"]>[0]) => { order.push(dialect.sqlToQuery(q).sql); return { rows: [] }; },
       update: () => ({
         set: (set: Record<string, unknown>) => ({
           where: (where: Parameters<PgDialect["sqlToQuery"]>[0]) => ({
-            returning: async () => { updates.push({ set, where: dialect.sqlToQuery(where).sql }); return returned[updates.length - 1]; },
+            returning: async () => {
+              updates.push({ set, where: dialect.sqlToQuery(where).sql });
+              order.push("update");
+              return returned[updates.length - 1];
+            },
           }),
         }),
       }),
@@ -41,6 +47,10 @@ describe("reapIn (plan P4)", () => {
     settled.length = 0;
     const now = new Date("2026-10-11T12:00:00Z");
     await reapIn(tx, reapableReaderRuns("deck", "me", now)!, now);
+    // The run rows are locked `for update` before the settle reads their saved lines, as `persistV2` does.
+    expect(order[0]).toMatch(/for update$/);
+    expect(order[0]).toContain(`"deck_suggestion_runs"."requested_count" is not null`);
+    expect(order.slice(1)).toEqual(["update", "update"]);
     expect(updates[0].set.status).toBe("ok");
     expect(updates[0].where).toContain(`"deck_suggestion_runs"."requested_count" is not null`);
     expect(updates[0].where).toContain(`exists (select 1 from "deck_suggestion_items" si where si.run_id = "deck_suggestion_runs".id)`);
