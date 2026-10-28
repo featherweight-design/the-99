@@ -40,12 +40,14 @@ Suggested: a test pinning the phone's caption and group notes while a draft exis
 
 **The ✕ ends the action line** on What's new rows, the lead story and Waiting on you (redraws #2285's top-right placement):
 - Phone: a 44 × 44 box at the right end of the press's line (Yes, No and the days left on an ask row; the lead's button line inside the band). The time stays on the kicker line; the text column loses its 30px reserve.
-- Desktop: a 32 × 32 box after the time and the press, on #2284's one line (Yes, No, the days left, then ✕ on an ask row; the lead's ✕ at the band's right edge on its button line). Coarse pointer keeps the 44px hit.
+- Desktop: a 32 × 32 box after the press (Yes, No, the days left, then ✕ on an ask row; the lead's ✕ at the band's right edge on its button line). Coarse pointer keeps the 44px hit.
+- **R1b (Hugh, 2026-10-28): the time moves into the kicker, after the kind, at both widths** (`Trade match · 6h ago`, a `·` between, same mono 10.5px). It no longer sits before the press on desktop or squeezed into the phone row's top-right corner. Applies to What's new rows, Waiting on you, the lead story, Your requests and the answer sheet's row.
+- **R1b: Your requests' card and owner preview is centred vertically on its row** (`items-center` on the row; in the answer sheet the preview spans the text and Clear, centred).
 - A row with no press keeps the action line for the ✕ alone. Disabled while an answer is out (rows), absent (lead) or none (receipts), as shipped.
 - Engineering: `DismissButton` renders in the flow of the action line, not `absolute top-[6px] right-[4px]`; drop the `pr-[30px]`/`md:pr-[34px]` reserves (`FeedItemRow`, `TradeRow`, `AskRow`) and the lead's `pr-[28px]`/`md:pr-[20px]`; AnswerPresses wraps in its own box with the ✕ at `ml-auto`. `useFeedDismiss`, focus, aria and toast unchanged. Your requests keeps its own ✕.
 
-**Rulings, all ratified:**
-- #2284 (desktop: time and press share one line on the right): ratified; the ✕ joins as the line's last item.
+**Rulings:**
+- #2284 (desktop: time and press share one line on the right): **amended in R1b**. The right-hand line keeps the press, then the ✕; the time goes to the kicker (above).
 - #2280 (one folded mark shows itself, not `+1`): ratified. The 16px mark costs ~3px of the name, which truncates; the right-hand columns never move.
 - #2288 (a trade match's Ask opens the spares sheet over the page): ratified as built (Friends with a spare, `on your wishlist`, that friend first; the press reads Requested or Accepted after).
 

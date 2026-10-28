@@ -34,10 +34,10 @@ CALLS = [
      "<li>The Home item’s press reads <b>Your request ›</b> (was <i>Your requests ›</i>). The item’s own ✕ still only hides it.</li>"
      "<li><b>R1b:</b> the accepted line ends <i>press buy on it in Shopping or add it to your collection</i>.</li></ul>",
      "Board: Spare-Answer-Sheet"),
-    ("4 · The ✕ and three rulings", "The ✕ ends the action line; #2284, #2280, #2288 ratified",
+    ("4 · The ✕ and three rulings", "The ✕ ends the action line; the time joins the kicker",
      "<p>On What’s new rows, the lead story and Waiting on you, <b>the ✕ moves from the top-right corner to the end of the action line</b>: "
-     "after the press on a phone (44px), after time and press on desktop (32px). It no longer sits beside the time or takes width from the title.</p>"
-     "<ul><li><b>#2284</b> (time and press on one line, desktop): ratified, with the ✕ joining that line.</li>"
+     "after the press on a phone (44px) and on desktop (32px). <b>R1b:</b> the time follows the kind on the kicker line at both widths (<i>Trade match · 6h ago</i>), and Your requests’ card preview is centred on its row.</p>"
+     "<ul><li><b>#2284</b> (one right-hand line, desktop): amended, the line is the press and the ✕; the time moves to the kicker.</li>"
      "<li><b>#2280</b> (one folded mark shows itself, not +1): ratified.</li>"
      "<li><b>#2288</b> (Ask opens the spares sheet over the page): ratified.</li></ul>",
      "Boards: Dismiss-X, Eng-Rulings"),

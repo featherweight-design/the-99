@@ -21,7 +21,11 @@ kit.CSS += r"""
 .dk .x4{width:32px;height:32px;margin:0 -6px 0 auto}
 .d4n .fi .ac{flex-wrap:nowrap;align-items:center;margin-top:2px}
 .d4n .fi .ac .yg{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
-.dk.d4n .fi .kr small{display:none}
+.d4n .fi .kr small,.d4n .ld .lk small{margin-left:0}
+.d4n .fi .kr small::before,.d4n .ld .lk small::before{content:"·";margin-right:7px}
+.d4n .ya .fi .kr small{margin-right:0}
+/* Your requests: the card and owner preview centred on the row */
+.ya .fi{align-items:center}
 .dk.d4n .fi .ac{gap:12px;margin:0;align-items:center}
 .d4n .ld .la{flex-wrap:nowrap;align-items:flex-start}
 .d4n .ld .la .yg{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
@@ -68,7 +72,7 @@ def row(it, desk_=False, mode="new", lit=False, pin=None):
     kr = f'<div class="kr">{un}{kd}<small>{it["stamp"]}</small></div>'
     ask = 'class="yn' in it["act"]
     act = f'<span class="yg">{it["act"]}</span>' if ask else it["act"]
-    tm = f'<small>{it["stamp"]}</small>' if (desk_ and not ask) else ""
+    tm = f'<small>{it["stamp"]}</small>' if (desk_ and not ask and mode == "shipped") else ""
     x = '<span class="x4">✕</span>' if mode == "new" else ""
     ac = f'<div class="ac">{tm}{act}{x}</div>'
     if mode == "new" and desk_ and ask:
@@ -162,24 +166,24 @@ def board_x():
                        "The ✕ ends the action line",
                        "#2285 reused Your requests’ ✕ (36px, the row’s top right) on What’s new rows, the lead story and Waiting on you. "
                        "<b>Redrawn: on every item the ✕ is the last thing on the action line, at the item’s right edge.</b> It never sits on the title line "
-                       "or beside the time, and the text column gets its full width back. On a phone it is a 44px box ending the press’s line; from "
-                       "desktop it is a 32px box after the time and the press, on the one line #2284 made. Behaviour is as shipped: it hides the item "
-                       "for good, answers nothing, focus moves to the next ✕, and a failed write puts the item back with the toast.", tag="R1")
+                       "and the text column gets its full width back. On a phone it is a 44px box ending the press’s line; from "
+                       "desktop a 32px box after the press. <b>R1b:</b> the time moves into the kicker, after the kind, at both widths (it was squeezed into the corner on a phone and sat before the press on desktop). Behaviour is as shipped: it hides the item "
+                       "for good, answers nothing, focus moves to the next ✕, and a failed write puts the item back with the toast.", tag="R1b")
             + frames(frame("<b>As shipped</b> · Home 390 · for reference", sp, ""),
                      frame("<b>As shipped</b> · Home 1300 · for reference", sd, ""),
                      '<div style="width:380px;flex:none;display:flex;flex-direction:column;gap:14px;padding-top:28px">'
                      '<div class="note"><b>What reads wrong today</b>' + key + "</div></div>")
             + frames(frame("<b>Redrawn</b> · Home 390", np_,
-                           "Each row ends in its press, left, and the ✕, right, on one 44px line. The time stays on the kicker line. "
+                           "Each row ends in its press, left, and the ✕, right, on one 44px line. The time follows the kind on the kicker line (<i>Trade match · 6h ago</i>), out of the corner. "
                            "The lead’s ✕ ends its button line, inside the band."),
                      frame("<b>Redrawn</b> · Home 1300", nd,
-                           "The right-hand line reads time, press, ✕ (#2284’s line, with the ✕ joined to it). The lead’s ✕ sits at the band’s right "
+                           "The right-hand line is the press and the ✕ only; the time follows the kind, as on a phone. The lead’s ✕ sits at the band’s right "
                            "edge, on its button’s line."))
             + frames(frame("<b>Redrawn</b> · /friends 390 · Waiting on you", fp,
                            "Ask rows: Yes, No and the days left, then the ✕ at the far end. The presses wrap inside their own group, so the ✕ "
-                           "keeps its place. Your requests keeps its own ✕, unchanged."),
+                           "keeps its place. Your requests keeps its own ✕; its card preview is centred on the row (R1b)."),
                      frame("<b>Redrawn</b> · /friends 1300", fd,
-                           "Yes, No, the days left, then the ✕. A trade match reads time, Ask Colin ›, ✕."))
+                           "Yes, No, the days left, then the ✕. A trade match reads Ask Colin ›, ✕; times sit after the kind. Your requests’ previews centred."))
             + frames(frame("<b>Lead story with an ask</b> · 390", lp,
                            "Yes and No stay together. The days left wraps under them and the ✕ holds the first line’s end."),
                      frame("<b>Lead story with an ask</b> · 1300", ld,
@@ -261,15 +265,15 @@ def board_r():
     pa = ph(home(False, "new"), over=sheet(False))
     pr = ph(home(False, "new", press='<span class="rq"><i></i>Requested</span>'))
     da = dk(home(True, "new"), over=sheet(True, 150), h=900)
-    body = (board_head("Item 4 · three changes that shipped on rulings, not boards", "Ratified, all three",
+    body = (board_head("Item 4 · three changes that shipped on rulings, not boards", "Ratified, one amended",
                        "Each change is drawn over the page it changed. <b>#2284</b> and <b>#2288</b> are ratified as built; <b>#2280</b> is ratified, with "
-                       "one note on the name’s width. The redrawn ✕ (the other item-4 board) joins #2284’s line as its last item.", tag="R1")
-            + '<h3 style="margin:0;font:600 18px Cinzel,serif">#2284 · from desktop, the time and the press share one line, on the right</h3>'
+                       "one note on the name’s width. <b>#2284 is amended (R1b, your call):</b> the press keeps its one right-hand line with the ✕, and the time moves into the kicker, after the kind.", tag="R1b")
+            + '<h3 style="margin:0;font:600 18px Cinzel,serif">#2284 · one right-hand line, amended: the time goes to the kicker</h3>'
             + frames(frame("<b>Before #2284</b> · What’s new rows at 1300", before,
                            "The time ended the kicker line; the press sat centred in its own column. Two right-hand edges."),
-                     frame("<b>Ratified</b> · with the ✕ joined", after,
-                           "Time, press, ✕ on one line, in the phone’s reading order. Waiting on you’s trade rows match; its ask rows keep Yes, "
-                           "No and the days left. The lead story is unchanged. Phone unchanged."))
+                     frame("<b>Amended</b> · R1b", after,
+                           "Press and ✕ on one line at the right; the time after the kind (<i>Price drop · yesterday</i>), the same at both widths. "
+                           "Ask rows keep Yes, No and the days left. The lead story’s time moves the same way."))
             + '<h3 style="margin:8px 0 0;font:600 18px Cinzel,serif">#2280 · one folded mark shows itself instead of +1</h3>'
             + frames(frame("<b>Before</b> · phone All rows (tight tier)", rows_box("All · Artifacts", False),
                            "Enlightened Tutor showed its first mark and <i>+1</i>: one tap to learn about one glyph that fits."),
@@ -289,7 +293,7 @@ def board_r():
                      frame("<b>Ratified</b> · 1300", da,
                            "The 640 modal, as the deck page opens it. Same from /friends’ Waiting on you."))
             + '<div class="note" style="max-width:1300px"><b>Notes</b><ul>'
-              '<li>#2284: matches the shipped boards’ order on a phone (time read before the press), so nothing new to learn.</li>'
+              '<li>#2284: amended. Time beside the press read as part of the call to action; in the kicker it reads as when, at both widths.</li>'
               '<li>#2280: in line with the one-line row’s rule that the auto tag, lock and ownership slot never fold; the about figures that draw a row follow.</li>'
               '<li>#2288: one place to ask, one sheet. Spare requests off, the press stays the link to the friend’s Spares tab, as shipped.</li></ul></div>')
     return doc("Three rulings", body, 1300 + 44 + 390 + 44 + 390 + 112)

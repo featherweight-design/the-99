@@ -18,7 +18,7 @@ kit.CSS += r"""
 .yr-m .yr-b{padding:16px 18px 18px}
 .yr-row{display:grid;grid-template-columns:46px minmax(0,1fr);gap:0 12px;border-radius:14px;background:var(--surface-inset);border:1px solid var(--border);padding:12px 14px 6px}
 .yr-m .yr-row{gap:0 14px;padding:12px 16px 6px}
-.yr-row .vis{position:relative;width:46px;height:64px;grid-row:1/3}
+.yr-row .vis{position:relative;width:46px;height:64px;grid-row:1/3;align-self:center}
 .yr-row .vis .cardimg{width:46px;height:64px}
 .yr-row .vis .fa{position:absolute;right:-6px;bottom:-5px;width:24px;height:24px;border-radius:7px;overflow:hidden;border:1.5px solid var(--surface-inset)}
 .yr-row .vis .fa img{width:100%;height:100%;object-fit:cover;display:block}
@@ -26,7 +26,8 @@ kit.CSS += r"""
 .yr-row .kr{display:flex;align-items:center;gap:7px}
 .yr-row .kd{font:500 9.5px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
 .yr-row .kd.ok{color:var(--success)}
-.yr-row .kr small{margin-left:auto;font:10.5px 'IBM Plex Mono';color:var(--fg-locked)}
+.yr-row .kr small{font:10.5px 'IBM Plex Mono';color:var(--fg-locked)}
+.yr-row .kr small::before{content:"·";margin-right:7px}
 .yr-row .tt{font:600 14px/1.35 'IBM Plex Sans';color:var(--fg)}
 .yr-row .dt{font-size:12.5px;line-height:1.5;color:var(--fg-body)}
 .yr-row .clr{grid-column:2;justify-self:start;display:flex;align-items:center;min-height:44px;margin-left:-2px;padding:0 2px;font:500 13px 'IBM Plex Sans';color:var(--fg-muted)}
@@ -40,7 +41,8 @@ kit.CSS += r"""
 .cmp{width:390px;border:1px solid var(--border-strong);border-radius:16px;overflow:hidden;background:var(--bg);position:relative}
 .cmp .yr-s{position:relative;border-radius:18px 18px 0 0}
 .ph .fi .bd{padding-right:30px}
-.dk .fi .kr small{display:none}
+.fi .kr small{margin-left:0}
+.fi .kr small::before{content:"·";margin-right:7px}
 .dk .fi .ac{gap:12px;padding-right:34px;align-items:baseline}
 .dk .fi .ac small{font:10.5px 'IBM Plex Mono';color:var(--fg-locked)}
 .fi.hl{background:color-mix(in oklab,var(--accent) 7%,transparent);box-shadow:inset 3px 0 0 var(--accent)}
@@ -59,7 +61,7 @@ def gitem(vis, kick, when, title, detail, press, desk_=False, un=False, hl=False
     """The shipped FeedItemRow: ✕ at the row's top right; from desktop the time moves to the press's column."""
     u = '<span class="un"></span>' if un else ""
     kr = f'<div class="kr">{u}<span class="kd{kc}">{kick}</span><small>{when}</small></div>'
-    act = f'<div class="ac">{f"<small>{when}</small>" if desk_ else ""}<span class="lnk">{press}</span></div>'
+    act = f'<div class="ac"><span class="lnk">{press}</span></div>'
     body = f'<div class="bd">{kr}<div class="tt">{title}</div><div class="dt">{detail}</div>{"" if desk_ else act}</div>'
     return f'<div class="fi{" hl" if hl else ""}{"" if un else " seen"}">{vis}{body}{act if desk_ else ""}<span class="xx">✕</span></div>'
 
