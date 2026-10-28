@@ -22,6 +22,23 @@ kit.CSS += r"""
 .sheet .bd img{width:150px;height:209px;border-radius:8px;display:block;flex:none}
 .sheet .bd .tx{display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5;color:var(--fg-body)}
 .sheet .bd .tx .mt{font:10.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.cdx{position:absolute;inset:0;z-index:30;overflow:hidden;background:var(--surface-sunken);border-radius:34px}
+.cdx .wash{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(28px);transform:scale(1.25);opacity:.55}
+.cdx .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.45) 100%)}
+.cdx .cnt{position:absolute;z-index:3;top:22px;left:18px;height:32px;padding:0 12px;border-radius:16px;display:flex;align-items:center;font:11px 'IBM Plex Mono';color:var(--fg-body);background:color-mix(in oklab,var(--bg) 55%,transparent)}
+.cdx .xx{position:absolute;z-index:3;top:22px;right:18px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--fg);background:color-mix(in oklab,var(--bg) 55%,transparent)}
+.cdx .cd{position:absolute;z-index:1;top:64px;left:35px;width:320px;height:447px;border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.cdx .cd img,.cdx .pk img{width:100%;height:100%;object-fit:cover;display:block}
+.cdx .pk{position:absolute;z-index:1;top:64px;left:367px;width:320px;height:447px;border-radius:14px;overflow:hidden;opacity:.5}
+.cdx .ts{position:absolute;z-index:2;left:0;right:0;bottom:0;height:280px;border-radius:18px 18px 0 0;border-top:1px solid var(--border-strong);background:var(--surface-rail);box-shadow:0 -14px 34px rgba(0,0,0,.45);padding:0 20px 34px;display:flex;flex-direction:column}
+.cdx .gr{height:22px;display:flex;align-items:center;justify-content:center;flex:none}
+.cdx .gr i{width:36px;height:4px;border-radius:2px;background:var(--border-strong);display:block}
+.cdx .hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.cdx .hd h3{margin:0;font:400 24px/1.15 Cinzel,serif;color:var(--fg)}
+.cdx .hd p{margin-top:5px;font-size:13px;color:var(--fg-muted)}
+.cdx .ow{margin-top:12px;font:12px 'IBM Plex Mono';color:var(--fg-body)}
+.cdx .ow b{font-weight:400;color:var(--accent-text)}
+.cdx .or{margin-top:12px;max-height:64px;overflow:hidden;font-size:13.5px;line-height:1.6;color:var(--fg-body);-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent)}
 .scrim2{position:absolute;inset:0;z-index:15;background:color-mix(in oklab,var(--bg) 72%,transparent)}
 """
 
@@ -64,6 +81,21 @@ def pop(rows, hint):
     return f'<div class="qp"><ul role="grid">{"".join(rows)}</ul><p class="hint">{hint}</p></div>'
 
 
+def card_detail_phone():
+    """The shipped phone card detail (card-modal.tsx, carousel R2 teaser), opened over the deck with quick-add's list kept behind it.
+    A one-result search, so the shipped detail draws no counter and no neighbor peek."""
+    base = ph(D.dock("giada", focus=True, status="1 match · 5-color only",
+                     pop=pop([drow("giada")], HINT_NEW)), kb=False)
+    gi = D.img("c-giada")
+    over = (f'<div class="cdx"><img class="wash" alt="" src="{gi}"><span class="grad"></span>'
+            '<span class="xx">✕</span>'
+            f'<span class="cd"><img alt="" src="{gi}"></span>'
+            '<div class="ts"><span class="gr"><i></i></span><div class="hd"><div><h3>Giada, Font of Hope</h3><p>Legendary Creature — Angel</p></div>'
+            f'<span style="margin-top:6px;display:flex;gap:3px">{D.pips(["1", "w"])}</span></div>'
+            '<p class="ow"><b>×1</b> owned</p>'
+            '<p class="or">Flying, vigilance. Each other Angel you control enters with an additional +1/+1 counter on it for each Angel you already control.</p></div></div>')
+    return base[:-len("</div>")] + over + "</div>"
+
 def board():
     head = board_head("Item 6b · card details from quick-add · #412 §2",
                       "Quick-add’s rows open card details from the name, like every other card row",
@@ -87,12 +119,10 @@ def board():
                  pop=pop([drow("swan", act="add", hit=True), drow("swords", hit=True), drow("aang", hit=True)], HINT_NEW))),
                  "The blue outlines are the two hit areas, drawn for this board only: the thumbnail and name (full row height, so 56px tall) open details; "
                  "<b>Add</b> (56 × 44) adds. A press anywhere else on the row still adds, as today.")
-         + frame("<b>A4</b> · 390 · the name pressed", ph(D.dock(Q, focus=True, status="3 matches · 5-color only",
-                 pop=pop([drow("swan"), drow("swords"), drow("aang")], HINT_NEW)), kb=False,
-                 over='<div class="scrim2"></div><div class="sheet"><span class="grip"></span><div class="sh"><b>Swan Song</b><span>✕</span></div>'
-                      f'<div class="bd"><img alt="" src="{D.img("c-swan-song")}"><div class="tx"><span class="mt">Instant · ×1 owned</span>'
-                      '<span>The shipped card detail, opened over the deck exactly as it opens from the decklist. Its ✕ returns to the field with the query and list kept.</span></div></div></div>'),
-                 "The keyboard drops while the sheet is open, as for any sheet. The card detail’s content is shipped and unchanged (availability included).")
+         + frame("<b>A4</b> · 390 · the name pressed (R2)", card_detail_phone(),
+                 "The shipped card detail, exactly as a decklist name opens it on a phone (card carousel R2): the card’s art washes the screen, the card sits at y 64, "
+                 "and the teaser sheet carries the name, type and what you own. The results are its list, as any row’s siblings are: this search found one card, so there is no counter "
+                 "and no peek; with more it reads <b>1 of 3</b> and the next result peeks at the right edge. ✕ returns to the deck with the query and list kept and focus in the field. Nothing in it is new.")
          + "</div></div>")
     B = ('<div class="sec"><h3>B · no details from quick-add</h3><div class="frames">'
          + frame("<b>B1</b> · 1300 · as shipped", dk(D.dock(Q, focus=True, desk=True, status="3 matches · 5-color only",

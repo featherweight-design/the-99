@@ -14,6 +14,7 @@ for k in ["swan-song", "swords", "aang-swift-savior", "counterspell", "mystical-
 for k in ["ghalta", "giada", "gisa", "jace", "dina", "sai", "lathliss"]:
     kit.LOCAL["crop-" + k] = f"art/crop-{k}.jpg"
 kit.LOCAL["aang"] = "art/hero-aang.jpg"
+kit.LOCAL["c-giada"] = "art/giada.jpg"
 img = kit.img
 
 P.DECKS["aang"] = dict(name="HD - Avatar Aang", cmd="Avatar Aang // Aang, Master of Elements", color="5-color",
@@ -83,7 +84,7 @@ kit.CSS += tb.CSS + r"""
 .tst .t1{font-size:13.5px;line-height:1.35;color:var(--fg)}
 .tst .t3{font-size:12.5px;line-height:1.45;color:var(--fg-body)}
 .tst .ta{flex:none;align-self:center;min-height:44px;display:flex;align-items:center;padding:0 12px;font:600 13.5px 'IBM Plex Sans';color:var(--accent-text);text-decoration:underline;text-underline-offset:2px}
-.mark-new{outline:1.5px dashed rgba(207,135,69,.8);outline-offset:3px;border-radius:10px}
+.mark-new{outline:1.5px dashed rgba(207,135,69,.8);outline-offset:-2px;border-radius:8px}
 .spec{display:grid;gap:28px;align-items:start}
 .spec .k{font-size:13px;line-height:1.55;color:var(--fg-muted)}
 .spec .k b{display:block;color:var(--fg);font:700 15px Cinzel,serif;margin-bottom:4px}
@@ -113,6 +114,7 @@ CARDS = {
     "swan": ("Swan Song", "swan-song", "Instant", 1, ["u"]),
     "swords": ("Swords to Plowshares", "swords", "Instant", 2, ["w"]),
     "aang": ("Aang, Swift Savior", "aang-swift-savior", "Legendary Creature — Human Avatar Ally", 0, ["1", "w", "u"]),
+    "giada": ("Giada, Font of Hope", "giada", "Legendary Creature — Angel", 1, ["1", "w"]),
     "counter": ("Counterspell", "counterspell", "Instant", 1, ["u", "u"]),
     "tutor": ("Mystical Tutor", "mystical-tutor", "Instant", 1, ["u"]),
 }

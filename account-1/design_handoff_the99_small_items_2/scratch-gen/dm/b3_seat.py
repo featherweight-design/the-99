@@ -137,7 +137,7 @@ def board():
                       "Shipped. The three text-only rows hang left of the deck names.")
               + frame("<b>3a</b> · 390 · Peter’s decks", ph('<div class="scrim3"></div><div class="sht"><span class="grip"></span>' + picker() + '</div>'),
                       "The dashed slot: 1px <code>--border-dashed</code>, 6px radius, the mark in <code>--fg-muted</code> (the ? at 16px, as Rule 0 draws it). "
-                      "Same row height (52), same press, no hover change beyond the shipped one.")
+                      "Same row height (52), same press, no hover change beyond the shipped one. The orange dashes mark the changed row on this board only; the app draws nothing there.")
               + frame("<b>3b</b> · 390 · after A deck not listed", ph("", peter="done"),
                       "Shipped and unchanged: Peter is seated with no deck, his initials in the art slot and <b>Which deck?</b> under his name to come back.")
               + "</div>")

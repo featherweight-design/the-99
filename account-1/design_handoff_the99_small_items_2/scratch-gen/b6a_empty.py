@@ -125,7 +125,7 @@ def board():
                     "The crown, the 7% vignette, a filled Clear filters. Keep only search is desktop-only.")
             + frame("<b>6a</b> · /collection · 390", ph_page(coll_top(), coll_one(), "Collection"),
                     "The shared ZeroState. Heading and body are collection’s shipped words. The one fix leads (<b>Keep only search</b>, now at both widths); <b>Clear all filters</b> follows, "
-                    "full width at 48 on a phone, as commanders draws them.")
+                    "full width at 48 on a phone, as commanders draws them. The orange dashes mark what changed, on this board only.")
             + frame("Reference · /commanders · 390 (unchanged)", ph_page(cmd_top(), cmd_ship(), "Commanders"),
                     "The winner, as shipped.")
             + "</div>")

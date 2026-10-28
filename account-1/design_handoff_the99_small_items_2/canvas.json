@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-10-28T20:52:55Z"
  },
- "title": "The 99 · Small items 2 · R1",
+ "title": "The 99 · Small items 2",
  "launch": {
   "view": "canvas"
  },
@@ -14,7 +14,7 @@
    "x": 0,
    "y": 0,
    "w": 1820,
-   "h": 1484,
+   "h": 1433,
    "title": "R1 · the eight calls, your decisions, the gaps"
   },
   "Good-To-Know.dc.html": {
@@ -35,7 +35,7 @@
    "x": 0,
    "y": 3125,
    "w": 2200,
-   "h": 3272,
+   "h": 3313,
    "title": "3 · Seat picker: A deck not listed"
   },
   "Ledger.dc.html": {
@@ -49,14 +49,14 @@
    "x": 5360,
    "y": 3125,
    "w": 2900,
-   "h": 3121,
+   "h": 3142,
    "title": "6a · Filtered-empty states (#412)"
   },
   "Quick-Add-Details.dc.html": {
    "x": 0,
    "y": 7039,
    "w": 2920,
-   "h": 3489,
+   "h": 3528,
    "title": "6b · Card details from quick-add (#412)"
   },
   "Consider-Tile.dc.html": {

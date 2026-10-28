@@ -29,8 +29,8 @@ for row in ROWS:
         order.append(fn)
         x += w + 80; hmax = max(hmax, h)
     y += hmax + 120
-idx = {"v": 3, "createdOnFiles": {"v": 1, "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")},
-       "title": "The 99 · Small items 2 · R1", "launch": {"view": "canvas"}, "pages": [], "boards": boards, "order": order,
+idx = {"v": 3, "createdOnFiles": {"v": 1, "at": "2026-10-28T20:52:55Z"},
+       "title": "The 99 · Small items 2", "launch": {"view": "canvas"}, "pages": [], "boards": boards, "order": order,
        "notes": {}, "designSystems": []}
 json.dump(idx, open("canvas/project/canvas.json", "w"), indent=1, ensure_ascii=False)
 print(json.dumps({k: (v["w"], v["h"]) for k, v in boards.items()}))

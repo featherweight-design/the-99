@@ -2,14 +2,21 @@
 
 A light addendum of eight unrelated items, each drawn over the shipped surface it changes. Brief: posted by Hugh in the
 project chat on 2026-10-28 ("Small items 2: eight open calls across About, the game log, Home and the deck builder").
-Goes to main as `design/design_handoff_the99_small_items_2/` (mirroring `design_handoff_the99_small_items/`) only after
-Hugh approves.
+Lives on main as `design/design_handoff_the99_small_items_2/`, beside `design_handoff_the99_small_items/`.
 
 Canvas: https://claude.ai/artifact/FfZa2ufJLTuEYicbR9H4rj (account 1; account 2 rebuilds from `scratch-gen/`) — Main, Good-To-Know, Try-It, Seat-Picker, Ledger, Filtered-Empty, Quick-Add-Details,
 Consider-Tile, Quick-Add-Failed.
 
-**Status: R1, awaiting Hugh's audit.** Items 1, 4 and 7 are ratifications; item 4 has no board. Every string is shipped
-copy unless a note marks it new for /copy-review.
+**Status: APPROVED by Hugh 2026-10-28 ("this all LGTM"), handoff PR #2345.** READINESS: Green (see `READINESS.md`). Items 1, 4 and 7 are
+ratifications; item 4 has no board. Every string is shipped copy unless a note marks it new for /copy-review.
+
+**Hugh's calls (R1 audit, 2026-10-28):** 1 ratified; 2 keep the ▾ / ▴; 3 all three trailing rows get the slot; 4 all
+three ratified; 5 an undone pass keeps its quiet line; 6a the commanders layout is the shared design; 6b option A, and on
+a phone it opens the shipped card detail, nothing new; 7 keep the plate, close; 8 the shared toast.
+
+**R2 (2026-10-28):** `Quick-Add-Details` A4 redrawn as the shipped phone card detail (card carousel R2: art wash, the
+card at y 64, the teaser sheet), in place of R1's invented sheet. The orange dashed outlines that mark what changed now
+sit inside their containers, and the boards say they are annotations only: the app draws nothing there.
 
 Sources read: main @4c65806; `feat/about-visual-pr5` (PR #2340); issues #477, #412, #182, #172 and #148; PRs #188,
 #395; `docs/superpowers/design-pipeline-status.md`, `design-tables/add-panel.md`, the backlog audits; handoffs
@@ -99,19 +106,21 @@ still on screen. **Each surface keeps its own words**: collection's heading name
 (`noResults.heading`) and keeps its caption. Collection's presses: with a query, **Keep only search** (primary, now at
 both widths) then **Clear all filters**; filters only, **Clear all filters** alone. Collection's crown and vignette
 retire here. Engineering: share `ZeroState` (e.g. `ui/`), render it from `no-results.tsx`; collection's breakpoint
-moves md → sm. Copy: `Clear filters` → `Clear all filters`; a key for `Keep only search`. Open to Hugh: keep the crown
-instead.
+moves md → sm. Copy: `Clear filters` → `Clear all filters`; a key for `Keep only search`. Hugh chose this layout over
+keeping collection's crown.
 
-### 6b · Card details from quick-add (`Quick-Add-Details`), Hugh's pick
+### 6b · Card details from quick-add (`Quick-Add-Details`): A, Hugh's pick
 
-- **A (recommended): a grid popup.** A combobox may own a grid instead of a listbox. Each row is two cells: the
+- **A (chosen): a grid popup.** A combobox may own a grid instead of a listbox. Each row is two cells: the
   thumbnail and name (opens the shared card detail, `View details for {name}`) and Add. ↑↓ move rows, →/← switch cells,
   ↵ acts on the active cell, typing resets to row 1's Add cell, so type-and-↵ still adds the top match. The name
   underlines on hover like a decklist name. On a phone the name cell (full row height) and Add (56 × 44) are the two
-  targets; elsewhere on the row still adds. Closing the detail returns to the field with the query and list kept.
+  targets; elsewhere on the row still adds. Pressing the name opens the **shipped** card detail, exactly as a decklist
+  name does: on a phone the full-screen card with its teaser sheet (A4), on desktop the 820 modal. Its list is the
+  results (a counter and peeks when there are two or more). Nothing in card detail is new. Closing it returns to the
+  field with the query and list kept.
   Hint copy for /copy-review: `→ details`, `← back to Add`, `↵ opens details`.
-- **B: no details from quick-add**, as a rule in the card-row doc: the whole row is the add, and the card is one press
-  away once it lands.
+- **B (not chosen): no details from quick-add.** Drawn for the record (B1, B2).
 - Either way: no modifier, long-press or open-on-focus.
 
 ## 7 · Add panel divergences and the consider tile, #182 (`Consider-Tile`, ratification)
@@ -129,7 +138,7 @@ this reconciles the three items PR #395 names against the record in the repo:
    plate, close.** Drawn: the plate as shipped at both widths, and the gradient for comparison.
 
 Nothing to build. #182's other open item ("99 means three things") is not in this brief and stays open. If Hugh has the
-verdict file, items 1 and 2 get checked against its wording.
+verdict file, items 1 and 2 get checked against its wording. Hugh ratified the plate on 2026-10-28.
 
 ## 8 · Quick-add's failed search, #172 (`Quick-Add-Failed`)
 
@@ -149,10 +158,12 @@ was the other precedent but is sized for a panel.
 
 ## Files
 
-- `*.dc.html`, `canvas.json`, `support.js`: the canvas boards (images by `/_blob/` url on the canvas; `art/` for local
-  rendering).
+- `Main.dc.html`: the eight calls and Hugh's decisions. `Good-To-Know`, `Try-It`, `Seat-Picker`, `Ledger`,
+  `Filtered-Empty`, `Quick-Add-Details`, `Consider-Tile`, `Quick-Add-Failed` (`.dc.html`): one board per item. Open from
+  disk; images load from `art/`; `support.js` is the boards' runtime.
 - `art/`: card images and commander crops the boards use (cut from the design folders' card images). Reference only;
   never copy into `public/`.
-- `scratch-gen/` (stays on `design-assets`): `dm/` (deck-page boards, on account 2's deck-messages kit), `about/`
+- The generator and the canvas index stay on `design-assets` (`account-1/design_handoff_the99_small_items_2/`):
+  `scratch-gen/`: `dm/` (deck-page boards, on account 2's deck-messages kit), `about/`
   (items 1–2, on account 2's About generator), `b6a_empty.py` (on account 1's cart v2 kit). `build_si2.py`,
   `build_root.py`, `about/build_si2.py` build; `render*.py` check every board for broken images and clipping.

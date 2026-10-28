@@ -47,7 +47,7 @@ CSS = kit.CSS + P.CSS + r"""
 .hitbox{outline:1.5px dashed rgba(143,166,190,.9);outline-offset:0}
 .tc.fv{outline:2px solid var(--accent);outline-offset:2px}
 .tap{position:absolute;z-index:6;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:2px solid #fff;background:rgba(255,255,255,.18);box-shadow:0 0 0 6px rgba(255,255,255,.12)}
-.newin{outline:1.5px dashed rgba(207,135,69,.8);outline-offset:6px;border-radius:14px}
+.newin{outline:1.5px dashed rgba(207,135,69,.8);outline-offset:-2px;border-radius:14px}
 """
 
 
