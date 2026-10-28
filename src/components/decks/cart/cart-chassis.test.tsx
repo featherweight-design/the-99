@@ -196,6 +196,28 @@ describe("the cart's chassis (v2 PR 8)", () => {
     expect(within(chip).getByRole("button", { name: new RegExp(term) })).toBeTruthy();
   });
 
+  it("closes the sort sheet when the window crosses into the wide form, and does not reopen it coming back", () => {
+    let wide = false;
+    const listeners = new Set<() => void>();
+    Object.defineProperty(window, "matchMedia", {
+      writable: true, configurable: true,
+      value: (query: string) => ({
+        get matches() { return wide; }, media: query, onchange: null,
+        addEventListener: (_: string, l: () => void) => listeners.add(l), removeEventListener: (_: string, l: () => void) => listeners.delete(l),
+        addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+      }),
+    });
+    const resize = (to: boolean) => { wide = to; act(() => { listeners.forEach((l) => l()); }); };
+    render(<CartView cart={cart()} provenance={provenance} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) }));
+    expect(screen.getByRole("menu", { name: copy.sort.sheetAria })).toBeTruthy();
+    resize(true);
+    resize(false);
+    // Back below 1000px the sheet is shut: no dialog, and the trigger says so.
+    expect(screen.queryByRole("menu", { name: copy.sort.sheetAria })).toBeNull();
+    expect(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) }).getAttribute("aria-expanded")).toBe("false");
+  });
+
   it("draws the desktop sort as the labelled menu past the hairline", () => {
     const { container } = renderWide(<CartView cart={cart()} provenance={provenance} />);
     expect(container.querySelector("[data-chassis-form='wide']")).toBeTruthy();
