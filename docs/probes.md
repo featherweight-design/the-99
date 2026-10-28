@@ -2934,8 +2934,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm probe:precon-overview-build` runs `db:build:precon-overviews --stub` for real on a scratch branch and reads
   `precon_synopses` back: under `--max-usd 0` nothing is written; two precons' rows land at contract 12, current, every
   section passed, each with the list fingerprint of the deck a start of it writes; a second run leaves them as written;
-  a row whose stored hash no longer matches is rewritten, and one held back by `--limit` is still marked
-  not current. It deletes every stub row it wrote. No model call. Scratch
+  a row whose stored hash no longer matches is rewritten, one held back by `--limit` is still marked
+  not current, and so is a row for a precon whose request cannot be built. It deletes every stub row it wrote. No model call. Scratch
   branch only (`assertScratchBranch`), named by `PROBE_DB_URL`. Measured 2026-10-27 on a scratch branch of local-dev
   migrated to 0179: all pass; with the build's skip removed, the second-run check fails.
 

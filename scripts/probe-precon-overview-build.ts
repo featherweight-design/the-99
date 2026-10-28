@@ -68,6 +68,21 @@ async function main() {
     check("a row whose inputs moved is rewritten", moved.inputHash !== "moved" && moved.current, `hash ${moved.inputHash.slice(0, 12)}, current ${moved.current}`);
     const held = await at(files[1]);
     check("a moved row past --limit is marked not current", held.inputHash === "moved" && !held.current, `hash ${held.inputHash.slice(0, 12)}, current ${held.current}`);
+
+    // A precon whose request cannot be built at all (the catalog refuses its commander) cannot show a
+    // stored row still fits it: a current row for it is marked not current.
+    let unbuildable: string | null = null;
+    for (const { f } of await db.select({ f: precons.fileName }).from(precons).where(sql`${precons.twinOf} is null`).orderBy(precons.fileName)) {
+      try { await preparePreconDeck(f); } catch { unbuildable = f; break; }
+    }
+    if (unbuildable) {
+      await db.insert(preconSynopses).values({ preconFile: unbuildable, contractVersion: 12, listFingerprint: "x", inputHash: "x", model: "stub", content: rows[0].content, current: true });
+      build("--limit", "0");
+      const gone = (await db.select().from(preconSynopses).where(and(eq(preconSynopses.preconFile, unbuildable), eq(preconSynopses.contractVersion, 12))))[0];
+      check(`a row for a precon with no buildable request (${unbuildable}) is marked not current`, gone && !gone.current, `current ${gone?.current}`);
+    } else {
+      console.log("SKIP  no precon on this branch fails to build, so the unbuildable check has nothing to run on");
+    }
   } finally {
     // Every row the runs wrote: the two precons, and the next ones the later runs moved on to.
     await db.delete(preconSynopses).where(eq(preconSynopses.model, "stub"));

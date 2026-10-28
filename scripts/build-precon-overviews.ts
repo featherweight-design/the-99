@@ -16,7 +16,8 @@
 //
 // THE CAP: `PRECON_OVERVIEW_MAX_USD` (or `--max-usd`), default and ceiling $15, a worst-case stop
 // (`scripts/lib/precon-overview-build.ts`). The dollars come from each reply's usage and go to ONE
-// `model_calls` row per batch, feature `precon_overview`, so the admin Costs page shows them.
+// `model_calls` row per batch, feature `precon_overview`, so the admin Costs page shows them; a batch
+// whose row cannot be written fails the run (exit 1) naming the batch and its dollars.
 //
 // FAILS CLOSED on its target: `PRECON_OVERVIEW_TARGET_BRANCH` is never defaulted and must equal
 // the database's `neon.branch_id`, or it exits 2 having written nothing.
@@ -59,7 +60,8 @@ async function main(): Promise<number> {
   const { batchCostMicroUsd } = await import("../src/lib/model/prices");
   const { parseReply } = await import("./eval/lib/request.mjs");
   const { sendBatch, countTokens } = await import("./eval/lib/batch.mjs");
-  const { recordSystemSpend } = await import("./lib/system-spend");
+  const { systemSpendRow } = await import("./lib/system-spend");
+  const { modelCalls } = await import("../src/db/schema");
   const { capMicroUsd, runBuild, worstMicroUsd } = await import("./lib/precon-overview-build");
   type Job = import("./lib/precon-overview-build").Job<unknown>;
   type Outgoing = import("./lib/precon-overview-build").Outgoing;
@@ -101,6 +103,9 @@ async function main(): Promise<number> {
     const req = await buildPreconRequest(file);
     if (!req.ok) {
       skipped.push({ file, why: req.why });
+      // No request means no way to show a stored row still fits: it is never carried over meanwhile.
+      if (stored.has(file) && !DRY) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
+        .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract)));
       continue;
     }
     const { list, params, hash } = req;
@@ -148,6 +153,8 @@ async function main(): Promise<number> {
     return 0;
   }
 
+  const unrecorded: { batchId: string; usd: number; error: string }[] = [];
+  const moved: string[] = [];
   const result = await runBuild<unknown>({
     jobs,
     capMicro,
@@ -177,14 +184,32 @@ async function main(): Promise<number> {
       });
       const micro = replies.reduce((n, r) => n + r.micro, 0);
       const tokens = replies.reduce((t, r) => ({ ...t, input: t.input + r.usage.input, output: t.output + r.usage.output }), { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
-      await recordSystemSpend({ feature: "precon_overview", model: call.model, usd: micro / 1e6, key: `precon_overview:${batchId}`, tokens });
+      // STRICT, unlike the shared helper: this job keeps no ledger of its own, so a batch's dollars
+      // reach the Costs page through this row or not at all. Keyed on the batch, so a retry or a re-run
+      // writes the same row; a row that still cannot be written fails the run, naming the batch.
+      const row = systemSpendRow({ feature: "precon_overview", model: call.model, usd: micro / 1e6, key: `precon_overview:${batchId}`, tokens });
+      try {
+        await db.insert(modelCalls).values(row).onConflictDoNothing({ target: modelCalls.id });
+      } catch {
+        try {
+          await db.insert(modelCalls).values(row).onConflictDoNothing({ target: modelCalls.id });
+        } catch (e) {
+          unrecorded.push({ batchId, usd: micro / 1e6, error: e instanceof Error ? e.message : String(e) });
+        }
+      }
       return { batchId, replies };
     },
     store: async (s) => {
       const m = [...meta.values()].find((x) => x.file === s.file)!;
+      // THE INPUTS ARE RE-CHECKED AT THE WRITE: the catalog can move while a batch runs. The answer is
+      // stored either way (it is paid for), but current only when this database still builds the very
+      // request it answered; otherwise the next run, or the copy, writes or checks it again.
+      const now = await buildPreconRequest(s.file);
+      const fits = now.ok && now.hash === m.hash && now.list === m.list;
+      if (!fits) moved.push(s.file);
       const row = {
         preconFile: s.file, contractVersion: contract, listFingerprint: m.list, inputHash: m.hash, model, content: s.content,
-        inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: true, createdAt: new Date(), checkedAt: new Date(),
+        inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(),
       };
       await db.insert(preconSynopses).values(row).onConflictDoUpdate({ target: [preconSynopses.preconFile, preconSynopses.contractVersion], set: row });
     },
@@ -193,7 +218,12 @@ async function main(): Promise<number> {
   console.log(`\nstored ${result.stored.length} of ${jobs.length}; failed ${result.failed.length}; deferred ${result.deferred.length}`);
   for (const f of result.failed) console.log(`  failed ${f.file}: ${f.reason}`);
   for (const d of result.deferred) console.log(`  deferred ${d} (the cap)`);
+  for (const f of moved) console.log(`  stored NOT current ${f}: its inputs moved while the batch ran`);
   console.log(`spent $${(result.spentMicro / 1e6).toFixed(4)} over ${result.batches.length} batch(es)`);
+  if (unrecorded.length > 0) {
+    for (const u of unrecorded) console.error(`model_calls: batch ${u.batchId} ($${u.usd.toFixed(4)}) was NOT recorded: ${u.error}`);
+    return 1;
+  }
   return 0;
 }
 

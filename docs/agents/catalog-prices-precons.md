@@ -64,10 +64,13 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   or index row the request reads. A row still matching, written by this run's model, is skipped and stamped current; one
   whose request moved is marked `current = false` BEFORE anything is sent, so it is never carried over while it waits.
   `--limit N` caps what is sent, never what is checked: every precon is still hashed and marked.
+  A precon whose request cannot be built has its row marked not current too, and each answer is re-checked
+  against the database's own request AT THE WRITE: one whose inputs moved during the batch is stored not current.
 - **The cap** is a worst-case stop in dollars: `PRECON_OVERVIEW_MAX_USD` or `--max-usd`, default and CEILING $15
   (`capMicroUsd` clamps), and a batch is sent only while dollars spent plus its worst case (counted input plus the full
   16,000-token output ceiling, at batch rates) fit (`scripts/lib/precon-overview-build.ts`). Spend goes to one
-  `model_calls` row per batch, `system`/`precon_overview`, which the Costs page shows.
+  `model_calls` row per batch, `system`/`precon_overview`, which the Costs page shows. The write is strict (one
+  retry): a batch whose row cannot be written fails the run, naming the batch and its dollars.
 - **It fails closed on its target**: `PRECON_OVERVIEW_TARGET_BRANCH` must equal the database's `neon.branch_id`, or it exits
   2. Locally name the database with `PRECON_OVERVIEW_DB_URL` (the env import overrides `DATABASE_URL`). `--dry-run` builds,
   hashes and prices every request and calls and writes nothing (input tokens estimated there). `--stub` answers with the
