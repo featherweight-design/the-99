@@ -48,13 +48,19 @@ CALLS = [
      "<ul><li>The first edit makes it stale exactly as any deck’s: the shipped banner and Re-analyze; after that the reading is the deck’s own.</li>"
      "<li>Engineering: one Overview and reading per precon list, written ahead; the copy is free.</li></ul>",
      "Board: Precon-Overview"),
+    ("6 · /friends on desktop", "Use the width: two columns",
+     "<p>From 1180px the head runs across, then <b>two columns</b>: Waiting on you, Your requests and Friends on the left; "
+     "<b>Pods</b> on the right (420px, seats three to a row as on a phone), whole above the fold.</p>"
+     "<ul><li>No tabs for now; nothing new, nothing hidden, phone unchanged.</li>"
+     "<li>Engineering: a grid in <code>friends-view.tsx</code>; DOM order stays phone order.</li></ul>",
+     "Board: Friends-Desktop"),
 ]
 
 
 def board():
     cards = "".join(f'<div class="call"><span class="n">{n}</span><h3>{t}</h3>{b}<span class="bd2">{f}</span></div>' for n, t, b, f in CALLS)
-    body = (board_head("Small items · 27 Oct 2026", "Five calls",
-                       "A light addendum: five unrelated items, each drawn over the shipped surface it changes. R1b folds in your feedback on 1 and 3. Your new rule (give the player a choice, "
+    body = (board_head("Small items · 27 Oct 2026", "Six calls",
+                       "A light addendum: six unrelated items, each drawn over the shipped surface it changes. R1b folds in your feedback on 1 and 3; 6 is new. Your new rule (give the player a choice, "
                        "never lock them in) drives the first. Copy is shipped where it exists; new strings are placeholders for /copy-review.", tag="R1b")
             + f'<div class="calls">{cards}</div>')
     return doc("Three small items", body, 1612)

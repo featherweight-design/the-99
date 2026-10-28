@@ -15,7 +15,7 @@
    "y": 0,
    "w": 1612,
    "h": 1143,
-   "title": "R1b \u00b7 the five calls"
+   "title": "R1b \u00b7 the six calls"
   },
   "Cuts-Alternatives.dc.html": {
    "x": 0,
@@ -58,6 +58,13 @@
    "w": 3000,
    "h": 3855,
    "title": "5 \u00b7 A precon\u2019s Overview, carried into the deck"
+  },
+  "Friends-Desktop.dc.html": {
+   "x": 10600,
+   "y": 1263,
+   "w": 2756,
+   "h": 2724,
+   "title": "6 \u00b7 /friends on desktop \u00b7 two columns"
   }
  },
  "order": [
@@ -67,7 +74,8 @@
   "Spare-Answer-Sheet.dc.html",
   "Dismiss-X.dc.html",
   "Eng-Rulings.dc.html",
-  "Precon-Overview.dc.html"
+  "Precon-Overview.dc.html",
+  "Friends-Desktop.dc.html"
  ],
  "notes": {},
  "designSystems": []

@@ -1,7 +1,7 @@
-# The 99 · Small items (R1b, account 2, 2026-10-27)
+# The 99 · Small items (R1b, account 2, 2026-10-27; item 6 2026-10-28)
 
-A light addendum of five unrelated items, each drawn over the shipped surface it changes. R1b folds in Hugh's feedback on items 1 and 3 (2026-10-27 23:39) and adds items 4 and 5.
-Canvas: https://claude.ai/artifact/M6sfvrUxLdd3TWELr19b4x (Main, Cuts-Alternatives, Draft-Note-Phone, Spare-Answer-Sheet, Dismiss-X, Eng-Rulings, Precon-Overview).
+A light addendum of six unrelated items, each drawn over the shipped surface it changes. R1b folds in Hugh's feedback on items 1 and 3 (2026-10-27 23:39) and adds items 4 and 5; item 6 (2026-10-28) follows Hugh's call on /friends.
+Canvas: https://claude.ai/artifact/M6sfvrUxLdd3TWELr19b4x (Main, Cuts-Alternatives, Draft-Note-Phone, Spare-Answer-Sheet, Dismiss-X, Eng-Rulings, Precon-Overview, Friends-Desktop).
 Status: R1b, awaiting Hugh's audit. Goes to main only on approval, as addenda to the handoffs each item builds on.
 
 ## 1 · Proposed cuts names more than the deck needs (`Cuts-Alternatives`, R1b)
@@ -57,7 +57,16 @@ Suggested: a test pinning the phone's caption and group notes while a draft exis
 - Engineering: one Overview and one reading per precon list, written ahead (a batch, like the prose) and re-written when the list or method changes; the deck's copy is judged fresh by the same list key as any reading, so no new staleness rule. Re-analyze costs what it costs today. Importing a list that happens to match a precon carries nothing.
 - Fixture: Turtle Power! (Heroes in a Half Shell); the Overview text and the Core verdict are stand-ins.
 
+## 6 · /friends on desktop, in two columns (`Friends-Desktop`)
+
+Hugh asked whether /friends needs sub-nav tabs; the call (accepted 2026-10-28) is **no tabs yet, use the width**. Shipped, the page is a 720px column in a wide window, so Pods starts under the fold.
+- From **1180px** (Home's two-column breakpoint) the container widens to 1160px. `FriendsHead` spans the top; below it a grid `minmax(0,1fr) 420px`, gap 44.
+- **Left:** Waiting on you, Your requests, then Friends (the rows keep the width they were drawn for; #2284's one-line right edge and item 4's ✕ fit). **Right:** Pods (the shipped pod card, seats three to a row as on a phone), then Open links.
+- Nothing waiting: the inbox sections stay absent as shipped, Friends moves up, neither column is empty.
+- DOM order stays phone order (head, inbox, friends, pods, links). Under 1180 and on a phone: unchanged.
+- Not now: tabs. Revisit with several pods or a dozen-plus friends (Friends | Pods tabs under the inbox, never around it).
+
 ## Files
-- `Main.dc.html`, `Cuts-Alternatives.dc.html`, `Draft-Note-Phone.dc.html`, `Spare-Answer-Sheet.dc.html`, `Dismiss-X.dc.html`, `Eng-Rulings.dc.html`, `Precon-Overview.dc.html`: the canvas artboards (images as `/_blob/` urls). `canvas.json`: the canvas index.
+- `Main.dc.html`, `Cuts-Alternatives.dc.html`, `Draft-Note-Phone.dc.html`, `Spare-Answer-Sheet.dc.html`, `Dismiss-X.dc.html`, `Eng-Rulings.dc.html`, `Precon-Overview.dc.html`, `Friends-Desktop.dc.html`: the canvas artboards (images as `/_blob/` urls). `canvas.json`: the canvas index.
 - `art/`: the images uploaded to the canvas (card images cut from Hugh's captures, reused from the strategy-focus, deck-messages and spare-requests rounds).
-- `scratch-gen/`: the generators. `cuts/` (strategy-focus kit + `ci.py`, `pv.py` via `bp.py`), `draft/` (deck-messages kit + `dn.py`), `spare/` (spare-requests kit + `ss.py`, `main.py` via `bm2.py`, `w4.py` via `b4.py`). Each `b.py` writes to `../out`; `render.py <names>` measures boards and flags broken images; `toblob.py` swaps `art/` for the canvas's `/_blob/` urls.
+- `scratch-gen/`: the generators. `cuts/` (strategy-focus kit + `ci.py`, `pv.py` via `bp.py`), `draft/` (deck-messages kit + `dn.py`), `spare/` (spare-requests kit + `ss.py`, `main.py` via `bm2.py`, `w4.py` via `b4.py`, `f6.py` via `b6.py`). Each `b.py` writes to `../out`; `render.py <names>` measures boards and flags broken images; `toblob.py` swaps `art/` for the canvas's `/_blob/` urls.
