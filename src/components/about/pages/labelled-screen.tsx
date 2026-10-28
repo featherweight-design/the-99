@@ -21,7 +21,8 @@ const PIN_SHADOW = "0 0 0 2px var(--bg), 0 3px 10px rgb(0 0 0 / 0.55)";
 const PIN_SHADOW_LIT =
   "0 0 0 2px var(--bg), 0 0 0 6px color-mix(in oklab, var(--accent) 38%, transparent), 0 3px 10px rgb(0 0 0 / 0.55)";
 
-// The States board's skeleton: six quiet bars on the sunken frame, at its own tops and widths.
+// The States board's skeleton: six quiet bars on the sunken frame, at its own tops and widths, a shade above
+// `--surface-raised` (the board's #231E18 in the dark reference sits between it and `--elevated`).
 const SKELETON_BARS: readonly [number, number][] = [[12, 52], [19, 80], [34, 84], [52, 70], [60, 84], [76, 60]];
 
 function Picture({
@@ -69,7 +70,7 @@ function Picture({
           {SKELETON_BARS.map(([top, w]) => (
             <i
               key={top}
-              className="absolute left-[8%] block h-[10px] rounded-[5px] bg-[color:var(--elevated)]"
+              className="absolute left-[8%] block h-[10px] rounded-[5px] bg-[color:color-mix(in_oklab,var(--surface-raised)_75%,var(--elevated))]"
               style={{ top: `${top}%`, width: `${w}%` }}
             />
           ))}
