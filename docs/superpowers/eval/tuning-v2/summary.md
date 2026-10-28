@@ -84,6 +84,6 @@ text was checked: the rationale, the short form and every citation, masked again
 
 ## Also noted
 
-- Citations cause most drops on both sides: 31 of 44 addition drops and all 20 cut drops.
+- Citations cause most drops on both sides: 31 of 45 addition drops and all 20 cut drops.
 - No refill ran in 23 runs. Every run made exactly 2 calls: the ask's 1.5N headroom always covered the drops.
 - Avatar Aang with N=3 kept exactly 3 every time. The other decks kept 5 of 5.
