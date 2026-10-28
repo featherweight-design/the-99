@@ -289,6 +289,7 @@
     "probe:edhrec-snapshot": "tsx scripts/probe-edhrec-snapshot.ts",
     "assets:brackets": "tsx scripts/copy-bracket-marks.mts",
     "probe:tuning-run": "tsx scripts/probe-tuning-run.ts",
+    "probe:tuning-v2": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-tuning-v2.mts",
     "probe:ai-sweep": "node scripts/probe-ai-sweep.mjs",
     "probe:precon-arrival": "node scripts/probe-precon-arrival.mjs",
     "probe:upcoming-precons-ui": "node scripts/probe-upcoming-precons-ui.mjs",
