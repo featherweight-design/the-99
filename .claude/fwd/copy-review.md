@@ -33,9 +33,10 @@ before introducing a synonym.
 - Hardcoded JSX strings, which are a separate finding: they violate the
   copy-in-`src/lib/copy` convention
 
-Channels in play: in-app only. **There is no email and no push**, so rule 2's email
-subject, preheader, push title and push body caps do not apply. There is no `releases.ts`,
-so the release-note caps and the frozen-record carve-out do not apply either.
+Channels in play: in-app, email (the invite-code mail, `codeMail` in
+`src/lib/invites/claim.ts`) and web push (titles and bodies in `src/lib/copy/push.ts`). Rule 2's
+email subject, preheader, push title and push body caps apply to those. There is no
+`releases.ts`, so the release-note caps and the frozen-record carve-out do not apply.
 
 ## Rule 4 calibration
 
@@ -103,7 +104,9 @@ by reading the diff.
 
 ## Tooltips and conventions (moved from the generic skill)
 
-- Tooltip designs do not exist yet; record `TOOLTIP`, never invent one.
+- A tooltip design exists: `src/components/cards/fact-tooltip.tsx`, and new mounts reuse it. Edit
+  existing tooltip copy normally. Record `TOOLTIP` only for a string that needs a tooltip where
+  no design covers it, and never invent one.
 - Copy-in-`src/lib/copy` is the convention; hardcoded JSX strings are a separate finding.
 - Locks include `READINESS.md` verdicts (the readiness audit's ready/not-ready call on a
   design handoff).
