@@ -204,6 +204,42 @@ describe("seen translation", () => {
     expect(unitSeen(face, { version: 16, ids: ["friends"] })).toBe(true);
   });
 
+  it("announces a new unit's switched sentence when its switch turns on after a visit", () => {
+    const base = ABOUT_SECTIONS.find((s) => s.id === "home")!;
+    const section = { ...base, labels: [{ ...base.labels[0], id: "fresh", region: "home/home/fresh", rest: " a. b.", switch: null, sentences: { " b.": "PUSH_ENABLED" as const }, since: 16, legacy: [] }] };
+    const off = visibleSections(OFF, [section]);
+    const seen = { version: 16, ids: seenKeysOf(off, "home") };
+    const on = visibleSections(env({ PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true" }), [section]);
+    expect(unseenUnits(on, seen).map((u) => u.key)).toEqual([sentenceKey("home/home/fresh", "PUSH_ENABLED")]);
+  });
+
+  it("keeps a Help me choose acknowledgement when the fill rule's sentence turns on", () => {
+    const hmcOn = env({ HELP_ME_CHOOSE_ENABLED: "true" });
+    const told = (ids: string[]) => unseenUnits(visibleSections(hmcOn), { version: 16, ids }).map((u) => u.key);
+    expect(told(["x"])).toContain(sentenceKey("rule/autofill", "HELP_ME_CHOOSE_ENABLED"));
+    expect(told(["help-me-choose"])).not.toContain(sentenceKey("rule/autofill", "HELP_ME_CHOOSE_ENABLED"));
+  });
+
+  it("lets the floor answer for a switched sentence only where it was a switched line of an unswitched entry", () => {
+    // Each was a \`captionLineSwitches\` line of the unswitched entry named, shown with it and seen by the floor.
+    const floorSeen = new Set([
+      "decks/games/log@TUNING_ENABLED", // log-a-game: "reads your games the next time it runs"
+      "rule/credits@ANALYSIS_TAB_ENABLED", "rule/credits@TUNING_ENABLED", "rule/credits@PROPOSED_CUTS_ENABLED", // credits
+    ]);
+    const switchOf = new Map(aboutEntries.map((e) => [e.id, e.switch ?? null]));
+    const units2 = [
+      ...ABOUT_SECTIONS.flatMap((s) => s.labels.map((l) => [`${s.area}/${s.id}/${l.id}`, l] as const)),
+      ...Object.entries(ABOUT_RULES).map(([k, r]) => [`rule/${k}`, r] as const),
+    ];
+    for (const [key, u] of units2) for (const sw of Object.values(u.sentences ?? {})) {
+      for (const one of (Array.isArray(sw) ? sw : [sw]) as string[]) {
+        if (one.startsWith("!")) continue;
+        const carried = u.legacy.some((id) => id.endsWith(`@${one}`) || switchOf.get(id) === one);
+        if (!carried) expect(floorSeen, `${key}@${one}`).toContain(`${key}@${one}`);
+      }
+    }
+  });
+
   it("announces a new switched label when its switch turns on, whatever the floor", () => {
     const fresh = { key: "x/y/z", since: 16, legacy: [] as string[], switch: "PUSH_ENABLED" as const };
     expect(unitSeen(fresh, { version: 16, ids: ["a"] })).toBe(false);

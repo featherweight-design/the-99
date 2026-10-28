@@ -127,7 +127,9 @@ export function sentenceSeen(u: Pick<VisibleUnit, "key" | "since" | "legacy">, s
   if (seen.ids.includes(sentenceKey(u.key, sw))) return true;
   const carriers = u.legacy.filter((id) => carries(id, sw));
   if (carriers.some((id) => seen.ids.includes(id))) return true;
-  return carriers.length === 0 && u.since <= seen.version;
+  // A sentence no legacy entry carried was a switched line inside an unswitched entry, seen with it by the floor. A
+  // unit with no legacy at all is new, and its sentences are seen by their keys alone.
+  return carriers.length === 0 && u.legacy.length > 0 && u.since <= seen.version;
 }
 
 export interface UnseenUnit {

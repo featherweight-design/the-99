@@ -712,7 +712,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
       " Tell Help me choose that any cards will do, and it can pick a much-played card to buy over a rarely played one of yours.": "HELP_ME_CHOOSE_ENABLED",
     },
     since: 1,
-    legacy: ["auto-fill"],
+    legacy: ["auto-fill", "help-me-choose"],
   },
   lock: {
     text: "A locked card is safe from every tool: none will offer to cut it, and updating the deck from a list starts it kept. The lock ends when you commit a version without the card.",
@@ -805,7 +805,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
       " They see your decks’ names, status and how many cards each still needs.": "!FRIEND_DECKS_ENABLED",
     },
     since: 16,
-    legacy: ["friends", "wishlist"],
+    legacy: ["friends", "wishlist", "friend-decks"],
   },
   "hidden-deck": {
     text: "A deck you hide looks deleted to friends: no tile, and its link stops working. Hiding it never frees its cards as spares.",
