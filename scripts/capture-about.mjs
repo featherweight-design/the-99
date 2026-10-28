@@ -753,9 +753,13 @@ function writePageManifest(m) {
   for (const t of ALL_THEMES) {
     if (m.shots[t]) {
       shots[t] = {};
-      for (const w of Object.keys(PAGE_VIEWPORTS)) if (m.shots[t][w]) shots[t][w] = sortKeys(m.shots[t][w]);
+      // A capture or crop no longer framed (one dropped from the boards) leaves the manifest with its frame.
+      for (const w of Object.keys(PAGE_VIEWPORTS)) {
+        const kept = Object.entries(m.shots[t][w] ?? {}).filter(([c]) => PAGE_FRAMES[c]?.width === w);
+        if (kept.length) shots[t][w] = sortKeys(Object.fromEntries(kept));
+      }
     }
-    if (m.tools[t]) tools[t] = sortKeys(m.tools[t]);
+    if (m.tools[t]) tools[t] = sortKeys(Object.fromEntries(Object.entries(m.tools[t]).filter(([k]) => TOOL_REGIONS[k])));
   }
   writeFileSync(
     PAGE_MANIFEST_FILE,
@@ -845,6 +849,26 @@ async function scrollToElement(page, selector) {
   );
   if (!found) throw new Error(`the frame's scroll target ${selector} is not drawn`);
   await page.waitForTimeout(300);
+  // Chrome that sticks to the frame's top once scrolled (a deck's compact head) is only stuck AFTER the scroll: read it
+  // then, and back off so the target's top edge clears it by a few px (p-deck-top's to-do card).
+  await page.evaluate(
+    ([scope, sel]) => {
+      const el = [...document.querySelectorAll(`${scope} ${sel}`)].find((e) => e.getClientRects().length > 0);
+      if (!el) return;
+      let floor = 0;
+      for (const o of document.querySelectorAll("body *")) {
+        const cs = getComputedStyle(o);
+        if (cs.position !== "fixed" && cs.position !== "sticky") continue;
+        if (o.contains(el) || el.contains(o)) continue;
+        const r = o.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0 && r.top <= 2 && r.bottom < innerHeight / 3) floor = Math.max(floor, r.bottom);
+      }
+      const short = floor + 10 - el.getBoundingClientRect().top;
+      if (short > 0) window.scrollTo({ top: window.scrollY - short, behavior: "instant" });
+    },
+    [PAGE, selector],
+  );
+  await page.waitForTimeout(200);
 }
 
 /** Opens a fixture deck's view, as the 390 set's deck frames do. */

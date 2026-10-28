@@ -93,7 +93,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Home",
     sub: "Where every visit starts.",
     screens: [{ screen: "home" }],
-    captures: { phone: ["p-home", "p-home-in-use"], desktop: ["d-home", "d-home2"] },
+    captures: { phone: ["p-home", "p-home-in-use"], desktop: ["d-home"] },
     labels: [
       {
         id: "help",

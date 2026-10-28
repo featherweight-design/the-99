@@ -327,7 +327,7 @@ export const ABOUT_REGIONS = {
   "home/home/help": {
     phone: { capture: "p-home", locator: "header [data-help-button='header']:visible" },
     // The rail's ?, pinned at its foot above the account trigger.
-    desktop: { capture: "d-home2", locator: "aside [data-help-button='rail']:visible" },
+    desktop: { capture: "d-home", locator: "aside [data-help-button='rail']:visible" },
   },
   "home/home/ready": both("p-home", "d-home", "[data-ready-to-build]"),
   // The figures sit below the fold at 390, so the phone has a second shot scrolled to them.

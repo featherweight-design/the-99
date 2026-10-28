@@ -6,12 +6,10 @@ import { PAGE_SHOTS, PAGE_WIDTHS, pageShotFor, pageToolCropFor, type PageManifes
 import { PAGE_MANIFEST } from "./page-shots.generated";
 
 const labels = ABOUT_SECTIONS.flatMap((s) => s.labels);
-/** No capture run has written the manifest yet: the readiness checks below wait for one (the PR's capture commit). */
-const EMPTY = Object.keys(PAGE_SHOTS).length === 0;
 
 describe("the pages' captures are ready (G3)", () => {
   // The capture server runs with every switch on, so every label is visible on its capture.
-  it.skipIf(EMPTY)("measures a box for every label region, in every theme, at both widths", () => {
+  it("measures a box for every label region, in every theme, at both widths", () => {
     for (const { key: theme } of THEMES) {
       for (const width of PAGE_WIDTHS) {
         for (const l of labels) {
@@ -25,13 +23,13 @@ describe("the pages' captures are ready (G3)", () => {
     }
   });
 
-  it.skipIf(EMPTY)("crops every tool's desktop card, in every theme", () => {
+  it("crops every tool's desktop card, in every theme", () => {
     for (const { key: theme } of THEMES) {
       for (const tool of Object.keys(TOOL_REGIONS)) expect(PAGE_MANIFEST.tools[theme]?.[tool], `${theme} ${tool}`).toBeDefined();
     }
   });
 
-  it.skipIf(EMPTY)("never measures two labels on one capture at the same box (they would be one label, G6)", () => {
+  it("never measures two labels on one capture at the same box (they would be one label, G6)", () => {
     for (const [theme, widths] of Object.entries(PAGE_SHOTS)) {
       for (const [width, shots] of Object.entries(widths)) {
         for (const [capture, shot] of Object.entries(shots ?? {})) {

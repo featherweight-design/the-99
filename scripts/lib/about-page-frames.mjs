@@ -43,7 +43,6 @@ export const PAGE_FRAMES = {
 
   // ---- 1300x900 ----------------------------------------------------------------------------------------------------
   "d-home": { width: "desktop", path: "/", feed: "off" },
-  "d-home2": { width: "desktop", path: "/", feed: "off" },
   "d-home-feed": { width: "desktop", path: "/", rearm: true },
   "d-collection2": { width: "desktop", path: "/collection" },
   "d-upload": { width: "desktop", path: "/collection/replace" },
