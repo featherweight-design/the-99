@@ -4,7 +4,7 @@
 // location — every path here would resolve against `http://localhost/`.
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { captureAboutSeen, catalogIds, gateReturn, restoreAboutSeen, markEveryEntrySeen, sheetCookie, variantIds } from "./about-clear.mjs";
+import { captureAboutSeen, catalogIds, gateReturn, restoreAboutSeen, markEveryEntrySeen, sheetCookie, variantIds, serverMismatch } from "./about-clear.mjs";
 import { gateDecision } from "../../src/lib/about/gate";
 
 // A probe's first load can already have been sent to the gate by the time it clears the sheet: the
@@ -153,4 +153,13 @@ describe("every probe that puts the About row back restores both columns (fa, 20
       expect(readFileSync(new URL(f, dir), "utf8")).toMatch(/restoreAboutSeen\(/);
     },
   );
+});
+
+describe("the About write goes where the server reads (2026-10-28)", () => {
+  it("refuses when .env.local points the server at another database, and passes otherwise", () => {
+    expect(serverMismatch("postgres://a", null)).toBeNull();
+    expect(serverMismatch("postgres://a", {})).toBeNull();
+    expect(serverMismatch("postgres://a", { DATABASE_URL: "postgres://a" })).toBeNull();
+    expect(serverMismatch("postgres://a", { DATABASE_URL: "postgres://scratch" })).toMatch(/nothing written/);
+  });
 });

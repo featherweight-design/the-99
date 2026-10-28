@@ -23,18 +23,41 @@
 // which is what its `about_version_seen` write already says about the account.
 import { readFileSync } from "node:fs";
 import { neon } from "@neondatabase/serverless";
+import { parse } from "dotenv";
 import { requireEnv } from "./env.mjs";
 
 /**
- * The database every About write here goes to: `ABOUT_DB_URL` when set, else `.env`'s `DATABASE_URL`. It must be the
- * one the SERVER reads, and `env.mjs` overrides an exported `DATABASE_URL` with `.env`'s, so a walk whose dev server
- * reads a scratch branch through `.env.local` names that branch here (`.env` never sets `ABOUT_DB_URL`). A walk on
- * 2026-10-28 wrote local-dev's About row while its server read a scratch branch. Opened once per run.
+ * The database every About write here goes to: `.env`'s `DATABASE_URL`, the one each probe's own branch guard checks,
+ * and never another (an override would let the write escape that guard). The server a probe drives must read the
+ * same database, so a worktree whose `.env.local` names a different `DATABASE_URL` (a dev server pointed at a scratch
+ * branch that way) is refused before anything is written: point `.env` at that branch instead. A walk on 2026-10-28
+ * wrote local-dev's About row while its server read a scratch branch through `.env.local`. Opened once per run.
  */
 let shared = null;
-export function aboutSql() {
-  shared ??= neon(process.env.ABOUT_DB_URL || requireEnv(["DATABASE_URL"]).DATABASE_URL);
+export function aboutSql(local = readLocalEnv()) {
+  if (shared) return shared;
+  const url = requireEnv(["DATABASE_URL"]).DATABASE_URL;
+  const refusal = serverMismatch(url, local);
+  if (refusal) throw new Error(refusal);
+  shared = neon(url);
   return shared;
+}
+
+/** The worktree's `.env.local`, parsed, or null without one. */
+function readLocalEnv() {
+  try {
+    return parse(readFileSync(new URL("../../.env.local", import.meta.url), "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+/** Why the About write must not go to `url`: `.env.local` points the server elsewhere. Pure, for the tests. */
+export function serverMismatch(url, local) {
+  const served = local?.DATABASE_URL;
+  if (!served || served === url) return null;
+  return "about-clear: .env.local sets a DATABASE_URL other than .env's, so the dev server reads another database than the About write would; point .env's DATABASE_URL at that database instead (nothing written).";
 }
 
 let announced = false;
@@ -44,7 +67,7 @@ async function announce(sql) {
   if (sql !== shared || announced) return;
   announced = true;
   const [row] = await sql`select current_setting('neon.branch_id', true) as branch`;
-  console.log(`about-clear: the About row is written on ${row?.branch || "an unnamed database"} (${process.env.ABOUT_DB_URL ? "ABOUT_DB_URL" : ".env DATABASE_URL"})`);
+  console.log(`about-clear: the About row is written on ${row?.branch || "an unnamed database"} (.env DATABASE_URL)`);
 }
 
 const VERSION_FILE = new URL("../../src/lib/copy/about.version.json", import.meta.url);

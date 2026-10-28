@@ -1971,9 +1971,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   presses Later if a card is already up. `about-clear.test.mts` sweeps every
   probe that writes the column and fails one that does not call it, and pins the ids it reads
   out of `about.ts` against `aboutEntries`.
-  Its writes go to `ABOUT_DB_URL` when set, else `.env`'s `DATABASE_URL` (which `env.mjs` will not let a shell
-  export replace), and it prints the branch it writes on before the first write: set `ABOUT_DB_URL` when the dev
-  server reads another database than `.env`'s.
+  Its writes go to `.env`'s `DATABASE_URL`, the database each probe's own guard checks, and it prints the branch
+  first; it refuses, writing nothing, when the worktree's `.env.local` names another `DATABASE_URL` (a dev server
+  reading elsewhere). Point `.env` at a scratch branch for a walk, never `.env.local`.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
