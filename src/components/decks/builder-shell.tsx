@@ -1565,7 +1565,13 @@ export function BuilderShell({
     setTopOffRequest((topOffNonce.current += 1));
   };
   const suggestedV2 = suggestedChangesV2
-    ? { at: built + (deckBodySize(false) - bodySize), over: built - bodySize, onTopOff: topOffPress }
+    ? {
+        at: built + (deckBodySize(false) - bodySize),
+        over: built - bodySize,
+        // Offered only while Your deck draws the Top off row (`bodySize - counts.total > 0`): a gap that unresolved lines
+        // fill has no row to open, so the tile names the count with no link rather than promising one.
+        onTopOff: bodySize - counts.total > 0 ? topOffPress : undefined,
+      }
     : null;
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
