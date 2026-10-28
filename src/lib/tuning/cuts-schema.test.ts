@@ -22,10 +22,10 @@ describe("cutsResponseSchema", () => {
     expect(s.safeParse(n(7)).success).toBe(false);
   });
 
-  it("bounds a far-over deck at the per-run cap of 15", () => {
+  it("bounds a far-over deck at the per-run cap of 20", () => {
     const s = cutsResponseSchema(cutsNamed(40));
-    expect(s.safeParse({ cuts: Array.from({ length: 15 }, () => cut) }).success).toBe(true);
-    expect(s.safeParse({ cuts: Array.from({ length: 16 }, () => cut) }).success).toBe(false);
+    expect(s.safeParse({ cuts: Array.from({ length: 20 }, () => cut) }).success).toBe(true);
+    expect(s.safeParse({ cuts: Array.from({ length: 21 }, () => cut) }).success).toBe(false);
   });
 
   it("holds a reason to 200 characters and needs a cite", () => {

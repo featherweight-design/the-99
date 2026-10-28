@@ -22,7 +22,7 @@ const calls = vi.hoisted(() => ({
   finished: [] as unknown[][],
   persisted: [] as unknown[][],
   persistResult: true,
-  modelCalls: [] as { system: string; user: string; effort?: string; deadlineMs?: number; retryFloorMs?: number; schema: unknown }[],
+  modelCalls: [] as { system: string; user: string; effort?: string; deadlineMs?: number; retryFloorMs?: number; maxTokens?: number; schema: unknown }[],
   modelOutcome: undefined as unknown,
   modelQueue: [] as unknown[],
   runPending: true,
@@ -255,7 +255,8 @@ describe("runProposedCuts, a run that answers", () => {
     await runProposedCuts(DECK);
     expect(calls.modelCalls).toHaveLength(1);
     const req = calls.modelCalls[0];
-    expect(req).toMatchObject({ effort: "medium", deadlineMs: 110_000, retryFloorMs: 70_000 });
+    // Proposed cuts' own ceiling and deadline (small items G2): 10,500 tokens inside 170s.
+    expect(req).toMatchObject({ effort: "medium", deadlineMs: 170_000, retryFloorMs: 70_000, maxTokens: 10_500 });
     // The front face only, as the eval's chosen configuration builds it.
     expect(req.user).toContain("text: Draw two cards.");
     expect(req.user).not.toContain("Back face.");

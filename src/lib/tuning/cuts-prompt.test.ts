@@ -108,20 +108,20 @@ describe("the plan in the prompt (v2)", () => {
       facts: cutFacts({ profile: profile({}, deck(70)), locked: new Set(), support: null, declaredBracket: null }),
       commanderName: "Gishath", keyCards: [], intent: null,
     }));
-    expect(big.system).toContain(`Propose exactly ${MAX_CUTS_PER_RUN} cuts.`);
+    expect(big.system).toContain("Propose exactly 20 cuts.");
     expect(big.system).toContain("The deck is 22 over");
     // At the cap the run names no more than it needs, so nothing is offered to choose between.
     expect(big.system).not.toContain("more than that");
     expect(withPlan().system).not.toContain("run this again");
   });
 
-  it("fills a deck near the cap only up to it: 13 over names 15, two more than it needs", () => {
+  it("fills a deck near the cap only up to it: 18 over names 20, two more than it needs", () => {
     const near = buildCutsPrompt(buildCutsPack({
-      facts: cutFacts({ profile: profile({}, deck(61)), locked: new Set(), support: null, declaredBracket: null }),
+      facts: cutFacts({ profile: profile({}, deck(66)), locked: new Set(), support: null, declaredBracket: null }),
       commanderName: "Gishath", keyCards: [], intent: null,
     }));
     expect(near.system).toContain(`Propose exactly ${MAX_CUTS_PER_RUN} cuts.`);
-    expect(near.system).toContain("The deck needs 13 cuts; name 2 more than that, so the player chooses which 13 to cut.");
+    expect(near.system).toContain("The deck needs 18 cuts; name 2 more than that, so the player chooses which 18 to cut.");
     expect(near.system).not.toContain("run this again");
   });
 

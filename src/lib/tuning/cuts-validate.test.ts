@@ -173,7 +173,8 @@ describe("the per-run cap", () => {
   });
   it("asks for no more than the cap of a deck 22 over, and keeps no more than that", () => {
     const pack = big();
-    expect([pack.over, pack.ask, pack.named]).toEqual([22, MAX_CUTS_PER_RUN, MAX_CUTS_PER_RUN]);
+    // A far-over deck needs and names 20 (small items G2): no room under the cap for spares.
+    expect([pack.over, pack.ask, pack.named]).toEqual([22, 20, 20]);
     const cuts = Array.from({ length: 22 }, (_, i) => c(`bear${i}`, [{ kind: "cost", mv: 3 }]));
     const r = run(cuts, pack);
     expect(r.kept).toHaveLength(MAX_CUTS_PER_RUN);

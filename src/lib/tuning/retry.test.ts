@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { retryable } from "./retry";
-import { MODEL_TIMEOUT_MS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "./limits";
+import { CUTS_MODEL_TIMEOUT_MS, MODEL_TIMEOUT_MS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "./limits";
 
 const usage = (inputTokens: number, outputTokens: number) => ({ inputTokens, outputTokens, cacheReadTokens: 0, cacheWriteTokens: 0 });
 const billed = (u = usage(4_000, 900)) => [{ model: TUNING_MODEL, usage: u, step: "suggest", effort: "medium" as const }];
@@ -21,6 +21,13 @@ describe("retryable", () => {
   it("does not ask when a whole attempt no longer fits the deadline", () => {
     expect(retryable(billed(), dropped, MODEL_TIMEOUT_MS - TUNING_RETRY_FLOOR_MS)).toBe(true);
     expect(retryable(billed(), dropped, MODEL_TIMEOUT_MS - TUNING_RETRY_FLOOR_MS + 1)).toBe(false);
+  });
+  it("measures Proposed cuts' second ask against its own, longer deadline", () => {
+    const cuts = { feature: "proposed_cuts" as const, lockedRule: "keyCard", deadlineMs: CUTS_MODEL_TIMEOUT_MS };
+    const at = CUTS_MODEL_TIMEOUT_MS - TUNING_RETRY_FLOOR_MS;
+    expect(at).toBeGreaterThan(MODEL_TIMEOUT_MS - TUNING_RETRY_FLOOR_MS);
+    expect(retryable(billed(), [{ rule: "notInDeck" }], at, cuts)).toBe(true);
+    expect(retryable(billed(), [{ rule: "notInDeck" }], at + 1, cuts)).toBe(false);
   });
   it("does not ask when nothing was billed", () => {
     expect(retryable([], dropped, 0)).toBe(false);

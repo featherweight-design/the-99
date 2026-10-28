@@ -97,7 +97,7 @@ const { buildCutsPack } = await import("../../src/lib/tuning/cuts-evidence");
 const { buildCutsPrompt } = await import("../../src/lib/tuning/cuts-prompt");
 const { cutsResponseSchema } = await import("../../src/lib/tuning/cuts-schema");
 const { validateCuts } = await import("../../src/lib/tuning/cuts-validate");
-const { TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL } = await import("../../src/lib/tuning/limits");
+const { TUNING_EFFORT, CUTS_MAX_TOKENS, TUNING_MODEL } = await import("../../src/lib/tuning/limits");
 
 type Pack = ReturnType<typeof buildCutsPack>;
 type Prepared = {
@@ -176,7 +176,7 @@ for (const [i, d] of BLIND_DECKS.entries()) {
     free, random,
     sent: {
       customId,
-      params: buildParams({ model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS, schema: cutsResponseSchema(pack.named) }, { effort: TUNING_EFFORT }),
+      params: buildParams({ model: TUNING_MODEL, system, user, maxTokens: CUTS_MAX_TOKENS, schema: cutsResponseSchema(pack.named) }, { effort: TUNING_EFFORT }),
     },
   });
 }
@@ -201,7 +201,7 @@ if (args.reuse) {
 } else {
   const tokens = await Promise.all(prepared.map((p) => countTokens(p.sent.params)));
   // `worstCaseUsd` counts the app's one retry (two attempts) at the full output ceiling.
-  const worstOf = new Map(prepared.map((p, i) => [p.customId, worstCaseUsd(TUNING_MODEL, tokens[i], TUNING_MAX_TOKENS, { batch: true })]));
+  const worstOf = new Map(prepared.map((p, i) => [p.customId, worstCaseUsd(TUNING_MODEL, tokens[i], CUTS_MAX_TOKENS, { batch: true })]));
   const worst = [...worstOf.values()].reduce((a, b) => a + b, 0);
   if (args.send) acquireRunLock(LEDGER_CUTS);
   const before = spent(readLedger(LEDGER_CUTS));

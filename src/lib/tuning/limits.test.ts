@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { ANSWER_TOKENS_WORST_CASE, ASK_PER_LIST, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong } from "./limits";
+import { ANSWER_TOKENS_WORST_CASE, ASK_PER_LIST, CUTS_MAX_TOKENS, CUTS_MODEL_TIMEOUT_MS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong } from "./limits";
 
 // The deck page's maxDuration bounds the run's Server Action, so the model deadline must fit
 // under it with room for the reads and writes around the call. Read from the page's source:
@@ -17,6 +17,29 @@ describe("MODEL_TIMEOUT_MS", () => {
     const maxDurationMs = Number(match![1]) * 1000;
     expect(MODEL_TIMEOUT_MS).toBeLessThan(maxDurationMs);
     expect(maxDurationMs - MODEL_TIMEOUT_MS).toBeGreaterThanOrEqual(10_000);
+  });
+});
+
+// Proposed cuts' own ceiling and deadline (small items G2, d9's option b): Suggested changes keeps
+// TUNING_MAX_TOKENS and MODEL_TIMEOUT_MS.
+describe("CUTS_MODEL_TIMEOUT_MS", () => {
+  const SLOWEST_TOKENS_PER_SECOND = 79; // measured on Sonnet 5 (TUNING_RETRY_FLOOR_MS); Sonnet 5.5's is unmeasured
+
+  it("fits under the deck page's maxDuration with the same ~10s for the rest of the run", () => {
+    const page = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/decks/[id]/page.tsx"), "utf8");
+    const maxDurationMs = Number(page.match(/export const maxDuration = (\d+);/)![1]) * 1000;
+    expect(maxDurationMs).toBe(180_000);
+    expect(maxDurationMs - CUTS_MODEL_TIMEOUT_MS).toBeGreaterThanOrEqual(10_000);
+  });
+
+  it("holds a whole reply at the cuts ceiling at the slowest measured rate, and leaves Suggested changes as it was", () => {
+    expect(CUTS_MAX_TOKENS).toBe(10_500);
+    expect((CUTS_MAX_TOKENS / SLOWEST_TOKENS_PER_SECOND) * 1000).toBeLessThan(CUTS_MODEL_TIMEOUT_MS);
+    expect([TUNING_MAX_TOKENS, MODEL_TIMEOUT_MS]).toEqual([8_000, 110_000]);
+  });
+
+  it("leaves a first attempt room to fail and still retry inside it", () => {
+    expect(TUNING_RETRY_FLOOR_MS).toBeLessThan(CUTS_MODEL_TIMEOUT_MS);
   });
 });
 
