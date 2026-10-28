@@ -91,4 +91,45 @@ describe("the pod card's edit state", () => {
     expect(removes()).toHaveLength(0);
     expect(screen.getByRole("button", { name: P.edit })).toBeInTheDocument();
   });
+
+  it("ends editing on its own when the last other member leaves on a redraw, with focus on the menu, not the page", () => {
+    const { redraw } = draw(pod({ members: [ME, DAVE] }));
+    fireEvent.click(screen.getByRole("button", { name: P.edit }));
+    expect(document.activeElement).toBe(removes()[0]);
+    act(() => redraw(pod({ members: [ME] })));
+    expect(removes()).toHaveLength(0);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: P.menuAria("Thursday") }));
+  });
+
+  it("leaves an Escape from outside the card (a sheet portaled over the page) to that sheet", () => {
+    draw(pod());
+    fireEvent.click(screen.getByRole("button", { name: P.edit }));
+    // A portal's keydown reaches the card's handler through the React tree while its target sits outside the card's
+    // DOM: call the handler as React would, with such a target.
+    const sheet = document.createElement("div");
+    document.body.appendChild(sheet);
+    const props = (cardEl() as unknown as Record<string, { onKeyDown?: (e: unknown) => void }>)[Object.keys(cardEl()).find((k) => k.startsWith("__reactProps"))!];
+    const stop = vi.fn();
+    act(() => props.onKeyDown?.({ key: "Escape", target: sheet, stopPropagation: stop }));
+    sheet.remove();
+    expect(stop).not.toHaveBeenCalled();
+    expect(removes()).toHaveLength(2);
+    // From inside the card it still ends editing.
+    fireEvent.keyDown(removes()[0], { key: "Escape" });
+    expect(removes()).toHaveLength(0);
+  });
+
+  it("holds Edit while a Leave or Delete is in flight", async () => {
+    let land!: (v: boolean) => void;
+    const onLeave = vi.fn(() => new Promise<boolean>((r) => { land = r; }));
+    render(<PodCard pod={pod()} shared={false} onRemove={vi.fn()} onAdd={vi.fn()} onShare={vi.fn()} onRename={vi.fn()} onLeave={onLeave} onDelete={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: P.menuAria("Thursday") }));
+    fireEvent.click(screen.getByRole("menuitem", { name: P.leave }));
+    const confirm = screen.getAllByRole("button").find((b) => b.textContent === P.leave && b.getAttribute("role") !== "menuitem");
+    await act(async () => { fireEvent.click(confirm!); });
+    expect(onLeave).toHaveBeenCalled();
+    expect((screen.getByRole("button", { name: P.edit }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => { land(false); });
+    expect((screen.getByRole("button", { name: P.edit }) as HTMLButtonElement).disabled).toBe(false);
+  });
 });

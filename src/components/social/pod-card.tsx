@@ -207,6 +207,25 @@ export function PodCard({
     onRemove(m);
   };
   const menuTrigger = useRef<HTMLButtonElement>(null);
+  const [menuBusy, setMenuBusy] = useState(false);
+  const busyWhile = async (write: () => Promise<boolean>) => {
+    setMenuBusy(true);
+    try {
+      return await write();
+    } finally {
+      setMenuBusy(false);
+    }
+  };
+  // Editing that ends on its own (the last other member left, seen on a redraw) takes the focused ✕ or Done with it:
+  // focus goes to the card's menu rather than the page.
+  const wasEditing = useRef(false);
+  useLayoutEffect(() => {
+    const ended = wasEditing.current && !editing;
+    wasEditing.current = editing;
+    if (!ended || focusNext.current) return;
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (lost) (editPress.current ?? menuTrigger.current)?.focus();
+  }, [editing]);
   // Leaving the field by its own controls hands focus back to the `…` it was opened from, which the field replaced.
   const refocus = useRef(false);
   useEffect(() => {
@@ -220,7 +239,9 @@ export function PodCard({
       data-testid="pod-card"
       data-editing={editing ? "" : undefined}
       onKeyDown={editing ? (e) => {
-        if (e.key !== "Escape") return;
+        // Only an Escape from the card itself: one from a sheet opened over the page bubbles here through its portal,
+        // and that sheet closes on it.
+        if (e.key !== "Escape" || !card.current?.contains(e.target as Node)) return;
         e.stopPropagation();
         stopEditing();
       } : undefined}
@@ -259,12 +280,14 @@ export function PodCard({
                   ref={editPress}
                   type="button"
                   onClick={startEditing}
-                  className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[10px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:min-h-[32px] md:text-[13px]"
+                  // A Leave or Delete in flight keeps the menu (and its pane) where it is until it lands.
+                  disabled={menuBusy}
+                  className="min-h-[44px] cursor-pointer disabled:cursor-default disabled:opacity-50 border-0 bg-transparent px-[10px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:min-h-[32px] md:text-[13px]"
                 >
                   {copy.edit}
                 </button>
               ) : null}
-              <PodMenu pod={pod} leaveHeld={leaveHeld} triggerRef={menuTrigger} onRename={() => setRenaming(true)} onLeave={onLeave} onDelete={onDelete} />
+              <PodMenu pod={pod} leaveHeld={leaveHeld} triggerRef={menuTrigger} onRename={() => setRenaming(true)} onLeave={() => busyWhile(onLeave)} onDelete={() => busyWhile(onDelete)} />
             </span>
           )}
         </div>
