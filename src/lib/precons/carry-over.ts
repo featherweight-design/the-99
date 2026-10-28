@@ -104,7 +104,12 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
       deckId, userId, fingerprint: list, contractVersion: src.contractVersion, model: src.model,
       modelCallId: null, preconFile: deck.precon!, status: "done", outcome: "survived", content: src.content,
       seenSeq,
+      // RULING 1 (d9): the deck's read is the precon's, so both rows carry the date its Overview was written,
+      // as the arrival's copy does (`stored-carry.ts`). The reading row is re-dated below, in this transaction.
+      createdAt: src.createdAt,
     }).returning({ id: deckSynopses.id });
+    await tx.update(deckProfiles).set({ computedAt: src.createdAt })
+      .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId), eq(deckProfiles.fingerprint, list), eq(deckProfiles.dirty, false)));
     if (v0) {
       await tx.insert(deckVersionSynopses)
         .select(tx.select({ versionId: sql<string>`${v0.id}::uuid`.as("version_id"), synopsisId: sql<string>`${written.id}::uuid`.as("synopsis_id") })

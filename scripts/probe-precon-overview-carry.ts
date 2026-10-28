@@ -88,6 +88,11 @@ async function main() {
     const [v0] = await db.select({ id: deckVersions.id }).from(deckVersions).where(eq(deckVersions.deckId, deckId));
     const [pin] = await db.select().from(deckVersionSynopses).where(eq(deckVersionSynopses.versionId, v0.id));
     check("v0 names the carried Overview", pin?.synopsisId === row.id, `pin ${pin?.synopsisId}`);
+    // Ruling 1, on the computing path too (the fallback, and every Precons I own start): both rows carry the
+    // date the precon's Overview was written.
+    const [srcRow] = await db.select({ createdAt: preconSynopses.createdAt }).from(preconSynopses).where(and(mine, eq(preconSynopses.preconFile, files[0])));
+    const [dated] = await db.select({ at: deckProfiles.computedAt }).from(deckProfiles).where(eq(deckProfiles.deckId, deckId));
+    check("the computing carry-over dates the reading and the Overview when the precon's Overview was written", dated?.at.getTime() === srcRow.createdAt.getTime() && row.createdAt.getTime() === srcRow.createdAt.getTime(), `reading ${dated?.at.toISOString()}, overview ${row.createdAt.toISOString()}, precon ${srcRow.createdAt.toISOString()}`);
 
     const again = await carryOverPreconOverview(deckId, USER, ON);
     const [readingAgain] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, deckId));
@@ -152,6 +157,8 @@ async function main() {
     const nc = await carryOverPreconOverview(second, USER, ON);
     const [ncReading] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, second));
     check("a precon whose row is not current: the reading, no Overview", !nc.attached && nc.reason === "not_current" && !!ncReading, `${JSON.stringify(nc)}, reading ${!!ncReading}`);
+    const [ncSrc] = await db.select({ createdAt: preconSynopses.createdAt }).from(preconSynopses).where(and(mine, eq(preconSynopses.preconFile, files[1])));
+    check("with no Overview attached the reading keeps its own date", !!ncReading && ncReading.computedAt.getTime() !== ncSrc.createdAt.getTime() && Date.now() - ncReading.computedAt.getTime() < 10 * 60_000, `reading ${ncReading?.computedAt.toISOString()}, precon ${ncSrc.createdAt.toISOString()}`);
 
     // An owner on the OTHER role basis: the reading is theirs, and the classifier's Overview is not attached.
     const labelsDeck = await start(files[0]);
