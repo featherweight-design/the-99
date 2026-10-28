@@ -37,6 +37,12 @@ const BRACKET_NAME = /\b(?:Exhibition|Upgraded|Optimized|cEDH)\b/;
  * the deck plays ("a second way to win", "hard to beat"), which predicts nothing.
  */
 const RESULT_CLAIM = /\b(?:will|would|should|could)\s+(?:win|lose|beat)\b|\b(?:win|wins|winning)\s+more\b|\blose\s+less\b|\bstronger\b/i;
+/**
+ * Suggested changes v2's narrowing on CUTS (Hugh, spec 2026-10-27 §6.2, Q9): on a cut, "stronger" nearly always compares
+ * cards ("frees the slot for a stronger draw spell"), so it passes, as does "more focused" (which RESULT_CLAIM never
+ * named). Every game-result prediction still fails.
+ */
+const RESULT_CLAIM_GAMES_ONLY = /\b(?:will|would|should|could)\s+(?:win|lose|beat)\b|\b(?:win|wins|winning)\s+more\b|\blose\s+less\b/i;
 
 /**
  * Something the player wrote that a suggestion may quote. A NOTE carries the date of its game,
@@ -79,6 +85,8 @@ type Range = { start: number; end: number };
 export function presentationFailures(
   text: string,
   quotable: readonly Quotable[],
+  /** `allowStronger`: the v2 cut narrowing above. Absent for every other caller, whose rule is unchanged. */
+  claims: { allowStronger?: boolean } = {},
 ): { broken: RuleKey[]; text: string } {
   const broken: RuleKey[] = [];
 
@@ -244,7 +252,7 @@ export function presentationFailures(
   if (hasUnmaskedMatch(repaired, BRACKET_WORD, fullyMasked) || hasUnmaskedMatch(repaired, BRACKET_NAME, fullyMasked)) {
     broken.push("noBracketClaim");
   }
-  if (hasUnmaskedMatch(repaired, RESULT_CLAIM, fullyMasked)) broken.push("noResultClaim");
+  if (hasUnmaskedMatch(repaired, claims.allowStronger ? RESULT_CLAIM_GAMES_ONLY : RESULT_CLAIM, fullyMasked)) broken.push("noResultClaim");
 
   // A counted noun must be preceded by `N of M`. `3 of 5 games` passes; `3 games` does not.
   // The numerator may be a word (`none of the 9 games`, `one of 11 cards`) and the denominator

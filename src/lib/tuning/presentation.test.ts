@@ -106,6 +106,18 @@ describe("presentationFailures", () => {
     expect(fails("You won 1 of 5 games.", [])).toEqual([]);
   });
 
+  // Suggested changes v2 on a cut (Hugh, spec 2026-10-27 §12 Q9): "stronger" and "more focused" pass; game results never.
+  it("lets a v2 cut say stronger or more focused, and still drops every game-result claim", () => {
+    const cut = (text: string) => presentationFailures(text, [], { allowStronger: true }).broken;
+    expect(cut("It frees the slot for a stronger draw spell.")).toEqual([]);
+    expect(cut("The deck gets more focused without it.")).toEqual([]);
+    for (const claim of ["This swap will win you games.", "You would lose less.", "Win more with it.", "It would beat combo."]) {
+      expect(cut(claim)).toContain("noResultClaim");
+    }
+    // Every other caller is unchanged: "stronger" still fails without the option.
+    expect(fails("It frees the slot for a stronger draw spell.", [])).toContain("noResultClaim");
+  });
+
   it("reads the player's own quoted words as theirs, not the model's claim", () => {
     const intent = [{ text: "I want to win late", date: null }];
     expect(fails("You said \u201cI want to win late\u201d.", intent)).toEqual([]);

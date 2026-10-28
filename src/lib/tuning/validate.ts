@@ -6,7 +6,7 @@ import { mentionsDate, noteDate } from "./note-date";
 import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from "./presentation";
 import { axisLabel } from "./prompt";
 import { escapeRegExp, quotesPlayerText } from "./quote-match";
-import type { TuningLine, TuningResponse } from "./response-schema";
+import type { TuningLine } from "./response-schema";
 
 /**
  * What the model is NOT trusted about. Pure and client-safe: the catalog lookup is injected as
@@ -73,7 +73,9 @@ export type Drop = {
   /** The line's place in ITS list as the model wrote it (before the two lists, in the one list). */
   position: number;
   rule: RuleKey | "cardExists" | "addNotLegal" | "duplicate" | "keyCard" | "universalStaple" | "neverCut"
-    | "commander" | "overCap" | "offSet" | "notOwned";
+    | "commander" | "overCap" | "offSet" | "notOwned"
+    // Suggested changes v2: a line that breaks the player's bracket choice (`v2/bracket-aim.ts`).
+    | "bracketAim";
   /** The card this drop is about, for a refusal sentence that names it — the model's own
    *  spelling (`s.cut`/`s.add`), not a resolved catalog name, since drops the model got wrong
    *  before a card ever resolved (`cardExists`) have none to give. */
@@ -128,6 +130,25 @@ export type RefusalDetail =
   | { reason: "nothingLeft" };
 
 /**
+ * Why a Suggested changes v2 list came back short of its target (spec 2026-10-27 §5.5): the restriction that bound it,
+ * from its drops, so the run can say "Found 14 additions under your $2 cap". The restriction with the most drops wins;
+ * a tie goes in the order the limits box lists them. Null when no restriction dropped anything on the list: then the
+ * shortfall is the model's (`charge.ts` refunds it), and the run states its count alone.
+ */
+export type ShortReason = "overCap" | "offSet" | "notOwned" | "bracketAim";
+
+export function shortReason(drops: readonly Pick<Drop, "rule">[]): ShortReason | null {
+  const order: ShortReason[] = ["overCap", "offSet", "notOwned", "bracketAim"];
+  let best: ShortReason | null = null;
+  let most = 0;
+  for (const rule of order) {
+    const n = drops.filter((d) => d.rule === rule).length;
+    if (n > most) { best = rule; most = n; }
+  }
+  return best;
+}
+
+/**
  * The refusal sentence's own selection (H35, PR 4a review-approved precedence): `commander` >
  * `locked`/`lockedMany` > `overCap` > `nothingLeft`. Pure, over the `drops` an empty-result run
  * already produced — the model never writes this sentence, the app does.
@@ -162,11 +183,16 @@ export function sizeLists(kept: readonly ValidatedSuggestion[], max: number): Va
 }
 
 export function validateSuggestions(args: {
-  response: TuningResponse;
+  /** A v10 reply, or a v2 reply's lists (either contract's lines). */
+  response: { additions: readonly TuningLine[]; cuts: readonly TuningLine[] };
   pack: EvidencePack;
   resolveName: (name: string) => ResolvedCard | null;
+  /** Suggested changes v2 (spec 2026-10-27): the run's words are cited as `request`, and a CUT's reason may say the deck
+   *  gets "stronger" (`noResultClaim` narrowed on cuts, §6.2). Absent for v10 and every other caller, unchanged. */
+  v2?: boolean;
 }): { kept: ValidatedSuggestion[]; droppedCount: number; drops: Drop[]; /** Ungroundable citations removed (`stripUngroundable`), each from a line that kept others. */ strippedCites: number } {
   const { response, pack, resolveName } = args;
+  const requestKind = args.v2 ? "request" : "notes";
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
   const keyCards = new Set((pack.strategy?.keyCards ?? []).map((k) => k.oracleId));
   const universal = new Set((pack.universal ?? []).map((u) => u.oracleId));
@@ -208,7 +234,7 @@ export function validateSuggestions(args: {
   const relabel = (line: TuningLine): TuningLine => {
     let changed = false;
     const evidence = line.evidence.map((c) => {
-      const other = c.kind === "intent" ? "notes" : c.kind === "notes" ? "intent" : null;
+      const other = c.kind === "intent" ? requestKind : c.kind === "notes" || c.kind === "request" ? "intent" : null;
       if (other === null || citationHolds(c, line) || !citationHolds({ ...c, kind: other }, line)) return c;
       changed = true;
       return { ...c, kind: other as typeof c.kind };
@@ -281,7 +307,7 @@ export function validateSuggestions(args: {
       // against what they wrote below. A role count is not that, and neither is a decklist
       // citation, which `citationHolds` cannot check and which would otherwise let a count-only cut
       // through by adding one.
-      if (universal.has(card.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent" || c.kind === "notes")) return { rule: "universalStaple" };
+      if (universal.has(card.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent" || c.kind === "notes" || c.kind === "request")) return { rule: "universalStaple" };
     } else {
       const rejection = validateCardForDeck(card, deck);
       if (rejection === "off-color-identity") return { rule: "colourIdentity" };
@@ -303,11 +329,12 @@ export function validateSuggestions(args: {
       if (ungroundable(c.kind, side) || !citationHolds(c, s)) return { rule: "citation", cite: { kind: c.kind } };
     }
 
-    const rationaleCheck = presentationFailures(s.rationale, quotable);
+    const claims = { allowStronger: args.v2 === true && side === "cut" };
+    const rationaleCheck = presentationFailures(s.rationale, quotable, claims);
     if (rationaleCheck.broken[0]) return { rule: rationaleCheck.broken[0] };
-    const shortCheck = presentationFailures(s.rationaleShort, quotable);
+    const shortCheck = presentationFailures(s.rationaleShort, quotable, claims);
     if (shortCheck.broken[0]) return { rule: shortCheck.broken[0] };
-    const evidenceChecks = s.evidence.map((c) => ({ c, check: presentationFailures(c.value, quotable) }));
+    const evidenceChecks = s.evidence.map((c) => ({ c, check: presentationFailures(c.value, quotable, claims) }));
     const failedEvidence = evidenceChecks.find((e) => e.check.broken[0]);
     if (failedEvidence) return { rule: failedEvidence.check.broken[0] };
 
@@ -398,7 +425,9 @@ export function validateSuggestions(args: {
         return citationQuotesPlayerText(pack.intent, c.value);
       // "Additional notes" (H35, PR 4b): the same whole-or-part rule as `intent`, against the
       // run's own notes text rather than the deck's standing description.
+      // Suggested changes v2 calls the run's words the REQUEST: the same text (`pack.notes`) under its v2 name.
       case "notes":
+      case "request":
         return citationQuotesPlayerText(pack.notes, c.value);
       // A focus citation names the deck's own focus, as the pack writes it, and states no figure: how far an addition moves
       // the focus is the app's chip (`strategyChips`), written after validation. Every deck's schema carries the kind; only

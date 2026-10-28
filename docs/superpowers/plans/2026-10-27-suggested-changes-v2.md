@@ -8,6 +8,41 @@ prototype (`scripts/eval/count-mechanism.mts`, #2291) and the citation fix (#228
 the incremental arrival, "taking a while"), with a READINESS verdict.** One PR at a time, each cut from fresh `main`, no
 stacking. Every PR is under ~20 files and ~800 lines; the estimates are below each.
 
+## Status (2026-10-28)
+
+- Plan approved by d9; P1 to P4 confirmed (P2's budget overrun path is for a pathology only).
+- Design's handoff merged: `design/design_handoff_the99_suggested_changes_v2/` (#2302, Hugh "This all LGTM", READINESS
+  Green), audited against the rebased tree. Its additions to the spec are folded in below as H1 to H6, approved by d9.
+- P5 approved by Hugh: `SUGGESTED_CHANGES_V2_ENABLED`, needs `TUNING_ENABLED`, staging on, production unset, removed once
+  v2 is everywhere; it enters the registry in the first PR that reads it (PR 5).
+- M1 approved by Hugh: 27 runs, a HARD $4 cap enforced in code, scratch branch only, Q9 from the same replies.
+- About (Hugh, "whichever lands first"): see PR 7.
+
+## What the handoff adds (H1 to H6, engineering calls approved by d9)
+
+- **H1. Line by line (G1).** The reply is parsed as it streams; each line is validated and saved as it completes, and a
+  list is "in" when its call ends. PR 2 builds the incremental parser and per-line validation; PR 3 the per-line saves,
+  the per-list "in" state and the live counts the wait draws ("11 to add and 4 to cut so far"), with a refill signal for
+  the 45-second note.
+- **H2. When the cuts start.** The cut call starts as soon as call 1 settles, alongside any additions refill: it asks
+  ceil(1.5N), "Coming in" is what call 1 kept (spec §5.1's table), and its target is min(N, additions finally kept).
+  Supersedes §5.1a's "ceil(1.5K)" sizing for the parallel case; a call 1 that kept nothing still skips the cut call.
+- **H3. The bracket choice is Keep (default), Down or Up** (README item 2, STATES). Keep drops any line that takes the
+  deck out of its bracket; Down keeps additions inside the target; Up flags additions that reach it. A drop for the
+  choice is the player's own restriction: charged, and named by the short-run sentence. A deck read as a range keeps
+  inside what it permits now. Supersedes the 2026-09-23 "shown, flagged, never dropped" rule for v2 runs only.
+- **H4. Picks are kept** across leaving mid-run, a return and an Undo: a `picked` flag per item (PR 1), written by a
+  cheap action (PR 4). Undo returns the set's item ids.
+- **H5. Type and role per line (G2)** come from the shipped grouping (`cardTypeGroup`) and the role counter
+  (`roleCounterFor`), read in PR 3's panel read with the deck's per-group counts. The chips (G3) use the handoff's
+  sources: worst role gap, focus, newest dated game note, second role gap (PR 5). The same-request check (G4) also
+  carries the bracket choice and returns the matching run's id and date (PR 3).
+- **H6. Build work the handoff draws as shipped but the code lacks:** `ModalChrome`'s min(640px, 100dvh − 96px) and 88%
+  sheet caps, the phone halves through `SegmentedSwitch`, the inert tile under 99 with its Top off / Proposed cuts link
+  (UI 5 and 6). Checking the bracket for up to ~60 lines per run (`withBracketAfter` builds one profile per line, sized
+  for 10) is measured and, if slow, made incremental in PR 3. Retired controls (Additional notes, Apply all, Reject,
+  Suggest again) leave in UI 5 and 6, with the About lines that quote them (copy-drift).
+
 ## Rulings this plan builds on
 
 From the spec, not re-opened: N from 1 to 20; ask ceil(1.5N) per list, one refill per short list (arm C); cuts made for the
@@ -47,7 +82,7 @@ Proposed cuts untouched.
   (not `failed`) because every reader draws items only from ok runs, and `persistRun` already settles an ok run as
   refunded. The report carries `cutsFailed` and its error class. Spec §9 already refunds this case. A v2 run the reaper
   finds pending with additions is settled the same way, not as `failed`.
-- **P5. NEEDS d9 (a new switch).** The UI replaces the panel's intake and results across three PRs while production must
+- **P5. APPROVED (Hugh, via d9): a new switch.** The UI replaces the panel's intake and results across three PRs while production must
   keep v10 until launch (spec §10), so it needs a switch: proposed `SUGGESTED_CHANGES_V2_ENABLED`, `kind: "model"`,
   `needs: "TUNING_ENABLED"`, staging on, production unset, out of All features until close-out. Off, the panel is v10 as
   shipped. The spec leaves a new switch to Hugh; your brief routes it through you, so I ask you and you take it to him if
@@ -57,22 +92,25 @@ Proposed cuts untouched.
 
 ### PR 1: data and the pure rules (no caller yet beyond tests; PR 2 is the first)
 
-- Migration `0181_suggestion_v2.sql`: on `deck_suggestion_runs`, `requested_count smallint null` (check 1 to 20),
-  `request_text text null` (check length at most 500), `bracket_target smallint null` (check 1 to 5); on
-  `deck_suggestion_items`, `apply_set uuid null` with an index on (`run_id`, `apply_set`). No backfill: a v10 run's count
+- Migration `0182_suggestion_v2.sql`: on `deck_suggestion_runs`, `requested_count smallint null` (check 1 to 20),
+  `request_text text null` (check length at most 500), `bracket_choice text null` (`keep`/`down`/`up`) with
+  `bracket_target smallint null` (1 to 5, both or neither); on `deck_suggestion_items`, `picked boolean` (H4) and
+  `apply_set uuid null` with a partial index on (`run_id`, `apply_set`). No backfill: a v10 run's count
   stays null (spec §10). The restrictions snapshot, `call_count`, per-list `refilled`, `cutsFailed` and the request hash go
   in `validation_report` jsonb. Items cascade from runs, and `PURGE_ORDER` lists the runs table.
 - `src/lib/tuning/v2/count.ts`, pure: `askFor(n)` = ceil(1.5n); `schemaCapFor(ask)` = 2 × ask; `cutAskFor(kept)`
   (ceil(1.5K); 0 skips call 2, spec §5.1a); `keepUpTo(lines, ask)`; `dropAcross(kept, refill)`.
 - `src/lib/tuning/v2/refill.ts`, pure: whether a list refills and the refill's reasons, each rejected card with its rule's
   own words (`suggestionRules`).
-- `src/lib/tuning/v2/charge.ts`, pure: spec §9's rule, table-driven over every row of §9's list, plus P4's case.
+- `src/lib/tuning/v2/charge.ts`, pure: spec §9's rule, table-driven over every row of §9's list, plus P4's case; the
+  bracket choice's drops count as a restriction (H3).
+- `src/lib/tuning/v2/bracket-aim.ts`, pure: H3's drop and flag rules over the shipped `bracketAfter` permits.
 - `src/lib/tuning/v2/request-hash.ts`, pure: a hash of N, the request and the bracket target. The deck's fingerprint
   (`tuningFingerprint`) is NOT changed: `stale` compares a run's fingerprint to one `tuningInputs` computes from the deck
   alone, so folding the request into it would make every v2 run read stale. "Same request as your last run" is the deck
   fingerprint AND this hash both matching.
-- `validate.ts`: `RefusalDetail` gains `offSet` and `notOwned`, and a v2 `shortReason` names the restriction that bound a
-  short list (spec §5.5); v10's `chooseRefusal` precedence unchanged, its tests prove it. The `request` citation kind at
+- `validate.ts`: a v2 `shortReason` names the restriction that bound a short list (spec §5.5: `overCap`, `offSet`,
+  `notOwned`, `bracketAim`), from the list's own drops; v10's `RefusalDetail` and `chooseRefusal` are unchanged. The `request` citation kind at
   every site `notes` has today: the intent/notes relabel repair (:211), the `universalStaple` exemption (:284), the quote
   check (:401).
 - `presentation.ts`: `noResultClaim` takes `{ narrowOnCuts }`. On a cut with it set, "stronger" and "more focused" pass;
@@ -145,7 +183,7 @@ After PR 2 merges, before PR 5 opens: `pnpm eval:tuning-v2` on the scratch branc
 each on three decks (27 runs, about $0.10 each at N=20). Per N: the count filled, cost per run, p50 and p90 latency per
 stage and in total, refills taken, cut drops by rule. **The Q9 check is in the same data:** every stored cut reply scored
 under today's `noResultClaim` and the narrowed one; the narrowing ships only if the drop falls and no game-result claim
-passes. **Proposed cap: $4**, hard, on the eval's own ledger. Results in `docs/superpowers/eval/tuning-v2/summary.md`,
+passes. **Cap: $4** (approved), hard, enforced in code on the eval's own ledger, scratch branch only. Results in `docs/superpowers/eval/tuning-v2/summary.md`,
 committed with the next PR. A figure that breaks an assumption (p90 near the budget, cost far above the prototype's) stops
 the line and goes to d9.
 
@@ -168,9 +206,12 @@ rather than grown.
 - **PR 6: running and results.** The wait and the incremental arrival (additions, then cuts) and the "taking a while"
   fallback, per the addendum; the two lists of about 1.5N; picking N from each; the equal-counts rule and the one apply;
   undo the set; a short run's count and the restriction that bound it; a refunded run; P4's run with no cuts; an open v10 run read-only once the switch is on (the cutover, spec §10).
-- **PR 7: history, About, close-out.** History rows (request, N, restrictions, bracket target, date, pool and picks; a
-  stale run read-only); the About entry rewritten for v2 and the `ABOUT_VERSION` bump (owed in this round, per AGENTS.md);
-  the feature's close-out walk and contact sheet. Then the switch question for production goes to Hugh.
+- **PR 7: history, About, close-out.** History rows (request, N, restrictions, bracket choice, date, pool and picks; a
+  stale run read-only); the feature's close-out walk and contact sheet. **About (Hugh, "whichever lands first"):** if the
+  visual About (#2299, plan `2026-10-27-about-visual.md`) has merged its page model, v2 adds its drawn card there with the
+  `ABOUT_VERSION` bump; if v2 lands first, PR 7 only removes the text entry's mentions of retired controls
+  (about-entries.ts, "Additional notes", "up to five"), with no bump, and the drawn card arrives with the About rebuild.
+  Coordinate with lane 58 through d9 before touching about-entries or about-pages. Then the production switch goes to Hugh.
 
 ## After launch (named, not built here)
 
