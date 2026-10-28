@@ -90,8 +90,8 @@ export const feedCopy = {
       /** With spare requests on, the press opens that card's spares sheet with Ask (signature card call 9). */
       tradeMatchAsk: (friend: string) => `Ask ${friend}`,
       combo: "See the combo",
-      /** An answer to the reader's own spare request: to Your requests on Friends. */
-      answer: "Your requests",
+      /** An answer to the reader's own spare request: opens that one request over Home (small items item 3). */
+      answer: "Your request",
     },
     /** The kicker of an answer to the reader's own spare request (spare requests handoff, board `Asker-States`). */
     answerKicker: "Your request",

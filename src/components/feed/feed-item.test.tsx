@@ -101,13 +101,14 @@ describe("FeedItemRow", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  it("draws an answer to the reader's own ask as Your request: who spares it, the buy line, a press to Your requests, no accent", () => {
+  it("draws an answer to the reader's own ask as Your request: who spares it, the buy line, a press to /friends off Home, no accent", () => {
     const colin = { publicId: "p3", displayName: "Colin" };
     list(<FeedItemRow item={view({ kind: "spare-request", friend: colin, answer: "yes", href: "/friends", answerDetail: { canBuy: true, others: [] } })} now={NOW} />);
     expect(screen.getByText("Your request").className).not.toContain("--accent-text");
     expect(screen.getByText("Colin can spare Sai, Master Thopterist")).toBeTruthy();
-    expect(screen.getByText("The handover is between you. Once it’s yours, press buy on it in Shopping.")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Your requests ›" }).getAttribute("href")).toBe("/friends");
+    expect(screen.getByText("The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.")).toBeTruthy();
+    // Outside What's new (no answer sheet to open) the press still goes to /friends, as it shipped.
+    expect(screen.getByRole("link", { name: "Your request ›" }).getAttribute("href")).toBe("/friends");
   });
 
   it("a No names who else has a spare, or nobody", () => {

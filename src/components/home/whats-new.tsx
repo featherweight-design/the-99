@@ -20,6 +20,7 @@ import type { FeedKind } from "../../lib/feed/kinds";
 import { FeedItemRow, type FeedFaces } from "../feed/feed-item";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { useFeedDismiss } from "../feed/dismiss";
+import { AnswerSheetProvider } from "./answer-sheet";
 import { HOME_HEADING_ID } from "./arrivals-banner";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -56,7 +57,9 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
   // The last row's ✕ lands on the section's own head while the section stays (Copilot round 4); Home's heading only when
   // it leaves (the lead alone left standing).
   const dismissed = useFeedDismiss(() => document.getElementById("home-whats-new") ?? document.getElementById(HOME_HEADING_ID));
-  const feed = withoutHidden(displaced, dismissed.hidden, heldLead?.gone ?? null);
+  // An answer opened over Home this visit (small items item 3) loses its diamond and its place in the count at once.
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set());
+  const feed = withoutOpened(withoutHidden(displaced, dismissed.hidden, heldLead?.gone ?? null), opened);
   const chosen = feed.chosen;
   const count = chosen && feed.unseen > 0 ? feed.unseen : 0;
   // The lead alone and nothing more: the head stands over no box, since the quiet line would contradict the lead.
@@ -81,14 +84,24 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
         ) : feed.items.length === 0 ? (
           <Quiet on={feed.on} />
         ) : (
-          <HoverPreviewProvider className="flex flex-col">
-            <Rows items={feed.items} now={now} faces={faces} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} />
-          </HoverPreviewProvider>
+          <AnswerSheetProvider now={now} onSeen={(key) => setOpened((prev) => new Set(prev).add(key))} onCleared={dismissed.dismiss}>
+            <HoverPreviewProvider className="flex flex-col">
+              <Rows items={feed.items} now={now} faces={faces} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} />
+            </HoverPreviewProvider>
+          </AnswerSheetProvider>
         )}
       </div>
       {dismissed.toast}
     </section>
   );
+}
+
+/** The feed with the answers opened over Home this visit drawn seen, and the unseen count less those that were unseen. */
+export function withoutOpened(feed: HomeFeed, opened: ReadonlySet<string>): HomeFeed {
+  if (!feed.chosen || opened.size === 0) return feed;
+  const seen = feed.items.filter((i) => i.unseen && opened.has(i.key)).length;
+  if (seen === 0) return feed;
+  return { ...feed, items: feed.items.map((i) => (opened.has(i.key) ? { ...i, unseen: false } : i)), unseen: feed.unseen - seen };
 }
 
 /**
