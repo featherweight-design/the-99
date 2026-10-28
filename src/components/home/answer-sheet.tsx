@@ -12,6 +12,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { closeSpareAction, openAnswerAction } from "../../app/friends/spare-actions";
+import { dialogsUp } from "../../lib/a11y/dialog";
+import { announceAnswerSeen } from "../shell/answer-seen";
 import { spareCopy } from "../../lib/copy/social";
 import type { FeedView } from "../../lib/feed/home";
 import type { YourRequest } from "../../lib/social/your-requests";
@@ -55,11 +57,13 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
     setPending(item.key);
     const out = await openAnswerAction(item.key).catch(() => null);
     setPending(null);
-    // The item was dismissed while the open was out: its press is gone, and so is the reader's interest in it.
-    if (!from.isConnected) return;
+    // The item was dismissed while the open was out (its press is gone), or the reader opened another sheet meanwhile:
+    // either way they moved on, so the late reply opens nothing and goes nowhere.
+    if (!from.isConnected || dialogsUp().length > 0) return;
     // Refused (cleared since, or the switch off) or failed: /friends, where the press went as it shipped.
     if (!out?.ok) return router.push("/friends");
     onSeen(item.key);
+    if (out.counted) announceAnswerSeen();
     setOpen({ item, request: out.request, from });
   }
   return (

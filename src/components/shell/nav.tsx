@@ -14,6 +14,7 @@ import { Lock } from "../ui/lock";
 import { PendingPip } from "./pending-pip";
 import { useRailTag } from "./rail-tag";
 import { useAboutSheetUp } from "./about-sheet-presence";
+import { onAnswerSeen } from "./answer-seen";
 import { usePendingPush } from "./pending-push";
 import { OfflinePill } from "../pwa/offline-pill";
 import { InstallSlot } from "../pwa/install-slot";
@@ -748,15 +749,18 @@ export type NavBadges = {
  * response). Friends': the board draws the badge ON /friends, so it stays through that first visit and clears once the
  * reader leaves, staying cleared on a later return (`markFriendsSeen`). Home's: dropped while the reader is on Home and
  * from then on (menu and Home handoff, call 8). Either starts over when the server sends a new count (any later render
- * of the layout, a new `badges` object), so news noticed after the visit still shows.
+ * of the layout, a new `badges` object), so news noticed after the visit still shows. An answer opened over Home
+ * (`announceAnswerSeen`) takes one off Friends' seen half at once, until that next count, which already leaves it out.
  */
 export function useSeenBadges(badges: NavBadges | undefined, pathname: string): NavBadges | undefined {
   // `friends`: `fresh`, not visited since this count arrived; `visiting`, on the first visit; `cleared`, left it for good.
-  const [seen, setSeen] = useState<{ from: NavBadges | undefined; friends: "fresh" | "visiting" | "cleared"; home: boolean }>({
-    from: badges, friends: "fresh", home: false,
+  // `opened`: answers opened over Home since this count arrived.
+  const [seen, setSeen] = useState<{ from: NavBadges | undefined; friends: "fresh" | "visiting" | "cleared"; home: boolean; opened: number }>({
+    from: badges, friends: "fresh", home: false, opened: 0,
   });
+  useEffect(() => onAnswerSeen(() => setSeen((s) => ({ ...s, opened: s.opened + 1 }))), []);
   let state = seen;
-  if (state.from !== badges) state = { from: badges, friends: "fresh", home: false };
+  if (state.from !== badges) state = { from: badges, friends: "fresh", home: false, opened: 0 };
   const onFriends = pathname === "/friends";
   if (state.friends === "fresh" && onFriends && (badges?.friends ?? 0) > 0) state = { ...state, friends: "visiting" };
   else if (state.friends === "visiting" && !onFriends) state = { ...state, friends: "cleared" };
@@ -765,8 +769,9 @@ export function useSeenBadges(badges: NavBadges | undefined, pathname: string): 
   // Adjusted during render (react.dev's pattern for state that follows a prop), never in an effect.
   if (state !== seen) setSeen(state);
   const dropHome = homeCounted && (pathname === "/" || state.home);
-  if (state.friends !== "cleared" && !dropHome) return badges;
-  return { ...badges, ...(state.friends === "cleared" ? { friends: 0 } : {}), ...(dropHome ? { home: 0 } : {}) };
+  const friends = state.friends === "cleared" ? 0 : Math.max(0, (badges?.friends ?? 0) - state.opened);
+  if (friends === (badges?.friends ?? 0) && !dropHome) return badges;
+  return { ...badges, ...(friends !== (badges?.friends ?? 0) ? { friends } : {}), ...(dropHome ? { home: 0 } : {}) };
 }
 
 function slotBadge(badges: NavBadges | undefined, href: NavHref): number {

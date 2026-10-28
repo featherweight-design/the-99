@@ -108,13 +108,14 @@ describe("openAnswerAction (small items item 3)", () => {
     expect(m.revalidatePath.mock.calls).toEqual([["/friends"]]);
     // After the response, so Home (where it was pressed) is not redrawn with the visit's moved cursor.
     expect(m.after).toHaveBeenCalledTimes(1);
-    expect(out).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "yes" } });
+    // The Friends badge counted it (unseen by its cursor too), so the shell drops it by one.
+    expect(out).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "yes" }, counted: true });
   });
 
   it("marks an answer the Friends cursor already covers (Home reads its own), revalidating only on a write", async () => {
     m.loadAnsweredRequest.mockResolvedValueOnce({ id: REQ, unseen: false, state: "no" });
     m.markAnswerSeen.mockResolvedValueOnce(false);
-    expect(await openAnswerAction(KEY)).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "no" } });
+    expect(await openAnswerAction(KEY)).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "no" }, counted: false });
     expect(m.markAnswerSeen).toHaveBeenCalledWith("user_1", REQ, ENV, expect.any(Date));
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });

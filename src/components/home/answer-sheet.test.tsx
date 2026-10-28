@@ -16,6 +16,8 @@ vi.mock("../cards/card-detail-provider", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: m.push }), usePathname: () => "/" }));
 
 import { WhatsNew } from "./whats-new";
+import * as seen from "../shell/answer-seen";
+import * as dialogs from "../../lib/a11y/dialog";
 import { feedCopy } from "../../lib/copy/feed";
 import { spareCopy } from "../../lib/copy/social";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
@@ -43,7 +45,7 @@ const press = () => screen.getAllByRole("button", { name: `${feedCopy.home.press
 
 beforeEach(() => {
   vi.resetAllMocks();
-  m.open.mockResolvedValue({ ok: true, request: request() });
+  m.open.mockResolvedValue({ ok: true, request: request(), counted: true });
   m.close.mockResolvedValue({ ok: true, closed: "cleared" });
   m.dismiss.mockResolvedValue({ ok: true });
 });
@@ -134,5 +136,29 @@ describe("the answer sheet's edges", () => {
     await act(async () => { reply({ ok: true, request: request() }); });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(m.push).not.toHaveBeenCalled();
+  });
+
+  it("announces the answer to the Friends badge only when the badge counted it", async () => {
+    const spy = vi.spyOn(seen, "announceAnswerSeen");
+    render(<WhatsNew feed={feed([answer(A)])} now={NOW} />);
+    await act(async () => { fireEvent.click(press()); });
+    expect(spy).toHaveBeenCalledTimes(1);
+    cleanup();
+    spy.mockClear();
+    m.open.mockResolvedValue({ ok: true, request: request(), counted: false });
+    render(<WhatsNew feed={feed([answer(A)])} now={NOW} />);
+    await act(async () => { fireEvent.click(press()); });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it("an open that returns while another sheet is up opens nothing and goes nowhere", async () => {
+    const up = vi.spyOn(dialogs, "dialogsUp").mockReturnValue([document.body]);
+    render(<WhatsNew feed={feed([answer(A)])} now={NOW} />);
+    await act(async () => { fireEvent.click(press()); });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(m.push).not.toHaveBeenCalled();
+    up.mockRestore();
   });
 });

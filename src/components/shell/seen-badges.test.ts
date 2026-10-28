@@ -1,12 +1,13 @@
 // The Friends badge after a /friends visit (menu and Home PR 7b): the shell is in the root layout, which a client
 // navigation does not render again, so the bar itself clears the count it drew once the reader has been to /friends and
 // left. The board draws the badge ON /friends, so it holds there; a new count from the server starts over.
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/", useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
 import { useSeenBadges, type NavBadges } from "./nav";
+import { announceAnswerSeen } from "./answer-seen";
 
 const hook = (badges: NavBadges, pathname: string) =>
   renderHook((p: { badges: NavBadges; pathname: string }) => useSeenBadges(p.badges, p.pathname), { initialProps: { badges, pathname } });
@@ -62,5 +63,18 @@ describe("useSeenBadges", () => {
     const next = { home: 2 };
     rerender({ badges: next, pathname: "/decks" });
     expect(result.current).toEqual({ home: 2 });
+  });
+
+  it("drops Friends' seen half by each answer opened over Home, until the server sends a new count", () => {
+    const badges = { friends: 2, friendsWaiting: 1 };
+    const { result, rerender } = hook(badges, "/");
+    act(() => announceAnswerSeen());
+    expect(result.current?.friends).toBe(1);
+    expect(result.current?.friendsWaiting).toBe(1);
+    act(() => { announceAnswerSeen(); announceAnswerSeen(); });
+    expect(result.current?.friends).toBe(0);
+    const next = { friends: 1 };
+    rerender({ badges: next, pathname: "/" });
+    expect(result.current?.friends).toBe(1);
   });
 });

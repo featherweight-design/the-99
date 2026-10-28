@@ -75,7 +75,8 @@ export async function answerSpareAction(requestId: string, answer: "yes" | "no")
   return out;
 }
 
-export type OpenAnswerOutcome = { ok: true; request: YourRequest } | { ok: false };
+/** `counted`: the Friends badge counted this answer until now (unseen by its cursor too), so the shell drops it by one. */
+export type OpenAnswerOutcome = { ok: true; request: YourRequest; counted: boolean } | { ok: false };
 
 /**
  * An answer item on Home, opened over Home (small items item 3, board `Spare-Answer-Sheet`): the one Your requests row
@@ -92,5 +93,5 @@ export async function openAnswerAction(key: string): Promise<OpenAnswerOutcome> 
   // the response: revalidating inside the action would redraw the page it was pressed on (Home), whose visit has already
   // moved its own cursor, and every diamond there would go at once.
   if (await markAnswerSeen(userId, request.id, env, now)) after(() => revalidatePath("/friends"));
-  return { ok: true, request: { ...request, unseen: false } };
+  return { ok: true, request: { ...request, unseen: false }, counted: request.unseen };
 }
