@@ -18,12 +18,11 @@ import { visibleSections } from "../../../lib/about/pages-visible";
 import { screenModel } from "../../../lib/about/pins";
 import { shotFor, toolShotId, type Shot } from "../../../lib/about/shots";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../../lib/copy/about-pages";
-import { landingFor, pageTools, type PageCard, type PageToolCard } from "../../../lib/discovery/page-tools";
+import { LIT_PARAM, landingFor, pageTools, type PageCard, type PageToolCard } from "../../../lib/discovery/page-tools";
 import { loadCardInput } from "../../../lib/discovery/showcase-input";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { resolveTheme } from "../../../lib/theme/server";
 import { AreaPage } from "../../../components/about/pages/area-page";
-import { LIT_PARAM } from "../../../components/discovery/label-landing";
 
 const isArea = (v: string): v is AboutArea => (ABOUT_AREA_IDS as readonly string[]).includes(v);
 

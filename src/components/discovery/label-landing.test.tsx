@@ -19,6 +19,8 @@ vi.mock("next/link", () => ({
   ),
 }));
 vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
+const scroll = vi.hoisted(() => ({ reveal: vi.fn(() => () => {}) }));
+vi.mock("../../lib/ui/reveal", () => scroll);
 
 const LIT = "decks/analysis/cuts";
 const model = (src: string): ScreenModel => ({
@@ -96,6 +98,22 @@ describe("LabelLanding", () => {
     expect(container.querySelector("[data-tool-card][data-lit]")).toBeNull();
   });
 
+  it("lands again on a second Show me to the same label after the reader turned it off", () => {
+    const landing: Landing = { key: LIT, isNew: false, card: CARDS[1] };
+    const tree = (request: string) => (
+      <LabelLanding landing={landing} request={request}>
+        <LabelledScreen phone={model("/p.webp")} desktop={model("/d.webp")} />
+      </LabelLanding>
+    );
+    const { container, rerender } = render(tree("r1"));
+    const line = () => width(container, "phone").querySelector(`[data-about-label='${LIT}'] button[aria-pressed]`)!;
+    fireEvent.click(line());
+    expect(line().getAttribute("aria-pressed")).toBe("false");
+    // Next keeps this state across a search-param change; only the request token is new.
+    rerender(tree("r2"));
+    expect(line().getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("lights nothing without a landing, and a press still lights a label", () => {
     const { container } = draw(null, null);
     const line = () => width(container, "phone").querySelector(`[data-about-label='${LIT}'] button`)!;
@@ -112,6 +130,18 @@ describe("LabelLanding", () => {
     expect(url.searchParams.has("lit")).toBe(false);
     expect(url.searchParams.get("x")).toBe("1");
     expect(url.hash).toBe("#analysis");
+  });
+
+  it("brings the address's section into view after the strip, and does nothing with no landing request", () => {
+    const section = document.createElement("section");
+    section.id = "analysis";
+    document.body.appendChild(section);
+    draw({ key: LIT, isNew: false, card: CARDS[1] });
+    expect(scroll.reveal).toHaveBeenCalledWith(section, "start");
+    scroll.reveal.mockClear();
+    draw(null, null);
+    expect(scroll.reveal).not.toHaveBeenCalled();
+    section.remove();
   });
 
   it("strips a `lit` the page could not land on, and writes nothing when the address has none", () => {

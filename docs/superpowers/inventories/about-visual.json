@@ -1,6 +1,6 @@
 {
-  "feature": "About visual PR 3 and PR 4: /about/[area], the strip, On this page, the labelled screen and Good to know",
-  "note": "Dark route: nothing links here until PR 6a, so every row is a goto. Reads only; no clearAbout (the database is read-only for this walk). The decks rows press the Lock cards label (needs NEVER_CUT_ENABLED on for the account) and photograph its lit region, pin and line. PR 4 rows scroll each section that carries rules to its Good to know block ([data-good-to-know=<section id>]): phone draws a swipe row (dots only with two or more cards), desktop a grid of three. The friends row scrolls to the bottom: every Friends rule follows a Friends switch that is off for the reader, so no Good to know heading should be drawn there.",
+  "feature": "About visual PR 3 to PR 5: /about/[area], the strip, On this page, the labelled screen, Good to know and Try it",
+  "note": "Dark route: nothing links here until PR 6a, so every row is a goto. Reads only; no clearAbout (the database is read-only for this walk). The decks rows press the Lock cards label (needs NEVER_CUT_ENABLED on for the account) and photograph its lit region, pin and line. PR 4 rows scroll each section that carries rules to its Good to know block ([data-good-to-know=<section id>]): phone draws a swipe row (dots only with two or more cards), desktop a grid of three. The friends row scrolls to the bottom: every Friends rule follows a Friends switch that is off for the reader, so no Good to know heading should be drawn there. PR 5 rows: Try it under the Analysis section (phone draws one card and N more below, which the second row presses; desktop a row of three), and a Show me landing on Proposed cuts (lit label; New tag and card only when the audit account has not been told about it, so either state is a pass if it matches the seen state).",
   "rows": [
     {
       "id": "about-home",
@@ -240,6 +240,91 @@
         },
         {
           "scroll": "bottom"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-tryit-decks-analysis",
+      "label": "/about/decks#analysis: Try it",
+      "view": "src/components/about/pages/try-it.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-try-it='analysis']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-tryit-more-phone",
+      "label": "/about/decks#analysis: Try it, N more below pressed (phone)",
+      "view": "src/components/about/pages/try-it.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "click": "[data-try-it='analysis'] [data-try-it-more]",
+          "settle": 400
+        },
+        {
+          "scrollTo": "[data-try-it='analysis']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-landing-cuts-phone",
+      "label": "/about/decks?lit=decks/analysis/cuts: Show me landing (phone)",
+      "view": "src/components/discovery/label-landing.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis",
+          "wait": "[data-about-width='phone'] [data-about-halo='decks/analysis/cuts']",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-about-width='phone'] [data-about-label='decks/analysis/cuts']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-landing-cuts-desktop",
+      "label": "/about/decks?lit=decks/analysis/cuts: Show me landing (desktop)",
+      "view": "src/components/discovery/label-landing.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis",
+          "wait": "[data-about-width='desktop'] [data-about-halo='decks/analysis/cuts']",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-about-width='desktop'] [data-about-label='decks/analysis/cuts']"
         },
         {
           "settle": 400

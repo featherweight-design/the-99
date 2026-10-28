@@ -7,7 +7,7 @@
 // not fetch a lazy image that is `display: none`, so a phone reader never downloads a desktop capture or the reverse.
 //
 // Phone: each capture full width with its labels under it. Desktop: each capture 700 wide with its labels beside it.
-// Pressing a label (or its pin) lights its region with the tool cards' halo (`TOOL_CARD_HALO`), its pin and its line.
+// Pressing a label (or its pin) lights its region with `REGION_HALO` (the Ways-In board's ring and 0.34 dim), its pin and its line.
 // While a capture loads its frame holds the capture's size with a quiet skeleton and no pins; the labels read without it.
 
 "use client";
@@ -15,8 +15,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { PageWidth } from "../../../lib/about/page-shots";
 import { pinsAt, type ScreenLabel, type ScreenModel, type ScreenShot } from "../../../lib/about/pins";
-import { TOOL_CARD_HALO } from "../tools/tool-card";
-import { LandingCard, LandingShowMe, NewTag, useLabelLanding } from "../../discovery/label-landing";
+import { LandingCard, LandingShowMe, NewTag, useLabelLanding, useLandingRequest } from "../../discovery/label-landing";
+
+// The Ways-In board dims the screen around a lit region at 0.34; the Tools tab card keeps its own halo.
+const REGION_HALO =
+  "0 0 0 2px color-mix(in oklab, var(--accent) 75%, transparent), 0 0 0 6px color-mix(in oklab, var(--accent) 20%, transparent), 0 0 0 2000px color-mix(in oklab, var(--bg) 34%, transparent)";
 
 const PIN_SHADOW = "0 0 0 2px var(--bg), 0 3px 10px rgb(0 0 0 / 0.55)";
 const PIN_SHADOW_LIT =
@@ -109,7 +112,7 @@ function Picture({
             top: `${litPin.box[1] * 100}%`,
             width: `${litPin.box[2] * 100}%`,
             height: `${litPin.box[3] * 100}%`,
-            boxShadow: TOOL_CARD_HALO,
+            boxShadow: REGION_HALO,
           }}
         />
       )}
@@ -191,13 +194,16 @@ function LabelList({
 
 function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
   // A Show me landing lights its label through this same state, as a press would (`label-landing.tsx`). A later
-  // landing on this page (another Show me while it is open) lights its own label, adjusted during render.
+  // landing on this page (another Show me while it is open, the same label's included) lights its label, adjusted
+  // during render. Keyed on the landing's request token, not its label: Next keeps this state across a search-param
+  // change, so a second Show me to a label the reader has since turned off would otherwise leave it dark.
   const landing = useLabelLanding();
+  const request = useLandingRequest();
   const landed = landing !== null && model.labels.some((l) => l.key === landing.key) ? landing.key : null;
   const [lit, setLit] = useState<string | null>(landed);
-  const [from, setFrom] = useState<string | null>(landed);
-  if (landed !== from) {
-    setFrom(landed);
+  const [from, setFrom] = useState<string | null>(request);
+  if (request !== from) {
+    setFrom(request);
     if (landed !== null) setLit(landed);
   }
   const press = (key: string) => setLit((cur) => (cur === key ? null : key));

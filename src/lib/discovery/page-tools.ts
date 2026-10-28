@@ -17,13 +17,17 @@ import { TOOLS, type Tool } from "./tools";
 /** A tool card on an About page: the shipped card's model, the label its Show me lights, and that landing's address. */
 export type PageToolCard = ToolCardModel & { label: string; showMe: string };
 
+/** The one-time parameter Show me writes. Here, not in the client landing module: a server page importing a constant
+ * from a "use client" module gets a client reference, never the string. */
+export const LIT_PARAM = "lit";
+
 /**
  * Show me's address: the label's page, lit, scrolled to its section. `labelKey` is `<area>/<section>/<label>`
  * (`labelKey`, `pages-visible.ts`).
  */
 export function showMeHref(labelKey: string): string {
   const [area, section] = labelKey.split("/");
-  return `/about/${area}?${new URLSearchParams({ lit: labelKey }).toString()}#${section}`;
+  return `/about/${area}?${new URLSearchParams({ [LIT_PARAM]: labelKey }).toString()}#${section}`;
 }
 
 /** The section a label key belongs to, as `<area>/<section>`. */

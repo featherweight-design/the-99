@@ -17,22 +17,25 @@
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { ABOUT_PAGE_STRINGS } from "../../lib/copy/about-pages";
 import type { PageWidth } from "../../lib/about/page-shots";
-import type { Landing, PageCard, PageToolCard } from "../../lib/discovery/page-tools";
+import { LIT_PARAM, type Landing, type PageCard, type PageToolCard } from "../../lib/discovery/page-tools";
 import { reveal } from "../../lib/ui/reveal";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { ToolCard, type ToolCardLink } from "../about/tools/tool-card";
 import { TOUCH_HIT } from "../ui/touch-hit";
 
-/** The one-time parameter Show me writes. */
-export const LIT_PARAM = "lit";
 
 export type { Landing, PageCard };
 
-const LandingContext = createContext<Landing | null>(null);
+const LandingContext = createContext<{ landing: Landing | null; request: string | null }>({ landing: null, request: null });
 
 /** The landing this page is drawing, or null. */
 export function useLabelLanding(): Landing | null {
-  return useContext(LandingContext);
+  return useContext(LandingContext).landing;
+}
+
+/** This render's landing token: a new one for every Show me, the same label's included, so each one lands again. */
+export function useLandingRequest(): string | null {
+  return useContext(LandingContext).request;
 }
 
 /** Where a landing's Show me scrolls to: the card under the label (phone) or the lit card in Try it (desktop). */
@@ -58,9 +61,14 @@ export function LabelLanding({
   children: ReactNode;
 }) {
   useEffect(() => {
-    if (request !== null) stripLit();
+    if (request === null) return;
+    stripLit();
+    // The strip loses the browser's own jump to the section (measured at 390: the page stayed at the top), so the
+    // landing brings its section into view itself, through `reveal` so the app's scroll marks read it as the app's.
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (id) reveal(document.getElementById(id), "start");
   }, [request]);
-  return <LandingContext.Provider value={landing}>{children}</LandingContext.Provider>;
+  return <LandingContext.Provider value={{ landing, request }}>{children}</LandingContext.Provider>;
 }
 
 /** The New tag after a landed label's words, for a label the reader has not been told about (Ways-In `.newtag`). */
