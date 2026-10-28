@@ -14,9 +14,10 @@ import { createHash } from "node:crypto";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles } from "../../db/schema";
+import { cards, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 // `SEAT_LABEL_MAX` is `OPPONENT_LABEL_MAX`: that module is read only by the game log's own (game-opponents.test.ts).
 import { SEAT_LABEL_MAX } from "../decks/game-seats";
+import { ruledSeatOwnersOf, seatDeckVisible } from "./rule-zero";
 import { cleanName, isUuid } from "./rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -53,7 +54,7 @@ const commanderOf = alias(cards, "seat_commander");
  * One statement, as `seatTargetQuery` is, so a reseat cannot commit between the grant and the seats. Apart so a test
  * can render its SQL. Server-only: it carries the account ids the seating hashes and the deck ids a save resolves.
  */
-export function tableSeatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select"> = db) {
+export function tableSeatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select"> = db, ruledOwners: readonly string[] = []) {
   return q
     .select({
       seat: ruleZeroSeats.seat,
@@ -77,8 +78,10 @@ export function tableSeatsQuery(viewerId: string, tableId: string, q: Pick<typeo
     .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
     .innerJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroSeats.userId))
     .leftJoin(viewerFriend, and(eq(viewerFriend.userId, viewerId), eq(viewerFriend.friendUserId, ruleZeroSeats.userId)))
-    // The seat's deck only while it is the seat player's own, as the table read draws it.
-    .leftJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId)))
+    // The seat's deck only while it is the seat player's own and their deck rules let friends see it, as the table
+    // read draws it (`seatDeckVisible`): a deck hidden since the pick prefills and logs as no deck.
+    .leftJoin(userPrefs, eq(userPrefs.userId, ruleZeroSeats.userId))
+    .leftJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId), seatDeckVisible(viewerId, ruledOwners)))
     .leftJoin(commanderOf, eq(commanderOf.oracleId, decks.commanderOracleId))
     .where(and(eq(ruleZeroSeats.tableId, tableId), sql`${ruleZeroTables.expiresAt} > now()`))
     .orderBy(asc(ruleZeroSeats.seat));
@@ -128,7 +131,7 @@ export function prefillFrom(rows: readonly TableSeatRow[], viewerId: string, tab
  */
 export async function tablePrefill(viewerId: string, tableId: unknown, deckId: string): Promise<TablePrefill | null> {
   if (!isUuid(tableId) || !isUuid(deckId)) return null;
-  return prefillFrom(await tableSeatsQuery(viewerId, tableId), viewerId, tableId, deckId);
+  return prefillFrom(await tableSeatsQuery(viewerId, tableId, db, await ruledSeatOwnersOf(viewerId, tableId, db)), viewerId, tableId, deckId);
 }
 
 /** What a table seat becomes: a friend ask `resolveFriendSeatsIn` resolves, or anyone by the deck's commanders. */
@@ -183,5 +186,5 @@ export async function resolveTableSeatsIn(
   seats: readonly number[],
 ): Promise<TableSeatResolution[] | null> {
   if (!isUuid(table.id)) return null;
-  return resolveSeatsFrom(await tableSeatsQuery(viewerId, table.id, tx), viewerId, table, seats);
+  return resolveSeatsFrom(await tableSeatsQuery(viewerId, table.id, tx, await ruledSeatOwnersOf(viewerId, table.id, tx)), viewerId, table, seats);
 }

@@ -11,7 +11,7 @@
  * when the two are friends), the deck's name and commanders, its reading reduced to what the table draws, its card
  * count and its state. No other player's deck id (decision 5): a seat is addressed by its number.
  */
-import { and, asc, eq, notInArray, or, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, deckGames, deckProfiles, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
@@ -26,8 +26,7 @@ import {
   type Drivers, type ReadSeat, type SeatState, type SeatValue, type TableRead,
 } from "../rule-zero/rules";
 import { resolveSwitchEnv } from "../switches/snapshot";
-import { pickerSeesDeck } from "./games";
-import { ruledOwnersOf, SEATS_MAX } from "./rule-zero";
+import { ruledSeatOwnersOf, SEATS_MAX, seatDeckVisible } from "./rule-zero";
 import { isUuid } from "./rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -122,10 +121,9 @@ const commanderOf = alias(cards, "seat_commander");
 const partnerOf = alias(cards, "seat_partner");
 
 /** The table's seats whose players are still in its pod, in seat order. Read only after the grant. */
-function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select">, ruledOwners: readonly string[] = []) {
-  // Another player's deck is drawn only while their deck rules let friends see it (the setup list's rule, under the
-  // OWNER's switch), so a deck hidden after it was seated reads as no deck. The viewer's own deck is always theirs.
-  const visible = ruledOwners.length === 0 ? undefined : or(eq(decks.userId, viewerId), notInArray(decks.userId, [...ruledOwners]), pickerSeesDeck);
+export function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select">, ruledOwners: readonly string[] = []) {
+  // Another player's deck is drawn only while their deck rules let friends see it, under the OWNER's switch.
+  const visible = seatDeckVisible(viewerId, ruledOwners);
   return q
     .select({
       seat: ruleZeroSeats.seat,
@@ -146,9 +144,10 @@ function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "selec
     .innerJoin(podMembers, and(eq(podMembers.podId, ruleZeroTables.podId), eq(podMembers.userId, ruleZeroSeats.userId)))
     .innerJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroSeats.userId))
     .leftJoin(viewerFriend, and(eq(viewerFriend.userId, viewerId), eq(viewerFriend.friendUserId, ruleZeroSeats.userId)))
+    // The seat player's deck rules, joined ahead of the deck that reads them (the seat's player is the deck's owner).
+    .leftJoin(userPrefs, eq(userPrefs.userId, ruleZeroSeats.userId))
     // The seat's deck only while it is the seat player's own: `setSeatDeck` and setup write nothing else.
     .leftJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId), visible))
-    .leftJoin(userPrefs, eq(userPrefs.userId, decks.userId))
     .leftJoin(commanderOf, eq(commanderOf.oracleId, decks.commanderOracleId))
     .leftJoin(partnerOf, eq(partnerOf.oracleId, decks.partnerOracleId))
     .where(eq(ruleZeroSeats.tableId, tableId))
@@ -157,9 +156,7 @@ function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "selec
 
 /** The seats, with each owner's `FRIEND_DECKS_ENABLED` decided first (the seats' players are read ahead of it). */
 async function readSeats(viewerId: string, tableId: string, q: Tx) {
-  const players = await q.select({ userId: ruleZeroSeats.userId }).from(ruleZeroSeats).where(eq(ruleZeroSeats.tableId, tableId));
-  const ruled = await ruledOwnersOf(players.map((p) => p.userId).filter((u) => u !== viewerId));
-  return seatsQuery(viewerId, tableId, q, ruled);
+  return seatsQuery(viewerId, tableId, q, await ruledSeatOwnersOf(viewerId, tableId, q));
 }
 
 type Verdict = ReturnType<typeof slotDeck>;

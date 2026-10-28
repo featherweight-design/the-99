@@ -146,6 +146,19 @@ async function main() {
     await vis.writeFriendDeckPrefs(F, { seeDecks: false, seeUnfinished: true });
     check("rule 0 table: sharing off since the pick, it reads as no deck", (await friendSeat()) === null, String(await friendSeat()));
     await vis.writeFriendDeckPrefs(F, { seeDecks: true, seeUnfinished: true });
+
+    // The game log's prefill from that table (the viewer's own seat holds the page's deck) follows the same rule.
+    const lg = await import("../src/lib/social/rule-zero-log");
+    const { rows: [myDeck] } = await db.execute<{ id: string }>(sql`select id from decks where user_id = ${V} and name = 'Probe Mine'`);
+    await db.execute(sql`update rule_zero_seats set deck_id = ${myDeck.id} where table_id = ${tableId} and user_id = ${V}`);
+    const prefillSeat = async () => {
+      const p = await lg.tablePrefill(V, tableId, myDeck.id);
+      return p === null ? "no prefill" : (p.seats.find((s) => s.name === "Finn")?.deckName ?? null);
+    };
+    check("rule 0 log prefill: the seated friend's shown deck is prefilled", (await prefillSeat()) === "Probe Shown", String(await prefillSeat()));
+    await vis.setDeckHiddenFromFriends(F, shown, true);
+    check("rule 0 log prefill: hidden since the pick, it prefills as no deck", (await prefillSeat()) === null, String(await prefillSeat()));
+    await vis.setDeckHiddenFromFriends(F, shown, false);
   } finally {
     const who = sql`(${V}, ${F}, ${S})`;
     await db.execute(sql`delete from pods where owner_user_id in ${who}`);

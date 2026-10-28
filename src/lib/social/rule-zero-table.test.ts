@@ -3,10 +3,31 @@
 import { describe, expect, it, vi } from "vitest";
 import { db } from "../../db";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { ON_THE_SPOT_MAX, loadTable, ownDecksQuery, readOnTheSpot, seatTargetQuery, tableGrantQuery } from "./rule-zero-table";
+import { ON_THE_SPOT_MAX, loadTable, ownDecksQuery, readOnTheSpot, seatTargetQuery, seatsQuery, tableGrantQuery } from "./rule-zero-table";
 
 const VIEWER = "user_viewer";
 const TABLE = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+
+describe("seatsQuery", () => {
+  const ruled = seatsQuery(VIEWER, TABLE, db, ["user_friend"]).toSQL();
+
+  it("draws a ruled friend's seated deck only while their rules let friends see it, never filtering the viewer's own", () => {
+    expect(ruled.sql).toContain('("decks"."user_id" = $');
+    expect(ruled.sql).toContain('"decks"."user_id" not in ($');
+    expect(ruled.sql).toContain('not "decks"."hidden_from_friends" and coalesce("user_prefs"."friends_see_decks", true)');
+    expect(ruled.params).toContain("user_friend");
+  });
+
+  it("joins the seat player's prefs ahead of the deck join that reads them", () => {
+    const prefs = ruled.sql.indexOf('left join "user_prefs" on "user_prefs"."user_id" = "rule_zero_seats"."user_id"');
+    expect(prefs).toBeGreaterThan(-1);
+    expect(prefs).toBeLessThan(ruled.sql.indexOf('left join "decks"'));
+  });
+
+  it("with no owner's switch on, draws every seated deck as shipped", () => {
+    expect(seatsQuery(VIEWER, TABLE, db).toSQL().sql).not.toContain("hidden_from_friends");
+  });
+});
 
 describe("tableGrantQuery", () => {
   const q = tableGrantQuery(VIEWER, TABLE).toSQL();

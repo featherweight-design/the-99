@@ -14,7 +14,7 @@
  * Nothing returned carries a Clerk id or another player's deck id (decision 5). Setup addresses every pod member by
  * `publicId`, the client-safe id, because it seats them; a player's face here is a display name and a commander.
  */
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
@@ -65,6 +65,21 @@ async function isMemberIn(tx: Tx, podId: string, userId: string): Promise<boolea
 export async function ruledOwnersOf(userIds: readonly string[]): Promise<string[]> {
   const on = await Promise.all([...new Set(userIds)].map(async (u) => ((friendDecksEnabled(await resolveSwitchEnv(u))) ? u : null)));
   return on.filter((u): u is string => u !== null);
+}
+
+/** A table's seated players other than the viewer whose deck rules apply (`ruledOwnersOf`). */
+export async function ruledSeatOwnersOf(viewerId: string, tableId: string, q: Pick<typeof db, "select">): Promise<string[]> {
+  const players = await q.select({ userId: ruleZeroSeats.userId }).from(ruleZeroSeats).where(eq(ruleZeroSeats.tableId, tableId));
+  return ruledOwnersOf(players.map((p) => p.userId).filter((u) => u !== viewerId));
+}
+
+/**
+ * The join condition that draws a seated deck only while its owner's rules let friends see it (the setup list's rule),
+ * so a deck hidden after it was seated reads as no deck. The viewer's own deck is always theirs. Needs `user_prefs`
+ * joined on the seat's player AHEAD of the deck join. Undefined when no owner's switch is on: drawn as shipped.
+ */
+export function seatDeckVisible(viewerId: string, ruledOwners: readonly string[]): SQL | undefined {
+  return ruledOwners.length === 0 ? undefined : or(eq(decks.userId, viewerId), notInArray(decks.userId, [...ruledOwners]), pickerSeesDeck);
 }
 
 /** Which of these friends' decks their owners' rules keep from friends (the picker's rule), under the owners' switches. */
