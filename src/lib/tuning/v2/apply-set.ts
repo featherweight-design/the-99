@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull, max, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, max, ne, sql } from "drizzle-orm";
 
 import { db } from "../../../db";
 import { deckSuggestionItems, deckSuggestionRuns, decks, deckVersions } from "../../../db/schema";
@@ -55,6 +55,15 @@ async function lockRunDeck(tx: Tx, runId: string, userId: string) {
   return run;
 }
 
+/**
+ * A version committed since the run read the deck retires the run (spec §8): its lines were made for a list that is no
+ * longer the base, so neither an apply nor an undo may touch it. Read under the deck lock, which a commit also takes.
+ */
+async function refuseIfRetired(tx: Tx, run: { deckId: string; readVersion: number | null }): Promise<void> {
+  const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions).where(eq(deckVersions.deckId, run.deckId));
+  if ((v?.n ?? null) !== run.readVersion) throw new Refused({ kind: "stale" });
+}
+
 /** The run's lines, locked `for update`, in the order the run saved them. */
 async function lockedLines(tx: Tx, runId: string) {
   return tx.select({
@@ -93,8 +102,7 @@ export async function applyPicks(args: {
       const plan = planPicks({ requestedCount: run.requestedCount, lines, addIds: args.addIds, cutIds: args.cutIds });
       if (!plan.ok) throw new Refused({ kind: "picks", reason: plan.reason });
 
-      const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions).where(eq(deckVersions.deckId, run.deckId));
-      if ((v?.n ?? null) !== run.readVersion) throw new Refused({ kind: "stale" });
+      await refuseIfRetired(tx, run);
       const head = await readProfileHead(tx, run.deckId, userId);
       if (!head) throw new Refused({ kind: "notFound" });
       if (deckTotal(head) !== V2_DECK_TOTAL) throw new Refused({ kind: "notAtSize" });
@@ -135,6 +143,7 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
       if (!owner) throw new Refused({ kind: "notFound" });
       const run = await lockRunDeck(tx, owner.runId, userId);
       if (!run) throw new Refused({ kind: "notFound" });
+      await refuseIfRetired(tx, run);
       const set = (await lockedLines(tx, owner.runId)).filter((l) => l.applySet === applySet && l.verdict === "accepted");
       if (set.length === 0) throw new Refused({ kind: "notFound" });
 
@@ -163,7 +172,7 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
  * written only on a change. The deck id when the line is an open v2 line of the reader's (picked or not), else null.
  */
 export async function setPicked(itemId: string, userId: string, picked: boolean): Promise<string | null> {
-  const [line] = await db.select({ deckId: deckSuggestionRuns.deckId, picked: deckSuggestionItems.picked })
+  const [line] = await db.select({ deckId: deckSuggestionRuns.deckId })
     .from(deckSuggestionItems)
     .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckSuggestionItems.runId))
     .where(and(
@@ -175,9 +184,14 @@ export async function setPicked(itemId: string, userId: string, picked: boolean)
       isNull(deckSuggestionItems.applySet),
     ));
   if (!line) return null;
-  if (line.picked !== picked) {
-    await db.update(deckSuggestionItems).set({ picked })
-      .where(and(eq(deckSuggestionItems.id, itemId), eq(deckSuggestionItems.verdict, "pending"), isNull(deckSuggestionItems.applySet)));
-  }
+  // The change test is in the UPDATE itself, against the row as it is now, so two overlapping presses cannot both read
+  // the old value and lose one of them; a press that changes nothing still writes nothing.
+  await db.update(deckSuggestionItems).set({ picked })
+    .where(and(
+      eq(deckSuggestionItems.id, itemId),
+      eq(deckSuggestionItems.verdict, "pending"),
+      isNull(deckSuggestionItems.applySet),
+      ne(deckSuggestionItems.picked, picked),
+    ));
   return line.deckId;
 }

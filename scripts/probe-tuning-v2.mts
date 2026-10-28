@@ -36,9 +36,15 @@ import { STUB_ADDITIONS } from "../src/lib/tuning/stub";
 import { applyItem, setDismissed, undoItem } from "../src/lib/tuning/verdicts";
 import { applyPicks, setPicked, undoSet } from "../src/lib/tuning/v2/apply-set";
 import { startTuningV2, type V2Wire } from "../src/lib/tuning/v2/run";
+import { v2StubDelayMs } from "../src/lib/tuning/stub";
 
 requireEnv(["DATABASE_URL"]);
 const env = { ...process.env, TUNING_V2_STUB_DELAY_MS: "400" } as NodeJS.ProcessEnv;
+// The staged stub is the probe's no-model guarantee, and it is off in a production build: refuse rather than call a model.
+if (v2StubDelayMs(env) === null) {
+  console.error("probe:tuning-v2 refuses: the staged stub is off (NODE_ENV=production?), so a run would call the real model.");
+  process.exit(2);
+}
 
 const PREFIX = `probe-tuning-v2-${Date.now()}`;
 let users = 0;
@@ -225,6 +231,23 @@ async function main() {
   check("7 · a pick is saved", await setPicked(adds[4].id, u, true), deckId);
   check("7 · and read back", (await linesOf(runId)).find((l) => l.id === adds[4].id)?.picked, true);
   check("7 · another reader's pick is refused", await setPicked(adds[4].id, `${u}-other`, false), null);
+  check("7 · an unpick is saved", await setPicked(adds[4].id, u, false), deckId);
+  check("7 · and read back", (await linesOf(runId)).find((l) => l.id === adds[4].id)?.picked, false);
+
+  // 7b — a commit retires the run (spec §8): an applied set is no longer undone by the run, and nothing more applies.
+  const setC = randomUUID();
+  const c1 = await applyPicks({ runId, addIds: [adds[0].id], cutIds: [cuts[0].id], actionId: setC, userId: u, env });
+  check("7b · a set applies before the commit", c1.ok, true);
+  const withC = await deckList(deckId);
+  await db.execute(sql`
+    insert into deck_versions (deck_id, number, commander_oracle_id)
+    select d.id, coalesce((select max(v.number) from deck_versions v where v.deck_id = d.id), 0) + 1, d.commander_oracle_id
+    from decks d where d.id = ${deckId}`);
+  const lateUndo = await undoSet({ applySet: setC, userId: u, env });
+  check("7b · undo after a commit is refused as stale", lateUndo.ok ? "undone" : lateUndo.refusal, { kind: "stale" });
+  check("7b · and the deck keeps the set", await deckList(deckId), withC);
+  const lateApply = await applyPicks({ runId, addIds: [adds[1].id], cutIds: [cuts[1].id], actionId: randomUUID(), userId: u, env });
+  check("7b · apply after a commit is refused as stale", lateApply.ok ? "applied" : lateApply.refusal, { kind: "stale" });
 
   // 8 — owned-only: the stub's additions are owned by nobody here.
   const o = newUser();
