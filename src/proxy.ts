@@ -183,9 +183,11 @@ export const config = {
   // excludes as a static file. Without the proxy, `Shell`'s `auth()` throws instead of the page's 308 or 404. The same
   // holds for every route tree whose pages read the session under a dynamic segment (`/decks/x.png` is a bot's 404, and
   // its page's own `auth()` threw; Sentry THE-99-1): none of them serves a file. A dotted path anywhere else is a file or
-  // a 404, which `shellUserId` draws signed out. `/about` is left out: its images are files under that path.
+  // a 404, which `shellUserId` draws signed out. `/about` matches its one dynamic segment alone (`/about/[area]`): its
+  // images are files deeper under that path (`/about/pages/`, `/about/shots/`), which the proxy must not run on.
   matcher: [
     "/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)", "/card/(.*)", "/commander/(.*)",
-    "/decks/(.*)", "/collection/(.*)", "/commanders/(.*)", "/friends/(.*)", "/friend/(.*)", "/join/(.*)",
+    "/decks/(.*)", "/collection/(.*)", "/commanders/(.*)", "/friends/(.*)", "/friend/(.*)", "/join/(.*)", "/admin/(.*)",
+    "/about/:area",
   ],
 };
