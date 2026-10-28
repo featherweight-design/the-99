@@ -1,0 +1,124 @@
+{
+  "feature": "About visual PR 3: /about/[area], the strip, On this page and the labelled screen",
+  "note": "Dark route: nothing links here until PR 6a, so every row is a goto. Reads only; no clearAbout (the database is read-only for this walk). The decks rows press the Lock cards label (needs NEVER_CUT_ENABLED on for the account) and photograph its lit region, pin and line.",
+  "rows": [
+    {
+      "id": "about-home",
+      "label": "/about/home: head, strip, On this page, first labelled screen",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/home",
+          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "about-collection",
+      "label": "/about/collection: head, strip, On this page, first labelled screen",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/collection",
+          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "about-commanders",
+      "label": "/about/commanders: head, strip, On this page, first labelled screen",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/commanders",
+          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "about-decks",
+      "label": "/about/decks: head, strip, On this page, first labelled screen",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks",
+          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "about-shopping",
+      "label": "/about/shopping: head, strip, On this page, first labelled screen",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/shopping",
+          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "about-friends",
+      "label": "/about/friends: head, strip, On this page, first labelled screen (every Friends label follows SOCIAL_FRIENDS_ENABLED: off for the reader, no pins and no lines)",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/friends",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "about-decks-lit-phone",
+      "label": "/about/decks: Your deck, Lock cards pressed (phone)",
+      "view": "src/components/about/pages/labelled-screen.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/about/decks#your-deck",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "click": "[data-about-width='phone'] [data-about-label='decks/your-deck/lock'] button",
+          "settle": 600
+        },
+        {
+          "wait": "[data-about-width='phone'] [data-about-halo='decks/your-deck/lock']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-decks-lit-desktop",
+      "label": "/about/decks: Your deck, Lock cards pressed (desktop)",
+      "view": "src/components/about/pages/labelled-screen.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/about/decks#your-deck",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "click": "[data-about-width='desktop'] [data-about-label='decks/your-deck/lock'] button",
+          "settle": 600
+        },
+        {
+          "wait": "[data-about-width='desktop'] [data-about-halo='decks/your-deck/lock']",
+          "settle": 400
+        }
+      ]
+    }
+  ]
+}

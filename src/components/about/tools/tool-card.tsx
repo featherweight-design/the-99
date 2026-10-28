@@ -18,6 +18,11 @@ export function entryHref(entry: string): string {
   return `/about?tab=reference#${entry}`;
 }
 
+/** The tool card's halo on its picture: an accent ring with the rest of the picture dimmed. About's labelled screen lights
+ *  a pressed label's region with the same look (`labelled-screen.tsx`). */
+export const TOOL_CARD_HALO =
+  "0 0 0 2px color-mix(in oklab, var(--accent) 75%, transparent), 0 0 0 6px color-mix(in oklab, var(--accent) 20%, transparent), 0 0 0 2000px color-mix(in oklab, var(--bg) 28%, transparent)";
+
 function Picture({ shot, name }: { shot: Shot | null; name: string }) {
   return (
     <div className="relative aspect-[3/2] overflow-hidden border-b border-b-[color:var(--border)] bg-[color:var(--bg)]">
@@ -43,8 +48,7 @@ function Picture({ shot, name }: { shot: Shot | null; name: string }) {
             top: `${shot.halo.y * 100}%`,
             width: `${shot.halo.w * 100}%`,
             height: `${shot.halo.h * 100}%`,
-            boxShadow:
-              "0 0 0 2px color-mix(in oklab, var(--accent) 75%, transparent), 0 0 0 6px color-mix(in oklab, var(--accent) 20%, transparent), 0 0 0 2000px color-mix(in oklab, var(--bg) 28%, transparent)",
+            boxShadow: TOOL_CARD_HALO,
           }}
         />
       )}

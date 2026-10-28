@@ -34,6 +34,8 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // answer costs one pointless revalidation of a static reference page. Making
   // it cleverer to spare that is the trade in the wrong direction.
   { path: "/about", dynamic: false },
+  // /about/[area] (the six visual pages) is listed for the same reason, and is dynamic.
+  { path: "/about/[area]", dynamic: true },
   // /credits reads the collection's card count (`getCollectionStats`) for the Welcome cell's sheet: before a collection
   // the sheet draws the lock line, once cards are in Help me choose leads with Try it (welcome credits D2). So a replace
   // does change what it draws, and the listing is needed, not merely conservative.
