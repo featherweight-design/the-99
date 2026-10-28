@@ -13,8 +13,8 @@
 // Each must be unchanged, while the deck's shown overview IS the carried row (or the check has
 // proved nothing). It also checks the schema refuses a run with neither a call nor a precon.
 //
-// It writes one deck under a per-run user id and deletes it in a `finally`. It runs on a scratch
-// branch only (`assertScratchBranch`), named by `PROBE_DB_URL`. No model is called.
+// It writes one deck under a per-run user id and deletes it, and that user's data stamp, in a
+// `finally`. It runs on a scratch branch only (`assertScratchBranch`), named by `PROBE_DB_URL`. No model is called.
 //
 //   PROBE_DB_URL=<scratch> pnpm probe:precon-overview-ledger
 import { requireEnv } from "./lib/env.mjs";
@@ -103,6 +103,9 @@ async function main() {
     check("the schema refuses a run with neither a call nor a precon", refused, refused ? "refused by deck_synopses_call_or_precon_check" : "accepted");
   } finally {
     await db.delete(decks).where(eq(decks.id, deckId));
+    // The deferred `user_data_touch` trigger stamps the per-run user on the deck's writes AND its
+    // delete, and the stamp has no relation to the deck, so it is removed after that delete commits.
+    await db.execute(sql`delete from user_data_stamps where user_id = ${USER}`);
   }
   console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
   process.exit(failures === 0 ? 0 : 1);

@@ -2936,8 +2936,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   deck, writes the carry-over's row, and reads the figures before and after: `readAllowance`,
   `freeRunsFor`, the admin Costs page's day figures and run rows, and the whole `model_calls` count. All
   must be unchanged while the deck's shown overview IS the carried row. It also checks the schema
-  refuses a run with neither a call nor a precon. One deck under a per-run user id, deleted in a
-  `finally`; no model call. Scratch branch only (`assertScratchBranch`), named by `PROBE_DB_URL`.
+  refuses a run with neither a call nor a precon. One deck under a per-run user id, deleted with
+  that user's data stamp in a `finally`; no model call. Scratch branch only (`assertScratchBranch`), named by `PROBE_DB_URL`.
   Measured 2026-10-27 on a scratch branch of local-dev migrated to 0179: all seven checks pass.
 
 - `pnpm probe:help-me-choose-screens` walks Help me choose's results at 1300x900 and 390x844:
