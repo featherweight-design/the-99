@@ -330,7 +330,7 @@ def prow(card, view="friend", friend=None, state=None, open_=False, loading=Fals
 # ---------------------------------------------------------------- the friend panel
 def fhead(friend, open_=True, sticky=False, ph=False):
     cards, spares = FTOT[friend]
-    fig = f"{cards} card{'' if cards == 1 else 's'} · {spares} spare"
+    fig = f"{cards} card{'' if cards == 1 else 's'} · {spares} spare{'' if spares == 1 else 's'}"
     chev = CHEV_D if open_ else CHEV_R
     return (f'<div class="fh2{" stk" if sticky else ""}">{face(friend, 30, 8)}<span class="nm"><b>{friend}</b>'
             f'<span>shares with {PODS[friend]}</span></span><small>{fig}</small><span class="chev">{chev}</span></div>')

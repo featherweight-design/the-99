@@ -17,3 +17,15 @@ A light redesign of the all-decks cart in all three views, focused on By friend.
 | `Loading` | 6 · By card and By friend while friends' spares are read |
 
 `scratch-gen/`: run `python3 build2.py local` to write `out/` with `art/` and flat previews, and `python3 render2.py <boards>` to check each board for broken images and clipping. `build2.py blob <dir>` writes the canvas files with the `/_blob` URLs. It reuses account 2's spare-requests kit (`kit.py`, `parts.py`, `sr.py`) unchanged.
+
+## R2 (2026-10-28): four answers for engineering, awaiting Hugh's audit
+
+Asked by the plan's For Design section (#2321: B2, B3, B4) and the PR 8 gap report (#2330). Canvas page **R2 · four answers** on the same canvas. Generator: `scratch-gen/r2.py` (`python3 build_r2.py local`).
+
+| Board | Answer |
+|---|---|
+| `R2-Main` | The four answers and the copy for /copy-review |
+| `R2-Failed-Read` | By card and By deck: the shared toast with Try again, the spare column closed, Friend and the spare key hidden. By friend: a dashed block with Try again, no toast |
+| `R2-Sticky` | Desktop: the header sticks as it is at rest (fill and its own rule, nothing added), pushed out by the next panel's header; the panel needs `overflow: clip`. Phone: no sticking |
+| `R2-Long-Name` | Ellipsis on the first name only, +N after it; a cut name with nothing after it gets a **more** pill opening the same list |
+| `R2-Chassis` | Recommended: the shipped chassis wins (mock vs shipped, every value), including the phone sort as `OrderMenu`'s dropdown (B2 sheet retired). Hugh's call |
