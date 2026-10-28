@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ledgerName, shortModel, type CostDetail } from "../../lib/admin/costs-detail-rule";
+import { isFreeRewrite, ledgerName, shortModel, type CostDetail } from "../../lib/admin/costs-detail-rule";
 import { usd, type CostSummary, type MonthKey } from "../../lib/admin/costs-rule";
 import type { AdminEnv } from "../../lib/admin/environment";
 import { adminCopy } from "../../lib/copy/admin";
@@ -231,7 +231,7 @@ function EvalsApart({ s, d }: { s: CostSummary; d: CostDetail }) {
 
 function ByFeature({ d }: { d: CostDetail }) {
   const rows: Row[] = d.features.map((f) => {
-    const free = f.origin === "system" && f.feature !== "labels" && f.feature !== "prose";
+    const free = isFreeRewrite(f);
     const title = copy.featureTitle(featureName(f.feature), f.step, free);
     const effort = f.effort ?? copy.effortUnknown;
     const p90 = f.p90Micro === null ? null : usd(f.p90Micro);

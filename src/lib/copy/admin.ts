@@ -210,6 +210,7 @@ export const adminCopy = {
       fits_read: "Find a deck read",
       labels: "Card labels",
       prose: "Commander prose",
+      precon_overview: "Precon Overviews",
     } as Record<string, string>,
     featureTitle: (name: string, step: string | null, free: boolean) => `${name}${free ? " rewrite, free" : ""}${step && step !== "call" ? `, ${step}` : ""}`,
     effortUnknown: "not recorded",

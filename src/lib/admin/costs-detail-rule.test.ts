@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { batchCostMicroUsd, batchRates, featureWorstCaseMicroUsd } from "../model/prices";
 import { expiredReserveFor } from "../labels/reserve";
 import { usdToMicro } from "../model/spend-rule";
-import { costDetail, ledgerName, ledgerRow, percentileCont, shortModel, type CallRow, type DetailRows, type LabelRunRow, type PartRow } from "./costs-detail-rule";
+import { costDetail, isFreeRewrite, ledgerName, ledgerRow, percentileCont, shortModel, type CallRow, type DetailRows, type LabelRunRow, type PartRow } from "./costs-detail-rule";
 
 const OCT = { year: 2026, month: 9 };
 let n = 0;
@@ -15,6 +15,14 @@ const labelRun = (over: Partial<LabelRunRow>): LabelRunRow => ({
   runId: "backfill-2026-10-03", model: "claude-sonnet-4-5", batches: 2677, collected: 2677, open: 0, expired: 0, inTokens: 13_862_095, outTokens: 5_157_552, cacheWriteTokens: 0, cacheReadTokens: 0, firstAt: new Date("2026-10-03T07:20:15Z"), ...over,
 });
 const rows = (over: Partial<DetailRows>): DetailRows => ({ calls: [], parts: [], labelRuns: [], ledgers: [], ...over });
+
+describe("isFreeRewrite", () => {
+  it("calls a system row a free rewrite unless it is a catalog job's own spend", () => {
+    expect(isFreeRewrite({ origin: "system", feature: "synopsis" })).toBe(true);
+    for (const job of ["labels", "prose", "precon_overview"]) expect(isFreeRewrite({ origin: "system", feature: job })).toBe(false);
+    expect(isFreeRewrite({ origin: "player", feature: "synopsis" })).toBe(false);
+  });
+});
 
 describe("percentileCont", () => {
   it("interpolates as Postgres does", () => {

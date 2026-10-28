@@ -69,8 +69,11 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
 - **The cap** is a worst-case stop in dollars: `PRECON_OVERVIEW_MAX_USD` or `--max-usd`, default and CEILING $15
   (`capMicroUsd` clamps), and a batch is sent only while dollars spent plus its worst case (counted input plus the full
   16,000-token output ceiling, at batch rates) fit (`scripts/lib/precon-overview-build.ts`). Spend goes to one
-  `model_calls` row per batch, `system`/`precon_overview`, which the Costs page shows. The write is strict (one
-  retry): a batch whose row cannot be written fails the run, naming the batch and its dollars.
+  `model_calls` row per batch, `system`/`precon_overview`, which the Costs page shows. The row is written with the batch's
+  WORST case the moment the API accepts it, then replaced by what it cost; strict (one retry), so a row that cannot be
+  written fails the run, naming the batch and its dollars. A run that dies while a batch runs prints its id: `--collect
+  <id>` picks up its results later (the API keeps them 29 days). Each custom id carries a prefix of its request's hash
+  (`customIdFor`), so a collected answer is stored only against the very request it answered.
 - **It fails closed on its target**: `PRECON_OVERVIEW_TARGET_BRANCH` must equal the database's `neon.branch_id`, or it exits
   2. Locally name the database with `PRECON_OVERVIEW_DB_URL` (the env import overrides `DATABASE_URL`). `--dry-run` builds,
   hashes and prices every request and calls and writes nothing (input tokens estimated there). `--stub` answers with the

@@ -42,6 +42,8 @@ if (process.env.PRECON_OVERVIEW_DB_URL) process.env.DATABASE_URL = process.env.P
 const argv = process.argv.slice(2);
 const DRY = argv.includes("--dry-run");
 const STUB = argv.includes("--stub");
+const COLLECT = argv.includes("--collect") ? argv[argv.indexOf("--collect") + 1] : undefined;
+if (argv.includes("--collect") && !/^msgbatch_[A-Za-z0-9]+$/.test(COLLECT ?? "")) throw new Error("--collect needs a batch id (msgbatch_…)");
 const flag = (name: string): number | undefined => {
   const i = argv.indexOf(name);
   if (i < 0) return undefined;
@@ -59,7 +61,8 @@ async function main(): Promise<number> {
   const { STUB_MODEL, stubReply } = await import("../src/lib/synopsis/stub");
   const { batchCostMicroUsd } = await import("../src/lib/model/prices");
   const { parseReply } = await import("./eval/lib/request.mjs");
-  const { sendBatch, countTokens } = await import("./eval/lib/batch.mjs");
+  const { countTokens } = await import("./eval/lib/batch.mjs");
+  const { collectBatch, customIdFor, submitBatch } = await import("./lib/precon-overview-batch");
   const { systemSpendRow } = await import("./lib/system-spend");
   const { modelCalls } = await import("../src/db/schema");
   const { capMicroUsd, runBuild, worstMicroUsd } = await import("./lib/precon-overview-build");
@@ -74,6 +77,7 @@ async function main(): Promise<number> {
     return 2;
   }
   const live = !DRY && !STUB;
+  if (COLLECT && (DRY || STUB)) throw new Error("--collect collects a real batch: not with --dry-run or --stub");
   if (live) requireEnv(["ANTHROPIC_API_KEY"]);
   // A stub's Overview is a fixture: written only to a scratch branch, never where a real one belongs.
   if (STUB) {
@@ -127,7 +131,7 @@ async function main(): Promise<number> {
       held += 1;
       continue;
     }
-    const customId = `p${i}`;
+    const customId = customIdFor(i, hash);
     facts.set(customId, req.facts);
     meta.set(customId, { file, list, hash });
     const f = req.facts;
@@ -137,8 +141,9 @@ async function main(): Promise<number> {
       check: (v) => checkReply(v as SynopsisReply, f, true),
       repair: async (content, failing, v): Promise<Outgoing> => {
         const p = preconRequestParams(repairPrompt(f, content, failing, true, v as SynopsisReply));
-        facts.set(`${customId}-r`, f);
-        return { customId: `${customId}-r`, params: p, worstMicro: worstMicroUsd(call.model, await inputTokensOf(p), call.maxTokens) };
+        const repairId = customIdFor(i, hash, true);
+        facts.set(repairId, f);
+        return { customId: repairId, params: p, worstMicro: worstMicroUsd(call.model, await inputTokensOf(p), call.maxTokens) };
       },
       merge: (first, v, failing) => applyRepair(first, { ok: true, value: v as SynopsisReply, usage: { inputTokens: 0, outputTokens: 0 } } as never, failing, f, true),
     });
@@ -155,6 +160,95 @@ async function main(): Promise<number> {
 
   const unrecorded: { batchId: string; usd: number; error: string }[] = [];
   const moved: string[] = [];
+  type Reply = import("./lib/precon-overview-build").Reply<unknown>;
+  type Stored = import("./lib/precon-overview-build").Stored;
+
+  // STRICT, unlike the shared helper: this job keeps no ledger of its own, so a batch's dollars reach
+  // the Costs page through this row or not at all. Keyed on the batch: written with the batch's WORST
+  // case the moment it is accepted, then replaced by what it cost, so a run that dies while waiting
+  // still shows the batch's spend at its ceiling. A row that cannot be written fails the run, naming it.
+  const recordSpend = async (batchId: string, usd: number, tokens?: { input: number; output: number; cacheRead: number; cacheWrite: number }) => {
+    const row = systemSpendRow({ feature: "precon_overview", model: call.model, usd, key: `precon_overview:${batchId}`, tokens });
+    const write = () => db.insert(modelCalls).values(row).onConflictDoUpdate({
+      target: modelCalls.id,
+      set: { costMicroUsd: row.costMicroUsd, inputTokens: row.inputTokens, outputTokens: row.outputTokens },
+    });
+    try {
+      await write();
+    } catch {
+      try {
+        await write();
+      } catch (e) {
+        unrecorded.push({ batchId, usd, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+  };
+  const repliesOf = (results: import("./eval/lib/batch.mjs").Got[]): Reply[] => results.map((g) => {
+    if (!g.ok) return { customId: g.customId, ok: false as const, reason: g.reason, micro: 0, usage: { input: 0, output: 0 } };
+    const u = g.message.usage;
+    const usage = { input: u.input_tokens, output: u.output_tokens };
+    const micro = batchCostMicroUsd(call.model, { inTokens: u.input_tokens, outTokens: u.output_tokens, cacheWriteTokens: u.cache_creation_input_tokens ?? 0, cacheReadTokens: u.cache_read_input_tokens ?? 0 });
+    const parsed = parseReply(synopsisResponseSchemaV8Wire, g.message);
+    return parsed.ok
+      ? { customId: g.customId, ok: true as const, value: parsed.value as unknown, micro, usage }
+      : { customId: g.customId, ok: false as const, reason: parsed.reason, micro, usage };
+  });
+  const spendOf = (replies: readonly Reply[]) => ({
+    micro: replies.reduce((n, r) => n + r.micro, 0),
+    tokens: replies.reduce((t, r) => ({ ...t, input: t.input + r.usage.input, output: t.output + r.usage.output }), { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }),
+  });
+  const store = async (s: Stored) => {
+    const m = [...meta.values()].find((x) => x.file === s.file)!;
+    // THE INPUTS ARE RE-CHECKED AT THE WRITE: the catalog can move while a batch runs. The answer is
+    // stored either way (it is paid for), but current only when this database still builds the very
+    // request it answered; otherwise the next run, or the copy, writes or checks it again.
+    const now = await buildPreconRequest(s.file);
+    const fits = now.ok && now.hash === m.hash && now.list === m.list;
+    if (!fits) moved.push(s.file);
+    const row = {
+      preconFile: s.file, contractVersion: contract, listFingerprint: m.list, inputHash: m.hash, model, content: s.content,
+      inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(),
+    };
+    await db.insert(preconSynopses).values(row).onConflictDoUpdate({ target: [preconSynopses.preconFile, preconSynopses.contractVersion], set: row });
+  };
+
+  // `--collect <batch id>`: the results of a batch an earlier run submitted and never collected. Only a
+  // first answer whose custom id carries THIS run's request hash for its precon is stored (the id
+  // embeds it, `customIdFor`); a precon whose inputs moved since, and a repair's answer (its first
+  // answer is gone), are left to the next ordinary run. Nothing new is sent.
+  if (COLLECT) {
+    const replies = repliesOf(await collectBatch(COLLECT, (l) => console.log(l)));
+    const spent = spendOf(replies);
+    await recordSpend(COLLECT, spent.micro / 1e6, spent.tokens);
+    const byId = new Map(jobs.map((j) => [j.first.customId, j]));
+    let kept = 0;
+    let left = 0;
+    for (const r of replies) {
+      const job = byId.get(r.customId);
+      if (!job || !r.ok) {
+        left += 1;
+        continue;
+      }
+      try {
+        const content = await job.check(r.value);
+        if (content.verdicts.every((v) => v.status === "ok")) {
+          await store({ file: job.file, content, micro: r.micro, usage: r.usage });
+          kept += 1;
+        } else left += 1;
+      } catch (e) {
+        console.error(`  ${job.file}: ${e instanceof Error ? e.message : String(e)}`);
+        left += 1;
+      }
+    }
+    console.log(`collected batch ${COLLECT}: stored ${kept}, left ${left} to the next run; it cost $${(spent.micro / 1e6).toFixed(4)}`);
+    for (const f of moved) console.log(`  stored NOT current ${f}: its inputs moved while the batch ran`);
+    if (unrecorded.length > 0) {
+      for (const u of unrecorded) console.error(`model_calls: batch ${u.batchId} ($${u.usd.toFixed(4)}) was NOT recorded: ${u.error}`);
+      return 1;
+    }
+    return 0;
+  }
+
   const result = await runBuild<unknown>({
     jobs,
     capMicro,
@@ -171,48 +265,15 @@ async function main(): Promise<number> {
           }),
         };
       }
-      const { batchId, results } = await sendBatch(batch.map((o) => ({ customId: o.customId, params: o.params as never })), (l) => console.log(l));
-      const replies = results.map((g) => {
-        if (!g.ok) return { customId: g.customId, ok: false as const, reason: g.reason, micro: 0, usage: { input: 0, output: 0 } };
-        const u = g.message.usage;
-        const usage = { input: u.input_tokens, output: u.output_tokens };
-        const micro = batchCostMicroUsd(call.model, { inTokens: u.input_tokens, outTokens: u.output_tokens, cacheWriteTokens: u.cache_creation_input_tokens ?? 0, cacheReadTokens: u.cache_read_input_tokens ?? 0 });
-        const parsed = parseReply(synopsisResponseSchemaV8Wire, g.message);
-        return parsed.ok
-          ? { customId: g.customId, ok: true as const, value: parsed.value as unknown, micro, usage }
-          : { customId: g.customId, ok: false as const, reason: parsed.reason, micro, usage };
-      });
-      const micro = replies.reduce((n, r) => n + r.micro, 0);
-      const tokens = replies.reduce((t, r) => ({ ...t, input: t.input + r.usage.input, output: t.output + r.usage.output }), { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
-      // STRICT, unlike the shared helper: this job keeps no ledger of its own, so a batch's dollars
-      // reach the Costs page through this row or not at all. Keyed on the batch, so a retry or a re-run
-      // writes the same row; a row that still cannot be written fails the run, naming the batch.
-      const row = systemSpendRow({ feature: "precon_overview", model: call.model, usd: micro / 1e6, key: `precon_overview:${batchId}`, tokens });
-      try {
-        await db.insert(modelCalls).values(row).onConflictDoNothing({ target: modelCalls.id });
-      } catch {
-        try {
-          await db.insert(modelCalls).values(row).onConflictDoNothing({ target: modelCalls.id });
-        } catch (e) {
-          unrecorded.push({ batchId, usd: micro / 1e6, error: e instanceof Error ? e.message : String(e) });
-        }
-      }
+      const batchId = await submitBatch(batch.map((o) => ({ customId: o.customId, params: o.params as never })));
+      console.log(`batch ${batchId}: ${batch.length} requests submitted (if this run dies, collect it with --collect ${batchId})`);
+      await recordSpend(batchId, batch.reduce((n, o) => n + o.worstMicro, 0) / 1e6);
+      const replies = repliesOf(await collectBatch(batchId, (l) => console.log(l)));
+      const spent = spendOf(replies);
+      await recordSpend(batchId, spent.micro / 1e6, spent.tokens);
       return { batchId, replies };
     },
-    store: async (s) => {
-      const m = [...meta.values()].find((x) => x.file === s.file)!;
-      // THE INPUTS ARE RE-CHECKED AT THE WRITE: the catalog can move while a batch runs. The answer is
-      // stored either way (it is paid for), but current only when this database still builds the very
-      // request it answered; otherwise the next run, or the copy, writes or checks it again.
-      const now = await buildPreconRequest(s.file);
-      const fits = now.ok && now.hash === m.hash && now.list === m.list;
-      if (!fits) moved.push(s.file);
-      const row = {
-        preconFile: s.file, contractVersion: contract, listFingerprint: m.list, inputHash: m.hash, model, content: s.content,
-        inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(),
-      };
-      await db.insert(preconSynopses).values(row).onConflictDoUpdate({ target: [preconSynopses.preconFile, preconSynopses.contractVersion], set: row });
-    },
+    store,
   });
 
   console.log(`\nstored ${result.stored.length} of ${jobs.length}; failed ${result.failed.length}; deferred ${result.deferred.length}`);

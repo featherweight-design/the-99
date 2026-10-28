@@ -123,18 +123,24 @@ export async function runBuild<V>(input: {
         result.failed.push({ file: p.job.file, reason: p.first ? `repair: ${reply.reason}` : reply.reason });
         continue;
       }
-      const content = p.first
-        ? await p.job.merge(p.first.content, reply.value, p.first.failing)
-        : await p.job.check(reply.value);
-      const failing = refused(content);
-      if (failing.length === 0) {
-        const s = { file: p.job.file, content, micro, usage };
-        await input.store(s);
-        result.stored.push(s);
-      } else if (!p.first) {
-        next.push({ job: p.job, out: await p.job.repair(content, failing, reply.value), first: { content, failing, micro, usage } });
-      } else {
-        result.failed.push({ file: p.job.file, reason: `refused after the repair: ${failing.join(", ")}` });
+      // ONE PRECON'S TROUBLE IS ITS OWN: the batch is already paid for, so a check, a repair's token
+      // count or a store that throws fails that precon and the loop goes on to store the others.
+      try {
+        const content = p.first
+          ? await p.job.merge(p.first.content, reply.value, p.first.failing)
+          : await p.job.check(reply.value);
+        const failing = refused(content);
+        if (failing.length === 0) {
+          const s = { file: p.job.file, content, micro, usage };
+          await input.store(s);
+          result.stored.push(s);
+        } else if (!p.first) {
+          next.push({ job: p.job, out: await p.job.repair(content, failing, reply.value), first: { content, failing, micro, usage } });
+        } else {
+          result.failed.push({ file: p.job.file, reason: `refused after the repair: ${failing.join(", ")}` });
+        }
+      } catch (e) {
+        result.failed.push({ file: p.job.file, reason: `${p.first ? "repair" : "first answer"} could not be handled: ${e instanceof Error ? e.message : String(e)}` });
       }
     }
     result.spentMicro += batch.micro;

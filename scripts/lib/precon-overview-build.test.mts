@@ -90,6 +90,16 @@ describe("runBuild", () => {
     expect(under.spentMicro).toBeLessThanOrEqual(900);
   });
 
+  it("a precon whose repair cannot be prepared fails alone, and the rest of the paid batch is still stored", async () => {
+    const broken = { ...job("a", 100, "refused"), repair: async (): Promise<Outgoing> => { throw new Error("count_tokens 503"); } } as Job<string>;
+    const jobs = [broken, job("b", 100, "ok")];
+    const { send } = sender(jobs, 1);
+    const stored: string[] = [];
+    const r = await runBuild({ jobs, send, capMicro: 1_000, store: async (s) => { stored.push(s.file); }, log: () => {} });
+    expect(stored).toEqual(["b"]);
+    expect(r.failed).toEqual([{ file: "a", reason: "first answer could not be handled: count_tokens 503" }]);
+  });
+
   it("sends nothing when not one request fits", async () => {
     const jobs = [job("a", 2_000, "ok")];
     const { send, sent } = sender(jobs, 1);

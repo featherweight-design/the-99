@@ -56,6 +56,7 @@ export const CALLERS = {
   "scripts/eval/labels-tiering.mts": { builders: ["src/lib/labels/prompt.ts"] },
   "scripts/eval/measure-pool-list.mts": { note: "counts tokens of the intake list (catalog only)" },
   "scripts/eval/lib/batch.mts": { note: "the eval batch sender: sends what its caller built" },
+  "scripts/lib/precon-overview-batch.ts": { note: "the precon Overview batch sender: sends what its caller built" },
   "scripts/eval/lib/request.mts": { note: "the eval request shape and reply parse: types only, sends nothing" },
   "scripts/probe-card-labels-waves.mts": { note: "a fake BatchClient for the labels probe: answers locally, sends nothing" },
   "scripts/eval/corpus.mts": { builders: ["src/lib/synopsis/prompt.ts", "src/lib/tuning/prompt.ts"] },
