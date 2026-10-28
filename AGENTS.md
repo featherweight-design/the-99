@@ -20,7 +20,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm typecheck` · `pnpm lint` · `pnpm test`
 - `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:seed` (Drizzle Kit; seed pulls the Scryfall catalog)
 
-Rules only. Each points at the doc holding its history, measurements and every feature- or pipeline-specific rule; read that doc before touching its area (index at the end).
+Rules only. A rule with a background doc names it; that doc holds its history, measurements and every feature- or pipeline-specific rule, so read it before touching that area (index at the end).
 
 ## Workflow
 
@@ -79,7 +79,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in 
 - `commanders-place.md` — the Commanders place and its paths.
 - `contact-sheet.md` — contact sheets, `check:shared`, `surface.mjs`.
 - `design-pipeline.md` — handoffs, READINESS, About labels, `design/`.
-- `guards.md` — every `check:*` guard, prompt identity, the Fan Content notice, public loaders.
+- `guards.md` — the cross-cutting `check:*` guards (copy drift, tokens, border collision, collection routes, db-pool, list cache, public reads), prompt identity, the Fan Content notice, public loaders. A feature's own guard lives in its feature doc (`check:switch-reads` in switches.md, `check:social-reads` in social.md, `check:payments-reads` in payments.md, `check:shared` in contact-sheet.md, the upstream contract checks in ci.md and catalog-prices-precons.md).
 - `list-cache.md` — the Home and `/decks` cache, its runbook ORDER, `list-stamp:triggers`.
 - `list-payloads.md` — `/discover` and `/collection` first-window payloads.
 - `measure.md` — `measure:load`, the reverted Tuning tools split, the gap-line measure.
