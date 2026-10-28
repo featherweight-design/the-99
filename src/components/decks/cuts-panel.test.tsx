@@ -692,6 +692,8 @@ describe("a result with more named than the deck needs (pick N)", () => {
     let answer!: (r: { ok: true }) => void;
     const p = pick();
     p.items = [cutItem(1), cutItem(2), item(3), item(4), item(5), item(6)];
+    // Two already cut, so the list as read is one over.
+    p.over = 1;
     const d = deps(p, { cut: vi.fn(() => new Promise<{ ok: true }>((r) => { answer = r; })) });
     await mount(d);
     fireEvent.click(within(screen.getAllByRole("article")[0]).getByRole("button", { name: copy.cut }));
@@ -708,4 +710,14 @@ describe("a result with more named than the deck needs (pick N)", () => {
     expect(foot()).toMatch(/^4 named for 3 cuts · /);
   });
 
+
+  it("a run reopened over a deck that has grown since does not say Back at 99", async () => {
+    const p = pick();
+    // Three of six cut when it ran, and two cards added since: the list as read is two over.
+    p.items = [cutItem(1), cutItem(2), cutItem(3), item(4), item(5), item(6)];
+    p.over = 2;
+    await mount(deps(p));
+    expect(screen.queryByText("Three cut.")).toBeNull();
+    expect(screen.queryByText(/Back at 99/)).toBeNull();
+  });
 });

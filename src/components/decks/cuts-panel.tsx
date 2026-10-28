@@ -291,10 +291,12 @@ export function CutsPanelView({
   // The result's rows against the cuts the deck needed when it ran (small items R1b): a run names three
   // more than that, and the head, the lead and the foot all read this one state (`pickState`).
   const counted = pickState({ named: items.length, needed: panel.asked, chosen: cutCount, answered });
-  // "Back at 99" is said only of the list as it stands: a run reopened from History over a deck that has grown since
-  // reads as one still being chosen from, with the count's live over line. (This visit's own cuts move `over` only
-  // when the action answers, so the instant switch to enough is never held back by it.)
-  const pick = priorResult && (counted.phase === "enough" || counted.phase === "past") && over > 0 ? { ...counted, phase: "choosing" as const } : counted;
+  // "Back at 99" is said only of the list as it stands: the live over, less the Cuts pressed since it was read (a Cut
+  // answers before the redraw that moves `over`, so the switch to enough stays instant). A run reopened over a deck that
+  // has grown since reads as one still being chosen from, with the count's live over line.
+  const pressedSinceRead = cutCount - items.filter((i) => i.verdict === "accepted").length;
+  const stillOver = over - pressedSinceRead > 0;
+  const pick = stillOver && (counted.phase === "enough" || counted.phase === "past") ? { ...counted, phase: "choosing" as const } : counted;
   const words = cutsPickWords(pick, { bodySize: panel.bodySize, asked: panel.itemsReport !== null ? panel.asked : items.length });
   // The lead: the over figure in --fg (never --warning), then what the state says next.
   const lead = (() => {

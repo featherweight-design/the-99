@@ -112,6 +112,8 @@ type Prepared = {
   deck: string;
   trial: number;
   over: number;
+  /** The cuts the prompt names (over + 3, capped): the reply's bound. */
+  named: number;
   k: number;
   cut: Set<string>;
   paired: Set<string>;
@@ -148,11 +150,12 @@ for (const t of truths) {
   const rolesOf = new Map<string, Set<string>>();
   for (const r of ROLE_ORDER) for (const c of profile.roles.cards[r] ?? []) rolesOf.set(c.oracleId, (rolesOf.get(c.oracleId) ?? new Set()).add(r));
   const paired = pairedSwaps(t.cut, t.added, rolesOf);
-  const schemaForCall = cutsResponseSchema(facts.over);
+  // Bounded at the cuts the prompt names (v5: three more than needed), as the app's own call is.
+  const schemaForCall = cutsResponseSchema(pack.named);
   for (let trial = 0; trial < trials; trial++) {
     const customId = `${t.deckId.slice(0, 8)}-${trial}`;
     prepared.push({
-      customId, deck: t.name, trial, over: facts.over, k: t.cut.length, cut: new Set(t.cut), paired,
+      customId, deck: t.name, trial, over: facts.over, named: pack.named, k: t.cut.length, cut: new Set(t.cut), paired,
       pool: profile.cards.filter((c) => !profile.commanderOracleIds.includes(c.oracleId)).length,
       pack,
       sent: { customId, params: buildParams({ model: MODEL, system, user, maxTokens: MAX_TOKENS, schema: schemaForCall }, { effort: EFFORT }) },
@@ -204,7 +207,7 @@ const send = async (batch: Sent[], pass: string, worstUsd: number): Promise<Got[
   return got;
 };
 
-const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.over)]));
+const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.named)]));
 const attempts = new Map<string, Got[]>();
 for (const g of await send(prepared.map((p) => p.sent), "a1", worst / 2)) attempts.set(g.customId, [g]);
 const midway = spent(readLedger(LEDGER_CUTS));
