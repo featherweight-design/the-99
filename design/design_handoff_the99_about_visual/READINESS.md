@@ -48,7 +48,7 @@ Light themes beyond the dark reference. The boards draw one theme, and the captu
 
 ## Engineering readiness audit (2026-10-27, against origin/main at b3dee1a8a)
 
-**Engineering verdict: Yellow.** Design's Green stands for what the boards draw, and every code claim in
+**Engineering verdict: Yellow, now Green:** the four items below are ruled (Addendum A1, 2026-10-28). Design's Green stands for what the boards draw, and every code claim in
 the README checks out except the two noted below. Four items are not drawn and need a ruling before the
 build plan can name them; everything else is engineering's to resolve, listed with its resolution.
 
@@ -70,18 +70,17 @@ build plan can name them; everything else is engineering's to resolve, listed wi
 `copy-strings.ts` holds 43 labels and 15 rules: Home 4/0, Collection 5/3, Commanders 4/0, Decks 19/6,
 Shopping 6/3, Friends 5/3. It places 12 of the 14 shipped tools.
 
-### Not drawn: needs a ruling
+### Not drawn: needs a ruling — RULED (Addendum A1, approved by Hugh 2026-10-28)
 
-1. **Two tools have no section.** `precons` and `mana-balance` are shipped Tools cards that no section
-   lists. Either a section takes each (placement, so Design), or the tool retires from the showcase.
-2. **The ? on screens with no section.** Nine of the 17 About screens have no section on any page:
-   card-details, sets, proxies, history, wishlist, new-deck, account, settings, credits. Call 5 says the ?
-   opens its area's page scrolled to its screen; for these there is no screen to scroll to.
-3. **How it works** (`HOW_IT_WORKS_ENABLED`, 20 entry links). The boards never mention it, and several of the
-   audit's cuts lean on it still holding their rule. Retire with the Reference (call 5's "one source"), or keep.
-4. **The one-time About sheet** (`ABOUT_SHEET_ENABLED`, About R6 §N) and the banner's first-run line ("What
-   The 99 does…"). Call 7 redraws the banner's launch lines only. Whether the sheet keeps announcing labels,
-   and what a brand-new account is shown, is not drawn.
+1. **Two tools have no section.** Both stay. `precons` is a label and Try it card on Decks › Your decks (the
+   shipped Precons button / "Commander precons" box); `mana-balance` is a label and Try it card on Decks ›
+   Analysis (the Tuning tile; desktop pin on the second Analysis shot). Board 8, README "Addendum A1".
+2. **The ? on screens with no section.** Each lands on a page section, never the index, with one label or rule
+   lit (halo, no New tag) under the back bar: `ABOUT_Q_LANDINGS` in `copy-strings.ts` and the README table.
+   `account` has no landing: `screenForPath` never returns it, so a ? pressed with the menu open answers for the
+   page under it. `card-details` is desktop only (at 390 card details covers the ?).
+3. **How it works** retires with the Reference (Hugh's ruling).
+4. **The one-time About sheet** retires (Hugh's ruling). Nothing drawn.
 
 ### Resolved by engineering
 
