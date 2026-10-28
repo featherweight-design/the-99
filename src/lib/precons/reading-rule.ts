@@ -5,7 +5,7 @@
  * ~1.1s of a ~1.8s carry at the median). The reading is deterministic from the list, the catalog and
  * the role basis, with no model, so the precon Overview build computes it once per precon and stores it
  * on the `precon_synopses` row (the `reading_*` columns), the copy writes the TARGET's own, and a start
- * copies it into `deck_profiles`.
+ * will copy it into `deck_profiles` (PR 6; until then a start computes its own in `after()`, as before).
  *
  * FRESH BY THE RULE A DECK'S OWN STORED READING KEEPS, never by the row's `current` (the Overview's):
  * the list it was built for, the profile and bracket-rules versions this code runs (`preconReadingCurrent`,
@@ -13,7 +13,7 @@
  * (`readingMoved`, the H1 rule a press recomputes on; `preconReadingFresh` in `reading.ts`). NOT the
  * catalog generation: every ingest and every catalog copy stamps it (this build's own copy included), and
  * a deck's stored reading is never judged by it either; `reading_catalog` is kept as `deck_profiles.catalog`
- * keeps it. A reading that is not fresh is never copied; the start then computes its own, as before.
+ * keeps it. Once PR 6 copies it, a reading that is not fresh is never copied; the start then computes its own, as now.
  *
  * Pure (no database): the rules a build, a copy and a start share. The reader is `reading.ts`.
  */

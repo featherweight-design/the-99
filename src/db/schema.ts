@@ -3507,14 +3507,17 @@ export const preconSynopses = pgTable("precon_synopses", {
   /**
    * THE PRECON'S BRACKET READING (small items 5, PR 6a): exactly the `deck_profiles` row an Analyze press
    * would write for a deck holding this precon's list, computed from THIS database's catalog at the row's
-   * role basis (no model), so a start copies it instead of computing it in the arrival render. Null until
+   * role basis (no model), for a start to copy instead of computing it in the arrival render (that copy is
+   * PR 6; this column has no reader in the app until it lands). Null until
    * a build or copy writes one. `reading` is the profile with a placeholder `deckId` (the copy sets the
    * deck's), and the rest are the profile row's own fields.
    *
-   * IT IS JUDGED FRESH BY ITS OWN KEY, never by `current` (which is the Overview's): the list it was built
-   * for (`reading_list`), the catalog generation read before it was computed (`reading_catalog`, the key
-   * `deck_profiles.catalog` stores), and the profile and bracket-rules versions (`preconReadingCurrent`).
-   * The build rewrites it whenever that key no longer matches, and the copy writes the TARGET's own.
+   * IT IS JUDGED FRESH BY ITS OWN RULE, never by `current` (which is the Overview's): the list it was built
+   * for (`reading_list`), the profile and bracket-rules versions (`preconReadingCurrent`), and no change log
+   * entry touching its cards since the log head read before it was computed (`readingMoved`). NEVER the
+   * catalog generation: `reading_catalog` is kept only as `deck_profiles.catalog` keeps it, because every
+   * ingest and copy stamps the generation and a reading keyed on it would go stale as it was written.
+   * The build rewrites it whenever that rule says it moved, and the copy writes the TARGET's own.
    */
   reading: jsonb("reading").$type<DeckProfile>(),
   readingPermits: integer("reading_permits").array(),

@@ -27,7 +27,7 @@
 //
 // THE READING TOO (small items 5, PR 6a). Every request is built from the precon's reading
 // (`loadDeckProfileFromHead`, no model), so each row also stores that reading (`reading_*`), the
-// first reading a start copies into its deck. It is written, before anything is sent, for every row
+// first reading a start will copy into its deck (PR 6; a start still computes its own until then). It is written, before anything is sent, for every row
 // whose stored reading is missing, not current for the precon's list and this code, or whose data
 // moved since (a change log entry touching it, `preconReadingDue`), WHATEVER its Overview hash says; a newly stored Overview
 // gets one at the write. `--readings-only` does that step alone: no model, no key, no Overview touched.

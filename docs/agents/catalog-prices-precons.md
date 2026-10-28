@@ -94,7 +94,8 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   it, and a deck's stored reading is never judged by it either. The build writes a row's reading, before anything is sent,
   whenever none is stored or it is not fresh (`preconReadingDue`), WHATEVER the Overview's hash says; a newly stored Overview
   takes the reading of the request rebuilt at its write. `--readings-only` runs that step alone: no model, no key, no
-  Overview touched (a backfill, or a scratch branch's seed). `readPreconCarry` is the one read a start makes: a precon's
+  Overview touched (a backfill, or a scratch branch's seed). `readPreconCarry` is the read a start will make once the arrival copy lands (small items PR 6;
+  until then it has no caller outside its tests, and a start still computes its reading in `after()`): a precon's
   Overview and its reading in one row, current or not.
 - **A carried-over Overview** is a `deck_synopses` row with `precon_file` set and `model_call_id` NULL (a check constraint
   makes the two exclusive). It holds no allowance unit and no `model_calls` row, so the allowance, credits, `freeRunsFor` and

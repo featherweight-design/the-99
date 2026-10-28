@@ -62,7 +62,8 @@ async function main() {
     const generationOf = async (q: Pick<typeof target, "select">) => (await q.select({ at: sql<string>`(extract(epoch from ${catalogRefreshes.refreshedAt}) * 1000)::bigint` })
       .from(catalogRefreshes))[0]?.at ?? "none";
     const generation = await generationOf(target);
-    // The key a reading is judged by (`catalogGeneration`'s), and the target's log head, both before any reading is built.
+    // The generation stored with a reading (`reading_catalog`, kept as `deck_profiles.catalog` keeps it; freshness never
+    // reads it, see `reading-rule.ts`), and the target's log head, the mark freshness DOES read, both before any reading is built.
     const catalogKey = generationKey(generation === "none" ? null : generation);
     const seenSeq = await readLogHead(target);
 
