@@ -69,6 +69,7 @@ const FEEDERS: Record<string, string> = {
   // printing (browse.ts), so there is no feeder to chain.
   "components/collection/rows-view.tsx": "",
   "components/decks/proxy-list-view.tsx": "lib/decks/proxy-list.ts",
+  // By deck's rows too (`CartFactsRow`, cart v2 PR 5): the group no longer draws a name of its own.
   "components/decks/cart/cart-line.tsx": "lib/decks/cart-read.ts",
   "components/intake/choose-row.tsx": "lib/intake/rows.ts",
   // The picks a past run lists that have gone: the printing card details open (`chainArt` in `loadGonePicks`).
@@ -77,7 +78,6 @@ const FEEDERS: Record<string, string> = {
   // card details uses (`chainArt` in `loadHomeFeed`'s lookups).
   "components/feed/feed-item.tsx": "lib/feed/home.ts",
   "components/commanders/synergy-row.tsx": "app/commanders/[slug]/page.tsx",
-  "components/decks/cart/cart-deck-group.tsx": "lib/decks/cart-read.ts",
   // Tokens are not cards: a token row previews the printing it is pictured with (`assembleDeckTokens`), which is the one
   // its card details open on (`loadTokenDetail`), so there is no owned-printing chain to apply. Named so the list stays complete.
   "components/decks/token-makers.tsx": "",
