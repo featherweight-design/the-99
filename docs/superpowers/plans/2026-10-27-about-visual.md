@@ -116,7 +116,7 @@
 - Modify: `src/lib/discovery/tools.ts`, `src/lib/discovery/entry-targets.ts` (gains `LABEL_TARGETS`, the client mirror of `Tool.label`), `src/lib/discovery/entry-targets.test.ts` (holds both mirrors equal), `src/lib/discovery/tools.test.ts`
 
 **Interfaces:**
-- Produces: each `Tool` gains `label: string | null` (a `labelKey`). `precons` and `mana-balance` get `null` until PR 9. `entry` stays until PR 7.
+- Produces: each `Tool` gains `label: string | null` (a `labelKey`). `precons` and `mana-balance` get `null` until PR 9. `entry` stays until PR 9; 7b trims it to the remaining entries.
 
 | Tool | Label |
 |---|---|
