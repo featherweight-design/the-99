@@ -124,6 +124,7 @@ section{margin:0 0 32px}h2{font-size:16px;margin:0 0 10px}.n{color:var(--muted);
 .col{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px}h3{margin:0 0 6px;font-size:15px}h4{margin:10px 0 4px;font-size:13px}
 ol{margin:0;padding-left:20px}li{margin:0 0 4px}li span{display:block;color:var(--muted);font-size:12.5px}.miss{color:var(--muted)}
 </style></head><body><h1>Suggested changes: three ways to fill a count</h1><p class="lede">Each case shows six runs on the same deck, count and request, labelled P to U in an order shuffled per case. Which is which is in a separate key. Read each column as a player would: are these the changes you would make?</p>${sections}</body></html>\n`);
+  // The key is written beside the board but never committed (`.gitignore`): the repository is where Hugh could read it.
   writeFileSync(`${OUT}/board-key.json`, `${JSON.stringify(key, null, 2)}\n`);
   console.log(`wrote ${OUT}/summary.md, board.html and board-key.json from ${rows.length} runs ($${total.toFixed(2)})`);
   process.exit(0);
