@@ -205,7 +205,7 @@ async function workV2(args: {
       const refill = req.stage.endsWith("Refill");
       if (refill) void markV2Progress(run.runId, "refilling", sideOf(req.stage), true).catch(() => undefined);
       const call = stub
-        ? stub({ stage: req.stage, ask: wire.requestedCount })
+        ? stub({ stage: req.stage, ask: req.ask })
         : streamModel({
           model: TUNING_MODEL, system: req.system, user: req.user, maxTokens: req.maxTokens, schema: req.schema,
           deadlineMs: req.deadlineMs, effort: TUNING_EFFORT,

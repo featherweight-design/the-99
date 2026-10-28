@@ -57,7 +57,7 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
 }
 
 /**
- * Per-card apply and dismiss are v10's alone (plan P3): a line of a run still being made is not the player's yet, and a
+ * Per-card apply, undo and dismiss are v10's alone (plan P3): a line of a run still being made is not the player's yet, and a
  * v2 line is applied with its picked set (PR 4), never alone, since one line moves the deck off 99.
  */
 export function appliesOneByOne(run: { status: string; requestedCount: number | null }): boolean {
@@ -103,7 +103,8 @@ export async function applyItem(itemId: string, userId: string, env: NodeJS.Proc
 export async function undoItem(itemId: string, userId: string, env: NodeJS.ProcessEnv): Promise<string | null> {
   return db.transaction(async (tx) => {
     const item = await lockedItem(tx, itemId, userId);
-    if (!item || item.verdict !== "accepted" || !item.undoSnapshot) return null;
+    // A v2 line is undone with its whole set (`undoSet`): one line alone would move the deck off 99 and strand the set.
+    if (!item || item.verdict !== "accepted" || !item.undoSnapshot || !appliesOneByOne(item.run)) return null;
     const { deckId, addOracleId, cutOracleId, undoSnapshot: snap } = item;
 
     if (!(await restoreSwap(tx, deckId, cutOracleId, addOracleId, snap, env))) return null;

@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 // One item's two reads (`lockedItem`): the run it belongs to, then the item, locked. Writes are recorded, never made.
-const fx = vi.hoisted(() => ({ run: { status: "ok", requestedCount: null as number | null }, updates: 0 }));
+const fx = vi.hoisted(() => ({
+  run: { status: "ok", requestedCount: null as number | null },
+  item: { verdict: "pending", undoSnapshot: null as object | null },
+  updates: 0,
+}));
 vi.mock("../../db", () => {
   const chain = (rows: unknown[]) => {
     const c: Record<string, unknown> = {};
@@ -14,7 +18,7 @@ vi.mock("../../db", () => {
   const tx = {
     select: () => (reads++ % 2 === 0
       ? chain([{ deckId: "deck", ...fx.run }])
-      : chain([{ addOracleId: "a", cutOracleId: null, verdict: "pending", undoSnapshot: null }])),
+      : chain([{ addOracleId: "a", cutOracleId: null, ...fx.item }])),
     execute: async () => ({ rows: [] }),
     update: () => ({ set: () => ({ where: async () => { fx.updates += 1; } }) }),
   };
@@ -29,7 +33,7 @@ vi.mock("../swaps/draft-swap", () => ({
 }));
 vi.mock("../decks/touch", () => ({ touchDeck: async () => undefined }));
 
-import { appliesOneByOne, applyItem, setDismissed } from "./verdicts";
+import { appliesOneByOne, applyItem, setDismissed, undoItem } from "./verdicts";
 
 // Plan P3: per-card apply is v10's alone. A line of a run still being made is not the player's yet, and a v2 line is
 // applied with its picked set (PR 4): one line alone would move the deck off 99.
@@ -73,5 +77,21 @@ describe("applyItem", () => {
       expect(await applyItem("item", "me", {} as NodeJS.ProcessEnv)).toBe(wrote ? "deck" : null);
       expect([swaps.planned, swaps.applied, fx.updates]).toEqual(wrote ? [1, 1, 1] : [0, 0, 0]);
     }
+  });
+});
+
+describe("undoItem", () => {
+  it("undoes a finished v10 run's applied line, and refuses a v2 line (undone with its set)", async () => {
+    fx.item = { verdict: "accepted", undoSnapshot: {} };
+    for (const [run, wrote] of [
+      [{ status: "ok", requestedCount: null }, true],
+      [{ status: "ok", requestedCount: 5 }, false],
+    ] as const) {
+      fx.run = run;
+      fx.updates = 0;
+      expect(await undoItem("item", "me", {} as NodeJS.ProcessEnv)).toBe(wrote ? "deck" : null);
+      expect(fx.updates).toBe(wrote ? 1 : 0);
+    }
+    fx.item = { verdict: "pending", undoSnapshot: null };
   });
 });

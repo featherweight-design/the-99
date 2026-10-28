@@ -260,15 +260,16 @@ describe("the v2 run's work", () => {
   it("saves each addition the moment it is kept, marks the additions in, then the cuts, and settles spent", async () => {
     const revalidate = await run();
     expect(s.streamed).toBe(0);
-    const adds = STUB_ADDITIONS.slice(0, 3).map((n) => `line add ${n}`);
-    const cuts = body.slice(0, 3).map((n) => `line cut ${n}`);
+    // The stub answers each call's own ask, ceil(1.5 × 3) = 5 (not N, which left every list under-produced).
+    const adds = STUB_ADDITIONS.slice(0, 5).map((n) => `line add ${n}`);
+    const cuts = body.slice(0, 5).map((n) => `line cut ${n}`);
     expect(s.events).toEqual([...adds, "in add true", ...cuts, "in cut true"]);
     const [handle, outcome, report, settleAs] = s.persisted[0] as [unknown, unknown, { keptCount: number; v2: Record<string, unknown> }, string];
     expect(handle).toEqual({ runId: "run_1", callId: "call_1" });
     expect(outcome).toEqual({ status: "ok" });
     expect(settleAs).toBe("spent");
-    expect(report.keptCount).toBe(6);
-    expect(report.v2).toMatchObject({ in: { add: true, cut: true }, callCount: 2 });
+    expect(report.keptCount).toBe(10);
+    expect(report.v2).toMatchObject({ in: { add: true, cut: true }, callCount: 2, underProduced: { add: false, cut: false } });
     expect(revalidate).toHaveBeenCalledTimes(1);
   });
 

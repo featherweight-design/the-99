@@ -86,6 +86,8 @@ describe("runV2", () => {
     expect(f.requests[0].system).toContain("Propose exactly 5 cards to add");
     expect(f.requests[1].user).toContain("Coming in (5): Add 1; Add 2; Add 3; Add 4; Add 5.");
     expect(f.requests[0].maxTokens).toBe(replyCeilingFor(5));
+    // Each call carries its own ask, which the staged stub answers (not N).
+    expect(f.requests.map((q) => q.ask)).toEqual([5, 5]);
     expect(r.additions.kept.map((l) => l.card)).toEqual(adds(1, 5));
     expect(r.cuts.kept).toHaveLength(5);
     expect(r.cuts.target).toBe(3);

@@ -40,6 +40,8 @@ export type V2Side = "add" | "cut";
 /** One streamed call, as the engine asks for it. PR 3 adapts `client.ts`'s `callModel` to this. */
 export type V2CallRequest = {
   stage: V2Stage;
+  /** How many lines this call asks for (its prompt's count): the staged stub answers exactly that many. */
+  ask: number;
   system: string;
   user: string;
   schema: z.ZodTypeAny;
@@ -195,7 +197,7 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     calls.push(here);
     const t = now();
     const call = args.callModel({
-      stage, system, user,
+      stage, ask: prompt.ask, system, user,
       schema: suggestedChangesV2Schema(schemaCapFor(prompt.ask), prompt.list),
       maxTokens: replyCeilingFor(prompt.ask),
       deadlineMs,
