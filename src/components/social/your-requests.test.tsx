@@ -20,7 +20,7 @@ const req = (id: string, state: YourRequest["state"], over: Partial<YourRequest>
   id, oracleId: `card-${id}`, card: { name: "Jace, Multiverse Architect", imageUri: null }, copies: 1,
   deckName: "Thopter Works", deckId: "deck-1", holder: { publicId: "pub-colin", displayName: "Colin", commander: null },
   state, daysLeft: state === "open" || state === "unavailable" || state === "unneeded" ? 12 : null,
-  createdAt: new Date(NOW.getTime() - 2 * DAY), answeredAt: null, cleared: false, standalone: false, unseen: false, othersWithSpare: [],
+  createdAt: new Date(NOW.getTime() - 2 * DAY), answeredAt: null, seenAt: null, cleared: false, standalone: false, unseen: false, othersWithSpare: [],
   canAskAgain: state === "expired", ...over,
 });
 

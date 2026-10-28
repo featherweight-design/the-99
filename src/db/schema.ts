@@ -3809,6 +3809,12 @@ export const spareRequests = pgTable("spare_requests", {
    */
   askerClearedAt: timestamp("asker_cleared_at", { withTimezone: true }),
   /**
+   * When the asker opened this answer (small items item 3: the answer sheet over Home). An answer is unseen while it
+   * is newer than BOTH this and the asker's Friends cursor (`friends_seen_at`), so opening one answer leaves another's
+   * diamond and takes one off the badge. Written only by `markAnswerSeen`, and only on a change.
+   */
+  askerSeenAt: timestamp("asker_seen_at", { withTimezone: true }),
+  /**
    * Asked for no list (a friend's Spares tab, signature card call 8): Your requests never reads it as no longer needed,
    * since no deck's Shopping list held it to begin with. Shopping's and the cart's asks are false.
    */

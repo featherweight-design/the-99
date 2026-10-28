@@ -399,6 +399,8 @@ export type MyAsk = {
   /** Days left on an open (or unavailable, or unneeded) ask; null once answered or expired. */
   daysLeft: number | null;
   createdAt: Date; answeredAt: Date | null;
+  /** When the asker opened this answer one by one (the answer sheet over Home), or null. */
+  seenAt: Date | null;
   /**
    * The asker cleared it from their list: read only with `keepClearedDeclines`, for a No still inside its cooldown
    * (which still holds that friend back). Your requests never draws one.
@@ -417,7 +419,7 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
   const cleared = keepClearedDeclines
     ? sql`(msr.asker_cleared_at is null or (msr.status = 'no' and msr.answered_at > ${declineFloor(now).toISOString()}::timestamptz))`
     : sql`msr.asker_cleared_at is null`;
-  return sql`select msr.id, msr.oracle_id, msr.status, msr.created_at, msr.answered_at, msr.copies,
+  return sql`select msr.id, msr.oracle_id, msr.status, msr.created_at, msr.answered_at, msr.asker_seen_at, msr.copies,
       msp.public_id::text as public_id, msp.display_name, mc.name as card_name, mc.image_uri as card_image, mdk.name as deck_name,
       mdk.id as deck_id, msr.asker_cleared_at is not null as cleared, msr.standalone,
       mcc.oracle_id as commander_oracle_id, mcc.name as commander_name, coalesce(mfp.art_crop_uri, mcc.art_crop_uri) as commander_art
@@ -435,6 +437,7 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
 
 type MyRow = Face & {
   id: string; oracle_id: string; status: StoredStatus; created_at: Date | string; answered_at: Date | string | null;
+  asker_seen_at?: Date | string | null;
   copies: number; public_id: string; display_name: string; card_name: string; card_image: string | null; deck_name: string | null;
   deck_id: string | null; cleared: boolean;
   /** Asked for no list (a friend's Spares tab): never reads `unneeded`. */
@@ -494,6 +497,7 @@ export function deriveMyAsks(
       id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies),
       deckName: r.deck_name, deckId: r.deck_id, holder: { publicId: r.public_id, displayName: r.display_name, commander: faceOf(r) },
       state, daysLeft: open ? daysLeft(a.createdAt, now) : null, createdAt: a.createdAt, answeredAt: a.answeredAt,
+      seenAt: r.asker_seen_at == null ? null : new Date(r.asker_seen_at),
       cleared: r.cleared === true, standalone: r.standalone === true,
     };
   });
@@ -572,12 +576,16 @@ export function waitingAsksCountQuery(holderId: string, now: Date): SQL {
       ${notDismissedAsk(sql`wsr`)}`;
 }
 
-/** Answers newer than the asker's Friends cursor (none read is every answer unseen), to current friends, still shown. */
+/**
+ * Answers newer than the asker's Friends cursor (none read is every answer unseen) and not opened one by one since they
+ * landed (`asker_seen_at`, the answer sheet over Home), to current friends, still shown.
+ */
 function unseenAnswers(askerId: string, now: Date): SQL {
   return sql`select 1 from ${spareRequests} usr
     join ${friendLinks} ufl on ufl.user_id = usr.asker_user_id and ufl.friend_user_id = usr.holder_user_id
     where usr.asker_user_id = ${askerId} and usr.status in ('yes', 'no') and usr.asker_cleared_at is null
       and usr.answered_at > ${openFloor(now).toISOString()}::timestamptz
+      and (usr.asker_seen_at is null or usr.answered_at > usr.asker_seen_at)
       and usr.answered_at > coalesce(
         (select uup.friends_seen_at from ${userPrefs} uup where uup.user_id = ${askerId}), '-infinity'::timestamptz)`;
 }
@@ -598,6 +606,24 @@ export function markAnswersSeenQuery(askerId: string, now: Date): SQL {
     where exists (${unseenAnswers(askerId, now)})
     on conflict (user_id) do update set friends_seen_at = excluded.friends_seen_at
       where mup.friends_seen_at is null or mup.friends_seen_at < excluded.friends_seen_at`;
+}
+
+/**
+ * Marks ONE answer seen: the asker opened it (small items item 3, the answer sheet over Home). Only the asker's own
+ * answered request, and only while it is unseen by this mark, so a repeat open writes nothing (the stamp trigger moves
+ * on any UPDATE). Apart for a test.
+ */
+export function markAnswerSeenQuery(askerId: string, requestId: string, now: Date): SQL {
+  return sql`update ${spareRequests} asr set asker_seen_at = ${now.toISOString()}::timestamptz
+    where asr.id = ${requestId}::uuid and asr.asker_user_id = ${askerId} and asr.status in ('yes', 'no')
+      and (asr.asker_seen_at is null or asr.asker_seen_at < asr.answered_at)`;
+}
+
+/** Marks one answer seen; whether it wrote. Nothing while the switch is off. */
+export async function markAnswerSeen(askerId: string, requestId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
+  if (!spareRequestsEnabled(env)) return false;
+  const done = await q.execute(markAnswerSeenQuery(askerId, requestId, now));
+  return (done.rowCount ?? 0) > 0;
 }
 
 async function countOf(query: SQL, q: Executor): Promise<number> {

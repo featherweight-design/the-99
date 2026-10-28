@@ -70,6 +70,19 @@ function standing(now: Date): SQL {
  * as the catalog branches type it: `public_id` is a uuid and the union's other branches give `null::text`, which
  * Postgres refuses to match ("UNION types text and uuid cannot be matched"), so it is cast to text.
  */
+/**
+ * True for a feed row (`key`, the union's `item:<id>`) that ANSWERS the reader's own spare request the reader has
+ * opened one by one since it landed (`asker_seen_at`, the answer sheet over Home): it reads seen whatever the cursor
+ * says, as the Friends badge's `unseenAnswers` does. Every other row is false. On the feed union's alias.
+ */
+export function answerOpened(viewerId: string, key: SQL): SQL {
+  return sql`exists (select 1 from ${feedItems} ofi
+    join ${spareRequests} osr on osr.id::text = ofi.dedupe_key and osr.asker_user_id = ofi.user_id
+    where 'item:' || ofi.id::text = ${key} and ofi.user_id = ${viewerId} and ofi.kind = 'spare-request'
+      and ofi.data ->> 'answer' is not null
+      and osr.asker_seen_at is not null and osr.asker_seen_at >= osr.answered_at)`;
+}
+
 export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[], now: Date): SQL {
   return sql`select fi.kind as kind, 'item:' || fi.id::text as key, fi.created_at as created_at,
       null::text as code, null::text as name, null::text as file_name,

@@ -22,7 +22,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { catalogFirstSeen, feedDismissals, precons, sets, userPrefs } from "../../db/schema";
 import { RELEASE_SET_TYPES } from "../catalog/index-due";
-import { storedFeedBranch } from "../social/feed-items";
+import { answerOpened, storedFeedBranch } from "../social/feed-items";
 import { unseenAnswersCount } from "../social/spare-requests";
 import { answerOf, type Answer } from "../social/spare-request-rules";
 import { availableFeedKinds } from "./flag";
@@ -110,7 +110,7 @@ export function feedQuery(viewerId: string, kinds: readonly FeedKind[], now: Dat
   if (!union) return null;
   return sql`select f.kind, f.key, f.created_at, f.code, f.name, f.file_name, f.oracle_id, f.variant_id,
       f.friend_public_id, f.friend_name, f.data,
-      f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz) as unseen
+      (f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz) and not ${answerOpened(viewerId, sql`f.key`)}) as unseen
     from (${union}) f
     left join ${userPrefs} up on up.user_id = ${viewerId}
     where ${inWindow(now)}
@@ -124,7 +124,8 @@ export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], n
   return sql`select count(*)::int as n
     from (${union}) f
     left join ${userPrefs} up on up.user_id = ${viewerId}
-    where ${inWindow(now)} and f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz)`;
+    where ${inWindow(now)} and f.created_at > coalesce(${cursorOf(cursor)}, '-infinity'::timestamptz)
+      and not ${answerOpened(viewerId, sql`f.key`)}`;
 }
 
 /**

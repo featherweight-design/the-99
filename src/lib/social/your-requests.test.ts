@@ -1,3 +1,4 @@
+import { PgDialect } from "drizzle-orm/pg-core";
 // Your requests' read (spare requests PR 3d): ONE read of the stored asks (cleared Nos inside their cooldown included,
 // for the retry rule, never returned), ONE friend-spares read for the open, expired and declined asks' cards, the buy list only
 // with an open ask, the diamond from the Friends cursor, who else has a spare after a No, and Ask again's eligibility.
@@ -12,7 +13,7 @@ vi.mock("./spare-requests", async (importOriginal) => ({
 vi.mock("../decks/availability-query", () => ({ loadDeckBuyRows: m.buyRows }));
 vi.mock("./spares", () => ({ loadFriendSpares: m.spares, loadOwnOffered: vi.fn() }));
 
-import { answerUnseen, loadYourRequests } from "./your-requests";
+import { answerUnseen, loadYourRequests, answeredRequestIdQuery } from "./your-requests";
 import type { ShownAsk } from "./spare-requests";
 
 const ON = { SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
@@ -53,6 +54,13 @@ describe("answerUnseen", () => {
     expect(answerUnseen({ state: "yes", answeredAt: at }, new Date("2026-10-22T00:00:00Z"))).toBe(false);
     expect(answerUnseen({ state: "open", answeredAt: null }, null)).toBe(false);
     expect(answerUnseen({ state: "expired", answeredAt: null }, null)).toBe(false);
+  });
+
+  it("is seen once the answer itself was opened after it landed, whatever the cursor (small items item 3)", () => {
+    expect(answerUnseen({ state: "yes", answeredAt: at, seenAt: new Date("2026-10-21T01:00:00Z") }, null)).toBe(false);
+    expect(answerUnseen({ state: "no", answeredAt: at, seenAt: at }, new Date("2026-10-20T00:00:00Z"))).toBe(false);
+    // Opened before a NEWER answer landed (a later No over an earlier ask): unseen again.
+    expect(answerUnseen({ state: "yes", answeredAt: at, seenAt: new Date("2026-10-20T00:00:00Z") }, null)).toBe(true);
   });
 });
 
@@ -167,5 +175,15 @@ describe("loadYourRequests", () => {
       m.shown.mockResolvedValue([stored("no", "no", { holder: "Max", createdAt: ago(3), answeredAt: ago(2) }), expired()]);
       expect((await loadYourRequests("u1", ON, NOW)).find((r) => r.id === "exp")?.canAskAgain).toBe(true);
     });
+  });
+});
+
+describe("answeredRequestIdQuery (small items item 3)", () => {
+  it("names a request only through the reader's own ANSWER item, as the reader's own ask", () => {
+    const { sql, params } = new PgDialect().sqlToQuery(answeredRequestIdQuery("user_1", "0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f"));
+    expect(sql).toContain("asr.id::text = afi.dedupe_key and asr.asker_user_id = afi.user_id");
+    expect(sql).toContain("afi.user_id = $1 and afi.id = $2::uuid and afi.kind = 'spare-request'");
+    expect(sql).toContain("afi.data ->> 'answer' is not null");
+    expect(params).toEqual(["user_1", "0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f"]);
   });
 });

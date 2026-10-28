@@ -10,7 +10,7 @@ vi.mock("./feed-write", () => ({ recordFeedItem: vi.fn(async () => true) }));
 import {
   answerQuery, answerSpareRequest, askForSpare, askInsteadForSpare, askLockQuery, clearQuery, closeSpareRequest, expireStaleQuery,
   incomingAsksQuery, loadAskStates, loadIncomingAsks, loadMyAsks, lockFriendshipQuery, markAnswersSeen, markAnswersSeenQuery,
-  myAsksQuery, ownDeckQuery, unseenAnswersCount, unseenAnswersCountQuery, waitingAsksCount, waitingAsksCountQuery, withdrawForInsteadQuery,
+  markAnswerSeenQuery, myAsksQuery, ownDeckQuery, unseenAnswersCount, unseenAnswersCountQuery, waitingAsksCount, waitingAsksCountQuery, withdrawForInsteadQuery,
   withdrawQuery,
 } from "./spare-requests";
 import { loadFriendSpares, loadOwnOffered } from "./spares";
@@ -400,6 +400,8 @@ describe("the Friends badge's spare-request queries", () => {
     expect(q).toMatch(/join "friend_links" ufl on ufl\.user_id = usr\.asker_user_id and ufl\.friend_user_id = usr\.holder_user_id/);
     expect(q).toMatch(/usr\.status in \('yes', 'no'\) and usr\.asker_cleared_at is null and usr\.answered_at > \$2::timestamptz/);
     expect(q).toMatch(/and usr\.answered_at > coalesce\( \(select uup\.friends_seen_at from "user_prefs" uup where uup\.user_id = \$3\), '-infinity'::timestamptz\)/);
+    // An answer opened one by one (the answer sheet over Home) is seen whatever the cursor says.
+    expect(q).toContain("and (usr.asker_seen_at is null or usr.answered_at > usr.asker_seen_at)");
     expect(params).toEqual(["a", openFloor(NOW).toISOString(), "a"]);
   });
 
@@ -416,5 +418,16 @@ describe("the Friends badge's spare-request queries", () => {
     expect(await unseenAnswersCount("a", {} as NodeJS.ProcessEnv, NOW)).toBe(0);
     expect(await markAnswersSeen("a", {} as NodeJS.ProcessEnv, NOW)).toBe(false);
     expect(db.execute).not.toHaveBeenCalled();
+  });
+});
+
+describe("markAnswerSeenQuery (small items item 3)", () => {
+  it("marks ONE answer of the reader's own, only while that answer is unseen by the mark", () => {
+    const { sql, params } = new PgDialect().sqlToQuery(markAnswerSeenQuery("a", "44444444-4444-4444-8444-444444444444", NOW));
+    const q = sql.replace(/\s+/g, " ");
+    expect(q).toBe(
+      "update \"spare_requests\" asr set asker_seen_at = $1::timestamptz where asr.id = $2::uuid and asr.asker_user_id = $3 and asr.status in ('yes', 'no') and (asr.asker_seen_at is null or asr.asker_seen_at < asr.answered_at)",
+    );
+    expect(params).toEqual([NOW.toISOString(), "44444444-4444-4444-8444-444444444444", "a"]);
   });
 });
