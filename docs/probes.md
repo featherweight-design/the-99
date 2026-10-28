@@ -2931,6 +2931,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   pass, 21 cards apart from the plain build; with the marker dropped from `retryAnswersOf` (the rule
   before it) the retry reads null and its plan IS the plain build, failing three checks.
 
+- `pnpm probe:precon-overview-ledger` proves a carried-over precon overview (`deck_synopses.precon_file`
+  set, `model_call_id` null) counts toward nothing that counts model calls. It starts a real precon
+  deck, writes the carry-over's row, and reads the figures before and after: `readAllowance`,
+  `freeRunsFor`, the admin Costs page's day figures and run rows, and the whole `model_calls` count. All
+  must be unchanged while the deck's shown overview IS the carried row. It also checks the schema
+  refuses a run with neither a call nor a precon. One deck under a per-run user id, deleted in a
+  `finally`; no model call. Scratch branch only (`assertScratchBranch`), named by `PROBE_DB_URL`.
+  Measured 2026-10-27 on a scratch branch of local-dev migrated to 0179: all seven checks pass.
+
 - `pnpm probe:help-me-choose-screens` walks Help me choose's results at 1300x900 and 390x844:
   the first page's candidates, every trial settling, the separators, overflow and animation, the
   three presses (Find commanders, Change answers, Start over), the row's box, the five-color drop

@@ -2608,7 +2608,7 @@ export const modelCalls = pgTable("model_calls", {
   // whether it still counts against its lot. No `on delete`: the purge deletes calls before lots.
   creditGrantId: uuid("credit_grant_id").references(() => creditGrants.id),
 }, (t) => [
-  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose')`),
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose', 'precon_overview')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // WHY a call was refunded, and only a refunded call has a reason. Written by `settleModelCall`; null
@@ -3126,8 +3126,18 @@ export const deckSynopses = pgTable("deck_synopses", {
   fingerprint: text("fingerprint").notNull(),
   contractVersion: integer("contract_version").notNull(),
   model: text("model").notNull(),
-  /** The allowance unit this run holds; its outcome write settles it. */
-  modelCallId: uuid("model_call_id").notNull().references(() => modelCalls.id),
+  /**
+   * The allowance unit this run holds; its outcome write settles it. NULL only on an overview a precon
+   * start CARRIED OVER (`precon_file` set): no model was called for this deck, so there is no unit, and
+   * every reader that counts calls (the allowance, `freeRunsFor`, admin costs) reads `model_calls` and
+   * so never counts it.
+   */
+  modelCallId: uuid("model_call_id").references(() => modelCalls.id),
+  /**
+   * The plain precon whose pre-written overview (`precon_synopses`) this row copies, set only on that
+   * carry-over. No FK: the precon ingest replaces `precons` whole, as `decks.built_from_precon` notes.
+   */
+  preconFile: text("precon_file"),
   status: text("status").notNull().default("pending"),
   /** Null while pending. */
   outcome: text("outcome"),
@@ -3153,6 +3163,8 @@ export const deckSynopses = pgTable("deck_synopses", {
   errorStatus: integer("error_status"),
 }, (t) => [
   check("deck_synopses_status_check", sql`${t.status} in ('pending', 'done')`),
+  // A run without an allowance unit is a carried-over precon overview, and nothing else is.
+  check("deck_synopses_call_or_precon_check", sql`(${t.modelCallId} is null) = (${t.preconFile} is not null)`),
   check(
     "deck_synopses_outcome_check",
     sql`(${t.status} = 'pending') = (${t.outcome} is null)
@@ -3433,6 +3445,40 @@ export const preconTokens = pgTable("precon_tokens", {
 }, (t) => [
   primaryKey({ columns: [t.fileName, t.tokenPrintingId] }),
   check("precon_tokens_quantity_check", sql`${t.quantity} > 0`),
+]);
+
+/**
+ * A precon's pre-written Overview (Hugh, 2026-10-27): the synopsis a deck started from that precon
+ * would get on its first Analyze, to be written ONCE on staging and copied to production (the builder
+ * and the copy are Precon Overviews PRs 2 and 3; nothing writes this table yet). Catalog data: nothing in it is anyone's, because the
+ * synopsis reads only the list and the catalog (`synopsis/generate.ts`, `factsWithSource`).
+ *
+ * One row per PLAIN precon and contract: a Collector's Edition twin repeats its plain edition's list
+ * (`precons.twin_of`), so it resolves to the plain one. No FK to `precons`: the ingest replaces that
+ * table whole every day, and a cascade would empty this one with it.
+ *
+ * `list_fingerprint` is `listFingerprint` over the deck a start writes (`preconDeckCards`), so a
+ * started deck carries this over only while its own list still is that list. `input_hash` is the
+ * hash of the exact model request (`synopsisRequestHash`), which is built from the catalog: it moves
+ * when any card text, combo, label or index row the request reads moves. `current` says the hash
+ * still matches THIS database's own inputs, which the copy is to re-check; only a current row is carried
+ * over (`carryOverDecision`).
+ */
+export const preconSynopses = pgTable("precon_synopses", {
+  preconFile: text("precon_file").notNull(),
+  contractVersion: integer("contract_version").notNull(),
+  listFingerprint: text("list_fingerprint").notNull(),
+  inputHash: text("input_hash").notNull(),
+  model: text("model").notNull(),
+  content: jsonb("content").$type<CheckedSynopsis>().notNull(),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  costMicroUsd: bigint("cost_micro_usd", { mode: "number" }),
+  current: boolean("current").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  checkedAt: timestamp("checked_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.preconFile, t.contractVersion] }),
 ]);
 
 /**

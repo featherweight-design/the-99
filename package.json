@@ -104,6 +104,7 @@
     "probe:help-me-choose-search": "tsx scripts/probe-help-me-choose-search.ts",
     "probe:help-me-choose-fill": "tsx scripts/probe-help-me-choose-fill.ts",
     "probe:hmc-retry-answers": "tsx scripts/probe-hmc-retry-answers.ts",
+    "probe:precon-overview-ledger": "tsx scripts/probe-precon-overview-ledger.ts",
     "probe:help-me-choose-plumbing": "tsx scripts/probe-help-me-choose-plumbing.ts",
     "probe:intake-settle": "tsx scripts/probe-intake-settle.ts",
     "probe:help-me-choose-screens": "node scripts/probe-help-me-choose-screens.mjs",
