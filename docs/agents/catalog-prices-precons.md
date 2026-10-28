@@ -115,11 +115,19 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   `Catalog refresh` behind `PRECON_OVERVIEWS_ENABLED='true'`: `generate` on `catalog-staging` (`staging-deployed`, the
   `ANTHROPIC_API_KEY` secret, `PRECON_OVERVIEW_TARGET_BRANCH` staging's branch), then `copy` in `catalog-production`. A
   DISPATCH runs without the variable, and its `mode` picks `generate` alone, `generate+copy` or `copy-only`.
-- **The carry-over** (`carryOverPreconOverview`, `src/lib/precons/carry-over.ts`) runs INLINE in the deck page's render
-  on the `?from=precon` landing that `createDeckFromPrecon` and `startPreconOwned` redirect to (`carryOnArrival`,
-  `arrival-carry.ts`; d9's ruling, small items 5), before the header's chip and the notices read the stored reading, so the
-  bracket shows at once; every deck `addPrecons` starts, which has no landing, keeps it in `after()`. A repeat (a
-  re-render, a refresh keeping the parameter, a double arrival) is a no-op. With the OWNER's Analysis tab on, it first
+- **The arrival copy** (`carryStoredOnArrival`, `src/lib/precons/stored-carry.ts`; small items 5, PR 6, d9's option (c))
+  runs INLINE in the deck page's render on the `?from=precon` landing that `createDeckFromPrecon` and `startPreconOwned`
+  redirect to (`carryOnArrival`, `arrival-carry.ts`), before the header's chip and the notices read the stored reading. It
+  COPIES the precon's stored reading (`readPreconCarry`, PR 6a) as the deck's first reading, its profile given the deck's id
+  and pinned to v0, and its Overview by the same rules as below, under the deck's lock and only if the edit stamp has not
+  moved since the list was read. Nothing is computed. With an Overview carried, both are dated when the precon's Overview
+  was written (the date line's "Analysis from the precon list · date"); with none, the reading is dated now. A stored
+  reading that is NOT FRESH for the deck (`preconReadingFresh`: none, another list or version, or a change log entry
+  touching it since the build) copies nothing: the computing carry-over below runs in `after()` and the page renders
+  WITHOUT the chip, with no pending state drawn. A deck that already has a reading is left alone, silently.
+- **The computing carry-over** (`carryOverPreconOverview`, `src/lib/precons/carry-over.ts`) is that fallback, and every deck
+  `addPrecons` starts (no landing) runs it in `after()`. A deck that already has a reading returns `has_reading` at once,
+  with no log line. With the OWNER's Analysis tab on, it first
   stores the deck's bracket READING through the Analyze press's own call (`computeAndStoreProfile`, no model; a press finds
   the version holding its list, so the reading is v0's; as a FIRST reading, so it never replaces a row a replay or a
   press already wrote), whether or not an Overview follows. Then, unless the deck holds a
