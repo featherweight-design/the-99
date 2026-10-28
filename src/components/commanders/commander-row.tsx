@@ -361,6 +361,7 @@ export function CommanderRow({ item, position = 0 }: { item: CommanderRowView; p
               band has no room for the long denominator beside a 27px figure —
               and the stretched link's own name carries it too. */}
           <div
+            data-fit-chip=""
             className="flex flex-col items-center shrink-0 px-[9px] py-[6px] sm:px-[11px] sm:py-[7px]"
             style={FIT_CHIP_STYLE}
           >

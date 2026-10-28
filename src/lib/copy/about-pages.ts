@@ -93,7 +93,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Home",
     sub: "Where every visit starts.",
     screens: [{ screen: "home" }],
-    captures: { phone: ["p-home"], desktop: ["d-home"] },
+    captures: { phone: ["p-home", "p-home-in-use"], desktop: ["d-home", "d-home2"] },
     labels: [
       {
         id: "help",
@@ -132,7 +132,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "What’s new",
     sub: "News for you, newest first, after anything waiting on you.",
     screens: [{ screen: "home" }],
-    captures: { phone: ["p-home-feed"], desktop: [] },
+    captures: { phone: ["p-home-feed"], desktop: ["d-home-feed"] },
     labels: [
       {
         id: "lead",
@@ -153,7 +153,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Cards",
     sub: "Everything you own, card by card.",
     screens: [{ screen: "collection" }],
-    captures: { phone: ["p-collection"], desktop: ["d-collection"] },
+    captures: { phone: ["p-collection"], desktop: ["d-collection2"] },
     labels: [
       {
         id: "tabs",
@@ -208,7 +208,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Upload a file",
     sub: "Bring in an export from another app.",
     screens: [{ screen: "upload" }],
-    captures: { phone: ["p-upload"], desktop: [] },
+    captures: { phone: ["p-upload"], desktop: ["d-upload"] },
     labels: [
       {
         id: "drop",
@@ -271,7 +271,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Discover",
     sub: "Commanders worth buying.",
     screens: [{ screen: "discover" }],
-    captures: { phone: ["p-discover"], desktop: [] },
+    captures: { phone: ["p-discover"], desktop: ["d-discover"] },
     labels: [
       {
         id: "order",
@@ -292,7 +292,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Your decks",
     sub: "Every deck, with what it needs next.",
     screens: [{ screen: "decks" }],
-    captures: { phone: ["p-decks"], desktop: [] },
+    captures: { phone: ["p-decks"], desktop: ["d-decks2"] },
     labels: [
       {
         id: "new-deck",
@@ -340,7 +340,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Your deck",
     sub: "The list, and what each row is telling you.",
     screens: [{ screen: "deck", view: "your-deck" }],
-    captures: { phone: ["p-deck-your-deck"], desktop: ["d-deck"] },
+    captures: { phone: ["p-deck-top", "p-deck-your-deck"], desktop: ["d-deck-top", "d-deck-list"] },
     labels: [
       {
         id: "row",
@@ -397,7 +397,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Analysis",
     sub: "Where your deck sits, and the tools that tune it.",
     screens: [{ screen: "deck", view: "analysis" }],
-    captures: { phone: ["p-deck-analysis", "p-analysis-tuning"], desktop: ["d-analysis", "d-analysis-describe"] },
+    captures: { phone: ["p-deck-analysis", "p-deck-analysis-read", "p-analysis-tuning"], desktop: ["d-analysis", "d-analysis-describe"] },
     labels: [
       {
         id: "bracket",
@@ -463,7 +463,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Versions",
     sub: "Every commit, kept.",
     screens: [{ screen: "deck", view: "versions" }],
-    captures: { phone: ["p-deck-versions"], desktop: [] },
+    captures: { phone: ["p-deck-versions"], desktop: ["d-versions-precon"] },
     labels: [
       {
         id: "version",
@@ -493,7 +493,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Games",
     sub: "What happened at the table.",
     screens: [{ screen: "deck", view: "games" }],
-    captures: { phone: ["p-deck-games"], desktop: [] },
+    captures: { phone: ["p-deck-games"], desktop: ["d-games"] },
     labels: [
       {
         id: "log",
@@ -526,7 +526,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Stats",
     sub: "The deck, drawn.",
     screens: [{ screen: "deck", view: "stats" }],
-    captures: { phone: ["p-deck-stats"], desktop: [] },
+    captures: { phone: ["p-deck-stats"], desktop: ["d-stats"] },
     labels: [
       {
         id: "curve",
@@ -547,7 +547,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Notes",
     sub: "The small stuff, kept with the deck.",
     screens: [{ screen: "deck", view: "notes" }],
-    captures: { phone: ["p-deck-notes"], desktop: [] },
+    captures: { phone: ["p-deck-notes"], desktop: ["d-notes"] },
     labels: [
       {
         id: "note",
@@ -626,7 +626,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Shopping for all decks",
     sub: "Every deck’s missing cards in one cart.",
     screens: [],
-    captures: { phone: ["p-decks"], desktop: [] },
+    captures: { phone: ["p-decks"], desktop: ["d-decks2"] },
     labels: [
       {
         id: "cart",

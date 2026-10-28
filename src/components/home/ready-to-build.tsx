@@ -29,7 +29,7 @@ export function ReadyToBuild({
   if (ready.shown.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-[11px]">
+    <section data-ready-to-build="" className="flex flex-col gap-[11px]">
       {/* §SectionLabel */}
       <h2 className="m-0 flex-none font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
         {c.readyHeading}

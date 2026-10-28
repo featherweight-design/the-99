@@ -71,7 +71,7 @@ export function CommitmentsCard({
   const overCommitted = c.overCommittedValue(commitments.overCommitted);
   const toBuy = c.toBuyValue(shopping.total.copies, formatCents(shopping.total.cents));
   return (
-    <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
+    <section data-commitments="" className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
       {/* §SectionLabel, with this instance's own `margin-top: 4`. */}
       <h2 className="m-0 mt-[4px] flex-none font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
         {c.commitmentsHeading}
