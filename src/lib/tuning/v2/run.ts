@@ -250,7 +250,9 @@ async function workV2(args: {
         const [chipped] = focusRun
           ? strategyChips([line], focusRun, await loadAddCards(line.addOracleId ? [line.addOracleId] : []))
           : [line];
-        await insertV2Line(run.runId, chipped);
+        // False: the run is no longer pending (the deck was deleted, or the run was settled). Fail it here, so the engine
+        // makes no further paid call for a run that cannot keep its lines (Copilot round 2).
+        if (!(await insertV2Line(run.runId, chipped))) throw new Error(`v2 run ${run.runId} is no longer pending`);
       },
       onListIn: (side) => markV2Progress(run.runId, "in", side, true),
     });

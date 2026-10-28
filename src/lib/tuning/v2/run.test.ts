@@ -15,6 +15,7 @@ const s = vi.hoisted(() => ({
   persisted: [] as unknown[][],
   failed: [] as unknown[][],
   failInsert: false,
+  goneRun: false,
   failResolve: false,
   reaped: 0,
   streamed: 0,
@@ -92,6 +93,7 @@ vi.mock("../run-store", () => ({
   startRun: async (...args: unknown[]) => { s.started.push(args); return s.start; },
   insertV2Line: async (_run: string, line: { addOracleId: string | null; cutOracleId: string | null }) => {
     if (s.failInsert) throw new Error("the write failed");
+    if (s.goneRun) return false;
     s.lines.push(line as never);
     s.events.push(`line ${line.addOracleId ? `add ${line.addOracleId}` : `cut ${line.cutOracleId}`}`);
     return true;
@@ -143,6 +145,7 @@ beforeEach(() => {
   s.persisted = [];
   s.failed = [];
   s.failInsert = false;
+  s.goneRun = false;
   s.failResolve = false;
   s.reaped = 0;
   s.streamed = 0;
@@ -332,6 +335,15 @@ describe("the v2 run's work", () => {
     // An addition off the focus gets no chip; a cut on none of the top strategies leads with the app's own.
     expect(s.lines.find((l) => l.addOracleId === STUB_ADDITIONS[1])!.evidence.some((c) => c.kind === "focus")).toBe(false);
     expect(s.lines.find((l) => l.cutOracleId === body[0])!.evidence[0]).toEqual({ kind: "decklist", value: "on none of the top 1" });
+  });
+
+  it("a run that is no longer pending when a line is saved fails, and makes no further call (round 2)", async () => {
+    s.goneRun = true;
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await run();
+    log.mockRestore();
+    expect(s.persisted).toEqual([]);
+    expect(s.failed).toHaveLength(1);
   });
 
   it("a failed line save fails the run the P4 way, never charging, never throwing", async () => {
