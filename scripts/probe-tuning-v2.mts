@@ -28,6 +28,8 @@ import { requireEnv } from "./lib/env.mjs";
 import { sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
+import { PRODUCTION_BRANCH_ID, STAGING_BRANCH_ID } from "./lib/spend-target";
+
 import { db } from "../src/db";
 import { STUB_ADDITIONS } from "../src/lib/tuning/stub";
 import { applyPicks, setPicked, undoSet } from "../src/lib/tuning/v2/apply-set";
@@ -120,6 +122,12 @@ async function run(deckId: string, userId: string, n: number) {
 
 const made: string[] = [];
 async function main() {
+  const [{ id: branchId }] = await rows<{ id: string | null }>(sql`select current_setting('neon.branch_id', true) as id`);
+  // Fail closed: an unknown branch (a primary, or a non-Neon database) is refused as well as the two named ones.
+  if (!branchId || branchId === PRODUCTION_BRANCH_ID || branchId === STAGING_BRANCH_ID || process.env.VERCEL_ENV === "production") {
+    throw new Error(`refusing to write a fixture to ${branchId ?? "(unknown)"}: point DATABASE_URL at local-dev or a scratch branch`);
+  }
+  console.log(`branch ${branchId}`);
   const c = await catalog();
   if (!c) {
     console.log("FAIL  catalog — no colourless legend with 99 colourless nonland cards");
