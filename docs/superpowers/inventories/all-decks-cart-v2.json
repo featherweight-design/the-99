@@ -1,5 +1,6 @@
 {
   "feature": "Shopping for all decks v2 (handoff design_handoff_the99_all_decks_cart_v2; plan 2026-10-28-all-decks-cart-v2.md)",
+  "clearAbout": true,
   "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. Later PRs add the row facts, By friend's panels, the Friend and Owned filters and the reading, empty and failed states. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
   "rows": [
     {
