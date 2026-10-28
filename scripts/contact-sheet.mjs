@@ -28,7 +28,6 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 import { fakeCameraArgs, writeFakeCamera } from "./lib/fake-camera.mjs";
-import { neon } from "@neondatabase/serverless";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
@@ -384,17 +383,6 @@ const browser = await chromium.launch();
 const cameraBrowsers = new Set();
 /** The account's About columns as the run found them, when an inventory clears the gate. */
 let aboutPrior = null;
-/** The database the About write goes to: CONTACT_SHEET_DB_URL when set, else `.env`'s DATABASE_URL. */
-let aboutSql = null;
-
-/** Opens the About database and prints which Neon branch it is, before anything is written to it. */
-async function aboutDatabase() {
-  const url = process.env.CONTACT_SHEET_DB_URL || requireEnv(["DATABASE_URL"]).DATABASE_URL;
-  const sql = neon(url);
-  const [row] = await sql`select current_setting('neon.branch_id', true) as branch`;
-  console.log(`clearAbout: writing the About row on ${row?.branch ?? "an unnamed database"}${process.env.CONTACT_SHEET_DB_URL ? " (CONTACT_SHEET_DB_URL)" : " (.env DATABASE_URL)"}`);
-  return sql;
-}
 try {
   await clerkSetup();
   for (const size of WIDTHS) {
@@ -461,15 +449,11 @@ try {
     // photographs the gate itself. Both About columns are captured first and put back in the `finally`
     // (the ids `clearAboutSheet` adds included), once, from the first width's capture.
     if (inventory.clearAbout && inventory.signedOut) throw new Error("clearAbout needs a signed-in account; the inventory is signedOut.");
-    // The About write goes to the database the SERVER reads, which is not always `.env`'s: a walk whose server runs
-    // on a scratch branch names it with CONTACT_SHEET_DB_URL (never set in `.env`, so `env.mjs` cannot override it),
-    // and the branch written is printed before the first write. Unset, `.env`'s DATABASE_URL as before.
     if (inventory.clearAbout) {
       const userId = await page.evaluate(() => window.Clerk?.user?.id ?? null);
       if (!userId) throw new Error("clearAbout: signed in, but Clerk reports no user.");
-      aboutSql ??= await aboutDatabase();
-      aboutPrior ??= await captureAboutSeen(userId, aboutSql);
-      await clearAboutSheet(page, userId, aboutSql);
+      aboutPrior ??= await captureAboutSeen(userId);
+      await clearAboutSheet(page, userId);
     }
     for (const row of inventory.rows) {
       // A surface that only EXISTS at one width says so, and the other width is
@@ -568,7 +552,7 @@ try {
   // than reading as a clean sheet over a dirty account. The browser still closes.
   if (aboutPrior) {
     try {
-      await restoreAboutSeen(aboutPrior, aboutSql);
+      await restoreAboutSeen(aboutPrior);
     } catch (error) {
       console.error("COULD NOT RESTORE the About row; the account's About state is changed:", error);
       process.exitCode = 1;
