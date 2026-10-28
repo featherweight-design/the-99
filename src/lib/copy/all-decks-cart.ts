@@ -191,7 +191,7 @@ export const allDecksCartCopy = {
     panelAria: (friend: string) => `Spares from ${friend}`,
     /** Empty-One B: the read landed and no friend has a spare of a drawn line. No press. */
     noneTitle: "No friend has a spare of these",
-    noneBody: (lines: number) => `A spare is a copy none of a friend’s decks use. None of your friends has one of these ${cards(lines)} right now.`,
+    noneBody: (lines: number) => `A spare is a copy none of a friend’s decks use. None of your friends has ${lines === 1 ? "this card" : `one of these ${cards(lines)}`} right now.`,
     /** Empty-One C: the reader has no friends. Its title is `socialCopy.friends.emptyTitle`. */
     noFriendsBody: "When you add friends, the spares they have of these cards show here, and you can ask for them.",
     toFriends: "Go to Friends",
