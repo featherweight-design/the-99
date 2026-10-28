@@ -69,6 +69,17 @@ describe("setup's decks (G2, G3, G8)", () => {
     expect(q.sql).toContain("fl.friend_user_id = pm.user_id");
   });
 
+  it("leaves out a ruled friend's hidden deck and every deck while their sharing is off, never the viewer's own", () => {
+    const ruled = new PgDialect().sqlToQuery(setupDecksQuery(VIEWER, POD, ["user_friend"]));
+    expect(ruled.sql).toContain('left join "user_prefs" up on up.user_id = d.user_id');
+    expect(ruled.sql).toContain("(d.user_id = $");
+    expect(ruled.sql).toContain("d.user_id not in ($");
+    expect(ruled.sql).toContain("not d.hidden_from_friends and coalesce(up.friends_see_decks, true)");
+    expect(ruled.params).toContain("user_friend");
+    // No owner's switch on: the list is as shipped.
+    expect(q.sql).not.toContain("hidden_from_friends");
+  });
+
   it("reads a deck's last game from that deck's own games, aliased", () => {
     expect(q.sql).toContain("(select max(g.played_at) from \"deck_games\" g where g.deck_id = d.id)");
   });

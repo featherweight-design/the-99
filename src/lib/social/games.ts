@@ -46,7 +46,7 @@ export type FriendDeck = {
  * Whether the picker may offer a deck, by its owner's rules: not hidden from friends, and the owner's "Friends can see
  * my decks" on (a reader with no `user_prefs` row has it on). Drafts pass. Needs `user_prefs` left-joined on the owner.
  */
-const pickerSeesDeck = sql`(not ${decks.hiddenFromFriends} and coalesce(${userPrefs.friendsSeeDecks}, true))`;
+export const pickerSeesDeck = sql`(not ${decks.hiddenFromFriends} and coalesce(${userPrefs.friendsSeeDecks}, true))`;
 
 /**
  * A friend's decks, by name, only while the two are friends. `ruledOwners` names the owners (account ids, never sent
