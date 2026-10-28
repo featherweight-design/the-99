@@ -273,7 +273,10 @@ describe("leave and delete", () => {
     const pod = mine({ nextOwner: { publicId: "p-Dave", displayName: "Dave" } });
     m.remove.mockReturnValue(new Promise(() => {}));
     const { rerender } = render(<PodsPane pods={[pod]} sharedIds={[]} friends={FRIENDS} />);
+    // Seats carry their ✕ only in the edit state (small items item 7), and Done hands the menu back.
+    await press(screen.getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
+    await press(screen.getByRole("button", { name: P.done }));
     await openMenu("Thursday");
     const leave = screen.getByRole("menuitem", { name: P.leave });
     expect(leave.getAttribute("aria-disabled")).toBe("true");
@@ -287,7 +290,10 @@ describe("leave and delete", () => {
   it("does not hold Leave for the removal of a member who is not the heir", async () => {
     m.remove.mockReturnValue(new Promise(() => {}));
     render(<PodsPane pods={[mine({ nextOwner: { publicId: "p-Dave", displayName: "Dave" } })]} sharedIds={[]} friends={FRIENDS} />);
+    // Seats carry their ✕ only in the edit state (small items item 7), and Done hands the menu back.
+    await press(screen.getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: P.removeMemberAria("Priya", "Thursday") }));
+    await press(screen.getByRole("button", { name: P.done }));
     await openMenu("Thursday");
     expect(screen.getByRole("menuitem", { name: P.leave }).getAttribute("aria-disabled")).toBeNull();
   });
