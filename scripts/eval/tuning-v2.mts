@@ -135,6 +135,9 @@ async function spendRun() {
   const catalog = (await db.select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal }).from(cards))
     .map((r) => ({ ...r, priceCents: null, printedInSelectedSets: true, owned: false }));
 
+  // Function scope: read after the loop for the exit status. (Inside the loop, the read after it resolved to the DOM lib's
+  // global `stop`, so typecheck passed while Node threw a ReferenceError.)
+  let stopped: string | null = null;
   acquireRunLock(LEDGER);
   mkdirSync(OUT, { recursive: true });
   const done = new Set(existsSync(ROWS) ? readFileSync(ROWS, "utf8").split("\n").filter(Boolean).map((l) => keyOf(JSON.parse(l))) : []);
@@ -183,6 +186,7 @@ async function spendRun() {
       onListIn: (side) => { listIn[side] = Date.now() - start; },
     });
     if (stop) {
+      stopped = stop;
       log(stop);
       break;
     }
@@ -205,11 +209,9 @@ async function spendRun() {
   }
   log(`done; ledger $${spent(readLedger(LEDGER)).toFixed(2)} of $${CAP_USD}`);
   // A cap stop exits 2, so a wrapper can tell a stopped run from a finished one.
-  return stop !== null;
+  return stopped !== null;
 }
 
-/** A game-result word a reader should look at by hand when it passes: "win", "lose", "beat" in any form. */
-const GAME_WORD = /\b(?:win|wins|winning|won|lose|loses|losing|lost|beat|beats)\b/i;
 
 /**
  * Q9 (spec §6.2): every stored cut line re-scored under BOTH `noResultClaim` variants, from the same replies. Counts the
@@ -218,6 +220,9 @@ const GAME_WORD = /\b(?:win|wins|winning|won|lose|loses|losing|lost|beat|beats)\
  * games included), against the run's own quotables, so a quoted note is masked exactly as `validate.ts` masks it.
  */
 function score() {
+  // Local: the CLI calls `score()` before a module-level declaration further down would be initialized.
+  /** A game-result word a reader should look at by hand when it passes: "win", "lose", "beat" in any form. */
+  const GAME_WORD = /\b(?:win|wins|winning|won|lose|loses|losing|lost|beat|beats)\b/i;
   if (!existsSync(ROWS)) return log(`no rows at ${ROWS}; nothing to score`);
   const rows = readFileSync(ROWS, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Row);
   type Line = { card: string; rationale: string; rationaleShort: string; evidence: { kind: string; value: string }[] };
