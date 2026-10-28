@@ -57,12 +57,29 @@ function Picture({ shot, name }: { shot: Shot | null; name: string }) {
 }
 
 // TOUCH_HIT: drawn at 38px (10px padding round a 12px line), a coarse pointer reaches 44px.
-const HOW =
-  `${TOUCH_HIT} z-[2] flex-none whitespace-nowrap py-[10px] font-mono text-[12px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)]`;
+const HOW = `${TOUCH_HIT} z-[2] flex-none whitespace-nowrap py-[10px] font-mono text-[12px]`;
+// The Tools tab's `How it works ›` is faint; the pages' `Show me ›` is drawn a step up (boards Decks, Ways-In `.sm`).
+const HOW_INK = "text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)]";
+const SHOW_ME_INK = "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]";
 const MONO_LINE = "pt-[4px] font-mono text-[12px] leading-[1.5] text-[color:var(--fg-muted)]";
 
-export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | null }) {
+/** The footer's left link: the Tools tab's `How it works ›` into the Reference, or an About page's `Show me ›` (call 6). */
+export type ToolCardLink = { href: string; label: string };
+
+export function ToolCard({
+  card, shot, link, lit = false, anchor,
+}: {
+  card: ToolCardModel;
+  shot: Shot | null;
+  /** The footer's left link; the Tools tab's `How it works ›` when absent. */
+  link?: ToolCardLink;
+  /** The card a Show me landing lit (Ways-In board, `.tc.on`): an accent border and ring. */
+  lit?: boolean;
+  /** An id for the card, so a link on the page can scroll to it. */
+  anchor?: string;
+}) {
   const { copy, state } = card;
+  const left = link ?? { href: entryHref(card.entry), label: showcaseCopy.howItWorks };
   const press = state.kind === "deck" || state.kind === "page";
   const footerLabel =
     state.kind === "deck" ? showcaseCopy.opens(state.deck, state.more) : state.kind === "page" ? state.label : null;
@@ -71,10 +88,22 @@ export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | nul
       aria-label={copy.name}
       data-tool-card={card.id}
       data-state={state.kind}
-      className="relative flex h-full flex-col overflow-hidden rounded-[14px] border border-[color:var(--border)] bg-[color:var(--surface)] focus-within:border-[color:var(--border-strong)]"
+      data-lit={lit ? "" : undefined}
+      id={anchor}
+      className={`relative flex h-full scroll-mt-[16px] flex-col overflow-hidden rounded-[14px] border bg-[color:var(--surface)] ${
+        lit
+          ? "border-[color:var(--accent)] shadow-[0_0_0_2px_color-mix(in_oklab,var(--accent)_45%,transparent)]"
+          : "border-[color:var(--border)] focus-within:border-[color:var(--border-strong)]"
+      }`}
     >
       <Picture shot={shot} name={copy.name} />
-      <div className="flex flex-1 flex-col gap-[8px] px-[14px] pb-[12px] pt-[14px] md:px-[18px] md:pb-[14px] md:pt-[16px]">
+      {/* An About page's card keeps the phone's body at every width, as its boards draw it (`.tc .bd`, `.tc .ft`); the
+          Tools tab's grows from md. */}
+      <div
+        className={`flex flex-1 flex-col gap-[8px] px-[14px] pb-[12px] pt-[14px] ${
+          link ? "" : "md:px-[18px] md:pb-[14px] md:pt-[16px]"
+        }`}
+      >
         <div className="flex items-baseline justify-between gap-[10px]">
           <h3 className="m-0 text-[16px] font-semibold leading-[1.3] text-[color:var(--fg)]">{copy.name}</h3>
           {card.credit && (
@@ -84,13 +113,13 @@ export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | nul
           )}
         </div>
         <p className="m-0 text-[14px] leading-[1.5] text-[color:var(--fg-body)]">{copy.line}</p>
-        <div className="mt-auto flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[8px]">
+        <div className={`${link ? "mt-[2px]" : "mt-auto"} flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[8px]`}>
           {state.kind === "none" && <p className={`m-0 ${MONO_LINE}`}>{state.line}</p>}
           {card.note && <p className={`m-0 ${MONO_LINE}`}>{card.note}</p>}
           <div className="flex min-h-[40px] items-center gap-[10px]">
-            <Link href={entryHref(card.entry)} className={HOW}>
-              {showcaseCopy.howItWorks}
-              <PendingReporter href={entryHref(card.entry)} />
+            <Link href={left.href} className={`${HOW} ${link ? SHOW_ME_INK : HOW_INK}`}>
+              {left.label}
+              <PendingReporter href={left.href} />
             </Link>
             {footerLabel && (
               <>

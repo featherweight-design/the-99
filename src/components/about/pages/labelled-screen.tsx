@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PageWidth } from "../../../lib/about/page-shots";
 import { pinsAt, type ScreenLabel, type ScreenModel, type ScreenShot } from "../../../lib/about/pins";
 import { TOOL_CARD_HALO } from "../tools/tool-card";
+import { LandingCard, LandingShowMe, NewTag, useLabelLanding } from "../../discovery/label-landing";
 
 const PIN_SHADOW = "0 0 0 2px var(--bg), 0 3px 10px rgb(0 0 0 / 0.55)";
 const PIN_SHADOW_LIT =
@@ -133,34 +134,54 @@ function Picture({
   );
 }
 
-function LabelList({ labels, lit, onPress }: { labels: readonly ScreenLabel[]; lit: string | null; onPress: (key: string) => void }) {
+function LabelList({
+  labels, lit, onPress, width,
+}: {
+  labels: readonly ScreenLabel[];
+  lit: string | null;
+  onPress: (key: string) => void;
+  width: PageWidth;
+}) {
+  const landing = useLabelLanding();
   return (
     <ol className="m-0 flex list-none flex-col gap-[2px] p-0">
       {labels.map((l) => {
         const on = l.key === lit;
+        const landed = landing !== null && landing.key === l.key ? landing : null;
         return (
           <li key={l.key} data-about-label={l.key}>
-            <button
-              type="button"
-              aria-pressed={on}
-              onClick={() => onPress(l.key)}
-              className={`-mx-[10px] flex w-[calc(100%+20px)] cursor-pointer items-start gap-[12px] rounded-[10px] border border-solid px-[10px] py-[9px] text-left ${
+            <div
+              className={`-mx-[10px] w-[calc(100%+20px)] rounded-[10px] border border-solid ${
                 on
                   ? "border-[color:color-mix(in_oklab,var(--accent)_55%,transparent)] bg-[color:var(--surface)]"
                   : "border-transparent bg-transparent"
               }`}
             >
-              <span
-                aria-hidden
-                className="mt-[1px] h-[22px] w-[22px] flex-none rounded-full bg-[color:var(--accent)] text-center font-mono text-[11px] font-semibold leading-[22px] text-[color:var(--bg)]"
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => onPress(l.key)}
+                className="flex w-full cursor-pointer items-start gap-[12px] rounded-[9px] border-0 bg-transparent px-[10px] py-[9px] text-left"
               >
-                {l.n}
-              </span>
-              <span className="text-[14px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">
-                <b className="font-semibold text-[color:var(--fg)]">{l.lead}</b>
-                {l.text}
-              </span>
-            </button>
+                <span
+                  aria-hidden
+                  className="mt-[1px] h-[22px] w-[22px] flex-none rounded-full bg-[color:var(--accent)] text-center font-mono text-[11px] font-semibold leading-[22px] text-[color:var(--bg)]"
+                >
+                  {l.n}
+                </span>
+                <span className="text-[14px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">
+                  <b className="font-semibold text-[color:var(--fg)]">{l.lead}</b>
+                  {l.text}
+                  {landed && <NewTag landing={landed} />}
+                </span>
+              </button>
+              {landed && landed.isNew && landed.card && (
+                <div className="-mt-[5px] pb-[9px] pl-[44px] pr-[10px]">
+                  <LandingShowMe landing={landed} width={width} />
+                </div>
+              )}
+            </div>
+            {landed && width === "phone" && <LandingCard landing={landed} />}
           </li>
         );
       })}
@@ -169,7 +190,16 @@ function LabelList({ labels, lit, onPress }: { labels: readonly ScreenLabel[]; l
 }
 
 function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
-  const [lit, setLit] = useState<string | null>(null);
+  // A Show me landing lights its label through this same state, as a press would (`label-landing.tsx`). A later
+  // landing on this page (another Show me while it is open) lights its own label, adjusted during render.
+  const landing = useLabelLanding();
+  const landed = landing !== null && model.labels.some((l) => l.key === landing.key) ? landing.key : null;
+  const [lit, setLit] = useState<string | null>(landed);
+  const [from, setFrom] = useState<string | null>(landed);
+  if (landed !== from) {
+    setFrom(landed);
+    if (landed !== null) setLit(landed);
+  }
   const press = (key: string) => setLit((cur) => (cur === key ? null : key));
   const unpinned = model.labels.filter((l) => l.shot === null);
   const desk = width === "desktop";
@@ -182,11 +212,11 @@ function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
         <div key={s.shot.src} className={desk ? "flex flex-row items-start gap-[36px]" : "flex flex-col gap-[16px]"}>
           <Picture shot={s} width={width} lit={lit} onPress={press} />
           <div className={desk ? "flex min-w-0 flex-1 flex-col gap-[16px]" : "contents"}>
-            <LabelList labels={model.labels.filter((l) => l.shot === i)} lit={lit} onPress={press} />
+            <LabelList labels={model.labels.filter((l) => l.shot === i)} lit={lit} onPress={press} width={width} />
           </div>
         </div>
       ))}
-      {unpinned.length > 0 && <LabelList labels={unpinned} lit={lit} onPress={press} />}
+      {unpinned.length > 0 && <LabelList labels={unpinned} lit={lit} onPress={press} width={width} />}
     </div>
   );
 }

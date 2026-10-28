@@ -17,20 +17,39 @@ const m = vi.hoisted(() => ({
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
+  seen: { version: 16, ids: [] as string[] },
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../../lib/theme/server", () => ({ resolveTheme: async () => m.theme }));
+vi.mock("../../../lib/about/read", () => ({ aboutSeen: async () => m.seen }));
+// The card input reads the database; a reader with one deck that fits every deck tool stands in for it.
+vi.mock("../../../lib/discovery/showcase-input", async () => {
+  const { SWITCH_FLAGS } = await import("../../../lib/switches/flags");
+  const { DECK_TOOLS } = await import("../../../lib/discovery/fits");
+  return {
+    loadCardInput: async (_userId: string, e: NodeJS.ProcessEnv) => ({
+      isOn: (n: keyof typeof SWITCH_FLAGS) => SWITCH_FLAGS[n](e),
+      fits: Object.fromEntries(DECK_TOOLS.map((t) => [t, { decks: [{ id: "d1", name: "Ghalta" }] }])),
+      deckCount: 1,
+      hasSyncBase: true,
+      place: true,
+    }),
+  };
+});
 vi.mock("next/navigation", () => ({ notFound: m.notFound, usePathname: () => "/about/decks", useRouter: () => ({ refresh: () => {} }) }));
 
 import AboutAreaRoute from "./page";
 import { AreaPage, type AreaSection } from "../../../components/about/pages/area-page";
+import type { Landing } from "../../../lib/discovery/page-tools";
 
-type El = ReactElement<{ area: string; sections: AreaSection[] }>;
-const draw = async (area: string) => (await AboutAreaRoute({ params: Promise.resolve({ area }) })) as El;
+type El = ReactElement<{ area: string; sections: AreaSection[]; landing: Landing | null; landingRequest: string | null }>;
+const draw = async (area: string, query: Record<string, string | string[]> = {}) =>
+  (await AboutAreaRoute({ params: Promise.resolve({ area }), searchParams: Promise.resolve(query) })) as El;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  m.seen = { version: 16, ids: [] };
   m.env = ALL_ON;
   m.theme = "amonkhet";
   m.requestSwitchEnv.mockImplementation(async () => m.env);
@@ -90,5 +109,53 @@ describe("/about/[area]", () => {
     const [s] = el.props.sections;
     expect(s.phone.shots[0].shot.src).toMatch(/^\/about\/pages\/kamigawa\/phone\//);
     expect(s.desktop.shots[0].shot.src).toMatch(/^\/about\/pages\/kamigawa\/desktop\//);
+  });
+
+  it("draws each section's Try it from the tools whose labels it draws, Show me aimed at the label (call 6)", async () => {
+    const analysis = (await draw("decks")).props.sections.find((s) => s.id === "analysis")!;
+    expect(analysis.tools.map((c) => c.card.id)).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
+    const cuts = analysis.tools.find((c) => c.card.id === "proposed-cuts")!;
+    expect(cuts.card.showMe).toBe("/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis");
+    // The press is still Try it, unchanged.
+    expect(cuts.card.state).toMatchObject({ kind: "deck", href: "/decks/d1?tool=proposed-cuts" });
+    // Each width's own picture: the 390 crop on a phone, the tool's desktop crop from md.
+    expect(cuts.phone?.src).toMatch(/^\/about\/shots\//);
+    expect(cuts.desktop?.src).toBe("/about/pages/amonkhet/desktop/tools/proposed-cuts.webp");
+    const html = renderToStaticMarkup(await draw("decks"));
+    expect(html).toContain('href="/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis"');
+    expect(html).toContain("Show me ›");
+    expect(html).not.toContain("How it works ›");
+  });
+
+  it("a switch off for the reader takes the tool card with its label (Review Focus 2)", async () => {
+    const cards = async () => (await draw("decks")).props.sections.flatMap((s) => s.tools.map((c) => c.card.id));
+    expect(await cards()).toContain("proposed-cuts");
+    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
+    expect(await cards()).not.toContain("proposed-cuts");
+    expect(renderToStaticMarkup(await draw("decks"))).not.toContain('data-tool-card="proposed-cuts"');
+  });
+
+  it("lands `?lit=` on a label this page draws: New, with its card, only while the reader has not been told", async () => {
+    const lit = "decks/analysis/cuts";
+    const fresh = await draw("decks", { lit });
+    expect(fresh.props.landing).toMatchObject({ key: lit, isNew: true, card: { card: { id: "proposed-cuts" } } });
+    expect(fresh.props.landingRequest).toEqual(expect.any(String));
+    m.seen = { version: 16, ids: [lit] };
+    const told = await draw("decks", { lit });
+    expect(told.props.landing).toMatchObject({ key: lit, isNew: false });
+    const html = renderToStaticMarkup(told);
+    expect(html).not.toContain("data-about-new");
+    expect(html).not.toContain("data-about-landing-card");
+  });
+
+  it("lands nowhere for a label this page does not draw, and still asks for the parameter's strip", async () => {
+    for (const lit of ["friends/friends/add", "decks/analysis/nope", ["decks/analysis/cuts", "decks/analysis/cuts"]]) {
+      const el = await draw("decks", { lit });
+      expect(el.props.landing).toBeNull();
+      expect(el.props.landingRequest).toEqual(expect.any(String));
+    }
+    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
+    expect((await draw("decks", { lit: "decks/analysis/cuts" })).props.landing).toBeNull();
+    expect((await draw("decks")).props.landingRequest).toBeNull();
   });
 });
