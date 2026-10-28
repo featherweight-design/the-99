@@ -43,7 +43,7 @@ const adds = (from: number, count: number) => Array.from({ length: count }, (_, 
 const cutsOf = (from: number, count: number) => Array.from({ length: count }, (_, i) => `Cut ${from + i}`);
 
 /** A reply per stage: the cards it names, or a failure. Every call takes `ms` of the fake clock (default 10s). */
-type Script = Partial<Record<V2Stage, { cards?: string[]; fail?: "timeout" | "malformed"; text?: string; ms?: number }>>;
+type Script = Partial<Record<V2Stage, { cards?: string[]; fail?: "timeout" | "malformed"; text?: string; ms?: number; chunk?: number; slow?: boolean }>>;
 
 function fake(script: Script) {
   let clock = 0;
@@ -56,9 +56,11 @@ function fake(script: Script) {
     const list = req.stage.startsWith("additions") ? "additions" : "cuts";
     const text = s.text ?? JSON.stringify({ [list]: (s.cards ?? []).map(line) });
     const deltas = (async function* () {
-      for (let i = 0; i < text.length; i += 7) {
-        await Promise.resolve();
-        yield text.slice(i, i + 7);
+      const size = s.chunk ?? 7;
+      for (let i = 0; i < text.length; i += size) {
+        // `slow`: each chunk waits a real timer tick, as a network stream would, so a sibling call's settle can overtake it.
+        await (s.slow ? new Promise((r) => setTimeout(r, 1)) : Promise.resolve());
+        yield text.slice(i, i + size);
       }
       clock += s.ms ?? 10_000;
       events.push(`end ${req.stage}`);
@@ -235,6 +237,21 @@ describe("runV2", () => {
     const f = fake({ additions: { cards: adds(1, 2) }, cuts: { cards: cutsOf(1, 2) } });
     const onLine = async () => { throw new Error("save failed"); };
     await expect(runV2({ ...base, n: 1, onLine, callModel: f.callModel, now: f.now })).rejects.toThrow("save failed");
+  });
+
+  it("lets both parallel branches settle before a failed save goes up, so nothing writes after the run fails (round 3)", async () => {
+    // Call 1 keeps 1 of N=2, so the additions refill and the cut call run side by side; the refill's save throws.
+    const f = fake({ additions: { cards: ["Add 1", "Bogus"] }, additionsRefill: { cards: adds(6, 1) }, cuts: { cards: cutsOf(1, 3), chunk: 20, slow: true } });
+    let failed = false;
+    let lateWrites = 0;
+    const onLine = async (side: "add" | "cut", l: { card: string }) => {
+      if (failed) lateWrites += 1;
+      if (side === "add" && l.card === "Add 6") throw new Error("save failed");
+    };
+    await expect(runV2({ ...base, n: 2, onLine, callModel: f.callModel, now: f.now }).finally(() => { failed = true; })).rejects.toThrow("save failed");
+    // Let anything still streaming drain before counting: a write after the rejection is what this guards.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(lateWrites).toBe(0);
   });
 
   it("sends the request as the run's words through playerText and validates a request citation", async () => {

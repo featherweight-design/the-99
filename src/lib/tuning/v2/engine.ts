@@ -288,11 +288,15 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
   } else {
     // H2: the cut call starts now, beside any additions refill; "Coming in" is what call 1 kept.
     const comingIn = names(additions);
-    const [, cutOk] = await Promise.all([
+    // Both branches settle before an error goes up, so neither is still writing lines after the caller has finalized
+    // the run (a save that throws in one branch must not leave the other streaming into a run already settled).
+    const [adds, cut] = await Promise.allSettled([
       refillAdditions().then(() => args.onListIn?.("add")),
       cutCall(askFor(n), comingIn),
     ]);
-    if (cutOk) await refillCuts();
+    if (adds.status === "rejected") throw adds.reason;
+    if (cut.status === "rejected") throw cut.reason;
+    if (cut.value) await refillCuts();
   }
   cuts.target = Math.min(n, additions.kept.length);
   await args.onListIn?.("cut");
