@@ -75,12 +75,11 @@
 - Produces:
   - `type AboutArea = "home" | "collection" | "commanders" | "decks" | "shopping" | "friends"`
   - `interface AboutLabel { id: string; region: string; lead: string; rest: string; switch: AboutLineSwitch | null; sentences?: Partial<Record<string, AboutLineSwitch>>; since: number }`
-  - `type RuleDiagram = { kind: "card-row" | "deck-tile" | "buy-tag" | "bracket-medal" | "role-cell"; props: Record<string, unknown> }` (fixture props per rule, read off the Labels board)
-  - `interface AboutRule { id: string; text: string; switch: AboutLineSwitch | null; sentences?: Partial<Record<string, AboutLineSwitch>>; diagram: RuleDiagram; since: number; legacy: readonly string[] }`
+  - `interface AboutRule { text: string; switch: AboutLineSwitch | null; sentences?: Partial<Record<string, AboutLineSwitch>>; since: number; legacy: readonly string[] }`, keyed by `AboutRuleId`. The rule's diagram is PR 4's (as built: it is drawn from the Labels board there, not guessed here).
   - Labels carry the same `legacy: readonly string[]`: the entry ids (bare, or `<id>@<SWITCH>` for a variant) the unit's words came from, per the audit's keep and merge table.
   - `interface AboutSection { area: AboutArea; id: string; name: string; sub: string; screens: readonly AboutScreenRef[]; captures: { phone: readonly string[]; desktop: readonly string[] }; labels: readonly AboutLabel[]; rules: readonly string[]; tools: readonly ToolId[] }`
   - `ABOUT_AREAS`, `ABOUT_SECTIONS`, `ABOUT_RULES`, `ABOUT_STRINGS` (shapes as in `copy-strings.ts`, plus `captures` as an ordered list for second shots and `screens` naming which `AboutScreen`/`DeckView` each section covers)
-  - `labelKey(section, label) => \`${section.area}/${section.id}/${label.id}\`` and `ruleKey(id) => \`rule/${id}\``; a rule is listed by exactly one section, so its area and section resolve from the key
+  - `labelKey(section, label) => \`${section.area}/${section.id}/${label.id}\``, `ruleKey(id) => \`rule/${id}\`` and `sentenceKey(key, sw) => \`${key}@${sw}\`` (as built: in `pages-visible.ts`); a rule is listed by exactly one section, so its area and section resolve from the key
 
 - [ ] **Step 1:** Run `/copy-review` over `copy-strings.ts`, the audit's facts with no string (READINESS "Resolved by engineering", bullet 3) and the rules How it works alone holds. Record the result in the PR body. Every switched clause becomes a `sentences` entry keyed by its exact text, the same mechanism as `captionLineSwitches`.
 - [ ] **Step 2:** Write tests in `about-pages.test.ts`: every label `region` is unique; every rule is listed by exactly one section; every section's `rules` name a key of `ABOUT_RULES`; every `switch` and `sentences` value is in `registry.ts`; at most five labels share one capture; every `AboutScreen` but the nine unsectioned ones and every `DeckView` is in exactly one section's `screens`; every `legacy` id is a real entry id (or `<id>@<variant switch>`). Add the new copy objects to `contentHash()` in `src/lib/copy/about.test.ts` (one hash, one pin) and re-pin `about.version.json`.
@@ -98,9 +97,10 @@
 - Consumes: Task 1.1's model; `SeenState` from `visible.ts`.
 - Produces:
   - `visibleSections(env: SwitchEnv, sections = ABOUT_SECTIONS): VisibleSection[]`: labels and rules whose switch fails are dropped and switched sentences stripped (reuse `lineSwitchHolds` from `visible.ts`; export it there); empty sections are kept, so the page still lists the screen.
-  - `unitSeen(unit: { key: string; since: number; switched: boolean; legacy: readonly string[] }, seen: SeenState): boolean`:
+  - `unitSeen(unit: Pick<VisibleUnit, "key" | "since" | "legacy" | "switch">, seen: SeenState): boolean`:
     - seen when `seen.ids` holds `unit.key`;
     - else seen when `seen.ids` holds any of `unit.legacy` that is a SWITCHED entry's id or a variant id (those are the only legacy ids ever written, `switchedIds`, `visible.ts:228`);
+    - else, for a unit that IS a switched entry's announcement (a legacy entry carries the unit's own switch, as `locked-cards` does for the lock label), NOT seen: such an entry was seen by id alone;
     - else, for an UNSWITCHED unit, seen when `unit.since <= seen.version`;
     - else, for a switched unit whose legacy sources are all unswitched entries, seen when `unit.since <= seen.version`, exactly as an unswitched unit. Today such a line was a `captionLineSwitches` line inside an unswitched entry, shown whenever the switch resolved on and seen with that entry by the floor. `visibleSections` only returns the unit while the switch resolves on for this reader (env plus `flag_overrides`, `requestSwitchEnv`), so the floor rule reproduces today's behaviour. Production has COMMANDERS_PLACE, FRIEND_DECKS, SPARE_REQUESTS, NEAR_COMBOS, STRATEGY_FOCUS, PUSH and HOME_FEED on app-wide through `flag_overrides` (d9, 2026-10-27), so treating these units as new would re-tell every production reader. A later off-to-on flip of such a switch is not announced, which is also what happens today.
   - A unit's switched sentences are announced too: each `sentences` switch gives the unit an announce key `<key>@<SWITCH>`, seen by that key or by a legacy variant id that carried the same switch (`upload-choice@COLLECTION_SYNC_ENABLED`, `friend-spares@SPARE_REQUESTS_ENABLED`).
