@@ -216,6 +216,9 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     if (here.lines + end.malformed < prompt.ask) listOf(side).underProduced = true;
     if (outcome.usage) here.usage = outcome.usage;
     here.ok = outcome.ok && !streamFailed && end.complete;
+    // A shape-invalid line, or a call that failed or was cut off, is the model's shortfall: a short list it touched is
+    // refunded (`charge.ts`), however many restriction drops sit beside it.
+    if (here.malformed > 0 || !here.ok) listOf(side).underProduced = true;
     if (!here.ok) {
       here.errorClass = outcome.ok ? "malformed" : outcome.errorClass;
       // A call cut off by what the budget left it, rather than by its own cap, is the budget's doing.
@@ -282,6 +285,7 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     additions: { kept: additions.kept.length, target: additions.target, drops: additions.drops, underProduced: additions.underProduced },
     cuts: { kept: cuts.kept.length, target: cuts.target, drops: cuts.drops, underProduced: cuts.underProduced },
     cutsFailed: cutsFailed !== null,
+    budgetReached,
   });
   return { additions, cuts, calls, callCount: calls.length, cutsFailed, budgetReached, strippedCites, charge };
 }

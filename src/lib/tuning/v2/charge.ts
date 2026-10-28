@@ -28,11 +28,13 @@ export type ListOutcome = {
 
 export type Charge =
   | { outcome: "spent" }
-  | { outcome: "refunded"; why: "ungrounded" | "cutsFailed" | "shortByModel" };
+  | { outcome: "refunded"; why: "ungrounded" | "cutsFailed" | "budget" | "shortByModel" };
 
-export function chargeFor(run: { additions: ListOutcome; cuts: ListOutcome; cutsFailed?: boolean }): Charge {
+export function chargeFor(run: { additions: ListOutcome; cuts: ListOutcome; cutsFailed?: boolean; budgetReached?: boolean }): Charge {
   if (run.additions.kept === 0) return { outcome: "refunded", why: "ungrounded" };
   if (run.cutsFailed) return { outcome: "refunded", why: "cutsFailed" };
+  // The run budget cut it short (plan P2): it finishes with what it has and is refunded, whatever the drops say.
+  if (run.budgetReached) return { outcome: "refunded", why: "budget" };
   for (const list of [run.additions, run.cuts]) {
     if (list.kept >= list.target) continue;
     const restriction = list.drops.filter((d) => RESTRICTION_RULES.has(d.rule)).length;

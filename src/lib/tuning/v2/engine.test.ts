@@ -218,6 +218,19 @@ describe("runV2", () => {
     expect(r.charge).toEqual({ outcome: "refunded", why: "shortByModel" });
   });
 
+  it("refunds a short list whose refill sent a shape-invalid line, though restriction drops outnumber the gap (round 1)", async () => {
+    const f = fake({
+      additions: { cards: adds(1, 3) },
+      additionsRefill: { text: JSON.stringify({ additions: [{ card: "Add 9" }] }) },
+      cuts: { cards: cutsOf(1, 3) },
+    });
+    const bracketAfter = (_side: "add" | "cut", l: { addOracleId: string | null }) => (["Add 1", "Add 2"].includes(l.addOracleId ?? "") ? [4] : null);
+    const r = await runV2({ ...base, n: 2, aim: { choice: "keep", target: 3 }, bracketAfter, callModel: f.callModel, now: f.now });
+    expect(r.additions.kept).toHaveLength(1);
+    expect(r.additions.underProduced).toBe(true);
+    expect(r.charge).toEqual({ outcome: "refunded", why: "shortByModel" });
+  });
+
   it("sends the request as the run's words through playerText and validates a request citation", async () => {
     const quoted = { ...line("Add 1"), evidence: [{ kind: "request", value: "more ramp" }] };
     const f = fake({ additions: { text: JSON.stringify({ additions: [quoted, ...adds(2, 4).map(line)] }) }, cuts: { cards: cutsOf(1, 5) } });

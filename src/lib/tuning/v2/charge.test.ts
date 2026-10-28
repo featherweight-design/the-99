@@ -41,6 +41,11 @@ describe("chargeFor", () => {
     expect(chargeFor({ additions: full(3), cuts: { kept: 3, target: 3, drops: drops("keyCard", "denominator") } })).toEqual({ outcome: "spent" });
   });
 
+  it("refunds a run the budget cut short, even when restriction drops cover the shortfall", () => {
+    const capped = { kept: 1, target: 2, drops: drops("bracketAim", "bracketAim") };
+    expect(chargeFor({ additions: full(2), cuts: capped, budgetReached: true })).toEqual({ outcome: "refunded", why: "budget" });
+  });
+
   it("refunds a failed cut call and a run with no additions", () => {
     expect(chargeFor({ additions: full(5), cuts: { kept: 0, target: 5, drops: [] }, cutsFailed: true })).toEqual({ outcome: "refunded", why: "cutsFailed" });
     expect(chargeFor({ additions: { kept: 0, target: 5, drops: drops("overCap") }, cuts: { kept: 0, target: 0, drops: [] } })).toEqual({ outcome: "refunded", why: "ungrounded" });
