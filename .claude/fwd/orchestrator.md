@@ -26,7 +26,7 @@
 ## Databases
 
 - Neon project: production, staging and local-dev branches. Production and staging are read-only for everyone (SELECT only; a hook enforces it). The sanctioned writes are the migration on deploy, and catalog or copy jobs run through workflows.
-- Scratch branches are 0.25 CU, made from local-dev, and named `scratch-<task>`. A lane names the branch explicitly (never through `.env`, which `env.mjs` overrides) and lists it at close. The orchestrator deletes it only after confirming its parent is local-dev.
+- Scratch branches are 0.25 CU, made from local-dev, and named `scratch-<task>`. A lane points the worktree's `.env` `DATABASE_URL` at the scratch branch (`env.mjs` loads `.env` over the shell, so a shell `DATABASE_URL` is ignored; `docs/probes.md`), or uses a script's own named-target variables where it has them, confirms the resolved `neon.branch_id` before the first write, and lists the branch at close. The orchestrator deletes it only after confirming its parent is local-dev.
 - A probe that deletes or reseeds a whole account calls `assertScratchBranch`. Measure on staging, mutate on local-dev or scratch.
 
 ## What to verify before reporting "done"
