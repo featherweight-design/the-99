@@ -1,0 +1,179 @@
+// One screen of an About page: its capture(s) with numbered pins, and the labels in a list (About visual build, plan
+// `2026-10-27-about-visual.md`, PR 3, Task 3.2; handoff `design/design_handoff_the99_about_visual/`, calls 0, 1 and 8,
+// boards Decks-Phone, Decks-Desktop, Labels and States).
+//
+// THE PICTURE MATCHES THE DEVICE (call 0): both widths are rendered and one is hidden at `md`, the codebase's
+// responsive split, because a server render cannot know the reader's width. The pictures are lazy, and a browser does
+// not fetch a lazy image that is `display: none`, so a phone reader never downloads a desktop capture or the reverse.
+//
+// Phone: each capture full width with its labels under it. Desktop: each capture 700 wide with its labels beside it.
+// Pressing a label (or its pin) lights its region with the tool cards' halo (`TOOL_CARD_HALO`), its pin and its line.
+// While a capture loads its frame holds the capture's size with a quiet skeleton and no pins; the labels read without it.
+
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import type { PageWidth } from "../../../lib/about/page-shots";
+import type { ScreenLabel, ScreenModel, ScreenShot } from "../../../lib/about/pins";
+import { TOOL_CARD_HALO } from "../tools/tool-card";
+
+const PIN_SHADOW = "0 0 0 2px var(--bg), 0 3px 10px rgb(0 0 0 / 0.55)";
+const PIN_SHADOW_LIT =
+  "0 0 0 2px var(--bg), 0 0 0 6px color-mix(in oklab, var(--accent) 38%, transparent), 0 3px 10px rgb(0 0 0 / 0.55)";
+
+// The States board's skeleton: six quiet bars on the sunken frame, at its own tops and widths.
+const SKELETON_BARS: readonly [number, number][] = [[12, 52], [19, 80], [34, 84], [52, 70], [60, 84], [76, 60]];
+
+function Picture({
+  shot, width, lit, onPress,
+}: {
+  shot: ScreenShot;
+  width: PageWidth;
+  lit: string | null;
+  onPress: (key: string) => void;
+}) {
+  const img = useRef<HTMLImageElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  // A capture cached by the browser can finish before hydration attaches `onLoad`; read it once mounted.
+  useEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth > 0) setLoaded(true);
+  }, []);
+  const litPin = shot.pins.find((p) => p.key === lit);
+  return (
+    <div
+      data-about-shot={width}
+      data-loaded={loaded ? "" : undefined}
+      className={`relative w-full flex-none overflow-hidden border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${
+        width === "phone" ? "rounded-[20px]" : "rounded-[12px] md:w-[700px] md:max-w-[60%]"
+      }`}
+      style={{ aspectRatio: `${shot.shot.w} / ${shot.shot.h}` }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size capture served as-is from public/ */}
+      <img
+        ref={img}
+        src={shot.shot.src}
+        width={shot.shot.w}
+        height={shot.shot.h}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        className={`absolute left-0 top-0 block h-full w-full ${loaded ? "" : "opacity-0"}`}
+      />
+      {!loaded && (
+        <div
+          aria-hidden
+          data-about-skeleton
+          className="absolute inset-0 bg-[linear-gradient(110deg,var(--surface-sunken)_30%,var(--surface-raised)_45%,var(--surface-sunken)_60%)]"
+        >
+          {SKELETON_BARS.map(([top, w]) => (
+            <i
+              key={top}
+              className="absolute left-[8%] block h-[10px] rounded-[5px] bg-[color:var(--elevated)]"
+              style={{ top: `${top}%`, width: `${w}%` }}
+            />
+          ))}
+        </div>
+      )}
+      {loaded && litPin && (
+        <span
+          aria-hidden
+          data-about-halo={litPin.key}
+          className="pointer-events-none absolute z-[2] rounded-[8px]"
+          style={{
+            left: `${litPin.box[0] * 100}%`,
+            top: `${litPin.box[1] * 100}%`,
+            width: `${litPin.box[2] * 100}%`,
+            height: `${litPin.box[3] * 100}%`,
+            boxShadow: TOOL_CARD_HALO,
+          }}
+        />
+      )}
+      {loaded &&
+        shot.pins.map((p) => (
+          // The list's line is the control a keyboard or screen reader uses; the pin is its pointer twin.
+          <button
+            key={p.key}
+            type="button"
+            tabIndex={-1}
+            aria-hidden
+            data-about-pin={p.key}
+            data-lit={p.key === lit ? "" : undefined}
+            onClick={() => onPress(p.key)}
+            className="absolute z-[3] -ml-[12px] -mt-[12px] h-[24px] w-[24px] cursor-pointer rounded-full border-0 bg-[color:var(--accent)] p-0 text-center font-mono text-[12px] font-semibold leading-[24px] text-[color:var(--bg)]"
+            style={{ left: `${p.left}%`, top: `${p.top}%`, boxShadow: p.key === lit ? PIN_SHADOW_LIT : PIN_SHADOW }}
+          >
+            {p.n}
+          </button>
+        ))}
+    </div>
+  );
+}
+
+function LabelList({ labels, lit, onPress }: { labels: readonly ScreenLabel[]; lit: string | null; onPress: (key: string) => void }) {
+  return (
+    <ol className="m-0 flex list-none flex-col gap-[2px] p-0">
+      {labels.map((l) => {
+        const on = l.key === lit;
+        return (
+          <li key={l.key} data-about-label={l.key}>
+            <button
+              type="button"
+              aria-pressed={on}
+              onClick={() => onPress(l.key)}
+              className={`-mx-[10px] flex w-[calc(100%+20px)] cursor-pointer items-start gap-[12px] rounded-[10px] border border-solid px-[10px] py-[9px] text-left ${
+                on
+                  ? "border-[color:color-mix(in_oklab,var(--accent)_55%,transparent)] bg-[color:var(--surface)]"
+                  : "border-transparent bg-transparent"
+              }`}
+            >
+              <span
+                aria-hidden
+                className="mt-[1px] h-[22px] w-[22px] flex-none rounded-full bg-[color:var(--accent)] text-center font-mono text-[11px] font-semibold leading-[22px] text-[color:var(--bg)]"
+              >
+                {l.n}
+              </span>
+              <span className="text-[14px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">
+                <b className="font-semibold text-[color:var(--fg)]">{l.lead}</b>
+                {l.text}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
+  const [lit, setLit] = useState<string | null>(null);
+  const press = (key: string) => setLit((cur) => (cur === key ? null : key));
+  const unpinned = model.labels.filter((l) => l.shot === null);
+  const desk = width === "desktop";
+  return (
+    <div
+      data-about-width={width}
+      className={desk ? "hidden flex-col gap-[20px] md:flex" : "flex flex-col gap-[16px] md:hidden"}
+    >
+      {model.shots.map((s, i) => (
+        <div key={s.shot.src} className={desk ? "flex flex-row items-start gap-[36px]" : "flex flex-col gap-[16px]"}>
+          <Picture shot={s} width={width} lit={lit} onPress={press} />
+          <div className={desk ? "flex min-w-0 flex-1 flex-col gap-[16px]" : "contents"}>
+            <LabelList labels={model.labels.filter((l) => l.shot === i)} lit={lit} onPress={press} />
+          </div>
+        </div>
+      ))}
+      {unpinned.length > 0 && <LabelList labels={unpinned} lit={lit} onPress={press} />}
+    </div>
+  );
+}
+
+/** A section's labelled screen at both widths; CSS shows the reader's own (call 0). */
+export function LabelledScreen({ phone, desktop }: { phone: ScreenModel; desktop: ScreenModel }) {
+  return (
+    <>
+      <Width model={phone} width="phone" />
+      <Width model={desktop} width="desktop" />
+    </>
+  );
+}
