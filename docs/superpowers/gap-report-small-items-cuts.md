@@ -1,5 +1,7 @@
 # Gap report: small items 1 and 2 (Proposed cuts names more than the deck needs; the draft note on a phone)
 
+This PR ships item 1 only. Item 2 ships in its own PR (branch `small-items/draft-note-phone`): its rows below (B1–B3, rows 4–6) were verified on that branch and are kept here because both boards were enumerated together.
+
 Property table: `docs/superpowers/design-tables/small-items-cuts.md`, enumerated from the `Cuts-Alternatives` and `Draft-Note-Phone` boards and README §1–2.
 
 ## Verify (Agent 2)
@@ -32,6 +34,6 @@ Rows 4 and 5 sit on the group note, which this branch now draws on a phone (d9's
   Suggested changes keeps its 8,000 tokens and 110s. Sonnet 5.5's output rate on cuts is unmeasured; the 79 tok/s floor comes from Sonnet 5. Real latency is to be recorded from staging.
 - **The needed cap also rises to 20.** Needed is min(over, 20) and spares are min(3, 20 − needed). A deck 18 or more over gets fewer than three spares.
 - **`CUTS_PROMPT_VERSION` is 5.** Stored results reopen the gate.
-- **Item 2.** README §2 says the group note already shows on a phone, but it shipped `hidden md:block`. Per d9's ruling the draft's group note now shows at every width, matching the 390 frame. The toolbar note keeps `hidden md:inline`. The README premise goes to Design as an erratum.
+- **Item 2 (ships separately, on `small-items/draft-note-phone`).** README §2 says the group note already shows on a phone, but it shipped `hidden md:block`. Per d9's ruling the draft's group note now shows at every width, matching the 390 frame. The toolbar note keeps `hidden md:inline`. The README premise goes to Design as an erratum.
 
-VERDICT: 0 new gaps.
+VERDICT: 0 new gaps in item 1, which this PR ships. Item 2's rows are verified on its own branch.
