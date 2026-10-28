@@ -422,9 +422,9 @@ describe("streamModel (Suggested changes v2, plan PR 3)", () => {
     const { messages, stream } = streamed(['{"answer": '], { fail: busy() });
     const call = streamModel(req, { messages, log: quiet });
     expect(await drain(call.deltas)).toEqual(['{"answer": ']);
-    // The final meter never arrived, so the bill is the text that did at three characters a token (11 characters: 4), never
-    // the provisional `message_start` count of 1 (Copilot round 4).
-    expect(await call.outcome).toEqual({ ok: false, errorClass: "upstream_busy", status: 529, usage: { inputTokens: 40, outputTokens: 4, cacheReadTokens: 0, cacheWriteTokens: 0 } });
+    // The final meter never arrived, so the bill is the call's worst case (its reply ceiling, 100), never the provisional
+    // `message_start` count of 1: thinking bills as output and streams no text (Copilot rounds 4 and 5).
+    expect(await call.outcome).toEqual({ ok: false, errorClass: "upstream_busy", status: 529, usage: { inputTokens: 40, outputTokens: 100, cacheReadTokens: 0, cacheWriteTokens: 0 } });
     expect(stream).toHaveBeenCalledTimes(1);
   });
 
