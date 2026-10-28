@@ -22,8 +22,15 @@
 // FAILS CLOSED on its target: `PRECON_OVERVIEW_TARGET_BRANCH` is never defaulted and must equal
 // the database's `neon.branch_id`, or it exits 2 having written nothing.
 //
-//   PRECON_OVERVIEW_TARGET_BRANCH=br-… PRECON_OVERVIEW_ROLE_BASIS=labels|classifier pnpm db:build:precon-overviews [--dry-run] [--stub] [--max-usd N] [--limit N]
+//   PRECON_OVERVIEW_TARGET_BRANCH=br-… PRECON_OVERVIEW_ROLE_BASIS=labels|classifier pnpm db:build:precon-overviews [--dry-run] [--stub] [--readings-only] [--max-usd N] [--limit N]
 //   (locally, name the database with PRECON_OVERVIEW_DB_URL)
+//
+// THE READING TOO (small items 5, PR 6a). Every request is built from the precon's reading
+// (`loadDeckProfileFromHead`, no model), so each row also stores that reading (`reading_*`), the
+// first reading a start copies into its deck. It is written, before anything is sent, for every row
+// whose stored reading is missing, not current for the precon's list and this code, or whose data
+// moved since (a change log entry touching it, `preconReadingDue`), WHATEVER its Overview hash says; a newly stored Overview
+// gets one at the write. `--readings-only` does that step alone: no model, no key, no Overview touched.
 //
 // `--dry-run` builds and hashes every request and prints the worst case, and calls and writes
 // nothing (input tokens are ESTIMATED there, at a character count over 3, since counting them is
@@ -42,6 +49,7 @@ if (process.env.PRECON_OVERVIEW_DB_URL) process.env.DATABASE_URL = process.env.P
 const argv = process.argv.slice(2);
 const DRY = argv.includes("--dry-run");
 const STUB = argv.includes("--stub");
+const READINGS_ONLY = argv.includes("--readings-only");
 const COLLECT = argv.includes("--collect") ? argv[argv.indexOf("--collect") + 1] : undefined;
 if (argv.includes("--collect") && !/^msgbatch_[A-Za-z0-9]+$/.test(COLLECT ?? "")) throw new Error("--collect needs a batch id (msgbatch_…)");
 const flag = (name: string): number | undefined => {
@@ -66,6 +74,10 @@ async function main(): Promise<number> {
   const { systemSpendRow } = await import("./lib/system-spend");
   const { modelCalls } = await import("../src/db/schema");
   const { capMicroUsd, runBuild, worstMicroUsd } = await import("./lib/precon-overview-build");
+  const { NO_PRECON_READING, preconReadingColumns, preconReadingDue } = await import("../src/lib/precons/reading-rule");
+  const { preconColumnsMoved } = await import("../src/lib/precons/reading");
+  const { readCatalogGeneration } = await import("../src/lib/cache/catalog-generation");
+  const { readLogHead } = await import("../src/lib/notices/log");
   type Job = import("./lib/precon-overview-build").Job<unknown>;
   type Outgoing = import("./lib/precon-overview-build").Outgoing;
   type SynopsisFacts = import("../src/lib/synopsis/facts").SynopsisFacts;
@@ -76,7 +88,8 @@ async function main(): Promise<number> {
     console.error(`build-precon-overviews: refusing. This database is ${branch?.id ?? "unknown"}, PRECON_OVERVIEW_TARGET_BRANCH is ${process.env.PRECON_OVERVIEW_TARGET_BRANCH}.`);
     return 2;
   }
-  const live = !DRY && !STUB;
+  if (READINGS_ONLY && (STUB || COLLECT)) throw new Error("--readings-only writes readings alone: not with --stub or --collect");
+  const live = !DRY && !STUB && !READINGS_ONLY;
   if (COLLECT && (DRY || STUB)) throw new Error("--collect collects a real batch: not with --dry-run or --stub");
   if (live) requireEnv(["ANTHROPIC_API_KEY"]);
   // A stub's Overview is a fixture: written only to a scratch branch, never where a real one belongs.
@@ -93,8 +106,23 @@ async function main(): Promise<number> {
   const limit = flag("--limit");
 
   const files = (await db.select({ file: precons.fileName }).from(precons).where(isNull(precons.twinOf)).orderBy(precons.fileName)).map((r) => r.file);
-  const stored = new Map((await db.select({ file: preconSynopses.preconFile, hash: preconSynopses.inputHash, list: preconSynopses.listFingerprint, model: preconSynopses.model })
-    .from(preconSynopses).where(and(eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)))).map((r) => [r.file, r]));
+  const stored = new Map((await db.select({
+    file: preconSynopses.preconFile, hash: preconSynopses.inputHash, list: preconSynopses.listFingerprint, model: preconSynopses.model,
+    reading: preconSynopses.reading, readingPermits: preconSynopses.readingPermits, readingList: preconSynopses.readingList,
+    readingCatalog: preconSynopses.readingCatalog, readingProfileVersion: preconSynopses.readingProfileVersion,
+    readingRulesVersion: preconSynopses.readingRulesVersion, readingAnalyzedOracleIds: preconSynopses.readingAnalyzedOracleIds,
+    readingSeenSeq: preconSynopses.readingSeenSeq, readingAt: preconSynopses.readingAt,
+  }).from(preconSynopses).where(and(eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)))).map((r) => [r.file, r]));
+
+  // THE READING'S STAMPS, read BEFORE any reading is computed, as `computeAndStoreProfile` reads them:
+  // a catalog write or a change log entry landing during the run is past them, so the reading it might
+  // have changed is judged not current (or the entry still reported) rather than hidden. Unreadable,
+  // the log head is never guessed: no reading is written this run.
+  const readingStamps = async () => ({ catalog: await readCatalogGeneration(), seenSeq: await readLogHead(db) });
+  const stamps = await readingStamps();
+  const readingFor = (req: { list: string; profile: import("../src/lib/profile/types").DeckProfile; analyzedOracleIds: string[] }, at: { catalog: string; seenSeq: number | null }) =>
+    at.seenSeq === null ? NO_PRECON_READING : preconReadingColumns({ profile: req.profile, list: req.list, catalog: at.catalog, seenSeq: at.seenSeq, analyzedOracleIds: req.analyzedOracleIds, at: new Date() });
+  let readings = 0;
 
   const inputTokensOf = async (params: object) => (live ? countTokens(params as never) : Math.ceil(JSON.stringify(params).length / 3));
 
@@ -115,6 +143,13 @@ async function main(): Promise<number> {
     }
     const { list, params, hash } = req;
     const had = stored.get(file);
+    // The reading first, and whatever the Overview's hash says: no model, so never held by the cap.
+    if (had && preconReadingDue(had, { list, moved: await preconColumnsMoved(had, list) })) {
+      readings += 1;
+      if (!DRY && stamps.seenSeq !== null) await db.update(preconSynopses).set(readingFor(req, stamps))
+        .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
+    }
+    if (READINGS_ONLY) continue;
     // Current only when written for this very request by the model this run writes with, so a
     // stub's row on a scratch branch never stands in for the real one.
     if (had && had.hash === hash && had.list === list && had.model === model) {
@@ -150,6 +185,11 @@ async function main(): Promise<number> {
     });
   }
 
+  console.log(`readings: ${readings} ${DRY ? "due" : stamps.seenSeq === null ? "due, NOT written (the change log head was unreadable)" : "written"} at catalog generation ${stamps.catalog}`);
+  if (READINGS_ONLY) {
+    console.log("readings only: nothing was sent and no Overview was touched");
+    return 0;
+  }
   const worst = jobs.reduce((n, j) => n + j.first.worstMicro, 0);
   console.log(`precons: ${files.length} plain, ${current} current, ${jobs.length} to write, ${held} held back by --limit, ${skipped.length} skipped`);
   for (const s of skipped) console.log(`  skipped ${s.file}: ${s.why}`);
@@ -203,12 +243,15 @@ async function main(): Promise<number> {
     // THE INPUTS ARE RE-CHECKED AT THE WRITE: the catalog can move while a batch runs. The answer is
     // stored either way (it is paid for), but current only when this database still builds the very
     // request it answered; otherwise the next run, or the copy, writes or checks it again.
+    const at = await readingStamps();
     const now = await buildPreconRequest(s.file, basis);
     const fits = now.ok && now.hash === m.hash && now.list === m.list;
     if (!fits) moved.push(s.file);
     const row = {
       preconFile: s.file, contractVersion: contract, roleBasis: basis, listFingerprint: m.list, inputHash: m.hash, model, content: s.content,
       inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(),
+      // The reading of the request this database builds NOW, whatever the Overview's fit: judged by its own key.
+      ...(now.ok ? readingFor(now, at) : NO_PRECON_READING),
     };
     await db.insert(preconSynopses).values(row).onConflictDoUpdate({ target: [preconSynopses.preconFile, preconSynopses.contractVersion, preconSynopses.roleBasis], set: row });
   };

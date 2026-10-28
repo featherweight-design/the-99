@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { planPreconOverviewCopy, type SourceRow } from "./precon-overview-copy";
+import { planPreconOverviewCopy, planReadingCopy, type SourceRow } from "./precon-overview-copy";
+import { PROFILE_VERSION } from "../../src/lib/profile/version";
+import { BRACKET_RULES_VERSION } from "../../src/lib/bracket/rules-version";
 
 const src = (file: string, inputHash: string, listFingerprint = `list-${file}`): SourceRow<string> => ({
   file, inputHash, listFingerprint, model: "m", content: `content-${file}`, inputTokens: 1, outputTokens: 1, costMicroUsd: 1,
@@ -51,5 +53,28 @@ describe("planPreconOverviewCopy", () => {
     expect(plan.stale).toEqual(["a"]);
     expect(plan.unbuildable).toEqual([{ file: "a", why: "card is not a legal commander" }]);
     expect(plan.install).toEqual([]);
+  });
+});
+
+describe("planReadingCopy (small items 5, PR 6a)", () => {
+  // A reading current for list-<file>, unless told otherwise.
+  const held = (file: string, list = `list-${file}`) => ({ file, reading: { reading: { commanderOracleIds: [] } as never, readingPermits: [2], readingList: list, readingCatalog: "1", readingProfileVersion: PROFILE_VERSION, readingRulesVersion: BRACKET_RULES_VERSION, readingAnalyzedOracleIds: [], readingSeenSeq: 1, readingAt: new Date() } });
+  const none = (file: string) => ({ file, reading: null });
+  const plan = (install: string[]) => ({ install: install.map((f) => src(f, "h")) });
+
+  it("writes the target's reading for every row the publish leaves whose reading is missing or not current", () => {
+    const out = planReadingCopy({
+      plan: plan(["new"]),
+      target: [held("ok"), none("empty"), held("moved-list", "old-list"), held("ghost")],
+      requests: [req("ok", "h"), req("empty", "h"), req("moved-list", "h"), req("new", "h"), req("no-row", "h")],
+      moved: new Set(),
+    });
+    expect(out).toEqual(["empty", "moved-list", "new"]);
+  });
+  it("writes one whose data moved, even with its Overview's hash unchanged", () => {
+    expect(planReadingCopy({ plan: plan([]), target: [held("a")], requests: [req("a", "h")], moved: new Set(["a"]) })).toEqual(["a"]);
+  });
+  it("leaves a precon the target cannot build as it is", () => {
+    expect(planReadingCopy({ plan: plan([]), target: [none("a")], requests: [{ file: "a", ok: false, why: "x" }], moved: new Set() })).toEqual([]);
   });
 });

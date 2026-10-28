@@ -11,6 +11,8 @@ import { preparePreconDeck } from "../../src/lib/precons/start";
 import { listFingerprint } from "../../src/lib/profile/fingerprint";
 import type { RoleBasis } from "../../src/lib/profile/build";
 import { loadDeckProfileFromHead } from "../../src/lib/profile/load";
+import type { DeckProfile } from "../../src/lib/profile/types";
+import { analyzedOracleIds } from "../../src/lib/notices/log";
 import type { SynopsisFacts } from "../../src/lib/synopsis/facts";
 import { factsWithSource, synopsisCallSettings } from "../../src/lib/synopsis/generate";
 import { SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "../../src/lib/synopsis/limits";
@@ -47,7 +49,12 @@ export function preconRequestParams(prompt: { system: string; user: string }): P
 }
 
 export type PreconRequest =
-  | { ok: true; file: string; list: string; facts: SynopsisFacts; params: Params; hash: string }
+  | {
+    ok: true; file: string; list: string; facts: SynopsisFacts; params: Params; hash: string;
+    /** The reading the request was built from (`loadDeckProfileFromHead`, no model): what a start's first
+     *  reading would be, stored beside the Overview (`preconReadingColumns`, PR 6a), and the cards it analyzed. */
+    profile: DeckProfile; analyzedOracleIds: string[];
+  }
   | { ok: false; file: string; why: string };
 
 /** Builds `file`'s first request: its started deck's list, reading, facts and prompt. */
@@ -62,8 +69,10 @@ export async function buildPreconRequest(file: string, basis: RoleBasis): Promis
   // A reading or facts read that throws (the labels basis reads `readLabelRoleSets`) is this precon's
   // own failure, never the run's: it has no request, so a stored row for it is marked not current.
   let built;
+  let profile: DeckProfile;
   try {
-    built = await factsWithSource(await loadDeckProfileFromHead(head, envAtBasis(process.env, basis)), true, true);
+    profile = await loadDeckProfileFromHead(head, envAtBasis(process.env, basis));
+    built = await factsWithSource(profile, true, true);
   } catch (e) {
     return { ok: false, file, why: `the reading could not be built: ${e instanceof Error ? e.message : String(e)}` };
   }
@@ -71,5 +80,8 @@ export async function buildPreconRequest(file: string, basis: RoleBasis): Promis
   // classifier's, which is another contract. Never written (or installed) under the wrong one.
   if (!built.shared) return { ok: false, file, why: "the label read failed, so contract 12's interaction reading is unavailable" };
   const params = preconRequestParams(buildSynopsisPrompt(built.facts, undefined, { v2: true, contract8: true }));
-  return { ok: true, file, list: listFingerprint(prepared), facts: built.facts, params, hash: synopsisRequestHash(params) };
+  return {
+    ok: true, file, list: listFingerprint(prepared), facts: built.facts, params, hash: synopsisRequestHash(params),
+    profile, analyzedOracleIds: analyzedOracleIds(prepared),
+  };
 }

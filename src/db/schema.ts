@@ -3504,6 +3504,27 @@ export const preconSynopses = pgTable("precon_synopses", {
   current: boolean("current").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   checkedAt: timestamp("checked_at").notNull().defaultNow(),
+  /**
+   * THE PRECON'S BRACKET READING (small items 5, PR 6a): exactly the `deck_profiles` row an Analyze press
+   * would write for a deck holding this precon's list, computed from THIS database's catalog at the row's
+   * role basis (no model), so a start copies it instead of computing it in the arrival render. Null until
+   * a build or copy writes one. `reading` is the profile with a placeholder `deckId` (the copy sets the
+   * deck's), and the rest are the profile row's own fields.
+   *
+   * IT IS JUDGED FRESH BY ITS OWN KEY, never by `current` (which is the Overview's): the list it was built
+   * for (`reading_list`), the catalog generation read before it was computed (`reading_catalog`, the key
+   * `deck_profiles.catalog` stores), and the profile and bracket-rules versions (`preconReadingCurrent`).
+   * The build rewrites it whenever that key no longer matches, and the copy writes the TARGET's own.
+   */
+  reading: jsonb("reading").$type<DeckProfile>(),
+  readingPermits: integer("reading_permits").array(),
+  readingList: text("reading_list"),
+  readingCatalog: text("reading_catalog"),
+  readingProfileVersion: integer("reading_profile_version"),
+  readingRulesVersion: integer("reading_rules_version"),
+  readingAnalyzedOracleIds: uuid("reading_analyzed_oracle_ids").array(),
+  readingSeenSeq: bigint("reading_seen_seq", { mode: "number" }),
+  readingAt: timestamp("reading_at"),
 }, (t) => [
   primaryKey({ columns: [t.preconFile, t.contractVersion, t.roleBasis] }),
   check("precon_synopses_role_basis_check", sql`${t.roleBasis} in ('labels', 'classifier')`),

@@ -6,6 +6,9 @@
 //   THE MOVE: a row whose stored hash no longer matches its request is rewritten, not skipped, and
 //   one held back by `--limit` is still marked not current.
 //   THE CAP: under `--max-usd 0` nothing fits, nothing is sent and nothing is written.
+//   THE READING (small items 5, PR 6a): each written row carries its precon's reading, current for the
+//   started deck's list, with the permits and profile a start's own compute gives; a second run keeps it;
+//   `--readings-only` rewrites a missing one or one of an older profile version, and touches no Overview.
 // It deletes every stub row it wrote. Scratch branch only (`assertScratchBranch`), named by `PROBE_DB_URL`.
 //
 //   PROBE_DB_URL=<scratch> pnpm probe:precon-overview-build
@@ -27,7 +30,10 @@ async function main() {
   const { db } = await import("../src/db");
   const { precons, preconSynopses } = await import("../src/db/schema");
   const { preparePreconDeck } = await import("../src/lib/precons/start");
-  const { listFingerprint } = await import("../src/lib/profile/fingerprint");
+  const { listFingerprint, profileFingerprint } = await import("../src/lib/profile/fingerprint");
+  const { preconReadingCurrent, preconReadingOf } = await import("../src/lib/precons/reading-rule");
+  const { loadDeckProfileFromHead } = await import("../src/lib/profile/load");
+  const { slotDeck } = await import("../src/lib/bracket/slot");
 
   const { rows: [branch] } = await db.execute<{ id: string | null }>(sql`select current_setting('neon.branch_id', true) as id`);
   assertScratchBranch(branch?.id ?? null, "probe:precon-overview-build");
@@ -51,6 +57,12 @@ async function main() {
       const fp = listFingerprint(await preparePreconDeck(r.preconFile));
       check(`${r.preconFile}'s list fingerprint is the started deck's`, r.listFingerprint === fp, `${r.listFingerprint.slice(0, 12)} vs ${fp.slice(0, 12)}`);
       check(`${r.preconFile}'s content passed every section`, r.content.verdicts.every((v) => v.status === "ok"), r.content.verdicts.map((v) => `${v.section}:${v.status}`).join(" "));
+      const prepared = await preparePreconDeck(r.preconFile);
+      const reading = preconReadingOf(r);
+      const own = await loadDeckProfileFromHead({ deckId: "x", userId: "x", declaredBracket: null, ...prepared }, { ...process.env, LABEL_ROLE_COUNTS_ENABLED: "" } as NodeJS.ProcessEnv);
+      const ownPermits = [...slotDeck(own).permits].sort((a, b) => a - b);
+      check(`${r.preconFile} carries its reading, current for the started deck's list`, preconReadingCurrent(reading, { list: fp }) && reading.seenSeq !== null, `list ${reading?.list.slice(0, 12)}, version ${reading?.profileVersion}`);
+      check(`${r.preconFile}'s reading is what a start computes`, !!reading && reading.profile.fingerprint === profileFingerprint(prepared) && JSON.stringify(reading.permits) === JSON.stringify(ownPermits), `permits ${JSON.stringify(reading?.permits)} vs ${JSON.stringify(ownPermits)}`);
     }
 
     // A second run: both still current, so neither is rewritten (the build moves on to the next two).
@@ -58,6 +70,21 @@ async function main() {
     const after = await db.select().from(preconSynopses).where(inArray(preconSynopses.preconFile, files));
     const same = after.length === 2 && after.every((r) => rows.find((w) => w.preconFile === r.preconFile)?.createdAt.getTime() === r.createdAt.getTime());
     check("a second run leaves both rows as written", same, after.map((r) => `${r.preconFile} ${r.createdAt.toISOString()}`).join(", "));
+    check("and both readings as written", after.every((r) => rows.find((w) => w.preconFile === r.preconFile)?.readingAt?.getTime() === r.readingAt?.getTime()), "");
+
+    // --readings-only: one row's reading gone, the other's from an older profile version. Both are
+    // rewritten, and neither Overview is touched (its hash, content date and current flag stand).
+    const readingsOnly = () => execFileSync("pnpm", ["-s", "db:build:precon-overviews", "--readings-only"], {
+      encoding: "utf8",
+      env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, PRECON_OVERVIEW_ROLE_BASIS: "classifier", ANTHROPIC_API_KEY: "" },
+    });
+    await db.update(preconSynopses).set({ reading: null }).where(and(eq(preconSynopses.preconFile, files[0]), eq(preconSynopses.contractVersion, 12)));
+    await db.update(preconSynopses).set({ readingProfileVersion: 0 }).where(and(eq(preconSynopses.preconFile, files[1]), eq(preconSynopses.contractVersion, 12)));
+    const out = readingsOnly();
+    const redone = await db.select().from(preconSynopses).where(inArray(preconSynopses.preconFile, files));
+    check("--readings-only rewrites a missing reading and an older version's", redone.every((r) => preconReadingCurrent(preconReadingOf(r), { list: r.listFingerprint })) && /readings: 2 written/.test(out), out.match(/readings: .*$/m)?.[0] ?? "");
+    check("and touches no Overview", redone.every((r) => { const w = after.find((x) => x.preconFile === r.preconFile)!; return w.inputHash === r.inputHash && w.createdAt.getTime() === r.createdAt.getTime() && w.current === r.current; }), "");
+    check("a run with nothing due writes none", /readings: 0 written/.test(readingsOnly()), "");
 
     // Both rows' inputs "move". Under --limit 1 the first is rewritten; the second is held back by the
     // limit, and must still be marked not current, never left current over inputs it does not fit.
