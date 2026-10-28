@@ -34,9 +34,21 @@
 // It refuses any database that is not a scratch branch (`assertScratchBranch`) before its first write.
 // The theme is the cookie the picker writes (`the99_theme`), never a preference row.
 //
+// THE PAGES (About as six visual pages, plan `2026-10-27-about-visual.md`, PR 2): the same run also takes every capture
+// the pages draw, at 390x844 (`p-…`) and at 1300x900 (`d-…`), from `scripts/lib/about-page-frames.mjs` (where each is
+// taken) and `ABOUT_REGIONS` (which labels it holds), into `public/about/pages/<theme>/<width>/<capture>.webp`, with each
+// tool card's desktop crop (`TOOL_REGIONS`) in `…/desktop/tools/<toolId>.webp`, and writes
+// `src/lib/about/page-shots.generated.ts`. The 390 set above, its manifest and `REQUIRED_SHOTS` are written exactly as
+// before, in the same run. A page image is written only when its pixels changed against the file on disk (decoded and
+// compared, never by bytes), at one WebP quality (`CAPTURE_PAGE_QUALITY`, default 70); the bytes written are printed at
+// the end. `CAPTURE_QUALITY_TRIAL=<dir>` also writes the first three captures at q60, q70 and q80 into that directory,
+// with their sizes, for the legibility check that picks the quality. `CAPTURE_WIDTHS=phone|desktop` limits the pages
+// to one width; `CAPTURE_IDS` takes capture names as well as the 390 set's ids.
+//
 //   PROBE_BASE=http://localhost:3417 pnpm capture:about
 //   CAPTURE_THEMES=amonkhet CAPTURE_IDS=home,tool-top-off pnpm capture:about     (a partial run merges into the set)
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -47,7 +59,8 @@ import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about
 import { applyPairs, identityLeftovers, identityOf, identityPlan } from "./lib/about-identity.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { ownedFixturePattern, readDeckMarks } from "./lib/about-fixture-ids.mjs";
-import { ABOUT_LOCATORS } from "./lib/about-locators.mjs";
+import { ABOUT_LOCATORS, ABOUT_REGIONS, TOOL_REGIONS, fromPage } from "./lib/about-locators.mjs";
+import { PAGE_FRAMES, PAGE_VIEWPORTS, samePixels, toolCrop } from "./lib/about-page-frames.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -85,6 +98,16 @@ const MIN_QUALITY = 30;
 
 const OUT_DIR = new URL("../public/about/shots/", import.meta.url);
 const MANIFEST = new URL("../src/lib/about/shots.generated.ts", import.meta.url);
+
+// The pages' captures (PR 2).
+const PAGE_OUT_DIR = new URL("../public/about/pages/", import.meta.url);
+const PAGE_MANIFEST_FILE = new URL("../src/lib/about/page-shots.generated.ts", import.meta.url);
+const PAGE_QUALITY = Number(process.env.CAPTURE_PAGE_QUALITY ?? 70);
+if (!Number.isInteger(PAGE_QUALITY) || PAGE_QUALITY < 30 || PAGE_QUALITY > 95) throw new Error(`CAPTURE_PAGE_QUALITY ${PAGE_QUALITY}: 30 to 95`);
+const TRIAL_DIR = process.env.CAPTURE_QUALITY_TRIAL ?? null;
+const TRIAL_QUALITIES = [60, 70, 80];
+const WIDTHS = process.env.CAPTURE_WIDTHS ? process.env.CAPTURE_WIDTHS.split(",") : ["phone", "desktop"];
+for (const w of WIDTHS) if (!PAGE_VIEWPORTS[w]) throw new Error(`unknown width ${w}`);
 
 // ── the account's decks, read by the names `about-fixtures.mts` writes ─────────────────────────────────────────────
 
@@ -157,6 +180,8 @@ async function fixture(userId) {
     under: await byRoleChecked("under"),
     over: await byRoleChecked("over"),
     played: await byRoleChecked("played"),
+    // Whole and never analyzed, with no description: the pages' Analyze press and Describe field (PR 2).
+    fresh: await byRoleChecked("fresh"),
     versioned: versioned.id,
     freeCard: free.oracle_id,
   };
@@ -522,11 +547,11 @@ const REQUIRED_ON_FRAME = {
   settings: [["[data-push-device='not-on']", "the push device row reading Not on yet (PUSH_ENABLED and HOME_FEED_ENABLED on, the VAPID keys set, `next start`)"]],
 };
 
-/** True when some match of `selector` has a box inside the 390x844 frame: drawn where the photograph will see it. */
-async function inFrame(page, selector) {
+/** True when some match of `selector` has a box inside the frame (390x844 unless `view` says): where the photograph sees it. */
+async function inFrame(page, selector, view = VIEW) {
   for (const el of await page.locator(selector).all()) {
     const r = await el.boundingBox().catch(() => null);
-    if (r && r.width > 0 && r.height > 0 && r.x < VIEW.width && r.y < VIEW.height && r.x + r.width > 0 && r.y + r.height > 0) return true;
+    if (r && r.width > 0 && r.height > 0 && r.x < view.width && r.y < view.height && r.x + r.width > 0 && r.y + r.height > 0) return true;
   }
   return false;
 }
@@ -612,7 +637,7 @@ async function shoot(page, theme, f) {
 async function measureEntries(page, frameId, inDialog) {
   // A dialog frame's locators name the dialog themselves, and so does a locator that begins with the shell's `header`
   // (`about-locators.mjs`, SCOPE); any other is scoped to the page.
-  const scopeOf = (locator) => (inDialog || /^header\b/.test(locator) ? page : page.locator(PAGE));
+  const scopeOf = (locator) => (inDialog || fromPage(locator) ? page : page.locator(PAGE));
   const boxes = {};
   const unplaced = [];
   for (const [entry, l] of Object.entries(ABOUT_LOCATORS)) {
@@ -641,6 +666,228 @@ async function shootTool(page, theme, id, el) {
   const x0 = clamp(r.x / VIEW.width), x1 = clamp((r.x + r.width) / VIEW.width);
   const y0 = clamp((r.y - top) / CROP_H), y1 = clamp((r.y + r.height - top) / CROP_H);
   await save(theme, id, await shot(page), box, [round4(x0), round4(y0), round4(x1 - x0), round4(y1 - y0)]);
+}
+
+// ── the pages' captures (About as six visual pages, PR 2) ──────────────────────────────────────────────────────────
+
+function readPageManifest() {
+  const MARK = "PAGE_MANIFEST: PageManifest = ";
+  try {
+    const src = readFileSync(PAGE_MANIFEST_FILE, "utf8");
+    const m = JSON.parse(src.slice(src.indexOf(MARK) + MARK.length, src.lastIndexOf(";")));
+    return { shots: m.shots ?? {}, tools: m.tools ?? {} };
+  } catch {
+    return { shots: {}, tools: {} };
+  }
+}
+
+const sortKeys = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
+
+function writePageManifest(m) {
+  const shots = {};
+  const tools = {};
+  for (const t of ALL_THEMES) {
+    if (m.shots[t]) {
+      shots[t] = {};
+      for (const w of Object.keys(PAGE_VIEWPORTS)) if (m.shots[t][w]) shots[t][w] = sortKeys(m.shots[t][w]);
+    }
+    if (m.tools[t]) tools[t] = sortKeys(m.tools[t]);
+  }
+  writeFileSync(
+    PAGE_MANIFEST_FILE,
+    "// Generated by `pnpm capture:about` (scripts/capture-about.mjs). Do not edit: re-run the capture.\n" +
+      "// Per theme, per width, per capture: its pixel size, bytes and WebP quality, and each label region's and tool's box as\n" +
+      "// fractions of it (left, top, width, height); per theme, each tool's desktop crop and its control's box within the crop.\n" +
+      'import type { PageManifest } from "./page-shots";\n\n' +
+      `export const PAGE_MANIFEST: PageManifest = ${JSON.stringify({ shots, tools }, null, 2)};\n`,
+  );
+}
+
+const pageSet = readPageManifest();
+let pageWritten = 0;
+let pageBytesWritten = 0;
+let pageKept = 0;
+let trials = 0;
+
+/** A picture decoded to raw pixels, or null when there is none (or it cannot be read). */
+async function decoded(input) {
+  try {
+    const { data, info } = await sharp(input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    return { data, width: info.width, height: info.height, channels: info.channels };
+  } catch {
+    return null;
+  }
+}
+
+/** `png` (cropped to `box` in device pixels when given) as WebP at `quality`. */
+async function encodeAt(png, box, quality) {
+  let img = sharp(png);
+  if (box) img = img.extract(box);
+  const { data, info } = await img.webp({ quality, effort: 6 }).toBuffer({ resolveWithObject: true });
+  return { data, width: info.width, height: info.height };
+}
+
+/**
+ * Writes `data` to `file` only when its pixels differ from the picture already there (d9's weight rule): an unchanged
+ * screen leaves the file, and the repository, as they were. Returns the file's bytes and whether it was written.
+ */
+async function writeIfChanged(file, data) {
+  if (existsSync(file) && samePixels(await decoded(fileURLToPath(file)), await decoded(data))) {
+    pageKept += 1;
+    return { written: false, bytes: statSync(file).size };
+  }
+  mkdirSync(new URL("./", file), { recursive: true });
+  writeFileSync(file, data);
+  pageWritten += 1;
+  pageBytesWritten += data.length;
+  return { written: true, bytes: data.length };
+}
+
+/** The first match of `locator` that is drawn (a box with area), its box in CSS px of the viewport; null when none is. */
+async function firstDrawn(page, locator) {
+  const scope = fromPage(locator) ? page : page.locator(PAGE);
+  for (const el of (await scope.locator(locator).all()).slice(0, 25)) {
+    const r = await el.boundingBox().catch(() => null);
+    if (r && r.width > 0 && r.height > 0) return r;
+  }
+  return null;
+}
+
+/** `r` clipped to the frame, as fractions of it; null when nothing of it is on the frame. */
+function fractionOf(r, view) {
+  const x0 = Math.max(0, r.x), y0 = Math.max(0, r.y);
+  const x1 = Math.min(view.width, r.x + r.width), y1 = Math.min(view.height, r.y + r.height);
+  if (x1 <= x0 || y1 <= y0) return null;
+  return [round4(x0 / view.width), round4(y0 / view.height), round4((x1 - x0) / view.width), round4((y1 - y0) / view.height)];
+}
+
+/** Scrolls the page so the first drawn `selector` in `<main>` sits just under the sticky header. */
+async function scrollToElement(page, selector) {
+  const found = await page.evaluate(
+    ([scope, sel]) => {
+      const el = [...document.querySelectorAll(`${scope} ${sel}`)].find((e) => e.getClientRects().length > 0);
+      if (!el) return false;
+      const header = [...document.querySelectorAll("header")].find(
+        (h) => ["sticky", "fixed"].includes(getComputedStyle(h).position) && h.getBoundingClientRect().height > 0,
+      );
+      const top = header ? header.getBoundingClientRect().bottom : 0;
+      window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - top - 8, behavior: "instant" });
+      return true;
+    },
+    [PAGE, selector],
+  );
+  if (!found) throw new Error(`the frame's scroll target ${selector} is not drawn`);
+  await page.waitForTimeout(300);
+}
+
+/** Opens a fixture deck's view, as the 390 set's deck frames do. */
+async function deckView(page, view) {
+  if (view !== "your-deck" && view !== "analysis" && view !== "games" && view !== "versions") await pressTab(page, "Your deck");
+  await DECK_VIEW_STEPS[view](page);
+}
+
+/** What the switch set must draw on a page frame: the ? on a frame shot from the top, and each surface's own rows. */
+async function requirePage(page, capture, frame, view) {
+  const keys = [];
+  if (!frame.deck && !frame.scroll) keys.push("*");
+  if (frame.path === "/friends") keys.push("friends");
+  if (frame.rearm) keys.push("home-feed");
+  for (const key of keys) {
+    for (const [selector, what] of REQUIRED_ON_FRAME[key] ?? []) {
+      if (!(await inFrame(page, selector, view))) throw new Error(`${capture} does not show ${what}`);
+    }
+  }
+}
+
+const wantPage = (capture, frame) =>
+  WIDTHS.includes(frame.width) && (FEED_OFF ? frame.feed === "off" : frame.feed !== "off") && (ONLY === null || ONLY.has(capture));
+
+async function savePage(theme, width, capture, png, regions, tools) {
+  const { data, width: w, height: h } = await encodeAt(png, null, PAGE_QUALITY);
+  if (TRIAL_DIR && trials < 3) {
+    trials += 1;
+    mkdirSync(TRIAL_DIR, { recursive: true });
+    for (const q of TRIAL_QUALITIES) {
+      const t = await encodeAt(png, null, q);
+      writeFileSync(`${TRIAL_DIR}/${theme}-${width}-${capture}-q${q}.webp`, t.data);
+      console.log(`  trial ${width}/${capture} q${q}: ${(t.data.length / 1024).toFixed(1)}KB`);
+    }
+  }
+  const prev = pageSet.shots[theme]?.[width]?.[capture];
+  const { written, bytes } = await writeIfChanged(new URL(`${theme}/${width}/${capture}.webp`, PAGE_OUT_DIR), data);
+  pageSet.shots[theme] ??= {};
+  pageSet.shots[theme][width] ??= {};
+  pageSet.shots[theme][width][capture] = { w, h, bytes, quality: written ? PAGE_QUALITY : (prev?.quality ?? PAGE_QUALITY), regions, tools };
+  console.log(`  ${width}/${capture}  ${w}x${h}  ${(bytes / 1024).toFixed(1)}KB${written ? "" : "  (unchanged)"}  ${Object.keys(regions).length} regions`);
+}
+
+async function saveToolCrop(theme, tool, capture, png, rect, view) {
+  const c = toolCrop(rect, view);
+  const s = view.scale;
+  const left = Math.round(c.left * s), top = Math.round(c.top * s);
+  const box = {
+    left,
+    top,
+    width: Math.min(Math.round(c.width * s), Math.round(view.width * s) - left),
+    height: Math.min(Math.round(c.height * s), Math.round(view.height * s) - top),
+  };
+  const { data, width: w, height: h } = await encodeAt(png, box, PAGE_QUALITY);
+  const prev = pageSet.tools[theme]?.[tool];
+  const { written, bytes } = await writeIfChanged(new URL(`${theme}/desktop/tools/${tool}.webp`, PAGE_OUT_DIR), data);
+  pageSet.tools[theme] ??= {};
+  pageSet.tools[theme][tool] = {
+    capture,
+    w,
+    h,
+    bytes,
+    quality: written ? PAGE_QUALITY : (prev?.quality ?? PAGE_QUALITY),
+    halo: c.halo.map(round4),
+  };
+  console.log(`  desktop/tools/${tool}  ${w}x${h}  ${(bytes / 1024).toFixed(1)}KB${written ? "" : "  (unchanged)"}`);
+}
+
+/** Every page capture of `width` this run takes, each label region on it measured the moment it is shot. */
+async function shootPages(page, theme, width, f) {
+  const view = PAGE_VIEWPORTS[width];
+  for (const [capture, frame] of Object.entries(PAGE_FRAMES)) {
+    if (frame.width !== width || !wantPage(capture, frame)) continue;
+    await attempt(page, theme, `${width}/${capture}`, async () => {
+      if (frame.rearm) await rearmFeed();
+      await open(page, frame.path ?? `/decks/${f[frame.deck]}`);
+      if (frame.deck) await deckView(page, frame.view);
+      if (frame.scroll === "tabs") await scrollToTabs(page);
+      else if (frame.scroll) await scrollToElement(page, frame.scroll);
+      await settle(page);
+      await requirePage(page, capture, frame, view);
+      const png = await shot(page);
+      const regions = {};
+      for (const [region, r] of Object.entries(ABOUT_REGIONS)) {
+        const at = r[width];
+        if (!at || at.capture !== capture) continue;
+        const rect = await firstDrawn(page, at.locator);
+        const b = rect ? fractionOf(rect, view) : null;
+        if (b) regions[region] = b;
+        else missed.push(`${theme}/${width}/${capture}#${region}: its locator draws nothing on the frame`);
+      }
+      const tools = {};
+      const crops = [];
+      if (width === "desktop") {
+        for (const [tool, t] of Object.entries(TOOL_REGIONS)) {
+          if (t.capture !== capture) continue;
+          const rect = await firstDrawn(page, t.locator);
+          const b = rect ? fractionOf(rect, view) : null;
+          if (!b) {
+            missed.push(`${theme}/desktop/tools/${tool}: its control is not drawn on ${capture}`);
+            continue;
+          }
+          tools[tool] = b;
+          crops.push([tool, rect]);
+        }
+      }
+      await savePage(theme, width, capture, png, regions, tools);
+      for (const [tool, rect] of crops) await saveToolCrop(theme, tool, capture, png, rect, view);
+    });
+  }
 }
 
 await clerkSetup();
@@ -676,13 +923,13 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 35_000));
   }
   const f = await fixture(userId);
-  for (const theme of THEMES) {
-    console.log(`\n── ${theme}`);
+  /** A signed-in page in `theme` at `view` (the 390 set's, or a page width's). */
+  const themedPage = async (theme, view) => {
     const context = await browser.newContext({
-      viewport: VIEW,
-      deviceScaleFactor: SCALE,
-      isMobile: true,
-      hasTouch: true,
+      viewport: { width: view.width, height: view.height },
+      deviceScaleFactor: view.scale,
+      isMobile: view.isMobile,
+      hasTouch: view.isMobile,
       reducedMotion: "reduce",
       storageState: storage,
     });
@@ -697,13 +944,29 @@ try {
     });
     await setupClerkTestingToken({ page });
     await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+    return { context, page };
+  };
+  for (const theme of THEMES) {
+    console.log(`\n── ${theme}`);
+    const { context, page } = await themedPage(theme, { ...VIEW, scale: SCALE, isMobile: true });
     await clearAboutSheet(page, userId);
     try {
       await shoot(page, theme, f);
+      // The pages' 390 captures share the 390 set's page: the same viewport and scale.
+      if (WIDTHS.includes("phone")) await shootPages(page, theme, "phone", f);
     } finally {
       await context.close();
     }
+    if (WIDTHS.includes("desktop")) {
+      const desk = await themedPage(theme, PAGE_VIEWPORTS.desktop);
+      try {
+        await shootPages(desk.page, theme, "desktop", f);
+      } finally {
+        await desk.context.close();
+      }
+    }
     writeManifest(set);
+    writePageManifest(pageSet);
   }
 } finally {
   try {
@@ -733,6 +996,9 @@ const total = all.reduce((n, e) => n + e.bytes, 0);
 const max = all.reduce((n, e) => Math.max(n, e.bytes), 0);
 console.log(`\n${all.length} images · ${(total / 1024 / 1024).toFixed(2)}MB in all · largest ${(max / 1024).toFixed(1)}KB`);
 if (lowered.length) console.log(`quality lowered: ${lowered.join(", ")}`);
+console.log(
+  `pages: ${pageWritten} images written (${(pageBytesWritten / 1024 / 1024).toFixed(2)}MB), ${pageKept} unchanged and left as they were, at q${PAGE_QUALITY}`,
+);
 if (missed.length) {
   console.log(`\nNOT CAPTURED (${missed.length}):\n  ${missed.join("\n  ")}`);
   process.exit(1);
