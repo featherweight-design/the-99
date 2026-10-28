@@ -59,14 +59,15 @@ describe("the Based on line (Overview accuracy PR 6)", () => {
   it("lists a claim's cards under it, one line per claim that cites any", () => {
     drawWith(checkedSynopsis({ evidence }), names);
     const lines = screen.getAllByTestId("synopsis-based-on").map((e) => e.textContent);
-    // strategy 1, keep 1, tip 1, key card 1 (its own card left out); the empty claims draw none.
-    expect(lines).toEqual(["Based onSol Ring", "Based onSol Ring", "Based onCraterhoof BehemothSol Ring", "Based onCraterhoof Behemoth"]);
+    // Strategy 1 and the keep line cite only the Sol Ring they name, so draw none; the tip names
+    // Craterhoof, so lists Sol Ring alone; the key card leaves out its own card; empty claims draw none.
+    expect(lines).toEqual(["Based onSol Ring", "Based onCraterhoof Behemoth"]);
   });
 
   it("opens the card's details from a listed card, as a mark does", async () => {
     const fetchCard = vi.fn(async () => null);
     drawWith(checkedSynopsis({ evidence }), names, fetchCard);
-    const line = screen.getAllByTestId("synopsis-based-on")[2];
+    const line = screen.getAllByTestId("synopsis-based-on")[1];
     fireEvent.click(within(line).getByRole("button", { name: "View details for Craterhoof Behemoth" }));
     await waitFor(() => expect(fetchCard).toHaveBeenCalled());
   });

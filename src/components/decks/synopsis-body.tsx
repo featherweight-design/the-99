@@ -212,8 +212,8 @@ export function SynopsisSections({
     />
   );
   const text = (t: string) => <SynopsisText text={t} cards={content.cards} art={art} />;
-  const basedOn = (kind: EvidenceKind, index: number, except?: string) => (
-    <BasedOn ids={basedOnIds(content, kind, index, except)} names={evidenceNames} art={art} />
+  const basedOn = (kind: EvidenceKind, index: number, line: string, except?: string) => (
+    <BasedOn ids={basedOnIds(content, kind, index, line, except)} names={evidenceNames} art={art} />
   );
   const body = "text-[13px] leading-[1.6] md:text-[13.5px] text-[var(--fg-body)]";
 
@@ -233,7 +233,7 @@ export function SynopsisSections({
                 {content.primer.strategy.map((step, i) => (
                   <li key={i} className="grid grid-cols-[22px_minmax(0,1fr)] items-baseline">
                     <span className="font-mono text-[11px] text-[var(--fg-faint)]">{i + 1}</span>
-                    <span className={body}>{text(step)}{basedOn("strategy", i)}</span>
+                    <span className={body}>{text(step)}{basedOn("strategy", i, step)}</span>
                   </li>
                 ))}
               </ol>
@@ -246,7 +246,7 @@ export function SynopsisSections({
                   fixed={content.lands ? synopsisCopy.modal.lands.keep(content.lands.keep.low, content.lands.keep.high) : null}
                   lines={content.primer.mulligan.keep}
                   render={text}
-                  basedOn={(i) => basedOn("keep", i)}
+                  basedOn={(i, line) => basedOn("keep", i, line)}
                 />
                 <Hand
                   label={synopsisCopy.modal.sendBack}
@@ -256,7 +256,7 @@ export function SynopsisSections({
                     : null}
                   lines={content.primer.mulligan.sendBack}
                   render={text}
-                  basedOn={(i) => basedOn("sendBack", i)}
+                  basedOn={(i, line) => basedOn("sendBack", i, line)}
                 />
               </div>
             </Sub>
@@ -265,7 +265,7 @@ export function SynopsisSections({
                 {content.primer.tips.map((tip, i) => (
                   <div key={i} className={`border-l border-[var(--border-strong)] pl-[12px] ${body}`}>
                     <p className="m-0">{text(tip.text)}</p>
-                    {basedOn("tips", i)}
+                    {basedOn("tips", i, tip.text)}
                   </div>
                 ))}
               </div>
@@ -290,7 +290,7 @@ export function SynopsisSections({
                       ? <CardName oracleId={card.oracleId} name={k.card} imageUri={art.get(card.oracleId)?.imageUri ?? null} />
                       : <span className="font-semibold text-[var(--fg)]">{k.card}</span>}
                   </span>
-                  <span className="text-[13px] leading-[1.5] text-[var(--fg-muted)]">{text(k.job)}{basedOn("keyCards", i, card?.oracleId)}</span>
+                  <span className="text-[13px] leading-[1.5] text-[var(--fg-muted)]">{text(k.job)}{basedOn("keyCards", i, k.job, card?.oracleId)}</span>
                 </div>
               );
             })}
@@ -304,7 +304,7 @@ export function SynopsisSections({
             {content.weaknesses.map((w, i) => (
               <p key={i} className={`m-0 grid grid-cols-[14px_minmax(0,1fr)] items-baseline ${body}`}>
                 <span aria-hidden className="mt-[2px] block h-[5px] w-[5px] rotate-45 bg-[var(--fg-faint)]" />
-                <span>{text(w)}{basedOn("weaknesses", i)}</span>
+                <span>{text(w)}{basedOn("weaknesses", i, w)}</span>
               </p>
             ))}
           </div>
@@ -347,7 +347,7 @@ function Hand({
   fixed: string | null;
   lines: string[];
   render: (t: string) => React.ReactNode;
-  basedOn: (index: number) => React.ReactNode;
+  basedOn: (index: number, line: string) => React.ReactNode;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-[8px] rounded-[9px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[14px] py-[12px]">
@@ -361,7 +361,7 @@ function Hand({
       {lines.map((line, i) => (
         <div key={i} className="grid grid-cols-[14px_minmax(0,1fr)] items-baseline text-[13px] leading-[1.55] text-[var(--fg-body)]">
           <span aria-hidden className="font-mono text-[11px] text-[var(--fg-faint)]">{glyph}</span>
-          <span>{render(line)}{basedOn(i)}</span>
+          <span>{render(line)}{basedOn(i, line)}</span>
         </div>
       ))}
     </div>
