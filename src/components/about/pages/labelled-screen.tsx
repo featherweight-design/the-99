@@ -14,7 +14,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { PageWidth } from "../../../lib/about/page-shots";
-import type { ScreenLabel, ScreenModel, ScreenShot } from "../../../lib/about/pins";
+import { pinsAt, type ScreenLabel, type ScreenModel, type ScreenShot } from "../../../lib/about/pins";
 import { TOOL_CARD_HALO } from "../tools/tool-card";
 
 const PIN_SHADOW = "0 0 0 2px var(--bg), 0 3px 10px rgb(0 0 0 / 0.55)";
@@ -34,14 +34,36 @@ function Picture({
   onPress: (key: string) => void;
 }) {
   const img = useRef<HTMLImageElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
+  // The picture's rendered size in CSS pixels, measured: the pins are placed at it (`pinsAt`), so their 28px gap and
+  // edge clamp hold however narrow the picture is drawn. Null until measured, and no pin is drawn before then.
+  // Its padding box, which the capture and the pins are positioned in (inside the 1px border).
+  const [rendered, setRendered] = useState<{ w: number; h: number } | null>(null);
   // A capture cached by the browser can finish before hydration attaches `onLoad`; read it once mounted.
   useEffect(() => {
     if (img.current?.complete && img.current.naturalWidth > 0) setLoaded(true);
   }, []);
+  useEffect(() => {
+    const el = frame.current;
+    if (!el) return;
+    const measure = () =>
+      setRendered((cur) => {
+        const w = el.clientWidth;
+        const h = el.clientHeight;
+        if (w <= 0 || h <= 0) return null;
+        return cur && cur.w === w && cur.h === h ? cur : { w, h };
+      });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const pins = rendered === null ? [] : pinsAt(shot.pins, rendered.w, rendered.h);
   const litPin = shot.pins.find((p) => p.key === lit);
   return (
     <div
+      ref={frame}
       data-about-shot={width}
       data-loaded={loaded ? "" : undefined}
       className={`relative w-full flex-none overflow-hidden border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${
@@ -91,7 +113,7 @@ function Picture({
         />
       )}
       {loaded &&
-        shot.pins.map((p) => (
+        pins.map((p) => (
           // The list's line is the control a keyboard or screen reader uses; the pin is its pointer twin.
           <button
             key={p.key}
@@ -102,7 +124,7 @@ function Picture({
             data-lit={p.key === lit ? "" : undefined}
             onClick={() => onPress(p.key)}
             className="absolute z-[3] -ml-[12px] -mt-[12px] h-[24px] w-[24px] cursor-pointer rounded-full border-0 bg-[color:var(--accent)] p-0 text-center font-mono text-[12px] font-semibold leading-[24px] text-[color:var(--bg)]"
-            style={{ left: `${p.left}%`, top: `${p.top}%`, boxShadow: p.key === lit ? PIN_SHADOW_LIT : PIN_SHADOW }}
+            style={{ left: `${p.x}px`, top: `${p.y}px`, boxShadow: p.key === lit ? PIN_SHADOW_LIT : PIN_SHADOW }}
           >
             {p.n}
           </button>

@@ -1,5 +1,5 @@
 import { fireEvent, render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScreenModel } from "../../../lib/about/pins";
 import { LabelledScreen } from "./labelled-screen";
 
@@ -10,8 +10,8 @@ const model = (src: string): ScreenModel => ({
     {
       shot: { src, w: 780, h: 1688 },
       pins: [
-        { key: "a/s/one", n: 1, left: 10, top: 5, box: [0.1, 0.05, 0.3, 0.1] },
-        { key: "a/s/two", n: 2, left: 50, top: 40, box: [0.4, 0.4, 0.3, 0.1] },
+        { key: "a/s/one", n: 1, box: [0.1, 0.05, 0.3, 0.1] },
+        { key: "a/s/two", n: 2, box: [0.11, 0.06, 0.3, 0.1] },
       ],
     },
   ],
@@ -20,6 +20,25 @@ const model = (src: string): ScreenModel => ({
     { key: "a/s/two", n: 2, lead: "Two", text: " is the second.", region: "a/s/two", shot: 0 },
   ],
 });
+
+// jsdom lays nothing out: the frame's rendered size and its observer are stood in for. `W` is the picture's width.
+let W = 388;
+beforeEach(() => {
+  W = 388;
+  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+  vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+    return this.hasAttribute("data-about-shot") ? W : 0;
+  });
+  vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+    return this.hasAttribute("data-about-shot") ? (W * 1688) / 780 : 0;
+  });
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+const px = (el: Element) => [parseFloat((el as HTMLElement).style.left), parseFloat((el as HTMLElement).style.top)];
 
 const draw = () => render(<LabelledScreen phone={model("/p.webp")} desktop={model("/d.webp")} />);
 
@@ -57,7 +76,7 @@ describe("LabelledScreen", () => {
     expect(line.getAttribute("aria-pressed")).toBe("true");
     const halo = phone.querySelector<HTMLElement>("[data-about-halo]")!;
     expect(halo.getAttribute("data-about-halo")).toBe("a/s/two");
-    expect(halo.style.left).toBe("40%");
+    expect(halo.style.left).toBe("11%");
     expect(phone.querySelector("[data-about-pin='a/s/two']")!.hasAttribute("data-lit")).toBe(true);
     expect(phone.querySelector("[data-about-pin='a/s/one']")!.hasAttribute("data-lit")).toBe(false);
     fireEvent.click(line);
@@ -71,5 +90,32 @@ describe("LabelledScreen", () => {
     fireEvent.click(desk.querySelector("[data-about-pin='a/s/one']")!);
     expect(desk.querySelector("[data-about-label='a/s/one'] button")!.getAttribute("aria-pressed")).toBe("true");
     expect(desk.querySelector("[data-about-halo]")!.getAttribute("data-about-halo")).toBe("a/s/one");
+  });
+});
+
+describe("LabelledScreen places pins at the picture's rendered size", () => {
+  it("two crowding regions keep their pins 28px apart and on the picture at a narrow width", () => {
+    for (const w of [388, 288]) {
+      W = w;
+      const { container, unmount } = draw();
+      const phone = container.querySelector<HTMLElement>("[data-about-width='phone']")!;
+      fireEvent.load(phone.querySelector("img")!);
+      const [a, b] = [...phone.querySelectorAll("[data-about-pin]")].map(px);
+      expect(Math.hypot(a[0] - b[0], a[1] - b[1]), `${w}px`).toBeGreaterThanOrEqual(27.9);
+      for (const [x, y] of [a, b]) {
+        expect(x).toBeGreaterThanOrEqual(12);
+        expect(x).toBeLessThanOrEqual(w - 12);
+        expect(y).toBeGreaterThanOrEqual(12);
+      }
+      unmount();
+    }
+  });
+
+  it("draws no pin before the picture is measured", () => {
+    W = 0;
+    const { container } = draw();
+    const phone = container.querySelector<HTMLElement>("[data-about-width='phone']")!;
+    fireEvent.load(phone.querySelector("img")!);
+    expect(phone.querySelectorAll("[data-about-pin]")).toHaveLength(0);
   });
 });

@@ -3,7 +3,7 @@ import { ABOUT_SECTIONS } from "../copy/about-pages";
 import { SWITCH_NAMES } from "../switches/registry";
 import { PAGE_WIDTHS, type PageShot } from "./page-shots";
 import { visibleSections, type VisibleSection } from "./pages-visible";
-import { MAX_PINS, PIN_GAP, PIN_SIZE, placePins, regionOf, screenModel, type Box, type PlacedPin } from "./pins";
+import { MAX_PINS, PIN_GAP, PIN_SIZE, pinsAt, placePins, regionOf, screenModel, type Box, type PlacedPin } from "./pins";
 
 const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
@@ -152,11 +152,9 @@ describe("screenModel: numbers in reading order across the captures", () => {
     expect(m.shots).toHaveLength(1);
   });
 
-  it("places pins in percent of the picture", () => {
+  it("carries each pin's region box, and leaves where it sits to the rendered size", () => {
     const m = screenModel(section(["c"]), "amonkhet", "phone", fake);
-    const [p] = m.shots[0].pins;
-    // 358 wide: 0.5 * 358 + 14 = 193 → 53.9%.
-    expect(p.left).toBeCloseTo(53.9, 1);
+    expect(m.shots[0].pins).toEqual([{ key: "decks/s/c", n: 1, box: [0.5, 0.1, 0.2, 0.05] }]);
   });
 });
 
@@ -178,5 +176,34 @@ describe("the shipped pages, every switch on", () => {
         }
       }
     }
+  });
+});
+
+describe("pinsAt: pins placed at the picture's RENDERED size", () => {
+  // A desktop picture is 700 wide only from about a 1180 window; at 768 it is about 388. A phone picture is the window
+  // less its gutters: 288 at a 320 window. The disc does not scale with the picture, so the gap and the clamp must hold
+  // in the rendered pixels.
+  const SIZES: Record<"phone" | "desktop", number[]> = { phone: [288, 358], desktop: [388, 700] };
+
+  it("keeps every shipped picture's pins 28px apart and clear of the edge at narrow and full widths", () => {
+    for (const s of visibleSections(ALL_ON)) {
+      for (const width of PAGE_WIDTHS) {
+        for (const sh of screenModel(s, "amonkhet", width).shots) {
+          for (const w of SIZES[width]) {
+            const h = (w * sh.shot.h) / sh.shot.w;
+            const pins = pinsAt(sh.pins, w, h);
+            const where = `${s.area}/${s.id} ${width} ${sh.shot.src} at ${w}px`;
+            expect(pins.map((p) => p.n), where).toEqual(sh.pins.map((p) => p.n));
+            if (pins.length > 1) expect(apart(pins as PlacedPin[]), where).toBeGreaterThanOrEqual(PIN_GAP - 0.1);
+            expect(inside(pins as PlacedPin[], { w, h }), where).toBe(true);
+          }
+        }
+      }
+    }
+  });
+
+  it("puts a pin 14px inside its region's corner in rendered pixels, not in a fixed frame's", () => {
+    const [p] = pinsAt([{ key: "k", n: 3, box: [0.5, 0.5, 0.1, 0.1] }], 388, 269);
+    expect(p).toMatchObject({ key: "k", n: 3, x: 208, y: 148.5 });
   });
 });

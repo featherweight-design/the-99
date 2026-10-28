@@ -37,7 +37,7 @@ const round = (v: number) => Math.round(v * 10) / 10;
  * never draw two pins on one spot (Review Focus 5).
  */
 export function placePins(regions: readonly { key: string; box: Box }[], frame: { w: number; h: number }): PlacedPin[] {
-  const ordered = [...regions].sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x || (a.key < b.key ? -1 : 1));
+  const ordered = readingOrder(regions);
   const minX = R;
   const maxX = Math.max(R, frame.w - R);
   const placed: PlacedPin[] = [];
@@ -48,6 +48,12 @@ export function placePins(regions: readonly { key: string; box: Box }[], frame: 
     placed.push({ key, n: i + 1, x: round(x), y: round(y) });
   });
   return placed;
+}
+
+/** Regions in reading order: by the region's top, then its left (then key, so a tie is stable). Scaling a picture
+ *  keeps this order, so it is the same at every rendered size. */
+function readingOrder<T extends { key: string; box: Box }>(regions: readonly T[]): T[] {
+  return [...regions].sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x || (a.key < b.key ? -1 : 1));
 }
 
 /** The first x from `x0` in direction `dir` (1 right, -1 left) clear of every earlier pin, or null past `limit`. */
@@ -64,21 +70,32 @@ function clear(x0: number, y: number, placed: readonly PlacedPin[], dir: 1 | -1,
   return null;
 }
 
-/** One picture of a section as a reader is drawn it: the capture, and its pins in percent of the picture, each with
- *  its region's box (fractions) for the halo. Only drawn labels' boxes: nothing of a label the reader is not drawn. */
-export type ScreenShot = {
-  shot: { src: string; w: number; h: number };
-  pins: { key: string; n: number; left: number; top: number; box: PageBox }[];
-};
+/** One pin a picture carries: its label's key and number, and its region's box (fractions of the picture). */
+export type ScreenPin = { key: string; n: number; box: PageBox };
+
+/** One picture of a section as a reader is drawn it: the capture, and the pins it carries, numbered. WHERE each pin
+ *  sits is decided only once the picture's rendered size is known (`pinsAt`), because the 24px disc, the 14px inset and
+ *  the 28px gap are real pixels that do not scale with the picture. Only drawn labels' boxes are here. */
+export type ScreenShot = { shot: { src: string; w: number; h: number }; pins: ScreenPin[] };
 
 /** One label line: its number, and the capture it is pinned on (null when no capture holds its region). */
 export type ScreenLabel = { key: string; n: number; lead: string; text: string; region: string; shot: number | null };
 
 export type ScreenModel = { shots: ScreenShot[]; labels: ScreenLabel[] };
 
-/** The width each width's picture is laid out at, which the pins' 14px and 28px are measured in: a 390 phone less its
- *  16px gutters, and desktop's 700 (call 0, Decks-Desktop board). Pins are then placed in percent, so they scale. */
-export const FRAME_WIDTH: Record<PageWidth, number> = { phone: 358, desktop: 700 };
+/**
+ * Each pin of one picture placed at the picture's RENDERED size, `w` by `h` CSS pixels: `placePins` on its regions'
+ * boxes scaled to that size, so the 14px inset, the edge clamp and the 28px gap hold in real pixels at every width (a
+ * desktop picture is 700 wide only from about 1180; at a 768 window it is about 388). Numbers stay the model's.
+ */
+export function pinsAt(pins: readonly ScreenPin[], w: number, h: number): (ScreenPin & { x: number; y: number })[] {
+  const placed = placePins(
+    pins.map((p) => ({ key: p.key, box: { x: p.box[0] * w, y: p.box[1] * h, w: p.box[2] * w, h: p.box[3] * h } })),
+    { w, h },
+  );
+  const at = new Map(placed.map((p) => [p.key, p]));
+  return pins.map((p) => ({ ...p, x: at.get(p.key)!.x, y: at.get(p.key)!.y }));
+}
 
 /**
  * A section at one width in the reader's theme: each capture with its pins, and its label list in pin order. Each
@@ -99,31 +116,26 @@ export function screenModel(
   for (const capture of section.captures[width]) {
     const shot = shotFor(theme, width, capture);
     if (!shot) continue;
-    const frame = { w: FRAME_WIDTH[width], h: (FRAME_WIDTH[width] * shot.h) / shot.w };
-    const regions = [...byKey.values()]
-      .filter((l) => !claimed.has(l.key) && Object.hasOwn(shot.regions, l.region))
-      .map((l) => {
-        const [x, y, w, h] = shot.regions[l.region];
-        return { key: l.key, box: { x: x * frame.w, y: y * frame.h, w: w * frame.w, h: h * frame.h } };
-      });
-    if (regions.length === 0 && shots.length > 0) continue;
-    const placed = placePins(regions, frame);
+    // Numbered in reading order on the capture's own pixels; the order is the same at any rendered size.
+    const placed = readingOrder(
+      [...byKey.values()]
+        .filter((l) => !claimed.has(l.key) && Object.hasOwn(shot.regions, l.region))
+        .map((l) => {
+          const [x, y, w, h] = shot.regions[l.region];
+          return { key: l.key, box: { x: x * shot.w, y: y * shot.h, w: w * shot.w, h: h * shot.h } };
+        }),
+    );
+    if (placed.length === 0 && shots.length > 0) continue;
     const index = shots.length;
     shots.push({
       shot: { src: shot.src, w: shot.w, h: shot.h },
-      pins: placed.map((p) => ({
-        key: p.key,
-        n: p.n + next - 1,
-        left: round((p.x / frame.w) * 1000) / 10,
-        top: round((p.y / frame.h) * 1000) / 10,
-        box: shot.regions[p.key],
-      })),
+      pins: placed.map((p, i) => ({ key: p.key, n: next + i, box: shot.regions[p.key] })),
     });
-    for (const p of placed) {
+    placed.forEach((p, i) => {
       const l = byKey.get(p.key)!;
       claimed.add(l.key);
-      labels.push({ key: l.key, n: p.n + next - 1, lead: l.lead ?? "", text: l.text, region: l.region, shot: index });
-    }
+      labels.push({ key: l.key, n: next + i, lead: l.lead ?? "", text: l.text, region: l.region, shot: index });
+    });
     next += placed.length;
   }
   for (const l of section.labels) {
