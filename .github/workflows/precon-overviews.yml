@@ -1,0 +1,127 @@
+name: Precon overviews
+
+# Every plain precon's pre-written Overview (Hugh, 2026-10-27), written ONCE on staging
+# (`db:build:precon-overviews`) and copied to production (`db:copy:precon-overviews`).
+#
+# Chained on the daily `Catalog refresh`, never a cron: a new precon arrives through the precon
+# ingest, and an Overview's inputs (card text, combos, labels) move with the catalog. The build skips
+# every precon whose request hash still matches, so a day with nothing new calls no model and
+# spends nothing. The scheduled run needs `PRECON_OVERVIEWS_ENABLED='true'`; a DISPATCH runs
+# without it, and its `mode` picks the jobs: `generate` alone (staging only), `generate+copy`, or
+# `copy-only`.
+on:
+  workflow_run:
+    workflows: [Catalog refresh]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Write on staging only, write then copy to production, or copy staging's Overviews only
+        type: choice
+        options: [generate, generate+copy, copy-only]
+        default: generate
+
+# ONE group, so two runs' builds or copies can never overlap.
+concurrency:
+  group: precon-overviews
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode != 'copy-only') ||
+      (github.event_name == 'workflow_run' && vars.PRECON_OVERVIEWS_ENABLED == 'true' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'schedule')
+    runs-on: ubuntu-latest
+    # A batch usually ends in minutes, and the Batch API allows it a day; the job waits on it.
+    timeout-minutes: 240
+    environment: catalog-staging
+    defaults:
+      run:
+        shell: bash
+    env:
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # Staging's Neon branch. A guard, not a credential: the build refuses any other database.
+      PRECON_OVERVIEW_TARGET_BRANCH: br-polished-pond-a6e63y0b
+      # The dollar cap, a worst-case stop. The build clamps it to $15 whatever this says.
+      PRECON_OVERVIEW_MAX_USD: ${{ vars.PRECON_OVERVIEW_MAX_USD || '15' }}
+      # The role basis the readings are built at (`LABEL_ROLE_COUNTS_ENABLED` in the app, a Vercel
+      # variable this job cannot read). Default `labels`: staging's scores are written at it. A deck
+      # carries an Overview over only when its owner's basis is the row's, so a wrong guess attaches
+      # nothing rather than something untrue.
+      PRECON_OVERVIEW_ROLE_BASIS: ${{ vars.PRECON_OVERVIEW_ROLE_BASIS || 'labels' }}
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - name: Fail loudly without the model key
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY is not set in the catalog-staging environment."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          # A staging leg runs the commit staging has deployed and migrated (`staging-deployed`, moved by `Staging
+          # sync` only after that deploy succeeds), never code ahead of staging's database (docs/agents/ops.md).
+          ref: staging-deployed
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Write precon Overviews on staging
+        run: |
+          echo "### Precon overviews — \`catalog-staging\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:build:precon-overviews 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  copy:
+    needs: generate
+    # `!cancelled()` so a SKIPPED generate (copy-only) does not skip this job too. A dispatch copies
+    # only when asked: `generate` alone never reaches production.
+    if: >-
+      ${{ !cancelled() &&
+      ((github.event_name == 'workflow_run' && needs.generate.result == 'success') ||
+       (github.event.inputs.mode == 'generate+copy' && needs.generate.result == 'success') ||
+       (github.event.inputs.mode == 'copy-only' && needs.generate.result == 'skipped')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: catalog-production
+    defaults:
+      run:
+        shell: bash
+    env:
+      CATALOG_COPY_SOURCE_URL: ${{ secrets.CATALOG_COPY_SOURCE_URL }}
+      CATALOG_COPY_TARGET_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      # Production's Neon branch. A guard, not a credential: the target must report exactly this.
+      CATALOG_COPY_TARGET_BRANCH: br-noisy-violet-a6vw4ess
+      # The copy builds each precon's request from the TARGET's catalog through `src/db`, at the build's basis.
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      PRECON_OVERVIEW_ROLE_BASIS: ${{ vars.PRECON_OVERVIEW_ROLE_BASIS || 'labels' }}
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - name: Fail loudly without the copy secret
+        run: |
+          if [ -z "$CATALOG_COPY_SOURCE_URL" ]; then
+            echo "::error::CATALOG_COPY_SOURCE_URL is not set in the catalog-production environment."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Copy precon Overviews to production
+        run: |
+          echo "### Precon overviews copy — staging to \`catalog-production\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:copy:precon-overviews 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

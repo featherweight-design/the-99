@@ -36,6 +36,7 @@ describe("readJobValues", () => {
     expect(out.values).toEqual({
       CATALOG_REFRESH_ENABLED: "true", COMBO_REFRESH_ENABLED: null, COMMANDER_INDEX_ENABLED: null,
       CARD_LABELS_ENABLED: null, TUNING_CHECK_ENABLED: null, PROSE_MAX_USD: "0",
+      PRECON_OVERVIEWS_ENABLED: null, PRECON_OVERVIEW_MAX_USD: null, PRECON_OVERVIEW_ROLE_BASIS: null,
     });
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe(GITHUB_VARIABLES_URL);
@@ -46,7 +47,7 @@ describe("readJobValues", () => {
     expect(log).not.toHaveBeenCalled();
   });
 
-  it("returns only the six listed names, never another variable or the token", async () => {
+  it("returns only the listed names, never another variable or the token", async () => {
     const out = await readJobValues(deps().d);
     expect(Object.keys(out.values!).sort()).toEqual([...JOB_VARIABLE_NAMES].sort());
     const text = JSON.stringify(out);

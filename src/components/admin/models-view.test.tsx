@@ -3,7 +3,7 @@
 // no-token line when they could not be read.
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { MODEL_ROWS } from "../../lib/admin/models";
+import { JOB_VARIABLES, MODEL_ROWS } from "../../lib/admin/models";
 import { adminCopy } from "../../lib/copy/admin";
 import { ModelsView, type ModelsRow } from "./models-view";
 
@@ -15,6 +15,7 @@ const ROWS: ModelsRow[] = MODEL_ROWS.map((d) => ({ ...d, micro: d.key === "tunin
 const VALUES = {
   CATALOG_REFRESH_ENABLED: "true", COMBO_REFRESH_ENABLED: "true", COMMANDER_INDEX_ENABLED: "true",
   CARD_LABELS_ENABLED: "true", TUNING_CHECK_ENABLED: null, PROSE_MAX_USD: "0",
+  PRECON_OVERVIEWS_ENABLED: null, PRECON_OVERVIEW_MAX_USD: null, PRECON_OVERVIEW_ROLE_BASIS: null,
 };
 
 describe("ModelsView", () => {
@@ -43,7 +44,7 @@ describe("ModelsView", () => {
   it("draws the job switches with GitHub's values, `not set` for one the repository lacks", () => {
     render(<ModelsView rows={ROWS} jobs={{ values: VALUES }} month="October" env="staging" />);
     const jobs = screen.getByTestId("job-rows");
-    expect(jobs.querySelectorAll("[data-job]")).toHaveLength(6);
+    expect(jobs.querySelectorAll("[data-job]")).toHaveLength(JOB_VARIABLES.length);
     expect(within(jobs.querySelector<HTMLElement>("[data-job='PROSE_MAX_USD']")!).getAllByText("0")).toHaveLength(2);
     expect(within(jobs.querySelector<HTMLElement>("[data-job='TUNING_CHECK_ENABLED']")!).getAllByText(copy.unset)).toHaveLength(2);
     expect(screen.queryByText(copy.noToken)).toBeNull();
