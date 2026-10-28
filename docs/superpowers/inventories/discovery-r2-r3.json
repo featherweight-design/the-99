@@ -94,13 +94,13 @@
       ]
     },
     {
-      "id": "about-tools",
-      "label": "/about — Tools, the default tab: the five groups (1280 grids, the phone's sideways rows), ToolCard's states, Written for you (R2·6b)",
-      "view": "src/components/about/tools/tools-tab.tsx",
+      "id": "about-index",
+      "label": "/about — the index of About's six pages (About visual PR 6a; the Tools tab retired), `?tab=tools` draws the same",
+      "view": "src/components/about/pages/about-index.tsx",
       "steps": [
         {
           "goto": "/about",
-          "wait": "[data-about-tools]",
+          "wait": "[data-about-index]",
           "settle": 600
         }
       ]
@@ -238,14 +238,13 @@
       ]
     },
     {
-      "id": "help-panel",
-      "label": "/collection — the ? opened: the panel at 1300 and the sheet at 390, with this screen's entries (R2·8 #2023)",
+      "id": "help-question",
+      "label": "/collection — the ? pressed: Collection's About page at Cards, under the back bar (About visual PR 6a; the panel retired)",
       "view": "src/components/help/help-root.tsx",
       "steps": [
         {
           "goto": "/collection",
-          "wait": "input[type='search']",
-          "settle": 600
+          "settle": 1500
         },
         {
           "openHelp": true,
@@ -255,8 +254,8 @@
     },
     {
       "id": "tour-again-about",
-      "label": "/about — About's head: `Take the tour →` after the subtitle, in the accent (R3·2)",
-      "view": "src/components/about/tools/about-tabs.tsx",
+      "label": "/about — About's head on the index: `Take the tour →` after the line, in the accent (R3·2)",
+      "view": "src/components/about/pages/about-index.tsx",
       "steps": [
         {
           "goto": "/about",
@@ -267,7 +266,7 @@
     },
     {
       "id": "help-over-card-details",
-      "label": "/collection — a card's details open, then the ? pressed over them: the panel beside the modal at 1300 (R2·9 #2040)",
+      "label": "/collection — a card's details open, then the ? pressed over them: Collection's About page at Cards with the key lit, under the back bar (R2·9 #2040; About visual PR 6a)",
       "view": "src/components/cards/card-modal.tsx",
       "widths": [
         "desktop"

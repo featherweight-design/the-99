@@ -1,8 +1,8 @@
-// A tool on About's Tools tab (discovery R2·5; handoff `design/design_handoff_the99_discovery_onboarding/`, README-r2
-// C2 and C3 with R2b's option C, property table "A tool card", STATES "A tool card").
+// A tool card on an About page's Try it (discovery R2·5, handoff `design/design_handoff_the99_discovery_onboarding/`,
+// README-r2 C2 and C3 with R2b's option C; About visual build, handoff call 6: `Show me ›` replaces `How it works ›`).
 //
-// Option C: the whole card is the press, its footer saying where it opens. `How it works ›` and a none-state's door
-// sit above the stretched link as their own links. A card with nothing to open is not a link at all.
+// Option C: the whole card is the press, its footer saying where it opens. `Show me ›` and a none-state's door sit
+// above the stretched link as their own links. A card with nothing to open is not a link at all.
 //
 // Widths are the grid's and the row's; no height is fixed (R2 gap 13): cards in a row stretch to the tallest.
 
@@ -12,11 +12,6 @@ import { showcaseCopy } from "../../../lib/copy/discovery";
 import type { Shot } from "../../../lib/about/shots";
 import type { ToolCardModel } from "../../../lib/discovery/showcase";
 import { TOUCH_HIT } from "../../ui/touch-hit";
-
-/** Where `How it works ›` opens the tool's entry: the Reference, at that entry. */
-export function entryHref(entry: string): string {
-  return `/about?tab=reference#${entry}`;
-}
 
 /** The tool card's halo on its picture: an accent ring with the rest of the picture dimmed. About's labelled screen lights
  *  a pressed label's region with the same look (`labelled-screen.tsx`). */
@@ -56,14 +51,12 @@ function Picture({ shot, name }: { shot: Shot | null; name: string }) {
   );
 }
 
-// TOUCH_HIT: drawn at 38px (10px padding round a 12px line), a coarse pointer reaches 44px.
-const HOW = `${TOUCH_HIT} z-[2] flex-none whitespace-nowrap py-[10px] font-mono text-[12px]`;
-// The Tools tab's `How it works ›` is faint; the pages' `Show me ›` is drawn a step up (boards Decks, Ways-In `.sm`).
-const HOW_INK = "text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)]";
-const SHOW_ME_INK = "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]";
+// TOUCH_HIT: drawn at 38px (10px padding round a 12px line), a coarse pointer reaches 44px. `Show me ›` in muted ink
+// (boards Decks, Ways-In `.sm`).
+const SHOW_ME = `${TOUCH_HIT} z-[2] flex-none whitespace-nowrap py-[10px] font-mono text-[12px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]`;
 const MONO_LINE = "pt-[4px] font-mono text-[12px] leading-[1.5] text-[color:var(--fg-muted)]";
 
-/** The footer's left link: the Tools tab's `How it works ›` into the Reference, or an About page's `Show me ›` (call 6). */
+/** The footer's left link: an About page's `Show me ›` (call 6). */
 export type ToolCardLink = { href: string; label: string };
 
 export function ToolCard({
@@ -71,15 +64,14 @@ export function ToolCard({
 }: {
   card: ToolCardModel;
   shot: Shot | null;
-  /** The footer's left link; the Tools tab's `How it works ›` when absent. */
-  link?: ToolCardLink;
+  /** The footer's left link, `Show me ›`. */
+  link: ToolCardLink;
   /** The card a Show me landing lit (Ways-In board, `.tc.on`): an accent border and ring. */
   lit?: boolean;
   /** An id for the card, so a link on the page can scroll to it. */
   anchor?: string;
 }) {
   const { copy, state } = card;
-  const left = link ?? { href: entryHref(card.entry), label: showcaseCopy.howItWorks };
   const press = state.kind === "deck" || state.kind === "page";
   const footerLabel =
     state.kind === "deck" ? showcaseCopy.opens(state.deck, state.more) : state.kind === "page" ? state.label : null;
@@ -97,13 +89,8 @@ export function ToolCard({
       }`}
     >
       <Picture shot={shot} name={copy.name} />
-      {/* An About page's card keeps the phone's body at every width, as its boards draw it (`.tc .bd`, `.tc .ft`); the
-          Tools tab's grows from md. */}
-      <div
-        className={`flex flex-1 flex-col gap-[8px] px-[14px] pb-[12px] pt-[14px] ${
-          link ? "" : "md:px-[18px] md:pb-[14px] md:pt-[16px]"
-        }`}
-      >
+      {/* The phone's body at every width, as the boards draw it (`.tc .bd`, `.tc .ft`). */}
+      <div className="flex flex-1 flex-col gap-[8px] px-[14px] pb-[12px] pt-[14px]">
         <div className="flex items-baseline justify-between gap-[10px]">
           <h3 className="m-0 text-[16px] font-semibold leading-[1.3] text-[color:var(--fg)]">{copy.name}</h3>
           {card.credit && (
@@ -113,13 +100,13 @@ export function ToolCard({
           )}
         </div>
         <p className="m-0 text-[14px] leading-[1.5] text-[color:var(--fg-body)]">{copy.line}</p>
-        <div className={`${link ? "mt-[2px]" : "mt-auto"} flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[8px]`}>
+        <div className="mt-[2px] flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[8px]">
           {state.kind === "none" && <p className={`m-0 ${MONO_LINE}`}>{state.line}</p>}
           {card.note && <p className={`m-0 ${MONO_LINE}`}>{card.note}</p>}
           <div className="flex min-h-[40px] items-center gap-[10px]">
-            <Link href={left.href} className={`${HOW} ${link ? SHOW_ME_INK : HOW_INK}`}>
-              {left.label}
-              <PendingReporter href={left.href} />
+            <Link href={link.href} className={SHOW_ME}>
+              {link.label}
+              <PendingReporter href={link.href} />
             </Link>
             {footerLabel && (
               <>

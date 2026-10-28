@@ -47,7 +47,7 @@ const card = (id: string, label: string): PageCard => ({
 });
 const CARDS = [card("suggested-changes", "decks/analysis/suggested"), card("proposed-cuts", LIT), card("mana-balance", "decks/analysis/mana")];
 
-const landable = (isNew: boolean): Landable => ({ "decks/analysis/analyze": { isNew: false }, [LIT]: { isNew } });
+const landable = (isNew: boolean): Landable => ({ "decks/analysis/analyze": { isNew: false, section: "analysis" }, [LIT]: { isNew, section: "analysis" } });
 const NEW = landable(true);
 const TOLD = landable(false);
 const at = (address: string) => window.history.replaceState(null, "", address);
@@ -99,6 +99,18 @@ describe("LabelLanding", () => {
     const phoneTry = [...container.querySelectorAll("[data-try-it-width='phone'] [data-tool-card]")].map((e) => e.getAttribute("data-tool-card"));
     expect(phoneTry).toEqual(["suggested-changes"]);
     expect(container.querySelector("[data-try-it-more]")?.textContent).toBe("1 more below");
+  });
+
+  it("lands the ?'s landing (with from) as the halo alone: lit, never New, no card, and keeps from on the strip", () => {
+    at(`/about/decks?from=${encodeURIComponent("/decks/new")}&lit=${encodeURIComponent(LIT)}#analysis`);
+    const { container } = draw(NEW);
+    expect(width(container, "phone").querySelector(`[data-about-label='${LIT}'] button`)!.getAttribute("aria-pressed")).toBe("true");
+    expect(container.querySelector("[data-about-new]")).toBeNull();
+    expect(container.querySelector("[data-about-landing-card]")).toBeNull();
+    expect(container.querySelector("[data-tool-card][data-lit]")).toBeNull();
+    const stripped = new URL(String(mirror.mirrorUrl.mock.calls.at(-1)![0]), "https://x.test");
+    expect(stripped.searchParams.get("from")).toBe("/decks/new");
+    expect(stripped.searchParams.has("lit")).toBe(false);
   });
 
   it("lights a label the reader has been told about with no New mark, no Show me and no card", () => {

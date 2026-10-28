@@ -1,14 +1,16 @@
 // "On this page": one chip per screen of an About page, each a jump to its section (About visual build, plan
 // `2026-10-27-about-visual.md`, PR 3, Task 3.1; handoff call 3, boards Decks-Phone and Decks-Desktop `.onp`).
 //
-// The chip is the ? panel's (`help-panel.tsx`'s Elsewhere chip: 34px, pill, `--border-strong` on `--surface`); the
-// panel keeps its own until PR 6a retires it and the chip moves here. The chip of the section being read is lit
-// (`.chip.on`: an accent border and `--fg` ink) and carries `aria-current`.
+// The chip is the retired ? panel's Elsewhere chip (34px, pill, `--border-strong` on `--surface`), which moved here when
+// the panel retired (PR 6a). The chip of the section being read is lit
+// (`.chip.on`: an accent border and `--fg` ink) and carries `aria-current`. A chip is a move within About, so it ends
+// the ?'s trip: it drops `from` from the address, and the back bar with it (PR 6a).
 
 "use client";
 
 import { useEffect, useState } from "react";
 import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
+import { dropFrom } from "./back-bar";
 
 const ABOUT_CHIP =
   "inline-flex h-[34px] items-center whitespace-nowrap rounded-full border border-solid bg-[color:var(--surface)] px-[12px] text-[13px]";
@@ -62,6 +64,7 @@ export function OnThisPage({ sections }: { sections: readonly { id: string; name
             key={s.id}
             href={`#${s.id}`}
             data-about-chip={s.id}
+            onClick={() => dropFrom()}
             aria-current={on ? "location" : undefined}
             className={`${ABOUT_CHIP} ${
               on

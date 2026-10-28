@@ -260,12 +260,12 @@ async function run(page, steps) {
       await searchSheet.waitFor({ state: "visible", timeout: 15_000 });
     }
     // The ? (discovery R2·8) is shell too: the rail's at 1300, the header's at 390, both marked `data-help-button`, and
-    // only the one with layout is pressed. The panel or sheet it opens is waited for by its own marks, filled.
+    // only the one with layout is pressed. It opens no panel since About visual PR 6a: it goes to its screen's About
+    // page, which is waited for by its own marks (a landed page's back bar, or the index's tiles).
     if (step.openHelp) {
       await page.locator("[data-help-button]:visible").first().click({ timeout: 15_000 });
-      // Its entries arrive after it opens (`/api/about/entries`): wait for the filled panel, as probe:help-panel does, so
-      // an empty one is never counted as reached.
-      await page.locator("[data-help-panel] :is([data-help-here], [data-help-empty])").first().waitFor({ state: "visible", timeout: 15_000 });
+      await page.waitForURL((u) => u.pathname.startsWith("/about"), { timeout: 15_000 });
+      await page.locator(":is([data-about-back], [data-about-index])").first().waitFor({ state: "visible", timeout: 15_000 });
     }
     // The account menu is shell, not page: its trigger is marked `data-account-trigger` (the header's at 390, the rail's at
     // 1300; the card-search trigger is also an `aria-expanded` button, so the mark, not the ARIA, finds it). `openAccount`

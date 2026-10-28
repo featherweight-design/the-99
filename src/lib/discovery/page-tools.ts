@@ -21,6 +21,9 @@ export type PageToolCard = ToolCardModel & { label: string; showMe: string };
  * from a "use client" module gets a client reference, never the string. */
 export const LIT_PARAM = "lit";
 
+/** Where the reader pressed the ?, carried to the About page so its back bar can return there (About visual PR 6a). */
+export const FROM_PARAM = "from";
+
 /**
  * Show me's address: the label's page, lit, scrolled to its section. `labelKey` is `<area>/<section>/<label>`
  * (`labelKey`, `pages-visible.ts`).
@@ -85,30 +88,37 @@ export function pageTools(visible: readonly VisibleSection[], input: CardInput, 
 /** A tool card as an About page draws it: the model, and its picture at each width (call 0). */
 export type PageCard = { card: PageToolCard; phone: Shot | null; desktop: Shot | null };
 
-/** A Show me landing (`?lit=`), as the page lands it. */
+/** A landing (`?lit=`, from Show me or the ?), as the page lands it. */
 export type Landing = {
-  /** The label lit: a label key this page draws. */
+  /** The unit lit: a label or rule key this page draws. */
   key: string;
+  /** The section it is in, the element the landing brings into view. */
+  section: string;
   /** The reader has not been told about it: marked New, with its card (call 7). */
   isNew: boolean;
   /** The card of the tool whose Show me lights this label, or null for a label no tool aims at. */
   card: PageCard | null;
 };
 
-/** Every label `area`'s page draws for the reader, keyed by label key, and whether it is New to them. The server's
- * half of a landing: the page decides this once, and the client lands each `?lit=` the live address carries on it. */
-export type Landable = Readonly<Record<string, { isNew: boolean }>>;
+/** Every label and rule `area`'s page draws for the reader, keyed by its key, with its section and whether it is New
+ * to them. The server's half of a landing: the page decides this once, and the client lands each `?lit=` the live
+ * address carries on it. */
+export type Landable = Readonly<Record<string, { isNew: boolean; section: string }>>;
 
 /**
- * The labels `area`'s page can land on: the labels it draws for the reader. New when the reader has not been told
- * about it, by the banner's own rule (`unseenUnits`: nothing is new to a first-run reader).
+ * The units `area`'s page can land on: the labels and rules it draws for the reader, so a unit switched off for them
+ * lands nowhere (Review Focus 2). A label is New when the reader has not been told about it, by the banner's own rule
+ * (`unseenUnits`: nothing is new to a first-run reader). A rule is never marked New: only the ? lands on one, and the
+ * ? draws the halo alone (Addendum A1).
  */
 export function landableIn(area: AboutArea, visible: readonly VisibleSection[], seen: SeenState): Landable {
   const unseen = new Set(unseenUnits(visible, seen).map((u) => u.key));
-  const out: Record<string, { isNew: boolean }> = {};
+  const out: Record<string, { isNew: boolean; section: string }> = {};
   for (const s of visible) {
     if (s.area !== area) continue;
-    for (const l of s.labels) out[l.key] = { isNew: unseen.has(l.key) };
+    for (const l of s.labels) out[l.key] = { isNew: unseen.has(l.key), section: s.id };
+    // A rule listed by two sections lands on the first.
+    for (const r of s.rules) if (!Object.hasOwn(out, r.key)) out[r.key] = { isNew: false, section: s.id };
   }
   return out;
 }
@@ -119,8 +129,6 @@ export function landableIn(area: AboutArea, visible: readonly VisibleSection[], 
  */
 export function landingFor(lit: unknown, landable: Landable, cards: readonly PageCard[]): Landing | null {
   if (typeof lit !== "string" || !Object.hasOwn(landable, lit)) return null;
-  return { key: lit, isNew: landable[lit].isNew, card: cards.find((c) => c.card.label === lit) ?? null };
+  const { isNew, section } = landable[lit];
+  return { key: lit, section, isNew, card: cards.find((c) => c.card.label === lit) ?? null };
 }
-
-/** The section a landing reveals: a label key's second segment, the section's element id. */
-export const landingSectionId = (labelKey: string) => labelKey.split("/")[1] ?? "";

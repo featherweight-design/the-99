@@ -100,8 +100,8 @@
     },
     {
       "id": "help-home",
-      "label": "/ Home, the ? panel offering this screen's entries",
-      "view": "src/components/help/help-panel.tsx",
+      "label": "/ Home, the ? pressed: its screen's About page, landed at its section under the back bar (About visual PR 6a; the panel retired)",
+      "view": "src/components/about/pages/back-bar.tsx",
       "steps": [
         {
           "goto": "/",
@@ -115,8 +115,8 @@
     },
     {
       "id": "help-friends",
-      "label": "/friends Friends, the ? panel offering this screen's entries",
-      "view": "src/components/help/help-panel.tsx",
+      "label": "/friends Friends, the ? pressed: its screen's About page, landed at its section under the back bar (About visual PR 6a; the panel retired)",
+      "view": "src/components/about/pages/back-bar.tsx",
       "steps": [
         {
           "goto": "/friends",
@@ -130,8 +130,8 @@
     },
     {
       "id": "help-collection",
-      "label": "/collection Collection, the ? panel offering this screen's entries",
-      "view": "src/components/help/help-panel.tsx",
+      "label": "/collection Collection, the ? pressed: its screen's About page, landed at its section under the back bar (About visual PR 6a; the panel retired)",
+      "view": "src/components/about/pages/back-bar.tsx",
       "steps": [
         {
           "goto": "/collection",
@@ -145,8 +145,8 @@
     },
     {
       "id": "help-credits",
-      "label": "/credits Credits, the ? panel offering this screen's entries",
-      "view": "src/components/help/help-panel.tsx",
+      "label": "/credits Credits, the ? pressed: its screen's About page, landed at its section under the back bar (About visual PR 6a; the panel retired)",
+      "view": "src/components/about/pages/back-bar.tsx",
       "steps": [
         {
           "goto": "/credits",

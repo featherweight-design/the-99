@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 
-// /about in its discovery shape (R2·6b): Tools by default, the Reference at `?tab=reference`, `loadToolFits` asked only
-// for the deck tools this reader's switches draw, the visit mounted on the Reference only, and the legacy gate's way
-// back kept for a reader it sent.
+// /about (About visual PR 6a): the index of the six pages by default and at `?tab=tools`, the Reference still at
+// `?tab=reference` with `loadToolFits` asked only for the deck tools this reader's switches draw and the visit mounted
+// on it, and the legacy gate's way back kept for a reader it sent.
 const m = vi.hoisted(() => ({
   loadToolFits: vi.fn<(userId: string, env: NodeJS.ProcessEnv, tools: readonly string[]) => Promise<object>>(async () => ({})),
   hasSyncAnchor: vi.fn(async () => false),
@@ -39,6 +39,7 @@ import { AboutTabs } from "../../components/about/tools/about-tabs";
 import { RecordVisit } from "../../components/about/record-visit";
 import { GateDismiss } from "../../components/about/gate-dismiss";
 import { LegalLinks } from "../../components/legal/legal-links";
+import { AboutIndex, type IndexTile } from "../../components/about/pages/about-index";
 import { TOOLS } from "../../lib/discovery/tools";
 
 type El = ReactElement<Record<string, unknown>>;
@@ -59,7 +60,8 @@ function find(node: ReactNode, type: unknown): El | null {
 
 const draw = async (query: Record<string, string | string[]> = {}) =>
   (await AboutRoute({ searchParams: Promise.resolve(query) })) as El;
-const tabs = async (query: Record<string, string | string[]> = {}) => find(await draw(query), AboutTabs)!.props;
+const tabs = async (query: Record<string, string | string[]> = { tab: "reference" }) => find(await draw(query), AboutTabs)!.props;
+const tiles = async (query: Record<string, string | string[]> = {}) => find(await draw(query), AboutIndex)!.props.tiles as IndexTile[];
 
 const DECK_SWITCHES = [
   "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED", "MANA_BALANCE_ENABLED", "SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED",
@@ -76,38 +78,63 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("/about, the legal links (launch A2)", () => {
-  it("draws the Terms and Privacy line after both tabs, whichever opens", async () => {
-    for (const query of [{} as Record<string, string>, { tab: "reference" }]) {
+  it("draws the Terms and Privacy line after the index and after the Reference", async () => {
+    for (const [query, type] of [[{}, AboutIndex], [{ tab: "reference" }, AboutTabs]] as const) {
       const root = await draw(query);
       expect(find(root, LegalLinks)).not.toBeNull();
       const kids = root.props.children as ReactNode[];
       const order = kids.filter(isValidElement).map((k) => (k as El).type);
-      expect(order.indexOf(LegalLinks)).toBeGreaterThan(order.indexOf(AboutTabs));
+      expect(order.indexOf(LegalLinks)).toBeGreaterThan(order.indexOf(type));
     }
   });
 });
 
-describe("/about, the tab", () => {
-  it("opens on Tools with no ?tab, and on anything but reference", async () => {
-    expect((await tabs()).initial).toBe("tools");
-    expect((await tabs({ tab: "settings" })).initial).toBe("tools");
-    expect((await tabs({ tab: ["reference", "reference"] })).initial).toBe("tools");
+describe("/about, the index (call 3)", () => {
+  it("draws the index with no ?tab, at the retired ?tab=tools, and at anything but reference", async () => {
+    for (const query of [{}, { tab: "tools" }, { tab: "settings" }, { tab: ["reference", "reference"] }] as Record<string, string | string[]>[]) {
+      const page = await draw(query);
+      expect(find(page, AboutIndex), JSON.stringify(query)).not.toBeNull();
+      expect(find(page, AboutTabs)).toBeNull();
+    }
   });
 
-  it("opens on the Reference at ?tab=reference", async () => {
-    expect((await tabs({ tab: "reference" })).initial).toBe("reference");
+  it("reads no fits, no credit limit and no visit for the index", async () => {
+    await draw();
+    expect(m.loadToolFits).not.toHaveBeenCalled();
+    expect(find(await draw(), RecordVisit)).toBeNull();
   });
 
-  it("hands AboutTabs both panels, counting the cards and the entries they draw", async () => {
+  it("draws six tiles in page order, each linking its page with a capture at each width", async () => {
+    const t = await tiles();
+    expect(t.map((x) => x.area)).toEqual(["home", "collection", "commanders", "decks", "shopping", "friends"]);
+    for (const x of t) {
+      expect(x.phone?.src, x.area).toMatch(/\/about\/pages\/[a-z-]+\/phone\//);
+      expect(x.desktop?.src, x.area).toMatch(/\/about\/pages\/[a-z-]+\/desktop\//);
+    }
+  });
+
+  it("counts the screens and the rules the reader is drawn (visibleSections)", async () => {
+    vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "");
+    vi.stubEnv("FRIEND_DECKS_ENABLED", "");
+    vi.stubEnv("SOCIAL_INVITES_ENABLED", "");
+    const off = Object.fromEntries((await tiles()).map((x) => [x.area, x.count]));
+    expect(off.home).toBe("2 screens");
+    expect(off.friends).toBe("1 screen");
+    vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
+    vi.stubEnv("FRIEND_DECKS_ENABLED", "true");
+    vi.stubEnv("SOCIAL_INVITES_ENABLED", "true");
+    const on = Object.fromEntries((await tiles()).map((x) => [x.area, x.count]));
+    expect(on.friends).toBe("1 screen · 3 good to know");
+  });
+});
+
+describe("/about, the Reference (until PR 7b)", () => {
+  it("draws the Reference at ?tab=reference, counting its entries", async () => {
     const props = await tabs();
-    const panels = props.panels as Record<string, El>;
-    const groups = panels.tools.props.groups as { cards: unknown[] }[];
-    const screens = panels.reference.props.screens as { entries: unknown[] }[];
-    expect(props.counts).toEqual({
-      tools: groups.reduce((n, g) => n + g.cards.length, 0),
-      reference: screens.reduce((n, s) => n + s.entries.length, 0),
-    });
-    expect((props.counts as { reference: number }).reference).toBeGreaterThan(0);
+    const panel = props.panel as El;
+    const screens = panel.props.screens as { entries: unknown[] }[];
+    expect(props.count).toBe(screens.reduce((n, s) => n + s.entries.length, 0));
+    expect(props.count as number).toBeGreaterThan(0);
   });
 });
 
@@ -115,42 +142,35 @@ describe("/about, the fits (E10)", () => {
   it("asks loadToolFits for the deck tools whose switches are on, and no other", async () => {
     vi.stubEnv("ANALYSIS_TAB_ENABLED", "true");
     vi.stubEnv("TUNING_ENABLED", "true");
-    await draw();
+    await tabs();
     expect(m.loadToolFits).toHaveBeenCalledTimes(1);
     expect(m.loadToolFits.mock.calls[0]![2]).toEqual(["top-off", "suggested-changes"]);
   });
 
   it("with every deck tool's switch off, asks only for Top off, which has none", async () => {
-    await draw();
+    await tabs();
     expect(m.loadToolFits.mock.calls[0]![2]).toEqual(["top-off"]);
   });
 
   it("decides by the tool's own switch, even where its entry is drawn", async () => {
     m.everyEntry = true;
-    await draw();
+    await tabs();
     expect(m.loadToolFits.mock.calls[0]![2]).toEqual(["top-off"]);
-  });
-
-  it("hands the fits to the showcase, so a fitting deck is the card's Try it", async () => {
-    m.loadToolFits.mockResolvedValueOnce({ "top-off": { decks: [{ id: "d1", name: "Gishath" }] } } as never);
-    const panels = (await tabs()).panels as Record<string, El>;
-    const cards = (panels.tools.props.groups as { cards: { id: string; state: { kind: string; href?: string } }[] }[]).flatMap((g) => g.cards);
-    expect(cards.find((c) => c.id === "top-off")!.state).toMatchObject({ kind: "deck", href: "/decks/d1?tool=top-off" });
   });
 
   it("reads the sync base only with Collection Sync on", async () => {
     vi.stubEnv("COLLECTION_SYNC_ENABLED", "");
-    await draw();
+    await tabs();
     expect(m.hasSyncAnchor).not.toHaveBeenCalled();
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
     vi.stubEnv("COLLECTION_SYNC_ENABLED", "true");
-    await draw();
+    await tabs();
     expect(m.hasSyncAnchor).toHaveBeenCalledWith("u1");
   });
 
   it("every tool it asks for is a deck tool", async () => {
     for (const s of DECK_SWITCHES) vi.stubEnv(s, "true");
-    await draw();
+    await tabs();
     const asked = m.loadToolFits.mock.calls[0]![2] as string[];
     expect(asked.length).toBeGreaterThan(1);
     for (const id of asked) expect(TOOLS.find((t) => t.id === id)!.lands.kind).toBe("deck");
@@ -158,29 +178,23 @@ describe("/about, the fits (E10)", () => {
 });
 
 describe("/about, the visit (R2 gap 10)", () => {
-  it("records the visit on the Reference only, never mounted with Tools", async () => {
-    const props = await tabs();
-    const once = props.onceShown as Record<string, El>;
-    expect(Object.keys(once)).toEqual(["reference"]);
-    expect(once.reference.type).toBe(RecordVisit);
-    // Each panel as the page builds it, not the `{tools, reference}` record, which is no element and would always miss.
-    const panels = Object.values(props.panels as Record<string, El>);
-    expect(panels).toHaveLength(2);
-    for (const panel of panels) expect(find(panel, RecordVisit)).toBeNull();
+  it("records the visit on the Reference, beside it rather than inside its panel", async () => {
+    const page = await draw({ tab: "reference" });
+    expect(find(page, RecordVisit)).not.toBeNull();
+    expect(find(find(page, AboutTabs)!.props.panel as ReactNode, RecordVisit)).toBeNull();
   });
 
   it("acknowledges a behind reader's visit, and lists what's new for the Reference", async () => {
     m.seen = { version: 1, ids: [] };
-    const props = await tabs({ tab: "reference" });
-    expect(((props.onceShown as Record<string, El>).reference.props as { behind: boolean }).behind).toBe(true);
-    const whatsNew = (props.panels as Record<string, El>).reference.props.whatsNew as { id: string }[];
+    const page = await draw({ tab: "reference" });
+    expect((find(page, RecordVisit)!.props as { behind: boolean }).behind).toBe(true);
+    const whatsNew = (find(page, AboutTabs)!.props.panel as El).props.whatsNew as { id: string }[];
     expect(whatsNew.length).toBeGreaterThan(0);
   });
 
   it("lists nothing new for a first-run reader", async () => {
     m.seen = { version: 0, ids: [] };
-    const props = await tabs();
-    expect((props.panels as Record<string, El>).reference.props.whatsNew).toEqual([]);
+    expect(((await tabs()).panel as El).props.whatsNew).toEqual([]);
   });
 });
 
@@ -190,8 +204,8 @@ describe("/about, the legacy gate's way back", () => {
     m.seen = { version: 1, ids: [] };
     const page = await draw({ next: "/decks" });
     expect(find(page, GateDismiss)!.props.destination).toBe("/decks");
-    expect(find(page, AboutTabs)!.props.initial).toBe("reference");
-    expect(find(page, AboutTabs)!.props.onceShown).toBeUndefined();
+    expect(find(page, AboutTabs)).not.toBeNull();
+    expect(find(page, RecordVisit)).toBeNull();
   });
 
   it("draws no dismiss with the sheet switch on, with no ?next=, or with a repeated one", async () => {

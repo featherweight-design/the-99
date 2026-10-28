@@ -4,7 +4,7 @@
  * them on. Exactly `'true'` turns each on. About's reshape, the nudges and the `?tool=` landing carry no switch.
  */
 
-/** `HELP_PANEL_ENABLED`: the "?" in the rail and the header, its panel, and `GET /api/about/entries`. */
+/** `HELP_PANEL_ENABLED`: the "?" in the rail and the header, which opens its screen's About page (About visual PR 6a). */
 export function helpPanelEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.HELP_PANEL_ENABLED === "true";
 }

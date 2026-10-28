@@ -34,6 +34,10 @@
 // The database needs migration 0066 (`about_seen_ids`); local-dev may be behind, so point the
 // worktree's own `.env` at a migrated scratch branch.
 //
+// `--ways-in` (About visual PR 6a) is a separate, read-only walk at 390 and 1300: the index's tiles (W1), the retired
+// Tools tab drawing the index (W2), and the ? pressed on Upload a file, History, New deck and an About page, each landing
+// read off the URL, the back bar and the lit unit (W3 to W6). The walks below open the Reference at `?tab=reference`.
+//
 // WHAT ONLY A BROWSER CAN ANSWER, and why each check exists:
 //   1   the card draws on a document load, beside the rail from `md` (audit E8) and
 //       above the tab bar on a phone, with the page reserving its height;
@@ -86,6 +90,7 @@ import { onPage } from "./lib/surface.mjs";
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "DATABASE_URL"]);
 if (!EMAIL.includes("+clerk_test")) throw new Error("Use a +clerk_test account (see the local-auth note).");
 const FLIP = process.argv.includes("--flip");
+const WAYS_IN = process.argv.includes("--ways-in");
 const FLIP_PORT = Number(process.env.PROBE_FLIP_PORT ?? 3297);
 const BASE = FLIP ? `http://localhost:${FLIP_PORT}` : (process.env.PROBE_BASE ?? "http://localhost:3000");
 const sql = neon(DATABASE_URL);
@@ -300,9 +305,9 @@ async function walk(browser, width, userIdRef) {
   );
   await page.keyboard.press("Escape");
 
-  // 5. An index row jumps.
+  // 5. An index row jumps. The Reference, at `?tab=reference` since `/about` became the pages' index (PR 6a).
   await behind(context, userId);
-  await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/about?tab=reference`, { waitUntil: "networkidle" });
   const rows = index.getByRole("link");
   const n = await rows.count();
   if (!report(L("the index lists what is new"), n > 0, `${n} rows`)) {
@@ -458,7 +463,8 @@ async function sheetTitles(page, card) {
 
 /** Waits for the visit /about records, which lands after the page has streamed in. */
 async function visitAbout(page, userId, id) {
-  await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
+  // The visit is recorded by the Reference (`?tab=reference`), never by the index `/about` is now (PR 6a).
+  await page.goto(`${BASE}/about?tab=reference`, { waitUntil: "networkidle" });
   // By id alone: an entry is an `li`, the appendix a `section`, and `li#how-it-works` never matched.
   await page.locator(`#${id}`).waitFor({ timeout: 30_000 }).catch(() => {});
   for (let i = 0; i < 20; i++) {
@@ -645,7 +651,7 @@ async function flipWalk(browser, who) {
     // F5. The seven figures, drawn by the page's own components, at both widths.
     for (const viewport of [{ width: 1300, height: 820 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport);
-      await page.goto(`${BASE}/about#locked-cards`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE}/about?tab=reference#locked-cards`, { waitUntil: "networkidle" });
       await page.waitForTimeout(600);
       const f = await figureFacts(page);
       const w = viewport.width;
@@ -690,7 +696,7 @@ async function flipWalk(browser, who) {
     // F6. All off: none of the seven entries is on the page.
     await stopServer(server);
     server = await startServer([]);
-    await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE}/about?tab=reference`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
     const gone = await page.evaluate(
       () =>
@@ -741,19 +747,104 @@ async function flipWalk(browser, who) {
   }
 }
 
+/**
+ * `--ways-in` (About visual PR 6a): the index, the retired Tools tab and the ?, at 390 and 1300. READ-ONLY: it writes
+ * no row, so it holds nothing. Each check presses the control and reads where it went, never a count of elements.
+ */
+async function waysInWalk(browser, width) {
+  const context = await browser.newContext({ viewport: width.viewport });
+  const page = await context.newPage();
+  await signIn(page);
+  const L = (s) => `${width.label}: ${s}`;
+  const desk = width.label >= 768;
+  const pressQuestion = async () => {
+    const q = page.locator(`[data-help-button='${desk ? "rail" : "header"}']`);
+    await q.waitFor({ timeout: 15_000 });
+    await q.click();
+  };
+  const landed = async (path) => {
+    await page.waitForURL((u) => u.pathname === path, { timeout: 20_000 });
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(600);
+    return new URL(page.url());
+  };
+
+  // W1. The index: its Decks tile goes to the Decks page.
+  await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
+  const tile = page.locator("[data-about-tile='decks']");
+  await tile.click();
+  report(L("W1 the index's Decks tile opens /about/decks"), (await landed("/about/decks")).pathname === "/about/decks");
+
+  // W2. The retired Tools tab draws the index, not a tab.
+  await page.goto(`${BASE}/about?tab=tools`, { waitUntil: "networkidle" });
+  const toolsTab = await page.getByRole("tab", { name: /^Tools/ }).count();
+  await page.locator("[data-about-tile='home']").click();
+  report(L("W2 ?tab=tools draws the index: its Home tile opens /about/home"), toolsTab === 0 && (await landed("/about/home")).pathname === "/about/home", `${toolsTab} Tools tab`);
+
+  // W3. The ? on Upload a file lands on Collection at #upload with the back bar; the bar goes back.
+  await page.goto(`${BASE}/collection/replace`, { waitUntil: "networkidle" });
+  await pressQuestion();
+  const up = await landed("/about/collection");
+  report(L("W3 the ? on Upload a file lands on #upload, from the screen"), up.hash === "#upload" && up.searchParams.get("from") === "/collection/replace", up.href);
+  const back = page.locator("[data-about-back] a");
+  const backText = (await back.textContent().catch(() => null))?.trim();
+  report(L("W3 the back bar names the screen"), backText === "‹ Back to Upload a file", String(backText));
+  const top = await back.evaluate((el) => el.getBoundingClientRect().top).catch(() => null);
+  await page.mouse.wheel(0, 1600);
+  await page.waitForTimeout(500);
+  const held = await back.evaluate((el) => el.getBoundingClientRect().top).catch(() => null);
+  report(L("W3 the back bar is held at the top while the page scrolls"), top !== null && held !== null && held >= 0 && held < 140, `${top} → ${held}`);
+  await back.click();
+  report(L("W3 Back to Upload a file returns there"), (await landed("/collection/replace")).pathname === "/collection/replace");
+
+  // W4. The ? on History lands on Upload a file with the Replace and Add rule lit, no New tag, `lit` stripped.
+  await page.goto(`${BASE}/collection/history`, { waitUntil: "networkidle" });
+  await pressQuestion();
+  const hist = await landed("/about/collection");
+  const lit = await page.locator("[data-rule='rule/replace'][data-lit]").count();
+  const news = await page.locator("[data-about-new]").count();
+  report(
+    L("W4 the ? on History lights the Replace and Add rule, no New tag, lit stripped, from kept"),
+    lit === 1 && news === 0 && !hist.searchParams.has("lit") && hist.searchParams.get("from") === "/collection/history",
+    `${page.url()} lit ${lit} new ${news}`,
+  );
+
+  // W5. The ? on New deck lights the New deck label (halo, its line pressed).
+  await page.goto(`${BASE}/decks/new`, { waitUntil: "networkidle" });
+  await pressQuestion();
+  await landed("/about/decks");
+  const label = page.locator(`[data-about-width='${desk ? "desktop" : "phone"}'] [data-about-label='decks/your-decks/new-deck'] button[aria-pressed='true']`);
+  report(L("W5 the ? on New deck lands on Your decks with New deck lit"), (await label.count()) === 1 && (await page.locator("[data-about-new]").count()) === 0);
+
+  // W6. On a page with no landing (About itself) the ? opens the index.
+  await page.goto(`${BASE}/about/friends`, { waitUntil: "networkidle" });
+  await pressQuestion();
+  report(L("W6 the ? on an About page opens the index"), (await landed("/about")).pathname === "/about");
+  await context.close();
+}
+
 await clerkSetup();
 const browser = await chromium.launch();
 const who = { id: null, original: undefined };
 try {
   if (BEHIND < 1) throw new Error(`ABOUT_VERSION is ${VERSION}; there is no version to be behind.`);
-  if (FLIP) {
+  if (WAYS_IN) {
+    for (const width of WIDTHS.filter((w) => w.full)) {
+      console.log(`\nways in, ${width.label}x${width.viewport.height}`);
+      try {
+        await waysInWalk(browser, width);
+      } catch (error) {
+        report(`${width.label}: the ways-in walk stopped`, false, String(error?.message ?? error).split("\n")[0]);
+      }
+    }
+  } else if (FLIP) {
     try {
       await flipWalk(browser, who);
     } catch (error) {
       report("the flip walk stopped", false, String(error?.message ?? error).split("\n")[0]);
     }
   }
-  for (const width of FLIP ? [] : WIDTHS) {
+  for (const width of FLIP || WAYS_IN ? [] : WIDTHS) {
     console.log(`\n${width.label}x${width.viewport.height}`);
     // A step that throws (a control a broken build never drew) is a failure at THIS width,
     // reported and counted, and the other widths still run. Found by the mount mutation,

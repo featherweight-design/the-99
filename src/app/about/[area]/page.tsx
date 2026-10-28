@@ -1,6 +1,6 @@
 // /about/[area]: one of About's six visual pages (About visual build, plan `2026-10-27-about-visual.md`, PR 3; handoff
-// `design/design_handoff_the99_about_visual/`). DARK until PR 6a: nothing links here but the pages' own strip and
-// their tool cards' Show me.
+// `design/design_handoff_the99_about_visual/`). Reached from the `/about` index, the ? on every screen, the pages' own
+// strip and their tool cards' Show me (PR 6a).
 //
 // The reader's switches decide what is drawn (`visibleSections`: a label switched off is gone, never greyed), and the
 // reader's theme picks the captures (`pageShotFor` falls back to the default theme at the same width). An unknown area
@@ -8,16 +8,23 @@
 // Each section's Try it is its tools whose switch is on and whose label is drawn (`pageTools`), and a `?lit=` naming a
 // label this page draws lands on it: lit, and, when the reader has not been told about it (`unseenUnits`), marked New
 // with its tool card (PR 5, call 7). The server hands over which labels can land (`landableIn`); the client lands. Nothing is written here: the visit's seen write is PR 6b's.
+//
+// The ? lands here too (PR 6a, call 5, Addendum A1) with `from`, the screen it was pressed on: validated here
+// (`safeFrom`, a same-origin path or nothing) and named (`backScreenName`; a deck by its own name, read for the
+// reader's own deck only), it draws the back bar. A `?lit=` naming a label or rule switched off for the reader is not
+// landable, so it lands on the section with nothing lit.
 
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { aboutSeen } from "../../../lib/about/read";
+import { backScreenName, deckIdOf, safeFrom } from "../../../lib/about/back";
+import { ownDeckName } from "../../../lib/about/back-read";
 import { pageToolCropFor } from "../../../lib/about/page-shots";
 import { visibleSections } from "../../../lib/about/pages-visible";
 import { screenModel } from "../../../lib/about/pins";
 import { shotFor, toolShotId, type Shot } from "../../../lib/about/shots";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../../lib/copy/about-pages";
-import { LIT_PARAM, landableIn, pageTools, toolIdsIn, type PageCard, type PageToolCard } from "../../../lib/discovery/page-tools";
+import { FROM_PARAM, LIT_PARAM, landableIn, pageTools, toolIdsIn, type PageCard, type PageToolCard } from "../../../lib/discovery/page-tools";
 import { loadCardInput, switchesOn } from "../../../lib/discovery/showcase-input";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { resolveTheme } from "../../../lib/theme/server";
@@ -45,11 +52,16 @@ export default async function AboutAreaRoute({
   const visible = visibleSections(env);
   // Fits are read for the tools this area draws alone; an area with none reads none.
   const here = toolIdsIn(visible, switchesOn(env), area);
-  const [theme, cardInput, seen] = await Promise.all([
+  const from = safeFrom(query[FROM_PARAM]);
+  const deckId = from === null ? null : deckIdOf(from);
+  const [theme, cardInput, seen, deckName] = await Promise.all([
     resolveTheme(),
     here.length > 0 ? loadCardInput(userId, env, undefined, here) : null,
     aboutSeen(userId),
+    deckId === null ? null : ownDeckName(userId, deckId),
   ]);
+  const screen = from === null ? null : backScreenName(from, deckName);
+  const back = from !== null && screen !== null ? { from, screen } : null;
   const tools = cardInput ? pageTools(visible, cardInput, area) : new Map<string, PageToolCard[]>();
   const cardOf = (card: PageToolCard): PageCard => ({
     card,
@@ -74,5 +86,5 @@ export default async function AboutAreaRoute({
   const landable = landableIn(area, visible, seen);
   const lit = query[LIT_PARAM];
   const initialLit = typeof lit === "string" && Object.hasOwn(landable, lit) ? lit : null;
-  return <AreaPage area={area} sections={sections} theme={theme} landable={landable} initialLit={initialLit} />;
+  return <AreaPage area={area} sections={sections} theme={theme} landable={landable} initialLit={initialLit} back={back} />;
 }

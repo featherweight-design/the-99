@@ -3,7 +3,7 @@ import { visibleSections, type VisibleSection } from "../about/pages-visible";
 import { NEVER_SEEN, type SeenState } from "../about/visible";
 import { SWITCH_FLAGS } from "../switches/flags";
 import { SWITCH_NAMES, type SwitchName } from "../switches/registry";
-import { landableIn, landingFor, landingSectionId, pageTools, showMeHref, type PageCard } from "./page-tools";
+import { landableIn, landingFor, pageTools, showMeHref, type PageCard } from "./page-tools";
 import type { CardInput } from "./showcase";
 import { TOOLS } from "./tools";
 
@@ -85,9 +85,16 @@ describe("landableIn and landingFor", () => {
   const cuts = "decks/analysis/cuts";
   const land = (seen: SeenState, v = visible) => landableIn("decks", v, seen);
 
-  it("can land on exactly the labels the page draws for the reader", () => {
-    const drawn = visible.filter((s) => s.area === "decks").flatMap((s) => s.labels.map((l) => l.key));
-    expect(Object.keys(land({ version: 16, ids: [] })).sort()).toEqual([...drawn].sort());
+  it("can land on exactly the labels and rules the page draws for the reader", () => {
+    const drawn = visible.filter((s) => s.area === "decks").flatMap((s) => [...s.labels, ...s.rules].map((u) => u.key));
+    expect(Object.keys(land({ version: 16, ids: [] })).sort()).toEqual([...new Set(drawn)].sort());
+  });
+
+  it("lands on a rule with its section, never marked New, and nowhere once its switch is off (Review Focus 2)", () => {
+    expect(landingFor("rule/credits", land({ version: 16, ids: [] }), cards)).toMatchObject({ key: "rule/credits", section: "analysis", isNew: false });
+    expect(landingFor("rule/proxy", landableIn("shopping", visible, { version: 16, ids: [] }), cards)).toMatchObject({ section: "deck-shopping" });
+    expect(landingFor("rule/lock", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "your-deck" });
+    expect(landingFor("rule/lock", land({ version: 16, ids: [] }, visibleSections(without("NEVER_CUT_ENABLED"))), cards)).toBeNull();
   });
 
   it("marks a label the reader has not been told about New, with its tool's card", () => {
@@ -118,6 +125,6 @@ describe("landableIn and landingFor", () => {
   });
 
   it("reveals the label's own section", () => {
-    expect(landingSectionId(cuts)).toBe("analysis");
+    expect(landingFor(cuts, land({ version: 16, ids: [] }), cards)?.section).toBe("analysis");
   });
 });

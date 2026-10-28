@@ -1,213 +1,53 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { afterDialogsReleased, afterScrollRestored, dialogsUp, visibleFocusables } from "../../lib/a11y/dialog";
-import { HELP_STOP_ID, helpStop, useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/help-over-dialog";
-import type { EntryPayload } from "../../lib/about/entries-payload";
+import { HELP_STOP_ID, useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/help-over-dialog";
+import { questionHref, questionLanding } from "../../lib/about/question-landing";
 import type { DeckView } from "../../lib/copy/about";
 import { helpPanelCopy } from "../../lib/copy/discovery";
-import type { TargetId } from "../../lib/discovery/targets";
-import { isDrawn } from "../../lib/ui/drawn";
 import { BuilderScreenContext } from "../decks/builder-screen";
-import { HALO_MS, useTargets } from "../discovery/targets-provider";
-import { useYieldMoment } from "../moments/moments-provider";
 import { useIsDesktop } from "../ui/use-is-desktop";
-import { HelpPanel } from "./help-panel";
 
 /**
- * The ? on every screen (discovery R2·8, README-r2 C4, design table `discovery-r2-8-help.md`). Mounted by the shell only
- * when `HELP_PANEL_ENABLED` resolves on for the reader; off, there is no root, so neither ? draws and nothing fetches.
+ * The ? on every screen (discovery R2·8; About visual build, plan `2026-10-27-about-visual.md`, PR 6a, handoff call 5
+ * and Addendum A1). Mounted by the shell only when `HELP_PANEL_ENABLED` resolves on for the reader; off, there is no
+ * root, so neither ? draws.
  *
- * The root holds what the two ?s (the rail's from `md`, the header's below it) and the panel share: whether it is open,
- * the press that opened it (focus goes back there), the deck view the builder publishes, and the reader's entries.
- * The entries come from `GET /api/about/entries` on the first open, or on intent at the rail's ? (R2 gap 6), and are
- * kept for the visit: the shell outlives the page, and the answer follows only the reader's switches and allowance.
+ * The ? opens no panel: it goes to its screen's About page, scrolled to the section that answers the screen, with the
+ * screen's back bar (`questionLanding`). The root holds what the two ?s (the rail's from `md`, the header's below it)
+ * share: the deck view the builder publishes, so a deck's ? answers for the view the reader is on.
  */
-
-export type HelpEntries = { state: "idle" | "loading" | "ready" | "error"; entries: readonly EntryPayload[] };
 
 type HelpCtx = {
-  open: boolean;
-  /** Opens from `opener`, or closes when open (the ? again closes, row 40). */
-  toggle: (opener: HTMLElement) => void;
-  /** Fetches the entries ahead of a press. */
-  prefetch: () => void;
-  /**
-   * A ? mounted anew takes over as the opener when the one that opened the panel has left the document: the rail's ?
-   * moves to and from its lift over card details (R2·9), so focus still has a ? to go back to on close.
-   */
-  adopt: (el: HTMLElement | null) => void;
-  /** Every ? mounted now, so a close can hand focus to one that is drawn. Returns its own removal. */
-  mount: (el: HTMLElement) => () => void;
+  /** Where the ? goes from the page the reader is on now: read off the LIVE address at the press. */
+  go: () => void;
 };
 
-/**
- * A ? focus can go back to: drawn at this width, and not under a modal dialog that stays up (card details at 390
- * covers the header's ?). The ? lifted over card details is that dialog's own extra stop, so it is never under it.
- */
-function reachable(el: HTMLElement | null): el is HTMLElement {
-  if (el === null || !el.isConnected || !isDrawn(el)) return false;
-  if (el === helpStop()) return true;
-  return !dialogsUp().some((d) => !d.hasAttribute("data-help-panel") && d.getAttribute("aria-modal") === "true" && !d.contains(el));
-}
-
 const HelpContext = createContext<HelpCtx | null>(null);
+
+/** The md breakpoint, read at the press: card details is answered only where its ? can be pressed. */
+const DESKTOP = "(min-width: 768px)";
 
 export function HelpRoot({ on, children }: { on: boolean; children: ReactNode }) {
   return on ? <HelpOn>{children}</HelpOn> : <>{children}</>;
 }
 
 function HelpOn({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
   const [deckView, setDeckView] = useState<DeckView | null>(null);
-  const [data, setData] = useState<HelpEntries>({ state: "idle", entries: [] });
-  const requested = useRef(false);
-  const opener = useRef<HTMLElement | null>(null);
-  // Show me: the target to reach once the panel has closed and handed focus back (row 101).
-  const [showMe, setShowMe] = useState<{ target: TargetId } | null>(null);
-  const targets = useTargets();
-
-  const prefetch = useCallback(() => {
-    if (requested.current) return;
-    requested.current = true;
-    setData((d) => ({ ...d, state: "loading" }));
-    fetch("/api/about/entries", { credentials: "same-origin" })
-      .then((r) => (r.ok ? (r.json() as Promise<{ entries: EntryPayload[] }>) : Promise.reject(new Error(String(r.status)))))
-      .then((body) => setData({ state: "ready", entries: body.entries }))
-      .catch(() => {
-        // A failed read is tried again on the next open; meanwhile the panel draws no rows.
-        requested.current = false;
-        setData({ state: "error", entries: [] });
-      });
-  }, []);
-
-  const toggle = useCallback(
-    (el: HTMLElement) => {
-      if (open) {
-        setOpen(false);
-        return;
-      }
-      opener.current = el;
-      prefetch();
-      setOpen(true);
-    },
-    [open, prefetch],
-  );
-
-  const close = useCallback(() => setOpen(false), []);
-
-  // Where focus goes on close, read as the panel goes: the ? that opened it if it is still reachable, else another ?
-  // that is. A window resized while the panel is open can leave the opener undrawn: the rail's ? is hidden below `md`
-  // and the header's from it (PR #2040, round 7). None reachable, focus goes into the dialog left up, below.
-  const buttons = useRef(new Set<HTMLElement>());
-  const returnTo = useMemo<{ readonly current: HTMLElement | null }>(
-    () => ({
-      get current() {
-        if (reachable(opener.current)) return opener.current;
-        return [...buttons.current].find(reachable) ?? null;
-      },
-    }),
-    [],
-  );
-  const mount = useCallback((el: HTMLElement) => {
-    buttons.current.add(el);
-    return () => {
-      buttons.current.delete(el);
-    };
-  }, []);
-  // No ? to go back to: the one left is under card details, still up after a resize below `md`. Focus goes into the
-  // card instead of the body. A task later, once the card has drawn itself out from under the panel (it is inert
-  // while the panel is stacked on it, and an inert control takes no focus).
-  const wasOpen = useRef(false);
-  useEffect(() => {
-    const closed = wasOpen.current && !open;
-    wasOpen.current = open;
-    if (!closed) return;
-    const t = window.setTimeout(() => {
-      const at = document.activeElement as HTMLElement | null;
-      if (at !== null && at !== document.body && at.isConnected && isDrawn(at)) return;
-      const top = dialogsUp().findLast((d) => d.getAttribute("aria-modal") === "true");
-      if (top === undefined) return;
-      (visibleFocusables(top)[0] ?? top).focus();
-    }, 0);
-    return () => window.clearTimeout(t);
-  }, [open]);
-
-  const adopt = useCallback((el: HTMLElement | null) => {
-    const was = opener.current;
-    if (el === null || was === null || was.isConnected) return;
-    if (was.dataset.helpButton === el.dataset.helpButton) opener.current = el;
-  }, []);
-
-  // Leaving the page closes the panel (H1). Adjusted during render, so the next page never paints under it.
-  const pathname = usePathname();
-  const [path, setPath] = useState(pathname);
-  if (pathname !== path) {
-    setPath(pathname);
-    if (open) setOpen(false);
-  }
-
-  // No bubble from the press to the halo's end (rows 101 to 104): the panel's own hold ends as it closes, which would
-  // start the moments' arrival timer under the halo. So a delivery hold is taken BEFORE the close and kept until the
-  // halo ends, or the root goes.
-  const yieldBubble = useYieldMoment();
-  const hold = useRef<{ release: () => void; timer: number | null } | null>(null);
-  const endHold = useCallback(() => {
-    const h = hold.current;
-    hold.current = null;
-    if (h === null) return;
-    if (h.timer !== null) window.clearTimeout(h.timer);
-    h.release();
-  }, []);
-  useEffect(() => endHold, [endHold]);
-
-  const onShowMe = useCallback(
-    (target: TargetId) => {
-      endHold();
-      hold.current = { release: yieldBubble(), timer: null };
-      setShowMe({ target });
-      setOpen(false);
-    },
-    [endHold, yieldBubble],
-  );
-
-  // After the close has committed: the panel's own cleanup has put focus back on the ? and, for the sheet, queued the
-  // release of its history entry. The scroll waits for that release, so the pop cannot land after it.
-  // That pop also starts the page's scroll restoration, which puts the offset the sheet opened over back for about
-  // half a second; a reveal made inside it (at once, under reduced motion) is pulled straight back, so it waits too.
-  useEffect(() => {
-    if (showMe === null || targets === null) return;
-    let unpin = () => {};
-    const unrelease = afterDialogsReleased(() => {
-      unpin = afterScrollRestored(() => {
-        setShowMe(null);
-        // Scrolled into view and haloed for 2.4s; never pressed, and no bubble (rows 101 to 104).
-        targets.scrollToTarget(showMe.target);
-        if (targets.haloTarget(showMe.target) && hold.current !== null) {
-          hold.current.timer = window.setTimeout(endHold, HALO_MS);
-        } else {
-          endHold();
-        }
-      });
-    });
-    return () => {
-      unrelease();
-      unpin();
-    };
-  }, [showMe, targets, endHold]);
-
-  const ctx = useMemo<HelpCtx>(() => ({ open, toggle, prefetch, adopt, mount }), [open, toggle, prefetch, adopt, mount]);
-
+  const go = useCallback(() => {
+    // The live address, never a render's: card details mirrors `?card=` without a navigation, and a deck's view is the
+    // builder's own state.
+    const { pathname, search } = window.location;
+    const desktop = typeof window.matchMedia === "function" && window.matchMedia(DESKTOP).matches;
+    router.push(questionHref(questionLanding(pathname, search, { deckView, desktop }), pathname + search));
+  }, [router, deckView]);
+  const ctx = useMemo<HelpCtx>(() => ({ go }), [go]);
   return (
     <HelpContext.Provider value={ctx}>
-      <BuilderScreenContext.Provider value={setDeckView}>
-        {children}
-        {open && (
-          <HelpPanel data={data} deckView={deckView} onClose={close} onShowMe={onShowMe} returnFocusRef={returnTo} />
-        )}
-      </BuilderScreenContext.Provider>
+      <BuilderScreenContext.Provider value={setDeckView}>{children}</BuilderScreenContext.Provider>
     </HelpContext.Provider>
   );
 }
@@ -293,38 +133,16 @@ function Button({
   style?: CSSProperties;
 }) {
   const p = PLACE[place];
-  // Intent fetches only from `md` up (R2 gap 6), where the rail's ? lives.
-  const intent = place === "rail" ? help.prefetch : undefined;
-  const { adopt, mount } = help;
-  const ref = useCallback(
-    (el: HTMLButtonElement | null) => {
-      buttonRef?.(el);
-      adopt(el);
-      if (el === null) return;
-      const unmount = mount(el);
-      // A cleanup replaces React's call with null, so it makes that call itself.
-      return () => {
-        unmount();
-        buttonRef?.(null);
-      };
-    },
-    [buttonRef, adopt, mount],
-  );
   return (
     <button
-      ref={ref}
+      ref={buttonRef}
       id={id}
       type="button"
       style={style}
       data-help-button={place}
       aria-label={helpPanelCopy.button}
-      aria-expanded={help.open}
-      onClick={(e) => help.toggle(e.currentTarget)}
-      onPointerEnter={intent}
-      onFocus={intent}
-      className={`flex shrink-0 cursor-pointer items-center justify-center border-0 p-0 font-mono font-medium ${p.box} ${
-        help.open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : p.rest
-      }`}
+      onClick={help.go}
+      className={`flex shrink-0 cursor-pointer items-center justify-center border-0 p-0 font-mono font-medium ${p.box} ${p.rest}`}
     >
       ?
     </button>

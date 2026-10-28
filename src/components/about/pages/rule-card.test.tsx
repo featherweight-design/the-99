@@ -112,3 +112,35 @@ describe("GoodToKnow", () => {
     expect(container.querySelector("[data-good-to-know-dots]")).toBeNull();
   });
 });
+
+describe("GoodToKnow under a landing on a rule (the ?, Addendum A1)", () => {
+  it("lights the landed rule's card alone, and on a phone scrolls the swipe row to it", async () => {
+    const { LabelLanding } = await import("../../discovery/label-landing");
+    window.history.replaceState(null, "", "/about/shopping?from=%2Fcollection%2Fproxies&lit=rule%2Fproxy#deck-shopping");
+    const rules = rulesOf(ALL_ON, "deck-shopping");
+    const at = rules.findIndex((r) => r.key === "rule/proxy");
+    expect(at).toBeGreaterThan(0);
+    const scrolled: number[] = [];
+    const proto = HTMLElement.prototype as unknown as Record<string, unknown>;
+    const had = { scrollTo: proto.scrollTo };
+    proto.scrollTo = function (this: HTMLElement, o: ScrollToOptions) {
+      scrolled.push(o.left ?? 0);
+    };
+    const sw = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollWidth");
+    Object.defineProperty(HTMLElement.prototype, "scrollWidth", { configurable: true, get: () => 900 });
+    try {
+      const { container } = render(
+        <LabelLanding landable={{ "rule/proxy": { isNew: false, section: "deck-shopping" } }} initialLit="rule/proxy" cards={[]}>
+          <GoodToKnow sectionId="deck-shopping" rules={rules} />
+        </LabelLanding>,
+      );
+      const lit = [...container.querySelectorAll("[data-rule][data-lit]")].map((e) => e.getAttribute("data-rule"));
+      expect(lit).toEqual(["rule/proxy"]);
+      expect(scrolled.at(-1)).toBe(at * (292 + 12));
+    } finally {
+      proto.scrollTo = had.scrollTo;
+      if (sw) Object.defineProperty(HTMLElement.prototype, "scrollWidth", sw);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>).scrollWidth;
+    }
+  });
+});

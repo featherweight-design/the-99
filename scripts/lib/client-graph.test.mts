@@ -88,8 +88,9 @@ describe("the About page's client bundle stays off the database", () => {
 });
 
 describe("the About entry list ships only with /about", () => {
-  // `about-entries.ts` is ~1,500 lines of copy (discovery plan R2·1b, R2 gap 6). The "?" fetches the entries it needs
-  // from `GET /api/about/entries`, so no page but `/about` may carry the list in its bundle. The rule names the entry
+  // `about-entries.ts` is ~1,500 lines of copy (discovery plan R2·1b, R2 gap 6). The "?" in the shell reads no About
+  // copy (`question-landing.ts` carries its own small tables; About visual PR 6a), so no page but `/about` may carry
+  // the list in its bundle. The rule names the entry
   // list, not `about.ts`, whose other copy the shell's account menu and the Analysis tab import on purpose.
   it("no route file outside /about reaches about-entries.ts", { timeout: 60_000 }, () => {
     // Every file the router renders, not only pages: a nested layout (or a loading or error boundary) ships its own

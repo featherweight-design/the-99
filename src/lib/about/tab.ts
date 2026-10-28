@@ -1,12 +1,11 @@
-// About's two tabs as the URL names them (discovery R2·5, R2·6b). A plain module, not the client
-// component's: `/about`'s server page reads `?tab=` through `aboutTabOf`, and a function exported
-// from a "use client" module is a client reference on the server, which throws when called.
+// About's `?tab=` as the URL names it (discovery R2·5, R2·6b). The Tools tab retired with About visual PR 6a, so the
+// one tab left is the Reference, until PR 7b. A plain module, not a client component's: `/about`'s server page reads
+// `?tab=` through `aboutTabOf`, and a function exported from a "use client" module is a client reference on the
+// server, which throws when called.
 
-export const ABOUT_TABS = ["tools", "reference"] as const;
-export type AboutTab = (typeof ABOUT_TABS)[number];
-export const TAB_PARAM = "tab";
+export type AboutTab = "index" | "reference";
 
-/** `?tab=` as the page reads it: anything but `reference` is Tools. */
+/** `?tab=` as the page reads it: `reference` is the Reference; anything else (`tools` included) is the index. */
 export function aboutTabOf(value: unknown): AboutTab {
-  return value === "reference" ? "reference" : "tools";
+  return value === "reference" ? "reference" : "index";
 }
