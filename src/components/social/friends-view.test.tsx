@@ -658,3 +658,22 @@ describe("the shared failure toast", () => {
     expect(alert().textContent).toBe(socialCopy.landing.declineFailed);
   });
 });
+
+describe("from 1180px, two columns (small items item 6, board `Friends-Desktop`)", () => {
+  it("splits the inbox and friends from pods and links, in the phone's DOM order", () => {
+    const { container } = draw({ waiting: <section data-testid="w">w</section>, pods: <section data-testid="p">p</section> });
+    const cols = container.querySelector("[data-friends-cols]")!;
+    for (const c of ["min-[1180px]:grid", "min-[1180px]:grid-cols-[minmax(0,1fr)_420px]", "min-[1180px]:gap-x-[44px]", "min-[1180px]:items-start"]) {
+      expect(cols.className.split(/\s+/)).toContain(c);
+    }
+    const left = cols.querySelector('[data-friends-col="left"]')!;
+    const right = cols.querySelector('[data-friends-col="right"]')!;
+    expect(left.firstElementChild?.getAttribute("data-testid")).toBe("w");
+    expect(right.firstElementChild?.getAttribute("data-testid")).toBe("p");
+    // DOM order is the phone's: inbox, friends (left), then pods, links (right); the head stays above the columns.
+    expect(left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(cols.parentElement!.className).toContain("min-[1180px]:max-w-[1160px]");
+    // Under 1180 nothing is a grid: the shipped single column.
+    expect(cols.className.split(/\s+/)).not.toContain("grid");
+  });
+});

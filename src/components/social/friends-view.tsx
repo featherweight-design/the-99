@@ -425,7 +425,11 @@ export function FriendsView({
         </div>
       ) : null}
 
-      <div className="mx-auto box-border w-full max-w-[720px] px-[16px] pb-[60px] pt-[22px] md:px-0 md:pt-[36px]">
+      {/* From 1180px (Home's two-column breakpoint) the page uses the width (small items item 6, board `Friends-Desktop`):
+          the head spans a 1160px container and two columns follow, the inbox and friends on the left, pods and open links
+          in a 420px right column. The DOM keeps the phone's order, so keyboard and reader order never change; under
+          1180 the columns are plain blocks in the shipped 720px column. */}
+      <div className="mx-auto box-border w-full max-w-[720px] px-[16px] pb-[60px] pt-[22px] md:px-0 md:pt-[36px] min-[1180px]:max-w-[1160px]">
         <FriendsHead
           name={name}
           commander={commander}
@@ -441,27 +445,33 @@ export function FriendsView({
           decksSeen={decksSeen}
           signature={signature}
         />
-        {waiting}
-        <FriendsList
-          friends={listed}
-          now={now}
-          timeZone={timeZone}
-          fresh={receipt?.publicId ?? null}
-          removing={removing}
-          onRemove={remove}
-          linkable={friendPages}
-        />
-        {pods}
-        <OpenLinks
-          links={open}
-          now={now}
-          timeZone={timeZone}
-          onShow={(l) => {
-            showOpener.current = document.activeElement as HTMLElement | null;
-            setShown({ token: l.token, url: linkUrl(l.token), expiresAt: l.expiresAt, friendsBefore: new Set(listedIds.current) });
-          }}
-          onRevoke={revoke}
-        />
+        <div data-friends-cols className="min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_420px] min-[1180px]:items-start min-[1180px]:gap-x-[44px]">
+          <div data-friends-col="left" className="min-w-0 min-[1180px]:flex min-[1180px]:flex-col">
+            {waiting}
+            <FriendsList
+              friends={listed}
+              now={now}
+              timeZone={timeZone}
+              fresh={receipt?.publicId ?? null}
+              removing={removing}
+              onRemove={remove}
+              linkable={friendPages}
+            />
+          </div>
+          <div data-friends-col="right" className="min-w-0 min-[1180px]:flex min-[1180px]:flex-col">
+            {pods}
+            <OpenLinks
+              links={open}
+              now={now}
+              timeZone={timeZone}
+              onShow={(l) => {
+                showOpener.current = document.activeElement as HTMLElement | null;
+                setShown({ token: l.token, url: linkUrl(l.token), expiresAt: l.expiresAt, friendsBefore: new Set(listedIds.current) });
+              }}
+              onRevoke={revoke}
+            />
+          </div>
+        </div>
       </div>
 
       {invites && adding ? (
