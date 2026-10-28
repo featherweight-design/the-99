@@ -60,8 +60,6 @@ export const allDecksCartCopy = {
   },
 
   list: {
-    /** A card in a deck's group that other selected decks need too. */
-    also: (names: string[]) => `also ${names.join(", ")}`,
     /** The list scroller's name on a phone, where it is a focusable box of its own. */
     regionAria: "Cards in this cart",
     decks: (qty: number, names: string[]) => `${n(qty)} · ${names.join(", ")}`,
@@ -76,10 +74,12 @@ export const allDecksCartCopy = {
     added: (q: number) => `${n(q)} added`,
   },
 
-  /** The desktop column header over By card's rows (v2 call 1, PR 4). The actions column has no label. */
+  /** The desktop column header over By card's rows and each open By deck group (v2 call 1). The actions column has no label. */
   columns: {
     card: "Card",
     need: "You need · for",
+    /** By deck's need column (PR 5): this deck's count, then the other decks that need the card. */
+    needByDeck: "This deck · also",
     spares: "Friends’ spares",
     own: "You own · in use in",
   },
@@ -87,10 +87,14 @@ export const allDecksCartCopy = {
   /** A row's facts (v2 call 1): the phone's labels (uppercase by style), and the words inside a fact. */
   facts: {
     need: "need",
+    /** By deck's need fact, from the open deck's point of view (PR 5). */
+    deck: "deck",
     spare: "spare",
     own: "own",
     /** The own fact, before the decks holding the copies (G1). */
     in: "in",
+    /** By deck, before the other selected decks that need the card too; the open deck is never one of them. */
+    also: "also",
     /** G1's fallback, when the decks holding the copies are not known and other decks hold every one. */
     inOther: "in other decks",
     /** G1's fallback when a deck on the line holds some of its own copies: `list.ownedSome`'s tail, after the count. */
@@ -107,6 +111,7 @@ export const allDecksCartCopy = {
     /** The open list's head, in place of the names: `for 4 decks`, `in 2 decks`, `from 2 friends`. */
     forDecks: (x: number) => `for ${decks(x)}`,
     inDecks: (x: number) => `in ${decks(x)}`,
+    alsoDecks: (x: number) => `also ${decks(x)}`,
     fromFriends: (x: number) => `from ${x === 1 ? "1 friend" : `${n(x)} friends`}`,
   },
 

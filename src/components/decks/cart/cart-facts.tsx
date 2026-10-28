@@ -204,7 +204,7 @@ export function CartFact({
   head: string;
   /** The pill's name while it shows `+N`. */
   moreAria: (rest: number) => string;
-  /** A word before the names (`in`). */
+  /** A word before the names (`in`, By deck's `also`), drawn only while there are names. */
   prefix?: string;
   /** Said in place of the names when they are not known (G1's `in other decks`): no pill. */
   fallback?: string;
@@ -264,7 +264,9 @@ export function CartFact({
         <span className="min-w-0 truncate">{fallback}</span>
       ) : (
         <>
-          {prefix !== undefined && !open ? <span className="flex-none">{prefix}</span> : null}
+          {/* `--fg-muted` in every fact: the own fact's line is already that colour, and By deck's `also` steps down from
+              the need fact's `--fg-body` names (the board's `.nms` at `--fg-muted`). Nothing to introduce, no prefix. */}
+          {prefix !== undefined && !open && names.length > 0 ? <span className="flex-none text-[color:var(--fg-muted)]">{prefix}</span> : null}
           {/* The slot the names and the pill share, the width the rule fits to. The pill stays one element open or
               shut, so focus stays on it. */}
           <span ref={slot} data-fact-slot className="relative flex min-w-0 flex-1 items-baseline gap-[7px]">

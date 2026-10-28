@@ -1,7 +1,7 @@
 {
   "feature": "Shopping for all decks v2 (handoff design_handoff_the99_all_decks_cart_v2; plan 2026-10-28-all-decks-cart-v2.md)",
   "clearAbout": true,
-  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). Later PRs add By friend's panels, the Friend and Owned filters and the reading, empty and failed states. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. Later PRs add By friend's panels, the Friend and Owned filters and the reading, empty and failed states. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
   "rows": [
     {
       "id": "chassis-rest-card",
@@ -191,6 +191,86 @@
         },
         {
           "wait": "[data-cart-row]:not(:has([data-fact=own]))"
+        }
+      ]
+    },
+    {
+      "id": "facts-rest-deck",
+      "label": "/decks/shopping?view=deck, the first group opened: its own column header with `This deck \u00b7 also` (desktop), the labelled DECK, SPARE and OWN lines (phone), the deck's count then `also` the other decks",
+      "view": "src/components/decks/cart/cart-deck-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=deck",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "click": "section[aria-labelledby] h3 button",
+          "settle": 600
+        },
+        {
+          "wait": "[data-cart-row]"
+        }
+      ]
+    },
+    {
+      "id": "facts-plus-deck",
+      "label": "/decks/shopping?view=deck, a group's row whose `also` names are left out: the `+N` pill after the names that fit",
+      "view": "src/components/decks/cart/cart-facts.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=deck",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "click": "section[aria-labelledby] h3 button",
+          "settle": 600
+        },
+        {
+          "wait": "[data-cart-row] [data-fact=need] [data-fact-pill=count]"
+        }
+      ]
+    },
+    {
+      "id": "facts-opened-deck",
+      "label": "/decks/shopping?view=deck, a need fact's `+N` pressed in a group: `also N decks`, the other decks with their counts on --surface-sunken, the pill reading `less`",
+      "view": "src/components/decks/cart/cart-facts.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=deck",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "click": "section[aria-labelledby] h3 button",
+          "settle": 600
+        },
+        {
+          "click": "[data-cart-row] [data-fact=need] [data-fact-pill=count]",
+          "settle": 400
+        },
+        {
+          "wait": "[data-fact-pill=less]"
+        }
+      ]
+    },
+    {
+      "id": "facts-alone-deck",
+      "label": "/decks/shopping?view=deck, a row only the open deck needs: the bare count, no `also`",
+      "view": "src/components/decks/cart/cart-deck-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=deck",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "click": "section[aria-labelledby] h3 button",
+          "settle": 600
+        },
+        {
+          "wait": "[data-cart-row] [data-fact=need]:has([data-fact-names]:empty)"
         }
       ]
     }

@@ -141,6 +141,26 @@ describe("CartFact", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
+  it("draws By deck's `also` before the names, a step down, and leaves it out with no other deck", () => {
+    const deckFact = (items: typeof decks) => (
+      <NameFitProvider>
+        <div data-test-width={400}>
+          <CartFact testId="need" label={copy.facts.deck} count={1} items={items} prefix={copy.facts.also} head={copy.facts.alsoDecks(items.length)} moreAria={copy.facts.moreDecksAria} />
+        </div>
+      </NameFitProvider>
+    );
+    const { unmount } = render(deckFact(decks.slice(1)));
+    const also = screen.getByText(copy.facts.also);
+    expect(also.className.split(/\s+/)).toEqual(expect.arrayContaining(["flex-none", "text-[color:var(--fg-muted)]"]));
+    expect(drawnNames()).toBe("HD - Kratos, HD - Thorin");
+    unmount();
+    // The open deck alone needs it: the count, and nothing after it.
+    render(deckFact([]));
+    expect(document.querySelector("[data-fact] b")?.textContent).toBe("1");
+    expect(screen.queryByText(copy.facts.also)).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
   it("brings hidden names back when the cell widens", () => {
     let notify: (entries: { target: Element }[]) => void = () => {};
     vi.stubGlobal("ResizeObserver", class {

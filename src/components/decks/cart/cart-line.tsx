@@ -8,8 +8,8 @@ import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { PriceFact } from "../../../lib/decks/price";
 import type { OwnFact, SelectedLine } from "../../../lib/decks/cart";
 import type { FriendSpare } from "../../../lib/social/spares";
-import { CartFact } from "./cart-facts";
-import { BY_CARD_GRID } from "./cart-columns";
+import { CartFact, type FactItem } from "./cart-facts";
+import { FACTS_GRID } from "./cart-columns";
 import { BuyTag } from "../buy-tag";
 import { useCartGotIt } from "./cart-got-it";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
@@ -167,8 +167,7 @@ export function CartLine({
 
 /**
  * By card's row (v2 call 1): the card, then its three facts, then the action stack, which By card holds the tag alone
- * (call 3: Ask lives in the spares modal). Phone: the facts are labelled lines under the name, the tag at the right.
- * Desktop: the facts are columns under `CartColumns`, the name cell and the facts dissolving into the row's grid.
+ * (call 3: Ask lives in the spares modal).
  */
 export function CartCardLine({
   line,
@@ -189,6 +188,51 @@ export function CartCardLine({
   const fact = lineFact(line, newestAsOf);
   const { added, press } = useLinePress(line);
   const need = line.selectedRows.map((r) => ({ name: deckNames.get(r.deckId) ?? "", count: r.quantity }));
+  return (
+    <CartFactsRow
+      line={line}
+      fact={fact}
+      need={{ label: copy.facts.need, count: line.copies, items: need, head: copy.facts.forDecks(need.length) }}
+      spares={spares}
+      own={own}
+      press={press}
+      added={added}
+      newestAsOf={newestAsOf}
+    />
+  );
+}
+
+/**
+ * A v2 row, By card's and By deck's (call 1): the card, then need, spare and own as facts, then the tag. Phone: the facts
+ * are labelled lines under the name, the tag at the right. Desktop: the facts are columns under `CartColumns`, the name
+ * cell and the facts dissolving into the row's grid. The need fact is the view's: By card's `need` counts every selected
+ * deck's copies `for` them; By deck's `deck` counts the open deck's, then names the others `also`.
+ */
+export function CartFactsRow({
+  line,
+  fact,
+  need,
+  spares,
+  own,
+  press,
+  added = 0,
+  inGroup = false,
+  newestAsOf,
+}: {
+  /** The line as this row reads it: By deck's is the open deck's own row alone, at its own pick. */
+  line: SelectedLine;
+  fact: PriceFact | null;
+  need: { label: string; count: number; items: readonly FactItem[]; head: string; prefix?: string };
+  /** Friends' spares of this card (S5), or none. */
+  spares: readonly FriendSpare[];
+  own: OwnFact | null;
+  /** The tag's I got it press; By deck's tag has none. */
+  press?: ReturnType<typeof useLinePress>["press"];
+  added?: number;
+  /** Inside a By deck group, whose body sets the inset: no padding of the row's own across, and a rule over the first. */
+  inGroup?: boolean;
+  newestAsOf: Date | null;
+}) {
   // Most spares first, then by name, so the name that leads is the friend most likely to have one to give.
   const friends = [...spares]
     .sort((a, b) => b.spare - a.spare || a.friend.displayName.localeCompare(b.friend.displayName))
@@ -203,7 +247,11 @@ export function CartCardLine({
   return (
     <li
       data-cart-row
-      className={`flex items-start gap-[12px] border-t border-[color:var(--border)] py-[12px] first:border-t-0 xl:grid xl:min-h-[64px] xl:items-center xl:px-[14px] xl:has-[[data-fact-open]]:items-start ${BY_CARD_GRID}`}
+      // In a group the column header sits just above the first row, which keeps its own rule under the header's (the
+      // board's `.colh` then `.nrw`, not its first child); on a phone there is no header and the first row has none.
+      className={`flex items-start gap-[12px] border-t border-[color:var(--border)] py-[12px] first:border-t-0 xl:grid xl:min-h-[64px] xl:items-center xl:has-[[data-fact-open]]:items-start ${
+        inGroup ? "xl:px-0 xl:first:border-t" : "xl:px-[14px]"
+      } ${FACTS_GRID}`}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-[4px] xl:contents">
         <div className="flex min-w-0 flex-col gap-[3px] xl:col-start-1 xl:row-start-1">
@@ -231,10 +279,11 @@ export function CartCardLine({
         </div>
         <CartFact
           testId="need"
-          label={copy.facts.need}
-          count={line.copies}
-          items={need}
-          head={copy.facts.forDecks(need.length)}
+          label={need.label}
+          count={need.count}
+          items={need.items}
+          prefix={need.prefix}
+          head={need.head}
           moreAria={copy.facts.moreDecksAria}
           className="xl:col-start-2 xl:row-start-1"
         />
