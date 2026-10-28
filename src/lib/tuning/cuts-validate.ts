@@ -13,7 +13,7 @@ import { presentationFailures, type RuleKey } from "./presentation";
  * player's call even when no option is ideal, so a claim the facts do not support does not drop the
  * cut: the unverifiable claim goes, the cites that held stay, and a cut left with none of its own
  * words shows the deck's own counts for the card instead (`softened` in the report). Survivors are
- * kept in the model's order up to `over`.
+ * kept in the model's order up to the cuts the run names (`pack.named`); beyond it is `tooMany`.
  */
 export type CutDropRule =
   | "cardExists" | "notInDeck" | "keyCard" | "duplicate" | "tooMany" | "citeMismatch"
@@ -27,7 +27,12 @@ export type CutSoftened = { position: number; name: string; rule: "citeMismatch"
 export type ValidatedCut = { oracleId: string; name: string; reason: string; cites: CutCite[]; position: number };
 
 export type CutsReport = {
-  askedCount: number; survivedCount: number; keptCount: number; /** The cuts the run asked for (up to MAX_CUTS_PER_RUN). */ over: number; drops: CutDrop[];
+  askedCount: number; survivedCount: number; keptCount: number;
+  /** The cuts the deck NEEDED from the run (up to MAX_CUTS_PER_RUN). Before prompt v5 a run named exactly this many. */
+  over: number;
+  /** The cuts the run was asked to NAME (`cutsNamed`). Absent on a run from before v5, which named `over`. */
+  named?: number;
+  drops: CutDrop[];
   /** Cuts kept with their reason or a cite removed. Absent on a run from before cuts were kept this way. */
   softened?: CutSoftened[];
   /** The figures the chips quote, as they stood when the validator checked the cites. Stored with the
@@ -100,14 +105,14 @@ export function validateCuts(args: {
     }
   });
 
-  const kept: ValidatedCut[] = survivors.slice(0, pack.ask).map(({ at: _at, soft: _soft, ...cut }) => cut);
-  for (const extra of survivors.slice(pack.ask)) dropped.push({ position: extra.at, rule: "tooMany", name: extra.name });
-  const softened: CutSoftened[] = survivors.slice(0, pack.ask).flatMap((s) => s.soft ? [{ position: s.at, name: s.name, ...s.soft }] : []);
+  const kept: ValidatedCut[] = survivors.slice(0, pack.named).map(({ at: _at, soft: _soft, ...cut }) => cut);
+  for (const extra of survivors.slice(pack.named)) dropped.push({ position: extra.at, rule: "tooMany", name: extra.name });
+  const softened: CutSoftened[] = survivors.slice(0, pack.named).flatMap((s) => s.soft ? [{ position: s.at, name: s.name, ...s.soft }] : []);
 
   return {
     kept,
     dropped,
-    report: { askedCount: reply.cuts.length, survivedCount: survivors.length, keptCount: kept.length, over: pack.ask, drops: dropped, ...(softened.length > 0 ? { softened } : {}) },
+    report: { askedCount: reply.cuts.length, survivedCount: survivors.length, keptCount: kept.length, over: pack.ask, named: pack.named, drops: dropped, ...(softened.length > 0 ? { softened } : {}) },
   };
 
   function check(cut: CutProposal): Omit<Survivor, "position" | "at"> | { rule: CutDropRule } {

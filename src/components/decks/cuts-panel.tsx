@@ -10,20 +10,21 @@ import {
   runProposedCuts,
   undoProposedCut,
 } from "../../app/decks/cuts-actions";
-import { deckCutsCopy } from "../../lib/copy/deck-cuts";
+import { cutsPickWords, deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
-import { cutsAsk, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
+import { cutsAsk, LEGACY_MAX_CUTS_PER_RUN, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import { cutChips, type Chip } from "../../lib/tuning/cuts-count";
 import { cutStands, type CutItem, type CutsPanel } from "../../lib/tuning/cuts-state";
+import { pickState, type PickState } from "../../lib/tuning/pick-n";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
-import { awaitRunSettled } from "./await-run";
+import { awaitRunMaxFor, awaitRunSettled } from "./await-run";
+import { CUTS_MODEL_TIMEOUT_MS } from "../../lib/tuning/limits";
 import { MutationError } from "./mutation-error";
 import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
-import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { FailMark } from "../ui/credit-button";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -32,6 +33,7 @@ import { ArtLayer } from "../ui/art-layer";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { useTarget } from "../discovery/targets-provider";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import { PickList } from "./pick-list";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -255,7 +257,8 @@ export function CutsPanelView({
     // The action returns once the run is reserved; the server finishes it after the response. Read
     // until it settles (each read also redraws the panel's running state).
     // A panel left behind stops polling; the run is the server's and finishes regardless.
-    const waited = result.ok ? await awaitRunSettled(reread, runId, { aborted: () => token.current !== mine || !mounted.current }) : null;
+    // A cuts run has its own 170s deadline (G2), so the wait outlasts it rather than the shared 110s one.
+    const waited = result.ok ? await awaitRunSettled(reread, runId, { aborted: () => token.current !== mine || !mounted.current, maxMs: awaitRunMaxFor(CUTS_MODEL_TIMEOUT_MS) }) : null;
     if (token.current !== mine) return;
     const next = waited ?? await reread();
     if (token.current !== mine) return;
@@ -287,16 +290,33 @@ export function CutsPanelView({
     return next !== null && ticket === asked.current;
   }
 
+  // The result's rows against the cuts the deck needed when it ran (small items R1b): a run names three
+  // more than that, and the head, the lead and the foot all read this one state (`pickState`).
+  const counted = pickState({ named: items.length, needed: panel.asked, chosen: cutCount, answered });
+  // "Back at 99" is said only of the list as it stands: the live over, less the Cuts pressed since it was read (a Cut
+  // answers before the redraw that moves `over`, so the switch to enough stays instant). A run reopened over a deck that
+  // has grown since reads as one still being chosen from, with the count's live over line.
+  // Read from the deck's total, which is not clamped: a deck back at its body says so, one under says by how many.
+  const pressedSinceRead = cutCount - items.filter((i) => i.verdict === "accepted").length;
+  // A legal deck is 100 cards, commanders included (99 + one, or 98 + a partner pair).
+  const liveOver = panel.total - pressedSinceRead - 100;
+  // Every pick run with a cut made reads its phase from the list, wherever the cuts stand against the run's need: a run
+  // reopened after cards left elsewhere can reach the line with fewer cuts than it needed.
+  const pick = counted.phase !== "enough" && counted.phase !== "past" && counted.phase !== "choosing" ? counted
+    : counted.chosen === 0 ? counted
+    : liveOver > 0 ? { ...counted, phase: "choosing" as const }
+    : liveOver === 0 ? { ...counted, phase: "enough" as const, past: 0 }
+    : { ...counted, phase: "past" as const, past: -liveOver };
+  const words = cutsPickWords(pick, { bodySize: panel.bodySize, asked: panel.itemsReport !== null ? panel.asked : items.length });
   // The lead: the over figure in --fg (never --warning), then what the state says next.
   const lead = (() => {
     if (running) return copy.deeper.pendingLead(cutsAsk(over));
-    if (resultShown && answered > 0) {
-      return copy.leadPart(cutCount, items.filter((i) => overrides.verdictOf(i) === "dismissed").length, items.length, items.length - answered);
-    }
-    if (resultShown) return copy.leadNamed(items.length);
+    if (resultShown) return words.lead;
     if (failed || refusedRun) return copy.leadBare;
     return copy.lead;
   })();
+  // Enough cut (or more): the lead's bold half says so, in place of the over line or the C8 box.
+  const headline = resultShown && !running ? words.headline : null;
   // C8 COUNTS ONLY WHAT THIS TOOL CUT TOWARD THE LINE: a row of this visit's result (or the run
   // History reopened) that was cut and still stands (`cutStands`: the list holds fewer copies than
   // when it was cut, since a Cut removes one). A deck that reached the line by another edit, a copy
@@ -314,8 +334,11 @@ export function CutsPanelView({
       className="mt-[18px] md:mt-6"
     >
       <CutsFreeCount
-        panel={panel}
+        // The count reads the list as the presses have left it (a Cut or Undo answers before the redraw that moves
+        // `over`), so an Undo back over the line shows the over lead at once, never the closing box.
+        panel={pressedSinceRead === 0 ? panel : { ...panel, over: Math.max(0, liveOver), total: panel.total - pressedSinceRead }}
         lead={lead}
+        headline={headline}
         cutCount={madeCuts}
         headingRef={headRef}
         onPress={() => void press()}
@@ -350,7 +373,7 @@ export function CutsPanelView({
           <>
             {over !== 0 && refused ? <MutationError message={refused} /> : null}
             {resultShown && !running ? (
-              <ResultBlock panel={panel} deps={deps} standing={cutsFootStanding(panel)} onSettled={verdictSettled} />
+              <ResultBlock panel={panel} pick={pick} words={words} deps={deps} standing={cutsFootStanding(panel)} onSettled={verdictSettled} />
             ) : null}
           </>
         )}
@@ -362,41 +385,40 @@ export function CutsPanelView({
   );
 }
 
-function ResultBlock({ panel, deps, standing, onSettled }: {
-  panel: CutsPanel; deps: CutsDeps; standing: string; onSettled: (announce: string, refusal?: string) => Promise<boolean>;
+function ResultBlock({ panel, pick, words, deps, standing, onSettled }: {
+  panel: CutsPanel; pick: PickState; words: { head: string; foot: string };
+  deps: CutsDeps; standing: string; onSettled: (announce: string, refusal?: string) => Promise<boolean>;
 }) {
   const { items, asked } = panel;
   const d = copy.deeper;
   // A run that hit the per-run cap leaves the rest of the overage for the next one.
-  const more = asked >= MAX_CUTS_PER_RUN ? Math.max(0, panel.over - items.filter((i) => i.verdict !== "accepted").length) : 0;
+  // A run from before prompt v5 (no `named` in its report) was capped at the old 15.
+  const cap = panel.itemsReport?.named === undefined ? LEGACY_MAX_CUTS_PER_RUN : MAX_CUTS_PER_RUN;
+  const more = asked >= cap ? Math.max(0, panel.over - items.filter((i) => i.verdict !== "accepted").length) : 0;
+  // Only a run that named fewer than the deck needed leaves a slot: the three extra rows are a choice, not owed.
   const slots = Array.from({ length: Math.max(0, asked - items.length) }, (_, i) => items.length + i + 1);
-  const hasRead = panel.itemsReport !== null;
   return (
-    <div className="mt-[14px] rounded-[10px] px-[12px] py-[14px] md:px-[14px]" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-      <div className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[10px]">
-        <h3 className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>{d.resultHead(items.length)}</h3>
-        <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{d.resultRead}</span>
-      </div>
-      <ul className="mt-[10px] flex flex-col gap-[8px]">
-        <ArrivalOrder>{items.map((item) => (
-          <li key={item.id}><CutRow item={item} panel={panel} deps={deps} items={items} onSettled={onSettled} /></li>
-        ))}</ArrivalOrder>
-        {slots.map((n) => (
-          <li key={`short-${n}`} data-testid="short-slot"
-            className="flex flex-col gap-[3px] rounded-[9px] px-[12px] py-[10px] md:flex-row md:items-baseline md:justify-between"
-            style={{ border: "1px dashed var(--border-dashed)" }}>
-            <span className="text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{`– ${d.shortRow(n)}`}</span>
-            <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{d.shortWhy}</span>
-          </li>
-        ))}
-      </ul>
-      {more > 0 && (
+    <PickList
+      state={pick}
+      words={{ head: () => words.head, foot: () => words.foot }}
+      read={d.resultRead}
+      footTail={standing}
+      after={more > 0 ? (
         <p data-testid="cuts-more" className="mt-[10px] text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{d.resultMore(more)}</p>
-      )}
-      <p className="mt-[12px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
-        <CreditsText text={`${d.resultFoot(items.length, hasRead ? asked : items.length)} · ${standing}`} />
-      </p>
-    </div>
+      ) : null}
+    >
+      <ArrivalOrder>{items.map((item) => (
+        <li key={item.id}><CutRow item={item} panel={panel} deps={deps} items={items} onSettled={onSettled} /></li>
+      ))}</ArrivalOrder>
+      {slots.map((n) => (
+        <li key={`short-${n}`} data-testid="short-slot"
+          className="flex flex-col gap-[3px] rounded-[9px] px-[12px] py-[10px] md:flex-row md:items-baseline md:justify-between"
+          style={{ border: "1px dashed var(--border-dashed)" }}>
+          <span className="text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{`– ${d.shortRow(n)}`}</span>
+          <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{d.shortWhy}</span>
+        </li>
+      ))}
+    </PickList>
   );
 }
 

@@ -11,6 +11,8 @@
  */
 export const AWAIT_RUN_POLL_MS = 2000;
 export const AWAIT_RUN_MAX_MS = 130_000;
+/** Past a deadline by the same 20s the default allows past the 110s one, for settling. */
+export const awaitRunMaxFor = (deadlineMs: number) => deadlineMs + 20_000;
 
 export async function awaitRunSettled<S extends { run?: { id: string; status: string } | null }>(
   read: () => Promise<S | null>,

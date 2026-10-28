@@ -22,7 +22,7 @@ const calls = vi.hoisted(() => ({
   finished: [] as unknown[][],
   persisted: [] as unknown[][],
   persistResult: true,
-  modelCalls: [] as { system: string; user: string; effort?: string; deadlineMs?: number; retryFloorMs?: number; schema: unknown }[],
+  modelCalls: [] as { system: string; user: string; effort?: string; deadlineMs?: number; retryFloorMs?: number; maxTokens?: number; schema: unknown }[],
   modelOutcome: undefined as unknown,
   modelQueue: [] as unknown[],
   runPending: true,
@@ -255,7 +255,8 @@ describe("runProposedCuts, a run that answers", () => {
     await runProposedCuts(DECK);
     expect(calls.modelCalls).toHaveLength(1);
     const req = calls.modelCalls[0];
-    expect(req).toMatchObject({ effort: "medium", deadlineMs: 110_000, retryFloorMs: 70_000 });
+    // Proposed cuts' own ceiling and deadline (small items G2): 10,500 tokens inside 170s.
+    expect(req).toMatchObject({ effort: "medium", deadlineMs: 170_000, retryFloorMs: 70_000, maxTokens: 10_500 });
     // The front face only, as the eval's chosen configuration builds it.
     expect(req.user).toContain("text: Draw two cards.");
     expect(req.user).not.toContain("Back face.");
@@ -296,12 +297,13 @@ describe("runProposedCuts, a run that answers", () => {
     expect((calls.persisted[0][1] as { oracleId: string }[])[0].oracleId).toBe("bear1");
   });
 
-  it("bounds the reply's array at the deck's over figure", async () => {
+  it("bounds the reply's array at the cuts named: the deck's two over, plus three", async () => {
     await runProposedCuts(DECK);
     const schema = calls.modelCalls[0].schema as { safeParse: (v: unknown) => { success: boolean } };
     const cut = { name: "bear1", reason: "x", cites: [{ kind: "offList" }] };
-    expect(schema.safeParse({ cuts: [cut, cut] }).success).toBe(true);
-    expect(schema.safeParse({ cuts: [cut, cut, cut] }).success).toBe(false);
+    const n = (k: number) => ({ cuts: Array.from({ length: k }, () => cut) });
+    expect(schema.safeParse(n(5)).success).toBe(true);
+    expect(schema.safeParse(n(6)).success).toBe(false);
   });
 
   it("does not throw when the run was superseded meanwhile", async () => {

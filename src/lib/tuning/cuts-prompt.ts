@@ -7,8 +7,9 @@ import type { CutsPack, CutsPackCard } from "./cuts-evidence";
 /**
  * Its own version, apart from Suggested changes' `PROMPT_VERSION`. 4 (2026-10-12, model tiering): no
  * wording change; the model moved to Sonnet 5.5, so a deck with a run stored at 3 reopens the gate.
+ * 5 (2026-10-27, small items R1b): a run names three more cuts than the deck needs, and the player chooses.
  */
-export const CUTS_PROMPT_VERSION = 4;
+export const CUTS_PROMPT_VERSION = 5;
 
 /** The last curve bucket holds that mana value and above, so it reads `7+`; a cite still uses 7. */
 const bucket = (cmc: number) => (cmc >= CURVE_MAX ? `${cmc}+` : `${cmc}`);
@@ -33,7 +34,7 @@ export function buildCutsPrompt(pack: CutsPack): { system: string; user: string 
   const { prompt, rules } = deckCutsCopy;
   const system = [
     prompt.task(pack.over),
-    prompt.count(pack.ask, pack.over),
+    prompt.count(pack.named, pack.ask, pack.over),
     prompt.order(pack.plan !== null),
     pack.plan !== null ? prompt.cites : prompt.citesNoPlan,
     prompt.reasonLength,

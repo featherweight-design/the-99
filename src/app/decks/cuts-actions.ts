@@ -33,7 +33,7 @@ import { cutItem, setCutKept, undoCutItem, type CutOutcome } from "../../lib/tun
 import { cutsResponseSchema } from "../../lib/tuning/cuts-schema";
 import { validateCuts, type CutsReport } from "../../lib/tuning/cuts-validate";
 import { proposedCutsEnabled } from "../../lib/tuning/flag";
-import { MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
+import { CUTS_MAX_TOKENS, CUTS_MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { retryable } from "../../lib/tuning/retry";
 import { runIsPending, type Billed } from "../../lib/tuning/run-store";
 import { listFingerprint } from "../../lib/profile/fingerprint";
@@ -169,9 +169,9 @@ export async function runProposedCuts(
       let checked: ReturnType<typeof validateCuts>;
       for (let attempt = 1; ; attempt++) {
         const outcome = (attempt === 1 ? await heldStubOutcome(env) : null) ?? await callModel({
-          model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
-          schema: cutsResponseSchema(pack.ask), deadlineMs: attempt === 1 ? MODEL_TIMEOUT_MS : MODEL_TIMEOUT_MS - (Date.now() - startedAt),
-          effort: TUNING_EFFORT, retryFloorMs: attempt === 1 ? TUNING_RETRY_FLOOR_MS : MODEL_TIMEOUT_MS,
+          model: TUNING_MODEL, system, user, maxTokens: CUTS_MAX_TOKENS,
+          schema: cutsResponseSchema(pack.named), deadlineMs: attempt === 1 ? CUTS_MODEL_TIMEOUT_MS : CUTS_MODEL_TIMEOUT_MS - (Date.now() - startedAt),
+          effort: TUNING_EFFORT, retryFloorMs: attempt === 1 ? TUNING_RETRY_FLOOR_MS : CUTS_MODEL_TIMEOUT_MS,
         });
         if (outcome.usage) billed.push({ model: TUNING_MODEL, usage: outcome.usage, step: attempt === 1 ? "cuts" : "cuts_retry", effort: TUNING_EFFORT });
         // A rejection is stored as busy: the distinction is kept for the overview only, for now.
@@ -183,7 +183,7 @@ export async function runProposedCuts(
         // made for a run that is no longer pending. The first ask's usage is recorded late, as ever.
         if (!(await runIsPending(run.runId))) return await fail("upstream_busy");
         // After that await, so the deadline it measures is the one left now.
-        if (!retryable(billed, checked.dropped, Date.now() - startedAt, { feature: "proposed_cuts", lockedRule: "keyCard" })) break;
+        if (!retryable(billed, checked.dropped, Date.now() - startedAt, { feature: "proposed_cuts", lockedRule: "keyCard", deadlineMs: CUTS_MODEL_TIMEOUT_MS })) break;
       }
       const { kept } = checked;
       const report: CutsReport = { ...checked.report, chips: cutCounts(facts, (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null, name).chips };

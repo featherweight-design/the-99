@@ -13,10 +13,11 @@ import { MODEL_TIMEOUT_MS, TUNING_RETRY_FLOOR_MS } from "./limits";
 export function retryable(
   billed: readonly Billed[], drops: readonly { rule: string }[], elapsedMs: number,
   /** The tool asking, whose reservation the two asks must stay inside, and the drop rule that is the player's own state. */
-  tool: { feature: ModelFeature; lockedRule: string } = { feature: "tuning", lockedRule: "neverCut" },
+  tool: { feature: ModelFeature; lockedRule: string; deadlineMs?: number } = { feature: "tuning", lockedRule: "neverCut" },
 ): boolean {
   if (billed.length === 0) return false;
   if (drops.length > 0 && drops.every((d) => d.rule === tool.lockedRule)) return false;
   if (billed.reduce((sum, b) => sum + costMicroUsd(b.model, b.usage), 0) * 2 > featureWorstCaseMicroUsd(tool.feature, billed[0].model)) return false;
-  return MODEL_TIMEOUT_MS - elapsedMs >= TUNING_RETRY_FLOOR_MS;
+  // The tool's own deadline (Proposed cuts' is `CUTS_MODEL_TIMEOUT_MS`); Suggested changes keeps the shared one.
+  return (tool.deadlineMs ?? MODEL_TIMEOUT_MS) - elapsedMs >= TUNING_RETRY_FLOOR_MS;
 }

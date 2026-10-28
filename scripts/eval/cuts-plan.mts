@@ -102,7 +102,7 @@ const { buildCutsPack } = await import("../../src/lib/tuning/cuts-evidence");
 const { buildCutsPrompt, CUTS_PROMPT_VERSION } = await import("../../src/lib/tuning/cuts-prompt");
 const { cutsResponseSchema } = await import("../../src/lib/tuning/cuts-schema");
 const { validateCuts } = await import("../../src/lib/tuning/cuts-validate");
-const { TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL } = await import("../../src/lib/tuning/limits");
+const { TUNING_EFFORT, CUTS_MAX_TOKENS, TUNING_MODEL } = await import("../../src/lib/tuning/limits");
 const readCutsPlan = args.plan ? (await import("../../src/lib/decks/cuts-plan-read")).readCutsPlan : null;
 
 async function versionRows(deckId: string, number: number) {
@@ -207,12 +207,12 @@ for (const d of want) {
   prepared.push({
     customId, deckName: d.name, over: facts.over, size: facts.total, added: addedN, pack,
     hughCut: new Map(names.map((n) => [n.id, n.name])),
-    sent: { customId, params: buildParams({ model: TUNING_MODEL, system, user, maxTokens: args["max-tokens"] ? Number(args["max-tokens"]) : TUNING_MAX_TOKENS, schema: cutsResponseSchema(pack.ask) }, { effort: TUNING_EFFORT }) },
+    sent: { customId, params: buildParams({ model: TUNING_MODEL, system, user, maxTokens: args["max-tokens"] ? Number(args["max-tokens"]) : CUTS_MAX_TOKENS, schema: cutsResponseSchema(pack.named) }, { effort: TUNING_EFFORT }) },
   });
   console.error(`${d.name}: ${facts.total} cards, over by ${facts.over}, Hugh removed ${hughCutIds.length}; prompt v${CUTS_PROMPT_VERSION}${args.plan ? " + plan" : ""}`);
 }
 
-const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.pack.ask)]));
+const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.pack.named)]));
 const attempts = new Map<string, Got[]>();
 let runId: string;
 

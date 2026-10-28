@@ -3,7 +3,7 @@ import { SYNOPSIS_MAX_TOKENS_V8 } from "../synopsis/limits";
 import { SYNOPSIS_MODEL } from "../synopsis/model";
 import { STUB_MODEL } from "../synopsis/stub";
 import { FITS_READ_INPUT_CEILING, FITS_READ_MAX_TOKENS, FITS_READ_MODEL } from "../swaps/fits-read-limits";
-import { TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
+import { CUTS_MAX_TOKENS, TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
 import { askFor, MAX_COUNT, replyCeilingFor } from "../tuning/v2/count";
 import type { ModelFeature } from "./allowance-rule";
 import type { ModelUsage } from "./client";
@@ -186,7 +186,7 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // output tokens against the 8,000 ceiling.
   // TWO calls since 2026-10-13: a press that leaves no card to cut asks once more (`runProposedCuts`), and the
   // second ask can cost a whole call, so a reservation for one would let the pair outrun what the reservation admitted.
-  proposed_cuts: { model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 2 },
+  proposed_cuts: { model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: CUTS_MAX_TOKENS, callsPerWrite: 2 },
   // Find a deck read (eval 2026-10-12, `docs/superpowers/eval/metrics-find-a-deck-read.md`): one
   // call. MEASURED 63,360 input tokens at most on the eval (21 candidates) and 4,257 output; the
   // press refuses a prompt over `FITS_READ_INPUT_CEILING`, so this prices the worst it can settle at.

@@ -2,7 +2,7 @@ import { deckDescriptionCopy } from "../copy/deck-description";
 import { deckNameIndex, normalizeName } from "../synopsis/facts";
 import { playerText } from "../model/player-text";
 import type { MixRole } from "../decks/mix";
-import { cutsAsk } from "./cuts-ask";
+import { cutsAsk, cutsNamed } from "./cuts-ask";
 import type { BracketFlag, CardCutFacts, CutFacts, MissingSignal, RoleFact } from "./cuts";
 import type { ComboFact, NearComboFact } from "../synopsis/facts-extra";
 
@@ -60,8 +60,10 @@ export type CutsPackCard = {
 
 export type CutsPack = {
   over: number;
-  /** The cuts this run asks for: `over`, up to `MAX_CUTS_PER_RUN`. */
+  /** The cuts the deck NEEDS from this run: `over`, up to `MAX_CUTS_PER_RUN` (`cutsAsk`). */
   ask: number;
+  /** The cuts this run NAMES, so the player chooses `ask` of them: `ask` plus three, up to the same cap (`cutsNamed`). */
+  named: number;
   commander: string;
   /** Names. Never cut. */
   keyCards: string[];
@@ -143,6 +145,7 @@ export function buildCutsPack(input: {
   return {
     over: facts.over,
     ask: cutsAsk(facts.over),
+    named: cutsNamed(facts.over),
     commander: commanderName,
     keyCards: [...keyCards],
     keyCardIds,

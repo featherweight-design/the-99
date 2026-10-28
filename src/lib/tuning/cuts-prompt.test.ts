@@ -22,11 +22,12 @@ describe("buildCutsPrompt", () => {
     expect(user).not.toMatch(/- cmc 7: have/);
   });
 
-  it("has its own version", () => expect(CUTS_PROMPT_VERSION).toBe(4));
+  it("has its own version", () => expect(CUTS_PROMPT_VERSION).toBe(5));
 
-  it("asks for exactly over cuts and carries the player-text rule and the cite rules", () => {
+  it("asks for three more cuts than the deck needs, says how many it needs, and carries the player-text rule and the cite rules", () => {
     const { system } = build();
-    expect(system).toContain("exactly 2 cuts");
+    expect(system).toContain("Propose exactly 5 cuts.");
+    expect(system).toContain("The deck needs 2 cuts; name 3 more than that, so the player chooses which 2 to cut. List them strongest case first.");
     expect(system).toContain(PLAYER_TEXT_SYSTEM_RULE);
     expect(system).toMatch(/cites entry/);
     expect(system).toMatch(/Never cut a Key card/);
@@ -107,9 +108,21 @@ describe("the plan in the prompt (v2)", () => {
       facts: cutFacts({ profile: profile({}, deck(70)), locked: new Set(), support: null, declaredBracket: null }),
       commanderName: "Gishath", keyCards: [], intent: null,
     }));
-    expect(big.system).toContain(`Propose exactly ${MAX_CUTS_PER_RUN} cuts.`);
+    expect(big.system).toContain("Propose exactly 20 cuts.");
     expect(big.system).toContain("The deck is 22 over");
+    // At the cap the run names no more than it needs, so nothing is offered to choose between.
+    expect(big.system).not.toContain("more than that");
     expect(withPlan().system).not.toContain("run this again");
+  });
+
+  it("fills a deck near the cap only up to it: 18 over names 20, two more than it needs", () => {
+    const near = buildCutsPrompt(buildCutsPack({
+      facts: cutFacts({ profile: profile({}, deck(66)), locked: new Set(), support: null, declaredBracket: null }),
+      commanderName: "Gishath", keyCards: [], intent: null,
+    }));
+    expect(near.system).toContain(`Propose exactly ${MAX_CUTS_PER_RUN} cuts.`);
+    expect(near.system).toContain("The deck needs 18 cuts; name 2 more than that, so the player chooses which 18 to cut.");
+    expect(near.system).not.toContain("run this again");
   });
 
   it("tells the model a capped combo list may omit pieces, and says nothing of it under the cap", () => {

@@ -52,6 +52,7 @@ export function cutsBlocked(panel: CutsPanel): boolean {
 export function CutsFreeCount({
   panel,
   lead = copy.lead,
+  headline: headlineOverride = null,
   cutCount = 0,
   headingRef,
   band,
@@ -62,6 +63,9 @@ export function CutsFreeCount({
   panel: CutsPanel;
   /** The sentences after the bold over line. Defaults to the count's own. */
   lead?: string;
+  /** The lead's bold half in place of the over line: a pick result cut to enough or past it ("Three cut."),
+   *  which also stands in for C8's box once the deck is at or under the line, since the other named rows stay open. */
+  headline?: string | null;
   /** Cuts this tool made toward the line (cut, and still standing: `cutStands`), for C8's head once the
    *  deck is back at its body size. Zero reads the neutral `Back to 99 / 99.` */
   cutCount?: number;
@@ -76,7 +80,7 @@ export function CutsFreeCount({
 }) {
   const { over } = panel;
   const standing = cutsStanding(panel);
-  const headline = copy.overLead(overWords(over), panel.bodySize);
+  const headline = headlineOverride ?? copy.overLead(overWords(over), panel.bodySize);
   return (
     <>
       <div className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[12px]">
@@ -85,7 +89,7 @@ export function CutsFreeCount({
         </h2>
         <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{copy.sub}</span>
       </div>
-      {over === 0 ? (
+      {over === 0 && headlineOverride === null ? (
         // C8 / C8b, as drawn (R2 canvas C, the `done` box, lines 212-217): the same box at both widths.
         <div
           data-testid="cuts-done"

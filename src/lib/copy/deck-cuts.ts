@@ -5,6 +5,7 @@
 
 import { numberWord } from "./deck-analysis";
 import { bodyWords } from "./number-words";
+import type { PickState } from "../tuning/pick-n";
 
 /** "sixth": the shortfall slot's ordinal, spelled up to twelfth and a numeral past it. */
 const ORDINAL_WORDS = [
@@ -35,8 +36,9 @@ export const deckCutsCopy = {
   prompt: {
     task: (over: number) =>
       `You propose cuts for a Magic: The Gathering Commander deck that is ${over} ${over === 1 ? "card" : "cards"} over 100.`,
-    count: (ask: number, over: number) =>
-      `Propose exactly ${ask} ${ask === 1 ? "cut" : "cuts"}. Propose fewer only if the deck genuinely has fewer defensible cuts.${over > ask ? ` The deck is ${over} over, more than one answer holds: name the ${ask} that should come out first, and the player will run this again for the rest.` : ""}`,
+    /** `named` the cuts to propose, `needed` the cuts the deck needs from this run (prompt v5: three more are named, and the player chooses). */
+    count: (named: number, needed: number, over: number) =>
+      `Propose exactly ${named} ${named === 1 ? "cut" : "cuts"}. Propose fewer only if the deck genuinely has fewer defensible cuts.${named > needed ? ` The deck needs ${needed} ${needed === 1 ? "cut" : "cuts"}; name ${named - needed} more than that, so the player chooses which ${needed} to cut. List them strongest case first.` : ""}${over > needed ? ` The deck is ${over} over, more than one answer holds: name the ${needed} that should come out first, and the player will run this again for the rest.` : ""}`,
     cites: "Cite with one of ten kinds: combo (state: assembled, oneShort, or none for a card in no combo the plan lists; the lists cover only the indexed bounded combos, so none is a statement about those lists and not about the deck's synergy), cost (the card's mana value), tapped (a land that enters tapped), colour (colour, and how many cards need it), inclusion (the card's percent), offList, role (role, have, target), curve (cmc, have), flag, intent.",
     /** The same line when the plan could not be read: combo and colour figures are not in the call, so they cannot be cited. */
     citesNoPlan: "Cite with one of eight kinds: cost (the card's mana value), tapped (a land that enters tapped), inclusion (the card's percent), offList, role (role, have, target), curve (cmc, have), flag, intent.",
@@ -125,6 +127,20 @@ export const deckCutsCopy = {
       /** After a capped run: how many are still over once these are dealt with. Placeholder owed to /copy-review. */
       resultMore: (n: number) => `${cap(numberWord(n))} more ${n === 1 ? "is" : "are"} still over. Cut these, then look deeper again for the rest.`,
       resultFoot: (named: number, asked: number) => `${named} of ${asked} named \u00b7 each figure checked against the count`,
+      /** A run that named more than the deck needs (small items R1b, the `Cuts-Alternatives` board): the
+       *  player chooses which to cut. Placeholders owed to /copy-review. */
+      pick: {
+        head: (named: number) => `${cap(numberWord(named))} to choose from`,
+        lead: (named: number, needed: number) => `${cap(numberWord(named))} named; cut any ${numberWord(needed)}. Cut writes to the list straight away.`,
+        foot: (named: number, needed: number) => `${named} named for ${needed} ${needed === 1 ? "cut" : "cuts"} \u00b7 each figure checked against the count`,
+        /** Enough cut, or more: the bold half of the lead. */
+        cutHead: (cut: number) => `${cap(numberWord(cut))} cut.`,
+        enoughLead: (bodySize: number, others: number) =>
+          `Back at ${bodySize}. The other ${numberWord(others)} ${others === 1 ? "stays" : "stay"} here, so you can Undo one and cut another instead.`,
+        /** More cut than the deck needed: the deck is under its body, said as the count says over. Not on the board (kept at /copy-review). */
+        pastLead: (under: number, bodySize: number) => `${cap(numberWord(under))} under the ${bodyWords(bodySize)}.`,
+        doneFoot: (cut: number, needed: number, others: number) => `${cut > needed ? `${cut} cut` : `${cut} of ${needed} cut`}${others > 0 ? ` \u00b7 ${others} more named` : ""}`,
+      },
       shortRow: (n: number) => `A ${ordinalWord(n)} wasn\u2019t named`,
       shortWhy: "it cited a figure the count doesn\u2019t have \u00b7 left out, not replaced",
       refused: "The run didn\u2019t name a cut it could back with a count, so nothing is shown. Your credit is back.",
@@ -159,3 +175,31 @@ export const deckCutsCopy = {
 } as const;
 
 export type CutsRuleKey = keyof typeof deckCutsCopy.rules;
+
+/**
+ * What a Look deeper result says, over its pick state (`pickState`): the result block's head, the
+ * lead's bold half (null keeps the count's own over line) and the sentences after it, and the foot
+ * before its credits tail. `asked` is the shipped foot's denominator. A run that named no more than
+ * the deck needed (`exact`) reads as it shipped.
+ */
+export function cutsPickWords(s: PickState, ctx: { bodySize: number; asked: number }): { head: string; headline: string | null; lead: string; foot: string } {
+  const p = deckCutsCopy.panel;
+  const d = p.deeper;
+  const part = () => p.leadPart(s.chosen, s.answered - s.chosen, s.named, s.open);
+  switch (s.phase) {
+    case "exact":
+      return { head: d.resultHead(s.named), headline: null, lead: s.answered > 0 ? part() : p.leadNamed(s.named), foot: d.resultFoot(s.named, ctx.asked) };
+    case "open":
+      return { head: d.pick.head(s.named), headline: null, lead: d.pick.lead(s.named, s.needed), foot: d.pick.foot(s.named, s.needed) };
+    case "choosing":
+      return { head: d.pick.head(s.named), headline: null, lead: part(), foot: d.pick.foot(s.named, s.needed) };
+    case "enough":
+    case "past":
+      return {
+        head: d.pick.head(s.named),
+        headline: d.pick.cutHead(s.chosen),
+        lead: s.phase === "enough" ? d.pick.enoughLead(ctx.bodySize, s.others) : d.pick.pastLead(s.past, ctx.bodySize),
+        foot: d.pick.doneFoot(s.chosen, s.needed, s.others),
+      };
+  }
+}

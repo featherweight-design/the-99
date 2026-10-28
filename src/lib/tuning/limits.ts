@@ -50,6 +50,25 @@ export const REAPER_CUTOFF_MS = 5 * 60 * 1000;
 export const MODEL_TIMEOUT_MS = 110_000;
 
 /**
+ * Proposed cuts' own output ceiling (small items G2, d9 2026-10-27, option b). Suggested changes keeps
+ * `TUNING_MAX_TOKENS`. A Look deeper run names up to 20 cuts (`MAX_CUTS_PER_RUN`, derived from this in
+ * `cuts-ask.ts`): 20 x 440 tokens a cut (the worst measured rate) with 15% kept free is 10,353, so
+ * 10,500. A clean 11,000 would derive a cap of 21, not 20.
+ */
+export const CUTS_MAX_TOKENS = 10_500;
+
+/**
+ * Proposed cuts' own deadline, both attempts included (the schema-fail retry inside `callModel` and the
+ * action's second ask). The worst full reply, 10,500 tokens at the slowest real-time rate the repo has
+ * measured (79 tokens a second, `TUNING_RETRY_FLOOR_MS`), is about 133s, over the shared 110s. That rate
+ * was measured on Sonnet 5; Sonnet 5.5's rate is unmeasured (its cuts trials ran p95 10.4s in the
+ * 2026-10-12 tiering eval, with no output token counts recorded), so real latency is to be recorded from
+ * staging. 170s leaves the deck page's `maxDuration` (180) the ~10s the run's reads and writes need,
+ * the margin `MODEL_TIMEOUT_MS` keeps under 120; `limits.test.ts` pins both.
+ */
+export const CUTS_MODEL_TIMEOUT_MS = 170_000;
+
+/**
  * The model a run calls, recorded per run in `deck_suggestion_runs.model`, for BOTH tools (Suggested
  * changes and Proposed cuts).
  *

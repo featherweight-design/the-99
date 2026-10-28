@@ -49,16 +49,26 @@ describe("validateCuts", () => {
     expect(r.dropped[0]).toMatchObject({ rule: "duplicate", position: 1 });
   });
 
-  it("caps the count at over and names the extras", () => {
-    const r = run([c("bear1", [OFF]), c("bear3", [OFF]), c("bear4", [OFF])]);
-    expect(r.kept).toHaveLength(2);
-    expect(r.dropped[0].rule).toBe("tooMany");
-    expect(r.report).toMatchObject({ survivedCount: 3, keptCount: 2 });
+  // Two over: the deck needs 2 cuts and the run names 5 (prompt v5, three more to choose from).
+  const six = ["bear1", "bear3", "bear4", "bear5", "bear6", "bear7"].map((n) => c(n, [OFF]));
+
+  it("keeps a reply of three more than the deck needs whole, and says both counts", () => {
+    const r = run(six.slice(0, 5));
+    expect(r.kept.map((k) => k.oracleId)).toEqual(["bear1", "bear3", "bear4", "bear5", "bear6"]);
+    expect(r.dropped).toEqual([]);
+    expect(r.report).toMatchObject({ survivedCount: 5, keptCount: 5, over: 2, named: 5 });
+  });
+
+  it("caps the count at the named count and names the extras", () => {
+    const r = run(six);
+    expect(r.kept).toHaveLength(5);
+    expect(r.dropped).toEqual([{ position: 5, rule: "tooMany", name: "bear7" }]);
+    expect(r.report).toMatchObject({ survivedCount: 6, keptCount: 5 });
   });
 
   it("reports every drop at the reply's own index, a tooMany one included", () => {
-    const r = run([c("nope", [OFF]), c("bear1", [OFF]), c("bear3", [OFF]), c("bear4", [OFF])]);
-    expect(r.dropped.map((d) => [d.rule, d.position])).toEqual([["notInDeck", 0], ["tooMany", 3]]);
+    const r = run([c("nope", [OFF]), ...six]);
+    expect(r.dropped.map((d) => [d.rule, d.position])).toEqual([["notInDeck", 0], ["tooMany", 6]]);
   });
 
   describe("cite equality", () => {
@@ -163,12 +173,13 @@ describe("the per-run cap", () => {
   });
   it("asks for no more than the cap of a deck 22 over, and keeps no more than that", () => {
     const pack = big();
-    expect([pack.over, pack.ask]).toEqual([22, MAX_CUTS_PER_RUN]);
+    // A far-over deck needs and names 20 (small items G2): no room under the cap for spares.
+    expect([pack.over, pack.ask, pack.named]).toEqual([22, 20, 20]);
     const cuts = Array.from({ length: 22 }, (_, i) => c(`bear${i}`, [{ kind: "cost", mv: 3 }]));
     const r = run(cuts, pack);
     expect(r.kept).toHaveLength(MAX_CUTS_PER_RUN);
     expect(r.dropped.map((d) => d.rule)).toEqual(Array(22 - MAX_CUTS_PER_RUN).fill("tooMany"));
-    expect(r.report).toMatchObject({ over: MAX_CUTS_PER_RUN, keptCount: MAX_CUTS_PER_RUN });
+    expect(r.report).toMatchObject({ over: MAX_CUTS_PER_RUN, named: MAX_CUTS_PER_RUN, keptCount: MAX_CUTS_PER_RUN });
   });
 });
 
