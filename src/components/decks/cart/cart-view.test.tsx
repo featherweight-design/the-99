@@ -372,6 +372,21 @@ describe("CartView by deck (A5)", () => {
       expect(screen.getByText(gotItCopy.receipt.added("Sol Ring", 2))).toBeTruthy();
     });
 
+    it("holds a search to the held slot too: one matching only the bought card still draws it, another drops it", async () => {
+      const view = await buySolRing(render(<CartView cart={cart()} provenance={provenance} buyEnabled />));
+      const after = cart();
+      after.lines = after.lines.filter((l) => l.oracleId !== "sol");
+      view.rerender(<CartView cart={after} provenance={provenance} buyEnabled />);
+      const search = screen.getByRole("searchbox", { name: copy.filters.search });
+      // Only the bought card matches: its slot is the list, not a no-match block.
+      fireEvent.change(search, { target: { value: "sol" } });
+      expect(list().getAllByRole("listitem").some((li) => li.hasAttribute("data-held-slot"))).toBe(true);
+      expect(screen.queryByText(copy.noMatch.title)).toBeNull();
+      // A search the bought card does not match takes its slot out with the other lines.
+      fireEvent.change(search, { target: { value: "tower" } });
+      expect(list().getAllByRole("listitem").some((li) => li.hasAttribute("data-held-slot"))).toBe(false);
+    });
+
     it("draws no held slot for a line that is only unselected, not gone from the cart", async () => {
       await buySolRing(render(<CartView cart={cart()} provenance={provenance} buyEnabled />));
       for (const name of ["HD - Gishath", "HD - Kratos"]) {
