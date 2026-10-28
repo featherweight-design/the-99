@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { cutsAsk, cutsNamed } from "./cuts-ask";
 import { cutsResponseSchema } from "./cuts-schema";
 
 const cut = { name: "Bear", reason: "Off the list.", cites: [{ kind: "offList" }] };
@@ -11,6 +12,20 @@ describe("cutsResponseSchema", () => {
     expect(s.safeParse({ cuts: [cut, cut] }).success).toBe(true);
     expect(s.safeParse({ cuts: [] }).success).toBe(false);
     expect(s.safeParse({ cuts: [cut, cut, cut] }).success).toBe(false);
+  });
+
+  it("bounds a reply by the cuts named, not the cuts needed: three over takes six, refuses seven", () => {
+    const s = cutsResponseSchema(cutsNamed(3));
+    const n = (k: number) => ({ cuts: Array.from({ length: k }, () => cut) });
+    expect(cutsAsk(3)).toBe(3);
+    expect(s.safeParse(n(6)).success).toBe(true);
+    expect(s.safeParse(n(7)).success).toBe(false);
+  });
+
+  it("bounds a far-over deck at the per-run cap of 15", () => {
+    const s = cutsResponseSchema(cutsNamed(40));
+    expect(s.safeParse({ cuts: Array.from({ length: 15 }, () => cut) }).success).toBe(true);
+    expect(s.safeParse({ cuts: Array.from({ length: 16 }, () => cut) }).success).toBe(false);
   });
 
   it("holds a reason to 200 characters and needs a cite", () => {

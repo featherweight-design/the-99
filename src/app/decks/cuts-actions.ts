@@ -170,7 +170,7 @@ export async function runProposedCuts(
       for (let attempt = 1; ; attempt++) {
         const outcome = (attempt === 1 ? await heldStubOutcome(env) : null) ?? await callModel({
           model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
-          schema: cutsResponseSchema(pack.ask), deadlineMs: attempt === 1 ? MODEL_TIMEOUT_MS : MODEL_TIMEOUT_MS - (Date.now() - startedAt),
+          schema: cutsResponseSchema(pack.named), deadlineMs: attempt === 1 ? MODEL_TIMEOUT_MS : MODEL_TIMEOUT_MS - (Date.now() - startedAt),
           effort: TUNING_EFFORT, retryFloorMs: attempt === 1 ? TUNING_RETRY_FLOOR_MS : MODEL_TIMEOUT_MS,
         });
         if (outcome.usage) billed.push({ model: TUNING_MODEL, usage: outcome.usage, step: attempt === 1 ? "cuts" : "cuts_retry", effort: TUNING_EFFORT });

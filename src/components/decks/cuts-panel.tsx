@@ -10,7 +10,7 @@ import {
   runProposedCuts,
   undoProposedCut,
 } from "../../app/decks/cuts-actions";
-import { deckCutsCopy } from "../../lib/copy/deck-cuts";
+import { cutsPickWords, deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
@@ -18,12 +18,12 @@ import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } 
 import { cutsAsk, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import { cutChips, type Chip } from "../../lib/tuning/cuts-count";
 import { cutStands, type CutItem, type CutsPanel } from "../../lib/tuning/cuts-state";
+import { pickState, type PickState } from "../../lib/tuning/pick-n";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { awaitRunSettled } from "./await-run";
 import { MutationError } from "./mutation-error";
 import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
-import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { FailMark } from "../ui/credit-button";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -32,6 +32,7 @@ import { ArtLayer } from "../ui/art-layer";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { useTarget } from "../discovery/targets-provider";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import { PickList } from "./pick-list";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -287,16 +288,19 @@ export function CutsPanelView({
     return next !== null && ticket === asked.current;
   }
 
+  // The result's rows against the cuts the deck needed when it ran (small items R1b): a run names three
+  // more than that, and the head, the lead and the foot all read this one state (`pickState`).
+  const pick = pickState({ named: items.length, needed: panel.asked, chosen: cutCount, answered });
+  const words = cutsPickWords(pick, { bodySize: panel.bodySize, asked: panel.itemsReport !== null ? panel.asked : items.length });
   // The lead: the over figure in --fg (never --warning), then what the state says next.
   const lead = (() => {
     if (running) return copy.deeper.pendingLead(cutsAsk(over));
-    if (resultShown && answered > 0) {
-      return copy.leadPart(cutCount, items.filter((i) => overrides.verdictOf(i) === "dismissed").length, items.length, items.length - answered);
-    }
-    if (resultShown) return copy.leadNamed(items.length);
+    if (resultShown) return words.lead;
     if (failed || refusedRun) return copy.leadBare;
     return copy.lead;
   })();
+  // Enough cut (or more): the lead's bold half says so, in place of the over line or the C8 box.
+  const headline = resultShown && !running ? words.headline : null;
   // C8 COUNTS ONLY WHAT THIS TOOL CUT TOWARD THE LINE: a row of this visit's result (or the run
   // History reopened) that was cut and still stands (`cutStands`: the list holds fewer copies than
   // when it was cut, since a Cut removes one). A deck that reached the line by another edit, a copy
@@ -316,6 +320,7 @@ export function CutsPanelView({
       <CutsFreeCount
         panel={panel}
         lead={lead}
+        headline={headline}
         cutCount={madeCuts}
         headingRef={headRef}
         onPress={() => void press()}
@@ -350,7 +355,7 @@ export function CutsPanelView({
           <>
             {over !== 0 && refused ? <MutationError message={refused} /> : null}
             {resultShown && !running ? (
-              <ResultBlock panel={panel} deps={deps} standing={cutsFootStanding(panel)} onSettled={verdictSettled} />
+              <ResultBlock panel={panel} pick={pick} words={words} deps={deps} standing={cutsFootStanding(panel)} onSettled={verdictSettled} />
             ) : null}
           </>
         )}
@@ -362,41 +367,38 @@ export function CutsPanelView({
   );
 }
 
-function ResultBlock({ panel, deps, standing, onSettled }: {
-  panel: CutsPanel; deps: CutsDeps; standing: string; onSettled: (announce: string, refusal?: string) => Promise<boolean>;
+function ResultBlock({ panel, pick, words, deps, standing, onSettled }: {
+  panel: CutsPanel; pick: PickState; words: { head: string; foot: string };
+  deps: CutsDeps; standing: string; onSettled: (announce: string, refusal?: string) => Promise<boolean>;
 }) {
   const { items, asked } = panel;
   const d = copy.deeper;
   // A run that hit the per-run cap leaves the rest of the overage for the next one.
   const more = asked >= MAX_CUTS_PER_RUN ? Math.max(0, panel.over - items.filter((i) => i.verdict !== "accepted").length) : 0;
+  // Only a run that named fewer than the deck needed leaves a slot: the three extra rows are a choice, not owed.
   const slots = Array.from({ length: Math.max(0, asked - items.length) }, (_, i) => items.length + i + 1);
-  const hasRead = panel.itemsReport !== null;
   return (
-    <div className="mt-[14px] rounded-[10px] px-[12px] py-[14px] md:px-[14px]" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-      <div className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[10px]">
-        <h3 className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>{d.resultHead(items.length)}</h3>
-        <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{d.resultRead}</span>
-      </div>
-      <ul className="mt-[10px] flex flex-col gap-[8px]">
-        <ArrivalOrder>{items.map((item) => (
-          <li key={item.id}><CutRow item={item} panel={panel} deps={deps} items={items} onSettled={onSettled} /></li>
-        ))}</ArrivalOrder>
-        {slots.map((n) => (
-          <li key={`short-${n}`} data-testid="short-slot"
-            className="flex flex-col gap-[3px] rounded-[9px] px-[12px] py-[10px] md:flex-row md:items-baseline md:justify-between"
-            style={{ border: "1px dashed var(--border-dashed)" }}>
-            <span className="text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{`– ${d.shortRow(n)}`}</span>
-            <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{d.shortWhy}</span>
-          </li>
-        ))}
-      </ul>
-      {more > 0 && (
+    <PickList
+      state={pick}
+      words={{ head: () => words.head, foot: () => words.foot }}
+      read={d.resultRead}
+      footTail={standing}
+      after={more > 0 ? (
         <p data-testid="cuts-more" className="mt-[10px] text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{d.resultMore(more)}</p>
-      )}
-      <p className="mt-[12px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
-        <CreditsText text={`${d.resultFoot(items.length, hasRead ? asked : items.length)} · ${standing}`} />
-      </p>
-    </div>
+      ) : null}
+    >
+      <ArrivalOrder>{items.map((item) => (
+        <li key={item.id}><CutRow item={item} panel={panel} deps={deps} items={items} onSettled={onSettled} /></li>
+      ))}</ArrivalOrder>
+      {slots.map((n) => (
+        <li key={`short-${n}`} data-testid="short-slot"
+          className="flex flex-col gap-[3px] rounded-[9px] px-[12px] py-[10px] md:flex-row md:items-baseline md:justify-between"
+          style={{ border: "1px dashed var(--border-dashed)" }}>
+          <span className="text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{`– ${d.shortRow(n)}`}</span>
+          <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{d.shortWhy}</span>
+        </li>
+      ))}
+    </PickList>
   );
 }
 

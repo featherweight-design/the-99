@@ -6,7 +6,7 @@ import { ROLE_ORDER } from "../decks/mix";
 /**
  * The shape a Proposed cuts reply must have, handed to the client as the structured-output format.
  * SHAPE ONLY: whether the card is in the deck and the cited figure is true is `cuts-validate.ts`.
- * Built per call because the array bound is `over`, which differs per deck.
+ * Built per call because the array bound is the cuts the run names (`CutsPack.named`), which differs per deck.
  */
 export const citeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("inclusion"), pct: z.number() }),
@@ -27,8 +27,8 @@ export const cutSchema = z.object({
   cites: z.array(citeSchema).min(1).max(4),
 });
 
-export function cutsResponseSchema(over: number) {
-  return z.object({ cuts: z.array(cutSchema).min(1).max(Math.max(1, over)) });
+export function cutsResponseSchema(named: number) {
+  return z.object({ cuts: z.array(cutSchema).min(1).max(Math.max(1, named)) });
 }
 
 export type CutsResponse = z.infer<ReturnType<typeof cutsResponseSchema>>;

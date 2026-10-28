@@ -176,12 +176,12 @@ for (const [i, d] of BLIND_DECKS.entries()) {
     free, random,
     sent: {
       customId,
-      params: buildParams({ model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS, schema: cutsResponseSchema(pack.ask) }, { effort: TUNING_EFFORT }),
+      params: buildParams({ model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS, schema: cutsResponseSchema(pack.named) }, { effort: TUNING_EFFORT }),
     },
   });
 }
 
-const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.pack.ask)]));
+const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.pack.named)]));
 const attempts = new Map<string, Got[]>();
 let runId: string;
 

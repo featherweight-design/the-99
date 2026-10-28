@@ -277,7 +277,7 @@ function cutFailure(cutId: string, deck: FitsDeckBlock, subjectId: string, nameO
   const cards = deck.list.filter((c) => !locked.has(c.oracleId)).map((c): CutsPackCard =>
     ({ oracleId: c.oracleId, name: c.name, quantity: 1, typeLine: c.typeLine, mv: 0, roles: [] }));
   const pack: CutsPack = {
-    over: 1, ask: 1, commander: deck.commanders[0]?.name ?? "", keyCards: [], keyCardIds: [...deck.keyCardIds],
+    over: 1, ask: 1, named: 1, commander: deck.commanders[0]?.name ?? "", keyCards: [], keyCardIds: [...deck.keyCardIds],
     intent: null, missing: [], support: null, roles: [], curve: null, brackets: [], cards, plan: null,
   };
   const name = nameOf.get(cutId) ?? cutId;

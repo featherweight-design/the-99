@@ -632,3 +632,78 @@ describe("an answer flips its row at once (optimistic)", () => {
     expect(screen.getByText(copy.refusals.cutLocked)).toBeTruthy();
   });
 });
+
+// Small items R1b (`Cuts-Alternatives`): a run names three more cuts than the deck needs, and the
+// player chooses. 102 cards: three over, six named.
+describe("a result with more named than the deck needs (pick N)", () => {
+  const pick = (extra: Partial<CutsPanel> = {}) => {
+    const p = withResult(6, 3, { over: 3, total: 102, ...extra });
+    p.itemsReport = { askedCount: 6, survivedCount: 6, keptCount: 6, over: 3, named: 6, drops: [] };
+    return p;
+  };
+  const cutItem = (n: number) => item(n, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 });
+  const foot = () => screen.getByText(/ named for | of 3 cut /).textContent ?? "";
+
+  it("open: the head says how many to choose from, the lead how many to cut, the foot both", async () => {
+    await mount(deps(pick()));
+    expect(screen.getByText("Six to choose from")).toBeTruthy();
+    expect(screen.queryByText("Six to cut")).toBeNull();
+    expect(screen.getByText("Three over the ninety-nine.").tagName).toBe("B");
+    expect(screen.getByText("Six named; cut any three. Cut writes to the list straight away.", { exact: false })).toBeTruthy();
+    expect(foot()).toMatch(/^6 named for 3 cuts · each figure checked against the count · /);
+    expect(screen.getAllByRole("article")).toHaveLength(6);
+    expect(screen.queryAllByTestId("short-slot")).toHaveLength(0);
+  });
+
+  it("enough cut: back at 99, the other three stay open with Cut, and no closing box", async () => {
+    const p = pick({ over: 0, total: 100 });
+    p.items = [cutItem(1), item(2), cutItem(3), item(4), cutItem(5), item(6)];
+    await mount(deps(p));
+    expect(screen.getByText("Three cut.").tagName).toBe("B");
+    expect(screen.getByText("Back at 99. The other three stay here, so you can Undo one and cut another instead.", { exact: false })).toBeTruthy();
+    expect(screen.queryByTestId("cuts-done")).toBeNull();
+    expect(screen.getByText("Six to choose from")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: copy.cut })).toHaveLength(3);
+    expect(screen.getAllByRole("button", { name: copy.undo })).toHaveLength(3);
+    expect(foot()).toMatch(/^3 of 3 cut · 3 more named · /);
+  });
+
+  it("a fourth Cut stays allowed, and the lead then says the deck is under", async () => {
+    const p = pick({ over: 0, total: 99 });
+    p.items = [cutItem(1), cutItem(2), cutItem(3), cutItem(4), item(5), item(6)];
+    await mount(deps(p));
+    expect(screen.getByText("Four cut.").tagName).toBe("B");
+    expect(screen.getByText("One under the ninety-nine.", { exact: false })).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: copy.cut })).toHaveLength(2);
+    expect(foot()).toMatch(/^4 of 3 cut · 2 more named · /);
+  });
+
+  it("part cut: the shipped part lead under the live over line, the open foot", async () => {
+    const p = pick({ over: 2, total: 101 });
+    p.items = [cutItem(1), item(2), item(3), item(4), item(5), item(6)];
+    await mount(deps(p));
+    expect(screen.getByText("Two over the ninety-nine.")).toBeTruthy();
+    expect(screen.getByText(copy.leadPart(1, 0, 6, 5), { exact: false })).toBeTruthy();
+    expect(foot()).toMatch(/^6 named for 3 cuts · /);
+  });
+
+  it("moves to enough the moment the third Cut is pressed, before the action answers", async () => {
+    let answer!: (r: { ok: true }) => void;
+    const p = pick();
+    p.items = [cutItem(1), cutItem(2), item(3), item(4), item(5), item(6)];
+    const d = deps(p, { cut: vi.fn(() => new Promise<{ ok: true }>((r) => { answer = r; })) });
+    await mount(d);
+    fireEvent.click(within(screen.getAllByRole("article")[0]).getByRole("button", { name: copy.cut }));
+    await waitFor(() => expect(screen.getByText("Three cut.")).toBeTruthy());
+    await act(async () => { answer({ ok: true }); });
+  });
+
+  it("a run that came back with fewer than over + 3 but more than needed draws no slot for the extras", async () => {
+    const p = pick();
+    p.items = p.items.slice(0, 4);
+    await mount(deps(p));
+    expect(screen.getByText("Four to choose from")).toBeTruthy();
+    expect(screen.queryAllByTestId("short-slot")).toHaveLength(0);
+    expect(foot()).toMatch(/^4 named for 3 cuts · /);
+  });
+});

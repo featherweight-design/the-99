@@ -24,7 +24,24 @@ export const WORST_TOKENS_PER_CUT = 440;
 export const OUTPUT_MARGIN = 0.15;
 export const MAX_CUTS_PER_RUN = Math.floor((OUTPUT_CEILING_TOKENS * (1 - OUTPUT_MARGIN)) / WORST_TOKENS_PER_CUT);
 
-/** The cuts a run for a deck `over` cards over 100 asks for. */
+/** The cuts a deck `over` cards over 100 NEEDS from one run: the overage, up to the cap. A run names more (`cutsNamed`). */
 export function cutsAsk(over: number): number {
   return Math.min(Math.max(0, over), MAX_CUTS_PER_RUN);
+}
+
+/**
+ * How many more cuts a run NAMES than the deck needs (small items R1b, Hugh 2026-10-27: "just over
+ * shoot by 2-3"), so the player chooses which to cut and is never locked into the model's picks.
+ */
+export const EXTRA_CUTS_NAMED = 3;
+
+/**
+ * The cuts a run for a deck `over` cards over 100 NAMES: what it needs plus `EXTRA_CUTS_NAMED`, held
+ * to the same `MAX_CUTS_PER_RUN`. The handoff left this cap open ("about 20", G2); it stays the
+ * measured 15, because the derivation above shows 20 entries at the worst measured rate (8,800
+ * tokens) overflow the 8,000-token output ceiling, and a named row costs what a needed one does. A
+ * deck 12 or more over therefore names fewer than three spares, and one 15 or more over names none.
+ */
+export function cutsNamed(over: number): number {
+  return over > 0 ? Math.min(over + EXTRA_CUTS_NAMED, MAX_CUTS_PER_RUN) : 0;
 }
