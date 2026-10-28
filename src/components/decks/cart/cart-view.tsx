@@ -11,7 +11,7 @@ import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import type { ProvenanceForm } from "../../../lib/decks/price";
 import { cartTotal, checkoutLinks, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
 import {
-  DEFAULT_SORTS, byCardOrder, cardCompare, matchesQuery, parseQuery, parseSort, searchLines, sortDecks, sortGroups,
+  DEFAULT_SORTS, MAX_QUERY, byCardOrder, cardCompare, matchesQuery, parseQuery, parseSort, searchLines, sortDecks, sortGroups,
   type CartSorts,
 } from "../../../lib/decks/cart-sort";
 import { CartChassis } from "./cart-chassis";
@@ -140,7 +140,9 @@ export function CartView({
     // focus for arrival.
     writeUrl({ view: next, query, sorts }, true);
   };
-  const chooseQuery = (next: string) => {
+  const chooseQuery = (typed: string) => {
+    // The cap holds for typing and pasting as it does for an arrival; spaces stay while the reader types.
+    const next = typed.slice(0, MAX_QUERY);
     setQuery(next);
     writeUrl({ view, query: next, sorts });
   };
@@ -341,6 +343,7 @@ export function CartView({
                   selected={selected}
                   showBuy={showKey}
                   drawn={drawnIds}
+                  query={query}
                 />
                 <CartChassisRow
                   view={view}
@@ -523,7 +526,8 @@ function CardOrFriendList({
   if (view === "friend" && byFriend && panels) {
     return <ByFriendList groups={panels} requests={byFriend.requests} held={drawn.held} deckNames={deckNames} newestAsOf={newestAsOf} />;
   }
-  if (lines.length === 0) return <NoMatch query={query} of={of} onDrop={onDrop} />;
+  // The held slot a purchase left counts: a search matching only the card just bought still draws it.
+  if (drawn.lines.length === 0) return <NoMatch query={query} of={of} onDrop={onDrop} />;
   return <ByCardList lines={lines} read={read} selected={selected} deckNames={deckNames} newestAsOf={newestAsOf} compare={compare} query={query} />;
 }
 
@@ -534,7 +538,7 @@ function CardOrFriendList({
  * friend never does: its line's press is the Ask. Nothing at all with none of the three.
  */
 function CartKeyRow({
-  view, onView, byDeckView, lines, read, selected, showBuy, drawn,
+  view, onView, byDeckView, lines, read, selected, showBuy, drawn, query,
 }: {
   view: CartViewMode;
   onView: (v: CartViewMode) => void;
@@ -544,9 +548,11 @@ function CartKeyRow({
   selected: ReadonlySet<string>;
   showBuy: boolean;
   drawn: ReadonlySet<string>;
+  /** The search, so the switch agrees with the list about which held slots are drawn. */
+  query: string;
 }) {
   const spares = usePageSpares();
-  const withHeld = useWithHeld(lines, read, selected);
+  const withHeld = useWithHeld(lines, read, selected, { query });
   const byFriend = friendGroups(useByFriend(withHeld.lines, withHeld.held));
   const v = shown(view, byFriend !== null);
   const viewSwitch = byDeckView || byFriend

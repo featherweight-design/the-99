@@ -166,6 +166,25 @@ describe("the cart's chassis (v2 PR 8)", () => {
     expect(live()).toBe("?q=sol&utm=x");
   });
 
+  it("moves between the sheet's orders with the arrows and keeps one Tab stop", () => {
+    render(<CartView cart={cart()} provenance={provenance} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) }));
+    const radios = screen.getAllByRole("radio").filter((r) => r.closest("[role=radiogroup]")?.getAttribute("aria-label") === copy.sort.sheetAria);
+    expect(radios.map((r) => r.tabIndex)).toEqual([0, -1, -1, -1, -1]);
+    fireEvent.keyDown(radios[0], { key: "ArrowDown" });
+    expect(document.activeElement).toBe(radios[1]);
+    fireEvent.keyDown(radios[1], { key: "ArrowUp" });
+    fireEvent.keyDown(radios[0], { key: "ArrowUp" });
+    expect(document.activeElement).toBe(radios[4]);
+  });
+
+  it("holds a pasted search to the same cap as an arrival, in the field and the address", () => {
+    render(<CartView cart={cart()} provenance={provenance} />);
+    fireEvent.change(search(), { target: { value: `sol${" ".repeat(120)}` } });
+    expect((search() as HTMLInputElement).value).toHaveLength(80);
+    expect(new URLSearchParams(live()).get("q")).toHaveLength(80);
+  });
+
   it("draws the desktop sort as the labelled menu past the hairline", () => {
     const { container } = renderWide(<CartView cart={cart()} provenance={provenance} />);
     expect(container.querySelector("[data-chassis-form='wide']")).toBeTruthy();

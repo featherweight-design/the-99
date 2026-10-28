@@ -27,7 +27,8 @@ export function CartSortSheet({ open, ...rest }: CartSortSheetProps) {
 
 function SheetBody({ open, view, value, order, labels, onPick, onDismiss }: CartSortSheetProps) {
   const dialog = useRef<HTMLDivElement>(null);
-  const selected = useRef<HTMLButtonElement>(null);
+  const selected = useRef<HTMLButtonElement | null>(null);
+  const items = useRef<(HTMLButtonElement | null)[]>([]);
   // Landing on the order already in force, so a keyboard or screen reader starts from where the list is.
   useDialogA11y(dialog, onDismiss, { initialFocusRef: selected });
   return (
@@ -46,15 +47,23 @@ function SheetBody({ open, view, value, order, labels, onPick, onDismiss }: Cart
         {copy.sort.viewOf[view]}
       </p>
       <div role="radiogroup" aria-label={copy.sort.sheetAria} className="flex flex-col pb-[16px]">
-        {order.map((option) => {
+        {order.map((option, i) => {
           const on = option === value;
           return (
             <button
               key={option}
-              ref={on ? selected : undefined}
               type="button"
               role="radio"
               aria-checked={on}
+              // Roving focus: one Tab stop, the arrows move between the orders, as a radiogroup promises.
+              tabIndex={on ? 0 : -1}
+              ref={(el) => { items.current[i] = el; if (on) selected.current = el; }}
+              onKeyDown={(e) => {
+                const to = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+                if (!to) return;
+                e.preventDefault();
+                items.current[(i + to + order.length) % order.length]?.focus();
+              }}
               onClick={() => onPick(option)}
               className={`flex h-[48px] w-full cursor-pointer items-center justify-between border-0 border-t border-solid border-t-[color:var(--elevated)] px-[16px] text-left font-sans text-[14px] text-[color:var(--fg)] ${
                 on ? "bg-[color:var(--elevated)]" : "bg-transparent"
