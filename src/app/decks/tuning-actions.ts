@@ -33,7 +33,7 @@ import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
 import { resolveBoxText } from "../../lib/cards/tagged-text";
 import { plainText, tagCount } from "../../lib/decks/notes-body";
-import { tuningEnabled } from "../../lib/tuning/flag";
+import { suggestedChangesV2Enabled, tuningEnabled } from "../../lib/tuning/flag";
 import { gateReason } from "../../lib/tuning/gate";
 import { MAX_SUGGESTIONS, NOTES_TAGS_MAX, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
@@ -47,6 +47,7 @@ import { refundsCredit } from "../../lib/tuning/refund";
 import { retryable } from "../../lib/tuning/retry";
 import { loadOwnedCandidates } from "../../lib/tuning/owned-candidates";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
+import { parseV2Wire, startTuningV2 } from "../../lib/tuning/v2/run";
 import { loadFocusCandidates, planFocusCandidates } from "../../lib/strategy/candidates";
 import { focusPack, loadAddCards, loadRunStrategy, strategyChips } from "../../lib/strategy/run";
 
@@ -191,13 +192,22 @@ export async function saveDeckLimits(
  * pending row, committed before any network call. Everything after that sits in one `try`, so a
  * throw anywhere fails the run and refunds its unit: no unit is ever spent on a call never made.
  */
+export async function runTuning(deckId: string, opts: V2RunOpts): Promise<DeckMutationResult | SameRequest>;
+export async function runTuning(deckId: string, opts?: { anyway?: boolean; runId?: string; notes?: string }): Promise<DeckMutationResult>;
 export async function runTuning(
   deckId: string,
-  opts: { anyway?: boolean; runId?: string; notes?: string } = {},
-): Promise<DeckMutationResult> {
+  opts: { anyway?: boolean; runId?: string; notes?: string } | V2RunOpts = {},
+): Promise<DeckMutationResult | SameRequest> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!tuningEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
+  // Suggested changes v2 (plan 2026-10-27, P1 and P5): reached only by a press that carries a count, and only while the
+  // reader's `SUGGESTED_CHANGES_V2_ENABLED` is on. Off, a replayed count is refused here, before anything is reserved:
+  // it never falls through to v10 either. Every other press is v10's, below, exactly as it was.
+  if (typeof opts === "object" && opts !== null && "requestedCount" in opts) {
+    if (!suggestedChangesV2Enabled(env)) return { ok: false, message: deckTuningCopy.run.refused };
+    return runTuningV2(deckId, userId, env, opts);
+  }
   const anyway = typeof opts === "object" && opts !== null && opts.anyway === true;
   // The panel names its run so it can wait on that run and no other (`await-run.ts`). Anything but
   // a uuid is refused rather than dropped: a wait keyed on an id the row does not carry would never end.
@@ -375,6 +385,41 @@ export async function runTuning(
     }
   };
   after(work);
+  return { ok: true };
+}
+
+/** A Suggested changes v2 press (plan PR 3): the count, the player's request, the bracket choice, and `confirmed` once
+ *  the player has answered "Same request as your last run: run again?". */
+export type V2RunOpts = {
+  requestedCount: number;
+  request?: string;
+  bracket?: { choice: "keep" | "down" | "up"; target: number } | null;
+  confirmed?: boolean;
+  runId?: string;
+};
+
+/** The deck and the request both match the newest ok v2 run (G4): nothing was reserved, and the player is asked once. */
+export type SameRequest = { ok: false; confirm: "same_request"; runId: string; at: string };
+
+async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEnv, opts: V2RunOpts): Promise<DeckMutationResult | SameRequest> {
+  const wire = parseV2Wire(opts as Record<string, unknown>);
+  if (!wire) return { ok: false, message: deckTuningCopy.run.refused };
+  const requested = opts.runId;
+  if (requested !== undefined && (typeof requested !== "string" || !isUuid(requested))) {
+    return { ok: false, message: deckTuningCopy.run.refused };
+  }
+  // The request box takes the `[[` picker as "Additional notes" did, under the same 500-character cap (spec §4, Q8),
+  // and reaches the prompt through `playerText` (`buildPromptV2`). A refusal here lands before the credit is reserved.
+  let request = "";
+  if (wire.request !== undefined) {
+    const resolved = await resolveBoxText(wire.request, { cap: deckDescriptionCopy.notes.maxLength, maxTags: NOTES_TAGS_MAX });
+    if (!resolved.ok) return { ok: false, message: deckTuningCopy.run.refused };
+    request = resolved.text.trim();
+  }
+  const started = await startTuningV2({ deckId, userId, env, runId: requested, wire, request });
+  if (started.kind === "refused") return { ok: false, message: started.message };
+  if (started.kind === "confirm") return { ok: false, confirm: "same_request", runId: started.runId, at: started.at };
+  after(() => started.work(() => revalidateDeck(deckId)));
   return { ok: true };
 }
 

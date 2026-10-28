@@ -10,7 +10,7 @@ import { printedIn } from "../sets/printed-in-sql";
 import type { EvidencePack } from "./evidence";
 import { nameResolver } from "./resolve-names";
 import type { TuningResponse } from "./response-schema";
-import { validateSuggestions } from "./validate";
+import { validateSuggestions, type ResolvedCard } from "./validate";
 
 /**
  * The half of a run that follows the model: one catalog read of every name it returned, the
@@ -45,9 +45,26 @@ export async function resolveAnswer(args: {
   env: NodeJS.ProcessEnv;
 }) {
   const { userId, deckId, pack, response } = args;
-  const { limits } = pack;
   const { additions, cuts } = response;
   const names = [...new Set([...additions, ...cuts].map((l) => l.card))];
+  const rows = await readResolvedRows({ userId, deckId, limits: pack.limits, names, env: args.env });
+  const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
+  return { ...validateSuggestions({ response, pack, resolveName }), askedCount: additions.length + cuts.length };
+}
+
+/**
+ * The catalog rows behind a set of names the model wrote, with what the hard filters read: legality and identity, the
+ * Set limit's printing, the price under a cap and, owned-only, whether a copy is free. One read per call of v10's reply
+ * (`resolveAnswer`), and one per streamed line of v2's (`v2/run.ts`), so the two judge a card the same way.
+ */
+export async function readResolvedRows(args: {
+  userId: string;
+  deckId: string;
+  limits: EvidencePack["limits"];
+  names: readonly string[];
+  env: NodeJS.ProcessEnv;
+}): Promise<(ResolvedCard & { name: string })[]> {
+  const { userId, deckId, limits, names, env } = args;
   const nameRows = names.length === 0 ? [] : await db
     .select({
       oracleId: cards.oracleId,
@@ -64,7 +81,7 @@ export async function resolveAnswer(args: {
   const [{ prices, newestAsOf }, suggestedOwned, availability] = await Promise.all([
     limits.capCents === null ? { prices: new Map(), newestAsOf: null } : loadPrices(suggestedIds),
     nameRows.length === 0 || !limits.ownedOnly ? new Set<string>() : readOwnedOracleIds(userId, suggestedIds),
-    nameRows.length === 0 || !limits.ownedOnly ? new Map() : loadAvailability(userId, { oracleIds: suggestedIds, excludeDeckId: deckId, env: args.env }),
+    nameRows.length === 0 || !limits.ownedOnly ? new Map() : loadAvailability(userId, { oracleIds: suggestedIds, excludeDeckId: deckId, env }),
   ]);
   const rows = nameRows.map((r) => {
     const fact = prices.get(r.oracleId) ?? null;
@@ -76,6 +93,5 @@ export async function resolveAnswer(args: {
       owned: suggestedOwned.has(r.oracleId) && (avail === undefined || avail.free > 0),
     };
   });
-  const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
-  return { ...validateSuggestions({ response, pack, resolveName }), askedCount: additions.length + cuts.length };
+  return rows;
 }

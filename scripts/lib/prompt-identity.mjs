@@ -45,6 +45,7 @@ export const CALLERS = {
   "src/app/decks/tuning-actions.ts": { builders: ["src/lib/tuning/prompt.ts"] },
   "src/app/decks/cuts-actions.ts": { builders: ["src/lib/tuning/cuts-prompt.ts"] },
   "src/lib/tuning/v2/engine.ts": { builders: ["src/lib/tuning/prompt.ts"], note: "sends through the callModel its caller injects" },
+  "src/lib/tuning/v2/run.ts": { builders: ["src/lib/tuning/prompt.ts"], note: "streams what runV2 built through streamModel" },
   "src/lib/swaps/fits-read-run.ts": { builders: ["src/lib/swaps/fits-read.ts"] },
   "src/lib/intake/the-read-run.ts": { builders: ["src/lib/intake/the-read.ts", "src/lib/intake/the-read-run.ts"] },
   "src/lib/synopsis/generate.ts": { builders: ["src/lib/synopsis/prompt.ts", "src/lib/synopsis/generate.ts"] },
@@ -94,7 +95,7 @@ const IDENTITY_IMPORT = /^@clerk\/|(^|\/)auth(\.[cm]?[jt]sx?)?$|\/social\/|\/adm
 // `buildParams(` is the eval harness's request: a script that builds one sends it through `eval/lib/batch.mts`.
 // The sending calls too, not only a client's construction: a module handed a client sends with it.
 const SENDS = [
-  /\bcallModel\s*(<[^()]*>)?\(/, /new Anthropic\(/, /api\.anthropic\.com\/v1\/messages/, /\bbuildParams\s*(<[^()]*>)?\(/,
+  /\b(callModel|streamModel)\s*(<[^()]*>)?\(/, /new Anthropic\(/, /api\.anthropic\.com\/v1\/messages/, /\bbuildParams\s*(<[^()]*>)?\(/,
   /\.messages\.(create|stream|countTokens)\(/, /\.batches\.create\(/,
   // A module typed to take a client sends with whatever name it gives it (`opts.client.create(`): the SDK's own types,
   // and the app's two client types, which a new helper would import rather than respell.

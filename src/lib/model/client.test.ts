@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { callModel, type ModelDeps } from "./client";
+import { callModel, streamModel, type ModelDeps } from "./client";
 
 const schema = z.object({ answer: z.string() });
 const req = { model: "caller-model", system: "s", user: "u", maxTokens: 100, schema, deadlineMs: 90_000 };
@@ -383,5 +383,70 @@ describe("callModel classifies each fault", () => {
     ]);
     expect(await callModel(req, { messages, log: quiet })).toEqual({ ok: false, errorClass: "upstream_rejected", status: 404 });
     expect(calls).toHaveLength(2);
+  });
+});
+
+/** A streamed reply as `messages.stream` yields it: the usage events and the text cut into the given pieces; `fail`
+ *  throws after the pieces, as a connection dropped mid-reply. */
+function streamed(pieces: string[], opts: { fail?: Error; output?: number } = {}) {
+  const calls: Call[] = [];
+  const stream = vi.fn((body: Call["body"], o: Call["opts"]) => {
+    calls.push({ body, opts: o });
+    return (async function* () {
+      yield { type: "message_start", message: { usage: { input_tokens: 40, output_tokens: 1 } } };
+      for (const text of pieces) yield { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } };
+      if (opts.fail) throw opts.fail;
+      yield { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: opts.output ?? 12 } };
+    })();
+  });
+  return { messages: { create: vi.fn(), stream } as unknown as ModelDeps["messages"], calls, stream };
+}
+
+async function drain(it: AsyncIterable<string>): Promise<string[]> {
+  const out: string[] = [];
+  for await (const d of it) out.push(d);
+  return out;
+}
+
+describe("streamModel (Suggested changes v2, plan PR 3)", () => {
+  it("hands over the text as it arrives and settles ok with the usage the stream reported", async () => {
+    const { messages, calls } = streamed(['{"ans', 'wer": "x"', "}"]);
+    const call = streamModel({ ...req, effort: "medium" }, { messages, log: quiet });
+    expect(await drain(call.deltas)).toEqual(['{"ans', 'wer": "x"', "}"]);
+    expect(await call.outcome).toEqual({ ok: true, usage: { inputTokens: 40, outputTokens: 12, cacheReadTokens: 0, cacheWriteTokens: 0 } });
+    expect(calls[0].opts).toMatchObject({ timeout: 90_000, maxRetries: 0 });
+    expect(calls[0].body.output_config).toMatchObject({ effort: "medium" });
+  });
+
+  it("never retries: a stream that drops mid-reply ends the call, keeping what arrived and what it billed", async () => {
+    const { messages, stream } = streamed(['{"answer": '], { fail: busy() });
+    const call = streamModel(req, { messages, log: quiet });
+    expect(await drain(call.deltas)).toEqual(['{"answer": ']);
+    // The final meter never arrived, so the bill is the call's worst case (its reply ceiling, 100), never the provisional
+    // `message_start` count of 1: thinking bills as output and streams no text (Copilot rounds 4 and 5).
+    expect(await call.outcome).toEqual({ ok: false, errorClass: "upstream_busy", status: 529, usage: { inputTokens: 40, outputTokens: 100, cacheReadTokens: 0, cacheWriteTokens: 0 } });
+    expect(stream).toHaveBeenCalledTimes(1);
+  });
+
+  it("settles malformed for a whole reply that fails the schema, never throwing", async () => {
+    const { messages } = streamed(['{"answer": 3}']);
+    const call = streamModel(req, { messages, log: quiet });
+    await drain(call.deltas);
+    expect(await call.outcome).toMatchObject({ ok: false, errorClass: "malformed" });
+  });
+
+  it("is a refusal with nothing sent when no key is set", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    const call = streamModel(req, { log: quiet });
+    expect(await drain(call.deltas)).toEqual([]);
+    expect(await call.outcome).toEqual({ ok: false, errorClass: "upstream_rejected" });
+  });
+
+  it("reads the stream at its own pace: the outcome settles while the reader has not taken a delta", async () => {
+    const { messages } = streamed(['{"answer": "x"}']);
+    const call = streamModel(req, { messages, log: quiet });
+    // Nothing has drained the deltas, and the outcome is in all the same.
+    expect(await call.outcome).toMatchObject({ ok: true });
+    expect(await drain(call.deltas)).toEqual(['{"answer": "x"}']);
   });
 });

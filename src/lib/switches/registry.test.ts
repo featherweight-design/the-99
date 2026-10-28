@@ -54,7 +54,7 @@ describe("the switch registry", () => {
     expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(
       [
         "ANALYSIS_TAB_ENABLED", "FIND_A_DECK_READ_ENABLED", "HELP_ME_CHOOSE_ENABLED", "OVERVIEW_V2_ENABLED", "PROPOSED_CUTS_ENABLED",
-        "SWAP_TOOLS_ENABLED", "TUNING_ENABLED",
+        "SUGGESTED_CHANGES_V2_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED",
       ],
     );
   });

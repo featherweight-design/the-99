@@ -34,6 +34,23 @@ export const PROPOSED_CUTS_TOOL = "proposed_cuts";
 export const REAPER_CUTOFF_MS = 5 * 60 * 1000;
 
 /**
+ * Suggested changes v2's time limit (plan 2026-10-27, P2). The deck page's `maxDuration` (600s) bounds the run's Server
+ * Action AND its `after()` work, which Next runs for the route's configured limit. A v2 run is given this BUDGET, the
+ * limit less a margin: the reads before the engine starts (about 3s measured for v10's, the same reads), the bracket
+ * check of the last line (under 1s) and `persistV2`'s one transaction all sit in the 30s left. Each streamed call's
+ * deadline is the smaller of its own cap and what the budget has left (`runV2`), so a run that somehow reaches it
+ * finishes with what it has and is refunded rather than being killed mid-write. `limits.test.ts` pins budget < limit.
+ */
+export const V2_RUN_BUDGET_MS = 570_000;
+
+/**
+ * A pending v2 run older than this was abandoned. Past the deck page's 600s limit (P2), so a live run is never reaped,
+ * where v10 and Proposed cuts keep `REAPER_CUTOFF_MS`. A v2 run the reaper finds with items already saved settles `ok`
+ * and refunded (plan P4); one with none fails `interrupted`, as v10's do.
+ */
+export const V2_REAPER_CUTOFF_MS = 11 * 60 * 1000;
+
+/**
  * One deadline across both attempts of a run's model call: the schema-fail retry runs inside it.
  *
  * 110s, up from 90 (the-99-d9's harness latency, 2026-09-24). With `TUNING_MAX_TOKENS` at 8,000

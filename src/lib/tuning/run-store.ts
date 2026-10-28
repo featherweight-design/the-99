@@ -1,14 +1,17 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
 import { deckSuggestionItems, deckSuggestionRuns, decks } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
+import type { RefundReason } from "../model/allowance-rule";
 import type { ModelErrorClass } from "../model/client";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { PROFILE_VERSION } from "../profile/version";
 import { intentTooLong, SUGGESTED_CHANGES_TOOL, TUNING_MODEL } from "./limits";
-import { PROMPT_VERSION } from "./prompt-version";
+import { PROMPT_VERSION, PROMPT_VERSION_V2 } from "./prompt-version";
+import type { V2Side } from "./v2/engine";
+import type { BracketAim } from "./v2/bracket-aim";
 import type { ValidatedSuggestion, ValidationReport } from "./validate";
 
 /**
@@ -98,13 +101,18 @@ export async function startRun(
    * `runId` is the id the panel chose for this press, so it waits on exactly the run it started
    * and never another tab's (the row's default makes one when absent).
    */
-  opts: { runId?: string; now?: Date; env: NodeJS.ProcessEnv },
+  opts: {
+    runId?: string; now?: Date; env: NodeJS.ProcessEnv;
+    /** A Suggested changes v2 run (plan 2026-10-27, P1): reserved under its own feature, stamped with its own prompt
+     *  version, and stored with the player's count, request and bracket choice and the report it starts with. */
+    v2?: { requestedCount: number; requestText: string | null; bracket: BracketAim | null; report: ValidationReport };
+  },
 ): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<RunHandle> => {
       await assertSomeCardOpen(tx, deckId, opts.env);
-      const unit = await reserveModelCall(tx, userId, "tuning", TUNING_MODEL, now);
+      const unit = await reserveModelCall(tx, userId, opts.v2 ? "suggested_changes_v2" : "tuning", TUNING_MODEL, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(deckSuggestionRuns).values({
         ...(opts.runId ? { id: opts.runId } : {}),
@@ -112,6 +120,14 @@ export async function startRun(
         model: TUNING_MODEL, promptVersion: PROMPT_VERSION, profileVersion: PROFILE_VERSION,
         readVersion,
         status: "pending",
+        ...(opts.v2 ? {
+          promptVersion: PROMPT_VERSION_V2,
+          requestedCount: opts.v2.requestedCount,
+          requestText: opts.v2.requestText,
+          bracketChoice: opts.v2.bracket?.choice ?? null,
+          bracketTarget: opts.v2.bracket?.target ?? null,
+          validationReport: opts.v2.report,
+        } : {}),
       }).returning({ id: deckSuggestionRuns.id });
       return { runId: row.id, callId: unit.id };
     });
@@ -225,4 +241,138 @@ export async function runIsPending(runId: string): Promise<boolean> {
   const rows = await db.select({ id: deckSuggestionRuns.id }).from(deckSuggestionRuns)
     .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending"))).limit(1);
   return rows.length > 0;
+}
+
+/**
+ * One kept line of a v2 run, saved the moment it is kept (handoff H1), while the run is still `pending`: the panel's poll
+ * draws it before the run ends (plan P3). `position` is the line's place in ITS list (`runV2`). False when nothing was
+ * written.
+ *
+ * SERIALIZED ON THE RUN ROW (PR #2316 review): the insert takes the run's row lock (`lockPendingV2RunsSql`) and writes
+ * only while the run is still pending, in one transaction, and every settle of a v2 run takes the same lock before it
+ * reads the saved lines. An `exists` check alone did not do that: under read committed a settle could count the lines
+ * while an insert that had already seen `pending` was still uncommitted, and the line landed on a settled run.
+ */
+export async function insertV2Line(runId: string, line: ValidatedSuggestion): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const locked = await tx.execute(lockPendingV2RunsSql(eq(deckSuggestionRuns.id, runId)));
+    if (locked.rows.length === 0) return false;
+    const { rows } = await tx.execute(insertV2LineSql(runId, line));
+    return rows.length > 0;
+  });
+}
+
+/**
+ * The pending runs in `scope`, locked `for update` until the transaction ends: the one lock a line insert and every v2
+ * settle take, so they serialize on the run row. A statement run after it sees every line an insert committed before
+ * the lock was granted, and an insert that waited on it re-checks `pending` and finds the run settled. Exported so its
+ * emitted SQL is pinned.
+ */
+export function lockPendingV2RunsSql(scope: SQL): SQL {
+  return sql`select ${deckSuggestionRuns}.id from ${deckSuggestionRuns}
+    where ${scope} and ${deckSuggestionRuns}.status = 'pending'
+    for update`;
+}
+
+/** Exported so its emitted SQL is pinned. */
+export function insertV2LineSql(runId: string, line: ValidatedSuggestion): SQL {
+  const after = line.bracketAfter === null ? sql`null` : sql`${sql.param(line.bracketAfter)}::int[]`;
+  return sql`
+    insert into ${deckSuggestionItems}
+      (run_id, add_oracle_id, cut_oracle_id, rationale, rationale_short, evidence, position, bracket_after)
+    select ${runId}, ${line.addOracleId}, ${line.cutOracleId}, ${line.rationale}, ${line.rationaleShort},
+           ${JSON.stringify(line.evidence)}::jsonb, ${line.position}, ${after}
+    where exists (select 1 from ${deckSuggestionRuns} r where r.id = ${runId} and r.status = 'pending')
+    returning id`;
+}
+
+/** A v2 run's progress flag (`in` or `refilling`, per list), written into its pending report for the wait to draw. */
+export async function markV2Progress(runId: string, key: "in" | "refilling", side: V2Side, value: boolean): Promise<void> {
+  const path = `{v2,${key},${side}}`;
+  await db.update(deckSuggestionRuns)
+    .set({ validationReport: sql`jsonb_set(${deckSuggestionRuns.validationReport}, ${path}::text[], ${value ? "true" : "false"}::jsonb, true)` })
+    .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")));
+}
+
+/**
+ * A v2 run's end: the report and the outcome, the unit settled as `charge.ts` decided. The lines are already saved
+ * (`insertV2Line`). `ok` for a run with additions, including a failed cut call (plan P4: its additions stay readable,
+ * and the run is refunded); `failed`/`ungrounded` for a run that kept no addition, refunded (spec §9). Guarded on
+ * `pending` like every outcome write; false when superseded, with the bill recorded late.
+ */
+export async function persistV2(
+  { runId, callId }: RunHandle,
+  outcome: { status: "ok" } | { status: "failed"; errorClass: "ungrounded" },
+  validationReport: ValidationReport,
+  settleAs: "spent" | "refunded",
+  billed: readonly Billed[],
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    // The run row's lock first (`insertV2Line`): no line can land between this settle and its commit.
+    await tx.execute(lockPendingV2RunsSql(eq(deckSuggestionRuns.id, runId)));
+    const rows = await tx.update(deckSuggestionRuns)
+      .set({ ...outcome, droppedCount: validationReport.drops?.length ?? 0, validationReport })
+      .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
+      .returning({ callId: deckSuggestionRuns.modelCallId });
+    const bill = billed.length > 0 ? billed : undefined;
+    if (rows.length === 0) {
+      await recordLate(tx, callId, bill);
+      return false;
+    }
+    await settleModelCall(tx, rows[0].callId, outcome.status === "ok" ? settleAs : "refunded", bill, new Date(), null);
+    return true;
+  });
+}
+
+/**
+ * The pending v2 runs in `scope` that already saved lines, settled as plan P4 settles a failed cut call: `ok`, so every
+ * reader still draws the lines, marked `interrupted` and refunded. For the reaper (a run whose process is gone) and for
+ * a run whose own write failed mid-stream. The caller fails the rest of `scope` as it always has.
+ */
+export async function settleV2PartialIn(
+  tx: Tx, scope: SQL, now: Date, reason: RefundReason | null, billed?: readonly Billed[],
+): Promise<string[]> {
+  // The run rows' locks first, in their own statement (`insertV2Line`): the update below then reads the saved lines with
+  // a snapshot taken after every insert that held a lock committed, and no new one can start.
+  await tx.execute(lockPendingV2RunsSql(and(scope, isNotNull(deckSuggestionRuns.requestedCount))!));
+  const settled = await tx.update(deckSuggestionRuns)
+    .set({ status: "ok", validationReport: v2InterruptedReport() })
+    .where(and(scope, eq(deckSuggestionRuns.status, "pending"), isNotNull(deckSuggestionRuns.requestedCount), v2HasItems()))
+    .returning({ id: deckSuggestionRuns.id, callId: deckSuggestionRuns.modelCallId });
+  for (const r of settled) await settleModelCall(tx, r.callId, "refunded", billed && billed.length > 0 ? billed : undefined, now, reason);
+  return settled.map((r) => r.id);
+}
+
+/** The run has a saved line. Its own alias, qualified on both sides (AGENTS.md's Drizzle rule). */
+export function v2HasItems(): SQL {
+  return sql`exists (select 1 from ${deckSuggestionItems} si where si.run_id = ${deckSuggestionRuns}.id)`;
+}
+
+/** The pending report, closed as interrupted: refunded, its kept count the lines it saved. */
+export function v2InterruptedReport(): SQL {
+  return sql`coalesce(${deckSuggestionRuns.validationReport}, '{}'::jsonb) || jsonb_build_object(
+    'keptCount', (select count(*) from ${deckSuggestionItems} si where si.run_id = ${deckSuggestionRuns}.id)::int,
+    'refunded', true,
+    'v2', coalesce(${deckSuggestionRuns.validationReport} -> 'v2', '{}'::jsonb)
+      || jsonb_build_object('interrupted', true, 'in', jsonb_build_object('add', true, 'cut', true)))`;
+}
+
+/**
+ * A v2 run whose work threw after lines may have been saved (a failed line save rejects `runV2`): with lines, `ok` and
+ * refunded (P4); with none, `failed` and refunded, as v10's throw is. False when the run was already settled.
+ */
+export async function failV2Run({ runId, callId }: RunHandle, billed: readonly Billed[]): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const mine = eq(deckSuggestionRuns.id, runId);
+    const kept = await settleV2PartialIn(tx, mine, now, null, billed);
+    if (kept.length > 0) return true;
+    const failed = await tx.update(deckSuggestionRuns)
+      .set({ status: "failed", errorClass: "upstream_busy" })
+      .where(and(mine, eq(deckSuggestionRuns.status, "pending")))
+      .returning({ callId: deckSuggestionRuns.modelCallId });
+    for (const r of failed) await settleModelCall(tx, r.callId, "refunded", billed.length > 0 ? billed : undefined, now, null);
+    if (failed.length === 0) await recordLate(tx, callId, billed.length > 0 ? billed : undefined);
+    return failed.length > 0;
+  });
 }

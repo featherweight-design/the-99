@@ -37,7 +37,7 @@ import { friendDecksEnabled, ruleZeroEnabled, signatureCardEnabled, socialFriend
 import { strategyFocusEnabled } from "../strategy/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
-import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled } from "../tuning/flag";
+import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled } from "../tuning/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { cardScanEnabled } from "../card-scan/flag";
 import { cardSearchEnabled } from "../card-search/flag";
@@ -101,6 +101,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   PUSH_ENABLED: pushEnabled,
   STAND_IN_LABELS_ENABLED: standInLabelsEnabled,
   STRATEGY_FOCUS_ENABLED: strategyFocusEnabled,
+  SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   TUNING_ENABLED: tuningEnabled,
   UPCOMING_PRECONS_ENABLED: upcomingPreconsEnabled,
@@ -120,6 +121,7 @@ export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: N
   { key: "synopsis", on: analysisTabEnabled },
   { key: "overview_v2", on: (env) => analysisTabEnabled(env) && overviewV2Enabled(env) },
   { key: "tuning", on: tuningEnabled },
+  { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
   { key: "proposed_cuts", on: proposedCutsEnabled },
   { key: "intake", on: helpMeChooseEnabled },
   { key: "fits_read", on: findADeckReadEnabled },

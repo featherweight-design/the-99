@@ -16,6 +16,17 @@ export function tuningEnabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
+ * Whether a Suggested changes press may take the v2 run (plan 2026-10-27, P5, approved by Hugh): the count, the
+ * request box, line-by-line saves and `suggested_changes_v2`'s own credit. Off, a v2 request is refused before
+ * anything is reserved and the panel is v10 as shipped. The same shape as `tuningEnabled`, OFF for anything but the
+ * exact string `'true'`, and it needs Suggested changes itself (and so the Analysis tab). Staging on, production
+ * unset; the switch is REMOVED once v2 is everywhere.
+ */
+export function suggestedChangesV2Enabled(env: NodeJS.ProcessEnv): boolean {
+  return env.SUGGESTED_CHANGES_V2_ENABLED === "true" && tuningEnabled(env);
+}
+
+/**
  * Whether this deployment offers Proposed cuts' model pass (Look deeper on a deck over 100): the
  * server actions that run and stop it, and the reads behind them. The same shape as
  * `tuningEnabled`, and OFF for anything but the exact string `'true'`. It needs the Analysis tab
