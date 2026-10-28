@@ -49,16 +49,17 @@ function cart(over: Partial<CartPayload> = {}): CartPayload {
     totalDecks: 5,
     priced: true,
     newestAsOf: NOW,
+    holders: [],
     decks: [
       { id: "thopter", name: "Thopter Works", brew: false, copies: 3, cents: 1435, pricedCopies: 3 },
       { id: "wizards", name: "HD - Wizards", brew: true, copies: 1, cents: 55, pricedCopies: 1 },
       { id: "tarkir", name: "Dragons of Tarkir", brew: false, copies: 1, cents: 55, pricedCopies: 1 },
     ],
     lines: [
-      { oracleId: JACE, name: "Jace, Multiverse Architect", commander: false, owned: 0, heldElsewhere: 0, rows: [row("thopter", 840)] },
-      { oracleId: BRAIN, name: "Brainstorm", commander: false, owned: 0, heldElsewhere: 0, rows: [row("wizards", 55), row("tarkir", 55)] },
-      { oracleId: GISA, name: "Ghoulcaller Gisa", commander: false, owned: 0, heldElsewhere: 0, rows: [row("thopter", 475)] },
-      { oracleId: TOWER, name: "Command Tower", commander: false, owned: 0, heldElsewhere: 0, rows: [row("thopter", 120)] },
+      { oracleId: JACE, name: "Jace, Multiverse Architect", commander: false, owned: 0, heldElsewhere: 0, heldBy: [], rows: [row("thopter", 840)] },
+      { oracleId: BRAIN, name: "Brainstorm", commander: false, owned: 0, heldElsewhere: 0, heldBy: [], rows: [row("wizards", 55), row("tarkir", 55)] },
+      { oracleId: GISA, name: "Ghoulcaller Gisa", commander: false, owned: 0, heldElsewhere: 0, heldBy: [], rows: [row("thopter", 475)] },
+      { oracleId: TOWER, name: "Command Tower", commander: false, owned: 0, heldElsewhere: 0, heldBy: [], rows: [row("thopter", 120)] },
     ],
     ...over,
   };
