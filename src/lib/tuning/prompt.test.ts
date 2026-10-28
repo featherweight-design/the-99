@@ -460,6 +460,14 @@ describe("buildPromptV2", () => {
     expect(user).toContain("Kept, additions: Cultivate.\nRejected, and why:\n- Bolt: it is outside the commander's colors\nPropose exactly 2 more additions, following every rule above. Name none of the cards listed here.");
   });
 
+  it("lets the request outrank the focus rules v10 states without exception, only in v2 and only with a focus", () => {
+    const withFocus = { ...pack, focus: { name: "Tokens", copies: 11, nonland: 62, on: ["Anointed Procession"], top: ["Tokens"], offTop: ["Ponder"], candidates: [] } };
+    const line = "When the player's request asks for something the focus rules above would prevent, the request wins";
+    expect(buildPromptV2(withFocus, { ...stage, list: "cuts" }).system).toContain(line);
+    expect(buildPrompt(withFocus).system).not.toContain(line);
+    expect(buildPromptV2(pack, { ...stage, list: "cuts" }).system).not.toContain(line);
+  });
+
   it("changes only its own lines: every other line of v10's system message is there, in order", () => {
     const v10 = buildPrompt(pack).system.split("\n");
     const v2 = buildPromptV2(pack, { ...stage, list: "additions" }).system.split("\n");

@@ -231,6 +231,12 @@ describe("runV2", () => {
     expect(r.charge).toEqual({ outcome: "refunded", why: "shortByModel" });
   });
 
+  it("fails the run when saving a kept line throws, rather than charging for a line it never saved (round 2)", async () => {
+    const f = fake({ additions: { cards: adds(1, 2) }, cuts: { cards: cutsOf(1, 2) } });
+    const onLine = async () => { throw new Error("save failed"); };
+    await expect(runV2({ ...base, n: 1, onLine, callModel: f.callModel, now: f.now })).rejects.toThrow("save failed");
+  });
+
   it("sends the request as the run's words through playerText and validates a request citation", async () => {
     const quoted = { ...line("Add 1"), evidence: [{ kind: "request", value: "more ramp" }] };
     const f = fake({ additions: { text: JSON.stringify({ additions: [quoted, ...adds(2, 4).map(line)] }) }, cuts: { cards: cutsOf(1, 5) } });

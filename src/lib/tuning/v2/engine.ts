@@ -204,10 +204,26 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     const parser = lineStream();
     let position = 0;
     let streamFailed = false;
+    // Only the STREAM failing is the call's failure. A line's validation or save (`take`, its `onLine`) throwing is the
+    // app's: the call's outcome is still settled (so nothing is left unhandled), then the error goes to the caller, which
+    // fails the run rather than charging for lines it never saved.
+    const deltas = call.deltas[Symbol.asyncIterator]();
     try {
-      for await (const delta of call.deltas) for (const raw of parser.push(delta)) await take(side, raw, position++, here);
-    } catch {
-      streamFailed = true;
+      for (;;) {
+        let next: IteratorResult<string>;
+        try {
+          next = await deltas.next();
+        } catch {
+          streamFailed = true;
+          break;
+        }
+        if (next.done) break;
+        for (const raw of parser.push(next.value)) await take(side, raw, position++, here);
+      }
+    } catch (error) {
+      await deltas.return?.().catch(() => undefined);
+      await call.outcome.catch(() => undefined);
+      throw error;
     }
     const outcome: V2CallOutcome = await call.outcome.catch(() => ({ ok: false as const, errorClass: "upstream_busy" as const }));
     const end = parser.end();

@@ -83,6 +83,9 @@ export function buildPromptV2(pack: EvidencePack, stage: PromptV2Stage): { syste
     const swapped = swap.get(line) ?? line;
     if (line.startsWith(GROUND_PREFIX)) return [swapped, SIGNAL_TRUST_LINE];
     if (line === AIM_LINE) return [swapped, ...bracketLines(stage)];
+    // The request outranks the focus (spec §4's signal order), so the focus rules v10 states without exception give way
+    // to it: the half-of-the-additions rule and the rule against cutting a focus card included (Copilot round 2).
+    if (line.startsWith(FOCUS_LAST_RULE)) return [swapped, REQUEST_OVER_FOCUS_LINE];
     return [swapped];
   });
   for (const line of [SIZE_LINE, AIM_LINE, KINDS_LINE, NOTES_LINE]) {
@@ -204,6 +207,9 @@ function limitsRules(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ow
 }
 
 const OWNED_HEADING = "Cards the player owns that fit this deck";
+
+const FOCUS_LAST_RULE = "The app shows how far each addition moves the focus";
+const REQUEST_OVER_FOCUS_LINE = "When the player's request asks for something the focus rules above would prevent, the request wins: those rules give way to it, including the share of additions that must count toward the focus and the rule against cutting a card that counts toward it.";
 
 /** Strategy focus: lean the additions toward it, prefer cuts off every top strategy, and never state the app's count. */
 function focusRules(focus: EvidencePack["focus"], roles: EvidencePack["targets"]["roles"]): string[] {
