@@ -121,19 +121,19 @@ describe("useCardSheetGestures", () => {
 
   it("carries the swap with the finger: the card's share out, the neighbor's in, and how far at release", () => {
     const onPage = vi.fn();
-    // A 320px card: the peek stands 290px off (0.86875 x 320 + 12).
-    render(<Harness onPage={onPage} cardWidth={320} />);
+    // A 600px card: the peek stands 533.25px off (0.86875 x 600 + 12), so half of it is past a quarter
+    // of jsdom's 1024px band and the release pages by distance, whatever the events' timestamps.
+    render(<Harness onPage={onPage} cardWidth={600} />);
     const band = screen.getByTestId("band");
     const stage = screen.getByTestId("stage");
     fireEvent.pointerDown(band, { pointerId: 1, clientX: 700, clientY: 300, button: 0, pointerType: "touch" });
-    // 145px left is half the 290px pitch.
-    fireEvent.pointerMove(window, { pointerId: 1, clientX: 555, clientY: 301, pointerType: "touch" });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 433.375, clientY: 301, pointerType: "touch" });
     expect(stage.hasAttribute("data-swiping")).toBe(true);
     expect(stage.style.getPropertyValue("--swipe-out")).toBe("0.5");
     expect(stage.style.getPropertyValue("--swipe-next")).toBe("0.5");
     expect(stage.style.getPropertyValue("--swipe-prev")).toBe("0");
-    fireEvent.pointerUp(window, { pointerId: 1, clientX: 555, clientY: 301, pointerType: "touch" });
-    expect(onPage).toHaveBeenCalledWith("next", -145, 0.5);
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 433.375, clientY: 301, pointerType: "touch" });
+    expect(onPage).toHaveBeenCalledWith("next", -266.625, 0.5);
     // Held where the finger left it until the next card arrives.
     expect(stage.style.getPropertyValue("--swipe-out")).toBe("0.5");
   });

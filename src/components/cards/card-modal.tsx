@@ -680,7 +680,7 @@ const PhonePeek = React.forwardRef<
     covered: boolean;
     /** The card just left, on a page: it shrinks into this peek from where it stood (`--enter-*`). */
     enter: React.CSSProperties | null;
-    /** The turned face it was showing as the card, kept until the shrink lands. */
+    /** The face it was showing as the card, kept until the shrink lands. */
     enterFace: string | null;
   }
 >(function PhonePeek({ sibling, direction, onPress, covered, enter, enterFace }, ref) {
@@ -908,7 +908,7 @@ export function CardModal({
   onClose: () => void;
   /** Called with the phone band's offset when a swipe paged (carousel R2), and with nothing for
    *  every other way of paging, so the next card enters from wherever the reader let go. */
-  /** `leftFace`: the back the card being left was showing, when it was turned (see `enterLeftFace`). */
+  /** `leftFace`: the face the card being left was showing (see `enterLeftFace`). */
   onPrev: ((offset?: number, progress?: number, leftFace?: string | null) => void) | null;
   onNext: ((offset?: number, progress?: number, leftFace?: string | null) => void) | null;
   /** The neighbor plate's own press (handoff decision 2), separate from `onPrev`/`onNext` so the
@@ -936,8 +936,8 @@ export function CardModal({
   /** How far that swipe had carried the swap, 0 to 1 (0 for any other page): the card enters at the
    *  size and opacity the finger left it, and the card left behind shrinks on from where it was. */
   enterProgress?: number;
-  /** The back the card left behind was showing, when the reader had turned it: it keeps that face while it
-   *  shrinks into its peek, which then rests on the front (m8). Null for a front. */
+  /** The face the card left behind was showing (a turned back, the printing it was opened at): it keeps
+   *  that face while it shrinks into its peek, which then rests on its own art (m8). */
   enterLeftFace?: string | null;
   /** The phone's sheet opens at its min snap: the reader minimized it on the card before this one
    *  and paged here. Captured once at construction, like `enterOffset`. */
@@ -1880,11 +1880,6 @@ export function CardModal({
   //
   // The reader's intent stays in `flipped`; every drawn decision reads this instead.
   const showingBack = twoFaced && flipped;
-  // Handed to the page, so the card being left keeps a turned face while it shrinks into its peek.
-  const leftFace = showingBack ? backImage : null;
-  useEffect(() => {
-    leftFaceRef.current = leftFace;
-  });
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.
@@ -2012,6 +2007,12 @@ export function CardModal({
     : null;
 
   const faceImage = showingBack ? backImage : resolved?.imageUri;
+  // Handed to the page, so the card being left keeps the face it shows (a turned back, a printing it
+  // was opened at) while it shrinks into its peek, whatever art the peek then rests on.
+  const leftFace = faceImage ?? null;
+  useEffect(() => {
+    leftFaceRef.current = leftFace;
+  });
   const artStyleOf = (image: string | null | undefined): React.CSSProperties => image
     ? { backgroundImage: cssUrl(image), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };

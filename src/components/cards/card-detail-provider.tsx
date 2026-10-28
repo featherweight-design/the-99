@@ -799,8 +799,8 @@ export function CardDetailProvider({
   const [enterOffset, setEnterOffset] = useState(0);
   // How far that swipe had carried the swap (0 to 1), so the card enters at the size it had grown to.
   const [enterProgress, setEnterProgress] = useState(0);
-  // The face the card being left was showing when it was a turned two-faced card's back, so it keeps
-  // that face while it shrinks into its peek; null for a front.
+  // The face the card being left was showing (a turned back, a printing it was opened at), so it keeps
+  // that face while it shrinks into its peek.
   const [enterLeftFace, setEnterLeftFace] = useState<string | null>(null);
   // The phone sheet's min snap, carried from card to card while the reader pages (Hugh, 2026-10-13:
   // paging still works there). A fresh open and a close drop it: every open starts at the teaser.
