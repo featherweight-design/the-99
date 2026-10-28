@@ -34,13 +34,20 @@ import { requireEnv } from "./env.mjs";
  * wrote local-dev's About row while its server read a scratch branch through `.env.local`. Opened once per run.
  */
 let shared = null;
-export function aboutSql(local = readLocalEnv()) {
-  if (shared) return shared;
-  const url = requireEnv(["DATABASE_URL"]).DATABASE_URL;
-  const refusal = serverMismatch(url, local);
-  if (refusal) throw new Error(refusal);
-  shared = neon(url);
+export function aboutSql() {
+  assertServerReadsEnv();
+  shared ??= neon(requireEnv(["DATABASE_URL"]).DATABASE_URL);
   return shared;
+}
+
+/**
+ * Refuses, before ANY read or write here, when the server reads another database than `.env`'s, whatever connection a
+ * caller passed: a probe that captured through its own connection would otherwise restore through it after the clear
+ * refused, and "nothing written" would not hold.
+ */
+export function assertServerReadsEnv(local = readLocalEnv()) {
+  const refusal = serverMismatch(process.env.DATABASE_URL, local);
+  if (refusal) throw new Error(refusal);
 }
 
 /** The worktree's `.env.local`, parsed, or null without one. */
@@ -126,6 +133,7 @@ export async function markEveryEntrySeen(
   sql = aboutSql(),
   version = JSON.parse(readFileSync(VERSION_FILE, "utf8")).version,
 ) {
+  assertServerReadsEnv();
   // Every entry's variant id too: an entry drawn in its variant is seen by that id alone (`isSeen`).
   const ids = [...catalogIds(), ...variantIds()];
   await announce(sql);
@@ -145,6 +153,7 @@ export async function markEveryEntrySeen(
  * page sits on the gate's redirect, this follows its `next` back to the route the probe asked for.
  */
 export async function clearAboutSheet(page, userId) {
+  assertServerReadsEnv();
   await markEveryEntrySeen(userId);
   await page.context().addCookies([sheetCookie(userId, page.url())]);
   const back = gateReturn(page.url());
@@ -182,6 +191,7 @@ export function gateReturn(url) {
  * `existed: false` when there is no row. Taken BEFORE the probe's first write to it.
  */
 export async function captureAboutSeen(userId, sql = aboutSql()) {
+  assertServerReadsEnv();
   const [row] = await sql`select about_version_seen, about_seen_ids from user_prefs where user_id = ${userId}`;
   return row
     ? { userId, existed: true, version: row.about_version_seen, ids: row.about_seen_ids }
@@ -193,6 +203,7 @@ export async function captureAboutSeen(userId, sql = aboutSql()) {
  * when there was none.
  */
 export async function restoreAboutSeen(capture, sql = aboutSql()) {
+  assertServerReadsEnv();
   await announce(sql);
   if (!capture.existed) {
     await sql`delete from user_prefs where user_id = ${capture.userId}`;
