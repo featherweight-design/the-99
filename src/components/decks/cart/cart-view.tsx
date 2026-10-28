@@ -399,7 +399,8 @@ export function CartView({
                 <HoverPreviewProvider>
                 {byDeck ? (
                   // Largest first unless the reader chose another order; an unselected deck keeps its place.
-                  deckGroups.length === 0 ? <NoMatch query={query} of={selectedLines.length} onDrop={() => chooseQuery("")} /> : deckGroups.map(({ deck: d, lines: deckLines }) => (
+                  // One name-fit observer for every open group's rows (G6: per list, never per row).
+                  deckGroups.length === 0 ? <NoMatch query={query} of={selectedLines.length} onDrop={() => chooseQuery("")} /> : <NameFitProvider>{deckGroups.map(({ deck: d, lines: deckLines }) => (
                     <CartDeckGroup
                       key={d.id}
                       deck={d}
@@ -408,12 +409,13 @@ export function CartView({
                       open={open.has(d.id)}
                       priced={cart.priced}
                       deckNames={deckNames}
+                      holders={holders}
                       selected={selected}
                       newestAsOf={newestAsOf}
                       onToggle={() => toggle(d.id)}
                       onFold={() => fold(d.id)}
                     />
-                  ))
+                  ))}</NameFitProvider>
                 ) : (
                   <CardOrFriendList
                     view={view}

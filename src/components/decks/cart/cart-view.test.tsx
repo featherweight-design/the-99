@@ -273,7 +273,8 @@ describe("CartView by deck (A5)", () => {
   it("opens the ?deck= group on arrival, its cards at that deck's own figure, with the others named", () => {
     render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
     expect(screen.getByText("Sol Ring")).toBeTruthy();
-    expect(screen.getByText(copy.list.also(["HD - Kratos"]))).toBeTruthy();
+    const sol = list().getAllByRole("listitem").find((li) => li.textContent?.includes("Sol Ring"))!;
+    expect(readNames(factOf(sol, "need"))).toBe("HD - Kratos");
     expect(screen.getByText("Command Tower")).toBeTruthy();
     // Kratos's group stays folded.
     expect(screen.getAllByText("Sol Ring")).toHaveLength(1);
@@ -290,7 +291,10 @@ describe("CartView by deck (A5)", () => {
       ],
     };
     render(<CartView cart={rats} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
-    expect(screen.getByText(copy.list.owned(3))).toBeTruthy();
+    // Named, it is where every copy is: Kratos holds all three.
+    const own = factOf(list().getAllByRole("listitem").find((li) => li.textContent?.includes("Relentless Rats"))!, "own")!;
+    expect(own.querySelector("b")?.textContent).toBe("3");
+    expect(readNames(own)).toBe("HD - Kratos");
   });
 
   it("draws a group whose copies sum to $0.00 without a figure, as DeckSelect does", () => {
@@ -709,6 +713,7 @@ describe("CartView, By card's row facts (v2 PR 4)", () => {
     expect(columns.className.split(/\s+/)).toEqual(expect.arrayContaining(["xl:overflow-y-hidden", "xl:[scrollbar-gutter:stable]"]));
     expect(screen.getByRole("region", { name: copy.list.regionAria }).className.split(/\s+/)).toContain("md:[scrollbar-gutter:stable]");
     unmount();
+    // Folded, By deck draws no header at all: each open group heads its own rows (PR 5).
     render(<CartView cart={held} provenance={provenance} initialView="deck" />);
     expect(document.querySelector("[data-cart-columns]")).toBeNull();
   });
@@ -737,6 +742,96 @@ describe("CartView, By card's spare fact (v2 PR 4)", () => {
       expect(spare.querySelector("b")?.textContent).toBe("4");
       expect(readNames(spare)).toBe("Chris, Ana");
       expect(within(spare).getByText(copy.facts.spare)).toBeTruthy();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+// v2 call 1, By deck (PR 5): the need fact reads from the open deck's point of view, under the group's own header.
+describe("CartView, By deck's row facts (v2 PR 5)", () => {
+  // Sol Ring for three decks: Gishath 1, Omnath 1, Kratos 2. Kratos holds 2 of the 17 owned; Thorin and Elves the rest.
+  const three = cart({
+    holders: [{ id: "thorin", name: "HD - Thorin" }, { id: "elves", name: "HD - Elves" }],
+    lines: cart().lines.map((l) => (l.oracleId === "sol"
+      ? { ...l, heldElsewhere: 15, heldBy: [{ deckId: "thorin", held: 10 }, { deckId: "elves", held: 5 }],
+        rows: [
+          { deckId: "gishath", quantity: 1, cents: 150, state: "priced" as const, commander: false, held: 0, finish: null },
+          { deckId: "omnath", quantity: 1, cents: 150, state: "priced" as const, commander: false, held: 0, finish: null },
+          { deckId: "kratos", quantity: 2, cents: 150, state: "priced" as const, commander: false, held: 2, finish: null },
+        ] }
+      : l)),
+  });
+  const row = (name: string) => list().getAllByRole("listitem").find((li) => li.textContent?.includes(name))!;
+
+  it("leads with the open deck's own count, then names the other decks `also`, never the open deck", () => {
+    render(<CartView cart={three} provenance={provenance} initialView="deck" focusDeckId="kratos" />);
+    const need = factOf(row("Sol Ring"), "need")!;
+    expect(need.querySelector("b")?.textContent).toBe("2");
+    expect(within(need).getByText(copy.facts.deck)).toBeTruthy();
+    expect(within(need).getByText(copy.facts.also)).toBeTruthy();
+    // In the selections' order, Kratos left out: it is the count.
+    expect(readNames(need)).toBe("HD - Gishath, HD - Omnath");
+  });
+
+  it("drops an unselected deck from `also`, and draws the bare count when no other deck needs it", () => {
+    render(<CartView cart={three} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    fireEvent.click(screen.getAllByRole("checkbox", { name: copy.selections.aria("HD - Omnath", true) })[0]);
+    expect(readNames(factOf(row("Sol Ring"), "need"))).toBe("HD - Kratos");
+    const tower = factOf(row("Command Tower"), "need")!;
+    expect(tower.querySelector("b")?.textContent).toBe("1");
+    expect(within(tower).queryByText(copy.facts.also)).toBeNull();
+    expect(readNames(tower)).toBe("");
+  });
+
+  it("names where every owned copy is in use, the open deck's line decks included", () => {
+    render(<CartView cart={three} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    const own = factOf(row("Sol Ring"), "own")!;
+    expect(own.querySelector("b")?.textContent).toBe("17");
+    expect(readNames(own)).toBe("HD - Kratos, HD - Thorin, HD - Elves");
+  });
+
+  it("falls back from the open deck's vantage: another line deck's copies are in another deck", () => {
+    // Elves unnamed: By card would say 15 in other decks (Kratos is on the line); from Gishath every copy is elsewhere.
+    render(<CartView cart={{ ...three, holders: [three.holders[0]] }} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    const own = factOf(row("Sol Ring"), "own")!;
+    expect(within(own).getByText(copy.facts.inOther)).toBeTruthy();
+    expect(readNames(own)).toBeNull();
+  });
+
+  it("heads each open group's rows with its own columns, This deck · also, at the group's inset", () => {
+    render(<CartView cart={three} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    const columns = document.querySelector("[data-cart-columns]")!;
+    expect(columns.getAttribute("data-cart-columns")).toBe("deck");
+    expect([...columns.children].map((c) => c.textContent)).toEqual([
+      copy.columns.card, copy.columns.needByDeck, copy.columns.spares, copy.columns.own, "",
+    ]);
+    // Inside the scroll box, in the group, with no inset of its own and no pull onto the list.
+    const group = screen.getByRole("region", { name: /HD - Gishath/ });
+    expect(group.contains(columns)).toBe(true);
+    const classes = columns.className.split(/\s+/);
+    expect(classes).toEqual(expect.arrayContaining(["hidden", "xl:grid", "xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.55fr)_minmax(0,1.1fr)_minmax(0,1.15fr)_100px]"]));
+    expect(classes.some((c) => /^(xl:)?(px-|-mb-)/.test(c) || c.includes("-mb-"))).toBe(false);
+    // The rows share its grid with no padding across; the body sets the inset, none on a phone.
+    const sol = row("Sol Ring");
+    expect(sol.className.split(/\s+/)).toEqual(expect.arrayContaining(["xl:grid", "xl:px-0", "xl:first:border-t"]));
+    expect(sol.closest("ul")!.parentElement!.className.split(/\s+/)).toEqual(expect.arrayContaining(["md:pl-[28px]", "pb-[6px]"]));
+    expect(sol.closest("ul")!.parentElement!.className).not.toMatch(/(^|\s)pl-/);
+  });
+
+  it("draws the spare fact as By card does, at the open deck's copy", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ spares: [
+        { oracleId: "sol", friend: { publicId: "c", displayName: "Chris", commander: null, pods: [] }, spare: 3 },
+      ] }),
+    }));
+    try {
+      await act(async () => { render(<CartView cart={three} provenance={provenance} socialFriends initialView="deck" focusDeckId="kratos" />); });
+      const spare = factOf(row("Sol Ring"), "spare")!;
+      expect(spare.querySelector("b")?.textContent).toBe("3");
+      expect(readNames(spare)).toBe("Chris");
+      expect(within(spare).getByRole("button", { name: spareCopy.markerAria("Sol Ring") })).toBeTruthy();
     } finally {
       vi.unstubAllGlobals();
     }

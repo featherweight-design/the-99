@@ -141,6 +141,65 @@ describe("CartFact", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
+  it("draws By deck's `also` before the names, a step down, and leaves it out with no other deck", () => {
+    const deckFact = (items: typeof decks) => (
+      <NameFitProvider>
+        <div data-test-width={400}>
+          <CartFact testId="need" label={copy.facts.deck} count={1} items={items} prefix={copy.facts.also} head={copy.facts.alsoDecks(items.length)} moreAria={copy.facts.moreDecksAria} />
+        </div>
+      </NameFitProvider>
+    );
+    const { unmount } = render(deckFact(decks.slice(1)));
+    const also = screen.getByText(copy.facts.also);
+    expect(also.className.split(/\s+/)).toEqual(expect.arrayContaining(["flex-none", "text-[color:var(--fg-muted)]"]));
+    expect(drawnNames()).toBe("HD - Kratos, HD - Thorin");
+    unmount();
+    // The open deck alone needs it: the count, and nothing after it.
+    render(deckFact([]));
+    expect(document.querySelector("[data-fact] b")?.textContent).toBe("1");
+    expect(screen.queryByText(copy.facts.also)).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("shuts an open list whose names all leave while it stays mounted, drawing the bare count", () => {
+    const deckFact = (items: typeof decks) => (
+      <NameFitProvider>
+        <div data-test-width={200}>
+          <CartFact testId="need" label={copy.facts.deck} count={1} items={items} prefix={copy.facts.also} head={copy.facts.alsoDecks(items.length)} moreAria={copy.facts.moreDecksAria} />
+        </div>
+      </NameFitProvider>
+    );
+    const { rerender } = render(deckFact(decks));
+    fireEvent.click(screen.getByRole("button", { name: copy.facts.moreDecksAria(1) }));
+    expect(screen.getByRole("button", { name: copy.facts.lessAria })).toBeTruthy();
+    // Every other deck deselected: the same fact, re-rendered with nothing to list.
+    rerender(deckFact([]));
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("list")).toBeNull();
+    expect(screen.queryByText(copy.facts.alsoDecks(0))).toBeNull();
+    expect(document.querySelector("[data-fact]")?.hasAttribute("data-fact-open")).toBe(false);
+    expect(document.querySelector("[data-fact] b")?.textContent).toBe("1");
+    // Names coming back draw shut, with their pill.
+    rerender(deckFact(decks));
+    expect(screen.getByRole("button", { name: copy.facts.moreDecksAria(1) }).getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("shuts an open own list that falls back to G1's words while mounted", () => {
+    const ownFact = (fallback?: string) => (
+      <NameFitProvider>
+        <div data-test-width={200}>
+          <CartFact testId="own" label={copy.facts.own} count={4} items={fallback ? [] : decks} prefix={copy.facts.in} fallback={fallback} head={copy.facts.inDecks(3)} moreAria={copy.facts.moreDecksAria} dim />
+        </div>
+      </NameFitProvider>
+    );
+    const { rerender } = render(ownFact());
+    fireEvent.click(screen.getByRole("button", { name: copy.facts.moreDecksAria(1) }));
+    rerender(ownFact(copy.facts.inOther));
+    expect(screen.getByText(copy.facts.inOther)).toBeTruthy();
+    expect(screen.queryByRole("list")).toBeNull();
+    expect(document.querySelector("[data-fact]")?.hasAttribute("data-fact-open")).toBe(false);
+  });
+
   it("brings hidden names back when the cell widens", () => {
     let notify: (entries: { target: Element }[]) => void = () => {};
     vi.stubGlobal("ResizeObserver", class {

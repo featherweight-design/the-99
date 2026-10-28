@@ -1,21 +1,59 @@
 // CartDeckGroup — one deck's share of the cart, by deck (handoff A5, A5-t). The header carries the
 // deck's select and its roll-up figure; the body lists what that deck buys, each at that deck's own
-// pick, with the other selected decks that need the card too (`also …`). Shaped like Consider's
-// shelf header, without its motion. An unselected deck stays folded.
+// pick. Shaped like Consider's shelf header, without its motion. An unselected deck stays folded.
+// v2 (PR 5): the body's rows are the v2 row (`CartFactsRow`), under the group's own column header on desktop, and the
+// need fact reads from this deck's point of view: its own count, then `also` the other selected decks that need it.
 
 import { useId } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { formatCents } from "../../../lib/decks/price";
-import { figuresOf, type CartDeck, type CartLine } from "../../../lib/decks/cart";
-import { BuyTag } from "../buy-tag";
-import { lineFact } from "./cart-line";
+import { figuresOf, ownFact, selectLine, type CartDeck, type CartLine, type OwnFact, type SelectedLine } from "../../../lib/decks/cart";
+import { CartFactsRow, lineFact } from "./cart-line";
+import { CartColumns } from "./cart-columns";
 import { Chevron } from "../../ui/chevron";
-import { CardDetailTrigger } from "../../cards/card-detail-provider";
-import { TwoFacedMark } from "../../cards/two-faced-mark";
-import { frontFaceName } from "../../../lib/cards/faces";
-import { OtherWaysPress } from "../../social/spare-markers";
+import { usePageSpares } from "../../social/spare-markers";
 import { Checkbox } from "../../ui/checkbox";
-import { TOUCH_HIT } from "../../ui/touch-hit";
+
+/**
+ * A line as the open deck's row reads it: this deck's own copy alone, at this deck's own pick (the figure its own
+ * Shopping list draws), a commander only when it is THIS deck's. Null when the deck buys none of it.
+ */
+export function deckLineOf(line: CartLine, deckId: string): SelectedLine | null {
+  const own = line.rows.find((r) => r.deckId === deckId);
+  if (!own) return null;
+  return { ...line, commander: own.commander, selectedRows: [own], ...figuresOf([own]) };
+}
+
+/**
+ * The need fact's `also`: the OTHER selected decks that need the card, each with its copies, in the selections' order
+ * (`deckNames` was built in it). The open deck is never one of them: it is the count the fact leads with.
+ */
+export function alsoDecks(
+  line: CartLine, deckId: string, selected: ReadonlySet<string>, deckNames: ReadonlyMap<string, string>,
+): { name: string; count: number }[] {
+  return [...deckNames].flatMap(([id, name]) => {
+    if (id === deckId || !selected.has(id)) return [];
+    const row = line.rows.find((r) => r.deckId === id);
+    return row ? [{ name, count: row.quantity }] : [];
+  });
+}
+
+/**
+ * The own fact from the open deck's point of view. Named, it is By card's (where every owned copy is in use, this deck
+ * included). Its fallback counts as elsewhere every copy any OTHER deck holds, on the line or off it: the line's own
+ * `heldElsewhere` leaves out every line deck's copies, which is right by card and wrong here, where another line deck's
+ * copies are in another deck.
+ */
+export function deckOwnFact(
+  line: CartLine, deckId: string, selected: ReadonlySet<string>,
+  rank: ReadonlyMap<string, number>, names: ReadonlyMap<string, string>,
+): OwnFact | null {
+  const picked = selectLine(line, selected);
+  const own = picked ? ownFact(picked, selected, rank, names) : null;
+  if (own?.kind !== "elsewhere") return own;
+  const elsewhere = line.heldElsewhere + line.rows.reduce((n, r) => n + (r.deckId === deckId ? 0 : r.held), 0);
+  return { ...own, elsewhere };
+}
 
 export function CartDeckGroup({
   deck,
@@ -24,6 +62,7 @@ export function CartDeckGroup({
   open,
   priced,
   deckNames,
+  holders,
   selected,
   newestAsOf,
   onToggle,
@@ -36,6 +75,8 @@ export function CartDeckGroup({
   open: boolean;
   priced: boolean;
   deckNames: Map<string, string>;
+  /** Who holds what, for the own fact (G1): each deck's place in the selections' order, and every holding deck's name. */
+  holders: { rank: ReadonlyMap<string, number>; names: ReadonlyMap<string, string> };
   selected: ReadonlySet<string>;
   newestAsOf: Date | null;
   onToggle: () => void;
@@ -44,6 +85,7 @@ export function CartDeckGroup({
   const labelId = useId();
   const bodyId = useId();
   const expanded = on && open;
+  const spares = usePageSpares();
   return (
     <section aria-labelledby={labelId} className="border-t border-[color:var(--border)]">
       <div className="flex min-h-[52px] items-center gap-[10px]">
@@ -75,63 +117,35 @@ export function CartDeckGroup({
         </h3>
       </div>
       {expanded ? (
-        <ul id={bodyId} className="m-0 flex list-none flex-col pl-[28px] pb-[10px]">
-          {lines.map((line) => {
-            const own = line.rows.find((r) => r.deckId === deck.id);
-            if (!own) return null;
-            // In the selections' own order (the canvas's), which `deckNames` was built in.
-            const others = [...deckNames]
-              .filter(([id]) => id !== deck.id && selected.has(id) && line.rows.some((r) => r.deckId === id))
-              .map(([, name]) => name);
-            // From THIS deck's vantage: every copy held by any other deck, on the line or off it. The
-            // line's own `heldElsewhere` leaves out every line deck's copies, which is right for the
-            // by-card line and wrong here, where another line deck's copies are in another deck.
-            const elsewhere = line.heldElsewhere + line.rows.reduce((n, r) => n + (r.deckId === deck.id ? 0 : r.held), 0);
-            // This deck's own copy, at this deck's own pick: the figure its own Shopping list draws.
-            const fact = lineFact({ ...line, selectedRows: [own], ...figuresOf([own]) }, newestAsOf);
-            return (
-              <li key={line.oracleId} className="flex items-start gap-[12px] border-t border-[color:var(--border)] py-[11px]">
-                <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                  <div className="flex flex-wrap items-baseline gap-x-[8px] gap-y-[2px]">
-                    <CardDetailTrigger
-                      oracleId={line.oracleId}
-                      name={line.name}
-                      imageUri={line.imageUri ?? null}
-                      preview
-                      // As the by-card line's name (cart-line.tsx): a 44px coarse-pointer hit past the drawn line.
-                      className={`${TOUCH_HIT} text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]`}
-                    >
-                      {frontFaceName(line.name, line.layout)}
-                    </CardDetailTrigger>
-                    <TwoFacedMark layout={line.layout} />
-                    {own.commander ? (
-                      <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{copy.list.commander}</span>
-                    ) : null}
-                  </div>
-                  {others.length > 0 ? (
-                    <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{copy.list.also(others)}</span>
-                  ) : null}
-                  {line.owned > 0 ? (
-                    <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
-                      {elsewhere === line.owned ? copy.list.owned(line.owned) : copy.list.ownedSome(line.owned, elsewhere)}
-                    </span>
-                  ) : null}
-                </div>
-                {/* S5: the spare glyph before the tag, as the By card line draws it. */}
-                <span className="mt-[3px] flex flex-none items-center gap-[8px]">
-                  <OtherWaysPress
-                    card={{ oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact, quantity: own.quantity }}
-                    standIn={false}
-                    standInAria=""
-                    limitFigure=""
-                    className="-my-[9px] md:my-0"
-                  />
-                  <BuyTag variant="row" reserveSlot price={fact} newestAsOf={newestAsOf} />
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+        // The body's inset: none on a phone (the board's 390 `.bd2`), 28 from md, under the deck name past the select.
+        <div id={bodyId} className="pb-[6px] md:pl-[28px]">
+          <CartColumns view="deck" />
+          <ul className="m-0 flex list-none flex-col p-0">
+            {lines.map((line) => {
+              const mine = deckLineOf(line, deck.id);
+              if (!mine) return null;
+              const also = alsoDecks(line, deck.id, selected, deckNames);
+              return (
+                <CartFactsRow
+                  key={line.oracleId}
+                  line={mine}
+                  fact={lineFact(mine, newestAsOf)}
+                  need={{
+                    label: copy.facts.deck,
+                    count: mine.copies,
+                    items: also,
+                    prefix: copy.facts.also,
+                    head: copy.facts.alsoDecks(also.length),
+                  }}
+                  spares={spares?.byCard.get(line.oracleId) ?? []}
+                  own={deckOwnFact(line, deck.id, selected, holders.rank, holders.names)}
+                  newestAsOf={newestAsOf}
+                  inGroup
+                />
+              );
+            })}
+          </ul>
+        </div>
       ) : null}
     </section>
   );
