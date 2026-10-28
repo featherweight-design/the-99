@@ -102,12 +102,12 @@
     - seen when `seen.ids` holds `unit.key`;
     - else seen when `seen.ids` holds any of `unit.legacy` that is a SWITCHED entry's id or a variant id (those are the only legacy ids ever written, `switchedIds`, `visible.ts:228`);
     - else, for an UNSWITCHED unit, seen when `unit.since <= seen.version`;
-    - else, for a switched unit whose legacy sources are all unswitched entries, NOT seen: the switch flip announces it once. (Today such a line was a `captionLineSwitches` line inside an unswitched entry and was never recorded, so a reader who already had the switch on is told once more. Production has none of these switches on today, so production readers are not; the PR body says so.)
+    - else, for a switched unit whose legacy sources are all unswitched entries, seen when `unit.since <= seen.version`, exactly as an unswitched unit. Today such a line was a `captionLineSwitches` line inside an unswitched entry, shown whenever the switch resolved on and seen with that entry by the floor. `visibleSections` only returns the unit while the switch resolves on for this reader (env plus `flag_overrides`, `requestSwitchEnv`), so the floor rule reproduces today's behaviour. Production has COMMANDERS_PLACE, FRIEND_DECKS, SPARE_REQUESTS, NEAR_COMBOS, STRATEGY_FOCUS, PUSH and HOME_FEED on app-wide through `flag_overrides` (d9, 2026-10-27), so treating these units as new would re-tell every production reader. A later off-to-on flip of such a switch is not announced, which is also what happens today.
   - A unit's switched sentences are announced too: each `sentences` switch gives the unit an announce key `<key>@<SWITCH>`, seen by that key or by a legacy variant id that carried the same switch (`upload-choice@COLLECTION_SYNC_ENABLED`, `friend-spares@SPARE_REQUESTS_ENABLED`).
   - `unseenUnits(visible: VisibleSection[], seen: SeenState): { key: string; area: AboutArea; section: string }[]`
   - `seenKeysOf(units): string[]`: every announce key of the given units, switched or not. A visit writes the keys of the PAGE visited; the version floor is never raised by a page visit (a visit to Decks must not mark Friends' new units seen), only by the banner's ✕, which writes every unseen key.
 
-- [ ] **Step 1:** Tests: for every floor 0 to 16, a reader whose `ids` are `switchedIds(visibleEntries(allOn))` restricted to entries with `since <= floor` gets `unseenUnits` equal to the units whose sources include an unswitched entry with `since > floor` (fixture built from the real entry list, so it tracks it); a reader holding `upload-choice@COLLECTION_SYNC_ENABLED` has the replace rule's Sync announce key seen; a reader holding only `upload-choice` has it unseen; `commanders/for-you/places` is unseen for a reader at 16 with the switch on and seen once its key is written; a visit to Decks writes no Friends key and leaves the floor.
+- [ ] **Step 1:** Tests: for every floor 0 to 16, a reader whose `ids` are `switchedIds(visibleEntries(allOn))` restricted to entries with `since <= floor` gets `unseenUnits` equal to the units whose sources include an unswitched entry with `since > floor` (fixture built from the real entry list, so it tracks it); a reader holding `upload-choice@COLLECTION_SYNC_ENABLED` has the replace rule's Sync announce key seen; a reader holding only `upload-choice` has it unseen; `commanders/for-you/places` is SEEN for a reader at floor 16 whose `COMMANDERS_PLACE_ENABLED` is on only through an app-wide `flag_overrides` row (env unset), and unseen for a reader at a floor below its source's `since`; a visit to Decks writes no Friends key and leaves the floor.
 - [ ] **Step 2:** Run them. Expected: FAIL. Implement. Expected: PASS. Commit.
 
 ### Task 1.3: Tool cards aim at labels
@@ -279,10 +279,11 @@ Delete the Reference tab and its files, `about-tabs.tsx`'s Reference half (Tools
 
 Place `precons` and `mana-balance` and the nine screens' ? per Design's boards; then the panel, `/api/about/entries`, search, the Tools tab and `about-entries.ts` retire, and the remaining old shots go.
 
-## Open for d9
+## Settled with d9 (2026-10-27)
+
+Approved as Hugh's proxy, with (a), (b) and (c) as written below.
 
 - **Announcing the redo.** Default: no announcement and no `ABOUT_VERSION` bump. The redo changes About itself, it is not a launch Hugh picked, and every migrated unit is already seen.
 - **Where the two unplaced tools live between PR 6a and PR 9.** PR 6a makes `/about` the index, but `precons` and `mana-balance` have no section until Design returns. Default: `/about?tab=tools` keeps rendering today's Tools tab, all 14 cards. It isn't linked from the index, but any existing link still reaches it, and it retires in PR 9. The alternative, an index row for it, is placement and would go to Design.
-- **Repository weight.** PR 2 adds 400 to 500 generated WebP files, about 15 to 20 MB, until 7b removes the 390-only set (about 7.6 MB). Default: accept it; it is the same pattern as today's shots at twice the widths.
-- **Switched lines told once more.** A label switched on a feature whose old line sat inside an unswitched entry (for example the Commanders places line) is announced when its switch is on for the reader. A staging reader who already had that switch on is told once more. Production readers are not, because none of those switches is on in production. Default: accept it.
+- **Repository weight** (d9, 2026-10-27: accepted for now). PR 2 adds 400 to 500 generated WebP files, about 15 to 20 MB, until 7b removes the 390-only set (about 7.6 MB). Every re-capture adds a set to git history, so PR 2 measures a typical re-capture diff, writes only captures whose pixels changed, and picks the lowest WebP quality that still reads. If a re-capture would add more than about 5 MB, it goes to d9 before PR 2 merges.
 - **Dark route.** The new pages are reachable by URL from PR 3 until PR 6a without a switch. Default: accept that, because nothing links there.
