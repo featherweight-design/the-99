@@ -81,7 +81,7 @@ export const ABOUT_RULE_IDS = [
 export type AboutRuleId = (typeof ABOUT_RULE_IDS)[number];
 
 /** Each unit's `since` is the highest `since` of its unswitched legacy entries, or 16 (`ABOUT_VERSION` at the build) when it
- *  has none; `aboutPageSince` derives it, and `about-pages.test.ts` pins every value to that derivation. */
+ *  has none. The values are written out here; `about-pages.test.ts` re-derives every one from the entries and pins it. */
 export const ABOUT_SECTIONS: readonly AboutSection[] = [
   {
     area: "home",
@@ -640,9 +640,12 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "friend",
         region: "friends/friends/friend",
         lead: "A friend’s page",
-        rest: " shows their spares and wishlist. It also lists the decks they let you open.",
+        rest: " shows their spares. It shows their wishlist too. It also lists the decks they let you open.",
         switch: "SOCIAL_FRIENDS_ENABLED",
-        sentences: { " It also lists the decks they let you open.": "FRIEND_DECKS_ENABLED" },
+        sentences: {
+          " It shows their wishlist too.": "SOCIAL_WISHLIST_ENABLED",
+          " It also lists the decks they let you open.": "FRIEND_DECKS_ENABLED",
+        },
         since: 16,
         legacy: ["friends", "friend-decks", "wishlist"],
       },
@@ -753,8 +756,12 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["proxies", "deck-tokens"],
   },
   "friends-see": {
-    text: "Friends see your name, your wishlist and the decks you let them open. They never see your collection, or a deck’s prices, buy list or notes.",
+    text: "Friends see your name and the spares you offer, never your collection, or a deck’s prices, buy list or notes. Your wishlist is theirs to read too. They can open the decks you let them.",
     switch: "SOCIAL_FRIENDS_ENABLED",
+    sentences: {
+      " Your wishlist is theirs to read too.": "SOCIAL_WISHLIST_ENABLED",
+      " They can open the decks you let them.": "FRIEND_DECKS_ENABLED",
+    },
     since: 16,
     legacy: ["friends", "wishlist"],
   },

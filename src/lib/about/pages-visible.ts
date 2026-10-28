@@ -62,7 +62,10 @@ function resolveText(text: string, sentences: AboutLabel["sentences"], env: Node
     if (!lineKept(sw, env)) out = out.replace(sentence, "");
     else announced.push(...positiveSwitches(sw));
   }
-  return [out.trim() === "" ? "" : out, announced];
+  // A label's `rest` opens with a space after its lead and keeps it; text whose first sentence was cut loses the one
+  // that sentence left behind.
+  const kept = text.startsWith(" ") ? out.trimEnd() : out.trim();
+  return [kept, [...new Set(announced)]];
 }
 
 function positiveSwitches(sw: AboutLineSwitch): AboutSwitch[] {
@@ -129,15 +132,17 @@ const unitsOf = (visible: readonly VisibleSection[]) => visible.flatMap((s) => [
  *  introduced to the pages rather than told about each part of them, so nothing is new to them. */
 export function unseenUnits(visible: readonly VisibleSection[], seen: SeenState): UnseenUnit[] {
   if (isFirstRun(seen)) return [];
-  return unitsOf(visible).flatMap((u) => [
-    ...(unitSeen(u, seen) ? [] : [{ key: u.key, area: u.area, section: u.section }]),
-    ...u.sentenceSwitches.filter((sw) => !sentenceSeen(u, sw, seen))
-      .map((sw) => ({ key: sentenceKey(u.key, sw), area: u.area, section: u.section })),
-  ]);
+  return unitsOf(visible).flatMap((u) => {
+    // A unit told as a whole carries its sentences with it; a sentence is told on its own only inside a seen unit.
+    if (!unitSeen(u, seen)) return [{ key: u.key, area: u.area, section: u.section }];
+    return u.sentenceSwitches.filter((sw) => !sentenceSeen(u, sw, seen))
+      .map((sw) => ({ key: sentenceKey(u.key, sw), area: u.area, section: u.section }));
+  });
 }
 
-/** Every announce key of the given sections' units, which a visit to them records. A visit never raises the floor:
- *  a visit to Decks must not mark a new unit on Friends seen. */
-export function seenKeysOf(visible: readonly VisibleSection[]): string[] {
-  return unitsOf(visible).flatMap((u) => [u.key, ...u.sentenceSwitches.map((sw) => sentenceKey(u.key, sw))]);
+/** Every announce key of one page's units, which a visit to that page records. A visit never raises the floor, and
+ *  never writes another page's keys: a visit to Decks must not mark a new unit on Friends seen. */
+export function seenKeysOf(visible: readonly VisibleSection[], area: AboutArea): string[] {
+  return unitsOf(visible.filter((s) => s.area === area))
+    .flatMap((u) => [u.key, ...u.sentenceSwitches.map((sw) => sentenceKey(u.key, sw))]);
 }

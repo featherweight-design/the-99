@@ -115,12 +115,34 @@ describe("seen translation", () => {
   });
 
   it("a visit to one page writes that page's keys alone", () => {
-    const decks = visibleSections(ALL_ON).filter((s) => s.area === "decks");
-    const written = seenKeysOf(decks);
+    const all = visibleSections(ALL_ON);
+    const decks = all.filter((s) => s.area === "decks");
+    const written = seenKeysOf(all, "decks");
     expect(written.every((k) => k.startsWith("decks/") || k.startsWith("rule/"))).toBe(true);
     const friendsRules = ABOUT_SECTIONS.filter((s) => s.area === "friends").flatMap((s) => s.rules.map(ruleKey));
     expect(written.some((k) => friendsRules.some((r) => k.startsWith(r)))).toBe(false);
     expect(written).toEqual(expect.arrayContaining(keys(decks)));
+  });
+
+  it("tells each new thing once: a new unit carries its sentences, and no key repeats", () => {
+    const visible = visibleSections(ALL_ON);
+    const fresh: SeenState = { version: 5, ids: ["placeholder"] };
+    const told = unseenUnits(visible, fresh).map((u) => u.key);
+    expect(new Set(told).size).toBe(told.length);
+    expect(told).toContain("rule/friends-see");
+    expect(told.filter((k) => k.startsWith("rule/friends-see@"))).toEqual([]);
+    const spare: SeenState = { version: 16, ids: ["friend-spares"] };
+    expect(unseenUnits(visible, spare).map((u) => u.key)).toContain(sentenceKey("shopping/deck-shopping/spare", "SPARE_REQUESTS_ENABLED"));
+    const writes = seenKeysOf(visible, "collection");
+    expect(new Set(writes).size).toBe(writes.length);
+  });
+
+  it("keeps a label's opening space and drops the one a cut first sentence leaves", () => {
+    const editOnly = visibleSections(env({ COLLECTION_EDIT_ENABLED: "true" }));
+    const replace = editOnly.flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
+    expect(replace.text.startsWith("With Replace")).toBe(true);
+    const help = editOnly.flatMap((s) => s.labels).find((l) => l.key === "collection/cards/tabs")!;
+    expect(help.text).toBe(" are your Collection’s tabs. History lists every change you’ve made to it.");
   });
 
   it("names every switched legacy entry in some unit, so no announced entry is lost", () => {
