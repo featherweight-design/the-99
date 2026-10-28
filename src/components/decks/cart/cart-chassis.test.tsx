@@ -114,6 +114,8 @@ describe("the cart's chassis (v2 PR 8)", () => {
     fireEvent.click(screen.getByRole("radio", { name: copy.view.byDeck }));
     expect(screen.getAllByRole("region", { name: /HD - / }).map((r) => r.textContent?.match(/HD - [A-Za-z]+/)?.[0])).toEqual(["HD - Gishath", "HD - Omnath"]);
     expect(live()).toBe("?q=sol&view=deck");
+    // By deck's sentence says how many cards the search left, as By card's does.
+    expect(resultLine(container)).toBe(copy.result.filtered(1, 4));
     // Clear all drops it, and the address with it.
     fireEvent.click(screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." }));
     expect(live()).toBe("?view=deck");
@@ -135,7 +137,11 @@ describe("the cart's chassis (v2 PR 8)", () => {
     expect(cardNames()).toEqual(["Sol Ring", "Mox Amber", "Smothering Tithe", "Swiftfoot Boots"]);
     fireEvent.click(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) }));
     const sheet = screen.getByRole("menu", { name: copy.sort.sheetAria });
-    expect(within(sheet).getAllByRole("menuitemradio").map((r) => r.textContent)).toEqual(Object.values(copy.sort.byCard).map((l) => `${l}${l === copy.sort.byCard.decks ? "✓" : ""}`));
+    const rows = within(sheet).getAllByRole("menuitemradio");
+    expect(rows.map((r) => r.textContent)).toEqual(Object.values(copy.sort.byCard));
+    // The chosen order is the one `aria-checked` row, drawn as a ring radio (no check glyph, no close button).
+    expect(rows.map((r) => r.getAttribute("aria-checked"))).toEqual(["true", "false", "false", "false", "false"]);
+    expect(within(sheet.closest("[role=dialog]") ?? document.body).queryByRole("button", { name: /close/i })).toBeNull();
     fireEvent.click(within(sheet).getByRole("menuitemradio", { name: copy.sort.byCard["price-high"] }));
     // Closed on a pick; an unpriced line goes last.
     expect(screen.queryByRole("menu", { name: copy.sort.sheetAria })).toBeNull();
@@ -194,6 +200,28 @@ describe("the cart's chassis (v2 PR 8)", () => {
     expect(screen.getByText(copy.filters.chipSearch(`${"a".repeat(24)}…`))).toBeTruthy();
     const chip = document.querySelector("[data-chassis-row='chips']") as HTMLElement;
     expect(within(chip).getByRole("button", { name: new RegExp(term) })).toBeTruthy();
+  });
+
+  it("closes the sort sheet when the window crosses into the wide form, and does not reopen it coming back", () => {
+    let wide = false;
+    const listeners = new Set<() => void>();
+    Object.defineProperty(window, "matchMedia", {
+      writable: true, configurable: true,
+      value: (query: string) => ({
+        get matches() { return wide; }, media: query, onchange: null,
+        addEventListener: (_: string, l: () => void) => listeners.add(l), removeEventListener: (_: string, l: () => void) => listeners.delete(l),
+        addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+      }),
+    });
+    const resize = (to: boolean) => { wide = to; act(() => { listeners.forEach((l) => l()); }); };
+    render(<CartView cart={cart()} provenance={provenance} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) }));
+    expect(screen.getByRole("menu", { name: copy.sort.sheetAria })).toBeTruthy();
+    resize(true);
+    resize(false);
+    // Back below 1000px the sheet is shut: no dialog, and the trigger says so.
+    expect(screen.queryByRole("menu", { name: copy.sort.sheetAria })).toBeNull();
+    expect(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) }).getAttribute("aria-expanded")).toBe("false");
   });
 
   it("draws the desktop sort as the labelled menu past the hairline", () => {

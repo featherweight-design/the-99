@@ -459,7 +459,8 @@ function CartChassisRow({
       // The selected decks the search leaves, and the copies they still need of its lines.
       const kept = deckGroups.filter((g) => selected.has(g.deck.id));
       const copies = kept.reduce((n, g) => n + g.lines.reduce((m, l) => m + (l.rows.find((r) => r.deckId === g.deck.id)?.quantity ?? 0), 0), 0);
-      return copy.result.byDeck(kept.length, copies);
+      // A search says how many cards are left, in any view (Controls C).
+      return query.trim() ? copy.result.filtered(lines.length, of) : copy.result.byDeck(kept.length, copies);
     }
     if (v === "friend" && byFriend) {
       return copy.result.byFriend(byFriend.groups.length, byFriend.groups.reduce((n, g) => n + g.spares, 0));
@@ -485,13 +486,13 @@ function CartChassisRow({
 function NoMatch({ query, of, onDrop }: { query: string; of: number; onDrop: () => void }) {
   const term = query.trim();
   return (
-    <div data-cart-no-match className="flex flex-col gap-[8px] rounded-[12px] border border-dashed border-[color:var(--border-dashed)] px-[20px] py-[22px]">
+    <div data-cart-no-match className="flex flex-col items-start gap-[8px] rounded-[12px] border border-dashed border-[color:var(--border-dashed)] px-[22px] py-[26px]">
       <h2 className="m-0 text-[15px] font-semibold text-[color:var(--fg)]">{copy.noMatch.title}</h2>
-      <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)]">{copy.noMatch.body(term, of)}</p>
+      <p className="m-0 max-w-[440px] text-[13px] leading-[1.55] text-[color:var(--fg-body)]">{copy.noMatch.body(term, of)}</p>
       <button
         type="button"
         onClick={onDrop}
-        className="mt-[4px] h-[44px] self-start rounded-[9px] border border-[color:var(--border-strong)] px-[16px] text-[13.5px] text-[color:var(--fg)]"
+        className="mt-[4px] flex h-[44px] items-center gap-[8px] rounded-[10px] border border-[color:var(--border-strong)] px-[14px] text-[14px] text-[color:var(--fg)]"
       >
         {copy.noMatch.drop(term)}
       </button>

@@ -63,6 +63,7 @@ export function CartChassis({
             value={query}
             onChange={onQuery}
             size={wide ? "column" : "sheet"}
+            active={term !== ""}
             placeholder={copy.filters.search}
           />
         </div>
@@ -84,7 +85,10 @@ export function CartChassis({
             aria-haspopup="dialog"
             aria-expanded={sheet}
             onClick={() => setSheet(true)}
-            className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)]"
+            className={`flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-solid bg-transparent p-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] ${
+              // Controls B2: the button reads as open while its sheet is.
+              sheet ? "border-[color:var(--accent)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_18%,transparent)]" : "border-[color:var(--border-strong)]"
+            }`}
           >
             <span aria-hidden>⇅</span>
           </button>
