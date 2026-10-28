@@ -3,9 +3,9 @@
  * reading, in one row. The rules that judge each are `reading-rule.ts` (the reading) and
  * `carryOverDecision` (the Overview).
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { preconSynopses } from "../../db/schema";
+import { decks, preconSynopses } from "../../db/schema";
 import type { RoleBasis } from "../profile/build";
 import type { CheckedSynopsis } from "../synopsis/types";
 import { readingMoved } from "../notices/read";
@@ -26,8 +26,17 @@ export type PreconCarry = {
   reading: PreconReading | null;
 };
 
+/**
+ * Which precon: its file, or THE DECK a start made from it (`decks.built_from_precon`, owner-scoped in the
+ * same statement), so an arrival reads the precon's row beside the deck's own reads instead of after them.
+ */
+export type PreconOf = string | { deckId: string; userId: string };
+
 /** The columns `readPreconCarry` selects, apart so a test can render the statement. */
-export function preconCarryQuery(file: string, contract: number, basis: RoleBasis, q: Pick<typeof db, "select"> = db) {
+export function preconCarryQuery(of: PreconOf, contract: number, basis: RoleBasis, q: Pick<typeof db, "select"> = db) {
+  const file = typeof of === "string"
+    ? eq(preconSynopses.preconFile, of)
+    : sql`${preconSynopses.preconFile} = (select d.built_from_precon from ${decks} d where d.id = ${of.deckId}::uuid and d.user_id = ${of.userId})`;
   return q.select({
     listFingerprint: preconSynopses.listFingerprint, contractVersion: preconSynopses.contractVersion, model: preconSynopses.model,
     content: preconSynopses.content, current: preconSynopses.current, createdAt: preconSynopses.createdAt, checkedAt: preconSynopses.checkedAt,
@@ -36,7 +45,7 @@ export function preconCarryQuery(file: string, contract: number, basis: RoleBasi
     readingRulesVersion: preconSynopses.readingRulesVersion, readingAnalyzedOracleIds: preconSynopses.readingAnalyzedOracleIds,
     readingSeenSeq: preconSynopses.readingSeenSeq, readingAt: preconSynopses.readingAt,
   }).from(preconSynopses).where(and(
-    eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis),
+    file, eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis),
   ));
 }
 
@@ -44,8 +53,8 @@ export function preconCarryQuery(file: string, contract: number, basis: RoleBasi
  * ONE QUERY: a precon's stored Overview and its stored reading at the owner's contract and role basis,
  * current or not (the caller judges each by its own rule). Null when the precon has no row there.
  */
-export async function readPreconCarry(file: string, contract: number, basis: RoleBasis, q: Pick<typeof db, "select"> = db): Promise<PreconCarry | null> {
-  const [row] = await preconCarryQuery(file, contract, basis, q);
+export async function readPreconCarry(of: PreconOf, contract: number, basis: RoleBasis, q: Pick<typeof db, "select"> = db): Promise<PreconCarry | null> {
+  const [row] = await preconCarryQuery(of, contract, basis, q);
   if (!row) return null;
   const { listFingerprint, contractVersion, model, content, current, createdAt, checkedAt, ...reading } = row;
   return {

@@ -19,6 +19,14 @@ describe("preconCarryQuery", () => {
   });
 });
 
+describe("preconCarryQuery by deck", () => {
+  it("names the precon by the deck a start made, owner-scoped, in the same statement", () => {
+    const { sql, params } = new PgDialect().sqlToQuery(preconCarryQuery({ deckId: "d-1", userId: "u-1" }, 12, "labels").getSQL());
+    expect(sql).toContain(`where ("precon_synopses"."precon_file" = (select d.built_from_precon from "decks" d where d.id = $1::uuid and d.user_id = $2) and "precon_synopses"."contract_version" = $3`);
+    expect(params).toEqual(["d-1", "u-1", 12, "labels"]);
+  });
+});
+
 describe("readPreconCarry", () => {
   const fake = (rows: unknown[]) => ({ select: () => ({ from: () => ({ where: async () => rows }) }) }) as never;
   const overview = { listFingerprint: "list-1", contractVersion: 12, model: "m", content: { overview: "x" }, current: false, createdAt: new Date(1), checkedAt: new Date(2) };
