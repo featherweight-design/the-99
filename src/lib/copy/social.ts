@@ -355,6 +355,9 @@ export const socialCopy = {
     notFriendTag: "not a friend",
     removeMemberAria: (name: string, pod: string) => `Remove ${name} from ${pod}`,
     addFriends: "+ Add friends",
+    /** The owner's edit state (small items item 7, board `Pod-Edit`): Edit shows each seat's ✕, Done puts them away. */
+    edit: "Edit",
+    done: "Done",
     share: "Share my spares with this pod",
     // Add friends (dialog at desktop, sheet at phone).
     addTitle: (pod: string) => `Add to ${pod}`,

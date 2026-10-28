@@ -155,8 +155,12 @@ describe("the table", () => {
 });
 
 describe("the owner's ✕", () => {
-  it("is drawn only for the owner, and never on your own seat", () => {
+  it("is drawn only for the owner, only while editing, and never on your own seat (small items item 7)", () => {
     render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    // At rest the seats carry no control; the owner's head has Edit, a member's has none.
+    expect(within(card("Thursday")).queryAllByRole("button", { name: /^Remove / })).toHaveLength(0);
+    expect(within(card("Adventurers")).queryByRole("button", { name: P.edit })).toBeNull();
+    fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     expect(within(card("Thursday")).getAllByRole("button", { name: /^Remove / }).map((b) => b.getAttribute("aria-label")))
       .toEqual([P.removeMemberAria("Dave", "Thursday"), P.removeMemberAria("Priya", "Thursday")]);
     expect(within(card("Adventurers")).queryAllByRole("button", { name: /^Remove / })).toHaveLength(0);
@@ -165,6 +169,7 @@ describe("the owner's ✕", () => {
   it("removes at once, with no confirm, and keeps a member already out as done", async () => {
     m.remove.mockResolvedValue({ ok: true, changed: false });
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
     expect(m.remove).toHaveBeenCalledWith("pod-1", "p-Dave");
     expect(seatNames(card("Thursday"))).toEqual([P.you, "Priya"]);
@@ -174,6 +179,7 @@ describe("the owner's ✕", () => {
   it("puts the seat back and says so when the write fails", async () => {
     m.remove.mockRejectedValue(new Error("down"));
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
     expect(seatNames(card("Thursday"))).toEqual([P.you, "Dave", "Priya"]);
     expect(screen.getByRole("alert").textContent).toContain(P.failed);
@@ -181,6 +187,7 @@ describe("the owner's ✕", () => {
 
   it("lets the server's redraw retire a held removal", async () => {
     const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
     // The redraw brings Dave back (someone re-added him): the server's truth wins.
     rerender(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }, DAVE, PRIYA, SAM] })]} sharedIds={[]} friends={FRIENDS} />);
@@ -298,6 +305,7 @@ describe("the spares box", () => {
 describe("round 1: races and edges", () => {
   it("keeps a member removed and re-added before the redraw, by their new join", async () => {
     const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
     // Same ids, same order: only Dave's join moved.
     rerender(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }, { ...DAVE, joinedAt: new Date("2026-10-15") }, PRIYA] })]} sharedIds={[]} friends={FRIENDS} />);
@@ -404,6 +412,7 @@ describe("the switch going off mid-visit", () => {
   it("refreshes into not found rather than calling it a failure", async () => {
     m.remove.mockResolvedValue({ ok: false, reason: "off" });
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
     expect(m.refresh).toHaveBeenCalled();
     expect(screen.queryByRole("alert")).toBeNull();
