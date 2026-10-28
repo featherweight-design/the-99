@@ -64,6 +64,15 @@ describe("the Based on line (Overview accuracy PR 6)", () => {
     expect(lines).toEqual(["Based onSol Ring", "Based onCraterhoof Behemoth"]);
   });
 
+  it("wires each section's own line: a weakness naming one cited card lists only the other", () => {
+    const content = checkedSynopsis({
+      evidence: { ...evidence, strategy: [[], []], keep: [[]], tips: [[]], keyCards: [[]], weaknesses: [["sol-ring", "craterhoof"]] },
+      weaknesses: ["Loses [[Sol Ring]] to an artifact wipe."],
+    });
+    drawWith(content, names);
+    expect(screen.getAllByTestId("synopsis-based-on").map((e) => e.textContent)).toEqual(["Based onCraterhoof Behemoth"]);
+  });
+
   it("opens the card's details from a listed card, as a mark does", async () => {
     const fetchCard = vi.fn(async () => null);
     drawWith(checkedSynopsis({ evidence }), names, fetchCard);

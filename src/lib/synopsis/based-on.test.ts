@@ -19,6 +19,8 @@ describe("basedOnIds", () => {
     // A mark resolves as the line renders it, whatever its case.
     expect(basedOnIds(c, "tips", 0, "Hold [[craterhoof behemoth]] for a wide board.")).toEqual(["sol-ring"]);
     expect(basedOnIds(c, "tips", 1, "Hold [[Craterhoof Behemoth]] for a wide board.")).toEqual([]);
+    // Every mark in the line counts, not only the first.
+    expect(basedOnIds(c, "tips", 0, "[[Sol Ring]] early, [[Craterhoof Behemoth]] late.")).toEqual([]);
     // A mark that names no deck card leaves the evidence alone.
     expect(basedOnIds(c, "tips", 1, "Hold [[Not In Deck]] back.")).toEqual(["craterhoof"]);
   });
