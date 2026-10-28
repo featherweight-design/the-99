@@ -30,6 +30,7 @@ export async function reapSynopses(tx: Tx, deckId: string, now: Date = new Date(
       lt(deckSynopses.createdAt, reapCutoff(now)),
     ))
     .returning({ callId: deckSynopses.modelCallId });
-  for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now, "reaped");
+  // A pending run always holds a unit; the one row without one, a carried-over precon overview, is written done.
+  for (const r of reaped) if (r.callId) await settleModelCall(tx, r.callId, "refunded", undefined, now, "reaped");
   return reaped.length;
 }
