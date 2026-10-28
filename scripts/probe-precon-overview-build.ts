@@ -33,7 +33,7 @@ async function main() {
   assertScratchBranch(branch?.id ?? null, "probe:precon-overview-build");
   const build = (...args: string[]) => execFileSync("pnpm", ["-s", "db:build:precon-overviews", "--stub", ...args], {
     encoding: "utf8",
-    env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id! },
+    env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, PRECON_OVERVIEW_ROLE_BASIS: "classifier" },
   });
 
   // The first two plain precons the build orders by: start from none of their rows.
@@ -76,7 +76,7 @@ async function main() {
       try { await preparePreconDeck(f); } catch { unbuildable = f; break; }
     }
     if (unbuildable) {
-      await db.insert(preconSynopses).values({ preconFile: unbuildable, contractVersion: 12, listFingerprint: "x", inputHash: "x", model: "stub", content: rows[0].content, current: true });
+      await db.insert(preconSynopses).values({ preconFile: unbuildable, contractVersion: 12, roleBasis: "classifier", listFingerprint: "x", inputHash: "x", model: "stub", content: rows[0].content, current: true });
       build("--limit", "0");
       const gone = (await db.select().from(preconSynopses).where(and(eq(preconSynopses.preconFile, unbuildable), eq(preconSynopses.contractVersion, 12))))[0];
       check(`a row for a precon with no buildable request (${unbuildable}) is marked not current`, gone && !gone.current, `current ${gone?.current}`);

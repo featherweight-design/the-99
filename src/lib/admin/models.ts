@@ -121,6 +121,7 @@ export const JOB_VARIABLES = [
   { name: "PROSE_MAX_USD", readAt: ".github/workflows/commander-index.yml" },
   { name: "PRECON_OVERVIEWS_ENABLED", readAt: ".github/workflows/precon-overviews.yml" },
   { name: "PRECON_OVERVIEW_MAX_USD", readAt: ".github/workflows/precon-overviews.yml" },
+  { name: "PRECON_OVERVIEW_ROLE_BASIS", readAt: ".github/workflows/precon-overviews.yml" },
 ] as const;
 
 export type JobVariable = (typeof JOB_VARIABLES)[number]["name"];

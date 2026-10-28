@@ -50,6 +50,11 @@ jobs:
       PRECON_OVERVIEW_TARGET_BRANCH: br-polished-pond-a6e63y0b
       # The dollar cap, a worst-case stop. The build clamps it to $15 whatever this says.
       PRECON_OVERVIEW_MAX_USD: ${{ vars.PRECON_OVERVIEW_MAX_USD || '15' }}
+      # The role basis the readings are built at (`LABEL_ROLE_COUNTS_ENABLED` in the app, a Vercel
+      # variable this job cannot read). Default `labels`: staging's scores are written at it. A deck
+      # carries an Overview over only when its owner's basis is the row's, so a wrong guess attaches
+      # nothing rather than something untrue.
+      PRECON_OVERVIEW_ROLE_BASIS: ${{ vars.PRECON_OVERVIEW_ROLE_BASIS || 'labels' }}
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - name: Fail loudly without the model key
@@ -96,8 +101,9 @@ jobs:
       CATALOG_COPY_TARGET_URL: ${{ secrets.CATALOG_DATABASE_URL }}
       # Production's Neon branch. A guard, not a credential: the target must report exactly this.
       CATALOG_COPY_TARGET_BRANCH: br-noisy-violet-a6vw4ess
-      # The copy builds each precon's request from the TARGET's catalog through `src/db`.
+      # The copy builds each precon's request from the TARGET's catalog through `src/db`, at the build's basis.
       DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      PRECON_OVERVIEW_ROLE_BASIS: ${{ vars.PRECON_OVERVIEW_ROLE_BASIS || 'labels' }}
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - name: Fail loudly without the copy secret

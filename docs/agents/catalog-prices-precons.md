@@ -54,6 +54,11 @@ Hugh, 2026-10-27: a player sees how a precon plays before choosing it, and a dec
 Overview over as its own synopsis while its list is the precon's. The Overview depends on nothing about the player (it
 reads only the list and the catalog), so it is catalog data, `precon_synopses`, one row per PLAIN precon and contract (a
 Collector's Edition twin resolves to its plain edition through `twin_of`). No FK to `precons`: the ingest replaces it daily.
+- **The role basis is an input.** The reading's roles (`LABEL_ROLE_COUNTS_ENABLED`, `labels` or `classifier`) reach the
+  prompt, so a row carries its `role_basis` and the primary key is (precon, contract, basis). A run is TOLD its basis
+  (`PRECON_OVERVIEW_ROLE_BASIS`, never defaulted in the scripts; the workflow defaults it to `labels`, staging's), because
+  the app reads the switch from a Vercel variable no workflow can see. The copy rebuilds the target's request at the row's
+  basis, and the carry-over attaches a row only to an owner on that basis, so a wrong guess attaches nothing.
 
 - **`pnpm db:build:precon-overviews`** writes them, ONCE, on staging. Every input is the app's own: the list a start
   writes (`preparePreconDeck`, whose card rule is `preconDeckCards`), `loadDeckProfileFromHead`, `factsWithSource`,
@@ -87,6 +92,8 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   when the request the TARGET's own catalog builds for that precon (`buildPreconRequest`, with `src/db` pointed at the target)
   hashes to it, on the same list. It is also the target's re-check: an installed row the target's inputs no longer fit, or
   whose request it cannot build, is marked not current; one that fits again is stamped current again. Nothing is deleted.
+  The target's catalog generation (`catalog_refreshes`) is read before its requests are built and again under its lock;
+  a moved one refuses the publish (exit 2, nothing written): run the copy again.
 - **The `Precon overviews` workflow** (`.github/workflows/precon-overviews.yml`) chains on a successful SCHEDULED
   `Catalog refresh` behind `PRECON_OVERVIEWS_ENABLED='true'`: `generate` on `catalog-staging` (`staging-deployed`, the
   `ANTHROPIC_API_KEY` secret, `PRECON_OVERVIEW_TARGET_BRANCH` staging's branch), then `copy` in `catalog-production`. A

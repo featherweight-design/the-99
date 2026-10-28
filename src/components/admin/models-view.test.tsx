@@ -15,7 +15,7 @@ const ROWS: ModelsRow[] = MODEL_ROWS.map((d) => ({ ...d, micro: d.key === "tunin
 const VALUES = {
   CATALOG_REFRESH_ENABLED: "true", COMBO_REFRESH_ENABLED: "true", COMMANDER_INDEX_ENABLED: "true",
   CARD_LABELS_ENABLED: "true", TUNING_CHECK_ENABLED: null, PROSE_MAX_USD: "0",
-  PRECON_OVERVIEWS_ENABLED: null, PRECON_OVERVIEW_MAX_USD: null,
+  PRECON_OVERVIEWS_ENABLED: null, PRECON_OVERVIEW_MAX_USD: null, PRECON_OVERVIEW_ROLE_BASIS: null,
 };
 
 describe("ModelsView", () => {

@@ -42,14 +42,14 @@ async function main() {
   assertScratchBranch(targetBranch, "probe:precon-overview-copy (target)");
 
   const run = (script: string, extra: Record<string, string>) => execFileSync("pnpm", ["-s", script, ...(script.includes("build") ? ["--stub", "--limit", "2"] : [])], {
-    encoding: "utf8", env: { ...process.env, ...extra },
+    encoding: "utf8", env: { ...process.env, PRECON_OVERVIEW_ROLE_BASIS: "classifier", ...extra },
   });
   const copy = () => run("db:copy:precon-overviews", {
     CATALOG_COPY_SOURCE_URL: env.PROBE_SOURCE_URL, CATALOG_COPY_TARGET_URL: env.PROBE_TARGET_URL, CATALOG_COPY_TARGET_BRANCH: targetBranch!,
   });
 
   const files = (await source.db.select({ f: precons.fileName }).from(precons).where(sql`${precons.twinOf} is null`).orderBy(precons.fileName).limit(2)).map((r) => r.f);
-  const mine = and(eq(preconSynopses.contractVersion, 12), inArray(preconSynopses.preconFile, files));
+  const mine = and(eq(preconSynopses.contractVersion, 12), eq(preconSynopses.roleBasis, "classifier"), inArray(preconSynopses.preconFile, files));
   const targetRows = () => target.db.select().from(preconSynopses).where(mine);
   try {
     await source.db.delete(preconSynopses).where(mine);

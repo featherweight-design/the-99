@@ -9,6 +9,7 @@
 import { synopsisRequestHash } from "../../src/lib/precons/overview";
 import { preparePreconDeck } from "../../src/lib/precons/start";
 import { listFingerprint } from "../../src/lib/profile/fingerprint";
+import type { RoleBasis } from "../../src/lib/profile/build";
 import { loadDeckProfileFromHead } from "../../src/lib/profile/load";
 import type { SynopsisFacts } from "../../src/lib/synopsis/facts";
 import { factsWithSource, synopsisCallSettings } from "../../src/lib/synopsis/generate";
@@ -19,6 +20,22 @@ import { buildParams, type Params } from "../eval/lib/request.mjs";
 
 /** The contract every precon Overview is written at: v2 with the evidence benchmarks, what production writes. */
 export const PRECON_OVERVIEW_CONTRACT = SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS;
+
+/**
+ * The role basis a run builds at: `PRECON_OVERVIEW_ROLE_BASIS`, `labels` or `classifier`, never
+ * defaulted. The reading's roles reach the prompt, so the basis is an input like any other: the build
+ * writes one basis's rows, the copy rebuilds the target's request at the row's own basis, and the
+ * carry-over attaches a row only to an owner on that basis. The app resolves it from
+ * `LABEL_ROLE_COUNTS_ENABLED`, a Vercel variable a workflow cannot read, so the run is told.
+ */
+export function preconRoleBasis(value: string | undefined): RoleBasis {
+  if (value === "labels" || value === "classifier") return value;
+  throw new Error(`precon overviews: PRECON_OVERVIEW_ROLE_BASIS must be "labels" or "classifier", not ${value === undefined ? "unset" : JSON.stringify(value)}`);
+}
+
+/** `env` with the role-count switch set to `basis`, so the reading is built at exactly that basis. */
+export const envAtBasis = (env: NodeJS.ProcessEnv, basis: RoleBasis): NodeJS.ProcessEnv =>
+  ({ ...env, LABEL_ROLE_COUNTS_ENABLED: basis === "labels" ? "true" : "" });
 
 /** The model call contract 12 makes (`synopsisCallSettings(true)`): model, effort and output ceiling. */
 export const preconOverviewCall = synopsisCallSettings(true);
@@ -34,7 +51,7 @@ export type PreconRequest =
   | { ok: false; file: string; why: string };
 
 /** Builds `file`'s first request: its started deck's list, reading, facts and prompt. */
-export async function buildPreconRequest(file: string): Promise<PreconRequest> {
+export async function buildPreconRequest(file: string, basis: RoleBasis): Promise<PreconRequest> {
   let prepared;
   try {
     prepared = await preparePreconDeck(file);
@@ -42,7 +59,7 @@ export async function buildPreconRequest(file: string): Promise<PreconRequest> {
     return { ok: false, file, why: e instanceof Error ? e.message : String(e) };
   }
   const head = { deckId: `precon:${file}`, userId: "catalog", commanderOracleId: prepared.commanderOracleId, partnerOracleId: prepared.partnerOracleId, declaredBracket: null, cards: prepared.cards };
-  const built = await factsWithSource(await loadDeckProfileFromHead(head, process.env), true, true);
+  const built = await factsWithSource(await loadDeckProfileFromHead(head, envAtBasis(process.env, basis)), true, true);
   // Contract 12 quotes the benchmarks' interaction reading; a failed label read falls back to the
   // classifier's, which is another contract. Never written (or installed) under the wrong one.
   if (!built.shared) return { ok: false, file, why: "the label read failed, so contract 12's interaction reading is unavailable" };

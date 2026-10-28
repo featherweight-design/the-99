@@ -22,7 +22,7 @@
 // FAILS CLOSED on its target: `PRECON_OVERVIEW_TARGET_BRANCH` is never defaulted and must equal
 // the database's `neon.branch_id`, or it exits 2 having written nothing.
 //
-//   PRECON_OVERVIEW_TARGET_BRANCH=br-… pnpm db:build:precon-overviews [--dry-run] [--stub] [--max-usd N] [--limit N]
+//   PRECON_OVERVIEW_TARGET_BRANCH=br-… PRECON_OVERVIEW_ROLE_BASIS=labels|classifier pnpm db:build:precon-overviews [--dry-run] [--stub] [--max-usd N] [--limit N]
 //   (locally, name the database with PRECON_OVERVIEW_DB_URL)
 //
 // `--dry-run` builds and hashes every request and prints the worst case, and calls and writes
@@ -32,7 +32,7 @@
 import { requireEnv } from "./lib/env.mjs";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
-requireEnv(["DATABASE_URL", "PRECON_OVERVIEW_TARGET_BRANCH"]);
+requireEnv(["DATABASE_URL", "PRECON_OVERVIEW_TARGET_BRANCH", "PRECON_OVERVIEW_ROLE_BASIS"]);
 // `PRECON_OVERVIEW_DB_URL`, when set, names the database instead: the env import above overrides
 // DATABASE_URL from a local `.env`, so a developer's run (a probe on a scratch branch) names its
 // target here. The workflow sets DATABASE_URL itself. The client is loaded dynamically below, so it
@@ -57,7 +57,7 @@ async function main(): Promise<number> {
   const { precons, preconSynopses } = await import("../src/db/schema");
   const { checkReply, repairPrompt, applyRepair } = await import("../src/lib/synopsis/generate");
   const { synopsisResponseSchemaV8Wire } = await import("../src/lib/synopsis/response-schema");
-  const { PRECON_OVERVIEW_CONTRACT, buildPreconRequest, preconOverviewCall, preconRequestParams } = await import("./lib/precon-overview-request");
+  const { PRECON_OVERVIEW_CONTRACT, buildPreconRequest, preconOverviewCall, preconRequestParams, preconRoleBasis } = await import("./lib/precon-overview-request");
   const { STUB_MODEL, stubReply } = await import("../src/lib/synopsis/stub");
   const { batchCostMicroUsd } = await import("../src/lib/model/prices");
   const { parseReply } = await import("./eval/lib/request.mjs");
@@ -86,6 +86,7 @@ async function main(): Promise<number> {
   }
 
   const contract = PRECON_OVERVIEW_CONTRACT;
+  const basis = preconRoleBasis(process.env.PRECON_OVERVIEW_ROLE_BASIS);
   const call = preconOverviewCall;
   const model = STUB ? STUB_MODEL : call.model;
   const capMicro = capMicroUsd(process.env.PRECON_OVERVIEW_MAX_USD, flag("--max-usd"));
@@ -93,7 +94,7 @@ async function main(): Promise<number> {
 
   const files = (await db.select({ file: precons.fileName }).from(precons).where(isNull(precons.twinOf)).orderBy(precons.fileName)).map((r) => r.file);
   const stored = new Map((await db.select({ file: preconSynopses.preconFile, hash: preconSynopses.inputHash, list: preconSynopses.listFingerprint, model: preconSynopses.model })
-    .from(preconSynopses).where(eq(preconSynopses.contractVersion, contract))).map((r) => [r.file, r]));
+    .from(preconSynopses).where(and(eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)))).map((r) => [r.file, r]));
 
   const inputTokensOf = async (params: object) => (live ? countTokens(params as never) : Math.ceil(JSON.stringify(params).length / 3));
 
@@ -104,12 +105,12 @@ async function main(): Promise<number> {
   let current = 0;
   let held = 0;
   for (const [i, file] of files.entries()) {
-    const req = await buildPreconRequest(file);
+    const req = await buildPreconRequest(file, basis);
     if (!req.ok) {
       skipped.push({ file, why: req.why });
       // No request means no way to show a stored row still fits: it is never carried over meanwhile.
       if (stored.has(file) && !DRY) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
-        .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract)));
+        .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
       continue;
     }
     const { list, params, hash } = req;
@@ -119,12 +120,12 @@ async function main(): Promise<number> {
     if (had && had.hash === hash && had.list === list && had.model === model) {
       current += 1;
       if (!DRY) await db.update(preconSynopses).set({ current: true, checkedAt: new Date() })
-        .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract)));
+        .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
       continue;
     }
     // Its inputs moved: never carried over while its replacement waits (or fails, or is deferred).
     if (had && !DRY) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
-      .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract)));
+      .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
     // `--limit` caps what is SENT, never what is checked: every precon past it is still hashed above,
     // so a row whose inputs moved is marked not current whatever the limit.
     if (limit !== undefined && jobs.length >= limit) {
@@ -152,7 +153,7 @@ async function main(): Promise<number> {
   const worst = jobs.reduce((n, j) => n + j.first.worstMicro, 0);
   console.log(`precons: ${files.length} plain, ${current} current, ${jobs.length} to write, ${held} held back by --limit, ${skipped.length} skipped`);
   for (const s of skipped) console.log(`  skipped ${s.file}: ${s.why}`);
-  console.log(`first answers' worst case $${(worst / 1e6).toFixed(2)}${live ? "" : " (input tokens estimated)"}; cap $${(capMicro / 1e6).toFixed(2)}; model ${model}`);
+  console.log(`first answers' worst case $${(worst / 1e6).toFixed(2)}${live ? "" : " (input tokens estimated)"}; cap $${(capMicro / 1e6).toFixed(2)}; model ${model}; role basis ${basis}`);
   if (DRY) {
     console.log("dry run: nothing was called and nothing was written");
     return 0;
@@ -202,14 +203,14 @@ async function main(): Promise<number> {
     // THE INPUTS ARE RE-CHECKED AT THE WRITE: the catalog can move while a batch runs. The answer is
     // stored either way (it is paid for), but current only when this database still builds the very
     // request it answered; otherwise the next run, or the copy, writes or checks it again.
-    const now = await buildPreconRequest(s.file);
+    const now = await buildPreconRequest(s.file, basis);
     const fits = now.ok && now.hash === m.hash && now.list === m.list;
     if (!fits) moved.push(s.file);
     const row = {
-      preconFile: s.file, contractVersion: contract, listFingerprint: m.list, inputHash: m.hash, model, content: s.content,
+      preconFile: s.file, contractVersion: contract, roleBasis: basis, listFingerprint: m.list, inputHash: m.hash, model, content: s.content,
       inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(),
     };
-    await db.insert(preconSynopses).values(row).onConflictDoUpdate({ target: [preconSynopses.preconFile, preconSynopses.contractVersion], set: row });
+    await db.insert(preconSynopses).values(row).onConflictDoUpdate({ target: [preconSynopses.preconFile, preconSynopses.contractVersion, preconSynopses.roleBasis], set: row });
   };
 
   // `--collect <batch id>`: the results of a batch an earlier run submitted and never collected. Only a

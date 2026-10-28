@@ -3453,7 +3453,7 @@ export const preconTokens = pgTable("precon_tokens", {
  * and the copy are Precon Overviews PRs 2 and 3; nothing writes this table yet). Catalog data: nothing in it is anyone's, because the
  * synopsis reads only the list and the catalog (`synopsis/generate.ts`, `factsWithSource`).
  *
- * One row per PLAIN precon and contract: a Collector's Edition twin repeats its plain edition's list
+ * One row per PLAIN precon, contract and role basis: a Collector's Edition twin repeats its plain edition's list
  * (`precons.twin_of`), so it resolves to the plain one. No FK to `precons`: the ingest replaces that
  * table whole every day, and a cascade would empty this one with it.
  *
@@ -3467,6 +3467,12 @@ export const preconTokens = pgTable("precon_tokens", {
 export const preconSynopses = pgTable("precon_synopses", {
   preconFile: text("precon_file").notNull(),
   contractVersion: integer("contract_version").notNull(),
+  /**
+   * The role basis the reading was built at (`RoleBasis`: `labels` or `classifier`, the
+   * `LABEL_ROLE_COUNTS_ENABLED` switch). The reading's roles feed the prompt, so an Overview fits only
+   * a reader on its basis: the carry-over attaches it only when the owner's basis is this one.
+   */
+  roleBasis: text("role_basis").notNull().default("classifier"),
   listFingerprint: text("list_fingerprint").notNull(),
   inputHash: text("input_hash").notNull(),
   model: text("model").notNull(),
@@ -3478,7 +3484,8 @@ export const preconSynopses = pgTable("precon_synopses", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   checkedAt: timestamp("checked_at").notNull().defaultNow(),
 }, (t) => [
-  primaryKey({ columns: [t.preconFile, t.contractVersion] }),
+  primaryKey({ columns: [t.preconFile, t.contractVersion, t.roleBasis] }),
+  check("precon_synopses_role_basis_check", sql`${t.roleBasis} in ('labels', 'classifier')`),
 ]);
 
 /**
