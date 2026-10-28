@@ -614,7 +614,9 @@ const ARRIVAL_CAP_MS = 2500;
 function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null, showLoading: boolean) {
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || key === null || showLoading || typeof ResizeObserver === "undefined") return;
+    if (!el || key === null || typeof ResizeObserver === "undefined") return;
+    // A shortcut pressed over a tool already open and still counting lets go of the hold it was given.
+    if (showLoading) { el.classList.remove("gentle-hold"); return; }
     // A box holding a control has content worth showing, busy or not: a held panel must never hide
     // something a reader can focus or press (a running Proposed cuts panel's Stop, say).
     const landed = () => el.getBoundingClientRect().height > 0 && toolDrew(el);

@@ -398,7 +398,12 @@ describe("TuningHub opening a tool", () => {
         return drawn ? <h2 id="cuts-heading">Proposed cuts</h2> : <section aria-busy>Counting</section>;
       }
       const spec: HubToolSpec = { tool: "cuts", panel: <Panel />, over: 6, total: 106 };
-      render(<TuningHub deckId="d" drawn tools={[suggested(), spec]} request={{ tool: "cuts", nonce: 1 }} />);
+      const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), spec]} />);
+      // Opened from its tile, still counting: held transparent, as before.
+      fireEvent.click(tile("cuts"));
+      await waitFor(() => expect(document.getElementById("tuning-tool-panel")?.classList.contains("gentle-hold")).toBe(true));
+      // Its shortcut pressed now lets go of the hold, and moves the page once.
+      rerender(<TuningHub deckId="d" drawn tools={[suggested(), spec]} request={{ tool: "cuts", nonce: 1 }} />);
       await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1));
       const panel = document.getElementById("tuning-tool-panel") as HTMLElement;
       // Counting, and not held transparent: the reader was just moved here.

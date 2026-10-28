@@ -83,8 +83,8 @@ export const TAB_PROBE = () => {
  * first scroll movement (`scroll`), the first frame where the tool's panel (its counting frame or its
  * content, `section[aria-label="Proposed cuts"]` / `[aria-labelledby="cuts-heading"]`) is inside the viewport
  * (`shown`) and the first where it holds content rather than the counting frame (`drew`). `shownTop` and
- * `drewTop` are the panel's distance from the viewport top at those two frames: their difference is the
- * jump the fill makes. Read back as `window.__cuts`.
+ * `drewTop` are the panel's document position at those two frames: their difference is the
+ * jump the fill makes, with scrolling taken out. Read back as `window.__cuts`.
  */
 export const CUTS_PRESS_PROBE = () => {
   const stamps = { at: null, scroll: null, shown: null, shownTop: null, drew: null, drewTop: null };
@@ -99,7 +99,8 @@ export const CUTS_PRESS_PROBE = () => {
       if (Number(cs.opacity) < 0.05 || cs.visibility === "hidden") return null;
     }
     const r = el.getBoundingClientRect();
-    return r.height > 0 && r.top < innerHeight && r.bottom > 0 ? r.top : null;
+    // Document position, so a scroll between two frames is not read as the panel moving.
+    return r.height > 0 && r.top < innerHeight && r.bottom > 0 ? r.top + scrollY : null;
   };
   const tick = () => {
     if (window.__cuts !== stamps) return;
