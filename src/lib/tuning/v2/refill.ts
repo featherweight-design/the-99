@@ -24,6 +24,7 @@ const REASON: Partial<Record<Drop["rule"], string>> = {
   overCap: "it is over the price limit",
   offSet: "it is from a set the player excluded",
   notOwned: "the player does not own it",
+  bracketAim: "it would move the deck away from the bracket the player chose",
 };
 
 /** Why a line was rejected: a hard filter's own reason, else the writing rule's own text (`suggestionRules`). */

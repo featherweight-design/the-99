@@ -12,6 +12,8 @@ describe("the v2 refill", () => {
 
   it("tells the model why each line fell, in the rule's own words", () => {
     expect(reasonFor({ rule: "colourIdentity" })).toBe("it is outside the commander's colors");
+    // The player's bracket choice is named as such, so the refill steers away from another bracket-moving card.
+    expect(reasonFor({ rule: "bracketAim" })).toBe("it would move the deck away from the bracket the player chose");
     expect(reasonFor({ rule: "citation", cite: { kind: "games" } })).toBe("its games citation is not supported by the evidence");
     expect(reasonFor({ rule: "noResultClaim" })).toBe(`it broke the rule: ${deckTuningCopy.suggestionRules.noResultClaim}`);
   });
