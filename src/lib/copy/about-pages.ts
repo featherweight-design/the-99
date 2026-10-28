@@ -355,7 +355,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "bracket-marks",
         region: "decks/your-deck/bracket-marks",
         lead: "The marks after a name",
-        rest: " flag what matters for your bracket: Game Changers, mass land denial, extra turns and tutors. Exhibition and Core allow no Game Changers, so count them before the rule zero chat.",
+        rest: " flag Game Changers (WotC’s list) plus mass land denial, extra turns and tutors, which are read from card text and can miss one. Exhibition and Core allow no Game Changers, so count them before the rule zero chat.",
         switch: null,
         since: 1,
         legacy: ["card-marks", "decklist-marks"],
