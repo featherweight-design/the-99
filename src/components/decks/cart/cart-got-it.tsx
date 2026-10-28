@@ -72,8 +72,8 @@ export type CartGotIt = {
   /** The lines an undo is in flight for: their tags are disabled (A9). */
   undoing: ReadonlySet<string>;
   /**
-   * A receipt is on screen. It holds the cart's toast slot (full width at z 60 on a phone), so any other toast the cart
-   * raises waits until it closes rather than drawing under it (cart v2 PR 7).
+   * A receipt is on screen. It holds the cart's toast slot (full width at z 60 on a phone), so the failed spares read's
+   * toast waits until it closes rather than drawing under it (cart v2 PR 7). The ask toasts mount at once, as shipped.
    */
   receiptOpen: boolean;
 };

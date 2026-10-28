@@ -330,8 +330,7 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
         ))}
       </ul>
       {line ? <p data-testid="friend-spares-line" className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{line}</p> : null}
-      {/* On the all-decks cart, a purchase's receipt holds the toast slot: a failed ask waits for it to close. */}
-      <SocialToast toast={cartGotIt?.receiptOpen ? null : toast} onDone={() => setToast(null)} />
+      <SocialToast toast={toast} onDone={() => setToast(null)} />
     </section>
   );
 }

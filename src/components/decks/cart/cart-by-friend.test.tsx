@@ -811,43 +811,6 @@ describe("the failure toast beside a purchase (PR 7, round 2)", () => {
     expect(failure()).toBeTruthy();
   });
 
-  it("a failed ask in By friend waits under the receipt, and shows once it closes", async () => {
-    served = { spares: BOARD, asks: [] };
-    actions.askSpareAction.mockResolvedValue({ ok: false, reason: "gone" });
-    await act(async () => { render(<CartView cart={cart()} {...props} initialView="friend" />); });
-    bought.loadPrintingChoices.mockResolvedValue([{
-      scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
-      collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
-      finishes: ["nonfoil"], owned: { nonfoil: 0 },
-    }]);
-    bought.markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
-    fireEvent.click(within(lineIn("Chris", "Command Tower")).getByRole("button", { name: gotItCopy.row.tagAria("Command Tower") }));
-    const add = await screen.findByRole("button", { name: /^Add/ });
-    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
-    await act(async () => { fireEvent.click(add); });
-    await act(async () => { fireEvent.click(within(lineIn("Peter", "Ghoulcaller")).getByTestId("friend-spare-ask")); });
-    const askFailed = () => screen.queryAllByRole("alert").find((el) => el.textContent?.includes(r.failed)) ?? null;
-    expect(askFailed()).toBeNull();
-    await act(async () => { vi.advanceTimersByTime(9_000); });
-    expect(askFailed()).toBeTruthy();
-  });
-
-  it("a failed ask in a line's spares modal waits under the receipt, and shows once it closes", async () => {
-    served = { spares: BOARD, asks: [] };
-    actions.askSpareAction.mockResolvedValue({ ok: false, reason: "gone" });
-    await act(async () => { render(<CartView cart={cart()} {...props} />); });
-    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
-    await buyJace();
-    const brain = list().getAllByRole("listitem").find((li) => li.textContent?.startsWith("Brainstorm"))!;
-    await act(async () => { fireEvent.click(within(brain).getByTestId("other-ways")); });
-    const dialog = screen.getByRole("dialog");
-    await act(async () => { fireEvent.click(within(dialog).getAllByTestId("friend-spare-ask")[0]); });
-    const askFailed = () => screen.queryAllByRole("alert").find((el) => el.textContent?.includes(r.failed)) ?? null;
-    expect(askFailed()).toBeNull();
-    await act(async () => { vi.advanceTimersByTime(9_000); });
-    expect(askFailed()).toBeTruthy();
-  });
-
   it("a failure that lands while the receipt is up is said only once the receipt closes", async () => {
     // The first read (every card) never lands; the one after the purchase fails while the receipt is up.
     let calls = 0;

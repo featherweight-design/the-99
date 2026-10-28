@@ -27,7 +27,6 @@ import { BAR } from "../../ui/tile-skeleton";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { CartFriendLine, CartHeldSlot } from "./cart-line";
 import { NameFitProvider } from "./cart-facts";
-import { useCartGotIt } from "./cart-got-it";
 import { FRIEND_GRID } from "./cart-columns";
 
 /** One friend's panel: who they are, the spares they hold of the drawn lines, and those lines in the cart's order. */
@@ -142,7 +141,6 @@ export function ByFriendList({
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
-  const receiptOpen = useCartGotIt()?.receiptOpen ?? false;
   const seq = useRef(0);
   // FOCUS AFTER AN ASK, as the modal does: the pressed Ask gives way to the line's Requested, so the focused control
   // leaves the document. Focus lands on that status, unless the reader has moved on.
@@ -208,8 +206,7 @@ export function ByFriendList({
           })}
         </FriendPanel>
       ))}
-      {/* A purchase's receipt holds the cart's toast slot: a failed ask waits for it to close. */}
-      <SocialToast toast={receiptOpen ? null : toast} onDone={() => setToast(null)} />
+      <SocialToast toast={toast} onDone={() => setToast(null)} />
     </div>
     </NameFitProvider>
   );
