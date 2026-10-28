@@ -448,6 +448,534 @@ export const PAGE_MANIFEST: PageManifest = {
           },
           "tools": {}
         }
+      },
+      "desktop": {
+        "d-analysis": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 56582,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/bracket": [
+              0.6826,
+              0.086,
+              0.2944,
+              0.3641
+            ],
+            "decks/analysis/findings": [
+              0.0708,
+              0.494,
+              0.9062,
+              0.1586
+            ]
+          },
+          "tools": {}
+        },
+        "d-analysis-describe": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51636,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/describe": [
+              0.3508,
+              0.3336,
+              0.4154,
+              0.0694
+            ],
+            "decks/analysis/mana": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "mana-balance": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-analysis-tuning": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 47548,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/suggested": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "decks/analysis/cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "suggested-changes": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "proposed-cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-collection2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 214600,
+          "quality": 60,
+          "regions": {
+            "collection/cards/tabs": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "collection/cards/add": [
+              0.8895,
+              0.0617,
+              0.0844,
+              0.0439
+            ],
+            "collection/cards/key": [
+              0.0738,
+              0.3533,
+              0.9,
+              0.0178
+            ],
+            "collection/cards/taken": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ]
+          },
+          "tools": {
+            "find-a-deck": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ],
+            "wishlist": [
+              0.2626,
+              0.1211,
+              0.0549,
+              0.0433
+            ]
+          }
+        },
+        "d-commanders": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 49756,
+          "quality": 60,
+          "regions": {
+            "commanders/for-you/places": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "commanders/for-you/fit": [
+              0.8938,
+              0.5294,
+              0.0615,
+              0.0589
+            ],
+            "commanders/for-you/styles": [
+              0.0923,
+              0.6597,
+              0.8631,
+              0.0201
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-list": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51060,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/row": [
+              0.0746,
+              0.2628,
+              0.0062,
+              0.0089
+            ],
+            "decks/your-deck/bracket-marks": [
+              0.1605,
+              0.4284,
+              0.0123,
+              0.0178
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-top": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 55926,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/commit": [
+              0.8654,
+              0.3972,
+              0.1015,
+              0.04
+            ],
+            "decks/your-deck/mix": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ],
+            "decks/your-deck/lock": [
+              0.5954,
+              0.8051,
+              0.0892,
+              0.0356
+            ]
+          },
+          "tools": {
+            "top-off": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ]
+          }
+        },
+        "d-decks2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 102018,
+          "quality": 60,
+          "regions": {
+            "decks/your-decks/new-deck": [
+              0.9177,
+              0.0178,
+              0.0654,
+              0.0356
+            ],
+            "decks/your-decks/precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ],
+            "decks/your-decks/deck-status": [
+              0.0754,
+              0.6817,
+              0.0458,
+              0.0267
+            ],
+            "decks/your-decks/decks-stats": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "shopping/all-decks/cart": [
+              0.0646,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          },
+          "tools": {
+            "lineup": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          }
+        },
+        "d-discover": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 47252,
+          "quality": 60,
+          "regions": {
+            "commanders/discover/order": [
+              0.8475,
+              0.25,
+              0.1355,
+              0.0356
+            ]
+          },
+          "tools": {
+            "help-me-choose": [
+              0.1824,
+              0.1211,
+              0.0942,
+              0.0433
+            ]
+          }
+        },
+        "d-friends": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 33278,
+          "quality": 60,
+          "regions": {
+            "friends/friends/face": [
+              0.2469,
+              0.04,
+              0.0492,
+              0.0711
+            ],
+            "friends/friends/add": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ],
+            "friends/friends/friend": [
+              0.2869,
+              0.2403,
+              0.3658,
+              0.0242
+            ],
+            "friends/friends/pod": [
+              0.2469,
+              0.3935,
+              0.5538,
+              0.3203
+            ],
+            "friends/friends/rule0": [
+              0.2615,
+              0.6408,
+              0.5246,
+              0.0586
+            ]
+          },
+          "tools": {
+            "friends": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ]
+          }
+        },
+        "d-games": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 39160,
+          "quality": 60,
+          "regions": {
+            "decks/games/log": [
+              0.0708,
+              0.1538,
+              0.0726,
+              0.0356
+            ],
+            "decks/games/matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          },
+          "tools": {
+            "matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          }
+        },
+        "d-home": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 80258,
+          "quality": 60,
+          "regions": {
+            "home/home/help": [
+              0.0088,
+              0.8956,
+              0.0292,
+              0.0422
+            ],
+            "home/home/ready": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.4983
+            ],
+            "home/home/in-use": [
+              0.7369,
+              0.1022,
+              0.2431,
+              0.2061
+            ]
+          },
+          "tools": {}
+        },
+        "d-home-feed": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 56052,
+          "quality": 60,
+          "regions": {
+            "home/whats-new/lead": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.2333
+            ]
+          },
+          "tools": {}
+        },
+        "d-notes": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 54112,
+          "quality": 60,
+          "regions": {
+            "decks/notes/note": [
+              0.3431,
+              0.5795,
+              0.3228,
+              0.0422
+            ]
+          },
+          "tools": {}
+        },
+        "d-shopping": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51146,
+          "quality": 60,
+          "regions": {
+            "shopping/deck-shopping/total": [
+              0.0677,
+              0.3885,
+              0.9123,
+              0.1169
+            ],
+            "shopping/deck-shopping/limit": [
+              0.0677,
+              0.5166,
+              0.9123,
+              0.0333
+            ],
+            "shopping/deck-shopping/standins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "shopping/deck-shopping/spare": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ],
+            "shopping/deck-shopping/buy": [
+              0.4163,
+              0.6934,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {
+            "stand-ins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "friend-spares": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ]
+          }
+        },
+        "d-stats": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51518,
+          "quality": 60,
+          "regions": {
+            "decks/stats/curve": [
+              0.0677,
+              0.1463,
+              0.4508,
+              0.599
+            ]
+          },
+          "tools": {}
+        },
+        "d-upload": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 24854,
+          "quality": 60,
+          "regions": {
+            "collection/upload/drop": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          },
+          "tools": {
+            "collection-sync": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          }
+        },
+        "d-versions-precon": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 59568,
+          "quality": 60,
+          "regions": {
+            "decks/versions/version": [
+              0.0677,
+              0.6038,
+              0.9123,
+              0.0744
+            ],
+            "decks/versions/precon-link": [
+              0.0677,
+              0.6849,
+              0.9123,
+              0.0756
+            ]
+          },
+          "tools": {}
+        }
       }
     },
     "kamigawa": {
@@ -889,6 +1417,534 @@ export const PAGE_MANIFEST: PageManifest = {
               0.3237,
               0.9077,
               0.3272
+            ]
+          },
+          "tools": {}
+        }
+      },
+      "desktop": {
+        "d-analysis": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 55680,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/bracket": [
+              0.6826,
+              0.086,
+              0.2944,
+              0.3641
+            ],
+            "decks/analysis/findings": [
+              0.0708,
+              0.494,
+              0.9062,
+              0.1586
+            ]
+          },
+          "tools": {}
+        },
+        "d-analysis-describe": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 50266,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/describe": [
+              0.3508,
+              0.3336,
+              0.4154,
+              0.0694
+            ],
+            "decks/analysis/mana": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "mana-balance": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-analysis-tuning": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 47296,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/suggested": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "decks/analysis/cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "suggested-changes": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "proposed-cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-collection2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 213790,
+          "quality": 60,
+          "regions": {
+            "collection/cards/tabs": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "collection/cards/add": [
+              0.8895,
+              0.0617,
+              0.0844,
+              0.0439
+            ],
+            "collection/cards/key": [
+              0.0738,
+              0.3533,
+              0.9,
+              0.0178
+            ],
+            "collection/cards/taken": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ]
+          },
+          "tools": {
+            "find-a-deck": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ],
+            "wishlist": [
+              0.2626,
+              0.1211,
+              0.0549,
+              0.0433
+            ]
+          }
+        },
+        "d-commanders": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 48322,
+          "quality": 60,
+          "regions": {
+            "commanders/for-you/places": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "commanders/for-you/fit": [
+              0.8938,
+              0.5294,
+              0.0615,
+              0.0589
+            ],
+            "commanders/for-you/styles": [
+              0.0923,
+              0.6597,
+              0.8631,
+              0.0201
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-list": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 50390,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/row": [
+              0.0746,
+              0.2628,
+              0.0062,
+              0.0089
+            ],
+            "decks/your-deck/bracket-marks": [
+              0.1605,
+              0.4284,
+              0.0123,
+              0.0178
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-top": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 55110,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/commit": [
+              0.8654,
+              0.3972,
+              0.1015,
+              0.04
+            ],
+            "decks/your-deck/mix": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ],
+            "decks/your-deck/lock": [
+              0.5954,
+              0.8051,
+              0.0892,
+              0.0356
+            ]
+          },
+          "tools": {
+            "top-off": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ]
+          }
+        },
+        "d-decks2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 101446,
+          "quality": 60,
+          "regions": {
+            "decks/your-decks/new-deck": [
+              0.9177,
+              0.0178,
+              0.0654,
+              0.0356
+            ],
+            "decks/your-decks/precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ],
+            "decks/your-decks/deck-status": [
+              0.0754,
+              0.6817,
+              0.0458,
+              0.0267
+            ],
+            "decks/your-decks/decks-stats": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "shopping/all-decks/cart": [
+              0.0646,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          },
+          "tools": {
+            "lineup": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          }
+        },
+        "d-discover": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 46028,
+          "quality": 60,
+          "regions": {
+            "commanders/discover/order": [
+              0.8475,
+              0.25,
+              0.1355,
+              0.0356
+            ]
+          },
+          "tools": {
+            "help-me-choose": [
+              0.1824,
+              0.1211,
+              0.0942,
+              0.0433
+            ]
+          }
+        },
+        "d-friends": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 32412,
+          "quality": 60,
+          "regions": {
+            "friends/friends/face": [
+              0.2469,
+              0.04,
+              0.0492,
+              0.0711
+            ],
+            "friends/friends/add": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ],
+            "friends/friends/friend": [
+              0.2869,
+              0.2403,
+              0.3658,
+              0.0242
+            ],
+            "friends/friends/pod": [
+              0.2469,
+              0.3935,
+              0.5538,
+              0.3203
+            ],
+            "friends/friends/rule0": [
+              0.2615,
+              0.6408,
+              0.5246,
+              0.0586
+            ]
+          },
+          "tools": {
+            "friends": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ]
+          }
+        },
+        "d-games": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 38794,
+          "quality": 60,
+          "regions": {
+            "decks/games/log": [
+              0.0708,
+              0.1538,
+              0.0726,
+              0.0356
+            ],
+            "decks/games/matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          },
+          "tools": {
+            "matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          }
+        },
+        "d-home": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 78714,
+          "quality": 60,
+          "regions": {
+            "home/home/help": [
+              0.0088,
+              0.8956,
+              0.0292,
+              0.0422
+            ],
+            "home/home/ready": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.4983
+            ],
+            "home/home/in-use": [
+              0.7369,
+              0.1022,
+              0.2431,
+              0.2061
+            ]
+          },
+          "tools": {}
+        },
+        "d-home-feed": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 54562,
+          "quality": 60,
+          "regions": {
+            "home/whats-new/lead": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.2333
+            ]
+          },
+          "tools": {}
+        },
+        "d-notes": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 53734,
+          "quality": 60,
+          "regions": {
+            "decks/notes/note": [
+              0.3431,
+              0.5795,
+              0.3228,
+              0.0422
+            ]
+          },
+          "tools": {}
+        },
+        "d-shopping": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 50956,
+          "quality": 60,
+          "regions": {
+            "shopping/deck-shopping/total": [
+              0.0677,
+              0.3885,
+              0.9123,
+              0.1169
+            ],
+            "shopping/deck-shopping/limit": [
+              0.0677,
+              0.5166,
+              0.9123,
+              0.0333
+            ],
+            "shopping/deck-shopping/standins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "shopping/deck-shopping/spare": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ],
+            "shopping/deck-shopping/buy": [
+              0.4163,
+              0.6934,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {
+            "stand-ins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "friend-spares": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ]
+          }
+        },
+        "d-stats": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51284,
+          "quality": 60,
+          "regions": {
+            "decks/stats/curve": [
+              0.0677,
+              0.1463,
+              0.4508,
+              0.599
+            ]
+          },
+          "tools": {}
+        },
+        "d-upload": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 23556,
+          "quality": 60,
+          "regions": {
+            "collection/upload/drop": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          },
+          "tools": {
+            "collection-sync": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          }
+        },
+        "d-versions-precon": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 59334,
+          "quality": 60,
+          "regions": {
+            "decks/versions/version": [
+              0.0677,
+              0.6038,
+              0.9123,
+              0.0744
+            ],
+            "decks/versions/precon-link": [
+              0.0677,
+              0.6849,
+              0.9123,
+              0.0756
             ]
           },
           "tools": {}
@@ -1338,6 +2394,534 @@ export const PAGE_MANIFEST: PageManifest = {
           },
           "tools": {}
         }
+      },
+      "desktop": {
+        "d-analysis": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 57588,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/bracket": [
+              0.6826,
+              0.086,
+              0.2944,
+              0.3641
+            ],
+            "decks/analysis/findings": [
+              0.0708,
+              0.494,
+              0.9062,
+              0.1586
+            ]
+          },
+          "tools": {}
+        },
+        "d-analysis-describe": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51016,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/describe": [
+              0.3508,
+              0.3336,
+              0.4154,
+              0.0694
+            ],
+            "decks/analysis/mana": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "mana-balance": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-analysis-tuning": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 47954,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/suggested": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "decks/analysis/cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "suggested-changes": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "proposed-cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-collection2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 214044,
+          "quality": 60,
+          "regions": {
+            "collection/cards/tabs": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "collection/cards/add": [
+              0.8895,
+              0.0617,
+              0.0844,
+              0.0439
+            ],
+            "collection/cards/key": [
+              0.0738,
+              0.3533,
+              0.9,
+              0.0178
+            ],
+            "collection/cards/taken": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ]
+          },
+          "tools": {
+            "find-a-deck": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ],
+            "wishlist": [
+              0.2626,
+              0.1211,
+              0.0549,
+              0.0433
+            ]
+          }
+        },
+        "d-commanders": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 49228,
+          "quality": 60,
+          "regions": {
+            "commanders/for-you/places": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "commanders/for-you/fit": [
+              0.8938,
+              0.5294,
+              0.0615,
+              0.0589
+            ],
+            "commanders/for-you/styles": [
+              0.0923,
+              0.6597,
+              0.8631,
+              0.0201
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-list": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 49770,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/row": [
+              0.0746,
+              0.2628,
+              0.0062,
+              0.0089
+            ],
+            "decks/your-deck/bracket-marks": [
+              0.1605,
+              0.4284,
+              0.0123,
+              0.0178
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-top": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 55602,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/commit": [
+              0.8654,
+              0.3972,
+              0.1015,
+              0.04
+            ],
+            "decks/your-deck/mix": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ],
+            "decks/your-deck/lock": [
+              0.5954,
+              0.8051,
+              0.0892,
+              0.0356
+            ]
+          },
+          "tools": {
+            "top-off": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ]
+          }
+        },
+        "d-decks2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 101892,
+          "quality": 60,
+          "regions": {
+            "decks/your-decks/new-deck": [
+              0.9177,
+              0.0178,
+              0.0654,
+              0.0356
+            ],
+            "decks/your-decks/precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ],
+            "decks/your-decks/deck-status": [
+              0.0754,
+              0.6817,
+              0.0458,
+              0.0267
+            ],
+            "decks/your-decks/decks-stats": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "shopping/all-decks/cart": [
+              0.0646,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          },
+          "tools": {
+            "lineup": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          }
+        },
+        "d-discover": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 47024,
+          "quality": 60,
+          "regions": {
+            "commanders/discover/order": [
+              0.8475,
+              0.25,
+              0.1355,
+              0.0356
+            ]
+          },
+          "tools": {
+            "help-me-choose": [
+              0.1824,
+              0.1211,
+              0.0942,
+              0.0433
+            ]
+          }
+        },
+        "d-friends": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 33266,
+          "quality": 60,
+          "regions": {
+            "friends/friends/face": [
+              0.2469,
+              0.04,
+              0.0492,
+              0.0711
+            ],
+            "friends/friends/add": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ],
+            "friends/friends/friend": [
+              0.2869,
+              0.2403,
+              0.3658,
+              0.0242
+            ],
+            "friends/friends/pod": [
+              0.2469,
+              0.3935,
+              0.5538,
+              0.3203
+            ],
+            "friends/friends/rule0": [
+              0.2615,
+              0.6408,
+              0.5246,
+              0.0586
+            ]
+          },
+          "tools": {
+            "friends": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ]
+          }
+        },
+        "d-games": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 39446,
+          "quality": 60,
+          "regions": {
+            "decks/games/log": [
+              0.0708,
+              0.1538,
+              0.0726,
+              0.0356
+            ],
+            "decks/games/matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          },
+          "tools": {
+            "matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          }
+        },
+        "d-home": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 79822,
+          "quality": 60,
+          "regions": {
+            "home/home/help": [
+              0.0088,
+              0.8956,
+              0.0292,
+              0.0422
+            ],
+            "home/home/ready": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.4983
+            ],
+            "home/home/in-use": [
+              0.7369,
+              0.1022,
+              0.2431,
+              0.2061
+            ]
+          },
+          "tools": {}
+        },
+        "d-home-feed": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 55586,
+          "quality": 60,
+          "regions": {
+            "home/whats-new/lead": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.2333
+            ]
+          },
+          "tools": {}
+        },
+        "d-notes": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 54146,
+          "quality": 60,
+          "regions": {
+            "decks/notes/note": [
+              0.3431,
+              0.5795,
+              0.3228,
+              0.0422
+            ]
+          },
+          "tools": {}
+        },
+        "d-shopping": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51388,
+          "quality": 60,
+          "regions": {
+            "shopping/deck-shopping/total": [
+              0.0677,
+              0.3885,
+              0.9123,
+              0.1169
+            ],
+            "shopping/deck-shopping/limit": [
+              0.0677,
+              0.5166,
+              0.9123,
+              0.0333
+            ],
+            "shopping/deck-shopping/standins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "shopping/deck-shopping/spare": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ],
+            "shopping/deck-shopping/buy": [
+              0.4163,
+              0.6934,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {
+            "stand-ins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "friend-spares": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ]
+          }
+        },
+        "d-stats": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51630,
+          "quality": 60,
+          "regions": {
+            "decks/stats/curve": [
+              0.0677,
+              0.1463,
+              0.4508,
+              0.599
+            ]
+          },
+          "tools": {}
+        },
+        "d-upload": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 24560,
+          "quality": 60,
+          "regions": {
+            "collection/upload/drop": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          },
+          "tools": {
+            "collection-sync": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          }
+        },
+        "d-versions-precon": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 59966,
+          "quality": 60,
+          "regions": {
+            "decks/versions/version": [
+              0.0677,
+              0.6038,
+              0.9123,
+              0.0744
+            ],
+            "decks/versions/precon-link": [
+              0.0677,
+              0.6849,
+              0.9123,
+              0.0756
+            ]
+          },
+          "tools": {}
+        }
       }
     },
     "phyrexia": {
@@ -1779,6 +3363,534 @@ export const PAGE_MANIFEST: PageManifest = {
               0.3237,
               0.9077,
               0.3272
+            ]
+          },
+          "tools": {}
+        }
+      },
+      "desktop": {
+        "d-analysis": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 55200,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/bracket": [
+              0.6826,
+              0.086,
+              0.2944,
+              0.3909
+            ],
+            "decks/analysis/findings": [
+              0.0708,
+              0.508,
+              0.9062,
+              0.1586
+            ]
+          },
+          "tools": {}
+        },
+        "d-analysis-describe": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51442,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/describe": [
+              0.3508,
+              0.3697,
+              0.4154,
+              0.0694
+            ],
+            "decks/analysis/mana": [
+              0.5277,
+              0.723,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "mana-balance": [
+              0.5277,
+              0.723,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-analysis-tuning": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 46468,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/suggested": [
+              0.0708,
+              0.4839,
+              0.4492,
+              0.1244
+            ],
+            "decks/analysis/cuts": [
+              0.0708,
+              0.6195,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "suggested-changes": [
+              0.0708,
+              0.4839,
+              0.4492,
+              0.1244
+            ],
+            "proposed-cuts": [
+              0.0708,
+              0.6195,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-collection2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 213848,
+          "quality": 60,
+          "regions": {
+            "collection/cards/tabs": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "collection/cards/add": [
+              0.8895,
+              0.0617,
+              0.0844,
+              0.0439
+            ],
+            "collection/cards/key": [
+              0.0738,
+              0.3533,
+              0.9,
+              0.0178
+            ],
+            "collection/cards/taken": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ]
+          },
+          "tools": {
+            "find-a-deck": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ],
+            "wishlist": [
+              0.2626,
+              0.1211,
+              0.0549,
+              0.0433
+            ]
+          }
+        },
+        "d-commanders": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 50860,
+          "quality": 60,
+          "regions": {
+            "commanders/for-you/places": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "commanders/for-you/fit": [
+              0.8938,
+              0.5294,
+              0.0615,
+              0.0589
+            ],
+            "commanders/for-you/styles": [
+              0.0923,
+              0.6597,
+              0.8631,
+              0.0201
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-list": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 49132,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/row": [
+              0.0746,
+              0.2628,
+              0.0062,
+              0.0089
+            ],
+            "decks/your-deck/bracket-marks": [
+              0.1605,
+              0.4284,
+              0.0123,
+              0.0178
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-top": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 54366,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/commit": [
+              0.8654,
+              0.3972,
+              0.1015,
+              0.04
+            ],
+            "decks/your-deck/mix": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ],
+            "decks/your-deck/lock": [
+              0.5954,
+              0.8051,
+              0.0892,
+              0.0356
+            ]
+          },
+          "tools": {
+            "top-off": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ]
+          }
+        },
+        "d-decks2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 102420,
+          "quality": 60,
+          "regions": {
+            "decks/your-decks/new-deck": [
+              0.9177,
+              0.0178,
+              0.0654,
+              0.0356
+            ],
+            "decks/your-decks/precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ],
+            "decks/your-decks/deck-status": [
+              0.0754,
+              0.6817,
+              0.0458,
+              0.0267
+            ],
+            "decks/your-decks/decks-stats": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "shopping/all-decks/cart": [
+              0.0646,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          },
+          "tools": {
+            "lineup": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          }
+        },
+        "d-discover": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 48228,
+          "quality": 60,
+          "regions": {
+            "commanders/discover/order": [
+              0.8475,
+              0.25,
+              0.1355,
+              0.0356
+            ]
+          },
+          "tools": {
+            "help-me-choose": [
+              0.1824,
+              0.1211,
+              0.0942,
+              0.0433
+            ]
+          }
+        },
+        "d-friends": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 31992,
+          "quality": 60,
+          "regions": {
+            "friends/friends/face": [
+              0.2469,
+              0.04,
+              0.0492,
+              0.0711
+            ],
+            "friends/friends/add": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ],
+            "friends/friends/friend": [
+              0.2869,
+              0.2403,
+              0.3658,
+              0.0242
+            ],
+            "friends/friends/pod": [
+              0.2469,
+              0.3935,
+              0.5538,
+              0.3203
+            ],
+            "friends/friends/rule0": [
+              0.2615,
+              0.6408,
+              0.5246,
+              0.0586
+            ]
+          },
+          "tools": {
+            "friends": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ]
+          }
+        },
+        "d-games": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 38778,
+          "quality": 60,
+          "regions": {
+            "decks/games/log": [
+              0.0708,
+              0.1538,
+              0.0726,
+              0.0356
+            ],
+            "decks/games/matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          },
+          "tools": {
+            "matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          }
+        },
+        "d-home": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 79440,
+          "quality": 60,
+          "regions": {
+            "home/home/help": [
+              0.0088,
+              0.8956,
+              0.0292,
+              0.0422
+            ],
+            "home/home/ready": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.4983
+            ],
+            "home/home/in-use": [
+              0.7369,
+              0.1022,
+              0.2431,
+              0.2061
+            ]
+          },
+          "tools": {}
+        },
+        "d-home-feed": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 54226,
+          "quality": 60,
+          "regions": {
+            "home/whats-new/lead": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.2333
+            ]
+          },
+          "tools": {}
+        },
+        "d-notes": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 52056,
+          "quality": 60,
+          "regions": {
+            "decks/notes/note": [
+              0.3431,
+              0.5795,
+              0.3228,
+              0.0422
+            ]
+          },
+          "tools": {}
+        },
+        "d-shopping": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 49688,
+          "quality": 60,
+          "regions": {
+            "shopping/deck-shopping/total": [
+              0.0677,
+              0.3885,
+              0.9123,
+              0.1169
+            ],
+            "shopping/deck-shopping/limit": [
+              0.0677,
+              0.5166,
+              0.9123,
+              0.0333
+            ],
+            "shopping/deck-shopping/standins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "shopping/deck-shopping/spare": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ],
+            "shopping/deck-shopping/buy": [
+              0.4163,
+              0.6934,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {
+            "stand-ins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "friend-spares": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ]
+          }
+        },
+        "d-stats": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 50656,
+          "quality": 60,
+          "regions": {
+            "decks/stats/curve": [
+              0.0677,
+              0.1463,
+              0.4508,
+              0.599
+            ]
+          },
+          "tools": {}
+        },
+        "d-upload": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 23672,
+          "quality": 60,
+          "regions": {
+            "collection/upload/drop": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          },
+          "tools": {
+            "collection-sync": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          }
+        },
+        "d-versions-precon": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 56680,
+          "quality": 60,
+          "regions": {
+            "decks/versions/version": [
+              0.0677,
+              0.6038,
+              0.9123,
+              0.0744
+            ],
+            "decks/versions/precon-link": [
+              0.0677,
+              0.6849,
+              0.9123,
+              0.0756
             ]
           },
           "tools": {}
@@ -2228,6 +4340,534 @@ export const PAGE_MANIFEST: PageManifest = {
           },
           "tools": {}
         }
+      },
+      "desktop": {
+        "d-analysis": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 55834,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/bracket": [
+              0.6826,
+              0.086,
+              0.2944,
+              0.3641
+            ],
+            "decks/analysis/findings": [
+              0.0708,
+              0.494,
+              0.9062,
+              0.1586
+            ]
+          },
+          "tools": {}
+        },
+        "d-analysis-describe": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 49940,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/describe": [
+              0.3508,
+              0.3336,
+              0.4154,
+              0.0694
+            ],
+            "decks/analysis/mana": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "mana-balance": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-analysis-tuning": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 47218,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/suggested": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "decks/analysis/cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "suggested-changes": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "proposed-cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-collection2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 213588,
+          "quality": 60,
+          "regions": {
+            "collection/cards/tabs": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "collection/cards/add": [
+              0.8895,
+              0.0617,
+              0.0844,
+              0.0439
+            ],
+            "collection/cards/key": [
+              0.0738,
+              0.3533,
+              0.9,
+              0.0178
+            ],
+            "collection/cards/taken": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ]
+          },
+          "tools": {
+            "find-a-deck": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ],
+            "wishlist": [
+              0.2626,
+              0.1211,
+              0.0549,
+              0.0433
+            ]
+          }
+        },
+        "d-commanders": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 47100,
+          "quality": 60,
+          "regions": {
+            "commanders/for-you/places": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "commanders/for-you/fit": [
+              0.8938,
+              0.5294,
+              0.0615,
+              0.0589
+            ],
+            "commanders/for-you/styles": [
+              0.0923,
+              0.6597,
+              0.8631,
+              0.0201
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-list": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 49440,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/row": [
+              0.0746,
+              0.2628,
+              0.0062,
+              0.0089
+            ],
+            "decks/your-deck/bracket-marks": [
+              0.1605,
+              0.4284,
+              0.0123,
+              0.0178
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-top": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 54516,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/commit": [
+              0.8654,
+              0.3972,
+              0.1015,
+              0.04
+            ],
+            "decks/your-deck/mix": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ],
+            "decks/your-deck/lock": [
+              0.5954,
+              0.8051,
+              0.0892,
+              0.0356
+            ]
+          },
+          "tools": {
+            "top-off": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ]
+          }
+        },
+        "d-decks2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 100484,
+          "quality": 60,
+          "regions": {
+            "decks/your-decks/new-deck": [
+              0.9177,
+              0.0178,
+              0.0654,
+              0.0356
+            ],
+            "decks/your-decks/precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ],
+            "decks/your-decks/deck-status": [
+              0.0754,
+              0.6817,
+              0.0458,
+              0.0267
+            ],
+            "decks/your-decks/decks-stats": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "shopping/all-decks/cart": [
+              0.0646,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          },
+          "tools": {
+            "lineup": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          }
+        },
+        "d-discover": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 45822,
+          "quality": 60,
+          "regions": {
+            "commanders/discover/order": [
+              0.8475,
+              0.25,
+              0.1355,
+              0.0356
+            ]
+          },
+          "tools": {
+            "help-me-choose": [
+              0.1824,
+              0.1211,
+              0.0942,
+              0.0433
+            ]
+          }
+        },
+        "d-friends": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 32912,
+          "quality": 60,
+          "regions": {
+            "friends/friends/face": [
+              0.2469,
+              0.04,
+              0.0492,
+              0.0711
+            ],
+            "friends/friends/add": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ],
+            "friends/friends/friend": [
+              0.2869,
+              0.2403,
+              0.3658,
+              0.0242
+            ],
+            "friends/friends/pod": [
+              0.2469,
+              0.3935,
+              0.5538,
+              0.3203
+            ],
+            "friends/friends/rule0": [
+              0.2615,
+              0.6408,
+              0.5246,
+              0.0586
+            ]
+          },
+          "tools": {
+            "friends": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ]
+          }
+        },
+        "d-games": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 38662,
+          "quality": 60,
+          "regions": {
+            "decks/games/log": [
+              0.0708,
+              0.1538,
+              0.0726,
+              0.0356
+            ],
+            "decks/games/matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          },
+          "tools": {
+            "matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          }
+        },
+        "d-home": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 76968,
+          "quality": 60,
+          "regions": {
+            "home/home/help": [
+              0.0088,
+              0.8956,
+              0.0292,
+              0.0422
+            ],
+            "home/home/ready": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.4983
+            ],
+            "home/home/in-use": [
+              0.7369,
+              0.1022,
+              0.2431,
+              0.2061
+            ]
+          },
+          "tools": {}
+        },
+        "d-home-feed": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 52874,
+          "quality": 60,
+          "regions": {
+            "home/whats-new/lead": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.2333
+            ]
+          },
+          "tools": {}
+        },
+        "d-notes": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 52678,
+          "quality": 60,
+          "regions": {
+            "decks/notes/note": [
+              0.3431,
+              0.5795,
+              0.3228,
+              0.0422
+            ]
+          },
+          "tools": {}
+        },
+        "d-shopping": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 50142,
+          "quality": 60,
+          "regions": {
+            "shopping/deck-shopping/total": [
+              0.0677,
+              0.3885,
+              0.9123,
+              0.1169
+            ],
+            "shopping/deck-shopping/limit": [
+              0.0677,
+              0.5166,
+              0.9123,
+              0.0333
+            ],
+            "shopping/deck-shopping/standins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "shopping/deck-shopping/spare": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ],
+            "shopping/deck-shopping/buy": [
+              0.4163,
+              0.6934,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {
+            "stand-ins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "friend-spares": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ]
+          }
+        },
+        "d-stats": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51282,
+          "quality": 60,
+          "regions": {
+            "decks/stats/curve": [
+              0.0677,
+              0.1463,
+              0.4508,
+              0.599
+            ]
+          },
+          "tools": {}
+        },
+        "d-upload": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 23892,
+          "quality": 60,
+          "regions": {
+            "collection/upload/drop": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          },
+          "tools": {
+            "collection-sync": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          }
+        },
+        "d-versions-precon": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 58522,
+          "quality": 60,
+          "regions": {
+            "decks/versions/version": [
+              0.0677,
+              0.6038,
+              0.9123,
+              0.0744
+            ],
+            "decks/versions/precon-link": [
+              0.0677,
+              0.6849,
+              0.9123,
+              0.0756
+            ]
+          },
+          "tools": {}
+        }
       }
     },
     "kaldheim": {
@@ -2673,8 +5313,1641 @@ export const PAGE_MANIFEST: PageManifest = {
           },
           "tools": {}
         }
+      },
+      "desktop": {
+        "d-analysis": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 56040,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/bracket": [
+              0.6826,
+              0.086,
+              0.2944,
+              0.3641
+            ],
+            "decks/analysis/findings": [
+              0.0708,
+              0.494,
+              0.9062,
+              0.1586
+            ]
+          },
+          "tools": {}
+        },
+        "d-analysis-describe": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51506,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/describe": [
+              0.3508,
+              0.3336,
+              0.4154,
+              0.0694
+            ],
+            "decks/analysis/mana": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "mana-balance": [
+              0.5277,
+              0.6869,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-analysis-tuning": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 47528,
+          "quality": 60,
+          "regions": {
+            "decks/analysis/suggested": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "decks/analysis/cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          },
+          "tools": {
+            "suggested-changes": [
+              0.0708,
+              0.4844,
+              0.4492,
+              0.1244
+            ],
+            "proposed-cuts": [
+              0.0708,
+              0.6199,
+              0.4492,
+              0.1244
+            ]
+          }
+        },
+        "d-collection2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 213660,
+          "quality": 60,
+          "regions": {
+            "collection/cards/tabs": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "collection/cards/add": [
+              0.8895,
+              0.0617,
+              0.0844,
+              0.0439
+            ],
+            "collection/cards/key": [
+              0.0738,
+              0.3533,
+              0.9,
+              0.0178
+            ],
+            "collection/cards/taken": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ]
+          },
+          "tools": {
+            "find-a-deck": [
+              0.2349,
+              0.6764,
+              0.054,
+              0.0167
+            ],
+            "wishlist": [
+              0.2626,
+              0.1211,
+              0.0549,
+              0.0433
+            ]
+          }
+        },
+        "d-commanders": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 49878,
+          "quality": 60,
+          "regions": {
+            "commanders/for-you/places": [
+              0.0477,
+              0.1211,
+              0.9523,
+              0.0444
+            ],
+            "commanders/for-you/fit": [
+              0.8938,
+              0.5294,
+              0.0615,
+              0.0589
+            ],
+            "commanders/for-you/styles": [
+              0.0923,
+              0.6597,
+              0.8631,
+              0.0201
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-list": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 49618,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/row": [
+              0.0746,
+              0.2628,
+              0.0062,
+              0.0089
+            ],
+            "decks/your-deck/bracket-marks": [
+              0.1605,
+              0.4284,
+              0.0123,
+              0.0178
+            ]
+          },
+          "tools": {}
+        },
+        "d-deck-top": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 55150,
+          "quality": 60,
+          "regions": {
+            "decks/your-deck/commit": [
+              0.8654,
+              0.3972,
+              0.1015,
+              0.04
+            ],
+            "decks/your-deck/mix": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ],
+            "decks/your-deck/lock": [
+              0.5954,
+              0.8051,
+              0.0892,
+              0.0356
+            ]
+          },
+          "tools": {
+            "top-off": [
+              0.0477,
+              0.5124,
+              0.9523,
+              0.2092
+            ]
+          }
+        },
+        "d-decks2": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 101448,
+          "quality": 60,
+          "regions": {
+            "decks/your-decks/new-deck": [
+              0.9177,
+              0.0178,
+              0.0654,
+              0.0356
+            ],
+            "decks/your-decks/precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ],
+            "decks/your-decks/deck-status": [
+              0.0754,
+              0.6817,
+              0.0458,
+              0.0267
+            ],
+            "decks/your-decks/decks-stats": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "shopping/all-decks/cart": [
+              0.0646,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          },
+          "tools": {
+            "lineup": [
+              0.1105,
+              0.1894,
+              0.043,
+              0.0333
+            ],
+            "precons": [
+              0.5285,
+              0.09,
+              0.4546,
+              0.0672
+            ]
+          }
+        },
+        "d-discover": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 47548,
+          "quality": 60,
+          "regions": {
+            "commanders/discover/order": [
+              0.8475,
+              0.25,
+              0.1355,
+              0.0356
+            ]
+          },
+          "tools": {
+            "help-me-choose": [
+              0.1824,
+              0.1211,
+              0.0942,
+              0.0433
+            ]
+          }
+        },
+        "d-friends": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 33036,
+          "quality": 60,
+          "regions": {
+            "friends/friends/face": [
+              0.2469,
+              0.04,
+              0.0492,
+              0.0711
+            ],
+            "friends/friends/add": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ],
+            "friends/friends/friend": [
+              0.2869,
+              0.2403,
+              0.3658,
+              0.0242
+            ],
+            "friends/friends/pod": [
+              0.2469,
+              0.3935,
+              0.5538,
+              0.3203
+            ],
+            "friends/friends/rule0": [
+              0.2615,
+              0.6408,
+              0.5246,
+              0.0586
+            ]
+          },
+          "tools": {
+            "friends": [
+              0.6992,
+              0.04,
+              0.1015,
+              0.0489
+            ]
+          }
+        },
+        "d-games": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 38898,
+          "quality": 60,
+          "regions": {
+            "decks/games/log": [
+              0.0708,
+              0.1538,
+              0.0726,
+              0.0356
+            ],
+            "decks/games/matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          },
+          "tools": {
+            "matchups": [
+              0.0708,
+              0.2827,
+              0.9062,
+              0.2308
+            ]
+          }
+        },
+        "d-home": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 80182,
+          "quality": 60,
+          "regions": {
+            "home/home/help": [
+              0.0088,
+              0.8956,
+              0.0292,
+              0.0422
+            ],
+            "home/home/ready": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.4983
+            ],
+            "home/home/in-use": [
+              0.7369,
+              0.1022,
+              0.2431,
+              0.2061
+            ]
+          },
+          "tools": {}
+        },
+        "d-home-feed": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 55790,
+          "quality": 60,
+          "regions": {
+            "home/whats-new/lead": [
+              0.0677,
+              0.1022,
+              0.6538,
+              0.2333
+            ]
+          },
+          "tools": {}
+        },
+        "d-notes": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 54066,
+          "quality": 60,
+          "regions": {
+            "decks/notes/note": [
+              0.3431,
+              0.5795,
+              0.3228,
+              0.0422
+            ]
+          },
+          "tools": {}
+        },
+        "d-shopping": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51208,
+          "quality": 60,
+          "regions": {
+            "shopping/deck-shopping/total": [
+              0.0677,
+              0.3885,
+              0.9123,
+              0.1169
+            ],
+            "shopping/deck-shopping/limit": [
+              0.0677,
+              0.5166,
+              0.9123,
+              0.0333
+            ],
+            "shopping/deck-shopping/standins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "shopping/deck-shopping/spare": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ],
+            "shopping/deck-shopping/buy": [
+              0.4163,
+              0.6934,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {
+            "stand-ins": [
+              0.3898,
+              0.688,
+              0.0188,
+              0.0289
+            ],
+            "friend-spares": [
+              0.8367,
+              0.688,
+              0.0357,
+              0.0289
+            ]
+          }
+        },
+        "d-stats": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 51648,
+          "quality": 60,
+          "regions": {
+            "decks/stats/curve": [
+              0.0677,
+              0.1463,
+              0.4508,
+              0.599
+            ]
+          },
+          "tools": {}
+        },
+        "d-upload": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 24384,
+          "quality": 60,
+          "regions": {
+            "collection/upload/drop": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          },
+          "tools": {
+            "collection-sync": [
+              0.2685,
+              0.242,
+              0.5108,
+              0.245
+            ]
+          }
+        },
+        "d-versions-precon": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 59918,
+          "quality": 60,
+          "regions": {
+            "decks/versions/version": [
+              0.0677,
+              0.6038,
+              0.9123,
+              0.0744
+            ],
+            "decks/versions/precon-link": [
+              0.0677,
+              0.6849,
+              0.9123,
+              0.0756
+            ]
+          },
+          "tools": {}
+        }
       }
     }
   },
-  "tools": {}
+  "tools": {
+    "amonkhet": {
+      "collection-sync": {
+        "capture": "d-upload",
+        "w": 1070,
+        "h": 713,
+        "bytes": 17394,
+        "quality": 60,
+        "halo": [
+          0.0337,
+          0.2669,
+          0.9313,
+          0.4642
+        ]
+      },
+      "find-a-deck": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 79292,
+        "quality": 60,
+        "halo": [
+          0.4467,
+          0.4822,
+          0.1081,
+          0.0346
+        ]
+      },
+      "friend-spares": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 5378,
+        "quality": 60,
+        "halo": [
+          0.6735,
+          0.4692,
+          0.0714,
+          0.06
+        ]
+      },
+      "friends": {
+        "capture": "d-friends",
+        "w": 975,
+        "h": 650,
+        "bytes": 5406,
+        "quality": 60,
+        "halo": [
+          0.3985,
+          0.0831,
+          0.2031,
+          0.1016
+        ]
+      },
+      "help-me-choose": {
+        "capture": "d-discover",
+        "w": 975,
+        "h": 650,
+        "bytes": 15124,
+        "quality": 60,
+        "halo": [
+          0.3648,
+          0.2517,
+          0.1883,
+          0.0901
+        ]
+      },
+      "lineup": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 14640,
+        "quality": 60,
+        "halo": [
+          0.2211,
+          0.3938,
+          0.0861,
+          0.0693
+        ]
+      },
+      "mana-balance": {
+        "capture": "d-analysis-describe",
+        "w": 975,
+        "h": 650,
+        "bytes": 8332,
+        "quality": 60,
+        "halo": [
+          0.0554,
+          0.37,
+          0.8985,
+          0.2587
+        ]
+      },
+      "matchups": {
+        "capture": "d-games",
+        "w": 1839,
+        "h": 1226,
+        "bytes": 34010,
+        "quality": 60,
+        "halo": [
+          0.0196,
+          0.3114,
+          0.9608,
+          0.2543
+        ]
+      },
+      "precons": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 17798,
+        "quality": 60,
+        "halo": [
+          0.0569,
+          0.1871,
+          0.9092,
+          0.1397
+        ]
+      },
+      "proposed-cuts": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 19148,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "stand-ins": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 18318,
+        "quality": 60,
+        "halo": [
+          0.4812,
+          0.4692,
+          0.0376,
+          0.06
+        ]
+      },
+      "suggested-changes": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 12306,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "top-off": {
+        "capture": "d-deck-top",
+        "w": 1929,
+        "h": 1285,
+        "bytes": 53466,
+        "quality": 60,
+        "halo": [
+          0.0373,
+          0.488,
+          0.9627,
+          0.2197
+        ]
+      },
+      "wishlist": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 27292,
+        "quality": 60,
+        "halo": [
+          0.4452,
+          0.2517,
+          0.1098,
+          0.0901
+        ]
+      }
+    },
+    "kamigawa": {
+      "collection-sync": {
+        "capture": "d-upload",
+        "w": 1070,
+        "h": 713,
+        "bytes": 17476,
+        "quality": 60,
+        "halo": [
+          0.0337,
+          0.2669,
+          0.9313,
+          0.4642
+        ]
+      },
+      "find-a-deck": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 79170,
+        "quality": 60,
+        "halo": [
+          0.4467,
+          0.4822,
+          0.1081,
+          0.0346
+        ]
+      },
+      "friend-spares": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 5122,
+        "quality": 60,
+        "halo": [
+          0.6735,
+          0.4692,
+          0.0714,
+          0.06
+        ]
+      },
+      "friends": {
+        "capture": "d-friends",
+        "w": 975,
+        "h": 650,
+        "bytes": 5264,
+        "quality": 60,
+        "halo": [
+          0.3985,
+          0.0831,
+          0.2031,
+          0.1016
+        ]
+      },
+      "help-me-choose": {
+        "capture": "d-discover",
+        "w": 975,
+        "h": 650,
+        "bytes": 14044,
+        "quality": 60,
+        "halo": [
+          0.3648,
+          0.2517,
+          0.1883,
+          0.0901
+        ]
+      },
+      "lineup": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 14340,
+        "quality": 60,
+        "halo": [
+          0.2211,
+          0.3938,
+          0.0861,
+          0.0693
+        ]
+      },
+      "mana-balance": {
+        "capture": "d-analysis-describe",
+        "w": 975,
+        "h": 650,
+        "bytes": 8098,
+        "quality": 60,
+        "halo": [
+          0.0554,
+          0.37,
+          0.8985,
+          0.2587
+        ]
+      },
+      "matchups": {
+        "capture": "d-games",
+        "w": 1839,
+        "h": 1226,
+        "bytes": 33812,
+        "quality": 60,
+        "halo": [
+          0.0196,
+          0.3114,
+          0.9608,
+          0.2543
+        ]
+      },
+      "precons": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 17838,
+        "quality": 60,
+        "halo": [
+          0.0569,
+          0.1871,
+          0.9092,
+          0.1397
+        ]
+      },
+      "proposed-cuts": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 18778,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "stand-ins": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 18214,
+        "quality": 60,
+        "halo": [
+          0.4812,
+          0.4692,
+          0.0376,
+          0.06
+        ]
+      },
+      "suggested-changes": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 11912,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "top-off": {
+        "capture": "d-deck-top",
+        "w": 1929,
+        "h": 1285,
+        "bytes": 53520,
+        "quality": 60,
+        "halo": [
+          0.0373,
+          0.488,
+          0.9627,
+          0.2197
+        ]
+      },
+      "wishlist": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 26476,
+        "quality": 60,
+        "halo": [
+          0.4452,
+          0.2517,
+          0.1098,
+          0.0901
+        ]
+      }
+    },
+    "ixalan": {
+      "collection-sync": {
+        "capture": "d-upload",
+        "w": 1070,
+        "h": 713,
+        "bytes": 17994,
+        "quality": 60,
+        "halo": [
+          0.0337,
+          0.2669,
+          0.9313,
+          0.4642
+        ]
+      },
+      "find-a-deck": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 79280,
+        "quality": 60,
+        "halo": [
+          0.4467,
+          0.4822,
+          0.1081,
+          0.0346
+        ]
+      },
+      "friend-spares": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 5164,
+        "quality": 60,
+        "halo": [
+          0.6735,
+          0.4692,
+          0.0714,
+          0.06
+        ]
+      },
+      "friends": {
+        "capture": "d-friends",
+        "w": 975,
+        "h": 650,
+        "bytes": 5348,
+        "quality": 60,
+        "halo": [
+          0.3985,
+          0.0831,
+          0.2031,
+          0.1016
+        ]
+      },
+      "help-me-choose": {
+        "capture": "d-discover",
+        "w": 975,
+        "h": 650,
+        "bytes": 14814,
+        "quality": 60,
+        "halo": [
+          0.3648,
+          0.2517,
+          0.1883,
+          0.0901
+        ]
+      },
+      "lineup": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 14592,
+        "quality": 60,
+        "halo": [
+          0.2211,
+          0.3938,
+          0.0861,
+          0.0693
+        ]
+      },
+      "mana-balance": {
+        "capture": "d-analysis-describe",
+        "w": 975,
+        "h": 650,
+        "bytes": 8226,
+        "quality": 60,
+        "halo": [
+          0.0554,
+          0.37,
+          0.8985,
+          0.2587
+        ]
+      },
+      "matchups": {
+        "capture": "d-games",
+        "w": 1839,
+        "h": 1226,
+        "bytes": 33998,
+        "quality": 60,
+        "halo": [
+          0.0196,
+          0.3114,
+          0.9608,
+          0.2543
+        ]
+      },
+      "precons": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 17902,
+        "quality": 60,
+        "halo": [
+          0.0569,
+          0.1871,
+          0.9092,
+          0.1397
+        ]
+      },
+      "proposed-cuts": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 19446,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "stand-ins": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 18330,
+        "quality": 60,
+        "halo": [
+          0.4812,
+          0.4692,
+          0.0376,
+          0.06
+        ]
+      },
+      "suggested-changes": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 12462,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "top-off": {
+        "capture": "d-deck-top",
+        "w": 1929,
+        "h": 1285,
+        "bytes": 54468,
+        "quality": 60,
+        "halo": [
+          0.0373,
+          0.488,
+          0.9627,
+          0.2197
+        ]
+      },
+      "wishlist": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 26966,
+        "quality": 60,
+        "halo": [
+          0.4452,
+          0.2517,
+          0.1098,
+          0.0901
+        ]
+      }
+    },
+    "phyrexia": {
+      "collection-sync": {
+        "capture": "d-upload",
+        "w": 1070,
+        "h": 713,
+        "bytes": 16558,
+        "quality": 60,
+        "halo": [
+          0.0337,
+          0.2669,
+          0.9313,
+          0.4642
+        ]
+      },
+      "find-a-deck": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 78794,
+        "quality": 60,
+        "halo": [
+          0.4467,
+          0.4822,
+          0.1081,
+          0.0346
+        ]
+      },
+      "friend-spares": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 5126,
+        "quality": 60,
+        "halo": [
+          0.6735,
+          0.4692,
+          0.0714,
+          0.06
+        ]
+      },
+      "friends": {
+        "capture": "d-friends",
+        "w": 975,
+        "h": 650,
+        "bytes": 4898,
+        "quality": 60,
+        "halo": [
+          0.3985,
+          0.0831,
+          0.2031,
+          0.1016
+        ]
+      },
+      "help-me-choose": {
+        "capture": "d-discover",
+        "w": 975,
+        "h": 650,
+        "bytes": 15134,
+        "quality": 60,
+        "halo": [
+          0.3648,
+          0.2517,
+          0.1883,
+          0.0901
+        ]
+      },
+      "lineup": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 14250,
+        "quality": 60,
+        "halo": [
+          0.2211,
+          0.3938,
+          0.0861,
+          0.0693
+        ]
+      },
+      "mana-balance": {
+        "capture": "d-analysis-describe",
+        "w": 975,
+        "h": 649,
+        "bytes": 7750,
+        "quality": 60,
+        "halo": [
+          0.0554,
+          0.4243,
+          0.8985,
+          0.2587
+        ]
+      },
+      "matchups": {
+        "capture": "d-games",
+        "w": 1839,
+        "h": 1226,
+        "bytes": 34158,
+        "quality": 60,
+        "halo": [
+          0.0196,
+          0.3114,
+          0.9608,
+          0.2543
+        ]
+      },
+      "precons": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 17734,
+        "quality": 60,
+        "halo": [
+          0.0569,
+          0.1871,
+          0.9092,
+          0.1397
+        ]
+      },
+      "proposed-cuts": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 18340,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3708,
+          0.8985,
+          0.2587
+        ]
+      },
+      "stand-ins": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 17884,
+        "quality": 60,
+        "halo": [
+          0.4812,
+          0.4692,
+          0.0376,
+          0.06
+        ]
+      },
+      "suggested-changes": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 11906,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3708,
+          0.8985,
+          0.2587
+        ]
+      },
+      "top-off": {
+        "capture": "d-deck-top",
+        "w": 1929,
+        "h": 1285,
+        "bytes": 53376,
+        "quality": 60,
+        "halo": [
+          0.0373,
+          0.488,
+          0.9627,
+          0.2197
+        ]
+      },
+      "wishlist": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 27140,
+        "quality": 60,
+        "halo": [
+          0.4452,
+          0.2517,
+          0.1098,
+          0.0901
+        ]
+      }
+    },
+    "eldraine": {
+      "collection-sync": {
+        "capture": "d-upload",
+        "w": 1070,
+        "h": 713,
+        "bytes": 17576,
+        "quality": 60,
+        "halo": [
+          0.0337,
+          0.2669,
+          0.9313,
+          0.4642
+        ]
+      },
+      "find-a-deck": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 79036,
+        "quality": 60,
+        "halo": [
+          0.4467,
+          0.4822,
+          0.1081,
+          0.0346
+        ]
+      },
+      "friend-spares": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 5182,
+        "quality": 60,
+        "halo": [
+          0.6735,
+          0.4692,
+          0.0714,
+          0.06
+        ]
+      },
+      "friends": {
+        "capture": "d-friends",
+        "w": 975,
+        "h": 650,
+        "bytes": 5282,
+        "quality": 60,
+        "halo": [
+          0.3985,
+          0.0831,
+          0.2031,
+          0.1016
+        ]
+      },
+      "help-me-choose": {
+        "capture": "d-discover",
+        "w": 975,
+        "h": 650,
+        "bytes": 14062,
+        "quality": 60,
+        "halo": [
+          0.3648,
+          0.2517,
+          0.1883,
+          0.0901
+        ]
+      },
+      "lineup": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 14172,
+        "quality": 60,
+        "halo": [
+          0.2211,
+          0.3938,
+          0.0861,
+          0.0693
+        ]
+      },
+      "mana-balance": {
+        "capture": "d-analysis-describe",
+        "w": 975,
+        "h": 650,
+        "bytes": 8176,
+        "quality": 60,
+        "halo": [
+          0.0554,
+          0.37,
+          0.8985,
+          0.2587
+        ]
+      },
+      "matchups": {
+        "capture": "d-games",
+        "w": 1839,
+        "h": 1226,
+        "bytes": 33486,
+        "quality": 60,
+        "halo": [
+          0.0196,
+          0.3114,
+          0.9608,
+          0.2543
+        ]
+      },
+      "precons": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 17758,
+        "quality": 60,
+        "halo": [
+          0.0569,
+          0.1871,
+          0.9092,
+          0.1397
+        ]
+      },
+      "proposed-cuts": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 19018,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "stand-ins": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 17866,
+        "quality": 60,
+        "halo": [
+          0.4812,
+          0.4692,
+          0.0376,
+          0.06
+        ]
+      },
+      "suggested-changes": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 12190,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "top-off": {
+        "capture": "d-deck-top",
+        "w": 1929,
+        "h": 1285,
+        "bytes": 52462,
+        "quality": 60,
+        "halo": [
+          0.0373,
+          0.488,
+          0.9627,
+          0.2197
+        ]
+      },
+      "wishlist": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 26534,
+        "quality": 60,
+        "halo": [
+          0.4452,
+          0.2517,
+          0.1098,
+          0.0901
+        ]
+      }
+    },
+    "kaldheim": {
+      "collection-sync": {
+        "capture": "d-upload",
+        "w": 1070,
+        "h": 713,
+        "bytes": 17614,
+        "quality": 60,
+        "halo": [
+          0.0337,
+          0.2669,
+          0.9313,
+          0.4642
+        ]
+      },
+      "find-a-deck": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 79084,
+        "quality": 60,
+        "halo": [
+          0.4467,
+          0.4822,
+          0.1081,
+          0.0346
+        ]
+      },
+      "friend-spares": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 5146,
+        "quality": 60,
+        "halo": [
+          0.6735,
+          0.4692,
+          0.0714,
+          0.06
+        ]
+      },
+      "friends": {
+        "capture": "d-friends",
+        "w": 975,
+        "h": 650,
+        "bytes": 5312,
+        "quality": 60,
+        "halo": [
+          0.3985,
+          0.0831,
+          0.2031,
+          0.1016
+        ]
+      },
+      "help-me-choose": {
+        "capture": "d-discover",
+        "w": 975,
+        "h": 650,
+        "bytes": 14974,
+        "quality": 60,
+        "halo": [
+          0.3648,
+          0.2517,
+          0.1883,
+          0.0901
+        ]
+      },
+      "lineup": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 14430,
+        "quality": 60,
+        "halo": [
+          0.2211,
+          0.3938,
+          0.0861,
+          0.0693
+        ]
+      },
+      "mana-balance": {
+        "capture": "d-analysis-describe",
+        "w": 975,
+        "h": 650,
+        "bytes": 8174,
+        "quality": 60,
+        "halo": [
+          0.0554,
+          0.37,
+          0.8985,
+          0.2587
+        ]
+      },
+      "matchups": {
+        "capture": "d-games",
+        "w": 1839,
+        "h": 1226,
+        "bytes": 33986,
+        "quality": 60,
+        "halo": [
+          0.0196,
+          0.3114,
+          0.9608,
+          0.2543
+        ]
+      },
+      "precons": {
+        "capture": "d-decks2",
+        "w": 975,
+        "h": 650,
+        "bytes": 17756,
+        "quality": 60,
+        "halo": [
+          0.0569,
+          0.1871,
+          0.9092,
+          0.1397
+        ]
+      },
+      "proposed-cuts": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 19486,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "stand-ins": {
+        "capture": "d-shopping",
+        "w": 975,
+        "h": 650,
+        "bytes": 18336,
+        "quality": 60,
+        "halo": [
+          0.4812,
+          0.4692,
+          0.0376,
+          0.06
+        ]
+      },
+      "suggested-changes": {
+        "capture": "d-analysis-tuning",
+        "w": 975,
+        "h": 650,
+        "bytes": 12420,
+        "quality": 60,
+        "halo": [
+          0.0508,
+          0.3716,
+          0.8985,
+          0.2587
+        ]
+      },
+      "top-off": {
+        "capture": "d-deck-top",
+        "w": 1929,
+        "h": 1285,
+        "bytes": 54576,
+        "quality": 60,
+        "halo": [
+          0.0373,
+          0.488,
+          0.9627,
+          0.2197
+        ]
+      },
+      "wishlist": {
+        "capture": "d-collection2",
+        "w": 975,
+        "h": 650,
+        "bytes": 27104,
+        "quality": 60,
+        "halo": [
+          0.4452,
+          0.2517,
+          0.1098,
+          0.0901
+        ]
+      }
+    }
+  }
 };
