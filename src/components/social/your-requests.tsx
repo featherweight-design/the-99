@@ -179,7 +179,7 @@ export function YourRequests({ rows, now, canBuy = true }: { rows: readonly Your
                   <span data-testid="your-request-status" tabIndex={-1} className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] ${text.ink}`}>
                     {text.kind}
                   </span>
-                  <small className={KICKER_AGE}>
+                  <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>
                     {feedAge(text.at.toISOString(), now.toISOString())}
                   </small>
                 </p>

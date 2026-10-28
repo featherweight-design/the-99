@@ -62,6 +62,8 @@ describe("WaitingOnYou", () => {
     const age = within(row).getByText("5h ago");
     expect(age.previousElementSibling?.textContent).toBe(w.kind["trade-match"]);
     expect(age.className).toContain("before:content-['·']");
+    // /friends keeps `--fg-faint` for the time (its PR 7b contrast ruling), not the board's `--fg-locked`.
+    expect(age.className).toContain("--fg-faint");
     // One link, on the action line before the ✕, at both widths.
     const link = within(row).getByRole("link", { name: w.seeSpares("Colin") });
     expect(link.getAttribute("href")).toBe("/friends/pub-colin?spare=ghalta");

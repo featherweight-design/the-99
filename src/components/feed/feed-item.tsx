@@ -254,7 +254,7 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
           <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : c.kicker[item.kind]}</span>
           {/* The time follows the kind at both widths (small items R1b: `Trade match · 6h ago`). */}
-          <small data-feed-age className={KICKER_AGE}>{feedAge(item.at, now)}</small>
+          <small data-feed-age className={`${KICKER_AGE} text-[color:var(--fg-locked)]`}>{feedAge(item.at, now)}</small>
         </div>
         <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]">{text.title}</p>
         {text.line && <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{text.line}</p>}

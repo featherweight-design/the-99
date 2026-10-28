@@ -93,6 +93,8 @@ describe("YourRequests", () => {
     const age = kind.nextElementSibling!;
     expect(age.tagName).toBe("SMALL");
     expect(age.className).toContain("before:content-['·']");
+    // /friends keeps `--fg-faint` for the time (its PR 7b contrast ruling), not the board's `--fg-locked`.
+    expect(age.className).toContain("--fg-faint");
     expect(age.className).not.toMatch(/(^|\s)ml-auto(\s|$)/);
     const row = screen.getByTestId("your-request");
     expect(row.className.split(/\s+/)).toContain("items-center");

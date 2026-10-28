@@ -156,7 +156,7 @@ function AskRow({ row, now, busy, locked, onAnswer, onDismiss }: {
         <p className="m-0 flex min-w-0 items-center gap-[7px]">
           <Unseen />
           <span className={`${KIND} text-[color:var(--accent-text)]`}>{w.kind["spare-request"]}</span>
-          <small className={KICKER_AGE}>{ago(row.createdAt, now)}</small>
+          <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{ago(row.createdAt, now)}</small>
         </p>
         <p className={TITLE}>{feedCopy.home.title.spareRequest(friend, ask.card.name)}</p>
         <p className={DETAIL}>{r.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)}</p>
@@ -189,7 +189,7 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
           <span className={`${KIND} ${yes ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
             {text.kind}
           </span>
-          <small className={KICKER_AGE}>{refreshCopy.home.elapsed.justNow}</small>
+          <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{refreshCopy.home.elapsed.justNow}</small>
         </p>
         <p className={TITLE}>{text.title}</p>
         <p className={DETAIL}>{text.detail}</p>
@@ -212,7 +212,7 @@ function TradeRow({ row: r, now, onDismiss }: { row: TradeMatchRow; now: Date; o
         <p className="m-0 flex min-w-0 items-center gap-[7px]">
           {r.unseen && <Unseen />}
           <span className={`${KIND} text-[color:var(--fg-faint)]`}>{w.kind[r.kind]}</span>
-          <small className={KICKER_AGE}>{ago(r.createdAt, now)}</small>
+          <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{ago(r.createdAt, now)}</small>
         </p>
         <p className={TITLE}>{w.tradeTitle(r.friend.displayName, r.card.name)}</p>
         <p className={DETAIL}>{w.tradeDetail(r.friend.displayName, r.pods)}</p>
@@ -226,8 +226,8 @@ function TradeRow({ row: r, now, onDismiss }: { row: TradeMatchRow; now: Date; o
   );
 }
 
-/** The board's `.lnk`: in the text column on a phone, where a long name wraps rather than clip, and the row's third
- * column from desktop, on one line. */
+/** The board's `.lnk`, on the row's action line before the ✕: under the text on a phone, where a long name wraps
+ * rather than clip, and the row's third column from desktop, on one line. */
 function WaitingLink({ row, className }: { row: TradeMatchRow; className: string }) {
   const trade = useTradeAsk();
   const press = "flex min-h-[32px] items-center gap-[4px] text-[13px] [overflow-wrap:anywhere] md:whitespace-nowrap font-medium text-[color:var(--accent-text)] no-underline";
