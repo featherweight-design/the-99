@@ -470,14 +470,22 @@ def textarea(text=None, focus=False, count=0, ph=False):
             f'<span>tag a card</span><span class="c">{count} / 500</span></div></div>')
 
 
+BRACKET_NOTES = {
+    2: "Nothing it suggests moves the deck out of 2 · Core. A card that would is left out.",
+    1: "Cuts lead with what keeps the deck out of 1 · Exhibition; additions stay inside it.",
+    3: "Additions lean toward what takes the deck to 3 · Upgraded, and each one that does says so.",
+    4: "Additions lean toward what takes the deck to 4 · Optimized, and each one that does says so.",
+}
+
+
 def bracket_piece(on=None, ph=False):
-    opts = [(1, "Exhibition"), (3, "Upgraded"), (4, "Optimized")]
-    o = "".join(f'<span class="{"on" if on == b else ""}"><img src="{img("b2" if b < 3 else ("b3" if b == 3 else "b4"))}" alt="">'
-                f'{"Down to" if b < 2 else "Up to"} {b} · {n}</span>' for b, n in opts)
-    note = ("Additions favor what takes the deck to Upgraded. The app shows the bracket each pick lands on."
-            if on == 3 else "Leave it, and the run keeps the bracket where the cards put it.")
-    return (f'<div class="brk"><span class="ot">optional · ships later (Q7)</span><div class="bh2"><b>Move to a bracket</b><span>now 2 · Core</span></div>'
-            f'<div class="bo">{o}</div><div class="bn">{note}</div></div>')
+    """The bracket move (Hugh 2026-10-27: release 1, first-class). Keep is the default; one choice, never empty."""
+    on = on or 2
+    opts = [(2, "Keep at 2 · Core"), (1, "Down to 1 · Exhibition"), (3, "Up to 3 · Upgraded"), (4, "Up to 4 · Optimized")]
+    o = "".join(f'<span class="{"on" if on == b else ""}"><img src="{img("b2" if b < 3 else ("b3" if b == 3 else "b4"))}" alt="">{lab}</span>'
+                for b, lab in opts)
+    return (f'<div class="brk2"><div class="bh2"><b>Bracket</b><span>now 2 · Core</span></div>'
+            f'<div class="bo">{o}</div><div class="bn">{BRACKET_NOTES[on]}</div></div>')
 
 
 def counter(n=3, ph=False):
@@ -495,11 +503,11 @@ def intake(ph=False, n=3, text=None, used=(), focus=False, count=0, bracket=True
     lead = "Say how many cards to change and what you’re after. You get more of each than you asked for, and you pick."
     s1 = f'<div class="stp">{stp("1", "How many cards?", "cards in · the same number come out")}{counter(n, ph)}</div>'
     box = textarea(text, focus, count, ph)
-    right = chips(used, hot, ph) + (bracket_piece(bon, ph) if bracket else "")
+    bp = bracket_piece(bon, ph) if bracket else ""
     if ph:
-        s2 = f'<div class="stp">{stp("2", "What are you looking to change?")}{box}{right}</div>'
+        s2 = f'<div class="stp">{stp("2", "What are you looking to change?")}{box}{chips(used, hot, ph)}{bp}</div>'
     else:
-        s2 = f'<div class="stp">{stp("2", "What are you looking to change?")}{box}{right}</div>'
+        s2 = f'<div class="stp">{stp("2", "What are you looking to change?")}<div class="rq2">{box}{bp}</div>{chips(used, hot, ph)}</div>'
     s3 = f'<div class="stp">{stp("3", "Any restrictions?", "kept for this deck, so the next run starts with them")}{lim(cap, ph=ph)}</div>'
     hint = WAIT_HINT.get(n, "usually under a minute")
     if send is None:
@@ -583,7 +591,10 @@ def row(side, it, ph, state="", flag_on=True):
     ct = "".join(f'<span class="ct{ck(kk)}"><span>{kk}</span><span>{v}</span></span>' for kk, v in cites)
     if ph and price and not owned and side == "add":
         ct += f'<span class="ct"><span>buy</span><span>{price}</span></span>'
-    fl = (f'<div class="flg">Applying it raises the deck’s bracket to {bchip2(3, "Upgraded")}</div>' if (flag and flag_on) else "")
+    if AIM.get("to"):
+        fl = (f'<div class="flg">Applying it takes the deck to {bchip2(3, "Upgraded")} <span class="asked">the bracket you asked for</span></div>' if (flag and flag_on) else "")
+    else:
+        fl = (f'<div class="flg">Applying it raises the deck’s bracket to {bchip2(3, "Upgraded")}</div>' if (flag and flag_on) else "")
     cls = "ln2" + {"on": " on", "off": " off", "ap": " apd"}.get(state, "")
     return (f'<div class="{cls}"><div class="l1">{sg}{th}{od}{nm}{buy}{ctl}</div><p>{why}</p>{fl}'
             f'<div class="cts">{ct}</div></div>')
@@ -650,8 +661,14 @@ def abar(na, nc, n, ph=False, bracket=None, done=False, maxn=None):
         br = (f' · bracket goes to <b style="color:var(--bracket-3)">Upgraded</b>' if bracket else " · bracket stays Core")
         lab = f'Apply {na} + {nc}'
         w = f'Nothing moves until you apply. One Undo puts all {na + nc} back.'
+        if bracket == "reached":
+            br = ' · bracket 2 → <b style="color:var(--bracket-3)">3 · Upgraded</b>, as asked'
+        elif bracket == "missed":
+            br = " · bracket stays 2 · Core"
+            w = ('<b>You asked for 3 · Upgraded.</b> None of your picks moves it: pick a flagged addition to get there, '
+                 'or apply these and stay at 2.')
         return (f'<div class="abar"><div class="tl"><span class="a"><span class="g">+{na} in</span><span class="r">−{nc} out</span><span class="q">stays at 99{br}</span></span>'
-                f'<span class="w">{w}</span></div><span class="ab2">{lab}</span></div>')
+                f'<span class="w{" warn" if bracket == "missed" else ""}">{w}</span></div><span class="ab2">{lab}</span></div>')
     if na == 0 and nc == 0:
         return (f'<div class="abar"><div class="tl"><span class="a"><span class="q" style="font-size:12px">0 in · 0 out</span></span>'
                 f'<span class="w">Pick up to {m} of each. The two counts must match, so the deck stays at 99.</span></div><span class="ab2 dis">Apply</span></div>')
@@ -663,9 +680,13 @@ def abar(na, nc, n, ph=False, bracket=None, done=False, maxn=None):
             f'<span class="w warn">{w}</span></div><span class="ab2 dis">Apply</span></div>')
 
 
+AIM = {}
+
+
 def ask(text, n, cap=None, params=None):
     q = f'<q>{text}</q>' if text else '<span class="none">No request. The run worked from the deck’s own gaps.</span>'
-    pm = params or (f'<b>{n} in, {n} out</b> · {"most $" + str(cap) + " a card" if cap else "no cap"} · any set · any card')
+    br = ' · <b style="color:var(--bracket-3)">up to 3 · Upgraded</b>' if AIM.get("to") == 3 else " · keep 2 · Core"
+    pm = params or (f'<b>{n} in, {n} out</b>{br} · {"most $" + str(cap) + " a card" if cap else "no cap"} · any set · any card')
     return f'<div class="ask"><span class="k">You asked</span>{q}<span class="pm">{pm}</span></div>'
 
 
@@ -673,7 +694,7 @@ READ = "read from 4 games · 2 game notes · 99 cards · the overview · focus +
 
 
 def results(ph, n, adds, cuts, pa=(), pc=(), grouped=False, tab="add", req=REQ10, cap=None, bracket=None, done=False, applied=(),
-            lead=None, short=None, maxn=None, extra_top="", newrun=True, readonly=False, head=None, bar=True):
+            lead=None, short=None, maxn=None, extra_top="", newrun=True, readonly=False, head=None, bar=True, side_ask=False):
     m = maxn or n
     sa = states_for(adds, set(pa), m if not readonly else None, applied)
     sc_ = states_for(cuts, set(pc), m if not readonly else None, applied)
@@ -687,8 +708,12 @@ def results(ph, n, adds, cuts, pa=(), pc=(), grouped=False, tab="add", req=REQ10
         lead = (f'<b>{len(adds)} to add and {len(cuts)} to cut.</b> Pick any {n} of each. Nothing moves until you apply.')
     nb = '<span class="nb">New run</span>' if newrun else ""
     hd = head if head is not None else f'<div class="hrow2"><h3>Suggested changes</h3>{nb}</div>'
-    top = (hd + extra_top + ask(req, n, cap) + (short or "") + f'<p class="lead">{lead}</p>'
-           + f'<span class="scl2" style="margin-top:-8px">{READ}</span>')
+    if side_ask and not ph:
+        top = (hd + extra_top + f'<div class="sbs">{ask(req, n, cap)}<div class="sbr">{short or ""}<p class="lead">{lead}</p>'
+               f'<span class="scl2">{READ}</span></div></div>')
+    else:
+        top = (hd + extra_top + ask(req, n, cap) + (short or "") + f'<p class="lead">{lead}</p>'
+               + f'<span class="scl2" style="margin-top:-8px">{READ}</span>')
     if grouped:
         top += group_switch("role" if grouped == "role" else "type", ph)
     na = len([k for k in pa]) if not done else len([k for k in applied if k in [it[0] for it in adds]])
@@ -789,3 +814,137 @@ def history_list(ph=False):
     return (f'<div class="hist"><div class="hh"><h3>History</h3><span>every run of every tool · newest first</span></div>{chipsr}'
             f'<div style="display:flex;flex-direction:column;gap:6px">{body}</div>'
             '<span class="scl2">Kept for as long as the deck is. A free count is recorded once per version of the list.</span></div>')
+
+
+# ================================================================ R2 (Hugh's rulings with engineering, 2026-10-27)
+CSS2 = r"""
+.brk2{border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-rail);padding:12px;display:flex;flex-direction:column;gap:9px}
+.brk2 .bh2{display:flex;align-items:baseline;gap:8px}
+.brk2 .bh2 b{font-size:13px;font-weight:600;color:var(--fg)}
+.brk2 .bh2 span{font:10.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.brk2 .bo{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.brk2 .bo span{display:flex;align-items:center;gap:7px;min-height:36px;padding:0 10px 0 6px;border-radius:8px;border:1px solid var(--border);background:var(--surface-sunken);font-size:12.5px;color:var(--fg-muted);white-space:nowrap}
+.ph .brk2 .bo span{min-height:44px}
+.brk2 .bo span img{width:20px;height:20px;flex:none}
+.brk2 .bo span.on{border-color:var(--accent);background:var(--elevated);color:var(--fg);font-weight:600}
+.brk2 .bn{font-size:12px;line-height:1.5;color:var(--fg-muted)}
+.rq2{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:stretch}
+.rq2 .ta{height:100%}
+.flg .asked{font:10.5px 'IBM Plex Mono';color:var(--fg-faint);margin-left:6px}
+.sbs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.sbr{display:flex;flex-direction:column;gap:8px}
+/* the streaming wait */
+.ws2{display:flex;flex-direction:column;gap:8px;border-radius:12px;border:1px solid var(--border);background:var(--surface-rail);padding:12px 16px;position:relative;overflow:hidden}
+.ws2:after{content:'';position:absolute;left:0;bottom:0;height:2px;width:38%;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+.ws2.fin:after{display:none}
+.ws2 .wh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.ws2 .clk{font:600 24px 'IBM Plex Mono';color:var(--fg)}
+.ws2 .so{font-size:13px;color:var(--fg-body)}
+.ws2 .so b{color:var(--fg);font-weight:600}
+.ws2 .usu{font:10.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.ph .ws2 .usu{flex-basis:100%}
+.ws2 .tw{border-radius:9px;border:1px solid var(--border-strong);border-left:3px solid var(--accent);background:var(--elevated-hover);padding:10px 12px;font-size:12.5px;line-height:1.55;color:var(--fg-body)}
+.ws2 .tw b{color:var(--fg);font-weight:600}
+.ws2 .lv{font-size:12px;color:var(--fg-muted)}
+.more{display:flex;align-items:center;gap:10px;min-height:52px;border-radius:9px;border:1px dashed var(--border-strong);padding:8px 12px;font-size:12.5px;color:var(--fg-muted)}
+.more .pd{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px color-mix(in oklab,var(--accent) 22%,transparent);flex:none}
+.more .mt2{margin-left:auto;font:10.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.more.wait{border-style:dotted;color:var(--fg-faint)}
+.more.wait .pd{background:var(--fg-locked);box-shadow:none}
+.more.in{border-style:solid;border-color:var(--border);color:var(--fg-faint)}
+.more.in .pd{background:var(--success);box-shadow:none}
+.ln2.nw:before{content:'new';position:absolute;top:-7px;right:12px;font:600 9px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:#0D0B09;background:var(--accent);border-radius:4px;padding:1px 6px}
+.lch .cc em{font-style:normal;color:var(--fg-faint)}
+.seg2 .sd{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 22%,transparent)}
+/* the apply confirmation (ModalChrome, eyebrow head) */
+.scrim{position:absolute;inset:0;background:rgba(8,6,4,.62);z-index:20;display:flex;align-items:center;justify-content:center}
+.ph .scrim{align-items:flex-end}
+.mdl{width:560px;border-radius:14px;border:1px solid var(--border-strong);background:var(--bg);box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+.ph .mdl{width:100%;border-radius:18px 18px 0 0;border-width:1px 0 0}
+.mdl .mh{display:flex;align-items:flex-start;gap:10px;padding:10px 8px 10px 18px;border-bottom:1px solid var(--border)}
+.mdl .mh .ey{margin:0;font:9.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.mdl .mh h4{margin:4px 0 0;font:700 17px 'Cinzel',serif;color:var(--fg)}
+.mdl .mh p{margin:4px 0 0;font-size:12.5px;line-height:1.5;color:var(--fg-body)}
+.mdl .mh .x{margin-left:auto;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;font:15px 'IBM Plex Mono';color:var(--fg-muted)}
+.mdl .mb{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:14px 18px}
+.ph .mdl .mb{grid-template-columns:1fr;gap:12px}
+.mdl .mb .k{font:500 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;display:block}
+.mdl .mb .cr2{display:flex;align-items:center;gap:8px;min-height:30px;font-size:13px;color:var(--fg-body)}
+.mdl .mb .cr2 img{width:20px;height:28px;border-radius:2px;border:1px solid var(--border-strong);object-fit:cover}
+.mdl .mf{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--border)}
+.ph .mdl .mf{flex-direction:column;align-items:stretch;padding-bottom:24px}
+.mdl .mf span.n{flex:1;font-size:12px;color:var(--fg-muted);line-height:1.5}
+.mdl .mf .ab2{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;border-radius:8px;background:var(--accent);color:#14110E;font:600 13.5px 'IBM Plex Sans'}
+.ph .mdl .mf .ab2{height:48px}
+.undn{border-radius:9px;border:1px solid var(--border);border-left:3px solid var(--fact);background:var(--surface);padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--fg-body)}
+.undn b{color:var(--fg);font-weight:600}
+"""
+kit.CSS += CSS2
+
+
+def stream(ph, at, n, adds_in, cuts_in, pa=(), pc=(), adds_total=None, cuts_total=None, adds_done=False, cuts_done=False,
+           note=None, new_adds=(), new_cuts=(), tab="add", grouped_when_done=True, short=None):
+    """Additions and cuts stream in as they pass the checks. Rows land in arrival order; a side groups when it is in."""
+    p = pool(n)
+    a_n, c_n = len(adds_in), len(cuts_in)
+    so = (f'<b>{a_n} to add</b> and <b>{c_n} to cut</b> so far' if not (adds_done and cuts_done)
+          else f'<b>{a_n} to add</b> and <b>{c_n} to cut</b> · done')
+    usu = WAIT_HINT.get(n, "usually about 40 seconds")
+    tw = f'<div class="tw">{note}</div>' if note else ""
+    lv = ("" if (adds_done and cuts_done) else
+          '<span class="lv">Pick while it works. Leave whenever you like: the run keeps going, its tile shows it, and it lands in History.</span>')
+    ws = (f'<div class="ws2{" fin" if adds_done and cuts_done else ""}"><div class="wh"><span class="clk">{at}</span><span class="so">{so}</span>'
+          f'<span class="usu">{usu}</span></div>{tw}{lv}</div>')
+    top = '<div class="hrow2"><h3>Suggested changes</h3></div>' + ask(REQ10, n) + ws + (short or "")
+
+    def side(kind, items, picked, done, total, new):
+        st = states_for(items, set(picked), n)
+        if done and grouped_when_done and len(items) > 5:
+            body = group_rows(kind, items, ph, st, "type")
+        else:
+            body = "".join(row(kind, it, ph, st.get(it[0], "")).replace('<div class="ln2', '<div class="ln2 nw', 1) if it[0] in new
+                           else row(kind, it, ph, st.get(it[0], "")) for it in items)
+        nm = "Additions" if kind == "add" else "Cuts"
+        cnt = (f'{len(items)}' if done else f'{len(items)} so far')
+        full = len(picked) >= n
+        hd = f'<div class="lch"><h4>{nm}<em>{cnt}</em></h4><span class="cc{" full" if full else ""}"><b>{len(picked)}</b> of {n} chosen</span></div>'
+        if done:
+            foot = (f'<div class="more in"><span class="pd"></span>All {len(items)} in{" · grouped by type now" if grouped_when_done and len(items) > 5 else ""}'
+                    f'<span class="mt2">{"asked for " + str(p)}</span></div>')
+        elif not items:
+            foot = ('<div class="more wait"><span class="pd"></span>Cuts start once the first additions are in.</div>' if kind == "cut"
+                    else f'<div class="more"><span class="pd"></span>Still finding more<span class="mt2">asked for {p}</span></div>')
+        else:
+            foot = f'<div class="more"><span class="pd"></span>Still finding more<span class="mt2">{len(items)} so far · asked for {p}</span></div>'
+        return hd, body + foot
+
+    hA, A = side("add", adds_in, pa, adds_done, adds_total, new_adds)
+    hC, C = side("cut", cuts_in, pc, cuts_done, cuts_total, new_cuts)
+    na, nc = len(pa), len(pc)
+    if adds_done and cuts_done:
+        bar = abar(na, nc, n, ph)
+    else:
+        bar = (f'<div class="abar"><div class="tl"><span class="a"><span class="g">+{na} in</span><span class="r">−{nc} out</span>'
+               f'<span class="q">still finding more</span></span><span class="w">Apply opens when both lists are in. Your picks are kept.</span></div>'
+               '<span class="ab2 dis">Apply</span></div>')
+    if ph:
+        def seg(k, nm, items, pk, done):
+            em = f'{len(pk)} of {n}' if items else "next"
+            dot = "" if done else '<i class="sd"></i>'
+            return f'<span class="{"on" if tab == k else ""}">{dot}{nm}<em>{em}</em></span>'
+        sg = f'<div class="seg2">{seg("add", "Additions", adds_in, pa, adds_done)}{seg("cut", "Cuts", cuts_in, pc, cuts_done)}</div>'
+        lst = (hA + A) if tab == "add" else (hC + C)
+        return f'<div class="sc">{top}{sg}<div class="lcol">{lst}</div>{bar}</div>'
+    return f'<div class="sc">{top}<div class="cols"><div class="lcol">{hA}{A}</div><div class="lcol">{hC}{C}</div></div>{bar}</div>'
+
+
+def confirm(adds, cuts, ph=False, bracket="Bracket stays 2 · Core."):
+    def li(sign, it):
+        c = "var(--accent)" if sign == "+" else "var(--fg-faint)"
+        return f'<div class="cr2"><span style="color:{c};font:600 13px IBM Plex Mono;width:10px">{sign}</span><img src="{P.card(it[0])}" alt="">{it[1]}</div>'
+    n = len(adds)
+    return (f'<div class="scrim"><div class="mdl"><div class="mh"><div><p class="ey">Suggested changes</p><h4>Apply {n} in, {n} out</h4>'
+            f'<p>The deck stays at 99. {bracket}</p></div><span class="x">✕</span></div>'
+            f'<div class="mb"><div><span class="k">Coming in · {n}</span>{"".join(li("+", a) for a in adds)}</div>'
+            f'<div><span class="k">Going out · {n}</span>{"".join(li("−", c) for c in cuts)}</div></div>'
+            f'<div class="mf"><span class="n">One change. One Undo puts all {2 * n} back.</span><span class="ab2">Apply {n} + {n}</span></div></div></div>')

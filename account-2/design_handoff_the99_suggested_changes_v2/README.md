@@ -1,12 +1,19 @@
-# The 99 · Suggested changes v2 · R1b (account 2, 2026-10-28)
+# The 99 · Suggested changes v2 · R2 (account 2, 2026-10-28)
 
 Canvas: https://claude.ai/artifact/QY9JsqnZvEcQNWvaAQ9QcJ
-Status: R1b, awaiting Hugh's audit. Goes to main only on approval, as `design/design_handoff_the99_suggested_changes_v2/`.
+Status: R2, awaiting Hugh's audit. Goes to main only on approval, as `design/design_handoff_the99_suggested_changes_v2/`.
 
 Source of truth: `docs/superpowers/specs/2026-10-27-suggested-changes-v2-design.md` (PR #2295, §3, §4, §5.5, §7, §7a, §11); eval in `scripts/eval/` (#2291) and `docs/superpowers/eval/count-mechanism/`.
 Extends `design_handoff_the99_tuning_hub/` and `design_handoff_the99_deck_tuning/`; the pick pattern follows prompt 22's Proposed cuts list (`design_handoff_the99_small_items/` item 1); the About change is in prompt 21's visual system (`design_handoff_the99_about_visual/`).
 
 Drawn over the shipped Tuning hub and Suggested changes (two lists) at 390 and 1300. Fixture: HD - Half Shell, focus +1/+1 counters. Card images are from the design folder (Scryfall is blocked in the container).
+
+## R2 · Hugh's rulings with engineering (addendum to prompt 23, 2026-10-27)
+1. **The wait** (board `Wait`, redrawn): a run is never cut short. No steps panel: a clock and "11 to add and 4 to cut so far". Additions stream in, then cuts; each row lands at the end of its list marked *new* for a beat, and a side groups by type once it is all in, so nothing moves under a thumb. Each list ends in **Still finding more** (cuts: "Cuts start once the first additions are in"). Picks work from the first row and are kept; Apply opens when both lists are in. About 45 s: "This is taking a while. Some cards didn't pass the checks, so it's looking further. Keep picking, or leave: it keeps going and lands in History." About 2 min: "Still going, about 2 minutes in. Runs this size can take up to about two and a half. It won't stop early, and your picks are kept." Finish short: count and reason ("Cuts came up 3 short of 15: three it wanted are cards you locked"), charged because N is still covered; under N is `Short-Run`. No Stop control.
+2. **The bracket move, release 1** (boards `Intake` E, `Results-20`): a first-class **Bracket** card beside the request box (under the chips on a phone): Keep at 2 · Core (default), Down to 1 · Exhibition, Up to 3 · Upgraded, Up to 4 · Optimized; each choice has its line. Keep means nothing suggested moves the deck out of its bracket. Results: *You asked* carries the aim, each addition that reaches it carries the shipped bracket flag with "the bracket you asked for", and the bar says "bracket 2 → 3 · Upgraded, as asked" or, when no pick reaches it, says so and how (Apply still allowed).
+3. **Apply, confirm, Undo** (new board `Apply`): Apply N + N opens a confirmation (ModalChrome eyebrow head, 560; sheet on a phone) listing what comes in and goes out with the bracket outcome; one button applies the set as one change; ✕ closes with nothing changed. Applied: the bar holds **Undo all 2N** until the next commit. Undone: all back, picks kept. Failure: the shared toast, nothing half-applied.
+4. **History** (board `History`): an opened run shows *You asked* beside its outcome on desktop, stacked on a phone; the run list quotes the request.
+5. **N runs 1 to 20**, 20 the launch maximum (unchanged). Picks stay capped at N per side (Hugh 2026-10-28).
 
 ## R1b · Hugh's feedback (2026-10-28)
 - What we noticed moves under the box on desktop too (beside it left a tall gap). Chips wrap in a row; the bracket piece sits under them.
@@ -31,8 +38,9 @@ Drawn over the shipped Tuning hub and Suggested changes (two lists) at 390 and 1
 | Results-10 | N=10, 15 a side, grouped By type (default) and By role (the other choice), each heading with where the picks take it |
 | Results-20 | N=20, 30 a side, grouped; the bracket flag on the set |
 | Short-Run | "Found 14 additions under your $2 cap" (charged), and short for no stated reason (refunded) |
-| Wait | 0:09 choosing additions; 0:41 additions in and pickable, cuts writing; 1:52 a refill, taking longer than usual; the landing tile meanwhile |
-| History | The run list (request quoted, asked · found · applied), an old run still live, a stale run |
+| Wait | Streaming: 0:12 first additions, 0:38 cuts follow, 0:52 taking a while, 2:04 about two minutes, 2:21 in and a little short; the landing tile meanwhile |
+| History | The run list (request quoted, asked · found · applied), an old run still live, a stale run; request beside the results |
+| Apply | Confirm (modal / sheet), applied with Undo all, undone, apply fails |
 | About | Decks › Analysis: Suggested changes label, new Good to know card (pick), credits card, Try it line; copy table |
 
 ## The calls
@@ -45,16 +53,13 @@ Drawn over the shipped Tuning hub and Suggested changes (two lists) at 390 and 1
 7. The wait shows the two calls as two steps; additions land early and are pickable while cuts are writing (needs G1).
 8. History keeps the request; an old run opens as its lists with picks marked, read-only once a newer version is committed.
 
-## Open for Hugh
-- Q1 · one apply for N+N, one undo (drawn to the proposal).
-- Q7 · structured bracket choice beside the box, drawn as an optional piece (dashed, "ships later").
-- Picks past N: drawn capped at N per side; lifting the cap keeps the equal-counts rule.
 
 ## For engineering
 - G1 · save call 1's kept additions as a run state (e.g. `adds_ready`) so the wait can show them.
 - G2 · each suggestion carries its card type group (`cardTypeGroup`) and its shelf role (the role counter's); no role → Threats & synergy.
 - G3 · chip sources: worst role gap, focus, newest game note, second role gap; at most four, hidden when empty.
 - G4 · the same-request check (spec §8) runs on press, before a credit is reserved.
+- G6 · stream additions and cuts as they validate (replaces G1's `adds_ready`), and the bracket aim reaches the prompt and the checks (Keep drops a card that would move the bracket).
 - G5 · every string is a placeholder for /copy-review. Retires Suggest again, Suggest again anyway, the unchanged lead, Additional notes, Reject on v2 rows.
 
 ## Files

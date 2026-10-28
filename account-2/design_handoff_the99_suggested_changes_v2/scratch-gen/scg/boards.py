@@ -1,4 +1,4 @@
-"""Suggested changes v2 R1 boards (account 2, 2026-10-28)."""
+"""Suggested changes v2 R2 boards (account 2, 2026-10-28)."""
 import kit
 import parts as P
 import graph  # noqa: F401  (shipped Suggested changes CSS)
@@ -105,18 +105,27 @@ CALLS = [
      "A bar pinned under the lists keeps the tally: <i>+10 in · −7 out · the deck would go to 102</i>. Unequal: Apply stays off and the bar names the "
      "fix (<i>Pick 3 more cuts</i>). Equal: <b>Apply 10 + 10</b>, with the set’s bracket outcome. Fewer than N of each is fine. After applying: "
      "<i>Undo all 20</i>; the rest of the pool stays pickable for another equal set."),
-    ("7", "The wait shows two calls as two steps, and the additions land early",
-     "A clock with what is usual for that N, three rows that tick (read, add, cut), and a moving rule on the live row. When the additions call "
-     "returns, its cards fan out and the Additions list appears below, pickable, while the cuts are still writing. A refill says so in words."),
+    ("7", "The wait: the lists fill in as cards arrive",
+     "A run is never cut short. Additions stream in first, then cuts, each landing at the end of its list (marked new for a beat) and grouping once its side is in. "
+     "Picks work as rows arrive; Apply opens when both lists are in. A taking-a-while note at about 45 seconds, another at about 2 minutes."),
     ("8", "History keeps the request",
      "Each run’s row quotes its request and says <i>asked · found · applied</i>. An old run opens as its lists with picks marked; once a newer "
      "version is committed it is read-only, with the shipped past-run note and <b>New run</b>."),
 ]
 
 QUESTIONS = [
-    ("Q1", "Applying (drawn to the proposal)", "One action for the picked set, one Undo. Per-card apply would let the deck leave 99 mid-pick."),
-    ("Q7", "Bracket goal (drawn as an optional piece)", "<i>Move to a bracket</i>: the three other brackets as pills, none selected, under the chips. Dashed and tagged so it can ship later; nothing else depends on it."),
-    ("Q", "Picks past N", "Drawn capped at N per side (the spec’s M ≤ N). If you’d rather let a player take 4 + 4 from a 3-card run, the cap goes and the bar’s rule (equal counts) still holds."),
+    ("1", "The wait: never cut short, lists stream in",
+     "No steps panel. A clock, <i>11 to add and 4 to cut so far</i>, and each side filling as cards pass the checks, additions first. Each list ends in a "
+     "<b>Still finding more</b> row until it is in. Picks work at once and are kept; Apply opens when both lists are in. At about 45 seconds a "
+     "<i>taking a while</i> note, at about 2 minutes a second one. Board 7."),
+    ("2", "The bracket move ships in release 1, beside the box",
+     "A first-class <b>Bracket</b> card beside the request box (under it on a phone): Keep at 2 · Core (the default), Down to 1, Up to 3, Up to 4. "
+     "Results say the aim, flag each addition that reaches it, and the bar says whether the picked set gets there. Boards 1 and 5."),
+    ("3", "One Apply, a confirmation, one Undo",
+     "Apply N + N opens a confirmation listing what comes in and goes out, then applies as one change; <b>Undo all</b> takes the set back and keeps the picks. Board 9."),
+    ("4", "History puts the request beside the results",
+     "An opened run shows <i>You asked</i> beside its outcome on desktop (stacked on a phone); the run list quotes it. Board 8."),
+    ("5", "N runs 1 to 20", "Unchanged from R1: the stepper stops at 20 (shown greyed + at 20, board 1). Picks stay capped at N per side."),
 ]
 
 R1B = [
@@ -150,10 +159,10 @@ def main():
                        "Copy is placeholder for /copy-review.")
             + '<div class="sec"><h3>R1b · your feedback (Oct 28)</h3>' + tbl(R1B) + '</div>'
             + '<div class="sec"><h3>The calls</h3>' + tbl(CALLS) + '</div>'
-            + '<div class="sec"><h3>Your open questions, as drawn</h3>' + tbl(QUESTIONS, True) + '</div>'
+            + '<div class="sec"><h3>R2 · your rulings with engineering (Oct 27–28)</h3>' + tbl(QUESTIONS, True) + '</div>'
             + '<div class="sec"><h3>For engineering</h3>' + tbl(GAPS) + '</div>'
             + '<div class="note" style="max-width:1500px"><b>Boards:</b> 1 Intake · 2 Not at 99 · 3 Results at 3 · 4 Results at 10 · 5 Results at 20 · '
-              '6 A short run · 7 The wait · 8 History · 9 About. Every frame is 390 and 1300.</div>')
+              '6 A short run · 7 The wait · 8 History · 9 Apply and Undo · 10 About. Every frame is 390 and 1300.</div>')
     return doc("Suggested changes v2 · main", body, 1612)
 
 
@@ -165,7 +174,7 @@ def intake_board():
     a = frames(frame("<b>390</b> · fresh, N = 3", S.intake(True, 3) and tool_ph(S.intake(True, 3))),
                frame("<b>1300</b> · fresh", tool_dk(S.intake(False, 3))))
     b = frames(frame("<b>390</b> · filled, N = 10", tool_ph(S.intake(True, 10, t10p, used=("removal", "focus"), count=118))),
-               frame("<b>1300</b> · filled, a chip just tapped, the bracket piece on", tool_dk(S.intake(False, 10, t10, used=("removal", "focus"), focus=True, count=118, bon=3, hot="focus"))))
+               frame("<b>1300</b> · filled, a chip just tapped, bracket up to 3", tool_dk(S.intake(False, 10, t10, used=("removal", "focus"), focus=True, count=118, bon=3, hot="focus"))))
     # chip behaviour
     def mini(lab, txt, used, focus=False, hot=None, count=0):
         return f'<div class="mini"><span class="cap0">{lab}</span>{S.textarea(txt, focus, count, True)}{S.chips(used, hot, True)}</div>'
@@ -183,9 +192,12 @@ def intake_board():
                        "How many, what to change, any restrictions, then <b>Suggest changes</b>. One panel, every step in view. The wait hint under the button "
                        "follows N (<i>usually under 20 seconds</i> at 3, <i>about a minute, now and then two</i> at 20). The line at the foot says what else the run reads, in the spec’s order, after the player’s words.")
             + sec("A · Fresh", "Nothing pre-filled, nothing selected. The request box shows a quiet placeholder only.", a)
-            + sec("B · Filled", "N = 10, two chips tapped, a sentence typed. The chips wrap under the box at both widths (R1b). The bracket goal is the optional piece (Q7).", b)
+            + sec("B · Filled", "N = 10, two chips tapped, a sentence typed. The chips wrap under the box at both widths (R1b). The bracket card sits beside the box, set to Up to 3 (R2: first-class, release 1).", b)
             + sec("C · How a chip behaves", "A suggestion, never an assumption: it adds words the player can see and change.", c)
-            + sec("D · Edges", "Identical inputs on an unchanged list ask once before spending (spec §8). The stepper stops at 20.", d))
+            + sec("D · Edges", "Identical inputs on an unchanged list ask once before spending (spec §8). The stepper stops at 20.", d)
+            + sec("E · The bracket card", "One choice, never empty: <b>Keep at 2 · Core</b> is the default, so a player who never touches it gets runs that hold the deck’s bracket. "
+                  "Each choice says what the run does with it. Beside the box on desktop (the box grows to its height), under the chips on a phone.",
+                  frames(*[frame(f"<b>{lab}</b>", f'<div class="mini"><div class="sc">{S.bracket_piece(b, True)}</div></div>') for b, lab in ((2, "keep, the default"), (1, "down to 1"), (3, "up to 3"), (4, "up to 4"))], gap=36)))
     return doc("Suggested changes v2 · intake", body, 2280)
 
 
@@ -264,20 +276,34 @@ def r10_board():
 
 # ---------------------------------------------------------------- 5 Results at 20
 def r20_board():
+    S.AIM["to"] = 3
+    try:
+        return _r20_board()
+    finally:
+        S.AIM.clear()
+
+
+def _r20_board():
     adds, cuts = A, C
     pa = K(adds[:20]) if "mystical-tutor" in K(adds[:20]) else K(adds[:20])
     pc = K(cuts[:20])
-    d = S.results(False, 20, adds, cuts, pa, pc, grouped=True, req=S.REQ20, bracket=True,
-                  lead=f'<b>30 to add and 27 to cut.</b> Pick any 20 of each. Nothing moves until you apply.')
-    p = S.results(True, 20, adds, cuts, pa, pc, grouped=True, req=S.REQ20, bracket=True, tab="cut",
+    pa_miss = [k for k in K(adds[:21]) if k != "mystical-tutor"][:20]
+    miss = S.results(False, 20, adds, cuts, pa_miss, pc, grouped=True, req=S.REQ20, bracket="missed",
+                     lead=f'<b>30 to add and 27 to cut</b>, aimed at 3 · Upgraded. Pick any 20 of each.')
+    d = S.results(False, 20, adds, cuts, pa, pc, grouped=True, req=S.REQ20, bracket="reached",
+                  lead=f'<b>30 to add and 27 to cut</b>, aimed at 3 · Upgraded. Pick any 20 of each. Nothing moves until you apply.')
+    p = S.results(True, 20, adds, cuts, pa, pc, grouped=True, req=S.REQ20, bracket="reached", tab="cut",
                   lead=f'<b>30 to add and 27 to cut.</b> Pick any 20 of each.')
     body = (board_head("5 · results at N = 20 (30 a side)", "Thirty to add, twenty-seven to cut",
                        "The run asked for 30 of each. Three cuts failed the checks and the count still cleared 20, so no refill: the list says 27, never pads, and "
-                       "nothing about it is short. All 20 + 20 picked; Mystical Tutor is a Game Changer, so its row carries the shipped bracket flag and the bar says the set moves the deck to Upgraded.")
+                       "nothing about it is short. The player asked to move <b>up to 3 · Upgraded</b> (R2): <i>You asked</i> says so, every addition that gets there carries the shipped bracket flag "
+                       "with <i>the bracket you asked for</i>, and the bar says whether the picked set reaches it.")
             + sec("A · Desktop", "Every row drawn, by type. Groups keep a long list scannable: the player finds Instants, takes what they need, moves on.",
                   frames(frame("<b>1300</b>", tool_dk(d))))
             + sec("B · Phone, the Cuts half", "27 rows under one control; the bar stays pinned at the bottom of the screen in use.",
-                  frames(frame("<b>390</b> · Cuts", tool_ph(p)))))
+                  frames(frame("<b>390</b> · Cuts", tool_ph(p))))
+            + sec("C · The picks don’t reach the aim", "Mystical Tutor left unpicked: Apply still works (it is the player’s call), and the bar says the set stays at 2 and how to get to 3.",
+                  frames(frame("<b>1300</b> · the bar", f'<div class="mini w" style="width:1300px">{S.abar(20, 20, 20, False, "missed")}</div>'))))
     return doc("Suggested changes v2 · results at 20", body, 1300 + 112 + 400)
 
 
@@ -320,21 +346,85 @@ def short_board():
 # ---------------------------------------------------------------- 7 The wait
 def wait_board():
     a15 = [A[i] for i in (0, 1, 2, 3, 4, 6, 7, 9, 10, 11, 12, 13, 14, 19, 24)]
-    w1p, w1d = S.wait(True, 1), S.wait(False, 1)
-    w2p, w2d = S.wait(True, 2, adds=a15, pa=K(a15[:2])), S.wait(False, 2, adds=a15, pa=K(a15[:2]))
-    w3p = S.wait(True, 3, adds=a15, pa=K(a15[:6]))
-    w3d = S.wait(False, 3, adds=a15, pa=K(a15[:6]))
-    body = (board_head("7 · the wait", "Two calls, shown as two steps",
-                       "15 to 60 seconds usually, up to about two and a half minutes. Alive across that range by being specific: a running clock and what’s usual for this N, "
-                       "rows that tick as each call returns, a moving rule under the live row, and the additions shown (and pickable) the moment they land. "
-                       "The shipped tile shows the run on the landing (accent edge, dot, words, time), and the run outlives the page.")
-            + sec("A · 0:09 · choosing cards to add", "The first call is out. Nothing to show yet but honest progress.",
-                  frames(frame("<b>390</b>", tool_ph(w1p)), frame("<b>1300</b>", tool_dk(w1d)), frame("<b>390</b> · the landing meanwhile", land_ph("running")), gap=44))
-            + sec("B · 0:41 · additions in, cuts writing", "Call 1’s 15 kept additions fan out and their list opens below, pickable. The cuts column holds quiet placeholders until call 2 returns (G1).",
-                  frames(frame("<b>390</b>", vp_ph(w2p, 1400)), frame("<b>1300</b>", tool_dk(w2d))))
-            + sec("C · 1:52 · a refill, taking longer than usual", "Two cuts failed the checks, so the run asks again with the reasons. The row says that in words, and the clock line swaps to the shipped ‘taking longer than usual’.",
-                  frames(frame("<b>390</b>", vp_ph(w3p, 1400)), frame("<b>1300</b>", tool_dk(w3d)))))
+    c12 = C[:12]
+    k = K
+    st = lambda ph, at, na, nc, pa, pc, **kw: S.stream(ph, at, 10, a15[:na], c12[:nc], k(pa), k(pc), **kw)
+    # A 0:12 · first additions in
+    aP = st(True, "0:12", 4, 0, [a15[0]], [], new_adds=k(a15[3:4]))
+    aD = st(False, "0:12", 4, 0, [a15[0]], [], new_adds=k(a15[3:4]))
+    # B 0:38 · cuts follow
+    pb_a, pb_c = [a15[i] for i in (0, 1, 2, 4)], [c12[0]]
+    bD = st(False, "0:38", 11, 4, pb_a, pb_c, new_adds=k(a15[10:11]), new_cuts=k(c12[3:4]))
+    bP = st(True, "0:38", 11, 4, pb_a, pb_c, new_cuts=k(c12[3:4]), tab="cut")
+    # C 0:52 · taking a while
+    t45 = ("<b>This is taking a while.</b> Some cards didn’t pass the checks, so it’s looking further. Keep picking, or leave: "
+           "it keeps going and lands in History.")
+    pc_a, pc_c = [a15[i] for i in (0, 1, 2, 4, 5, 7, 9)], [c12[i] for i in (0, 1, 3)]
+    cD = st(False, "0:52", 14, 7, pc_a, pc_c, note=t45, new_cuts=k(c12[6:7]))
+    cP = st(True, "0:52", 14, 7, pc_a, pc_c, note=t45, tab="add")
+    # D 2:04 · about two minutes
+    t2 = ("<b>Still going, about 2 minutes in.</b> Runs this size can take up to about two and a half. It won’t stop early, and your picks are kept.")
+    pd_a, pd_c = [a15[i] for i in (0, 1, 2, 4, 5, 7, 9, 11, 13, 14)], [c12[i] for i in (0, 1, 3, 5, 6, 8)]
+    dD = st(False, "2:04", 15, 11, pd_a, pd_c, note=t2, adds_done=True, new_cuts=k(c12[10:11]))
+    dP = st(True, "2:04", 15, 11, pd_a, pd_c, note=t2, adds_done=True, tab="cut")
+    # E 2:21 · in, short on cuts
+    sh = ('<div class="shrt"><b>Found 15 to add and 12 to cut.</b> Cuts came up 3 short of 15: three it wanted are cards you locked. '
+          'You still have more than 10 of each, so the run keeps its credit.</div>')
+    pe_c = [c12[i] for i in (0, 1, 3, 5, 6, 8, 9, 10, 11)]
+    eD = st(False, "2:21", 15, 12, pd_a, pe_c, adds_done=True, cuts_done=True, short=sh)
+    eP = st(True, "2:21", 15, 12, pd_a, pe_c, adds_done=True, cuts_done=True, short=sh, tab="cut")
+    body = (board_head("7 · the wait", "The lists fill in as cards arrive",
+                       "R2, Hugh’s ruling with engineering: a run is never cut short. Additions stream in as they pass the checks, then cuts follow. Each row lands at the end "
+                       "of its list, marked <i>new</i> for a beat, so nothing moves under the player’s thumb; a side groups by type once it is all in. Picks work from the first "
+                       "row and are kept. Apply opens when both lists are in. 15 to 60 seconds usually, up to about two and a half minutes.")
+            + sec("A · 0:12 · the first additions", "Four in, one picked. Each list ends in <b>Still finding more</b> until it is in; the cuts side says it comes next.",
+                  frames(frame("<b>390</b>", vp_ph(aP, 1100)), frame("<b>1300</b>", tool_dk(aD)), frame("<b>390</b> · the landing meanwhile", land_ph("running"))))
+            + sec("B · 0:38 · cuts follow", "Eleven additions in, four cuts. Picking runs ahead of the run: 4 and 1 chosen. The bar keeps the tally and says when Apply opens.",
+                  frames(frame("<b>390</b> · the Cuts half", vp_ph(bP, 1300)), frame("<b>1300</b>", tool_dk(bD))))
+            + sec("C · 0:52 · taking a while", "After about 45 seconds, one note under the clock says why and what the player can do. Nothing else changes.",
+                  frames(frame("<b>390</b>", vp_ph(cP, 1300)), frame("<b>1300</b>", tool_dk(cD))))
+            + sec("D · 2:04 · about two minutes", "Additions are all in and grouped by type; cuts are still arriving. The note says how long it can take, and that it won’t stop early.",
+                  frames(frame("<b>390</b> · the Cuts half", vp_ph(dP, 1300)), frame("<b>1300</b>", tool_dk(dD))))
+            + sec("E · 2:21 · in, a little short", "The run finishes with its count and the reason. Here it still covers 10 of each, so it keeps its credit; a run under N is board 6.",
+                  frames(frame("<b>390</b> · the Cuts half", vp_ph(eP, 1300)), frame("<b>1300</b>", tool_dk(eD)))))
     return doc("Suggested changes v2 · the wait", body, 390 * 2 + 1300 + 88 + 112)
+
+
+# ---------------------------------------------------------------- 9 Apply, confirm, Undo
+def overlay(frame_html, layer):
+    return frame_html[:-6] + layer + "</div>"
+
+
+def apply_board():
+    a5, c5 = A[:5], C[:5]
+    pa, pc = K(a5[:3]), K([c5[0], c5[1], c5[3]])
+    ina, outc = a5[:3], [c5[0], c5[1], c5[3]]
+    ap = pa + pc
+    eqD = S.results(False, 3, a5, c5, pa, pc, req=S.REQ3)
+    eqP = S.results(True, 3, a5, c5, pa, pc, req=S.REQ3, tab="cut")
+    doneD = S.results(False, 3, a5, c5, done=True, applied=ap, req=S.REQ3,
+                      lead="<b>Applied 3 in, 3 out.</b> The deck is back at 99, on a new draft. The other 4 stay here.")
+    doneP = S.results(True, 3, a5, c5, done=True, applied=ap, req=S.REQ3, tab="add",
+                      lead="<b>Applied 3 in, 3 out.</b> The deck is back at 99. The other 4 stay here.")
+    und = ('<div class="undn"><b>Undone.</b> All 6 are back as they were, and your picks are still here: apply them again or change them.</div>')
+    undD = S.results(False, 3, a5, c5, pa, pc, req=S.REQ3, extra_top=und)
+    undP = S.results(True, 3, a5, c5, pa, pc, req=S.REQ3, extra_top=und, tab="add")
+    toast = ('<div class="toast" style="bottom:96px"><div class="tt"><span class="t1">Couldn’t apply. Nothing changed, and your picks are kept.</span>'
+             '<span class="t2">Try Apply again in a moment.</span></div><span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted)">✕</span></div>')
+    body = (board_head("9 · apply, confirm, undo", "One change in, one Undo out",
+                       "R2: applying is one action for the picked additions and cuts. Apply N + N opens a confirmation that lists both sides and the bracket outcome; "
+                       "its one button applies the set as a single change on the deck’s draft. <b>Undo all</b> takes the whole set back and keeps the picks. "
+                       "The ✕ closes the confirmation with nothing changed.")
+            + sec("A · Confirm", "The shipped ModalChrome (eyebrow head, 560 wide) on desktop; the shipped sheet on a phone. Three in, three out, by name, with the card.",
+                  frames(frame("<b>390</b>", overlay(vp_ph(eqP, 844), S.confirm(ina, outc, True))),
+                         frame("<b>1300</b>", overlay(vp_dk(eqD, 900), S.confirm(ina, outc)))))
+            + sec("B · Applied", "The bar turns to the set’s Undo and stays until the deck is committed. Applied rows read Added / Cut; the unpicked four stay pickable.",
+                  frames(frame("<b>390</b>", vp_ph(doneP, 1000)), frame("<b>1300</b>", tool_dk(doneD))))
+            + sec("C · Undone", "One press puts all six back. The picks stay, so Apply 3 + 3 is one press away again.",
+                  frames(frame("<b>390</b>", vp_ph(undP, 1000)), frame("<b>1300</b>", tool_dk(undD))))
+            + sec("D · Apply fails", "The shared toast (ToastFrame) over the bar. Nothing is half-applied: the write is one transaction.",
+                  frames(frame("<b>390</b>", overlay(vp_ph(eqP, 844), toast)))))
+    return doc("Suggested changes v2 · apply and undo", body, 390 + 1300 + 44 + 112)
 
 
 # ---------------------------------------------------------------- 8 History
@@ -347,19 +437,19 @@ def history_board():
     back = ('<div class="pastm"><span class="b">‹ History</span><span class="m">Oct 26 · version 4 · 1 credit</span></div>'
             '<div class="hrow2"><h3>Suggested changes</h3><span class="nb">New run</span></div>')
     rev = '<p class="lead" style="margin-top:-6px">From a run on Oct 26. Each change is checked against the deck as it is now.</p>'
-    old_d = S.results(False, 3, a5, c5, done=True, applied=ap, req=S.REQ3, head=back + rev, newrun=False,
+    old_d = S.results(False, 3, a5, c5, done=True, applied=ap, req=S.REQ3, head=back + rev, newrun=False, side_ask=True,
                       lead="<b>Applied 3 in, 3 out on Oct 26.</b> The other 4 are still pickable while the deck is on version 4.")
     old_p = S.results(True, 3, a5, c5, done=True, applied=ap, req=S.REQ3, head=back + rev, newrun=False, tab="cut",
                       lead="<b>Applied 3 in, 3 out on Oct 26.</b> The other 4 are still pickable.")
     stale_note = ('<div class="stale"><span>A past run, read-only. The list has changed by 7 cards since; nothing here can be applied now.</span></div>')
     back2 = ('<div class="pastm"><span class="b">‹ History</span><span class="m">Oct 19 · version 3 · 1 credit</span></div>'
              '<div class="hrow2"><h3>Suggested changes</h3><span class="nb">New run</span></div>')
-    st_d = S.results(False, 3, a5, c5, applied=K(a5[:2]) + K(c5[:2]), req="Fewer clunky legends, more cheap removal.", head=back2 + stale_note, readonly=True, newrun=False,
+    st_d = S.results(False, 3, a5, c5, applied=K(a5[:2]) + K(c5[:2]), req="Fewer clunky legends, more cheap removal.", head=back2 + stale_note, readonly=True, newrun=False, side_ask=True,
                      lead="<b>5 to add and 5 to cut</b> · 2 + 2 applied on Oct 19.")
     st_p = S.results(True, 3, a5, c5, applied=K(a5[:2]) + K(c5[:2]), req="Fewer clunky legends, more cheap removal.", head=back2 + stale_note, readonly=True, newrun=False,
                      lead="<b>5 to add and 5 to cut</b> · 2 + 2 applied on Oct 19.")
     body = (board_head("8 · history", "Every run, with what was asked",
-                       "The shipped History tool, its rows carrying v2’s shape: the request quoted (cut to one line), then <i>asked · found · applied</i>. A v10 run "
+                       "The shipped History tool, its rows carrying v2’s shape: the request quoted (cut to one line), then <i>asked · found · applied</i>. An opened run puts what the player typed beside what came of it (R2). A v10 run "
                        "(Sep 30) keeps its old summary, as stored. Short and refunded runs say so in the outcome pill; the refunded tier is struck.")
             + sec("A · The run list", "Opening a row opens the run.", frames(frame("<b>390</b>", hl_p), frame("<b>1300</b>", hl_d)))
             + sec("B · An old run, still live", "Same version of the list: the applied six read Added / Cut, the set’s one Undo stays in the bar until the next commit, and the unpicked four can still form another equal set.",
@@ -379,4 +469,5 @@ BOARDS = [
     ("Short-Run", short_board, "6 · A short run"),
     ("Wait", wait_board, "7 · The wait"),
     ("History", history_board, "8 · History"),
+    ("Apply", apply_board, "9 · Apply, confirm, Undo"),
 ]
