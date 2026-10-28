@@ -92,6 +92,8 @@ export function LeadStory({
     : ask
       ? { title: feed.title, line: spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName), press: null }
       : feed;
+  // The ✕ is absent while an answer is out and on the receipt, as shipped.
+  const dismiss = receipt || busy ? undefined : onDismiss;
   async function press(a: Answer, from: Element) {
     if (!ask || busy) return;
     onHold?.(true);
@@ -131,37 +133,37 @@ export function LeadStory({
           </span>
         )}
       </div>
-      <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className={`relative flex min-w-0 flex-1 flex-col gap-[6px] ${onDismiss && !receipt ? "pr-[28px] md:pr-[20px]" : ""}`}>
-        {/* The ✕'s 44px coarse hit reaches 44px in from the story's edge: 28px past its 16px padding on a phone, 20px past
-            its 24px from desktop. The whole column keeps clear, since a long title runs beside it. */}
+      <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
         <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
           <span className="min-w-0">{receipt ? receipt.kind : feedCopy.home.kicker[item.kind]}</span>
-          <small className="ml-auto flex-none whitespace-nowrap text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
+          <small className="flex-none whitespace-nowrap text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case before:mr-[7px] before:content-['·']">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
         </p>
         <h3 id="home-lead-title" className="m-0 font-display [overflow-wrap:anywhere] text-[18px] leading-[1.25] font-bold text-[color:var(--fg)] md:text-[22px]">
           {text.title}
         </h3>
         {text.line && <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:max-w-[640px] md:text-[13.5px]">{text.line}</p>}
-        {text.press && (
-          <div className="mt-[6px] flex min-w-0 flex-wrap gap-[8px]">
-            <FeedPress
-              item={item}
-              label={text.press}
-              stretch=""
-              filled
-              className="inline-flex min-h-[40px] max-w-full min-w-0 items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] py-[6px] text-center font-sans text-[13.5px] font-semibold [overflow-wrap:anywhere] text-[color:var(--bg)] md:min-h-[36px] md:text-[13px]"
-            />
-          </div>
-        )}
-        {ask && !receipt && (
-          // The column's own 6px gap is the board's 6px under the detail; no margin on top of it.
-          <div className="min-w-0">
-            <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null}
-              onAnswer={(a, from) => void press(a, from)} size="lead" />
+        {/* The action line (board `Dismiss-X`, `.d4n .ld .la`): the press, or Yes, No and the days left, then the ✕ at
+            its end, the band's right edge from desktop. On a phone the ✕ holds the first line's end while the days left
+            wraps under Yes and No. */}
+        {(text.press || (ask && !receipt) || dismiss) && (
+          <div data-lead-actions className="mt-[6px] flex min-w-0 flex-nowrap items-start gap-[8px] md:items-center">
+            {text.press && (
+              <FeedPress
+                item={item}
+                label={text.press}
+                stretch=""
+                filled
+                className="inline-flex min-h-[40px] max-w-full min-w-0 items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] py-[6px] text-center font-sans text-[13.5px] font-semibold [overflow-wrap:anywhere] text-[color:var(--bg)] md:min-h-[36px] md:text-[13px]"
+              />
+            )}
+            {ask && !receipt && (
+              <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null}
+                onAnswer={(a, from) => void press(a, from)} size="lead" />
+            )}
+            {dismiss && <DismissButton title={text.title} onPress={dismiss} className="mt-[-2px] md:mt-0" />}
           </div>
         )}
       </div>
-      {onDismiss && !receipt && !busy && <DismissButton title={text.title} onPress={onDismiss} />}
       {!shared && toast}
     </section>
   );

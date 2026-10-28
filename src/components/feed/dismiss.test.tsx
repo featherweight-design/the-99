@@ -1,5 +1,5 @@
-// The ✕ on What's new, its lead story and Waiting on you (Hugh's ruling 2026-10-27): each surface draws Your requests'
-// bare ✕ at the row's top right with its 44px coarse hit, the press hides the item at once under the key the server
+// The ✕ on What's new, its lead story and Waiting on you (Hugh's ruling 2026-10-27): each surface ends its action line
+// with the ✕ (small items board `Dismiss-X`), 44px on a phone and 32px from desktop with a 44px coarse hit, the press hides the item at once under the key the server
 // keeps (Home's own key; an ask by `ask:<request id>`), the count follows, and a failed write brings the row back with
 // the toast.
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
@@ -43,34 +43,35 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("the ✕ itself", () => {
-  it("is Your requests' bare ✕: 36px at the row's top right, a 44px coarse hit, named for the item", () => {
+  it("ends the action line: in flow at ml-auto, 44px on a phone, 32px from desktop with a 44px coarse hit, named for the item", () => {
     const onDismiss = vi.fn();
     render(<ul><FeedItemRow item={view(1)} now={NOW} onDismiss={onDismiss} /></ul>);
     const x = screen.getByRole("button", { name: d.aria(titleOf(1)) });
-    for (const c of ["absolute", "top-[6px]", "right-[4px]", "h-[36px]", "w-[36px]", "pointer-coarse:after:h-[44px]", "pointer-coarse:after:w-[44px]"]) {
-      expect(x.className.split(/\s+/)).toContain(c);
+    const cls = x.className.split(/\s+/);
+    for (const c of ["ml-auto", "h-[44px]", "w-[44px]", "md:h-[32px]", "md:w-[32px]", "mr-[-10px]", "md:mr-[-6px]", "relative", "pointer-coarse:after:h-[44px]", "pointer-coarse:after:w-[44px]"]) {
+      expect(cls).toContain(c);
     }
-    expect(x.closest("li")!.className).toMatch(/(^|\s)relative(\s|$)/);
+    expect(cls).not.toContain("absolute");
+    expect(x.parentElement!.hasAttribute("data-feed-actions")).toBe(true);
     fireEvent.click(x);
     expect(onDismiss).toHaveBeenCalledWith(x);
   });
 
-  it("is not drawn without a dismiss, and keeps the whole text column and the desktop column clear of it when drawn", () => {
+  it("is not drawn without a dismiss, and no text column keeps a reserve for it", () => {
     const { container, rerender } = render(<ul><FeedItemRow item={view(1)} now={NOW} /></ul>);
     expect(container.querySelector("[data-feed-dismiss]")).toBeNull();
     rerender(<ul><FeedItemRow item={view(1)} now={NOW} onDismiss={() => {}} /></ul>);
-    expect(container.querySelector("[data-feed-age-desktop]")!.parentElement!.className).toMatch(/md:pr-\[34px\]/);
-    // The title's own column, not the kicker alone (Copilot round 3): a long title's first line runs beside the ✕.
-    const column = screen.getByText(titleOf(1)).parentElement!.className.split(/\s+/);
-    expect(column).toContain("pr-[30px]");
-    expect(column).toContain("md:pr-0");
+    expect(screen.getByText(titleOf(1)).parentElement!.className).not.toMatch(/pr-\[/);
+    expect(container.querySelector("[data-feed-actions]")!.className).not.toMatch(/pr-\[/);
   });
 
-  it("keeps the lead's whole text column clear of its ✕", () => {
-    render(<LeadSlot lead={view(9, { key: "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f" })} now={NOW} />);
-    const lead = screen.getByRole("heading", { level: 3 }).parentElement!.className.split(/\s+/);
-    expect(lead).toContain("pr-[28px]");
-    expect(lead).toContain("md:pr-[20px]");
+  it("ends the lead's action line with its ✕, with no reserve on the text column", () => {
+    const { container } = render(<LeadSlot lead={view(9, { key: "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f" })} now={NOW} />);
+    expect(screen.getByRole("heading", { level: 3 }).parentElement!.className).not.toMatch(/pr-\[/);
+    const line = container.querySelector("[data-lead-actions]")!;
+    expect(line.lastElementChild!.hasAttribute("data-feed-dismiss")).toBe(true);
+    // The phone's nudge holds the ✕ on the first line's end (`.d4n.ph .ld .la .x4`).
+    expect(line.lastElementChild!.className.split(/\s+/)).toEqual(expect.arrayContaining(["mt-[-2px]", "md:mt-0"]));
   });
 });
 
@@ -192,10 +193,15 @@ describe("Waiting on you", () => {
     expect(screen.queryAllByTestId("waiting-row")).toHaveLength(0);
   });
 
-  it("keeps each row's whole text column clear of its ✕ on a phone", () => {
+  it("ends each row's action line with its ✕, after the presses, with no reserve on the text column", () => {
     render(<WaitingOnYou rows={[ask, trade]} now={NOW_D} />);
     for (const title of [feedCopy.home.title.spareRequest("Ana", "Sol Ring"), w.tradeTitle("Colin", "Ghalta, Primal Hunger")]) {
-      expect(screen.getByText(title).parentElement!.className.split(/\s+/)).toContain("pr-[30px]");
+      expect(screen.getByText(title).parentElement!.className).not.toMatch(/pr-\[/);
     }
+    const [askRow, tradeRow] = screen.getAllByTestId("waiting-row");
+    expect(within(askRow).getByRole("button", { name: /^Hide/ }).previousElementSibling!.getAttribute("data-testid")).toBe("spare-answer");
+    const tradeX = within(tradeRow).getAllByRole("button", { name: /^Hide/ });
+    expect(tradeX).toHaveLength(1);
+    expect(tradeX[0].previousElementSibling!.textContent).toContain("Colin");
   });
 });

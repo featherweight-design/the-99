@@ -18,12 +18,11 @@ describe("FeedItemRow", () => {
   it("draws the kicker, the age, the title and the line, with the accent diamond while unseen", () => {
     const { container } = list(<FeedItemRow item={view({ name: "Secrets of Strixhaven", setSize: 288, href: "/collection/sets/sos" })} now={NOW} />);
     expect(screen.getByText("New set")).toBeInTheDocument();
-    // The age twice, one per width: on the kicker line on a phone, beside the press from desktop.
-    const ages = screen.getAllByText("5h ago");
-    expect(ages).toHaveLength(2);
-    expect(ages[0].className).toMatch(/(^|\s)md:hidden(\s|$)/);
-    expect(ages[1].className).toMatch(/(^|\s)hidden(\s|$)/);
-    expect(ages[1].className).toMatch(/(^|\s)md:inline(\s|$)/);
+    // The age once, after the kind on the kicker line at both widths (small items R1b: `New set · 5h ago`).
+    const age = screen.getByText("5h ago");
+    expect(age.previousElementSibling?.textContent).toBe("New set");
+    expect(age.className).toContain("before:content-['·']");
+    expect(age.className).not.toMatch(/(^|\s)(md:)?hidden(\s|$)/);
     expect(screen.getByText("Secrets of Strixhaven is out")).toBeInTheDocument();
     expect(screen.getByText("288 cards.")).toBeInTheDocument();
     expect(container.querySelector("[data-feed-unseen]")).not.toBeNull();
@@ -32,22 +31,24 @@ describe("FeedItemRow", () => {
     expect(container.querySelector('[data-commander-thumb="feed"]')).not.toBeNull();
   });
 
-  it("puts the desktop age on the press's line, before it, on one baseline", () => {
-    const { container } = list(<FeedItemRow item={view({ href: "/x" })} now={NOW} />);
-    const age = container.querySelector("[data-feed-age-desktop]")!;
-    const line = age.parentElement!;
-    expect(line.className).toMatch(/md:items-baseline/);
+  it("ends the action line with the ✕, after the press: under the text on a phone, the third column from desktop", () => {
+    const { container } = list(<FeedItemRow item={view({ href: "/x" })} now={NOW} onDismiss={() => {}} />);
+    const line = container.querySelector("[data-feed-actions]")!;
+    expect(line.className).toMatch(/(^|\s)col-start-2(\s|$)/);
     expect(line.className).toMatch(/md:col-start-3/);
-    expect(line.className).toMatch(/md:flex-nowrap/);
-    expect(age.nextElementSibling?.textContent).toBe("See the set ›");
+    expect(line.className).toMatch(/flex-nowrap/);
+    expect([...line.children].map((c) => c.textContent)).toEqual(["See the set ›", "✕"]);
+    expect(line.lastElementChild!.className).toMatch(/(^|\s)ml-auto(\s|$)/);
   });
 
-  it("keeps the desktop age in the right column for a row with no press", () => {
-    const { container } = list(<FeedItemRow item={view({ kind: "spare-request", friend: { publicId: "p", displayName: "Peter" } })} now={NOW} />);
-    const age = container.querySelector("[data-feed-age-desktop]")!;
-    expect(age.parentElement!.className).toMatch(/(^|\s)hidden(\s|$)/);
-    expect(age.parentElement!.className).toMatch(/md:flex(\s|$)/);
+  it("keeps the action line for the ✕ alone on a row with no press, and draws none with neither", () => {
+    const item = view({ kind: "spare-request", friend: { publicId: "p", displayName: "Peter" } });
+    const { container, unmount } = list(<FeedItemRow item={item} now={NOW} onDismiss={() => {}} />);
     expect(screen.queryByRole("link")).toBeNull();
+    expect([...container.querySelector("[data-feed-actions]")!.children].map((c) => c.textContent)).toEqual(["✕"]);
+    unmount();
+    const bare = list(<FeedItemRow item={item} now={NOW} />);
+    expect(bare.container.querySelector("[data-feed-actions]")).toBeNull();
   });
 
   it("drops the diamond and steps the kicker down once seen", () => {
@@ -147,8 +148,8 @@ describe("FeedItemRow", () => {
   it("draws no press for a price drop whose card the catalog no longer holds", () => {
     const { container } = list(<FeedItemRow item={view({ kind: "price-drop", card: null, outbound: null, drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
     expect(document.querySelector("[data-feed-press]")).toBeNull();
-    // No press text, so the press column is not drawn either (no empty, spaced wrapper under the line on a phone).
-    expect(container.querySelector("[data-feed-age-desktop]")!.parentElement!.className).toMatch(/^hidden /);
+    // No press and no ✕, so the action line is not drawn either (no empty, spaced wrapper under the line on a phone).
+    expect(container.querySelector("[data-feed-actions]")).toBeNull();
   });
 
   it("makes a linked row's picture a real link to the same place, out of the tab order", () => {
@@ -178,7 +179,7 @@ describe("FeedItemRow", () => {
 
   it("reads 'just now' for an item under an hour old", () => {
     list(<FeedItemRow item={view({ at: "2026-10-22T11:30:00Z", href: "/x" })} now={NOW} />);
-    expect(screen.getAllByText("just now")).toHaveLength(2);
+    expect(screen.getAllByText("just now")).toHaveLength(1);
     expect(screen.queryByText(/0h ago/)).toBeNull();
   });
 

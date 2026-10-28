@@ -136,12 +136,12 @@ describe("the lead story", () => {
 });
 
 describe("Waiting on you", () => {
-  it("opens the sheet in place from the trade match's press, at both widths' presses", async () => {
+  it("opens the sheet in place from the trade match's one press, drawn at both widths", async () => {
     await act(async () => { render(inProvider(<WaitingOnYou rows={[trade]} now={new Date(NOW)} />)); });
     const presses = document.querySelectorAll<HTMLElement>("[data-trade-ask-press]");
-    expect(presses).toHaveLength(2);
+    expect(presses).toHaveLength(1);
     expect(document.querySelector("a[href*='?spare=']")).toBeNull();
-    await act(async () => { fireEvent.click(presses[1]); });
+    await act(async () => { fireEvent.click(presses[0]); });
     expect(sheet()).toBeInTheDocument();
   });
 

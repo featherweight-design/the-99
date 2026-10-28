@@ -1,9 +1,10 @@
 "use client";
 
 // The ✕ on a What's new item (Home's rows and lead story) and a Waiting on you row (Hugh's ruling 2026-10-27, the
-// menu-home plan's product call 6): Your requests' bare ✕ (spare requests, Asker-States `.fi .xx`), 36px at the row's
-// top right, with a coarse pointer's 44px hit kept inside the row. The press hides the item at once and for good
-// (`dismissFeedItemAction`, `feed_dismissals`); a failed write puts it back with the toast. It answers nothing.
+// menu-home plan's product call 6). It ENDS the row's action line (small items board `Dismiss-X`, `.x4`), after the
+// press: 44px square on a phone, 32px from desktop with a coarse pointer's 44px hit. The press hides the item at once
+// and for good (`dismissFeedItemAction`, `feed_dismissals`); a failed write puts it back with the toast. It answers
+// nothing.
 import { useRef, useState, type ReactNode } from "react";
 import { dismissFeedItemAction } from "../../app/feed-dismiss-actions";
 import { feedCopy } from "../../lib/copy/feed";
@@ -11,15 +12,15 @@ import { SocialToast, type SocialToastState } from "../social/social-toast";
 
 const d = feedCopy.home.dismiss;
 
-/**
- * A coarse pointer's 44px hit, centred on the 36px box: TOUCH_HIT's pseudo-element without its leading `relative`
- * (the box is absolute). At the row's top right (top 6, right 4) it reaches 2px from the top and 0px past the right,
- * so it stays inside the row.
- */
+/** A coarse pointer's 44px hit, centred on the box (TOUCH_HIT's pseudo-element): only the 32px desktop box needs it. */
 const HIT =
-  "pointer-coarse:after:absolute pointer-coarse:after:left-1/2 pointer-coarse:after:top-1/2 pointer-coarse:after:h-[44px] pointer-coarse:after:w-[44px] pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:-translate-y-1/2 pointer-coarse:after:content-['']";
+  "relative pointer-coarse:after:absolute pointer-coarse:after:left-1/2 pointer-coarse:after:top-1/2 pointer-coarse:after:h-[44px] pointer-coarse:after:w-[44px] pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:-translate-y-1/2 pointer-coarse:after:content-['']";
 
-export function DismissButton({ title, onPress, disabled = false }: { title: string; onPress: (from: HTMLElement) => void; disabled?: boolean }) {
+export function DismissButton({ title, onPress, disabled = false, className = "" }: {
+  title: string; onPress: (from: HTMLElement) => void; disabled?: boolean;
+  /** The lead's phone nudge (`.d4n.ph .ld .la .x4`, margin-top −2px). */
+  className?: string;
+}) {
   return (
     <button
       type="button"
@@ -27,7 +28,7 @@ export function DismissButton({ title, onPress, disabled = false }: { title: str
       aria-label={d.aria(title)}
       disabled={disabled}
       onClick={(e) => onPress(e.currentTarget)}
-      className={`absolute top-[6px] right-[4px] z-[1] flex h-[36px] w-[36px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT}`}
+      className={`z-[1] ml-auto mr-[-10px] flex h-[44px] w-[44px] flex-none cursor-pointer md:mr-[-6px] md:h-[32px] md:w-[32px] items-center justify-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
     >
       <span aria-hidden>✕</span>
     </button>

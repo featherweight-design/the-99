@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { askSpareAction, closeSpareAction } from "../../app/friends/spare-actions";
 import { feedAge } from "../../lib/feed/age";
+import { KICKER_AGE } from "../feed/kicker-age";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { expiresAt } from "../../lib/social/spare-request-rules";
 import type { YourRequest } from "../../lib/social/your-requests";
@@ -151,9 +152,10 @@ export function YourRequests({ rows, now, canBuy = true }: { rows: readonly Your
               data-oracle={a.oracleId}
               data-state={a.state}
               data-unseen={a.unseen ? "" : undefined}
-              className="relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] [&+&]:[border-top:1px_solid_var(--border)] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px]"
+              className="relative grid grid-cols-[46px_minmax(0,1fr)] items-center gap-x-[12px] px-[14px] py-[12px] [&+&]:[border-top:1px_solid_var(--border)] md:grid-cols-[46px_minmax(0,1fr)_auto] md:gap-x-[14px] md:px-[16px]"
             >
-              <span aria-hidden className="relative row-span-2 h-[64px] w-[46px] self-start md:row-span-1 md:self-center">
+              {/* Centred on its row at both widths (small items R1b, `.ya .fi{align-items:center}`), spanning the text and Ask again on a phone. */}
+              <span aria-hidden className="relative row-span-2 h-[64px] w-[46px] md:row-span-1">
                 {a.card.imageUri ? (
                   <FadingImg src={a.card.imageUri} alt="" className="block h-[64px] w-[46px] rounded-[3px] object-cover shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
                 ) : (
@@ -177,7 +179,7 @@ export function YourRequests({ rows, now, canBuy = true }: { rows: readonly Your
                   <span data-testid="your-request-status" tabIndex={-1} className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] ${text.ink}`}>
                     {text.kind}
                   </span>
-                  <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                  <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>
                     {feedAge(text.at.toISOString(), now.toISOString())}
                   </small>
                 </p>
