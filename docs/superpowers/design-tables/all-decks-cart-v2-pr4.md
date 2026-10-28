@@ -130,14 +130,15 @@ Values are read from the canvases' inline CSS classes (`.colh .nrw .cn .nm2 .cmd
 | Row, +N | names wider than the cell | `+N` pill | measured widths |
 | Row, `more` | one name, cut | `more` pill | measured widths |
 | Row, opened | the pill pressed | head, `less`, the inline list | — |
-| Own, names | `inUseIn(line, selected, rank)` names every holding deck | `in` + names | `CartLine.heldBy`, `CartPayload.holders` |
-| Own, fallback (G1) | a holding deck the read cannot name | `in other decks`, no pill | — |
+| Own, names | `ownFact` (`lib/decks/cart`): every deck holding a copy is named and their copies sum to `owned` (the selected decks on the line that hold some, then `inUseIn`) | `in` + names | `CartLine.heldBy`, `CartPayload.holders`, the line's `held` |
+| Own, fallback (G1), all elsewhere | the names do not account for every copy, and `heldElsewhere` equals `owned` | `in other decks`, no pill | — |
+| Own, fallback (G1), some on the line | the names do not account for every copy, and a deck on the line holds some (`heldElsewhere` below `owned`) | `· N in other decks` (N = `heldElsewhere`; nothing when it is 0), no pill | — |
 | Nothing owned | `owned` 0 | no own line (phone), empty cell (desktop) | — |
 | Held slot (S3) | bought this visit, gone from the read | the shipped slot, no facts | unchanged |
 
 ## Verification (design-review, 2026-10-28)
 
-Verify pass (row by row against `cart-facts.tsx`, `cart-columns.tsx`, `CartCardLine` in `cart-line.tsx`, `ByCardList` / `ByCardColumns` in `cart-view.tsx`): every row MATCH but six, and every state REACHABLE. The build was also rendered at 1300 and 390 in a real browser on fixtures (a 43-character deck name included), which drew `+N` after whole names, the long first name cut with `+2`, the lone long name cut with `more`, the opened list under the fact, and no horizontal scroll at either width.
+Verify pass (row by row against `cart-facts.tsx`, `cart-columns.tsx`, `CartCardLine` in `cart-line.tsx`, `ByCardList` / `ByCardColumns` in `cart-view.tsx`): every row MATCH but five, and every state REACHABLE (the five are listed below). The build was also rendered at 1300 and 390 in a real browser on fixtures (a 43-character deck name included), which drew `+N` after whole names, the long first name cut with `+2`, the lone long name cut with `more`, the opened list under the fact, and no horizontal scroll at either width.
 
 | # | Gap | Result |
 |---|---|---|
@@ -150,5 +151,6 @@ Verify pass (row by row against `cart-facts.tsx`, `cart-columns.tsx`, `CartCardL
 Decided where the boards are silent (not gaps):
 - The open own list's head reads `facts.inDecks(n)` and the open friend list's `facts.fromFriends(n)`, the need list's `for N decks` in their own facts' words.
 - Friend names in the spare fact are ordered most spares first, then by name.
-- The own fact's count is every copy owned (`owned`); its names are the decks `inUseIn` returns. A holding deck the read cannot name sends the whole fact to G1's fallback (`2 in other decks`, no `·`, no pill), rather than naming some decks and not others.
+- The own fact's count is every copy owned (`owned`); its names are where EVERY copy is in use (`ownHoldings`: the selected decks on the line that hold some, in the selections' order, then `inUseIn`). They are drawn only when every deck is named and the copies sum to `owned`; otherwise the fact falls back to the shipped row's facts, never naming some decks and not others: `in other decks` when other decks hold every copy, else `· N in other decks` (`list.ownedSome`'s tail).
+- The column header keeps the list box's scrollbar gutter (`scrollbar-gutter: stable` on both), so a classic scrollbar narrows the header's grid and the rows' alike. Checked in a browser with a forced 15px scrollbar: the header's columns and the row's land on the same x, and both right edges at the same x.
 - The phone labels stay on desktop as `sr-only`, so each cell names itself to a screen reader; the column header is `aria-hidden`.
