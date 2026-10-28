@@ -178,7 +178,7 @@ The tilt (`data-tilt`, `@property`, the glare, the hover rule that plays no band
 | Back | as the front, and the back art is that printing's own (`hasOwnBack`, `backImageUri`) | `faceFilm(resolved, "back")` |
 | A pick | follows the pick at once | the same `resolved` the face draws |
 | Mixed holding, unowned card, suggestion, token, oracle-level or representative art | never | `soleFoilFinish` is undefined, or `hasOwnArt` is false |
-| A precon's open view | the card's own resolution (call 6) | unchanged |
+| A precon's open view | the box's finish for the printing it views: an all-foil box card draws its film whoever owns what (Hugh, 2026-10-28, amending call 6) | `ViewPrinting.finish` → `openAtPrinting.finish` → `viewedFinish` on the shown row; `faceFilm` prefers it |
 
 ### Mid views: R1's tile film, still (G10)
 
@@ -198,7 +198,7 @@ The tilt (`data-tilt`, `@property`, the glare, the hover rule that plays no band
 | 5 Picked a plain printing | film leaves with the face | read off `resolved`, not `preview.foil` |
 | 6 Another printing's or oracle art | plain | `hasOwnArt` false |
 | 7 Unowned | plain | `finishes: {}` |
-| 8 Precon open view | own resolution | unchanged |
+| 8 Precon open view | the box's finish (Hugh, 2026-10-28) | `viewedFinish`, the tile's rule (`foil === quantity`) |
 | 9 Cold open | film held, 300ms fade on landing | the span's mark |
 | 10 Face failed | film held | `failed` |
 | 11 Two-faced, flipped | film on each face, rides the turn | one span per face |

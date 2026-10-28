@@ -295,7 +295,13 @@ export type SiblingCard = {
 export type Sibling = string | SiblingCard;
 
 /** One printing a card is viewed at: `open`'s `atPrinting`. */
-export type ViewPrinting = PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string };
+export type ViewPrinting = PreferredPrinting & {
+  imageUri?: string | null;
+  backImageUri?: string | null;
+  scryfallId?: string;
+  /** The finish the list holds the card in (a precon box's foil), which the details face draws whoever owns what. */
+  finish?: FoilFinish;
+};
 
 /** A list in the one shape the provider holds. */
 export function siblingCards(list: readonly Sibling[]): SiblingCard[] {
@@ -557,7 +563,7 @@ export { STACK_DROP_MS };
 type EditCardRef = { oracleId: string; name: string; imageUri: string | null };
 type OpenAt = {
   oracleId: string;
-  printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null };
+  printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; finish?: FoilFinish };
 } | null;
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
 /** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
@@ -1646,10 +1652,10 @@ export function CardDetailProvider({
     if (!s) return null;
     // A card viewed at one printing (`viewPrintings`) shows it on its plate too, as it will when
     // paged onto: the plate never draws the reader's own copy of a card the list stands at another.
-    // A viewed printing names no finish, so its plate draws no film.
+    // Its film is the viewed printing's finish, the box's on a precon, never the reader's own copy's.
     const viewed = viewPrintings?.[s.oracleId];
     if (viewed?.imageUri) {
-      return viewed.imageUri !== (s.imageUri ?? null) || s.foil ? { ...s, imageUri: viewed.imageUri, foil: undefined } : s;
+      return viewed.imageUri !== (s.imageUri ?? null) || s.foil !== viewed.finish ? { ...s, imageUri: viewed.imageUri, foil: viewed.finish } : s;
     }
     const readCard = readArt.get(s.oracleId);
     if (!readCard) return s;

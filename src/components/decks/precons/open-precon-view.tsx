@@ -167,6 +167,8 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
     cards.flatMap((c) => (c.printing ? [[c.oracleId, {
       setCode: c.printing.setCode, collectorNumber: c.printing.collectorNumber,
       scryfallId: c.printing.scryfallId, imageUri: c.printing.imageUri, backImageUri: c.printing.backImageUri,
+      // The box's finish, the tile's rule: its foil animates in card details too (Hugh, 2026-10-28).
+      ...(allFoil(c) ? { finish: "foil" as const } : {}),
     }]] : [])),
   );
 
