@@ -8,6 +8,6 @@ describe("ENTRY_TARGETS", () => {
   });
 
   it("LABEL_TARGETS is exactly TOOLS' label → target pairs", () => {
-    expect(LABEL_TARGETS).toEqual(Object.fromEntries(TOOLS.map((t) => [t.label, t.target])));
+    expect(LABEL_TARGETS).toEqual(Object.fromEntries(TOOLS.flatMap((t) => t.labels.map((l) => [l, t.target]))));
   });
 });

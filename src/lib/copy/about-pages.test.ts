@@ -78,9 +78,9 @@ describe("about pages copy model", () => {
     for (const [id, r] of Object.entries(ABOUT_RULES)) expect(r.since, id).toBe(sinceOf(r.legacy));
   });
 
-  it("aims every tool's Show me at a label of a section that lists the tool", () => {
+  it("aims every tool's first Show me label at a section that lists the tool (the handoff's placement)", () => {
     for (const t of TOOLS) {
-      const s = ABOUT_SECTIONS.find((x) => x.labels.some((l) => `${x.area}/${x.id}/${l.id}` === t.label));
+      const s = ABOUT_SECTIONS.find((x) => x.labels.some((l) => `${x.area}/${x.id}/${l.id}` === t.labels[0]));
       expect(s, t.id).toBeDefined();
       expect(s!.tools, t.id).toContain(t.id);
     }

@@ -11,7 +11,10 @@ import type { TargetId } from "./targets";
  * - `switch`: the switch the tool lives behind, or null for one with none (Top off). Off for a reader, the tool is
  *   absent: no card, and a `?tool=` naming it lands nowhere.
  * - `entry`: the About entry its `How it works ›` opens (`src/lib/copy/about-entries.ts`).
- * - `label`: the label on the About pages its `Show me ›` lights (`labelKey`, `src/lib/about/pages-visible.ts`).
+ * - `labels`: the labels on the About pages its `Show me ›` can light (`labelKey`, `src/lib/about/pages-visible.ts`), in
+ *   order: the first one the reader is drawn wins (`showMeLabel`), and the tool's card sits in that label's section
+ *   (handoff call 6: a section's tools follow its labels). The first is the handoff's placement; a later one covers a
+ *   switch combination that hides it (Help me choose with the Commanders place off lives under New deck).
  * - `target`: the control a landing haloes. A credit tool's is its Tuning hub tile, never its run press.
  * - `lands`: a deck's tab (and, within Your deck, the Shopping filter), or a route for a tool with a page of its own.
  * - `credit`: the cost chip the app ALREADY draws for it, verbatim (ruling 5, R2 gap 4), or null where it draws none.
@@ -30,7 +33,7 @@ export type Tool = {
   group: ToolGroup;
   switch: SwitchName | null;
   entry: string;
-  label: string;
+  labels: readonly [string, ...string[]];
   target: TargetId;
   lands: ToolLands;
   credit: string | null;
@@ -41,24 +44,24 @@ const hub = tuningHubCopy.tools;
 
 export const TOOLS = [
   // Start a deck
-  { id: "help-me-choose", group: "start", switch: "HELP_ME_CHOOSE_ENABLED", entry: "help-me-choose", label: "commanders/for-you/places", target: "help-me-choose", lands: { kind: "route", href: "/decks/new/choose" }, credit: null, needsDeck: false },
-  { id: "precons", group: "start", switch: "PRECONS_ENABLED", entry: "precons", label: "decks/your-decks/precons", target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
+  { id: "help-me-choose", group: "start", switch: "HELP_ME_CHOOSE_ENABLED", entry: "help-me-choose", labels: ["commanders/for-you/places", "decks/your-decks/new-deck"], target: "help-me-choose", lands: { kind: "route", href: "/decks/new/choose" }, credit: null, needsDeck: false },
+  { id: "precons", group: "start", switch: "PRECONS_ENABLED", entry: "precons", labels: ["decks/your-decks/precons"], target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
   // Tune it
-  { id: "top-off", group: "tune", switch: null, entry: "auto-fill", label: "decks/your-deck/mix", target: "top-off", lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },
-  { id: "proposed-cuts", group: "tune", switch: "PROPOSED_CUTS_ENABLED", entry: "proposed-cuts", label: "decks/analysis/cuts", target: "proposed-cuts", lands: { kind: "deck", tab: "analysis" }, credit: hub.cuts.cost, needsDeck: true },
-  { id: "suggested-changes", group: "tune", switch: "TUNING_ENABLED", entry: "suggested-changes", label: "decks/analysis/suggested", target: "suggested-changes", lands: { kind: "deck", tab: "analysis" }, credit: hub.suggested.cost, needsDeck: true },
-  { id: "mana-balance", group: "tune", switch: "MANA_BALANCE_ENABLED", entry: "mana-balance", label: "decks/analysis/mana", target: "mana-balance", lands: { kind: "deck", tab: "analysis" }, credit: hub.mana.cost, needsDeck: true },
+  { id: "top-off", group: "tune", switch: null, entry: "auto-fill", labels: ["decks/your-deck/mix"], target: "top-off", lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },
+  { id: "proposed-cuts", group: "tune", switch: "PROPOSED_CUTS_ENABLED", entry: "proposed-cuts", labels: ["decks/analysis/cuts"], target: "proposed-cuts", lands: { kind: "deck", tab: "analysis" }, credit: hub.cuts.cost, needsDeck: true },
+  { id: "suggested-changes", group: "tune", switch: "TUNING_ENABLED", entry: "suggested-changes", labels: ["decks/analysis/suggested"], target: "suggested-changes", lands: { kind: "deck", tab: "analysis" }, credit: hub.suggested.cost, needsDeck: true },
+  { id: "mana-balance", group: "tune", switch: "MANA_BALANCE_ENABLED", entry: "mana-balance", labels: ["decks/analysis/mana"], target: "mana-balance", lands: { kind: "deck", tab: "analysis" }, credit: hub.mana.cost, needsDeck: true },
   // Buy smarter
-  { id: "stand-ins", group: "buy", switch: "SWAP_TOOLS_ENABLED", entry: "stand-ins", label: "shopping/deck-shopping/standins", target: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
-  { id: "friend-spares", group: "buy", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friend-spares", label: "shopping/deck-shopping/spare", target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
+  { id: "stand-ins", group: "buy", switch: "SWAP_TOOLS_ENABLED", entry: "stand-ins", labels: ["shopping/deck-shopping/standins"], target: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
+  { id: "friend-spares", group: "buy", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friend-spares", labels: ["shopping/deck-shopping/spare"], target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
   // Use what you own
-  { id: "find-a-deck", group: "own", switch: "SWAP_TOOLS_ENABLED", entry: "fits-your-decks", label: "collection/cards/taken", target: "find-a-deck", lands: { kind: "route", href: "/collection?avail=free" }, credit: null, needsDeck: true },
-  { id: "wishlist", group: "own", switch: "SOCIAL_WISHLIST_ENABLED", entry: "wishlist", label: "collection/cards/tabs", target: "wishlist", lands: { kind: "route", href: "/collection/wishlist" }, credit: null, needsDeck: false },
-  { id: "collection-sync", group: "own", switch: "COLLECTION_SYNC_ENABLED", entry: "upload-choice", label: "collection/upload/drop", target: "collection-sync", lands: { kind: "route", href: "/collection/replace" }, credit: null, needsDeck: false },
+  { id: "find-a-deck", group: "own", switch: "SWAP_TOOLS_ENABLED", entry: "fits-your-decks", labels: ["collection/cards/taken"], target: "find-a-deck", lands: { kind: "route", href: "/collection?avail=free" }, credit: null, needsDeck: true },
+  { id: "wishlist", group: "own", switch: "SOCIAL_WISHLIST_ENABLED", entry: "wishlist", labels: ["collection/cards/tabs"], target: "wishlist", lands: { kind: "route", href: "/collection/wishlist" }, credit: null, needsDeck: false },
+  { id: "collection-sync", group: "own", switch: "COLLECTION_SYNC_ENABLED", entry: "upload-choice", labels: ["collection/upload/drop"], target: "collection-sync", lands: { kind: "route", href: "/collection/replace" }, credit: null, needsDeck: false },
   // Play
-  { id: "matchups", group: "play", switch: "SOCIAL_GAMES_ENABLED", entry: "opponents", label: "decks/games/matchups", target: "matchups", lands: { kind: "deck", tab: "games" }, credit: null, needsDeck: true },
-  { id: "lineup", group: "play", switch: "LINEUP_ENABLED", entry: "decks-stats", label: "decks/your-decks/decks-stats", target: "lineup", lands: { kind: "route", href: "/decks?view=stats" }, credit: null, needsDeck: true },
-  { id: "friends", group: "play", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friends", label: "friends/friends/add", target: "friends", lands: { kind: "route", href: "/friends" }, credit: null, needsDeck: false },
+  { id: "matchups", group: "play", switch: "SOCIAL_GAMES_ENABLED", entry: "opponents", labels: ["decks/games/matchups"], target: "matchups", lands: { kind: "deck", tab: "games" }, credit: null, needsDeck: true },
+  { id: "lineup", group: "play", switch: "LINEUP_ENABLED", entry: "decks-stats", labels: ["decks/your-decks/decks-stats"], target: "lineup", lands: { kind: "route", href: "/decks?view=stats" }, credit: null, needsDeck: true },
+  { id: "friends", group: "play", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friends", labels: ["friends/friends/add"], target: "friends", lands: { kind: "route", href: "/friends" }, credit: null, needsDeck: false },
 ] as const satisfies readonly Tool[];
 
 export type ToolId = (typeof TOOLS)[number]["id"];

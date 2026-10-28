@@ -24,7 +24,7 @@ export const ENTRY_TARGETS: Readonly<Record<string, TargetId>> = {
 };
 
 /**
- * Each About page label a tool's Show me lights, and that tool's halo target: `TOOLS`' `label` → `target`, for the tool
+ * Each About page label a tool's Show me lights, and that tool's halo target: every one of `TOOLS`' `labels` → its `target`, for the tool
  * landing on the About pages (plan `2026-10-27-about-visual.md`, PR 5).
  */
 export const LABEL_TARGETS: Readonly<Record<string, TargetId>> = {
@@ -40,6 +40,7 @@ export const LABEL_TARGETS: Readonly<Record<string, TargetId>> = {
   "decks/games/matchups": "matchups",
   "decks/your-decks/decks-stats": "lineup",
   "friends/friends/add": "friends",
+  "decks/your-decks/new-deck": "help-me-choose",
   "decks/your-decks/precons": "precons",
   "decks/analysis/mana": "mana-balance",
 };

@@ -112,10 +112,10 @@
 ### Task 1.3: Tool cards aim at labels
 
 **Files:**
-- Modify: `src/lib/discovery/tools.ts`, `src/lib/discovery/entry-targets.ts` (gains `LABEL_TARGETS`, the client mirror of `Tool.label`), `src/lib/discovery/entry-targets.test.ts` (holds both mirrors equal), `src/lib/discovery/tools.test.ts`
+- Modify: `src/lib/discovery/tools.ts`, `src/lib/discovery/entry-targets.ts` (gains `LABEL_TARGETS`, the client mirror of `Tool.labels`), `src/lib/discovery/entry-targets.test.ts` (holds both mirrors equal), `src/lib/discovery/tools.test.ts`
 
 **Interfaces:**
-- Produces: each `Tool` gains `label: string` (a `labelKey`; Precons and Mana Balance per Addendum A1). `entry` stays until 7b removes it with the entries.
+- Produces: each `Tool` gains `labels: readonly [string, ...string[]]` (`labelKey`s in preference order; Precons and Mana Balance per Addendum A1). `showMeLabel(labels, visible)` picks the first the reader is drawn, and the tool's card sits in that label's section (call 6). Help me choose falls back to New deck when the Commanders place is off (as built, round 3). `entry` stays until 7b removes it with the entries.
 
 | Tool | Label |
 |---|---|
@@ -232,7 +232,7 @@ Before `gh pr create`: design-review property table against Decks-Phone, Decks-D
 - Create: `src/components/about/pages/try-it.tsx`, `src/components/discovery/label-landing.tsx`
 
 **Interfaces:**
-- Consumes: Task 1.3's `Tool.label`.
+- Consumes: Task 1.3's `Tool.labels` and `showMeLabel`.
 - Produces: a section's tools, after its rules (phone: the first and "N more below"; desktop: a row of three). "Show me ›" links to `/about/<area>?lit=<labelKey>#<section>`; `label-landing.tsx` reads `lit`, lights the label, and when the label is unseen marks it **New** and draws its tool card directly under it (call 7, Ways-In board), then strips `lit` through `mirrorUrl`. The press stays Try it (`tryHref`, unchanged). A desktop card uses its tool's desktop crop. The Tools tab at `/about?tab=tools` is unchanged until 6a retires it; until then its "How it works ›" links are unchanged.
 - [ ] Tests: `showcaseGroups` keeps a tool on a page only when its label is visible; Show me's href for every tool with a label; the landing draws New and the card under the label only for an unseen label.
 

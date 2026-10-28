@@ -172,3 +172,9 @@ export function afterVisit(visible: readonly VisibleSection[], area: AboutArea, 
   if (isFirstRun(seen)) return { version: ABOUT_VERSION, ids: unitsOf(visible).flatMap(unitKeys) };
   return { version: seen.version, ids: [...new Set([...seen.ids, ...seenKeysOf(visible, area)])] };
 }
+
+/** The label a tool's Show me lights for this reader: the first of its `labels` they are drawn, or null. */
+export function showMeLabel(labels: readonly string[], visible: readonly VisibleSection[]): string | null {
+  const drawn = new Set(visible.flatMap((s) => s.labels.map((l) => l.key)));
+  return labels.find((l) => drawn.has(l)) ?? null;
+}

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_RULES, ABOUT_SECTIONS } from "../copy/about-pages";
 import { aboutEntries } from "../copy/about-entries";
-import { SWITCH_NAMES } from "../switches/registry";
+import { SWITCHES, SWITCH_NAMES } from "../switches/registry";
+import { TOOLS } from "../discovery/tools";
 import { resolveEnv, type SwitchSnapshot } from "../switches/resolve";
 import {
-  afterVisit, labelKey, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
+  afterVisit, labelKey, showMeLabel, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
 } from "./pages-visible";
 import { NEVER_SEEN, switchedIds, visibleEntries, type SeenState } from "./visible";
 
@@ -76,6 +77,26 @@ describe("each sentence follows its own switch", () => {
     }
     expect(text).toContain(has);
     if (lacks) expect(text).not.toContain(lacks);
+  });
+});
+
+describe("Show me", () => {
+  /** A switch with every parent it needs, and nothing else on. */
+  const withNeeds = (name: string): Record<string, string> => {
+    const out: Record<string, string> = {};
+    for (let n: string | undefined = name; n; n = (SWITCHES.find((s) => s.name === n) as { needs?: string } | undefined)?.needs) out[n] = "true";
+    return out;
+  };
+
+  it.each(TOOLS.map((t) => [t.id, t] as const))("%s has a label the reader is drawn whenever the tool is on", (_id, t) => {
+    const envs = [ALL_ON, env(t.switch ? withNeeds(t.switch) : {})];
+    for (const e of envs) expect(showMeLabel(t.labels, visibleSections(e)), t.id).not.toBeNull();
+  });
+
+  it("falls back to New deck for Help me choose with the Commanders place off", () => {
+    const hmc = TOOLS.find((t) => t.id === "help-me-choose")!;
+    expect(showMeLabel(hmc.labels, visibleSections(env(withNeeds("HELP_ME_CHOOSE_ENABLED"))))).toBe("decks/your-decks/new-deck");
+    expect(showMeLabel(hmc.labels, visibleSections(ALL_ON))).toBe("commanders/for-you/places");
   });
 });
 
