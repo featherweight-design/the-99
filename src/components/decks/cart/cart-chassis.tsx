@@ -100,8 +100,9 @@ export function CartChassis({
       silentResult={!wide && sheet}
       resultTrailing={
         reading ? (
-          <span className="flex items-center gap-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-            <span aria-hidden className="h-[6px] w-[6px] flex-none rounded-full bg-[color:var(--fact)]" />
+          // Loading A's `.rln .rd`: the line's mono 11, a 7px gap, the 6px `--fact` dot at .8.
+          <span data-result-reading className="flex items-center gap-[7px] font-mono text-[11px] text-[color:var(--fg-faint)]">
+            <span aria-hidden className="h-[6px] w-[6px] flex-none rounded-full bg-[color:var(--fact)] opacity-80" />
             {copy.result.reading}
           </span>
         ) : null

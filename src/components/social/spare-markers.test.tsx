@@ -106,6 +106,32 @@ describe("a failed read (v2 G5)", () => {
   });
 });
 
+describe("Try again (cart v2 B2)", () => {
+  it("reads again only the cards asked for now, keeping a departed card's history", async () => {
+    function Spy() {
+      const ctx = usePageSpares();
+      return (
+        <>
+          <output data-testid="spy">{JSON.stringify({ loaded: [...(ctx?.loaded ?? [])].sort(), failed: [...(ctx?.failed ?? [])].sort() })}</output>
+          <button type="button" onClick={() => ctx?.retry()}>retry</button>
+        </>
+      );
+    }
+    const seen = () => JSON.parse(screen.getByTestId("spy").textContent ?? "{}");
+    const tree = (ids: string[]) => <FriendSparesProvider oracleIds={ids} newestAsOf={asOf}><Spy /></FriendSparesProvider>;
+    fetchMock.mockResolvedValue({ ok: false, json: async () => null });
+    let rerender!: (ui: React.ReactNode) => void;
+    await act(async () => { ({ rerender } = render(tree(["poly", "other"]))); });
+    // Poly leaves the list (bought); the read of what is left fails too.
+    await act(async () => { rerender(tree(["other"])); });
+    expect(seen()).toEqual({ loaded: ["other", "poly"], failed: ["other", "poly"] });
+    fetchMock.mockResolvedValue(answer([]));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "retry" })); });
+    expect(fetchMock.mock.calls.at(-1)?.[0]).toContain("ids=other");
+    expect(seen()).toEqual({ loaded: ["other", "poly"], failed: ["poly"] });
+  });
+});
+
 describe("the spares-only modal", () => {
   it("opens from a marker with the swap tools off: the title, a Replacing box with no deck line, the friends", async () => {
     fetchMock.mockResolvedValue(answer(SPARES));

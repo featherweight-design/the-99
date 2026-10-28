@@ -7,7 +7,8 @@
 
 import { CARD_TILE_CAPTION_SUB_H, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "./card-tile-caption";
 
-const BAR = "rounded-[3px] bg-[color:var(--elevated)]";
+/** The skeleton bar: every shape here, and the all-decks cart's friend cells while their spares are read (v2 call 9). */
+export const BAR = "rounded-[3px] bg-[color:var(--elevated)]";
 
 /** The owned line (42 to 46%), the name (60 to 90%) and the identity dots, varied by position so a grid is not a wall. */
 const OWNED = [44, 42, 46, 43, 45, 42];

@@ -98,6 +98,9 @@ type Ctx = {
   loaded: ReadonlySet<string>;
   /** The landed cards whose newest read failed: their spares are not known, so nothing may say they have none. */
   failed: ReadonlySet<string>;
+  /** Read every asked card's spares again (the cart's Try again, v2 addendum R2 B2): the failed cards are reading again
+   *  until it lands. */
+  retry: () => void;
 };
 
 /** The asks after an ask landed: Ask instead's withdrawn ask leaves (a withdrawn ask is never shown), the new one leads. */
@@ -180,6 +183,8 @@ export function FriendSparesProvider({
   const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
   const [opened, setOpened] = useState<SpareCard | null>(null);
   const [asks, setAsks] = useState<AskStateLine[]>([]);
+  // Moved by Try again: the read below runs once more for the same cards.
+  const [round, setRound] = useState(0);
   // On open, the read is the opened card alone, skipped once it has landed this visit.
   const sparesKey = sparesOnOpen ? (opened && !loaded.has(opened.oracleId) ? opened.oracleId : "") : key;
   useEffect(() => {
@@ -197,7 +202,15 @@ export function FriendSparesProvider({
     return () => {
       live = false;
     };
-  }, [sparesKey]);
+  }, [sparesKey, round]);
+  const retry = useCallback(() => {
+    // Only the cards the read asks for again: its failed ones go back to reading (v2 Loading A) until it lands. A card
+    // that left the list keeps its history, since no read will land for it again.
+    const ids = new Set(sparesKey ? sparesKey.split(",") : []);
+    setLoaded((prev) => new Set([...prev].filter((id) => !(ids.has(id) && failed.has(id)))));
+    setFailed((prev) => new Set([...prev].filter((id) => !ids.has(id))));
+    setRound((r) => r + 1);
+  }, [failed, sparesKey]);
   // The asks land after the page, as the spares do. Each card is read ONCE per visit, when it first joins the list, and
   // no read is ever thrown away: a card leaving the list (a stand-in taken, its sheet left open) neither cancels its
   // read nor drops what it held, so its sheet keeps Requested or Declined. After that read, a card's state is moved by
@@ -271,8 +284,8 @@ export function FriendSparesProvider({
     const asksByCard = new Map<string, AskStateLine[]>();
     for (const a of asks) asksByCard.set(a.oracleId, [...(asksByCard.get(a.oracleId) ?? []), a]);
     const req: RequestsCtx | null = requests ? { asksFor: (id) => asksByCard.get(id) ?? [], ask } : null;
-    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req, loaded, failed };
-  }, [spares, asks, opened, key, newestAsOf, requests, ask, loaded, failed]);
+    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req, loaded, failed, retry };
+  }, [spares, asks, opened, key, newestAsOf, requests, ask, loaded, failed, retry]);
   return (
     <SparesContext.Provider value={value}>
       <SpareRequestsContext.Provider value={value.requests}>
@@ -331,7 +344,7 @@ export function StaticSparesProvider({
   const value = useMemo<Ctx>(() => {
     const byCard = new Map<string, FriendSpare[]>();
     for (const s of spares) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
-    return { byCard, seen: byCard, opened: null, open: () => {}, close: () => {}, newestAsOf, requests: null, loaded: new Set(byCard.keys()), failed: new Set() };
+    return { byCard, seen: byCard, opened: null, open: () => {}, close: () => {}, newestAsOf, requests: null, loaded: new Set(byCard.keys()), failed: new Set(), retry: () => {} };
   }, [spares, newestAsOf]);
   return <SparesContext.Provider value={value}>{children}</SparesContext.Provider>;
 }

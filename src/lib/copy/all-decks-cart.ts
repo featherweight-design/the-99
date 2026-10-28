@@ -35,7 +35,7 @@ export const allDecksCartCopy = {
     label: "View",
     byCard: "By card",
     byDeck: "By deck",
-    /** The third view (spare requests PR 3c), drawn only while a line has a friend's spare. */
+    /** The third view (spare requests PR 3c), drawn from first paint with spare requests on (v2 G2). */
     byFriend: "By friend",
   },
 
@@ -149,12 +149,27 @@ export const allDecksCartCopy = {
     byCard: (lines: number, spare: number) => `${lines === 1 ? "1 card" : `${n(lines)} cards`} · ${n(spare)} with a friend’s spare`,
     byCardNoSpare: (lines: number) => (lines === 1 ? "1 card" : `${n(lines)} cards`),
     byDeck: (deckN: number, copiesN: number) => `${decks(deckN)} · ${copies(copiesN)}`,
+    /** By friend's panels, or none to draw (Empty-One B and C): `0 friends`, with no spares to count. */
     byFriend: (friendsN: number, sparesN: number) =>
-      `${friendsN === 1 ? "1 friend" : `${n(friendsN)} friends`} · ${sparesN === 1 ? "1 spare" : `${n(sparesN)} spares`}`,
+      friendsN === 0
+        ? "0 friends"
+        : `${friendsN === 1 ? "1 friend" : `${n(friendsN)} friends`} · ${sparesN === 1 ? "1 spare" : `${n(sparesN)} spares`}`,
     /** A search leaves some of the cards: By card's count against the selected lines. */
     filtered: (shown: number, of: number) => `${n(shown)} of ${of === 1 ? "1 card" : `${n(of)} cards`}`,
     /** The trailing slot while friends' spares are still being read. */
     reading: "reading friends’ spares",
+    /** By friend's whole sentence while the read is out (Loading C, D): the view has nothing else to count. */
+    readingByFriend: "Reading friends’ spares…",
+    /** By friend's sentence after a failed read (addendum R2 B2). */
+    failedByFriend: "Friends’ spares didn’t load",
+  },
+
+  /** A failed friends' spares read (addendum R2 B2): By card's and By deck's toast, By friend's block. */
+  failedRead: {
+    toast: "We couldn’t read your friends’ spares.",
+    title: "Couldn’t read your friends’ spares",
+    body: "Your cards and prices are here. Friends’ spares didn’t load.",
+    retry: "Try again",
   },
 
   /** A search that leaves nothing: the chassis's no-match shape, naming the one fix. */
@@ -174,6 +189,12 @@ export const allDecksCartCopy = {
     foldAria: (friend: string, open: boolean) => (open ? `Fold ${friend}’s spares` : `Open ${friend}’s spares`),
     /** The panel's name, for a screen reader moving by region. */
     panelAria: (friend: string) => `Spares from ${friend}`,
+    /** Empty-One B: the read landed and no friend has a spare of a drawn line. No press. */
+    noneTitle: "No friend has a spare of these",
+    noneBody: (lines: number) => `A spare is a copy none of a friend’s decks use. None of your friends has ${lines === 1 ? "this card" : `one of these ${cards(lines)}`} right now.`,
+    /** Empty-One C: the reader has no friends. Its title is `socialCopy.friends.emptyTitle`. */
+    noFriendsBody: "When you add friends, the spares they have of these cards show here, and you can ask for them.",
+    toFriends: "Go to Friends",
   },
 
   none: {

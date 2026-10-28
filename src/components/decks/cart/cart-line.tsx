@@ -8,14 +8,15 @@ import type { PriceFact } from "../../../lib/decks/price";
 import type { OwnFact, SelectedLine } from "../../../lib/decks/cart";
 import type { FriendSpare } from "../../../lib/social/spares";
 import { CartFact, type FactItem } from "./cart-facts";
-import { FACTS_GRID, FRIEND_GRID } from "./cart-columns";
+import { FACTS_GRID, FACTS_GRID_CLOSED, FRIEND_GRID, useSpareColumn } from "./cart-columns";
 import { BuyTag } from "../buy-tag";
 import { useCartGotIt } from "./cart-got-it";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
 import { TOUCH_HIT } from "../../ui/touch-hit";
 import { TwoFacedMark } from "../../cards/two-faced-mark";
 import { frontFaceName } from "../../../lib/cards/faces";
-import { OtherWaysPress } from "../../social/spare-markers";
+import { OtherWaysPress, usePageSpares } from "../../social/spare-markers";
+import { BAR } from "../../ui/tile-skeleton";
 
 /**
  * The line's figure as one fact for the shared tag: the priced copies' sum (audit finding 9), each
@@ -208,6 +209,12 @@ export function CartFactsRow({
     ? (own.elsewhere === own.owned ? copy.facts.inOther : own.elsewhere > 0 ? copy.facts.someInOther(own.elsewhere) : "")
     : undefined;
   const ownItems = own?.kind === "named" ? own.decks.map((d) => ({ name: d.name, count: d.held })) : [];
+  // Every friend's spares (By card, By deck) while this card's read is out: the cell draws the skeleton bar (call 9), on a
+  // phone as a SPARE line every row keeps until the read lands. After a failed read the column is closed (B2).
+  const pageSpares = usePageSpares();
+  const spareOpen = useSpareColumn();
+  const reading = friendSpare === undefined && pageSpares !== null && !pageSpares.loaded.has(line.oracleId);
+  const grid = friendSpare !== undefined ? FRIEND_GRID : spareOpen ? FACTS_GRID : FACTS_GRID_CLOSED;
   return (
     <li
       {...data}
@@ -216,7 +223,7 @@ export function CartFactsRow({
       // board's `.colh` then `.nrw`, not its first child); on a phone there is no header and the first row has none.
       className={`flex items-start gap-[12px] border-t border-[color:var(--border)] py-[12px] first:border-t-0 xl:grid xl:min-h-[64px] xl:items-center xl:has-[[data-fact-open]]:items-start ${
         inPanel ? "px-[14px]" : inGroup ? "xl:px-0 xl:first:border-t" : "xl:px-[14px]"
-      } ${friendSpare !== undefined ? FRIEND_GRID : FACTS_GRID}`}
+      } ${grid}`}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-[4px] xl:contents">
         <div className="flex min-w-0 flex-col gap-[3px] xl:col-start-1 xl:row-start-1">
@@ -262,7 +269,9 @@ export function CartFactsRow({
             moreAria={copy.facts.moreFriendsAria}
             className="xl:col-start-3 xl:row-start-1"
           />
-        ) : friends.length > 0 ? (
+        ) : reading ? (
+          <SpareReading />
+        ) : friends.length > 0 && spareOpen ? (
           <CartFact
             testId="spare"
             label={copy.facts.spare}
@@ -315,6 +324,27 @@ export function CartFactsRow({
         </span>
       </span>
     </li>
+  );
+}
+
+/**
+ * A spare cell while its card's read is out (Loading A, B): the shipped skeleton bar, breathing, 58px in the desktop
+ * column and 74px on the phone's labelled line. The result line says what it waits for, so the cell is hidden from a
+ * screen reader.
+ */
+function SpareReading() {
+  return (
+    <div
+      aria-hidden
+      data-fact="spare"
+      data-fact-reading=""
+      className="grid min-w-0 grid-cols-[44px_minmax(0,1fr)] items-baseline xl:col-start-3 xl:row-start-1 xl:flex xl:flex-col xl:items-stretch"
+    >
+      <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)] xl:hidden">{copy.facts.spare}</span>
+      <span className="font-mono text-[11.5px] leading-[1.5]">
+        <span data-testid="spare-skeleton" className={`${BAR} anim-skeleton inline-block h-[10px] w-[74px] align-middle xl:w-[58px]`} />
+      </span>
+    </div>
   );
 }
 

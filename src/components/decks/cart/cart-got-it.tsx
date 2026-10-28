@@ -71,6 +71,11 @@ export type CartGotIt = {
   held: ReadonlyMap<string, CartHeld>;
   /** The lines an undo is in flight for: their tags are disabled (A9). */
   undoing: ReadonlySet<string>;
+  /**
+   * A receipt is on screen. It holds the cart's toast slot (full width at z 60 on a phone), so the failed spares read's
+   * toast waits until it closes rather than drawing under it (cart v2 PR 7). The ask toasts mount at once, as shipped.
+   */
+  receiptOpen: boolean;
 };
 
 const CartGotItContext = createContext<CartGotIt | null>(null);
@@ -190,8 +195,8 @@ export function CartGotItProvider({
     failedAway: () => setReceipt((cur) => (cur?.written.entryId === r.written.entryId ? cur : { ...r, failed: true })),
   });
   const value = useMemo<CartGotIt>(
-    () => ({ openFor: target?.line.oracleId ?? null, pending, open, held, undoing }),
-    [target, pending, open, held, undoing],
+    () => ({ openFor: target?.line.oracleId ?? null, pending, open, held, undoing, receiptOpen: receipt !== null }),
+    [target, pending, open, held, undoing, receipt],
   );
   return (
     <CartGotItContext.Provider value={value}>

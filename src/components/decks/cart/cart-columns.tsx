@@ -4,6 +4,7 @@
 // spare column is `Spare`, this friend's copies alone, in a fixed 64px column. The action stack's column is unlabelled.
 // The phone has no header; its facts carry their labels.
 
+import { createContext, useContext } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 
 /**
@@ -15,6 +16,17 @@ import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
  */
 export const FACTS_GRID =
   "xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.55fr)_minmax(0,1.1fr)_minmax(0,1.15fr)_100px] xl:gap-x-[18px]";
+
+/**
+ * By card's and By deck's grid while friends' spares failed to read (addendum R2 B2, `R2-Failed-Read` A): the spare
+ * column closes to nothing and the others take its room, until Try again lands.
+ */
+export const FACTS_GRID_CLOSED =
+  "xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1.75fr)_0px_minmax(0,1.3fr)_100px] xl:gap-x-[18px]";
+
+/** Whether the spare column is drawn: false only after a failed read (B2), for the header and every row alike. */
+export const SpareColumnContext = createContext(true);
+export const useSpareColumn = () => useContext(SpareColumnContext);
 
 /** By friend's grid (the board's `.colh` and `.nrw` there): a wider need, a 64px spare count and a wider own. */
 export const FRIEND_GRID =
@@ -36,17 +48,19 @@ export const FRIEND_GRID =
 export function CartColumns({ view = "card" }: { view?: "card" | "deck" | "friend" }) {
   const byDeck = view === "deck";
   const byFriend = view === "friend";
+  // Closed, the spare heading is an empty cell in a 0px column (`R2-Failed-Read` A's `.colh`).
+  const spareOpen = useSpareColumn() || byFriend;
   return (
     <div
       aria-hidden
       data-cart-columns={view}
       className={`hidden whitespace-nowrap border-b border-b-[color:var(--border-strong)] pb-[7px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)] xl:grid ${
         byDeck ? "" : `${byFriend ? "px-[15px]" : "px-[14px]"} xl:-mb-[12px] xl:overflow-y-hidden xl:[scrollbar-gutter:stable]`
-      } ${byFriend ? FRIEND_GRID : FACTS_GRID}`}
+      } ${byFriend ? FRIEND_GRID : spareOpen ? FACTS_GRID : FACTS_GRID_CLOSED}`}
     >
       <span>{copy.columns.card}</span>
       <span>{byDeck ? copy.columns.needByDeck : copy.columns.need}</span>
-      <span>{byFriend ? copy.columns.spare : copy.columns.spares}</span>
+      <span>{spareOpen ? (byFriend ? copy.columns.spare : copy.columns.spares) : null}</span>
       <span>{copy.columns.own}</span>
       <span className="text-right" />
     </div>
