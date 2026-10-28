@@ -77,3 +77,10 @@ portalled to `<body>` (outside `<main>`) by its name, so the shell's account she
   answer still arrives. `{ "unhold": "<url glob>" }` removes it, as `"throttle": "off"` ends a throttle; both last for
   the page, so the row after a held one takes them away. `sheet-loader-fill.json` holds the stand-ins read (a server
   action POST to the deck's own path).
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- `scripts/contact-sheet.mjs` photographs every surface in a feature's inventory (`docs/superpowers/inventories/*.json`) at both widths into one image. Every step verb reaches content through `lib/surface.mjs`, a row existing at one width says `"widths"`, there is no optional click, and a run that photographs nothing fails. An inventory with `"signedOut": true` photographs a public page with no sign-in. `pnpm check:shared <inventory>` checks that routes sharing a control import and reference the same component (`shares.module` names the component used as-is; each row's `view` names the file that imports it).
+- Browser scripts reach the page through `scripts/lib/surface.mjs` (`onPage()`, `openSheet()`), never a bare selector, because the shell renders its own controls around `<main>`. `scripts/lib/surface.test.mts` sweeps every `probe-*.mjs` for unscoped forms.

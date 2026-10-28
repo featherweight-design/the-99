@@ -54,3 +54,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   Inserts are batched 500 rows to a statement, because the first version issued one per row over
   ~6,400 rows and did not finish inside two minutes — the cost here is round trips to a
   serverless Postgres, not work.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- `pnpm pull:staging` copies a player's real decks and collection from **staging** into a local database: `PULL_TARGET_URL=<local-dev> PULL_TARGET_BRANCH=br-… pnpm pull:staging [--dry-run] [--replace]`. ONE WAY and FAILS CLOSED: the target is never defaulted, `PULL_TARGET_BRANCH` must equal the `neon.branch_id` the target reports, and the source's account is named with `PULL_FROM_USER_ID` or inferred only when the source holds exactly one. A target account already holding decks REFUSES unless `--replace`, which replaces rather than merges. Both ends are transactional. It is a snapshot: re-run it before a measurement that matters.

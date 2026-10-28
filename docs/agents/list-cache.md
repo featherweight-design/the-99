@@ -43,3 +43,19 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   - **Coming back:** `list-stamp:triggers enable`, then a deploy with the switch on. A stamp that
     sat still while writes landed says nothing about them, and a new deployment starts every
     reader on a fresh miss (the deployment is in the key).
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **Home and `/decks` cache their whole payload per reader**, keyed on `user_data_stamps`, which every per-user table they read bumps at COMMIT through a deferred `user_data_touch` constraint trigger (`cachePageForUser`, `src/lib/cache/page-cache.ts`; behind `LIST_CACHE_ENABLED`, staging on, production unset). A degraded ranking is served and never stored. **Runbook, and its ORDER is the point:** a cached page looks stale: turn `LIST_CACHE_ENABLED` off (a redeploy) or Vercel Instant Rollback. Writes failing on a `user_data_touch` trigger: FIRST turn the cache off or roll back, THEN run `pnpm list-stamp:triggers disable`; never the other way round, or every cached page is served stale. Never drop `user_data_stamps` while the triggers exist. Permanent removal is a follow-up migration: drop every trigger (read the live set), then the function, then the table. Coming back: `list-stamp:triggers enable`, then a deploy with the switch on.
+- `pnpm list-stamp:triggers disable|enable` takes every `user_data_touch` trigger out of the
+  write path, or puts it back, in ONE transaction. It takes every table lock up front in
+  one `lock table` statement under a 5s `statement_timeout`, so the app's writes wait at most ~5s
+  once, and a busy database rolls the whole run back. A per-table `lock_timeout` would not do
+  that: each table could wait its own 5s while the tables already locked stayed blocked. It reads the triggers the database actually
+  has, not a list, and reads them back afterwards. The target is NAMED, the `pull:staging` rule:
+  `STAMP_TARGET_URL` and `STAMP_TARGET_BRANCH`, and a branch that does not match what the
+  database reports stops the run before anything is altered. Rehearsed on a branch of staging
+  migrated to 0073: a wrong branch refused, `disable` took all sixteen and `probe:list-stamp`
+  then failed 66 checks, `enable` put them back and it passed. The runbook above says WHEN.

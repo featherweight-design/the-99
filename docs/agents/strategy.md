@@ -87,3 +87,9 @@ With a focus set (and the switch on), a Suggested changes run reads it in `tunin
 - **The eval.** `pnpm eval:tuning-focus` (paid, $3 cap on `ledger-strategy-focus.jsonl`, staging read-only) runs the same
   decks with no focus and with their Nth strategy as the focus, and prints additions on the focus, off-plan cuts and
   cost per run.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **Strategy focus** (`STRATEGY_FOCUS_ENABLED`, needs `ANALYSIS_TAB_ENABLED`; unset in production, in All features; handoff `design_handoff_the99_strategy_focus`). `deckStrategy` (`src/lib/strategy/score.ts`, pure) DESCRIBES a deck's top 5 axes, the label themes plus the type-line axes in `axes.ts`, each `copies × ln(lift)` against the CATALOG, floor 5 copies; it NEVER returns a verdict (the score does not tell precons from tuned decks). `tooSmall` under `MIN_NONLAND` (30, measured). A deck's FOCUS (`decks.strategy_focus`, copied to the version at commit) is any strategy `parseStrategyKey` names, written only by `setStrategyFocus` (free, only on a change); `loadDeckStrategy` returns it with each drawn strategy's `+N`/`−N` since the newest committed version. A Suggested changes run with a focus is shown up to 20 on-focus cards it could add (`loadFocusCandidates`, `src/lib/strategy/candidates.ts`: the commander's list and the profile's staples bucket, ranked by card facts and NEVER by ownership, the run's limits filtering; on an owned-only run they join the owned shortlist through `planFocusCandidates`), and the rule names each role two or more short. Proof: `pnpm eval:tuning-focus --arms focus`. `pnpm measure:strategy` (read-only, staging) prints the peaks against both baselines, the ring and the floor's stability.

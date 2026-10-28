@@ -129,3 +129,11 @@ left out. The fixture is `{ commander, rows: [[oracle id, quantity], ...] }`, pu
 (it is a player's collection). The script seeds those rows under its own fixture account, so it runs only on a scratch
 branch made from local-dev (`assertScratchBranch` refuses production, staging and local-dev). For a before/after, run it
 from two checkouts against the same branch and fixture. First used for Any cards fill tune #2 (Szarel, 2026-10-22).
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- `pnpm measure:load` times pages and the card-details press in a real browser at 1300x900 and 390x844: the before/after tool every performance PR puts in its body. Point it at `next start`, never `next dev`, on a scratch Neon branch holding a `pull:staging` copy whose URL the worktree's `.env` `DATABASE_URL` names; it refuses production and staging for its one write, by `neon.branch_id`. Presses are timed IN THE PAGE (`scripts/lib/press-probe.mjs`), never by a Playwright wait. Options (`MEASURE_PROFILE`, `MEASURE_ROUTES`, `MEASURE_DB_URL`, `MEASURE_DEPLOYED=1` for staging.the-99.dev only) are in the background file.
+- **Loading the deck page's Tuning tools on demand was tried and reverted** (#1639, 2026-10-13). Do not retry without reading the tables at https://github.com/HartiganHM/the-99/pull/1639#issuecomment-6143963075. #1633's cut stands, with its guard `scripts/lib/client-graph.test.mts`.
+- `scripts/measure-gap-line.mts` measures the commander row's gap line against a real database (read-only; `MEASURE_USER_ID` picks the account, default the busiest). The frequency is a property of the reader's played set, so measure the right account. It must import and call shipped rules (`byNovelty`), never restate them, and its figures include brews.

@@ -66,3 +66,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   fast as the bare page at both widths, where 12 cost ~4.7s at 1300.
 
 **`/collection` remembers the reader's sort** (`collection_sort` cookie, `<key>.<direction>`). The first window of 200 is cut by sort, so a client-only store would draw the default order and then re-sort; the cookie is read by the page and the browser alike through `withStoredSort` (`lib/collection/sort-options.ts`), which makes the stored sort the URL's default: a URL naming `sort` or `dir` wins whole. Every press of the Sort control writes it, the default included (Name is a choice too). The page cuts per request (not inside the cached list), so no cache key carries it. Proof: `pnpm probe:collection-sort-memory`.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **`/discover` ships whole rows for its first window only** (25): `cutToWindow` cuts the rest to list columns and the draw fields arrive from `GET /api/discovery-fields?sort=&b=&s=` (signed in, at most `MAX_FIELDS_BATCH` 200, `private, no-store`). The server's window must be the client's (`lib/discovery/window`). `probe:payload` holds the wire to 0.3MB.
+- **`/collection` ships whole cards for its first window only** (200), the same shape: `cutCollectionWindow`, fields from `GET /api/collection-fields?ids=`, a withheld card marked by the decoder (`withheld: true`). The page cuts through `pageWindowIds`, which joins availability first. Its grid's art waits for the page except `GRID_EAGER_TILES` (4). `probe:payload` holds the wire to 1.05MB.

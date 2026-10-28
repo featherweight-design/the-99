@@ -85,3 +85,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   card no token comes from. The About entry `deck-tokens` follows `DECK_TOKENS_ENABLED` through `AboutSwitch` and is
   `since: 14`, the current version: a switched entry is announced when its switch flips, so the line **bumped nothing** and
   only re-pinned the content hash.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **The printings ingest also builds the token catalog** (`tokens`, `token_printings`, `card_tokens`; rules in `src/lib/tokens/catalog.ts`, transaction in `publish.ts`). Tokens and printings are UPSERTED and never deleted; `card_tokens` is an exact replace. The run REFUSES under `TOKEN_FLOORS` (non-zero exit, previous rows standing) and SKIPS cleanly when the tables do not exist yet.
+- **`pnpm db:seed:prices` also prices tokens** (`token_printing_prices`) in the SAME transaction as card prices, skipping cleanly before the token tables exist. A token's link line uses Mana Pool's own product name, set and number (`tokenManapoolLine`). Against a populated token catalog, under `TOKEN_PRICE_FLOOR` (1,400) priced token printings, or under `TOKEN_IDENTITY_SHARE` (90%) carrying product identity, it writes card prices, NO token prices, and exits non-zero.
+- **Token ownership is recorded by the upload, in its own transaction** (`token_ownership`, `token_reads`, `token_printing_holdings`, `deck_token_printings`). Three states, never two: owned (a row), not owned (no row and a `token_reads` row), not known (neither). Only a confirmed upload writes the marker; a hand mark never does. `writeUploadTokens` runs inside `replaceCollection` and `applyCollectionChange`, so a failing token write rolls the confirm back. A deck's token printing follows the chain: the deck's pick while held, else the most-held printing with art, else the catalog's art; `writeDeckTokenPrintingIn` is the ONE writer and refuses a printing not of that token or not held (`DECK_TOKENS_ENABLED`).
+- **A deck's tokens are read by `loadDeckTokens` and written by two actions** (`DECK_TOKENS_ENABLED`, staging on, production off). A held token is never drawn as joined, and every write that makes a token held deletes ALL the player's joins for it in the same transaction. The actions revalidate the deck page and cart, never Home or `/decks`; `summarisePrices`, `shoppingCount`, status and roll-up stay the cards' alone.

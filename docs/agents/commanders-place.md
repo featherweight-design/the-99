@@ -26,3 +26,9 @@ Behind `COMMANDERS_PLACE_ENABLED` (`commandersPlaceEnabled`, `src/lib/commanders
 the reader's stored `commander_scores` less built commanders (0 until `/commanders` has ranked once, and then left out of the line), `discover` is
 `discoverCandidates` counted in the database. They are read live, not cached: building a deck moves both and no cache tag drops on a deck write.
 The head re-reads them (`refreshCommanderCounts`) on a tab switch and on window focus, as Collection's head does.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **The Commanders place** (`COMMANDERS_PLACE_ENABLED`; unset in production). `commanders/(list)/` holds For you, Discover and Help me choose under the Collection place's strip (`PlaceStrip`, extracted); `/commanders/[slug]` stays outside the group. `/discover` and `/decks/new/choose` redirect (temporary, query kept) when it is on and render in place when it is off; every link and redirect follows the switch through `choosePath` / `discoverPath` (`lib/commanders/place-paths.ts`), on or off. A new path a collection change can stale goes in `COLLECTION_ROUTES`. Plan `2026-10-22-menu-home.md`, PR 1.

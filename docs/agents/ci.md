@@ -56,3 +56,17 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `[runtime] node vX.Y.Z` once per server start, never in a response
   (`vercel logs --scope featherweight-design --project the-99 --since 1h -q "[runtime]"`, `--project the-99-staging` for staging; the repository is not `vercel link`ed, so every `vercel logs` here names the scope. Or the dashboard's Logs with that text). The first reading, 2026-10-27 after #2278: v24.21.0 on BOTH projects, so Vercel had not yet rolled 24.22.1 out. Below the patched
   floor, redeploy; Vercel's own rollout is the fix.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **CI test selection** (`scripts/ci-select.mjs`, rules in `scripts/lib/ci-select.mjs`): a PR runs `vitest related` UNION a computed always-set (tests whose source mentions `node:fs`, `child_process`, `process.cwd()`, `import.meta.url` and the like). The FULL suite runs on lockfile/config/`ci.yml`/selector/dependency changes, an unreadable import graph, the `ci:full` label, and always on a push to main. A test that reads the tree through a helper must itself mention it. `CI selector calibration` (dispatch-only) must be run after changing the rules.
+- `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. It runs daily at 07:00 in `Upstream contract checks`, two hours ahead of the daily catalog refresh.
+- `pnpm check:manapool` validates ManaPool's price-feed contract (payload shape, a real parse, and
+  the `scryfall_id` duplication ratio) without touching a database, and runs daily in that same
+  workflow. `/prices/singles` is a documented endpoint of the Mana Pool Public API, but those docs
+  warn v1 "is subject to change without notice", and the check runs ahead of the daily ingest so a
+  shape change is known before that ingest fails on it.
+- `pnpm check:spellbook` validates Spellbook's LIVE feed contract, no database, daily.
+- `pnpm.overrides` in `package.json` pins seven transitive packages to patched versions. An override can force a version its parent never tested, so exercise it (`brace-expansion@5` broke ESLint; the `esbuild` pin is proved by `pnpm db:generate` and `drizzle-kit check`).

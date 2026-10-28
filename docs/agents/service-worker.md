@@ -45,3 +45,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `src/app/sw.test.ts` pins all of it, including that a push touches no cache. The `VERSION` bump drops the v1 caches once; the install
   keeps `/offline` again.
 
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **`public/sw.js` is the app's service worker**, registered in production only. It CACHES `/_next/static/` (cache first, newest 600 files) and lets every other request through, except that a page load whose network FAILS is answered with the one page it keeps, `/offline` (fetched with `credentials: "omit"`, public in `src/proxy.ts`). Never the mana sprite, a reader's document, an RSC payload, `/api`, an action or anything cross-origin. To retire it, ship a `sw.js` that unregisters itself; bump `VERSION` to drop every cache. `src/app/sw.test.ts` pins this. It also shows a PUSH (`push`, `notificationclick`; v2): the payload is shown as sent and nothing of it is kept, a focused window gets no notification except in Safari's WebKit (iPhone, iPad, Safari on a Mac: it revokes a silent subscription), a tap carries what to open in the address (`push-card`, `push-combo`), and a landing that leaves the app becomes Home.

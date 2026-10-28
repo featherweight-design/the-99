@@ -24,3 +24,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   The combo mark (PR 2 of the addendum) is the row's last mark, after the facts, folding with them: a card's two-card combo partner in this
   deck, commanders counted (`loadInDeckPartners`, the bracket's three §4.3b rules), spoken in the row's description and glossed `Two-card combo`
   in the mark key when a list row in view draws it. `docs/superpowers/inventories/combo-row.json` holds its rows.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **The one-line card row**: every card row is ONE 34px line at EVERY width, in All and Shopping. Two-line phone rows are retired; no row class is gated on `md`. A coarse pointer keeps a 44px hit through `TOUCH_HIT` so no target grows the row. The right-hand columns are fixed by `order` (All: 72px pip track and the ✕; Shopping: 84px buy tag and the ✕). Marks fold by the row's own width (`FOLD`, a container query on `DecklistRow`'s wrapper, at every width); a folded mark is `sr-only`, never `display: none`. The auto tag, the lock mark and the ownership slot never fold.
