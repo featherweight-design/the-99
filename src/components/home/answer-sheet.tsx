@@ -23,7 +23,11 @@ import { RequestPicture, RequestText, requestText } from "../social/your-request
 const m = spareCopy.request.mine;
 
 type Ctx = {
-  /** Opens the item's request over Home; `from` is the press, the element focus returns to. */
+  /**
+   * Opens the item's request over Home. `from` is the press: a close hands focus back to it explicitly (Safari never
+   * focuses a pressed button, and the open waits on the action, so the dialog's own restore can find only the body),
+   * and Clear finds the row's ✕ from it.
+   */
   open: (item: FeedView, from: HTMLElement) => void;
   /** The item whose open is out, so its press reads busy. */
   pending: string | null;
@@ -63,7 +67,14 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
         <AnswerSheet
           {...open}
           now={now}
-          onClose={() => setOpen(null)}
+          onClose={() => {
+            const back = open.from;
+            setOpen(null);
+            // After the dialog's own restore, which runs as it unmounts.
+            requestAnimationFrame(() => {
+              if (back.isConnected) back.focus();
+            });
+          }}
           onCleared={() => {
             const row = open.from.closest("li")?.querySelector<HTMLElement>("[data-feed-dismiss]") ?? open.from;
             setOpen(null);

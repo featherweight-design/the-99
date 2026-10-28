@@ -64,6 +64,17 @@ describe("the answer sheet over Home", () => {
     expect(within(screen.getByTestId("answer-sheet-row")).queryByTestId("your-request-close")).toBeNull();
   });
 
+  it("hands focus back to the press when the sheet closes, even if the press never took it (Safari)", async () => {
+    render(<WhatsNew feed={feed([answer(A)])} now={NOW} />);
+    const opener = press();
+    (document.activeElement as HTMLElement | null)?.blur();
+    await act(async () => { fireEvent.click(opener); });
+    await act(async () => { fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: s.sheet.close })); });
+    await act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+
   it("drops the item's diamond and its place in the count once opened", async () => {
     const { container } = render(<WhatsNew feed={feed([answer(A), answer(B, { answer: "no" })])} now={NOW} />);
     expect(container.querySelectorAll("[data-feed-unseen]")).toHaveLength(2);
