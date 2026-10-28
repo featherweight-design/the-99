@@ -21,6 +21,7 @@ import { FadingImg } from "../ui/hydrated-art";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
+import { KICKER_AGE } from "../feed/kicker-age";
 import { faceInitials } from "./face";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
@@ -45,11 +46,13 @@ export function placeReceipts(
 }
 
 const ROW = "[&+&]:[border-top:1px_solid_var(--border)]";
-/** A spare request's row and its receipt: the picture spans the text and the presses on a phone, which sit in the
- *  text column (`.fi .ac`, 6px under the detail); from desktop the presses are the row's third column. */
+/** Every Waiting on you row: the picture spans the text and the action line on a phone; from desktop the action line
+ *  is the row's third column. */
 const ASK_ROW = `relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px] ${ROW}`;
+/** A row's action line (`.d4n .ac`): under the text on a phone (the text column's 3px gap plus 2px), the row's third
+ *  column from desktop, ending in the ✕. */
+const ACTIONS = "col-start-2 mt-[5px] flex min-w-0 flex-nowrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:gap-[12px]";
 const KIND = "truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em]";
-const TIME = "ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]";
 const TITLE = "m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]";
 const DETAIL = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]";
 
@@ -149,19 +152,20 @@ function AskRow({ row, now, busy, locked, onAnswer, onDismiss }: {
   return (
     <li data-testid="waiting-row" data-kind="spare-request" data-unseen="" className={ASK_ROW}>
       <Picture imageUri={ask.card.imageUri} friend={ask.asker} className="row-span-2 self-start md:row-span-1 md:self-center" />
-      <div className="flex min-w-0 flex-col gap-[3px] pr-[30px] md:pr-0">
+      <div className="flex min-w-0 flex-col gap-[3px]">
         <p className="m-0 flex min-w-0 items-center gap-[7px]">
           <Unseen />
           <span className={`${KIND} text-[color:var(--accent-text)]`}>{w.kind["spare-request"]}</span>
-          <small className={TIME}>{ago(row.createdAt, now)}</small>
+          <small className={KICKER_AGE}>{ago(row.createdAt, now)}</small>
         </p>
         <p className={TITLE}>{feedCopy.home.title.spareRequest(friend, ask.card.name)}</p>
         <p className={DETAIL}>{r.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)}</p>
       </div>
-      <div className="col-start-2 mt-[6px] min-w-0 md:col-start-3 md:row-start-1 md:mt-0 md:pr-[34px]">
+      {/* The action line (board `Dismiss-X`, `.d4n .ac`): Yes, No and the days left, then the ✕ at its end. */}
+      <div className={ACTIONS}>
         <AnswerPresses friend={friend} card={ask.card.name} daysLeft={ask.daysLeft} busy={busy} locked={locked} onAnswer={onAnswer} size="row" />
+        <DismissButton title={feedCopy.home.title.spareRequest(friend, ask.card.name)} onPress={onDismiss} disabled={locked} />
       </div>
-      <DismissButton title={feedCopy.home.title.spareRequest(friend, ask.card.name)} onPress={onDismiss} disabled={locked} />
     </li>
   );
 }
@@ -185,7 +189,7 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
           <span className={`${KIND} ${yes ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
             {text.kind}
           </span>
-          <small className={TIME}>{refreshCopy.home.elapsed.justNow}</small>
+          <small className={KICKER_AGE}>{refreshCopy.home.elapsed.justNow}</small>
         </p>
         <p className={TITLE}>{text.title}</p>
         <p className={DETAIL}>{text.detail}</p>
@@ -201,25 +205,23 @@ function TradeRow({ row: r, now, onDismiss }: { row: TradeMatchRow; now: Date; o
       data-testid="waiting-row"
       data-kind="trade-match"
       data-unseen={r.unseen ? "" : undefined}
-      className={`relative grid grid-cols-[46px_minmax(0,1fr)] gap-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-[14px] md:px-[16px] ${ROW}`}
+      className={ASK_ROW}
     >
-      <Picture imageUri={r.card.imageUri} friend={r.friend} />
-      <div className="flex min-w-0 flex-col gap-[3px] pr-[30px] md:pr-0">
+      <Picture imageUri={r.card.imageUri} friend={r.friend} className="row-span-2 self-start md:row-span-1 md:self-center" />
+      <div className="flex min-w-0 flex-col gap-[3px]">
         <p className="m-0 flex min-w-0 items-center gap-[7px]">
           {r.unseen && <Unseen />}
           <span className={`${KIND} text-[color:var(--fg-faint)]`}>{w.kind[r.kind]}</span>
-          <small className={`${TIME} md:hidden`}>{ago(r.createdAt, now)}</small>
+          <small className={KICKER_AGE}>{ago(r.createdAt, now)}</small>
         </p>
         <p className={TITLE}>{w.tradeTitle(r.friend.displayName, r.card.name)}</p>
         <p className={DETAIL}>{w.tradeDetail(r.friend.displayName, r.pods)}</p>
-        <WaitingLink row={r} className="mt-[6px] md:hidden" />
       </div>
-      {/* From desktop the time sits on the link's baseline, before it (Hugh's ruling, 2026-10-27: the menu-home plan's product call 5), as on What's new. */}
-      <div className="hidden md:flex md:items-baseline md:justify-end md:gap-[12px] md:pr-[34px]">
-        <small data-waiting-age-desktop className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{ago(r.createdAt, now)}</small>
-        <WaitingLink row={r} className="flex" />
+      {/* The action line, as on What's new: the link, then the ✕ at its end. */}
+      <div className={ACTIONS}>
+        <WaitingLink row={r} className="flex min-w-0" />
+        <DismissButton title={w.tradeTitle(r.friend.displayName, r.card.name)} onPress={onDismiss} />
       </div>
-      <DismissButton title={w.tradeTitle(r.friend.displayName, r.card.name)} onPress={onDismiss} />
     </li>
   );
 }

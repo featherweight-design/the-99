@@ -87,6 +87,18 @@ describe("YourRequests", () => {
     for (const row of rows) expect(within(row).getByTestId("your-request-close").textContent).toBe("✕");
   });
 
+  it("puts the time after the kind on the kicker, and centres the row (small items R1b)", () => {
+    render(<YourRequests rows={[req("a", "open")]} now={NOW} />);
+    const kind = screen.getByTestId("your-request-status");
+    const age = kind.nextElementSibling!;
+    expect(age.tagName).toBe("SMALL");
+    expect(age.className).toContain("before:content-['·']");
+    expect(age.className).not.toMatch(/(^|\s)ml-auto(\s|$)/);
+    const row = screen.getByTestId("your-request");
+    expect(row.className.split(/\s+/)).toContain("items-center");
+    expect(row.firstElementChild!.className).not.toMatch(/self-start/);
+  });
+
   it("names the ✕ for what it does: withdraw an open ask, clear the rest", () => {
     render(<YourRequests rows={[req("a", "open"), req("b", "yes")]} now={NOW} />);
     expect(screen.getByRole("button", { name: m.withdrawAria("Colin", "Jace, Multiverse Architect") })).toBeTruthy();

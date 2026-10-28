@@ -20,6 +20,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { NEW_TAB_SUFFIX } from "../ui/external-link";
+import { KICKER_AGE } from "./kicker-age";
 import { DismissButton } from "./dismiss";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "../social/trade-ask";
 import { feedAge } from "../../lib/feed/age";
@@ -248,34 +249,34 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
       className="relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px]"
     >
       <Picture item={item} face={face} />
-      {/* With a ✕ the whole text column keeps clear of its 44px coarse hit (row padding 14 + 30), not the kicker alone: a
-          long title's first line runs beside it. From desktop the right column holds the reserve instead. */}
-      <div className={`flex min-w-0 flex-col gap-[3px] ${onDismiss ? "pr-[30px] md:pr-0" : ""}`}>
+      <div className="flex min-w-0 flex-col gap-[3px]">
         <div className="flex min-w-0 items-center gap-[7px]">
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
           <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : c.kicker[item.kind]}</span>
-          <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)] md:hidden">{feedAge(item.at, now)}</small>
+          {/* The time follows the kind at both widths (small items R1b: `Trade match · 6h ago`). */}
+          <small data-feed-age className={KICKER_AGE}>{feedAge(item.at, now)}</small>
         </div>
         <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]">{text.title}</p>
         {text.line && <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{text.line}</p>}
       </div>
-      {/* From desktop the time leaves the kicker line for the right column, on the press's baseline and before it, in the
-          phone's reading order (Hugh's ruling, 2026-10-27: the menu-home plan's product call 5). A row with no press keeps its
-          time there alone. */}
-      <div className={`${text.press ? "col-start-2 mt-[9px] flex" : "hidden"} min-w-0 flex-wrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:flex md:flex-nowrap md:items-baseline md:justify-end md:gap-[12px] ${onDismiss ? "md:pr-[34px]" : ""}`}>
-        <small data-feed-age-desktop className="hidden flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)] md:inline">{feedAge(item.at, now)}</small>
-        {text.press && (
-          <FeedPress
-            item={item}
-            // An outbound press ends in its ↗ (`FeedPress`), not the in-app ›.
-            label={item.outbound ? text.press : `${text.press} ›`}
-            describedBy={titleId}
-            stretch="after:absolute after:inset-0 after:content-['']"
-            className="flex min-h-[32px] min-w-0 items-center font-sans text-[13px] font-medium [overflow-wrap:anywhere] text-[color:var(--accent-text)]"
-          />
-        )}
-      </div>
-      {onDismiss && <DismissButton title={text.title} onPress={onDismiss} />}
+      {/* The action line (board `Dismiss-X`, `.d4n .ac`): the press, then the ✕ at its end. Under the text on a phone
+          (the text column's 3px gap plus 2px), the row's third column from desktop. A row with no press keeps the line
+          for its ✕ alone. */}
+      {(text.press || onDismiss) && (
+        <div data-feed-actions className="col-start-2 mt-[5px] flex min-w-0 flex-nowrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:gap-[12px]">
+          {text.press && (
+            <FeedPress
+              item={item}
+              // An outbound press ends in its ↗ (`FeedPress`), not the in-app ›.
+              label={item.outbound ? text.press : `${text.press} ›`}
+              describedBy={titleId}
+              stretch="after:absolute after:inset-0 after:content-['']"
+              className="flex min-h-[32px] min-w-0 items-center font-sans text-[13px] font-medium [overflow-wrap:anywhere] text-[color:var(--accent-text)]"
+            />
+          )}
+          {onDismiss && <DismissButton title={text.title} onPress={onDismiss} />}
+        </div>
+      )}
     </li>
   );
 }
