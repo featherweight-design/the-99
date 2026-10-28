@@ -102,3 +102,22 @@ Shopping 6/3, Friends 5/3. It places 12 of the 14 shipped tools.
 - **Seen state (G4):** a translation table from today's bare ids and `<id>@<SWITCH>` variants to label and
   rule keys, so no account is told twice; `/api/about/entries` and the ? panel's search retire with the panel.
 - **Probes and inventories** that open entries by hash are re-pointed in the PR that removes the entry.
+
+### Engineering audit of Addendum A1 (2026-10-28, against origin/main)
+
+**Verdict: Green.** Every code claim the addendum makes holds:
+
+- `screenForPath` never returns `account` (`src/lib/about/screen-for-path.ts`): no branch names it.
+- `/decks/new`, `/decks/import` and `/decks/precons/**` all return `new-deck`, and `/commanders/choose` returns
+  `new-deck` too, so the three new-deck landings split on the path, not on the screen. The build keys
+  `ABOUT_Q_LANDINGS` by path for that one screen.
+- `CREDITS_HREF` lands on the Decks › Analysis credits rule, as planned in PR 6a.
+- Mana Balance is free: the Tuning hub's own pill says `free` (`src/lib/copy/tuning-hub.ts`). The precons label
+  matches the shipped box ("with how many of its cards you already own", `src/lib/copy/precons.ts`).
+
+Two consequences for the build, neither a gap:
+
+- Analysis now holds six labels and Your decks four. Analysis therefore needs its second shot at both widths
+  (phone: the Tuning shot; desktop: the second Analysis shot), as the boards draw, to stay within five pins
+  per picture.
+- The two new labels and the landings table go through `/copy-review` with the rest of the strings.
