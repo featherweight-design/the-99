@@ -1,6 +1,6 @@
 # The 99: Shopping for all decks v2 (R1, account 1, 2026-10-27)
 
-**Status: R1, awaiting Hugh's audit.** No handoff PR until Hugh approves.
+**Status: R1b, approved (LGTM, Hugh, 2026-10-27)** with one change: the Filters sheet’s Friend pills are equal width (Any friend across the row, friends two to a row). Recommendations D1–D5 taken; D6 (About) not in this round.
 
 Canvas: https://claude.ai/artifact/6HnmL4ZzLBSD1ZX6etQCBX (account 1). Account 2 can't open it, so rebuild from `scratch-gen/` (don't re-import the `.dc.html`).
 

@@ -124,7 +124,10 @@ kit.CSS += r"""
 .sht2 .hd b{font:700 18px 'Cinzel',serif;color:var(--fg)}
 .sht2 .hd small{font:11px 'IBM Plex Mono';color:var(--fg-muted)}
 .sht2 .gh{font:10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:-6px}
-.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pills .pill{min-width:0}
+.pills .pill.all{grid-column:1/-1;justify-content:center}
+.pills .pill small{margin-left:auto}
 .pill{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 14px 0 6px;border-radius:999px;border:1px solid var(--border-strong);font:14px 'IBM Plex Sans';color:var(--fg-body)}
 .pill.np{padding-left:14px}
 .pill small{font:11px 'IBM Plex Mono';color:var(--fg-faint)}

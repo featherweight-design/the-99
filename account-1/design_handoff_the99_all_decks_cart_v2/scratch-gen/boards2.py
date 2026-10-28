@@ -265,7 +265,7 @@ def sheet():
     return ('<div class="scr"></div><div class="sht2"><span class="grab"></span>'
             '<div class="hd"><b>Filters</b><small>23 of 48 cards match</small></div>'
             '<span class="gh">Friend · has a spare</span>'
-            f'<div class="pills"><span class="pill np">Any friend</span>{pills}</div>'
+            f'<div class="pills"><span class="pill np all">Any friend</span>{pills}</div>'
             '<span class="gh">Owned</span><div class="segx"><span class="on">Any</span><span>You own some</span><span>None</span></div>'
             '<div class="bts"><span class="bp">Show 23 cards</span><span class="lnk">Clear all</span></div></div>')
 
@@ -315,7 +315,7 @@ def controls_board():
             + frames(frame("<b>A1</b> · Friend · 1300", d1, "One radio for <b>Any friend</b> (spare available), then each friend who has a spare, with how many of the cart’s cards they hold. More than one friend can be picked."),
                      frame("<b>A2</b> · Sort · 1300", d2, "Sort is past the hairline and is never empty. Its options change with the view (the table below)."))
             + sec("B · phone", "The Filters sheet and the sort button", "")
-            + frames(frame("<b>B1</b> · Filters · 390", p1, "The chassis’s compact sheet: friends as pills with their faces, Owned as a segmented control. The primary press counts what you’ll get."),
+            + frames(frame("<b>B1</b> · Filters · 390", p1, "The chassis’s compact sheet: <b>Any friend</b> across the full width, then friends as equal-width pills in two columns with their faces, Owned as a segmented control. The primary press counts what you’ll get."),
                      frame("<b>B2</b> · Sort · 390", p2, "The ⇅ button opens the view’s sort as a sheet with 48px rows."),
                      frame("Sort and filters", table))
             + sec("C · narrowed", "A filter in By card, the same filter in By friend", "")
