@@ -244,7 +244,9 @@ export function PodsPane({
             if (!creating) createOpening.current += 1;
             setCreating(true);
           }}
-          className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] md:min-h-[32px]"
+          // From 1180px the head sits beside the left column's heads (small items item 6), so it holds their 32px: the press
+          // is 24px tall there, with a coarse pointer's 44px hit kept.
+          className="relative min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] md:min-h-[32px] min-[1180px]:min-h-[24px] pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:top-1/2 pointer-coarse:after:h-[44px] pointer-coarse:after:-translate-y-1/2 pointer-coarse:after:content-['']"
         >
           {copy.newPod}
         </button>

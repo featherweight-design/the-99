@@ -409,3 +409,11 @@ describe("the switch going off mid-visit", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
+
+describe("the Pods head beside the left column (small items item 6)", () => {
+  it("holds the left heads' 32px from 1180: New pod is 24px there, with a coarse pointer's 44px hit", () => {
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    const cls = screen.getByRole("button", { name: P.newPod }).className.split(/\s+/);
+    expect(cls).toEqual(expect.arrayContaining(["min-[1180px]:min-h-[24px]", "pointer-coarse:after:h-[44px]"]));
+  });
+});
