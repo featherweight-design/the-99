@@ -262,6 +262,10 @@ export function TuningPanel({
   // stay "Down to 1" (review round 1). Null is Keep, the default, whatever bracket the deck reads at.
   const [bracketPick, setBracketPick] = useState<BracketPick>(null);
   const intakeCard = bracketCard(permits);
+  // The reading as of the latest render, for the press: it reads the card AFTER the limits flush, and a new analysis can
+  // land during that wait (review round 2), so the closure's `permits` may be the one the press started from.
+  const permitsRef = useRef(permits);
+  permitsRef.current = permits;
   const intakeRef = useRef<{ count: number; request: string; bracketPick: BracketPick }>({ count: V2_DEFAULT_COUNT, request: "", bracketPick: null });
   // Moves on every intake edit, so a "same request" answer to a press made before the edit is dropped (review round 1).
   const intakeRev = useRef(0);
@@ -847,7 +851,7 @@ export function TuningPanel({
       }
       // Snapshotted after every await, as v10's notes are: what the intake shows as the press runs.
       const typed = intakeRef.current;
-      const card = bracketCard(permits);
+      const card = bracketCard(permitsRef.current);
       const option = card ? card.options[pickIndex(card, typed.bracketPick)] : null;
       const opts: V2RunOpts = {
         requestedCount: clampCount(typed.count),
