@@ -1,7 +1,7 @@
 {
   "feature": "Shopping for all decks v2 (handoff design_handoff_the99_all_decks_cart_v2; plan 2026-10-28-all-decks-cart-v2.md)",
   "clearAbout": true,
-  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. Later PRs add the row facts, By friend's panels, the Friend and Owned filters and the reading, empty and failed states. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). Later PRs add By friend's panels, the Friend and Owned filters and the reading, empty and failed states. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
   "rows": [
     {
       "id": "chassis-rest-card",
@@ -127,6 +127,70 @@
           "goto": "/decks/shopping?sort=price-high",
           "wait": "h1",
           "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "facts-rest-card",
+      "label": "/decks/shopping, By card at rest: the column header (desktop), the labelled need, spare and own lines (phone), a `+N` pill where names are left out",
+      "view": "src/components/decks/cart/cart-facts.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-cart-row]",
+          "settle": 2000
+        },
+        {
+          "wait": "[data-fact-pill=count]"
+        }
+      ]
+    },
+    {
+      "id": "facts-opened-card",
+      "label": "/decks/shopping, a `+N` pressed: the full list in place under the fact on --surface-sunken, the pill reading `less`",
+      "view": "src/components/decks/cart/cart-facts.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-cart-row]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-fact-pill=count]",
+          "settle": 400
+        },
+        {
+          "wait": "[data-fact-pill=less]"
+        }
+      ]
+    },
+    {
+      "id": "facts-cut-more-card",
+      "label": "/decks/shopping, a lone deck name too wide for its cell: cut with an ellipsis, then `more` (addendum R2, ruling 3); needs a long deck name on the account",
+      "view": "src/components/decks/cart/cart-facts.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-cart-row]",
+          "settle": 2000
+        },
+        {
+          "wait": "[data-fact-pill=more]"
+        }
+      ]
+    },
+    {
+      "id": "facts-nothing-owned-card",
+      "label": "/decks/shopping, a row with nothing owned: no own line on the phone, an empty own cell on desktop",
+      "view": "src/components/decks/cart/cart-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-cart-row]",
+          "settle": 2000
+        },
+        {
+          "wait": "[data-cart-row]:not(:has([data-fact=own]))"
         }
       ]
     }
