@@ -35,7 +35,8 @@ export type ModelRowKey =
   | "judgement"
   | "fitsRead"
   | "labels"
-  | "prose";
+  | "prose"
+  | "preconOverview";
 
 export type ModelRowDef = {
   key: ModelRowKey;
@@ -94,6 +95,13 @@ export const MODEL_ROWS: readonly ModelRowDef[] = [
     key: "prose", origin: "system", model: PROSE_MODEL, effort: null,
     at: "scripts/generate-commander-prose.ts · PROSE_MAX_USD",
     spend: { feature: "prose", origin: "system" },
+  },
+  {
+    // The precon Overview build sends the Overview's own contract-12 request (`synopsisCallSettings(true)`),
+    // so its model and effort are the Overview's constants, imported, and no script id can drift from them.
+    key: "preconOverview", origin: "system", model: SYNOPSIS_MODEL, batch: true, effort: SYNOPSIS_EFFORT,
+    at: "scripts/lib/precon-overview-request.ts · scripts/build-precon-overviews.ts · PRECON_OVERVIEW_MAX_USD",
+    spend: { feature: "precon_overview", origin: "system" },
   },
 ];
 

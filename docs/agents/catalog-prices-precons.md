@@ -47,3 +47,32 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   revealed commanders, `arrivals-read.ts` the precons listed in the last 30 days, and `arrivals.ts` holds the pure rules (the banner's
   lines, the seen keys, the countdown, `new`, the Announced filters). **None has a caller beyond its tests and
   `pnpm probe:upcoming-precons`** until the plan's PR 2 and 3 (`2026-10-14-upcoming-precons.md`), behind `UPCOMING_PRECONS_ENABLED`.
+
+## Pre-written precon Overviews
+
+Hugh, 2026-10-27: a player sees how a precon plays before choosing it, and a deck started from that precon carries the
+Overview over as its own synopsis while its list is the precon's. The Overview depends on nothing about the player (it
+reads only the list and the catalog), so it is catalog data, `precon_synopses`, one row per PLAIN precon and contract (a
+Collector's Edition twin resolves to its plain edition through `twin_of`). No FK to `precons`: the ingest replaces it daily.
+
+- **`pnpm db:build:precon-overviews`** writes them, ONCE, on staging. Every input is the app's own: the list a start
+  writes (`preparePreconDeck`, whose card rule is `preconDeckCards`), `loadDeckProfileFromHead`, `factsWithSource`,
+  `buildSynopsisPrompt` at contract 12, `checkReply`, and one repair through `repairPrompt` and `applyRepair`. The transport
+  is the Batch API (`scripts/eval/lib/batch.mts`, pinned to `https://api.anthropic.com` because `.env`'s proxy has no batches
+  route), with the request built by the eval harness's `buildParams`. Only an Overview whose every section passed is stored.
+- **`input_hash`** is the hash of that exact request (`synopsisRequestHash`), so it moves with any card text, combo, label
+  or index row the request reads. A row still matching, written by this run's model, is skipped and stamped current; one
+  whose request moved is marked `current = false` BEFORE anything is sent, so it is never carried over while it waits.
+  `--limit N` caps what is sent, never what is checked: every precon is still hashed and marked.
+- **The cap** is a worst-case stop in dollars: `PRECON_OVERVIEW_MAX_USD` or `--max-usd`, default and CEILING $15
+  (`capMicroUsd` clamps), and a batch is sent only while dollars spent plus its worst case (counted input plus the full
+  16,000-token output ceiling, at batch rates) fit (`scripts/lib/precon-overview-build.ts`). Spend goes to one
+  `model_calls` row per batch, `system`/`precon_overview`, which the Costs page shows.
+- **It fails closed on its target**: `PRECON_OVERVIEW_TARGET_BRANCH` must equal the database's `neon.branch_id`, or it exits
+  2. Locally name the database with `PRECON_OVERVIEW_DB_URL` (the env import overrides `DATABASE_URL`). `--dry-run` builds,
+  hashes and prices every request and calls and writes nothing (input tokens estimated there). `--stub` answers with the
+  synopsis stub and refuses anything but a scratch branch (`assertScratchBranch`); a stub row is never current for a live run.
+- **A carried-over Overview** is a `deck_synopses` row with `precon_file` set and `model_call_id` NULL (a check constraint
+  makes the two exclusive). It holds no allowance unit and no `model_calls` row, so the allowance, credits, `freeRunsFor` and
+  the Costs page never count it (`src/lib/synopsis/carried-over.test.ts`, `pnpm probe:precon-overview-ledger`).
+  The copy to production and the carry-over itself are Precon Overviews PRs 3 and 4.

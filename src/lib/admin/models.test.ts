@@ -24,6 +24,7 @@ describe("the Models registry", () => {
       ["shortlist", READ_SHORTLIST_MODEL, READ_SHORTLIST_EFFORT],
       ["judgement", READ_JUDGE_MODEL, READ_JUDGE_EFFORT],
       ["fitsRead", FITS_READ_MODEL, FITS_READ_EFFORT],
+      ["preconOverview", SYNOPSIS_MODEL, SYNOPSIS_EFFORT],
     ];
     for (const [key, model, effort] of expected) expect([key, row(key).model, row(key).effort]).toEqual([key, model, effort]);
   });

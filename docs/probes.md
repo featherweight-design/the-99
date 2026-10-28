@@ -2931,6 +2931,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   pass, 21 cards apart from the plain build; with the marker dropped from `retryAnswersOf` (the rule
   before it) the retry reads null and its plan IS the plain build, failing three checks.
 
+- `pnpm probe:precon-overview-build` runs `db:build:precon-overviews --stub` for real on a scratch branch and reads
+  `precon_synopses` back: under `--max-usd 0` nothing is written; two precons' rows land at contract 12, current, every
+  section passed, each with the list fingerprint of the deck a start of it writes; a second run leaves them as written;
+  a row whose stored hash no longer matches is rewritten, and one held back by `--limit` is still marked
+  not current. It deletes every stub row it wrote. No model call. Scratch
+  branch only (`assertScratchBranch`), named by `PROBE_DB_URL`. Measured 2026-10-27 on a scratch branch of local-dev
+  migrated to 0179: all pass; with the build's skip removed, the second-run check fails.
+
 - `pnpm probe:precon-overview-ledger` proves a carried-over precon overview (`deck_synopses.precon_file`
   set, `model_call_id` null) counts toward nothing that counts model calls. It starts a real precon
   deck, writes the carry-over's row, and reads the figures before and after: `readAllowance`,

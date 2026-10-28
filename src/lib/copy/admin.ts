@@ -513,6 +513,7 @@ export const adminCopy = {
       fitsRead: "Find a deck read",
       labels: "Card labels",
       prose: "Commander prose",
+      preconOverview: "Precon Overviews",
     },
     origin: { player: "player", system: "system" },
     batch: (model: string) => `${model}, Batch`,

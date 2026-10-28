@@ -48,6 +48,7 @@ export const CALLERS = {
   "src/lib/intake/the-read-run.ts": { builders: ["src/lib/intake/the-read.ts", "src/lib/intake/the-read-run.ts"] },
   "src/lib/synopsis/generate.ts": { builders: ["src/lib/synopsis/prompt.ts", "src/lib/synopsis/generate.ts"] },
   "scripts/generate-commander-prose.ts": { builders: ["src/lib/prose/prompt.ts"] },
+  "scripts/lib/precon-overview-request.ts": { builders: ["src/lib/synopsis/prompt.ts"], note: "builds a precon Overview's request from the catalog; sends nothing" },
   "scripts/build-card-labels.ts": { builders: ["src/lib/labels/prompt.ts"] },
   "scripts/label-cards-run.mts": { builders: ["src/lib/labels/prompt.ts"] },
   "scripts/lib/card-labels-build.ts": { builders: ["src/lib/labels/prompt.ts"], note: "sends through the client its caller hands it" },

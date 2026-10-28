@@ -1,0 +1,145 @@
+/**
+ * The precon Overview build's loop (`scripts/build-precon-overviews.ts`): which requests go out, in
+ * which batch, under the dollar cap, and what is stored. The script builds the requests from the
+ * database and hands this a sender; the probe hands it the synopsis stub, so the paid model never
+ * runs outside the staging build.
+ *
+ * THE CAP IS A WORST-CASE STOP, measured in dollars. A batch is sent only when the dollars already
+ * spent plus that batch's worst case (each request's counted input plus its full `max_tokens` of
+ * output, at batch rates) stay within the cap, so the run can never spend past it whatever the
+ * replies are. The cap is clamped to `PRECON_OVERVIEW_CAP_USD`: no environment value or flag raises it.
+ *
+ * One repair per precon, as the app's write makes (contract B): a first answer with a refused
+ * section is sent once more with the repair prompt, in a later batch under the same cap. Only an
+ * Overview whose every section passed is stored; anything less is reported and left unstored, so
+ * a deck never carries over a partial one.
+ */
+import { batchCostMicroUsd } from "../../src/lib/model/prices";
+import type { CheckedSynopsis, SectionId } from "../../src/lib/synopsis/types";
+
+/** The hard ceiling, in dollars, for one run (Hugh's $15 for the full catalog, 2026-10-27). */
+export const PRECON_OVERVIEW_CAP_USD = 15;
+
+/** The run's cap in micro-dollars: the flag, else the environment, else the ceiling, and never above it. */
+export function capMicroUsd(envValue: string | undefined, flag: number | undefined): number {
+  const raw = flag ?? (envValue === undefined || envValue === "" ? PRECON_OVERVIEW_CAP_USD : Number(envValue));
+  if (!Number.isFinite(raw) || raw < 0) throw new Error(`precon overviews: the cap must be a dollar amount, not ${String(flag ?? envValue)}`);
+  return Math.round(Math.min(raw, PRECON_OVERVIEW_CAP_USD) * 1_000_000);
+}
+
+/** What one request can cost at most: its counted input and its whole output ceiling, at batch rates. */
+export function worstMicroUsd(model: string, inputTokens: number, maxTokens: number): number {
+  return batchCostMicroUsd(model, { inTokens: inputTokens, outTokens: maxTokens, cacheWriteTokens: 0, cacheReadTokens: 0 });
+}
+
+/** The longest prefix of `queue` whose worst case still fits beside `spentMicro` under `capMicro`. */
+export function takeWithinCap<T extends { worstMicro: number }>(queue: readonly T[], spentMicro: number, capMicro: number): { take: T[]; rest: T[] } {
+  let room = capMicro - spentMicro;
+  let n = 0;
+  while (n < queue.length && queue[n].worstMicro <= room) {
+    room -= queue[n].worstMicro;
+    n += 1;
+  }
+  return { take: queue.slice(0, n), rest: queue.slice(n) };
+}
+
+/** One request as the sender sends it. `params` is opaque here: built and hashed by the caller. */
+export type Outgoing = { customId: string; params: unknown; worstMicro: number };
+
+/** One reply, parsed: the value the schema accepted, or why there is none. `micro` is what it cost. */
+export type Reply<V> =
+  | { customId: string; ok: true; value: V; micro: number; usage: { input: number; output: number } }
+  | { customId: string; ok: false; reason: string; micro: number; usage: { input: number; output: number } };
+
+/** Sends one batch and returns every reply, keyed by `customId`, with the batch's id. */
+export type Send<V> = (batch: readonly Outgoing[]) => Promise<{ batchId: string; replies: Reply<V>[] }>;
+
+/** One precon's first request, built by the caller. */
+export type Job<V> = {
+  file: string;
+  first: Outgoing;
+  /** The checked content of a reply: the app's own `checkReply` over this precon's facts. */
+  check: (value: V) => Promise<CheckedSynopsis>;
+  /** The repair request for a first answer, built with the app's own `repairPrompt`. */
+  repair: (content: CheckedSynopsis, failing: SectionId[], value: V) => Promise<Outgoing>;
+  /** The app's own merge of a repair over the first answer (`applyRepair`). */
+  merge: (first: CheckedSynopsis, value: V, failing: SectionId[]) => Promise<CheckedSynopsis>;
+};
+
+export type Stored = { file: string; content: CheckedSynopsis; micro: number; usage: { input: number; output: number } };
+
+export type BuildResult = {
+  stored: Stored[];
+  /** Precons whose Overview came back with a refused section after the repair, or no reply at all. */
+  failed: { file: string; reason: string }[];
+  /** Precons never sent because the cap had no room left for them. */
+  deferred: string[];
+  spentMicro: number;
+  batches: { id: string; requests: number; micro: number; usage: { input: number; output: number } }[];
+};
+
+const refused = (c: CheckedSynopsis): SectionId[] => c.verdicts.filter((v) => v.status !== "ok").map((v) => v.section);
+
+/**
+ * Runs the build: first answers, then one repair each where a section was refused, every batch
+ * under the cap. `store` is called for each precon whose every section passed, as soon as it does.
+ */
+export async function runBuild<V>(input: {
+  jobs: readonly Job<V>[];
+  send: Send<V>;
+  capMicro: number;
+  store: (s: Stored) => Promise<void>;
+  log: (line: string) => void;
+}): Promise<BuildResult> {
+  const result: BuildResult = { stored: [], failed: [], deferred: [], spentMicro: 0, batches: [] };
+  type Pending = { job: Job<V>; out: Outgoing; first?: { content: CheckedSynopsis; failing: SectionId[]; micro: number; usage: { input: number; output: number } } };
+  let queue: Pending[] = input.jobs.map((job) => ({ job, out: job.first }));
+  while (queue.length > 0) {
+    const { take, rest } = takeWithinCap(queue.map((p) => ({ ...p, worstMicro: p.out.worstMicro })), result.spentMicro, input.capMicro);
+    if (take.length === 0) {
+      for (const p of rest) result.deferred.push(p.job.file);
+      input.log(`cap: $${(input.capMicro / 1e6).toFixed(2)} leaves no room for ${rest.length} more request(s); stopping`);
+      break;
+    }
+    const worst = take.reduce((n, p) => n + p.out.worstMicro, 0);
+    input.log(`batch of ${take.length}: worst case $${(worst / 1e6).toFixed(2)}, spent so far $${(result.spentMicro / 1e6).toFixed(2)}`);
+    const { batchId, replies } = await input.send(take.map((p) => p.out));
+    const got = new Map(replies.map((r) => [r.customId, r]));
+    const batch = { id: batchId, requests: take.length, micro: 0, usage: { input: 0, output: 0 } };
+    const next: Pending[] = [];
+    for (const p of take) {
+      const reply = got.get(p.out.customId);
+      if (!reply) {
+        result.failed.push({ file: p.job.file, reason: "no reply in the batch" });
+        continue;
+      }
+      batch.micro += reply.micro;
+      batch.usage.input += reply.usage.input;
+      batch.usage.output += reply.usage.output;
+      const micro = reply.micro + (p.first?.micro ?? 0);
+      const usage = { input: reply.usage.input + (p.first?.usage.input ?? 0), output: reply.usage.output + (p.first?.usage.output ?? 0) };
+      if (!reply.ok) {
+        // A repair that did not come back leaves the first answer as it was, which had a refused section.
+        result.failed.push({ file: p.job.file, reason: p.first ? `repair: ${reply.reason}` : reply.reason });
+        continue;
+      }
+      const content = p.first
+        ? await p.job.merge(p.first.content, reply.value, p.first.failing)
+        : await p.job.check(reply.value);
+      const failing = refused(content);
+      if (failing.length === 0) {
+        const s = { file: p.job.file, content, micro, usage };
+        await input.store(s);
+        result.stored.push(s);
+      } else if (!p.first) {
+        next.push({ job: p.job, out: await p.job.repair(content, failing, reply.value), first: { content, failing, micro, usage } });
+      } else {
+        result.failed.push({ file: p.job.file, reason: `refused after the repair: ${failing.join(", ")}` });
+      }
+    }
+    result.spentMicro += batch.micro;
+    result.batches.push(batch);
+    queue = [...next, ...rest.map((r) => ({ job: r.job, out: r.out, first: r.first }))];
+  }
+  return result;
+}
