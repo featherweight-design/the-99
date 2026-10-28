@@ -73,7 +73,8 @@ export const PAGE_VIEWPORTS = {
  * least `PAD` clear of the control on each side where the frame allows, kept inside the frame.
  */
 export function toolCrop(rect, view = PAGE_VIEWPORTS.desktop, { MIN_W = 650, PAD = 24 } = {}) {
-  const width = Math.min(view.width, Math.max(MIN_W, Math.ceil(rect.width + 2 * PAD)));
+  // Wide enough for the control's width AND, at 3:2, its height, so a tall control is not cut top and bottom.
+  const width = Math.min(view.width, Math.max(MIN_W, Math.ceil(rect.width + 2 * PAD), Math.ceil(((rect.height + 2 * PAD) * 3) / 2)));
   const height = Math.min(view.height, Math.round((width * 2) / 3));
   const cx = rect.x + rect.width / 2;
   const cy = rect.y + rect.height / 2;
@@ -88,11 +89,12 @@ export function toolCrop(rect, view = PAGE_VIEWPORTS.desktop, { MIN_W = 650, PAD
 }
 
 /**
- * True when two decoded images are the same picture: same size, and no more than `share` of their pixels differ by more
- * than `tolerance` in any channel. A re-capture is written only when this is false (d9's weight rule: decode-compare,
+ * True when two decoded images are the same picture: same size, and no pixel differs by more than `tolerance` in any
+ * channel. The tolerance absorbs encoder noise; there is no share of pixels allowed to differ, because one changed digit
+ * at 2x is only 100 to 250 pixels, and a picture judged unchanged keeps a stale image beside a fresh manifest. A re-capture is written only when this is false (d9's weight rule: decode-compare,
  * never byte-compare, so an unchanged screen adds nothing to the repository).
  */
-export function samePixels(a, b, { tolerance = 8, share = 0.0005 } = {}) {
+export function samePixels(a, b, { tolerance = 8, share = 0 } = {}) {
   if (!a || !b || a.width !== b.width || a.height !== b.height || a.channels !== b.channels) return false;
   const { data: x } = a;
   const { data: y } = b;

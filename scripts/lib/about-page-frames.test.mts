@@ -59,6 +59,13 @@ describe("toolCrop", () => {
     }
   });
 
+  it("keeps a tall control whole when the frame has the room", () => {
+    const c = toolCrop({ x: 500, y: 200, width: 100, height: 500 }, view);
+    expect(c.height).toBeGreaterThanOrEqual(548);
+    expect(c.halo[1]).toBeGreaterThan(0);
+    expect(c.halo[1] + c.halo[3]).toBeLessThan(1);
+  });
+
   it("centres a small control", () => {
     const c = toolCrop({ x: 500, y: 400, width: 100, height: 40 }, view);
     expect(c.width).toBe(650);
@@ -79,6 +86,12 @@ describe("samePixels: an unchanged screen is not written again", () => {
     expect(samePixels(img(100), b)).toBe(false);
     expect(samePixels(img(100), img(100, 99))).toBe(false);
     expect(samePixels(null, img(100))).toBe(false);
+  });
+  it("tells a changed digit apart on a full phone capture", () => {
+    const a = { width: 780, height: 1688, channels: 4, data: Buffer.alloc(780 * 1688 * 4, 100) };
+    const b = { ...a, data: Buffer.from(a.data) };
+    for (let i = 0; i < 150; i += 1) b.data[(1000 + i) * 4] = 230;
+    expect(samePixels(a, b)).toBe(false);
   });
 });
 
