@@ -35,6 +35,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { parseArgs } from "node:util";
 import { z } from "zod";
 
+import { deckTuningCopy } from "../../src/lib/copy/deck-tuning";
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { EVAL_USER_ID } from "./count-mechanism-seed.mjs";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
@@ -134,8 +135,13 @@ const REASON: Record<string, string> = {
   offSet: "it is from a set the player excluded",
   notOwned: "the player does not own it",
 };
+/** Why a line was rejected, in words the refill can act on: a hard filter's own reason, else the writing rule's own text. */
 export const reasonFor = (d: { rule: string; cite?: string }) =>
-  d.rule === "citation" ? `its ${d.cite ?? ""} citation is not supported by the evidence` : (REASON[d.rule] ?? "its wording broke a writing rule");
+  d.rule === "citation"
+    ? `its ${d.cite ?? ""} citation is not supported by the evidence`
+    : (REASON[d.rule]
+      ?? (Object.hasOwn(deckTuningCopy.suggestionRules, d.rule) ? `it broke the rule: ${deckTuningCopy.suggestionRules[d.rule as keyof typeof deckTuningCopy.suggestionRules]}` : null)
+      ?? "its wording broke a writing rule");
 
 /** The refill's question: what stands, what fell and why, and exactly the shortfall on each list. */
 export function refillBlock(kept: { adds: string[]; cuts: string[] }, rejected: { card: string; side: "add" | "cut"; reason: string }[], short: Ask): string {
@@ -232,12 +238,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     record(LEDGER, { at: new Date().toISOString(), runId: id, source: "pending", usd: worst, requests: 1, pending: id, note: label });
     const schema = z.object({ additions: z.array(lineSchema).max(ask.adds), cuts: z.array(lineSchema).max(ask.cuts) });
     const t = Date.now();
-    const o = await callModel<Reply>({ model: app.model, system, user, maxTokens: ceilingFor(ask.adds + ask.cuts), schema, deadlineMs: 300_000, effort: TUNING_EFFORT, stream: true });
+    // Every attempt that failed logs a `[model] malformed` or `[model] upstream` line; counted, it says whether an attempt
+    // may have been billed with no meter coming back (a stream that dropped before its final message).
+    let failedAttempts = 0;
+    const o = await callModel<Reply>(
+      { model: app.model, system, user, maxTokens: ceilingFor(ask.adds + ask.cuts), schema, deadlineMs: 300_000, effort: TUNING_EFFORT, stream: true },
+      { log: (line) => { if (/^\[model\] (malformed|upstream)/.test(line)) failedAttempts++; console.error(line); } },
+    );
     const ms = Date.now() - t;
-    // A FAILED call settles at its worst case, metered or not: its usage can cover only some of `callModel`'s attempts (a
-    // metered first attempt, then an unmetered one), and an under-count would let later calls past the cap. A call that
+    // A call with any failed attempt settles at its worst case, metered or not, success or failure: its usage can cover only
+    // some of `callModel`'s attempts, and an under-count would let later calls past the cap. A call whose one attempt
     // succeeded settles at its meter.
-    const usd = o.ok ? (o.usage ? costMicroUsd(app.model, o.usage) / 1e6 : 0) : worst;
+    const usd = o.ok && failedAttempts === 0 ? (o.usage ? costMicroUsd(app.model, o.usage) / 1e6 : 0) : worst;
     record(LEDGER, { at: new Date().toISOString(), runId: `count-mechanism-${label}`, source: "realtime:1", usd, requests: 1, settles: id, note: label });
     log(`${label}: ${o.ok ? "ok" : `failed (${o.errorClass})`} in ${(ms / 1000).toFixed(1)}s, $${usd.toFixed(4)}; ledger $${spent(readLedger(LEDGER)).toFixed(2)}`);
     return { o, ms, usd };

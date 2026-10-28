@@ -79,6 +79,9 @@ describe("the refill's question", () => {
 
   it("says which citation failed", () => {
     expect(reasonFor({ rule: "citation", cite: "intent" })).toBe("its intent citation is not supported by the evidence");
+    // A writing rule is named by its own text, so a refill can tell a promised result from a missing denominator.
+    expect(reasonFor({ rule: "noResultClaim" })).toMatch(/^it broke the rule: No rationale or citation may promise a result/);
+    expect(reasonFor({ rule: "denominator" })).toMatch(/denominator/);
   });
 });
 
