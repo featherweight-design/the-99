@@ -136,8 +136,9 @@ async function main(): Promise<number> {
     const req = await buildPreconRequest(file, basis);
     if (!req.ok) {
       skipped.push({ file, why: req.why });
-      // No request means no way to show a stored row still fits: it is never carried over meanwhile.
-      if (stored.has(file) && !DRY) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
+      // No request means no way to show a stored row still fits: it is never carried over meanwhile. Not under
+      // --readings-only, which promises never to touch an Overview.
+      if (stored.has(file) && !DRY && !READINGS_ONLY) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
         .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
       continue;
     }
