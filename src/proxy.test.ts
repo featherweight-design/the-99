@@ -524,4 +524,14 @@ describe("the proxy's matcher", () => {
     // A static file elsewhere is still left alone.
     expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url: "/mana/sprite.svg" })).toBe(false);
   });
+  it("runs on a dotted path under every signed-in tree whose pages read the session (THE-99-1), and not on a file", async () => {
+    const { unstable_doesMiddlewareMatch } = await import("next/experimental/testing/server");
+    for (const url of ["/decks/x.png", "/collection/sets/a.b", "/commanders/foo.php", "/friends/x.y", "/friend/a.b", "/join/a.b", "/admin/accounts/x.y", "/about/foo.php"]) {
+      expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url }), url).toBe(true);
+    }
+    // About's images are files deeper under its path; the proxy never runs on one.
+    for (const url of ["/about/shots/amonkhet/sets.webp", "/about/pages/a.png", "/icon.svg"]) {
+      expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url }), url).toBe(false);
+    }
+  });
 });

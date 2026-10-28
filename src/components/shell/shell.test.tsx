@@ -15,7 +15,14 @@ vi.mock("next/navigation", async (importOriginal) => ({
   useRouter: () => ({ push: () => {} }),
 }));
 let signedInUser: string | null = "user_1";
-vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: signedInUser }) }));
+// Set to make `auth()` throw, as Clerk does where the proxy never ran (a dotted 404, THE-99-1).
+let authError: Error | null = null;
+vi.mock("@clerk/nextjs/server", () => ({
+  auth: async () => {
+    if (authError) throw authError;
+    return { userId: signedInUser };
+  },
+}));
 let uniqueCards = 5;
 vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards }) }));
 // The props each menu's call site is handed, so the Friends row's switch can be read off them.
@@ -37,6 +44,18 @@ vi.mock("./about-sheet", () => ({
 const Shell = (await import("./shell")).default;
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
 const { switchBits } = await import("../../lib/switches/resolve");
+
+describe("Shell on a path the proxy never ran on (THE-99-1)", () => {
+  it("draws the page signed out instead of throwing Clerk's error", async () => {
+    authError = new Error("Clerk: auth() was called but Clerk can't detect usage of clerkMiddleware(). Please ensure the following:");
+    try {
+      await renderShell();
+      expect(screen.getByText("page")).toBeTruthy();
+    } finally {
+      authError = null;
+    }
+  });
+});
 
 async function renderShell() {
   render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));

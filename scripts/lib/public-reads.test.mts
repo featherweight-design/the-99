@@ -15,7 +15,12 @@ describe("the public loaders, as they stand", () => {
 
   it("are wired to the two public routes alone (F3 PR 2a): the proxy names each with its slash (once in `isPublic`, once in the matcher), never the signed-in lists", () => {
     const proxy = codeOnly(readFileSync("src/proxy.ts", "utf8"));
-    expect([...proxy.matchAll(/["']\/(card|commander)s?\b[^"']*["']/g)].map((m) => m[0]).sort()).toEqual(['"/card/(.*)"', '"/card/(.*)"', '"/commander/(.*)"', '"/commander/(.*)"']);
+    // `isPublic` names the two public routes and no signed-in list (`/commanders` is the reader's own place); the matcher
+    // may name signed-in trees too (it only decides where the proxy runs, which protects them), so it is checked apart.
+    const isPublic = proxy.match(/isPublic = createRouteMatcher\(\[([^\]]*)\]/)![1];
+    expect([...isPublic.matchAll(/["']\/(card|commander)s?\b[^"']*["']/g)].map((m) => m[0]).sort()).toEqual(['"/card/(.*)"', '"/commander/(.*)"']);
+    const matcher = proxy.match(/matcher: \[([^\]]*)\]/)![1];
+    expect([...matcher.matchAll(/["']\/(card|commander)\b[^"']*["']/g)].map((m) => m[0]).sort()).toEqual(['"/card/(.*)"', '"/commander/(.*)"']);
   });
 });
 
