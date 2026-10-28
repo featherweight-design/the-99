@@ -113,3 +113,26 @@ describe("the answer sheet over Home", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+describe("the answer sheet's edges", () => {
+  it("a press on the item's picture opens the sheet, never a trip to /friends", async () => {
+    const { container } = render(<WhatsNew feed={feed([answer(A)])} now={NOW} />);
+    const picture = container.querySelector<HTMLElement>("[data-feed-picture]")!;
+    expect(picture.tagName).not.toBe("A");
+    await act(async () => { fireEvent.click(picture); });
+    expect(m.open).toHaveBeenCalledWith(A);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("an open that returns after its item was dismissed opens nothing and goes nowhere", async () => {
+    let reply!: (v: unknown) => void;
+    m.open.mockReturnValue(new Promise((r) => { reply = r; }));
+    render(<WhatsNew feed={feed([answer(A), answer(B, { answer: "no" })])} now={NOW} />);
+    await act(async () => { fireEvent.click(press()); });
+    const first = document.querySelector<HTMLElement>("[data-feed-dismiss]")!;
+    await act(async () => { fireEvent.click(first); });
+    await act(async () => { reply({ ok: true, request: request() }); });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(m.push).not.toHaveBeenCalled();
+  });
+});

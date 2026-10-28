@@ -55,6 +55,8 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
     setPending(item.key);
     const out = await openAnswerAction(item.key).catch(() => null);
     setPending(null);
+    // The item was dismissed while the open was out: its press is gone, and so is the reader's interest in it.
+    if (!from.isConnected) return;
     // Refused (cleared since, or the switch off) or failed: /friends, where the press went as it shipped.
     if (!out?.ok) return router.push("/friends");
     onSeen(item.key);

@@ -194,7 +194,9 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   // it is the row's press (a link when the row links, else passed to its button).
   const hover = usePreviewRow(item.kind === "combo" ? null : item.card?.image ?? null);
   const trade = useTradeAsk();
-  const inPlace = tradeAskOf(item, trade !== null && trade.has(item.card?.oracleId ?? "")) !== null;
+  const answers = useAnswerSheet();
+  // A press that opens in place (a trade match's sheet, or an answer's sheet on Home) takes the picture's press too.
+  const inPlace = tradeAskOf(item, trade !== null && trade.has(item.card?.oracleId ?? "")) !== null || (answers !== null && !!item.answer);
   if (item.kind === "combo") {
     return (
       <span
