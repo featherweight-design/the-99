@@ -98,4 +98,12 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   `Catalog refresh` behind `PRECON_OVERVIEWS_ENABLED='true'`: `generate` on `catalog-staging` (`staging-deployed`, the
   `ANTHROPIC_API_KEY` secret, `PRECON_OVERVIEW_TARGET_BRANCH` staging's branch), then `copy` in `catalog-production`. A
   DISPATCH runs without the variable, and its `mode` picks `generate` alone, `generate+copy` or `copy-only`.
-  The carry-over itself is Precon Overviews PR 4.
+- **The carry-over** (`carryOverPreconOverview`, `src/lib/precons/carry-over.ts`) runs in each start's `after()`:
+  `createDeckFromPrecon`, `startPreconOwned` and every deck `addPrecons` starts. With the OWNER's Analysis tab on, it first
+  stores the deck's bracket READING through the Analyze press's own call (`computeAndStoreProfile`, no model; a press finds
+  the version holding its list, so the reading is v0's), whether or not an Overview follows. Then, unless the deck holds a
+  card illegal in Commander (notices on), it attaches the precon's Overview at the owner's contract and role basis when that row is
+  `current` and its list is the deck's (`carryOverDecision`): a `deck_synopses` row with `precon_file` set and no
+  allowance unit, at the reading's `seen_seq`, under the deck's own lock, and named by v0's `deck_version_synopses`. A deck
+  that already has a synopsis, or whose list moved, gets none. The first edit makes it stale through today's rules.
+  `importDeckOwned` is the pasted-list import, not a precon start, and carries nothing.

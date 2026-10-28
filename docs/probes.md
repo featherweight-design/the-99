@@ -2950,6 +2950,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   branch only (`assertScratchBranch`), named by `PROBE_DB_URL`. Measured 2026-10-27 on a scratch branch of local-dev
   migrated to 0179: all pass; with the build's skip removed, the second-run check fails.
 
+- `pnpm probe:precon-overview-carry` starts real precon decks (`startPreconDeck`) after the build's stub has written two
+  precons' Overviews, and runs the carry-over: the deck gets a fresh bracket reading with its permits and the carried
+  Overview as its shown synopsis (`precon_file` set, no allowance unit), `readSynopsisState` calls it fresh, v0 names it,
+  a second carry-over attaches nothing, and one card added through `touchDeck` makes the same read call it stale. A precon
+  whose row is not current gets the reading and no Overview; an owner on the other role basis gets no Overview; with the
+  Analysis tab off, nothing at all. It deletes its
+  decks, its data stamp and its precon rows. No model call. Scratch branch only (`assertScratchBranch`), `PROBE_DB_URL`.
+  Measured 2026-10-27 on a scratch branch of local-dev migrated to 0181: all ten pass.
+
 - `pnpm probe:precon-overview-copy` runs `db:copy:precon-overviews` for real between two scratch branches
   (`PROBE_SOURCE_URL`, `PROBE_TARGET_URL`, both `assertScratchBranch`). The source's rows come from the build's stub,
   relabelled as a real model's, because the copy never carries a stub's row. On the target: both rows are installed,

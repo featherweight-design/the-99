@@ -1,0 +1,103 @@
+/**
+ * The carry-over (Hugh, 2026-10-27): a deck started from a precon takes that precon's pre-written
+ * Overview (`precon_synopses`) as its own synopsis while its list is the precon's, "effectively kick
+ * starting the analysis of a new precon deck". Called from each start's `after()`, once the deck
+ * and its v0 have committed.
+ *
+ * HONEST BY CONSTRUCTION: the Overview is attached only when it is exactly what an Analyze press
+ * would write for this deck now (`carryOverDecision`), and through the same rows a press writes, so
+ * every rule the deck page already applies keeps working:
+ *   - the Analysis tab is on for the owner, and the stored row is at the OWNER's contract and role basis;
+ *   - the row is `current` (its inputs are still this database's, the copy's re-check) and its list
+ *     is the deck's list, read after the start committed;
+ *   - the deck's bracket READING is stored first, through `computeAndStoreProfile` (deterministic, no
+ *     model), by the press's own call, so it is v0's, whether or not an Overview follows: the header's bracket shows at once,
+ *     and an Overview with no fresh reading reads as stale (`read.ts`);
+ *   - a deck holding a card illegal in Commander gets no Overview while notices are on, as a press would;
+ *   - the Overview is a `deck_synopses` row with `precon_file` set and NO allowance unit, at the
+ *     reading's own `seen_seq`, and v0's `deck_version_synopses` names it.
+ * The first edit dirties the reading and moves the list, so today's rules mark it stale. A deck that
+ * already has a synopsis, or whose list moved before this ran, gets nothing. Failure is logged and
+ * swallowed: the start has already answered the player, and a deck without it is as every deck is.
+ */
+import { and, asc, eq, sql } from "drizzle-orm";
+import { db } from "../../db";
+import { deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, preconSynopses } from "../../db/schema";
+import { analysisTabEnabled } from "../decks/analysis-flag";
+import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
+import { roleBasisFromEnv } from "../decks/label-counts-flag";
+import { noticesEnabled } from "../notices/flag";
+import { holdsIllegalCard } from "../notices/read";
+import { listFingerprint } from "../profile/fingerprint";
+import { readProfileHead } from "../profile/load";
+import { computeAndStoreProfile, isNewestVersion, requestProfileDeps } from "../profile/stored";
+import { synopsisContractVersion } from "../synopsis/limits";
+import { overviewV2Enabled } from "../synopsis/overview-v2";
+import { carryOverDecision } from "./overview";
+
+export type CarryOverResult =
+  | { attached: true; synopsisId: string }
+  | { attached: false; reason: "off" | "none" | "not_current" | "list_moved" | "not_a_precon" | "illegal" | "no_reading" | "has_synopsis" };
+
+/** Attach `deckId`'s precon Overview, if it is honest to. `env` is the OWNER's resolved switches. */
+export async function carryOverPreconOverview(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<CarryOverResult> {
+  if (!analysisTabEnabled(env)) return { attached: false, reason: "off" };
+  const [deck] = await db.select({ precon: decks.builtFromPrecon }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+  if (!deck?.precon) return { attached: false, reason: "not_a_precon" };
+  const head = await db.transaction((tx) => readProfileHead(tx, deckId, userId));
+  if (!head) return { attached: false, reason: "not_a_precon" };
+  const list = listFingerprint(head);
+
+  // THE BRACKET READING FIRST, whether or not an Overview follows: the deck's own reading, stored by
+  // the Analyze press's own call (deterministic, no model). A press finds the version holding its list
+  // (`versionHolding`), so the reading is v0's, the box's own list the start committed. Not a commit's
+  // `pinTo`: a pin never computes a reading that is not already stored. The header's bracket shows at
+  // once, and an Overview needs a fresh reading to be fresh.
+  const reading = await computeAndStoreProfile(deckId, userId, requestProfileDeps(env));
+  if (reading?.kind !== "ok" || !reading.reading.fresh) return { attached: false, reason: "no_reading" };
+
+  // The same withhold a press makes before an Overview (`generate.ts`'s `run`): an illegal deck's is not shown.
+  if (noticesEnabled(env) && (await holdsIllegalCard(deckId, userId))) return { attached: false, reason: "illegal" };
+  const contract = synopsisContractVersion(overviewV2Enabled(env), deckBenchmarksEnabled(env));
+  // At the OWNER's contract AND role basis: the reading's roles reach the prompt, so an Overview built at
+  // the other basis is not what this owner's Analyze would write, and none is attached.
+  const [row] = await db.select().from(preconSynopses)
+    .where(and(eq(preconSynopses.preconFile, deck.precon), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, roleBasisFromEnv(env))));
+  const decision = carryOverDecision({ analysisTab: true, row: row ?? null, liveFingerprint: list });
+  if (!decision.attach) return { attached: false, reason: decision.reason };
+
+  const [v0] = await db.select({ id: deckVersions.id }).from(deckVersions).where(eq(deckVersions.deckId, deckId)).orderBy(asc(deckVersions.number)).limit(1);
+  return db.transaction(async (tx): Promise<CarryOverResult> => {
+    // The press's own lock (`startRun`), so a press landing now and this cannot both write.
+    await tx.select({ id: decks.id }).from(decks).where(eq(decks.id, deckId)).for("update");
+    const again = await readProfileHead(tx, deckId, userId);
+    if (!again || listFingerprint(again) !== list) return { attached: false, reason: "list_moved" };
+    const [any] = await tx.select({ id: deckSynopses.id }).from(deckSynopses).where(eq(deckSynopses.deckId, deckId)).limit(1);
+    if (any) return { attached: false, reason: "has_synopsis" };
+    const [stored] = await tx.select({ list: deckProfiles.fingerprint, dirty: deckProfiles.dirty, seenSeq: deckProfiles.seenSeq })
+      .from(deckProfiles).where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
+    if (!stored || stored.dirty || stored.list !== list) return { attached: false, reason: "no_reading" };
+    const [written] = await tx.insert(deckSynopses).values({
+      deckId, userId, fingerprint: list, contractVersion: row!.contractVersion, model: row!.model,
+      modelCallId: null, preconFile: deck.precon!, status: "done", outcome: "survived", content: row!.content,
+      seenSeq: stored.seenSeq,
+    }).returning({ id: deckSynopses.id });
+    if (v0) {
+      await tx.insert(deckVersionSynopses)
+        .select(tx.select({ versionId: sql<string>`${v0.id}::uuid`.as("version_id"), synopsisId: sql<string>`${written.id}::uuid`.as("synopsis_id") })
+          .from(sql`(select 1) as one`).where(isNewestVersion(deckId, v0.id)))
+        .onConflictDoNothing();
+    }
+    return { attached: true, synopsisId: written.id };
+  });
+}
+
+/** The start's `after()` body: never throws into a response that has already been sent. */
+export async function carryOverAfterStart(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<void> {
+  try {
+    const r = await carryOverPreconOverview(deckId, userId, env);
+    if (!r.attached && r.reason !== "off" && r.reason !== "none") console.info(`precon overview not carried over: ${r.reason}`);
+  } catch (error) {
+    console.warn("the precon overview was not carried over", error);
+  }
+}
