@@ -11,7 +11,7 @@
  * target's own request is marked not current, so a deck started there never carries over an
  * Overview of inputs the target no longer has. Nothing is ever deleted.
  */
-import { preconReadingDue, type PreconReadingColumns } from "../../src/lib/precons/reading-rule";
+import { preconReadingWrite, type PreconReadingColumns } from "../../src/lib/precons/reading-rule";
 
 export type SourceRow<C> = { file: string; listFingerprint: string; inputHash: string; model: string; content: C; inputTokens: number | null; outputTokens: number | null; costMicroUsd: number | null };
 export type TargetRow = { file: string; inputHash: string; current: boolean };
@@ -88,6 +88,8 @@ export function planReadingCopy(input: {
   requests: readonly TargetRequest[];
   /** Target precons whose stored reading's data moved since it was computed (`preconColumnsMoved`). */
   moved: ReadonlySet<string>;
+  /** The columns each buildable precon gets now (`preconReadingColumns`): empty for a short list. */
+  next: ReadonlyMap<string, PreconReadingColumns>;
 }): string[] {
   const target = new Map(input.target.map((r) => [r.file, r.reading]));
   const installs = new Set(input.plan.install.map((r) => r.file));
@@ -95,7 +97,8 @@ export function planReadingCopy(input: {
   for (const req of input.requests) {
     if (!req.ok || (!target.has(req.file) && !installs.has(req.file))) continue;
     const held = target.get(req.file) ?? null;
-    if (!held || preconReadingDue(held, { list: req.list, moved: input.moved.has(req.file) })) out.push(req.file);
+    const next = input.next.get(req.file);
+    if (next && preconReadingWrite(held, next, input.moved.has(req.file))) out.push(req.file);
   }
   return out;
 }

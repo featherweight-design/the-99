@@ -5,6 +5,9 @@ import { deckProfile } from "../../components/decks/__fixtures__/deck-profile";
 import { preconCarryQuery, readPreconCarry } from "./reading";
 import { preconReadingColumns } from "./reading-rule";
 
+/** A whole 99-card body with one commander, which Analyze's size gate accepts. */
+const WHOLE = { partnerOracleId: null, cards: [{ oracleId: "x", quantity: 99 }] };
+
 describe("preconCarryQuery", () => {
   it("is one statement over precon_synopses by precon, contract and basis, with no filter on current", () => {
     const { sql, params } = new PgDialect().sqlToQuery(preconCarryQuery("Turtles_TMC", 12, "labels").getSQL());
@@ -32,7 +35,7 @@ describe("readPreconCarry", () => {
   const overview = { listFingerprint: "list-1", contractVersion: 12, model: "m", content: { overview: "x" }, current: false, createdAt: new Date(1), checkedAt: new Date(2) };
 
   it("returns the Overview and the reading of one row, current or not", async () => {
-    const reading = preconReadingColumns({ profile: deckProfile(), list: "list-1", catalog: "1", seenSeq: 3, analyzedOracleIds: ["a"], at: new Date(5) });
+    const reading = preconReadingColumns({ head: WHOLE, profile: deckProfile(), list: "list-1", catalog: "1", seenSeq: 3, analyzedOracleIds: ["a"], at: new Date(5) });
     const got = await readPreconCarry("f", 12, "labels", fake([{ ...overview, ...reading }]));
     expect(got?.overview).toEqual(overview);
     expect(got?.reading).toMatchObject({ list: "list-1", seenSeq: 3, permits: reading.readingPermits });

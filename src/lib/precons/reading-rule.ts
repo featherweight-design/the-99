@@ -15,9 +15,15 @@
  * a deck's stored reading is never judged by it either; `reading_catalog` is kept as `deck_profiles.catalog`
  * keeps it. Once PR 6 copies it, a reading that is not fresh is never copied; the start then computes its own, as now.
  *
- * Pure (no database): the rules a build, a copy and a start share. The reader is `reading.ts`.
+ * ONLY A WHOLE LIST HAS ONE (`deckLegality`, Analyze's own size gate): the precon ingest keeps a precon
+ * after omitting unmapped copies, so a prepared list can be short, and `computeAndStoreProfile` would refuse
+ * it. Such a precon stores NO reading (`preconReadingColumns` answers the empty columns), and a stale one is
+ * cleared (`preconReadingWrite`); its Overview is untouched.
+ *
+ * Pure (reads no database): the rules a build, a copy and a start share. The reader is `reading.ts`.
  */
 import { BRACKET_RULES_VERSION } from "../bracket/rules-version";
+import { deckLegality } from "../profile/stored";
 import { slotDeck } from "../bracket/slot";
 import type { DeckProfile } from "../profile/types";
 import { PROFILE_VERSION } from "../profile/version";
@@ -45,8 +51,11 @@ export const NO_PRECON_READING: PreconReadingColumns = {
  * Pure: the columns for a reading `profile` of the precon's `list`. `catalog` and `seenSeq` are the
  * generation and the change log head read BEFORE the profile was computed, as `computeAndStoreProfile`
  * reads them, so a log entry landing during the compute is past the mark and still reported.
+ *
+ * `head` is the prepared list: one Analyze would refuse as short (`deckLegality`) has no reading at all.
  */
 export function preconReadingColumns(input: {
+  head: { partnerOracleId: string | null; cards: readonly { oracleId: string; quantity: number }[] };
   profile: DeckProfile;
   list: string;
   catalog: string;
@@ -54,6 +63,7 @@ export function preconReadingColumns(input: {
   analyzedOracleIds: string[];
   at: Date;
 }): PreconReadingColumns {
+  if (!deckLegality({ partnerOracleId: input.head.partnerOracleId, cards: [...input.head.cards] }).legal) return NO_PRECON_READING;
   return {
     reading: input.profile,
     readingPermits: [...slotDeck(input.profile).permits].sort((a, b) => a - b),
@@ -109,3 +119,13 @@ export function preconReadingDue(c: PreconReadingColumns, now: { list: string; m
   return !preconReadingCurrent(preconReadingOf(c), now) || now.moved;
 }
 
+
+/**
+ * Pure: whether a build or copy writes `next` (the columns `preconReadingColumns` gives the precon now) over
+ * `held` (what its row stores). A reading is written when due (`preconReadingDue`); NO reading (a short list)
+ * is written only to clear one still stored, so nothing is written twice for a precon that never has one.
+ */
+export function preconReadingWrite(held: PreconReadingColumns | null, next: PreconReadingColumns, moved: boolean): boolean {
+  if (next.reading === null || next.readingList === null) return !!held?.reading;
+  return !held || preconReadingDue(held, { list: next.readingList, moved });
+}

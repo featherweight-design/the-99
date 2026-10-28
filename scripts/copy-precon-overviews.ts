@@ -76,11 +76,11 @@ async function main() {
       readingSeenSeq: preconSynopses.readingSeenSeq, readingAt: preconSynopses.readingAt,
     }).from(preconSynopses).where(and(eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
     const requests: TargetRequest[] = [];
-    const built = new Map<string, { list: string; profile: DeckProfile; analyzedOracleIds: string[] }>();
+    const built = new Map<string, { list: string; profile: DeckProfile; analyzedOracleIds: string[]; head: { partnerOracleId: string | null; cards: { oracleId: string; quantity: number }[] } }>();
     for (const file of plain) {
       const r = await buildPreconRequest(file, basis);
       requests.push(r.ok ? { file, ok: true, list: r.list, hash: r.hash } : { file, ok: false, why: r.why });
-      if (r.ok) built.set(file, { list: r.list, profile: r.profile, analyzedOracleIds: r.analyzedOracleIds });
+      if (r.ok) built.set(file, { list: r.list, profile: r.profile, analyzedOracleIds: r.analyzedOracleIds, head: r.head });
     }
     const plan = planPreconOverviewCopy<Content>({ source: sourceRows, target: targetRows, requests });
     // An unreadable log head is never guessed: no reading is written this run.
@@ -90,8 +90,10 @@ async function main() {
       const b = built.get(r.file);
       if (b && (await preconColumnsMoved(r, b.list))) moved.add(r.file);
     }
+    // The columns each precon gets now, decided before the publish (none for a short list, `deckLegality`).
+    const next = new Map([...built].map(([file, b]) => [file, preconReadingColumns({ ...b, catalog: catalogKey, seenSeq: seenSeq ?? 0, at: new Date() })]));
     const readingFiles = seenSeq === null ? [] : planReadingCopy({
-      plan, requests, moved,
+      plan, requests, moved, next,
       target: targetRows.map((r) => ({ file: r.file, reading: r })),
     });
 

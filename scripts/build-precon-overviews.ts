@@ -74,7 +74,7 @@ async function main(): Promise<number> {
   const { systemSpendRow } = await import("./lib/system-spend");
   const { modelCalls } = await import("../src/db/schema");
   const { capMicroUsd, runBuild, worstMicroUsd } = await import("./lib/precon-overview-build");
-  const { NO_PRECON_READING, preconReadingColumns, preconReadingDue } = await import("../src/lib/precons/reading-rule");
+  const { NO_PRECON_READING, preconReadingColumns, preconReadingWrite } = await import("../src/lib/precons/reading-rule");
   const { preconColumnsMoved } = await import("../src/lib/precons/reading");
   const { readCatalogGeneration } = await import("../src/lib/cache/catalog-generation");
   const { readLogHead } = await import("../src/lib/notices/log");
@@ -120,8 +120,12 @@ async function main(): Promise<number> {
   // the log head is never guessed: no reading is written this run.
   const readingStamps = async () => ({ catalog: await readCatalogGeneration(), seenSeq: await readLogHead(db) });
   const stamps = await readingStamps();
-  const readingFor = (req: { list: string; profile: import("../src/lib/profile/types").DeckProfile; analyzedOracleIds: string[] }, at: { catalog: string; seenSeq: number | null }) =>
-    at.seenSeq === null ? NO_PRECON_READING : preconReadingColumns({ profile: req.profile, list: req.list, catalog: at.catalog, seenSeq: at.seenSeq, analyzedOracleIds: req.analyzedOracleIds, at: new Date() });
+  type Built = { list: string; profile: import("../src/lib/profile/types").DeckProfile; analyzedOracleIds: string[]; head: { partnerOracleId: string | null; cards: { oracleId: string; quantity: number }[] } };
+  // The columns the precon gets now: none for a list Analyze would refuse as short (`deckLegality`).
+  const columnsFor = (req: Built, at: { catalog: string; seenSeq: number }) =>
+    preconReadingColumns({ head: req.head, profile: req.profile, list: req.list, catalog: at.catalog, seenSeq: at.seenSeq, analyzedOracleIds: req.analyzedOracleIds, at: new Date() });
+  const readingFor = (req: Built, at: { catalog: string; seenSeq: number | null }) =>
+    at.seenSeq === null ? NO_PRECON_READING : columnsFor(req, { catalog: at.catalog, seenSeq: at.seenSeq });
   let readings = 0;
 
   const inputTokensOf = async (params: object) => (live ? countTokens(params as never) : Math.ceil(JSON.stringify(params).length / 3));
@@ -145,7 +149,8 @@ async function main(): Promise<number> {
     const { list, params, hash } = req;
     const had = stored.get(file);
     // The reading first, and whatever the Overview's hash says: no model, so never held by the cap.
-    if (had && preconReadingDue(had, { list, moved: await preconColumnsMoved(had, list) })) {
+    // The decision reads the columns' shape only, never the mark, so an unreadable head decides alike (and writes nothing).
+    if (had && preconReadingWrite(had, columnsFor(req, { catalog: stamps.catalog, seenSeq: stamps.seenSeq ?? 0 }), await preconColumnsMoved(had, list))) {
       readings += 1;
       if (!DRY && stamps.seenSeq !== null) await db.update(preconSynopses).set(readingFor(req, stamps))
         .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));

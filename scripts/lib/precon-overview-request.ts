@@ -54,6 +54,8 @@ export type PreconRequest =
     /** The reading the request was built from (`loadDeckProfileFromHead`, no model): what a start's first
      *  reading would be, stored beside the Overview (`preconReadingColumns`, PR 6a), and the cards it analyzed. */
     profile: DeckProfile; analyzedOracleIds: string[];
+    /** The prepared list, for Analyze's size gate: a short one (unmapped copies left out) stores no reading. */
+    head: { partnerOracleId: string | null; cards: { oracleId: string; quantity: number }[] };
   }
   | { ok: false; file: string; why: string };
 
@@ -82,6 +84,6 @@ export async function buildPreconRequest(file: string, basis: RoleBasis): Promis
   const params = preconRequestParams(buildSynopsisPrompt(built.facts, undefined, { v2: true, contract8: true }));
   return {
     ok: true, file, list: listFingerprint(prepared), facts: built.facts, params, hash: synopsisRequestHash(params),
-    profile, analyzedOracleIds: analyzedOracleIds(prepared),
+    profile, analyzedOracleIds: analyzedOracleIds(prepared), head: { partnerOracleId: prepared.partnerOracleId, cards: prepared.cards },
   };
 }
