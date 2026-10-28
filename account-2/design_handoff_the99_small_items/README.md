@@ -1,7 +1,7 @@
 # The 99 · Small items (R1b, account 2, 2026-10-27; item 6 2026-10-28)
 
-A light addendum of six unrelated items, each drawn over the shipped surface it changes. R1b folds in Hugh's feedback on items 1 and 3 (2026-10-27 23:39) and adds items 4 and 5; item 6 (2026-10-28) follows Hugh's call on /friends.
-Canvas: https://claude.ai/artifact/M6sfvrUxLdd3TWELr19b4x (Main, Cuts-Alternatives, Draft-Note-Phone, Spare-Answer-Sheet, Dismiss-X, Eng-Rulings, Precon-Overview, Friends-Desktop).
+A light addendum of seven unrelated items, each drawn over the shipped surface it changes. R1b folds in Hugh's feedback on items 1 and 3 (2026-10-27 23:39) and adds items 4 and 5; items 6 and 7 (2026-10-28) follow Hugh's calls on /friends and pods.
+Canvas: https://claude.ai/artifact/M6sfvrUxLdd3TWELr19b4x (Main, Cuts-Alternatives, Draft-Note-Phone, Spare-Answer-Sheet, Dismiss-X, Eng-Rulings, Precon-Overview, Friends-Desktop, Pod-Edit).
 Status: R1b, awaiting Hugh's audit. Goes to main only on approval, as addenda to the handoffs each item builds on.
 
 ## 1 · Proposed cuts names more than the deck needs (`Cuts-Alternatives`, R1b)
@@ -68,7 +68,16 @@ Hugh asked whether /friends needs sub-nav tabs; the call (accepted 2026-10-28) i
 - DOM order stays phone order (head, inbox, friends, pods, links). Under 1180 and on a phone: unchanged.
 - Not now: tabs. Revisit with several pods or a dozen-plus friends (Friends | Pods tabs under the inbox, never around it).
 
+## 7 · An edit state for pods (`Pod-Edit`)
+
+Hugh (2026-10-28): the owner's ✕ disc on every member's art is distracting on so small an image.
+- At rest the seats carry **no control**. The owner's pod head gets **Edit**, a text press before `···` (44px phone, 32 desktop). A member who isn't the owner sees neither, as shipped.
+- **Editing:** the card's edge goes accent; **Done** (filled) replaces Edit and `···`; every seat but yours shows **Remove** under the name in `--danger` (44px hit on a phone, 28px line on desktop with the coarse pointer's 44px). Add friends and the spares box work as usual.
+- Remove acts at once, no confirm, nobody told (as shipped); a failed write puts the seat back with the shared toast. Editing ends on Done, Escape, leaving the page, or when you're the only member left.
+- Focus: Edit → first Remove; Done → Edit; after a Remove, the next Remove, else Done.
+- Engineering: `pod-card.tsx` gets an `editing` state; `Seat` loses the absolute ✕ disc and renders a text button after the name while editing (same `removeMemberAria`, `onRemove`). Rename, Leave, Delete stay in `pod-menu.tsx`. Copy for /copy-review: Edit, Done, Remove.
+
 ## Files
-- `Main.dc.html`, `Cuts-Alternatives.dc.html`, `Draft-Note-Phone.dc.html`, `Spare-Answer-Sheet.dc.html`, `Dismiss-X.dc.html`, `Eng-Rulings.dc.html`, `Precon-Overview.dc.html`, `Friends-Desktop.dc.html`: the canvas artboards (images as `/_blob/` urls). `canvas.json`: the canvas index.
+- `Main.dc.html`, `Cuts-Alternatives.dc.html`, `Draft-Note-Phone.dc.html`, `Spare-Answer-Sheet.dc.html`, `Dismiss-X.dc.html`, `Eng-Rulings.dc.html`, `Precon-Overview.dc.html`, `Friends-Desktop.dc.html`, `Pod-Edit.dc.html`: the canvas artboards (images as `/_blob/` urls). `canvas.json`: the canvas index.
 - `art/`: the images uploaded to the canvas (card images cut from Hugh's captures, reused from the strategy-focus, deck-messages and spare-requests rounds).
-- `scratch-gen/`: the generators. `cuts/` (strategy-focus kit + `ci.py`, `pv.py` via `bp.py`), `draft/` (deck-messages kit + `dn.py`), `spare/` (spare-requests kit + `ss.py`, `main.py` via `bm2.py`, `w4.py` via `b4.py`, `f6.py` via `b6.py`). Each `b.py` writes to `../out`; `render.py <names>` measures boards and flags broken images; `toblob.py` swaps `art/` for the canvas's `/_blob/` urls.
+- `scratch-gen/`: the generators. `cuts/` (strategy-focus kit + `ci.py`, `pv.py` via `bp.py`), `draft/` (deck-messages kit + `dn.py`), `spare/` (spare-requests kit + `ss.py`, `main.py` via `bm2.py`, `w4.py` via `b4.py`, `f6.py` via `b6.py`, `f7.py` via `b7.py`). Each `b.py` writes to `../out`; `render.py <names>` measures boards and flags broken images; `toblob.py` swaps `art/` for the canvas's `/_blob/` urls.

@@ -54,13 +54,18 @@ CALLS = [
      "<ul><li>No tabs for now; nothing new, nothing hidden, phone unchanged.</li>"
      "<li>Engineering: a grid in <code>friends-view.tsx</code>; DOM order stays phone order.</li></ul>",
      "Board: Friends-Desktop"),
+    ("7 · Pods · an edit state", "Remove members from Edit, not from the art",
+     "<p>The ✕ discs leave the seats. The owner’s pod head gets <b>Edit</b> beside ···; pressed, the card takes an accent edge, "
+     "Edit becomes <b>Done</b>, and each member shows <b>Remove</b> under the name.</p>"
+     "<ul><li>Remove works as shipped: at once, no confirm, nobody told.</li><li>Rename, Leave and Delete stay in ···.</li></ul>",
+     "Board: Pod-Edit"),
 ]
 
 
 def board():
     cards = "".join(f'<div class="call"><span class="n">{n}</span><h3>{t}</h3>{b}<span class="bd2">{f}</span></div>' for n, t, b, f in CALLS)
-    body = (board_head("Small items · 27 Oct 2026", "Six calls",
-                       "A light addendum: six unrelated items, each drawn over the shipped surface it changes. R1b folds in your feedback on 1 and 3; 6 is new. Your new rule (give the player a choice, "
+    body = (board_head("Small items · 27 Oct 2026", "Seven calls",
+                       "A light addendum: seven unrelated items, each drawn over the shipped surface it changes. R1b folds in your feedback on 1 and 3; 6 and 7 are new. Your new rule (give the player a choice, "
                        "never lock them in) drives the first. Copy is shipped where it exists; new strings are placeholders for /copy-review.", tag="R1b")
             + f'<div class="calls">{cards}</div>')
     return doc("Three small items", body, 1612)
