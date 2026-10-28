@@ -5,7 +5,7 @@ Give this file to account 1 at the start of its next Design session. Repo: `Hart
 ## State on GitHub
 
 - Everything account 2 designed is pushed to `design-assets` under `account-2/`. Tip at handover: `aa830cc` (Suggested changes v2 R2b).
-- Every approved account-2 handoff is merged into main under `design/`, **except #2302** (Suggested changes v2), which is open, CI green and mergeable, waiting for Hugh to merge.
+- Every approved account-2 handoff is merged into main under `design/`, the last being #2302 (Suggested changes v2, merged 2026-10-28 04:03 UTC). No design handoff PRs are open.
 - Build prompts for Claude Code CLI are copied into `account-2/build-prompts/` (same files as the project's `build-prompts/` folder). Earlier rounds' prompts were handed to Hugh in chat and aren't in the folder.
 - This note was delivered as a reference-only PR into `design-assets` (Hugh, 2026-10-28: "Just open a PR they can reference, no need to merge"). Read it from the PR branch `handover/account-2-to-account-1-2026-10-28`.
 
@@ -13,7 +13,6 @@ Give this file to account 1 at the start of its next Design session. Repo: `Hart
 
 | PR | What | State |
 |---|---|---|
-| #2302 | Design handoff: Suggested changes v2 | Open, CI green, approved design. Hugh merges. |
 | #2303 | Small items 3b: answer sheet over Home (code) | Open, engineering |
 | #2299 | About visual PR 1: copy model, seen translation, tool labels (code) | Open, engineering |
 | #2281 | chore: shared fwd-stack tsconfig and ESLint presets (code) | Open, engineering |
@@ -40,7 +39,7 @@ Give this file to account 1 at the start of its next Design session. Repo: `Hart
 | About as six visual pages (R3) | design_handoff_the99_about_visual (31f9234..aea2370) | https://claude.ai/artifact/2xkvoZtTrCqsXYRg5RPhV9 | #2293 merged (Hugh's eng audit Yellow, ruled by A1) | (eng PRs from #2299) |
 | About visual addendum A1 (Precons + Mana Balance placed, ? landings for nine screens) | same folder, board 8 (a2e811d) | same canvas | #2297 merged (Green) | — |
 | Small items (cuts over+3, phone draft note, spare answer sheet, the ✕ + #2284/#2280/#2288, precon Overview, /friends two-column desktop, pod edit state) | design_handoff_the99_small_items (8026a5d..04a8b0e) | https://claude.ai/artifact/M6sfvrUxLdd3TWELr19b4x | #2294 merged | small-items.md |
-| Suggested changes v2 (N in/N out at 99, request + chips, ~1.5N a side, streaming wait, bracket move, Apply 2N changes + Undo, history, About) | design_handoff_the99_suggested_changes_v2 (6ef08d1, 466aefe, e23c3a5, aa830cc) | https://claude.ai/artifact/QY9JsqnZvEcQNWvaAQ9QcJ | **#2302 OPEN** | suggested-changes-v2.md |
+| Suggested changes v2 (N in/N out at 99, request + chips, ~1.5N a side, streaming wait, bracket move, Apply 2N changes + Undo, history, About) | design_handoff_the99_suggested_changes_v2 (6ef08d1, 466aefe, e23c3a5, aa830cc) | https://claude.ai/artifact/QY9JsqnZvEcQNWvaAQ9QcJ | #2302 merged | suggested-changes-v2.md |
 
 Inputs and specs that sit on main: About visual inputs `docs/superpowers/about-visual/` (#2283), Suggested changes v2 spec `docs/superpowers/specs/2026-10-27-suggested-changes-v2-design.md` (#2295), count-mechanism eval (#2291).
 
@@ -52,7 +51,7 @@ Basic-lands stepper #1747 · Upcoming precons + Home banner #1751 · Small polis
 
 ## Still open or in progress
 
-- **#2302 Suggested changes v2 handoff**: approved, waiting for Hugh's merge. Build prompt is ready (seven PRs, backend through About).
+- **Suggested changes v2**: handoff #2302 merged; build prompt ready (seven PRs, backend through About) for Hugh to hand to Claude Code.
 - **TMNT / partner commanders** (code, not design): fix #2262 merged 2026-10-26 (single deck can grow into a pair when colours match exactly; pair→single still refused; needs `CHANGE_COMMANDER_ENABLED`). The thread is blocked on Hugh running the write probe on local-dev: `pnpm tsx scripts/probe-change-commander-write.ts` (all "grow" lines should PASS), then Peter testing his partner decks.
 - **Push icon** (#2261 merged): Android grey "T" fix; on-device check by Hugh pending.
 - **Bracket reach** form heads-up (option A) is on hold until engineering says whether the server can tell before submit.
