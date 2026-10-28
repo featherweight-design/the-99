@@ -365,7 +365,7 @@ renderVals() {{ return {{}}; }}
 """
 
 
-def board_head(kicker, title, cap, tag="R1"):
+def board_head(kicker, title, cap, tag="R1b"):
     return (f'<div class="bh"><div class="kick"><span class="tag">{tag}</span>{kicker}</div>'
             f'<h2>{title}</h2><p>{cap}</p></div>')
 

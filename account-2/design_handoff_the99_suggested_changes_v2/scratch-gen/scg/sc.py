@@ -140,6 +140,31 @@ CUTS = [
      [("mix", "removal 6 of 10")]),
 ]
 
+TYPE_OF = {
+    "swords": "inst", "avabruck-caretaker": "cre", "path": "inst", "arlinn": "pw", "heartless-act": "inst", "avenger-of-zendikar": "cre",
+    "atreus": "cre", "searing-touch": "inst", "all-will-be-one": "ench", "zimone": "cre", "counterspell": "inst", "captain-america": "cre",
+    "gleaming-splendor": "art", "all-is-dust": "sorc", "alrund": "cre", "polyraptor": "cre", "ghalta": "cre", "mystical-tutor": "inst",
+    "jace": "pw", "swan-song": "inst", "quintorius": "cre", "jasmine-tea-shop": "land", "bard-king-of-dale": "cre", "brudiclad": "cre",
+    "firebending-lesson": "sorc", "beorn": "cre", "ajani-unrelenting": "pw", "miku": "cre", "moonmist": "inst", "lathliss": "cre",
+    "wizards-staff": "art", "assimilation-aegis": "art",
+}
+# The deck page's type groups, in its order (CARD_TYPE_GROUP_ORDER), with the deck's own count of each (99).
+TYPES = [("cre", "Creatures"), ("inst", "Instants"), ("sorc", "Sorceries"), ("art", "Artifacts"), ("ench", "Enchantments"),
+         ("pw", "Planeswalkers"), ("land", "Lands")]
+TYPE_HAVE = {"cre": 34, "inst": 9, "sorc": 5, "art": 7, "ench": 6, "pw": 2, "land": 36}
+GROUP_LABELS = {"type": "By type", "role": "By role"}
+
+
+def type_of(k):
+    return TYPE_OF.get(k, "cre")
+
+
+def group_switch(on="type", ph=False):
+    """The deck toolbar's grouping well (group-toggle.tsx, SegmentedSwitch), the same stored choice."""
+    seg = "".join(f'<span class="{"on" if k == on else ""}">{v}</span>' for k, v in GROUP_LABELS.items())
+    return f'<div class="gsw"><span class="gl">Group</span><div class="gw">{seg}</div></div>'
+
+
 ROLES = [("removal", "Removal"), ("draw", "Draw"), ("ramp", "Ramp"), ("wipes", "Wipes"), ("land", "Land"), ("other", "Threats & synergy")]
 HAVE = {"removal": (6, 10), "draw": (7, 10), "ramp": (8, 10), "wipes": (1, 3), "land": (36, 37), "other": (31, None)}
 
@@ -196,8 +221,7 @@ CSS = r"""
 .ntc{display:flex;flex-direction:column;gap:8px}
 .ntc .nh{font:500 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
 .ntc .ns{font-size:12px;line-height:1.5;color:var(--fg-muted)}
-.chs{display:flex;flex-direction:column;gap:6px}
-.ph .chs{flex-direction:row;flex-wrap:wrap}
+.chs{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px}
 .chp{display:flex;align-items:center;gap:8px;min-height:40px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-sunken);padding:6px 10px;font-size:12.5px;line-height:1.35;color:var(--fg-body)}
 .ph .chp{min-height:44px}
 .chp .k{font:9.5px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--fg-locked);flex:none}
@@ -311,8 +335,16 @@ CSS = r"""
 .ln2 .ct.ya{border-color:color-mix(in oklab,var(--fact) 55%,transparent)}
 .ln2 .ct.ya span:first-child{color:var(--fact)}
 .ln2 .flg{font-size:12px;color:var(--fg-body);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.ln2 .done{margin-left:auto;display:flex;align-items:center;gap:7px;font:10.5px 'IBM Plex Mono';color:var(--success);flex:none}
-.ln2 .done i{width:15px;height:15px;border-radius:4px;border:1px solid var(--success);font-size:9px;display:flex;align-items:center;justify-content:center;font-style:normal}
+.ln2 .done{margin-left:auto;display:flex;align-items:center;gap:8px;font:600 13px 'IBM Plex Sans';color:var(--success);flex:none;height:32px;padding:0 4px}
+.ln2 .done i{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--success);background:color-mix(in oklab,var(--success) 16%,transparent);font:700 13px 'IBM Plex Sans';display:flex;align-items:center;justify-content:center;font-style:normal}
+.ph .ln2 .done{height:44px}
+.gsw{display:flex;align-items:center;gap:10px;justify-content:flex-end}
+.ph .gsw{justify-content:flex-start}
+.gsw .gl{font:500 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.gw{display:flex;gap:2px;border:1px solid var(--border-strong);border-radius:9px;padding:3px}
+.gw span{height:28px;padding:0 12px;display:flex;align-items:center;border-radius:6px;font-size:12.5px;color:var(--fg-muted)}
+.ph .gw span{height:38px;padding:0 14px}
+.gw span.on{background:var(--elevated);color:var(--fg);font-weight:600}
 .ln2.apd{background:var(--surface-rail)}
 .ln2.apd .nm.c{text-decoration:line-through;text-decoration-color:var(--fg-locked)}
 .ln2 .rot{margin-left:auto;font:10px 'IBM Plex Mono';color:var(--fg-faint);flex:none}
@@ -467,7 +499,7 @@ def intake(ph=False, n=3, text=None, used=(), focus=False, count=0, bracket=True
     if ph:
         s2 = f'<div class="stp">{stp("2", "What are you looking to change?")}{box}{right}</div>'
     else:
-        s2 = f'<div class="stp">{stp("2", "What are you looking to change?")}<div class="rq"><div>{box}</div><div style="display:flex;flex-direction:column;gap:14px">{right}</div></div></div>'
+        s2 = f'<div class="stp">{stp("2", "What are you looking to change?")}{box}{right}</div>'
     s3 = f'<div class="stp">{stp("3", "Any restrictions?", "kept for this deck, so the next run starts with them")}{lim(cap, ph=ph)}</div>'
     hint = WAIT_HINT.get(n, "usually under a minute")
     if send is None:
@@ -537,11 +569,11 @@ def row(side, it, ph, state="", flag_on=True):
         buy = f'<span class="buy">buy {price}</span>' if (price and not owned and not ph) else ""
     nm = f'<span class="nm {"a" if side == "add" else "c"}">{n}</span>'
     if state == "ap":
-        ctl = f'<span class="done"><i>✓</i>{"added" if side == "add" else "cut"}</span>'
+        ctl = f'<span class="done"><i>✓</i>{"Added" if side == "add" else "Cut"}</span>'
     elif state == "ro":
-        ctl = '<span class="rot">not picked</span>'
+        ctl = '<span class="rot">Not picked</span>'
     elif state == "rop":
-        ctl = '<span class="rot" style="color:var(--fg-muted)">picked, not applied</span>'
+        ctl = '<span class="rot" style="color:var(--fg-muted)">Picked, not applied</span>'
     elif state == "on":
         ctl = '<span class="pk">✓ Picked</span>'
     else:
@@ -561,6 +593,18 @@ def group_rows(side, items, ph, states, grouped):
     if not grouped:
         return "".join(row(side, it, ph, states.get(it[0], "")) for it in items)
     out = []
+    if grouped != "role":
+        for tk, tn in TYPES:
+            g = [it for it in items if type_of(it[0]) == tk]
+            if not g:
+                continue
+            have = TYPE_HAVE[tk]
+            picked = sum(1 for it in g if states.get(it[0]) in ("on", "ap"))
+            mv = have + picked if side == "add" else have - picked
+            fig = f'{have} in the deck' + (f' · <em>{mv} with your picks</em>' if picked else "")
+            out.append(f'<div class="grh"><b>{tn}</b><span>{len(g)} · {fig}</span></div>')
+            out += [row(side, it, ph, states.get(it[0], "")) for it in g]
+        return "".join(out)
     for rk, rn in ROLES:
         g = [it for it in items if it[2] == rk]
         if not g:
@@ -645,6 +689,8 @@ def results(ph, n, adds, cuts, pa=(), pc=(), grouped=False, tab="add", req=REQ10
     hd = head if head is not None else f'<div class="hrow2"><h3>Suggested changes</h3>{nb}</div>'
     top = (hd + extra_top + ask(req, n, cap) + (short or "") + f'<p class="lead">{lead}</p>'
            + f'<span class="scl2" style="margin-top:-8px">{READ}</span>')
+    if grouped:
+        top += group_switch("role" if grouped == "role" else "type", ph)
     na = len([k for k in pa]) if not done else len([k for k in applied if k in [it[0] for it in adds]])
     nc = len([k for k in pc]) if not done else len([k for k in applied if k in [it[0] for it in cuts]])
     if done:

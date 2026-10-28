@@ -88,18 +88,19 @@ CALLS = [
     ("2", "How many: the stepper, with its pool spelled out",
      "− N + (1 to 20, typed or stepped, 44px on a phone) and one line beside it: <i>3 in, 3 out. You’ll pick from about 5 of each.</i> "
      "The cut count is never a separate control."),
-    ("3", "The request box is empty; what we noticed sits beside it",
-     "Never pre-filled. Beside the box on desktop, under it on a phone: <b>What we noticed</b>, up to four chips in the citation chips’ shape "
+    ("3", "The request box is empty; what we noticed sits under it",
+     "Never pre-filled. Under the box at both widths (R1b: beside it left a hole on desktop): <b>What we noticed</b>, up to four chips in the citation chips’ shape "
      "(kind, then words): a role short of its target, the focus, a recent game note, a second role gap. A tap appends its sentence to the end of the "
      "box, highlighted for a beat, and the chip turns dashed with a ✓. It comes back if its words leave the box. Nothing is assumed: an untapped chip sends nothing."),
     ("4", "Results: two lists, one Pick per row",
      "The shipped two-list line, with Add/Reject replaced by one toggle, <b>Pick</b> → <b>✓ Picked</b> (the row takes the brass edge). "
      "Desktop shows Additions and Cuts side by side; a phone switches between them with the shipped segmented control, each half carrying its "
      "<i>n of N</i>. A side at N greys its other Picks; unpick one to swap. No Reject: an unpicked row just stays in the run."),
-    ("5", "Grouped by job above 5 per side, flat at 5",
-     "At N=3 the five rows read in the run’s order. From N=4 (six or more a side) rows group under the shipped shelf roles: Removal, Draw, Ramp, Wipes, "
-     "Land, Threats & synergy, each heading with the deck’s figure (<i>you have 6 of 10</i>) and, once you pick, where your picks take it "
-     "(<i>8 with your picks</i>). Inside a group the run’s order holds."),
+    ("5", "Grouped above 5 per side, by type unless the player picks role",
+     "At N=3 the five rows read in the run’s order. From N=4 (six or more a side) rows group, under the deck toolbar’s own <b>By type · By role</b> "
+     "switch and the same stored choice (<code>the99:deck-grouping</code>, default By type). By type uses the deck page’s groups (Creatures, Instants, "
+     "Sorceries, Artifacts, Enchantments, Planeswalkers, Lands) with the deck’s count; By role uses the shelf roles with the deck’s figure "
+     "(<i>you have 6 of 10</i>). Either way a heading says where your picks take it (<i>8 with your picks</i>), and inside a group the run’s order holds."),
     ("6", "One Apply for the set, one Undo (to the spec’s Q1 proposal)",
      "A bar pinned under the lists keeps the tally: <i>+10 in · −7 out · the deck would go to 102</i>. Unequal: Apply stays off and the bar names the "
      "fix (<i>Pick 3 more cuts</i>). Equal: <b>Apply 10 + 10</b>, with the set’s bracket outcome. Fewer than N of each is fine. After applying: "
@@ -118,9 +119,18 @@ QUESTIONS = [
     ("Q", "Picks past N", "Drawn capped at N per side (the spec’s M ≤ N). If you’d rather let a player take 4 + 4 from a 3-card run, the cap goes and the bar’s rule (equal counts) still holds."),
 ]
 
+R1B = [
+    ("1", "What we noticed moves under the box on desktop",
+     "The chips sat in a column beside the box, which left a tall empty gap under it. They now wrap in a row under the box, with the bracket piece below them, as on a phone. Board 1."),
+    ("2", "Applied rows: a bigger ✓, and <b>Added</b> / <b>Cut</b>",
+     "The applied mark is a 20px box (was 15) in the success tone with the word in sentence case, 13px, 32px tall (44 on a phone). Boards 3 and 8."),
+    ("3", "Group by type, or role: the player’s choice",
+     "Default <b>By type</b>, the deck page’s own groups. The deck toolbar’s By type · By role switch sits above the lists and keeps the same stored choice, so a player who reads their deck by role sees runs that way too. Boards 4, 5, 6 and 7."),
+]
+
 GAPS = [
     ("G1", "Additions before cuts", "Save call 1’s kept additions as soon as they validate (a run state, say <code>adds_ready</code>), so the wait can show and pick them while call 2 runs. Without it, the wait keeps the ticking rows and the list appears at the end."),
-    ("G2", "A role per suggestion", "Grouping needs each line’s shelf role (the role counter’s, not the model’s). A line with none goes in Threats & synergy."),
+    ("G2", "Type and role per suggestion", "Each line carries its card type group (<code>cardTypeGroup</code>) and its shelf role (the role counter’s, not the model’s). A line with no role goes in Threats & synergy."),
     ("G3", "The chips’ sources", "Short role: the role strip’s worst gap. Focus: the deck’s focus. Game: the newest game note (quoted, dated). A second role gap. Hidden when there is nothing to say; never more than four."),
     ("G4", "Same request", "The ‘same request’ check (spec §8) runs on press, before a credit is reserved: same N, same words, same limits, same list fingerprint."),
     ("G5", "Copy", "Every string is a placeholder for /copy-review. Retires: <i>Suggest again</i>, <i>Suggest again anyway</i>, the unchanged lead, <i>Additional notes</i>, Reject on v2 rows."),
@@ -138,6 +148,7 @@ def main():
                        "list per side of about 1.5N, a longer wait, and history. Fixture: <b>HD - Half Shell</b> (Heroes in a Half Shell, five colors, so every "
                        "card is legal), 99 + 1, Core, focus +1/+1 counters. Cards are real images from earlier rounds; reasons and figures are stand-ins. "
                        "Copy is placeholder for /copy-review.")
+            + '<div class="sec"><h3>R1b · your feedback (Oct 28)</h3>' + tbl(R1B) + '</div>'
             + '<div class="sec"><h3>The calls</h3>' + tbl(CALLS) + '</div>'
             + '<div class="sec"><h3>Your open questions, as drawn</h3>' + tbl(QUESTIONS, True) + '</div>'
             + '<div class="sec"><h3>For engineering</h3>' + tbl(GAPS) + '</div>'
@@ -172,7 +183,7 @@ def intake_board():
                        "How many, what to change, any restrictions, then <b>Suggest changes</b>. One panel, every step in view. The wait hint under the button "
                        "follows N (<i>usually under 20 seconds</i> at 3, <i>about a minute, now and then two</i> at 20). The line at the foot says what else the run reads, in the spec’s order, after the player’s words.")
             + sec("A · Fresh", "Nothing pre-filled, nothing selected. The request box shows a quiet placeholder only.", a)
-            + sec("B · Filled", "N = 10, two chips tapped, a sentence typed. On desktop the chips sit beside the box; on a phone, under it. The bracket goal is the optional piece (Q7).", b)
+            + sec("B · Filled", "N = 10, two chips tapped, a sentence typed. The chips wrap under the box at both widths (R1b). The bracket goal is the optional piece (Q7).", b)
             + sec("C · How a chip behaves", "A suggestion, never an assumption: it adds words the player can see and change.", c)
             + sec("D · Edges", "Identical inputs on an unchanged list ask once before spending (spec §8). The stepper stops at 20.", d))
     return doc("Suggested changes v2 · intake", body, 2280)
@@ -194,7 +205,7 @@ def notat_board():
     c = frames(frame("<b>390</b> · the deck moved off 99 with the intake open", c1), frame("<b>1300</b> · …or with picks made", c2))
     body = (board_head("2 · a deck not at 99", "Pointed to the right tool",
                        "Suggested changes runs on a deck at exactly 99 (100 with the commander) and keeps it there. Under or over, its tile goes inert in the shipped "
-                       "way (dashed, faint, not a button) and its line says why, with one link to the tool that fixes it. The link is the tile’s only control.")
+                       "way (dashed, faint, not a button) and its line says why, with one link to the tool that fixes it. The link is the tile’s only control.", tag="R1")
             + sec("A · Under: Top off", "Top off lives on Your deck, so the link switches tab and opens it. Proposed cuts keeps its shipped inert line.", a)
             + sec("B · Over: Proposed cuts", "Proposed cuts is live here, so the link opens it in place, as its own tile would.", b)
             + sec("C · Drifting off 99 mid-flow", "An edit elsewhere (another tab, Your deck) takes the deck off 99. Send and Apply stop, and say why, with the same link. Picks are kept.", c))
@@ -226,7 +237,7 @@ def r3_board():
             + sec("A · Phone", "One half at a time, under the segmented control. The bar is pinned above the fold with the tally and Apply.", a)
             + sec("B · Unequal", "3 in and 2 out would take the deck to 100. Apply stays off, and the bar says what fixes it. Picks are never undone for you.", b)
             + sec("C · Equal", "Both at 3: Apply 3 + 3. The bar adds the set’s bracket outcome. 2 + 2 would apply too.", c)
-            + sec("D · Applied", "One change, one Undo for all six. Applied rows read added / cut (the shipped answered state); the four unpicked stay pickable for another equal set.", d))
+            + sec("D · Applied", "One change, one Undo for all six. Applied rows read <b>✓ Added</b> / <b>✓ Cut</b> (R1b: a bigger mark, sentence case); the four unpicked stay pickable for another equal set.", d))
     return doc("Suggested changes v2 · results at 3", body, 3 * 390 + 2 * 44 + 112 + 0)
 
 
@@ -239,13 +250,15 @@ def r10_board():
     d = S.results(False, 10, a15, c15, pa, pc, grouped=True)
     p = S.results(True, 10, a15, c15, pa, pc, grouped=True, tab="add")
     pcut = S.results(True, 10, a15, c15, pa, pc, grouped=True, tab="cut")
-    body = (board_head("4 · results at N = 10 (15 a side)", "Fifteen of each, grouped by job",
-                       "Above five a side the rows group under the shipped shelf roles, each heading with the deck’s own figure and where the picks take it. "
+    body = (board_head("4 · results at N = 10 (15 a side)", "Fifteen of each, grouped",
+                       "Above five a side the rows group, by type unless the player chose By role on the deck page’s switch (R1b). Each heading carries the deck’s own figure and where the picks take it. "
                        "Mid-pick: 10 additions chosen (that side is full, so its other Picks grey), 7 cuts. Apply waits for 3 more cuts.")
             + sec("A · Desktop, the whole run", "Two columns, each with its count chip. The bar pins to the window’s bottom while the lists scroll.",
                   frames(frame("<b>1300</b>", tool_dk(d))))
             + sec("B · Phone, both halves", "Additions is full (10 of 10, green in the control); Cuts shows 7 of 10.",
-                  frames(frame("<b>390</b> · Additions", tool_ph(p)), frame("<b>390</b> · Cuts", tool_ph(pcut)))))
+                  frames(frame("<b>390</b> · Additions", tool_ph(p)), frame("<b>390</b> · Cuts", tool_ph(pcut))))
+            + sec("C · By role, the other choice", "The same run with By role pressed: the shelf roles, each with <i>you have X of Y</i>. The choice is the deck toolbar’s, kept for every deck, so it is set once.",
+                  frames(frame("<b>1300</b> · By role", tool_dk(S.results(False, 10, a15, c15, pa, pc, grouped="role"))), frame("<b>390</b> · By role", tool_ph(S.results(True, 10, a15, c15, pa, pc, grouped="role", tab="add"))))))
     return doc("Suggested changes v2 · results at 10", body, 1300 + 112 + 400)
 
 
@@ -261,7 +274,7 @@ def r20_board():
     body = (board_head("5 · results at N = 20 (30 a side)", "Thirty to add, twenty-seven to cut",
                        "The run asked for 30 of each. Three cuts failed the checks and the count still cleared 20, so no refill: the list says 27, never pads, and "
                        "nothing about it is short. All 20 + 20 picked; Mystical Tutor is a Game Changer, so its row carries the shipped bracket flag and the bar says the set moves the deck to Upgraded.")
-            + sec("A · Desktop", "Every row drawn. Groups keep a long list scannable: the player finds Removal, takes what they need, moves on.",
+            + sec("A · Desktop", "Every row drawn, by type. Groups keep a long list scannable: the player finds Instants, takes what they need, moves on.",
                   frames(frame("<b>1300</b>", tool_dk(d))))
             + sec("B · Phone, the Cuts half", "27 rows under one control; the bar stays pinned at the bottom of the screen in use.",
                   frames(frame("<b>390</b> · Cuts", tool_ph(p)))))
@@ -349,9 +362,9 @@ def history_board():
                        "The shipped History tool, its rows carrying v2’s shape: the request quoted (cut to one line), then <i>asked · found · applied</i>. A v10 run "
                        "(Sep 30) keeps its old summary, as stored. Short and refunded runs say so in the outcome pill; the refunded tier is struck.")
             + sec("A · The run list", "Opening a row opens the run.", frames(frame("<b>390</b>", hl_p), frame("<b>1300</b>", hl_d)))
-            + sec("B · An old run, still live", "Same version of the list: the applied six read added / cut, the set’s one Undo stays in the bar until the next commit, and the unpicked four can still form another equal set.",
+            + sec("B · An old run, still live", "Same version of the list: the applied six read Added / Cut, the set’s one Undo stays in the bar until the next commit, and the unpicked four can still form another equal set.",
                   frames(frame("<b>390</b> · the Cuts half", vp_ph(old_p, 1150)), frame("<b>1300</b>", tool_dk(old_d))))
-            + sec("C · A stale run", "A newer version is committed: the shipped past-run note, no Picks, no bar. Each row reads added, cut or not picked. New run starts a fresh intake.",
+            + sec("C · A stale run", "A newer version is committed: the shipped past-run note, no Picks, no bar. Each row reads Added, Cut or Not picked. New run starts a fresh intake.",
                   frames(frame("<b>390</b>", tool_ph(st_p)), frame("<b>1300</b>", tool_dk(st_d)))))
     return doc("Suggested changes v2 · history", body, 390 + 1300 + 44 + 112)
 
