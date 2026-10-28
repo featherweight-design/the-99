@@ -198,7 +198,8 @@ async function main() {
   const undone = await undoSet({ applySet: actionId, userId: u, env });
   check("4 · undo the set", undone.ok && undone.itemIds.length, 6);
   check("4 · undo returns the exact list", await deckList(deckId), before);
-  const retried = await applyPicks({ runId, ...pick, actionId, userId: u, env });
+  // In upper case, as a client might send it: the set id is matched however it is written.
+  const retried = await applyPicks({ runId, ...pick, actionId: actionId.toUpperCase(), userId: u, env });
   check("4 · a delayed repeat of the undone press names no line", retried.ok && retried.itemIds.length, 0);
   check("4 · and does not reverse the undo", await deckList(deckId), before);
   check("4 · the lines are open again and still picked",

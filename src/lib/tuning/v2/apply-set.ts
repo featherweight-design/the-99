@@ -43,17 +43,20 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
  * item: the order every deck write and a deck delete take (`verdicts.ts`'s `lockedItem`).
  */
 async function lockRunDeck(tx: Tx, runId: string, userId: string) {
+  const [owner] = await tx.select({ deckId: deckSuggestionRuns.deckId }).from(deckSuggestionRuns)
+    .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.userId, userId)));
+  if (!owner) return null;
+  await lockDeck(tx, owner.deckId);
+  // Read under the lock, never before it: an apply and an Undo that commit while this waits must be seen (a set id they
+  // spent, a status that settled), or a delayed press would act on the run as it was.
   const [run] = await tx.select({
     deckId: deckSuggestionRuns.deckId,
     status: deckSuggestionRuns.status,
     requestedCount: deckSuggestionRuns.requestedCount,
     readVersion: deckSuggestionRuns.readVersion,
     spentSets: deckSuggestionRuns.spentSets,
-  }).from(deckSuggestionRuns)
-    .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.userId, userId)));
-  if (!run) return null;
-  await lockDeck(tx, run.deckId);
-  return run;
+  }).from(deckSuggestionRuns).where(eq(deckSuggestionRuns.id, runId));
+  return run ?? null;
 }
 
 /**
@@ -90,7 +93,10 @@ async function lockedLines(tx: Tx, runId: string) {
 export async function applyPicks(args: {
   runId: string; addIds: readonly string[]; cutIds: readonly string[]; actionId: string; userId: string; env: NodeJS.ProcessEnv;
 }): Promise<ApplySetResult> {
-  const { runId, actionId, userId, env } = args;
+  const { runId, userId, env } = args;
+  // Postgres returns a uuid in lower case, and every id here is compared as a string against what it read, so the set id
+  // and the picked ids are lowered first.
+  const actionId = args.actionId.toLowerCase();
   try {
     return await db.transaction(async (tx) => {
       const run = await lockRunDeck(tx, runId, userId);
@@ -103,7 +109,8 @@ export async function applyPicks(args: {
       if (run.spentSets.includes(actionId)) return { ok: true as const, deckId: run.deckId, applySet: actionId, itemIds: [] };
       if (run.status !== "ok" || run.requestedCount === null) throw new Refused({ kind: "notV2" });
 
-      const plan = planPicks({ requestedCount: run.requestedCount, lines, addIds: args.addIds, cutIds: args.cutIds });
+      const lower = (ids: readonly string[]) => ids.map((id) => id.toLowerCase());
+      const plan = planPicks({ requestedCount: run.requestedCount, lines, addIds: lower(args.addIds), cutIds: lower(args.cutIds) });
       if (!plan.ok) throw new Refused({ kind: "picks", reason: plan.reason });
 
       await refuseIfRetired(tx, run);
@@ -139,7 +146,8 @@ export async function applyPicks(args: {
  * whole undo, so a set is never half undone. Returns the set's item ids for the panel to re-select.
  */
 export async function undoSet(args: { applySet: string; userId: string; env: NodeJS.ProcessEnv }): Promise<ApplySetResult> {
-  const { applySet, userId, env } = args;
+  const { userId, env } = args;
+  const applySet = args.applySet.toLowerCase();
   try {
     return await db.transaction(async (tx) => {
       const [owner] = await tx.select({ runId: deckSuggestionItems.runId })
