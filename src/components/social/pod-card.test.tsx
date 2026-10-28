@@ -48,7 +48,7 @@ describe("the pod card's edit state", () => {
     expect(removes().map((b) => b.getAttribute("aria-label"))).toEqual([P.removeMemberAria("Dave", "Thursday"), P.removeMemberAria("Priya", "Thursday")]);
     expect(cardEl().className).toContain("shadow-[inset_0_0_0_1px_var(--accent)]");
     expect(screen.queryByRole("button", { name: P.edit })).toBeNull();
-    expect(screen.queryByRole("button", { name: /More|…|···/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: P.menuAria("Thursday") })).toBeNull();
     expect(screen.getByRole("button", { name: P.done })).toBeInTheDocument();
     expect(document.activeElement).toBe(removes()[0]);
   });
@@ -85,5 +85,10 @@ describe("the pod card's edit state", () => {
     act(() => redraw(pod({ members: [ME] })));
     expect(removes()).toHaveLength(0);
     expect(screen.queryByRole("button", { name: P.done })).toBeNull();
+    // Left alone: focus goes to the card's menu, and a friend added later does not reopen the edit state.
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: P.menuAria("Thursday") }));
+    act(() => redraw(pod({ members: [ME, DAVE] })));
+    expect(removes()).toHaveLength(0);
+    expect(screen.getByRole("button", { name: P.edit })).toBeInTheDocument();
   });
 });

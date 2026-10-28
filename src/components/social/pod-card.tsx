@@ -175,6 +175,9 @@ export function PodCard({
   // Escape, on leaving the page (it is never stored) and once the owner is the only member left.
   const [editingState, setEditing] = useState(false);
   const editing = editingState && pod.isOwner && n > 1;
+  // Ended for good when the owner is left alone (or loses the pod), so a friend added later does not reopen it.
+  // Adjusted during render, as for state that follows a prop.
+  if (editingState && !editing) setEditing(false);
   const card = useRef<HTMLDivElement>(null);
   const editPress = useRef<HTMLButtonElement>(null);
   const donePress = useRef<HTMLButtonElement>(null);
@@ -187,7 +190,8 @@ export function PodCard({
     focusNext.current = null;
     if (next.kind === "edit") return void editPress.current?.focus();
     const presses = card.current?.querySelectorAll<HTMLButtonElement>("[data-pod-remove]") ?? [];
-    (presses[next.index] ?? donePress.current)?.focus();
+    // Left alone, neither Done nor Edit is drawn, so focus goes to the card's menu.
+    (presses[next.index] ?? donePress.current ?? card.current?.querySelector<HTMLElement>("[aria-haspopup='menu']"))?.focus();
   });
   const startEditing = () => {
     focusNext.current = { kind: "remove", index: 0 };
