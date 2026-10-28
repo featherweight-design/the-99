@@ -296,9 +296,14 @@ export function CutsPanelView({
   // "Back at 99" is said only of the list as it stands: the live over, less the Cuts pressed since it was read (a Cut
   // answers before the redraw that moves `over`, so the switch to enough stays instant). A run reopened over a deck that
   // has grown since reads as one still being chosen from, with the count's live over line.
+  // Read from the deck's total, which is not clamped: a deck back at its body says so, one under says by how many.
   const pressedSinceRead = cutCount - items.filter((i) => i.verdict === "accepted").length;
-  const stillOver = over - pressedSinceRead > 0;
-  const pick = stillOver && (counted.phase === "enough" || counted.phase === "past") ? { ...counted, phase: "choosing" as const } : counted;
+  // A legal deck is 100 cards, commanders included (99 + one, or 98 + a partner pair).
+  const liveOver = panel.total - pressedSinceRead - 100;
+  const pick = counted.phase !== "enough" && counted.phase !== "past" ? counted
+    : liveOver > 0 ? { ...counted, phase: "choosing" as const }
+    : liveOver === 0 ? { ...counted, phase: "enough" as const, past: 0 }
+    : { ...counted, phase: "past" as const, past: -liveOver };
   const words = cutsPickWords(pick, { bodySize: panel.bodySize, asked: panel.itemsReport !== null ? panel.asked : items.length });
   // The lead: the over figure in --fg (never --warning), then what the state says next.
   const lead = (() => {
