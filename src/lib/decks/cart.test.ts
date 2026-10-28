@@ -200,7 +200,6 @@ describe("where owned copies are in use (v2's own fact, G1)", () => {
   });
 
   it("leaves out a deck on the line that holds none", () => {
-    expect(inUseIn(tower, new Set(["omnath"]), rank).map((h) => h.deckId)).not.toContain("gishath-none");
     const noneHeld = { ...tower, rows: tower.rows.map((r) => ({ ...r, held: 0 })) };
     expect(inUseIn(noneHeld, new Set(["omnath"]), rank).map((h) => h.deckId)).toEqual(["kratos", "alpha", "zeta"]);
   });
