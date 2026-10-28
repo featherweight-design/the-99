@@ -46,13 +46,11 @@ describe("carryOnArrival", () => {
     warn.mockRestore();
   });
 
-  it("does nothing more for a deck that already has its reading (a repeat), and says nothing", async () => {
+  it("does nothing more for a deck that already has its reading (a repeat)", async () => {
+    // Silence on a repeat is `carryLogLine`'s (carry-over.test.ts); here, only that no fallback is scheduled.
     const { d } = deps({ kind: "nothing" });
-    const info = vi.spyOn(console, "info").mockImplementation(() => {});
     await carryOnArrival(true, "deck-1", "user-1", env, d);
     expect(d.later).not.toHaveBeenCalled();
-    expect(info).not.toHaveBeenCalled();
-    info.mockRestore();
   });
 
   it("runs nothing on any other visit", async () => {

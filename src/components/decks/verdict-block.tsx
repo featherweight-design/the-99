@@ -298,7 +298,9 @@ function Population({
 /**
  * The date line in its three forms (handoff copy `analyzed.*`): stale, pinned, or asked. A reading
  * pinned to version 0 is of the precon's own list (only a precon start commits a v0, `start.ts`), so
- * it says so, stale or not (small items 5): the start carried it, and nothing was pressed.
+ * it says so, stale or not (small items 5). That is usually the start's carried reading, but an Analyze
+ * press on the unchanged list also pins to v0 and reads the same: it IS of the precon's list (d9's ruling 2,
+ * 2026-10-28).
  */
 export function analyzedLine(at: Date, now: Date, fresh: boolean, versionNumber: number | null): string {
   const copy = deckAnalysisCopy.panel;
