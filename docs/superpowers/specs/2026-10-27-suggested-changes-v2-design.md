@@ -1,6 +1,6 @@
 # Suggested changes v2: the design
 
-**Status:** design, awaiting Hugh's approval. Do not build from it until he approves.
+**Status:** approved by Hugh, 2026-10-27/28, with his answers to §12 folded in. The build plan follows in `docs/superpowers/plans/`.
 **Branch:** `spec-suggested-changes-v2`
 **Sources:**
 - Hugh's rulings in the rethink board (`boards/suggested-changes-rethink-2026-10-27.md`, outside the repository).
@@ -8,7 +8,7 @@
 - The lopsided-run triage and fix (#2289).
 - The product principle "give the player a choice" (Hugh, 2026-10-27).
 
-**Who decided what.** Every decision below is marked. **(Hugh)** is his ruling, quoted or paraphrased from the rethink board or the triage thread. **(a2)** is this author's call, made to fill a gap the rulings leave; each is open to Hugh's veto. Questions only Hugh can answer are collected in §12, most important first.
+**Who decided what.** Every decision below is marked. **(Hugh)** is his ruling, quoted or paraphrased from the rethink board or the triage thread. **(a2)** is this author's call, made to fill a gap the rulings leave; each is open to Hugh's veto. Questions only Hugh could answer are collected in §12, each now with his answer; the sections they touch carry the ruling as **(Hugh)**.
 
 ---
 
@@ -67,11 +67,12 @@ Analysis unlocks at 99. Suggested changes is offered only when the deck is exact
 ## 4. Intake: three steps, then send (Hugh)
 
 1. **How many cards.** N, the cards in. Cuts equal N.
-   - **(a2)** N runs from 1 to 20. The eval measured 3, 10 and 20. A ceiling above 20 is untested, and at 1.5N it means asking for 30+ cards per list. 20 is measured; a higher ceiling is §12 Q6.
+   - N runs from 1 to 20 for launch. **(Hugh, §12 Q6)** The eval measured 3, 10 and 20; a ceiling above 20 is untested, and at 1.5N it means asking for 30+ cards per list.
 2. **What are you looking to change?** The player's own words, never pre-filled. **(Hugh)**
    - Beside the box: suggestions drawn from what the app knows (two short on removal, the focus, a recent game note, a role gap). Tapping one adds its words to the box; it's a suggestion, not an assumption. **(Hugh)**
-   - The text is player input reaching a prompt, so it goes through `playerText`, with the system rule naming its tags. That is AGENTS.md's rule. Its cap is §12 Q8.
+   - The text is player input reaching a prompt, so it goes through `playerText`, with the system rule naming its tags. That is AGENTS.md's rule. Its cap stays 500 characters, today's "Additional notes" cap (`deckDescriptionCopy.notes.maxLength`). **(Hugh, §12 Q8)**
    - Empty is allowed. With no request, the run works from the deck's own weaknesses. **(Hugh: "with none, do our best")**
+   - Beside the box, a structured bracket choice ("move to bracket N"), shipped in release 1 (§5.4). **(Hugh, §12 Q7)**
 3. **Any restrictions?** A price cap, sets, owned cards only. These are the existing three limits. **(Hugh)**
    - **(a2)** One change in meaning: today `runTuning` clears `ownedOnly` when no owned card fits (`ownedNone`, `tuning-actions.ts`), so an owned-only run can come back with cards to buy. v2 removes that fallback. An owned-only run that can't fill the count returns short (or empty, refunded) and says owned-only bound it (§5.5).
 
@@ -100,7 +101,7 @@ The prompt states this order. The app's reads feed in "when they help answer the
 
 One-call was cheaper (within arm C: 36% at N=3, 22% at 10, 3% at 20) but missed the count 13 times in 69 runs.
 
-The cut call sees the additions call 1 KEPT. Those are the cards the player can pick from; they are not yet chosen. **(a2)** This means the cuts make room for the pool, not for the player's final picks. §12 Q3 asks whether the cut list should be re-asked after the player picks additions.
+The cut call sees the additions call 1 KEPT. Those are the cards the player can pick from; they are not yet chosen. This means the cuts make room for the pool, not for the player's final picks. The run is ONE pass: the cuts are not re-asked after the player picks additions. **(Hugh, §12 Q3)**
 
 ### 5.1a When the additions fall short (a2)
 
@@ -136,7 +137,7 @@ A request can name a bracket, either typed ("bring it down to 3") or tapped from
 
 This mirrors Help me choose's bracket target (`bracketReach`). The app already computes each suggestion's `bracketAfter` and shows the move. That stays, and `noBracketClaim` stays: the model never names a bracket, the app does.
 
-**(a2)** v2's first release reads a bracket target only from a structured choice beside the box, never by parsing the free text. Parsing the player's words for an instruction is fragile, and their text is data, never an instruction (`playerText`). Whether to offer the choice at all in release 1 is §12 Q7.
+The bracket move ships in release 1, as a structured choice beside the request box. **(Hugh, §12 Q7)** **(a2)** The run reads a bracket target only from that choice, never by parsing the free text. Parsing the player's words for an instruction is fragile, and their text is data, never an instruction (`playerText`).
 
 ### 5.5 When the count can't be filled
 
@@ -147,6 +148,17 @@ After the refill, a list can still hold fewer than N. Examples: a strict price c
 - names the restriction that limited it, from the drops it recorded. **(a2)** `chooseRefusal` picks a sentence for an empty run today, but `RefusalDetail` (`validate.ts`) only tells `commander`, `locked`, `overCap` and `nothingLeft` apart: a run bound by `offSet` or `notOwned` falls to `nothingLeft`. v2 adds `offSet` and `notOwned` details so the sentence can name them.
 
 It never pads with invalid cards and never silently shows fewer than asked. **(Hugh: "fulfilled or explicitly negotiated")** Whether a short run refunds its credit is §9.
+
+### 5.6 Results arrive as they are made (Hugh, §12 Q4)
+
+A run is never cut short to fit a time limit. **(Hugh)**
+
+- **The additions appear as soon as call 1 (and its refill, if any) returns them**, before the cut call starts. The cuts follow when call 2 returns. The player can read the additions while the cuts are still being made.
+- **The run is not bound by one 120-second function limit.** Whether it raises `maxDuration`, keeps working after the response, streams, or combines them is the build plan's call; the requirement is that a run at N=20 with both refills completes.
+- **"Taking a while" messaging is the fallback**, for a run still working past its expected time, never a cutoff.
+- How the wait and the incremental arrival look is Design's, in an addendum to prompt 23 (§11).
+
+The earlier proposal to skip a refill that would overrun, and return short and refunded, is withdrawn.
 
 ## 6. Validation rules: keep, relax or drop
 
@@ -181,7 +193,7 @@ These check whether the reason is grounded and fit to show.
 | `denominator` | A count without its "of M" | **Keep.** It dropped 24 lines across 141 runs (23 additions, 1 cut), and the refill now names it in the rule's words. |
 | `quotedNote` | A misquoted game note | **Keep.** |
 | `noBracketClaim` | The model naming a bracket | **Keep.** The app shows the move (§5.4). |
-| `noResultClaim` | A promised result | **Relax, on the word "stronger" only.** See below. |
+| `noResultClaim` | A promised result | **Narrowed on cuts (Hugh, §12 Q9).** See below. |
 | `ownershipNotRanking` | Owned cards ranked first | **Keep.** It's a prompt rule, not a validator drop. |
 | `oneCard` | One card per line, with its own reason | **Keep.** |
 
@@ -189,11 +201,12 @@ These check whether the reason is grounded and fit to show.
 - predictions about games: "will win", "would lose", "win more", "lose less";
 - the bare word **"stronger"**.
 
-On a cut, "stronger" is nearly always a comparison of cards ("frees the slot for a stronger draw spell"), not a promise. Proposal **(a2)**:
-- Keep every prediction pattern, on both lists.
-- Narrow "stronger" to the deck as its subject ("makes the deck stronger", "a stronger deck").
+On a cut, "stronger" is nearly always a comparison of cards ("frees the slot for a stronger draw spell"), not a promise. The ruling **(Hugh, §12 Q9)**:
+- **On cuts**, "stronger" and "more focused" are allowed. A cut's reason may say the deck gets stronger or more focused without it.
+- **Win and game-result claims stay blocked on both lists**: "will win", "would lose", "win more", "lose less" and their kin.
+- Additions keep today's rule.
 
-The change is measured before it ships. Re-score the 141 stored replies? Not possible: the replies were not kept. So it's one small eval at N=20 on two decks (about $1) to see the drop fall and nothing worse pass. Hugh may prefer to drop the rule on cuts entirely (§12 Q9).
+The change is measured before it ships. The 141 eval replies were not kept, so they cannot be re-scored. The check is one small eval at N=20 on two decks, about $1, to see the cut drops fall and no game-result claim pass. The spend needs the orchestrator's OK on the actual figure before it runs.
 
 ### 6.3 Pipeline steps that go
 
@@ -212,33 +225,32 @@ These are the v10 drop points that are not validation rules.
 - **The lists:** additions and cuts, each about 1.5N valid suggestions, in the model's order. **(Hugh)**
 - **Picking:** the player picks any N additions and N cuts. **(Hugh)**
   - **(a2)** The picks may be unequal while choosing, but applying requires equal counts. Applying an unequal set would move the deck off 99, which Suggested changes never does (§3).
-  - How applying and undo work is §7a (§12 Q1).
+  - Applying and undo work as §7a sets out. **(Hugh, §12 Q1)**
 - **Each suggestion shows** the card, its reason and its citation chips. The app adds:
   - the focus chip with its figure (`strategyChips`);
   - the off-plan cut chip;
   - the bracket move.
 - **No "Suggest again" form** under the results. A new run starts at a fresh intake. **(Hugh)**
 
-## 7a. Applying the picks (Hugh's, §12 Q1)
+## 7a. Applying the picks (Hugh, §12 Q1)
 
 Today each suggestion applies the moment it is pressed and undoes alone, so the deck can drift off 99. That contradicts §3's "99 to 99".
 
-**Proposal (a2):**
+**Ruled (Hugh, §12 Q1), as proposed:**
 - Applying is ONE action that writes M picked additions and M picked cuts in one transaction, where M is at most N and at most the shorter of the two lists (a short run, §5.1a, offers fewer than N on one side). It refuses unequal counts and a deck no longer at size.
 - Undo reverts the whole applied set, not single cards.
 - The pool stays readable after applying. Taking more from it later is a NEW apply of an equal-count set, allowed while the deck is at size and the run is not stale (`readVersion`).
 
-This replaces today's per-card apply and undo for v2 runs. It changes how a player handles the results, so it is Hugh's call.
+This replaces today's per-card apply and undo for v2 runs. The M ≤ shorter-list detail is **(a2)**; one apply and one undo for the set is Hugh's.
 
 ## 8. What is stored
 
 **Runs and suggestions.** The `deck_suggestion_runs` and `deck_suggestion_items` tables stay, as the one run record every Tuning tool shares. New per run:
 
 - **`requested_count`** (N), an integer.
-- **`request_text`**: the player's request, the same text that went to the model.
-  - **(a2)** Stored, because "old runs live in history" **(Hugh)** needs to show what was asked, and today's notes field is never saved.
-  - It's per-user data, so the account purge already covers the table.
-  - Whether to keep it is §12 Q5: it's the first time a player's typed request is kept.
+- **`request_text`**: the player's request, the same text that went to the model. **(Hugh, §12 Q5)**
+  - Stored, and history shows it, because "old runs live in history" **(Hugh)** needs to show what was asked. Today's notes field is never saved; this is the first time a player's typed request is kept.
+  - The table holds its rows by `user_id`, and `PURGE_ORDER` already lists `deck_suggestion_runs`, so the text is purged with the account.
 - **Restrictions:** already stored on the deck. The run snapshots them **(a2)**, so history shows what bound an old run.
 - **`call_count`**, and a `refilled` flag per list, in the validation report **(a2)**, so a run's cost is explainable.
 
@@ -256,7 +268,7 @@ This replaces today's per-card apply and undo for v2 runs. It changes how a play
 
 ## 9. Cost, and the credit question
 
-**These are prototype measurements.** The eval trimmed each list's survivors to N before the cut call saw the additions; v2 sends the whole surviving pool (about 1.5N). The cut prompt is therefore longer in v2, so cost and latency here are a floor, not a validation of the pool-based flow. Pricing (Q2) and the time limit (Q4) should allow for that, and the build re-measures on the real flow before either is fixed.
+**These are prototype measurements.** The eval trimmed each list's survivors to N before the cut call saw the additions; v2 sends the whole surviving pool (about 1.5N). The cut prompt is therefore longer in v2, so cost and latency here are a floor, not a validation of the pool-based flow. The price (1 credit, Q2) is revisited after launch against the re-measured figure, and the build re-measures cost and latency on the real streamed flow before launch (§10).
 
 | N | Prototype measured cost per run (two calls, arm C) | v10 today |
 |---|---|---|
@@ -266,14 +278,9 @@ This replaces today's per-card apply and undo for v2 runs. It changes how a play
 
 v10 asks for 6 + 6 and keeps 5 + 5, whatever the player wants. v2 at N=20 costs about 3× a v10 run, and at N=10 about 2×. Latency rises too: p50 56s at 20.
 
-**For Hugh, not decided here:** a run costs 1 credit today. Options:
-- keep 1 credit at any N;
-- price by N (1 credit to 10, 2 credits above);
-- cap N at 10 for one credit.
+**The price: 1 credit at any N, revisited after launch. (Hugh, §12 Q2)** The build re-measures cost and latency on the real streamed flow before launch (§10), and that figure is what the post-launch revisit reads.
 
-This is §12 Q2.
-
-**Refunds (a2, pending Q2).** v10 refunds a single-ask run that kept under 3 lines or under a third of the lines the model returned (`refundsCredit`). In v2:
+**Refunds (a2).** v10 refunds a single-ask run that kept under 3 lines or under a third of the lines the model returned (`refundsCredit`). In v2:
 - A run whose two lists BOTH reach N is charged.
 - A short run is charged only when, on each short list, the restriction drops (`overCap`, `offSet`, `notOwned`) account for the whole deficit: the list's shortfall below N is no larger than its restriction drops. The restriction cost those cards, not the pipeline, and the run says so (§5.5).
 - Any other short run is refunded whole. That includes the model returning too few lines after the refill (under-production, with no drops to explain it), a mix of under-production and restriction drops, a model-caused drop on a short list, a malformed reply, and a skipped call 2.
@@ -302,6 +309,8 @@ This is §12 Q2.
   | Reservation | none | `FEATURE_CALLS.tuning`, one 8,000-token call (two attempts) |
 
   **(a2)** The reservation grows to cover two calls and up to two refills at the scaled ceiling, so a run never spends past what it reserved. The ceiling scales with N, as in the eval. Streaming is needed for a reply that large inside the deadline.
+- **The time limit (Hugh, §12 Q4).** A run is never cut short (§5.6). The additions are written as soon as call 1 settles, so the client shows them while the cuts are made. The run must complete at N=20 with both refills; the mechanism is the plan's call.
+- **Re-measured before launch.** Cost and latency are measured again on the real streamed v2 flow (the whole pool reaching the cut call, the scaled ceilings), not taken from the prototype.
 - **The switch.** **(a2)** v2 ships behind the existing Suggested changes surface's own switch, or a new one only if Hugh asks for one (no new switches without him). Production keeps v10 until v2 is approved and shipped.
 - **Open v10 runs at cutover (a2).** A v10 run with pending items becomes read-only history. Its per-card apply would move the deck off 99, which v2 never does. An item already applied keeps its undo until the deck's next version, as today.
 - **Proposed cuts keeps its rules (a2).** The `noResultClaim` narrowing (§6.2) applies to Suggested changes only, through a parameter on the shared check (`presentation.ts`). Proposed cuts keeps today's rule until its own redesign; its citation kinds are its own (`cuts-schema.ts`), so the `notes` to `request` rename does not reach it.
@@ -314,27 +323,36 @@ Design owns these, under Hugh's rule that results presentation is a UI call:
 1. **The intake screens.**
    - The three steps.
    - The suggestion chips beside the request box, which are never pre-filled.
-   - The bracket choice, if Q7 says yes.
+   - The bracket choice (release 1, §5.4).
    - How a deck not at 99 is pointed to Top-off or Proposed cuts.
 2. **The results lists.**
    - How about 1.5N suggestions per list read, grouped or flat ("grouped vs lists", open in the rethink).
    - How a player picks N from each, and how the equal-counts rule is shown.
    - How a short run states its count and its reason (§5.5).
-3. **The running state.** Two calls take 15–60s at p50, up to 114s at p90 at N=20. The wait needs a design.
+3. **The running state.** Two calls take 15–60s at p50, up to 114s at p90 at N=20. The wait and the incremental arrival (additions first, then cuts, §5.6) need a design, and the "taking a while" fallback. Design is adding these as an addendum to prompt 23. **(Hugh)**
 4. **History.** The run list, an old run's pool and picks, and a read-only stale run.
 5. **The About entry**, rewritten for v2.
 
-## 12. Hugh's questions, most important first
+## 12. Hugh's questions, with his answers (2026-10-27/28)
 
-1. **How applying works.** Today each suggestion applies, and undoes, one card at a time, so the deck can leave 99. Proposal: one action applies the picked N + N together, with one undo for the set (§7a). Agree, or keep per-card apply?
-2. **The credit price.** A v2 run costs about 3× a v10 run at N=20, and 2× at 10. Keep 1 credit at any N, price by N, or cap N per credit? Pricing by N touches the payments ledger (`reserveModelCall`). (§9)
-3. **Cuts made for the pool, or for the picks?** The cut call makes room for every addition call 1 kept. Should the cuts be re-asked once the player has picked their N additions? That's a second, smaller paid call and a new run state, with cuts that fit the actual picks better. (§5.1)
-4. **The time limit.** Runs execute after the response, inside the deck page's 120-second function limit. Two calls at N=20 took 56s at p50 and 114s at p90 in the eval, so a refill can push past 120s. Raise the limit for this action (function time costs money, against the 2026-10-23 cost audit), or skip a refill that would overrun, so the run returns short and refunded? My lean: skip the refill and keep 120s.
-5. **Storing the request text.** History needs it to show what was asked, and it's the first time a player's typed request is kept. Store it (purged with the account), or show history without it? (§8)
-6. **The count's ceiling.** 20 is measured. Allow more (untested, about 1.5× the tokens per extra card), or cap at 20? (§4)
-7. **The bracket move in release 1.** Offer a structured "move to bracket N" choice beside the request box now, or ship the count and the request first and add the bracket goal after? (§5.4)
-8. **The request's length.** Today's "Additional notes" cap is 500 characters (`deckDescriptionCopy.notes.maxLength`). Keep it, or change it for a request? (§4)
-9. **`noResultClaim` on cuts.** Narrow "stronger" to the deck as its subject (my proposal, measured first), or drop the rule on cuts entirely? (§6.2)
+1. **How applying works.** Today each suggestion applies, and undoes, one card at a time, so the deck can leave 99. Proposal: one action applies the picked N + N together, with one undo for the set (§7a).
+   **Answer (Hugh):** one apply for the picked N + N, one undo for the set, as proposed.
+2. **The credit price.** A v2 run costs about 3× a v10 run at N=20, and 2× at 10. Keep 1 credit at any N, price by N, or cap N per credit? (§9)
+   **Answer (Hugh):** 1 credit at any N; revisit after launch.
+3. **Cuts made for the pool, or for the picks?** Should the cuts be re-asked once the player has picked their N additions? (§5.1)
+   **Answer (Hugh):** one pass; no re-cut after the picks.
+4. **The time limit.** Runs execute after the response, inside the deck page's 120-second function limit, and a refill can push past 120s at N=20.
+   **Answer (Hugh):** never cut a request short. Stream results: the additions appear as the first call returns them, then the cuts. The run must not be bound by one 120s function limit (raise `maxDuration`, keep running after the response, or stream: the plan's call). "Taking a while" messaging is the fallback. The proposal to skip a refill and return short is withdrawn. Design is adding an addendum for the wait and the incremental arrival. (§5.6)
+5. **Storing the request text.** (§8)
+   **Answer (Hugh):** store it, purged with the account; history shows it.
+6. **The count's ceiling.** (§4)
+   **Answer (Hugh):** cap N at 20 for launch.
+7. **The bracket move in release 1.** (§5.4)
+   **Answer (Hugh):** ships in release 1, as a structured choice beside the request box.
+8. **The request's length.** (§4)
+   **Answer (Hugh):** keep 500 characters.
+9. **`noResultClaim` on cuts.** (§6.2)
+   **Answer (Hugh):** narrow it on cuts: allow "stronger" and "more focused", block win and game-result claims. A ~$1 measured check runs before it ships, with the orchestrator's OK on the actual spend.
 
 ## 13. Decision log
 
@@ -352,23 +370,30 @@ Design owns these, under Hugh's rule that results presentation is a UI call:
 | The bracket move as a goal | Hugh |
 | Results presentation goes to Design | Hugh |
 | An ungroundable citation costs only itself; `focus` is citable | Shipped (#2289), kept |
-| N from 1 to 20 | a2 (Q6) |
+| N from 1 to 20 for launch | Hugh (Q6) |
 | A loose schema cap at twice the ask; the first ask-many valid lines kept | a2 |
 | `notes` renamed `request` | a2 |
-| A bracket target only from a structured choice, never parsed from text | a2 (Q7) |
+| The bracket move ships in release 1 as a structured choice beside the box | Hugh (Q7) |
+| A bracket target only from that choice, never parsed from text | a2 |
 | Picks may be unequal while choosing; applying requires equal counts | a2 |
 | Unpicked suggestions stay pending, never auto-dismissed | a2 |
-| Store `requested_count`, `request_text`, a restrictions snapshot and call counts | a2 (Q5) |
-| The refund follows the cause of a shortfall | a2 (Q2) |
-| `noResultClaim`: narrow "stronger", measured first | a2 (Q9) |
+| Store the request text, purged with the account; history shows it | Hugh (Q5) |
+| Store `requested_count`, a restrictions snapshot and call counts | a2 |
+| 1 credit at any N; revisit after launch | Hugh (Q2) |
+| The refund follows the cause of a shortfall | a2 |
+| `noResultClaim` narrowed on cuts ("stronger", "more focused" allowed; game-result claims blocked); ~$1 check first | Hugh (Q9) |
 | PROMPT_VERSION 11; v10 runs readable as they were | a2 |
 | "At size" is a total of 100 including commanders; the gate is on Suggested changes only | a2 |
 | Short additions: call 2 asks ceil(1.5·K), skipped when K is 0 | a2 |
-| One apply for the picked set, with one undo | a2 (Q1) |
+| One apply for the picked set, with one undo | Hugh (Q1) |
 | No "unchanged" gate; identical inputs ask once before spending | a2 |
-| Charged when both lists fill, or each short list's deficit is covered by restriction drops; else refunded whole | a2 (Q2) |
+| Charged when both lists fill, or each short list's deficit is covered by restriction drops; else refunded whole | a2 |
 | Open v10 runs become read-only at cutover | a2 |
 | Proposed cuts keeps today's rules; the narrowing is scoped to Suggested changes | a2 |
 | The owned-only fallback is removed; an owned-only run returns short rather than with cards to buy | a2 |
 | `keyCard` kept as a stated exception to the signal order | a2 |
-| Apply M + M, with M at most N and at most the shorter list | a2 (Q1) |
+| Apply M + M, with M at most N and at most the shorter list | a2 |
+| One pass; the cuts are not re-asked after the picks | Hugh (Q3) |
+| Never cut a run short; additions shown as call 1 returns, then cuts; not bound by one 120s limit | Hugh (Q4) |
+| The request keeps the 500-character cap | Hugh (Q8) |
+| Cost and latency re-measured on the streamed v2 flow before launch | Hugh, via the orchestrator |
