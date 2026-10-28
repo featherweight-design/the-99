@@ -3198,6 +3198,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   email, id or first name) and draws no shell. Then, with the browser offline, the header pill (390) or the rail
   pill (1300) must show, a page load must show `/offline` at the address asked for, and back online `Try again`
   must load that page. Read-only.
+- `pnpm probe:card-swipe` proves the phone card swipe is one motion (Hugh, 2026-10-28) at 390. Halfway through a held
+  horizontal drag the card has shrunk to 1 - 0.2625/2 at .75 and the neighbor has grown to meet it; a drag back undoes
+  both before the lift, and a short release eases both home without paging. A committed swipe is sampled every frame
+  under 4x CPU throttling: the drag causes no layout, the arriving card's first frame is the size and place the swipe
+  left its peek, it only grows from there, and the card left behind shrinks on from where it was let go. Reduced motion
+  slides with no scale, and at 1300 the details draw no phone band and ArrowRight pages. It prints the frame rate.
+  `PROBE_BASE` (a local server; it refuses any other host), `PROBE_DECK_ID` (a deck of three or more cards), and
+  `PROBE_SHOTS` for frames and a video. It writes only the probe account's About row, restores it, and refuses
+  production and staging by `neon.branch_id`.
 - `pnpm probe:card-sheet-min` proves the phone card sheet's min snap (Hugh, 2026-10-13) at 390. It opens a
   card from the deck page's list and swipes down on the card from the teaser. Mid-drag, the card must have grown as
   far toward its min size as the sheet has moved toward min (within 5 points), and on a drag back up it must shrink

@@ -51,7 +51,9 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     [".anim-sheet-in", `filter-sheet-in ${DURATION} ${EASE} ${DELAY} both`],
     // The kept curves, on token lengths: the stacked card and the phone card keep the sheet's snap curve.
     [".anim-stack-rise", `stack-rise ${DURATION} ${OUT} ${DELAY} both`],
-    [".anim-phone-card-enter", `phone-card-enter ${DURATION} ${OUT} ${DELAY} both`],
+    // `backwards`: a held end state would own the `scale` and `opacity` the next swipe writes.
+    [".anim-phone-card-enter", `phone-card-enter ${DURATION} ${OUT} ${DELAY} backwards`],
+    [".anim-phone-peek-enter", `phone-peek-enter ${DURATION} ${OUT} ${DELAY} backwards`],
     [".anim-carousel-prev", `carousel-art-enter-prev ${QUICK} ${OUT} both`],
     [".anim-carousel-next", `carousel-art-enter-next ${QUICK} ${OUT} both`],
   ])("%s runs %s", (selector, animation) => {
@@ -68,7 +70,7 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
 
   it("leaves no motion class on a literal length or curve, in any rule outside the reduced-motion block", () => {
     const retimed = [".anim-menu-in", ".anim-zoom-in", ".anim-sheet-up", ".anim-rail-tag", ".anim-overlay-in", ".anim-overlay-out",
-      ".anim-sheet-in", ".anim-backdrop-in", ".anim-stack-rise", ".anim-phone-card-enter", ".anim-carousel-prev", ".anim-carousel-next",
+      ".anim-sheet-in", ".anim-backdrop-in", ".anim-stack-rise", ".anim-phone-card-enter", ".anim-phone-peek-enter", ".anim-carousel-prev", ".anim-carousel-next",
       ".anim-card-turn", ".sheet-snap", ".band-dim", ".anim-quickadd-in"];
     for (const selector of retimed) {
       const re = new RegExp(`^\\s*${selector.replace(/[.[\]]/g, "\\$&")}\\s*\\{([^}]*)\\}`, "gm");
