@@ -33,7 +33,7 @@ import { PRODUCTION_BRANCH_ID, STAGING_BRANCH_ID } from "./lib/spend-target";
 
 import { db } from "../src/db";
 import { STUB_ADDITIONS } from "../src/lib/tuning/stub";
-import { applyItem, setDismissed } from "../src/lib/tuning/verdicts";
+import { applyItem, setDismissed, undoItem } from "../src/lib/tuning/verdicts";
 import { applyPicks, setPicked, undoSet } from "../src/lib/tuning/v2/apply-set";
 import { startTuningV2, type V2Wire } from "../src/lib/tuning/v2/run";
 
@@ -187,6 +187,8 @@ async function main() {
   const repeat = await applyPicks({ runId, ...pick, actionId, userId: u, env });
   check("4 · a repeat of the same press answers with the set", repeat.ok && repeat.itemIds.length, 6);
   check("4 · and writes nothing", await deckList(deckId), after);
+  check("4 · per-card undo refuses one line of the set", await undoItem(adds[0].id, u, env), null);
+  check("4 · and the deck keeps the whole set", await deckList(deckId), after);
   const undone = await undoSet({ applySet: actionId, userId: u, env });
   check("4 · undo the set", undone.ok && undone.itemIds.length, 6);
   check("4 · undo returns the exact list", await deckList(deckId), before);
