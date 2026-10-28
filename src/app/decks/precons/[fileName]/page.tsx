@@ -13,7 +13,7 @@ import { loadOpenPrecon } from "../../../../lib/precons/open-read";
 import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
 import { OpenPreconView } from "../../../../components/decks/precons/open-precon-view";
 import { parseEdition } from "../../../../lib/precons/edition";
-import { loadPreconOverview } from "../../../../lib/precons/overview-read";
+import { loadPreconOverview, overviewForList, renderedPreconList } from "../../../../lib/precons/overview-read";
 
 export const metadata: Metadata = { title: preconsCopy.list.title };
 
@@ -48,6 +48,7 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
     const qs = new URLSearchParams({ ...(from === "new" ? { from: "new" } : {}), edition: "collector" }).toString();
     redirect(`/decks/precons/${encodeURIComponent(precon.plainFileName)}?${qs}`);
   }
-  const overview = await overviewRead;
+  // Shown only beside the list it was written for: an ingest can move the list without touching `current`.
+  const overview = overviewForList(await overviewRead, renderedPreconList(precon));
   return <OpenPreconView precon={precon} fromNew={from === "new"} canOwn={collectionEditEnabled(env)} edition={parseEdition(edition)} overview={overview} />;
 }

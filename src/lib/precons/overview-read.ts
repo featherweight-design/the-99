@@ -17,6 +17,8 @@ import { allEvidenceIds } from "../synopsis/based-on";
 import { synopsisContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import type { CheckedSynopsis } from "../synopsis/types";
+import { listFingerprint } from "../profile/fingerprint";
+import { preconDeckCards } from "./deck-cards";
 
 export type PreconOverview = {
   content: CheckedSynopsis;
@@ -24,7 +26,33 @@ export type PreconOverview = {
   art: Record<string, string | null>;
   /** The names its claims cite, for "Based on"; empty while `OVERVIEW_V2_ENABLED` is off. */
   evidenceNames: Record<string, string>;
+  /** The list it was written for (`list_fingerprint`): shown only beside that very list (`overviewForList`). */
+  listFingerprint: string;
 };
+
+/**
+ * The fingerprint of the list the precon page RENDERS, as a start would write it: its commanders in the
+ * feed's order (the lead first, as `preparePreconDeck` takes them) and its body (`preconDeckCards`).
+ */
+export function renderedPreconList(precon: {
+  row: { commanders: readonly { oracleId: string }[] };
+  cards: readonly { oracleId: string; quantity: number; isCommander: boolean }[];
+}): string {
+  return listFingerprint({
+    commanderOracleId: precon.row.commanders[0]?.oracleId ?? "",
+    partnerOracleId: precon.row.commanders[1]?.oracleId ?? null,
+    cards: preconDeckCards(precon.cards),
+  });
+}
+
+/**
+ * Pure: the Overview only beside the list it was written for. The precon ingest replaces `precon_cards`
+ * without touching `current` (a feed correction, a card newly mapped), so `current` alone cannot say the
+ * row still describes the list on the page; the carry-over compares the list the same way.
+ */
+export function overviewForList<T extends { listFingerprint: string }>(overview: T | null, list: string): T | null {
+  return overview && overview.listFingerprint === list ? overview : null;
+}
 
 /** The row's key at the reader's switches: which contract and basis an Analyze press would write at. */
 export function preconOverviewKey(env: NodeJS.ProcessEnv) {
@@ -50,7 +78,7 @@ async function evidenceNamesOf(content: CheckedSynopsis): Promise<Record<string,
 export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEnv): Promise<PreconOverview | null> {
   if (!analysisTabEnabled(env)) return null;
   const { contract, basis } = preconOverviewKey(env);
-  const [row] = await db.select({ content: preconSynopses.content, current: preconSynopses.current }).from(preconSynopses).where(and(
+  const [row] = await db.select({ content: preconSynopses.content, current: preconSynopses.current, listFingerprint: preconSynopses.listFingerprint }).from(preconSynopses).where(and(
     eq(preconSynopses.preconFile, fileName),
     eq(preconSynopses.contractVersion, contract),
     eq(preconSynopses.roleBasis, basis),
@@ -66,5 +94,5 @@ export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEn
         .then((rows) => Object.fromEntries(rows.map((r) => [r.oracleId, r.imageUri]))),
     v2 ? evidenceNamesOf(content) : Promise.resolve({}),
   ]);
-  return { content, art, evidenceNames };
+  return { content, art, evidenceNames, listFingerprint: row.listFingerprint };
 }
