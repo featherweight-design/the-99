@@ -25,12 +25,12 @@ This plan follows the audit at https://github.com/HartiganHM/the-99/pull/2308#is
 | A13 | G3: `?q ?friend ?owned ?sort` mirrored through `mirrorUrl` | Logic. |
 | A14 | G4: the price and cost comparators | Logic. Unpriced and sold-out lines go last in both directions. |
 | A15 | A sort param arriving on the wrong view | Logic. It drops to that view's default. |
+| A16 | The cart's Ask size (was B1) | README call 3 states the sizes: phone 36px, desktop 28px. At phone that is the spares sheet's shipped `ASK_SIZE.sheet` (36 / radius 9 / 13px) apart from a 72px minimum width; on desktop it is `line`'s 28px height with a 64px minimum width. It is specified, so it is built to the mock as a cart size. |
 
-### (b) New visuals, sent to Design as one batch (see For Design)
+### (b) New visuals, sent to Design as one batch (see For Design; B1 became A16)
 
 | # | Item | What is new |
 |---|---|---|
-| B1 | **The phone Ask** | It is drawn at 36px tall, 72 minimum width, radius 9, 13px text. Shipped `RowEnd` `line` is 32 / 56 / 7 / 12.5. The desktop minimum width also differs, 64 drawn against 56 shipped. This needs a new `ASK_SIZE.cart` size. The README calls `RowEnd` "unchanged", so Design should confirm the size is intended. |
 | B2 | **A failed spares read (G5)** | The handoff's premise is wrong: today a failure is swallowed into "none" and draws Empty-One B ("None of your friends has one … right now"), which is false. No specimen exists for a failed state. My recommendation for the least invention: a toast through the existing `SocialToast` pattern, empty spare cells with no bars, no panels, and the Friend trigger hidden. The toast's text and placement in the cart are still new. |
 | B3 | **The sticky By friend panel header** | It is described in prose only, with no specimen at either width. That covers how phone pinning behaves (D5) and how the sticky header looks over scrolled rows. |
 | B4 | **G6: a first deck name wider than its cell** | There is no specimen. My recommendation: an ellipsis only when the first name alone cannot fit, `+N` always shown after it, and never a cut in the middle of a name. |
@@ -46,15 +46,7 @@ This plan follows the audit at https://github.com/HartiganHM/the-99/pull/2308#is
 
 ## For Design
 
-These four items go back to Design as one batch. The handoff is `design/design_handoff_the99_all_decks_cart_v2/`. PRs 4 to 7 wait for the answers.
-
-### B1: The phone Ask size
-
-- **Where:** `Row.dc.html`, "The spare-request states, carried into the new row", and README call 3 ("Sizes: … Phone Ask 36px").
-- **What's missing:**
-  - Call 3 sizes the phone Ask at 36px tall, 72 minimum width, radius 9 and 13px text, and the desktop Ask at a 64 minimum width.
-  - The same call says `RowEnd` is "unchanged". The shipped `line` size is 32 tall, 56 wide, radius 7 and 12.5px text, and the same `RowEnd` draws the Ask on the friend's spares sheet.
-- **Recommendation:** confirm that the larger Ask is intended for the cart only. Engineering would add it as a cart-only size and leave the spares sheet's Ask as it ships.
+These three items go back to Design as one batch. B1, the Ask size, turned out to be specified in README call 3 and is now A16. The handoff is `design/design_handoff_the99_all_decks_cart_v2/`. PRs 4 to 7 wait for the answers.
 
 ### B2: A failed spares read
 
@@ -115,7 +107,7 @@ Every UI PR runs the design-review property table and draws both widths in the s
    - Files: `cart-deck-group.tsx` and the facts variant.
    - The "This deck · also" column, with the deck's own name excluded from "also".
 6. **By friend panels and rows.**
-   - Ask above the tag, with the `ASK_SIZE.cart` size (B1 once ruled).
+   - Ask above the tag, at the cart's Ask size (A16).
    - The panel figure.
    - Fold state, kept for the visit.
    - The sticky header (B3 once ruled).
@@ -151,5 +143,5 @@ Every PR mutation-checks its tests: a named mutation fails each test before it i
 
 - PRs 1, 2, 3 and 8 touch no (b) item and can start at once.
 - B4 gates PR 4, and PR 5 follows PR 4 because it reuses `cart-facts.tsx`.
-- B1, B2 and B3 gate PRs 6 and 7.
+- B2 and B3 gate PRs 6 and 7.
 - If any (b) item goes to Design, I build PRs 1, 2, 3 and 8 while it is out.
