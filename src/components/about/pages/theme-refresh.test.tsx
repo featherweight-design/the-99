@@ -25,6 +25,19 @@ describe("ThemeRefresh", () => {
     expect(refresh).toHaveBeenCalledOnce();
   });
 
+  it("refreshes at mount when the page was drawn in another theme than <html> already has (Back after a change)", async () => {
+    document.documentElement.dataset.theme = "kamigawa";
+    render(<ThemeRefresh drawnIn="amonkhet" />);
+    await flush();
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("does not refresh at mount when the page was drawn in the theme <html> has", async () => {
+    render(<ThemeRefresh drawnIn="amonkhet" />);
+    await flush();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
   it("does not refresh when the theme is set to the one the page was drawn in", async () => {
     render(<ThemeRefresh drawnIn="amonkhet" />);
     document.documentElement.dataset.theme = "amonkhet";
