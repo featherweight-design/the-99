@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { modelCalls } from "../../src/db/schema";
 
-export type SystemFeature = "labels" | "prose";
+export type SystemFeature = "labels" | "prose" | "precon_overview";
 
 export type SystemSpend = {
   feature: SystemFeature;

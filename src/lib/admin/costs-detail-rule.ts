@@ -20,6 +20,14 @@ import { monthParam, type MonthKey } from "./costs-rule";
  */
 
 export type Origin = "player" | "system";
+
+/**
+ * The `system` features that are catalog JOBS (their own spend, run by a script), not a player's
+ * free method rewrite: every other `system` row is one of those rewrites. One list, so a new job
+ * is named here once rather than at each reader.
+ */
+export const SYSTEM_JOB_FEATURES: ReadonlySet<string> = new Set(["labels", "prose", "precon_overview"]);
+export const isFreeRewrite = (f: { origin: Origin; feature: string }) => f.origin === "system" && !SYSTEM_JOB_FEATURES.has(f.feature);
 export type CallRow = {
   id: string;
   userId: string;
