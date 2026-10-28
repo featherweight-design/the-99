@@ -98,8 +98,8 @@ export async function markEveryEntrySeen(
  * bring the page back, so the probe would wait on its own route's content and time out. When the
  * page sits on the gate's redirect, this follows its `next` back to the route the probe asked for.
  */
-export async function clearAboutSheet(page, userId) {
-  await markEveryEntrySeen(userId);
+export async function clearAboutSheet(page, userId, sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL)) {
+  await markEveryEntrySeen(userId, sql);
   await page.context().addCookies([sheetCookie(userId, page.url())]);
   const back = gateReturn(page.url());
   if (back) {
