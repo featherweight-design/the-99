@@ -43,3 +43,63 @@ take during development. No open item blocks the build, and every open item alre
 ## Not drawn
 
 Light themes beyond the dark reference. The boards draw one theme, and the captures for the other five follow G2.
+
+---
+
+## Engineering readiness audit (2026-10-27, against origin/main at b3dee1a8a)
+
+**Engineering verdict: Yellow.** Design's Green stands for what the boards draw, and every code claim in
+the README checks out except the two noted below. Four items are not drawn and need a ruling before the
+build plan can name them; everything else is engineering's to resolve, listed with its resolution.
+
+### Claims checked
+
+- `capture:about` shoots 390x844 only, six themes: true (`scripts/capture-about.mjs`).
+- Boxes measured per capture into `shots.generated.ts` through `scripts/lib/about-locators.mjs`: true.
+  `data-about-region` does not exist yet; the build adds it or extends the locators (G3).
+- Tool card "How it works ›" opens the Reference: true (`tool-card.tsx`, `copy/discovery.ts`).
+- "About The 99" first in the account menu: true. `ABOUT_VERSION` is 16: true.
+- Correction: the banner's "New in the app" heading draws only when About items and arrivals show together;
+  About items alone draw "N new in About:" (`arrivals-banner.tsx`, `copy/about.ts`). Call 7's two-launch form
+  follows the drawn band either way.
+- Correction: "the shipped tab strip" for the six-page strip is read as `PlaceStrip` (the Collection and
+  Commanders places' strip); `about-tabs.tsx` is only Tools and Reference.
+
+### Counts
+
+`copy-strings.ts` holds 43 labels and 15 rules: Home 4/0, Collection 5/3, Commanders 4/0, Decks 19/6,
+Shopping 6/3, Friends 5/3. It places 12 of the 14 shipped tools.
+
+### Not drawn: needs a ruling
+
+1. **Two tools have no section.** `precons` and `mana-balance` are shipped Tools cards that no section
+   lists. Either a section takes each (placement, so Design), or the tool retires from the showcase.
+2. **The ? on screens with no section.** Nine of the 17 About screens have no section on any page:
+   card-details, sets, proxies, history, wishlist, new-deck, account, settings, credits. Call 5 says the ?
+   opens its area's page scrolled to its screen; for these there is no screen to scroll to.
+3. **How it works** (`HOW_IT_WORKS_ENABLED`, 20 entry links). The boards never mention it, and several of the
+   audit's cuts lean on it still holding their rule. Retire with the Reference (call 5's "one source"), or keep.
+4. **The one-time About sheet** (`ABOUT_SHEET_ENABLED`, About R6 §N) and the banner's first-run line ("What
+   The 99 does…"). Call 7 redraws the banner's launch lines only. Whether the sheet keeps announcing labels,
+   and what a brand-new account is shown, is not drawn.
+
+### Resolved by engineering
+
+- **Links into the Reference** (`CREDITS_HREF = /about?tab=reference#credits`, the version redirect's
+  `/about?tab=reference&next=…`, the banner's `#new`): each retargets to the page that now holds its content,
+  through the same scroll-to target the ? uses (credits: the Decks page's credits rule).
+- **Switched forms of rules.** Several rules carry a sentence that belongs to a switch unset in production
+  (the spare's 14-day lapse under `SPARE_REQUESTS_ENABLED`, the proxy rule's token sentence under
+  `DECK_TOKENS_ENABLED`, the friends-see rule's signature-card and friend-deck clauses), and the audit keeps
+  switch-off forms with no home in the strings (import's replace-only line, Sync's keys, buying credits under
+  `PAYMENTS_ENABLED`). A rule or label gets per-switch sentences inside its drawn card, as today's entries
+  split their captions; the words go through `/copy-review`.
+- **Audit facts with no string** (decklist `$`/`P` marks, bracket classifiers being partial, which AGENTS.md
+  requires on every bracket surface, auto-fill's staples, wishlist counts never shown to friends, the tour
+  re-run, upload-choice's doubling and empty-Collection keys): written into the drawn label or rule they
+  belong to, through `/copy-review`. No new card is placed.
+- "Play styles" and "The curve" labels have no audit source; they describe shipped controls and stay.
+- **Showcase targets (G5):** remapped label by label before any entry is removed, in the build's first PR.
+- **Seen state (G4):** a translation table from today's bare ids and `<id>@<SWITCH>` variants to label and
+  rule keys, so no account is told twice; `/api/about/entries` and the ? panel's search retire with the panel.
+- **Probes and inventories** that open entries by hash are re-pointed in the PR that removes the entry.
