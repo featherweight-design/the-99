@@ -1,0 +1,98 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-28T02:46:00Z"
+ },
+ "title": "The 99 \u00b7 Suggested changes v2",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 1512,
+   "title": "R1 \u00b7 the calls and open questions"
+  },
+  "Intake.dc.html": {
+   "x": 1692,
+   "y": 0,
+   "w": 2280,
+   "h": 5990,
+   "title": "1 \u00b7 Intake: three steps, then send"
+  },
+  "Not-At-99.dc.html": {
+   "x": 4052,
+   "y": 0,
+   "w": 2040,
+   "h": 3525,
+   "title": "2 \u00b7 A deck not at 99"
+  },
+  "Results-3.dc.html": {
+   "x": 0,
+   "y": 6110,
+   "w": 1370,
+   "h": 5314,
+   "title": "3 \u00b7 Results at N = 3 (5 a side)"
+  },
+  "Results-10.dc.html": {
+   "x": 1450,
+   "y": 6110,
+   "w": 1812,
+   "h": 6264,
+   "title": "4 \u00b7 Results at N = 10 (15 a side)"
+  },
+  "Results-20.dc.html": {
+   "x": 3342,
+   "y": 6110,
+   "w": 1812,
+   "h": 9703,
+   "title": "5 \u00b7 Results at N = 20 (30 a side)"
+  },
+  "Short-Run.dc.html": {
+   "x": 0,
+   "y": 15933,
+   "w": 1846,
+   "h": 4341,
+   "title": "6 \u00b7 A short run"
+  },
+  "Wait.dc.html": {
+   "x": 1926,
+   "y": 15933,
+   "w": 2280,
+   "h": 6733,
+   "title": "7 \u00b7 The wait"
+  },
+  "History.dc.html": {
+   "x": 4286,
+   "y": 15933,
+   "w": 1846,
+   "h": 4491,
+   "title": "8 \u00b7 History"
+  },
+  "About.dc.html": {
+   "x": 6212,
+   "y": 15933,
+   "w": 1862,
+   "h": 3791,
+   "title": "9 \u00b7 About \u00b7 Decks \u203a Analysis"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Intake.dc.html",
+  "Not-At-99.dc.html",
+  "Results-3.dc.html",
+  "Results-10.dc.html",
+  "Results-20.dc.html",
+  "Short-Run.dc.html",
+  "Wait.dc.html",
+  "History.dc.html",
+  "About.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
