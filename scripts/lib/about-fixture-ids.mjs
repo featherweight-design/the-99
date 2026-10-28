@@ -51,7 +51,7 @@ export function sortFixtures(viewer, ids) {
 // an id no one signs in as. It is scoped to the viewer because the friend's id is (`fixtureFriendId`), and it is
 // purged with the friend, after the decks it names are deleted.
 
-const MARK = /^about-deck:(under|over|played):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const MARK = /^about-deck:(under|over|played|fresh):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 
 /** The mark that records deck `id` as the fixture's deck for `role`. */
 export function deckMark(role, id) {
