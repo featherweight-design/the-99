@@ -11,11 +11,12 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, ty
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
+import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { reveal } from "../../lib/ui/reveal";
 import { visitBaseline } from "../../lib/decks/visit";
 import type { HubTileRun, HubTiles } from "../../lib/tuning/hub-tiles";
 import { historyPress, type HistoryRow, type HistoryTool } from "../../lib/tuning/history";
-import { ReviewRunProvider, type ReviewRun } from "./review-run";
+import { OpenHistoryProvider, OpenRunProvider, ReviewRunProvider, type OpenRun, type ReviewRun } from "./review-run";
 import { historyDate, summaryText, TuningHistory } from "./tuning-history";
 import { TuningToolMark, type TuningTool } from "./tuning-tool-mark";
 import { useTarget } from "../discovery/targets-provider";
@@ -27,7 +28,12 @@ const WATCH_MS = 3000;
 const SHOWN_WAIT_MS = 10_000;
 
 export type HubToolSpec =
-  | { tool: "suggested"; panel: ReactNode | null }
+  | {
+    tool: "suggested"; panel: ReactNode | null;
+    /** Suggested changes v2 on (plan 2026-10-27, UI PR 5): the deck's count on the tool's 99 scale, how far it is from its
+     *  body size (over positive, under negative), and the way to Top off on Your deck. Off, the tile is as shipped. */
+    v2?: { at: number; over: number; onTopOff?: () => void } | null;
+  }
   /** Free and read on every open: no run in flight, never inert. */
   | { tool: "mana"; panel: ReactNode }
   | { tool: "cuts"; panel: ReactNode; over: number; total: number }
@@ -70,6 +76,8 @@ type TileView = {
   /** The figure that explains an offer (`this deck is 6 over`), in muted ink, never `--warning`. */
   offer: boolean;
   inert: boolean;
+  /** An inert tile's one control (Suggested changes v2 off 99, Not-At-99 A and B): the tool that fixes it. */
+  link?: { label: string; go: "topOff" | "cuts" } | null;
 };
 
 function runStatus(run: HubTileRun | null, words: string, outcome: (run: Extract<HubTileRun, { kind: "ok" }>) => string, now: number) {
@@ -83,7 +91,7 @@ function runStatus(run: HubTileRun | null, words: string, outcome: (run: Extract
   return { status: copy.lastRun(date, said), statusPhone: copy.lastRun(date), running: false };
 }
 
-function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number): TileView {
+function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number, hasCuts = false): TileView {
   if (spec.tool === "history") {
     const h = tiles?.history;
     const status = h ? copy.tools.history.runs(h.runs, h.running) : "";
@@ -91,12 +99,26 @@ function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number): TileVie
   }
   if (spec.tool === "suggested") {
     const t = copy.tools.suggested;
+    const v2 = spec.v2 ?? null;
+    // v2 runs 99 to 99 (README item 1): under or over, the tile goes inert the shipped way and its line links the tool
+    // that fixes it. Under: Top off, on Your deck. Over: Proposed cuts, opened in place, when this hub draws it.
+    if (v2 && v2.over !== 0) {
+      const tile = suggestedChangesV2Copy.tile;
+      const under = v2.over < 0;
+      const link = under
+        ? (v2.onTopOff ? { label: tile.topOff, go: "topOff" as const } : null)
+        : (hasCuts ? { label: tile.proposedCuts, go: "cuts" as const } : null);
+      return {
+        tool: "suggested", purpose: under ? tile.under(v2.at) : tile.over(v2.over), cost: "", status: "", statusPhone: "",
+        running: false, offer: false, inert: true, link,
+      };
+    }
     if (spec.panel === null) {
       return { tool: "suggested", purpose: t.needsReading, cost: "", status: "", statusPhone: "", running: false, offer: false, inert: true };
     }
     const run = runStatus(tiles?.suggested_changes ?? null, copy.runningWords.suggested,
       (r) => (r.total === 0 ? copy.outcome.nothing : copy.outcome.applied(r.accepted, r.total)), now);
-    return { tool: "suggested", purpose: t.purpose, cost: t.cost, ...run, offer: false, inert: false };
+    return { tool: "suggested", purpose: v2 ? suggestedChangesV2Copy.tile.purpose : t.purpose, cost: t.cost, ...run, offer: false, inert: false };
   }
   if (spec.tool === "mana") {
     // Its last count's date and nothing more: a free count has no outcome to report (R3: no verdict).
@@ -365,6 +387,17 @@ export function TuningHub({
     setReview({ run, row, left: false });
     setOpening((prev) => ({ tool: row.tool, focus: true, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
   };
+  // A tool reopening one of its own runs in place, as a History press does (Suggested changes v2's same-request confirm,
+  // `Open Oct 26’s run`): the run read-only under the hub's note, with the way back to History.
+  const openRun: OpenRun = useCallback((tool, runId, at) => {
+    setPast(null);
+    setReturnRow(null);
+    const row: HistoryRow = { id: `run:${runId}`, tool, tier: "credit", outcome: "ok", at, summary: { kind: "none" } };
+    setReview({ run: { tool, runId }, row, left: false });
+    setOpening((prev) => ({ tool, focus: true, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
+  }, []);
+  // A tool's own way to History (Suggested changes v2's footer link): the History tab, as its tab press opens it.
+  const openHistory = useCallback(() => open("history", { focus: true, scroll: false }), [open]);
   const backToHistory = () => {
     const from = review?.row.id ?? null;
     setReview(null);
@@ -372,7 +405,15 @@ export function TuningHub({
     setReturnRow(from);
     setOpening((prev) => ({ tool: "history", focus: false, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
   };
-  const views = tools.map((spec) => tileOf(spec, tiles, now));
+  const hasCuts = tools.some((t) => t.tool === "cuts");
+  const views = tools.map((spec) => tileOf(spec, tiles, now, hasCuts));
+  // An inert tile's link: Top off is the shell's (Your deck), Proposed cuts opens here in place, as its own tile would.
+  const suggestedSpec = tools.find((t): t is Extract<HubToolSpec, { tool: "suggested" }> => t.tool === "suggested");
+  const onTopOff = suggestedSpec?.v2?.onTopOff;
+  const followLink = (go: "topOff" | "cuts") => {
+    if (go === "topOff") onTopOff?.();
+    else open("cuts", { focus: true, scroll: true });
+  };
   // History's chips: the run-making tools this hub draws.
   const historyTools = tools.flatMap((t): HistoryTool[] => (t.tool === "history" ? [] : [t.tool]));
   // A tool that stopped being offered while it was open finishes in place (C8); one that is not
@@ -480,7 +521,11 @@ export function TuningHub({
                 {reviewing ? <ReviewNote row={reviewing.row} counted={reviewing.run.runId === null} onBack={backToHistory} /> : null}
                 {/* Keyed on the run, so a tool reopened on another run, or back on its own read, reads afresh. */}
                 <Fragment key={reviewed ? reviewed.row.id : "live"}>
-                  <ReviewRunProvider value={reviewing ? { ...reviewing.run, leave: leaveReview } : null}>{opened.panel}</ReviewRunProvider>
+                  <ReviewRunProvider value={reviewing ? { ...reviewing.run, leave: leaveReview } : null}>
+                    <OpenRunProvider value={openRun}>
+                      <OpenHistoryProvider value={openHistory}>{opened.panel}</OpenHistoryProvider>
+                    </OpenRunProvider>
+                  </ReviewRunProvider>
                 </Fragment>
               </>
             ) : null}
@@ -491,7 +536,7 @@ export function TuningHub({
           {/* A tile can sit below the fold, and the tool opens in its place starting at the tab row:
               bring the hub's top into view, as a shortcut does (Hugh, 2026-10-11), smoothly unless the
               reader asks for reduced motion (`reveal`). */}
-          {views.map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} />)}
+          {views.map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} onLink={followLink} />)}
         </div>
       )}
     </section>
@@ -523,7 +568,7 @@ const TILE_TARGETS: Partial<Record<TuningTool, TargetId>> = {
   suggested: "suggested-changes", mana: "mana-balance", cuts: "proposed-cuts",
 };
 
-function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
+function ToolTile({ view, onOpen, onLink }: { view: TileView; onOpen: () => void; onLink?: (go: "topOff" | "cuts") => void }) {
   const name = NAMES[view.tool];
   const targetRef = useTarget(TILE_TARGETS[view.tool] ?? null);
   const markInk = view.running ? "var(--accent-text)" : view.inert ? "var(--fg-locked)" : "var(--fg-body)";
@@ -538,6 +583,16 @@ function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
       <span className="text-[12.5px] leading-[1.5]" style={{ color: view.inert ? "var(--fg-faint)" : "var(--fg-body)", textWrap: "pretty" }}>
         {view.purpose}
       </span>
+      {view.inert && view.link && onLink ? (
+        <button
+          type="button"
+          data-tile-link={view.link.go}
+          onClick={() => onLink(view.link!.go)}
+          className="mt-[4px] flex min-h-[44px] w-fit items-center font-mono text-[11px] text-[color:var(--accent-text)] underline underline-offset-[3px] md:min-h-0"
+        >
+          {view.link.label}
+        </button>
+      ) : null}
       {view.inert ? null : (
         <>
           <span className="flex-1" />

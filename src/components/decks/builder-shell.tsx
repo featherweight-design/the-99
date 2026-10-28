@@ -25,7 +25,11 @@ import { HoverPreviewProvider } from "./hover-preview";
 import { CutsPanelView } from "./cuts-panel";
 import { ManaBalancePanel } from "./mana-balance-panel";
 import { hasColoredPip } from "../../lib/tuning/mana-view";
-import { TuningPanel } from "./tuning-panel";
+import { TuningPanel, type TuningV2 } from "./tuning-panel";
+import { strategyName } from "../../lib/copy/strategy-focus";
+import { localDay } from "../../lib/copy/credits";
+import { plainText } from "../../lib/decks/notes-body";
+import { hasOverviewContent } from "../../lib/tuning/v2/intake";
 import { TuningHub, type HubRequest } from "./tuning-hub";
 import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
@@ -113,7 +117,7 @@ import { LockCardsProvider, useCardLocks } from "./lock-cards";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import { hasChanges, type DraftState } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
-import { type MixRole, type RecommendedMix } from "../../lib/decks/mix";
+import { ROLE_ORDER, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import type { JobRowsByCard } from "../../lib/decks/job-tally";
 import { roleCounterFor, roleNamedFor } from "../../lib/decks/label-role-counts";
 import { LabelRowsProvider } from "./label-rows-context";
@@ -314,6 +318,9 @@ interface BuilderShellProps {
    *  and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Off, both
    *  tools mount directly, exactly as before the hub. */
   tuningHubEnabled?: boolean;
+  /** `suggestedChangesV2Enabled(env)` for this reader (plan 2026-10-27, P5): Suggested changes draws the v2 intake and
+   *  press, and its tile goes inert off 99. Off, the panel and the hub are as shipped. */
+  suggestedChangesV2?: boolean;
   /** Try it's `?tool=` (discovery R2, E11), decided by the page from this reader's switches: the deck tool to land
    *  on. The page opens its tab; the shell opens its view and lands on its target. Null strips the parameter. */
   landing?: Pick<ToolLanding, "tool" | "target" | "moment" | "lands"> | null;
@@ -388,6 +395,7 @@ export function BuilderShell({
   proposedCutsEnabled = false,
   manaBalanceEnabled = false,
   tuningHubEnabled = false,
+  suggestedChangesV2 = false,
   landing = null,
   landingRequest = null,
   nearCombos = null,
@@ -484,6 +492,10 @@ export function BuilderShell({
   // 20). Hidden with `display:none` rather than unmounted, so a half-typed
   // query is still there when the list closes.
   const [topOffOpen, setTopOffOpen] = useState(false);
+  // Suggested changes v2's `Top off on Your deck →` (Not-At-99 A): a request the top-off row answers by opening its list
+  // once, on arrival at Your deck. Dropped once answered, so a later visit to the tab does not open it again.
+  const [topOffRequest, setTopOffRequest] = useState<number | null>(null);
+  const topOffNonce = useRef(0);
   // The open list's commit bar is `fixed`, and the dock it displaces is hidden
   // rather than shrunk, so at phone widths NOTHING in flow holds the bottom slot
   // while the list is up and the tail of the decklist scrolls under the bar.
@@ -1548,8 +1560,43 @@ export function BuilderShell({
   const analysisTabRef = useMergedRef(suggestedMoment.ref, cutsTabMoment.ref, manaTabMoment.ref);
   const analysisTabDescribedBy =
     suggestedMoment["aria-describedby"] ?? cutsTabMoment["aria-describedby"] ?? manaTabMoment["aria-describedby"];
+  // Suggested changes v2 (plan 2026-10-27, UI PR 5), on this reader's switch: the 99 the tool keeps a deck at, the links
+  // to the tools that bring a deck back there, and what the "What we noticed" chips read (README item 2, plan H5).
+  // `at` is the deck on the tool's 99 scale: the built count, with a partner's second slot added back.
+  const proposedCutsPress = !proposedCutsEnabled
+    ? undefined
+    : tuningHubEnabled
+      ? () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); }
+      : () => pressTool("proposed-cuts");
+  const topOffPress = () => {
+    setView("deck");
+    setDeckPanel("list");
+    setTopOffRequest((topOffNonce.current += 1));
+  };
+  let suggestedV2: TuningV2 | null = null;
+  if (suggestedChangesV2) {
+    const have = roleCounterFor(labelRows)(cards);
+    // Newest first (the page's order): the first game whose note says anything.
+    const noted = games.find((g) => g.note !== null && plainText(g.note).trim() !== "");
+    suggestedV2 = {
+      at: built + (deckBodySize(false) - bodySize),
+      over: built - bodySize,
+      noticed: {
+        roles: ROLE_ORDER.map((role) => ({
+          role, label: mix.cells[role].label, have: have[role], target: mix.cells[role].target, advisory: mix.cells[role].advisory,
+        })),
+        focus: strategyFocus.settled ? strategyName(strategyFocus.settled) : null,
+        game: noted ? { note: plainText(noted.note!), date: localDay(noted.playedAt) } : null,
+      },
+      // The overview the run reads (`readTuningContext`): the shown synopsis, with a strategy or Key cards in it.
+      hasOverview: synopsis.view.kind === "ready" && hasOverviewContent(synopsis.view.state.synopsis?.content ?? null),
+      onTopOff: topOffPress,
+      onProposedCuts: proposedCutsPress,
+    };
+  }
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
+      v2={suggestedV2}
       landingTarget={!tuningHubEnabled}
       freshEachVisit={freshEachVisit}
       deckId={deck.id}
@@ -1817,6 +1864,8 @@ export function BuilderShell({
                     onConsider={() => setView("consider")}
                     onAnnounce={setAnnouncement}
                     onInflight={setFillInflight}
+                    openRequest={topOffRequest}
+                    onOpenRequestAnswered={() => setTopOffRequest(null)}
                     onOpenChange={setTopOffOpen}
                     onBarHeight={setTopOffBarHeight}
                   />
@@ -1827,11 +1876,7 @@ export function BuilderShell({
                     next={row.next}
                     // N2b (discovery R3): on Proposed cuts' own switch. With the hub off, the press lands on the panel
                     // the tab mounts directly (R3 gap 7).
-                    onProposedCuts={!proposedCutsEnabled
-                      ? undefined
-                      : tuningHubEnabled
-                        ? () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); }
-                        : () => pressTool("proposed-cuts")}
+                    onProposedCuts={proposedCutsPress}
                   />
                 ) : row.kind === "spokenForTwice" ? (
                   <SpokenForTwiceRow
@@ -2002,7 +2047,13 @@ export function BuilderShell({
                       onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}
                       tools={[
-                        ...(tuningEnabled ? [{ tool: "suggested" as const, panel: permits ? suggestedPanel(permits, true) : null }] : []),
+                        ...(tuningEnabled
+                          ? [{
+                            tool: "suggested" as const,
+                            panel: permits ? suggestedPanel(permits, true) : null,
+                            v2: suggestedV2 ? { at: suggestedV2.at, over: suggestedV2.over, onTopOff: topOffPress } : null,
+                          }]
+                          : []),
                         ...(manaBalanceEnabled ? [{ tool: "mana" as const, panel: manaPanel }] : []),
                         ...(proposedCutsEnabled
                           ? [{ tool: "cuts" as const, panel: cutsPanel(true), over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) }]

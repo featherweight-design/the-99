@@ -26,6 +26,9 @@ export function CountStepper({
   onStep,
   onType,
   atOne,
+  fewerOff = false,
+  moreOff = false,
+  size = "line",
 }: {
   layout: "row" | "band";
   count: number;
@@ -36,12 +39,25 @@ export function CountStepper({
   onType: (n: number) => void;
   /** Drawn in the − slot when the count is 1: the shipped ✕, with its own label and press. */
   atOne?: React.ReactNode;
+  /** A bounded count at its floor or ceiling (Suggested changes' 1 to 20): that button greys and its press is refused,
+   *  while staying focusable and named (`aria-disabled`, never `disabled`). Absent, nothing is ever off, as shipped. */
+  fewerOff?: boolean;
+  moreOff?: boolean;
+  /** `row` only. `line` (the default) is the decklist's bare 34px line, as shipped. `cell` is a bordered group of three
+   *  cells, the form a count drawn as a field of its own takes (Suggested changes' How many cards?): 44px cells on a
+   *  phone, 36 by 34 from `md`, the figure's cell wider than the buttons'. */
+  size?: "line" | "cell";
 }) {
   const band = layout === "band";
+  const cell = !band && size === "cell";
   const shell = band
     ? "absolute inset-x-0 bottom-0 z-20 flex h-[44px] items-center justify-between md:h-[32px] bg-[color:color-mix(in_oklab,var(--bg)_70%,transparent)]"
-    : "flex-none flex items-center";
-  const button = band
+    : cell
+      ? "inline-flex flex-none items-stretch rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]"
+      : "flex-none flex items-center";
+  const button = cell
+    ? "flex h-[44px] w-[44px] md:h-[34px] md:w-[36px] items-center justify-center font-mono text-[16px] md:text-[14px] leading-none text-[color:var(--fg-body)] hover:text-[color:var(--fg)]"
+    : band
     ? "flex h-[44px] w-[44px] md:h-[32px] md:w-[32px] items-center justify-center font-mono text-[15px] md:text-[13px] leading-none text-[color:var(--fg-body)] md:text-[color:var(--fg-faint)] md:group-hover:text-[color:var(--fg)] md:group-focus-within:text-[color:var(--fg)]"
     // A row is one 34px line at every width, so the row's buttons are the ✕'s 22x20 and a coarse pointer's 44px hit is
     // drawn past them (TOUCH_HIT), as on the ✕ that takes the − slot at 1. On a coarse pointer the button is itself the
@@ -50,21 +66,24 @@ export function CountStepper({
   const ring =
     "cursor-pointer bg-transparent border-0 p-0 rounded-[6px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]";
   return (
-    <span className={shell} data-testid={`count-stepper-${layout}`}>
+    <span className={shell} data-testid={`count-stepper-${layout}`} data-size={cell ? "cell" : undefined}>
       {count === 1 && atOne ? (
         atOne
       ) : (
-        <button type="button" aria-label={fewerLabel} onClick={() => onStep(-1)} className={`${button} ${ring}`}>
+        <button type="button" aria-label={fewerLabel} aria-disabled={fewerOff || undefined} onClick={() => { if (!fewerOff) onStep(-1); }} className={`${button} ${ring} ${fewerOff ? OFF : ""}`}>
           {"−"}
         </button>
       )}
-      <CountField count={count} label={countLabel} band={band} onStep={onStep} onType={onType} />
-      <button type="button" aria-label={moreLabel} onClick={() => onStep(1)} className={`${button} ${ring}`}>
+      <CountField count={count} label={countLabel} band={band} cell={cell} onStep={onStep} onType={onType} />
+      <button type="button" aria-label={moreLabel} aria-disabled={moreOff || undefined} onClick={() => { if (!moreOff) onStep(1); }} className={`${button} ${ring} ${moreOff ? OFF : ""}`}>
         +
       </button>
     </span>
   );
 }
+
+/** A bounded count's end (`fewerOff`, `moreOff`): greyed over every rest and hover ink the layouts give. */
+const OFF = "cursor-default text-[color:var(--fg-disabled)]! group-hover:text-[color:var(--fg-disabled)]!";
 
 /** A coarse pointer's row figure is its own 44px slot between the − and + slots: 44px wide and tall, the extra height drawn past
  *  the 34px line by negative margins on a `<label>` around the input (an input has no pseudo-element to carry a hit, and a
@@ -72,17 +91,22 @@ export function CountStepper({
  *  under the digits. */
 const ROW_FIGURE_SLOT = "pointer-coarse:-my-[12px] pointer-coarse:py-[12px]";
 const ROW_FIGURE_COARSE = "pointer-coarse:min-w-[44px]!";
+/** The `cell` group's figure: 52px on a phone and 46px from `md`, ruled off from the buttons either side. */
+const CELL_FIGURE = "w-[52px] md:w-[46px] items-center border-x border-solid border-[color:var(--border-strong)]";
 
 function CountField({
   count,
   label,
   band,
+  cell = false,
   onStep,
   onType,
 }: {
   count: number;
   label: string;
   band: boolean;
+  /** The bordered group's figure cell: wider than its buttons, ruled off from them. */
+  cell?: boolean;
   onStep: (delta: 1 | -1) => void;
   onType: (n: number) => void;
 }) {
@@ -95,7 +119,10 @@ function CountField({
   const shownText = draft ?? String(count);
   // The label's padding is part of the figure's hit: a press on it focuses the input and must not reach the row's own press.
   return (
-    <label className={`flex justify-center ${band ? "" : ROW_FIGURE_SLOT}`} onClick={(e) => e.stopPropagation()}>
+    <label
+      className={`flex justify-center ${cell ? CELL_FIGURE : band ? "" : ROW_FIGURE_SLOT}`}
+      onClick={(e) => e.stopPropagation()}
+    >
     <input
       inputMode="numeric"
       aria-label={label}
@@ -124,7 +151,7 @@ function CountField({
       // past 99, an imported stack in the thousands) widens the field by its own digits, at the same font, rather
       // than clipping. Monospace, so `ch` is one digit.
       style={{ minWidth: band ? 32 : 24, width: `${shownText.length + 0.5}ch` }}
-      className={`${band ? "" : ROW_FIGURE_COARSE} h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] [@media(pointer:fine)]:md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
+      className={`${band || cell ? "" : ROW_FIGURE_COARSE} ${cell ? "font-semibold [@media(pointer:fine)]:md:text-[15px]! text-[color:var(--fg)]!" : ""} h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] [@media(pointer:fine)]:md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
     />
     </label>
   );

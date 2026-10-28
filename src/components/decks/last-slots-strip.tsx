@@ -87,6 +87,10 @@ export interface LastSlotsStripProps {
   /** The open list's pinned commit bar, measured, so the shell can reserve it at
       the page foot. See TopOffListProps.onBarHeight. */
   onBarHeight?: (height: number) => void;
+  /** Another surface asked for the list open (Suggested changes v2's `Top off on Your deck →`): each new value opens it
+   *  once, when there are cards to offer, and is answered either way so its owner can drop it. */
+  openRequest?: number | null;
+  onOpenRequestAnswered?: () => void;
 }
 
 // ── LastSlotsStrip ─────────────────────────────────────────────────────────
@@ -115,6 +119,8 @@ function LastSlotsStripInner({
   onInflight,
   onOpenChange,
   onBarHeight,
+  openRequest = null,
+  onOpenRequestAnswered,
 }: LastSlotsStripProps) {
   const listId = useId();
   // The row's one press, in all three faces: the door, Close, and ran out's Consider.
@@ -316,6 +322,22 @@ function LastSlotsStripInner({
     },
     [],
   );
+
+  // A request from elsewhere to open the list (`openRequest`): answered once per value, after the strip has drawn, so the
+  // open runs exactly as the door's press does (its focus move and its reveal included).
+  const openListRef = useRef(openList);
+  const answeredRef = useRef(onOpenRequestAnswered);
+  useEffect(() => {
+    openListRef.current = openList;
+    answeredRef.current = onOpenRequestAnswered;
+  });
+  const answeredOpen = useRef<number | null>(null);
+  useEffect(() => {
+    if (openRequest === null || answeredOpen.current === openRequest) return;
+    answeredOpen.current = openRequest;
+    answeredRef.current?.();
+    if (!open && candidates.length > 0) openListRef.current();
+  }, [openRequest, open, candidates.length]);
 
   // State 13: nothing left to offer, and the row says why and points to Consider instead.
   // The open list outranks it: a quick-add can take the last candidates while the list is up, and

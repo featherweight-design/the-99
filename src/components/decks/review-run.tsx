@@ -31,3 +31,28 @@ export function useReviewRun(tool: HistoryTool): ReviewRun | null {
   const run = useContext(ReviewRunContext);
   return run && run.tool === tool ? run : null;
 }
+
+/**
+ * Reopen one of a tool's own runs as History does, from inside the tool: Suggested changes v2's same-request confirm,
+ * `Open Oct 26’s run` (Intake board D). The hub provides it; null where there is no hub (and so no History to go back to).
+ * `at` is the run's ISO date, for the note the hub draws above the reopened run.
+ */
+export type OpenRun = (tool: HistoryTool, runId: string, at: string) => void;
+
+const OpenRunContext = createContext<OpenRun | null>(null);
+
+export const OpenRunProvider = OpenRunContext.Provider;
+
+export function useOpenRun(): OpenRun | null {
+  return useContext(OpenRunContext);
+}
+
+/** Open the hub's History tool from inside a tool (Suggested changes v2's footer, `Last run Oct 26 · History ›`). The hub
+ *  provides it; null where there is no hub. */
+const OpenHistoryContext = createContext<(() => void) | null>(null);
+
+export const OpenHistoryProvider = OpenHistoryContext.Provider;
+
+export function useOpenHistory(): (() => void) | null {
+  return useContext(OpenHistoryContext);
+}
