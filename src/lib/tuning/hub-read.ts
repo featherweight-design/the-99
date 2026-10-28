@@ -20,6 +20,7 @@ export async function readHubTiles(
       tool: deckSuggestionRuns.tool,
       status: deckSuggestionRuns.status,
       createdAt: deckSuggestionRuns.createdAt,
+      v2: sql<boolean>`${deckSuggestionRuns.requestedCount} is not null`,
     }).from(deckSuggestionRuns)
       .where(and(eq(deckSuggestionRuns.deckId, deckId), eq(deckSuggestionRuns.userId, userId), eq(deckSuggestionRuns.tool, tool)))
       .orderBy(desc(deckSuggestionRuns.createdAt))

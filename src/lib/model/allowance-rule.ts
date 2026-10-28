@@ -93,11 +93,14 @@ export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
  * How long a `reserved` unit counts before it is taken to be stranded.
  *
  * A reservation counts because it is a run in flight — that is what stops two presses taking
- * the last unit. But a run cannot be in flight longer than its call's deadline plus the outcome
- * write, and deck tuning's reaper fails any pending run after five minutes. A reservation older
- * than this was stranded — its process died, or its deck was deleted and took the run with it —
- * and nothing is left to settle it. Counting it anyway would charge the player for a call they
- * never got an answer from, for the rest of the window. Ten minutes is twice the reaper's cutoff.
+ * the last unit. But a run cannot be in flight longer than the request that reserved it: the deck
+ * page's `maxDuration` (600s since Suggested changes v2) bounds the Server Action and its `after()`
+ * work, and the unit is reserved inside that request. A reservation older than this was stranded —
+ * its process died, or its deck was deleted and took the run with it — and nothing is left to
+ * settle it. Counting it anyway would charge the player for a call they never got an answer from,
+ * for the rest of the window. Ten minutes is that limit (`limits.test.ts` pins limit <= this); the
+ * v2 reaper's 11-minute cutoff is past it, so a dead v2 run's unit stops counting before the
+ * reaper refunds it, which charges nothing.
  */
 export const RESERVATION_TTL_MS = 10 * 60 * 1000;
 

@@ -3,6 +3,8 @@ import type { Availability } from "../decks/availability";
 import type { PriceFact } from "../decks/price";
 import type { Allowance } from "../model/allowance-rule";
 import type { ValidationReport } from "./validate";
+import type { CardTypeGroup } from "../decks/grouping";
+import type { MixRole } from "../decks/mix";
 
 /**
  * What the tuning panel and `runTuning` read. Types only, and pure, so the gate and the panel
@@ -90,6 +92,10 @@ export type LineItem = {
   inDeck: boolean;
   /** The player has locked a cut's card since the run (Locked, F4). Always false for an addition. */
   locked: boolean;
+  /** Suggested changes v2 (handoff H5, G2): the card's type group (`cardTypeGroup`) and the shelf role it fills by the
+   *  deck page's own role counter (`roleCounterFor`; null for a card that fills none). Absent on a v10 line. */
+  typeGroup?: CardTypeGroup;
+  role?: MixRole | null;
 };
 
 export type TuningItem = PairItem | LineItem;
@@ -106,6 +112,8 @@ export type TuningRun = {
   /** What the run measured about its own answer (H35, PR 4a). Null or absent for a run
    *  persisted before the column existed, or a test fixture that predates it. */
   validationReport?: ValidationReport | null;
+  /** Suggested changes v2's count (plan P1): set on a v2 run, null on v10's. */
+  requestedCount?: number | null;
 };
 
 export type TuningState = {
@@ -147,4 +155,21 @@ export type TuningState = {
    *  newer run exists. Absent or null for the panel's ordinary newest-ok-run read. Each line's
    *  `applies` is read live, so a swap the deck has moved past shows as no longer applying. */
   review?: { runId: string; at: Date } | null;
+  /**
+   * A Suggested changes v2 run still being made (plan P3): its lines saved so far, which list is in and which is being
+   * refilled, so the panel's poll draws the additions while the cuts are made. Null with no such run. `items` above
+   * stay the last finished run's.
+   */
+  live?: TuningLive | null;
+};
+
+export type TuningLive = {
+  runId: string;
+  /** `cuts` once the additions are in. */
+  phase: "additions" | "cuts";
+  in: { add: boolean; cut: boolean };
+  refilling: { add: boolean; cut: boolean };
+  items: TuningItem[];
+  /** When the prices on `items` were read, as `TuningState.newestPriceAsOf` is for the last set's. */
+  newestPriceAsOf: Date | null;
 };

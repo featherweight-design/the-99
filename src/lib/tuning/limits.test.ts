@@ -46,6 +46,8 @@ describe("V2_RUN_BUDGET_MS", () => {
   it("is reaped only past the limit, and the unit is settled no later than its reservation stops counting", () => {
     expect(V2_REAPER_CUTOFF_MS).toBeGreaterThan(pageLimitMs());
     expect(V2_RUN_BUDGET_MS + 20_000).toBeLessThanOrEqual(RESERVATION_TTL_MS);
+    // A run cannot outlive the request that reserved its unit, so the reservation outlives every live run.
+    expect(pageLimitMs()).toBeLessThanOrEqual(RESERVATION_TTL_MS);
   });
 });
 

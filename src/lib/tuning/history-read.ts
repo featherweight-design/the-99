@@ -38,6 +38,7 @@ export function runsPageQuery(tx: Pick<Tx, "select">, deckId: string, userId: st
     errorClass: deckSuggestionRuns.errorClass,
     createdAt: deckSuggestionRuns.createdAt,
     validationReport: deckSuggestionRuns.validationReport,
+    requestedCount: deckSuggestionRuns.requestedCount,
   }).from(deckSuggestionRuns)
     .where(and(
       eq(deckSuggestionRuns.deckId, deckId),
@@ -125,6 +126,7 @@ export async function readHistory(
         errorClass: r.errorClass,
         createdAt: r.createdAt,
         askedOver: typeof over === "number" ? over : null,
+        v2: r.requestedCount !== null,
         items: tally.get(r.id) ?? emptyItems,
       };
     });
@@ -146,8 +148,9 @@ export async function readHistoryCountIn(
   const countTools = drawn.flatMap((t) => RUN_TOOL_OF[t].counts);
   const [paid] = runTools.length === 0 ? [{ n: 0, running: 0 }] : await tx.select({
     n: sql<number>`count(*)::int`,
-    // In flight: pending and inside the reaper's cutoff, as `runOutcome` reads a row.
-    running: sql<number>`(count(*) filter (where ${deckSuggestionRuns.status} = 'pending' and ${deckSuggestionRuns.createdAt} >= ${reapCutoff(now)}))::int`,
+    // In flight: pending and inside the reaper's cutoff for its kind, as `runOutcome` reads a row.
+    running: sql<number>`(count(*) filter (where ${deckSuggestionRuns.status} = 'pending' and ${deckSuggestionRuns.createdAt} >= case
+      when ${deckSuggestionRuns.requestedCount} is null then ${reapCutoff(now)}::timestamp else ${reapCutoff(now, true)}::timestamp end))::int`,
   }).from(deckSuggestionRuns)
     .where(and(eq(deckSuggestionRuns.deckId, deckId), eq(deckSuggestionRuns.userId, userId), inArray(deckSuggestionRuns.tool, runTools)));
   const [counted] = countTools.length === 0 ? [{ n: 0 }] : await tx.select({ n: sql<number>`count(*)::int` }).from(deckToolCounts)
@@ -187,10 +190,11 @@ export async function readPastRun(
       createdAt: deckSuggestionRuns.createdAt,
       validationReport: deckSuggestionRuns.validationReport,
       errorClass: deckSuggestionRuns.errorClass,
+      requestedCount: deckSuggestionRuns.requestedCount,
     }).from(deckSuggestionRuns)
       .where(and(eq(deckSuggestionRuns.id, ref.uuid), eq(deckSuggestionRuns.deckId, deckId), eq(deckSuggestionRuns.userId, userId))).limit(1);
     if (!run) return null;
-    const outcome = runOutcome(run.status as RunStatus, run.createdAt, now, run.errorClass);
+    const outcome = runOutcome(run.status as RunStatus, run.createdAt, now, run.errorClass, run.requestedCount !== null);
     const at = run.createdAt.toISOString();
     if (run.tool === "proposed_cuts") {
       const lines = await tx.select({ cut: cards.name, reason: deckCutItems.reason, verdict: deckCutItems.verdict, evidence: deckCutItems.evidence })

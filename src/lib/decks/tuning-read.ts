@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, lt, max, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, max, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { chainArt } from "../cards/chain-art";
@@ -14,7 +14,7 @@ import {
   decks,
   deckVersions,
 } from "../../db/schema";
-import { readAllowance, settleModelCall } from "../model/allowance";
+import { readAllowance } from "../model/allowance";
 import { withPayments } from "../payments/flag";
 import { cacheForUser } from "../cache/user-lists";
 import { switchBits } from "../switches/resolve";
@@ -25,16 +25,19 @@ import type { Bracket, DeckProfile } from "../profile/types";
 import { bracketAfter } from "../tuning/bracket-shift";
 import { tuningFingerprint } from "../tuning/fingerprint";
 import { SUGGESTED_CHANGES_TOOL } from "../tuning/limits";
-import { PROMPT_VERSION } from "../tuning/prompt-version";
+import { PROMPT_VERSION, PROMPT_VERSION_V2 } from "../tuning/prompt-version";
 import { loadUniversalStaples } from "../staples/universal";
 import { readShownSynopsis } from "../synopsis/generate";
-import { reapCutoff } from "../tuning/reaper";
-import type { TuningItem, TuningRun, TuningState } from "../tuning/state";
-import type { ValidatedSuggestion } from "../tuning/validate";
+import { pastReapCutoff, reapIn } from "../tuning/reap-runs";
+import type { TuningItem, TuningLive, TuningRun, TuningState } from "../tuning/state";
+import { lineFacts } from "../tuning/v2/line-facts";
+import type { ValidatedSuggestion, ValidationReport } from "../tuning/validate";
+import { loadJobRows } from "./job-rows";
 import { listDeckGames, type DeckGame } from "./games";
 import { loadPrices } from "./price-query";
 import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
+import { labelRoleCountsEnabled } from "./label-counts-flag";
 import { neverCutEnabled } from "./never-cut-flag";
 import { liveLockedIds } from "./locks";
 import { strategyFocusEnabled } from "../strategy/flag";
@@ -247,17 +250,12 @@ export async function readTuningState(
   opts: { allLocked?: string | null; runId?: string | null } = {},
   env: NodeJS.ProcessEnv,
 ): Promise<TuningState> {
-  await db.transaction(async (tx) => {
-    const reaped = await tx.update(deckSuggestionRuns)
-      .set({ status: "failed", errorClass: "interrupted" })
-      .where(and(
-        suggestedRunsOfDeck(deckId),
-        eq(deckSuggestionRuns.status, "pending"),
-        lt(deckSuggestionRuns.createdAt, reapCutoff(now)),
-      ))
-      .returning({ callId: deckSuggestionRuns.modelCallId });
-    for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now, "reaped");
-  });
+  // A v2 run past its own, longer cutoff with lines saved settles `ok` and refunded (plan P4); every other one fails.
+  await db.transaction((tx) => reapIn(tx, and(
+    suggestedRunsOfDeck(deckId),
+    eq(deckSuggestionRuns.status, "pending"),
+    pastReapCutoff(now),
+  )!, now));
 
   const runOf = suggestedRunsOfDeck(deckId);
   const mine = eq(deckSuggestionRuns.userId, userId);
@@ -268,6 +266,7 @@ export async function readTuningState(
     promptVersion: deckSuggestionRuns.promptVersion,
     profileVersion: deckSuggestionRuns.profileVersion,
     validationReport: deckSuggestionRuns.validationReport,
+    requestedCount: deckSuggestionRuns.requestedCount,
   }).from(deckSuggestionRuns).where(okRunWhere(deckId, userId, runId))
     .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
   const [[newest], [newestOk], [reviewed], [games], allowance] = await Promise.all([
@@ -278,6 +277,7 @@ export async function readTuningState(
       createdAt: deckSuggestionRuns.createdAt,
       droppedCount: deckSuggestionRuns.droppedCount,
       validationReport: deckSuggestionRuns.validationReport,
+      requestedCount: deckSuggestionRuns.requestedCount,
     }).from(deckSuggestionRuns).where(and(runOf, mine))
       .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
     okRun(null),
@@ -296,8 +296,12 @@ export async function readTuningState(
   // replaced on screen, still open (STATES-tuning-panel.md :42): the failure is about the new
   // run, and nothing the player had was changed by it.
   const { items, newestPriceAsOf } = lastOk
-    ? await readItems(lastOk.id, deckId, userId, env)
+    ? await readItems(lastOk.id, deckId, userId, env, lastOk.requestedCount !== null)
     : { items: [], newestPriceAsOf: null };
+  // A v2 run still being made (plan P3): the lines it has saved so far, drawn by the panel's poll beside the last set.
+  const live = run?.status === "pending" && newest?.requestedCount != null
+    ? liveOf(run.id, newest.validationReport, await readItems(run.id, deckId, userId, env, true))
+    : null;
 
   return {
     run,
@@ -308,13 +312,36 @@ export async function readTuningState(
     stale: lastOk ? lastOk.fingerprint !== fingerprint : false,
     retired: lastOk ? await readRetired(deckId, lastOk.id) : null,
     modelVersionMoved: lastOk
-      ? lastOk.promptVersion !== PROMPT_VERSION || lastOk.profileVersion !== PROFILE_VERSION
+      ? lastOk.promptVersion !== promptVersionFor(lastOk.requestedCount) || lastOk.profileVersion !== PROFILE_VERSION
       : false,
     allowance,
     gameCount: games?.count ?? 0,
     newestPriceAsOf,
     allLocked: opts.allLocked ?? null,
     review: reviewed ? { runId: reviewed.id, at: reviewed.createdAt } : null,
+    live,
+  };
+}
+
+/** The prompt version a run is measured against: its own path's (plan P1). A run with a count is v2's. */
+export function promptVersionFor(requestedCount: number | null): number {
+  return requestedCount !== null ? PROMPT_VERSION_V2 : PROMPT_VERSION;
+}
+
+/** A pending v2 run as the panel draws it, from its report's progress flags. */
+export function liveOf(
+  runId: string, report: ValidationReport | null, read: { items: TuningItem[]; newestPriceAsOf: Date | null },
+): TuningLive {
+  const v2 = report?.v2;
+  const added = v2?.in.add ?? false;
+  return {
+    runId,
+    phase: added ? "cuts" : "additions",
+    in: { add: added, cut: v2?.in.cut ?? false },
+    refilling: { add: v2?.refilling.add ?? false, cut: v2?.refilling.cut ?? false },
+    items: read.items,
+    // The live lines' own price snapshot: the last set's `newestPriceAsOf` is another read, and null on a first run.
+    newestPriceAsOf: read.newestPriceAsOf,
   };
 }
 
@@ -350,6 +377,8 @@ async function readItems(
   deckId: string,
   userId: string,
   env: NodeJS.ProcessEnv,
+  /** A v2 run's lines: each also carries its type group and shelf role (H5). */
+  v2 = false,
 ): Promise<{ items: TuningItem[]; newestPriceAsOf: Date | null }> {
   // Qualified by hand: a bare `oracle_id` inside would resolve against `deck_locks` itself.
   const cutLocked = neverCutEnabled(env)
@@ -365,8 +394,12 @@ async function readItems(
     bracket_after: number[] | null; owned_quantity: number; applies: boolean;
     add_image_uri: string | null; cut_image_uri: string | null; cut_in_deck: boolean;
     add_in_deck: boolean; cut_locked: boolean;
+    card_type_line: string | null; card_oracle_text: string | null; card_keywords: string[] | null;
   }>(sql`
     select i.id, i.add_oracle_id, a.name as add_name, a.type_line as add_type_line,
+           -- The line's own card, for a v2 line's type and role (H5).
+           coalesce(a.type_line, c.type_line) as card_type_line, coalesce(a.oracle_text, c.oracle_text) as card_oracle_text,
+           coalesce(a.keywords, c.keywords) as card_keywords,
            a.image_uri as add_image_uri, c.image_uri as cut_image_uri,
            i.cut_oracle_id, c.name as cut_name, i.rationale, i.rationale_short, i.evidence,
            i.position, i.verdict, i.bracket_after,
@@ -419,7 +452,15 @@ async function readItems(
   ]);
   // The hover preview draws these, and card details opens the deck's pick or the owned printing: the same
   // chain, not the catalog's arbitrary one (`chainArt`).
-  const art = await chainArt(userId, deckId, rows.rows.flatMap((r) => [r.add_oracle_id, r.cut_oracle_id]), env);
+  const [art, jobRows] = await Promise.all([
+    chainArt(userId, deckId, rows.rows.flatMap((r) => [r.add_oracle_id, r.cut_oracle_id]), env),
+    // The labels the strip counts by, read only while the strip counts by them (`LABEL_ROLE_COUNTS_ENABLED`); off, or a
+    // failed read, falls back to the classifier, as the strip's does (null).
+    v2 && rows.rows.length > 0 && labelRoleCountsEnabled(env)
+      ? loadJobRows(rows.rows.map((r) => ({ oracleId: (r.add_oracle_id ?? r.cut_oracle_id)!, typeLine: r.card_type_line ?? "" })))
+        .catch(() => null)
+      : null,
+  ]);
   const items = rows.rows.map((r): TuningItem => {
     const addArt = art.get(r.add_oracle_id ?? "") ?? r.add_image_uri;
     const cutArt = art.get(r.cut_oracle_id ?? "") ?? r.cut_image_uri;
@@ -469,6 +510,10 @@ async function readItems(
       price: add ? prices.get(id) ?? null : null,
       inDeck: add ? r.add_in_deck : r.cut_in_deck,
       locked: !add && r.cut_locked,
+      ...(v2 ? lineFacts({
+        oracleId: id, name: (add ? r.add_name : r.cut_name) ?? "", typeLine: r.card_type_line ?? "",
+        oracleText: r.card_oracle_text, keywords: r.card_keywords ?? [],
+      }, jobRows) : {}),
     };
   });
   return { items, newestPriceAsOf: newestAsOf };

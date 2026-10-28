@@ -71,8 +71,9 @@ export type RunStatus = "pending" | "ok" | "failed" | "cancelled";
  * History's own read reaps it first (`reapReaderRuns`), and a row read in the instant it crosses
  * the cutoff says failed rather than drawing it running for ever.
  */
-export function runOutcome(status: RunStatus, createdAt: Date, now: Date, errorClass: string | null = null): HistoryOutcome {
-  if (status === "pending") return createdAt.getTime() >= reapCutoff(now).getTime() ? "running" : "failed";
+export function runOutcome(status: RunStatus, createdAt: Date, now: Date, errorClass: string | null = null, v2 = false): HistoryOutcome {
+  // A v2 run (plan P2) runs up to the deck page's 600s, so it reads running inside its own, longer cutoff.
+  if (status === "pending") return createdAt.getTime() >= reapCutoff(now, v2).getTime() ? "running" : "failed";
   if (status === "ok") return "ok";
   if (status === "cancelled") return "stopped";
   // `ungrounded` is stored as a failure but is a neutral refusal: nothing it could check, so it
@@ -90,6 +91,8 @@ export type RunRecord = {
   createdAt: Date;
   /** `validation_report.over` on a Proposed cuts run: how many cuts it was asked for. */
   askedOver: number | null;
+  /** A Suggested changes v2 run (`requested_count` set): its own reaper window. Absent reads as v10's. */
+  v2?: boolean;
   items: { total: number; adds: number; cuts: number; acceptedAdds: number; acceptedCuts: number; accepted: number; dismissed: number };
 };
 
@@ -107,7 +110,7 @@ export function isCutsCountSummary(s: unknown): s is CutsCountSummary {
 }
 
 export function shapeRun(r: RunRecord, now: Date): HistoryRow {
-  const outcome = runOutcome(r.status, r.createdAt, now, r.errorClass);
+  const outcome = runOutcome(r.status, r.createdAt, now, r.errorClass, r.v2);
   const suggested = r.tool === "suggested_changes";
   let summary: HistorySummary = { kind: "none" };
   if (outcome === "ok" && suggested) {
