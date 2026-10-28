@@ -183,7 +183,7 @@ describe("costDetail, refunds, reservations and accounts", () => {
     const tuning = d.reserved.find((r) => r.feature === "tuning");
     expect(tuning).toEqual({ feature: "tuning", reservedMicro: featureWorstCaseMicroUsd("tuning"), meanMicro: 40_000, runs: 2 });
     expect(d.reserved.find((r) => r.feature === "proposed_cuts")?.meanMicro).toBeNull();
-    expect(d.reserved.map((r) => r.feature)).toEqual(["tuning", "synopsis", "intake", "proposed_cuts", "fits_read"]);
+    expect(d.reserved.map((r) => r.feature)).toEqual(["tuning", "synopsis", "intake", "proposed_cuts", "fits_read", "suggested_changes_v2"]);
   });
 
   it("counts a press whose cost has not landed, without a mean", () => {

@@ -8,7 +8,7 @@ import type { DeckGame } from "../decks/games";
 import { PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import { buildPlayGroup } from "../profile/play";
 import type { EvidencePack } from "./evidence";
-import { buildPrompt } from "./prompt";
+import { buildPrompt, buildPromptV2 } from "./prompt";
 
 const game = (id: string, over: Partial<DeckGame> = {}): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-09-01T20:00:00Z"),
@@ -408,5 +408,64 @@ describe("the strategy focus in the prompt", () => {
     const { system, user } = buildPrompt({ ...pack, focus });
     expect(user).not.toContain("Cards not in the deck that count toward the focus");
     expect(system).not.toContain("Draw the additions");
+  });
+});
+
+describe("buildPromptV2", () => {
+  const stage = { n: 4, ask: 6, aim: null } as const;
+
+  it("asks the additions stage for exactly the ask, cuts left to a separate step, and fills the list", () => {
+    const { system } = buildPromptV2(pack, { ...stage, list: "additions" });
+    expect(system).toContain("Propose exactly 6 cards to add; the cuts are chosen in a separate step.");
+    expect(system).toContain("The player wants 4 cards in.");
+    expect(system).toContain("Fill the list: when the evidence thins, choose the soundest remaining cards rather than offering fewer.");
+    expect(system).not.toContain("Propose up to");
+    expect(system).not.toContain("offer fewer of either");
+  });
+
+  it("shows the cut stage what is coming in and asks for the cuts that make room", () => {
+    const { system, user } = buildPromptV2(pack, { ...stage, list: "cuts", comingIn: ["Cultivate", "Kodama's Reach"] });
+    expect(system).toContain("Propose exactly 6 cards to cut");
+    expect(system).toContain("The player is adding 2 cards, listed under \"Coming in\", and the deck must stay its size.");
+    expect(user.endsWith("\nComing in (2): Cultivate; Kodama's Reach.")).toBe(true);
+  });
+
+  it("calls the run's words the request: the citation kind, its rule, and the words through playerText", () => {
+    const { system, user } = buildPromptV2({ ...pack, notes: "more ramp" }, { ...stage, list: "additions" });
+    expect(system).toContain("games, note, decklist, intent, mix, request, and focus");
+    expect(system).toContain("A request citation uses the player's own words from what they asked for this run.");
+    expect(system).not.toContain("A notes citation");
+    expect(system).toContain(PLAYER_TEXT_SYSTEM_RULE);
+    expect(user).toContain("<<<PLAYER_TEXT>>>\nmore ramp\n<<<END_PLAYER_TEXT>>>");
+  });
+
+  it("states the signal-trust order: the request, the overview, the focus, then the description", () => {
+    const { system } = buildPromptV2(pack, { ...stage, list: "additions" });
+    expect(system).toContain("strongest first: what the player is asking for this run, then how the deck plays (its overview), then the player's focus, then what the deck is for.");
+  });
+
+  it("names the bracket choice per stage, and never asks the model to name one", () => {
+    const keep = buildPromptV2(pack, { ...stage, list: "cuts", comingIn: [], aim: { choice: "keep", target: 3 } }).system;
+    expect(keep).toContain("no card you suggest may move it out of bracket 3");
+    expect(keep).toContain("Never name a bracket in a rationale or a citation");
+    expect(buildPromptV2(pack, { ...stage, list: "cuts", comingIn: [], aim: { choice: "down", target: 2 } }).system).toContain("favor cuts that bring it down");
+    expect(buildPromptV2(pack, { ...stage, list: "additions", aim: { choice: "down", target: 2 } }).system).toContain("every addition must keep it within bracket 2");
+    expect(buildPromptV2(pack, { ...stage, list: "additions", aim: { choice: "up", target: 4 } }).system).toContain("favor additions that move it there");
+    expect(buildPromptV2(pack, { ...stage, list: "additions" }).system).not.toContain("bracket 3");
+  });
+
+  it("asks a refill for exactly the shortfall, naming what stands and what fell", () => {
+    const { system, user } = buildPromptV2(pack, { ...stage, ask: 2, list: "additions", refill: { kept: ["Cultivate"], rejected: [{ card: "Bolt", reason: "it is outside the commander's colors" }] } });
+    expect(system).toContain("Propose exactly 2 cards to add");
+    expect(user).toContain("Kept, additions: Cultivate.\nRejected, and why:\n- Bolt: it is outside the commander's colors\nPropose exactly 2 more additions, following every rule above. Name none of the cards listed here.");
+  });
+
+  it("changes only its own lines: every other line of v10's system message is there, in order", () => {
+    const v10 = buildPrompt(pack).system.split("\n");
+    const v2 = buildPromptV2(pack, { ...stage, list: "additions" }).system.split("\n");
+    const changed = v10.filter((l) => !v2.includes(l));
+    expect(changed).toHaveLength(4);
+    expect(v2.filter((l) => v10.includes(l))).toEqual(v10.filter((l) => v2.includes(l)));
+    expect(buildPrompt(pack).system).toContain("Propose up to 6 cards to add and up to 6 cards to cut");
   });
 });

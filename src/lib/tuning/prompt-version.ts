@@ -37,3 +37,9 @@
 // is told to cite it as `focus`, never as `intent`. With no kind for it the model filed the focus under `intent`, which a deck
 // with no intent fails, and HD - Goblins lost all five additions. A deck with a run stored at version 9 reopens the gate.
 export const PROMPT_VERSION = 10;
+
+// Suggested changes v2's OWN number (plan 2026-10-27, P1), stamped on a v2 run beside v10's unchanged `PROMPT_VERSION`, and
+// compared against a run of its own path. 11 (2026-10-27): the count and the two-call wording (additions, then cuts that make
+// room for what is coming in, each asked ceil(1.5N)), the refill's question, `notes` renamed `request`, the signal-trust order,
+// and the bracket choice (`buildPromptV2`).
+export const PROMPT_VERSION_V2 = 11;

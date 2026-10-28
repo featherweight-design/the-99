@@ -123,7 +123,9 @@ export function counts(row: LedgerRow, now: Date): boolean {
  */
 export type RefundReason = "failed" | "nothing_valid" | "late_success" | "reaped";
 
-export type ModelFeature = "tuning" | "synopsis" | "intake" | "proposed_cuts" | "fits_read";
+/** `suggested_changes_v2` is Suggested changes' v2 run (plan 2026-10-27, P1): priced apart, so v10's `tuning` figures, its
+ *  `retryable` and `callMicroFor("tuning")` stay as they are until v10 is removed. */
+export type ModelFeature = "tuning" | "synopsis" | "intake" | "proposed_cuts" | "fits_read" | "suggested_changes_v2";
 
 export type Allowance = {
   used: number;

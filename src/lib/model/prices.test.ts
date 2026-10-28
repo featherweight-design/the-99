@@ -69,6 +69,10 @@ describe("FEATURE_CALLS", () => {
     // contract 8's first 4,500 and $0.432 at 6,000).
     expect(featureWorstCaseMicroUsd("tuning")).toBe(208_000);
     expect(featureWorstCaseMicroUsd("synopsis")).toBe(832_000);
+    // Suggested changes v2 (plan 2026-10-27, P1): four streamed calls at N=20's ceiling, each both attempts at 16,000 input
+    // and 22,000 reply tokens on Sonnet 5.5: 4 x 2 x (16,000 x $2 + 22,000 x $10) = $2.016. v10's `tuning` stays $0.208.
+    expect(FEATURE_CALLS.suggested_changes_v2.steps).toEqual(Array.from({ length: 4 }, () => ({ model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: 22_000 })));
+    expect(featureWorstCaseMicroUsd("suggested_changes_v2")).toBe(2_016_000);
     // The read: two steps under one reservation (rework plan, 2026-10-11). The shortlist on Haiku
     // 5.5's >100K card, its 175,000-token ceiling all at the cache-write rate, both attempts:
     // 2 x (175,000 x 1.25 x $0.50 + 4,000 x $2.50) = $0.239. The judgement on Sonnet 5.5:

@@ -208,6 +208,7 @@ export const adminCopy = {
       intake: "Help me choose",
       proposed_cuts: "Proposed cuts",
       fits_read: "Find a deck read",
+      suggested_changes_v2: "Suggested changes v2",
       labels: "Card labels",
       prose: "Commander prose",
       precon_overview: "Precon Overviews",
@@ -676,7 +677,7 @@ export const adminCopy = {
     note: "Note (optional)",
     confirm: (n: number) => `Turn on for ${n}`,
     cancel: "Cancel",
-    capability: { synopsis: "Overview", overview_v2: "Overview v2", tuning: "Suggested changes", proposed_cuts: "Proposed cuts", intake: "Help me choose", fits_read: "Find a deck read" },
+    capability: { synopsis: "Overview", overview_v2: "Overview v2", tuning: "Suggested changes", proposed_cuts: "Proposed cuts", intake: "Help me choose", fits_read: "Find a deck read", suggested_changes_v2: "Suggested changes v2" },
   },
 } as const;
 

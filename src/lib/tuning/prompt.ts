@@ -7,6 +7,7 @@ import type { EvidencePack } from "./evidence";
 import { ASK_PER_LIST } from "./limits";
 import { noteDate } from "./note-date";
 import { lockedCardsCopy } from "../copy/locked-cards";
+import type { BracketAim } from "./v2/bracket-aim";
 
 /**
  * The evidence pack, rendered as the two messages a tuning run sends. Pure string work.
@@ -40,6 +41,118 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
   // focus change reopens the gate through the fingerprint, as locks and limits do).
   const blocks = [renderPack(pack), pack.strategy ? strategyBlock(pack.strategy) : null, pack.focus ? focusBlock(pack.focus) : null];
   return { system, user: blocks.filter((b): b is string => b !== null).join("\n\n") };
+}
+
+/**
+ * Suggested changes v2's prompt (`PROMPT_VERSION_V2` 11; spec 2026-10-27 §4, §5, §10; plan PR 2 and H2, H3), for ONE call of
+ * the two-call flow: the additions stage, or the cut stage that makes room for what is coming in, each asked
+ * ceil(1.5N) (`askFor`), and either one's refill (asked the shortfall, told what stands and what fell and why). Composed from
+ * v10's own lines, so every rule both share is one text: only the size and aim sentences, the citation kinds (`notes` is the
+ * `request` in v2), the signal-trust order and the bracket choice differ, with the "Coming in" list and the refill's question
+ * appended to the user message. Derived from the count-mechanism prototype (`scripts/eval/count-mechanism.mts`'s
+ * `patchFlow`, `comingInBlock`, `refillBlock`), the flow the eval measured.
+ *
+ * THE REQUEST is the pack's `notes`: the field `renderPack` already sends through `playerText` at 500 characters
+ * (`deckDescriptionCopy.notes.maxLength`) under the system's `PLAYER_TEXT_SYSTEM_RULE`, and the one `validateSuggestions`
+ * quotes a `request` citation against. One field, so the words the model was shown and the words a citation is checked
+ * against cannot differ. `buildPrompt` (v10) is untouched; `prompt.test.ts` pins it byte for byte.
+ */
+export type PromptV2Stage = {
+  list: "additions" | "cuts";
+  /** The player's count: N cards in, N out. */
+  n: number;
+  /** How many lines this call asks for: ceil(1.5N) on a first ask, the shortfall on a refill. */
+  ask: number;
+  /** The bracket choice beside the request (H3), or none. */
+  aim: BracketAim | null;
+  /** The cut stage only: the additions coming in, by name (H2: what call 1 kept). */
+  comingIn?: readonly string[];
+  /** A refill: what this list kept so far, and each rejected card with the reason in its rule's own words (`reasonFor`). */
+  refill?: { kept: readonly string[]; rejected: readonly { card: string; reason: string }[] };
+};
+
+export function buildPromptV2(pack: EvidencePack, stage: PromptV2Stage): { system: string; user: string } {
+  const v10 = buildPrompt(pack);
+  const swap = new Map<string, string>([
+    [SIZE_LINE, sizeLineV2(stage)],
+    [AIM_LINE, aimLineV2(stage)],
+    [KINDS_LINE, KINDS_LINE.replace(" notes, ", " request, ")],
+    [NOTES_LINE, REQUEST_LINE],
+  ]);
+  const lines = v10.system.split("\n").flatMap((line) => {
+    const swapped = swap.get(line) ?? line;
+    if (line.startsWith(GROUND_PREFIX)) return [swapped, SIGNAL_TRUST_LINE];
+    if (line === AIM_LINE) return [swapped, ...bracketLines(stage)];
+    return [swapped];
+  });
+  for (const line of [SIZE_LINE, AIM_LINE, KINDS_LINE, NOTES_LINE]) {
+    if (!v10.system.split("\n").includes(line)) throw new Error(`buildPromptV2: v10's line moved: ${line.slice(0, 40)}`);
+  }
+  const user = [
+    v10.user,
+    ...(stage.list === "cuts" ? [comingInBlockV2(stage.comingIn ?? [])] : []),
+    ...(stage.refill ? [refillBlockV2(stage)] : []),
+  ].join("\n");
+  return { system: lines.join("\n"), user };
+}
+
+const GROUND_PREFIX = "Ground every card in the evidence you are given";
+const FILL = "Fill the list: when the evidence thins, choose the soundest remaining cards rather than offering fewer.";
+const REQUEST_LINE = "A request citation uses the player's own words from what they asked for this run. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.";
+/** Spec §4: the request first, then the overview, the focus and the deck's description (Hugh). */
+const SIGNAL_TRUST_LINE = "Weigh what you are given in this order, strongest first: what the player is asking for this run, then how the deck plays (its overview), then the player's focus, then what the deck is for. Use the others where they help answer the request, never in place of it. With no request, work from the deck's own weaknesses.";
+const INDEPENDENT = "Each card stands alone: never pair an addition with a cut, and never refer to a card in the other list.";
+
+function sizeLineV2(stage: PromptV2Stage): string {
+  return stage.list === "additions"
+    ? `Propose exactly ${stage.ask} cards to add; the cuts are chosen in a separate step. ${INDEPENDENT}`
+    : `Propose exactly ${stage.ask} cards to cut; the additions were chosen in an earlier step. ${INDEPENDENT}`;
+}
+
+function aimLineV2(stage: PromptV2Stage): string {
+  const own = "Give every card its own rationale and its own citations.";
+  return stage.list === "additions"
+    ? `The player wants ${stage.n} cards in. Choose the additions for what the player asked, and for the deck's weaknesses that the overview, the focus, the games and the targets show. ${FILL} ${own}`
+    : `The player is adding ${stage.comingIn?.length ?? 0} cards, listed under "Coming in", and the deck must stay its size. Choose the cuts that make room: the cards that make the least sense in this deck once those are in. ${FILL} ${own}`;
+}
+
+/**
+ * The bracket choice (H3; spec §5.4). The model is told the target so it can steer, and never names a bracket itself
+ * (`noBracketClaim`): the app shows each card's move, and `aimDrops` drops a line that breaks Keep or Down.
+ */
+function bracketLines(stage: PromptV2Stage): string[] {
+  const aim = stage.aim;
+  if (!aim) return [];
+  const t = aim.target;
+  const goal =
+    aim.choice === "keep"
+      ? `The player wants the deck to stay in bracket ${t}: no card you suggest may move it out of bracket ${t}.`
+      : aim.choice === "down"
+        ? stage.list === "additions"
+          ? `The player wants to bring the deck down to bracket ${t}: every addition must keep it within bracket ${t}.`
+          : `The player wants to bring the deck down to bracket ${t}: favor cuts that bring it down, the cards that hold it above bracket ${t}.`
+        : stage.list === "additions"
+          ? `The player wants to move the deck up to bracket ${t}: favor additions that move it there.`
+          : `The player wants to move the deck up to bracket ${t}.`;
+  return [goal, "Never name a bracket in a rationale or a citation: the app shows how each card moves it."];
+}
+
+/** What the cut stage is told is coming in: the additions kept, by name (prototype's `comingInBlock`). */
+function comingInBlockV2(adds: readonly string[]): string {
+  return ["", `Coming in (${adds.length}): ${adds.join("; ")}.`].join("\n");
+}
+
+/** The refill's question (spec §5.1, arm C): what stands, what fell and why, and exactly the shortfall. */
+function refillBlockV2(stage: PromptV2Stage): string {
+  const refill = stage.refill!;
+  const noun = stage.list === "additions" ? "additions" : "cuts";
+  return [
+    "",
+    "Your first answer was checked against the rules.",
+    `Kept, ${noun}: ${refill.kept.join("; ") || "none"}.`,
+    ...(refill.rejected.length > 0 ? ["Rejected, and why:", ...refill.rejected.map((r) => `- ${r.card}: ${r.reason}`)] : []),
+    `Propose exactly ${stage.ask} more ${noun}, following every rule above. Name none of the cards listed here.`,
+  ].join("\n");
 }
 
 /**
@@ -146,24 +259,30 @@ function strategyBlock(strategy: NonNullable<EvidencePack["strategy"]>): string 
 const COMMANDER_RULE = "Never suggest cutting a card marked as a commander.";
 const LOCKED_RULE = lockedCardsCopy.tuning.promptRule;
 
-const SYSTEM = [
+const SIZE_LINE = `Propose up to ${ASK_PER_LIST} cards to add and up to ${ASK_PER_LIST} cards to cut, as two separate lists. Each card stands alone: never pair an addition with a cut, and never refer to a card in the other list.`;
+const AIM_LINE = "Aim for as many cuts as additions, so the deck stays its size, but offer fewer of either when the evidence is thin. Give every card its own rationale and its own citations.";
+const KINDS_LINE = "Cite with one of seven kinds: games, note, decklist, intent, mix, notes, and focus, which only a deck with a focus may use. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.";
+const NOTES_LINE = "A notes citation uses the player's own words from what they asked for this run. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.";
+
+const SYSTEM_LINES = [
   "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.",
   PLAYER_TEXT_SYSTEM_RULE,
-  `Propose up to ${ASK_PER_LIST} cards to add and up to ${ASK_PER_LIST} cards to cut, as two separate lists. Each card stands alone: never pair an addition with a cut, and never refer to a card in the other list.`,
-  "Aim for as many cuts as additions, so the deck stays its size, but offer fewer of either when the evidence is thin. Give every card its own rationale and its own citations.",
+  SIZE_LINE,
+  AIM_LINE,
   "Ground every card in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
-  "Cite with one of seven kinds: games, note, decklist, intent, mix, notes, and focus, which only a deck with a focus may use. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.",
+  KINDS_LINE,
   "A games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\".",
   "A note citation names the date of the note you quote, as the notes list writes it: \"26 Aug\". Quote that note in the rationale.",
   "An intent citation uses the player's own words. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.",
-  "A notes citation uses the player's own words from what they asked for this run. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.",
+  NOTES_LINE,
   "A mix citation names a target and its figure as the targets list writes it: \"draw 4 of 10\".",
   "A card from the staples list is cited with a decklist citation, with the figure as the staples list writes it: \"Sol Ring: in 415 of 431 commanders' decks\". Never as a mix citation: a mix citation names a target from the targets list.",
   `Name cards exactly as the decklist and the staples list spell them. ${COMMANDER_RULE}`,
   "Rules. A suggestion that breaks any of these is discarded before the player sees it:",
   ...Object.values(deckTuningCopy.suggestionRules).map((rule) => `- ${rule}`),
   "Write the rationale in plain words for the player. rationaleShort is the same point in at most 80 characters.",
-].join("\n");
+];
+const SYSTEM = SYSTEM_LINES.join("\n");
 
 /**
  * The player's text as ONE line: each line break becomes a space, and nothing else changes.
