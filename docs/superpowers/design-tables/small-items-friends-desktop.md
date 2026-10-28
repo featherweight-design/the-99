@@ -2,7 +2,7 @@
 
 Sources: `design/design_handoff_the99_small_items/README.md` §6; `Friends-Desktop.dc.html` (redrawn frames `.dk.d4n` / `.fp.f6two`; shipped reference `.dk.d4s` / `.fp.f6one`). Board frame is 1300px wide with a 62px rail (`.rail`), so `.main` is ~1236px.
 
-Breakpoint: **from 1180px** (`min-[1180px]`, Home's two-column breakpoint). Under 1180 and on a phone: unchanged (shipped single column).
+Breakpoint: **from 1180px**, Home's two-column breakpoint, written `min-[73.75rem]` (an arbitrary `min-[1180px]` sorts ahead of `md`, so an `md:` value on the same property would beat it). Under 1180 and on a phone: unchanged (shipped single column).
 
 ## Page container
 

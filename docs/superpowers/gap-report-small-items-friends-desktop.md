@@ -1,7 +1,7 @@
 # Gap report — Small items 6 (/friends desktop, two columns from 1180px)
 
 Property table: `docs/superpowers/design-tables/small-items-friends-desktop.md`.
-Implementation verified at commit `cdd022875` (branch `small-items/friends-desktop`):
+Implementation verified on branch `small-items/friends-desktop` (PASS 1 at its first commit; Confirm below at the branch tip):
 `src/components/social/friends-view.tsx`, `pod-card.tsx`, and the section heads in
 `waiting-on-you.tsx`, `your-requests.tsx`, `friends-list.tsx`, `pods-pane.tsx`, `open-links.tsx`.
 
@@ -10,7 +10,7 @@ Implementation verified at commit `cdd022875` (branch `small-items/friends-deskt
 ### Page container (`friends-view.tsx`)
 | Property | Result |
 |---|---|
-| Width ≥1180 | ✅ MATCH (accepted deviation b) — design: 1160px / implementation: `min-[1180px]:max-w-[1160px]` (fills the ~1118px main at a 1180 viewport) |
+| Width ≥1180 | ✅ MATCH (accepted deviation b) — design: 1160px / implementation: `min-[73.75rem]:max-w-[1160px]` (fills the ~1118px main at a 1180 viewport) |
 | Centering | ✅ MATCH — `mx-auto` |
 | Padding | ✅ MATCH (accepted deviation c) — design: `36px 0 50px` / implementation: `md:pt-[36px] md:px-0 pb-[60px]` (shipped bottom kept) |
 | Display flex column | ✅ MATCH — block container whose children stack (head, then the grid); equivalent stacking, no gap involved |
@@ -25,11 +25,11 @@ Implementation verified at commit `cdd022875` (branch `small-items/friends-deskt
 ### Two-column grid (`[data-friends-cols]`)
 | Property | Result |
 |---|---|
-| Display | ✅ MATCH — `min-[1180px]:grid` |
-| Columns | ✅ MATCH — `min-[1180px]:grid-cols-[minmax(0,1fr)_420px]` |
-| Gap | ✅ MATCH — `min-[1180px]:gap-x-[44px]`, row gap 0 (default) |
-| Alignment | ✅ MATCH — `min-[1180px]:items-start` |
-| Column element | ✅ MATCH — `min-w-0 min-[1180px]:flex min-[1180px]:flex-col` |
+| Display | ✅ MATCH — `min-[73.75rem]:grid` |
+| Columns | ✅ MATCH — `min-[73.75rem]:grid-cols-[minmax(0,1fr)_420px]` |
+| Gap | ✅ MATCH — `min-[73.75rem]:gap-x-[44px]`, row gap 0 (default) |
+| Alignment | ✅ MATCH — `min-[73.75rem]:items-start` |
+| Column element | ✅ MATCH — `min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col` |
 | Left order | ✅ MATCH — `waiting` (WaitingOnYou, YourRequests) then FriendsList |
 | Right order | ✅ MATCH — `pods` (PodsPane) then OpenLinks |
 | DOM / reading order | ✅ MATCH — head, inbox, friends, pods, links (test asserts it) |
@@ -60,8 +60,8 @@ Implementation verified at commit `cdd022875` (branch `small-items/friends-deskt
 | Width fills 420 | ✅ MATCH — block in the 420px column |
 | Padding / radius / border / background / gap / overflow / blurred art | ✅ MATCH (accepted deviation a) — shipped values kept: padding `md:pt-6 pr-6 pb-8 pl-18`, `rounded-[12px]`, `--border-strong`, `--surface-rail`, wash opacity .30 `blur(34px) saturate(1.25)` |
 | Pod head | ✅ MATCH (a) — shipped (meta 11px vs board 10.5px is shipped) |
-| Seat grid columns | ✅ MATCH — `min-[1180px]:grid-cols-[repeat(3,116px)]`; fits: 420 − 2 border − 24 padding − 12 `mr` = 382 ≥ 372 |
-| Seat grid gap | ✅ MATCH — `md:gap-x-[12px]`, `min-[1180px]:gap-y-[12px]` |
+| Seat grid columns | ✅ MATCH — `min-[73.75rem]:grid-cols-[repeat(3,116px)]`; fits: 420 − 2 border − 24 padding − 12 `mr` = 382 ≥ 372 |
+| Seat grid gap | ✅ MATCH — `md:gap-x-[12px]`, `min-[73.75rem]:gap-y-[12px]` |
 | Seat / seat art / own seat / seat ✕ | ✅ MATCH (a) — shipped (art `md:h-[84px]` radius 10, ✕ 28×28) |
 | Wrap 5 + tile → two rows of three | ✅ MATCH — 3-column grid, tile is the last `li` |
 | Add friends tile | ✅ MATCH (a) — shipped (h 74, radius 10, 1.5px dashed) |
@@ -93,7 +93,7 @@ Implementation verified at commit `cdd022875` (branch `small-items/friends-deskt
 Note (not a table row): with no friends and no pods, PodsPane returns null and, with no open links, the right column is empty while the grid still reserves 420px. The table claims neither column is empty only for its drawn states.
 
 ## Gaps
-1. First-head alignment: the Pods head renders 41px (its 32px "New pod" button plus 8px padding and rule) against 32px heads on the left, so the right column's head rule sits ~9px lower at ≥1180. Fix: drop the button's `md:min-h-[32px]` inside the head at `min-[1180px]` (or let the button overflow the content box, e.g. `md:-my-…`), keeping the coarse-pointer hit target.
+1. First-head alignment: the Pods head renders 41px (its 32px "New pod" button plus 8px padding and rule) against 32px heads on the left, so the right column's head rule sits ~9px lower at ≥1180. Fix: drop the button's `md:min-h-[32px]` inside the head at `min-[73.75rem]` (or let the button overflow the content box, e.g. `md:-my-…`), keeping the coarse-pointer hit target.
 
 ## Accepted deviations
 - (a) Pod card keeps shipped padding, radius, border, wash, seat art, ✕ and tile sizes; the board's `.f6pod` approximates "as shipped".
@@ -109,3 +109,5 @@ One MISMATCH (Pods head height breaks the first-head rule alignment). Everything
 2. Found by the walk, not by the table: every 1180 override lost to its `md:` counterpart. Tailwind orders an arbitrary `min-[1180px]` ahead of `md` (48rem) because the units differ, so the seat grid stayed five columns and the page scrolled sideways (99px over at 1180, 60px at 1300). **FIXED** by writing this PR's breakpoint in rem (`min-[73.75rem]`). The walk now measures no horizontal page scroll at 390, 1179, 1180 and 1300, with a three-column seat grid in the 420px right column.
 
 VERDICT: 0 gaps remain.
+
+PASS 1's rows above name the breakpoint as the branch now ships it (`min-[73.75rem]`); they were verified when it read `min-[1180px]`, which is the defect item 2 records.
