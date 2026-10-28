@@ -56,6 +56,8 @@ export type SynopsisRow = {
   content: CheckedSynopsis;
   /** The change log head the reading it was written from had seen (deck notices plan D11). */
   seenSeq?: number;
+  /** A precon start carried it over (`precon_file` set, `carry-over.ts`): the label row says so. */
+  fromPrecon?: boolean;
 };
 
 export type WriteResult =
@@ -242,6 +244,7 @@ export async function readShownSynopsis(
       createdAt: deckSynopses.createdAt,
       content: deckSynopses.content,
       seenSeq: deckSynopses.seenSeq,
+      fromPrecon: sql<boolean>`(${deckSynopses.preconFile} is not null)`,
     })
     .from(deckSynopses)
     .where(and(

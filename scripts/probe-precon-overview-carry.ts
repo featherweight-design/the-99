@@ -3,7 +3,13 @@
 //   THE START: a deck started from that precon carries over its bracket reading (a fresh
 //   `deck_profiles` row with its permits) and its Overview: the deck's shown synopsis IS the carried
 //   row (`precon_file` set, no allowance unit), `readSynopsisState` calls it fresh, and v0 names it.
-//   ONCE: a second carry-over attaches nothing (`has_synopsis`).
+//   ONCE: a second carry-over attaches nothing (`has_synopsis`), and a double ARRIVAL (`carryOnArrival`,
+//   the landing's inline run, twice) writes nothing more: one reading as stored, one Overview.
+//   THE DATE LINE: the carried reading is v0's (number 0), which the verdict says is the precon list's.
+//   THE STORED COPY (PR 6): the arrival copies the precon's stored reading (written by the stub build) and
+//   its Overview with no compute: the same permits and profile a compute gives, v0's pin, the deck's own
+//   id, dated when the Overview was written; a second arrival does nothing; a stored reading that is not
+//   fresh copies nothing and says to fall back.
 //   THE FIRST EDIT: one card added through `touchDeck` makes the same read call it stale.
 //   NOT CURRENT: a deck started from a precon whose row is not current gets the reading, no Overview.
 //   ANOTHER BASIS: an owner counting roles by the other basis gets no Overview built at this one.
@@ -41,6 +47,10 @@ async function main() {
   const { readSynopsisState } = await import("../src/lib/synopsis/read");
   const { touchDeck } = await import("../src/lib/decks/touch");
   const { overviewDataMovedFor } = await import("../src/lib/notices/overview");
+  const { carryOnArrival } = await import("../src/lib/precons/arrival-carry");
+  const { readStoredReading, requestProfileDeps } = await import("../src/lib/profile/stored");
+  const { analyzedLine } = await import("../src/components/decks/verdict-block");
+  const { carryStoredOnArrival } = await import("../src/lib/precons/stored-carry");
 
   const { rows: [branch] } = await db.execute<{ id: string | null }>(sql`select current_setting('neon.branch_id', true) as id`);
   assertScratchBranch(branch?.id ?? null, "probe:precon-overview-carry");
@@ -78,10 +88,42 @@ async function main() {
     const [v0] = await db.select({ id: deckVersions.id }).from(deckVersions).where(eq(deckVersions.deckId, deckId));
     const [pin] = await db.select().from(deckVersionSynopses).where(eq(deckVersionSynopses.versionId, v0.id));
     check("v0 names the carried Overview", pin?.synopsisId === row.id, `pin ${pin?.synopsisId}`);
+    // Ruling 1, on the computing path too (the fallback, and every Precons I own start): both rows carry the
+    // date the precon's Overview was written.
+    const [srcRow] = await db.select({ createdAt: preconSynopses.createdAt }).from(preconSynopses).where(and(mine, eq(preconSynopses.preconFile, files[0])));
+    const [dated] = await db.select({ at: deckProfiles.computedAt }).from(deckProfiles).where(eq(deckProfiles.deckId, deckId));
+    check("the computing carry-over dates the reading and the Overview when the precon's Overview was written", dated?.at.getTime() === srcRow.createdAt.getTime() && row.createdAt.getTime() === srcRow.createdAt.getTime(), `reading ${dated?.at.toISOString()}, overview ${row.createdAt.toISOString()}, precon ${srcRow.createdAt.toISOString()}`);
 
     const again = await carryOverPreconOverview(deckId, USER, ON);
     const [readingAgain] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, deckId));
-    check("a second carry-over attaches nothing and leaves the reading as it was", !again.attached && again.reason === "no_reading" && readingAgain?.computedAt.getTime() === reading?.computedAt.getTime(), `${JSON.stringify(again)}, computed ${reading?.computedAt.toISOString()} then ${readingAgain?.computedAt.toISOString()}`);
+    check("a second carry-over attaches nothing and leaves the reading as it was", !again.attached && again.reason === "has_reading" && readingAgain?.computedAt.getTime() === reading?.computedAt.getTime(), `${JSON.stringify(again)}, computed ${reading?.computedAt.toISOString()} then ${readingAgain?.computedAt.toISOString()}`);
+    await carryOnArrival(true, deckId, USER, ON);
+    await carryOnArrival(true, deckId, USER, ON);
+    const [readingArrived] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, deckId));
+    const synopses = await db.select({ id: deckSynopses.id }).from(deckSynopses).where(eq(deckSynopses.deckId, deckId));
+    check("a double arrival is a no-op: one reading as stored, one Overview", synopses.length === 1 && synopses[0].id === row.id && readingArrived?.computedAt.getTime() === reading?.computedAt.getTime() && readingArrived?.dirty === false, `synopses ${synopses.length}, computed ${readingArrived?.computedAt.toISOString()}`);
+    const stored = await readStoredReading(deckId, USER, requestProfileDeps(ON));
+    check("the carried reading is v0's, and its date line says the precon list", stored?.versionNumber === 0 && analyzedLine(stored.analyzedAt, new Date(), stored.fresh, stored.versionNumber).startsWith("Analysis from the precon list · "), `version ${stored?.versionNumber}, fresh ${stored?.fresh}`);
+
+    // THE STORED COPY: a fresh deck of the same precon, copied from the stored reading with no compute.
+    const copied = await start(files[0]);
+    const [src] = await db.select().from(preconSynopses).where(and(mine, eq(preconSynopses.preconFile, files[0])));
+    const c1 = await carryStoredOnArrival(copied, USER, ON);
+    const [cp] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, copied));
+    const [cs] = await db.select().from(deckSynopses).where(eq(deckSynopses.deckId, copied));
+    check("the arrival copies the stored reading and Overview", c1.kind === "copied" && c1.overview && !!cp && !!cs && cs.preconFile === files[0] && cs.modelCallId === null, JSON.stringify(c1));
+    check("the copy is the reading a compute gives this deck", !!cp && JSON.stringify(cp.permits) === JSON.stringify(reading?.permits) && cp.fingerprint === reading?.fingerprint && cp.profile.fingerprint === reading?.profile.fingerprint && cp.profile.deckId === copied && !cp.dirty, `permits ${JSON.stringify(cp?.permits)} vs ${JSON.stringify(reading?.permits)}`);
+    const copiedStored = await readStoredReading(copied, USER, requestProfileDeps(ON));
+    check("pinned to v0, fresh, and dated when the precon's Overview was written", copiedStored?.versionNumber === 0 && copiedStored.fresh && copiedStored.analyzedAt.getTime() === src.createdAt.getTime() && cs?.createdAt.getTime() === src.createdAt.getTime(), `version ${copiedStored?.versionNumber}, at ${copiedStored?.analyzedAt.toISOString()} vs ${src.createdAt.toISOString()}`);
+    const c2 = await carryStoredOnArrival(copied, USER, ON);
+    const synCount = (await db.select({ id: deckSynopses.id }).from(deckSynopses).where(eq(deckSynopses.deckId, copied))).length;
+    check("a second arrival does nothing", c2.kind === "nothing" && synCount === 1, JSON.stringify(c2));
+    await db.update(preconSynopses).set({ readingProfileVersion: 0 }).where(and(mine, eq(preconSynopses.preconFile, files[0])));
+    const stale = await start(files[0]);
+    const c3 = await carryStoredOnArrival(stale, USER, ON);
+    const [staleRow] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, stale));
+    check("a stored reading that is not fresh copies nothing and falls back", c3.kind === "fallback" && c3.reason === "not_fresh" && !staleRow, JSON.stringify(c3));
+    await db.update(preconSynopses).set({ readingProfileVersion: src.readingProfileVersion }).where(and(mine, eq(preconSynopses.preconFile, files[0])));
 
     // One edit: a card the deck does not hold, added as every list edit is, through `touchDeck`.
     const [extra] = await db.select({ id: cards.oracleId }).from(cards)
@@ -115,6 +157,8 @@ async function main() {
     const nc = await carryOverPreconOverview(second, USER, ON);
     const [ncReading] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, second));
     check("a precon whose row is not current: the reading, no Overview", !nc.attached && nc.reason === "not_current" && !!ncReading, `${JSON.stringify(nc)}, reading ${!!ncReading}`);
+    const [ncSrc] = await db.select({ createdAt: preconSynopses.createdAt }).from(preconSynopses).where(and(mine, eq(preconSynopses.preconFile, files[1])));
+    check("with no Overview attached the reading keeps its own date", !!ncReading && ncReading.computedAt.getTime() !== ncSrc.createdAt.getTime() && Date.now() - ncReading.computedAt.getTime() < 10 * 60_000, `reading ${ncReading?.computedAt.toISOString()}, precon ${ncSrc.createdAt.toISOString()}`);
 
     // An owner on the OTHER role basis: the reading is theirs, and the classifier's Overview is not attached.
     const labelsDeck = await start(files[0]);

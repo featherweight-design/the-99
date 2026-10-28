@@ -147,6 +147,12 @@ export const deckAnalysisCopy = {
     analyzedCommitted: (version: number, date: string) => `analyzed with version ${version} · ${date}`,
     analyzedStale: (date: string) => `analyzed ${date}, before your changes`,
     /**
+     * A reading of a precon start's v0, the precon's own list (small items 5, `Precon-Overview`): the
+     * deck starts with it, nothing pressed, and the first edit stales it as any reading.
+     */
+    analyzedPrecon: (date: string) => `Analysis from the precon list · ${date}`,
+    analyzedPreconStale: (date: string) => `Analysis from the precon list · ${date}, before your changes`,
+    /**
      * Ruling 1 (Hugh, 2026-09-23): analysis runs only on a whole deck. Undrawn in the handoff;
      * the line sits where the press would, and the press is disabled. Goes to /copy-review.
      */

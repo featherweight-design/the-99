@@ -38,13 +38,17 @@ import { carryOverDecision } from "./overview";
 
 export type CarryOverResult =
   | { attached: true; synopsisId: string }
-  | { attached: false; reason: "off" | "none" | "not_current" | "list_moved" | "not_a_precon" | "illegal" | "no_reading" | "has_synopsis" };
+  | { attached: false; reason: "off" | "none" | "not_current" | "list_moved" | "not_a_precon" | "illegal" | "no_reading" | "has_synopsis" | "has_reading" };
 
 /** Attach `deckId`'s precon Overview, if it is honest to. `env` is the OWNER's resolved switches. */
 export async function carryOverPreconOverview(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<CarryOverResult> {
   if (!analysisTabEnabled(env)) return { attached: false, reason: "off" };
   const [deck] = await db.select({ precon: decks.builtFromPrecon }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   if (!deck?.precon) return { attached: false, reason: "not_a_precon" };
+  // A DECK THAT ALREADY HAS A READING has nothing to carry: the arrival copied it, a press wrote one, or
+  // this ran before. Said before any compute, and silently (`carryOverAfterStart`): a repeat is not news.
+  const [read] = await db.select({ id: deckProfiles.deckId }).from(deckProfiles).where(eq(deckProfiles.deckId, deckId)).limit(1);
+  if (read) return { attached: false, reason: "has_reading" };
   const head = await db.transaction((tx) => readProfileHead(tx, deckId, userId));
   if (!head) return { attached: false, reason: "not_a_precon" };
   const list = listFingerprint(head);
@@ -100,7 +104,12 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
       deckId, userId, fingerprint: list, contractVersion: src.contractVersion, model: src.model,
       modelCallId: null, preconFile: deck.precon!, status: "done", outcome: "survived", content: src.content,
       seenSeq,
+      // RULING 1 (d9): the deck's read is the precon's, so both rows carry the date its Overview was written,
+      // as the arrival's copy does (`stored-carry.ts`). The reading row is re-dated below, in this transaction.
+      createdAt: src.createdAt,
     }).returning({ id: deckSynopses.id });
+    await tx.update(deckProfiles).set({ computedAt: src.createdAt })
+      .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId), eq(deckProfiles.fingerprint, list), eq(deckProfiles.dirty, false)));
     if (v0) {
       await tx.insert(deckVersionSynopses)
         .select(tx.select({ versionId: sql<string>`${v0.id}::uuid`.as("version_id"), synopsisId: sql<string>`${written.id}::uuid`.as("synopsis_id") })
@@ -111,11 +120,21 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
   });
 }
 
+/**
+ * The one line a carry-over logs, or none. Nothing to do is SILENT: the switch off, no Overview to carry,
+ * or a deck already read (a repeat arrival, a replayed start), which is not news (d9, 2026-10-28).
+ */
+export function carryLogLine(r: CarryOverResult): string | null {
+  if (r.attached || r.reason === "off" || r.reason === "none" || r.reason === "has_reading") return null;
+  return `precon overview not carried over: ${r.reason}`;
+}
+
 /** The start's `after()` body: never throws into a response that has already been sent. */
 export async function carryOverAfterStart(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<void> {
   try {
     const r = await carryOverPreconOverview(deckId, userId, env);
-    if (!r.attached && r.reason !== "off" && r.reason !== "none") console.info(`precon overview not carried over: ${r.reason}`);
+    const line = carryLogLine(r);
+    if (line) console.info(line);
   } catch (error) {
     console.warn("the precon overview was not carried over", error);
   }

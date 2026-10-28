@@ -160,6 +160,13 @@ export function SynopsisOverview({
   // its caption and drops its button (rule 7): two buttons with different notes would run one write.
   const showNotice = !!mn && !!synopsis && !writing;
   const noticeLeads = showNotice && freeLeft && !readingFresh && state.pressWrites;
+
+  // WHERE A CARRIED OVERVIEW CAME FROM (small items 5): a precon start's, said in the label row while
+  // its list is the reading's (fresh), and once an edit stales that reading. After Re-analyze the
+  // reading is the deck's own and ruling D's line says the rest, so the aside goes.
+  const carriedAside = synopsis?.fromPrecon && !writing && !(stale && readingFresh)
+    ? stale ? synopsisCopy.fromPreconStale : synopsisCopy.fromPrecon
+    : null;
   const showsNoticePress = showNotice && !noticeLeads;
 
   // 1d over a held overview: the new write failed, so the failure leads, and the held paragraph under
@@ -283,6 +290,9 @@ export function SynopsisOverview({
         <h3 id="synopsis-overview-label" className="font-mono uppercase text-[9.5px] tracking-[0.14em] md:text-[10px] md:tracking-[0.16em] text-[var(--fg-faint)]">
           {synopsisCopy.label}
         </h3>
+        {carriedAside ? (
+          <small data-testid="overview-carried-aside" className="font-mono text-[10.5px] text-[var(--fg-faint)]">{carriedAside}</small>
+        ) : null}
         {synopsis && writing ? (
           <span ref={statusRef} tabIndex={-1} role="status" data-testid="overview-writing-new" className="inline-flex items-center gap-[8px] outline-none">
             <WorkPulse />

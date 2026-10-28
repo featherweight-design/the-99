@@ -32,19 +32,9 @@ export function preconPins(lines: readonly PreconLine[]): ImportPrintingPick[] {
   return [...pins.values()];
 }
 
-/**
- * The list a start writes: every card but the commanders, one row per card, because the feed can list
- * one card under two printings. ONE definition: the pre-written overview's list fingerprint
- * (`precons/overview.ts`) must be the fingerprint of exactly the deck this writes.
- */
-export function preconDeckCards(lines: readonly Pick<PreconLine, "oracleId" | "quantity" | "isCommander">[]): { oracleId: string; quantity: number }[] {
-  const body = new Map<string, number>();
-  for (const l of lines) {
-    if (l.isCommander) continue;
-    body.set(l.oracleId, (body.get(l.oracleId) ?? 0) + l.quantity);
-  }
-  return [...body].map(([oracleId, quantity]) => ({ oracleId, quantity }));
-}
+// The list a start writes lives in `deck-cards.ts` (pure), so a page can fingerprint it without this module.
+import { preconDeckCards } from "./deck-cards";
+export { preconDeckCards };
 
 /** A precon's deck, read and checked, ready to write: everything but the reader's name for it. */
 export type PreparedPreconDeck = {
