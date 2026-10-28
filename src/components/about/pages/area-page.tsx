@@ -14,7 +14,7 @@ import { LabelledScreen } from "./labelled-screen";
 import { OnThisPage } from "./on-this-page";
 import { GoodToKnow, type RuleCardModel } from "./rule-card";
 import { TryIt } from "./try-it";
-import { LabelLanding, type Landing, type PageCard } from "../../discovery/label-landing";
+import { LabelLanding, type Landable, type PageCard } from "../../discovery/label-landing";
 import { ThemeRefresh } from "./theme-refresh";
 
 export type AreaSection = {
@@ -33,16 +33,16 @@ export type AreaSection = {
 const TABS: readonly PlaceTab[] = ABOUT_AREAS.map((a) => ({ place: a.id, href: `/about/${a.id}`, label: a.name }));
 
 export function AreaPage({
-  area, sections, theme, landing = null, landingRequest = null,
+  area, sections, theme, landable = {}, initialLit = null,
 }: {
   area: AboutArea;
   sections: readonly AreaSection[];
   /** The theme the captures were chosen in: a theme picked after it asks the server again. */
   theme: string;
-  /** The label a Show me landed on, or null. */
-  landing?: Landing | null;
-  /** The render's token when the address carried `?lit=`, which the landing strips. */
-  landingRequest?: string | null;
+  /** The labels this page can land a Show me on, and whether each is New to the reader (`landableIn`). */
+  landable?: Landable;
+  /** The request's `?lit=` when it names a landable label, so the first paint is already lit. */
+  initialLit?: string | null;
 }) {
   const copy = ABOUT_AREAS.find((a) => a.id === area)!;
   return (
@@ -66,7 +66,7 @@ export function AreaPage({
         />
         <ThemeRefresh drawnIn={theme} />
         <OnThisPage sections={sections.map((s) => ({ id: s.id, name: s.name }))} />
-        <LabelLanding landing={landing} request={landingRequest}>
+        <LabelLanding landable={landable} initialLit={initialLit} cards={sections.flatMap((s) => s.tools)}>
           {sections.map((s, i) => (
             <section
               key={s.id}

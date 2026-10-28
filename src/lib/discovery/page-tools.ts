@@ -38,18 +38,34 @@ export const sectionOf = (labelKey: string) => labelKey.split("/").slice(0, 2).j
  * handoff's placement), then any tool that falls back to one of its labels, in registry order. A section with no card
  * is absent.
  */
-export function pageTools(visible: readonly VisibleSection[], input: CardInput): Map<string, PageToolCard[]> {
+/** Where each tool on the About pages sits: the section of the first of its labels drawn for the reader, while its
+ * switch is on. Needs no reader data, so a page can ask only about the tools it will draw. */
+function placeTools(visible: readonly VisibleSection[], isOn: CardInput["isOn"]): Map<string, { tool: Tool; label: string }[]> {
   const placed = new Map<string, { tool: Tool; label: string }[]>();
   const tools: readonly Tool[] = TOOLS;
   for (const t of tools) {
-    if (t.switch !== null && !input.isOn(t.switch)) continue;
+    if (t.switch !== null && !isOn(t.switch)) continue;
     const label = showMeLabel(t.labels, visible);
     if (label === null) continue;
     const key = sectionOf(label);
     placed.set(key, [...(placed.get(key) ?? []), { tool: t, label }]);
   }
+  return placed;
+}
+
+/** The ids of the tools `area`'s page draws, for `loadCardInput` to read fits for those alone. */
+export function toolIdsIn(visible: readonly VisibleSection[], isOn: CardInput["isOn"], area: AboutArea): string[] {
+  return [...placeTools(visible, isOn)]
+    .filter(([key]) => key.split("/")[0] === area)
+    .flatMap(([, here]) => here.map((p) => p.tool.id));
+}
+
+/** Each section's tool cards, keyed `<area>/<section>`; with `area`, that area's sections only. */
+export function pageTools(visible: readonly VisibleSection[], input: CardInput, area?: AboutArea): Map<string, PageToolCard[]> {
+  const placed = placeTools(visible, input.isOn);
   const out = new Map<string, PageToolCard[]>();
   for (const s of visible) {
+    if (area !== undefined && s.area !== area) continue;
     const key = `${s.area}/${s.id}`;
     const here = placed.get(key);
     if (!here) continue;
@@ -69,7 +85,7 @@ export function pageTools(visible: readonly VisibleSection[], input: CardInput):
 /** A tool card as an About page draws it: the model, and its picture at each width (call 0). */
 export type PageCard = { card: PageToolCard; phone: Shot | null; desktop: Shot | null };
 
-/** A Show me landing (`?lit=`), as the page decided it. */
+/** A Show me landing (`?lit=`), as the page lands it. */
 export type Landing = {
   /** The label lit: a label key this page draws. */
   key: string;
@@ -79,16 +95,32 @@ export type Landing = {
   card: PageCard | null;
 };
 
+/** Every label `area`'s page draws for the reader, keyed by label key, and whether it is New to them. The server's
+ * half of a landing: the page decides this once, and the client lands each `?lit=` the live address carries on it. */
+export type Landable = Readonly<Record<string, { isNew: boolean }>>;
+
 /**
- * The landing `lit` asks for on `area`'s page: a label that page draws, else null (another page's label, one switched
- * off, a repeated parameter, anything else). New when the reader has not been told about it, by the banner's own rule
- * (`unseenUnits`: nothing is new to a first-run reader).
+ * The labels `area`'s page can land on: the labels it draws for the reader. New when the reader has not been told
+ * about it, by the banner's own rule (`unseenUnits`: nothing is new to a first-run reader).
  */
-export function landingFor(
-  lit: unknown, area: AboutArea, visible: readonly VisibleSection[], seen: SeenState, cards: readonly PageCard[],
-): Landing | null {
-  if (typeof lit !== "string") return null;
-  if (!visible.some((s) => s.area === area && s.labels.some((l) => l.key === lit))) return null;
-  const isNew = unseenUnits(visible, seen).some((u) => u.key === lit);
-  return { key: lit, isNew, card: cards.find((c) => c.card.label === lit) ?? null };
+export function landableIn(area: AboutArea, visible: readonly VisibleSection[], seen: SeenState): Landable {
+  const unseen = new Set(unseenUnits(visible, seen).map((u) => u.key));
+  const out: Record<string, { isNew: boolean }> = {};
+  for (const s of visible) {
+    if (s.area !== area) continue;
+    for (const l of s.labels) out[l.key] = { isNew: unseen.has(l.key) };
+  }
+  return out;
 }
+
+/**
+ * The landing `lit` asks for: a label the page can land on (`landableIn`), else null (another page's label, one
+ * switched off, a repeated parameter, anything else). Carries the card of the tool whose Show me lights it.
+ */
+export function landingFor(lit: unknown, landable: Landable, cards: readonly PageCard[]): Landing | null {
+  if (typeof lit !== "string" || !Object.hasOwn(landable, lit)) return null;
+  return { key: lit, isNew: landable[lit].isNew, card: cards.find((c) => c.card.label === lit) ?? null };
+}
+
+/** The section a landing reveals: a label key's second segment, the section's element id. */
+export const landingSectionId = (labelKey: string) => labelKey.split("/")[1] ?? "";

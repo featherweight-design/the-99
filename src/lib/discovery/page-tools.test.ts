@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { visibleSections, type VisibleSection } from "../about/pages-visible";
-import { NEVER_SEEN } from "../about/visible";
+import { NEVER_SEEN, type SeenState } from "../about/visible";
 import { SWITCH_FLAGS } from "../switches/flags";
 import { SWITCH_NAMES, type SwitchName } from "../switches/registry";
-import { landingFor, pageTools, showMeHref, type PageCard } from "./page-tools";
+import { landableIn, landingFor, landingSectionId, pageTools, showMeHref, type PageCard } from "./page-tools";
 import type { CardInput } from "./showcase";
 import { TOOLS } from "./tools";
 
@@ -79,34 +79,45 @@ describe("showMeHref", () => {
   });
 });
 
-describe("landingFor", () => {
+describe("landableIn and landingFor", () => {
   const visible = visibleSections(ALL_ON);
   const cards: PageCard[] = [...pageTools(visible, input(ALL_ON)).values()].flat().map((card) => ({ card, phone: null, desktop: null }));
   const cuts = "decks/analysis/cuts";
+  const land = (seen: SeenState, v = visible) => landableIn("decks", v, seen);
+
+  it("can land on exactly the labels the page draws for the reader", () => {
+    const drawn = visible.filter((s) => s.area === "decks").flatMap((s) => s.labels.map((l) => l.key));
+    expect(Object.keys(land({ version: 16, ids: [] })).sort()).toEqual([...drawn].sort());
+  });
 
   it("marks a label the reader has not been told about New, with its tool's card", () => {
-    const l = landingFor(cuts, "decks", visible, { version: 16, ids: [] }, cards);
+    const l = landingFor(cuts, land({ version: 16, ids: [] }), cards);
     expect(l).toMatchObject({ key: cuts, isNew: true });
     expect(l?.card?.card.id).toBe("proposed-cuts");
   });
 
   it("lights a label the reader has been told about with no New mark", () => {
-    expect(landingFor(cuts, "decks", visible, { version: 16, ids: [cuts] }, cards)).toMatchObject({ key: cuts, isNew: false });
+    expect(landingFor(cuts, land({ version: 16, ids: [cuts] }), cards)).toMatchObject({ key: cuts, isNew: false });
     // A first-run reader is introduced to the pages: nothing is new to them.
-    expect(landingFor(cuts, "decks", visible, NEVER_SEEN, cards)).toMatchObject({ isNew: false });
+    expect(landingFor(cuts, land(NEVER_SEEN), cards)).toMatchObject({ isNew: false });
   });
 
   it("lands nowhere for another page's label, an unknown key, a repeated parameter or a label switched off", () => {
     const seen = { version: 16, ids: [] };
-    expect(landingFor("friends/friends/add", "decks", visible, seen, cards)).toBeNull();
-    expect(landingFor("decks/analysis/nope", "decks", visible, seen, cards)).toBeNull();
-    expect(landingFor([cuts, cuts], "decks", visible, seen, cards)).toBeNull();
-    expect(landingFor(undefined, "decks", visible, seen, cards)).toBeNull();
-    expect(landingFor(cuts, "decks", visibleSections(without("PROPOSED_CUTS_ENABLED")), seen, cards)).toBeNull();
+    expect(landingFor("friends/friends/add", land(seen), cards)).toBeNull();
+    expect(landingFor("decks/analysis/nope", land(seen), cards)).toBeNull();
+    expect(landingFor([cuts, cuts], land(seen), cards)).toBeNull();
+    expect(landingFor(undefined, land(seen), cards)).toBeNull();
+    expect(landingFor("toString", land(seen), cards)).toBeNull();
+    expect(landingFor(cuts, land(seen, visibleSections(without("PROPOSED_CUTS_ENABLED"))), cards)).toBeNull();
   });
 
   it("carries no card for a label no tool aims at", () => {
     const visibleLabel = visible.find((s) => s.id === "analysis")!.labels.find((l) => !TOOLS.some((t) => (t.labels as readonly string[]).includes(l.key)))!;
-    expect(landingFor(visibleLabel.key, "decks", visible, { version: 16, ids: [] }, cards)?.card).toBeNull();
+    expect(landingFor(visibleLabel.key, land({ version: 16, ids: [] }), cards)?.card).toBeNull();
+  });
+
+  it("reveals the label's own section", () => {
+    expect(landingSectionId(cuts)).toBe("analysis");
   });
 });

@@ -195,13 +195,13 @@ function LabelList({
 function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
   // A Show me landing lights its label through this same state, as a press would (`label-landing.tsx`). A later
   // landing on this page (another Show me while it is open, the same label's included) lights its label, adjusted
-  // during render. Keyed on the landing's request token, not its label: Next keeps this state across a search-param
-  // change, so a second Show me to a label the reader has since turned off would otherwise leave it dark.
+  // during render. Keyed on the landing's token, not its label: a second Show me to a label the reader has since turned
+  // off lands the same label again, and keying on the label would leave it dark.
   const landing = useLabelLanding();
   const request = useLandingRequest();
   const landed = landing !== null && model.labels.some((l) => l.key === landing.key) ? landing.key : null;
   const [lit, setLit] = useState<string | null>(landed);
-  const [from, setFrom] = useState<string | null>(request);
+  const [from, setFrom] = useState<number>(request);
   if (request !== from) {
     setFrom(request);
     if (landed !== null) setLit(landed);

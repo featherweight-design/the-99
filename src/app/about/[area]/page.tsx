@@ -7,9 +7,8 @@
 // is a 404. Each section's Good to know rules are its visible rules, their switched sentences and diagram parts cut.
 // Each section's Try it is its tools whose switch is on and whose label is drawn (`pageTools`), and a `?lit=` naming a
 // label this page draws lands on it: lit, and, when the reader has not been told about it (`unseenUnits`), marked New
-// with its tool card (PR 5, call 7). Nothing is written here: the visit's seen write is PR 6b's.
+// with its tool card (PR 5, call 7). The server hands over which labels can land (`landableIn`); the client lands. Nothing is written here: the visit's seen write is PR 6b's.
 
-import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { aboutSeen } from "../../../lib/about/read";
@@ -18,8 +17,8 @@ import { visibleSections } from "../../../lib/about/pages-visible";
 import { screenModel } from "../../../lib/about/pins";
 import { shotFor, toolShotId, type Shot } from "../../../lib/about/shots";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../../lib/copy/about-pages";
-import { LIT_PARAM, landingFor, pageTools, type PageCard, type PageToolCard } from "../../../lib/discovery/page-tools";
-import { loadCardInput } from "../../../lib/discovery/showcase-input";
+import { LIT_PARAM, landableIn, pageTools, toolIdsIn, type PageCard, type PageToolCard } from "../../../lib/discovery/page-tools";
+import { loadCardInput, switchesOn } from "../../../lib/discovery/showcase-input";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { resolveTheme } from "../../../lib/theme/server";
 import { AreaPage } from "../../../components/about/pages/area-page";
@@ -43,9 +42,15 @@ export default async function AboutAreaRoute({
   const [userId, { area }, query] = await Promise.all([requireUserId(), params, searchParams]);
   if (!isArea(area)) notFound();
   const env = await requestSwitchEnv(userId);
-  const [theme, cardInput, seen] = await Promise.all([resolveTheme(), loadCardInput(userId, env), aboutSeen(userId)]);
   const visible = visibleSections(env);
-  const tools = pageTools(visible, cardInput);
+  // Fits are read for the tools this area draws alone; an area with none reads none.
+  const here = toolIdsIn(visible, switchesOn(env), area);
+  const [theme, cardInput, seen] = await Promise.all([
+    resolveTheme(),
+    here.length > 0 ? loadCardInput(userId, env, undefined, here) : null,
+    aboutSeen(userId),
+  ]);
+  const tools = cardInput ? pageTools(visible, cardInput, area) : new Map<string, PageToolCard[]>();
   const cardOf = (card: PageToolCard): PageCard => ({
     card,
     phone: shotFor(theme, toolShotId(card.id)),
@@ -62,15 +67,12 @@ export default async function AboutAreaRoute({
       rules: s.rules.flatMap((r) => (r.diagram ? [{ key: r.key, text: r.text, diagram: r.diagram }] : [])),
       tools: (tools.get(`${s.area}/${s.id}`) ?? []).map(cardOf),
     }));
+  // The server decides only what a landing needs to know about the reader: which labels this page can land on and
+  // whether each is New to them. The landing itself follows the LIVE address on the client (`LabelLanding`), because a
+  // second Show me to this page is served from the router's cache with no render here. `initialLit` lights the first
+  // paint when the request itself carried a label this page can land on.
+  const landable = landableIn(area, visible, seen);
   const lit = query[LIT_PARAM];
-  const landing = landingFor(lit, area, visible, seen, sections.flatMap((s) => s.tools));
-  return (
-    <AreaPage
-      area={area}
-      sections={sections}
-      theme={theme}
-      landing={landing}
-      landingRequest={lit === undefined ? null : randomUUID()}
-    />
-  );
+  const initialLit = typeof lit === "string" && Object.hasOwn(landable, lit) ? lit : null;
+  return <AreaPage area={area} sections={sections} theme={theme} landable={landable} initialLit={initialLit} />;
 }

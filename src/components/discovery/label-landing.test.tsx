@@ -1,14 +1,15 @@
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScreenModel } from "../../lib/about/pins";
-import type { Landing, PageCard } from "../../lib/discovery/page-tools";
+import type { Landable, PageCard } from "../../lib/discovery/page-tools";
 import { LabelledScreen } from "../about/pages/labelled-screen";
 import { TryIt } from "../about/pages/try-it";
 import { LabelLanding } from "./label-landing";
 
 // Show me's landing (About visual PR 5, call 7, Ways-In board): the label lit through the labelled screen's own state;
 // New, Show me and the tool card only for a label the reader has not been told about (on a phone under the label,
-// from md lit in Try it); `?lit=` stripped through `mirrorUrl`, never `history.replaceState`.
+// from md lit in Try it); `?lit=` read from the LIVE address, so every arrival lands, and stripped through `mirrorUrl`,
+// never `history.replaceState`.
 const mirror = vi.hoisted(() => ({ mirrorUrl: vi.fn() }));
 vi.mock("../../lib/url/mirror", () => mirror);
 vi.mock("next/link", () => ({
@@ -46,9 +47,15 @@ const card = (id: string, label: string): PageCard => ({
 });
 const CARDS = [card("suggested-changes", "decks/analysis/suggested"), card("proposed-cuts", LIT), card("mana-balance", "decks/analysis/mana")];
 
-const draw = (landing: Landing | null, request: string | null = "r1") =>
+const landable = (isNew: boolean): Landable => ({ "decks/analysis/analyze": { isNew: false }, [LIT]: { isNew } });
+const NEW = landable(true);
+const TOLD = landable(false);
+const at = (address: string) => window.history.replaceState(null, "", address);
+const LANDED = `/about/decks?lit=${encodeURIComponent(LIT)}&x=1#analysis`;
+
+const draw = (land: Landable = NEW, initialLit: string | null = LIT) =>
   render(
-    <LabelLanding landing={landing} request={request}>
+    <LabelLanding landable={land} initialLit={initialLit} cards={CARDS}>
       <LabelledScreen phone={model("/p.webp")} desktop={model("/d.webp")} />
       <TryIt sectionId="analysis" cards={CARDS} />
     </LabelLanding>,
@@ -58,16 +65,17 @@ const width = (c: HTMLElement, w: string) => c.querySelector(`[data-about-width=
 
 beforeEach(() => {
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
-  window.history.replaceState(null, "", `/about/decks?lit=${encodeURIComponent(LIT)}&x=1#analysis`);
+  at(LANDED);
 });
 afterEach(() => {
   vi.unstubAllGlobals();
   mirror.mirrorUrl.mockReset();
+  scroll.reveal.mockClear();
 });
 
 describe("LabelLanding", () => {
   it("lights the landed label, marks it New and draws its card under it on a phone, lit in Try it from md", () => {
-    const { container } = draw({ key: LIT, isNew: true, card: CARDS[1] });
+    const { container } = draw(NEW);
     for (const w of ["phone", "desktop"]) {
       const line = width(container, w).querySelector(`[data-about-label='${LIT}'] button[aria-pressed]`)!;
       expect(line.getAttribute("aria-pressed")).toBe("true");
@@ -90,7 +98,7 @@ describe("LabelLanding", () => {
   });
 
   it("lights a label the reader has been told about with no New mark, no Show me and no card", () => {
-    const { container } = draw({ key: LIT, isNew: false, card: CARDS[1] });
+    const { container } = draw(TOLD);
     expect(width(container, "phone").querySelector(`[data-about-label='${LIT}'] button`)!.getAttribute("aria-pressed")).toBe("true");
     expect(container.querySelector("[data-about-new]")).toBeNull();
     expect(container.querySelector("[data-about-landing-show-me]")).toBeNull();
@@ -98,24 +106,45 @@ describe("LabelLanding", () => {
     expect(container.querySelector("[data-tool-card][data-lit]")).toBeNull();
   });
 
-  it("lands again on a second Show me to the same label after the reader turned it off", () => {
-    const landing: Landing = { key: LIT, isNew: false, card: CARDS[1] };
-    const tree = (request: string) => (
-      <LabelLanding landing={landing} request={request}>
-        <LabelledScreen phone={model("/p.webp")} desktop={model("/d.webp")} />
-      </LabelLanding>
-    );
-    const { container, rerender } = render(tree("r1"));
-    const line = () => width(container, "phone").querySelector(`[data-about-label='${LIT}'] button[aria-pressed]`)!;
+  it("lands again when the live address carries the same label after the reader turned it off", () => {
+    // A second Show me to the page the reader is on renders nothing on the server (Next serves its cached tree), so
+    // the only signal is the address itself: same component, same props, a new `lit`.
+    const { container } = draw(NEW);
+    const line = () => width(container, "desktop").querySelector(`[data-about-label='${LIT}'] button[aria-pressed]`)!;
+    expect(line().getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(line());
     expect(line().getAttribute("aria-pressed")).toBe("false");
-    // Next keeps this state across a search-param change; only the request token is new.
-    rerender(tree("r2"));
+    // The strip (mocked here), then Show me's push, twice over.
+    for (let i = 0; i < 2; i += 1) {
+      act(() => window.history.pushState(null, "", "/about/decks#analysis"));
+      expect(line().getAttribute("aria-pressed")).toBe("false");
+      act(() => window.history.pushState(null, "", `/about/decks?lit=${encodeURIComponent(LIT)}#analysis#analysis`));
+      expect(line().getAttribute("aria-pressed")).toBe("true");
+      expect(width(container, "desktop").querySelectorAll("[data-about-new]")).toHaveLength(1);
+      fireEvent.click(line());
+    }
+    // Each arrival strips again, writing the hash once.
+    expect(mirror.mirrorUrl).toHaveBeenCalledTimes(3);
+    const url = mirror.mirrorUrl.mock.calls[2][0] as URL;
+    expect(url.searchParams.has("lit")).toBe(false);
+    expect(url.hash).toBe("#analysis");
+  });
+
+  it("lands a label first named by the live address after the page rendered with none", () => {
+    at("/about/decks#analysis");
+    const { container } = draw(NEW, null);
+    const line = () => width(container, "phone").querySelector(`[data-about-label='${LIT}'] button[aria-pressed]`)!;
+    expect(line().getAttribute("aria-pressed")).toBe("false");
+    expect(mirror.mirrorUrl).not.toHaveBeenCalled();
+    act(() => window.history.pushState(null, "", `/about/decks?lit=${encodeURIComponent(LIT)}#analysis`));
     expect(line().getAttribute("aria-pressed")).toBe("true");
+    expect(container.querySelector("[data-about-landing-card]")?.getAttribute("data-about-landing-card")).toBe("proposed-cuts");
+    expect(mirror.mirrorUrl).toHaveBeenCalledTimes(1);
   });
 
   it("lights nothing without a landing, and a press still lights a label", () => {
-    const { container } = draw(null, null);
+    at("/about/decks#analysis");
+    const { container } = draw(NEW, null);
     const line = () => width(container, "phone").querySelector(`[data-about-label='${LIT}'] button`)!;
     expect(line().getAttribute("aria-pressed")).toBe("false");
     fireEvent.click(line());
@@ -123,40 +152,61 @@ describe("LabelLanding", () => {
   });
 
   it("strips `lit` through mirrorUrl, keeping the rest of the address and its hash", () => {
-    draw({ key: LIT, isNew: true, card: CARDS[1] });
+    draw(NEW);
     expect(mirror.mirrorUrl).toHaveBeenCalledTimes(1);
     const url = mirror.mirrorUrl.mock.calls[0][0] as URL;
+    // No history state: Next adopts a replace only when the state lacks its own `__NA` mark.
+    expect(mirror.mirrorUrl.mock.calls[0]).toHaveLength(1);
     expect(url.pathname).toBe("/about/decks");
     expect(url.searchParams.has("lit")).toBe(false);
     expect(url.searchParams.get("x")).toBe("1");
     expect(url.hash).toBe("#analysis");
   });
 
-  it("brings the address's section into view after the strip, and does nothing with no landing request", () => {
+  it("brings the landed label's section into view by its key, whatever the hash says, and nothing with no `lit`", () => {
     const section = document.createElement("section");
     section.id = "analysis";
     document.body.appendChild(section);
-    draw({ key: LIT, isNew: false, card: CARDS[1] });
+    at(`/about/decks?lit=${encodeURIComponent(LIT)}#analysis#analysis`);
+    draw(TOLD);
     expect(scroll.reveal).toHaveBeenCalledWith(section, "start");
+    // The doubled hash Next can write is put back as the section's.
+    expect((mirror.mirrorUrl.mock.calls[0][0] as URL).hash).toBe("#analysis");
     scroll.reveal.mockClear();
-    draw(null, null);
+    at("/about/decks#analysis");
+    draw(NEW, null);
     expect(scroll.reveal).not.toHaveBeenCalled();
     section.remove();
   });
 
-  it("strips a `lit` the page could not land on, and writes nothing when the address has none", () => {
-    draw(null, "r1");
+  it("lands with a malformed fragment instead of throwing", () => {
+    at(`/about/decks?lit=${encodeURIComponent(LIT)}#%E0`);
+    const { container } = draw(TOLD);
+    expect(width(container, "phone").querySelector(`[data-about-label='${LIT}'] button`)!.getAttribute("aria-pressed")).toBe("true");
     expect(mirror.mirrorUrl).toHaveBeenCalledTimes(1);
-    mirror.mirrorUrl.mockReset();
-    window.history.replaceState(null, "", "/about/decks#analysis");
-    draw(null, "r2");
+  });
+
+  it("strips a `lit` the page cannot land on and lights nothing; a malformed fragment then scrolls nowhere", () => {
+    at(`/about/decks?lit=${encodeURIComponent("friends/friends/add")}#%E0`);
+    const { container } = draw(NEW, null);
+    expect(mirror.mirrorUrl).toHaveBeenCalledTimes(1);
+    expect((mirror.mirrorUrl.mock.calls[0][0] as URL).searchParams.has("lit")).toBe(false);
+    expect(container.querySelector("button[aria-pressed='true']")).toBeNull();
+    expect(container.querySelector("[data-about-new]")).toBeNull();
+    expect(scroll.reveal).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing when the address has no `lit`", () => {
+    at("/about/decks#analysis");
+    draw(NEW, null);
     expect(mirror.mirrorUrl).not.toHaveBeenCalled();
   });
 });
 
 describe("TryIt", () => {
   it("shows a phone reader the first card and N more below, which opens the rest", () => {
-    const { container, getByText } = draw(null, null);
+    at("/about/decks");
+    const { container, getByText } = draw(NEW, null);
     const phone = () => [...container.querySelectorAll("[data-try-it-width='phone'] [data-tool-card]")].map((e) => e.getAttribute("data-tool-card"));
     expect(phone()).toEqual(["suggested-changes"]);
     fireEvent.click(getByText("2 more below"));
@@ -165,7 +215,8 @@ describe("TryIt", () => {
   });
 
   it("draws every card in the desktop row, each footer's link Show me at its label", () => {
-    const { container } = draw(null, null);
+    at("/about/decks");
+    const { container } = draw(NEW, null);
     const desk = container.querySelectorAll("[data-try-it-width='desktop'] [data-tool-card]");
     expect(desk).toHaveLength(3);
     const links = [...container.querySelectorAll("[data-try-it-width='desktop'] a")].filter((a) => a.textContent === "Show me ›");
