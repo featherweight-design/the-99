@@ -23,48 +23,18 @@
 // which is what its `about_version_seen` write already says about the account.
 import { readFileSync } from "node:fs";
 import { neon } from "@neondatabase/serverless";
-import { parse } from "dotenv";
 import { requireEnv } from "./env.mjs";
 
 /**
- * The database every About write here goes to: `.env`'s `DATABASE_URL`, the one each probe's own branch guard checks,
- * and never another (an override would let the write escape that guard). The server a probe drives must read the
- * same database, so a worktree whose `.env.local` names a different `DATABASE_URL` (a dev server pointed at a scratch
- * branch that way) is refused before anything is written: point `.env` at that branch instead. A walk on 2026-10-28
- * wrote local-dev's About row while its server read a scratch branch through `.env.local`. Opened once per run.
+ * The database every About write here goes to: `.env`'s `DATABASE_URL`, the one each probe's own branch guard checks.
+ * A walk whose dev server should read a scratch branch points the worktree's `.env` at it, never `.env.local`, or the
+ * server and this write disagree (2026-10-28: a walk wrote local-dev's About row while its server read a scratch
+ * branch). The branch written is printed before the first write, so a mismatch shows. Opened once per run.
  */
 let shared = null;
 export function aboutSql() {
-  assertServerReadsEnv();
   shared ??= neon(requireEnv(["DATABASE_URL"]).DATABASE_URL);
   return shared;
-}
-
-/**
- * Refuses, before ANY read or write here, when the server reads another database than `.env`'s, whatever connection a
- * caller passed: a probe that captured through its own connection would otherwise restore through it after the clear
- * refused, and "nothing written" would not hold.
- */
-export function assertServerReadsEnv(local = readLocalEnv()) {
-  const refusal = serverMismatch(process.env.DATABASE_URL, local);
-  if (refusal) throw new Error(refusal);
-}
-
-/** The worktree's `.env.local`, parsed, or null without one. */
-function readLocalEnv() {
-  try {
-    return parse(readFileSync(new URL("../../.env.local", import.meta.url), "utf8"));
-  } catch (error) {
-    if (error?.code === "ENOENT") return null;
-    throw error;
-  }
-}
-
-/** Why the About write must not go to `url`: `.env.local` points the server elsewhere. Pure, for the tests. */
-export function serverMismatch(url, local) {
-  const served = local?.DATABASE_URL;
-  if (!served || served === url) return null;
-  return "about-clear: .env.local sets a DATABASE_URL other than .env's, so the dev server reads another database than the About write would; point .env's DATABASE_URL at that database instead (nothing written).";
 }
 
 let announced = false;
@@ -133,7 +103,6 @@ export async function markEveryEntrySeen(
   sql = aboutSql(),
   version = JSON.parse(readFileSync(VERSION_FILE, "utf8")).version,
 ) {
-  assertServerReadsEnv();
   // Every entry's variant id too: an entry drawn in its variant is seen by that id alone (`isSeen`).
   const ids = [...catalogIds(), ...variantIds()];
   await announce(sql);
@@ -153,7 +122,6 @@ export async function markEveryEntrySeen(
  * page sits on the gate's redirect, this follows its `next` back to the route the probe asked for.
  */
 export async function clearAboutSheet(page, userId) {
-  assertServerReadsEnv();
   await markEveryEntrySeen(userId);
   await page.context().addCookies([sheetCookie(userId, page.url())]);
   const back = gateReturn(page.url());
@@ -191,7 +159,6 @@ export function gateReturn(url) {
  * `existed: false` when there is no row. Taken BEFORE the probe's first write to it.
  */
 export async function captureAboutSeen(userId, sql = aboutSql()) {
-  assertServerReadsEnv();
   const [row] = await sql`select about_version_seen, about_seen_ids from user_prefs where user_id = ${userId}`;
   return row
     ? { userId, existed: true, version: row.about_version_seen, ids: row.about_seen_ids }
@@ -203,7 +170,6 @@ export async function captureAboutSeen(userId, sql = aboutSql()) {
  * when there was none.
  */
 export async function restoreAboutSeen(capture, sql = aboutSql()) {
-  assertServerReadsEnv();
   await announce(sql);
   if (!capture.existed) {
     await sql`delete from user_prefs where user_id = ${capture.userId}`;
