@@ -257,7 +257,7 @@ there, and one upload on that account so the first screen is not "not known".
 ## Verification, per PR
 
 - Pre-push gate: `pnpm typecheck && pnpm lint && pnpm test`, the stub-DB build, `git fetch && git rebase origin/main`.
-- Pre-open pass (`pr-review` §10b) on every code PR, then `precheck.mjs record`; every finding verified before acting.
+- Pre-open pass (`pr-review` §10b) on every code PR, then `precheck.mjs record <findings-file>` (one finding per line); every finding verified before acting.
 - `check:list-cache`, `check:collection-routes`, `check:copy-drift` and `check:tokens` (CSS) must stay green; the
   design table is added to `check:copy-drift`'s scan by being under `docs/superpowers/design-tables/`.
 - Measure on **staging, read-only**; mutate only on local-dev or a scratch branch I delete. `probe:arrivals` is never
