@@ -26,7 +26,7 @@ export type BrowsePrinting = {
    * The finish the opener says this printing is VIEWED in, where that is not the reader's to decide: a precon's box
    * copy (Hugh, 2026-10-28: a box's foils animate in its card details). Only on the row card details is opened at.
    */
-  viewedFinish?: FoilFinish;
+  viewedFinish?: Finish;
   /**
    * The printing's catalog id, where the holding names one. Optional for the reason
    * `layout` and `availability` are: fixtures and tests build `BrowsePrinting`
@@ -139,7 +139,8 @@ export function faceFilm(printing: BrowsePrinting | undefined, face: "front" | "
   // A viewed finish comes with the opener's own art for the printing, so it is that printing's art too.
   if (!printing?.hasOwnArt && printing?.viewedFinish === undefined) return undefined;
   if (face === "front" ? !printing.imageUri : !(printing.hasOwnBack && printing.backImageUri)) return undefined;
-  return printing.viewedFinish ?? soleFoilFinish(printing.finishes);
+  if (printing.viewedFinish !== undefined) return printing.viewedFinish === "nonfoil" ? undefined : printing.viewedFinish;
+  return soleFoilFinish(printing.finishes);
 }
 
 /** The printing a user chose to represent a card. Set code uppercased, as BrowsePrinting is. */

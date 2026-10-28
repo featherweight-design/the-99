@@ -94,6 +94,8 @@ describe("faceFilm", () => {
     expect(faceFilm({ ...own, finishes: {}, hasOwnArt: false, viewedFinish: "foil" })).toBe("foil");
     expect(faceFilm({ ...own, finishes: { nonfoil: 1 }, viewedFinish: "foil" })).toBe("foil");
     expect(faceFilm({ ...own, imageUri: null, viewedFinish: "foil" })).toBeUndefined();
+    // A plain box card stays plain over the reader's own foil copy.
+    expect(faceFilm({ ...own, viewedFinish: "nonfoil" })).toBeUndefined();
   });
 
   it("draws on the back only over the printing's own back art", () => {
@@ -160,6 +162,18 @@ describe("where details reads foil", () => {
       openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1", finish: "foil" },
     });
     for (const host of [desktop(), phone()]) expect(ownFilm(host)).toHaveAttribute("data-foil", "foil");
+  });
+  it("draws no film over the oracle's art when the box names a foil printing with no art of its own", () => {
+    mount(card({ quantity: 0, printings: [printing({ quantity: 0, finishes: {} })] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "99", imageUri: null, scryfallId: "s-9", finish: "foil" },
+    });
+    expect(films(desktop())).toHaveLength(0);
+  });
+  it("draws a plain box card plain over the reader's own foil copy", () => {
+    mount(card({ printings: [printing()] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1", finish: "nonfoil" },
+    });
+    expect(films(desktop())).toHaveLength(0);
   });
   it("draws no film where the opener names no finish and the reader holds none", () => {
     mount(card({ quantity: 0, printings: [printing({ quantity: 0, finishes: {} })] }), {

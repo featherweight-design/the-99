@@ -30,7 +30,7 @@ import {
 } from "react";
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
-import { faceFilm, printedNameOf, resolvedPrinting, withDeckPick, type FoilFinish } from "../../lib/collection/browse";
+import { faceFilm, printedNameOf, resolvedPrinting, withDeckPick, type Finish, type FoilFinish } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import type { FitsViewMemory } from "./fits-view";
@@ -299,8 +299,8 @@ export type ViewPrinting = PreferredPrinting & {
   imageUri?: string | null;
   backImageUri?: string | null;
   scryfallId?: string;
-  /** The finish the list holds the card in (a precon box's foil), which the details face draws whoever owns what. */
-  finish?: FoilFinish;
+  /** The finish the list holds the card in (a precon box's), which the details face draws whoever owns what. */
+  finish?: Finish;
 };
 
 /** A list in the one shape the provider holds. */
@@ -563,7 +563,7 @@ export { STACK_DROP_MS };
 type EditCardRef = { oracleId: string; name: string; imageUri: string | null };
 type OpenAt = {
   oracleId: string;
-  printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; finish?: FoilFinish };
+  printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; finish?: Finish };
 } | null;
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
 /** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
@@ -1655,7 +1655,8 @@ export function CardDetailProvider({
     // Its film is the viewed printing's finish, the box's on a precon, never the reader's own copy's.
     const viewed = viewPrintings?.[s.oracleId];
     if (viewed?.imageUri) {
-      return viewed.imageUri !== (s.imageUri ?? null) || s.foil !== viewed.finish ? { ...s, imageUri: viewed.imageUri, foil: viewed.finish } : s;
+      const foil = viewed.finish === "nonfoil" ? undefined : viewed.finish;
+      return viewed.imageUri !== (s.imageUri ?? null) || s.foil !== foil ? { ...s, imageUri: viewed.imageUri, foil } : s;
     }
     const readCard = readArt.get(s.oracleId);
     if (!readCard) return s;
