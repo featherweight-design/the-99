@@ -353,7 +353,6 @@
     "eval:strategy-input": "tsx scripts/eval/strategy-input.mts",
     "eval:tuning-strategy": "tsx scripts/eval/tuning-strategy-metrics.mts",
     "eval:count-mechanism": "tsx scripts/eval/count-mechanism.mts",
-    "eval:tuning-v2": "tsx scripts/eval/tuning-v2.mts",
     "probe:image-timing": "node scripts/probe-image-timing.mjs",
     "fetch:fonts": "tsx scripts/fetch-fonts.mts",
     "probe:font-parity": "node scripts/probe-font-parity.mjs",
