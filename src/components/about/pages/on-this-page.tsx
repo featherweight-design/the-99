@@ -23,6 +23,13 @@ export function OnThisPage({ sections }: { sections: readonly { id: string; name
     const read = () => {
       frame = 0;
       let at = sections[0]?.id ?? null;
+      // At the foot of the page a short last section can never reach the reading line: it is the one in view
+      // (`legal-toc.tsx`'s rule).
+      const atEnd = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+      if (atEnd) {
+        setCurrent(sections[sections.length - 1]?.id ?? at);
+        return;
+      }
       for (const s of sections) {
         const el = document.getElementById(s.id);
         if (el && el.getBoundingClientRect().top <= READ_LINE) at = s.id;
