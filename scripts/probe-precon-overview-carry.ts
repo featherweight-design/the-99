@@ -92,8 +92,8 @@ async function main() {
     check("after the first edit the same read calls it stale", edited?.stale === true, `stale ${edited?.stale}`);
     // A replayed start's carry-over after that edit: the edit's dirty reading is the owner's to recompute.
     await carryOverPreconOverview(deckId, USER, ON);
-    const [replayed] = await db.select({ dirty: deckProfiles.dirty }).from(deckProfiles).where(eq(deckProfiles.deckId, deckId));
-    check("a replay after the edit leaves the reading dirty", replayed?.dirty === true, `dirty ${replayed?.dirty}`);
+    const [replayed] = await db.select({ dirty: deckProfiles.dirty, list: deckProfiles.fingerprint, at: deckProfiles.computedAt }).from(deckProfiles).where(eq(deckProfiles.deckId, deckId));
+    check("a replay after the edit leaves the reading as the start stored it, dirty", replayed?.dirty === true && replayed.list === reading?.fingerprint && replayed.at.getTime() === reading?.computedAt.getTime(), `dirty ${replayed?.dirty}, list ${replayed?.list === reading?.fingerprint ? "v0's" : "moved"}, computed ${replayed?.at.toISOString()}`);
 
     // A deck data change published AFTER the row's last check, on a card the deck holds, while the row
     // still says current: the carried Overview has not seen it, so the data-moved rule reports it.
