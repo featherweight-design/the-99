@@ -24,6 +24,7 @@ import { readPickCatalog } from "../../lib/precons/list-read";
 import { PICK_MAX, recoverCommitted, resolvePick, runPickAdds, type PickOutcome } from "../../lib/precons/pick";
 import { committedPreconAdds, preconAddDecks } from "../../lib/precons/added";
 import { after } from "next/server";
+import { carryOverAfterStart } from "../../lib/precons/carry-over";
 
 export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
   const userId = await requireUserId();
@@ -34,6 +35,9 @@ export async function createDeckFromPrecon(fileName: string, rawName: string): P
 
   const deckId = await startPreconDeck(userId, fileName, name, env);
   revalidateClaims(deckId, userId);
+  // The precon's pre-written Overview, after the response: the start has committed, and a deck
+  // without it is as every deck is (`carry-over.ts`).
+  after(() => carryOverAfterStart(deckId, userId, env));
   redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}`);
 }
 
@@ -59,6 +63,7 @@ export async function startPreconOwned(fileName: string, rawName: string, action
   // After the response, as every collection write does (`edit-actions.ts`, `settled`).
   after(async () => {
     invalidateCollectionReaders(userId);
+    await carryOverAfterStart(result.deckId, userId, env);
     await warmCommanderScores(userId, env);
   });
   redirect(`/decks/${result.deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}&${PRECON_ADDED_PARAM}=${result.entryId}`);
@@ -115,7 +120,11 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
     invalidateCollectionReaders(userId);
     // Each deck a box started, as the owned start revalidates its one.
     for (const o of added) if (o.ok && o.deckId) revalidateClaims(o.deckId, userId);
-    after(() => warmCommanderScores(userId, env));
+    after(async () => {
+      // Each newly started deck takes its precon's Overview, as a single start does.
+      for (const o of added) if (o.ok && o.deckId) await carryOverAfterStart(o.deckId, userId, env);
+      await warmCommanderScores(userId, env);
+    });
   }
   return outcomes;
 }

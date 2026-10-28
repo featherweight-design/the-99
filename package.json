@@ -110,6 +110,7 @@
     "probe:precon-overview-ledger": "tsx scripts/probe-precon-overview-ledger.ts",
     "probe:precon-overview-build": "tsx scripts/probe-precon-overview-build.ts",
     "probe:precon-overview-copy": "tsx scripts/probe-precon-overview-copy.ts",
+    "probe:precon-overview-carry": "tsx scripts/probe-precon-overview-carry.ts",
     "probe:help-me-choose-plumbing": "tsx scripts/probe-help-me-choose-plumbing.ts",
     "probe:intake-settle": "tsx scripts/probe-intake-settle.ts",
     "probe:help-me-choose-screens": "node scripts/probe-help-me-choose-screens.mjs",

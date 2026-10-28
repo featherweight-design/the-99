@@ -59,7 +59,14 @@ export async function buildPreconRequest(file: string, basis: RoleBasis): Promis
     return { ok: false, file, why: e instanceof Error ? e.message : String(e) };
   }
   const head = { deckId: `precon:${file}`, userId: "catalog", commanderOracleId: prepared.commanderOracleId, partnerOracleId: prepared.partnerOracleId, declaredBracket: null, cards: prepared.cards };
-  const built = await factsWithSource(await loadDeckProfileFromHead(head, envAtBasis(process.env, basis)), true, true);
+  // A reading or facts read that throws (the labels basis reads `readLabelRoleSets`) is this precon's
+  // own failure, never the run's: it has no request, so a stored row for it is marked not current.
+  let built;
+  try {
+    built = await factsWithSource(await loadDeckProfileFromHead(head, envAtBasis(process.env, basis)), true, true);
+  } catch (e) {
+    return { ok: false, file, why: `the reading could not be built: ${e instanceof Error ? e.message : String(e)}` };
+  }
   // Contract 12 quotes the benchmarks' interaction reading; a failed label read falls back to the
   // classifier's, which is another contract. Never written (or installed) under the wrong one.
   if (!built.shared) return { ok: false, file, why: "the label read failed, so contract 12's interaction reading is unavailable" };
