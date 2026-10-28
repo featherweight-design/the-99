@@ -255,7 +255,7 @@ export function CartCardLine({
                 standInAria=""
                 limitFigure=""
                 oneLine
-                className="pointer-coarse:after:!h-[calc(100%+4px)]"
+                className="pointer-coarse:after:h-[calc(100%+4px)]!"
               />
             }
             className="xl:col-start-3 xl:row-start-1"
