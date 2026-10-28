@@ -224,6 +224,13 @@ export function CartFact({
   // everything fits: without the hold, `less` would fold to a fit with no pill, unmounting the focused press.
   const [held, setHeld] = useState<FitPill>(null);
   const [seen, setSeen] = useState(measured);
+  // A list left with nothing to open shuts while mounted: deselecting every other deck empties By deck's `also`, and a
+  // named own fact can fall back to `in other decks` (with no items). Open, it would draw `also 0 decks`, `less` and an empty list in
+  // place of the bare count. Adjusted during render, so the open form never paints; the fold path then runs as for a press.
+  if (open && items.length === 0) {
+    setOpen(false);
+    setHeld(null);
+  }
   if (seen !== measured) {
     setSeen(measured);
     if (!open && held !== null) setHeld(null);
