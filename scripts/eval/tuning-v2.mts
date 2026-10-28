@@ -31,6 +31,8 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { worstCaseMicroUsd } from "../../src/lib/model/prices";
 import { buildPromptV2 } from "../../src/lib/tuning/prompt";
 import { presentationFailures } from "../../src/lib/tuning/presentation";
+import { playerTextBody } from "../../src/lib/model/player-text";
+import { noteDate } from "../../src/lib/tuning/note-date";
 import { askFor, replyCeilingFor } from "../../src/lib/tuning/v2/count";
 import type { V2CallModel, V2Report, V2Side, V2Stage } from "../../src/lib/tuning/v2/engine";
 import { TUNING_MODEL } from "../../src/lib/tuning/limits";
@@ -63,6 +65,9 @@ type Row = {
   drops: { add: string[]; cut: string[] };
   callCount: number; refilled: { add: boolean; cut: boolean }; cutsFailed: V2Report["cutsFailed"]; budgetReached: boolean;
   charge: V2Report["charge"]; usd: number; calls: StoredCall[];
+  /** What the validator let a line quote on this run (notes with their dates, the intent, the request), built as
+   *  `validate.ts` builds it, so `--score` masks a quotation exactly as the app does. */
+  quotables: { text: string; date: string | null }[];
 };
 
 const log = (line: string) => console.log(`[eval:tuning-v2] ${line}`);
@@ -70,7 +75,7 @@ const log = (line: string) => console.log(`[eval:tuning-v2] ${line}`);
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { values: args } = parseArgs({ options: { "dry-run": { type: "boolean", default: false }, spend: { type: "boolean", default: false }, score: { type: "boolean", default: false } } });
   if (args.score) score();
-  else if (args.spend && !args["dry-run"]) await spendRun();
+  else if (args.spend && !args["dry-run"]) process.exit((await spendRun()) ? 2 : 0);
   else dryRun();
   process.exit(0);
 }
@@ -189,11 +194,18 @@ async function spendRun() {
       callCount: report.callCount, refilled: { add: report.additions.refilled, cut: report.cuts.refilled },
       cutsFailed: report.cutsFailed, budgetReached: report.budgetReached, charge: report.charge,
       usd: stored.reduce((s, c) => s + c.usd, 0), calls: stored,
+      quotables: [
+        ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, pack.year) }])),
+        ...(pack.intent === null ? [] : [{ text: playerTextBody(pack.intent), date: null }]),
+        ...(REQUESTS[p.deck] ? [{ text: playerTextBody(REQUESTS[p.deck]), date: null }] : []),
+      ],
     };
     appendFileSync(ROWS, `${JSON.stringify(row)}\n`);
     log(`${label}: ${row.kept.add}/${p.n} in, ${row.kept.cut}/${row.target.cut} out, ${row.callCount} calls, ${(row.ms / 1000).toFixed(0)}s, $${row.usd.toFixed(3)}, ${report.charge.outcome}; ledger $${spent(readLedger(LEDGER)).toFixed(2)}`);
   }
   log(`done; ledger $${spent(readLedger(LEDGER)).toFixed(2)} of $${CAP_USD}`);
+  // A cap stop exits 2, so a wrapper can tell a stopped run from a finished one.
+  return stop !== null;
 }
 
 /** A game-result word a reader should look at by hand when it passes: "win", "lose", "beat" in any form. */
@@ -202,21 +214,22 @@ const GAME_WORD = /\b(?:win|wins|winning|won|lose|loses|losing|lost|beat|beats)\
 /**
  * Q9 (spec §6.2): every stored cut line re-scored under BOTH `noResultClaim` variants, from the same replies. Counts the
  * lines each variant drops for it, and lists every cut line that passes the narrowed rule while still using a game-result
- * word, for a human to read. A games citation's own words ("Lost 4 of 5 games") are not a claim and are not checked.
+ * word, for a human to read. Every text the app checks is checked here (the rationale, the short form, EVERY citation,
+ * games included), against the run's own quotables, so a quoted note is masked exactly as `validate.ts` masks it.
  */
 function score() {
   if (!existsSync(ROWS)) return log(`no rows at ${ROWS}; nothing to score`);
   const rows = readFileSync(ROWS, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Row);
   type Line = { card: string; rationale: string; rationaleShort: string; evidence: { kind: string; value: string }[] };
   const cutLines = rows.flatMap((r) => r.calls.filter((c) => c.stage.startsWith("cuts") && c.raw).flatMap((c) => ((c.raw as { cuts: Line[] }).cuts ?? []).map((line) => ({ r, line }))));
-  const claims = (line: Line, allowStronger: boolean) =>
-    [line.rationale, line.rationaleShort, ...line.evidence.filter((e) => e.kind !== "games").map((e) => e.value)]
-      .some((t) => presentationFailures(t, [], { allowStronger }).broken.includes("noResultClaim"));
-  const strict = cutLines.filter(({ line }) => claims(line, false));
-  const narrowed = cutLines.filter(({ line }) => claims(line, true));
+  const claims = ({ r, line }: { r: Row; line: Line }, allowStronger: boolean) =>
+    [line.rationale, line.rationaleShort, ...line.evidence.map((e) => e.value)]
+      .some((t) => presentationFailures(t, r.quotables ?? [], { allowStronger }).broken.includes("noResultClaim"));
+  const strict = cutLines.filter((c) => claims(c, false));
+  const narrowed = cutLines.filter((c) => claims(c, true));
   log(`${rows.length} runs, ${cutLines.length} stored cut lines`);
   log(`noResultClaim drops: ${strict.length} under today's rule, ${narrowed.length} narrowed on cuts (allowStronger)`);
-  const passing = cutLines.filter(({ line }) => !claims(line, true) && GAME_WORD.test(`${line.rationale} ${line.rationaleShort}`));
+  const passing = cutLines.filter((c) => !claims(c, true) && GAME_WORD.test(`${c.line.rationale} ${c.line.rationaleShort}`));
   log(`${passing.length} cut lines pass the narrowed rule with a game-result word; read each:`);
   for (const { r, line } of passing) log(`- ${r.deck} N=${r.n} r${r.rep}: ${line.card}: ${line.rationale}`);
 }
