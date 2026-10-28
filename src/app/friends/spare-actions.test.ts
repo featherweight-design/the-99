@@ -8,6 +8,7 @@ const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   requestSwitchEnv: vi.fn(),
   revalidatePath: vi.fn(),
+  after: vi.fn(),
   askForSpare: vi.fn(),
   askInsteadForSpare: vi.fn(),
   closeSpareRequest: vi.fn(),
@@ -18,6 +19,8 @@ const m = vi.hoisted(() => ({
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
+// `after` runs its callback after the response; here at once, but recorded, so a test can tell deferred from inline.
+vi.mock("next/server", () => ({ after: (fn: () => void) => { m.after(); fn(); } }));
 vi.mock("../../lib/social/spare-requests", () => ({
   askForSpare: m.askForSpare, askInsteadForSpare: m.askInsteadForSpare,
   closeSpareRequest: m.closeSpareRequest, answerSpareRequest: m.answerSpareRequest, markAnswerSeen: m.markAnswerSeen,
@@ -103,13 +106,16 @@ describe("openAnswerAction (small items item 3)", () => {
     expect(m.loadAnsweredRequest).toHaveBeenCalledWith("user_1", KEY, ENV, expect.any(Date));
     expect(m.markAnswerSeen).toHaveBeenCalledWith("user_1", REQ, ENV, expect.any(Date));
     expect(m.revalidatePath.mock.calls).toEqual([["/friends"]]);
-    expect(out).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "yes" } });
+    // After the response, so Home (where it was pressed) is not redrawn with the visit's moved cursor.
+    expect(m.after).toHaveBeenCalledTimes(1);
+    // The Friends badge counted it (unseen by its cursor too), so the shell drops it by one.
+    expect(out).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "yes" }, counted: true });
   });
 
   it("marks an answer the Friends cursor already covers (Home reads its own), revalidating only on a write", async () => {
     m.loadAnsweredRequest.mockResolvedValueOnce({ id: REQ, unseen: false, state: "no" });
     m.markAnswerSeen.mockResolvedValueOnce(false);
-    expect(await openAnswerAction(KEY)).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "no" } });
+    expect(await openAnswerAction(KEY)).toEqual({ ok: true, request: { id: REQ, unseen: false, state: "no" }, counted: false });
     expect(m.markAnswerSeen).toHaveBeenCalledWith("user_1", REQ, ENV, expect.any(Date));
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });

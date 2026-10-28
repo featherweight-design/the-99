@@ -58,6 +58,51 @@ export function requestText(a: YourRequest, now: Date, canBuy = true): { kind: s
   }
 }
 
+/**
+ * One ask's picture: the card at card shape, the friend who holds it in the corner (their commander's art, else their
+ * initials). Shared by Your requests and the answer sheet over Home (small items item 3), which draw the same row.
+ */
+export function RequestPicture({ a, className = "" }: { a: YourRequest; className?: string }) {
+  return (
+    <span aria-hidden className={`relative h-[64px] w-[46px] ${className}`}>
+      {a.card.imageUri ? (
+        <FadingImg src={a.card.imageUri} alt="" className="block h-[64px] w-[46px] rounded-[3px] object-cover shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
+      ) : (
+        <span className="block h-[64px] w-[46px] rounded-[3px] bg-[color:var(--surface-sunken)]" />
+      )}
+      <span className="absolute -bottom-[5px] -right-[6px] flex h-[24px] w-[24px] items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[9px] font-semibold text-[color:var(--fg-muted)] [border:1.5px_solid_var(--surface-inset)]">
+        {a.holder.commander?.artCropUri
+          ? <FadingImg src={a.holder.commander.artCropUri} alt="" className="block h-full w-full object-cover" />
+          : faceInitials(a.holder.displayName)}
+      </span>
+    </span>
+  );
+}
+
+/** One ask's words: the kicker (its state, the diamond while unseen, the time), the title and the detail. */
+export function RequestText({ a, text, now, className = "" }: { a: YourRequest; text: ReturnType<typeof requestText>; now: Date; className?: string }) {
+  return (
+    <div className={`flex min-w-0 flex-col gap-[3px] ${className}`}>
+      <p className="m-0 flex min-w-0 items-center gap-[7px]">
+        {a.unseen && (
+          <>
+            <span aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />
+            <span className="sr-only">{socialCopy.waiting.unseen}</span>
+          </>
+        )}
+        <span data-testid="your-request-status" tabIndex={-1} className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] ${text.ink}`}>
+          {text.kind}
+        </span>
+        <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>
+          {feedAge(text.at.toISOString(), now.toISOString())}
+        </small>
+      </p>
+      <p className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]">{text.title}</p>
+      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{text.detail}</p>
+    </div>
+  );
+}
+
 export function YourRequests({ rows, now, canBuy = true }: { rows: readonly YourRequest[]; now: Date; canBuy?: boolean }) {
   const router = useRouter();
   const root = useRef<HTMLElement | null>(null);
@@ -155,37 +200,9 @@ export function YourRequests({ rows, now, canBuy = true }: { rows: readonly Your
               className="relative grid grid-cols-[46px_minmax(0,1fr)] items-center gap-x-[12px] px-[14px] py-[12px] [&+&]:[border-top:1px_solid_var(--border)] md:grid-cols-[46px_minmax(0,1fr)_auto] md:gap-x-[14px] md:px-[16px]"
             >
               {/* Centred on its row at both widths (small items R1b, `.ya .fi{align-items:center}`), spanning the text and Ask again on a phone. */}
-              <span aria-hidden className="relative row-span-2 h-[64px] w-[46px] md:row-span-1">
-                {a.card.imageUri ? (
-                  <FadingImg src={a.card.imageUri} alt="" className="block h-[64px] w-[46px] rounded-[3px] object-cover shadow-[0_2px_6px_rgba(0,0,0,.45)]" />
-                ) : (
-                  <span className="block h-[64px] w-[46px] rounded-[3px] bg-[color:var(--surface-sunken)]" />
-                )}
-                <span className="absolute -bottom-[5px] -right-[6px] flex h-[24px] w-[24px] items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[9px] font-semibold text-[color:var(--fg-muted)] [border:1.5px_solid_var(--surface-inset)]">
-                  {a.holder.commander?.artCropUri
-                    ? <FadingImg src={a.holder.commander.artCropUri} alt="" className="block h-full w-full object-cover" />
-                    : faceInitials(a.holder.displayName)}
-                </span>
-              </span>
+              <RequestPicture a={a} className="row-span-2 md:row-span-1" />
               {/* Clear of the ✕ (36px at the row's top right): the whole text column, title and detail included. */}
-              <div className="flex min-w-0 flex-col gap-[3px] pr-[30px]">
-                <p className="m-0 flex min-w-0 items-center gap-[7px]">
-                  {a.unseen && (
-                    <>
-                      <span aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />
-                      <span className="sr-only">{socialCopy.waiting.unseen}</span>
-                    </>
-                  )}
-                  <span data-testid="your-request-status" tabIndex={-1} className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] ${text.ink}`}>
-                    {text.kind}
-                  </span>
-                  <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>
-                    {feedAge(text.at.toISOString(), now.toISOString())}
-                  </small>
-                </p>
-                <p className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]">{text.title}</p>
-                <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{text.detail}</p>
-              </div>
+              <RequestText a={a} text={text} now={now} className="pr-[30px]" />
               {again && (
                 <div className="col-start-2 mt-[6px] flex min-w-0 md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:pr-[34px]">
                   <RowEnd ask={{ kind: "askAgain" }} friend={a.holder.displayName} card={a.card.name} busy={busy === a.id}

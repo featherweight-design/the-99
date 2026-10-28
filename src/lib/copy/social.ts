@@ -488,7 +488,7 @@ export const spareCopy = {
       /** "For Thopter Works · 12 days left"; the days alone with no deck. */
       openDetail: (deck: string | null, days: string) => (deck ? `For ${deck} · ${days}` : days),
       canSpare: (friend: string, card: string) => `${friend} can spare ${card}`,
-      acceptedDetail: "The handover is between you. Once it’s yours, press buy on it in Shopping.",
+      acceptedDetail: "The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.",
       /** `acceptedDetail` with no buy press (`SHOPPING_MARK_BOUGHT_ENABLED` off): the collection takes it by hand. */
       acceptedDetailNoBuy: "The handover is between you. Once it’s yours, add it to your collection.",
       keeping: (friend: string, card: string) => `${friend} is keeping ${card}`,
@@ -503,6 +503,11 @@ export const spareCopy = {
       noLongerNeededDetail: "It’s off your buy lists now. ✕ withdraws the request.",
       withdrawAria: (friend: string, card: string) => `Withdraw your request to ${friend} for ${card}`,
       clearAria: (friend: string, card: string) => `Clear your request to ${friend} for ${card}`,
+      /**
+       * One answered request opened over Home (small items item 3, board `Spare-Answer-Sheet`): the sheet's title, its
+       * Clear (named by `clearAria`) and the foot's way to the whole list.
+       */
+      sheet: { title: "Your request", close: "Close", clear: "Clear", all: "All your requests ›" },
     },
   },
 } as const;

@@ -23,6 +23,7 @@ import { NEW_TAB_SUFFIX } from "../ui/external-link";
 import { KICKER_AGE } from "./kicker-age";
 import { DismissButton } from "./dismiss";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "../social/trade-ask";
+import { useAnswerSheet } from "../home/answer-sheet";
 import { feedAge } from "../../lib/feed/age";
 
 const c = feedCopy.home;
@@ -103,6 +104,24 @@ export function FeedPress({
 }) {
   const detail = useCardDetailIfAny();
   const trade = useTradeAsk();
+  const answers = useAnswerSheet();
+  // An answer to the reader's own ask, on a page that can open it (Home's What's new): its one request over the page
+  // (small items item 3), never a trip to /friends.
+  if (answers && item.answer) {
+    return (
+      <button
+        type="button"
+        data-feed-press
+        aria-haspopup="dialog"
+        aria-busy={answers.pending === item.key || undefined}
+        onClick={(e) => answers.open(item, e.currentTarget)}
+        className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
+        aria-describedby={describedBy}
+      >
+        {label}
+      </button>
+    );
+  }
   // A trade match the page can open in place (product call 8): its sheet over this page, that friend first; once asked,
   // the press says Requested or Accepted, as the friend's tab does, and still opens the sheet.
   const asking = tradeAskOf(item, trade !== null && trade.has(item.card?.oracleId ?? ""));
@@ -175,7 +194,9 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   // it is the row's press (a link when the row links, else passed to its button).
   const hover = usePreviewRow(item.kind === "combo" ? null : item.card?.image ?? null);
   const trade = useTradeAsk();
-  const inPlace = tradeAskOf(item, trade !== null && trade.has(item.card?.oracleId ?? "")) !== null;
+  const answers = useAnswerSheet();
+  // A press that opens in place (a trade match's sheet, or an answer's sheet on Home) takes the picture's press too.
+  const inPlace = tradeAskOf(item, trade !== null && trade.has(item.card?.oracleId ?? "")) !== null || (answers !== null && !!item.answer);
   if (item.kind === "combo") {
     return (
       <span

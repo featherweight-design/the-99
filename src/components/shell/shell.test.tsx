@@ -140,7 +140,7 @@ describe("Shell and the Friends badge (menu and Home PR 7)", () => {
     await renderShell();
     expect(feed.unseenFriendsCount).toHaveBeenCalledWith("user_1", expect.anything());
     expect(navProps.some((n) => "badges" in n)).toBe(true);
-    for (const p of navProps.filter((n) => "badges" in n)) expect(p.badges).toEqual({ friends: 3 });
+    for (const p of navProps.filter((n) => "badges" in n)) expect(p.badges).toEqual({ friends: 3, friendsAt: expect.any(String) });
     expect(feed.noticeTradeMatches).not.toHaveBeenCalled();
     await feed.after.mock.calls[0][0]();
     expect(feed.noticeTradeMatches).toHaveBeenCalledWith("user_1", expect.anything());
