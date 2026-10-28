@@ -44,6 +44,8 @@ describe("search", () => {
   it("caps what the address can hand it", () => {
     expect(parseQuery("x".repeat(MAX_QUERY + 40))).toHaveLength(MAX_QUERY);
     expect(parseQuery(null)).toBe("");
+    expect(parseQuery("  sol ")).toBe("sol");
+    expect(parseQuery("   ")).toBe("");
   });
 
   it("narrows lines and leaves them in order", () => {

@@ -32,7 +32,7 @@ export const MAX_QUERY = 80;
 
 /** `?q=` as the search it names: trimmed and capped; absent when empty. */
 export function parseQuery(raw: string | null | undefined): string {
-  return (raw ?? "").slice(0, MAX_QUERY);
+  return (raw ?? "").trim().slice(0, MAX_QUERY);
 }
 
 /** Does this card's name hold the search? Case-blind, on the oracle name (both faces of a two-faced card). */

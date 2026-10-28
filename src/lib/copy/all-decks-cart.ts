@@ -76,7 +76,6 @@ export const allDecksCartCopy = {
     added: (q: number) => `${n(q)} added`,
   },
 
-  /** By friend (spare requests PR 3c; handoff `Cart-By-Friend`): one panel per friend holding a spare of a line. */
   /** The chassis's controls (v2, PR 8). Friend and Owned arrive with PR 9. */
   filters: {
     search: "Search cards",
@@ -124,6 +123,7 @@ export const allDecksCartCopy = {
     drop: (term: string) => `Drop “${term}”`,
   },
 
+  /** By friend (spare requests PR 3c; handoff `Cart-By-Friend`): one panel per friend holding a spare of a line. */
   byFriend: {
     /** The panel head's pods line, comma-joined as the board draws it. */
     via: (pods: readonly string[]) => `shares with ${pods.join(", ")}`,
