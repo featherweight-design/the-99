@@ -8,7 +8,7 @@ import { useRef, useState } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import type { CartView } from "../../../lib/decks/cart-sort";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
-import { Sheet, SheetHeader } from "../../ui/sheet";
+import { Sheet } from "../../ui/sheet";
 
 export type CartSortSheetProps = {
   open: boolean;
@@ -43,42 +43,54 @@ function SheetBody({ open, view, value, order, labels, onPick, onDismiss }: Cart
       // Compact is everything under the chassis's 1000px, which `min-[1000px]:hidden` states without a 999px edge a
       // fractional width could fall through.
       frameClassName="fixed inset-0 z-50 flex flex-col justify-end min-[1000px]:hidden bottom-auto top-[var(--vv-top,0px)] h-[var(--vv-h,100%)]"
-      scrimClassName="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
-      panelClassName="relative z-10 flex max-h-[86dvh] flex-col rounded-t-[16px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)]"
+      // Controls B2: the scrim, the 38x4 grab and the 18px sheet on `--surface-raised`. There is no close button: the
+      // scrim, the grab's drag and Escape dismiss it, and a pick closes it.
+      scrimClassName="absolute inset-0 bg-[rgba(8,6,4,0.62)]"
+      handleClassName="flex touch-none justify-center pt-[10px] pb-0"
+      handleBarClassName="h-[4px] w-[38px] rounded-[2px] bg-[color:var(--border-dashed)]"
+      panelClassName="relative z-10 flex max-h-[86dvh] flex-col rounded-t-[18px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)]"
     >
-      <SheetHeader title={copy.sort.label} closeLabel={copy.sort.close} onDismiss={onDismiss} />
-      <p className="m-0 px-[16px] pb-[8px] font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
-        {copy.sort.viewOf[view]}
-      </p>
-      <div role="menu" aria-label={copy.sort.sheetAria} className="flex flex-col pb-[16px]">
-        {order.map((option, i) => {
-          const on = option === value;
-          return (
-            <button
-              key={option}
-              type="button"
-              role="menuitemradio"
-              aria-checked={on}
-              // Roving focus: one Tab stop, the arrows move between the orders, as a radiogroup promises.
-              tabIndex={stop === i ? 0 : -1}
-              onFocus={() => setStop(i)}
-              ref={(el) => { items.current[i] = el; if (on) selected.current = el; }}
-              onKeyDown={(e) => {
-                const to = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
-                if (!to) return;
-                e.preventDefault();
-                items.current[(i + to + order.length) % order.length]?.focus();
-              }}
-              onClick={() => onPick(option)}
-              className={`flex h-[48px] w-full cursor-pointer items-center justify-between border-0 border-t border-solid border-t-[color:var(--elevated)] px-[16px] text-left font-sans text-[14px] text-[color:var(--fg)] ${
-                on ? "bg-[color:var(--elevated)]" : "bg-transparent"
-              }`}
-            >
-              {labels[option]}
-              {on ? <span aria-hidden className="text-[color:var(--accent-text)]">✓</span> : null}
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-[14px] px-[18px] pt-[14px] pb-[26px]">
+        <div className="flex items-baseline justify-between">
+          <h2 className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)]">{copy.sort.label}</h2>
+          <small className="font-mono text-[11px] text-[color:var(--fg-muted)]">{copy.sort.viewOf[view]}</small>
+        </div>
+        <div role="menu" aria-label={copy.sort.sheetAria} className="flex flex-col">
+          {order.map((option, i) => {
+            const on = option === value;
+            return (
+              <button
+                key={option}
+                type="button"
+                role="menuitemradio"
+                aria-checked={on}
+                // Roving focus: one Tab stop, the arrows move between the orders.
+                tabIndex={stop === i ? 0 : -1}
+                onFocus={() => setStop(i)}
+                ref={(el) => { items.current[i] = el; if (on) selected.current = el; }}
+                onKeyDown={(e) => {
+                  const to = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+                  if (!to) return;
+                  e.preventDefault();
+                  items.current[(i + to + order.length) % order.length]?.focus();
+                }}
+                onClick={() => onPick(option)}
+                className={`flex min-h-[48px] w-full cursor-pointer items-center gap-[10px] rounded-[8px] border-0 px-[8px] text-left font-sans text-[15px] text-[color:var(--fg)] ${
+                  on ? "bg-[color:var(--elevated)]" : "bg-transparent"
+                }`}
+              >
+                {/* The ring radio the sheet draws in place of a check: 5px accent ring when chosen, a dashed 1.5px one when not. */}
+                <span
+                  aria-hidden
+                  className={`h-[16px] w-[16px] flex-none rounded-full border-solid ${
+                    on ? "border-[5px] border-[color:var(--accent)]" : "border-[1.5px] border-[color:var(--border-dashed)]"
+                  }`}
+                />
+                {labels[option]}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </Sheet>
   );

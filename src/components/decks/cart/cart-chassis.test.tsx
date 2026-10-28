@@ -114,6 +114,8 @@ describe("the cart's chassis (v2 PR 8)", () => {
     fireEvent.click(screen.getByRole("radio", { name: copy.view.byDeck }));
     expect(screen.getAllByRole("region", { name: /HD - / }).map((r) => r.textContent?.match(/HD - [A-Za-z]+/)?.[0])).toEqual(["HD - Gishath", "HD - Omnath"]);
     expect(live()).toBe("?q=sol&view=deck");
+    // By deck's sentence says how many cards the search left, as By card's does.
+    expect(resultLine(container)).toBe(copy.result.filtered(1, 4));
     // Clear all drops it, and the address with it.
     fireEvent.click(screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." }));
     expect(live()).toBe("?view=deck");
@@ -135,7 +137,11 @@ describe("the cart's chassis (v2 PR 8)", () => {
     expect(cardNames()).toEqual(["Sol Ring", "Mox Amber", "Smothering Tithe", "Swiftfoot Boots"]);
     fireEvent.click(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) }));
     const sheet = screen.getByRole("menu", { name: copy.sort.sheetAria });
-    expect(within(sheet).getAllByRole("menuitemradio").map((r) => r.textContent)).toEqual(Object.values(copy.sort.byCard).map((l) => `${l}${l === copy.sort.byCard.decks ? "✓" : ""}`));
+    const rows = within(sheet).getAllByRole("menuitemradio");
+    expect(rows.map((r) => r.textContent)).toEqual(Object.values(copy.sort.byCard));
+    // The chosen order is the one `aria-checked` row, drawn as a ring radio (no check glyph, no close button).
+    expect(rows.map((r) => r.getAttribute("aria-checked"))).toEqual(["true", "false", "false", "false", "false"]);
+    expect(within(sheet.closest("[role=dialog]") ?? document.body).queryByRole("button", { name: /close/i })).toBeNull();
     fireEvent.click(within(sheet).getByRole("menuitemradio", { name: copy.sort.byCard["price-high"] }));
     // Closed on a pick; an unpriced line goes last.
     expect(screen.queryByRole("menu", { name: copy.sort.sheetAria })).toBeNull();

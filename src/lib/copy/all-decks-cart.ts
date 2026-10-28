@@ -89,7 +89,6 @@ export const allDecksCartCopy = {
     /** The trigger's words and its accessible name: `Sort · Most decks`. */
     trigger: (current: string) => `Sort · ${current}`,
     sheetAria: "Sort",
-    close: "Close sort",
     byCard: {
       decks: "Most decks",
       "price-high": "Price, high first",

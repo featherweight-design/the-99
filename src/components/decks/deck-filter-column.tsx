@@ -69,6 +69,7 @@ export function DeckSearchField({
   size,
   autoFocus,
   placeholder = refreshCopy.filters.searchPlaceholder,
+  active = false,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -76,6 +77,8 @@ export function DeckSearchField({
   autoFocus?: boolean;
   /** What the field searches, when it is not a deck list's. */
   placeholder?: string;
+  /** A search is on: the field takes the accent edge (the cart's `.fld.on`). */
+  active?: boolean;
 }) {
   const column = size === "column";
   return (
@@ -87,7 +90,7 @@ export function DeckSearchField({
       onClear={() => onChange("")}
       placeholder={placeholder}
       aria-label={placeholder}
-      containerClassName={column ? "h-[34px] gap-[9px] rounded-[8px] px-[11px] py-0" : "h-[44px] gap-[9px] rounded-[10px] px-[12px] py-0"}
+      containerClassName={`${column ? "h-[34px] gap-[9px] rounded-[8px] px-[11px] py-0" : "h-[44px] gap-[9px] rounded-[10px] px-[12px] py-0"}${active ? " border-[color:var(--accent)]" : ""}`}
       className={column ? "text-[12.5px]" : "text-[16px]"}
     />
   );
