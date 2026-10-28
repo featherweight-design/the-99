@@ -245,13 +245,33 @@ export async function runIsPending(runId: string): Promise<boolean> {
 
 /**
  * One kept line of a v2 run, saved the moment it is kept (handoff H1), while the run is still `pending`: the panel's poll
- * draws it before the run ends (plan P3). Written only while the run is pending, in one statement, so a run the reaper or
- * a deck delete settled meanwhile gains nothing. `position` is the line's place in ITS list (`runV2`). False when nothing
- * was written.
+ * draws it before the run ends (plan P3). `position` is the line's place in ITS list (`runV2`). False when nothing was
+ * written.
+ *
+ * SERIALIZED ON THE RUN ROW (PR #2316 review): the insert takes the run's row lock (`lockPendingV2RunsSql`) and writes
+ * only while the run is still pending, in one transaction, and every settle of a v2 run takes the same lock before it
+ * reads the saved lines. An `exists` check alone did not do that: under read committed a settle could count the lines
+ * while an insert that had already seen `pending` was still uncommitted, and the line landed on a settled run.
  */
 export async function insertV2Line(runId: string, line: ValidatedSuggestion): Promise<boolean> {
-  const { rows } = await db.execute(insertV2LineSql(runId, line));
-  return rows.length > 0;
+  return db.transaction(async (tx) => {
+    const locked = await tx.execute(lockPendingV2RunsSql(eq(deckSuggestionRuns.id, runId)));
+    if (locked.rows.length === 0) return false;
+    const { rows } = await tx.execute(insertV2LineSql(runId, line));
+    return rows.length > 0;
+  });
+}
+
+/**
+ * The pending runs in `scope`, locked `for update` until the transaction ends: the one lock a line insert and every v2
+ * settle take, so they serialize on the run row. A statement run after it sees every line an insert committed before
+ * the lock was granted, and an insert that waited on it re-checks `pending` and finds the run settled. Exported so its
+ * emitted SQL is pinned.
+ */
+export function lockPendingV2RunsSql(scope: SQL): SQL {
+  return sql`select ${deckSuggestionRuns}.id from ${deckSuggestionRuns}
+    where ${scope} and ${deckSuggestionRuns}.status = 'pending'
+    for update`;
 }
 
 /** Exported so its emitted SQL is pinned. */
@@ -288,6 +308,8 @@ export async function persistV2(
   billed: readonly Billed[],
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
+    // The run row's lock first (`insertV2Line`): no line can land between this settle and its commit.
+    await tx.execute(lockPendingV2RunsSql(eq(deckSuggestionRuns.id, runId)));
     const rows = await tx.update(deckSuggestionRuns)
       .set({ ...outcome, droppedCount: validationReport.drops?.length ?? 0, validationReport })
       .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
@@ -310,6 +332,9 @@ export async function persistV2(
 export async function settleV2PartialIn(
   tx: Tx, scope: SQL, now: Date, reason: RefundReason | null, billed?: readonly Billed[],
 ): Promise<string[]> {
+  // The run rows' locks first, in their own statement (`insertV2Line`): the update below then reads the saved lines with
+  // a snapshot taken after every insert that held a lock committed, and no new one can start.
+  await tx.execute(lockPendingV2RunsSql(and(scope, isNotNull(deckSuggestionRuns.requestedCount))!));
   const settled = await tx.update(deckSuggestionRuns)
     .set({ status: "ok", validationReport: v2InterruptedReport() })
     .where(and(scope, eq(deckSuggestionRuns.status, "pending"), isNotNull(deckSuggestionRuns.requestedCount), v2HasItems()))

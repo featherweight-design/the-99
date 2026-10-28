@@ -38,10 +38,12 @@ const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | nul
   // Every action in this file but `saveDeckDescription`/`saveDeckHeader` is Suggested-changes-
   // specific and re-checks this gate; defaults to on so every test below it keeps proving what
   // it always proved, the same shape `swaps/actions.test.ts` uses for its own flag.
-  tuningEnabled: true }));
+  tuningEnabled: true,
+  // `SUGGESTED_CHANGES_V2_ENABLED` (plan P5): on by default so the v2 branch's tests reach it; one test turns it off.
+  v2Enabled: true }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: () => calls.tuningEnabled }));
+vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: () => calls.tuningEnabled, suggestedChangesV2Enabled: () => calls.tuningEnabled && calls.v2Enabled }));
 // The catalog read behind a tag: the real module would reach the (stubbed) database. The stand-in knows only the
 // ids a test puts in `catalog`; any other id is unknown to it, so its tag degrades to the name it carried, and
 // every ask is recorded with whether it was the Commander-legal lookup.
@@ -237,6 +239,7 @@ beforeEach(() => {
   calls.candidateArgs = undefined;
   calls.limits = { capCents: null, sets: [], ownedOnly: false };
   calls.tuningEnabled = true;
+  calls.v2Enabled = true;
   calls.stateOpts = undefined;
   later.queue.length = 0;
   v2.starts = [];
@@ -1124,6 +1127,16 @@ describe("runTuning's v2 branch (plan 2026-10-27, P1 and PR 3)", () => {
     // v10's own reads never ran for it: no gate, no `unchanged`.
     expect(calls.inputs).toBe(0);
     expect(calls.started).toBe(0);
+  });
+
+  it("refuses a count while the reader's SUGGESTED_CHANGES_V2_ENABLED is off, before anything is reserved, and never falls through to v10", async () => {
+    calls.v2Enabled = false;
+    expect(await press({ requestedCount: 5 })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    expect(v2.starts).toEqual([]);
+    expect(v2.worked).toBe(0);
+    expect(calls.inputs).toBe(0);
+    expect(calls.started).toBe(0);
+    expect(later.queue).toEqual([]);
   });
 
   it.each([

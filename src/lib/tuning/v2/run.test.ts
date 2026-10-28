@@ -18,6 +18,40 @@ const s = vi.hoisted(() => ({
   failResolve: false,
   reaped: 0,
   streamed: 0,
+  // Each stub call's stage, in order, and a stand-in the test may put in place of the staged stub's answer.
+  calls: [] as string[],
+  custom: null as null | ((req: { stage: string; ask: number }) => { deltas: AsyncIterable<string>; outcome: Promise<{ ok: true }> }),
+  // A catalog read naming `slowName` waits on this gate; `reads` lists every read's names.
+  slowName: null as string | null,
+  gate: null as Promise<void> | null,
+  reads: [] as string[][],
+  lines: [] as { addOracleId: string | null; cutOracleId: string | null; evidence: { kind: string; value: string }[] }[],
+  runStrategy: null as unknown,
+  addCards: new Map<string, unknown>(),
+}));
+
+vi.mock("../stub", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../stub")>();
+  return {
+    ...actual,
+    stagedStubOutcome: (env: Record<string, string | undefined>, names: { adds: readonly string[]; cuts: readonly string[] }) => {
+      const real = actual.stagedStubOutcome(env, names);
+      if (!real) return null;
+      return (req: { stage: string; ask: number }) => {
+        s.calls.push(req.stage);
+        return (s.custom ?? real)(req as never);
+      };
+    },
+  };
+});
+vi.mock("../../strategy/candidates", () => ({
+  loadFocusCandidates: async () => [],
+  planFocusCandidates: async () => ({ shortlist: undefined, candidates: [], ownedNone: false }),
+}));
+vi.mock("../../strategy/run", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../strategy/run")>()),
+  loadRunStrategy: async () => s.runStrategy,
+  loadAddCards: async (ids: string[]) => new Map(ids.flatMap((id) => (s.addCards.has(id) ? [[id, s.addCards.get(id)]] : []))),
 }));
 
 vi.mock("../../../db", () => ({
@@ -45,6 +79,8 @@ vi.mock("../../model/client", () => ({ streamModel: () => { s.streamed += 1; thr
 vi.mock("../reap-runs", () => ({ reapReaderRuns: async () => { s.reaped += 1; } }));
 vi.mock("../answer", () => ({
   readResolvedRows: async ({ names }: { names: string[] }) => {
+    s.reads.push(names);
+    if (s.slowName !== null && names.includes(s.slowName)) await s.gate;
     if (s.failResolve) throw new Error("catalog read failed");
     return names.map((name) => ({
       name, oracleId: name, colorIdentity: [], commanderLegal: true, priceCents: null, printedInSelectedSets: true, owned: false,
@@ -56,6 +92,7 @@ vi.mock("../run-store", () => ({
   startRun: async (...args: unknown[]) => { s.started.push(args); return s.start; },
   insertV2Line: async (_run: string, line: { addOracleId: string | null; cutOracleId: string | null }) => {
     if (s.failInsert) throw new Error("the write failed");
+    s.lines.push(line as never);
     s.events.push(`line ${line.addOracleId ? `add ${line.addOracleId}` : `cut ${line.cutOracleId}`}`);
     return true;
   },
@@ -109,7 +146,37 @@ beforeEach(() => {
   s.failResolve = false;
   s.reaped = 0;
   s.streamed = 0;
+  s.calls = [];
+  s.custom = null;
+  s.slowName = null;
+  s.gate = null;
+  s.reads = [];
+  s.lines = [];
+  s.runStrategy = null;
+  s.addCards = new Map();
 });
+
+/** One staged call's answer: these lines, each after its own wait, then the close. */
+function answer(list: "additions" | "cuts", cards: { card: string; waitMs?: number }[]) {
+  let done!: () => void;
+  const outcome = new Promise<{ ok: true }>((res) => { done = () => res({ ok: true }); });
+  const deltas = (async function* () {
+    try {
+      yield `{"${list}":[`;
+      for (let i = 0; i < cards.length; i++) {
+        if (cards[i].waitMs) await new Promise((res) => setTimeout(res, cards[i].waitMs));
+        yield `${i > 0 ? "," : ""}${JSON.stringify({
+          card: cards[i].card, rationale: `${cards[i].card} is a staged line.`, rationaleShort: "A staged line",
+          evidence: [{ kind: "decklist", value: "A staged citation" }],
+        })}`;
+      }
+      yield "]}";
+    } finally {
+      done();
+    }
+  })();
+  return { deltas, outcome };
+}
 
 describe("parseV2Wire", () => {
   it("reads a count, a request and a bracket choice off the closed sets, and nothing else", () => {
@@ -216,6 +283,55 @@ describe("the v2 run's work", () => {
     log.mockRestore();
     expect(s.persisted).toEqual([]);
     expect(s.failed).toHaveLength(1);
+  });
+
+  it("makes no further model call once a catalog read has failed (PR #2316 review)", async () => {
+    s.failResolve = true;
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await run();
+    log.mockRestore();
+    // The first call's read failed: no additions refill (which a list kept empty would otherwise start) and no cut call.
+    expect(s.calls).toEqual(["additions"]);
+    expect(s.failed).toHaveLength(1);
+  });
+
+  it("two streams naming a card at once share ONE catalog read, and neither validates before it lands (PR #2316 review)", async () => {
+    // Call 1 keeps one addition, so the additions refill and the cut call stream side by side (H2). The cut call names
+    // "Shared" first and its read is held; the refill names it while that read is still out.
+    let release!: () => void;
+    s.gate = new Promise((res) => { release = res; });
+    s.slowName = "Shared";
+    s.custom = ({ stage }) => {
+      if (stage === "additions") return answer("additions", [{ card: "Fresh" }]);
+      if (stage === "cuts") return answer("cuts", [{ card: "Shared" }]);
+      if (stage === "additionsRefill") return answer("additions", [{ card: "Shared", waitMs: 5 }]);
+      return answer("cuts", []);
+    };
+    setTimeout(() => release(), 30);
+    await run({ wire: wire({ requestedCount: 2 }) });
+    expect(s.reads.filter((names) => names.includes("Shared"))).toHaveLength(1);
+    // The refill's addition validated against the row the cut call's read brought in: kept and saved, never dropped as a
+    // card that does not exist.
+    expect(s.events).toContain("line add Shared");
+    const report = (s.persisted[0] as [unknown, unknown, { drops: { rule: string }[] }])[2];
+    expect(report.drops.map((d) => d.rule)).not.toContain("cardExists");
+  });
+
+  it("chips each line on a focus run before it is saved, as v10 does (strategyChips)", async () => {
+    const add = STUB_ADDITIONS[0];
+    s.inputs = inputs({ focus: "tokens" });
+    s.runStrategy = {
+      key: "tokens", name: "Tokens", copies: 4, top: ["tokens"],
+      cards: body.map((oracleId) => ({ oracleId, typeLine: "Creature", manaValue: 2, keywords: [], quantity: 1, themes: [] })),
+      names: new Map(body.map((n) => [n, n])),
+    };
+    s.addCards = new Map([[add, { oracleId: add, typeLine: "Artifact", manaValue: 2, keywords: [], quantity: 1, themes: ["tokens"] }]]);
+    await run();
+    const added = s.lines.find((l) => l.addOracleId === add)!;
+    expect(added.evidence[0]).toEqual({ kind: "focus", value: "Tokens 4 \u2192 5" });
+    // An addition off the focus gets no chip; a cut on none of the top strategies leads with the app's own.
+    expect(s.lines.find((l) => l.addOracleId === STUB_ADDITIONS[1])!.evidence.some((c) => c.kind === "focus")).toBe(false);
+    expect(s.lines.find((l) => l.cutOracleId === body[0])!.evidence[0]).toEqual({ kind: "decklist", value: "on none of the top 1" });
   });
 
   it("a failed line save fails the run the P4 way, never charging, never throwing", async () => {

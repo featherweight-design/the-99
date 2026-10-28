@@ -33,7 +33,7 @@ import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
 import { resolveBoxText } from "../../lib/cards/tagged-text";
 import { plainText, tagCount } from "../../lib/decks/notes-body";
-import { tuningEnabled } from "../../lib/tuning/flag";
+import { suggestedChangesV2Enabled, tuningEnabled } from "../../lib/tuning/flag";
 import { gateReason } from "../../lib/tuning/gate";
 import { MAX_SUGGESTIONS, NOTES_TAGS_MAX, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
@@ -201,9 +201,13 @@ export async function runTuning(
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!tuningEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
-  // Suggested changes v2 (plan 2026-10-27, P1): reached only by a press that carries a count, which nothing sends until
-  // its UI ships behind its own switch. Every other press is v10's, below, exactly as it was.
-  if (typeof opts === "object" && opts !== null && "requestedCount" in opts) return runTuningV2(deckId, userId, env, opts);
+  // Suggested changes v2 (plan 2026-10-27, P1 and P5): reached only by a press that carries a count, and only while the
+  // reader's `SUGGESTED_CHANGES_V2_ENABLED` is on. Off, a replayed count is refused here, before anything is reserved:
+  // it never falls through to v10 either. Every other press is v10's, below, exactly as it was.
+  if (typeof opts === "object" && opts !== null && "requestedCount" in opts) {
+    if (!suggestedChangesV2Enabled(env)) return { ok: false, message: deckTuningCopy.run.refused };
+    return runTuningV2(deckId, userId, env, opts);
+  }
   const anyway = typeof opts === "object" && opts !== null && opts.anyway === true;
   // The panel names its run so it can wait on that run and no other (`await-run.ts`). Anything but
   // a uuid is refused rather than dropped: a wait keyed on an id the row does not carry would never end.

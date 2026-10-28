@@ -14,7 +14,7 @@ import { streamModel } from "../../model/client";
 import type { ProfileHead } from "../../profile/load";
 import { buildPlayGroup } from "../../profile/play";
 import { loadFocusCandidates, planFocusCandidates } from "../../strategy/candidates";
-import { focusPack, loadRunStrategy } from "../../strategy/run";
+import { focusPack, loadAddCards, loadRunStrategy, strategyChips } from "../../strategy/run";
 import { readResolvedRows } from "../answer";
 import { buildEvidencePack } from "../evidence";
 import { TUNING_EFFORT, TUNING_MODEL, V2_RUN_BUDGET_MS } from "../limits";
@@ -167,16 +167,24 @@ async function workV2(args: {
     if (focusRun && focusPlan) pack.focus = focusPack(focusRun, focusPlan.candidates);
 
     // The validator's name lookup is synchronous, and a line's names are known only once it streams in: each line's
-    // card is read (`readResolvedRows`, v10's own read) before its last delta reaches the engine.
+    // card is read (`readResolvedRows`, v10's own read) before its last delta reaches the engine. The READ is what is
+    // cached per name, not the fact of asking (PR #2316 review): the cut call streams beside the additions refill, and a
+    // stream naming a card the other is still reading awaits that same read rather than reaching the validator without
+    // the row.
     const rows: (ResolvedCard & { name: string })[] = [];
-    const asked = new Set<string>();
+    const reads = new Map<string, Promise<void>>();
     let resolve = nameResolver(rows, inDeckIds);
     const ensure = async (names: string[]) => {
-      const fresh = [...new Set(names)].filter((n) => !asked.has(n));
-      if (fresh.length === 0) return;
-      for (const n of fresh) asked.add(n);
-      rows.push(...await readResolvedRows({ userId, deckId, limits, names: fresh, env }));
-      resolve = nameResolver(rows, inDeckIds);
+      const unique = [...new Set(names)];
+      const fresh = unique.filter((n) => !reads.has(n));
+      if (fresh.length > 0) {
+        const read = readResolvedRows({ userId, deckId, limits, names: fresh, env }).then((found) => {
+          rows.push(...found);
+          resolve = nameResolver(rows, inDeckIds);
+        });
+        for (const n of fresh) reads.set(n, read);
+      }
+      await Promise.all([...new Set(unique.map((n) => reads.get(n)!))]);
     };
 
     const commanders = new Set(profile.commanderOracleIds);
@@ -190,6 +198,10 @@ async function workV2(args: {
     let appError: unknown = null;
     const sideOf = (stage: string): V2Side => (stage.startsWith("additions") ? "add" : "cut");
     const callModel: V2CallModel = (req) => {
+      // After a catalog read failed, no further call is made (PR #2316 review): the run is failing as the app's error,
+      // and a refill or cut call started now would be paid for nothing. The throw rejects `runV2` (its `run` makes the
+      // call outside the stream's own try), which is the app-error path below.
+      if (appError !== null) throw appError;
       const refill = req.stage.endsWith("Refill");
       if (refill) void markV2Progress(run.runId, "refilling", sideOf(req.stage), true).catch(() => undefined);
       const call = stub
@@ -232,7 +244,14 @@ async function workV2(args: {
       cardFloor: async (side, line) =>
         side === "add" && line.addOracleId ? cardFloorOf(line.addOracleId, await loadBracketGateFacts([line.addOracleId])) : null,
       budgetMs: V2_RUN_BUDGET_MS,
-      onLine: async (_side, line) => { await insertV2Line(run.runId, line); },
+      // AFTER validation, as v10 does (`runTuning`): the focus chips are the app's figures, which the validator would drop
+      // from the model. A line's own addition is read for its chip, so each line is chipped as it is saved.
+      onLine: async (_side, line) => {
+        const [chipped] = focusRun
+          ? strategyChips([line], focusRun, await loadAddCards(line.addOracleId ? [line.addOracleId] : []))
+          : [line];
+        await insertV2Line(run.runId, chipped);
+      },
       onListIn: (side) => markV2Progress(run.runId, "in", side, true),
     });
     if (appError !== null) throw appError;
