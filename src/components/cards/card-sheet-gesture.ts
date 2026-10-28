@@ -236,8 +236,9 @@ const SPRING = "transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1)";
  * shrink and dim the card as it leaves and grow the neighbor as it comes, only where motion is
  * welcome; under reduced motion the band still slides with the finger and nothing scales.
  */
-export function swipeProgress(bandX: number, pitch: number): number {
-  if (pitch <= 0) return 0;
+export function swipeProgress(bandX: number, pitch: number, canPrev: boolean, canNext: boolean): number {
+  // Past an end the band rubber-bands with nothing coming in, so nothing swaps: it only slides.
+  if (pitch <= 0 || (bandX < 0 && !canNext) || (bandX > 0 && !canPrev)) return 0;
   return Math.max(-1, Math.min(1, bandX / pitch));
 }
 
@@ -371,7 +372,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         // springs back after a beat.
         d.bandX = bandOffset(dx, canPrev, canNext);
         band.style.transform = `translateX(${d.bandX}px)`;
-        const progress = swipeProgress(d.bandX, d.pitch);
+        const progress = swipeProgress(d.bandX, d.pitch, canPrev, canNext);
         writeSwipe(stage, progress);
         onPage(dir, d.bandX, Math.abs(progress));
         setTimeout(() => {
@@ -460,7 +461,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       d.bandX = bandOffset(dx, canPrev, canNext);
       band.style.transition = "none";
       band.style.transform = `translateX(${d.bandX}px)`;
-      writeSwipe(opts.current.stageRef?.current, swipeProgress(d.bandX, d.pitch));
+      writeSwipe(opts.current.stageRef?.current, swipeProgress(d.bandX, d.pitch, canPrev, canNext));
       return;
     }
     const sheet = sheetRef.current;

@@ -138,6 +138,18 @@ describe("useCardSheetGestures", () => {
     expect(stage.style.getPropertyValue("--swipe-out")).toBe("0.5");
   });
 
+  it("swaps nothing past an end, where the band only rubber-bands", () => {
+    render(<Harness canNext={false} cardWidth={320} />);
+    const band = screen.getByTestId("band");
+    const stage = screen.getByTestId("stage");
+    fireEvent.pointerDown(band, { pointerId: 1, clientX: 700, clientY: 300, button: 0, pointerType: "touch" });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 500, clientY: 301, pointerType: "touch" });
+    expect(band.style.transform).toBe("translateX(-40px)");
+    expect(stage.style.getPropertyValue("--swipe-out")).toBe("0");
+    expect(stage.style.getPropertyValue("--swipe-next")).toBe("0");
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 500, clientY: 301, pointerType: "touch" });
+  });
+
   it("lets the swap go home with the band on a release that does not page", () => {
     const onPage = vi.fn();
     render(<Harness onPage={onPage} cardWidth={320} />);
