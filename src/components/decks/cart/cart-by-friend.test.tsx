@@ -163,8 +163,8 @@ describe("By friend's panels", () => {
     served = { spares: BOARD, asks: [] };
     await mount({ initialView: "friend" });
     expect(panels().map((p) => p.getAttribute("data-friend"))).toEqual(["p-Colin", "p-Chris", "p-Max", "p-Peter"]);
-    expect(screen.getByText(copy.list.headByFriend(4, 5))).toBeTruthy();
-    expect(screen.getByText("4 friends · 5 spares · most first")).toBeTruthy();
+    expect(screen.getByText(copy.result.byFriend(4, 5))).toBeTruthy();
+    expect(screen.getByText("4 friends · 5 spares")).toBeTruthy();
     expect(panel("Colin").getByTestId("friend-panel-spares").textContent).toBe("2 spares");
     expect(panel("Chris").getByText("shares with Thursday pod, Cube night")).toBeTruthy();
     // A panel's lines keep the by-card order (commanders, then most selected decks, then A to Z).
@@ -289,7 +289,7 @@ describe("a `?view=friend` arrival", () => {
     served = { spares: [], asks: [] };
     await mount({ initialView: "friend" });
     expect(panels()).toHaveLength(0);
-    expect(screen.getByText(copy.list.headByCard(4))).toBeTruthy();
+    expect(screen.getByText(copy.result.byCardNoSpare(4))).toBeTruthy();
     expect(list().getAllByRole("listitem")).toHaveLength(4);
   });
 

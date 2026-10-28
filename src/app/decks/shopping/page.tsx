@@ -12,6 +12,7 @@ import { loadCart } from "../../../lib/decks/cart-read";
 import { provenanceForm } from "../../../lib/decks/price";
 import { isUuid } from "../../../lib/uuid";
 import { CartView } from "../../../components/decks/cart/cart-view";
+import { parseQuery } from "../../../lib/decks/cart-sort";
 import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { socialFriendsEnabled, spareRequestsEnabled } from "../../../lib/social/flag";
@@ -26,7 +27,7 @@ async function readNow() {
 export default async function AllDecksShoppingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string | string[]; deck?: string | string[] }>;
+  searchParams: Promise<{ view?: string | string[]; deck?: string | string[]; q?: string | string[]; sort?: string | string[] }>;
 }) {
   // The reader first: the switch is theirs (`requestSwitchEnv`), resolved once for the whole render.
   const userId = await requireUserId();
@@ -56,6 +57,9 @@ export default async function AllDecksShoppingPage({
       provenance={provenance}
       initialView={initialView}
       focusDeckId={deck}
+      // `?q` and `?sort` (v2 G3): the search for every view, and the sort of the view the page opens on.
+      initialQuery={typeof params.q === "string" ? parseQuery(params.q) : ""}
+      initialSort={typeof params.sort === "string" ? params.sort : null}
       buyEnabled={shoppingMarkBoughtEnabled(env)}
       // Friends' spares on the lines (Social R2 PR B): read after the page from the uncached route, so no key changes.
       socialFriends={socialFriendsEnabled(env)}

@@ -84,11 +84,6 @@ export function useByFriend(lines: readonly SelectedLine[], held: HeldLines = NO
 /** By friend's panels, while it has some: what the switch's segment and a `?view=friend` arrival wait for today. */
 export const friendGroups = (b: ByFriend | null) => (b?.status === "groups" ? b : null);
 
-/** The list head: `4 friends · 5 spares · most first`. */
-export function byFriendHead(groups: readonly FriendGroup[]): string {
-  return copy.list.headByFriend(groups.length, groups.reduce((n, g) => n + g.spares, 0));
-}
-
 const lineKey = (publicId: string, oracleId: string) => `${publicId}:${oracleId}`;
 
 export function ByFriendList({

@@ -216,9 +216,10 @@ describe("CartView", () => {
     // Under a returned phone header (card search plan PR B), which publishes the room it takes.
     expect(controls.className).toContain("top-[var(--header-offset,0px)]");
     expect(controls.className).toContain("md:static");
-    // The switch and the heading are the pinned block's members.
+    // The switch and the chassis (search, sort, the result line that replaced the list heading) are the pinned block's members.
     expect(within(controls).getByRole("radiogroup", { name: copy.view.label })).toBeTruthy();
-    expect(within(controls).getByRole("heading", { level: 2 })).toBeTruthy();
+    expect(controls.querySelector("[data-chassis-row='result']")).toBeTruthy();
+    expect(within(controls).getByRole("searchbox", { name: copy.filters.search })).toBeTruthy();
     const box = screen.getByRole("region", { name: copy.list.regionAria });
     // Desktop keeps what the phone gave up: positive assertions first, so dropping a class outright fails too.
     for (const c of ["md:overflow-y-auto", "md:flex-1", "md:min-h-[120px]"]) expect(box.className).toContain(c);
@@ -251,7 +252,7 @@ describe("CartView by deck (A5)", () => {
     render(<CartView cart={cart()} provenance={provenance} />);
     fireEvent.click(screen.getByRole("radio", { name: copy.view.byDeck }));
     expect(screen.getByRole("radio", { name: copy.view.byDeck }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByText(copy.list.headByDeck(3, 4))).toBeTruthy();
+    expect(screen.getByText(copy.result.byDeck(3, 4))).toBeTruthy();
     const groups = screen.getAllByRole("region", { name: /HD - / });
     expect(groups.map((g) => g.getAttribute("aria-labelledby") && g.textContent?.match(/HD - [A-Za-z]+/)?.[0])).toEqual(["HD - Gishath", "HD - Omnath", "HD - Kratos"]);
     expect(screen.queryByText("Sol Ring")).toBeNull();

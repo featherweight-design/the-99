@@ -1,0 +1,134 @@
+{
+  "feature": "Shopping for all decks v2 (handoff design_handoff_the99_all_decks_cart_v2; plan 2026-10-28-all-decks-cart-v2.md)",
+  "clearAbout": true,
+  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. Later PRs add the row facts, By friend's panels, the Friend and Owned filters and the reading, empty and failed states. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "rows": [
+    {
+      "id": "chassis-rest-card",
+      "label": "/decks/shopping, By card at rest: the chassis under the switch (search, sort, NO FILTERS ON, the result line)",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "chassis-rest-deck",
+      "label": "/decks/shopping?view=deck, By deck at rest: the same chassis, By deck's sentence",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=deck",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "chassis-searched",
+      "label": "/decks/shopping, a search on: the chip, `N of M cards`, the narrowed list",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "sol",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "chassis-searched-deck",
+      "label": "/decks/shopping?view=deck, the same search carried to By deck: only the decks it leaves a card of",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=deck",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "sol",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "chassis-no-match",
+      "label": "/decks/shopping, a search that matches nothing: the no-match block with its one fix",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "zzzzzz",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "chassis-sort-menu",
+      "label": "/decks/shopping, the desktop sort menu open (Controls A2)",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "Sort \u00b7 Most decks",
+          "settle": 400
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "chassis-sort-sheet",
+      "label": "/decks/shopping, the phone sort sheet open (Controls B2)",
+      "view": "src/components/decks/cart/cart-sort-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "Sort \u00b7 Most decks",
+          "settle": 600
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "chassis-sorted",
+      "label": "/decks/shopping?sort=price-high, By card sorted by price, high first: unpriced lines last",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?sort=price-high",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    }
+  ]
+}
