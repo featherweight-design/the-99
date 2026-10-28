@@ -2,8 +2,6 @@
 // `2026-10-16-discovery-r2-r3.md` "About's shape"): Tools by default, the Reference at `?tab=reference`. Auth-gated
 // like every other route: the app is invite-only, so there is no public version of this page.
 
-import { commandersPlaceEnabled } from "../../lib/commanders/place-flag";
-import { count, eq } from "drizzle-orm";
 import { requireUserId } from "../../lib/auth";
 import { aboutSeen } from "../../lib/about/read";
 import { aboutSheetEnabled } from "../../lib/about/flag";
@@ -11,13 +9,11 @@ import { safeNext } from "../../lib/about/gate";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { referenceScreens } from "../../lib/about/reference";
 import { creditsEntryOf, displayedId, switchedIds, unseenEntries, visibleEntries } from "../../lib/about/visible";
-import { hasSyncAnchor } from "../../lib/collection/sync-base";
 import { ABOUT_VERSION, ALLOWANCE_SLOT, fillAllowance } from "../../lib/copy/about";
 import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
-import { DECK_TOOLS, loadToolFits, type DeckToolId } from "../../lib/discovery/fits";
 import { showcaseGroups, writtenForYou } from "../../lib/discovery/showcase";
-import { TOOLS } from "../../lib/discovery/tools";
+import { loadCardInput } from "../../lib/discovery/showcase-input";
 import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
 import { dailyLimitFor } from "../../lib/model/allowance";
 import { perfRoute } from "../../lib/perf/timing";
@@ -26,7 +22,6 @@ import type { SwitchName } from "../../lib/switches/registry";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { resolveTheme } from "../../lib/theme/server";
 import { db } from "../../db";
-import { decks } from "../../db/schema";
 import { AboutTabs } from "../../components/about/tools/about-tabs";
 import { aboutTabOf } from "../../lib/about/tab";
 import { ToolsTab } from "../../components/about/tools/tools-tab";
@@ -49,17 +44,6 @@ function soleNext(value: string | string[] | undefined): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-/** The deck tools whose switches are on for this reader: the only ones `loadToolFits` is asked about. */
-function deckToolsFor(isOn: (name: SwitchName) => boolean): DeckToolId[] {
-  const deckTools: ReadonlySet<string> = new Set(DECK_TOOLS);
-  return TOOLS.filter((t) => deckTools.has(t.id) && (t.switch === null || isOn(t.switch))).map((t) => t.id as DeckToolId);
-}
-
-async function deckCount(userId: string): Promise<number> {
-  const [row] = await db.select({ n: count() }).from(decks).where(eq(decks.userId, userId));
-  return Number(row?.n ?? 0);
-}
-
 export default async function AboutRoute({
   searchParams,
 }: {
@@ -72,25 +56,15 @@ export default async function AboutRoute({
   const isOn = (name: SwitchName) => SWITCH_FLAGS[name](env);
   const visible = visibleEntries(env);
   const visibleIds = new Set(visible.map((e) => e.id));
-  const syncOn = isOn("COLLECTION_SYNC_ENABLED");
-  const [seen, creditLimit, theme, fits, decksHeld, syncAnchored] = await Promise.all([
+  const [seen, creditLimit, theme, cardInput] = await Promise.all([
     aboutSeen(userId),
     // The reader's own daily credit limit, read once: the credits entry, Written for you and How it works state it.
     dailyLimitFor(db, userId),
     resolveTheme(),
-    perf.timed("toolFits", () => loadToolFits(userId, env, deckToolsFor(isOn))),
-    deckCount(userId),
-    syncOn ? hasSyncAnchor(userId) : false,
+    loadCardInput(userId, env, perf),
   ]);
 
-  const groups = showcaseGroups({
-    isOn,
-    visibleEntryIds: visibleIds,
-    fits,
-    deckCount: decksHeld,
-    hasSyncBase: syncAnchored,
-    place: commandersPlaceEnabled(env),
-  });
+  const groups = showcaseGroups({ ...cardInput, visibleEntryIds: visibleIds });
   const filled = visible.map((e) => ({ ...e, caption: fillAllowance(e.caption, creditLimit) }));
   const screens = referenceScreens(filled, groups, theme);
 

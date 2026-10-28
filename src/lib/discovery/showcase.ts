@@ -35,11 +35,10 @@ export type ToolCardModel = {
 
 export type ShowcaseGroup = { group: ToolGroup; cards: ToolCardModel[] };
 
-export type ShowcaseInput = {
+/** What a card needs to know about its reader (`loadCardInput`, `showcase-input.ts`). */
+export type CardInput = {
   /** The reader's resolved switches. */
   isOn: (name: SwitchName) => boolean;
-  /** The ids of the About entries this reader can see (`visibleEntries`). */
-  visibleEntryIds: ReadonlySet<string>;
   /** `loadToolFits` for the deck tools whose switches are on. */
   fits: Partial<Record<DeckToolId, ToolFit>>;
   /** How many decks the reader has: a tool that reads decks says so when there are none. */
@@ -50,6 +49,11 @@ export type ShowcaseInput = {
   place: boolean;
 };
 
+export type ShowcaseInput = CardInput & {
+  /** The ids of the About entries this reader can see (`visibleEntries`). */
+  visibleEntryIds: ReadonlySet<string>;
+};
+
 /** The Try it address: the tool's page, or a deck, with the one-time parameter its landing reads. */
 export function tryHref(path: string, tool: ToolId): string {
   const [base, query] = path.split("?");
@@ -58,7 +62,7 @@ export function tryHref(path: string, tool: ToolId): string {
   return `${base}?${params.toString()}`;
 }
 
-function stateOf(tool: Tool, copy: ToolCopy, input: ShowcaseInput): CardState {
+function stateOf(tool: Tool, copy: ToolCopy, input: CardInput): CardState {
   const id = tool.id as ToolId;
   if (tool.lands.kind === "route") {
     if (tool.needsDeck && input.deckCount === 0) return { kind: "none", line: showcaseCopy.needsADeck, door: null };
@@ -83,18 +87,21 @@ export function showcaseGroups(input: ShowcaseInput): ShowcaseGroup[] {
     cards: tools
       .filter((t) => t.group === group)
       .filter((t) => (t.switch === null || input.isOn(t.switch)) && input.visibleEntryIds.has(t.entry))
-      .map((t): ToolCardModel => {
-        const copy: ToolCopy = showcaseCopy.tools[t.id as ToolId];
-        return {
-          id: t.id as ToolId,
-          copy,
-          credit: t.credit,
-          entry: t.entry,
-          state: stateOf(t, copy, input),
-          note: t.id === "collection-sync" && !input.hasSyncBase ? showcaseCopy.syncNoBase : null,
-        };
-      }),
+      .map((t) => toolCardOf(t, input)),
   })).filter((g) => g.cards.length > 0);
+}
+
+/** One tool's card for this reader: its copy, cost chip, where its press goes and its note. Its switch is the caller's. */
+export function toolCardOf(t: Tool, input: CardInput): ToolCardModel {
+  const copy: ToolCopy = showcaseCopy.tools[t.id as ToolId];
+  return {
+    id: t.id as ToolId,
+    copy,
+    credit: t.credit,
+    entry: t.entry,
+    state: stateOf(t, copy, input),
+    note: t.id === "collection-sync" && !input.hasSyncBase ? showcaseCopy.syncNoBase : null,
+  };
 }
 
 export type WrittenRow = (typeof writtenForYouCopy.rows)[number];

@@ -1089,6 +1089,11 @@ export const ABOUT_PAGE_STRINGS = {
   goodToKnow: "Good to know",
   goodToKnowSub: "What the screen can’t show",
   tryIt: "Try it",
+  tryItSub: "Each card opens the tool for real",
+  /** A phone's Try it shows its first card; the rest wait under this press. */
+  moreBelow: (n: number) => `${n} more below`,
+  /** A label a Show me landed on that the reader has not been told about (call 7). */
+  newTag: "New",
   onThisPage: "On this page",
   bannerLead: (page: string) => `New on ${page}:`,
   bannerMulti: "New in the app",

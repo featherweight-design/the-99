@@ -17,20 +17,41 @@ const m = vi.hoisted(() => ({
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
+  seen: { version: 16, ids: [] as string[] },
+  asked: [] as (readonly string[] | undefined)[],
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../../lib/theme/server", () => ({ resolveTheme: async () => m.theme }));
+vi.mock("../../../lib/about/read", () => ({ aboutSeen: async () => m.seen }));
+// The card input reads the database; a reader with one deck that fits every deck tool stands in for it.
+vi.mock("../../../lib/discovery/showcase-input", async () => {
+  const { SWITCH_FLAGS } = await import("../../../lib/switches/flags");
+  const { DECK_TOOLS } = await import("../../../lib/discovery/fits");
+  return {
+    switchesOn: (e: NodeJS.ProcessEnv) => (n: keyof typeof SWITCH_FLAGS) => SWITCH_FLAGS[n](e),
+    loadCardInput: async (_userId: string, e: NodeJS.ProcessEnv, _perf?: unknown, only?: readonly string[]) => (m.asked.push(only), {
+      isOn: (n: keyof typeof SWITCH_FLAGS) => SWITCH_FLAGS[n](e),
+      fits: Object.fromEntries(DECK_TOOLS.map((t) => [t, { decks: [{ id: "d1", name: "Ghalta" }] }])),
+      deckCount: 1,
+      hasSyncBase: true,
+      place: true,
+    }),
+  };
+});
 vi.mock("next/navigation", () => ({ notFound: m.notFound, usePathname: () => "/about/decks", useRouter: () => ({ refresh: () => {} }) }));
 
 import AboutAreaRoute from "./page";
 import { AreaPage, type AreaSection } from "../../../components/about/pages/area-page";
+import type { Landable } from "../../../lib/discovery/page-tools";
 
-type El = ReactElement<{ area: string; sections: AreaSection[] }>;
-const draw = async (area: string) => (await AboutAreaRoute({ params: Promise.resolve({ area }) })) as El;
+type El = ReactElement<{ area: string; sections: AreaSection[]; landable: Landable; initialLit: string | null }>;
+const draw = async (area: string, query: Record<string, string | string[]> = {}) =>
+  (await AboutAreaRoute({ params: Promise.resolve({ area }), searchParams: Promise.resolve(query) })) as El;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  m.seen = { version: 16, ids: [] };
   m.env = ALL_ON;
   m.theme = "amonkhet";
   m.requestSwitchEnv.mockImplementation(async () => m.env);
@@ -90,5 +111,75 @@ describe("/about/[area]", () => {
     const [s] = el.props.sections;
     expect(s.phone.shots[0].shot.src).toMatch(/^\/about\/pages\/kamigawa\/phone\//);
     expect(s.desktop.shots[0].shot.src).toMatch(/^\/about\/pages\/kamigawa\/desktop\//);
+  });
+
+  it("draws each section's Try it from the tools whose labels it draws, Show me aimed at the label (call 6)", async () => {
+    const analysis = (await draw("decks")).props.sections.find((s) => s.id === "analysis")!;
+    expect(analysis.tools.map((c) => c.card.id)).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
+    const cuts = analysis.tools.find((c) => c.card.id === "proposed-cuts")!;
+    expect(cuts.card.showMe).toBe("/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis");
+    // The press is still Try it, unchanged.
+    expect(cuts.card.state).toMatchObject({ kind: "deck", href: "/decks/d1?tool=proposed-cuts" });
+    // Each width's own picture: the 390 crop on a phone, the tool's desktop crop from md.
+    expect(cuts.phone?.src).toMatch(/^\/about\/shots\//);
+    expect(cuts.desktop?.src).toBe("/about/pages/amonkhet/desktop/tools/proposed-cuts.webp");
+    const html = renderToStaticMarkup(await draw("decks"));
+    expect(html).toContain('href="/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis"');
+    expect(html).toContain("Show me ›");
+    expect(html).not.toContain("How it works ›");
+  });
+
+  it("reads fits only for the tools the area draws, and none for an area that draws none", async () => {
+    m.requestSwitchEnv.mockResolvedValue(ALL_ON);
+    m.asked.length = 0;
+    const decks = await draw("decks");
+    const drawn = decks.props.sections.flatMap((s) => s.tools.map((t) => t.card.id)).sort();
+    expect(m.asked).toHaveLength(1);
+    expect([...(m.asked[0] ?? [])].sort()).toEqual(drawn);
+    for (const area of ["home", "collection", "commanders", "shopping", "friends"]) {
+      m.asked.length = 0;
+      const page = await draw(area);
+      const ids = page.props.sections.flatMap((s) => s.tools.map((t) => t.card.id));
+      if (ids.length === 0) expect(m.asked).toEqual([]);
+      else expect([...(m.asked[0] ?? [])].sort()).toEqual([...ids].sort());
+    }
+  });
+
+  it("a switch off for the reader takes the tool card with its label (Review Focus 2)", async () => {
+    const cards = async () => (await draw("decks")).props.sections.flatMap((s) => s.tools.map((c) => c.card.id));
+    expect(await cards()).toContain("proposed-cuts");
+    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
+    expect(await cards()).not.toContain("proposed-cuts");
+    expect(renderToStaticMarkup(await draw("decks"))).not.toContain('data-tool-card="proposed-cuts"');
+  });
+
+  it("hands over the labels this page can land on, New only while the reader has not been told, and lands `?lit=` on first paint", async () => {
+    const lit = "decks/analysis/cuts";
+    const fresh = await draw("decks", { lit });
+    expect(fresh.props.initialLit).toBe(lit);
+    expect(fresh.props.landable[lit]).toEqual({ isNew: true });
+    const drawn = fresh.props.sections.flatMap((s) => [...s.desktop.labels, ...s.phone.labels].map((l) => l.key));
+    expect(Object.keys(fresh.props.landable).sort()).toEqual([...new Set(drawn)].sort());
+    const freshHtml = renderToStaticMarkup(fresh);
+    expect(freshHtml).toContain("data-about-new");
+    expect(freshHtml).toContain('data-about-landing-card="proposed-cuts"');
+    m.seen = { version: 16, ids: [lit] };
+    const told = await draw("decks", { lit });
+    expect(told.props.landable[lit]).toEqual({ isNew: false });
+    const html = renderToStaticMarkup(told);
+    expect(html).not.toContain("data-about-new");
+    expect(html).not.toContain("data-about-landing-card");
+  });
+
+  it("lights nothing on first paint for a label this page does not draw", async () => {
+    for (const lit of ["friends/friends/add", "decks/analysis/nope", "toString", ["decks/analysis/cuts", "decks/analysis/cuts"]]) {
+      const el = await draw("decks", { lit });
+      expect(el.props.initialLit).toBeNull();
+    }
+    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
+    const off = await draw("decks", { lit: "decks/analysis/cuts" });
+    expect(off.props.initialLit).toBeNull();
+    expect(off.props.landable).not.toHaveProperty(["decks/analysis/cuts"]);
+    expect((await draw("decks")).props.initialLit).toBeNull();
   });
 });
