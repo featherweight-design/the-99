@@ -314,6 +314,9 @@ interface BuilderShellProps {
    *  and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Off, both
    *  tools mount directly, exactly as before the hub. */
   tuningHubEnabled?: boolean;
+  /** `suggestedChangesV2Enabled(env)` for this reader (plan 2026-10-27, P5): Suggested changes' hub tile goes inert off
+   *  99 with a link to the tool that brings the deck back, and carries v2's purpose line at 99. Off, the hub is as shipped. */
+  suggestedChangesV2?: boolean;
   /** Try it's `?tool=` (discovery R2, E11), decided by the page from this reader's switches: the deck tool to land
    *  on. The page opens its tab; the shell opens its view and lands on its target. Null strips the parameter. */
   landing?: Pick<ToolLanding, "tool" | "target" | "moment" | "lands"> | null;
@@ -388,6 +391,7 @@ export function BuilderShell({
   proposedCutsEnabled = false,
   manaBalanceEnabled = false,
   tuningHubEnabled = false,
+  suggestedChangesV2 = false,
   landing = null,
   landingRequest = null,
   nearCombos = null,
@@ -484,6 +488,10 @@ export function BuilderShell({
   // 20). Hidden with `display:none` rather than unmounted, so a half-typed
   // query is still there when the list closes.
   const [topOffOpen, setTopOffOpen] = useState(false);
+  // Suggested changes v2's `Top off on Your deck →` (Not-At-99 A): a request the top-off row answers by opening its list
+  // once, on arrival at Your deck. Dropped once answered, so a later visit to the tab does not open it again.
+  const [topOffRequest, setTopOffRequest] = useState<number | null>(null);
+  const topOffNonce = useRef(0);
   // The open list's commit bar is `fixed`, and the dock it displaces is hidden
   // rather than shrunk, so at phone widths NOTHING in flow holds the bottom slot
   // while the list is up and the tail of the decklist scrolls under the bar.
@@ -1548,6 +1556,17 @@ export function BuilderShell({
   const analysisTabRef = useMergedRef(suggestedMoment.ref, cutsTabMoment.ref, manaTabMoment.ref);
   const analysisTabDescribedBy =
     suggestedMoment["aria-describedby"] ?? cutsTabMoment["aria-describedby"] ?? manaTabMoment["aria-describedby"];
+  // Suggested changes v2 (plan 2026-10-27, UI PR 5a), on this reader's switch: the 99 the tool keeps a deck at, and the
+  // way to Top off on Your deck (the hub opens Proposed cuts in place itself). `at` is the deck on the tool's 99 scale:
+  // the built count, with a partner's second slot added back.
+  const topOffPress = () => {
+    setView("deck");
+    setDeckPanel("list");
+    setTopOffRequest((topOffNonce.current += 1));
+  };
+  const suggestedV2 = suggestedChangesV2
+    ? { at: built + (deckBodySize(false) - bodySize), over: built - bodySize, onTopOff: topOffPress }
+    : null;
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
       landingTarget={!tuningHubEnabled}
@@ -1817,6 +1836,8 @@ export function BuilderShell({
                     onConsider={() => setView("consider")}
                     onAnnounce={setAnnouncement}
                     onInflight={setFillInflight}
+                    openRequest={topOffRequest}
+                    onOpenRequestAnswered={() => setTopOffRequest(null)}
                     onOpenChange={setTopOffOpen}
                     onBarHeight={setTopOffBarHeight}
                   />
@@ -2002,7 +2023,13 @@ export function BuilderShell({
                       onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}
                       tools={[
-                        ...(tuningEnabled ? [{ tool: "suggested" as const, panel: permits ? suggestedPanel(permits, true) : null }] : []),
+                        ...(tuningEnabled
+                          ? [{
+                            tool: "suggested" as const,
+                            panel: permits ? suggestedPanel(permits, true) : null,
+                            v2: suggestedV2,
+                          }]
+                          : []),
                         ...(manaBalanceEnabled ? [{ tool: "mana" as const, panel: manaPanel }] : []),
                         ...(proposedCutsEnabled
                           ? [{ tool: "cuts" as const, panel: cutsPanel(true), over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) }]

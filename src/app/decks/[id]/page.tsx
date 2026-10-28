@@ -80,7 +80,7 @@ import { friendDecksEnabled, ruleZeroEnabled, socialFriendsEnabled, socialGamesE
 import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
-import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
+import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
@@ -786,6 +786,7 @@ export default async function DeckBuilderPage({
       proposedCutsEnabled={proposedCutsEnabled(env)}
       manaBalanceEnabled={manaBalanceEnabled(env)}
       tuningHubEnabled={tuningHubEnabled(env)}
+      suggestedChangesV2={suggestedChangesV2Enabled(env)}
       noticesEnabled={noticesEnabled(env)}
       initialNotices={notices}
       // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips
