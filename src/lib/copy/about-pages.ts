@@ -311,9 +311,18 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         since: 16,
         legacy: ["decks-stats"],
       },
+      {
+        id: "precons",
+        region: "decks/your-decks/precons",
+        lead: "Precons",
+        rest: " lists every Commander precon, with how many of its cards you already own. Start a deck from one just as it comes in the box.",
+        switch: "PRECONS_ENABLED",
+        since: 16,
+        legacy: ["precons"],
+      },
     ],
     rules: [],
-    tools: ["lineup"],
+    tools: ["lineup", "precons"],
   },
   {
     area: "decks",
@@ -378,7 +387,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Analysis",
     sub: "Where your deck sits, and the tools that tune it.",
     screens: [{ screen: "deck", view: "analysis" }],
-    captures: { phone: ["p-deck-analysis"], desktop: ["d-analysis"] },
+    captures: { phone: ["p-deck-analysis", "p-analysis-tuning"], desktop: ["d-analysis", "d-analysis-describe"] },
     labels: [
       {
         id: "bracket",
@@ -425,9 +434,18 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         since: 16,
         legacy: ["suggested-changes"],
       },
+      {
+        id: "mana",
+        region: "decks/analysis/mana",
+        lead: "Mana Balance",
+        rest: " counts every source of each color against what your spells ask for. It’s free to run.",
+        switch: "MANA_BALANCE_ENABLED",
+        since: 16,
+        legacy: ["mana-balance"],
+      },
     ],
     rules: ["intent", "credits"],
-    tools: ["suggested-changes", "proposed-cuts"],
+    tools: ["suggested-changes", "proposed-cuts", "mana-balance"],
   },
   {
     area: "decks",

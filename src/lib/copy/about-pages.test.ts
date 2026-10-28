@@ -78,12 +78,8 @@ describe("about pages copy model", () => {
     for (const [id, r] of Object.entries(ABOUT_RULES)) expect(r.since, id).toBe(sinceOf(r.legacy));
   });
 
-  it("aims every placed tool's Show me at a label of a section that lists the tool", () => {
+  it("aims every tool's Show me at a label of a section that lists the tool", () => {
     for (const t of TOOLS) {
-      if (t.label === null) {
-        expect(["precons", "mana-balance"], t.id).toContain(t.id);
-        continue;
-      }
       const s = ABOUT_SECTIONS.find((x) => x.labels.some((l) => `${x.area}/${x.id}/${l.id}` === t.label));
       expect(s, t.id).toBeDefined();
       expect(s!.tools, t.id).toContain(t.id);

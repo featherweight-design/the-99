@@ -11,8 +11,7 @@ import type { TargetId } from "./targets";
  * - `switch`: the switch the tool lives behind, or null for one with none (Top off). Off for a reader, the tool is
  *   absent: no card, and a `?tool=` naming it lands nowhere.
  * - `entry`: the About entry its `How it works ›` opens (`src/lib/copy/about-entries.ts`).
- * - `label`: the label on the About pages its `Show me ›` lights (`labelKey`, `src/lib/about/pages-visible.ts`), or null
- *   for a tool no section places yet (Precons and Mana balance, until Design places them: About visual plan, PR 9).
+ * - `label`: the label on the About pages its `Show me ›` lights (`labelKey`, `src/lib/about/pages-visible.ts`).
  * - `target`: the control a landing haloes. A credit tool's is its Tuning hub tile, never its run press.
  * - `lands`: a deck's tab (and, within Your deck, the Shopping filter), or a route for a tool with a page of its own.
  * - `credit`: the cost chip the app ALREADY draws for it, verbatim (ruling 5, R2 gap 4), or null where it draws none.
@@ -31,7 +30,7 @@ export type Tool = {
   group: ToolGroup;
   switch: SwitchName | null;
   entry: string;
-  label: string | null;
+  label: string;
   target: TargetId;
   lands: ToolLands;
   credit: string | null;
@@ -43,12 +42,12 @@ const hub = tuningHubCopy.tools;
 export const TOOLS = [
   // Start a deck
   { id: "help-me-choose", group: "start", switch: "HELP_ME_CHOOSE_ENABLED", entry: "help-me-choose", label: "commanders/for-you/places", target: "help-me-choose", lands: { kind: "route", href: "/decks/new/choose" }, credit: null, needsDeck: false },
-  { id: "precons", group: "start", switch: "PRECONS_ENABLED", entry: "precons", label: null, target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
+  { id: "precons", group: "start", switch: "PRECONS_ENABLED", entry: "precons", label: "decks/your-decks/precons", target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
   // Tune it
   { id: "top-off", group: "tune", switch: null, entry: "auto-fill", label: "decks/your-deck/mix", target: "top-off", lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },
   { id: "proposed-cuts", group: "tune", switch: "PROPOSED_CUTS_ENABLED", entry: "proposed-cuts", label: "decks/analysis/cuts", target: "proposed-cuts", lands: { kind: "deck", tab: "analysis" }, credit: hub.cuts.cost, needsDeck: true },
   { id: "suggested-changes", group: "tune", switch: "TUNING_ENABLED", entry: "suggested-changes", label: "decks/analysis/suggested", target: "suggested-changes", lands: { kind: "deck", tab: "analysis" }, credit: hub.suggested.cost, needsDeck: true },
-  { id: "mana-balance", group: "tune", switch: "MANA_BALANCE_ENABLED", entry: "mana-balance", label: null, target: "mana-balance", lands: { kind: "deck", tab: "analysis" }, credit: hub.mana.cost, needsDeck: true },
+  { id: "mana-balance", group: "tune", switch: "MANA_BALANCE_ENABLED", entry: "mana-balance", label: "decks/analysis/mana", target: "mana-balance", lands: { kind: "deck", tab: "analysis" }, credit: hub.mana.cost, needsDeck: true },
   // Buy smarter
   { id: "stand-ins", group: "buy", switch: "SWAP_TOOLS_ENABLED", entry: "stand-ins", label: "shopping/deck-shopping/standins", target: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
   { id: "friend-spares", group: "buy", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friend-spares", label: "shopping/deck-shopping/spare", target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },

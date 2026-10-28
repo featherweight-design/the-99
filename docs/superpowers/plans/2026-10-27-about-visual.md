@@ -14,7 +14,7 @@
 
 - Handoff R3 approved by Hugh, 2026-10-28; engineering verdict Yellow (READINESS, engineering section).
 - Hugh via d9, 2026-10-27: **How it works RETIRES**; a rule only it holds is folded into its page's Good to know copy through `/copy-review`. **The one-time About sheet RETIRES**; the banner carries launches, and a brand-new account's first-run line points at the `/about` index.
-- Hugh via d9, 2026-10-27: the `precons` and `mana-balance` Tools cards and the ? on the nine unsectioned screens (card-details, sets, proxies, history, wishlist, new-deck, account, settings, credits) are **placement, sent to Design**. Until those boards land, both cards keep working and those nine screens keep today's ? panel. They are PR 9, after Design returns.
+- Hugh via d9, 2026-10-27, then Design's **Addendum A1** (#2297, approved by Hugh 2026-10-28, audited Green): Precons is a label and Try it card on Decks › Your decks, Mana Balance on Decks › Analysis (its second shot), and the ? on each of the nine unsectioned screens lands on a page section with one label or rule lit (`ABOUT_Q_LANDINGS` in the handoff's `copy-strings.ts`; `account` has no landing). This folds the former PR 9 into PR 1 (the two labels) and PR 6a (the landings, and the panel and Tools tab retire).
 - Launch rule is discretionary (workshop ruling 6); PR 1 rewrites AGENTS.md and `docs/agents/design-pipeline.md` to it.
 - No new app switch (d9 rule e). The new pages ship dark at `/about/[area]` (no link reaches them) until PR 6a swaps every way in at once.
 
@@ -51,12 +51,11 @@
 | 3 | `/about/[area]`: strip, On this page, the labelled screen (pins, list, press-to-light), states | 14 | 750 |
 | 4 | Good to know: the rule card and its diagrams | 12 | 700 |
 | 5 | Try it: tool cards on the page, Show me navigate-then-light, the landing's New mark | 9 | 500 |
-| 6a | Ways in: `/about` index, the ? on sectioned screens with the Back bar, `legacyHref` for every Reference link, their probes and tables | 16 | 650 |
+| 6a | Ways in: `/about` index, the ? on every screen with the Back bar (the A1 landings for the nine), `legacyHref` for every Reference link; the ? panel, its search and the Tools tab retire; their probes and tables | 18 | 700 |
 | 6b | Launches: the banner and first-run line, seen writes, the sheet and the gate's redirect retire, their probes and tables | 16 | 600 |
 | 7a | Retire How it works (method tags kept) | deletions | net negative |
 | 7b | Retire the Reference, the cut entries and the 390-only shots | deletions | net negative |
 | 8 | Close-out: inventory, contact sheet, feature-acceptance walk at 390 and 1300 | 4 | 100 |
-| 9 | After Design: the two tools' placement and the nine screens' ?; the panel, the Tools tab and the last entries retire | tbd | tbd |
 
 **Every PR keeps every shipped surface working.** Each PR that changes a string a probe, an inventory or a copy-drift design table quotes (`about.md`, `about-r6.md`, `about-how-it-works.md`, `about-launch-entries.md`, `discovery-r2-5-tools.md`, `discovery-r2-6a-reference.md`, `discovery-r2-8-help.md`) fixes that probe, inventory or table in the same PR, and every PR that touches pinned content re-pins `about.version.json` (no bump). 7a and 7b are deletion PRs; their added lines stay under 200, and if either passes 20 changed files of surviving code it splits again by directory. No PR stacks; each is cut from fresh `main`.
 
@@ -84,7 +83,7 @@
 - [ ] **Step 1:** Run `/copy-review` over `copy-strings.ts`, the audit's facts with no string (READINESS "Resolved by engineering", bullet 3) and the rules How it works alone holds. Record the result in the PR body. Every switched clause becomes a `sentences` entry keyed by its exact text, the same mechanism as `captionLineSwitches`.
 - [ ] **Step 2:** Write tests in `about-pages.test.ts`: every label `region` is unique; every rule is listed by exactly one section; every section's `rules` name a key of `ABOUT_RULES`; every `switch` and `sentences` value is in `registry.ts`; at most five labels share one capture; every `AboutScreen` but the nine unsectioned ones and every `DeckView` is in exactly one section's `screens`; every `legacy` id is a real entry id (or `<id>@<variant switch>`). Add the new copy objects to `contentHash()` in `src/lib/copy/about.test.ts` (one hash, one pin) and re-pin `about.version.json`.
 - [ ] **Step 3:** Run `pnpm vitest run src/lib/copy/about-pages.test.ts`. Expected: FAIL (module missing).
-- [ ] **Step 4:** Write `about-pages.ts` from the reviewed strings. A migrated unit's `since` is the HIGHEST `since` among its unswitched `legacy` entries (so a reader at a lower floor who never saw the newest source is still told once, and nobody is told twice); a unit with no unswitched source takes 16. The `home/home/help` label's words go to `/copy-review` with the note that the nine panel screens keep the panel until PR 9.
+- [ ] **Step 4:** Write `about-pages.ts` from the reviewed strings. A migrated unit's `since` is the HIGHEST `since` among its unswitched `legacy` entries (so a reader at a lower floor who never saw the newest source is still told once, and nobody is told twice); a unit with no unswitched source takes 16. The `home/home/help` label goes to `/copy-review` too: the ? on the account menu has no landing (Addendum A1).
 - [ ] **Step 5:** Run the test. Expected: PASS. Commit.
 
 ### Task 1.2: Visibility and seen
@@ -116,7 +115,7 @@
 - Modify: `src/lib/discovery/tools.ts`, `src/lib/discovery/entry-targets.ts` (gains `LABEL_TARGETS`, the client mirror of `Tool.label`), `src/lib/discovery/entry-targets.test.ts` (holds both mirrors equal), `src/lib/discovery/tools.test.ts`
 
 **Interfaces:**
-- Produces: each `Tool` gains `label: string | null` (a `labelKey`). `precons` and `mana-balance` get `null` until PR 9. `entry` stays until PR 9; 7b trims it to the remaining entries.
+- Produces: each `Tool` gains `label: string` (a `labelKey`; Precons and Mana Balance per Addendum A1). `entry` stays until 7b removes it with the entries.
 
 | Tool | Label |
 |---|---|
@@ -197,7 +196,7 @@ The images are generated, so they sit outside the size gate, but they are many: 
 
 **Interfaces:**
 - Consumes: `visibleSections`, `pageShotFor` (`page-shots.ts`).
-- Produces: `/about/[area]` renders the six-page strip (`PlaceStrip`, the shipped strip; Main board's strip), the area's name and line, On this page chips (the ? panel's chip component, imported as-is; the panel stays for the nine unsectioned screens until PR 9), then each section in order with id `#<section>`. An unknown area 404s. No link reaches the route until PR 6.
+- Produces: `/about/[area]` renders the six-page strip (`PlaceStrip`, the shipped strip; Main board's strip), the area's name and line, On this page chips (the ? panel's chip component, moved to `components/about/pages/` when 6a retires the panel), then each section in order with id `#<section>`. An unknown area 404s. No link reaches the route until PR 6.
 
 ### Task 3.2: The labelled screen
 
@@ -234,7 +233,7 @@ Before `gh pr create`: design-review property table against Decks-Phone, Decks-D
 
 **Interfaces:**
 - Consumes: Task 1.3's `Tool.label`.
-- Produces: a section's tools, after its rules (phone: the first and "N more below"; desktop: a row of three). "Show me ›" links to `/about/<area>?lit=<labelKey>#<section>`; `label-landing.tsx` reads `lit`, lights the label, and when the label is unseen marks it **New** and draws its tool card directly under it (call 7, Ways-In board), then strips `lit` through `mirrorUrl`. The press stays Try it (`tryHref`, unchanged). A desktop card uses its tool's desktop crop. The Tools tab at `/about?tab=tools` is unchanged and stays until PR 9 (it holds the two unplaced tools); its "How it works ›" links go through `legacyHref` from PR 6a.
+- Produces: a section's tools, after its rules (phone: the first and "N more below"; desktop: a row of three). "Show me ›" links to `/about/<area>?lit=<labelKey>#<section>`; `label-landing.tsx` reads `lit`, lights the label, and when the label is unseen marks it **New** and draws its tool card directly under it (call 7, Ways-In board), then strips `lit` through `mirrorUrl`. The press stays Try it (`tryHref`, unchanged). A desktop card uses its tool's desktop crop. The Tools tab at `/about?tab=tools` is unchanged until 6a retires it; until then its "How it works ›" links are unchanged.
 - [ ] Tests: `showcaseGroups` keeps a tool on a page only when its label is visible; Show me's href for every tool with a label; the landing draws New and the card under the label only for an unseen label.
 
 ---
@@ -246,10 +245,10 @@ Before `gh pr create`: design-review property table against Decks-Phone, Decks-D
 - Create: `src/lib/about/legacy-href.ts`, `src/components/about/pages/back-bar.tsx`, tests
 
 **Interfaces:**
-- `sectionForScreen(screen: AboutScreen, view?: DeckView): { area; section } | null`: null for the nine unsectioned screens, which keep opening today's panel.
+- `questionLanding(pathname: string, search: string): { area; section; lit: string | null } | null`: a sectioned screen lands on its section with nothing lit; each of the nine A1 screens lands on its `ABOUT_Q_LANDINGS` section with that label or rule lit (halo, no New tag), keyed by path for the three new-deck routes; `account` and an unknown path return null (the ? answers for the page under the menu). Card details lands only at desktop width. The ? panel (`help-panel.tsx`, `help-panel.ts`, `search.ts`, `entries-payload.ts`, `/api/about/entries`) and the Tools tab retire here.
 - The ? on a sectioned screen navigates to `/about/<area>?from=<path>#<section>`; `back-bar.tsx` holds "‹ Back to {screen}" at the top while `from` is set.
-- `legacyHref(href: string): string` maps `/about?tab=reference#<entry>` (and the bare Reference) to `/about/<area>#<section>` through each unit's `legacy` list, `#new` to `/about`, and an unknown hash to `/about`; `/about?tab=tools` is left alone. EVERY built Reference link goes through it: `CREDITS_HREF`, `help-panel.ts:82`, `tool-card.tsx:18`, `tools-tab.tsx:110` (Review Focus 3).
-- [ ] Tests: `legacyHref` for `#credits`, `#locked-cards`, `#push`, `#new`, an unknown hash, and `?tab=tools` unchanged; `sectionForScreen` null for exactly the nine; the account menu's first row is still "About The 99" (call 4). Design-review against Ways-In and Main. Contact sheet of the index and the ? from one screen per area at both widths.
+- `legacyHref(href: string): string` maps `/about?tab=reference#<entry>` (and the bare Reference) to `/about/<area>#<section>` through each unit's `legacy` list, `#new` to `/about`, and an unknown hash to `/about`; `/about?tab=tools` goes to `/about`. EVERY built Reference link goes through it: `CREDITS_HREF`, `help-panel.ts:82`, `tool-card.tsx:18`, `tools-tab.tsx:110` (Review Focus 3).
+- [ ] Tests: `legacyHref` for `#credits`, `#locked-cards`, `#push`, `#new`, an unknown hash, and `?tab=tools`; `questionLanding` for every row of the A1 table, the three new-deck paths, `account`, and card details at both widths; the account menu's first row is still "About The 99" (call 4). Design-review against Ways-In and Main. Contact sheet of the index and the ? from one screen per area at both widths.
 
 ## PR 6b: Launches
 
@@ -269,21 +268,17 @@ Delete `how-it-works.tsx`, `how-rows.tsx`, `how-it-works-links.ts`, `how-it-work
 
 ## PR 7b: Retire the Reference
 
-Delete the Reference tab and its files, `about-tabs.tsx`'s Reference half (Tools stays until PR 9), `reference.ts`, `caption.ts`, `reveal-entry.ts`, and the probes, inventories and design tables that quote them. Cut `about-entries.ts` to the entries the nine panel screens and the Tools tab still draw. `ENTRY_TARGETS` and `TOOLS.entry` keep exactly the ids that remain (the mirror test holds them equal). Delete the 390-only shots no remaining surface draws, and shrink `REQUIRED_SHOTS` and `shots.test.ts` to what remains; the tour's `tour-*.webp` stay.
+Delete the Reference tab and its files, `about-tabs.tsx`, `reference.ts`, `caption.ts`, `reveal-entry.ts`, and the probes, inventories and design tables that quote them. Delete `about-entries.ts` and the entry model with it, once 6b's seen translation is the only reader of the legacy ids (it keeps a frozen list of legacy id, switch and `since` in `src/lib/about/legacy-entries.ts`). `ENTRY_TARGETS` and `TOOLS.entry` retire. Delete the 390-only shots no remaining surface draws, and shrink `REQUIRED_SHOTS` and `shots.test.ts` to what remains; the tour's `tour-*.webp` stay.
 
 ## PR 8: Close-out
 
 `docs/superpowers/inventories/about-visual.json` (every page, the index, the ? from one screen per area, banner one and two, Show me landing, the States), contact sheet at 390 and 1300, `pnpm check:shared` for the strip and chips, feature-acceptance walk against the brief, tracker row to Shipped.
-
-## PR 9: After Design
-
-Place `precons` and `mana-balance` and the nine screens' ? per Design's boards; then the panel, `/api/about/entries`, search, the Tools tab and `about-entries.ts` retire, and the remaining old shots go.
 
 ## Settled with d9 (2026-10-27)
 
 Approved as Hugh's proxy, with (a), (b) and (c) as written below.
 
 - **Announcing the redo.** Default: no announcement and no `ABOUT_VERSION` bump. The redo changes About itself, it is not a launch Hugh picked, and every migrated unit is already seen.
-- **Where the two unplaced tools live between PR 6a and PR 9.** PR 6a makes `/about` the index, but `precons` and `mana-balance` have no section until Design returns. Default: `/about?tab=tools` keeps rendering today's Tools tab, all 14 cards. It isn't linked from the index, but any existing link still reaches it, and it retires in PR 9. The alternative, an index row for it, is placement and would go to Design.
+- **The Tools tab** retires in 6a (superseded by Addendum A1, which places both remaining tools).
 - **Repository weight** (d9, 2026-10-27: accepted for now). PR 2 adds 400 to 500 generated WebP files, about 15 to 20 MB, until 7b removes the 390-only set (about 7.6 MB). Every re-capture adds a set to git history, so PR 2 measures a typical re-capture diff, writes only captures whose pixels changed, and picks the lowest WebP quality that still reads. If a re-capture would add more than about 5 MB, it goes to d9 before PR 2 merges.
 - **Dark route.** The new pages are reachable by URL from PR 3 until PR 6a without a switch. Default: accept that, because nothing links there.

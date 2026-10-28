@@ -7,7 +7,7 @@ describe("ENTRY_TARGETS", () => {
     expect(ENTRY_TARGETS).toEqual(Object.fromEntries(TOOLS.map((t) => [t.entry, t.target])));
   });
 
-  it("LABEL_TARGETS is exactly TOOLS' label → target pairs, for the tools a section places", () => {
-    expect(LABEL_TARGETS).toEqual(Object.fromEntries(TOOLS.flatMap((t) => (t.label ? [[t.label, t.target]] : []))));
+  it("LABEL_TARGETS is exactly TOOLS' label → target pairs", () => {
+    expect(LABEL_TARGETS).toEqual(Object.fromEntries(TOOLS.map((t) => [t.label, t.target])));
   });
 });
