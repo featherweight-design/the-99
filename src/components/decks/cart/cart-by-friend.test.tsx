@@ -306,6 +306,16 @@ describe("By friend's v2 row and panel (PR 6)", () => {
     expect(head("Colin").className).toContain("bg-[color:var(--elevated)]");
     expect(head("Colin").className).not.toMatch(/shadow/);
   });
+
+  it("keeps focus clear of the stuck header, and the folded header's focus ring inside its clipped panel", async () => {
+    served = { spares: BOARD, asks: [] };
+    await mount({ initialView: "friend" });
+    // The list box reserves the header's 53px for focus scrolling, so a tabbed-to row never parks beneath it.
+    const box = screen.getByRole("region", { name: copy.list.regionAria });
+    expect(box.className.split(/\s+/)).toContain("md:scroll-pt-[53px]");
+    // The panel clips, so the header's ring draws inside the button rather than past its edge.
+    expect(head("Colin").className.split(/\s+/)).toContain("focus-visible:-outline-offset-2");
+  });
 });
 
 describe("the spare key while friends' spares are read", () => {

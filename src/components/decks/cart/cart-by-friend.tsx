@@ -213,7 +213,7 @@ function FriendPanel({ group: g, open, onFold, children }: { group: FriendGroup;
           aria-controls={open ? bodyId : undefined}
           aria-label={copy.byFriend.foldAria(g.friend.displayName, open)}
           aria-describedby={figureId}
-          className={`flex min-h-[52px] w-full cursor-pointer items-center gap-[11px] bg-[color:var(--elevated)] py-[9px] pl-[14px] pr-[8px] text-left font-[inherit] ${
+          className={`flex min-h-[52px] w-full cursor-pointer items-center focus-visible:-outline-offset-2 gap-[11px] bg-[color:var(--elevated)] py-[9px] pl-[14px] pr-[8px] text-left font-[inherit] ${
             open ? "border-b border-b-[color:var(--border-strong)]" : ""
           }`}
         >

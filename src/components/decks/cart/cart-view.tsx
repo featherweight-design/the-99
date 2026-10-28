@@ -400,8 +400,11 @@ export function CartView({
                 role="region"
                 aria-label={copy.list.regionAria}
                 // The scrollbar's gutter is kept whether or not the list overflows, and the column header keeps the same one, so a
-                // classic scrollbar narrows both alike and the rows stay under their columns.
-                className="md:-mx-[13px] md:min-h-[120px] md:flex-1 md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] md:border-b md:border-b-[color:var(--border)] md:px-[13px]"
+                // classic scrollbar narrows both alike and the rows stay under their columns. By friend reserves its
+                // sticky panel header's 53px (52 tall plus its rule) so focus scrolling never parks a control under it.
+                className={`md:-mx-[13px] md:min-h-[120px] md:flex-1 md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] md:border-b md:border-b-[color:var(--border)] md:px-[13px] ${
+                  view === "friend" ? "md:scroll-pt-[53px]" : ""
+                }`}
               >
                 <HoverPreviewProvider>
                 {byDeck ? (
