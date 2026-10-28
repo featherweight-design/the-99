@@ -17,7 +17,7 @@ This plan follows the audit at https://github.com/HartiganHM/the-99/pull/2308#is
 | A5 | Export `BAR` from `tile-skeleton` | Reuses an existing part as it is. |
 | A6 | `CartFilterSheet` | Each route builds its own sheet on `ui/sheet.tsx`. The cart's is drawn in Controls. |
 | A7 | A trailing slot on `ResultLine` for the reading dot and its words | Drawn in Loading and Controls. |
-| A8 | The Friend panel: "Any friend" radio above the checkboxes | Drawn. Built as "nothing selected means Any friend" on `FilterPanel`. |
+| A8 | The Friend panel: "Any friend" radio above the checkboxes | Drawn. Built on `FilterPanel` with three states (decision 2): no filter, Any friend, or named friends. |
 | A9 | Panel folded at 390 | Built from the 1300 specimen. |
 | A10 | No match at 1300 | Built from the 390 specimen. |
 | A11 | No friends yet at 1300 | Built from the 390 specimen, whose caption says "same block at its width". |
@@ -136,7 +136,11 @@ Every PR mutation-checks its tests: a named mutation fails each test before it i
 ## Engineering decisions (recommended, no Design needed)
 
 1. **G1 ordering.** Holding decks outside the cart come after the cart's own decks, most copies first, then by name. If that read fails, fall back to the shipped "N · in other decks".
-2. **Any friend.** It is the unfiltered state: no `?friend` in the URL. Its count is the number of lines that have a spare.
+2. **The Friend filter has three states.** Clearing filters must bring back every line, so:
+   - **Off** (no `?friend`): every line shows.
+   - **Any friend** (`?friend=any`): only lines that some friend has a spare of. Its count is that number of lines, the "spare available" figure.
+   - **Named friends** (`?friend=<public ids>`): only lines those friends have a spare of. An unknown id is dropped.
+   - A chip shows for Any friend and for named friends, and its ✕ returns the filter to off.
 3. **A sort param that belongs to another view** drops to the current view's default and is stripped from the URL through `mirrorUrl`.
 
 ## Sequencing against (b)
