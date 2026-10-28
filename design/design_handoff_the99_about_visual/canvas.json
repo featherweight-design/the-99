@@ -1,0 +1,90 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-27T20:09:20Z"
+ },
+ "title": "About as six visual pages",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1610,
+   "h": 1679,
+   "title": "Main \u00b7 calls and gaps"
+  },
+  "Decks-Phone.dc.html": {
+   "x": 1690,
+   "y": 0,
+   "w": 1370,
+   "h": 4782,
+   "title": "1 \u00b7 Decks in full \u00b7 phone"
+  },
+  "Decks-Desktop.dc.html": {
+   "x": 3140,
+   "y": 0,
+   "w": 4132,
+   "h": 3662,
+   "title": "2 \u00b7 Decks in full \u00b7 desktop"
+  },
+  "Labels.dc.html": {
+   "x": 0,
+   "y": 4902,
+   "w": 1610,
+   "h": 1630,
+   "title": "3 \u00b7 How a label points"
+  },
+  "Other-Pages.dc.html": {
+   "x": 1690,
+   "y": 4902,
+   "w": 2238,
+   "h": 4228,
+   "title": "4 \u00b7 The other five pages \u00b7 phone"
+  },
+  "Other-Pages-Desktop.dc.html": {
+   "x": 4008,
+   "y": 4902,
+   "w": 4132,
+   "h": 5891,
+   "title": "4b \u00b7 The other five pages \u00b7 desktop"
+  },
+  "Ways-In.dc.html": {
+   "x": 0,
+   "y": 10913,
+   "w": 2372,
+   "h": 6894,
+   "title": "5 \u00b7 Index, banner, landing, ?"
+  },
+  "States.dc.html": {
+   "x": 2452,
+   "y": 10913,
+   "w": 1804,
+   "h": 3130,
+   "title": "6 \u00b7 States"
+  },
+  "Copy.dc.html": {
+   "x": 4336,
+   "y": 10913,
+   "w": 1610,
+   "h": 3487,
+   "title": "7 \u00b7 Copy"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Decks-Phone.dc.html",
+  "Decks-Desktop.dc.html",
+  "Labels.dc.html",
+  "Other-Pages.dc.html",
+  "Other-Pages-Desktop.dc.html",
+  "Ways-In.dc.html",
+  "States.dc.html",
+  "Copy.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
