@@ -190,34 +190,35 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
  */
 export async function setPicked(itemId: string, userId: string, picked: boolean): Promise<string | null> {
   return db.transaction(async (tx) => {
+    const [owner] = await tx.select({ deckId: deckSuggestionRuns.deckId })
+      .from(deckSuggestionItems)
+      .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckSuggestionItems.runId))
+      .where(and(eq(deckSuggestionItems.id, itemId), eq(deckSuggestionRuns.userId, userId)));
+    if (!owner) return null;
+    await lockDeck(tx, owner.deckId);
+    // Whether the line is open is decided under the lock: an apply that commits while this waits takes the line, and the
+    // pick must then answer null rather than report a change it did not make.
     const [line] = await tx.select({ deckId: deckSuggestionRuns.deckId, readVersion: deckSuggestionRuns.readVersion })
       .from(deckSuggestionItems)
       .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckSuggestionItems.runId))
       .where(and(
         eq(deckSuggestionItems.id, itemId),
-        eq(deckSuggestionRuns.userId, userId),
         inArray(deckSuggestionRuns.status, ["pending", "ok"]),
         isNotNull(deckSuggestionRuns.requestedCount),
         eq(deckSuggestionItems.verdict, "pending"),
         isNull(deckSuggestionItems.applySet),
-      ));
+      ))
+      .for("update", { of: deckSuggestionItems });
     if (!line) return null;
-    await lockDeck(tx, line.deckId);
     try {
       await refuseIfRetired(tx, line);
     } catch (error) {
       if (error instanceof Refused) return null;
       throw error;
     }
-    // The change test is in the UPDATE itself, against the row as it is now, so two overlapping presses cannot both read
-    // the old value and lose one of them; a press that changes nothing still writes nothing.
+    // Written only on a change; the row is locked, so the value compared is the value written over.
     await tx.update(deckSuggestionItems).set({ picked })
-      .where(and(
-        eq(deckSuggestionItems.id, itemId),
-        eq(deckSuggestionItems.verdict, "pending"),
-        isNull(deckSuggestionItems.applySet),
-        ne(deckSuggestionItems.picked, picked),
-      ));
+      .where(and(eq(deckSuggestionItems.id, itemId), ne(deckSuggestionItems.picked, picked)));
     return line.deckId;
   });
 }
