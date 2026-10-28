@@ -336,7 +336,14 @@ function LastSlotsStripInner({
     if (openRequest === null || answeredOpen.current === openRequest) return;
     answeredOpen.current = openRequest;
     answeredRef.current?.();
-    if (!open && candidates.length > 0) openListRef.current();
+    if (!open && candidates.length > 0) {
+      openListRef.current();
+      return;
+    }
+    // Already open, or nothing to offer: the link that asked has unmounted with its tab, so focus and reveal the row
+    // itself rather than leaving focus on the document.
+    rootRef.current?.focus({ preventScroll: true });
+    reveal(rootRef.current, "start");
   }, [openRequest, open, candidates.length]);
 
   // State 13: nothing left to offer, and the row says why and points to Consider instead.
@@ -359,7 +366,7 @@ function LastSlotsStripInner({
   const n = String(openSlots);
 
   return (
-    <div ref={rootRef}>
+    <div ref={rootRef} tabIndex={-1} className="outline-none">
       {exhausted ? (
         <TodoRow
           tone="action"

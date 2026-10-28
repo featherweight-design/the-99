@@ -186,6 +186,9 @@ describe("LastSlotsStrip", () => {
     });
     expect(answered).toHaveBeenCalledTimes(1);
     expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    // The link that asked unmounted with its tab: focus lands on the row, never on the document.
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement?.getAttribute("tabindex")).toBe("-1");
   });
 
   it("titles the row for the open slots and names the press in full", () => {
