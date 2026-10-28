@@ -11,6 +11,8 @@ export type HubRunRow = {
   tool: HubTool;
   status: "pending" | "ok" | "failed" | "cancelled";
   createdAt: Date;
+  /** A Suggested changes v2 run: its own, longer reaper window (plan P2). Absent reads as v10's. */
+  v2?: boolean;
 };
 
 /** An ok run's answered lines: how many it returned and how many the reader took. */
@@ -46,10 +48,10 @@ export function shapeHubTiles(
   counts: ReadonlyMap<string, HubRunCounts>,
   now: Date,
 ): HubTiles {
-  const cutoff = reapCutoff(now).getTime();
+  const live = (r: HubRunRow) => r.createdAt.getTime() >= reapCutoff(now, r.v2 === true).getTime();
   const tileOf = (tool: HubTool): HubTileRun | null => {
     const mine = rows.filter((r) => r.tool === tool);
-    const running = mine.find((r) => r.status === "pending" && r.createdAt.getTime() >= cutoff);
+    const running = mine.find((r) => r.status === "pending" && live(r));
     if (running) return { kind: "running", startedAt: running.createdAt.toISOString() };
     const last = mine.find((r) => r.status !== "pending");
     if (!last) return null;
@@ -66,12 +68,12 @@ export function shapeHubTiles(
 /** The tools' state as the visit baseline reads it: the last ok run's time, as `okKeyOf` keys it,
  *  and the newest settled run's id (a pending run is not a prior one). */
 export function hubSeen(rows: readonly HubRunRow[], lastOk: ReadonlyMap<HubTool, Date>, now: Date): NonNullable<HubTiles["seen"]> {
-  const cutoff = reapCutoff(now).getTime();
+  const live = (r: HubRunRow) => r.createdAt.getTime() >= reapCutoff(now, r.v2 === true).getTime();
   const of = (tool: HubTool) => {
     const ok = lastOk.get(tool);
     // A pending run past the reaper's cutoff was abandoned before this visit: the tool's own read
     // reaps it to failed, and that failure is a prior one, so it counts as settled here.
-    const settled = rows.find((r) => r.tool === tool && (r.status !== "pending" || r.createdAt.getTime() < cutoff));
+    const settled = rows.find((r) => r.tool === tool && (r.status !== "pending" || !live(r)));
     return { okKey: ok ? String(ok.getTime()) : null, runId: settled?.id ?? null };
   };
   return { suggested: of("suggested_changes"), cuts: of("proposed_cuts") };

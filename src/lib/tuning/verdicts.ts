@@ -33,7 +33,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  */
 async function lockedItem(tx: Tx, itemId: string, userId: string) {
   const [owner] = await tx
-    .select({ deckId: deckSuggestionRuns.deckId })
+    .select({ deckId: deckSuggestionRuns.deckId, status: deckSuggestionRuns.status, requestedCount: deckSuggestionRuns.requestedCount })
     .from(deckSuggestionItems)
     .innerJoin(deckSuggestionRuns, eq(deckSuggestionRuns.id, deckSuggestionItems.runId))
     .where(and(eq(deckSuggestionItems.id, itemId), eq(deckSuggestionRuns.userId, userId)));
@@ -49,7 +49,7 @@ async function lockedItem(tx: Tx, itemId: string, userId: string) {
     .from(deckSuggestionItems)
     .where(eq(deckSuggestionItems.id, itemId))
     .for("update");
-  return row ? { ...row, deckId: owner.deckId } : null;
+  return row ? { ...row, deckId: owner.deckId, run: { status: owner.status, requestedCount: owner.requestedCount } } : null;
 }
 
 async function lockDeck(tx: Tx, deckId: string): Promise<void> {
@@ -67,10 +67,18 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
  * And refused when the player has LOCKED the cut (Locked, F4; `planSwap`'s `cutLocked`): the one
  * refusal where the cut is still in the deck.
  */
+/**
+ * Per-card apply is v10's alone (plan P3): a line of a run still being made is not the player's yet, and a v2 line is
+ * applied with its picked set (PR 4), never alone, since one line moves the deck off 99.
+ */
+export function appliesOneByOne(run: { status: string; requestedCount: number | null }): boolean {
+  return run.status === "ok" && run.requestedCount === null;
+}
+
 export async function applyItem(itemId: string, userId: string, env: NodeJS.ProcessEnv): Promise<string | null> {
   return db.transaction(async (tx) => {
     const item = await lockedItem(tx, itemId, userId);
-    if (!item || item.verdict !== "pending") return null;
+    if (!item || item.verdict !== "pending" || !appliesOneByOne(item.run)) return null;
     const { deckId, addOracleId, cutOracleId } = item;
 
     const plan = await planSwap(tx, deckId, cutOracleId, addOracleId, env);

@@ -182,3 +182,12 @@ describe("Improve my mana's help reads in History", () => {
     expect(RUN_TOOL_OF.mana.counts).toContain("mana_help");
   });
 });
+
+describe("runOutcome for a Suggested changes v2 run (plan P2)", () => {
+  it("reads it running past v10's five minutes, inside its own window, and failed past that", () => {
+    expect(runOutcome("pending", ago(6 * 60_000), now)).toBe("failed");
+    expect(runOutcome("pending", ago(6 * 60_000), now, null, true)).toBe("running");
+    expect(runOutcome("pending", ago(12 * 60_000), now, null, true)).toBe("failed");
+    expect(shapeRun(run({ status: "pending", createdAt: ago(6 * 60_000), v2: true }), now).outcome).toBe("running");
+  });
+});

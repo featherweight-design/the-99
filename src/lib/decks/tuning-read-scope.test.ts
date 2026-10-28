@@ -1,7 +1,8 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
-import { okRunWhere, suggestedRunsOfDeck, swapped } from "./tuning-read";
+import { PROMPT_VERSION, PROMPT_VERSION_V2 } from "../tuning/prompt-version";
+import { liveOf, okRunWhere, promptVersionFor, suggestedRunsOfDeck, swapped } from "./tuning-read";
 
 describe("the panel's run reads", () => {
   it("scope a deck's runs to Suggested changes, so another tool's run on the deck is never its latest", () => {
@@ -36,5 +37,22 @@ describe("swapped: the list a line would leave behind (the bracket flag reads it
 
   it("still changes both for a pair stored before the two lists", () => {
     expect(asMap(swapped(list, { addOracleId: "z", cutOracleId: "a" }))).toEqual({ b: 2, z: 1 });
+  });
+});
+
+describe("Suggested changes v2 on the panel's read (plan P1, P3)", () => {
+  it("measures a run against its own path's prompt version", () => {
+    expect(promptVersionFor(null)).toBe(PROMPT_VERSION);
+    expect(promptVersionFor(7)).toBe(PROMPT_VERSION_V2);
+  });
+
+  it("draws a pending v2 run's progress from its report: additions first, then cuts once the additions are in", () => {
+    const report = (inAdd: boolean, refillCut: boolean) => ({
+      askedCount: 0, survivedCount: 0, keptCount: 0,
+      v2: { requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: false }, in: { add: inAdd, cut: false }, refilling: { add: false, cut: refillCut } },
+    });
+    expect(liveOf("r", report(false, false), [])).toEqual({ runId: "r", phase: "additions", in: { add: false, cut: false }, refilling: { add: false, cut: false }, items: [] });
+    expect(liveOf("r", report(true, true), [])).toMatchObject({ phase: "cuts", in: { add: true, cut: false }, refilling: { cut: true } });
+    expect(liveOf("r", null, [])).toMatchObject({ phase: "additions" });
   });
 });

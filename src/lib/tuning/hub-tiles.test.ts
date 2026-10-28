@@ -66,3 +66,11 @@ describe("hubSeen", () => {
     expect(seen.cuts.runId).toBe("gone");
   });
 });
+
+describe("a Suggested changes v2 run's tile (plan P2)", () => {
+  it("stays running past five minutes, inside its own reaper window", () => {
+    const v2 = { ...row("a", "suggested_changes", "pending", ago(REAPER_CUTOFF_MS + 60_000)), v2: true };
+    expect(shapeHubTiles([v2], new Map(), now).suggested_changes).toMatchObject({ kind: "running" });
+    expect(shapeHubTiles([{ ...v2, v2: false }], new Map(), now).suggested_changes).not.toMatchObject({ kind: "running" });
+  });
+});
