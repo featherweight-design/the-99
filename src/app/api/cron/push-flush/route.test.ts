@@ -68,4 +68,23 @@ describe("GET /api/cron/push-flush", () => {
     // Reported to monitoring under its tag: caught here, Next's onRequestError would never see it.
     expect(m.capture).toHaveBeenCalledWith("push-flush", expect.any(Error));
   });
+
+  it("does nothing on the staging project, after the bearer check, unless STAGING_CRONS is 'run'", async () => {
+    const saved = { label: process.env.ADMIN_ENV_LABEL, on: process.env.STAGING_CRONS };
+    try {
+      process.env.ADMIN_ENV_LABEL = "staging";
+      delete process.env.STAGING_CRONS;
+      expect((await call("Bearer nope")).status).toBe(401);
+      const res = await call("Bearer s3cret");
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ paused: "staging" });
+      expect(m.flush).not.toHaveBeenCalled();
+      process.env.STAGING_CRONS = "run";
+      await call("Bearer s3cret");
+      expect(m.flush).toHaveBeenCalledTimes(1);
+    } finally {
+      if (saved.label === undefined) delete process.env.ADMIN_ENV_LABEL; else process.env.ADMIN_ENV_LABEL = saved.label;
+      if (saved.on === undefined) delete process.env.STAGING_CRONS; else process.env.STAGING_CRONS = saved.on;
+    }
+  });
 });

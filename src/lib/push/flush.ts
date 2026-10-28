@@ -1,6 +1,7 @@
 /**
  * The flush (plan `2026-10-22-push.md`, D1): the pushes the outbox holds go to the devices, judged one device at a time.
- * Run by `/api/cron/push-flush` every fifteen minutes. It takes no lock: an overlapping run can send a push twice (a
+ * Run by `/api/cron/push-flush` every fifteen minutes (paused on the staging project: `src/lib/cron/staging-pause.ts`).
+ * It takes no lock: an overlapping run can send a push twice (a
  * notification's `tag` is its kind, so the second replaces the first on the device), but it never loses another run's
  * progress, because `payload.done` is merged in the database and a row is settled only when the merged set covers every device.
  *

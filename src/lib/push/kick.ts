@@ -5,7 +5,8 @@
  * from inside `after()`) are ONE flush: the delay lets them all land, and a flush already running absorbs the rest as one
  * more pass. The cron
  * (`/api/cron/push-flush`, every 15 minutes) stays the guarantee: outside a request (a job, a script, a probe) `after()`
- * cannot be scheduled and nothing happens here, and a kick that fails leaves the rows for the next run.
+ * cannot be scheduled and nothing happens here, and a kick that fails leaves the rows for the next run. On the staging project
+ * the cron is paused (`src/lib/cron/staging-pause.ts`), so there such rows wait until `STAGING_CRONS='run'`.
  *
  * The flush is imported lazily, so the writer that calls this (`recordFeedItem`) does not load the sender. Dormant without
  * the VAPID keys, like the cron.
