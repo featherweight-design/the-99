@@ -10,7 +10,7 @@
 // when the open is refused) the press goes to /friends, as it shipped.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { closeSpareAction, openAnswerAction } from "../../app/friends/spare-actions";
 import { dialogsUp } from "../../lib/a11y/dialog";
 import { announceAnswerSeen } from "../shell/answer-seen";
@@ -46,12 +46,17 @@ type Open = { item: FeedView; request: YourRequest; from: HTMLElement };
 export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
   now: string;
   onSeen: (key: string) => void;
-  onCleared: (key: string, from: HTMLElement) => void;
+  onCleared: (key: string, from: HTMLElement, move?: boolean) => void;
   children: ReactNode;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
   const [open, setOpen] = useState<Open | null>(null);
+  // The sheet up now, read by a Clear whose reply lands after it closed.
+  const current = useRef<Open | null>(null);
+  useLayoutEffect(() => {
+    current.current = open;
+  }, [open]);
   async function openItem(item: FeedView, from: HTMLElement) {
     if (pending) return;
     setPending(item.key);
@@ -60,7 +65,7 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
     // The server marked the answer seen whatever happens next, so the diamond, the count and the Friends badge follow it.
     if (out?.ok) {
       onSeen(item.key);
-      if (out.counted) announceAnswerSeen();
+      if (out.counted) announceAnswerSeen(new Date(out.request.answeredAt ?? 0).toISOString());
     }
     // The item was dismissed while the open was out (its press is gone), or the reader opened another sheet meanwhile:
     // either way they moved on, so the late reply opens nothing and goes nowhere.
@@ -86,8 +91,11 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
           }}
           onCleared={() => {
             const row = open.from.closest("li")?.querySelector<HTMLElement>("[data-feed-dismiss]") ?? open.from;
-            setOpen(null);
-            onCleared(open.item.key, row);
+            // Closed while the Clear was out: the request is gone, so its item goes too, but the reader is elsewhere
+            // now (perhaps in another sheet), so focus stays where they put it.
+            const still = current.current === open;
+            if (still) setOpen(null);
+            onCleared(open.item.key, row, still);
           }}
         />
       )}

@@ -143,6 +143,8 @@ export default async function Shell({
     if (homeUnseen > 0) badges.home = homeUnseen;
   }
   if (door.friends && door.commandersPlace) {
+    // Taken BEFORE the read, so an answer that lands during it is never taken off a count that may not hold it.
+    badges.friendsAt = new Date().toISOString();
     const [seenHalf, waiting] = await Promise.all([
       perfRead("shell.friendsBadge", () => unseenFriendsCount(userId, env)),
       perfRead("shell.friendsWaiting", () => waitingAsksCount(userId, env)),

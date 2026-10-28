@@ -97,6 +97,25 @@ describe("the answer sheet over Home", () => {
     expect(document.activeElement?.getAttribute("data-feed-dismiss")).not.toBeNull();
   });
 
+  it("a Clear that lands after the sheet closed still takes the item off, but leaves focus where the reader put it", async () => {
+    let reply!: (v: unknown) => void;
+    m.close.mockReturnValue(new Promise((r) => { reply = r; }));
+    render(<WhatsNew feed={feed([answer(A), answer(B, { answer: "no" })])} now={NOW} />);
+    await act(async () => { fireEvent.click(press()); });
+    await act(async () => { fireEvent.click(screen.getByTestId("answer-sheet-clear")); });
+    await act(async () => { fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: s.sheet.close })); });
+    await act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
+    const elsewhere = document.createElement("button");
+    document.body.appendChild(elsewhere);
+    elsewhere.focus();
+    await act(async () => { reply({ ok: true, closed: "cleared" }); });
+    await act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
+    expect(m.dismiss).toHaveBeenCalledWith(A);
+    expect(screen.getAllByRole("button", { name: `${feedCopy.home.press.answer} ›` })).toHaveLength(1);
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
+  });
+
   it("a failed Clear keeps the sheet and shows the shared toast", async () => {
     m.close.mockResolvedValue({ ok: false, reason: "gone" });
     render(<WhatsNew feed={feed([answer(A)])} now={NOW} />);

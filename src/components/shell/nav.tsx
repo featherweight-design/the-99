@@ -741,6 +741,8 @@ export type NavBadges = {
   friends?: number;
   /** Friends' WAITING half: spare requests waiting on the reader's answer, cleared only by answering (never by a visit). */
   friendsWaiting?: number;
+  /** When `friends` was read (ISO): an answer opened over Home comes off it only when it was answered by then. */
+  friendsAt?: string;
 };
 
 /**
@@ -754,13 +756,13 @@ export type NavBadges = {
  */
 export function useSeenBadges(badges: NavBadges | undefined, pathname: string): NavBadges | undefined {
   // `friends`: `fresh`, not visited since this count arrived; `visiting`, on the first visit; `cleared`, left it for good.
-  // `opened`: answers opened over Home since this count arrived.
-  const [seen, setSeen] = useState<{ from: NavBadges | undefined; friends: "fresh" | "visiting" | "cleared"; home: boolean; opened: number }>({
-    from: badges, friends: "fresh", home: false, opened: 0,
+  // `opened`: when each answer opened over Home since this count arrived was answered.
+  const [seen, setSeen] = useState<{ from: NavBadges | undefined; friends: "fresh" | "visiting" | "cleared"; home: boolean; opened: readonly string[] }>({
+    from: badges, friends: "fresh", home: false, opened: [],
   });
-  useEffect(() => onAnswerSeen(() => setSeen((s) => ({ ...s, opened: s.opened + 1 }))), []);
+  useEffect(() => onAnswerSeen((at) => setSeen((s) => ({ ...s, opened: [...s.opened, at] }))), []);
   let state = seen;
-  if (state.from !== badges) state = { from: badges, friends: "fresh", home: false, opened: 0 };
+  if (state.from !== badges) state = { from: badges, friends: "fresh", home: false, opened: [] };
   const onFriends = pathname === "/friends";
   if (state.friends === "fresh" && onFriends && (badges?.friends ?? 0) > 0) state = { ...state, friends: "visiting" };
   else if (state.friends === "visiting" && !onFriends) state = { ...state, friends: "cleared" };
@@ -769,7 +771,9 @@ export function useSeenBadges(badges: NavBadges | undefined, pathname: string): 
   // Adjusted during render (react.dev's pattern for state that follows a prop), never in an effect.
   if (state !== seen) setSeen(state);
   const dropHome = homeCounted && (pathname === "/" || state.home);
-  const friends = state.friends === "cleared" ? 0 : Math.max(0, (badges?.friends ?? 0) - state.opened);
+  // Only an answer the count held comes off it: one answered after the count was read was never in it.
+  const held = badges?.friendsAt ? state.opened.filter((at) => at <= badges.friendsAt!).length : 0;
+  const friends = state.friends === "cleared" ? 0 : Math.max(0, (badges?.friends ?? 0) - held);
   if (friends === (badges?.friends ?? 0) && !dropHome) return badges;
   return { ...badges, ...(friends !== (badges?.friends ?? 0) ? { friends } : {}), ...(dropHome ? { home: 0 } : {}) };
 }

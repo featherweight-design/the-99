@@ -57,7 +57,8 @@ export function nextDismiss(from: HTMLElement): HTMLElement | null {
  */
 export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (key: string, on: boolean) => void): {
   hidden: ReadonlySet<string>;
-  dismiss: (key: string, from: HTMLElement) => void;
+  /** `move: false` hides the row without moving focus: a press made elsewhere, after the reader moved on (the answer sheet's late Clear). */
+  dismiss: (key: string, from: HTMLElement, move?: boolean) => void;
   toast: ReactNode;
 } {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
@@ -72,10 +73,10 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
     });
     onChange?.(key, on);
   };
-  function dismiss(key: string, from: HTMLElement) {
+  function dismiss(key: string, from: HTMLElement, move = true) {
     const next = nextDismiss(from);
     put(key, true);
-    requestAnimationFrame(() => (next ?? fallback?.())?.focus());
+    if (move) requestAnimationFrame(() => (next ?? fallback?.())?.focus());
     void dismissFeedItemAction(key)
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);

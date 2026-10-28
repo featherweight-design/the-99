@@ -4,13 +4,14 @@
 // takes it off until the layout next sends a count, which already leaves the answer out.
 const EVENT = "the99:friends-answer-seen";
 
-/** One answer the Friends badge counted is now seen. */
-export function announceAnswerSeen(): void {
-  window.dispatchEvent(new Event(EVENT));
+/** One answer the Friends cursor had not covered is now seen; `answeredAt` (ISO) says whether the bar's count held it. */
+export function announceAnswerSeen(answeredAt: string): void {
+  window.dispatchEvent(new CustomEvent<string>(EVENT, { detail: answeredAt }));
 }
 
-/** Calls `on` for each announced answer; returns the unsubscribe. */
-export function onAnswerSeen(on: () => void): () => void {
-  window.addEventListener(EVENT, on);
-  return () => window.removeEventListener(EVENT, on);
+/** Calls `on` with each announced answer's time; returns the unsubscribe. */
+export function onAnswerSeen(on: (answeredAt: string) => void): () => void {
+  const listener = (e: Event) => on((e as CustomEvent<string>).detail);
+  window.addEventListener(EVENT, listener);
+  return () => window.removeEventListener(EVENT, listener);
 }

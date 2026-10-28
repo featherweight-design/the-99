@@ -65,15 +65,19 @@ describe("useSeenBadges", () => {
     expect(result.current).toEqual({ home: 2 });
   });
 
-  it("drops Friends' seen half by each answer opened over Home, until the server sends a new count", () => {
-    const badges = { friends: 2, friendsWaiting: 1 };
+  it("drops Friends' seen half by each answer opened over Home that the count held, until the server sends a new count", () => {
+    const AT = "2026-10-28T05:00:00.000Z";
+    const badges = { friends: 2, friendsWaiting: 1, friendsAt: AT };
     const { result, rerender } = hook(badges, "/");
-    act(() => announceAnswerSeen());
+    act(() => announceAnswerSeen("2026-10-28T04:00:00.000Z"));
     expect(result.current?.friends).toBe(1);
     expect(result.current?.friendsWaiting).toBe(1);
-    act(() => { announceAnswerSeen(); announceAnswerSeen(); });
+    // Answered after the count was read: it was never in it, so the trade match it would hide stays counted.
+    act(() => announceAnswerSeen("2026-10-28T05:30:00.000Z"));
+    expect(result.current?.friends).toBe(1);
+    act(() => { announceAnswerSeen(AT); announceAnswerSeen("2026-10-28T03:00:00.000Z"); });
     expect(result.current?.friends).toBe(0);
-    const next = { friends: 1 };
+    const next = { friends: 1, friendsAt: "2026-10-28T06:00:00.000Z" };
     rerender({ badges: next, pathname: "/" });
     expect(result.current?.friends).toBe(1);
   });
