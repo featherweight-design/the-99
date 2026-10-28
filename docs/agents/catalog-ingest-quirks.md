@@ -42,3 +42,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `fetch:mana` runs it after writing the files; run it by hand after editing one.
   `mana-sprite.test.ts` fails when the committed sprite is not the build of the committed files, or
   holds a cell for anything but the manifest's slugs; the build and the reader share one sorted order.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **`job=printings` alone is the sharp tool; its blast radius is every set.** A refused run leaves the previous denominators standing and EXITS NON-ZERO (since #704). Dispatch `job=all` unless you have a reason not to.
+- **A `reversible_card` printing is ingested from its FACES** (face 0 supplies `oracle_id`, `image_uris`, `flavor_name`). A layout whose faces disagree on the oracle id is skipped; `skippedReversible` is a narrow counter, not a constant.
+- `pnpm fetch:mana` downloads Scryfall's mana symbols into `public/mana/` and rewrites the manifest the renderer checks (a symbol with no art falls back to a lettered disc). `pnpm build:mana-sprite` rebuilds `public/mana/sprite.svg`, the ONE file every pip draws from (a classic sprite of 100-unit cells, not `<view>` fragments); `fetch:mana` runs it, and `mana-sprite.test.ts` fails when it is stale.

@@ -23,3 +23,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   for its moment (`useMomentAnchor`'s `fallback`), which counts only while no other control of that moment is registered:
   the Analysis tab stands in for `Proposed cuts →` and `balance mana →` when they are not drawn. M11's condition (a game
   logged, no friend) is the shell's one extra read (`src/lib/social/after-game.ts`), made only while M11 is live and unspent.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **Moments** (`MOMENTS_ENABLED`; staging on, production unset): one-time bubbles beside a control a reader has not used, in a FIXED ORDER (`src/lib/moments/registry.ts`), one per visit, each following its tool's switch; a control can be a FALLBACK for its moment (`useMomentAnchor`'s `fallback`). The spent set is `user_prefs.moments_spent`, append-only, written only when it adds an id. Nothing arrives while a surface is open over the page.

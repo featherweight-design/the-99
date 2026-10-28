@@ -49,3 +49,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `{ ...e } = process.env`, is a copy and is one); a binding default in a variable
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **Feature switches resolve per reader.** Each `*_ENABLED` variable is the default; `flag_overrides` sits on top (app-wide, per group, per account). Order: the variable set to the literal `off` wins outright (the KILL SWITCH, which no override can raise), then account, then group (OFF wins), then app-wide, then the variable. A `plumbing` switch takes the app-wide override alone; a compound switch names its parent as `needs`. The registry is `src/lib/switches/registry.ts`. Every page, layout, action and route handler decides a switch from `requestSwitchEnv(userId)`, and every flag function and reader REQUIRES its `env`; scripts, probes and evals pass `process.env` themselves. `pnpm check:switch-reads` fails any code under `src/` that hands the `process.env` object on, outside `src/lib/switches/`, tests and its `ALLOWED` list. A cache whose payload depends on a switch carries it in its key.

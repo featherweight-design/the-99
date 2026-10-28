@@ -50,3 +50,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   lands are excluded because the land sweep's caps could drop them. Hugh's ruling binds the rest:
   owned cards only, and a short collection is reported, never filled by buying, until the player
   chooses on the choice screen.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog (read-only). A classifier built from a fixture agrees with that fixture; watch `any` against 129 for a dropped word, since `unreachable` is only a structural invariant.
+- **The bracket system's classifiers are all PARTIAL, and every surface says so.** The partial-detection strings live beside their classifiers (`oracle-rules.ts`, `combo-features.ts`) and are re-exported by `bracket/rules.ts`. There is no B2/B3 chain-or-loop flag: the only thing that violates bracket 3 is a measured LOOP, an assembled combo Spellbook records as producing infinite turns.
+- **Help me choose's bracket answer is a TARGET as well as a ceiling** (`BRACKET_REACH_ENABLED`, needs `HELP_ME_CHOOSE_ENABLED`; staging on, production unset). `bracketReach` (`src/lib/intake/bracket-reach.ts`, pure) finds the smallest set of OWNED, free, nonland cards that brings the deck into the bracket asked for, checked through `permitsOf` (the analysis's arithmetic, in `fill-gate.ts`), and `planFill` places it first (`source: "bracket"`). It never places a card to buy and never a mass land denial card or a turn loop: a collection that cannot reach the answer lands in the highest bracket below it that its own cards reach (a bracket-4 ask over one free Game Changer places it and lands at 3, which is new), and the plan's `bracketReach` comes back `short` for the choice screen (plan `2026-10-21-bracket-reach.md`, PR 3). Proof: `pnpm probe:help-me-choose-fill` section 5.

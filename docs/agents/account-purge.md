@@ -53,3 +53,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   SHARE). A Checkout started in that instant fails at `ensureCustomer`: accepted. The restricted key needs Customers
   write, which it already has. The purge reads no feature switch. `src/lib/account/purge-stripe.test.ts` pins the order.
   A Checkout racing step 0 is closed twice: `ensureCustomer` refuses an account with a tombstone (no Customer, no mapping), and the transaction deletes `stripe_customers` `returning` the id and rolls back on one step 0 did not handle, so the 500 and its retry delete that Customer.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- **Deleting an account deletes everything the app holds for it.** Clerk's `user.deleted` webhook (`POST /api/clerk-webhook`, authorized only by the Svix signature; 503 with the secret unset) records a tombstone in its own commit, then runs `purgeAccount` (`src/lib/account/purge.ts`), whose step 0 deletes the account's Stripe Customer when it has a `stripe_customers` mapping (`deleteStripeCustomerFor`; cancels its subscriptions; a Stripe failure or a missing key THROWS, so nothing is purged, the webhook answers 500 and the sweep retries; a Customer not tagged as this app's is never deleted, is logged, and the purge goes on), then the database half in ONE transaction: the social half first, then every table by `user_id` in `PURGE_ORDER`, then the data stamps locked LAST in user id order. A thirty-minute Vercel cron (`GET /api/cron/account-sweep`, `CRON_SECRET` bearer) re-runs the idempotent purge for each tombstone, and retires the raw Clerk id after 24 hours. `src/lib/account/purge.test.ts` computes coverage from `schema.ts`: a new per-user table fails CI until the purge handles it. Proof: `pnpm probe:purge`.

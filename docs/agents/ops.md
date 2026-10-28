@@ -127,3 +127,36 @@ Never put any of them in `.env`.
 **To see a change on staging sooner,** dispatch Staging sync, then confirm with `curl https://staging.the-99.dev/api/health`.
 
 **When to undo it.** Put staging back on main when production gets a release cycle (as Concert Crawl's has), because staging is then the gate and must track main. To undo: set the staging project's production branch back to `main` (Vercel, the-99-staging, Settings, Git, Production Branch), set `STAGING_BRANCH` to `main`, delete `staging-sync.yml` and both branches (`staging`, `staging-deployed`), and remove the `ref:` lines from the catalog workflows' staging legs.
+
+## From AGENTS.md (moved 2026-10-28)
+
+The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
+
+- Database migrations apply automatically during each Vercel **production** build (`vercel-build` → `scripts/vercel-migrate.ts`). Every Vercel project therefore needs `MIGRATE_DATABASE_URL` set — **Production scope, and Production alone** — with the same value as that project's `DATABASE_URL`, or its production builds fail by design. Preview deployments skip migrations entirely.
+
+  **The SCOPE is the half that bites, and the sensitivity is not.** A copy scoped to Preview is
+  inert, because previews skip migrations; production then finds nothing and refuses to build.
+  That is `decideMigration`'s fail-closed branch working — shipping code without its schema is
+  what #70 cost — but the message it prints names the variable rather than the scope, so the
+  failure reads as "never set" when the truth is "set somewhere it is never read".
+
+  Marking it **Sensitive is correct and is what ships** on both projects, and that is a
+  MEASUREMENT rather than a preference: the variable is Sensitive today and production builds
+  read it — the 14:54Z and 20:46Z builds on 2026-09-21 logged `migrations applied successfully`,
+  and this script fails the build outright when the value is absent, so a build that migrated had
+  it. Sensitive additionally keeps the value out of the dashboard, the same treatment
+  `DATABASE_URL`, `CLERK_SECRET_KEY` and `CRON_SECRET` carry. The deploy spec's §Credential
+  handling was written on the opposite premise — that a build step cannot read a Sensitive
+  variable — and carries a note saying so; which of the two was true in July is not established,
+  only what is true now.
+  This line previously said "non-sensitive", which was wrong, and reading it is a plausible
+  route to "re-scope this variable": on 2026-09-21 it moved to Preview on both projects and
+  every production deploy failed for five hours, across seven deployments and five merged PRs.
+  Nothing was down — the running build kept serving — but nothing new shipped either.
+- **Vercel skips builds that cannot change the site** (`ignoreCommand` in `vercel.json`, `scripts/vercel-ignore.mjs`, rule in `scripts/lib/vercel-ignore.mjs`). Both Vercel projects build every push to main, so Build CPU was 77% of the Vercel bill (cost audit 2026-10-23). A push whose diff since the last successful deploy (`VERCEL_GIT_PREVIOUS_SHA`) touches only `docs/`, `design/`, `.github/`, `.claude/` or a root `*.md` is skipped; ANYTHING else, an unreadable diff or an empty one builds. `docs/superpowers/eval` is NOT skippable (the Costs page reads it at runtime) and neither is `scripts/` (tsconfig includes it, so the build type-checks it). Neither project builds a non-production deployment (previews are unused), and the staging project (`STAGING_PROJECT_ID`) skips any ref but `staging`. The log line is `[ignore-build] SKIP|BUILD: reason`.
+- **Staging deploys once a day, not on every main push** (Hugh, 2026-10-23, the cost audit's rank 1). The staging Vercel project builds the `staging` branch, which `Staging sync` (`.github/workflows/staging-sync.yml`) fast-forwards to main daily at 07:41 UTC and on dispatch ("sync now"); production still builds every main push. After the deploy of it succeeds the sync moves `staging-deployed` to the same commit, and the catalog workflows' STAGING legs check out `staging-deployed`, so an ingest never runs ahead of staging's migrations; the copy jobs run main. To see a change on staging now, dispatch Staging sync. Undo it when production gets a release cycle.
+- **A weekly cost check** (`.github/workflows/cost-check.yml`, `scripts/cost-check.mjs`; dormant until `COST_CHECK_ENABLED='true'`, Hugh sets the `VERCEL_USAGE_TOKEN` and `NEON_API_KEY_READONLY` secrets himself). Read-only, GET only (a test pins it); red past the thresholds in `scripts/lib/cost-thresholds.mjs`, or when a source cannot be read, and a red run opens a `cost` issue. A `vercel.json` cron faster than every 15 minutes fails `pnpm test` unless `scripts/lib/cron-cadence.mjs` allowlists it with a reason.
+- **Stuck-loader reports** (`NAV_STALL_LOG_ENABLED`, plumbing; staging on, production off): a loading screen up 8 seconds sends ONE report per navigation to `POST /api/nav-stall` (always 204), which logs one line with no reader or deployment id. Find them with `vercel logs --scope featherweight-design -p the-99-staging -q "nav-stall"` (production has the switch off).
+- **Security headers**: `next.config.ts` sends HSTS, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` and `Permissions-Policy` on every path (`src/lib/security/headers.ts`). The Content-Security-Policy is REPORT-ONLY and production-only; reports go to `POST /api/csp-report`. Read the `[csp]` Vercel logs for a week before enforcing. `rate_hits` (`RATE_LIMIT_ENABLED`, plumbing) is observe-only: it logs `[rate] would refuse ...` and refuses nothing. An ANONYMOUS visitor's reads of the public pages (the card page, behind `PUBLIC_PAGES_ENABLED`) are counted by `observeAnonymousHit` (`src/lib/rate/anon.ts`, bucket `public-read`) under `anon:` plus a SHA-256 of their network address (an IPv6 on its /64) and the UTC day: a pseudonymous key, not an unlinkable one, cleaned up opportunistically as later requests are counted (a sweep by window, not a timer: promise no age); it is called from the route, never `proxy.ts`.
+- **The admin Costs page reads Anthropic's Admin API** (`src/lib/admin/anthropic-cost.ts`: the workspace and org cost report and The 99's key list) with `ANTHROPIC_ADMIN_KEY`, set on BOTH Vercel projects, **Production scope**, **Sensitive**. Without it the page degrades to this environment's ledger and says why; nothing fails. Never put it in `.env`. The caps it is drawn against are typed in from the console.
+- **Error monitoring** (Sentry, errors only; dormant until `SENTRY_DSN` and `SENTRY_ENVIRONMENT` are set, `NEXT_PUBLIC_*` twins for the browser; Hugh sets them, see the variable table in the background file). Every event passes `scrubEvent` (`src/lib/sentry/scrub.ts`): no user, header, cookie, body, query string or exception message. A route that answers 500 itself reports through `captureServerError(tag, error)` (fixed tag and SQLSTATE only), never with the error's message. `src/instrumentation.ts` holds `onRequestError`.
