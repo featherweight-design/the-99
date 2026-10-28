@@ -6,18 +6,12 @@ import { PAGE_SHOTS, PAGE_WIDTHS, pageShotFor, pageToolCropFor, type PageManifes
 import { PAGE_MANIFEST } from "./page-shots.generated";
 
 const labels = ABOUT_SECTIONS.flatMap((s) => s.labels);
-/** The captures land one width at a time (Copilot reviews no file of a PR that carries both, the-99#2320): a width is
- *  checked once ANY theme has it, so a theme missing from it fails. The desktop captures' PR removes this, so both
- *  widths are then always checked. */
-const captured = (width: (typeof PAGE_WIDTHS)[number]) => THEMES.some(({ key }) => Object.keys(PAGE_SHOTS[key]?.[width] ?? {}).length > 0);
-const WIDTHS = PAGE_WIDTHS.filter(captured);
-const EMPTY = WIDTHS.length === 0;
 
 describe("the pages' captures are ready (G3)", () => {
   // The capture server runs with every switch on, so every label is visible on its capture.
-  it.skipIf(EMPTY)("measures a box for every label region, in every theme, at every captured width", () => {
+  it("measures a box for every label region, in every theme, at both widths", () => {
     for (const { key: theme } of THEMES) {
-      for (const width of WIDTHS) {
+      for (const width of PAGE_WIDTHS) {
         for (const l of labels) {
           const at = ABOUT_REGIONS[l.region][width];
           expect(at, `${l.region} ${width}`).not.toBeNull();
@@ -29,13 +23,13 @@ describe("the pages' captures are ready (G3)", () => {
     }
   });
 
-  it.skipIf(!captured("desktop"))("crops every tool's desktop card, in every theme", () => {
+  it("crops every tool's desktop card, in every theme", () => {
     for (const { key: theme } of THEMES) {
       for (const tool of Object.keys(TOOL_REGIONS)) expect(PAGE_MANIFEST.tools[theme]?.[tool], `${theme} ${tool}`).toBeDefined();
     }
   });
 
-  it.skipIf(EMPTY)("never measures two labels on one capture at the same box (they would be one label, G6)", () => {
+  it("never measures two labels on one capture at the same box (they would be one label, G6)", () => {
     for (const [theme, widths] of Object.entries(PAGE_SHOTS)) {
       for (const [width, shots] of Object.entries(widths)) {
         for (const [capture, shot] of Object.entries(shots ?? {})) {
