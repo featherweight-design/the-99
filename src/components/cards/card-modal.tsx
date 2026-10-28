@@ -718,7 +718,12 @@ const PhonePeek = React.forwardRef<
     >
       {sibling.imageUri ? <ArtLayer src={sibling.imageUri} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} /> : null}
       <SiblingFilm sibling={sibling} />
-      {enter && enterFace && !landed ? <ArtLayer src={enterFace} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} /> : null}
+      {/* Hidden under reduced motion, where no shrink runs and so no end would ever take it away. */}
+      {enter && enterFace && !landed ? (
+        <span className="peek-enter-face absolute inset-0 rounded-[inherit]">
+          <ArtLayer src={enterFace} style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)" }} />
+        </span>
+      ) : null}
     </button>
   );
 });
@@ -1055,6 +1060,8 @@ export function CardModal({
   const [enteredOffset] = useState(enterOffset);
   const [enteredProgress] = useState(enterProgress);
   const [enteredLeftFace] = useState(enterLeftFace);
+  // The face this card shows when turned, for the arrow keys' listener, which is attached before it is known.
+  const leftFaceRef = useRef<string | null>(null);
   /**
    * The phone's sheet (carousel R2): the teaser on every open and every page, which a remount
    * per card gives by construction, or the full details column. Set only by the phone's own
@@ -1813,10 +1820,10 @@ export function CardModal({
       }
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        if (onPrev) onPrev(); else onAtStart?.();
+        if (onPrev) onPrev(undefined, undefined, leftFaceRef.current); else onAtStart?.();
       } else {
         e.preventDefault();
-        if (onNext) onNext(); else onAtEnd?.();
+        if (onNext) onNext(undefined, undefined, leftFaceRef.current); else onAtEnd?.();
       }
     };
     document.addEventListener("keydown", handler);
@@ -1875,6 +1882,9 @@ export function CardModal({
   const showingBack = twoFaced && flipped;
   // Handed to the page, so the card being left keeps a turned face while it shrinks into its peek.
   const leftFace = showingBack ? backImage : null;
+  useEffect(() => {
+    leftFaceRef.current = leftFace;
+  });
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
   // name the same card.

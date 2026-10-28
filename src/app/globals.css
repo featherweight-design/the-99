@@ -1451,6 +1451,8 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   .sheet-snap.sheet-gentle,
   .band-dim,
   .card-grow { transition: none; }
+  /* The turned face a card keeps while it shrinks into its peek: no shrink runs, so it is never drawn. */
+  .peek-enter-face { display: none; }
 
   .anim-reveal { animation: reveal-in 100ms var(--motion-ease) backwards; }
   .art-lift,
