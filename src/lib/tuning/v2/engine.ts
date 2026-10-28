@@ -231,7 +231,12 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     here.malformed += end.malformed;
     if (here.lines + end.malformed < prompt.ask) listOf(side).underProduced = true;
     if (outcome.usage) here.usage = outcome.usage;
-    here.ok = outcome.ok && !streamFailed && end.complete;
+    // The reply closed whole, but the client's whole-reply parse failed it on a constraint each line is checked for here
+    // (a line with an empty `rationaleShort`, more lines than the cap). Every line was already judged one by one, so the
+    // call stands and only those lines are lost; failing it would refund the run over one bad line. All eight malformed
+    // attempts M1 recorded were this, a single empty `rationaleShort` in an otherwise complete reply.
+    const judgedWhole = !outcome.ok && outcome.errorClass === "malformed" && end.complete;
+    here.ok = (outcome.ok || judgedWhole) && !streamFailed && end.complete;
     // A shape-invalid line, or a call that failed or was cut off, is the model's shortfall: a short list it touched is
     // refunded (`charge.ts`), however many restriction drops sit beside it.
     if (here.malformed > 0 || !here.ok) listOf(side).underProduced = true;

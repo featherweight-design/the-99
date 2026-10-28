@@ -157,6 +157,30 @@ describe("runV2", () => {
     expect(r.charge).toEqual({ outcome: "refunded", why: "cutsFailed" });
   });
 
+  // M1's eight malformed attempts were all one line with an empty `rationaleShort` in an otherwise complete reply: the
+  // client's whole-reply parse failed the call, while each line had already been judged on its own.
+  it("keeps a closed reply the whole-reply parse failed: only the bad line is lost, the cuts stand", async () => {
+    const bad = { ...line("Cut 3"), rationaleShort: "" };
+    const text = JSON.stringify({ cuts: [line("Cut 1"), line("Cut 2"), bad, line("Cut 4"), line("Cut 5")] });
+    const f = fake({ additions: { cards: adds(1, 5) }, cuts: { text, fail: "malformed" } });
+    const r = await runV2({ ...base, n: 3, callModel: f.callModel, now: f.now });
+    expect(r.cutsFailed).toBeNull();
+    expect(r.cuts.kept.map((l) => l.card)).toEqual(["Cut 1", "Cut 2", "Cut 4", "Cut 5"]);
+    expect(r.calls.find((c) => c.stage === "cuts")).toMatchObject({ ok: true, malformed: 1 });
+    // Both lists still reach their target of 3, so the run is charged.
+    expect(r.charge).toEqual({ outcome: "spent" });
+  });
+
+  it("keeps a closed additions reply the same way, and refunds it when the lost line leaves the list short", async () => {
+    const bad = { ...line("Add 2"), rationaleShort: "" };
+    const text = JSON.stringify({ additions: [line("Add 1"), bad] });
+    const f = fake({ additions: { text, fail: "malformed" }, additionsRefill: { cards: [] }, cuts: { cards: cutsOf(1, 2) } });
+    const r = await runV2({ ...base, n: 2, callModel: f.callModel, now: f.now });
+    expect(r.calls[0]).toMatchObject({ stage: "additions", ok: true, malformed: 1 });
+    expect(r.additions.kept.map((l) => l.card)).toEqual(["Add 1"]);
+    expect(r.charge.outcome).toBe("refunded");
+  });
+
   it("treats a reply that stopped mid-object as malformed even when the call said ok", async () => {
     const f = fake({ additions: { cards: adds(1, 5) }, cuts: { text: `{"cuts":[${JSON.stringify(line("Cut 1"))}` } });
     const r = await runV2({ ...base, n: 3, callModel: f.callModel, now: f.now });
