@@ -30,7 +30,9 @@ stacking. Every PR is under ~20 files and ~800 lines; the estimates are below ea
 - **H3. The bracket choice is Keep (default), Down or Up** (README item 2, STATES). Keep drops any line that takes the
   deck out of its bracket; Down keeps additions inside the target; Up flags additions that reach it. A drop for the
   choice is the player's own restriction: charged, and named by the short-run sentence. A deck read as a range keeps
-  inside what it permits now. Supersedes the 2026-09-23 "shown, flagged, never dropped" rule for v2 runs only.
+  inside what it permits now. Down also drops an addition whose card alone bars the target (`cardFloor`, the lowest
+  bracket a deck holding it can be; PR 3 derives it from the card's bracket facts), since a second Game Changer moves no
+  permits yet still blocks the way down. Supersedes the 2026-09-23 "shown, flagged, never dropped" rule for v2 runs only.
 - **H4. Picks are kept** across leaving mid-run, a return and an Undo: a `picked` flag per item (PR 1), written by a
   cheap action (PR 4). Undo returns the set's item ids.
 - **H5. Type and role per line (G2)** come from the shipped grouping (`cardTypeGroup`) and the role counter

@@ -18,6 +18,10 @@ describe("the bracket choice", () => {
     expect(aimDrops({ choice: "down", target: 1 }, "add", [2])).toBe(true);
     expect(aimDrops({ choice: "down", target: 1 }, "add", [1, 2])).toBe(false);
     expect(aimDrops({ choice: "down", target: 1 }, "cut", [2])).toBe(false);
+    // A second Game Changer leaves a bracket-3 deck's permits as they were (null delta) but still bars the target.
+    expect(aimDrops({ choice: "down", target: 1 }, "add", null, 3)).toBe(true);
+    expect(aimDrops({ choice: "down", target: 3 }, "add", null, 3)).toBe(false);
+    expect(aimDrops({ choice: "keep", target: 3 }, "add", null, 4)).toBe(false);
   });
 
   it("Up drops nothing and flags an addition that reaches the target", () => {

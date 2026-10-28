@@ -7,7 +7,9 @@
  *
  * - **Keep**: nothing suggested moves the deck out of its bracket. A line whose permits no longer include the bracket kept
  *   at is dropped (`bracketAim`). The player chose this, so the drop is a restriction, like a price cap (`charge.ts`).
- * - **Down**: additions stay inside the target; an addition whose permits exclude it is dropped. Cuts are steered by the
+ * - **Down**: additions stay inside the target. An addition is dropped when its permits exclude the target, or when the
+ *   card ALONE cannot sit in a deck at the target (`cardFloor`, the lowest bracket a deck holding it can be: a second Game
+ *   Changer leaves a bracket-3 deck's permits at [3], so the delta alone would let it through). Cuts are steered by the
  *   prompt, never dropped for this.
  * - **Up**: nothing is dropped; an addition that reaches the target is flagged (`reachesAim`).
  *
@@ -17,10 +19,15 @@
 export type BracketChoice = "keep" | "down" | "up";
 export type BracketAim = { choice: BracketChoice; target: number };
 
-export function aimDrops(aim: BracketAim, side: "add" | "cut", bracketAfter: readonly number[] | null): boolean {
-  if (bracketAfter === null) return false;
-  if (aim.choice === "keep") return !bracketAfter.includes(aim.target);
-  if (aim.choice === "down") return side === "add" && !bracketAfter.includes(aim.target);
+export function aimDrops(
+  aim: BracketAim, side: "add" | "cut", bracketAfter: readonly number[] | null,
+  /** For an addition: the lowest bracket any deck holding this card can be (null when the card bars none). */
+  cardFloor: number | null = null,
+): boolean {
+  if (aim.choice === "keep") return bracketAfter !== null && !bracketAfter.includes(aim.target);
+  if (aim.choice === "down" && side === "add") {
+    return (bracketAfter !== null && !bracketAfter.includes(aim.target)) || (cardFloor !== null && cardFloor > aim.target);
+  }
   return false;
 }
 

@@ -2931,7 +2931,8 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   check("deck_suggestion_runs_request_text_check", sql`${t.requestText} is null or char_length(${t.requestText}) <= 500`),
   check(
     "deck_suggestion_runs_bracket_check",
-    sql`(${t.bracketChoice} is null and ${t.bracketTarget} is null) or (${t.bracketChoice} in ('keep', 'down', 'up') and ${t.bracketTarget} between 1 and 5)`,
+    // Both or neither, written out: a CHECK that evaluates to NULL passes, so `in` and `between` alone would let one half in.
+    sql`(${t.bracketChoice} is null and ${t.bracketTarget} is null) or (${t.bracketChoice} is not null and ${t.bracketTarget} is not null and ${t.bracketChoice} in ('keep', 'down', 'up') and ${t.bracketTarget} between 1 and 5)`,
   ),
   check("deck_suggestion_runs_tool_check", sql`${t.tool} in ('suggested_changes', 'proposed_cuts')`),
   check(

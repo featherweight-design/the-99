@@ -1,5 +1,5 @@
 {
-  "id": "774a433b-5ac1-4aae-b60a-ccc5f3c481d0",
+  "id": "c0fb937a-de19-4ddb-b175-92850fcc71a2",
   "prevId": "9ceecb10-4712-42fd-ae1e-22ac57799b5a",
   "version": "7",
   "dialect": "postgresql",
@@ -4240,7 +4240,7 @@
         },
         "deck_suggestion_runs_bracket_check": {
           "name": "deck_suggestion_runs_bracket_check",
-          "value": "(\"deck_suggestion_runs\".\"bracket_choice\" is null and \"deck_suggestion_runs\".\"bracket_target\" is null) or (\"deck_suggestion_runs\".\"bracket_choice\" in ('keep', 'down', 'up') and \"deck_suggestion_runs\".\"bracket_target\" between 1 and 5)"
+          "value": "(\"deck_suggestion_runs\".\"bracket_choice\" is null and \"deck_suggestion_runs\".\"bracket_target\" is null) or (\"deck_suggestion_runs\".\"bracket_choice\" is not null and \"deck_suggestion_runs\".\"bracket_target\" is not null and \"deck_suggestion_runs\".\"bracket_choice\" in ('keep', 'down', 'up') and \"deck_suggestion_runs\".\"bracket_target\" between 1 and 5)"
         },
         "deck_suggestion_runs_tool_check": {
           "name": "deck_suggestion_runs_tool_check",
