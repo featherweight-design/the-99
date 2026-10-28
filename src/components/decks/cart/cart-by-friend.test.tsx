@@ -231,7 +231,7 @@ describe("By friend's v2 row and panel (PR 6)", () => {
     const grid = "xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.7fr)_64px_minmax(0,1.25fr)_100px]";
     expect(lineIn("Colin", "Brainstorm").className).toContain(grid);
     // Inside a panel the row keeps 14px across at every width (`.fpn .prw`, `.fpn .nrw`).
-    expect(lineIn("Colin", "Brainstorm").className).toContain("px-[14px]");
+    expect(lineIn("Colin", "Brainstorm").className.split(/\s+/)).toContain("px-[14px]");
     const columns = document.querySelector('[data-cart-columns="friend"]')!;
     expect(columns.className).toContain(grid);
     expect(columns.className).toContain("px-[15px]");
