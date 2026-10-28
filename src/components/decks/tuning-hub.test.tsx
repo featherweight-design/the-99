@@ -385,6 +385,32 @@ describe("TuningHub opening a tool", () => {
     expect(hub.style.minHeight).toBe("");
   });
 
+  it("scrolls once for a shortcut, not again when the tool's content lands, and shows its counting state meanwhile", async () => {
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
+    const RO = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} } as unknown as typeof ResizeObserver;
+    try {
+      let land!: () => void;
+      function Panel() {
+        const [drawn, setDrawn] = useState(false);
+        land = () => setDrawn(true);
+        return drawn ? <h2 id="cuts-heading">Proposed cuts</h2> : <section aria-busy>Counting</section>;
+      }
+      const spec: HubToolSpec = { tool: "cuts", panel: <Panel />, over: 6, total: 106 };
+      render(<TuningHub deckId="d" drawn tools={[suggested(), spec]} request={{ tool: "cuts", nonce: 1 }} />);
+      await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1));
+      const panel = document.getElementById("tuning-tool-panel") as HTMLElement;
+      // Counting, and not held transparent: the reader was just moved here.
+      expect(panel.classList.contains("gentle-hold")).toBe(false);
+      await act(async () => { land(); });
+      await waitFor(() => expect(document.activeElement?.id).toBe("cuts-heading"));
+      expect(scroll).toHaveBeenCalledTimes(1);
+    } finally {
+      globalThis.ResizeObserver = RO;
+    }
+  });
+
   it("returns an open tool to the tiles on a request with no tool, opening nothing (discovery R3, N1)", async () => {
     read.mockResolvedValue(empty);
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);

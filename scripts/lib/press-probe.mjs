@@ -93,6 +93,11 @@ export const CUTS_PRESS_PROBE = () => {
   document.addEventListener("scroll", () => { if (stamps.at != null) stamps.scroll ??= performance.now(); }, { capture: true, passive: true });
   const inView = (el) => {
     if (!el || el.closest("[hidden]")) return null;
+    // Geometry alone reads a held (opacity 0) panel as shown: walk the ancestors for what a reader can see.
+    for (let n = el; n && n !== document.body; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (Number(cs.opacity) < 0.05 || cs.visibility === "hidden") return null;
+    }
     const r = el.getBoundingClientRect();
     return r.height > 0 && r.top < innerHeight && r.bottom > 0 ? r.top : null;
   };

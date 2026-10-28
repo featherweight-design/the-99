@@ -149,7 +149,9 @@ export function TuningHub({
   const toolRef = useRef<HTMLDivElement>(null);
   // The tool's arrival plays when its content lands, on a tab press as on a tile press (Hugh,
   // 2026-10-12): most tools draw nothing until their first read answers.
-  useArrival(toolRef, openTool);
+  // A shortcut's opening has already moved the page here, so it shows the tool's own counting state
+  // while the read is out rather than holding blank.
+  useArrival(toolRef, openTool, opening?.early === true);
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
 
   // A tool opened before the hub's first read lands (a shortcut opens one in the first render, and
@@ -318,7 +320,9 @@ export function TuningHub({
       // (Hugh, 2026-10-12: Mana Balance landed below the fold). A slow read gives way at the wait's
       // end, as above.
       if (!late && opening.scroll && !(toolRef.current && toolDrew(toolRef.current))) return false;
-      if (opening.scroll) reveal(sectionRef.current);
+      // A shortcut already moved the page and holds the room for it: a second reveal here would pull a
+      // reader who has scrolled on back, or restart the first one's animation.
+      if (opening.scroll && !movedEarly) reveal(sectionRef.current);
       if (!opening.focus || !heading) return true;
       if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
       heading.focus({ preventScroll: true });
@@ -604,12 +608,13 @@ const ARRIVAL_CAP_MS = 2500;
  * loading state (`PENDING`), then takes the arrival class afresh. A read slower than
  * `ARRIVAL_CAP_MS` shows its loading state and then its content without a second fade. A panel
  * whose content is there at mount keeps the mount's own arrival. Classes, not state: the hold has
- * to land before the first paint, and nothing else reads it.
+ * to land before the first paint, and nothing else reads it. A shortcut's opening (`showLoading`) holds
+ * nothing: the page has already moved to the panel, so its loading state is what the reader sees.
  */
-function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
+function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null, showLoading: boolean) {
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || key === null || typeof ResizeObserver === "undefined") return;
+    if (!el || key === null || showLoading || typeof ResizeObserver === "undefined") return;
     // A box holding a control has content worth showing, busy or not: a held panel must never hide
     // something a reader can focus or press (a running Proposed cuts panel's Stop, say).
     const landed = () => el.getBoundingClientRect().height > 0 && toolDrew(el);
@@ -636,5 +641,5 @@ function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
       mo.disconnect();
       clearTimeout(cap);
     };
-  }, [ref, key]);
+  }, [ref, key, showLoading]);
 }
