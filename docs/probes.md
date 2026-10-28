@@ -2950,6 +2950,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   branch only (`assertScratchBranch`), named by `PROBE_DB_URL`. Measured 2026-10-27 on a scratch branch of local-dev
   migrated to 0179: all pass; with the build's skip removed, the second-run check fails.
 
+- `pnpm probe:precon-overview-copy` runs `db:copy:precon-overviews` for real between two scratch branches
+  (`PROBE_SOURCE_URL`, `PROBE_TARGET_URL`, both `assertScratchBranch`). The source's rows come from the build's stub,
+  relabelled as a real model's, because the copy never carries a stub's row. On the target: both rows are installed,
+  current, with the source's hash; a target row whose inputs moved is replaced, current, by the source's fitting row; a row neither side's hash fits any more is marked not current and NOT overwritten by
+  the source's misfit; and once it fits again the next copy re-stamps it current. It deletes its rows on both branches.
+  No model call. Measured 2026-10-27 between two scratch branches of local-dev migrated to 0179: all six pass.
+
 - `pnpm probe:precon-overview-ledger` proves a carried-over precon overview (`deck_synopses.precon_file`
   set, `model_call_id` null) counts toward nothing that counts model calls. It starts a real precon
   deck, writes the carry-over's row, and reads the figures before and after: `readAllowance`,

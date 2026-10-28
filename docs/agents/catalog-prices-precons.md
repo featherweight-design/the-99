@@ -81,4 +81,14 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
 - **A carried-over Overview** is a `deck_synopses` row with `precon_file` set and `model_call_id` NULL (a check constraint
   makes the two exclusive). It holds no allowance unit and no `model_calls` row, so the allowance, credits, `freeRunsFor` and
   the Costs page never count it (`src/lib/synopsis/carried-over.test.ts`, `pnpm probe:precon-overview-ledger`).
-  The copy to production and the carry-over itself are Precon Overviews PRs 3 and 4.
+- **`pnpm db:copy:precon-overviews`** installs staging's CURRENT, non-stub rows on production through the catalog copy
+  harness (`withCopyPair`, a source snapshot under the source's `catalog-ingest` lock, one target transaction under the
+  target's). PER ROW, never whole (`planPreconOverviewCopy`, `scripts/lib/precon-overview-copy.ts`): a row is installed only
+  when the request the TARGET's own catalog builds for that precon (`buildPreconRequest`, with `src/db` pointed at the target)
+  hashes to it, on the same list. It is also the target's re-check: an installed row the target's inputs no longer fit, or
+  whose request it cannot build, is marked not current; one that fits again is stamped current again. Nothing is deleted.
+- **The `Precon overviews` workflow** (`.github/workflows/precon-overviews.yml`) chains on a successful SCHEDULED
+  `Catalog refresh` behind `PRECON_OVERVIEWS_ENABLED='true'`: `generate` on `catalog-staging` (`staging-deployed`, the
+  `ANTHROPIC_API_KEY` secret, `PRECON_OVERVIEW_TARGET_BRANCH` staging's branch), then `copy` in `catalog-production`. A
+  DISPATCH runs without the variable, and its `mode` picks `generate` alone, `generate+copy` or `copy-only`.
+  The carry-over itself is Precon Overviews PR 4.
