@@ -9,14 +9,16 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import type { ProvenanceForm } from "../../../lib/decks/price";
-import { cartTotal, checkoutLinks, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
+import { cartTotal, checkoutLinks, inUseIn, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
 import {
   DEFAULT_SORTS, MAX_QUERY, byCardOrder, cardCompare, matchesQuery, parseQuery, parseSort, searchLines, sortDecks, sortGroups,
   type CartSorts,
 } from "../../../lib/decks/cart-sort";
 import { CartChassis } from "./cart-chassis";
 import { CartCheckout } from "./cart-checkout";
-import { CartHeldSlot, CartLine } from "./cart-line";
+import { CartCardLine, CartHeldSlot } from "./cart-line";
+import { CartColumns } from "./cart-columns";
+import { NameFitProvider } from "./cart-facts";
 import { CartGotItProvider, useCartGotIt } from "./cart-got-it";
 import { BackBand } from "./back-band";
 import { ShoppingKeyBuy, ShoppingKeySpare } from "../shopping-key";
@@ -58,9 +60,12 @@ function useWithHeld(
   }, [gotIt, lines, read, selected, compare, query]);
 }
 
-/** The by-card list (`useWithHeld`'s lines, a held one as its slot). */
+/** Who holds what, for the own fact (G1): each deck's place in the selections' order, and every holding deck's name. */
+type Holders = { rank: ReadonlyMap<string, number>; names: ReadonlyMap<string, string> };
+
+/** The by-card list (`useWithHeld`'s lines, a held one as its slot), its rows' names fitted by one observer. */
 function ByCardList({
-  lines, read, selected, deckNames, newestAsOf, compare, query,
+  lines, read, selected, deckNames, holders, newestAsOf, compare, query,
 }: {
   lines: SelectedLine[];
   /** The reader's order (`cardCompare`), and the search a held slot is held to as well. */
@@ -70,18 +75,32 @@ function ByCardList({
   read: ReadonlySet<string>;
   selected: ReadonlySet<string>;
   deckNames: Map<string, string>;
+  holders: Holders;
   newestAsOf: Date | null;
 }) {
   const drawn = useWithHeld(lines, read, selected, { compare, query });
+  const spares = usePageSpares();
   return (
-    <ul className="m-0 list-none p-0">
-      {drawn.lines.map((line) => {
-        const added = drawn.held.get(line.oracleId);
-        return added !== undefined
-          ? <CartHeldSlot key={line.oracleId} name={line.name} added={added} />
-          : <CartLine key={line.oracleId} line={line} deckNames={deckNames} newestAsOf={newestAsOf} />;
-      })}
-    </ul>
+    <NameFitProvider>
+      <ul className="m-0 list-none p-0">
+        {drawn.lines.map((line) => {
+          const added = drawn.held.get(line.oracleId);
+          return added !== undefined
+            ? <CartHeldSlot key={line.oracleId} name={line.name} added={added} />
+            : (
+              <CartCardLine
+                key={line.oracleId}
+                line={line}
+                deckNames={deckNames}
+                holdings={inUseIn(line, selected, holders.rank)}
+                holderNames={holders.names}
+                spares={spares?.byCard.get(line.oracleId) ?? []}
+                newestAsOf={newestAsOf}
+              />
+            );
+        })}
+      </ul>
+    </NameFitProvider>
   );
 }
 
@@ -160,6 +179,10 @@ export function CartView({
   });
   const newestAsOf = useMemo(() => (cart.newestAsOf ? new Date(cart.newestAsOf) : null), [cart.newestAsOf]);
   const deckNames = useMemo(() => new Map(cart.decks.map((d) => [d.id, d.name])), [cart.decks]);
+  const holders = useMemo<Holders>(() => ({
+    rank: new Map(cart.decks.map((d, i) => [d.id, i])),
+    names: new Map([...cart.holders.map((h) => [h.id, h.name] as const), ...cart.decks.map((d) => [d.id, d.name] as const)]),
+  }), [cart.decks, cart.holders]);
   const sparesIds = useMemo(() => cart.lines.map((l) => l.oracleId), [cart.lines]);
 
   // Commanders first, then the cards most SELECTED decks need, then A to Z (A2, A3): the order is
@@ -362,6 +385,7 @@ export function CartView({
                   it stay put; focusable and named, so a keyboard reader can scroll it. Phone: the page scrolls. */}
               {/* The provider sits OUTSIDE the scroll box: it draws the modal where it is mounted, and the dialog's
                   scroll lock looks for a scrollable ancestor, so mounted inside it would let the cart scroll behind. */}
+              {byDeck ? null : <ByCardColumns view={view} lines={lines} read={readIds} selected={selected} query={query} />}
               <CardDetailProvider>
               {/* The spares-only modal a line's spare press opens (S5): inside this provider, since it opens card details. */}
               <SparesSheetHost />
@@ -400,6 +424,7 @@ export function CartView({
                     onDrop={() => chooseQuery("")}
                     sorts={sorts}
                     deckNames={deckNames}
+                    holders={holders}
                     newestAsOf={newestAsOf}
                   />
                 )}
@@ -424,6 +449,25 @@ export function CartView({
   return buyEnabled ? (
     <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>
   ) : withSpares;
+}
+
+/**
+ * By card's column header (v2 call 1), above the list's scroll box, while By card draws rows: not over By friend's
+ * panels, and not over the no-match block.
+ */
+function ByCardColumns({
+  view, lines, read, selected, query,
+}: {
+  view: CartViewMode;
+  lines: SelectedLine[];
+  read: ReadonlySet<string>;
+  selected: ReadonlySet<string>;
+  query: string;
+}) {
+  const drawn = useWithHeld(lines, read, selected, { query });
+  const byFriend = friendGroups(useByFriend(drawn.lines, drawn.held));
+  if (shown(view, byFriend !== null) !== "card" || drawn.lines.length === 0) return null;
+  return <CartColumns />;
 }
 
 /** The view drawn: By friend falls back to By card while it has no panels to draw (`friendGroups` null). */
@@ -502,7 +546,7 @@ function NoMatch({ query, of, onDrop }: { query: string; of: number; onDrop: () 
 
 /** By card, or By friend while it has something to draw. */
 function CardOrFriendList({
-  view, lines, of, read, selected, query, onDrop, sorts, deckNames, newestAsOf,
+  view, lines, of, read, selected, query, onDrop, sorts, deckNames, holders, newestAsOf,
 }: {
   view: CartViewMode;
   lines: SelectedLine[];
@@ -513,6 +557,7 @@ function CardOrFriendList({
   onDrop: () => void;
   sorts: CartSorts;
   deckNames: Map<string, string>;
+  holders: Holders;
   newestAsOf: Date | null;
 }) {
   const spares = usePageSpares();
@@ -529,7 +574,7 @@ function CardOrFriendList({
   }
   // The held slot a purchase left counts: a search matching only the card just bought still draws it.
   if (drawn.lines.length === 0) return <NoMatch query={query} of={of} onDrop={onDrop} />;
-  return <ByCardList lines={lines} read={read} selected={selected} deckNames={deckNames} newestAsOf={newestAsOf} compare={compare} query={query} />;
+  return <ByCardList lines={lines} read={read} selected={selected} deckNames={deckNames} holders={holders} newestAsOf={newestAsOf} compare={compare} query={query} />;
 }
 
 /**
