@@ -1098,6 +1098,17 @@ describe("the pending-change notes follow the mark, which both views now draw", 
     }
   });
 
+  // Ruled by d9 (small items 2): the group heading's draft note matches the board's 390 frame and
+  // shows on a phone too, while the toolbar's note stays desktop only.
+  it("draws the group's draft note at every width while a draft exists, so the phone keeps it", () => {
+    renderDecklist([rampOwned, drawOwned], { filter: "all", pendingChanges });
+
+    const note = screen.getByText(deckVersioningCopy.pending.groupChangeNote(1));
+    for (let el: HTMLElement | null = note; el && el !== document.body; el = el.parentElement) {
+      expect([...el.classList].filter((c) => c === "hidden" || /^(sm|md|lg):(block|inline|flex)$/.test(c))).toEqual([]);
+    }
+  });
+
   // Shopping's rows are the same `DecklistRow`, so they carry the same brass
   // rule and need the same sentence. The figure is the marks on screen, not the
   // whole draft: this list is a subset, and a caption counting rows the reader
