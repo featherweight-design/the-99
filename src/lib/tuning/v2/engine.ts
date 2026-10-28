@@ -81,6 +81,8 @@ export type V2List = {
   refilled: boolean;
   /** Lines that passed but came past the list's ask (spec §5.2), ignored. */
   overAsk: number;
+  /** Some call on this list returned fewer lines than it asked for (`charge.ts`: a short list with it is refunded). */
+  underProduced: boolean;
 };
 
 export type V2Report = {
@@ -105,6 +107,8 @@ export type RunV2Args = {
   resolveName: (name: string) => ResolvedCard | null;
   /** The brackets the deck permits with this one line (`bracketAfter` in `bracket-shift.ts`); absent, no line is checked. */
   bracketAfter?: (side: V2Side, line: ValidatedSuggestion) => number[] | null | Promise<number[] | null>;
+  /** For an addition: the lowest bracket any deck holding the card can be (`aimDrops`' Down rule); absent, none is read. */
+  cardFloor?: (side: V2Side, line: ValidatedSuggestion) => number | null | Promise<number | null>;
   budgetMs: number;
   now?: () => number;
   callCapMs?: number;
@@ -127,8 +131,8 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
   let budgetReached = false;
   let strippedCites = 0;
   let cutsFailed: V2Report["cutsFailed"] = null;
-  const additions: V2List = { kept: [], drops: [], target: n, refilled: false, overAsk: 0 };
-  const cuts: V2List & { skipped: boolean } = { kept: [], drops: [], target: 0, refilled: false, overAsk: 0, skipped: false };
+  const additions: V2List = { kept: [], drops: [], target: n, refilled: false, overAsk: 0, underProduced: false };
+  const cuts: V2List & { skipped: boolean } = { kept: [], drops: [], target: 0, refilled: false, overAsk: 0, underProduced: false, skipped: false };
   const listOf = (side: V2Side) => (side === "add" ? additions : cuts);
   const caps: Record<V2Side, number> = { add: askFor(n), cut: 0 };
 
@@ -162,7 +166,8 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     const id = (v.addOracleId ?? v.cutOracleId)!;
     if (used.has(id)) return drop({ rule: "duplicate" });
     const after = args.bracketAfter ? await args.bracketAfter(side, v) : null;
-    if (args.aim && args.bracketAfter && aimDrops(args.aim, side, after)) return drop({ rule: "bracketAim" });
+    const floor = args.aim && args.cardFloor ? await args.cardFloor(side, v) : null;
+    if (args.aim && aimDrops(args.aim, side, after, floor)) return drop({ rule: "bracketAim" });
     // Re-checked after the await: a parallel call may have filled the list or taken the card meanwhile.
     if (used.has(id)) return drop({ rule: "duplicate" });
     if (list.kept.length >= caps[side]) {
@@ -207,6 +212,7 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     const end = parser.end();
     here.ms = now() - t;
     here.malformed += end.malformed;
+    if (here.lines + end.malformed < prompt.ask) listOf(side).underProduced = true;
     if (outcome.usage) here.usage = outcome.usage;
     here.ok = outcome.ok && !streamFailed && end.complete;
     if (!here.ok) {
@@ -272,8 +278,8 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
   await args.onListIn?.("cut");
 
   const charge = chargeFor({
-    additions: { kept: additions.kept.length, target: additions.target, drops: additions.drops },
-    cuts: { kept: cuts.kept.length, target: cuts.target, drops: cuts.drops },
+    additions: { kept: additions.kept.length, target: additions.target, drops: additions.drops, underProduced: additions.underProduced },
+    cuts: { kept: cuts.kept.length, target: cuts.target, drops: cuts.drops, underProduced: cuts.underProduced },
     cutsFailed: cutsFailed !== null,
   });
   return { additions, cuts, calls, callCount: calls.length, cutsFailed, budgetReached, strippedCites, charge };

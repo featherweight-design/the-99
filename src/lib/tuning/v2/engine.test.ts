@@ -192,14 +192,30 @@ describe("runV2", () => {
   });
 
   it("drops a line that breaks a Keep choice as the player's restriction, and charges a run it bound", async () => {
-    const f = fake({ additions: { cards: adds(1, 5) }, additionsRefill: { cards: adds(6, 1) }, cuts: { cards: cutsOf(1, 5) } });
-    // Add 1 and Add 6 would take the deck to bracket 4; the player keeps it at 3.
-    const bracketAfter = (_side: "add" | "cut", l: { addOracleId: string | null }) => (l.addOracleId === "Add 1" || l.addOracleId === "Add 6" ? [4] : null);
-    const r = await runV2({ ...base, n: 5, aim: { choice: "keep", target: 3 }, bracketAfter, callModel: f.callModel, now: f.now });
-    expect(r.additions.drops.map((d) => d.rule)).toEqual(["bracketAim", "bracketAim"]);
-    expect(r.additions.kept).toHaveLength(4);
+    const f = fake({ additions: { cards: adds(1, 3) }, additionsRefill: { cards: adds(6, 1) }, cuts: { cards: cutsOf(1, 3) } });
+    // Add 1, Add 2 and Add 6 would take the deck to bracket 4; the player keeps it at 3.
+    const bracketAfter = (_side: "add" | "cut", l: { addOracleId: string | null }) => (["Add 1", "Add 2", "Add 6"].includes(l.addOracleId ?? "") ? [4] : null);
+    const r = await runV2({ ...base, n: 2, aim: { choice: "keep", target: 3 }, bracketAfter, callModel: f.callModel, now: f.now });
+    expect(r.additions.drops.map((d) => d.rule)).toEqual(["bracketAim", "bracketAim", "bracketAim"]);
+    expect(r.additions.kept.map((l) => l.card)).toEqual(["Add 3"]);
     expect(f.requests[0].system).toContain("stay in bracket 3");
     expect(r.charge).toEqual({ outcome: "spent" });
+  });
+
+  it("drops a Down addition whose card alone bars the target, through cardFloor", async () => {
+    const f = fake({ additions: { cards: adds(1, 3) }, cuts: { cards: cutsOf(1, 3) } });
+    const cardFloor = (_side: "add" | "cut", l: { addOracleId: string | null }) => (l.addOracleId === "Add 2" ? 4 : null);
+    const r = await runV2({ ...base, n: 2, aim: { choice: "down", target: 2 }, cardFloor, callModel: f.callModel, now: f.now });
+    expect(r.additions.drops).toEqual([expect.objectContaining({ rule: "bracketAim", name: "Add 2" })]);
+  });
+
+  it("refunds a short list whose call returned fewer lines than it asked, though restrictions could cover the gap", async () => {
+    const f = fake({ additions: { cards: adds(1, 2) }, additionsRefill: { cards: adds(6, 1) }, cuts: { cards: cutsOf(1, 3) } });
+    const bracketAfter = (_side: "add" | "cut", l: { addOracleId: string | null }) => (["Add 1", "Add 6"].includes(l.addOracleId ?? "") ? [4] : null);
+    const r = await runV2({ ...base, n: 2, aim: { choice: "keep", target: 3 }, bracketAfter, callModel: f.callModel, now: f.now });
+    expect(r.additions).toMatchObject({ underProduced: true });
+    expect(r.additions.kept).toHaveLength(1);
+    expect(r.charge).toEqual({ outcome: "refunded", why: "shortByModel" });
   });
 
   it("sends the request as the run's words through playerText and validates a request citation", async () => {
