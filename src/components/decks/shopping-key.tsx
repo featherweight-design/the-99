@@ -72,9 +72,12 @@ export function ShoppingKeyOver() {
   );
 }
 
-/** The key's spare item on its own, for the all-decks cart: drawn while a friend has a spare of a line (S5). */
-export function ShoppingKeySpare({ among }: { among?: ReadonlySet<string> }) {
-  return <SpareKeyItem className={ITEM} among={among} />;
+/**
+ * The key's spare item on its own, for the all-decks cart: drawn while a friend has a spare of a line (S5), and while
+ * friends' spares are still being read (v2 Loading A), ahead of the glyphs they bring.
+ */
+export function ShoppingKeySpare({ among, reading = false }: { among?: ReadonlySet<string>; reading?: boolean }) {
+  return <SpareKeyItem className={ITEM} among={among} reading={reading} />;
 }
 
 /** The key's buy item on its own: the all-decks cart draws it alone beside its view switch. */

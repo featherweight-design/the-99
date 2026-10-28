@@ -1,15 +1,14 @@
-// CartLine — one card on the cart (handoff S0): its name, the decks that need it with their copies
-// (`3 · HD - Gishath, HD - Kratos, HD -Thorin`, full names, wrapped, never truncated), the owned fact
-// when the player owns it, and the buy tag at the line's total. By friend draws it until v2's PR 6.
-// CartCardLine — By card's v2 row (call 1): the card, then need, spare and own as facts.
+// The cart's v2 rows (call 1): the card, then need, spare and own as facts, then the action stack.
+// CartCardLine is By card's, CartFriendLine By friend's (PR 6), and By deck draws CartFactsRow itself.
 
+import type { ReactNode } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { PriceFact } from "../../../lib/decks/price";
 import type { OwnFact, SelectedLine } from "../../../lib/decks/cart";
 import type { FriendSpare } from "../../../lib/social/spares";
 import { CartFact, type FactItem } from "./cart-facts";
-import { FACTS_GRID } from "./cart-columns";
+import { FACTS_GRID, FRIEND_GRID } from "./cart-columns";
 import { BuyTag } from "../buy-tag";
 import { useCartGotIt } from "./cart-got-it";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
@@ -71,100 +70,6 @@ function spareCardOf(line: SelectedLine, fact: PriceFact | null) {
   return { oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact, quantity: line.copies };
 }
 
-export function CartLine({
-  line,
-  deckNames,
-  newestAsOf,
-  end,
-  inPanel = false,
-  spare,
-  data,
-}: {
-  line: SelectedLine;
-  deckNames: Map<string, string>;
-  newestAsOf: Date | null;
-  /**
-   * What sits before the buy tag in place of the spare press: By friend's Ask or one-word status (spare requests PR
-   * 3c), where the glyph would say nothing. Absent, the line draws the shipped press.
-   */
-  end?: React.ReactNode;
-  /** Inside a By friend panel (`.fg .cl`): inset 14px, ruled between lines, the right side centred on the line. */
-  inPanel?: boolean;
-  /**
-   * By friend: the panel's friend's spare copies of this card, after the decks line in the modal row's figure ("2
-   * spares"), so a reader can see how many before asking. Absent elsewhere.
-   */
-  spare?: number;
-  /** Data attributes for the line's `<li>`: By friend marks its friend and state, for the focus landing and probes. */
-  data?: Record<`data-${string}`, string>;
-}) {
-  const names = line.selectedRows.map((r) => deckNames.get(r.deckId) ?? "");
-  const fact = lineFact(line, newestAsOf);
-  const spareCard = spareCardOf(line, fact);
-  const { added, press } = useLinePress(line);
-  return (
-    <li {...data} className={inPanel
-      ? "flex items-center gap-[12px] border-t border-[color:var(--border)] px-[14px] py-[11px] first:border-t-0"
-      : "flex items-start gap-[12px] border-t border-[color:var(--border)] py-[11px]"}>
-      <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-        <div className="flex flex-wrap items-baseline gap-x-[8px] gap-y-[2px]">
-          <CardDetailTrigger
-            oracleId={line.oracleId}
-            name={line.name}
-            imageUri={line.imageUri ?? null}
-            preview
-            // The name draws at its ~21px line; a coarse pointer gets 44px, reaching under a pixel past the row's 11px padding
-            // (onto the row above's empty bottom padding) and, for a very short name, over the plain text beside it.
-            className={`${TOUCH_HIT} text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]`}
-          >
-            {frontFaceName(line.name, line.layout)}
-          </CardDetailTrigger>
-          <TwoFacedMark layout={line.layout} />
-          {line.commander ? (
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
-              {copy.list.commander}
-            </span>
-          ) : null}
-        </div>
-        <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">
-          {copy.list.decks(line.copies, names)}
-          {/* The separator and the count wrap as one, so a narrow line never leaves a hanging "·". */}
-          {spare !== undefined ? (
-            <>
-            {" "}
-            <span className="whitespace-nowrap">
-              {"· "}
-              <em data-testid="cart-line-spare" className="not-italic text-[color:var(--fact)]">{copy.byFriend.spares(spare)}</em>
-            </span>
-            </>
-          ) : null}
-        </span>
-        {/* Why a card the player owns is on a buy list, said without a verdict or a warning colour
-            (lock 4): the other decks hold the copies. */}
-        {line.owned > 0 ? (
-          <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
-            {line.heldElsewhere === line.owned
-              ? copy.list.owned(line.owned)
-              : copy.list.ownedSome(line.owned, line.heldElsewhere)}
-          </span>
-        ) : null}
-        {/* S4: bought this visit and still listed, at the count the read gives it now. */}
-        {added > 0 ? (
-          <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.list.addedThisVisit(added)}</span>
-        ) : null}
-      </div>
-      {/* S5: the spare glyph before the tag while a friend holds a spare, opening the spares-only modal. The cart has
-          no stand-ins, so the press never holds ⇄. */}
-      <span className={inPanel ? "mt-[1px] flex flex-none items-center gap-[10px]" : "mt-[3px] flex flex-none items-center gap-[8px]"}>
-        {end !== undefined ? end : (
-          <OtherWaysPress card={spareCard} standIn={false} standInAria="" limitFigure="" className="-my-[9px] md:my-0" />
-        )}
-        <BuyTag variant="row" reserveSlot price={fact} newestAsOf={newestAsOf} press={press} />
-      </span>
-    </li>
-  );
-}
-
 /**
  * By card's row (v2 call 1): the card, then its three facts, then the action stack, which By card holds the tag alone
  * (call 3: Ask lives in the spares modal).
@@ -203,7 +108,52 @@ export function CartCardLine({
 }
 
 /**
- * A v2 row, By card's and By deck's (call 1): the card, then need, spare and own as facts, then the tag. Phone: the facts
+ * By friend's row (v2 call 1, PR 6): the card, need, this friend's spare copies as a bare count, and own, then the action
+ * stack with the Ask (or its status) above the tag (call 3). The row sits in a friend's panel.
+ */
+export function CartFriendLine({
+  line,
+  deckNames,
+  own,
+  spare,
+  ask,
+  data,
+  newestAsOf,
+}: {
+  line: SelectedLine;
+  deckNames: ReadonlyMap<string, string>;
+  own: OwnFact | null;
+  /** The panel's friend's spare copies of this card. */
+  spare: number;
+  /** `RowEnd` at the cart's size: Ask, or the status in its place. */
+  ask: ReactNode;
+  /** Data attributes for the row's `<li>`: its friend and ask state, for the focus landing and probes. */
+  data: Record<`data-${string}`, string>;
+  newestAsOf: Date | null;
+}) {
+  const fact = lineFact(line, newestAsOf);
+  const { added, press } = useLinePress(line);
+  const need = line.selectedRows.map((r) => ({ name: deckNames.get(r.deckId) ?? "", count: r.quantity }));
+  return (
+    <CartFactsRow
+      line={line}
+      fact={fact}
+      need={{ label: copy.facts.need, count: line.copies, items: need, head: copy.facts.forDecks(need.length) }}
+      spares={[]}
+      friendSpare={spare}
+      own={own}
+      press={press}
+      added={added}
+      ask={ask}
+      inPanel
+      data={data}
+      newestAsOf={newestAsOf}
+    />
+  );
+}
+
+/**
+ * A v2 row, By card's, By deck's and By friend's (call 1): the card, then need, spare and own as facts, then the tag. Phone: the facts
  * are labelled lines under the name, the tag at the right. Desktop: the facts are columns under `CartColumns`, the name
  * cell and the facts dissolving into the row's grid. The need fact is the view's: By card's `need` counts every selected
  * deck's copies `for` them; By deck's `deck` counts the open deck's, then names the others `also`.
@@ -217,6 +167,10 @@ export function CartFactsRow({
   press,
   added = 0,
   inGroup = false,
+  friendSpare,
+  ask,
+  inPanel = false,
+  data,
   newestAsOf,
 }: {
   /** The line as this row reads it: By deck's is the open deck's own row alone, at its own pick. */
@@ -231,6 +185,16 @@ export function CartFactsRow({
   added?: number;
   /** Inside a By deck group, whose body sets the inset: no padding of the row's own across, and a rule over the first. */
   inGroup?: boolean;
+  /**
+   * By friend: the panel's friend's spare copies, drawn as the spare fact's count alone, on every row and at every width
+   * (By friend's grid, its 64px spare column). Absent elsewhere, where the spare fact is every friend's.
+   */
+  friendSpare?: number;
+  /** By friend: the Ask or its status, on top of the action stack, the tag under it (call 3). */
+  ask?: ReactNode;
+  /** Inside a By friend panel (`.fpn .nrw`, `.fpn .prw`): 14px across at every width. */
+  inPanel?: boolean;
+  data?: Record<`data-${string}`, string>;
   newestAsOf: Date | null;
 }) {
   // Most spares first, then by name, so the name that leads is the friend most likely to have one to give.
@@ -246,12 +210,13 @@ export function CartFactsRow({
   const ownItems = own?.kind === "named" ? own.decks.map((d) => ({ name: d.name, count: d.held })) : [];
   return (
     <li
+      {...data}
       data-cart-row
       // In a group the column header sits just above the first row, which keeps its own rule under the header's (the
       // board's `.colh` then `.nrw`, not its first child); on a phone there is no header and the first row has none.
       className={`flex items-start gap-[12px] border-t border-[color:var(--border)] py-[12px] first:border-t-0 xl:grid xl:min-h-[64px] xl:items-center xl:has-[[data-fact-open]]:items-start ${
-        inGroup ? "xl:px-0 xl:first:border-t" : "xl:px-[14px]"
-      } ${FACTS_GRID}`}
+        inPanel ? "px-[14px]" : inGroup ? "xl:px-0 xl:first:border-t" : "xl:px-[14px]"
+      } ${friendSpare !== undefined ? FRIEND_GRID : FACTS_GRID}`}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-[4px] xl:contents">
         <div className="flex min-w-0 flex-col gap-[3px] xl:col-start-1 xl:row-start-1">
@@ -287,7 +252,17 @@ export function CartFactsRow({
           moreAria={copy.facts.moreDecksAria}
           className="xl:col-start-2 xl:row-start-1"
         />
-        {friends.length > 0 ? (
+        {friendSpare !== undefined ? (
+          <CartFact
+            testId="spare"
+            label={copy.facts.spare}
+            count={friendSpare}
+            items={[]}
+            head=""
+            moreAria={copy.facts.moreFriendsAria}
+            className="xl:col-start-3 xl:row-start-1"
+          />
+        ) : friends.length > 0 ? (
           <CartFact
             testId="spare"
             label={copy.facts.spare}
@@ -326,8 +301,16 @@ export function CartFactsRow({
         ) : null}
       </div>
       <span className="flex flex-none flex-col items-end gap-[10px] xl:col-start-5 xl:row-start-1 xl:gap-[7px]">
-        {/* The tag's row in the stack: 22px on a phone, 20 on desktop, the shipped tag centred in it. */}
-        <span className="flex h-[22px] items-center xl:h-[20px]">
+        {/* By friend's Ask (or its status) on top: 36px on a phone, 28 on desktop, so the tag never moves (call 3). */}
+        {ask !== undefined ? <span data-cart-ask className="flex h-[36px] items-center xl:h-[28px]">{ask}</span> : null}
+        {/* The tag's row in the stack: 22px on a phone, 20 on desktop, the shipped tag centred in it. Under an Ask, the
+            tag's coarse 44px hit is cut at the gap's midline (5px up on a phone, 3.5 on desktop), where the Ask's stops:
+            the two meet there and never overlap. */}
+        <span
+          className={`flex h-[22px] items-center xl:h-[20px] ${
+            ask !== undefined ? "[clip-path:inset(-5px_-100vw_-100vw_-100vw)] xl:[clip-path:inset(-3.5px_-100vw_-100vw_-100vw)]" : ""
+          }`}
+        >
           <BuyTag variant="row" reserveSlot price={fact} newestAsOf={newestAsOf} press={press} />
         </span>
       </span>

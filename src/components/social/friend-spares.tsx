@@ -229,14 +229,22 @@ export function FriendSpareSection({ spares, card, first }: { spares: readonly F
 }
 
 const ASK_PRESS = "flex flex-none cursor-pointer items-center justify-center whitespace-nowrap bg-transparent font-sans disabled:cursor-default";
-/** The press's box: the modal's friend row (`.ask`, 36px at phone, 32px from md), the cart's By friend line
- *  (`.cl .ask`, 32px at phone, 28px from md, a 56px floor and 12.5px type), or Your requests' row. */
+/** The press's box: the modal's friend row (`.ask`, 36px at phone, 32px from md), Your requests' row, or the all-decks
+ *  cart's action stack. */
 const ASK_SIZE = {
   sheet: "h-[36px] min-w-[64px] rounded-[9px] px-[14px] text-[13px] md:h-[32px] md:rounded-[8px]",
-  line: "h-[32px] min-w-[56px] rounded-[7px] px-[12px] text-[12.5px] md:h-[28px]",
   /** Your requests' Ask again on `/friends` (`.fi .ac .ask`): 36px at both widths. */
   row: "h-[36px] min-w-[64px] rounded-[9px] px-[14px] text-[13px] md:rounded-[8px]",
+  /**
+   * The all-decks cart's action stack (v2 call 3, plan A16), Ask over the buy tag: the sheet's 36px at phone with a 72px
+   * floor, 28px on desktop (`xl`, where the cart's row turns to columns) with a 64px floor. On a coarse pointer
+   * its hit reaches down to the gap’s midline (10px at phone, 7 on desktop), where the tag’s own hit stops, and up to
+   * about 44px tall (12px up on desktop, the row’s own padding, so it never reaches the row above).
+   */
+  cart: "relative h-[36px] min-w-[72px] rounded-[9px] px-[14px] text-[13px] xl:h-[28px] xl:min-w-[64px] xl:rounded-[7px] xl:px-[12px] xl:text-[12.5px] pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:-top-[3px] pointer-coarse:after:-bottom-[5px] pointer-coarse:after:content-[''] xl:pointer-coarse:after:-top-[12px] xl:pointer-coarse:after:-bottom-[3.5px]",
 } as const;
+/** The status in a size's place: the cart's reads 12.5px on desktop (`.act .fst`), the rest 13. */
+const STATUS_SIZE: Record<keyof typeof ASK_SIZE, string> = { sheet: "", row: "", cart: "xl:text-[12.5px]" };
 const ASK_INK = "font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]";
 const ASK_ALT_INK = "font-medium text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)]";
 const STATUS = "inline-flex flex-none items-center gap-[6px] whitespace-nowrap font-sans text-[13px] font-medium";
@@ -333,7 +341,7 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
  */
 export function RowEnd({ ask, friend, card, busy, locked, onAsk, size = "sheet" }: {
   ask: RowAsk; friend: string; card: string; busy: boolean; locked: boolean; onAsk: () => void;
-  /** `line` on the cart's By friend line, whose press is a size down (`.cl .ask`). */
+  /** `cart` in the all-decks cart's action stack (`.act .ask`). */
   size?: keyof typeof ASK_SIZE;
 }) {
   const r = spareCopy.request;
@@ -350,7 +358,7 @@ export function RowEnd({ ask, friend, card, busy, locked, onAsk, size = "sheet" 
   }
   if (ask.kind === "requested") {
     return (
-      <span data-testid="friend-spare-status" tabIndex={-1} className={`${STATUS} text-[color:var(--accent-text)]`}>
+      <span data-testid="friend-spare-status" tabIndex={-1} className={`${STATUS} ${STATUS_SIZE[size]} text-[color:var(--accent-text)]`}>
         <i aria-hidden="true" className="size-[7px] rounded-full bg-[color:var(--accent)]" />
         {r.requested}
       </span>
@@ -358,14 +366,14 @@ export function RowEnd({ ask, friend, card, busy, locked, onAsk, size = "sheet" 
   }
   if (ask.kind === "accepted") {
     return (
-      <span data-testid="friend-spare-status" tabIndex={-1} className={`${STATUS} text-[color:var(--success)]`}>
+      <span data-testid="friend-spare-status" tabIndex={-1} className={`${STATUS} ${STATUS_SIZE[size]} text-[color:var(--success)]`}>
         <i aria-hidden="true" className="text-[12px] not-italic">✓</i>
         {r.accepted}
       </span>
     );
   }
   return (
-    <span data-testid="friend-spare-status" tabIndex={-1} className={`${STATUS} text-[color:var(--fg-muted)]`}>
+    <span data-testid="friend-spare-status" tabIndex={-1} className={`${STATUS} ${STATUS_SIZE[size]} text-[color:var(--fg-muted)]`}>
       <i aria-hidden="true" className="size-[7px] rounded-full bg-[color:var(--fg-faint)]" />
       {r.declined}
     </span>

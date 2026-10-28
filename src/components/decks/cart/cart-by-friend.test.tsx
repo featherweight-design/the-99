@@ -105,6 +105,9 @@ const list = () => within(screen.getByRole("region", { name: copy.list.regionAri
 const panels = () => screen.queryAllByTestId("friend-panel");
 const panel = (name: string) => within(panels().find((p) => p.getAttribute("data-friend") === `p-${name}`)!);
 const lineIn = (name: string, card: string) => panel(name).getAllByRole("listitem").find((li) => li.textContent?.startsWith(card))!;
+/** A row's fact count: `need`, `spare` or `own`. */
+const factCount = (li: HTMLElement, fact: string) => li.querySelector(`[data-fact="${fact}"] b`)?.textContent ?? null;
+const head = (name: string) => panels().find((p) => p.getAttribute("data-friend") === `p-${name}`)!.querySelector("[data-panel-head] button") as HTMLElement;
 
 describe("By friend's segment", () => {
   it("is drawn once a selected line has a friend's spare, with spare requests on", async () => {
@@ -165,26 +168,31 @@ describe("By friend's panels", () => {
     expect(panels().map((p) => p.getAttribute("data-friend"))).toEqual(["p-Colin", "p-Chris", "p-Max", "p-Peter"]);
     expect(screen.getByText(copy.result.byFriend(4, 5))).toBeTruthy();
     expect(screen.getByText("4 friends · 5 spares")).toBeTruthy();
-    expect(panel("Colin").getByTestId("friend-panel-spares").textContent).toBe("2 spares");
+    // The head's figure: the panel's cards, then this friend's spares of them, both inflected (addendum R2).
+    expect(panel("Colin").getByTestId("friend-panel-figure").textContent).toBe("2 cards · 2 spares");
+    expect(panel("Peter").getByTestId("friend-panel-figure").textContent).toBe("1 card · 1 spare");
     expect(panel("Chris").getByText("shares with Thursday pod, Cube night")).toBeTruthy();
     // A panel's lines keep the by-card order (commanders, then most selected decks, then A to Z).
-    expect(panel("Colin").getAllByRole("listitem").map((li) => li.textContent?.split("2 ·")[0].split("1 ·")[0])).toEqual([
+    expect(panel("Colin").getAllByRole("listitem").map((li) => ["Brainstorm", "Jace, Multiverse Architect"].find((n) => li.textContent?.startsWith(n)))).toEqual([
       "Brainstorm", "Jace, Multiverse Architect",
     ]);
     expect(panel("Max").getAllByRole("listitem")).toHaveLength(1);
-    // The shipped line: the count and the decks, then this friend's spares of the card (Hugh, 2026-10-27).
-    expect(within(lineIn("Colin", "Brainstorm")).getByText((_, el) => el?.textContent === "2 · HD - Wizards, Dragons of Tarkir · 1 spare")).toBeTruthy();
+    // v2's row: the need fact (the count and its decks), this friend's spare as a bare count, and no own fact with none owned.
+    const brain = lineIn("Colin", "Brainstorm");
+    expect(factCount(brain, "need")).toBe("2");
+    expect(brain.querySelector('[data-fact="need"] [data-fact-names]')?.textContent).toBe("HD - Wizards, Dragons of Tarkir");
+    expect(factCount(brain, "spare")).toBe("1");
+    expect(brain.querySelector('[data-fact="spare"] [data-fact-names]')?.textContent).toBe("");
+    expect(brain.querySelector('[data-fact="own"]')).toBeNull();
   });
 
   it("names each friend's own spares of the line's card, not the panel's total", async () => {
     served = { spares: [spare(JACE, "Colin", 3), spare(BRAIN, "Colin"), spare(JACE, "Max", 2, ["Cube night"])], asks: [] };
     await mount({ initialView: "friend" });
-    expect(within(lineIn("Colin", "Jace, Multiverse Architect")).getByTestId("cart-line-spare").textContent).toBe("3 spares");
-    // The separator wraps with the count: never a "·" hanging at the end of a phone line.
-    expect(within(lineIn("Colin", "Jace, Multiverse Architect")).getByTestId("cart-line-spare").parentElement?.className).toContain("whitespace-nowrap");
-    expect(within(lineIn("Colin", "Jace, Multiverse Architect")).getByTestId("cart-line-spare").parentElement?.textContent).toBe("· 3 spares");
-    expect(within(lineIn("Colin", "Brainstorm")).getByTestId("cart-line-spare").textContent).toBe("1 spare");
-    expect(within(lineIn("Max", "Jace, Multiverse Architect")).getByTestId("cart-line-spare").textContent).toBe("2 spares");
+    expect(factCount(lineIn("Colin", "Jace, Multiverse Architect"), "spare")).toBe("3");
+    expect(factCount(lineIn("Colin", "Brainstorm"), "spare")).toBe("1");
+    expect(factCount(lineIn("Max", "Jace, Multiverse Architect"), "spare")).toBe("2");
+    expect(panel("Colin").getByTestId("friend-panel-figure").textContent).toBe("2 cards · 4 spares");
   });
 
   it("orders by spares in copies, then by name", () => {
@@ -202,6 +210,116 @@ describe("By friend's panels", () => {
     expect(list().queryByTestId("other-ways")).toBeNull();
     expect(screen.queryByTestId("spare-key")).toBeNull();
     expect(screen.getByText(/press to add/)).toBeTruthy();
+  });
+});
+
+describe("By friend's v2 row and panel (PR 6)", () => {
+  it("draws the own fact where the copies are in use, as By card does", async () => {
+    served = { spares: [spare(GISA, "Peter")], asks: [] };
+    const c = cart();
+    c.lines[2] = { ...c.lines[2], owned: 1, heldElsewhere: 1, heldBy: [{ deckId: "elves", held: 1 }] };
+    c.holders = [{ id: "elves", name: "HD - Elves" }];
+    await mount({ initialView: "friend" }, c);
+    const gisa = lineIn("Peter", "Ghoulcaller");
+    expect(factCount(gisa, "own")).toBe("1");
+    expect(gisa.querySelector('[data-fact="own"] [data-fact-names]')?.textContent).toBe("HD - Elves");
+  });
+
+  it("lays the row out in By friend's grid, under By friend's column header", async () => {
+    served = { spares: BOARD, asks: [] };
+    await mount({ initialView: "friend" });
+    const grid = "xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.7fr)_64px_minmax(0,1.25fr)_100px]";
+    expect(lineIn("Colin", "Brainstorm").className).toContain(grid);
+    // Inside a panel the row keeps 14px across at every width (`.fpn .prw`, `.fpn .nrw`).
+    expect(lineIn("Colin", "Brainstorm").className).toContain("px-[14px]");
+    const columns = document.querySelector('[data-cart-columns="friend"]')!;
+    expect(columns.className).toContain(grid);
+    expect(columns.className).toContain("px-[15px]");
+    expect([...columns.children].map((c) => c.textContent)).toEqual([
+      copy.columns.card, copy.columns.need, copy.columns.spare, copy.columns.own, "",
+    ]);
+    expect(document.querySelector('[data-cart-columns="card"]')).toBeNull();
+  });
+
+  it("stacks the Ask above the tag, at the cart's Ask size, and a status takes the Ask's place", async () => {
+    served = { spares: BOARD, asks: [ask(JACE, "Colin", "open")] };
+    await mount({ initialView: "friend" });
+    const brain = lineIn("Colin", "Brainstorm");
+    const press = within(brain).getByTestId("friend-spare-ask");
+    const slot = press.closest("[data-cart-ask]")!;
+    const tag = within(brain).getByRole("button", { name: gotItCopy.row.tagAria("Brainstorm") });
+    // One column, the Ask's row first and the tag's under it.
+    expect(slot.parentElement).toBe(tag.parentElement!.parentElement);
+    expect(slot.nextElementSibling).toBe(tag.parentElement);
+    expect(slot.parentElement!.className).toContain("flex-col");
+    expect(slot.parentElement!.className).toContain("gap-[10px]");
+    expect(slot.parentElement!.className).toContain("xl:gap-[7px]");
+    expect(slot.className).toContain("h-[36px]");
+    expect(slot.className).toContain("xl:h-[28px]");
+    for (const c of ["h-[36px]", "min-w-[72px]", "rounded-[9px]", "text-[13px]", "xl:h-[28px]", "xl:min-w-[64px]", "xl:rounded-[7px]", "xl:text-[12.5px]"]) {
+      expect(press.className).toContain(c);
+    }
+    // The two coarse hits meet at the gap's midline: the Ask's reaches down to it, the tag's is cut there.
+    expect(press.className).toContain("pointer-coarse:after:-bottom-[5px]");
+    expect(press.className).toContain("xl:pointer-coarse:after:-bottom-[3.5px]");
+    expect(tag.parentElement!.className).toContain("[clip-path:inset(-5px_-100vw_-100vw_-100vw)]");
+    expect(tag.parentElement!.className).toContain("xl:[clip-path:inset(-3.5px_-100vw_-100vw_-100vw)]");
+    const status = within(lineIn("Colin", "Jace")).getByTestId("friend-spare-status");
+    expect(status.closest("[data-cart-ask]")).toBeTruthy();
+    expect(status.className).toContain("xl:text-[12.5px]");
+  });
+
+  it("folds a panel from its header and keeps the fold for the visit, across a view switch", async () => {
+    served = { spares: BOARD, asks: [] };
+    await mount({ initialView: "friend" });
+    expect(head("Colin").getAttribute("aria-expanded")).toBe("true");
+    expect(head("Colin").getAttribute("aria-label")).toBe(copy.byFriend.foldAria("Colin", true));
+    fireEvent.click(head("Colin"));
+    expect(head("Colin").getAttribute("aria-expanded")).toBe("false");
+    expect(head("Colin").getAttribute("aria-label")).toBe(copy.byFriend.foldAria("Colin", false));
+    expect(panel("Colin").queryAllByRole("listitem")).toHaveLength(0);
+    // Folded, the head keeps its figure and drops its rule.
+    expect(panel("Colin").getByTestId("friend-panel-figure").textContent).toBe("2 cards · 2 spares");
+    expect(head("Colin").className).not.toContain("border-b");
+    expect(head("Max").className).toContain("border-b-[color:var(--border-strong)]");
+    expect(panel("Max").getAllByRole("listitem")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byCard }));
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byFriend }));
+    expect(head("Colin").getAttribute("aria-expanded")).toBe("false");
+    expect(panel("Colin").queryAllByRole("listitem")).toHaveLength(0);
+    fireEvent.click(head("Colin"));
+    expect(panel("Colin").getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("sticks the open header to the list box top from md, its panel clipped without becoming a scroller", async () => {
+    served = { spares: BOARD, asks: [] };
+    await mount({ initialView: "friend" });
+    const section = panels()[0];
+    expect(section.className).toContain("overflow-clip");
+    expect(section.className).not.toContain("overflow-hidden");
+    const h = section.querySelector("[data-panel-head]")!;
+    expect(h.className).toContain("md:sticky");
+    expect(h.className).toContain("md:top-0");
+    // The phone's header scrolls with its rows: nothing sticks below md.
+    expect(h.className.split(" ")).not.toContain("sticky");
+    // Stuck, it looks as at rest: its fill and its rule, nothing added.
+    expect(head("Colin").className).toContain("bg-[color:var(--elevated)]");
+    expect(head("Colin").className).not.toMatch(/shadow/);
+  });
+});
+
+describe("the spare key while friends' spares are read", () => {
+  it("names the spare glyph in By card before the read lands", async () => {
+    fetchMock.mockImplementation((url: string) =>
+      url.startsWith("/api/spare-requests") ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) }) : new Promise(() => {}));
+    await mount();
+    expect(screen.getByTestId("spare-key")).toBeTruthy();
+  });
+
+  it("leaves once the read lands with no spare", async () => {
+    served = { spares: [], asks: [] };
+    await mount();
+    expect(screen.queryByTestId("spare-key")).toBeNull();
   });
 });
 

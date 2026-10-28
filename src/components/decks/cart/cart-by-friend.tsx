@@ -6,18 +6,23 @@
 // is the Ask itself: the modal's own state rule (`rowAsk`) and its one way to ask (`SpareRequestsContext`'s `ask`), so
 // the modal and this view always agree. One open ask per card holds here too: a second friend's line reads Ask
 // instead, which moves it.
+//
+// v2 (PR 6): each line is the cart's fact row in By friend's grid, the Ask over the tag; each panel folds from its
+// header, and on desktop that header sticks to the top of the list box while its rows scroll (addendum R2, B3).
 
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { spareCopy } from "../../../lib/copy/social";
-import type { SelectedLine } from "../../../lib/decks/cart";
+import type { OwnFact, SelectedLine } from "../../../lib/decks/cart";
 import type { FriendSpare, SpareFriend } from "../../../lib/social/spares";
 import { frontFaceName } from "../../../lib/cards/faces";
 import { usePageSpares } from "../../social/spare-markers";
 import { RowEnd, SpareRequestsContext, rowAsk, type RequestsCtx } from "../../social/friend-spares";
 import { Face } from "../../social/face";
 import { SocialToast, type SocialToastState } from "../../social/social-toast";
-import { CartHeldSlot, CartLine } from "./cart-line";
+import { Chevron } from "../../ui/chevron";
+import { CartFriendLine, CartHeldSlot } from "./cart-line";
+import { NameFitProvider } from "./cart-facts";
 
 /** One friend's panel: who they are, the spares they hold of the drawn lines, and those lines in the cart's order. */
 /** `spareOf`: this friend's spare copies of each line's card, so the line can say how many before an Ask (Hugh, 2026-10-27). */
@@ -91,6 +96,9 @@ export function ByFriendList({
   requests,
   held = NO_HELD,
   deckNames,
+  ownOf,
+  shut,
+  onFold,
   newestAsOf,
 }: {
   groups: readonly FriendGroup[];
@@ -98,6 +106,11 @@ export function ByFriendList({
   /** Lines bought this visit and gone from the read: drawn as By card draws them, a held slot where the line was. */
   held?: HeldLines;
   deckNames: Map<string, string>;
+  /** The own fact of a line (`ownFact`), as By card reads it. */
+  ownOf: (line: SelectedLine) => OwnFact | null;
+  /** The friends whose panels are folded (by public id): kept by the cart for the visit, so a view switch keeps them. */
+  shut: ReadonlySet<string>;
+  onFold: (publicId: string) => void;
   newestAsOf: Date | null;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
@@ -132,61 +145,94 @@ export function ByFriendList({
     else landOn.current = key;
   }
   return (
-    <div ref={listRef} data-testid="cart-by-friend" className="flex flex-col gap-[14px] pt-[2px]">
+    <NameFitProvider>
+    {/* 12px between panels (`.fpn + .fpn`); on desktop 10 under the column header's rule, which sits above the box. */}
+    <div ref={listRef} data-testid="cart-by-friend" className="flex flex-col gap-[12px] pt-[2px] xl:pt-[10px]">
       {groups.map((g) => (
-        <section
-          key={g.friend.publicId}
-          data-testid="friend-panel"
-          data-friend={g.friend.publicId}
-          aria-label={copy.byFriend.panelAria(g.friend.displayName)}
-          className="overflow-hidden rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--bg)]"
-        >
-          <header className="flex items-center gap-[11px] border-b border-b-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[10px]">
-            <Face name={g.friend.displayName} commander={g.friend.commander} size={30} />
-            <span className="flex min-w-0 flex-1 flex-col gap-[1px]">
-              <b className="truncate text-[15px] font-semibold text-[color:var(--fg)]">{g.friend.displayName}</b>
-              {g.friend.pods.length > 0 ? (
-                <span className="truncate font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.byFriend.via(g.friend.pods)}</span>
-              ) : null}
-            </span>
-            <small data-testid="friend-panel-spares" className="flex-none font-mono text-[11px] text-[color:var(--fg-muted)]">
-              {copy.byFriend.spares(g.spares)}
-            </small>
-          </header>
-          <ul className="m-0 list-none p-0">
-            {g.lines.map((line) => {
-              const added = held.get(line.oracleId);
-              if (added !== undefined) return <CartHeldSlot key={line.oracleId} name={line.name} added={added} />;
-              const key = lineKey(g.friend.publicId, line.oracleId);
-              const ask = rowAsk(requests.asksFor(line.oracleId), g.friend.publicId);
-              return (
-                  <CartLine
-                    key={line.oracleId}
-                    data={{ "data-friend-line": key, "data-ask": ask.kind }}
-                    line={line}
-                    deckNames={deckNames}
-                    newestAsOf={newestAsOf}
-                    inPanel
-                    spare={g.spareOf.get(line.oracleId)}
-                    end={
-                      <RowEnd
-                        size="line"
-                        ask={ask}
-                        friend={g.friend.displayName}
-                        card={frontFaceName(line.name, line.layout)}
-                        busy={busy === key}
-                        locked={busy !== null}
-                        onAsk={() => void press(g.friend, line, ask.kind === "askInstead" ? ask.fromRequestId : undefined)}
-                      />
-                    }
+        <FriendPanel key={g.friend.publicId} group={g} open={!shut.has(g.friend.publicId)} onFold={() => onFold(g.friend.publicId)}>
+          {g.lines.map((line) => {
+            const added = held.get(line.oracleId);
+            if (added !== undefined) return <CartHeldSlot key={line.oracleId} name={line.name} added={added} />;
+            const key = lineKey(g.friend.publicId, line.oracleId);
+            const ask = rowAsk(requests.asksFor(line.oracleId), g.friend.publicId);
+            return (
+              <CartFriendLine
+                key={line.oracleId}
+                data={{ "data-friend-line": key, "data-ask": ask.kind }}
+                line={line}
+                deckNames={deckNames}
+                own={ownOf(line)}
+                spare={g.spareOf.get(line.oracleId) ?? 0}
+                newestAsOf={newestAsOf}
+                ask={
+                  <RowEnd
+                    size="cart"
+                    ask={ask}
+                    friend={g.friend.displayName}
+                    card={frontFaceName(line.name, line.layout)}
+                    busy={busy === key}
+                    locked={busy !== null}
+                    onAsk={() => void press(g.friend, line, ask.kind === "askInstead" ? ask.fromRequestId : undefined)}
                   />
-              );
-            })}
-          </ul>
-        </section>
+                }
+              />
+            );
+          })}
+        </FriendPanel>
       ))}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </div>
+    </NameFitProvider>
   );
 }
 
+/**
+ * One friend's panel (`.fpn`): its header is the fold press (call 7, the By deck group's shape), and open, its rows.
+ *
+ * Desktop (from `md`, where the list scrolls in its own box): the header is `position: sticky; top: 0` in that box, and
+ * stuck it looks exactly as at rest, its `--elevated` fill and its own `--border-strong` rule, nothing added (addendum R2,
+ * B3). The panel is its containing block, so the next panel's header pushes it out. The panel clips its corners with
+ * `overflow: clip`, never `hidden`, which would make it a scroll container and stop the header sticking. Phone: the page
+ * scrolls under the pinned controls, and the header scrolls with its rows.
+ */
+function FriendPanel({ group: g, open, onFold, children }: { group: FriendGroup; open: boolean; onFold: () => void; children: React.ReactNode }) {
+  const bodyId = useId();
+  const figureId = useId();
+  return (
+    <section
+      data-testid="friend-panel"
+      data-friend={g.friend.publicId}
+      aria-label={copy.byFriend.panelAria(g.friend.displayName)}
+      className="overflow-clip rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--bg)]"
+    >
+      <h3 data-panel-head className="m-0 md:sticky md:top-0 md:z-[1]">
+        <button
+          type="button"
+          onClick={onFold}
+          aria-expanded={open}
+          aria-controls={open ? bodyId : undefined}
+          aria-label={copy.byFriend.foldAria(g.friend.displayName, open)}
+          aria-describedby={figureId}
+          className={`flex min-h-[52px] w-full cursor-pointer items-center gap-[11px] bg-[color:var(--elevated)] py-[9px] pl-[14px] pr-[8px] text-left font-[inherit] ${
+            open ? "border-b border-b-[color:var(--border-strong)]" : ""
+          }`}
+        >
+          <Face name={g.friend.displayName} commander={g.friend.commander} size={30} />
+          <span className="flex min-w-0 flex-1 flex-col gap-[1px]">
+            <b className="truncate text-[15px] font-semibold text-[color:var(--fg)]">{g.friend.displayName}</b>
+            {g.friend.pods.length > 0 ? (
+              <span className="truncate font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.byFriend.via(g.friend.pods)}</span>
+            ) : null}
+          </span>
+          <small id={figureId} data-testid="friend-panel-figure" className="flex-none whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-muted)]">
+            {copy.byFriend.figure(g.lines.length, g.spares)}
+          </small>
+          <span aria-hidden className="flex size-[36px] flex-none items-center justify-center text-[color:var(--fg-muted)]">
+            <Chevron kind="disclosure" open={open} />
+          </span>
+        </button>
+      </h3>
+      {open ? <ul id={bodyId} className="m-0 list-none p-0">{children}</ul> : null}
+    </section>
+  );
+}

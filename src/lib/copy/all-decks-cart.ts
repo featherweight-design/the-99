@@ -8,6 +8,8 @@
 const n = (x: number) => x.toLocaleString("en-US");
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 const decks = (x: number) => (x === 1 ? "1 deck" : `${n(x)} decks`);
+const cards = (x: number) => (x === 1 ? "1 card" : `${n(x)} cards`);
+const spares = (x: number) => (x === 1 ? "1 spare" : `${n(x)} spares`);
 /** `Gishath, Kratos and Thorin`: receipt prose only, since a line names its decks with commas. */
 const and = (names: string[]) =>
   names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
@@ -62,7 +64,6 @@ export const allDecksCartCopy = {
   list: {
     /** The list scroller's name on a phone, where it is a focusable box of its own. */
     regionAria: "Cards in this cart",
-    decks: (qty: number, names: string[]) => `${n(qty)} · ${names.join(", ")}`,
     commander: "commander",
     /** Every owned copy is held by decks not on this line. */
     owned: (owned: number) => `you own ${n(owned)} · all ${n(owned)} in other decks`,
@@ -81,6 +82,8 @@ export const allDecksCartCopy = {
     /** By deck's need column (PR 5): this deck's count, then the other decks that need the card. */
     needByDeck: "This deck · also",
     spares: "Friends’ spares",
+    /** By friend's spare column (PR 6): this friend's spare copies of the card, a count alone. */
+    spare: "Spare",
     own: "You own · in use in",
   },
 
@@ -165,8 +168,10 @@ export const allDecksCartCopy = {
   byFriend: {
     /** The panel head's pods line, comma-joined as the board draws it. */
     via: (pods: readonly string[]) => `shares with ${pods.join(", ")}`,
-    /** The panel head's figure: the spares this friend holds of the selected lines. */
-    spares: (x: number) => (x === 1 ? "1 spare" : `${n(x)} spares`),
+    /** The panel head's figure (PR 6): its cards, then the spares this friend holds of them, inflected (addendum R2). */
+    figure: (cardsN: number, sparesN: number) => `${cards(cardsN)} · ${spares(sparesN)}`,
+    /** The panel head is its fold press (call 7). */
+    foldAria: (friend: string, open: boolean) => (open ? `Fold ${friend}’s spares` : `Open ${friend}’s spares`),
     /** The panel's name, for a screen reader moving by region. */
     panelAria: (friend: string) => `Spares from ${friend}`,
   },

@@ -1,7 +1,7 @@
 {
   "feature": "Shopping for all decks v2 (handoff design_handoff_the99_all_decks_cart_v2; plan 2026-10-28-all-decks-cart-v2.md)",
   "clearAbout": true,
-  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. Later PRs add By friend's panels, the Friend and Owned filters and the reading, empty and failed states. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. PR 6 rows: By friend's panels (By friend's column header with `Spare` on desktop, the head's `N cards \u00b7 N spares`, the row's need, spare and own facts, the Ask or its status above the tag, a folded panel, and on desktop the open header stuck to the list box top while its rows scroll); they need a friend with a spare of a selected line, and the status row a request already sent. The single-spare panel (`1 card \u00b7 1 spare`) and the spare key while the read is out are proved in `cart-by-friend.test.tsx`, since neither holds still on a live account. Later PRs add the Friend and Owned filters and the reading, empty and failed states. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
   "rows": [
     {
       "id": "chassis-rest-card",
@@ -271,6 +271,79 @@
         },
         {
           "wait": "[data-cart-row] [data-fact=need]:has([data-fact-names]:empty)"
+        }
+      ]
+    },
+    {
+      "id": "friend-rest",
+      "label": "/decks/shopping?view=friend, By friend at rest: the column header with `Spare` (desktop), each panel's head (face, name, pods, `N cards \u00b7 N spares`, chevron), and rows of need, spare and own facts with the Ask above the tag",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=friend",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "wait": "[data-testid=friend-panel]"
+        }
+      ]
+    },
+    {
+      "id": "friend-stuck",
+      "label": "/decks/shopping?view=friend, scrolled into the first panel's rows: on desktop its header stuck at the list box top, square, as at rest; on a phone it scrolls away under the pinned controls",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=friend",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "wait": "[data-testid=friend-panel]"
+        },
+        {
+          "scrollTo": "[data-testid=friend-panel] li[data-cart-row]:nth-of-type(6)"
+        }
+      ]
+    },
+    {
+      "id": "friend-folded",
+      "label": "/decks/shopping?view=friend, the first panel folded from its head: the figure kept, no rule under the head, the chevron turned back, the next panel up",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=friend",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "wait": "[data-testid=friend-panel]"
+        },
+        {
+          "click": "[data-panel-head] button",
+          "settle": 400
+        },
+        {
+          "wait": "[data-panel-head] button[aria-expanded=false]"
+        }
+      ]
+    },
+    {
+      "id": "friend-status",
+      "label": "/decks/shopping?view=friend, a row whose ask is out: Requested (or Accepted, Declined) in the Ask's place above the tag, the tag where it was",
+      "view": "src/components/decks/cart/cart-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=friend",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "wait": "[data-testid=friend-panel]"
+        },
+        {
+          "wait": "[data-friend-line] [data-testid=friend-spare-status]"
         }
       ]
     }

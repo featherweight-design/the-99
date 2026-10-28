@@ -16,7 +16,7 @@ Handoff: `design/design_handoff_the99_all_decks_cart_v2/` (R1b, approved 2026-10
 | +N / less | 19px pill, radius 5, 1px `--border-strong`, mono 10.5 weight 500; coarse pointer 44px hit (`TOUCH_HIT`) |
 | Opened list | grid name / count, 3px row gap, padding 8px 10px, radius 8, `--surface-sunken`, counts `--fg-muted`, right-aligned |
 | Spare press (By card, By deck) | the shipped glyph press at 30×26, radius 6, then the count and names |
-| Action stack | column, right-aligned, gap 7: Ask 28px (shipped `.line` size) or `RowEnd` status, then `BuyTag` row |
+| Action stack | column, right-aligned, gap 7: Ask 28px (`RowEnd`'s `cart` size, min width 64) or its status, then `BuyTag` row |
 
 ## Row (phone)
 
