@@ -44,7 +44,10 @@ next-env.d.ts
 
 # agent worktrees + local claude state
 /.worktrees/
-/.claude/
+/.claude/*
+# the fwd plugin's per-project rules are shared
+!/.claude/fwd/
+!/.claude/fwd.json
 
 # clerk configuration (can include secrets)
 /.clerk/
