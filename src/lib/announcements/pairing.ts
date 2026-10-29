@@ -9,7 +9,7 @@
  * - Choose a Background + a Background;
  * - Doctor's companion + a Time Lord Doctor.
  *
- * Otherwise a second line that could itself be a commander (a legendary creature, or a card that
+ * Otherwise a second line that could itself be a commander (a legendary creature, Vehicle or Spacecraft, or a card that
  * says it can be your commander) is the alternate commander (Star Trek's Captain Janeway), and any
  * other second line (Foundations' `Always Watching`) is just a card.
  */
@@ -24,7 +24,8 @@ const lineStarts = (c: CommanderFacts, pattern: RegExp) => text(c).split("\n").s
 
 export function isCommanderEligible(c: CommanderFacts): boolean {
   const type = front(c.typeLine);
-  return (/\blegendary\b/i.test(type) && /\bcreature\b/i.test(type)) || /can be your commander/i.test(text(c));
+  // A legendary Vehicle or Spacecraft may lead a deck (rule 903.3a as amended; `isCommanderCandidate` in recs/score.ts).
+  return (/\blegendary\b/i.test(type) && /\b(?:creature|vehicle|spacecraft)\b/i.test(type)) || /can be your commander/i.test(text(c));
 }
 
 /** `Partner—Survivors` → `survivors`; plain `Partner` → `""`; no partner ability → null. Not `Partner with`. */

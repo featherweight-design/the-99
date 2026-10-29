@@ -49,6 +49,10 @@ describe("isCommanderEligible", () => {
   it.each<[CommanderFacts, boolean]>([
     [janeway, true],
     [card("Inspirit, Flagship Vessel", "Legendary Artifact — Spacecraft", "Inspirit can be your commander."), true],
+    // A legendary Vehicle or Spacecraft leads with no "can be your commander" text (rule 903.3a as amended).
+    [card("Hearthhull, the Worldseed", "Legendary Artifact — Spacecraft"), true],
+    [card("Weatherlight", "Legendary Artifact — Vehicle"), true],
+    [card("Smuggler's Copter", "Artifact — Vehicle"), false],
     [card("Grist, the Hunger Tide", "Legendary Planeswalker — Grist", "Grist, the Hunger Tide can be your commander."), true],
     [card("Llanowar Elves", "Creature — Elf Druid"), false],
     [card("Raised by Giants", "Legendary Enchantment — Background"), false],

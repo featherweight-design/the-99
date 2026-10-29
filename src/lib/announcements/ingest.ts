@@ -308,7 +308,11 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
 
   for (const entry of due) {
     if (now().getTime() - started.getTime() >= budgetMs) break;
-    if (fetched > 0) await sleep(delayMs);
+    if (fetched > 0) {
+      await sleep(delayMs);
+      // The budget bounds when a fetch STARTS, so the politeness delay can spend the rest of it.
+      if (now().getTime() - started.getTime() >= budgetMs) break;
+    }
     fetched++;
     const page = await deps.fetchText(entry.url, { headers }).catch(() => null);
     if (page?.status !== 200) {

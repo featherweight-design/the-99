@@ -86,7 +86,7 @@ const pages = (lastmods: [string, string][] = LASTMODS) => ({
   ...Object.fromEntries(SLUGS.map((s) => [postUrl(s), { status: 200, text: fixture(`${s}.html`) }])),
 });
 
-async function run(opts: { store: IngestStore; site: ReturnType<typeof web>; now?: string; budgetMs?: number; tick?: number }) {
+async function run(opts: { store: IngestStore; site: ReturnType<typeof web>; now?: string; budgetMs?: number; tick?: number; sleepAdvances?: boolean }) {
   const alerts: IngestAlert[] = [];
   const sleeps: number[] = [];
   let t = Date.parse(opts.now ?? "2026-10-29T12:00:00.000Z");
@@ -95,7 +95,10 @@ async function run(opts: { store: IngestStore; site: ReturnType<typeof web>; now
     store: opts.store,
     alert: (a) => alerts.push(a),
     now: () => new Date((t += opts.tick ?? 0)),
-    sleep: async (ms) => void sleeps.push(ms),
+    sleep: async (ms) => {
+      sleeps.push(ms);
+      if (opts.sleepAdvances) t += ms;
+    },
     delayMs: 1500,
     budgetMs: opts.budgetMs,
   });
@@ -208,6 +211,14 @@ describe("runAnnouncementsIngest", () => {
     const { report } = await run({ store: mem.store, site: web(pages()), budgetMs: 100_000, tick: 30_000 });
     expect(report.deferred).toBeGreaterThan(0);
     expect(report.saved + report.deferred).toBe(3);
+  });
+
+  it("re-checks the budget after the politeness delay, so a delay that spends it starts no fetch", async () => {
+    const mem = memoryStore();
+    // Fetch 1 at 0 ms; delay to 1,500 (inside 2,000), fetch 2; delay to 3,000 (spent), no fetch 3.
+    const { report } = await run({ store: mem.store, site: web(pages()), budgetMs: 2_000, sleepAdvances: true });
+    expect(report.saved).toBe(2);
+    expect(report.deferred).toBe(1);
   });
 
   it("alerts on a Commander decklists post still short of its promise three days after it was published", async () => {
