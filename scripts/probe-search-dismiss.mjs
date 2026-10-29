@@ -207,6 +207,8 @@ try {
       (await setField.inputValue()) === setQuery && (await surface.isVisible()), JSON.stringify({ picked: firstLabel }));
     // Put the pick back, so the probe leaves the filter as it found it.
     await surface.locator(pickRole).first().click();
+    // The pick keeps the search, so the first Escape clears it and the second closes the surface.
+    await setField.press("Escape");
     await setField.press("Escape");
     await page.waitForTimeout(300);
     report(`${vp.label} Set filter: with nothing typed, Escape closes the surface`, !(await surface.isVisible()));
