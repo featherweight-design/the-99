@@ -80,7 +80,9 @@ export function useToolLanding(
       if (deferred) waiting.current = null;
       if (live.pathname !== path || (deferred ? now !== null : now !== asked)) return;
       if (el !== null) {
-        targets.scrollToTarget(target);
+        // No beat (Hugh's ruling 2026-10-29): the landing follows a page load, not a press, so nothing of the reader's
+        // is still laying out, and the target has just drawn.
+        targets.scrollToTarget(target, { beat: false });
         const spend = () => {
           if (moment !== null) suppress(moment);
         };

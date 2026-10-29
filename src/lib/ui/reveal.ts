@@ -185,11 +185,17 @@ function isTyping(e: KeyboardEvent): boolean {
   return e.key.length === 1 || e.key === "Backspace" || e.key === "Delete";
 }
 
+/** How a reveal starts. `beat: false` skips the motion beat (`MOTION.delayMs`) and eases from the next frame: for a
+ *  scroll no press of the reader's precedes, so there is nothing of theirs to let lay out first (a Try it landing,
+ *  Hugh's ruling 2026-10-29). Every other reveal keeps the beat. Reduced motion jumps either way. */
+export type RevealOptions = { beat?: boolean };
+
 export function reveal(
   el: Element | null | undefined,
   block: RevealBlock = "start",
   inline?: RevealInline,
   view?: RevealView,
+  { beat = true }: RevealOptions = {},
 ): () => void {
   if (!el || typeof window === "undefined") return () => {};
   // A hidden instance (the card modal draws its meta twice, one hidden by CSS) has no box to bring.
@@ -226,8 +232,9 @@ export function reveal(
   for (const type of CANCEL_EVENTS) window.addEventListener(type, onInput, { capture: true, passive: true });
   active = stop;
 
-  // Measured after the beat, not before it: whatever the reader's press drew has laid out by then.
-  timer = setTimeout(() => {
+  // Measured after the beat, not before it: whatever the reader's press drew has laid out by then. With no beat, it
+  // is measured now, and the first write lands on the next frame.
+  const run = () => {
     timer = null;
     const tracks = plan();
     if (tracks.length === 0) return stop();
@@ -241,6 +248,8 @@ export function reveal(
       frame = requestAnimationFrame(step);
     };
     frame = requestAnimationFrame(step);
-  }, MOTION.delayMs);
+  };
+  if (beat) timer = setTimeout(run, MOTION.delayMs);
+  else run();
   return stop;
 }

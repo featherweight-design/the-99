@@ -204,6 +204,21 @@ describe("TargetsProvider", () => {
     expect(api!.targetRect("mana-balance")).not.toBeNull();
   });
 
+  it("keeps the motion beat by default, and hands a caller's no-beat on to reveal", () => {
+    render(
+      <TargetsProvider>
+        <Grab />
+        <Control id="mana-balance" name="Mana" />
+      </TargetsProvider>,
+    );
+    const el = screen.getByRole("button", { name: "Mana" });
+    vi.mocked(reveal).mockClear();
+    api!.scrollToTarget("mana-balance");
+    expect(vi.mocked(reveal).mock.calls.at(-1)).toEqual([el, "center"]);
+    api!.scrollToTarget("mana-balance", { beat: false });
+    expect(vi.mocked(reveal).mock.calls.at(-1)).toEqual([el, "center", undefined, undefined, { beat: false }]);
+  });
+
   it("waits for a target that registers later, and gives up after the wait or an abort", async () => {
     function Late() {
       const [on, setOn] = useState(false);

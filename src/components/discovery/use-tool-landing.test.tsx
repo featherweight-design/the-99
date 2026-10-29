@@ -89,7 +89,7 @@ describe("useToolLanding", () => {
     const el = screen.getByRole("button", { name: "Choose the last" });
     expect(el.hasAttribute(HALO_ATTR)).toBe(true);
     expect(scrolled).toHaveBeenCalledTimes(1);
-    expect(scrolled).toHaveBeenCalledWith(el, "center");
+    expect(scrolled).toHaveBeenCalledWith(el, "center", undefined, undefined, { beat: false });
     expect(screen.queryByRole("note")).toBeNull();
     expect(spendMomentAction).toHaveBeenCalledWith("top-off");
     expect(window.location.search).toBe("?tab=deck");
@@ -327,7 +327,7 @@ describe("useToolLanding", () => {
     await flush();
     const el = screen.getByRole("button", { name: "Cuts" });
     expect(scrolled).toHaveBeenCalledTimes(1);
-    expect(scrolled).toHaveBeenCalledWith(el, "center");
+    expect(scrolled).toHaveBeenCalledWith(el, "center", undefined, undefined, { beat: false });
     expect(el.hasAttribute(HALO_ATTR)).toBe(true);
     expect(window.location.search).toBe("");
   });

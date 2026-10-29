@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { TargetId } from "../../lib/discovery/targets";
 import { isDrawn } from "../../lib/ui/drawn";
-import { reveal } from "../../lib/ui/reveal";
+import { reveal, type RevealOptions } from "../../lib/ui/reveal";
 
 /**
  * The one registry of halo targets (discovery R2/R3, plan `2026-10-16-discovery-r2-r3.md`, decision 2). Mounted once by
@@ -25,8 +25,9 @@ export const HALO_ATTR = "data-target-halo";
 export type Targets = {
   targetRect: (id: TargetId) => DOMRect | null;
   /** Brings the target to the middle of the view through the app's own `reveal` (eased, marked as the app's scroll,
-   *  instant under reduced motion). False when it is not drawn. */
-  scrollToTarget: (id: TargetId) => boolean;
+   *  instant under reduced motion). False when it is not drawn. `{ beat: false }` skips the motion beat: the Try it
+   *  landing's alone (Hugh's ruling 2026-10-29), since no press of the reader's precedes it. */
+  scrollToTarget: (id: TargetId, options?: RevealOptions) => boolean;
   /** Haloes the target for `ms`. False when it is not drawn. */
   haloTarget: (id: TargetId, ms?: number) => boolean;
   /** The target's element once it registers, or null when `timeoutMs` passes first (never, for `Infinity`) or `signal`
@@ -157,10 +158,11 @@ export function TargetsProvider({ children, navLocked = null }: { children: Reac
   const targetRect = useCallback((id: TargetId) => resolve(id)?.getBoundingClientRect() ?? null, [resolve]);
 
   const scrollToTarget = useCallback(
-    (id: TargetId) => {
+    (id: TargetId, options?: RevealOptions) => {
       const el = resolve(id);
       if (el === null) return false;
-      reveal(el, "center");
+      if (options) reveal(el, "center", undefined, undefined, options);
+      else reveal(el, "center");
       return true;
     },
     [resolve],
