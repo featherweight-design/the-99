@@ -98,7 +98,8 @@ async function run() {
       const scrollPaddingTop = await page.evaluate(() => document.documentElement.style.scrollPaddingTop);
       fail(
         `${width}px · scroll-padding-top matches the head height`,
-        scrollPaddingTop === `${oneRow ? 66 : 116}px`,
+        // The page adds the shell header's offset: `calc(116px + var(--header-offset, 0px))`.
+        scrollPaddingTop === `${oneRow ? 66 : 116}px` || scrollPaddingTop.startsWith(`calc(${oneRow ? 66 : 116}px`),
         `${scrollPaddingTop} against ${oneRow ? 66 : 116}px`,
       );
 
