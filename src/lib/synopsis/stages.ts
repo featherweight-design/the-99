@@ -64,7 +64,16 @@ export const stagesResponseSchemaWire = synopsisResponseSchemaV8Wire.extend({ al
 /** Iteration 3's reply: iteration 2's plus the REQUIRED land line. Iteration 2's schema is left as it was. */
 export const stagesResponseSchemaWireV3 = stagesResponseSchemaWire.extend({ landKeep: claimed });
 export type StagesReply = z.infer<typeof stagesResponseSchemaWire> & { landKeep?: z.infer<typeof claimed> };
-export const stagesSchemaFor = (shape: StagesShape) => (shape === 3 ? stagesResponseSchemaWireV3 : stagesResponseSchemaWire);
+/**
+ * Iteration 3's reply for a precon whose box carries an alternate commander: the alternate line is
+ * REQUIRED in the schema, not only asked for in the prompt. The reply is constrained server-side to
+ * the schema (`callModel`, `output_config.format`), so the model cannot leave it out; the prompt
+ * alone did not hold (CounterIntelligence_EOC, iteration 3, 2026-10-29).
+ */
+export const stagesResponseSchemaWireV3Alternate = stagesResponseSchemaWireV3.extend({ alternate: claimed });
+/** The schema a deck's reply is asked for in: iteration 3 requires the alternate line when the box carries one. Iteration 2's is unchanged. */
+export const stagesSchemaFor = (shape: StagesShape, alternates: readonly string[] = []) =>
+  (shape === 3 ? (alternates.length > 0 ? stagesResponseSchemaWireV3Alternate : stagesResponseSchemaWireV3) : stagesResponseSchemaWire);
 
 /**
  * The alternate commanders a precon's box carries: the MTGJSON deck file's main-board cards that are
@@ -292,6 +301,91 @@ export function checkExplainedOnce(doc: OverviewDoc, facts: Pick<SynopsisFacts, 
   // commander repeat that involves the Key cards is not exempt there.
   const exempt = (o: { sections: RepetitionSection[]; commander: boolean }) => o.commander && !(opts.keyCardNames && o.sections.includes("keyCardJobs"));
   return { pass: offenders.length === 0, passExceptCommanders: offenders.every(exempt), offenders };
+}
+
+/**
+ * THE EXPLAINED-ONCE POST-PASS (iteration 3, after the i3 run: ScrappySurvivors_PIP named Mantle of
+ * the Ancients as a Key card and in a tip; CounterIntelligence_EOC named Hangarback Walker in a stage
+ * and a tip, and Kappa Cannoneer in a stage and as a Key card). Deterministic, no model call.
+ *
+ * The sections are read in order, stages, then Key cards, then tips, and the EARLIER one keeps a
+ * non-commander card (the commander is never touched):
+ *  - a Key card whose own card a stage already explained is DROPPED (the row is about that card and
+ *    has nothing left); a job that marks such a card keeps its words and loses the mark;
+ *  - a tip that marks such a card keeps its words and loses that card's MARK (and its evidence ref),
+ *    so the tip's subject is the cards it still marks. A tip is never deleted: tips are exactly 2;
+ *  - a tip with NO marked card left once the earlier-explained ones are taken out has lost its only
+ *    subject: it is left exactly as written and REPORTED (`tipsWithoutSubject`), so
+ *    `checkNoCardTwice` still fails it and the reply needs a repair, never a silent fix.
+ * A mark is what makes a card a line's subject (`checkExplainedOnce` and `checkNoCardTwice` count
+ * marks); a name left as plain text is a reference to a card explained elsewhere.
+ */
+export type DedupeReport = {
+  droppedKeyCards: { card: string; explainedIn: "stages" }[];
+  unmarked: { where: string; card: string; explainedIn: "stages" | "keyCards" }[];
+  tipsWithoutSubject: { tip: number; text: string; cards: string[] }[];
+};
+export function dedupeSections(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders">): { doc: OverviewDoc; report: DedupeReport } {
+  const deck = deckOf(facts);
+  const report: DedupeReport = { droppedKeyCards: [], unmarked: [], tipsWithoutSubject: [] };
+  const explained = new Map<string, "stages" | "keyCards">();
+  const idOf = (name: string) => {
+    const c = deck.names.get(normalizeName(name));
+    return c && !deck.commanders.has(c.oracleId) ? c.oracleId : null;
+  };
+  const note = (text: string, section: "stages" | "keyCards") => {
+    for (const m of marksIn(text)) { const id = idOf(m); if (id && !explained.has(id)) explained.set(id, section); }
+  };
+  /** The line with every mark of an already-explained card written as plain text, and those cards' refs dropped. */
+  const unmark = (line: Line, where: string): { line: Line; removed: string[]; left: string[] } => {
+    const removed: string[] = [];
+    const left: string[] = [];
+    const text = line.text.replace(/\[\[([^\[\]]+)\]\]/g, (whole, name: string) => {
+      const id = idOf(name);
+      const from = id ? explained.get(id) : undefined;
+      if (!from) { left.push(name); return whole; }
+      removed.push(name);
+      report.unmarked.push({ where, card: deck.byId.get(id!)!.name, explainedIn: from });
+      return name;
+    });
+    const gone = new Set(removed.flatMap((n) => { const id = idOf(n); return id ? [id] : []; }));
+    const refs = line.refs?.filter((r) => { const c = refCard(deck, r); return !c || !gone.has(c.oracleId); });
+    return { line: { ...line, text, ...(line.refs ? { refs } : {}) }, removed, left };
+  };
+
+  for (const l of [...doc.stages, ...doc.strategy]) note(l.text, "stages");
+  const keyCards: OverviewDoc["keyCards"] = [];
+  doc.keyCards.forEach((k) => {
+    const id = idOf(k.card);
+    if (id && explained.get(id) === "stages") { report.droppedKeyCards.push({ card: deck.byId.get(id)!.name, explainedIn: "stages" }); return; }
+    const job = unmark(k.job, `keyCards[${keyCards.length}] (${k.card})`).line;
+    keyCards.push({ card: k.card, job });
+  });
+  for (const k of keyCards) { const id = idOf(k.card); if (id && !explained.has(id)) explained.set(id, "keyCards"); note(k.job.text, "keyCards"); }
+  const tips = doc.tips.map((t, i) => {
+    const marked = marksIn(t.text);
+    const subjects = marked.filter((m) => { const id = idOf(m); return !id || !explained.has(id); });
+    if (marked.length > 0 && subjects.length === 0) {
+      report.tipsWithoutSubject.push({ tip: i, text: t.text, cards: marked });
+      return t;
+    }
+    return unmark(t, `tips[${i}]`).line;
+  });
+  return { doc: { ...doc, keyCards, tips }, report };
+}
+
+/**
+ * NO NON-COMMANDER CARD IN TWO SECTIONS (iteration 3): a deck card other than a commander that is
+ * marked in, or is the Key card of, more than one of the overview, the stages, the alternate line,
+ * the Key cards (name and job) and the tips is an offender. The commander's own repeats are
+ * `checkExplainedOnce`'s to report. Run after `dedupeSections`, it fails exactly what the pass could
+ * not fix (a tip that lost its only subject, or a card the overview and a later section share).
+ */
+export function checkNoCardTwice(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders">): CheckResult<{ card: string; sections: RepetitionSection[] }> {
+  const offenders = checkExplainedOnce(doc, facts, { keyCardNames: true }).offenders
+    .filter((o) => !o.commander)
+    .map(({ card, sections }) => ({ card, sections }));
+  return { pass: offenders.length === 0, offenders };
 }
 
 /**
@@ -694,12 +788,19 @@ export type StagesChecks = {
   mulliganSpecificToday?: ReturnType<typeof checkMulliganSpecific>;
   /** Iteration 3 only. */
   deckKind?: ReturnType<typeof checkDeckKind>;
+  /** Iteration 3 only: no non-commander card in two sections, read after the post-pass when it ran. */
+  noCardTwice?: ReturnType<typeof checkNoCardTwice>;
+  /** Iteration 3 with `postPass`: what `dedupeSections` changed or reported on the reply the checks read. */
+  dedupe?: DedupeReport;
 };
 
 /** Every auto-pass check on one deck's new reply, against its old shown content. */
-export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc; oldDoc: OverviewDoc; facts: SynopsisFacts; alternates: readonly string[]; shape?: StagesShape; kind?: "precon" | "player deck" }): StagesChecks {
+export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc; oldDoc: OverviewDoc; facts: SynopsisFacts; alternates: readonly string[]; shape?: StagesShape; kind?: "precon" | "player deck"; postPass?: boolean }): StagesChecks {
   const shape = input.shape ?? 2;
-  const doc = docFromStagesReply(input.reply, shape);
+  const raw = docFromStagesReply(input.reply, shape);
+  // Iteration 3's explained-once post-pass, when the caller ran it on what it shows (`dedupeSections`).
+  const passed = shape === 3 && input.postPass ? dedupeSections(raw, input.facts) : null;
+  const doc = passed?.doc ?? raw;
   const castTurn = input.facts.stats?.commanderCastTurn ?? null;
   const base: StagesChecks = {
     cardsInList: checkCardsInList(doc, input.facts),
@@ -718,6 +819,8 @@ export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc;
     mulliganSpecific: checkMulliganSpecific(doc, input.facts, land),
     mulliganSpecificToday: checkMulliganSpecific(input.oldDoc, input.facts, land),
     deckKind: checkDeckKind(input.shownNew, input.kind ?? "precon"),
+    noCardTwice: checkNoCardTwice(doc, input.facts),
+    ...(passed ? { dedupe: passed.report } : {}),
   };
 }
 
@@ -725,7 +828,7 @@ export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc;
 export function allChecksPass(c: StagesChecks, exceptCommanders: boolean): boolean {
   return c.cardsInList.pass && c.turnNumbers.pass && (exceptCommanders ? c.explainedOnce.passExceptCommanders : c.explainedOnce.pass)
     && c.stageFit.pass && c.stagesNameCards.pass && c.length.pass && c.shape.pass
-    && (c.landKeep?.pass ?? true) && (c.mulliganSpecific?.pass ?? true) && (c.deckKind?.pass ?? true);
+    && (c.landKeep?.pass ?? true) && (c.mulliganSpecific?.pass ?? true) && (c.deckKind?.pass ?? true) && (c.noCardTwice?.pass ?? true);
 }
 
 /**

@@ -9,6 +9,9 @@ import {
   alternateCommanders,
   checkCardsInList,
   checkExplainedOnce,
+  checkNoCardTwice,
+  dedupeSections,
+  stagesSchemaFor,
   checkLength,
   checkShape,
   checkStageFit,
@@ -649,9 +652,10 @@ describe("iteration 3: the prompt", () => {
     expect(system).toContain("- landKeep: ONE { text, evidence }, at most 120 characters");
     expect(system).toContain("holds 4 lands (write the number as the digit 4, never a range)");
     expect(system).toContain("EVERY line names a card of this decklist as [[Name]]");
-    expect(system).toContain("A Key card is NEVER a card that the overview, a stage line, a tip or the alternate line names");
+    expect(system).toContain("A Key card is NEVER a card that the overview, a stage line or the alternate line names");
     expect(system).toContain("EXACTLY 2 tips");
-    expect(system).toContain("A tip names NO card that a stage line or the alternate line names");
+    expect(system).toContain("A tip names NO card that a stage line, a Key card (the card or its job) or the alternate line names");
+    expect(system).toContain("the stage lines first, then the Key cards from the cards the stages leave out, then the tips");
     expect(system).toContain("named in ONE place only: the Close line, never also");
     expect(system).toContain("- alternate: leave it out.");
     expect(user).toContain("Keep-line land number");
@@ -664,5 +668,119 @@ describe("iteration 3: the prompt", () => {
   });
   it("refuses iteration 3 without the land number", () => {
     expect(() => buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [], shape: 3 } })).toThrow(/needs landKeep/);
+  });
+});
+
+describe("iteration 3: the explained-once post-pass and the no-card-twice check", () => {
+  // Mirrors CounterIntelligence_EOC (i3): Satyr Wayfinder stands for Hangarback Walker (a stage, then a
+  // tip), Grave Titan for Kappa Cannoneer (a stage, then a Key card).
+  const counterIntelligence = (): StagesReply => {
+    const r = goodReply();
+    r.landKeep = { text: "Keep 3 lands: the curve is low.", evidence: [] };
+    r.primer.strategy = [
+      { text: "Around turn 4, [[Meren of Clan Nel Toth]] lands while [[Satyr Wayfinder]] fills the yard.", evidence: ["c1", "c2"] },
+      { text: "[[Viscera Seer]] turns each death into experience.", evidence: ["c3"] },
+      { text: "[[Grave Titan]] closes while its tokens feed the engine.", evidence: ["c4"] },
+    ];
+    r.keyCards = [
+      { card: "Grave Titan", claims: [], job: "Floods the board with bodies.", evidence: ["c4"] },
+      { card: "Spore Frog", claims: [], job: "Fogs a big attack, then returns.", evidence: ["c6"] },
+    ];
+    r.primer.tips = [
+      { text: "[[Eternal Witness]] returns [[Satyr Wayfinder]] to refill the yard.", evidence: ["c5", "c2"] },
+      { text: "[[Eternal Witness]] returns a [[Forest]] when you are short of lands.", evidence: ["c5", "c7"] },
+    ];
+    return r;
+  };
+  // Mirrors ScrappySurvivors_PIP (i3): Spore Frog stands for Mantle of the Ancients (a Key card, then a tip).
+  const scrappy = (): StagesReply => {
+    const r = counterIntelligence();
+    r.keyCards = [{ card: "Spore Frog", claims: [], job: "Fogs a big attack, then returns.", evidence: ["c6"] }];
+    r.primer.tips = [
+      { text: "[[Eternal Witness]] returns [[Spore Frog]] after it is sacrificed.", evidence: ["c5", "c6"] },
+      { text: "[[Eternal Witness]] returns a [[Forest]] when you are short of lands.", evidence: ["c5", "c7"] },
+    ];
+    return r;
+  };
+
+  it("fails a non-commander card in two sections, as both i3 failures did", () => {
+    expect(checkNoCardTwice(docFromStagesReply(counterIntelligence(), 3), FACTS).offenders).toEqual([
+      { card: "Satyr Wayfinder", sections: ["stages", "tips"] },
+      { card: "Grave Titan", sections: ["stages", "keyCardJobs"] },
+    ]);
+    expect(checkNoCardTwice(docFromStagesReply(scrappy(), 3), FACTS).offenders).toEqual([{ card: "Spore Frog", sections: ["tips", "keyCardJobs"] }]);
+  });
+  it("never counts the commander, which checkExplainedOnce reports apart", () => {
+    const d = docFromStagesReply(counterIntelligence(), 3);
+    const twice = { ...d, overview: [{ text: "A deck led by [[Meren of Clan Nel Toth]]." }] };
+    expect(checkNoCardTwice(twice, FACTS).offenders.some((o) => o.card === "Meren of Clan Nel Toth")).toBe(false);
+    expect(checkExplainedOnce(twice, FACTS, { keyCardNames: true }).offenders.some((o) => o.card === "Meren of Clan Nel Toth")).toBe(true);
+  });
+  it("drops a Key card a stage explained and unmarks a stage card in a tip, keeping the tip whole", () => {
+    const { doc: out, report } = dedupeSections(docFromStagesReply(counterIntelligence(), 3), FACTS);
+    expect(out.keyCards.map((k) => k.card)).toEqual(["Spore Frog"]);
+    expect(out.tips).toHaveLength(2);
+    expect(out.tips[0]).toEqual({ text: "[[Eternal Witness]] returns Satyr Wayfinder to refill the yard.", refs: ["c5"] });
+    expect(report).toEqual({
+      droppedKeyCards: [{ card: "Grave Titan", explainedIn: "stages" }],
+      unmarked: [{ where: "tips[0]", card: "Satyr Wayfinder", explainedIn: "stages" }],
+      tipsWithoutSubject: [],
+    });
+    expect(checkNoCardTwice(out, FACTS)).toEqual({ pass: true, offenders: [] });
+  });
+  it("lets a Key card keep its card over a later tip", () => {
+    const { doc: out, report } = dedupeSections(docFromStagesReply(scrappy(), 3), FACTS);
+    expect(out.keyCards.map((k) => k.card)).toEqual(["Spore Frog"]);
+    expect(out.tips[0].text).toBe("[[Eternal Witness]] returns Spore Frog after it is sacrificed.");
+    expect(report.unmarked).toEqual([{ where: "tips[0]", card: "Spore Frog", explainedIn: "keyCards" }]);
+    expect(checkNoCardTwice(out, FACTS).pass).toBe(true);
+  });
+  it("leaves a tip that would lose its only subject as written, reports it, and still fails the check", () => {
+    const r = counterIntelligence();
+    r.primer.tips[0] = { text: "[[Satyr Wayfinder]] and [[Spore Frog]] loop through the yard.", evidence: ["c2", "c6"] };
+    const { doc: out, report } = dedupeSections(docFromStagesReply(r, 3), FACTS);
+    expect(out.tips[0].text).toBe("[[Satyr Wayfinder]] and [[Spore Frog]] loop through the yard.");
+    expect(out.tips).toHaveLength(2);
+    expect(report.tipsWithoutSubject).toEqual([{ tip: 0, text: "[[Satyr Wayfinder]] and [[Spore Frog]] loop through the yard.", cards: ["Satyr Wayfinder", "Spore Frog"] }]);
+    expect(checkNoCardTwice(out, FACTS).pass).toBe(false);
+  });
+  it("never touches the commander, and leaves a clean reply as it was", () => {
+    const r = counterIntelligence();
+    r.keyCards = [{ card: "Spore Frog", claims: [], job: "Fogs a big attack, then returns.", evidence: ["c6"] }];
+    r.primer.tips = [
+      { text: "[[Meren of Clan Nel Toth]] returns [[Eternal Witness]] each end step.", evidence: ["c1", "c5"] },
+      { text: "[[Eternal Witness]] returns a [[Forest]] when you are short of lands.", evidence: ["c5", "c7"] },
+    ];
+    const before = docFromStagesReply(r, 3);
+    const { doc: out, report } = dedupeSections(before, FACTS);
+    expect(out).toEqual(before);
+    expect(report).toEqual({ droppedKeyCards: [], unmarked: [], tipsWithoutSubject: [] });
+  });
+  it("runs through stagesChecks only when the caller ran the post-pass on what it shows", () => {
+    const reply = counterIntelligence();
+    const input = { reply, shownNew: docShownNew(OLD, reply, 3), oldDoc: docFromChecked(OLD), facts: FACTS, alternates: [], shape: 3 as const, kind: "precon" as const };
+    const raw = stagesChecks(input);
+    expect(raw.noCardTwice?.pass).toBe(false);
+    expect(raw.dedupe).toBeUndefined();
+    expect(allChecksPass(raw, true)).toBe(false);
+    const passed = stagesChecks({ ...input, postPass: true });
+    expect(passed.noCardTwice?.pass).toBe(true);
+    expect(passed.dedupe?.droppedKeyCards).toEqual([{ card: "Grave Titan", explainedIn: "stages" }]);
+    expect(passed.explainedOnce.passExceptCommanders).toBe(true);
+    // Iteration 2 never runs it.
+    expect(stagesChecks({ ...input, shape: 2, postPass: true }).noCardTwice).toBeUndefined();
+  });
+});
+
+describe("iteration 3: the alternate line is required by the schema when the box carries one", () => {
+  const reply = () => ({ ...goodReply(), landKeep: { text: "Keep 3 lands: the curve is low.", evidence: [] } });
+  it("rejects a reply with no alternate line for a precon with an alternate, as CounterIntelligence_EOC's was", () => {
+    expect(stagesSchemaFor(3, ["Grave Titan"]).safeParse(reply()).success).toBe(false);
+    expect(stagesSchemaFor(3, ["Grave Titan"]).safeParse({ ...reply(), alternate: { text: "Lead with [[Grave Titan]].", evidence: ["c4"] } }).success).toBe(true);
+  });
+  it("leaves the field optional with no alternate, and iteration 2's schema unchanged", () => {
+    expect(stagesSchemaFor(3).safeParse(reply()).success).toBe(true);
+    expect(stagesSchemaFor(3, [])).toBe(stagesResponseSchemaWireV3);
+    expect(stagesSchemaFor(2, ["Grave Titan"])).toBe(stagesResponseSchemaWire);
   });
 });
