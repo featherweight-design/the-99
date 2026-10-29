@@ -29,7 +29,7 @@ import { PROMPT_VERSION, PROMPT_VERSION_V2 } from "../tuning/prompt-version";
 import { loadUniversalStaples } from "../staples/universal";
 import { readShownSynopsis } from "../synopsis/generate";
 import { pastReapCutoff, reapIn } from "../tuning/reap-runs";
-import type { TuningItem, TuningLive, TuningRun, TuningState } from "../tuning/state";
+import type { TuningItem, TuningLive, TuningRun, TuningState, V2Ask } from "../tuning/state";
 import { lineFacts } from "../tuning/v2/line-facts";
 import type { ValidatedSuggestion, ValidationReport } from "../tuning/validate";
 import { loadJobRows } from "./job-rows";
@@ -267,6 +267,7 @@ export async function readTuningState(
     profileVersion: deckSuggestionRuns.profileVersion,
     validationReport: deckSuggestionRuns.validationReport,
     requestedCount: deckSuggestionRuns.requestedCount,
+    ...askColumns,
   }).from(deckSuggestionRuns).where(okRunWhere(deckId, userId, runId))
     .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
   const [[newest], [newestOk], [reviewed], [games], allowance] = await Promise.all([
@@ -278,6 +279,7 @@ export async function readTuningState(
       droppedCount: deckSuggestionRuns.droppedCount,
       validationReport: deckSuggestionRuns.validationReport,
       requestedCount: deckSuggestionRuns.requestedCount,
+      ...askColumns,
     }).from(deckSuggestionRuns).where(and(runOf, mine))
       .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
     okRun(null),
@@ -289,7 +291,10 @@ export async function readTuningState(
     readAllowance(userId, now, "tuning").then((a) => withPayments(a, env)),
   ]);
 
-  const run: TuningRun | null = newest ? { ...newest, status: newest.status as TuningRun["status"] } : null;
+  const run: TuningRun | null = newest ? {
+    id: newest.id, status: newest.status as TuningRun["status"], errorClass: newest.errorClass, createdAt: newest.createdAt,
+    droppedCount: newest.droppedCount, validationReport: newest.validationReport, requestedCount: newest.requestedCount,
+  } : null;
   const lastOk = reviewed ?? newestOk;
   // The items are the newest OK run's, or in review the named run's (and then `stale`, `retired`
   // and `modelVersionMoved` describe that run). A failed or stopped re-run leaves the set it would have
@@ -300,7 +305,7 @@ export async function readTuningState(
     : { items: [], newestPriceAsOf: null };
   // A v2 run still being made (plan P3): the lines it has saved so far, drawn by the panel's poll beside the last set.
   const live = run?.status === "pending" && newest?.requestedCount != null
-    ? liveOf(run.id, newest.validationReport, await readItems(run.id, deckId, userId, env, true))
+    ? liveOf(run.id, newest.validationReport, await readItems(run.id, deckId, userId, env, true), askOf(newest))
     : null;
 
   return {
@@ -320,6 +325,7 @@ export async function readTuningState(
     allLocked: opts.allLocked ?? null,
     review: reviewed ? { runId: reviewed.id, at: reviewed.createdAt } : null,
     live,
+    itemsAsk: lastOk ? askOf(lastOk) ?? null : null,
   };
 }
 
@@ -328,9 +334,34 @@ export function promptVersionFor(requestedCount: number | null): number {
   return requestedCount !== null ? PROMPT_VERSION_V2 : PROMPT_VERSION;
 }
 
+/** A run's own ask columns (spec §8), read beside each run row so You asked needs no second read. */
+const askColumns = {
+  requestText: deckSuggestionRuns.requestText,
+  bracketChoice: deckSuggestionRuns.bracketChoice,
+  bracketTarget: deckSuggestionRuns.bracketTarget,
+};
+
+/** A v2 run's ask as the results' You asked draws it; undefined for a v10 run (no count). */
+export function askOf(row: {
+  id: string; requestedCount: number | null; requestText: string | null; bracketChoice: string | null;
+  bracketTarget: number | null; validationReport: ValidationReport | null;
+}): V2Ask | undefined {
+  if (row.requestedCount === null) return undefined;
+  const choice = row.bracketChoice;
+  const restrictions = row.validationReport?.v2?.restrictions ?? null;
+  return {
+    runId: row.id,
+    requestedCount: row.requestedCount,
+    request: row.requestText && row.requestText.trim() !== "" ? row.requestText : null,
+    bracket: (choice === "keep" || choice === "down" || choice === "up") && row.bracketTarget !== null
+      ? { choice, target: row.bracketTarget } : null,
+    restrictions: restrictions ? { capCents: restrictions.capCents, sets: [...restrictions.sets], ownedOnly: restrictions.ownedOnly } : null,
+  };
+}
+
 /** A pending v2 run as the panel draws it, from its report's progress flags. */
 export function liveOf(
-  runId: string, report: ValidationReport | null, read: { items: TuningItem[]; newestPriceAsOf: Date | null },
+  runId: string, report: ValidationReport | null, read: { items: TuningItem[]; newestPriceAsOf: Date | null }, ask?: V2Ask,
 ): TuningLive {
   const v2 = report?.v2;
   const added = v2?.in.add ?? false;
@@ -342,6 +373,7 @@ export function liveOf(
     items: read.items,
     // The live lines' own price snapshot: the last set's `newestPriceAsOf` is another read, and null on a first run.
     newestPriceAsOf: read.newestPriceAsOf,
+    ...(ask ? { ask } : {}),
   };
 }
 
@@ -393,7 +425,7 @@ async function readItems(
     evidence: TuningItem["evidence"]; position: number; verdict: TuningItem["verdict"];
     bracket_after: number[] | null; owned_quantity: number; applies: boolean;
     add_image_uri: string | null; cut_image_uri: string | null; cut_in_deck: boolean;
-    add_in_deck: boolean; cut_locked: boolean;
+    add_in_deck: boolean; cut_locked: boolean; picked: boolean; apply_set: string | null;
     card_type_line: string | null; card_oracle_text: string | null; card_keywords: string[] | null;
   }>(sql`
     select i.id, i.add_oracle_id, a.name as add_name, a.type_line as add_type_line,
@@ -402,7 +434,7 @@ async function readItems(
            coalesce(a.keywords, c.keywords) as card_keywords,
            a.image_uri as add_image_uri, c.image_uri as cut_image_uri,
            i.cut_oracle_id, c.name as cut_name, i.rationale, i.rationale_short, i.evidence,
-           i.position, i.verdict, i.bracket_after,
+           i.position, i.verdict, i.bracket_after, i.picked, i.apply_set,
            coalesce((
              select sum(ci.quantity) from ${collectionItems} ci
              where ci.user_id = ${userId} and ci.oracle_id = i.add_oracle_id
@@ -510,6 +542,7 @@ async function readItems(
       price: add ? prices.get(id) ?? null : null,
       inDeck: add ? r.add_in_deck : r.cut_in_deck,
       locked: !add && r.cut_locked,
+      ...(v2 ? { picked: r.picked, applySet: r.apply_set } : {}),
       ...(v2 ? lineFacts({
         oracleId: id, name: (add ? r.add_name : r.cut_name) ?? "", typeLine: r.card_type_line ?? "",
         oracleText: r.card_oracle_text, keywords: r.card_keywords ?? [],

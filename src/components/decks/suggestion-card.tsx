@@ -46,6 +46,7 @@ export function SuggestionCard({
   newestPriceAsOf,
   actions,
   onSettled,
+  readOnly = false,
 }: {
   item: TuningItem;
   /** The reading on screen now, which the bracket flag is worded against. */
@@ -55,6 +56,9 @@ export function SuggestionCard({
   /** Told after a verdict lands, with what to announce, so the panel can re-read. */
   /** Resolves false when the panel's re-read failed: the row then keeps its answer drawn. */
   onSettled: (announce: string) => void | boolean | Promise<void | boolean>;
+  /** A set the deck has moved past (a v10 run once Suggested changes v2 is on, spec §10): no Apply, Reject, Undo or Show
+   *  again; the names and thumbnails still open the cards. */
+  readOnly?: boolean;
 }) {
   const [busy, setBusy] = useState<keyof CardActions | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
@@ -89,7 +93,7 @@ export function SuggestionCard({
       <AnsweredRow
         tone="applied"
         pair={<><span>{item.cutName}</span> <Arrow ink="var(--success)" /> <b className="font-semibold" style={{ color: "var(--fg)" }}>{item.addName}</b></>}
-        action={{ label: copy.undo, onPress: () => answer("undo"), busy: busy !== null }}
+        action={readOnly ? undefined : { label: copy.undo, onPress: () => answer("undo"), busy: busy !== null }}
         refused={refused}
       />
     );
@@ -99,7 +103,7 @@ export function SuggestionCard({
       <AnsweredRow
         tone="rejected"
         pair={<>{item.cutName} <Arrow ink="var(--fg-faint)" /> {item.addName}</>}
-        action={{ label: copy.restore, onPress: () => answer("restore"), busy: busy !== null }}
+        action={readOnly ? undefined : { label: copy.restore, onPress: () => answer("restore"), busy: busy !== null }}
         refused={refused}
       />
     );
@@ -201,7 +205,7 @@ export function SuggestionCard({
             </li>
           ))}
         </ul>
-        <div className="flex gap-[8px] md:mr-auto md:gap-[7px]">
+        {readOnly ? null : <div className="flex gap-[8px] md:mr-auto md:gap-[7px]">
           <button
             type="button"
             onClick={() => answer("apply")}
@@ -219,7 +223,7 @@ export function SuggestionCard({
           >
             {copy.reject}
           </button>
-        </div>
+        </div>}
       </div>
       {refused ? <MutationError message={refused} /> : null}
     </article>

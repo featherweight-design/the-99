@@ -9,8 +9,9 @@ import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 import type { TuningState } from "../../lib/tuning/state";
 import { usualFor } from "../../lib/tuning/v2/intake";
+import { v2Line } from "../../lib/tuning/v2/results-fixture";
 import type { Bracket } from "../../lib/profile/types";
-import { OpenHistoryProvider, OpenRunProvider, type OpenRun } from "./review-run";
+import { OpenHistoryProvider, OpenRunProvider, ReviewRunProvider, type OpenRun } from "./review-run";
 import { TuningPanel, type TuningDeps, type TuningFacts, type TuningV2 } from "./tuning-panel";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
@@ -19,7 +20,9 @@ vi.mock("../../app/decks/tuning-actions", () => ({
   saveDeckLimits: vi.fn(async () => ({ ok: true })), undoSuggestion: vi.fn(),
 }));
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: async () => [] }));
-vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
+vi.mock("../cards/card-detail-provider", () => ({
+  useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false }), useCardIntent: () => ({}),
+}));
 
 const sc = suggestedChangesV2Copy;
 const at = new Date("2026-10-26T18:22:00Z");
@@ -334,5 +337,175 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     await act(async () => { fireEvent.click(send()); });
     expect(d.read).toHaveBeenCalledTimes(2);
     expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
+  });
+});
+
+describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI PR 6)", () => {
+  const RUN = "33333333-3333-4333-8333-333333333333";
+  const ask = { runId: RUN, requestedCount: 3, request: "More removal.", bracket: { choice: "keep" as const, target: 2 }, restrictions: null };
+  const lines = [...[0, 1, 2, 3, 4].map((i) => v2Line(`a${i}`, "add", { position: i })), ...[0, 1, 2, 3, 4].map((i) => v2Line(`c${i}`, "cut", { position: 10 + i }))];
+  const pending = (items = lines.slice(0, 2)): TuningState => ({
+    ...fresh,
+    run: { id: RUN, status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0, requestedCount: 3 },
+    live: { runId: RUN, phase: "additions", in: { add: false, cut: false }, refilling: { add: false, cut: false }, items, newestPriceAsOf: null, ask },
+  });
+  const finished: TuningState = {
+    ...okRun(RUN), run: { id: RUN, status: "ok", errorClass: null, createdAt: at, droppedCount: 0, requestedCount: 3 }, items: lines, itemsAsk: ask,
+  };
+  const v2Actions = () => ({ apply: vi.fn(async () => ({ ok: true as const, itemIds: [] })), undo: vi.fn(), pick: vi.fn(async () => ({ ok: true })) });
+
+  it("draws the wait for a run being made, in place of the intake and its press", async () => {
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => pending());
+    await draw(d, v2At());
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("wait");
+    expect(document.querySelector("[data-sc-intake]")).toBeNull();
+    expect(screen.queryByRole("button", { name: sc.intake.send })).toBeNull();
+    expect(screen.queryByText(deckTuningCopy.panel.loadingHeading)).toBeNull();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: `${sc.results.pick} Card a0` })); });
+    expect(d.v2.pick).toHaveBeenCalledWith("a0", true);
+  });
+
+  it("draws a finished v2 run's results with New run, which opens a fresh intake", async () => {
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => finished);
+    await draw(d, v2At());
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    expect(document.querySelector("[data-sc-asked]")!.textContent).toContain("“More removal.”");
+    expect(document.querySelector("[data-sc-intake]")).toBeNull();
+    // Retired on v2 rows: no Add, Reject, Apply all or Suggest again.
+    for (const name of [deckTuningCopy.lists.add, deckTuningCopy.lists.reject, deckTuningCopy.lists.applyAll, deckTuningCopy.panel.again]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+    fireEvent.click(screen.getByRole("button", { name: sc.run.newRun }));
+    expect(document.querySelector("[data-sc-run]")).toBeNull();
+    expect(document.querySelector("[data-sc-intake]")).not.toBeNull();
+    expect(box().value).toBe("");
+    // The fresh intake alone: the v2 run's lines never fall into the v10 read-only set.
+    expect(document.body.textContent).not.toContain(sc.pastRun);
+    expect(document.body.textContent).not.toContain("Card a0");
+    expect(screen.queryByRole("button", { name: deckTuningCopy.panel.again })).toBeNull();
+  });
+
+  it("hands a press to the panel's watch: the wait is drawn as the lines land, then the results", async () => {
+    const d = { ...deps(), v2: v2Actions() };
+    let now: TuningState = fresh;
+    d.read = vi.fn(async () => now);
+    d.run = vi.fn(async () => { now = pending(); return { ok: true }; }) as unknown as typeof d.run;
+    await draw(d, v2At());
+    await act(async () => { fireEvent.click(send()); });
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("wait");
+    now = finished;
+    await act(async () => { await new Promise((r) => setTimeout(r, 3200)); });
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    expect(document.querySelector('[role="status"]')!.textContent).toBe(deckTuningCopy.announce.readyLists(5, 5));
+  });
+
+  it("the watch waits for its own read: reads slower than the tick still land the finished run", async () => {
+    vi.useFakeTimers();
+    try {
+      const d = { ...deps(), v2: v2Actions() };
+      // The first read draws the wait; every watch read after it takes 4 seconds, longer than the 3-second tick.
+      d.read = vi.fn()
+        .mockResolvedValueOnce(pending())
+        .mockImplementation(() => new Promise<TuningState>((r) => { setTimeout(() => r(finished), 4000); }));
+      await draw(d, v2At());
+      expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("wait");
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+      expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("New run after a run made here opens an empty request box, not the request just sent", async () => {
+    const d = { ...deps(), v2: v2Actions() };
+    let now: TuningState = fresh;
+    d.read = vi.fn(async () => now);
+    d.run = vi.fn(async () => { now = finished; return { ok: true }; }) as unknown as typeof d.run;
+    await draw(d, v2At());
+    fireEvent.change(box(), { target: { value: "More removal.", selectionStart: 13 } });
+    await act(async () => { fireEvent.click(send()); });
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    fireEvent.click(screen.getByRole("button", { name: sc.run.newRun }));
+    expect(box().value).toBe("");
+  });
+
+  it("a short run's new-run link opens the intake from a run History reopened", async () => {
+    const short: TuningState = {
+      ...finished,
+      items: lines.slice(0, 7),
+      review: { runId: RUN, at },
+      itemsValidationReport: {
+        askedCount: 0, survivedCount: 0, keptCount: 0,
+        v2: {
+          requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: true }, in: { add: true, cut: true }, refilling: { add: false, cut: false },
+          shortReason: { add: null, cut: "notOwned" }, charge: { outcome: "spent" },
+        },
+      },
+    };
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => short);
+    await draw(d, v2At(), [2], (node) => <ReviewRunProvider value={{ tool: "suggested", runId: RUN }}>{node}</ReviewRunProvider>);
+    expect(document.querySelector('[data-sc-short="bound"]')).not.toBeNull();
+    // The head's New run too (History board B): an opened run offers it.
+    expect(screen.getByRole("button", { name: sc.run.newRun })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: sc.short.boundLink }));
+    expect(document.querySelector("[data-sc-run]")).toBeNull();
+    expect(document.querySelector("[data-sc-intake]")).not.toBeNull();
+  });
+
+  it("says a failed rerun above the earlier set it leaves on screen", async () => {
+    const RUN2 = "44444444-4444-4444-8444-444444444444";
+    const failed: TuningState = { ...finished, run: { id: RUN2, status: "failed", errorClass: "timeout", createdAt: at, droppedCount: 0, requestedCount: 3 } };
+    const d = { ...deps(), v2: v2Actions() };
+    let now: TuningState = finished;
+    d.read = vi.fn(async () => now);
+    d.run = vi.fn(async () => { now = failed; return { ok: true }; }) as unknown as typeof d.run;
+    await draw(d, v2At());
+    fireEvent.click(screen.getByRole("button", { name: sc.run.newRun }));
+    await act(async () => { fireEvent.click(send()); });
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    expect(screen.getByTestId("tuning-failure")).toBeTruthy();
+  });
+
+  it("draws an open v10 run read-only once the switch is on (the cutover), with the intake for a new run", async () => {
+    const d = deps();
+    const v10 = lines.map((l) => ({ ...l, typeGroup: undefined, role: undefined, picked: undefined, applySet: undefined }));
+    d.read = vi.fn(async () => ({ ...okRun(RUN), items: v10 }));
+    await draw(d, v2At());
+    expect(document.querySelector("[data-sc-run]")).toBeNull();
+    expect(document.body.textContent).toContain(sc.pastRun);
+    for (const name of [deckTuningCopy.lists.applyAll, deckTuningCopy.lists.add, deckTuningCopy.lists.reject]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+    expect(document.querySelector("[data-sc-intake]")).not.toBeNull();
+  });
+
+  it("draws an older paired run read-only with its cards still open to inspection", async () => {
+    const d = deps();
+    const pair = {
+      id: "p1", addOracleId: "add", addName: "Rhystic Study", addTypeLine: "Enchantment", cutOracleId: "cut", cutName: "Divination",
+      rationale: "Draw.", rationaleShort: "", evidence: [], position: 0, verdict: "pending" as const, addImageUri: null, cutImageUri: null,
+      owned: true, ownedQuantity: 1, availability: null, price: null, bracketAfter: null, applies: true, cutInDeck: true, addInDeck: false,
+      cutLocked: false,
+    };
+    d.read = vi.fn(async () => ({ ...okRun(RUN), items: [pair] }));
+    await draw(d, v2At());
+    expect(document.body.textContent).toContain(sc.pastRun);
+    expect(screen.queryByRole("button", { name: deckTuningCopy.card.apply })).toBeNull();
+    expect(screen.getByRole("button", { name: deckTuningCopy.card.open("Divination") })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: deckTuningCopy.card.open("Rhystic Study") })).not.toBeDisabled();
+  });
+
+  it("with the switch off, a v10 set keeps Add, Reject and Apply all", async () => {
+    const d = deps();
+    const v10 = lines.map((l) => ({ ...l, typeGroup: undefined, role: undefined, picked: undefined, applySet: undefined }));
+    d.read = vi.fn(async () => ({ ...okRun(RUN), items: v10 }));
+    await draw(d, null);
+    expect(screen.getByRole("button", { name: deckTuningCopy.lists.applyAll })).toBeTruthy();
+    // Each line draws its answers twice (phone and desktop).
+    expect(screen.getAllByRole("button", { name: deckTuningCopy.lists.reject })).toHaveLength(20);
+    expect(document.body.textContent).not.toContain(sc.pastRun);
   });
 });

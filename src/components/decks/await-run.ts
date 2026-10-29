@@ -13,9 +13,6 @@ export const AWAIT_RUN_POLL_MS = 2000;
 export const AWAIT_RUN_MAX_MS = 130_000;
 /** Past a deadline by the same 20s the default allows past the 110s one, for settling. */
 export const awaitRunMaxFor = (deadlineMs: number) => deadlineMs + 20_000;
-/** A Suggested changes v2 run's wait (plan P2): past its run budget (`V2_RUN_BUDGET_MS`, 570s) and short of its reaper's
- *  11 minutes. v10 and Proposed cuts keep `AWAIT_RUN_MAX_MS`; a caller passes this as `maxMs`. */
-export const AWAIT_RUN_V2_MAX_MS = 600_000;
 
 export async function awaitRunSettled<S extends { run?: { id: string; status: string } | null }>(
   read: () => Promise<S | null>,
