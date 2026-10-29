@@ -41,7 +41,11 @@ describe("matchCardName", () => {
     ["Fire // Ice", "fire-ice"],
   ])("%s → %s", (name, id) => expect(matchCardName(name, index)).toBe(id));
 
-  it.each([["Grimclimb Pathway"], ["Finality"], ["Sol"], ["Dandân art 2"], [""]])("%s does not match (no back faces, no prefixes)", (name) => {
+  it.each([["Dandân art 2", "dandan"], ["Dandan Art 12", "dandan"]])("%s → %s: an art-variant tag is stripped", (name, id) => {
+    expect(matchCardName(name, index)).toBe(id);
+  });
+
+  it.each([["Grimclimb Pathway"], ["Finality"], ["Sol"], ["Sol Ring art"], ["Art 2"], [""]])("%s does not match (no back faces, no prefixes)", (name) => {
     expect(matchCardName(name, index)).toBeNull();
   });
 });

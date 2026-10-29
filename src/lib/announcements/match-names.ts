@@ -12,9 +12,10 @@
  *    Pathway`. Only a front face is indexed, never a back face, and a full name always wins over a
  *    front face that collides with it;
  * 3. the post name's own front face, for a post that spells the faces differently from the catalog;
- * 4. the name without a trailing parenthetical: posts tag duplicate copies by printing
- *    (`Sol Ring (Villains)`, `Ransom Note (Clues)`). Tried last, so a card whose real name ends in
- *    parentheses still matches whole.
+ * 4. the name without a trailing tag: a parenthetical, as posts tag duplicate copies by printing
+ *    (`Sol Ring (Villains)`, `Ransom Note (Clues)`), or an art-variant tag (`Dandân art 2`, ruling
+ *    2026-10-29). Tried last, so a card whose real name ends in parentheses still matches whole.
+ *    Anything still unmatched is reported, never dropped.
  */
 import { normalizeCardName } from "../collection/match";
 import { normalizeName } from "../synopsis/facts";
@@ -50,8 +51,11 @@ export function buildNameIndex<Id>(entries: Iterable<readonly [string, Id]>): Ma
 export function matchCardName<Id>(name: string, index: ReadonlyMap<string, Id>): Id | null {
   const key = nameKey(name);
   const tries = [key, key.split(" // ")[0]];
-  const bare = key.replace(/\s*\([^()]*\)$/, "");
-  if (bare !== key && bare) tries.push(bare, bare.split(" // ")[0]);
+  // A printing tag (`Sol Ring (Villains)`) or an art-variant tag (`Dandân art 2`), tried only after the whole name.
+  for (const tag of [/\s*\([^()]*\)$/, /\s+art\s+\d+$/]) {
+    const bare = key.replace(tag, "");
+    if (bare !== key && bare) tries.push(bare, bare.split(" // ")[0]);
+  }
   for (const k of tries) {
     const id = index.get(k);
     if (id !== undefined) return id;
