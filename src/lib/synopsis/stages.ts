@@ -5,7 +5,7 @@ import { deckNameIndex, HAND_SIZE, normalizeName, type FactCard, type SynopsisFa
 import { isLandFace, playableAsLand } from "../cards/facet";
 import { CHAR_BUDGETS, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { synopsisResponseSchemaV8Wire } from "./response-schema";
-import type { CheckedSynopsis } from "./types";
+import type { CheckedSynopsis, SectionId } from "./types";
 import { figuresIn, marksIn, rendered } from "./validate";
 
 /**
@@ -368,7 +368,10 @@ export function dedupeSections(doc: OverviewDoc, facts: Pick<SynopsisFacts, "car
   const tips = doc.tips.map((t, i) => {
     const marked = marksIn(t.text);
     const subjects = marked.filter((m) => { const id = idOf(m); return !id || !explained.has(id); });
-    if (subjects.length < marked.length && new Set(subjects.map(normalizeName)).size < TIP_MIN_CARDS) {
+    // Counted by the card each mark resolves to, as the validator counts a tip's cards, so `[[Fire]]`
+    // and `[[Ice]]` are one subject (Fire // Ice); a mark that resolves to nothing counts by its spelling.
+    const cardOf = (m: string) => deck.names.get(normalizeName(m))?.oracleId ?? `?${normalizeName(m)}`;
+    if (subjects.length < marked.length && new Set(subjects.map(cardOf)).size < TIP_MIN_CARDS) {
       report.tipsWithoutSubject.push({ tip: i, text: t.text, cards: marked });
       return t;
     }
@@ -471,6 +474,17 @@ export function checkShape(doc: OverviewDoc, alternates: readonly string[], shap
     const wanted = new Set(alternates.map(normalizeName));
     if (alternates.length > 0 && !marksIn(l.text).some((m) => wanted.has(normalizeName(m)))) offenders.push("the alternate line names none of the alternate commanders");
   }
+  return { pass: offenders.length === 0, offenders };
+}
+
+/**
+ * The shape of the reply the checks read AND of the doc a reader is shown: an offender of either
+ * fails, the shown doc's marked "shown: " (and left out when the reply already has the same one).
+ */
+export function checkShapeShown(replyDoc: OverviewDoc, shownDoc: OverviewDoc, alternates: readonly string[], shape: StagesShape = 2): CheckResult<string> {
+  const reply = checkShape(replyDoc, alternates, shape).offenders;
+  const shown = checkShape(shownDoc, alternates, shape).offenders.filter((o) => !reply.includes(o)).map((o) => `shown: ${o}`);
+  const offenders = [...reply, ...shown];
   return { pass: offenders.length === 0, offenders };
 }
 
@@ -817,7 +831,9 @@ export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc;
     stageFit: checkStageFit(doc, input.facts, castTurn),
     stagesNameCards: checkStagesNameCards(doc, input.facts),
     length: checkLength(input.shownNew, input.oldDoc),
-    shape: checkShape(doc, input.alternates, shape),
+    // After the post-pass the reader is shown the VALIDATED sections deduped, which can hold fewer
+    // Key cards than the reply did (validation kept 5 of 6, the pass dropped one more): both are read.
+    shape: passed ? checkShapeShown(doc, input.shownNew, input.alternates, shape) : checkShape(doc, input.alternates, shape),
   };
   if (shape === 2) return base;
   const land = landKeepNumber(input.facts);
@@ -830,6 +846,29 @@ export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc;
     noCardTwice: checkNoCardTwice(doc, input.facts),
     ...(passed ? { dedupe: passed.report } : {}),
   };
+}
+
+/** The contract-8 section a repetition section's lines come from (the alternate and Wins by lines are no contract-8 section, so no repair rewrites them). */
+const REPAIR_SECTION_OF: Record<RepetitionSection, SectionId | null> = { overview: "overview", stages: "primer", winsBy: null, alternate: null, tips: "primer", keyCardJobs: "keyCards" };
+
+/**
+ * What iteration 3's post-pass and its checks leave for the app's one repair: the sections to
+ * rewrite and why. A Key cards section under its minimum (on the reply or on what is shown), a tip
+ * the pass left without a subject, and a card still in two sections (the LATER section is rewritten,
+ * as the pass keeps the earlier one; the earlier when the later is a line no repair rewrites).
+ */
+export function i3RepairTargets(c: StagesChecks): { sections: SectionId[]; reasons: string[] } {
+  const sections = new Set<SectionId>();
+  const reasons: string[] = [];
+  for (const o of c.shape.offenders) if (/ Key cards, not /.test(o)) { sections.add("keyCards"); reasons.push(`keyCards: ${o.replace(/^shown: /, "")} once a Key card a stage already explains is dropped; name other cards`); }
+  for (const t of c.dedupe?.tipsWithoutSubject ?? []) { sections.add("primer"); reasons.push(`primer: tip ${t.tip + 1} needs ${TIP_MIN_CARDS} cards no earlier section explains (it names ${t.cards.join(", ")})`); }
+  for (const o of c.noCardTwice?.offenders ?? []) {
+    const later = o.sections.slice(1).flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
+    const targets = later.length > 0 ? later : o.sections.flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
+    for (const s of targets) sections.add(s);
+    if (targets.length > 0) reasons.push(`${[...new Set(targets)].join(", ")}: ${o.card} is explained in ${o.sections.join(" and ")}; explain each card in one section only`);
+  }
+  return { sections: [...sections], reasons: [...new Set(reasons)] };
 }
 
 /** Whether every check that applies to the shape passes. `exceptCommanders` reads the repetition rule with the commanders exempt. */

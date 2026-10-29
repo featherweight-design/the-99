@@ -14,6 +14,9 @@ import {
   stagesSchemaFor,
   checkLength,
   checkShape,
+  checkShapeShown,
+  i3RepairTargets,
+  type RepetitionSection,
   checkStageFit,
   checkStagesNameCards,
   checkTurnNumbers,
@@ -792,6 +795,50 @@ describe("iteration 3: the explained-once post-pass and the no-card-twice check"
     const { doc: out, report } = dedupeSections(before, FACTS);
     expect(out).toEqual(before);
     expect(report).toEqual({ droppedKeyCards: [], unmarked: [], tipsWithoutSubject: [] });
+  });
+  it("counts a tip's surviving subjects by the card they resolve to, so [[Fire]] and [[Ice]] are one", () => {
+    const facts: SynopsisFacts = { ...FACTS, cards: [...FACTS.cards, { oracleId: "fi", name: "Fire // Ice", typeLine: "Instant // Instant", quantity: 1, categories: [], oracleText: "Fire deals 2 damage. Ice taps a permanent.", manaValue: 4 }] };
+    const r = counterIntelligence();
+    r.primer.tips[0] = { text: "[[Fire]] and [[Ice]] clear a blocker for [[Satyr Wayfinder]].", evidence: ["c8", "c2"] };
+    const { doc: out, report } = dedupeSections(docFromStagesReply(r, 3), facts);
+    expect(out.tips[0].text).toBe("[[Fire]] and [[Ice]] clear a blocker for [[Satyr Wayfinder]].");
+    expect(report.tipsWithoutSubject).toEqual([{ tip: 0, text: "[[Fire]] and [[Ice]] clear a blocker for [[Satyr Wayfinder]].", cards: ["Fire", "Ice", "Satyr Wayfinder"] }]);
+  });
+  it("fails the shape on what is SHOWN when validation and the post-pass together leave too few Key cards", () => {
+    const r = counterIntelligence();
+    r.primer.strategy[1] = { text: "Each death becomes experience for the engine.", evidence: [] };
+    r.primer.tips = [
+      { text: "[[Meren of Clan Nel Toth]] returns a [[Forest]] creature land each turn.", evidence: ["c1", "c7"] },
+      { text: "Sacrifice a [[Forest]] creature land with [[Meren of Clan Nel Toth]] out.", evidence: ["c7", "c1"] },
+    ];
+    // Six Key cards; the pass drops Grave Titan (a stage explains it): five left on the reply.
+    r.keyCards = [...goodReply().keyCards.filter((k) => k.card !== "Satyr Wayfinder"), { card: "Sol Ring", claims: [], job: "Ramps by two.", evidence: [] }, { card: "Meren of Clan Nel Toth", claims: [], job: "Returns a creature each end step.", evidence: ["c1"] }];
+    expect(r.keyCards).toHaveLength(6);
+    const replyDoc = docFromStagesReply(r, 3);
+    // Validation kept five of the six (it refused Sol Ring's row); the pass then drops Grave Titan: four shown.
+    const shownNew = dedupeSections({ ...replyDoc, keyCards: replyDoc.keyCards.filter((k) => k.card !== "Sol Ring") }, FACTS).doc;
+    expect(shownNew.keyCards).toHaveLength(4);
+    const checks = stagesChecks({ reply: r, shownNew, oldDoc: docFromChecked(OLD), facts: FACTS, alternates: [], shape: 3, kind: "precon", postPass: true });
+    expect(checkShape(dedupeSections(replyDoc, FACTS).doc, [], 3).pass).toBe(true);
+    expect(checks.shape).toEqual({ pass: false, offenders: ["shown: 4 Key cards, not 5 to 8"] });
+    expect(checkShapeShown(replyDoc, replyDoc, [], 3)).toEqual(checkShape(replyDoc, [], 3));
+    expect(i3RepairTargets(checks).sections).toEqual(["keyCards"]);
+  });
+  it("sends what the post-pass leaves to the one repair, the later section of a card in two", () => {
+    const r = counterIntelligence();
+    const c = stagesChecks({ reply: r, shownNew: dedupeSections(docShownNew(OLD, r, 3), FACTS).doc, oldDoc: docFromChecked(OLD), facts: FACTS, alternates: [], shape: 3, kind: "precon", postPass: true });
+    const t = i3RepairTargets(c);
+    expect(t.sections.sort()).toEqual(["keyCards", "primer"]);
+    expect(t.reasons).toContain("primer: tip 1 needs 2 cards no earlier section explains (it names Eternal Witness, Satyr Wayfinder)");
+    expect(t.reasons).toContain("primer: Satyr Wayfinder is explained in stages and tips; explain each card in one section only");
+    expect(t.reasons.some((x) => x.startsWith("keyCards: 1 Key cards, not 5 to 8"))).toBe(true);
+    // A card in the overview and a Key card's job: the Key cards (the later section) are rewritten.
+    const twice = { ...c, shape: { pass: true, offenders: [] }, dedupe: undefined, noCardTwice: { pass: false, offenders: [{ card: "Spore Frog", sections: ["overview", "keyCardJobs"] as RepetitionSection[] }] } };
+    expect(i3RepairTargets(twice).sections).toEqual(["keyCards"]);
+    // The later section is the alternate line, which no repair rewrites: the earlier one is.
+    const alt = { ...twice, noCardTwice: { pass: false, offenders: [{ card: "Spore Frog", sections: ["stages", "alternate"] as RepetitionSection[] }] } };
+    expect(i3RepairTargets(alt).sections).toEqual(["primer"]);
+    expect(i3RepairTargets({ ...twice, noCardTwice: { pass: true, offenders: [] } })).toEqual({ sections: [], reasons: [] });
   });
   it("runs through stagesChecks only when the caller ran the post-pass on what it shows", () => {
     const reply = counterIntelligence();

@@ -36,7 +36,8 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  * After the i3 run (2026-10-29), iteration 3 also REQUIRES the alternate line in the schema for such a
  * precon (`stagesSchemaFor`), and runs a deterministic explained-once post-pass on the reply
  * (`dedupeSections`: stages, then Key cards, then tips keep a card in that order) before it is shown
- * and checked; `checkNoCardTwice` fails what the pass cannot fix.
+ * and checked; `checkNoCardTwice` fails what the pass cannot fix. The pass and its checks run on the
+ * first write BEFORE the one repair is chosen, so what they fail is sent for that repair too (`i3RepairTargets`).
  *
  *   PROD_READONLY_DATABASE_URL=... pnpm eval:overview-stages --list-prod-decks
  *       Lists Hugh's production decks (read-only, SELECT only, nothing else runs): id, name,
@@ -289,7 +290,7 @@ if (args.replay) {
   const stored = JSON.parse(readFileSync(join(runDir, "summary.json"), "utf8")) as { iteration: number };
   const shapeR = stagesMod.shapeOfIteration(stored.iteration);
   const read = <T,>(p: string): T | null => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) as T : null);
-  type NewFile = { id: string; kind: "precon" | "player deck"; alternates: string[]; content: Checked; reply: import("../../src/lib/synopsis/stages").StagesReply; repairReply: import("../../src/lib/synopsis/stages").StagesReply | null; firstVerdicts: Checked["verdicts"]; failed?: string };
+  type NewFile = { id: string; kind: "precon" | "player deck"; alternates: string[]; content: Checked; reply: import("../../src/lib/synopsis/stages").StagesReply; repairReply: import("../../src/lib/synopsis/stages").StagesReply | null; firstVerdicts: Checked["verdicts"]; repaired?: string[]; failed?: string };
   type OldFile = { name: string; commanders: string[]; landLine: string; note: string; content: Checked | null; source: string; shown: import("../../src/lib/synopsis/stages").OverviewDoc | null };
   type Checks = import("../../src/lib/synopsis/stages").StagesChecks;
   const dirs = readdirSync(runDir).filter((d) => statSync(join(runDir, d)).isDirectory() && existsSync(join(runDir, d, "new.json")));
@@ -346,36 +347,44 @@ if (args.replay) {
       if (req.ok) { facts = req.facts; basis = "facts rebuilt from staging (read-only)"; }
     }
     if (!facts && prodFacts.has(id)) { facts = prodFacts.get(id)!; basis = "facts read from production (read-only)"; }
+    // The sections the repair rewrote: stored since iteration 3 sends the post-pass's failures too;
+    // an older run's are its refused first verdicts.
+    const failing = neu.repaired ?? (neu.firstVerdicts ?? []).filter((v) => v.status === "refused").map((v) => v.section);
+    const effective = stagesMod.mergeStagesReply(neu.reply, neu.repairReply, failing);
     const partial = !facts;
     if (partial) {
       if (!before || !before.cardsInList.pass) { console.log(`${id}: no facts, and no stored "cards in the list" pass to lean on; not replayed`); continue; }
-      facts = namedFacts(neu.reply, commanders);
-      basis = "PARTIAL: facts not stored and not rebuildable here; the post-pass, the repetition checks, shape and length re-run on the cards the deck's own lines name, every other check carried over as stored";
+      // From the merged reply the checks read, so a card only the repair named is in the index.
+      facts = namedFacts(effective, commanders);
+      basis = `PARTIAL: facts not stored and not rebuildable here; ${shapeR === 3 ? "the post-pass, " : ""}the repetition checks, shape and length re-run on the cards the deck's own lines name, every other check carried over as stored`;
     }
-    const failing = (neu.firstVerdicts ?? []).filter((v) => v.status === "refused").map((v) => v.section);
-    const effective = stagesMod.mergeStagesReply(neu.reply, neu.repairReply, failing);
     let res: { shownNew: import("../../src/lib/synopsis/stages").OverviewDoc; checks: Checks; shownDedupe: unknown };
     if (!partial) {
       res = checkedNew(stagesMod, { content: neu.content, effective, oldContent: old?.content ?? null, facts: facts!, alternates: neu.alternates, shape: shapeR, kind: neu.kind });
     } else {
       // The partial facts carry names alone: run only the checks that read names and the commanders.
-      const shownPass = stagesMod.dedupeSections(stagesMod.docShownNew(neu.content, effective, shapeR), facts!);
-      const replyPass = stagesMod.dedupeSections(stagesMod.docFromStagesReply(effective, shapeR), facts!);
+      // The post-pass and `checkNoCardTwice` are iteration 3's alone; an iteration 1 or 2 run is re-read as it was.
+      const i3 = shapeR === 3;
+      const shownRaw = stagesMod.docShownNew(neu.content, effective, shapeR);
+      const replyRaw = stagesMod.docFromStagesReply(effective, shapeR);
+      const shownPass = i3 ? stagesMod.dedupeSections(shownRaw, facts!) : null;
+      const replyPass = i3 ? stagesMod.dedupeSections(replyRaw, facts!) : null;
+      const shownDoc = shownPass?.doc ?? shownRaw;
+      const replyDoc = replyPass?.doc ?? replyRaw;
       res = {
-        shownNew: shownPass.doc, shownDedupe: shownPass.report,
+        shownNew: shownDoc, shownDedupe: shownPass?.report ?? null,
         checks: {
           ...before!,
-          explainedOnce: stagesMod.checkExplainedOnce(replyPass.doc, facts!, { keyCardNames: shapeR === 3 }),
-          shape: stagesMod.checkShape(replyPass.doc, neu.alternates, shapeR),
-          length: stagesMod.checkLength(shownPass.doc, stagesMod.docFromChecked(old?.content ?? EMPTY_CHECKED)),
-          noCardTwice: stagesMod.checkNoCardTwice(replyPass.doc, facts!),
-          dedupe: replyPass.report,
+          explainedOnce: stagesMod.checkExplainedOnce(replyDoc, facts!, { keyCardNames: i3 }),
+          shape: i3 ? stagesMod.checkShapeShown(replyDoc, shownDoc, neu.alternates, shapeR) : stagesMod.checkShape(replyDoc, neu.alternates, shapeR),
+          length: stagesMod.checkLength(shownDoc, stagesMod.docFromChecked(old?.content ?? EMPTY_CHECKED)),
+          ...(i3 ? { noCardTwice: stagesMod.checkNoCardTwice(replyDoc, facts!), dedupe: replyPass!.report } : {}),
         },
       };
     }
     const after: Checks = res.checks;
-    // The stored checks predate `checkNoCardTwice`: read it on the stored reply as it was, before the post-pass.
-    const b = passes(before && !before.noCardTwice ? { ...before, noCardTwice: stagesMod.checkNoCardTwice(stagesMod.docFromStagesReply(effective, shapeR), facts!) } : before);
+    // The stored checks predate `checkNoCardTwice` (iteration 3's alone): read it on the stored reply as it was, before the post-pass.
+    const b = passes(before && !before.noCardTwice && shapeR === 3 ? { ...before, noCardTwice: stagesMod.checkNoCardTwice(stagesMod.docFromStagesReply(effective, shapeR), facts!) } : before);
     const a = passes(after);
     const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])];
     const schemaOk = stagesMod.stagesSchemaFor(shapeR, neu.alternates).safeParse(neu.reply).success;
@@ -702,10 +711,20 @@ for (const [i, p] of plans.entries()) {
   let content = firstChecked;
   let repairReply: StagesReply | null = null;
   let repairUsd: number | undefined;
-  const failing = refusedSections(firstChecked);
+  const refused = refusedSections(firstChecked);
+  // Iteration 3: the explained-once post-pass and its checks run on the first write BEFORE the one
+  // repair is chosen, so a Key cards section the pass leaves short, a tip it leaves without a subject
+  // or a card still in two sections is rewritten too, not only a section the validator refused.
+  const i3First = shape === 3
+    ? stages.i3RepairTargets(checkedNew(stages, { content: firstChecked, effective: reply, oldContent: old.content, facts: it.facts, alternates: it.alternates, shape, kind: it.kind }).checks)
+    : { sections: [], reasons: [] };
+  const failing = [...new Set([...refused, ...i3First.sections])];
   const left = SYNOPSIS_DEADLINE_MS - saved.latencyMs;
   if (repairOn && failing.length > 0 && left >= SYNOPSIS_REPAIR_MIN_MS) {
-    const repPrompt = buildSynopsisPrompt(it.facts, { keep: firstChecked, refused: failing, first: reply }, { v2: true, contract8: true, stages: stagesOpt(it, old.content) });
+    const built = buildSynopsisPrompt(it.facts, { keep: firstChecked, refused: failing, first: reply }, { v2: true, contract8: true, stages: stagesOpt(it, old.content) });
+    const repPrompt = i3First.reasons.length > 0
+      ? { ...built, user: `${built.user}\nThese also broke the rule that each card is explained in one section only: ${i3First.reasons.join("; ")}.` }
+      : built;
     const rep = await ask<StagesReply>(it, "new-repair", repPrompt, newSchema(it), left, 1, i);
     if (!rep) break;
     repairUsd = rep.usd;
@@ -723,7 +742,7 @@ for (const [i, p] of plans.entries()) {
     // Each section shown, with whether only a precon has it (`SECTION_SCOPE`): a player's deck shows none of those.
     sections: stages.sectionsOf(shownNew),
     usd: saved.usd, repairUsd, usage: saved.usage, stops: saved.stops, latencyMs: saved.latencyMs,
-    firstVerdicts: firstChecked.verdicts, content, reply, repairReply, shown: shownNew,
+    firstVerdicts: firstChecked.verdicts, ...(shape === 3 ? { i3BeforeRepair: i3First } : {}), repaired: repairReply ? failing : [], content, reply, repairReply, shown: shownNew,
   }, null, 2)}\n`);
   writeFileSync(new URL("checks.json", dir), `${JSON.stringify({ id: it.id, validatorPass, verdicts: content.verdicts, checks }, null, 2)}\n`);
 }
