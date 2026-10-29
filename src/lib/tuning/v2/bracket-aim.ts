@@ -7,8 +7,10 @@ import { permitsOf, type GateFacts } from "../../intake/fill-gate";
  * `bracketAfter` is the shipped per-line flag (`bracket-shift.ts`): the brackets the deck permits with that one change,
  * or null when the change moves nothing. A deck whose reading is a range ("Exhibition or Core") permits more than one.
  *
- * - **Keep**: nothing suggested moves the deck out of its bracket. A line whose permits no longer include the bracket kept
- *   at is dropped (`bracketAim`). The player chose this, so the drop is a restriction, like a price cap (`charge.ts`).
+ * - **Keep**: nothing suggested moves the deck out of its bracket. A line whose permits no longer reach the bracket kept
+ *   at is dropped (`bracketAim`). A deck read as a range keeps the whole range (d9, 2026-10-28): `target` is its top and
+ *   `low` its bottom, and a line is dropped only when none of its permits fall in [low, target]; a single bracket sends no
+ *   `low`, so it keeps exactly its own. The player chose this, so the drop is a restriction, like a price cap (`charge.ts`).
  * - **Down**: additions stay inside the target. An addition is dropped when its permits exclude the target, or when the
  *   card ALONE cannot sit in a deck at the target (`cardFloor`, the lowest bracket a deck holding it can be: a second Game
  *   Changer leaves a bracket-3 deck's permits at [3], so the delta alone would let it through). Cuts are steered by the
@@ -19,14 +21,17 @@ import { permitsOf, type GateFacts } from "../../intake/fill-gate";
  * player has stated an aim; v10 and Proposed cuts keep it.
  */
 export type BracketChoice = "keep" | "down" | "up";
-export type BracketAim = { choice: BracketChoice; target: number };
+export type BracketAim = { choice: BracketChoice; target: number; /** Keep on a range: its bottom. */ low?: number };
 
 export function aimDrops(
   aim: BracketAim, side: "add" | "cut", bracketAfter: readonly number[] | null,
   /** For an addition: the lowest bracket any deck holding this card can be (null when the card bars none). */
   cardFloor: number | null = null,
 ): boolean {
-  if (aim.choice === "keep") return bracketAfter !== null && !bracketAfter.includes(aim.target);
+  if (aim.choice === "keep") {
+    const low = aim.low ?? aim.target;
+    return bracketAfter !== null && !bracketAfter.some((b) => b >= low && b <= aim.target);
+  }
   if (aim.choice === "down" && side === "add") {
     return (bracketAfter !== null && !bracketAfter.includes(aim.target)) || (cardFloor !== null && cardFloor > aim.target);
   }

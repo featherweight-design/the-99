@@ -190,7 +190,11 @@ describe("parseV2Wire", () => {
       { requestedCount: 0 }, { requestedCount: 2.5 }, { requestedCount: 5, request: null },
       { requestedCount: 5, bracket: { choice: "keep", target: 0 } }, { requestedCount: 5, bracket: { choice: "Keep", target: 3 } },
       { requestedCount: 5, bracket: "keep" },
+      // A range's bottom rides on Keep only, as an integer no higher than its top.
+      { requestedCount: 5, bracket: { choice: "up", target: 5, low: 4 } }, { requestedCount: 5, bracket: { choice: "keep", target: 4, low: 5 } },
+      { requestedCount: 5, bracket: { choice: "keep", target: 5, low: 0 } },
     ]) expect(parseV2Wire(bad)).toBeNull();
+    expect(parseV2Wire({ requestedCount: 5, bracket: { choice: "keep", target: 5, low: 4 } })?.bracket).toEqual({ choice: "keep", target: 5, low: 4 });
   });
 });
 

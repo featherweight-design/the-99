@@ -55,10 +55,12 @@ export function parseV2Wire(opts: Record<string, unknown>): V2Wire | null {
   if (opts.request !== undefined && typeof opts.request !== "string") return null;
   let bracket: BracketAim | null = null;
   if (opts.bracket !== undefined && opts.bracket !== null) {
-    const b = opts.bracket as { choice?: unknown; target?: unknown };
+    const b = opts.bracket as { choice?: unknown; target?: unknown; low?: unknown };
     if (typeof b !== "object" || !CHOICES.includes(b.choice as BracketChoice)) return null;
     if (!Number.isInteger(b.target) || (b.target as number) < 1 || (b.target as number) > 5) return null;
-    bracket = { choice: b.choice as BracketChoice, target: b.target as number };
+    // A range's bottom, on Keep only, and no higher than its top.
+    if (b.low !== undefined && (b.choice !== "keep" || !Number.isInteger(b.low) || (b.low as number) < 1 || (b.low as number) > (b.target as number))) return null;
+    bracket = { choice: b.choice as BracketChoice, target: b.target as number, ...(b.low !== undefined ? { low: b.low as number } : {}) };
   }
   return { requestedCount: opts.requestedCount, request: opts.request as string | undefined, bracket, confirmed: opts.confirmed === true };
 }
