@@ -1,7 +1,7 @@
 "use client";
 
 // The cart's phone Filters sheet (handoff Controls B1, R1b; plan A6, PR 9): the compact chassis's one filter surface,
-// opened by the 36px Filters pill. The Friend group is Any friend across the row, then the friends as equal-width pills
+// opened by the 44px Filters box. The Friend group is Any friend across the row, then the friends as equal-width pills
 // two to a row, each with its face and how many of the cart's cards they hold; Owned is a segmented control. Filters
 // apply as they are pressed, so the primary press only closes the sheet and Escape or a swipe lose nothing.
 

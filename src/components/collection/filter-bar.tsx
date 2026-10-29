@@ -39,6 +39,7 @@ import { FilterPanel } from "../ui/filter-panel";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { FiltersBoxTrigger } from "../ui/filters-box-trigger";
 import { UNDER_HEADER } from "../ui/under-header";
 import { noteAppScroll } from "../../lib/ui/reveal";
 
@@ -298,9 +299,9 @@ export function FilterBar({
     }
     const mq = window.matchMedia("(min-width: 900px)");
     const apply = () => {
-      // 108/66, not the brief's provisional 102/60 — see the head's own comment below.
+      // 116/66 (Small items 4 item 1: row B is the 44px Filters box) — see the head's own comment below.
       // Plus a returned phone header's room (card search plan PR B), which the head rides under.
-      document.documentElement.style.scrollPaddingTop = `calc(${mq.matches ? "66px" : "108px"} + var(--header-offset, 0px))`;
+      document.documentElement.style.scrollPaddingTop = `calc(${mq.matches ? "66px" : "116px"} + var(--header-offset, 0px))`;
     };
     apply();
     mq.addEventListener("change", apply);
@@ -450,9 +451,10 @@ export function FilterBar({
 
   // Below 1000px: collection's own pinned head (collection surfaces, R1 + addendum R2), not
   // the shared chassis. Two heights, both fixed and neither animated (STATES H1/H2):
-  //   < 900px  — 108px, two rows: search + the view well, then Filters · Sort · the count.
+  //   < 900px  — 116px, two rows: search + the view well, then Filters · Sort · the count.
   //   900-999  — 66px, one row: the same five controls side by side (`min-[900px]:flex-row`).
-  // The brief's own arithmetic (8+44+6+36+7+1) states 102 and 60, 6px under both: it sizes
+  // 116 = 8 + 50 + 6 + 44 + 7 + 1 (Small items 4 item 1: row B is the 44px Filters box, was 36).
+  // The original brief's arithmetic (8+44+6+36+7+1) stated 102 and 60, 6px under the then heads: it sized
   // row 1 to the 44px search field alone, but `ViewToggle`'s shared compact well is 48px
   // content-box (`view-toggle.tsx`'s own 94×48 note) — 50px rendered with its border — and
   // row 1's height is the TALLER of the two. Shrinking that well just for this row would
@@ -483,7 +485,7 @@ export function FilterBar({
             focus and drop the reader's focus to nowhere. */}
         <div
           data-collection-search-row
-          // Pinned to the view well's own rendered height (50px, the 108/66 arithmetic's
+          // Pinned to the view well's own rendered height (50px, the 116/66 arithmetic's
           // basis above) rather than left to the row's tallest VISIBLE child: hiding the
           // well on search focus would otherwise shrink this row — and the head along with
           // it — by the 6px gap between the well and the 44px search field, moving content
@@ -510,9 +512,8 @@ export function FilterBar({
         </div>
 
         {/* Row B — Filters (with its dimension badge), the hairline, Sort, the
-            result count. Drawn at 36px (decision 7): the trigger and the
-            count keep a 44px hit target through an overlay rather than a
-            taller box, or the head would be 8px taller again. */}
+            result count. One 44px height (Small items 4 item 1): the Filters box
+            and Sort's compact trigger are both 44 themselves. */}
         <div className="flex items-center gap-[8px] min-[900px]:flex-none">
           <FiltersTrigger
             active={activeDimensions}
@@ -524,7 +525,6 @@ export function FilterBar({
             key="sort-compact"
             portalSheet
             compact
-            compactTriggerHeightPx={36}
             copy={collectionFilterCopy.sort}
             options={buildSortOptions(sort, sortDirection)}
             selected={[sort]}
@@ -632,7 +632,7 @@ export function FilterBar({
  *
  * The badge counts DIMENSIONS, not values — "3" beside a trigger that opens four
  * groups reads as three groups on, which is what it is. Zero draws no badge at
- * all rather than a `0`. Exported for the all-decks cart, whose compact Filters pill is this one (cart v2 addendum R2 §4).
+ * all rather than a `0`. Exported for the all-decks cart, whose compact Filters box is this one (cart v2 addendum R2 §4).
  */
 export function FiltersTrigger({
   active,
@@ -644,34 +644,12 @@ export function FiltersTrigger({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <FiltersBoxTrigger
+      label={collectionChassisCopy.sheet.trigger}
+      ariaLabel={collectionChassisCopy.sheet.triggerAria(active)}
+      badge={active}
+      expanded={expanded}
       onClick={onClick}
-      aria-haspopup="dialog"
-      aria-expanded={expanded}
-      aria-label={collectionChassisCopy.sheet.triggerAria(active)}
-      className={[
-        // Drawn at 36px (decision 7), with a 44px hit target kept by the
-        // same `after:` overlay the chip ✕ and chassis Clear-all use —
-        // drawing it at the shared 44px would make the pinned head 116px.
-        "relative inline-flex h-[36px] shrink-0 cursor-pointer items-center gap-[7px] whitespace-nowrap",
-        "rounded-full border border-solid px-[13px] font-sans text-[12.5px] font-medium",
-        "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px] after:w-full",
-        "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
-        active > 0
-          ? "border-[color:var(--accent)] bg-[color:var(--elevated)] text-[color:var(--fg)]"
-          : "border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-[color:var(--fg)]",
-      ].join(" ")}
-    >
-      {collectionChassisCopy.sheet.trigger}
-      {active > 0 && (
-        <span
-          aria-hidden
-          className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--accent)] px-[5px] font-mono text-[10px] text-[color:var(--bg)]"
-        >
-          {active}
-        </span>
-      )}
-    </button>
+    />
   );
 }
