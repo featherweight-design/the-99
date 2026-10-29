@@ -3,7 +3,7 @@
 import { requireUserId } from "../../lib/auth";
 import { ABOUT_VERSION } from "../../lib/copy/about";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../lib/copy/about-pages";
-import { visibleSections, visitWrite } from "../../lib/about/pages-visible";
+import { answeredKeys, visibleSections, visitWrite } from "../../lib/about/pages-visible";
 import { aboutSeen, markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
@@ -47,8 +47,7 @@ const MAX_SHOWN = 200;
  * and of those only the ones this reader's switches still draw now (decided here from the proxy's resolution, so a
  * caller can drop an id but never add one). The appendix by its id, while its switch is on.
  */
-async function acknowledged(userId: string, shown: readonly unknown[]): Promise<string[]> {
-  const env = await requestSwitchEnv(userId);
+function acknowledged(env: NodeJS.ProcessEnv, shown: readonly unknown[]): string[] {
   const drawn = new Set([...switchedIds(visibleEntries(env)), ...(howItWorksEnabled(env) ? [HOW_IT_WORKS_ID] : [])]);
   const claimed = shown.slice(0, MAX_SHOWN).filter((id): id is string => typeof id === "string");
   return [...new Set(claimed.filter((id) => drawn.has(id)))];
@@ -61,8 +60,18 @@ async function acknowledged(userId: string, shown: readonly unknown[]): Promise<
  *
  * Called from `RecordVisit`'s effect after the page has mounted in a browser, never during render: a write at render
  * would record a prefetch the reader never opened. It neither redirects nor revalidates.
+ *
+ * Returns what the write CONFIRMED, for the page to acknowledge in this document: the ids written, and the pages' unit
+ * keys the reader is told about once it lands (`answeredKeys` of the state it leaves, from the switches resolved for
+ * THIS call), never the render's forecast, so a switch flipped between the render and the visit cannot acknowledge a
+ * unit the write did not cover.
  */
-export async function recordAboutVisit(shown: readonly string[]) {
+export async function recordAboutVisit(shown: readonly string[]): Promise<string[]> {
   const userId = await requireUserId();
-  await markAboutVisited(userId, ABOUT_VERSION, await acknowledged(userId, Array.isArray(shown) ? shown : []));
+  const env = await requestSwitchEnv(userId);
+  const ids = acknowledged(env, Array.isArray(shown) ? shown : []);
+  const seen = await aboutSeen(userId);
+  await markAboutVisited(userId, ABOUT_VERSION, ids);
+  const after = { version: Math.max(seen.version, ABOUT_VERSION), ids: [...new Set([...seen.ids, ...ids])] };
+  return [...new Set([...ids, ...answeredKeys(visibleSections(env), after)])];
 }

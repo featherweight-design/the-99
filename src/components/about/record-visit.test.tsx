@@ -3,7 +3,7 @@ import { renderToString } from "react-dom/server";
 import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const recordAboutVisit = vi.fn(async (_shown?: readonly string[]) => {});
+const recordAboutVisit = vi.fn(async (_shown?: readonly string[]): Promise<string[]> => []);
 vi.mock("../../app/about/actions", () => ({ recordAboutVisit }));
 
 const { RecordVisit } = await import("./record-visit");
@@ -41,33 +41,42 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
   });
 
   // About on the banner: Back to Home after a visit must not bring About's line back from the router's payload.
-  it("tells Home's banner, once the write lands, that every entry the page drew is answered", async () => {
-    render(<RecordVisit behind shown={["notes"]} drawn={["browse", "notes"]} />);
-    expect(aboutAcknowledged(["notes"])).toBe(false);
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(aboutAcknowledged(["notes"])).toBe(true);
-    expect(aboutAcknowledged(["browse", "notes"])).toBe(true);
-    expect(aboutAcknowledged(["notes", "lineup"])).toBe(false);
-  });
-
-  // Review round 1: Home's banner checks unit keys, which the Reference's legacy ids never match.
-  it("acknowledges the unit keys its write covers once it lands, so Back to Home drops those launches", async () => {
-    render(<RecordVisit behind shown={["locked-cards"]} drawn={["locked-cards"]} answered={["decks/your-deck/lock"]} />);
+  // Review rounds 1 and 4: Home's banner checks unit keys, and a behind reader's visit acknowledges what the write
+  // CONFIRMED (the action's answer), never the render's forecast.
+  it("acknowledges, once the write lands, exactly the keys the action confirmed", async () => {
+    recordAboutVisit.mockResolvedValueOnce(["locked-cards", "decks/your-deck/lock"]);
+    render(<RecordVisit behind shown={["locked-cards"]} drawn={["locked-cards", "browse"]} answered={["decks/games/matchups"]} />);
     expect(launchAcknowledged("decks/your-deck/lock")).toBe(false);
     await Promise.resolve();
     await Promise.resolve();
     expect(launchAcknowledged("decks/your-deck/lock")).toBe(true);
     expect(aboutAcknowledged(["locked-cards"])).toBe(true);
-    expect(aboutFirstRunOver()).toBe(false);
+    // Neither a forecast handed in at render nor an entry drawn but unwritten is acknowledged by a write.
+    expect(launchAcknowledged("decks/games/matchups")).toBe(false);
+    expect(aboutAcknowledged(["browse"])).toBe(false);
   });
 
-  it("ends the first run in this document when the write does, once it lands", async () => {
-    render(<RecordVisit behind shown={[]} drawn={[]} answered={[]} endsFirstRun />);
+  it("does not acknowledge a unit the render forecast but the write did not cover (a switch flipped in between)", async () => {
+    recordAboutVisit.mockResolvedValueOnce(["home/home/ready"]);
+    render(<RecordVisit behind shown={["locked-cards"]} answered={["decks/your-deck/lock"]} />);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(launchAcknowledged("home/home/ready")).toBe(true);
+    expect(launchAcknowledged("decks/your-deck/lock")).toBe(false);
+  });
+
+  it("ends the first run in this document once the write lands (it raises the floor)", async () => {
+    render(<RecordVisit behind shown={[]} />);
     expect(aboutFirstRunOver()).toBe(false);
     await Promise.resolve();
     await Promise.resolve();
     expect(aboutFirstRunOver()).toBe(true);
+  });
+
+  it("acknowledges a current reader's drawn ids and covered unit keys at once, and ends nothing", () => {
+    render(<RecordVisit behind={false} shown={[]} drawn={["notes"]} answered={["decks/games/matchups"]} />);
+    expect(launchAcknowledged("decks/games/matchups")).toBe(true);
+    expect(aboutFirstRunOver()).toBe(false);
   });
 
   it("acknowledges nothing when the write fails", async () => {
@@ -80,7 +89,7 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
 
   it("a late failure of an older visit leaves a later visit's acknowledgement standing", async () => {
     let reject!: (e: Error) => void;
-    recordAboutVisit.mockImplementationOnce(() => new Promise<void>((_, r) => { reject = r; }));
+    recordAboutVisit.mockImplementationOnce(() => new Promise<string[]>((_, r) => { reject = r; }));
     const first = render(<RecordVisit behind shown={["notes"]} drawn={["notes"]} />);
     first.unmount();
     // Another tab marked About seen meanwhile: this tab's next /about mount is current and writes nothing.
@@ -93,7 +102,7 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
 
   it("a re-run effect while the write is pending leaves nothing acknowledged when it fails", async () => {
     let reject!: (e: Error) => void;
-    recordAboutVisit.mockImplementationOnce(() => new Promise<void>((_, r) => { reject = r; }));
+    recordAboutVisit.mockImplementationOnce(() => new Promise<string[]>((_, r) => { reject = r; }));
     const { rerender } = render(<RecordVisit behind shown={["notes"]} drawn={["notes"]} />);
     rerender(<RecordVisit behind shown={["notes"]} drawn={["notes", "browse"]} />);
     reject(new Error("offline"));

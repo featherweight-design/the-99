@@ -1,4 +1,5 @@
 import { render, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const record = vi.hoisted(() => vi.fn(async (_area: unknown, _claimed?: unknown): Promise<string[]> => ["decks/games/matchups", "rule/lock"]));
@@ -20,6 +21,25 @@ describe("RecordPageVisit (About visual PR 6b)", () => {
     expect(record).toHaveBeenCalledWith("decks", ["decks/games/matchups"]);
     await waitFor(() => expect(launchAcknowledged("rule/lock")).toBe(true));
     expect(launchAcknowledged("decks/games/matchups")).toBe(true);
+  });
+
+  // Review round 4: a refresh in place (a switch turned on, then `ThemeRefresh`) draws new keys to write.
+  it("records again when a re-render in place claims new keys, and not for the same claim re-sent", async () => {
+    const { rerender } = render(<RecordPageVisit area="decks" owed keys={["decks/games/matchups"]} claimed={["decks/games/matchups"]} />);
+    await waitFor(() => expect(launchAcknowledged("rule/lock")).toBe(true));
+    rerender(<RecordPageVisit area="decks" owed keys={["decks/games/matchups"]} claimed={["decks/games/matchups"]} />);
+    expect(record).toHaveBeenCalledTimes(1);
+    rerender(<RecordPageVisit area="decks" owed keys={["decks/games/matchups", "decks/your-deck/lock"]} claimed={["decks/your-deck/lock"]} />);
+    expect(record).toHaveBeenCalledTimes(2);
+    expect(record).toHaveBeenLastCalledWith("decks", ["decks/your-deck/lock"]);
+    // The same keys in a new array, in another order, are the same visit.
+    rerender(<RecordPageVisit area="decks" owed keys={["decks/your-deck/lock", "decks/games/matchups"]} claimed={["decks/your-deck/lock"]} />);
+    expect(record).toHaveBeenCalledTimes(2);
+  });
+
+  it("writes once under StrictMode's double effect", () => {
+    render(<StrictMode><RecordPageVisit area="decks" owed keys={["decks/games/log"]} claimed={["decks/games/log"]} /></StrictMode>);
+    expect(record).toHaveBeenCalledTimes(1);
   });
 
   it("writes nothing when nothing is owed, and acknowledges this page's keys at once", () => {

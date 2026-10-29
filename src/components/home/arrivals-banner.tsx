@@ -110,11 +110,16 @@ const CROP_SIZES = {
   list: { phone: [44, 32], desktop: [44, 32], box: "h-[32px] w-[44px]", round: "rounded-[5px]" },
 } as const;
 
-/** Where a crop's image sits in its box at one width, as custom properties the image's classes read per breakpoint. */
-function cropVars(crop: BannerCrop | null, [w, h]: readonly [number, number], prefix: "p" | "d"): Record<string, string> {
-  if (!crop) return {};
-  const at = cropStyle(crop, w, h);
-  return { [`--${prefix}l`]: `${at.left}px`, [`--${prefix}t`]: `${at.top}px`, [`--${prefix}w`]: `${at.width}px`, [`--${prefix}h`]: `${at.height}px` };
+/** Where a crop's image sits in its box at one width, as custom properties the image's classes read per breakpoint.
+ *  Spelled out, one literal name each, so each is declared where it is set (`check:tokens`). */
+function cropVars(phone: BannerCrop | null, desktop: BannerCrop | null, s: (typeof CROP_SIZES)[keyof typeof CROP_SIZES]): CSSProperties {
+  const px = (n: number) => `${n}px`;
+  const p = phone ? cropStyle(phone, s.phone[0], s.phone[1]) : null;
+  const d = desktop ? cropStyle(desktop, s.desktop[0], s.desktop[1]) : null;
+  return {
+    ...(p ? { "--pl": px(p.left), "--pt": px(p.top), "--pw": px(p.width), "--ph": px(p.height) } : {}),
+    ...(d ? { "--dl": px(d.left), "--dt": px(d.top), "--dw": px(d.width), "--dh": px(d.height) } : {}),
+  } as CSSProperties;
 }
 
 /**
@@ -142,7 +147,7 @@ function LaunchCrop({ launch, size }: { launch: AboutLaunch; size: "line" | "lis
         aria-hidden="true"
         data-about-crop
         className={`relative box-content flex-none overflow-hidden border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] ${s.round} ${s.box} ${shown}`}
-        style={{ ...cropVars(phone, s.phone, "p"), ...cropVars(desktop, s.desktop, "d") } as CSSProperties}
+        style={cropVars(phone, desktop, s)}
       >
         <picture>
           <source media={CROP_MEDIA} srcSet={desktop?.src ?? BLANK_PIXEL} />

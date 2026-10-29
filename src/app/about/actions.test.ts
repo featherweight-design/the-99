@@ -118,6 +118,31 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
 });
 
 describe("recordAboutVisit (R6)", () => {
+  beforeEach(() => {
+    stored.seen = { version: 9, ids: [] };
+    resolved.env = {};
+  });
+
+  // Review round 4: the page acknowledges this answer, not its render's forecast.
+  it("returns what the write confirmed: the ids written and the unit keys the state it leaves covers", async () => {
+    stored.seen = { version: 14, ids: [] };
+    resolved.env = { NEVER_CUT_ENABLED: "true" };
+    const confirmed = await recordAboutVisit(["locked-cards"]);
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["locked-cards"]);
+    expect(confirmed).toContain("locked-cards");
+    expect(confirmed).toContain("decks/your-deck/lock");
+    expect(confirmed).toContain("home/home/ready");
+  });
+
+  it("confirms no unit a switch flipped off between the render and the visit took out of the write", async () => {
+    stored.seen = { version: 14, ids: [] };
+    resolved.env = {};
+    const confirmed = await recordAboutVisit(["locked-cards"]);
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
+    expect(confirmed).not.toContain("locked-cards");
+    expect(confirmed).not.toContain("decks/your-deck/lock");
+  });
+
   it("records the current version and the switched entries the page showed", async () => {
     await recordAboutVisit([]);
     expect(requireUserId).toHaveBeenCalledOnce();
