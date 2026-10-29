@@ -97,6 +97,19 @@ describe("summariseFillPasses", () => {
     expect(line.liveCards).toEqual([{ oracleId: "island", quantity: 8 }]);
   });
 
+  // Adding a copy to a basic claims the stack (`addCardToDeckFor` clears `auto`), so the line and the
+  // header (auto copies) agree: nothing live, and the pass reads as kept, never "30 of 30 still here"
+  // beside a header of 34.
+  it("reads a claimed stack as kept, and the undo of a stacked top-off as not offered", () => {
+    const [seed] = summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "forest", 30)],
+      deckCards: [kept("forest", 34)],
+    });
+    expect(seed).toMatchObject({ live: 0, kept: 30, removed: 0 });
+    expect(seed.liveCards).toEqual([]);
+  });
+
   it("counts a stack the player has claimed as kept, not live", () => {
     expect(summariseFillPasses({
       passes: [pass({ id: "p1" })],
