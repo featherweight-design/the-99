@@ -19,9 +19,10 @@
 // it describes, it docks at the top of the visible band instead (`dockPlace`). Top or foot is decided once, before the
 // first paint of each tap's dock (the screen keys the dock on its label, so another tap mounts a new one and decides
 // again). At the top it rides the header (Small items 4 item 3, board `Dock-Header.html`): `DOCK_AT_TOP` is live CSS,
-// 12px under the back bar or the returned header, moving on the header's own slide. Same look, gutters and ✕.
+// 12px under the back bar or the returned header, moving on the header's own slide, and 12px under a header still in
+// the page as it scrolls off (`--about-dock-floor`, followed on scroll). Same look, gutters and ✕.
 
-import { createContext, useContext, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
 import { dockPlace, type DockPlace } from "../../../lib/about/dock-place";
 import type { ScreenLabel } from "../../../lib/about/pins";
@@ -57,12 +58,14 @@ export function useDockSlot(): Slot {
   return useContext(DockSlot) ?? own;
 }
 
-/** What can hold the top of a phone screen above the dock: the quick-return header and About's sticky back bar. */
-const TOP_BARS = "header[data-quick-return], [data-about-back]";
+/** What holds the top of a phone screen above the dock that the dock's CSS cannot see: the quick-return header while it
+ *  is in the page (away or back, `--header-offset` already places the dock, and a header mid-slide would read as a
+ *  stale edge), and About's sticky back bar. */
+const TOP_BARS = "header[data-quick-return=page], [data-about-back]";
 
-/** The lowest bottom edge of what holds the top of the screen now. A header gone away ends at or above the screen's
- *  top and a back bar not drawn has no box, so neither counts (0 when nothing does). Both sit at the page's top, so
- *  neither is ever below the screen. */
+/** The lowest bottom edge of what holds the top of the screen now: `max(0, rect.bottom)`. A header scrolled off ends
+ *  at or above the screen's top and a back bar not drawn has no box, so neither counts (0 when nothing does). Both sit
+ *  at the page's top, so neither is ever below the screen. */
 export function topEdgeNow(): number {
   let edge = 0;
   for (const el of document.querySelectorAll<HTMLElement>(TOP_BARS)) {
@@ -74,12 +77,21 @@ export function topEdgeNow(): number {
 /**
  * The top dock's place (Small items 4 item 3): the higher of 12px under the notch's inset, 12px under the back bar and
  * the returned header (`--about-back-h` is the back bar's height while it shows, `--header-offset` the room a returned
- * header takes), and 12px under the floor a header still in the page set at the tap (`--about-dock-floor`). Its `top`
+ * header takes), and 12px under the live bottom edge of a header still in the page and the back bar (`--about-dock-floor`, set at the
+ * tap and followed on scroll, cleared at 0). Its `top`
  * moves on the header's own slide (`--header-ms`, `--header-ease`: 200ms back, 160ms away); reduced motion jumps. At
- * the foot `top` is `auto`, which never animates. Every class spelled whole so Tailwind sees it.
+ * the foot `top` is `auto`, which never animates. Following a header in the page (`data-about-dock-follow`) it moves
+ * with the scroll, unanimated. Every class spelled whole so Tailwind sees it.
  */
 export const DOCK_AT_TOP =
-  "data-[about-dock-at=top]:top-[max(env(safe-area-inset-top,0px)_+_12px,var(--header-offset,0px)_+_var(--about-back-h,0px)_+_12px,var(--about-dock-floor,0px)_+_12px)] data-[about-dock-at=top]:bottom-auto transition-[top] duration-[var(--header-ms,200ms)] ease-[var(--header-ease,var(--motion-ease-out))] motion-reduce:transition-none";
+  "data-[about-dock-at=top]:top-[max(env(safe-area-inset-top,0px)_+_12px,var(--header-offset,0px)_+_var(--about-back-h,0px)_+_12px,var(--about-dock-floor,0px)_+_12px)] data-[about-dock-at=top]:bottom-auto transition-[top] duration-[var(--header-ms,200ms)] ease-[var(--header-ease,var(--motion-ease-out))] motion-reduce:transition-none data-[about-dock-follow]:transition-none";
+
+/** A header still in the page and on screen: the floor then moves with every scroll, so the dock follows it frame by
+ *  frame rather than easing after it (the slide is for the header's own return and departure). */
+export function headerInPageNow(): boolean {
+  const el = document.querySelector<HTMLElement>("header[data-quick-return=page]");
+  return !!el && el.getClientRects().length > 0 && el.getBoundingClientRect().bottom > 0;
+}
 
 export function PinDock({
   label, onClose, region,
@@ -91,6 +103,7 @@ export function PinDock({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState<DockPlace>({ at: "foot" });
+  const [follow, setFollow] = useState(false);
   // Once, on the tap that mounted this dock, before it paints: measured at the foot, its shipped place, then at the
   // top as its CSS places it now (from `auto`, so nothing animates), and put back for React to settle.
   const read = useRef(region);
@@ -103,13 +116,41 @@ export function PinDock({
     const top = el.getBoundingClientRect().top;
     el.setAttribute("data-about-dock-at", "foot");
     const next = dockPlace({ region: lit, foot, top, topEdge: topEdgeNow() });
-    if (next.at === "top") setPlace(next);
+    if (next.at === "top") {
+      setPlace(next);
+      setFollow(headerInPageNow());
+    }
   }, []);
+  // Docked at the top, the floor follows the bars' LIVE bottom edge (orchestrator ruling, 2026-10-29), so the dock
+  // climbs 12px under a header scrolling off with the page. One read a frame, on a passive listener attached only
+  // while docked at the top and removed on undock or unmount. At 0 the floor clears and the CSS formula alone places
+  // it (the returned header, the back bar, the notch).
+  const atTop = place.at === "top";
+  useEffect(() => {
+    if (!atTop) return;
+    let frame: number | null = null;
+    const tick = () => {
+      frame = null;
+      const edge = topEdgeNow();
+      const floor = edge > 0 ? edge : null;
+      setPlace((prev) => (prev.at === "top" && prev.floor !== floor ? { at: "top", floor } : prev));
+      setFollow(headerInPageNow());
+    };
+    const onScroll = () => {
+      if (frame === null) frame = requestAnimationFrame(tick);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [atTop]);
   return (
     <div
       ref={ref}
       data-about-dock={label.key}
       data-about-dock-at={place.at}
+      data-about-dock-follow={atTop && follow ? "" : undefined}
       style={place.at === "top" && place.floor !== null ? ({ "--about-dock-floor": `${place.floor}px` } as CSSProperties) : undefined}
       className={`${DOCK_AT_TOP} fixed bottom-[calc(var(--tabbar-h)+12px)] left-[12px] right-[12px] z-[34] flex max-h-[40dvh] items-start gap-[12px] rounded-[12px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_55%,var(--border-strong))] bg-[color:var(--elevated)] py-[12px] pl-[14px] pr-[12px] text-[14px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_-12px_36px_rgb(0_0_0/0.45)] md:hidden`}
     >

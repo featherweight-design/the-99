@@ -12,7 +12,8 @@
 // item 3, "the label rides the header"), and never under the notch's safe-area inset. The one thing that CSS cannot
 // see is a header still in the page (scrolled part way, or not at all: `--header-offset` is 0 there, yet the header
 // and the back bar under it hold the top of the screen). Then the tap's measured edge becomes a floor, so the label
-// never sits over either; it is the same edge the dock always docked under before it rode the header.
+// never sits over either. `PinDock` then follows that edge live on scroll (orchestrator ruling, 2026-10-29), so the
+// dock climbs as the header leaves with the page, and clears the floor once it reaches 0.
 //
 // Client-safe: pure arithmetic over on-screen boxes, in viewport pixels.
 

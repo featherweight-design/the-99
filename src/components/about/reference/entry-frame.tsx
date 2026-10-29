@@ -2,6 +2,7 @@
 // window, moved so the entry's control is in view, the control haloed and the rest dimmed as a tool card's is. An entry
 // whose control the locator map does not place shows the top of its screen, unhaloed.
 
+import { haloInsets } from "../../../lib/about/halo";
 import { frameWindow } from "../../../lib/about/reference";
 import type { Shot } from "../../../lib/about/shots";
 
@@ -25,11 +26,10 @@ export function EntryFrame({ shot, alt }: { shot: Shot; alt: string }) {
           aria-hidden
           data-entry-halo
           className="pointer-events-none absolute rounded-[8px]"
+          // Held 8px inside the frame on every side, as a tool card's is (Small items 3 item 2): a control running to the
+          // frame's edge (a full-width bar) would otherwise lose its ring and glow to the frame's clip.
           style={{
-            left: `${w.halo.left}%`,
-            top: `${w.halo.top}%`,
-            width: `${w.halo.width}%`,
-            height: `${w.halo.height}%`,
+            ...haloInsets({ x: w.halo.left / 100, y: w.halo.top / 100, w: w.halo.width / 100, h: w.halo.height / 100 }),
             boxShadow:
               "0 0 0 2px color-mix(in oklab, var(--accent) 75%, transparent), 0 0 0 6px color-mix(in oklab, var(--accent) 20%, transparent), 0 0 0 2000px color-mix(in oklab, var(--bg) 28%, transparent)",
           }}

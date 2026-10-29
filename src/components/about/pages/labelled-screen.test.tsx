@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HALO_REACH, PIN_GUTTER, PIN_SIZE, type ScreenModel } from "../../../lib/about/pins";
 import { LabelledScreen } from "./labelled-screen";
@@ -373,6 +373,97 @@ describe("LabelledScreen docks a pressed pin's label on a phone (R4 board 3)", (
       pin(phoneOf(third.container), "a/s/three");
       expect(floorOf(third.container)).toBe("");
       done3();
+    });
+
+    // The orchestrator's ruling (2026-10-29): docked at the top, the floor follows the bars' live bottom edge on
+    // scroll, one read a frame, and clears at 0. Frames are queued here and run by hand.
+    const frames = () => {
+      const queue: FrameRequestCallback[] = [];
+      vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => queue.push(cb));
+      vi.stubGlobal("cancelAnimationFrame", () => {});
+      return {
+        pending: () => queue.length,
+        flush: () => act(() => queue.splice(0).forEach((cb) => cb(0))),
+      };
+    };
+    const scroll = () => act(() => void window.dispatchEvent(new Event("scroll")));
+
+    it("follows a header scrolling off with the page, frame by frame, and clears the floor at 0", () => {
+      const raf = frames();
+      const boxes = { two: [300, 340], three: [700, 730], css: 12, bar: [0, 79] };
+      const done = stage(boxes);
+      const { container } = draw();
+      pin(phoneOf(container), "a/s/three");
+      expect(floorOf(container)).toBe("79px");
+      // Following the header it moves unanimated; the slide is for the header's return and departure.
+      expect(dockOf(container).hasAttribute("data-about-dock-follow")).toBe(true);
+      expect(dockOf(container).className.split(/\s+/)).toContain("data-[about-dock-follow]:transition-none");
+      // Scrolled 30px: the header ends at 49 and the dock climbs with it. Two scrolls in a frame read once.
+      boxes.bar = [-30, 49];
+      scroll();
+      scroll();
+      expect(raf.pending()).toBe(1);
+      raf.flush();
+      expect(floorOf(container)).toBe("49px");
+      // Gone with the page: the floor clears and the CSS formula alone places the dock.
+      boxes.bar = [-79, 0];
+      scroll();
+      raf.flush();
+      expect(floorOf(container)).toBe("");
+      expect(dockOf(container).hasAttribute("data-about-dock-follow")).toBe(false);
+      // Back within its height: the floor returns.
+      boxes.bar = [-10, 69];
+      scroll();
+      raf.flush();
+      expect(floorOf(container)).toBe("69px");
+      done();
+    });
+
+    it("counts a header away or back as the CSS's, never as a floor", () => {
+      const raf = frames();
+      const boxes = { two: [300, 340], three: [700, 730], css: 12, bar: [0, 79] };
+      const done = stage(boxes);
+      const { container } = draw();
+      pin(phoneOf(container), "a/s/three");
+      // Back over the page, mid-slide: --header-offset places the dock, so its box is not an edge here.
+      document.querySelector("header[data-quick-return]")!.setAttribute("data-quick-return", "shown");
+      boxes.bar = [-20, 59];
+      scroll();
+      raf.flush();
+      expect(floorOf(container)).toBe("");
+      done();
+    });
+
+    it("listens for scroll only while docked at the top, and stops on undock and on unmount", () => {
+      frames();
+      const add = vi.spyOn(window, "addEventListener");
+      const remove = vi.spyOn(window, "removeEventListener");
+      const handlers = () => add.mock.calls.filter(([t]) => t === "scroll").map(([, h]) => h);
+      const removed = (h: unknown) => remove.mock.calls.some(([t, r]) => t === "scroll" && r === h);
+      const done = stage({ two: [300, 340], three: [700, 730], css: 12, bar: [0, 79] });
+      const { container, unmount } = draw();
+      const phone = phoneOf(container);
+      const before = handlers().length;
+      // At the foot: nothing listens.
+      pin(phone, "a/s/two");
+      expect(handlers().length).toBe(before);
+      // At the top: one passive listener.
+      pin(phone, "a/s/three");
+      const mine = handlers().slice(before);
+      expect(mine).toHaveLength(1);
+      expect(add.mock.calls.find(([, h]) => h === mine[0])![2]).toEqual({ passive: true });
+      // Undocked by its ✕: removed.
+      fireEvent.click(dockOf(container).querySelector("[data-about-dock-close]")!);
+      expect(container.querySelector("[data-about-dock]")).toBeNull();
+      expect(removed(mine[0])).toBe(true);
+      // Docked again, then the page goes: removed.
+      pin(phone, "a/s/three");
+      const again = handlers().slice(before + 1);
+      expect(again).toHaveLength(1);
+      expect(removed(again[0])).toBe(false);
+      unmount();
+      expect(removed(again[0])).toBe(true);
+      done();
     });
 
     it("keeps the foot for a region so tall the top dock would cover it too", () => {

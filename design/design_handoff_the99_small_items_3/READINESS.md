@@ -81,6 +81,16 @@ not draw are listed under Open, and neither blocks.
     one inside, one low, and two outside it.
   - `tool-card.test.tsx` pins the server markup.
   - In the browser at 1300, Top off's halo ends 8px inside the frame's padding box.
+- **The Reference entry's halo too (pre-open finding, verified).** `EntryFrame`
+  (`src/components/about/reference/entry-frame.tsx`) drew an opened entry's halo straight from `frameWindow`'s
+  percentages inside its `overflow-hidden` 3:2 frame, so a control running to the frame's edge lost its ring and glow
+  to the clip. The Reference boxes include full-width ones (`[0, 0.9076, 1, 0.0521]`, a bar across the foot). It now
+  goes through the same `haloInsets`, fed `frameWindow`'s window percentages as fractions; no math of its own.
+  `entry-frame.test.tsx` pins the server markup (a full-width bar held 8px in, a box inside placed as before, no halo
+  when the locator map has none).
+  - Every halo renderer, by import of `frameWindow`, `haloAt`, `HALO_REACH` or `haloInsets`: `tool-card.tsx`
+    (`haloInsets`), `entry-frame.tsx` (`frameWindow` + `haloInsets`, this fix), and `labelled-screen.tsx` (`haloAt`,
+    already clamped in pixels). The rest are the helpers themselves (`halo.ts`, `pins.ts`, `reference.ts`) and tests.
 
 ### Item 6: the phone dock for a low region (resolves R4 ruling 6)
 
@@ -122,6 +132,28 @@ orchestrator's ruling. It supersedes the pixel top above: only the top-or-foot c
   before) and, when it is lower than the CSS reaches, publishes it as `--about-dock-floor`. The dock then stays 12px
   under where the bars ended at the tap while they scroll off with the page, which is the shipped item 6 behavior.
   Once the header has left with the page, a returning header (79) is never below that floor, so it still rides.
+- **The floor follows the live edge (orchestrator ruling, 2026-10-29; overrules the fixed floor above).** The dock
+  climbs 12px under whatever is on screen as an in-page header scrolls off. While a label is docked at the top,
+  `PinDock` holds one passive `scroll` listener, read once a frame through `requestAnimationFrame`, that resets
+  `--about-dock-floor` to `max(0, rect.bottom)` of the bars (`topEdgeNow`). The listener is attached only while docked
+  at the top and removed on undock and on unmount. At 0 the variable is cleared and the CSS formula alone places the
+  dock.
+  - Only a header in the page counts (`header[data-quick-return=page]`), with the back bar. Away or back,
+    `--header-offset` already places the dock, and a header read mid-slide would leave a stale floor once the scroll
+    stops.
+  - While a header in the page is on screen the dock carries `data-about-dock-follow`, which drops the `top` transition.
+    The floor then moves with the scroll itself, and easing after it would trail the header's edge. The slide stays for
+    the header's own return and departure.
+  - Proof: `labelled-screen.test.tsx` mocks the header's box: 79, then 49 after two scrolls read in one frame, then
+    cleared at 0, then 69 back within its height. A header `shown` mid-slide sets no floor. The listener is passive, is
+    never added at the foot, and is removed by ✕ and by unmount. Nine mutations each fail at least one test: no
+    listener, no removal, no clearing at 0, no rAF throttle, any header mode counted, no follow attribute, listening at
+    the foot, not passive, and the raw entry halo.
+  - Measured at 390×844 on the scratch branch (dock top, px, 10px wheel steps from scrollY 0, `/about/collection`
+    with no back bar): 91, 81, 71, 61, 51, 41, 31, 21 (header bottom 79 to 9, floor 79 to 9), then 16 easing to 12 once
+    away (floor cleared); scrolled up, header shown, 88 to 91. With the back bar (`/about/decks?from=%2Fdecks`): 138,
+    128, 118, 108, 98, 88, 78, 68 (bar bottom 126 to 56), then 63 easing to 59 once away; header shown, 135 to 138.
+    `transition-property` was `none` while following and `top` after.
 - **The decision reads the dock as placed.** `PinDock`'s layout effect sets `data-about-dock-at=top` on itself, reads
   its box, and puts it back, so `dockPlace`'s cover check uses the CSS's own top (inset, bars and all) plus the floor.
 - **Proof.** `dock-place.test.ts`: the threshold, the floor (header in the page at 0 and at 30px, with and without the
