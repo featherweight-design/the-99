@@ -3,7 +3,7 @@
 import { requireUserId } from "../../lib/auth";
 import { ABOUT_VERSION } from "../../lib/copy/about";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../lib/copy/about-pages";
-import { answeredKeys, visibleSections, visitWrite } from "../../lib/about/pages-visible";
+import { heldAnswer, visibleSections, visitWrite } from "../../lib/about/pages-visible";
 import { aboutSeen, markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
@@ -37,10 +37,7 @@ export async function recordAboutPageVisit(area: unknown, claimed: unknown): Pro
   const visible = visibleSections(env);
   const write = visitWrite(claimed, visible, area as AboutArea, seen);
   if (write) await markAboutVisited(userId, write.version, write.ids);
-  const after = write
-    ? { version: Math.max(seen.version, write.version), ids: [...new Set([...seen.ids, ...write.ids])] }
-    : seen;
-  return [...new Set([...after.ids, ...answeredKeys(visible, after)])];
+  return heldAnswer(visible, seen, write);
 }
 
 /** No page draws more than this many switched entries and appendix ids; anything longer is not one. */
@@ -77,6 +74,5 @@ export async function recordAboutVisit(shown: readonly string[]): Promise<string
   const ids = acknowledged(env, Array.isArray(shown) ? shown : []);
   const seen = await aboutSeen(userId);
   await markAboutVisited(userId, ABOUT_VERSION, ids);
-  const after = { version: Math.max(seen.version, ABOUT_VERSION), ids: [...new Set([...seen.ids, ...ids])] };
-  return [...new Set([...ids, ...answeredKeys(visibleSections(env), after)])];
+  return heldAnswer(visibleSections(env), seen, { version: ABOUT_VERSION, ids });
 }

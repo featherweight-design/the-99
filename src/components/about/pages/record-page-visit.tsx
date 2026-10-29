@@ -11,8 +11,9 @@ import { acknowledgeAbout, acknowledgeHeld, endAboutFirstRun } from "../../home/
  * `owed` is the server's verdict that the visit writes something (a key of this page the reader does not hold, or a
  * first-run baseline), and `claimed` is exactly what it rendered for the visit to write: the action writes only those
  * of them it still draws, so a unit switched on after this render is not marked seen unread. When it does, the write's own answer, the keys it wrote, is acknowledged in this document once
- * it LANDS, so Back to Home drops those launches from the banner it restores. When nothing is owed, `keys` (this page's
- * keys, which the reader already holds) are acknowledged at once and the first run ends, since only a reader past it
+ * it LANDS, so Back to Home drops those launches from the banner it restores. When nothing is owed, `keys` (`heldAnswer` of the
+ * rendered state: every id the reader holds and every launch key it answers, on any page, review round 7) are
+ * acknowledged at once and the first run ends, since only a reader past it
  * owes nothing. Otherwise a non-empty set of written keys ends the reader's first run in this document (`acknowledgeHeld`): a reader holding any key is past it, even when a unit
  * switched off since Home rendered left one of the first-run line's ids unwritten. A failed write acknowledges nothing: the banner shows
  * the line again on a later load, the cheaper failure. The ref keeps the same visit (page and claimed keys) from

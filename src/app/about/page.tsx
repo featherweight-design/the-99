@@ -23,7 +23,7 @@ import { db } from "../../db";
 import { AboutTabs } from "../../components/about/tools/about-tabs";
 import { aboutTabOf } from "../../lib/about/tab";
 import { AboutIndex, type IndexTile } from "../../components/about/pages/about-index";
-import { answeredKeys, visibleSections } from "../../lib/about/pages-visible";
+import { heldAnswer, visibleSections } from "../../lib/about/pages-visible";
 import { pageShotFor, type PageWidth } from "../../lib/about/page-shots";
 import { ABOUT_AREAS, ABOUT_PAGE_STRINGS } from "../../lib/copy/about-pages";
 import { ReferenceTab } from "../../components/about/reference/reference-tab";
@@ -104,8 +104,8 @@ export default async function AboutRoute({
   const owes = behind || (howItWorks && !seen.ids.includes(HOW_IT_WORKS_ID));
   // What Home's banner checks is the pages' unit keys, not these legacy ids. A visit that writes acknowledges what its
   // write confirms (the action's answer); one that writes nothing acknowledges the units the reader's state already
-  // covers (`answeredKeys`), so Back to Home does not redraw their launches.
-  const answered = owes ? [] : answeredKeys(visibleSections(env), seen);
+  // covers and the ids it holds (`heldAnswer`), so Back to Home does not redraw their launches.
+  const answered = owes ? [] : heldAnswer(visibleSections(env), seen, null);
 
   // The boards' `main` (ReferencePhone `24px 0 104px`; the Desk boards `40px 56px 64px`). The phone's 104px includes
   // the 74px tab bar the shell's main column already reserves (`--tabbar-h`), so 30px is the page's own.

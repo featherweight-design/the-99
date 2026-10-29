@@ -47,7 +47,7 @@ vi.mock("next/navigation", () => ({ notFound: m.notFound, usePathname: () => "/a
 import AboutAreaRoute from "./page";
 import { AreaPage, type AreaSection } from "../../../components/about/pages/area-page";
 import { RecordPageVisit } from "../../../components/about/pages/record-page-visit";
-import { afterVisit, seenKeysOf, visibleSections } from "../../../lib/about/pages-visible";
+import { afterVisit, heldAnswer, seenKeysOf, visibleSections } from "../../../lib/about/pages-visible";
 import type { Landable } from "../../../lib/discovery/page-tools";
 
 type El = ReactElement<{
@@ -260,12 +260,20 @@ describe("/about/[area], reached by the ? (PR 6a)", () => {
 });
 
 describe("/about/[area], the visit (PR 6b)", () => {
-  it("records the visit once open, for this page's keys alone, decided from the reader's own switches", async () => {
+  it("records the visit once open, decided from the reader's own switches, acknowledging the state it rendered from", async () => {
     const visit = await visitOf("decks");
     expect(visit.type).toBe(RecordPageVisit);
     expect(visit.props.area).toBe("decks");
-    expect(visit.props.keys).toEqual(seenKeysOf(visibleSections(m.env), "decks"));
-    expect(visit.props.keys.every((k) => k.startsWith("decks/") || k.startsWith("rule/"))).toBe(true);
+    expect(visit.props.keys).toEqual(heldAnswer(visibleSections(m.env), m.seen, null));
+  });
+
+  // Review round 7: an already-current Decks visit acknowledges a Shopping launch another tab marked seen.
+  it("hands the no-write path every key the reader holds, another page's included", async () => {
+    const [shopping] = seenKeysOf(visibleSections(m.env), "shopping");
+    m.seen = { version: 16, ids: [...seenKeysOf(visibleSections(m.env), "decks"), shopping] };
+    const visit = await visitOf("decks");
+    expect(visit.props.owed).toBe(false);
+    expect(visit.props.keys).toContain(shopping);
   });
 
   it("owes a write while the reader lacks a key of this page, and none once they hold them all", async () => {

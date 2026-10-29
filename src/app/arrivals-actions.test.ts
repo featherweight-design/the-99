@@ -82,8 +82,8 @@ describe("dismissArrivals, About's lines", () => {
     expect(about.read).toHaveBeenCalledWith("user_1");
     const [, version, ids] = about.mark.mock.calls[0] as unknown as [string, number, string[]];
     expect(ids).toContain(LOCK);
-    // The keys written go back to the banner, which acknowledges them (and ends a first run) in this document.
-    expect(written).toEqual(ids);
+    // The state it leaves goes back to the banner, which acknowledges it (and ends a first run) in this document.
+    expect(written).toEqual(expect.arrayContaining(["x", ...ids]));
     expect(version).toBeLessThanOrEqual(ABOUT_VERSION);
     // No arrival keys claimed: the arrival read is not made.
     expect(stub.lines).not.toHaveBeenCalled();
@@ -92,12 +92,24 @@ describe("dismissArrivals, About's lines", () => {
   it("never writes a key the page did not draw, one no longer new, or one switched off for the reader", async () => {
     stub.env = {};
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };
-    expect(await dismissArrivals([], [LOCK, "made/up/key"])).toEqual([]);
+    const answer = await dismissArrivals([], [LOCK, "made/up/key"]);
+    expect(answer).not.toContain(LOCK);
+    expect(answer).not.toContain("made/up/key");
     expect(about.mark).not.toHaveBeenCalled();
     stub.env = { NEVER_CUT_ENABLED: "true" };
     about.seen = { version: ABOUT_VERSION, ids: ["x", LOCK] };
     await dismissArrivals([], [LOCK]);
     expect(about.mark).not.toHaveBeenCalled();
+  });
+
+  // Review round 7: a launch another tab already marked seen writes nothing here, and is still acknowledged.
+  it("answers a no-write ✕ with the state the reader holds, so a launch seen in another tab is acknowledged", async () => {
+    stub.env = { NEVER_CUT_ENABLED: "true" };
+    about.seen = { version: ABOUT_VERSION, ids: ["x", LOCK] };
+    const answer = await dismissArrivals([], [LOCK]);
+    expect(about.mark).not.toHaveBeenCalled();
+    expect(answer).toContain(LOCK);
+    expect(answer).toContain("x");
   });
 
   it("takes both halves in one press", async () => {

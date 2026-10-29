@@ -22,7 +22,7 @@ import { aboutSeen } from "../../../lib/about/read";
 import { backScreenName, deckIdOf, safeFrom } from "../../../lib/about/back";
 import { ownDeckName } from "../../../lib/about/back-read";
 import { pageToolCropFor } from "../../../lib/about/page-shots";
-import { afterVisit, seenKeysOf, visibleSections } from "../../../lib/about/pages-visible";
+import { afterVisit, heldAnswer, visibleSections } from "../../../lib/about/pages-visible";
 import { screenModel } from "../../../lib/about/pins";
 import { shotFor, toolShotId, type Shot } from "../../../lib/about/shots";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../../lib/copy/about-pages";
@@ -99,7 +99,7 @@ export default async function AboutAreaRoute({
   return (
     <>
       <AreaPage area={area} sections={sections} theme={theme} landable={landable} initialLit={initialLit} back={back} />
-      <RecordPageVisit area={area} owed={owed} keys={seenKeysOf(visible, area)} claimed={claimed} />
+      <RecordPageVisit area={area} owed={owed} keys={heldAnswer(visible, seen, null)} claimed={claimed} />
     </>
   );
 }

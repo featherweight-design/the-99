@@ -282,3 +282,17 @@ export function answeredKeys(visible: readonly VisibleSection[], seen: SeenState
   const open = new Set(unseenUnits(visible, seen).flatMap((u) => u.ack));
   return unitsOf(visible).flatMap(unitKeys).filter((k) => !open.has(k));
 }
+
+/**
+ * What every About write answers the browser with (review rounds 6 and 7): the state the reader is left at, `seen`
+ * merged with `write` as `markAboutVisited` merges (a union, the floor by `greatest`), as the ids it holds plus every
+ * launch key that state answers. Answered from the RESULTING state on the write and the no-write path alike, so a key
+ * another tab wrote after Home was cached is acknowledged too, and a reader past their first run always gets a
+ * non-empty answer that ends it in this document.
+ */
+export function heldAnswer(visible: readonly VisibleSection[], seen: SeenState, write: SeenState | null): string[] {
+  const after = write
+    ? { version: Math.max(seen.version, write.version), ids: [...new Set([...seen.ids, ...write.ids])] }
+    : seen;
+  return [...new Set([...after.ids, ...answeredKeys(visible, after)])];
+}

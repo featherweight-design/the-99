@@ -2,7 +2,7 @@
 
 import { requireUserId } from "../lib/auth";
 import { aboutDismissal } from "../lib/about/notice";
-import { visibleSections } from "../lib/about/pages-visible";
+import { heldAnswer, visibleSections } from "../lib/about/pages-visible";
 import { aboutSeen, markAboutVisited } from "../lib/about/read";
 import { dismissKeys, readArrivalLines } from "../lib/precons/banner";
 import { seenKeysFor } from "../lib/precons/arrivals";
@@ -24,8 +24,9 @@ import { requestSwitchEnv } from "../lib/switches/request";
  * 0123), which retires Home's cached payload, so the next load draws neither half.
  *
  * No revalidation: the banner collapses in the browser, and re-rendering Home inside this reply would pay for a
- * page the reader is already looking at. The arrivals half writes nothing while its switch is off. Returns the About
- * keys written, which the banner acknowledges in this document (a non-empty set ends the first run there).
+ * page the reader is already looking at. The arrivals half writes nothing while its switch is off. Returns, when the
+ * banner claimed About keys, `heldAnswer` of the state the reader is left at (written or not), which the banner
+ * acknowledges in this document (a non-empty set ends the first run there).
  */
 export async function dismissArrivals(shown: unknown, about?: unknown): Promise<string[]> {
   const userId = await requireUserId();
@@ -35,11 +36,11 @@ export async function dismissArrivals(shown: unknown, about?: unknown): Promise<
     if (keys.length > 0) await markUpcomingSeen(userId, keys);
   }
   if (Array.isArray(about) && about.length > 0) {
-    const write = aboutDismissal(about, await aboutSeen(userId), visibleSections(env));
-    if (write) {
-      await markAboutVisited(userId, write.version, write.ids);
-      return [...write.ids];
-    }
+    const seen = await aboutSeen(userId);
+    const visible = visibleSections(env);
+    const write = aboutDismissal(about, seen, visible);
+    if (write) await markAboutVisited(userId, write.version, write.ids);
+    return heldAnswer(visible, seen, write);
   }
   return [];
 }
