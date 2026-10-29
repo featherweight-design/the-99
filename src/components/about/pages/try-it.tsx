@@ -14,17 +14,45 @@
 // name against its cost chip). A Show me landing on a label the reader had not been told about lights its tool's card
 // in the desktop row (Ways-In desktop landing); on a phone that card is drawn under the label instead.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
+import { addPanelCopy } from "../../../lib/copy/decks-builder";
+import { noteAppScroll } from "../../../lib/ui/reveal";
 import { landingCardAnchor, showMeLink, useLabelLanding, type PageCard } from "../../discovery/label-landing";
 import { ToolCard } from "../tools/tool-card";
 import { TOUCH_HIT } from "../../ui/touch-hit";
 
 export function TryIt({ sectionId, cards }: { sectionId: string; cards: readonly PageCard[] }) {
+  // Per visit: a remount (a new visit, a ? landing) starts folded (Small items 2, item 2).
   const [open, setOpen] = useState(false);
+  // Where focus goes after the list opens or folds: the first card it added, or the press it restored.
+  const focusAfter = useRef<"opened" | "folded" | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const moreRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    const after = focusAfter.current;
+    focusAfter.current = null;
+    // The card's Try it press is its whole-card link, the one that carries the card's name as its label. A card with no
+    // way in draws none: then its first link or button, else the card itself, so focus still reaches what opened.
+    if (after === "opened") {
+      const added = listRef.current?.children[1] as HTMLElement | undefined;
+      const target = added?.querySelector<HTMLElement>("a[aria-label]") ?? added?.querySelector<HTMLElement>("a, button") ?? added;
+      if (target && target === added) added.tabIndex = -1;
+      target?.focus();
+    }
+    if (after === "folded") {
+      moreRef.current?.focus();
+      // The app's own scroll, so quick return does not read it as the reader's.
+      noteAppScroll();
+      moreRef.current?.scrollIntoView?.({ block: "nearest" });
+    }
+  }, [open]);
   const landing = useLabelLanding();
   if (cards.length === 0) return null;
   const headingId = `${sectionId}-try-it`;
+  const phoneListId = `${sectionId}-try-it-phone`;
+  // 44 x 44 at every pointer (Small items 2, 2a): the box itself, and `TOUCH_HIT` past it on a coarse one.
+  const press = `${TOUCH_HIT} inline-flex min-h-[44px] min-w-[44px] items-center justify-center cursor-pointer self-center border-0 bg-transparent p-0 font-mono text-[10px] font-medium tracking-[0.04em] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)] active:text-[color:var(--fg-muted)] md:hidden`;
   const litTool = landing?.isNew && landing.card ? landing.card.card.id : null;
   // On a phone the landed card is drawn under its label instead (Ways-In phone landing), so it leaves this list; a
   // list it leaves empty draws no phone heading either.
@@ -45,23 +73,43 @@ export function TryIt({ sectionId, cards }: { sectionId: string; cards: readonly
         </h3>
         <span className="ml-[2px] text-[13px] text-[color:var(--fg-muted)]">{ABOUT_PAGE_STRINGS.tryItSub}</span>
       </div>
-      <ul aria-labelledby={headingId} data-try-it-width="phone" className="m-0 flex list-none flex-col gap-[16px] p-0 md:hidden">
+      <ul ref={listRef} id={phoneListId} aria-labelledby={headingId} data-try-it-width="phone" className="m-0 flex list-none flex-col gap-[16px] p-0 md:hidden">
         {phoneCards.map((c) => (
           <li key={c.card.id}>
             <ToolCard card={c.card} shot={c.phone} link={showMeLink(c.card)} />
           </li>
         ))}
       </ul>
-      {!open && rest.length > 0 && (
+      {rest.length > 0 && (open ? (
         <button
           type="button"
-          data-try-it-more
-          onClick={() => setOpen(true)}
-          className={`${TOUCH_HIT} cursor-pointer self-center border-0 bg-transparent p-0 font-mono text-[10px] font-medium tracking-[0.04em] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)] md:hidden`}
+          data-try-it-fewer
+          aria-expanded="true"
+          aria-controls={phoneListId}
+          onClick={() => {
+            focusAfter.current = "folded";
+            setOpen(false);
+          }}
+          className={press}
         >
-          {ABOUT_PAGE_STRINGS.moreBelow(rest.length)}
+          {addPanelCopy.consider.collapse}<span aria-hidden="true"> ▴</span>
         </button>
-      )}
+      ) : (
+        <button
+          ref={moreRef}
+          type="button"
+          data-try-it-more
+          aria-expanded="false"
+          aria-controls={phoneListId}
+          onClick={() => {
+            focusAfter.current = "opened";
+            setOpen(true);
+          }}
+          className={press}
+        >
+          {ABOUT_PAGE_STRINGS.moreBelow(rest.length)}<span aria-hidden="true"> ▾</span>
+        </button>
+      ))}
       <ul
         aria-labelledby={headingId}
         data-try-it-width="desktop"
