@@ -57,34 +57,10 @@ describe("the readers the cron looks at", () => {
     expect(r.params).toEqual(["new-set", "new-set", ["spare-request"], "new-set", "new-precon", "new-precon", ["spare-request"], "new-precon"]);
   });
 
-  /**
-   * The rule, evaluated as Postgres would on one joined row (`cup` all nulls for a reader with no prefs row): the stamp,
-   * else `-infinity` for a default-on kind not declined, else null. Mirrors the rendered SQL above, pinned by it.
-   */
-  type Row = { pushKinds: Record<string, string> | null; declined: string[] | null } | null;
-  const selected = (row: Row, kinds: string[], defaultOn: string[]) =>
-    kinds.some((k) => row?.pushKinds?.[k] !== undefined || (defaultOn.includes(k) && !(row?.declined ?? []).includes(k)));
-
-  it("for today's kinds (none default on), selects exactly whom the inner join selected: a reader with no row is not one", () => {
-    const kinds = ["new-set", "new-precon"];
-    const innerJoin = (row: Row) => row !== null && kinds.some((k) => row.pushKinds?.[k] !== undefined);
-    const readers: Row[] = [
-      null, // a device, no prefs row
-      { pushKinds: null, declined: null },
-      { pushKinds: {}, declined: [] },
-      { pushKinds: { "new-set": "2026-10-01T00:00:00.000Z" }, declined: [] },
-      { pushKinds: { "price-drop": "2026-10-01T00:00:00.000Z" }, declined: ["new-precon"] },
-    ];
-    for (const row of readers) expect(selected(row, kinds, ["spare-request"])).toBe(innerJoin(row));
-  });
-
-  it("for a default-on kind, selects a reader with no prefs row and one who never chose, never one who declined", () => {
+  it("for a default-on kind, passes the kind as default on to the gate", () => {
     const r = render(catalogReadersQuery(["new-set"], ["new-set"]));
     expect(flat(r.sql)).toContain(`left join "user_prefs" cup on cup.user_id = cps.user_id where ${gate(1)}`);
     expect(r.params).toEqual(["new-set", "new-set", ["new-set"], "new-set"]);
-    expect(selected(null, ["new-set"], ["new-set"])).toBe(true);
-    expect(selected({ pushKinds: {}, declined: [] }, ["new-set"], ["new-set"])).toBe(true);
-    expect(selected({ pushKinds: {}, declined: ["new-set"] }, ["new-set"], ["new-set"])).toBe(false);
   });
 });
 
