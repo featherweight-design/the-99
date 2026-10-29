@@ -107,6 +107,13 @@ describe("LabelledScreen", () => {
     phone.style.setProperty("--tabbar-h", "88px");
     const band = reveal.mock.calls[0][3] as () => { top: number; bottom: number };
     expect(band().bottom).toBe(window.innerHeight - 88);
+    // And below the Back bar while it is held at the top.
+    expect(band().top).toBe(0);
+    const bar = document.body.appendChild(document.createElement("div"));
+    bar.setAttribute("data-about-back", "");
+    vi.spyOn(bar, "getBoundingClientRect").mockReturnValue({ top: 56, bottom: 107, height: 51 } as DOMRect);
+    expect(band().top).toBe(107);
+    bar.remove();
     fireEvent.click(phone.querySelector("[data-about-pin='a/s/two']")!);
     fireEvent.click(phone.querySelector("[data-about-label='a/s/one'] button")!);
     expect(reveal).toHaveBeenCalledTimes(1);

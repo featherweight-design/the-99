@@ -207,11 +207,13 @@ function LabelList({
 
 /**
  * The band of the window a revealed line must land in: below the page's scroll padding (the returned phone header's
- * room) and, on a phone, above the fixed tab bar. The bar's height is read where the line inherits it, because the
- * shell raises `--tabbar-h` while the bar is locked.
+ * room) and the "‹ Back to {screen}" bar while it is held at the top, and, on a phone, above the fixed tab bar. The tab
+ * bar's height is read where the line inherits it, because the shell raises `--tabbar-h` while the bar is locked.
  */
 function visibleBand(line: HTMLElement | null | undefined, width: PageWidth) {
-  const top = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  const back = document.querySelector("[data-about-back]")?.getBoundingClientRect();
+  const top = back && back.height > 0 ? Math.max(padding, back.bottom) : padding;
   const tabbar = width === "phone" && line ? parseFloat(getComputedStyle(line).getPropertyValue("--tabbar-h")) || 0 : 0;
   return { top, bottom: window.innerHeight - tabbar };
 }
