@@ -163,6 +163,13 @@ describe("where details reads foil", () => {
     });
     for (const host of [desktop(), phone()]) expect(ownFilm(host)).toHaveAttribute("data-foil", "foil");
   });
+  it("draws the box's foil on a printing the reader holds none of, while holding another", () => {
+    // The reader's only copy is another printing, so the box's is injected as a row of its own.
+    mount(card({ printings: [printing({ setCode: "CMR", collectorNumber: "1", scryfallId: "s-other", imageUri: "https://img/other.jpg", finishes: { nonfoil: 1 } })] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1", finish: "foil" },
+    });
+    for (const host of [desktop(), phone()]) expect(ownFilm(host)).toHaveAttribute("data-foil", "foil");
+  });
   it("draws no film over the oracle's art when the box names a foil printing with no art of its own", () => {
     mount(card({ quantity: 0, printings: [printing({ quantity: 0, finishes: {} })] }), {
       openAtPrinting: { setCode: "MSC", collectorNumber: "99", imageUri: null, scryfallId: "s-9", finish: "foil" },
