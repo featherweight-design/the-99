@@ -377,6 +377,9 @@ const NOT_A_ROW = new Set<string>([
   // Card search's results: each row already draws the card's art, and a press hands over to card details through
   // the history (`afterDialogsReleased`); there is no pointer to rest on the phone, and the desktop field's rows are PR D's.
   "components/card-search/search-layer.tsx",
+  // Quick-add's results (Small items 2 item 6b): a search popup like card search's, whose rows already draw the card's
+  // thumbnail; the name cell opens card details and the board draws no hover preview over the field.
+  "components/decks/quick-add-bar.tsx",
 ]);
 
 describe("the row guard's own failure paths", () => {
