@@ -530,7 +530,9 @@ function CartBody({
                 {byDeck ? (
                   // Largest first unless the reader chose another order; an unselected deck keeps its place.
                   // One name-fit observer for every open group's rows (G6: per list, never per row).
-                  deckGroups.length === 0 ? <NoMatch query={query} of={selectedLines.length} filtering={filtering} onDrop={() => chooseQuery("")} onClear={clearAll} /> : <NameFitProvider>{deckGroups.map(({ deck: d, lines: deckLines }) => (
+                  // With a filter on, no match is decided from the selected lines it leaves: an unselected deck's
+                  // group still holding a line is not something to show.
+                  deckGroups.length === 0 || (filtering && lines.length === 0) ? <NoMatch query={query} of={selectedLines.length} filtering={filtering} onDrop={() => chooseQuery("")} onClear={clearAll} /> : <NameFitProvider>{deckGroups.map(({ deck: d, lines: deckLines }) => (
                     <CartDeckGroup
                       key={d.id}
                       deck={d}

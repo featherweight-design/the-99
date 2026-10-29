@@ -286,6 +286,34 @@ describe("the cart's Owned filter (v2 PR 9)", () => {
     expect(live()).toBe("");
   });
 
+  it("draws no match in By deck when a filter leaves no selected line, not an unselected deck's header", () => {
+    // Only Kratos's card is owned.
+    const c = cart();
+    const only = { ...c, lines: c.lines.map((l) => (l.oracleId === "tithe" ? { ...l, owned: 1, heldElsewhere: 1 } : l)) };
+    render(<CartView cart={only} provenance={provenance} initialView="deck" initialOwned="some" />);
+    expect(deckRegions()).toEqual(["HD - Kratos"]);
+    // The deck list's own box (the group header carries the same one).
+    fireEvent.click(screen.getAllByRole("checkbox", { name: copy.selections.aria("HD - Kratos", true) })[0]);
+    expect(screen.queryAllByRole("region", { name: /HD - / })).toHaveLength(0);
+    expect(document.querySelector("[data-cart-no-match]")).toBeTruthy();
+  });
+
+  it("moves between the sheet's Owned segments with the arrows, as one Tab stop", () => {
+    render(<CartView cart={ownedCart()} provenance={provenance} />);
+    fireEvent.click(filtersPill());
+    const segments = within(screen.getByRole("radiogroup", { name: copy.filters.owned })).getAllByRole("radio");
+    expect(segments.map((r) => r.tabIndex)).toEqual([0, -1, -1]);
+    segments[0].focus();
+    fireEvent.keyDown(segments[0], { key: "ArrowRight" });
+    expect(document.activeElement).toBe(segments[1]);
+    expect(segments.map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "true", "false"]);
+    expect(segments.map((r) => r.tabIndex)).toEqual([-1, 0, -1]);
+    expect(live()).toBe("?owned=some");
+    fireEvent.keyDown(segments[1], { key: "ArrowLeft" });
+    fireEvent.keyDown(segments[0], { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(segments[2]);
+  });
+
   it("strips an ?owned it does not offer from the address", () => {
     window.history.replaceState(null, "", "/decks/shopping?owned=maybe");
     render(<CartView cart={ownedCart()} provenance={provenance} initialOwned="maybe" />);

@@ -174,11 +174,13 @@ export function friendKeeps(filter: FriendFilter, holders: readonly string[] | u
 
 /**
  * A press on the Friend panel's row or the sheet's pill. `any` toggles Any friend (off, or replacing the named
- * friends); a friend's id toggles that friend in the named list (replacing Any), and the last one off is off.
+ * friends); a friend's id toggles that friend in the named list (replacing Any), and the last one off is off. A friend
+ * past `MAX_FRIEND_IDS` is not added, so every filter a press builds survives `parseFriend` on a reload.
  */
 export function toggleFriend(filter: FriendFilter, code: string): FriendFilter {
   if (code === "any") return filter === "any" ? null : "any";
   const named = filter === null || filter === "any" ? [] : filter;
+  if (!named.includes(code) && named.length >= MAX_FRIEND_IDS) return filter; // one cap with `parseFriend`
   const next = named.includes(code) ? named.filter((id) => id !== code) : [...named, code];
   return next.length > 0 ? next : null;
 }

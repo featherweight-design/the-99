@@ -95,9 +95,11 @@ export function CartChassis({
   // lands every id left has a name (the cart drops the rest, decision 2).
   const named = (friend === null || friend === "any" ? [] : friend).flatMap((id) => friendNames.get(id) ?? []);
   const friendValue = friend === "any" ? copy.filters.anyFriend : named.length > 0 ? named.join(", ") : copy.filters.friendReading;
+  // Cut for the eye as the search chip is (a chip cannot shrink, so a long one pushes its ✕ off a phone), spoken whole.
+  const shortFriend = friendValue.length > CHIP_TERM_MAX ? `${friendValue.slice(0, CHIP_TERM_MAX)}…` : friendValue;
   const chips: FilterChip[] = [
     ...(friendOn ? [{
-      key: "friend", leading: dimension(copy.filters.chipFriend), label: friendValue,
+      key: "friend", leading: dimension(copy.filters.chipFriend), label: shortFriend,
       spoken: `${copy.filters.chipFriend} ${friendValue}`, onRemove: filters.onFriendOff,
     }] : []),
     ...(owned !== "any" ? [{

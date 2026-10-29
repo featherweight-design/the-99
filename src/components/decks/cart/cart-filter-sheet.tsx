@@ -5,7 +5,7 @@
 // two to a row, each with its face and how many of the cart's cards they hold; Owned is a segmented control. Filters
 // apply as they are pressed, so the primary press only closes the sheet and Escape or a swipe lose nothing.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { chassisCopy } from "../../../lib/copy/filter-chassis";
@@ -13,6 +13,7 @@ import { collectionChassisCopy } from "../../../lib/copy/collection";
 import { OWNED_FILTERS, type FriendFilter, type OwnedFilter } from "../../../lib/decks/cart-sort";
 import type { SpareFriend } from "../../../lib/social/spares";
 import { Face } from "../../social/face";
+import { onSegmentKeys } from "../../ui/segment-keys";
 import { Sheet } from "../../ui/sheet";
 
 /** A friend the Friend filter offers: one with a spare of a selected line, and how many of the drawn cards they hold. */
@@ -65,6 +66,9 @@ function SheetBody({ open, onDismiss, shown, of, offer, friend, onFriend, owned,
   }, [shown, of]);
   useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog });
   const named = Array.isArray(friend) ? friend : [];
+  // The Owned segments are one Tab stop with the arrows moving the choice, the shipped segmented controls' keys.
+  const uid = useId();
+  const segId = (v: OwnedFilter) => `${uid}-owned-${v}`;
   return (
     <Sheet
       open={open}
@@ -129,10 +133,13 @@ function SheetBody({ open, onDismiss, shown, of, offer, friend, onFriend, owned,
             {OWNED_FILTERS.map((value) => (
               <button
                 key={value}
+                id={segId(value)}
                 type="button"
                 role="radio"
                 aria-checked={owned === value}
+                tabIndex={owned === value ? 0 : -1}
                 onClick={() => onOwned(value)}
+                onKeyDown={(e) => onSegmentKeys(e, OWNED_FILTERS, segId, onOwned)}
                 className={`flex h-[38px] min-w-0 flex-1 cursor-pointer items-center justify-center rounded-[7px] border-0 px-[4px] font-sans text-[13.5px] font-medium whitespace-nowrap ${
                   owned === value ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "bg-transparent text-[color:var(--fg-muted)]"
                 }`}

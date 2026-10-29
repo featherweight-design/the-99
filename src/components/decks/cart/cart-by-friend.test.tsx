@@ -910,6 +910,19 @@ describe("the Friend filter (v2 PR 9)", () => {
     expect(chipsRow().textContent).not.toContain("p-Chris");
   });
 
+  it("cuts a Friend chip naming long or many friends for the eye, so its ✕ stays on a phone, and speaks every name", async () => {
+    const long = (n: string) => ({ oracleId: TOWER, friend: { ...friend(n), publicId: `p-${n.replace(/ /g, "_")}` }, spare: 1 });
+    served = { spares: [long("Bartholomew Featherstonehaugh"), long("Wilhelmina Cholmondeley")], asks: [] };
+    window.history.replaceState(null, "", "/decks/shopping?friend=p-Bartholomew_Featherstonehaugh,p-Wilhelmina_Cholmondeley");
+    await mount({ initialFriend: "p-Bartholomew_Featherstonehaugh,p-Wilhelmina_Cholmondeley" });
+    const whole = "Bartholomew Featherstonehaugh, Wilhelmina Cholmondeley";
+    const remove = within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} ${whole}` });
+    const label = remove.parentElement?.querySelector("[aria-hidden='true']:not([class*='fg-muted'])")?.textContent ?? "";
+    expect(label.length).toBeLessThanOrEqual(25);
+    expect(label.endsWith("…")).toBe(true);
+    expect(within(chipsRow()).getByText(`${copy.filters.chipFriend} ${whole}`, { selector: ".sr-only" })).toBeTruthy();
+  });
+
   it("drops a named friend once their spares sit only on unselected decks' lines, rather than naming them by id", async () => {
     served = { spares: BOARD, asks: [] };
     window.history.replaceState(null, "", "/decks/shopping?friend=p-Chris");

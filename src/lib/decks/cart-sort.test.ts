@@ -153,6 +153,15 @@ describe("the Friend filter (decision 2)", () => {
     expect(toggleFriend(["a"], "a")).toBeNull();
   });
 
+  it("caps a selection at the parse limit, so every filter it builds survives a reload", () => {
+    const full = Array.from({ length: MAX_FRIEND_IDS }, (_, i) => `f${i}`);
+    // The 25th friend's press does nothing; a named friend still comes off, and Any still replaces them.
+    expect(toggleFriend(full, "extra")).toBe(full);
+    expect(toggleFriend(full, "f0")).toHaveLength(MAX_FRIEND_IDS - 1);
+    expect(toggleFriend(full, "any")).toBe("any");
+    expect(parseFriend(friendParam(toggleFriend(full.slice(1), "extra")))).toEqual([...full.slice(1), "extra"]);
+  });
+
   it("drops a named id no friend answers to once the read lands, and Any with no friend holding a spare", () => {
     const known = new Set(["a", "b"]);
     const named = ["a", "b"] as const;
