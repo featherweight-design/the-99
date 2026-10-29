@@ -401,6 +401,23 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     expect(document.querySelector('[role="status"]')!.textContent).toBe(deckTuningCopy.announce.readyLists(5, 5));
   });
 
+  it("the watch waits for its own read: reads slower than the tick still land the finished run", async () => {
+    vi.useFakeTimers();
+    try {
+      const d = { ...deps(), v2: v2Actions() };
+      // The first read draws the wait; every watch read after it takes 4 seconds, longer than the 3-second tick.
+      d.read = vi.fn()
+        .mockResolvedValueOnce(pending())
+        .mockImplementation(() => new Promise<TuningState>((r) => { setTimeout(() => r(finished), 4000); }));
+      await draw(d, v2At());
+      expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("wait");
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+      expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("New run after a run made here opens an empty request box, not the request just sent", async () => {
     const d = { ...deps(), v2: v2Actions() };
     let now: TuningState = fresh;

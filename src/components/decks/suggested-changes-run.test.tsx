@@ -254,6 +254,23 @@ describe("the results", () => {
     expect(document.body.textContent).toContain(sc.run.pickRefused);
   });
 
+  it("lets only a row's latest save roll it back: Pick, unpick, Pick with the first save failing last stays picked", async () => {
+    const t = setup();
+    const replies: Array<(r: { ok: boolean }) => void> = [];
+    t.actions.pick.mockImplementation(() => new Promise((res) => { replies.push(res); }));
+    await press(pick("a0"));
+    await press(pickedBtn("a0"));
+    await press(pick("a0"));
+    expect(t.actions.pick.mock.calls).toEqual([["a0", true], ["a0", false], ["a0", true]]);
+    await act(async () => { replies[1]({ ok: true }); replies[2]({ ok: true }); });
+    await act(async () => { replies[0]({ ok: false }); });
+    expect(pickedBtn("a0")).toBeTruthy();
+    // The latest save failing still rolls back.
+    await press(pickedBtn("a0"));
+    await act(async () => { replies[3]({ ok: false }); });
+    expect(pickedBtn("a0")).toBeTruthy();
+  });
+
   it("stays flat at N = 3 and groups from N = 4 under the deck page's stored switch", async () => {
     setup();
     expect(document.querySelector("[data-sc-group]")).toBeNull();

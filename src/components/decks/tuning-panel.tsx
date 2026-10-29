@@ -748,7 +748,14 @@ export function TuningPanel({
       localLongWait = setTimeout(() => setLongWait(true), LONG_WAIT_MS - elapsed);
       longWaitTimer.current = localLongWait;
     }
-    const watchId = setInterval(() => void reread(), WATCH_MS);
+    // A tick waits for the watch's own previous read: a read slower than the tick would otherwise be superseded by the
+    // next one every time, and the panel would never draw the settled run (review round 2).
+    let polling = false;
+    const watchId = setInterval(() => {
+      if (polling) return;
+      polling = true;
+      void reread().finally(() => { polling = false; });
+    }, WATCH_MS);
     return () => {
       clearInterval(watchId);
       if (localStagger !== null) clearInterval(localStagger);

@@ -89,6 +89,8 @@ export function SuggestedChangesRun({
   const n = ask?.requestedCount ?? 3;
   const waiting = live !== null;
   const [overrides, setOverrides] = useState<ReadonlyMap<string, boolean>>(() => new Map());
+  // Each row's latest pick save, by count: a mutable map kept for the component's life (read only in `toggle`).
+  const [pickRev] = useState(() => new Map<string, number>());
   const [pickError, setPickError] = useState<string | null>(null);
   const [half, setHalf] = useState<"add" | "cut">("add");
   const [stored, setGrouping] = useStoredView(DECK_GROUPING_KEY, isDeckGrouping);
@@ -160,8 +162,12 @@ export function SuggestedChangesRun({
     if (!was && (side.length >= cap || !l.applies)) return;
     setOverrides((m) => new Map(m).set(l.id, !was));
     setPickError(null);
+    // Only a row's latest save may roll it back: Pick, unpick, Pick with the first save failing last must not undo the
+    // newer choice the server holds (review round 2).
+    const mine = (pickRev.get(l.id) ?? 0) + 1;
+    pickRev.set(l.id, mine);
     const r = await actions.pick(l.id, !was).catch(() => ({ ok: false }));
-    if (!r.ok) {
+    if (!r.ok && pickRev.get(l.id) === mine) {
       setOverrides((m) => new Map(m).set(l.id, was));
       setPickError(sc.run.pickRefused);
     }
