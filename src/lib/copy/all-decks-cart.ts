@@ -5,6 +5,8 @@
 // Reused unchanged from elsewhere: `exportLinkOutCopy.shopping` (`Buy these at Mana Pool`),
 // `priceCopy.strip.*`, `priceCopy.tag.*`.
 
+import type { FilterPanelCopy } from "./collection";
+
 const n = (x: number) => x.toLocaleString("en-US");
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 const decks = (x: number) => (x === 1 ? "1 deck" : `${n(x)} decks`);
@@ -15,6 +17,40 @@ const and = (names: string[]) =>
   names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 
 const ASPICKED = "as you picked";
+
+/**
+ * One cart filter panel's `FilterPanelCopy`, on the pattern of `/decks`' (`deckChassisCopy`), counting cards. A single
+ * pick reads `Friend: Chris` (addendum R2 §4); Owned's Any is its rest, so the trigger reads the bare word there.
+ */
+function cartPanel(dimension: string, rest?: string): FilterPanelCopy {
+  return {
+    triggerLabel: dimension,
+    triggerOne: (name) => (name === rest ? dimension : `${dimension}: ${name}`),
+    triggerAriaCollapsed: `${dimension} filter`,
+    triggerAriaWithSelection: (x) => `${dimension} filter, ${n(x)} on`,
+    panelAriaLabel: `${dimension} options`,
+    sheetTitle: dimension,
+    searchPlaceholder: "",
+    searchAriaLabel: "",
+    clearSearch: "",
+    groupDefault: dimension,
+    groupSelected: (x) => `${n(x)} on`,
+    groupMatches: (x) => cards(x),
+    optionAria: (name, count) => `${name}, ${cards(count)}`,
+    optionAriaUnavailable: (name) => `${name}, no cards`,
+    footerTotal: (total) => cards(total),
+    footerSelected: (x, total) => `${n(x)} of ${n(total)} on`,
+    clear: "Clear",
+    done: "Done",
+    closeLabel: `Close ${dimension.toLowerCase()} filter`,
+    emptyTitle: "Nothing here",
+    emptyBody: (query) => ({ before: "No ", query, after: " to show" }),
+    announceMatches: (x) => cards(x),
+    announceAdded: (name, _x, shown, total) => `${name} on. ${n(shown)} of ${cards(total)}.`,
+    announceRemoved: (name, _x, shown, total) => `${name} off. ${n(shown)} of ${cards(total)}.`,
+    announceCleared: (total) => `Filters cleared. ${cards(total)}.`,
+  };
+}
 
 export const allDecksCartCopy = {
   title: "Shopping for all decks",
@@ -118,11 +154,34 @@ export const allDecksCartCopy = {
     fromFriends: (x: number) => `from ${x === 1 ? "1 friend" : `${n(x)} friends`}`,
   },
 
-  /** The chassis's controls (v2, PR 8). Friend and Owned arrive with PR 9. */
+  /** The chassis's controls (v2, PR 8; Friend and Owned, PR 9). */
   filters: {
     search: "Search cards",
     /** The chip for a search: the term itself, since "Search" would name the field rather than the filter. */
     chipSearch: (term: string) => `“${term}”`,
+    friend: "Friend",
+    /** The Friend panel's head and the sheet's Friend group. */
+    friendHead: "Friend · has a spare",
+    /** The one radio above the friends: the lines some friend has a spare of ("spare available"). */
+    anyFriend: "Any friend",
+    /** The Friend trigger's words while friends' spares are being read (Loading A). */
+    friendReading: "reading…",
+    owned: "Owned",
+    ownedAny: "Any",
+    ownedSome: "You own some",
+    ownedNone: "None",
+    /** The dimension a chip names before its value. */
+    chipFriend: "Friend",
+    chipOwned: "Owned",
+    /** The sheet's figure and primary press. */
+    sheetMatch: (shown: number, of: number) => `${n(shown)} of ${cards(of)} match`,
+    show: (x: number) => `Show ${cards(x)}`,
+  },
+
+  /** The desktop Friend and Owned panels (`FilterPanel`'s contract), on the pattern of `/decks`' panels. */
+  panels: {
+    friend: cartPanel("Friend"),
+    owned: cartPanel("Owned", "Any"),
   },
 
   /** Sort, per view (call 5). The first of each is the shipped default; the keys are `lib/decks/cart-sort`'s. */
@@ -140,8 +199,6 @@ export const allDecksCartCopy = {
     },
     byDeck: { largest: "Largest first", cost: "Cost, high first", name: "Name" },
     byFriend: { spare: "Most spares", cards: "Most cards", name: "Name" },
-    /** The phone sheet's sub-line: which view's orders these are. */
-    viewOf: { card: "By card", deck: "By deck", friend: "By friend" },
   },
 
   /** Row 3, the chassis's result line. */

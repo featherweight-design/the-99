@@ -829,3 +829,298 @@ describe("the failure toast beside a purchase (PR 7, round 2)", () => {
     expect(failure()).toBeTruthy();
   });
 });
+
+describe("the Friend filter (v2 PR 9)", () => {
+  // Sol Ring: a card no friend has a spare of, so Any friend has something to leave out.
+  const SOL = "55555555-5555-4555-8555-555555555555";
+  const withSol = () => cart({ lines: [...cart().lines, { oracleId: SOL, name: "Sol Ring", commander: false, owned: 0, heldElsewhere: 0, heldBy: [], rows: [row("thopter", 150)] }] });
+  const cardNames = () => list().getAllByRole("listitem").map((li) => li.textContent?.match(/Jace|Brainstorm|Ghoulcaller Gisa|Command Tower|Sol Ring/)?.[0]);
+  const resultLine = () => document.querySelector("[data-chassis-row='result'] p")?.textContent;
+  const original = window.matchMedia;
+  const wide = () => Object.defineProperty(window, "matchMedia", {
+    writable: true, configurable: true,
+    value: (query: string) => ({ matches: true, media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false }),
+  });
+  afterEach(() => Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: original }));
+
+  it("offers Any friend and each friend with a spare and their counts; a pick narrows every view, and its chip turns it off", async () => {
+    served = { spares: BOARD, asks: [] };
+    wide();
+    await mount({}, withSol());
+    fireEvent.click(screen.getByRole("button", { name: "Friend filter" }));
+    // Most cards first, then by name: Colin holds two of the drawn cards, the others one each.
+    expect(screen.getAllByRole("option").map((o) => o.getAttribute("aria-label"))).toEqual([
+      "Any friend, 4 cards", "Colin, 2 cards", "Chris, 1 card", "Max, 1 card", "Peter, 1 card",
+    ]);
+    // Each friend's row draws their face.
+    expect(screen.getAllByRole("option").slice(1).every((o) => o.querySelector("[data-face]"))).toBe(true);
+    // Max holds a spare of Jace, which Colin holds one of too.
+    fireEvent.click(screen.getByRole("option", { name: "Max, 1 card" }));
+    expect(cardNames()).toEqual(["Jace"]);
+    expect(resultLine()).toBe(copy.result.filtered(1, 5));
+    expect(window.location.search).toBe("?friend=p-Max");
+    expect(screen.getByRole("button", { name: /^Friend options, Max/ }).textContent).toContain(`${copy.filters.friend}: Max`);
+    // Carried to By friend (D4), where only Max's panel is left, not Colin's over the same card (Controls C2).
+    fireEvent.click(screen.getByRole("radio", { name: copy.view.byFriend }));
+    expect(panels().map((p) => p.getAttribute("data-friend"))).toEqual(["p-Max"]);
+    // The one chip's ✕ turns the filter off: every panel, every line.
+    fireEvent.click(screen.getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Max` }));
+    expect(panels()).toHaveLength(4);
+    expect(window.location.search).toBe("?view=friend");
+  });
+
+  it("opens on ?friend=any: the lines some friend has a spare of, with the Any friend chip", async () => {
+    served = { spares: BOARD, asks: [] };
+    window.history.replaceState(null, "", "/decks/shopping?friend=any");
+    await mount({ initialFriend: "any" }, withSol());
+    expect(cardNames()).not.toContain("Sol Ring");
+    expect(cardNames()).toHaveLength(4);
+    expect(screen.getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} ${copy.filters.anyFriend}` })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Filter cards, 1 on" })).toBeTruthy();
+    expect(window.location.search).toBe("?friend=any");
+  });
+
+  it("drops a named id no friend with a spare answers to, from the filter and the address", async () => {
+    served = { spares: BOARD, asks: [] };
+    window.history.replaceState(null, "", "/decks/shopping?friend=p-Chris,p-Nobody");
+    await mount({ initialFriend: "p-Chris,p-Nobody" }, withSol());
+    expect(window.location.search).toBe("?friend=p-Chris");
+    expect(cardNames()).toEqual(["Command Tower"]);
+    cleanup();
+    window.history.replaceState(null, "", "/decks/shopping?friend=p-Nobody");
+    await mount({ initialFriend: "p-Nobody" }, withSol());
+    expect(window.location.search).toBe("");
+    expect(cardNames()).toHaveLength(5);
+  });
+
+  const chipsRow = () => document.querySelector("[data-chassis-row='chips']") as HTMLElement;
+
+  it("never shows a public id: a named filter's chip is name-free while the read is out, and named once it lands", async () => {
+    let land: (v: unknown) => void = () => {};
+    fetchMock.mockImplementation((url: string) =>
+      url.startsWith("/api/spare-requests")
+        ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) })
+        : new Promise((resolve) => { land = resolve; }));
+    window.history.replaceState(null, "", "/decks/shopping?friend=p-Chris");
+    await mount({ initialFriend: "p-Chris" });
+    expect(chipsRow().textContent).not.toContain("p-Chris");
+    expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} ${copy.filters.friendReading}` })).toBeTruthy();
+    await act(async () => { land({ ok: true, json: async () => ({ spares: BOARD }) }); });
+    expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Chris` })).toBeTruthy();
+    expect(chipsRow().textContent).not.toContain("p-Chris");
+  });
+
+  it("cuts a Friend chip naming long or many friends for the eye, so its ✕ stays on a phone, and speaks every name", async () => {
+    const long = (n: string) => ({ oracleId: TOWER, friend: { ...friend(n), publicId: `p-${n.replace(/ /g, "_")}` }, spare: 1 });
+    served = { spares: [long("Bartholomew Featherstonehaugh"), long("Wilhelmina Cholmondeley")], asks: [] };
+    window.history.replaceState(null, "", "/decks/shopping?friend=p-Bartholomew_Featherstonehaugh,p-Wilhelmina_Cholmondeley");
+    await mount({ initialFriend: "p-Bartholomew_Featherstonehaugh,p-Wilhelmina_Cholmondeley" });
+    const whole = "Bartholomew Featherstonehaugh, Wilhelmina Cholmondeley";
+    const remove = within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} ${whole}` });
+    const label = remove.parentElement?.querySelector("[aria-hidden='true']:not([class*='fg-muted'])")?.textContent ?? "";
+    expect(label.length).toBeLessThanOrEqual(25);
+    expect(label.endsWith("…")).toBe(true);
+    expect(within(chipsRow()).getByText(`${copy.filters.chipFriend} ${whole}`, { selector: ".sr-only" })).toBeTruthy();
+  });
+
+  it("disables a friend pill with none of the drawn cards, as the desktop panel's unavailable rows", async () => {
+    served = { spares: BOARD, asks: [] };
+    await mount();
+    fireEvent.change(screen.getByRole("searchbox", { name: copy.filters.search }), { target: { value: "brainstorm" } });
+    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    const pill = (label: string) => within(document.querySelector("[data-friend-pills]") as HTMLElement).getByRole("checkbox", { name: label });
+    expect((pill("Colin, 1 card") as HTMLButtonElement).disabled).toBe(false);
+    const max = pill("Max, 0 cards") as HTMLButtonElement;
+    expect(max.disabled).toBe(true);
+    expect(max.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(max);
+    expect(max.getAttribute("aria-checked")).toBe("false");
+    expect(window.location.search).toBe("?q=brainstorm");
+  });
+
+  describe("a purchase under the filter", () => {
+    const buyProps = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true };
+    async function buyJaceAndReread(initialFriend: string, wideView = false) {
+      if (wideView) wide();
+      bought.loadPrintingChoices.mockResolvedValue([{
+        scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+        collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+        finishes: ["nonfoil"], owned: { nonfoil: 0 },
+      }]);
+      bought.markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
+      served = { spares: BOARD, asks: [] };
+      window.history.replaceState(null, "", `/decks/shopping?friend=${initialFriend}`);
+      let view!: ReturnType<typeof render>;
+      await act(async () => { view = render(<CartView cart={cart()} {...buyProps} initialFriend={initialFriend} />); });
+      fireEvent.click(list().getByRole("button", { name: gotItCopy.row.tagAria("Jace, Multiverse Architect") }));
+      const add = await screen.findByRole("button", { name: /^Add/ });
+      await act(async () => { fireEvent.click(add); });
+      const after = cart();
+      after.lines = after.lines.filter((l) => l.oracleId !== JACE);
+      // The next read asks for the lines left, so Jace's spares (Colin's and Max's) are no longer in it.
+      served = { spares: BOARD.filter((x) => x.oracleId !== JACE), asks: [] };
+      await act(async () => { view.rerender(<CartView cart={after} {...buyProps} initialFriend={initialFriend} />); });
+      // Let the purchase's own follow-ups (the receipt, the re-read) settle inside this test.
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    }
+    const held = () => list().getAllByRole("listitem").filter((li) => li.hasAttribute("data-held-slot"));
+
+    it("keeps a one-friend filter whose last card was bought: its held slot, and no unrelated card back", async () => {
+      await buyJaceAndReread("p-Max");
+      expect(window.location.search).toBe("?friend=p-Max");
+      expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Max` })).toBeTruthy();
+      expect(held()).toHaveLength(1);
+      expect(list().getAllByRole("listitem")).toHaveLength(1);
+    });
+
+    // Jace is owned by no one here, so under Max's filter the held slot is a `None` card and the only one drawn.
+    it("counts the held slot in Owned's desktop panel, so None stays offered while the slot shows", async () => {
+      await buyJaceAndReread("p-Max", true);
+      expect(held()).toHaveLength(1);
+      fireEvent.click(screen.getByRole("button", { name: /^Owned options, Any, collapsed$/ }));
+      expect(screen.getAllByRole("option").map((o) => o.getAttribute("aria-label"))).toEqual(["Any, 1 card", "You own some, no cards", "None, 1 card"]);
+      expect(screen.getByRole("option", { name: "None, 1 card" }).getAttribute("aria-disabled")).toBeNull();
+      // The result line counts the slot the list draws, against the selected cards and the slot.
+      expect(resultLine()).toBe(copy.result.filtered(1, 4));
+    });
+
+    it("counts the held slot in the phone sheet's figure and its Show press, through an Owned pick", async () => {
+      await buyJaceAndReread("p-Max");
+      fireEvent.click(screen.getByRole("button", { name: "Filter cards, 1 on" }));
+      const sheet = screen.getByRole("dialog", { name: "Filters" });
+      expect(within(sheet).getByText(copy.filters.sheetMatch(1, 4))).toBeTruthy();
+      fireEvent.click(within(sheet).getByRole("radio", { name: copy.filters.ownedNone }));
+      expect(within(sheet).getByText(copy.filters.sheetMatch(1, 4))).toBeTruthy();
+      expect(within(sheet).getByRole("button", { name: copy.filters.show(1) })).toBeTruthy();
+      expect(held()).toHaveLength(1);
+    });
+
+    it("counts the held slot in no match's way out: dropping the search gives the lines and the slot", async () => {
+      await buyJaceAndReread("");
+      fireEvent.change(screen.getByRole("searchbox", { name: copy.filters.search }), { target: { value: "zzz" } });
+      expect(screen.getByText(copy.noMatch.body("zzz", 4))).toBeTruthy();
+      expect(resultLine()).toBe(copy.result.filtered(0, 4));
+    });
+
+    // Max's last card (Jace) bought under his filter: By card draws its held slot, By deck no row (a slot has no group),
+    // By friend Max's panel holding the slot. Every figure is a count of the rows the view on screen draws (`viewRows`).
+    const VIEWS = [
+      { view: "card", radio: copy.view.byCard, rows: 1, of: 4, line: copy.result.filtered(1, 4) },
+      { view: "deck", radio: copy.view.byDeck, rows: 0, of: 3, line: copy.result.filtered(0, 3) },
+      { view: "friend", radio: copy.view.byFriend, rows: 1, of: 4, line: copy.result.byFriend(1, 1) },
+    ] as const;
+    const drawnRows = (view: string) => {
+      if (document.querySelector("[data-cart-no-match]")) return 0;
+      if (view === "friend") return new Set(panels().flatMap((p) => p.getAttribute("data-friend") ? within(p).getAllByRole("listitem").map((li) => li.textContent) : [])).size;
+      return list().getAllByRole("listitem").length;
+    };
+    for (const width of ["phone", "desktop"] as const) {
+      for (const c of VIEWS) {
+        it(`agrees with the rows By ${c.view} draws after the purchase, at ${width} width`, async () => {
+          await buyJaceAndReread("p-Max", width === "desktop");
+          fireEvent.click(screen.getByRole("radio", { name: c.radio }));
+          expect(drawnRows(c.view)).toBe(c.rows);
+          expect(resultLine()).toBe(c.line);
+          const none = (n: number) => (n === 0 ? "no cards" : n === 1 ? "1 card" : `${n} cards`);
+          if (width === "desktop") {
+            fireEvent.click(screen.getByRole("button", { name: /^Owned options, Any, collapsed$/ }));
+            expect(screen.getAllByRole("option").map((o) => o.getAttribute("aria-label"))).toEqual([
+              `Any, ${c.rows === 1 ? "1 card" : `${c.rows} cards`}`, "You own some, no cards", `None, ${none(c.rows)}`,
+            ]);
+          } else {
+            fireEvent.click(screen.getByRole("button", { name: "Filter cards, 1 on" }));
+            const sheet = screen.getByRole("dialog", { name: "Filters" });
+            expect(within(sheet).getByText(copy.filters.sheetMatch(c.rows, c.of))).toBeTruthy();
+            expect(within(sheet).getByRole("button", { name: copy.filters.show(c.rows) })).toBeTruthy();
+          }
+        });
+      }
+    }
+
+    it("keeps both friends of a two-friend filter, and the bought card's held slot", async () => {
+      await buyJaceAndReread("p-Max,p-Peter");
+      expect(window.location.search).toBe("?friend=p-Max%2Cp-Peter");
+      expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Max, Peter` })).toBeTruthy();
+      expect(held()).toHaveLength(1);
+      expect(cardNames()).toContain("Ghoulcaller Gisa");
+    });
+  });
+
+  it("drops a named friend once their spares sit only on unselected decks' lines, rather than naming them by id", async () => {
+    served = { spares: BOARD, asks: [] };
+    window.history.replaceState(null, "", "/decks/shopping?friend=p-Chris");
+    await mount({ initialFriend: "p-Chris" });
+    expect(cardNames()).toEqual(["Command Tower"]);
+    // Command Tower is Thopter Works' alone, and Chris holds a spare of nothing else.
+    fireEvent.click(screen.getByRole("checkbox", { name: copy.selections.aria("Thopter Works", true) }));
+    expect(chipsRow().textContent).not.toContain("p-Chris");
+    expect(screen.queryByRole("button", { name: /Remove filter: Friend/ })).toBeNull();
+    expect(window.location.search).toBe("");
+    expect(cardNames()).toEqual(["Brainstorm"]);
+  });
+
+  it("draws the desktop trigger dashed, reading…, while the read is out, and the sheet's group the same", async () => {
+    fetchMock.mockImplementation((url: string) =>
+      url.startsWith("/api/spare-requests") ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) }) : new Promise(() => {}));
+    wide();
+    await mount();
+    const reading = document.querySelector("[data-friend-reading]") as HTMLElement;
+    expect(reading.textContent).toBe(`${copy.filters.friend}${copy.filters.friendReading}`);
+    expect(reading.className).toContain("border-dashed");
+    expect(screen.queryByRole("button", { name: "Friend filter" })).toBeNull();
+    cleanup();
+    Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: original });
+    await mount();
+    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    const group = screen.getByRole("group", { name: copy.filters.friendHead });
+    expect(within(group).getByText(copy.filters.friendReading)).toBeTruthy();
+    expect(within(group).queryAllByRole("checkbox")).toHaveLength(0);
+  });
+
+  it("hides the trigger after a failed read, and leaves an arriving ?friend inert rather than claiming no card matches", async () => {
+    served = { spares: [], asks: [], fail: true };
+    window.history.replaceState(null, "", "/decks/shopping?friend=p-Chris");
+    wide();
+    await mount({ initialFriend: "p-Chris" });
+    expect(document.querySelector("[data-friend-reading]")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Friend/ })).toBeNull();
+    expect(cardNames()).toHaveLength(4);
+    expect(screen.queryByRole("button", { name: /Remove filter: Friend/ })).toBeNull();
+    // Kept for a Try again that lands.
+    expect(window.location.search).toBe("?friend=p-Chris");
+  });
+
+  it("has no trigger and no sheet group when no friend has a spare", async () => {
+    served = { spares: [], asks: [] };
+    wide();
+    await mount();
+    expect(screen.queryByRole("button", { name: /^Friend/ })).toBeNull();
+    expect(document.querySelector("[data-friend-reading]")).toBeNull();
+    cleanup();
+    Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: original });
+    await mount();
+    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    expect(screen.queryByRole("group", { name: copy.filters.friendHead })).toBeNull();
+  });
+
+  it("draws the phone sheet's friends as equal pills two to a row under Any friend, which spans it (R1b)", async () => {
+    served = { spares: BOARD, asks: [] };
+    await mount({}, withSol());
+    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    const grid = document.querySelector("[data-friend-pills]") as HTMLElement;
+    expect(grid.className).toContain("grid-cols-[repeat(2,minmax(0,1fr))]");
+    const pills = within(grid).getAllByRole("checkbox");
+    expect(pills.map((p) => p.getAttribute("aria-label"))).toEqual([copy.filters.anyFriend, "Colin, 2 cards", "Chris, 1 card", "Max, 1 card", "Peter, 1 card"]);
+    expect(pills[0].className).toContain("col-span-full");
+    expect(pills.slice(1).every((p) => !p.className.includes("col-span-full") && p.querySelector("[data-face]"))).toBe(true);
+    fireEvent.click(pills[1]);
+    expect(pills[1].getAttribute("aria-checked")).toBe("true");
+    expect(cardNames()).toEqual(["Brainstorm", "Jace"]);
+    expect(window.location.search).toBe("?friend=p-Colin");
+    // Any friend replaces the named friends.
+    fireEvent.click(pills[0]);
+    expect(pills.map((p) => p.getAttribute("aria-checked"))).toEqual(["true", "false", "false", "false", "false"]);
+    expect(window.location.search).toBe("?friend=any");
+    expect(cardNames()).toHaveLength(4);
+  });
+});

@@ -28,7 +28,7 @@ async function readNow() {
 export default async function AllDecksShoppingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string | string[]; deck?: string | string[]; q?: string | string[]; sort?: string | string[] }>;
+  searchParams: Promise<{ view?: string | string[]; deck?: string | string[]; q?: string | string[]; sort?: string | string[]; friend?: string | string[]; owned?: string | string[] }>;
 }) {
   // The reader first: the switch is theirs (`requestSwitchEnv`), resolved once for the whole render.
   const userId = await requireUserId();
@@ -66,6 +66,8 @@ export default async function AllDecksShoppingPage({
       // `?q` and `?sort` (v2 G3): the search for every view, and the sort of the view the page opens on.
       initialQuery={typeof params.q === "string" ? parseQuery(params.q) : ""}
       initialSort={typeof params.sort === "string" ? params.sort : null}
+      initialFriend={typeof params.friend === "string" ? params.friend : null}
+      initialOwned={typeof params.owned === "string" ? params.owned : null}
       buyEnabled={shoppingMarkBoughtEnabled(env)}
       // Friends' spares on the lines (Social R2 PR B): read after the page from the uncached route, so no key changes.
       socialFriends={socialFriendsEnabled(env)}

@@ -11,10 +11,11 @@ import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import type { ProvenanceForm } from "../../../lib/decks/price";
 import { cartTotal, checkoutLinks, ownFact, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
 import {
-  DEFAULT_SORTS, MAX_QUERY, byCardOrder, cardCompare, matchesQuery, parseQuery, parseSort, searchLines, sortDecks, sortGroups,
-  type CartSorts,
+  DEFAULT_SORTS, MAX_QUERY, byCardOrder, cardCompare, friendKeeps, friendParam, matchesQuery, ownedKeeps, parseFriend, parseOwned,
+  parseQuery, parseSort, searchLines, settleFriend, sortDecks, sortGroups, toggleFriend,
+  type CartSorts, type FriendFilter, type OwnedFilter,
 } from "../../../lib/decks/cart-sort";
-import { CartChassis } from "./cart-chassis";
+import { CartChassis, type CartFilters, type FriendOffer } from "./cart-chassis";
 import { CartCheckout } from "./cart-checkout";
 import { CartCardLine, CartHeldSlot } from "./cart-line";
 import { CartColumns, SpareColumnContext } from "./cart-columns";
@@ -27,10 +28,13 @@ import { CartDeckGroup } from "./cart-deck-group";
 import { DeckSelect } from "./deck-select";
 import { ViewSwitch, type CartViewMode } from "./view-switch";
 import {
-  ByFriendEmpty, ByFriendList, ByFriendReading, friendGroups, spareReadStatus, useByFriend, type ByFriend, type HeldLines,
+  ByFriendEmpty, ByFriendList, ByFriendReading, friendGroups, groupByFriend, spareReadStatus, useByFriend, type ByFriend,
+  type FriendGroup, type HeldLines,
 } from "./cart-by-friend";
 import { SocialToast, type SocialToastState } from "../../social/social-toast";
 import { mirrorUrl } from "../../../lib/url/mirror";
+import { chassisCopy } from "../../../lib/copy/filter-chassis";
+import type { FriendSpare, SpareFriend } from "../../../lib/social/spares";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { HoverPreviewProvider } from "../hover-preview";
 import { CardDetailProvider } from "../../cards/card-detail-provider";
@@ -50,18 +54,23 @@ function useWithHeld(
 ): { lines: SelectedLine[]; held: HeldLines } {
   const { compare = byCardOrder, query = "" } = shape;
   const gotIt = useCartGotIt();
+  const keep = useContext(LineFilterContext);
   return useMemo(() => {
-    // A slot the search leaves out goes with the rest of the lines it leaves out.
+    // A slot the search or a filter leaves out goes with the rest of the lines it leaves out.
     const gone = [...(gotIt?.held.values() ?? [])].filter((h) =>
-      !read.has(h.line.oracleId) && [...h.deckIds].some((d) => selected.has(d)) && matchesQuery(h.line.name, query));
+      !read.has(h.line.oracleId) && [...h.deckIds].some((d) => selected.has(d)) && matchesQuery(h.line.name, query) && keep(h.line));
     // `lines` arrive in the by-card order: only a sort of the reader's choosing, or a held slot to place, re-sorts.
     const placed = gone.length === 0 ? lines : [...lines, ...gone.map((h) => h.line)];
     return {
       lines: gone.length === 0 && compare === byCardOrder ? lines : [...placed].sort(compare),
       held: new Map(gone.map((h) => [h.line.oracleId, h.added])),
     };
-  }, [gotIt, lines, read, selected, compare, query]);
+  }, [gotIt, lines, read, selected, compare, query, keep]);
 }
+
+/** The Friend and Owned filters as one test of a line (PR 9), for the pieces that place held slots (`useWithHeld`). */
+type LineKeep = (line: { oracleId: string; owned: number }) => boolean;
+const LineFilterContext = createContext<LineKeep>(() => true);
 
 /** Who holds what, for the own fact (G1): each deck's place in the selections' order, and every holding deck's name. */
 type Holders = { rank: ReadonlyMap<string, number>; names: ReadonlyMap<string, string> };
@@ -106,18 +115,26 @@ function ByCardList({
   );
 }
 
-export function CartView({
-  cart,
-  provenance,
-  initialView = "card",
-  focusDeckId = null,
-  initialQuery = "",
-  initialSort = null,
-  buyEnabled = false,
-  socialFriends = false,
-  spareAsks = false,
-  hasFriends = true,
-}: {
+/**
+ * The page's providers around the cart (I got it, friends' spares), so the cart itself can read friends' spares: the
+ * Friend filter narrows its lines by them (PR 9).
+ */
+export function CartView(props: CartViewProps) {
+  const { cart, buyEnabled = false, socialFriends = false, spareAsks = false } = props;
+  const newestAsOf = useMemo(() => (cart.newestAsOf ? new Date(cart.newestAsOf) : null), [cart.newestAsOf]);
+  const deckNames = useMemo(() => new Map(cart.decks.map((d) => [d.id, d.name])), [cart.decks]);
+  const sparesIds = useMemo(() => cart.lines.map((l) => l.oracleId), [cart.lines]);
+  const page = <CartBody {...props} />;
+  // Friends' spares (S5): one read of every card the cart lists, both views, outside the scroll box with the rest.
+  const withSpares = socialFriends ? (
+    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests={spareAsks} deckId={null}>{page}</FriendSparesProvider>
+  ) : page;
+  return buyEnabled ? (
+    <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>
+  ) : withSpares;
+}
+
+type CartViewProps = {
   cart: CartPayload;
   provenance: ProvenanceForm | null;
   /** I got it on a cart line (cart PR 6): `SHOPPING_MARK_BOUGHT_ENABLED` and its collection switch. */
@@ -137,45 +154,89 @@ export function CartView({
   initialQuery?: string;
   /** `?sort`, raw: read for the view the page opens on, and no sort at all for any other view's value (A15). */
   initialSort?: string | null;
-}) {
+  /** `?friend`, raw: `any`, or comma-joined public ids (PR 9, decision 2). */
+  initialFriend?: string | null;
+  /** `?owned`, raw: `some` or `none` (PR 9). */
+  initialOwned?: string | null;
+};
+
+function CartBody({
+  cart,
+  provenance,
+  initialView = "card",
+  focusDeckId = null,
+  initialQuery = "",
+  initialSort = null,
+  initialFriend = null,
+  initialOwned = null,
+  buyEnabled = false,
+  socialFriends = false,
+  spareAsks = false,
+  hasFriends = true,
+}: CartViewProps) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set(cart.decks.map((d) => d.id)));
   const [view, setView] = useState<CartViewMode>(initialView);
   const [query, setQuery] = useState(() => parseQuery(initialQuery));
   // Sort is per view (call 5): each view keeps its own for the visit, and the URL carries the one on screen.
   const [sorts, setSorts] = useState<CartSorts>(() => ({ ...DEFAULT_SORTS, [initialView]: parseSort(initialView, initialSort) }));
   const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set(focusDeckId ? [focusDeckId] : []));
-  // The address mirrors the view, the search and the sort of the view on screen (G3), as `?view` already did. Every
-  // parameter this page does not own is read back off the live URL and kept; a default is an absence.
-  const writeUrl = (next: { view: CartViewMode; query: string; sorts: CartSorts }, dropDeck = false) => {
+  // The two filters (PR 9): for the visit, carried across the views (D4), mirrored as `?friend` and `?owned`.
+  const [friend, setFriend] = useState<FriendFilter>(() => parseFriend(initialFriend));
+  const [owned, setOwned] = useState<OwnedFilter>(() => parseOwned(initialOwned));
+  // The address mirrors the view, the search, the filters and the sort of the view on screen (G3), as `?view` already
+  // did. Every parameter this page does not own is read back off the live URL and kept; a default is an absence.
+  type UrlState = { view: CartViewMode; query: string; sorts: CartSorts; friend: FriendFilter; owned: OwnedFilter };
+  const writeUrl = (patch: Partial<UrlState>, dropDeck = false) => {
+    const next: UrlState = { view, query, sorts, friend, owned, ...patch };
     const live = new URLSearchParams(window.location.search);
     if (dropDeck) live.delete("deck");
     if (next.view === "card") live.delete("view"); else live.set("view", next.view);
     if (next.query.trim()) live.set("q", next.query); else live.delete("q");
+    const f = friendParam(next.friend);
+    if (f === null) live.delete("friend"); else live.set("friend", f);
+    if (next.owned === "any") live.delete("owned"); else live.set("owned", next.owned);
     const sort = next.sorts[next.view];
     if (sort === DEFAULT_SORTS[next.view]) live.delete("sort"); else live.set("sort", sort);
     const qs = live.toString();
     mirrorUrl(qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
   };
-  // A sort that arrived on the wrong view, or a search past its cap, is stripped from the address once (A15).
-  useEffect(() => { writeUrl({ view, query, sorts }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // A sort that arrived on the wrong view, a search past its cap or a filter value it does not offer is stripped from
+  // the address on arrival (A15), and a friend the landed read does not know is stripped when it is dropped.
+  const friendKey = friendParam(friend);
+  useEffect(() => { writeUrl({}); }, [friendKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const chooseView = (next: CartViewMode) => {
     setView(next);
     // Mirrored, not routed: the payload already holds both views. Dropping `?deck=` too, which was a one-time
     // focus for arrival.
-    writeUrl({ view: next, query, sorts }, true);
+    writeUrl({ view: next }, true);
   };
   const chooseQuery = (typed: string) => {
     // The cap holds for typing and pasting as it does for an arrival; spaces stay while the reader types.
     const next = typed.slice(0, MAX_QUERY);
     setQuery(next);
-    writeUrl({ view, query: next, sorts });
+    writeUrl({ query: next });
   };
   const chooseSort = (drawn: CartViewMode, next: string) => {
     const nextSorts = { ...sorts, [drawn]: parseSort(drawn, next) };
     setSorts(nextSorts);
     // The address names the view's sort only while the view on screen is the one asked for (a By friend drawn as By card,
     // with spare requests off, keeps its own sort for the visit and does not write the card's over it).
-    if (drawn === view) writeUrl({ view, query, sorts: nextSorts });
+    if (drawn === view) writeUrl({ sorts: nextSorts });
+  };
+  const chooseFriend = (next: FriendFilter) => {
+    setFriend(next);
+    writeUrl({ friend: next });
+  };
+  const chooseOwned = (next: OwnedFilter) => {
+    setOwned(next);
+    writeUrl({ owned: next });
+  };
+  // Clear all takes every filter and the search, never the sort (`chassisCopy.chips.clearAllAria`).
+  const clearAll = () => {
+    setQuery("");
+    setFriend(null);
+    setOwned("any");
+    writeUrl({ query: "", friend: null, owned: "any" });
   };
   const fold = (id: string) => setOpen((prev) => {
     const next = new Set(prev);
@@ -195,7 +256,7 @@ export function CartView({
     rank: new Map(cart.decks.map((d, i) => [d.id, i])),
     names: new Map([...cart.holders.map((h) => [h.id, h.name] as const), ...cart.decks.map((d) => [d.id, d.name] as const)]),
   }), [cart.decks, cart.holders]);
-  const sparesIds = useMemo(() => cart.lines.map((l) => l.oracleId), [cart.lines]);
+  const spares = usePageSpares();
 
   // Commanders first, then the cards most SELECTED decks need, then A to Z (A2, A3): the order is
   // re-read as decks are selected, and a line no selected deck needs drops out.
@@ -203,8 +264,77 @@ export function CartView({
     .map((l) => selectLine(l, selected))
     .filter((l): l is SelectedLine => l !== null)
     .sort(byCardOrder), [cart.lines, selected]);
-  // Search narrows the same selected lines in every view (call 5); the chassis counts against `selectedLines`.
-  const lines = useMemo(() => searchLines(selectedLines, query), [selectedLines, query]);
+  // The selected cards: whether their spares read failed decides the spare column, the toast and the Friend filter (B2).
+  const sparesRead = useMemo(() => selectedLines.map((l) => l.oracleId), [selectedLines]);
+  const selectedRead = spares ? spareReadStatus(sparesRead, spares.loaded, spares.failed) : null;
+  // Once the selected cards' read has landed, a named friend with no spare of a selected line is dropped (decision 2),
+  // and the address with it: the same friends the Friend panel offers, so every id left has a row and a name.
+  // A card bought this visit that the read no longer lists still holds a slot while one of its decks is selected (S3), so
+  // its friends (read for it before, `spares.seen`) still count: buying a friend's last card keeps the friend picked.
+  const gotIt = useCartGotIt();
+  const heldLines = useMemo(() => {
+    const listed = new Set(cart.lines.map((l) => l.oracleId));
+    return [...(gotIt?.held.values() ?? [])]
+      .filter((h) => !listed.has(h.line.oracleId) && [...h.deckIds].some((d) => selected.has(d)))
+      .map((h) => h.line);
+  }, [gotIt, cart.lines, selected]);
+  const known = useMemo(() => new Set([
+    ...selectedLines.flatMap((l) => spares?.byCard.get(l.oracleId) ?? []),
+    ...heldLines.flatMap((l) => spares?.seen.get(l.oracleId) ?? []),
+  ].map((x) => x.friend.publicId)), [spares, selectedLines, heldLines]);
+  // With friends' spares off there is no Friend filter at all.
+  const settled = !spares ? null : selectedRead === "landed" ? settleFriend(friend, known) : friend;
+  if (settled !== friend) setFriend(settled);
+  // A failed read leaves the Friend filter inert (B2 hides its trigger): kept for a Try again, narrowing nothing.
+  const friendOn = selectedRead !== null && selectedRead !== "failed" ? friend : null;
+  // The friends with a spare of a card, or undefined while its read is out (or failed): such a card is kept.
+  const holdersOf = useMemo(() => (id: string) => (spares && spares.loaded.has(id) && !spares.failed.has(id)
+    ? (spares.byCard.get(id) ?? spares.seen.get(id) ?? []).map((x) => x.friend.publicId)
+    : undefined), [spares]);
+  const keepOwned = useMemo(() => (l: { owned: number }) => ownedKeeps(owned, l.owned), [owned]);
+  const keep = useMemo<LineKeep>(() => (l) => keepOwned(l) && friendKeeps(friendOn, holdersOf(l.oracleId)), [keepOwned, friendOn, holdersOf]);
+  const filtering = friendOn !== null || owned !== "any";
+  // Search and the filters narrow the same selected lines in every view (call 5, D4); the chassis counts against
+  // `selectedLines`.
+  const searched = useMemo(() => searchLines(selectedLines, query), [selectedLines, query]);
+  const lines = useMemo(() => (filtering ? searched.filter(keep) : searched), [searched, keep, filtering]);
+  // Every figure (the result line and its denominator, the sheet's figure and Show press, the Owned and Friend counts
+  // and their disabled rows, No match's figure) is a count of `viewRows`: the rows the view on screen draws under a
+  // filter state. One helper, so no figure can disagree with its own view's list.
+  const drawnView: CartViewMode = view === "friend" && !(socialFriends && spareAsks) ? "card" : view;
+  const rowSource = useMemo<RowSource>(() => ({
+    selectedLines, heldLines, holdersOf, byCard: spares?.byCard ?? new Map(), seen: spares?.seen ?? new Map(),
+  }), [selectedLines, heldLines, holdersOf, spares]);
+  const rowsFor = (patch: Partial<RowFilter> = {}) => viewRows(drawnView, { query, friend: friendOn, owned, ...patch }, rowSource);
+  const drawnNow = rowsFor();
+  const figures: ViewFigures = {
+    rows: drawnNow.rows,
+    groups: drawnNow.groups,
+    of: rowsFor({ query: "", friend: null, owned: "any" }).rows.length,
+    withoutSearch: rowsFor({ query: "" }).rows.length,
+  };
+  // What the Friend trigger and the sheet's group offer (call 6): each friend `known` names (a spare of a selected line
+  // or a selected held slot), with the rows the view would draw were that friend the filter.
+  const knownFriends = new Map<string, SpareFriend>();
+  for (const l of selectedLines) for (const x of spares?.byCard.get(l.oracleId) ?? []) knownFriends.set(x.friend.publicId, x.friend);
+  for (const l of heldLines) for (const x of spares?.seen.get(l.oracleId) ?? []) knownFriends.set(x.friend.publicId, x.friend);
+  const offer: FriendOffer = !spares || selectedRead === "failed" ? { kind: "none" }
+    : selectedRead === "reading" ? { kind: "reading" }
+      : knownFriends.size === 0 ? { kind: "none" }
+        : {
+          kind: "friends",
+          any: rowsFor({ friend: "any" }).rows.length,
+          friends: [...knownFriends.values()]
+            .map((f) => ({ friend: f, count: rowsFor({ friend: [f.publicId] }).rows.length }))
+            .sort((a, b) => b.count - a.count || a.friend.displayName.localeCompare(b.friend.displayName, "en-US", { sensitivity: "base" })),
+        };
+  const ownedCounts = {
+    any: rowsFor({ owned: "any" }).rows.length, some: rowsFor({ owned: "some" }).rows.length, none: rowsFor({ owned: "none" }).rows.length,
+  };
+  const cartFilters: CartFilters = {
+    friend, onFriend: (code) => chooseFriend(toggleFriend(friend, code)), offer, friendLive: friendOn !== null || friend === null,
+    onFriendOff: () => chooseFriend(null), owned, onOwned: chooseOwned, ownedCounts, shown: figures.rows.length, of: figures.of, onClearAll: clearAll,
+  };
   // Desktop is one screen tall (Hugh, 2026-10-11), so the list scrolls in its own box and the sort, the
   // decks and the checkout stay on screen; the phone's page scrolls as one (2026-10-13) and ignores the
   // height. The top is measured rather than assumed, since the shell header above it has no fixed
@@ -236,8 +366,6 @@ export function CartView({
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [band]);
   const readIds = useMemo(() => new Set(cart.lines.map((l) => l.oracleId)), [cart.lines]);
-  // The selected cards: whether their spares read failed decides the spare column and the toast (B2), a search aside.
-  const sparesRead = useMemo(() => selectedLines.map((l) => l.oracleId), [selectedLines]);
   const total = cartTotal(cart.decks, selected);
   const links = useMemo(() => checkoutLinks(cart.lines, selected), [cart.lines, selected]);
   const deckCount = cart.decks.filter((d) => selected.has(d.id)).length;
@@ -265,8 +393,8 @@ export function CartView({
   // By deck: the decks in the reader's order, and with a search only the decks it leaves a card of (a group with
   // no line would be a header over nothing). The lines in a deck keep the shipped order.
   const deckGroups = useMemo(() => sortDecks(cart.decks, sorts.deck)
-    .map((d) => ({ deck: d, lines: searchLines(groupLines.get(d.id) ?? [], query) }))
-    .filter((g) => query.trim() === "" || g.lines.length > 0), [cart.decks, sorts.deck, groupLines, query]);
+    .map((d) => ({ deck: d, lines: searchLines(groupLines.get(d.id) ?? [], query).filter((l) => !filtering || keep(l)) }))
+    .filter((g) => (query.trim() === "" && !filtering) || g.lines.length > 0), [cart.decks, sorts.deck, groupLines, query, filtering, keep]);
   const brews = cart.decks.some((d) => d.brew && selected.has(d.id));
   // The cards the list draws now, which the key's spare item names only while one of them shows the glyph: the
   // selected lines by card, the open selected decks' lines by deck (a folded or unselected group draws none).
@@ -324,6 +452,7 @@ export function CartView({
     ? "md:h-dvh"
     : "md:h-[calc(100dvh-var(--cart-top))]";
   const page = empty ?? (
+    <LineFilterContext.Provider value={keep}>
     <SpareReadState ids={sparesRead} view={view}>
     <div
       ref={pageRef}
@@ -387,7 +516,7 @@ export function CartView({
                 <CartChassisRow
                   view={view}
                   lines={lines}
-                  of={selectedLines.length}
+                  figures={figures}
                   read={readIds}
                   selected={selected}
                   query={query}
@@ -397,6 +526,8 @@ export function CartView({
                   deckGroups={deckGroups}
                   sparesRead={sparesRead}
                   hasFriends={hasFriends}
+                  filters={cartFilters}
+                  filtering={filtering}
                 />
               </div>
               {/* Desktop: the list is its own scroll box, filling what the page leaves, so the controls above
@@ -422,7 +553,9 @@ export function CartView({
                 {byDeck ? (
                   // Largest first unless the reader chose another order; an unselected deck keeps its place.
                   // One name-fit observer for every open group's rows (G6: per list, never per row).
-                  deckGroups.length === 0 ? <NoMatch query={query} of={selectedLines.length} onDrop={() => chooseQuery("")} /> : <NameFitProvider>{deckGroups.map(({ deck: d, lines: deckLines }) => (
+                  // With a filter on, no match is decided from the selected lines it leaves: an unselected deck's
+                  // group still holding a line is not something to show.
+                  deckGroups.length === 0 || (filtering && lines.length === 0) ? <NoMatch query={query} of={figures.withoutSearch} filtering={filtering} onDrop={() => chooseQuery("")} onClear={clearAll} /> : <NameFitProvider>{deckGroups.map(({ deck: d, lines: deckLines }) => (
                     <CartDeckGroup
                       key={d.id}
                       deck={d}
@@ -442,11 +575,14 @@ export function CartView({
                   <CardOrFriendList
                     view={view}
                     lines={lines}
-                    of={selectedLines.length}
+                    of={figures.withoutSearch}
                     read={readIds}
                     selected={selected}
                     query={query}
                     onDrop={() => chooseQuery("")}
+                    filtering={filtering}
+                    onClear={clearAll}
+                    friendFilter={friendOn}
                     sorts={sorts}
                     deckNames={deckNames}
                     holders={holders}
@@ -470,14 +606,9 @@ export function CartView({
       </div>
     </div>
     </SpareReadState>
+    </LineFilterContext.Provider>
   );
-  // Friends' spares (S5): one read of every card the cart lists, both views, outside the scroll box with the rest.
-  const withSpares = socialFriends ? (
-    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests={spareAsks} deckId={null}>{page}</FriendSparesProvider>
-  ) : page;
-  return buyEnabled ? (
-    <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>
-  ) : withSpares;
+  return page;
 }
 
 /**
@@ -527,11 +658,12 @@ function friendBody(b: ByFriend | null, hasFriends: boolean): "panels" | "readin
  * set for the view DRAWN, since By friend draws as By card with spare requests off (and only then).
  */
 function CartChassisRow({
-  view, lines, of, read, selected, query, onQuery, sorts, onSort, deckGroups, sparesRead, hasFriends,
+  view, lines, figures, read, selected, query, onQuery, sorts, onSort, deckGroups, sparesRead, hasFriends, filters, filtering,
 }: {
   view: CartViewMode;
   lines: SelectedLine[];
-  of: number;
+  /** The view's rows and denominator (`viewRows`), which every number in the sentence counts. */
+  figures: ViewFigures;
   read: ReadonlySet<string>;
   selected: ReadonlySet<string>;
   query: string;
@@ -543,11 +675,14 @@ function CartChassisRow({
   sparesRead: readonly string[];
   /** No friend: By friend's sentence is `0 friends`, reading or not, as its block is Empty-One C (`friendBody`). */
   hasFriends: boolean;
+  filters: CartFilters;
+  /** A Friend or Owned filter narrows the lines: the sentence takes its filtered form, as for a search. */
+  filtering: boolean;
 }) {
   const drawn = useWithHeld(lines, read, selected, { query });
   const friendView = useByFriend(drawn.lines, drawn.held);
-  const byFriend = friendGroups(friendView);
   const spares = usePageSpares();
+  const { rows, of } = figures;
   const v = shown(view, friendView !== null);
   const failed = spares !== null && spareReadStatus(sparesRead, spares.loaded, spares.failed) === "failed";
   const sentence = (() => {
@@ -555,8 +690,8 @@ function CartChassisRow({
       // The selected decks the search leaves, and the copies they still need of its lines.
       const kept = deckGroups.filter((g) => selected.has(g.deck.id));
       const copies = kept.reduce((n, g) => n + g.lines.reduce((m, l) => m + (l.rows.find((r) => r.deckId === g.deck.id)?.quantity ?? 0), 0), 0);
-      // A search says how many cards are left, in any view (Controls C).
-      return query.trim() ? copy.result.filtered(lines.length, of) : copy.result.byDeck(kept.length, copies);
+      // A search or a filter says how many cards are left, in any view (Controls C).
+      return query.trim() || filtering ? copy.result.filtered(rows.length, of) : copy.result.byDeck(kept.length, copies);
     }
     if (v === "friend" && friendView && drawn.lines.length > 0) {
       // Loading C/D says what the view waits for, R2 C/D that it failed, Empty-One B/C `0 friends`.
@@ -564,13 +699,13 @@ function CartChassisRow({
       const body = friendBody(friendView, hasFriends);
       if (body === "reading") return copy.result.readingByFriend;
       if (body === "failed") return copy.result.failedByFriend;
-      const groups = byFriend?.groups ?? [];
+      const groups = figures.groups;
       return copy.result.byFriend(groups.length, groups.reduce((n, g) => n + g.spares, 0));
     }
-    if (query.trim()) return copy.result.filtered(lines.length, of);
+    if (query.trim() || filtering) return copy.result.filtered(rows.length, of);
     // A failed read has no clause to give (R2 A): nothing may say how many cards have a spare.
-    const withSpare = spares && !failed ? lines.filter((l) => (spares.byCard.get(l.oracleId)?.length ?? 0) > 0).length : 0;
-    return withSpare > 0 ? copy.result.byCard(lines.length, withSpare) : copy.result.byCardNoSpare(lines.length);
+    const withSpare = spares && !failed ? rows.filter((l) => (spares.byCard.get(l.oracleId)?.length ?? 0) > 0).length : 0;
+    return withSpare > 0 ? copy.result.byCard(rows.length, withSpare) : copy.result.byCardNoSpare(rows.length);
   })();
   return (
     <CartChassis
@@ -582,23 +717,62 @@ function CartChassisRow({
       resultLine={sentence}
       // By friend's own sentence says it is reading (Loading C), so the trailing clause is By card's and By deck's.
       reading={v !== "friend" && spares !== null && lines.some((l) => !spares.loaded.has(l.oracleId))}
+      filters={filters}
     />
   );
 }
 
-/** A search that leaves nothing: the chassis's no-match shape, naming the one fix (call 10). */
-function NoMatch({ query, of, onDrop }: { query: string; of: number; onDrop: () => void }) {
+/** Does By friend draw this friend's panel under the Friend filter? Only a named list leaves some out. */
+const namedKeeps = (filter: FriendFilter, publicId: string) => !Array.isArray(filter) || filter.includes(publicId);
+
+/** A filter state a figure is counted under: the reader's own, or it with one dimension changed (a panel row's count). */
+type RowFilter = { query: string; friend: FriendFilter; owned: OwnedFilter };
+/** What the rows are drawn from: the selected lines, the selected held slots (S3), and the friends' spares read. */
+type RowSource = {
+  selectedLines: readonly SelectedLine[];
+  heldLines: readonly SelectedLine[];
+  holdersOf: (oracleId: string) => readonly string[] | undefined;
+  byCard: ReadonlyMap<string, readonly FriendSpare[]>;
+  seen: ReadonlyMap<string, readonly FriendSpare[]>;
+};
+/** The view's rows now, By friend's panels, the rows with no search and no filter (the denominator), and without the search. */
+type ViewFigures = { rows: readonly SelectedLine[]; groups: readonly FriendGroup[]; of: number; withoutSearch: number };
+
+/**
+ * The rows `view` draws under a filter state: By card its lines and the held slots the same search and filters leave
+ * (`useWithHeld`); By deck its lines alone (a held slot has no group); By friend the lines of the panels it draws
+ * (`groupByFriend`, a named filter leaving only those friends' panels). Every figure in the cart is a count of this.
+ */
+export function viewRows(view: CartViewMode, f: RowFilter, src: RowSource): { rows: SelectedLine[]; groups: FriendGroup[] } {
+  const keeps = (l: SelectedLine) =>
+    matchesQuery(l.name, f.query) && ownedKeeps(f.owned, l.owned) && friendKeeps(f.friend, src.holdersOf(l.oracleId));
+  const lines = src.selectedLines.filter(keeps);
+  if (view === "deck") return { rows: lines, groups: [] };
+  const withHeld = [...lines, ...src.heldLines.filter(keeps)];
+  if (view === "card") return { rows: withHeld, groups: [] };
+  const held = new Map(src.heldLines.map((l) => [l.oracleId, 0]));
+  const groups = groupByFriend(withHeld, src.byCard, held, src.seen).filter((g) => namedKeeps(f.friend, g.friend.publicId));
+  const rows = [...new Set(groups.flatMap((g) => g.lines))];
+  return { rows, groups };
+}
+
+/**
+ * Search and filters that leave nothing: the chassis's no-match shape (call 10). A search alone names its one fix; with
+ * a Friend or Owned filter on, the way out is the chip row's own Clear all, since which one to drop is not one answer.
+ */
+function NoMatch({ query, of, filtering, onDrop, onClear }: { query: string; of: number; filtering: boolean; onDrop: () => void; onClear: () => void }) {
   const term = query.trim();
   return (
     <div data-cart-no-match className="flex flex-col items-start gap-[8px] rounded-[12px] border border-dashed border-[color:var(--border-dashed)] px-[22px] py-[26px]">
       <h2 className="m-0 text-[15px] font-semibold text-[color:var(--fg)]">{copy.noMatch.title}</h2>
-      <p className="m-0 max-w-[440px] text-[13px] leading-[1.55] text-[color:var(--fg-body)]">{copy.noMatch.body(term, of)}</p>
+      {filtering ? null : <p className="m-0 max-w-[440px] text-[13px] leading-[1.55] text-[color:var(--fg-body)]">{copy.noMatch.body(term, of)}</p>}
       <button
         type="button"
-        onClick={onDrop}
+        onClick={filtering ? onClear : onDrop}
+        aria-label={filtering ? chassisCopy.chips.clearAllAria : undefined}
         className="mt-[4px] flex h-[44px] items-center gap-[8px] rounded-[10px] border border-[color:var(--border-strong)] px-[14px] text-[14px] text-[color:var(--fg)]"
       >
-        {copy.noMatch.drop(term)}
+        {filtering ? chassisCopy.chips.clearAll : copy.noMatch.drop(term)}
       </button>
     </div>
   );
@@ -606,7 +780,7 @@ function NoMatch({ query, of, onDrop }: { query: string; of: number; onDrop: () 
 
 /** By card, or By friend: its panels, their skeleton while the read is out, or a dashed block. */
 function CardOrFriendList({
-  view, lines, of, read, selected, query, onDrop, sorts, deckNames, holders, newestAsOf, friendShut, onFoldFriend, hasFriends,
+  view, lines, of, read, selected, query, onDrop, filtering, onClear, friendFilter, sorts, deckNames, holders, newestAsOf, friendShut, onFoldFriend, hasFriends,
 }: {
   view: CartViewMode;
   lines: SelectedLine[];
@@ -615,6 +789,10 @@ function CardOrFriendList({
   selected: ReadonlySet<string>;
   query: string;
   onDrop: () => void;
+  filtering: boolean;
+  onClear: () => void;
+  /** The Friend filter as it narrows now (null while off or inert). */
+  friendFilter: FriendFilter;
   sorts: CartSorts;
   deckNames: Map<string, string>;
   holders: Holders;
@@ -633,9 +811,12 @@ function CardOrFriendList({
     () => cardCompare(sorts.card, (id) => (spares?.byCard.get(id) ?? spares?.seen.get(id))?.reduce((n, s) => n + s.spare, 0) ?? 0),
     [sorts.card, spares],
   );
-  const panels = useMemo(() => (byFriend ? sortGroups(byFriend.groups, sorts.friend) : null), [byFriend, sorts.friend]);
+  // Named friends leave only their own panels (Controls C2); Any friend leaves every panel.
+  const panels = useMemo(() => (byFriend
+    ? sortGroups(byFriend.groups.filter((g) => namedKeeps(friendFilter, g.friend.publicId)), sorts.friend)
+    : null), [byFriend, sorts.friend, friendFilter]);
   // The held slot a purchase left counts: a search matching only the card just bought still draws it.
-  if (drawn.lines.length === 0) return <NoMatch query={query} of={of} onDrop={onDrop} />;
+  if (drawn.lines.length === 0) return <NoMatch query={query} of={of} filtering={filtering} onDrop={onDrop} onClear={onClear} />;
   const body = view === "friend" && friendView ? friendBody(friendView, hasFriends) : null;
   if (body === "reading") return <ByFriendReading />;
   if (body === "none" || body === "noFriends") return <ByFriendEmpty kind={body} lines={drawn.lines.length} />;

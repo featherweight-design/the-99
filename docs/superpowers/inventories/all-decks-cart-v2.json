@@ -1,7 +1,7 @@
 {
   "feature": "Shopping for all decks v2 (handoff design_handoff_the99_all_decks_cart_v2; plan 2026-10-28-all-decks-cart-v2.md)",
   "clearAbout": true,
-  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. PR 6 rows: By friend's panels (By friend's column header with `Spare` on desktop, the head's `N cards \u00b7 N spares`, the row's need, spare and own facts, the Ask or its status above the tag, a folded panel, and on desktop the open header stuck to the list box top while its rows scroll); they need a friend with a spare of a selected line, and the status row a request already sent. The single-spare panel (`1 card \u00b7 1 spare`) and the spare key while the read is out are proved in `cart-by-friend.test.tsx`, since neither holds still on a live account. PR 7 rows: the reading, empty and failed states, staged by holding or answering `/api/friend-spares` (a read held 8s draws Loading A to D; an empty answer draws Empty-One B; a 500 draws addendum R2's failed read: the toast in By card and By deck, the dashed block with Try again in By friend). Empty-One C (no friends yet) needs an account with no friends, decided on the server, so it and the said-once rule across view switches are proved in `cart-by-friend.test.tsx`. Later PRs add the Friend and Owned filters. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. PR 6 rows: By friend's panels (By friend's column header with `Spare` on desktop, the head's `N cards \u00b7 N spares`, the row's need, spare and own facts, the Ask or its status above the tag, a folded panel, and on desktop the open header stuck to the list box top while its rows scroll); they need a friend with a spare of a selected line, and the status row a request already sent. The single-spare panel (`1 card \u00b7 1 spare`) and the spare key while the read is out are proved in `cart-by-friend.test.tsx`, since neither holds still on a live account. PR 7 rows: the reading, empty and failed states, staged by holding or answering `/api/friend-spares` (a read held 8s draws Loading A to D; an empty answer draws Empty-One B; a 500 draws addendum R2's failed read: the toast in By card and By deck, the dashed block with Try again in By friend). Empty-One C (no friends yet) needs an account with no friends, decided on the server, so it and the said-once rule across view switches are proved in `cart-by-friend.test.tsx`. PR 9 rows: the Friend and Owned filters (the desktop panels, the phone Filters sheet, each filter carried across the views, a filter's no match, the Friend trigger reading and after a failed read); a named friend's filter, an unknown id dropped from `?friend` and the trigger absent with no spare are proved in `cart-by-friend.test.tsx`, since they need a known fixture friend. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
   "rows": [
     {
       "id": "chassis-rest-card",
@@ -99,9 +99,9 @@
       ]
     },
     {
-      "id": "chassis-sort-sheet",
-      "label": "/decks/shopping, the phone sort sheet open (Controls B2)",
-      "view": "src/components/decks/cart/cart-sort-sheet.tsx",
+      "id": "chassis-sort-dropdown",
+      "label": "/decks/shopping, the phone's 44px \u21c5 open: `OrderMenu`'s dropdown, as /decks draws it (addendum R2 \u00a74 retired the cart's sort sheet)",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -449,6 +449,151 @@
         {
           "wait": "[data-testid=cart-by-friend-empty][data-kind=failed]"
         }
+      ]
+    },
+    {
+      "id": "filters-friend-panel",
+      "label": "/decks/shopping, the Friend panel open: Any friend, then each friend with a spare, face and count, most cards first (Controls A1, shipped `FilterPanel`)",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "Friend filter",
+          "settle": 600
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "filters-owned-panel",
+      "label": "/decks/shopping, the Owned panel open: Any, You own some, None with their counts",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "Owned options, Any, collapsed",
+          "settle": 600
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "filters-sheet",
+      "label": "/decks/shopping, the phone Filters sheet: `N of M cards match`, Any friend across the row, the friends as equal pills two to a row, Owned as segments, Show and Clear all (Controls B1, R1b)",
+      "view": "src/components/decks/cart/cart-filter-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "Filter cards",
+          "settle": 600
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "filters-friend-any",
+      "label": "/decks/shopping?friend=any: the lines some friend has a spare of, the Any friend chip, `N of M cards`, the Filters badge on a phone",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?friend=any",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "filters-friend-carried",
+      "label": "/decks/shopping?view=friend&friend=any&owned=none, both filters carried to By friend (D4): its panels over the lines they leave, both chips (Controls C2). A named friend leaves only that friend's panel; it needs a fixture friend's public id in `?friend`",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=friend&friend=any&owned=none",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "filters-owned-deck",
+      "label": "/decks/shopping?view=deck&owned=some, Owned carried to By deck: only the decks it leaves a card of, the Owned chip, `N of M cards`",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=deck&owned=some",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "filters-no-match",
+      "label": "/decks/shopping?owned=some&q=zzzzzz, a filter and a search that leave nothing: the no-match block with Clear all",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?owned=some&q=zzzzzz",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "filters-friend-reading",
+      "label": "/decks/shopping while friends' spares are read: the Friend trigger dashed, `reading\u2026` (Loading A); on a phone the sheet's Friend group the same",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "hold": "**/api/friend-spares**",
+          "ms": 8000,
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-friend-reading]"
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "filters-friend-failed",
+      "label": "/decks/shopping, the spares read failed: no Friend trigger (addendum R2 B2), Owned still there",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "mock": "**/api/friend-spares**",
+          "status": 500,
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ],
+      "widths": [
+        "desktop"
       ]
     }
   ]
