@@ -150,8 +150,9 @@ describe("the foot clearance a bar publishes", () => {
       useDeckFootClearance(el);
       return null;
     }
-    const a = render(<Foot el={dock} />);
+    // The hidden dock publishing after the bar must not take the floor back down to 0.
     const b = render(<Foot el={topOff} />);
+    const a = render(<Foot el={dock} />);
     expect(document.documentElement.style.getPropertyValue(DECK_FOOT_VAR)).toBe("120px");
     b.unmount();
     expect(document.documentElement.style.getPropertyValue(DECK_FOOT_VAR)).toBe("0px");
