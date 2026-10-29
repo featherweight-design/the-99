@@ -24,8 +24,8 @@ phone, a 210px name column from `md`), Weaknesses.
    without one must read complete without it.
 6. No Wins by line.
 
-Live example: `docs/superpowers/eval/runs/overview-stages-3-fix-ci/compare.html` on branch
-`feat/overview-i3-dedupe`, with each deck's `new.json` beside it.
+Live example: the harness's `overview-stages-3-fix-ci/compare.html`, with each deck's `new.json` beside it. Eval runs
+are gitignored, so the orchestrator attaches it to the prompt.
 
 ## Asks
 
