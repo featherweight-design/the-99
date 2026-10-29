@@ -115,13 +115,13 @@ describe("CollectionBrowser — clearing filters", () => {
   });
 
 
-  it("says nothing when Clear filters is pressed with no filter on", () => {
+  it("says nothing when Clear all filters is pressed with no filter on", () => {
     // `NoResults` draws its CTA in the catalog-unmatched state too — a reader
     // with a collection, none of it resolved against the catalog. Nothing is
     // filtered there, so the button changes nothing and a "Filters cleared"
     // announcement would describe an event that did not happen.
     render(view([]));
-    fireEvent.click(screen.getByRole("button", { name: /Clear filters/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Clear all filters/i }));
     expect(document.body.textContent).not.toContain("Filters cleared");
   });
 

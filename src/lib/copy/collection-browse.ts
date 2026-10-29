@@ -20,8 +20,8 @@ export const collectionBrowseCopy = {
     // and inventing copy Design did not write is out of scope for this pass.
     heading: (query: string, colorLabel: string | null) => {
       const q = query.trim();
-      if (q && colorLabel) return `Nothing matches "${q}" in ${colorLabel}.`;
-      if (q) return `Nothing matches "${q}".`;
+      if (q && colorLabel) return `Nothing matches “${q}” in ${colorLabel}.`;
+      if (q) return `Nothing matches “${q}”.`;
       if (colorLabel) return `Nothing matches in ${colorLabel}.`;
       return "Nothing matches those filters.";
     },
@@ -30,7 +30,9 @@ export const collectionBrowseCopy = {
     // filter alone. Naming a search and a colour filter here would state as
     // fact something that is often not true of the filters actually set.
     caption: "Nothing in your collection clears every filter. Drop one of them.",
-    cta: "Clear filters",
+    cta: "Clear all filters",
+    // With a query on, the one fix: drop every filter but the search.
+    keepSearch: "Keep only search",
   },
 } as const;
 

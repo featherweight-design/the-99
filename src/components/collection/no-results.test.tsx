@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NoResults } from "./no-results";
 
 // Forced-state coverage for the richness pass's no-results re-skin. The state
@@ -22,20 +22,20 @@ describe("NoResults", () => {
   it("reproduces the Surfaces v2 heading for query + color", () => {
     renderNoResults("counterspell", ["R"]);
     expect(screen.getByRole("heading").textContent).toBe(
-      'Nothing matches "counterspell" in Red.',
+      'Nothing matches “counterspell” in Red.',
     );
   });
 
   it("names the guild for a multi-color filter", () => {
     renderNoResults("counterspell", ["R", "W"]);
     expect(screen.getByRole("heading").textContent).toBe(
-      'Nothing matches "counterspell" in Boros.',
+      'Nothing matches “counterspell” in Boros.',
     );
   });
 
   it("drops the color clause when no color is active", () => {
     renderNoResults("counterspell", []);
-    expect(screen.getByRole("heading").textContent).toBe('Nothing matches "counterspell".');
+    expect(screen.getByRole("heading").textContent).toBe('Nothing matches “counterspell”.');
   });
 
   it("drops the query clause when only a color is active", () => {
@@ -59,22 +59,54 @@ describe("NoResults", () => {
     ).toHaveLength(1);
   });
 
-  it("carries a quiet crown and no illustration", () => {
+  it("draws the shared ZeroState: three hollow diamonds, no crown, no vignette", () => {
     const { container } = renderNoResults("counterspell", ["R"]);
-    const svgs = container.querySelectorAll("svg");
-    expect(svgs).toHaveLength(1);
-    const diamonds = svgs[0].querySelectorAll("rect");
-    expect(diamonds).toHaveLength(3);
-    expect(diamonds[0].getAttribute("fill")).toBe("var(--border-strong)");
+    // The crown was an svg of three filled rects; the shared rule is spans.
+    expect(container.querySelectorAll("svg")).toHaveLength(0);
+    const rule = container.querySelector('[aria-hidden="true"]');
+    expect(rule?.children).toHaveLength(3);
+    for (const d of Array.from(rule?.children ?? [])) {
+      expect(d.className).toContain("rotate-45");
+      expect(d.className).toContain("border-[color:var(--border-strong)]");
+    }
+    expect(container.innerHTML).not.toContain("radial-gradient");
+    const heading = screen.getByRole("heading");
+    expect(heading.className).toContain("text-[19px]");
+    expect(heading.className).toContain("font-semibold");
     expect(container.textContent).not.toContain("?");
   });
 
-  it("keeps 'Keep only search' reachable only while a query is active", () => {
-    const { unmount } = renderNoResults("counterspell", ["R"]);
-    expect(screen.getByRole("button", { name: "Clear filters" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Keep only search" })).toBeTruthy();
-    unmount();
-    renderNoResults("", ["R"]);
+  it("with a query, leads with Keep only search then Clear all filters, at both widths", () => {
+    const onKeepSearch = vi.fn();
+    const onClearAll = vi.fn();
+    render(
+      <NoResults
+        query="counterspell"
+        colors={["R"]}
+        totalCount={1418}
+        onClearAll={onClearAll}
+        onKeepSearch={onKeepSearch}
+      />,
+    );
+    const buttons = screen.getAllByRole("button");
+    expect(buttons.map((b) => b.textContent)).toEqual(["Keep only search", "Clear all filters"]);
+    // Neither press hides at a breakpoint any more.
+    for (const b of buttons) expect(b.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+    // 48 on the phone, 32 hugging from sm (640), never md.
+    for (const b of buttons) {
+      expect(b.className).toContain("h-[48px]");
+      expect(b.className).toContain("sm:h-[32px]");
+      expect(b.className).not.toMatch(/(^|\s)md:/);
+    }
+    fireEvent.click(buttons[0]);
+    expect(onKeepSearch).toHaveBeenCalledTimes(1);
+    fireEvent.click(buttons[1]);
+    expect(onClearAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("filters only: Clear all filters alone", () => {
+    renderNoResults("  ", ["R"]);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Clear all filters"]);
     expect(screen.queryByRole("button", { name: "Keep only search" })).toBeNull();
   });
 });

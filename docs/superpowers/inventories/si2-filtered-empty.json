@@ -1,0 +1,59 @@
+{
+  "feature": "Small items 2, item 6a: one filtered-empty state (the shared ZeroState) on /collection and both /commanders lanes",
+  "note": "Board: design/design_handoff_the99_small_items_2/Filtered-Empty.dc.html. Collection keeps its own words (heading naming the query and colors, its caption); with a query it leads with Keep only search then Clear all filters, filters only shows Clear all filters alone. The owned and discover lanes on /commanders draw the same shape with their own copy. Filters are set through the URL so no row depends on what a press opens.",
+  "shares": {
+    "binding": "ZeroState",
+    "module": "src/components/ui/zero-state.tsx",
+    "note": "The one filtered-empty shape. Each row's view is the file that renders ZeroState for that surface."
+  },
+  "rows": [
+    {
+      "id": "collection-query-colors",
+      "label": "/collection?q=zzqx&c=RG: heading names the query and Gruul, caption, Keep only search (primary) then Clear all filters",
+      "view": "src/components/collection/no-results.tsx",
+      "steps": [
+        {
+          "goto": "/collection?q=zzqx&c=RG",
+          "wait": "h2",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "collection-filters-only",
+      "label": "/collection?c=WUBRG&m=exact&s=zzz filtered to nothing with no query: the colors heading, caption, Clear all filters alone",
+      "view": "src/components/collection/no-results.tsx",
+      "steps": [
+        {
+          "goto": "/collection?c=WUBRG&m=exact&s=zzz",
+          "wait": "h2",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "commanders-owned",
+      "label": "/commanders?p=zzz, the owned lane at zero: the same diamonds, heading, body and buttons in its own words",
+      "view": "src/components/commanders/filtered-empty.tsx",
+      "steps": [
+        {
+          "goto": "/commanders?p=zzz",
+          "wait": "h2",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "commanders-discover",
+      "label": "/commanders/discover?p=zzz, the discover lane at zero: the same shape",
+      "view": "src/components/commanders/discovery-view.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/discover?p=zzz",
+          "wait": "h2",
+          "settle": 5000
+        }
+      ]
+    }
+  ]
+}

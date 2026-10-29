@@ -13,7 +13,7 @@ import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { discoverCopy } from "../../lib/copy/lanes";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { PendingMark } from "../ui/pending-mark";
-import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "./filtered-empty";
+import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 import { laneHref } from "./list-nav";
 import { usePlace } from "./place-paths";
 
