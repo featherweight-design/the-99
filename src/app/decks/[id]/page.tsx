@@ -10,13 +10,12 @@ import { comboFor, comboLookupIds, deckComboFields } from "../../../lib/combos/a
 import { dropDismissed, readDismissedSuggestions } from "../../../lib/precons/suggestion-dismissed";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
-import { noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { carryOnArrival } from "../../../lib/precons/arrival-carry";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
 import { readDeckOriginAndStart } from "../../../lib/precons/start-version";
 import { preconsEnabled } from "../../../lib/precons/flag";
-import { strategyFocusEnabled } from "../../../lib/strategy/flag";
 import { loadDeckStrategy } from "../../../lib/strategy/load";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
@@ -241,8 +240,7 @@ export default async function DeckBuilderPage({
   );
   // COMBOS ONE PIECE AWAY (combos close, G7): the status line's segment and its list, two-card combos
   // only (G2). Started with the request beside the row's combo marks; it needs only the deck id. NOT
-  // cached: where each missing piece is moves with availability and prices. Empty while
-  // `NEAR_COMBOS_ENABLED` is off; a read that fails answers null, and the page draws no segment.
+  // cached: where each missing piece is moves with availability and prices. A read that fails answers null, and the page draws no segment.
   const nearCombosRead = early(
     // Uncapped: the sheet lists every combo its count names, so the segment's count and the sheet's
     // rows always agree. Two-card near combos run to 54 on staging's busiest deck, a small payload.
@@ -269,9 +267,9 @@ export default async function DeckBuilderPage({
   const friendPrefsRead = friendDecksEnabled(env)
     ? early(perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)).catch(() => null))
     : null;
-  // The deck's strategy and its focus (`STRATEGY_FOCUS_ENABLED`), uncached: a card edit revalidates this page, and the
+  // The deck's strategy and its focus, uncached: a card edit revalidates this page, and the
   // block's +N / −N counts the list as it stands. A failed read costs the block, nothing else.
-  const strategyRead = strategyFocusEnabled(env)
+  const strategyRead = analysisTabEnabled(env)
     ? early(perf.timed("strategy", () => loadDeckStrategy(userId, id, env)).catch(() => null))
     : null;
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
@@ -367,7 +365,7 @@ export default async function DeckBuilderPage({
     : null;
   // The ticked import's receipt (no-collection entry S10): `?added=<entry>` beside `imported=1`. The same one-time
   // claim, read only for the reader's own add written for this deck; a failed read draws the plain strip.
-  const importAddReceiptRead = noCollectionEntryEnabled(env) && arrivedFromImport(query[IMPORTED_PARAM]) && typeof preconAddedParam === "string"
+  const importAddReceiptRead = collectionEditEnabled(env) && arrivedFromImport(query[IMPORTED_PARAM]) && typeof preconAddedParam === "string"
     ? early(perf.timed("importAddReceipt", () => readImportAddReceipt(userId, preconAddedParam, id)).catch(() => null))
     : null;
   // The precon link's doors (R3): an unlinked deck's suggestion and the Versions foot row's picker,

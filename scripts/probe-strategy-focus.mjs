@@ -5,7 +5,7 @@
 // (the strategy-focus inventory's SF_NOFOCUS_DECK). It WRITES that deck's `strategy_focus` and puts the value it found
 // back in a `finally`: run it on a scratch branch off local-dev, never production or staging.
 //
-//   STRATEGY_FOCUS_ENABLED=true ANALYSIS_TAB_ENABLED=true node node_modules/next/dist/bin/next dev -p 3417
+//   ANALYSIS_TAB_ENABLED=true node node_modules/next/dist/bin/next dev -p 3417
 //   PROBE_BASE=http://localhost:3417 SF_DECK=<deck id> pnpm probe:strategy-focus
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";

@@ -25,7 +25,7 @@ type ComboPieceRow = import("../synopsis/combo-facts").ComboPieceRow;
 type NearCombo = import("./near-combos").NearCombo;
 type CardComboRow = import("./near-combos").CardComboRow;
 
-const ON: NodeJS.ProcessEnv = { ...process.env, NEAR_COMBOS_ENABLED: "true" };
+const ON: NodeJS.ProcessEnv = { ...process.env };
 const piece = (v: string, name: string, o: Partial<ComboPieceRow> = {}): ComboPieceRow => ({
   variant_id: v, produces: ["Infinite mana"], card_count: 2, mana_value_needed: 0, oracle_id: `id-${name}`,
   name, must_be_commander: false, held: true, commander_legal: true, color_identity: ["U"], ...o,
@@ -181,12 +181,6 @@ describe("loadNearCombos", () => {
     execute.mockReset();
     loadAvailability.mockReset();
     loadPrices.mockReset();
-  });
-
-  it("reads nothing while the switch is off", async () => {
-    expect(await loadNearCombos({ userId: "u", deckId: "d", env: {} as NodeJS.ProcessEnv })).toEqual({ combos: [], total: 0 });
-    expect(select).not.toHaveBeenCalled();
-    expect(execute).not.toHaveBeenCalled();
   });
 
   it("a deck that is not the reader's reads as empty", async () => {
@@ -372,11 +366,6 @@ describe("read B: a card's combos", () => {
     expect(new PgDialect().sqlToQuery(cardComboQuery("user_1", CARD)).params).toContain(6);
   });
 
-  it("reads nothing while the switch is off", async () => {
-    execute.mockReset();
-    expect(await loadCardCombos({ userId: "u", oracleId: CARD, env: {} as NodeJS.ProcessEnv })).toEqual({ combos: [], total: 0, inScope: false });
-    expect(execute).not.toHaveBeenCalled();
-  });
 
   it("states each other piece from the deck in scope and the reader's availability", async () => {
     execute.mockReset();

@@ -1,8 +1,6 @@
 import type { SQL } from "drizzle-orm";
 import type { CardBracketFlags } from "../bracket/flags-read";
-import type { ModalComboPartner } from "../combos/near-miss";
 import type { CardCombos } from "../combos/near-combos";
-import { nearCombosEnabled } from "../combos/flag";
 // One card's full detail, for surfaces that hold nothing but an oracle id — the decklist,
 // the Add panel and the builder spine (#127, #91). loadBrowseCards cannot serve them: it is
 // rooted in collection_items, and a deck routinely lists cards the user does not own.
@@ -262,43 +260,8 @@ async function proxyingDecks(userId: string, oracleId: string): Promise<Proxying
  * never a claim that the card is clear.
  */
 /**
- * The card's two-card combo partners, for the modal's block.
- *
- * FAIL-SOFT and injected, exactly like `withBracketFacts` beside it and for the same reason:
- * without the seam, deleting this function leaves the whole suite green while the modal
- * silently loses its block. A failure omits the block rather than losing the card — the block
- * is a receipt, and nothing on this path depends on it to draw the rest.
- *
- * `deckOracleIds` is what makes `in this deck` sayable. Opened from `/collection` there is no
- * deck in scope and that state has no referent, which is what the block's scope line exists
- * to make visible rather than leaving it looking like an inconsistency.
- */
-export async function withComboPartners(
-  card: BrowseCard,
-  userId: string,
-  deckOracleIds?: readonly string[],
-  read?: (args: {
-    userId: string;
-    oracleId: string;
-    deckOracleIds?: readonly string[];
-  }) => Promise<ModalComboPartner[]>,
-): Promise<BrowseCard> {
-  try {
-    const load = read ?? (await import("../combos/near-miss")).loadCardComboPartners;
-    const partners = await load({ userId, oracleId: card.oracleId, deckOracleIds });
-    // OMITTED WHEN EMPTY rather than sent as `[]`: the block is absent entirely when nothing
-    // is detected — no heading, no empty state, no reserved height — and an empty array would
-    // spend payload to say what an absent field already says.
-    return partners.length > 0 ? { ...card, comboPartners: partners } : card;
-  } catch {
-    return card;
-  }
-}
-
-/**
- * The card's combos for the same block, read from `loadCardCombos` (combos one piece away UI-3), when
- * `NEAR_COMBOS_ENABLED` is on for the reader. The same seam as `withComboPartners` and for the same
- * reason: injected, so deleting this call fails a test rather than silently losing the block; FAIL-SOFT,
+ * The card's combos for the modal's block, read from `loadCardCombos` (combos one piece away UI-3).
+ * The same seam as `withBracketFacts`: injected, so deleting this call fails a test rather than silently losing the block; FAIL-SOFT,
  * so a failed read omits the block and keeps the card; OMITTED WHEN EMPTY, the block's absence.
  */
 export async function withCardCombos(card: BrowseCard, read: () => Promise<CardCombos>): Promise<BrowseCard> {
@@ -353,7 +316,7 @@ export async function withBracketFacts(
 export const loadCardDetail = cache(async function loadCardDetail(
   userId: string,
   oracleId: string,
-  /** The deck the modal was opened from, if any. See `withComboPartners`. */
+  /** The deck the modal was opened from, if any. See `withCardCombos`. */
   deckOracleIds: readonly string[] | undefined,
   /** The reader's resolved switches (`requestSwitchEnv`): the Fits door's gate. A probe passes `process.env`. */
   env: NodeJS.ProcessEnv,
@@ -427,28 +390,19 @@ export const loadCardDetail = cache(async function loadCardDetail(
   const proxiedBy = proxyingDecks(userId, oracleId);
   const gate = fitsGate(userId, oracleId, undefined, env);
   const flags = settle(async () => (await import("../bracket/flags-read")).loadBracketFlags([oracleId]));
-  // ONE combo read, never two: with near combos on, the block's lines come from `loadCardCombos`
-  // (two-card combos only, combos close E3) and the shipped partners read is not started.
-  const near = nearCombosEnabled(env);
-  const combos = near
-    ? settle(async () => {
-        const { loadCardCombos, CARD_COMBOS_SHORTLIST } = await import("../combos/near-combos");
-        return loadCardCombos({
-          userId,
-          oracleId,
-          env,
-          maxPieces: 2,
-          // Uncapped in practice (the SQL shortlist): the closed row counts this same list (OPEN-1).
-          cap: CARD_COMBOS_SHORTLIST,
-          deck: deckOracleIds ? { oracleIds: deckOracleIds, commanderOracleIds: commanderOracleIds ?? [] } : undefined,
-        });
-      })
-    : null;
-  const partners = near
-    ? null
-    : settle(async () =>
-        (await import("../combos/near-miss")).loadCardComboPartners({ userId, oracleId, deckOracleIds }),
-      );
+  // ONE combo read: the block's lines come from `loadCardCombos` (two-card combos only, combos close E3).
+  const combos = settle(async () => {
+    const { loadCardCombos, CARD_COMBOS_SHORTLIST } = await import("../combos/near-combos");
+    return loadCardCombos({
+      userId,
+      oracleId,
+      env,
+      maxPieces: 2,
+      // Uncapped in practice (the SQL shortlist): the closed row counts this same list (OPEN-1).
+      cap: CARD_COMBOS_SHORTLIST,
+      deck: deckOracleIds ? { oracleIds: deckOracleIds, commanderOracleIds: commanderOracleIds ?? [] } : undefined,
+    });
+  });
   // The Wishlist section: off for this reader, or a failed read, is no section. Started with the rest and caught here,
   // so a rejection that lands before anyone awaits it is never an unhandled one.
   const wishlist: Promise<BrowseCard["wishlist"]> = wishlistEnabled(env)
@@ -456,9 +410,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
     : Promise.resolve(null);
   const assemble = async (base: BrowseCard) => {
     const faced = await withBracketFacts({ ...base, wishlist: await wishlist }, () => unsettle(flags));
-    return combos
-      ? withCardCombos(faced, () => unsettle(combos))
-      : withComboPartners(faced, userId, deckOracleIds, () => unsettle(partners!));
+    return withCardCombos(faced, () => unsettle(combos));
   };
 
   if (owned.length > 0) {

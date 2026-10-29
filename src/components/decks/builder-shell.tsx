@@ -306,7 +306,7 @@ interface BuilderShellProps {
    *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
    *  credit lines' mention of it are withheld, same as `analysisEnabled` withholds the whole tab. */
   tuningEnabled?: boolean;
-  /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null with `STRATEGY_FOCUS_ENABLED` off. */
+  /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null with the Analysis tab off. */
   strategy?: StrategyRead | null;
   /** `socialGamesEnabled(env)` for this reader: the game log draws its "Across the table" row. */
   socialGames?: boolean;
@@ -331,8 +331,7 @@ interface BuilderShellProps {
   /** A token that moves on each render carrying `?tool=`, so a landing on the mounted shell runs again. */
   landingRequest?: string | null;
   /** `loadNearCombos` (two pieces): the combos this deck is one piece away from, for the status line's
-   *  segment and its list (combos close). Null when the read failed or never ran: no segment. Empty
-   *  while `NEAR_COMBOS_ENABLED` is off. */
+   *  segment and its list (combos close). Null when the read failed or never ran: no segment. */
   nearCombos?: NearCombos | null;
 }
 

@@ -42,7 +42,7 @@ const STATE_INK: Record<string, string> = {
  * specifies. The partner's name opens that partner in place (ledger 14).
  *
  * COMBOS ONE PIECE AWAY (UI-3, `Card-Details.dc.html`): a card carrying `cardCombos` (the near-combos
- * read, set by the server only with `NEAR_COMBOS_ENABLED` on) draws its lines from that instead, each
+ * read, set by the server) draws its lines from that instead, each
  * with where the partner is and a press that opens the combo over the card (`onOpenCombo`). The
  * branch is on the DATA, never a switch read here, so a caller handing the block a shipped card (the
  * About figure) keeps the shipped face.

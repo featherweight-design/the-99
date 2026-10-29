@@ -58,7 +58,7 @@ export function summariseByState(
 }
 
 /*
- * COMBOS ONE PIECE AWAY, UI-3 (`NEAR_COMBOS_ENABLED`): the same block drawn from `loadCardCombos`,
+ * COMBOS ONE PIECE AWAY, UI-3: the same block drawn from `loadCardCombos`,
  * one line per two-card combo. The closed row's counts and the open list come from the SAME list
  * (OPEN-1), so the two can never name different sets.
  */

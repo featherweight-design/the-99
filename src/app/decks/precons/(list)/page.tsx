@@ -29,7 +29,7 @@ import { recordSoftFailure } from "../../../../lib/cache/soft-failure";
 import { PreconListView } from "../../../../components/decks/precons/precon-list-view";
 import { PreconsDown } from "../../../../components/decks/precons/precons-down";
 import { PreconPickView } from "../../../../components/decks/precons/precon-pick-view";
-import { noCollectionEntryEnabled } from "../../../../lib/collection/edit-flag";
+import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
 import {
   PICK_PARAM,
   PICK_VALUE,
@@ -63,10 +63,10 @@ export default async function PreconsPage({
   for (const [k, v] of Object.entries(raw))
     if (typeof v === "string") params.set(k, v);
 
-  // Precons I own (no-collection entry S2 to S7): a pick mode of this list, behind the line's switch. Its payload
+  // Precons I own (no-collection entry S2 to S7): a pick mode of this list, behind collection edit. Its payload
   // carries each box's copies and tokens, so it has its own key and is never the plain list's entry. Off, or with
   // no `pick=own`, the page below is exactly as shipped.
-  if (params.get(PICK_PARAM) === PICK_VALUE && noCollectionEntryEnabled(env)) {
+  if (params.get(PICK_PARAM) === PICK_VALUE && collectionEditEnabled(env)) {
     let picked: PreconList | null = null;
     try {
       picked = await cachePageForUser(

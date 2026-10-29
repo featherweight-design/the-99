@@ -91,7 +91,7 @@ export type DashboardProps = {
   /** `HELP_ME_CHOOSE_ENABLED`, resolved for this reader: `No decks yet` carries Help me choose's door (discovery R3 E1). */
   helpMeChoose?: boolean;
   /**
-   * Decks and no cards, with NO_COLLECTION_ENTRY_ENABLED (no-collection entry S12): the kicker counts the decks, the
+   * Decks and no cards, with COLLECTION_EDIT_ENABLED (no-collection entry S12): the kicker counts the decks, the
    * header's one action is `Add your cards` (Update collection and New deck both need cards), the lock's page line
    * shows on desktop as it does on first run. Ready to build is absent at zero cards either way. Off: as shipped.
    */

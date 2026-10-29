@@ -26,7 +26,7 @@ vi.mock("./nav", () => ({
 
 const Shell = (await import("./shell")).default;
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
-const ON = { NO_COLLECTION_ENTRY_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 
 async function renderShell() {
   render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
@@ -52,8 +52,8 @@ describe("Shell and the open lock", () => {
     expect(seen.rail).toEqual({ hasDecks: true });
   });
 
-  it("hands the shipped lock (null) and reads no deck with the switch off", async () => {
-    for (const env of [{}, { NO_COLLECTION_ENTRY_ENABLED: "true" }, { COLLECTION_EDIT_ENABLED: "true" }]) {
+  it("hands the shipped lock (null) and reads no deck with collection editing off", async () => {
+    for (const env of [{}]) {
       state.env = env as unknown as NodeJS.ProcessEnv;
       await renderShell();
       expect(seen.rail).toBeNull();

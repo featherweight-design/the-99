@@ -1,7 +1,7 @@
 // The rankers' empty state at zero cards, `/commanders` and `/discover` alike: nothing can be ranked without a
 // collection to rank against. One button, to /collection, where every way in is (no-collection entry, Open 7).
 // The words are the page's own copy key (`commandersCopy.noCards`, `discoveryCopy.noCards`), its `on` form with
-// NO_COLLECTION_ENTRY_ENABLED and its `off` form, the shipped words, without it; the link is /collection either way.
+// COLLECTION_EDIT_ENABLED and its `off` form, the shipped words, without it; the link is /collection either way.
 
 import { CardFan } from "../marks";
 import { PrimaryButton } from "../ui/button";

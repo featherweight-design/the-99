@@ -64,7 +64,7 @@ export type EvidencePack = {
    */
   strategy?: { steps: string[]; keyCards: { oracleId: string; name: string }[] } | null;
   /**
-   * The deck's strategy focus (`STRATEGY_FOCUS_ENABLED`), set by the run after the pack is built (`focusPack`): its name,
+   * The deck's strategy focus, set by the run after the pack is built (`focusPack`): its name,
    * how many of the deck's nonland cards count toward it and which, the top strategies' names, and the nonland cards on
    * none of them nor the focus. Absent with no focus, and the prompt then says nothing about one.
    */

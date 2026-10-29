@@ -264,11 +264,10 @@ export type BrowseCard = {
    */
   comboPartners?: ModalComboPartner[];
   /**
-   * The same block's lines read from `loadCardCombos` (combos one piece away UI-3), set INSTEAD of
-   * `comboPartners` when `NEAR_COMBOS_ENABLED` is on for the reader: one line per two-card combo,
-   * each partner with its where-line and art, and whether the deck in scope lists the card itself
-   * (the block's split). The block draws the new face from this field and the shipped face from
-   * `comboPartners`, never from a switch read on the client. Omitted when empty, as that one is.
+   * The same block's lines read from `loadCardCombos` (combos one piece away UI-3): one line per
+   * two-card combo, each partner with its where-line and art, and whether the deck in scope lists
+   * the card itself (the block's split). `comboPartners` above is no longer set (the switch retired);
+   * its removal is a follow-up. Omitted when empty.
    */
   cardCombos?: Pick<CardCombos, "combos" | "inScope">;
   availability?: Availability | null;

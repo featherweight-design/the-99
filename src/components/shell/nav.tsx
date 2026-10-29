@@ -94,7 +94,7 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 /**
- * The lock at zero cards with NO_COLLECTION_ENTRY_ENABLED (no-collection entry, call 6), or null for the shipped
+ * The lock at zero cards with COLLECTION_EDIT_ENABLED (no-collection entry, call 6), or null for the shipped
  * four-slot lock. Collection opens, because its empty state is where a player who starts empty starts; Commanders,
  * Discover and Decks wait for a card. `hasDecks` says whether this is first run (no decks: the note's button is
  * `Go to step 1`) or not (`Add your cards`, and the note says where the decks are).

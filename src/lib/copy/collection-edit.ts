@@ -26,7 +26,6 @@ export const collectionEditCopy = {
     addShort: "Add",
   },
   empty: {
-    body: "A pile of possibilities waiting for a commander. Bring a file over, or add cards one at a time.",
     uploadTitle: "Upload a file",
     uploadSub: "A CSV from ManaBox, Moxfield, Archidekt or Deckbox",
     addTitle: "Add cards",
@@ -37,7 +36,7 @@ export const collectionEditCopy = {
     bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or add cards by hand.",
   },
   // The "ways" group (no-collection entry S1, S13, S15): one quiet group under the upload, on first run's step 1 and
-  // on the empty Collection, behind NO_COLLECTION_ENTRY_ENABLED. Strings are the handoff's `ways` block. The phone
+  // on the empty Collection, behind COLLECTION_EDIT_ENABLED. Strings are the handoff's `ways` block. The phone
   // draws each row's label alone; the desktop columns carry a sub-line, the full form on step 1 and the short form
   // in the empty Collection's narrower column.
   ways: {

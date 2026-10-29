@@ -20,7 +20,7 @@ import {
 } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
-import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
+import { collectionEditEnabled, collectionSyncEnabled } from "../../lib/collection/edit-flag";
 import { keptForReview, parseSyncOptions, SYNC_REVIEW_CAP, changedTokenCount, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt, readBuiltEntries } from "../../lib/collection/history";
 import { builtLeaving, type BuiltLeaving } from "../../lib/collection/built-leaving";
@@ -248,7 +248,7 @@ export type UploadChangePreview = {
    */
   historyReaches: boolean;
   /**
-   * S14 (no-collection entry): a Replace by a player who has never uploaded, with the line's switch on: the copies
+   * S14 (no-collection entry): a Replace by a player who has never uploaded, with collection edit on: the copies
    * it would take and where they came from, for Replace's warning. Null when nothing leaves; absent otherwise.
    */
   built?: BuiltLeaving | null;
@@ -358,8 +358,8 @@ export async function previewUploadChange(
     default: throw new Error(`upload preview refused: ${result.status}`);
   }
   const s = result.sync;
-  // S14: only a Replace by a player with no upload to be "since", and only with the line's switch on.
-  const built = kind === "replace" && lastUpload === null && noCollectionEntryEnabled(env)
+  // S14: only a Replace by a player with no upload to be "since", and only with collection edit on.
+  const built = kind === "replace" && lastUpload === null && collectionEditEnabled(env)
     ? builtLeaving(result.rows, await readBuiltEntries(userId))
     : undefined;
   const tagged = s

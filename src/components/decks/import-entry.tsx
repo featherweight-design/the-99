@@ -91,7 +91,7 @@ function formatBytes(bytes: number): string {
 export function ImportEntry({ compact = false, canOwn = false }: {
   compact?: boolean;
   /**
-   * `NO_COLLECTION_ENTRY_ENABLED`, resolved for the reader by the page (S8): the form offers `I own these cards`.
+   * `COLLECTION_EDIT_ENABLED`, resolved for the reader by the page (S8): the form offers `I own these cards`.
    * Off, the form and the payload are exactly as shipped.
    */
   canOwn?: boolean;

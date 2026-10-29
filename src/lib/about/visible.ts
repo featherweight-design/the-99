@@ -14,8 +14,7 @@ import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
-import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
-import { nearCombosEnabled } from "../combos/flag";
+import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
 import {
   friendDecksEnabled, ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled,
 } from "../social/flag";
@@ -34,7 +33,6 @@ import { homeFeedEnabled } from "../feed/flag";
 import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
-import { strategyFocusEnabled } from "../strategy/flag";
 import { pushEnabled } from "../push/flag";
 
 /**
@@ -85,8 +83,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   // Already reads SWAP_TOOLS_ENABLED: the read lives in Find a deck for it.
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
-  // Already reads COLLECTION_EDIT_ENABLED: the line's own switch needs it.
-  NO_COLLECTION_ENTRY_ENABLED: noCollectionEntryEnabled,
+  // Starting without a collection ended on exactly when collection edit is.
+  NO_COLLECTION_ENTRY_ENABLED: collectionEditEnabled,
   // The Social line: `SOCIAL_GAMES_ENABLED` already needs `SOCIAL_FRIENDS_ENABLED` inside its own function.
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
   SOCIAL_GAMES_ENABLED: socialGamesEnabled,
@@ -106,8 +104,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Spare requests (close-out): `friend-spares`' variant only. Already needs SOCIAL_FRIENDS_ENABLED.
   SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
   // Combos one piece away (close-out): its own entry, and combo-awareness's card-details key.
-  NEAR_COMBOS_ENABLED: nearCombosEnabled,
-  STRATEGY_FOCUS_ENABLED: strategyFocusEnabled,
+  NEAR_COMBOS_ENABLED: () => true,
+  // The strategy focus ended on exactly when the Analysis tab is, where its ring mounts.
+  STRATEGY_FOCUS_ENABLED: analysisTabEnabled,
   // Push notifications (close-out): its own entry, and `whats-new`'s news key. Already needs HOME_FEED_ENABLED. The
   // switch alone, as its flag reads it: the VAPID check (`pushAvailable`) parses keys with `node:crypto`, and this module
   // is imported by `proxy.ts`.

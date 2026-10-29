@@ -3,7 +3,7 @@
 // Equal tiles, neither primary. Rows on the phone, 260px tiles from `md`. Drawn only under
 // COLLECTION_EDIT_ENABLED; with it off the page keeps its single Upload button.
 //
-// With NO_COLLECTION_ENTRY_ENABLED (no-collection entry S13) the two doors become one: the Upload tile, 540 wide
+// With COLLECTION_EDIT_ENABLED (no-collection entry S13) the two doors become one: the Upload tile, 540 wide
 // from `md` and the shipped 64px row on the phone, then the ways group step 1 draws, whose third row is this
 // state's own `Add cards`. One order on both surfaces.
 

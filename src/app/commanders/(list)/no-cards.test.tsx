@@ -1,4 +1,4 @@
-// `/commanders` and `/discover` at zero cards (no-collection entry, Open 7): with NO_COLLECTION_ENTRY_ENABLED each
+// `/commanders` and `/discover` at zero cards (no-collection entry, Open 7): with collection editing on each
 // reads `Nothing to rank yet`, its own body and `Add your cards`, from its copy key; without it, the shipped words.
 // The button goes to /collection either way.
 import { render, screen } from "@testing-library/react";
@@ -30,7 +30,7 @@ vi.mock("../../../components/commanders/commanders-view", () => ({ CommandersVie
 const { default: CommandersPage } = await import("./page");
 const { default: DiscoverPage } = await import("./discover/page");
 
-const ON = { NO_COLLECTION_ENTRY_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 
 afterEach(() => {
   env.value = {} as NodeJS.ProcessEnv;
@@ -63,9 +63,8 @@ describe("the rankers at zero cards, with the no-collection entry on", () => {
   });
 });
 
-describe("the rankers at zero cards, with the switch off", () => {
-  // Collection editing alone does not turn the line on: the line's own switch needs it, not the reverse.
-  for (const off of [{}, { COLLECTION_EDIT_ENABLED: "true" }, { NO_COLLECTION_ENTRY_ENABLED: "true" }]) {
+describe("the rankers at zero cards, with collection editing off", () => {
+  for (const off of [{}]) {
     for (const [name, page] of [
       ["/commanders", CommandersPage],
       ["/discover", DiscoverPage],

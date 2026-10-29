@@ -100,7 +100,7 @@ export function AnalysisPanel({
    *  overfull deck has none, and a reading needs a whole deck), so a caller must not gate it on
    *  `held`. Absent with `PROPOSED_CUTS_ENABLED` off. */
   cuts?: ReactNode;
-  /** The deck's strategy block (`STRATEGY_FOCUS_ENABLED`): drawn last in the reading, above Tuning, and only over one. */
+  /** The deck's strategy block: drawn last in the reading, above Tuning, and only over one. */
   strategy?: ReactNode;
   /** Mana Balance, mounted directly when it is the only Tuning tool on. Like `cuts`, it needs no
    *  reading. */
