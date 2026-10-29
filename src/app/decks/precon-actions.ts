@@ -18,7 +18,6 @@ import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { warmCommanderScores } from "../../lib/recs/warm";
 import { isUuid } from "../../lib/uuid";
-import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
 import { readPickCatalog } from "../../lib/precons/list-read";
 import { PICK_MAX, recoverCommitted, resolvePick, runPickAdds, type PickOutcome } from "../../lib/precons/pick";
 import { committedPreconAdds, preconAddDecks } from "../../lib/precons/added";
@@ -80,8 +79,8 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!preconsEnabled(env)) throw new Error("precons are off");
-  // `noCollectionEntryEnabled` needs collection editing, the rollout boundary every collection write keeps.
-  if (!noCollectionEntryEnabled(env)) throw new Error("the precon pick is off");
+  // The pick is a collection write, so it keeps the collection-edit boundary every other write keeps.
+  if (!collectionEditEnabled(env)) throw new Error("the precon pick is off");
   // A retry is answered from the entries it already wrote BEFORE the catalog is read, so a refresh that landed between
   // the commit and the retry cannot refuse an add that stands. Only the rest are checked and added.
   // The whole request is held to one box and one id each, and the cap, before anything is recovered or added.

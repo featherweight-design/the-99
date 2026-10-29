@@ -117,11 +117,11 @@ describe("Home's arrivals banner", () => {
 
 describe("Home's precon pick receipt (no-collection entry S5)", () => {
   const RECEIPT = { entryIds: ["e1"], names: ["Abzan Armor"], copies: 100, tokens: 10 };
-  const LINE = { ...ON, COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
+  const LINE = { ...ON, COLLECTION_EDIT_ENABLED: "true" };
   const visit = async (query: Record<string, string>) =>
     (await HomePage({ searchParams: Promise.resolve(query) })) as ReactElement<{ children: ReactElement[] }>;
 
-  it("reads the claim from the ledger and draws the strip over the dashboard, with the line's switch on", async () => {
+  it("reads the claim from the ledger and draws the strip over the dashboard, with collection editing on", async () => {
     stub.env = LINE;
     stub.receipt.mockResolvedValue(RECEIPT);
     const page = await visit({ precons: "e1" });
@@ -130,7 +130,7 @@ describe("Home's precon pick receipt (no-collection entry S5)", () => {
     expect(page.props.children[1].type).toBe(Dashboard);
   });
 
-  it("reads no receipt with precons off, the line's switch on", async () => {
+  it("reads no receipt with precons off, collection editing on", async () => {
     stub.env = { ...LINE, PRECONS_ENABLED: "" };
     stub.receipt.mockResolvedValue(RECEIPT);
     const page = await visit({ precons: "e1" });
@@ -157,7 +157,7 @@ describe("Home's precon pick receipt (no-collection entry S5)", () => {
 });
 
 describe("Home's ways in at zero cards (no-collection entry S1, S12)", () => {
-  const LINE = { COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
+  const LINE = { COLLECTION_EDIT_ENABLED: "true" };
   const visit = async () =>
     (await HomePage({ searchParams: Promise.resolve({}) })) as ReactElement<{
       ways?: { precons: boolean } | null;
@@ -175,9 +175,9 @@ describe("Home's ways in at zero cards (no-collection entry S1, S12)", () => {
     expect(page.props.ways).toEqual({ precons: false });
   });
 
-  it("hands first run no group with the line's switch off, editing on or not", async () => {
+  it("hands first run no group with collection editing off", async () => {
     stub.uniqueCards = 0;
-    const offs: Record<string, string>[] = [{ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }, { NO_COLLECTION_ENTRY_ENABLED: "true" }];
+    const offs: Record<string, string>[] = [{ PRECONS_ENABLED: "true" }, {}];
     for (const env of offs) {
       stub.env = env;
       const page = await visit();

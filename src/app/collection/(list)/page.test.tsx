@@ -39,7 +39,7 @@ async function renderEmpty() {
 describe("/collection, empty collection", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("switch off: the shipped single Upload button and body, no doors", async () => {
+  it("collection editing off: the shipped single Upload button and body, no doors", async () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
     await renderEmpty();
     expect(screen.getByRole("link", { name: "Upload your CSV" }).getAttribute("href")).toBe("/collection/replace");
@@ -48,18 +48,8 @@ describe("/collection, empty collection", () => {
     expect(screen.queryByText("Upload a file")).toBeNull();
   });
 
-  it("switch on: two doors replace the single button", async () => {
+  it("collection editing on: one Upload tile, the ways group, and the body that names it (S13)", async () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    await renderEmpty();
-    expect(screen.queryByRole("link", { name: "Upload your CSV" })).toBeNull();
-    expect(screen.getByRole("link", { name: /Upload a file/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Add cards/ })).toBeTruthy();
-    expect(screen.getByText(/Bring a file over, or add cards one at a time/)).toBeTruthy();
-  });
-
-  it("the no-collection entry on: one Upload tile, the ways group, and the body that names it (S13)", async () => {
-    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
     vi.stubEnv("PRECONS_ENABLED", "true");
     await renderEmpty();
     expect(screen.getAllByRole("link", { name: /Upload a file/ })).toHaveLength(1);
@@ -71,18 +61,16 @@ describe("/collection, empty collection", () => {
     expect(screen.getByText("A pile of possibilities waiting for a commander. Bring a file over, or start another way.")).toBeTruthy();
   });
 
-  it("the no-collection entry on with precons off: the group without Precons I own (S15)", async () => {
+  it("collection editing on with precons off: the group without Precons I own (S15)", async () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
     vi.stubEnv("PRECONS_ENABLED", "");
     await renderEmpty();
     expect(screen.getByRole("group", { name: "No file? Start another way" })).toBeTruthy();
     expect(screen.queryByText("Precons I own")).toBeNull();
   });
 
-  it("the line's switch without collection editing draws the shipped single button (S16)", async () => {
+  it("without collection editing the page draws the shipped single button (S16)", async () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
-    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
     await renderEmpty();
     expect(screen.getByRole("link", { name: "Upload your CSV" })).toBeTruthy();
     expect(screen.queryByRole("group", { name: "No file? Start another way" })).toBeNull();
@@ -93,7 +81,6 @@ describe("/collection, empty collection", () => {
 describe("/collection, after a precon pick", () => {
   const LINE = () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
     vi.stubEnv("PRECONS_ENABLED", "true");
   };
   const visit = async (query: Record<string, string>) => render(await CollectionPage({ searchParams: Promise.resolve(query) }));
@@ -110,17 +97,17 @@ describe("/collection, after a precon pick", () => {
     expect(strip.compareDocumentPosition(screen.getByTestId("browser")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("reads nothing and draws nothing without a claim, or with the line's switch off", async () => {
+  it("reads nothing and draws nothing without a claim, or with collection editing off", async () => {
     LINE();
     h.unique = 40;
     await visit({});
-    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "");
+    vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
     await visit({ precons: "e1" });
     expect(h.receiptReads).toEqual([]);
     expect(screen.queryByRole("status")).toBeNull();
   });
 
-  it("reads nothing and draws nothing with precons off, the line's switch on", async () => {
+  it("reads nothing and draws nothing with precons off, collection editing on", async () => {
     LINE();
     vi.stubEnv("PRECONS_ENABLED", "");
     h.unique = 40;

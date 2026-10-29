@@ -35,7 +35,7 @@ const n = (v: number) => v.toLocaleString("en-US");
 
 export const discoveryCopy = {
   /**
-   * `/discover` at zero cards. `on` is the no-collection entry's (Open 7, NO_COLLECTION_ENTRY_ENABLED); `off` is the
+   * `/discover` at zero cards. `on` is the no-collection entry's (Open 7, COLLECTION_EDIT_ENABLED); `off` is the
    * shipped empty state, word for word, which `/commanders` shares.
    */
   noCards: {

@@ -22,7 +22,6 @@ const stub = vi.hoisted(() => ({
   invalidate: vi.fn(),
   editedKeys: vi.fn(async () => new Set<string>()),
   lastUpload: null as Date | null,
-  noCollection: false,
   built: vi.fn(async () => [] as { source: string | null; rows: unknown[] | null }[]),
 }));
 
@@ -35,7 +34,6 @@ vi.mock("next/server", () => ({ after: () => {} }));
 vi.mock("../../lib/collection/edit-flag", () => ({
   collectionEditEnabled: () => stub.ledger,
   collectionSyncEnabled: () => stub.ledger && stub.sync,
-  noCollectionEntryEnabled: () => stub.ledger && stub.noCollection,
 }));
 vi.mock("../../lib/collection/write", async (actual) => ({
   ...(await actual<typeof import("../../lib/collection/write")>()),
@@ -224,7 +222,7 @@ describe("previewUploadChange", () => {
     stub.lastUpload = null;
   });
 
-  it("S14: names what a first Replace takes from a collection built in the app, only with the line's switch on", async () => {
+  it("S14: names what a first Replace takes from a collection built in the app, only with collection editing on", async () => {
     stub.ledger = true;
     const st = (quantity: number) => ({ quantity, scryfallId: null, condition: null });
     const moved = (before: number | null, after: number | null) => ({
@@ -235,18 +233,12 @@ describe("previewUploadChange", () => {
     stub.built.mockResolvedValue([{ source: "precon:box.json", rows: [moved(null, 3)] }]);
     stub.lastUpload = null;
     try {
-      // Off: the shipped shape, no `built` and no read of the entries.
-      stub.built.mockClear();
-      expect(await previewUploadChange(UPLOAD, "replace")).not.toHaveProperty("built");
-      expect(stub.built).not.toHaveBeenCalled();
-      stub.noCollection = true;
       expect(await previewUploadChange(UPLOAD, "replace")).toHaveProperty("built", { copies: 3, precons: 1, byHand: false });
       // An Add takes nothing, and a player who has uploaded has an upload to be "since".
       expect(await previewUploadChange(UPLOAD, "add")).not.toHaveProperty("built");
       stub.lastUpload = new Date(Date.now() - 86_400_000);
       expect(await previewUploadChange(UPLOAD, "replace")).not.toHaveProperty("built");
     } finally {
-      stub.noCollection = false;
       stub.lastUpload = null;
     }
   });

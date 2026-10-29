@@ -52,7 +52,6 @@ export const SWITCHES = [
   { name: "NEAR_COMBOS_ENABLED", kind: "feature" },
   { name: "NEVER_CUT_ENABLED", kind: "feature" },
   { name: "NOTICES_ENABLED", kind: "feature" },
-  { name: "NO_COLLECTION_ENTRY_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
   { name: "PRECONS_ENABLED", kind: "feature" },

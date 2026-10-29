@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
   selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
   enabled: true, collectionEdit: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
   invalidated: [] as string[], warmed: [] as string[], committed: [] as unknown[], carried: [] as string[],
-  line: true, picking: false, picks: [] as unknown[][], pickResult: ((): unknown => ({ ok: true, entryId: "e" })) as (f: string) => unknown,
+  picking: false, picks: [] as unknown[][], pickResult: ((): unknown => ({ ok: true, entryId: "e" })) as (f: string) => unknown,
 }));
 
 vi.mock("../../db", () => {
@@ -38,7 +38,7 @@ vi.mock("../../lib/precons/start-owned", () => ({
   },
 }));
 vi.mock("../../lib/collection/edit-flag", () => ({
-  collectionEditEnabled: () => state.collectionEdit, noCollectionEntryEnabled: () => state.line && state.collectionEdit,
+  collectionEditEnabled: () => state.collectionEdit,
 }));
 const committed = vi.hoisted(() => ({ map: new Map<string, string>(), decks: new Map<string, string>(), asked: [] as string[][] }));
 vi.mock("../../lib/precons/added", async (importOriginal) => ({
@@ -74,7 +74,7 @@ const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}
 
 beforeEach(() => {
   state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; state.committed = [];
-  state.line = true; state.picking = false; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}`, deckId: `deck-${f}` });
+  state.picking = false; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}`, deckId: `deck-${f}` });
   committed.map = new Map(); committed.decks = new Map(); committed.asked = [];
   state.enabled = true; state.collectionEdit = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
   state.carried = [];
@@ -229,11 +229,9 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
     expect(state.carried).toEqual(["deck-Abzan", "deck-Revival_CE"]);
   });
 
-  it("refuses with the line's switch, collection editing or precons off, and writes nothing", async () => {
+  it("refuses with collection editing or precons off, and writes nothing", async () => {
     const one = [{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }];
-    state.line = false;
-    await expect(addPrecons(one)).rejects.toThrow("the precon pick is off");
-    state.line = true; state.collectionEdit = false;
+    state.collectionEdit = false;
     await expect(addPrecons(one)).rejects.toThrow("the precon pick is off");
     state.collectionEdit = true; state.enabled = false;
     await expect(addPrecons(one)).rejects.toThrow("precons are off");

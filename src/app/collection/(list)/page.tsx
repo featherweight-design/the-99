@@ -32,7 +32,7 @@ import {
 } from "../../../components/ui/empty-state";
 import { PrimaryButton } from "../../../components/ui/button";
 import { CollectionEmptyDoors } from "../../../components/collection/collection-empty-doors";
-import { collectionEditEnabled, noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
@@ -116,7 +116,7 @@ export default async function CollectionPage({
   // own strip and dismiss key, read per request from the ledger and only when the address claims one. With the line's
   // switch or precons off, nothing: the pick itself is off then.
   let receipt: PickReceipt | null = null;
-  const claim = noCollectionEntryEnabled(env) && preconsEnabled(env) ? params[PICK_RECEIPT_PARAM] : undefined;
+  const claim = collectionEditEnabled(env) && preconsEnabled(env) ? params[PICK_RECEIPT_PARAM] : undefined;
   if (claim !== undefined) {
     try {
       receipt = await readPickReceipt(userId, claim);
@@ -137,8 +137,8 @@ export default async function CollectionPage({
   if (stats.uniqueCards === 0) {
     const editEnabled = collectionEditEnabled(env);
     // The no-collection entry (S13): one Upload tile and the ways group, which opens the precon pick with
-    // `PRECONS_ENABLED` on. It needs collection editing, so it never draws without the doors' own switch.
-    const ways = noCollectionEntryEnabled(env) ? { precons: preconsEnabled(env) } : null;
+    // `PRECONS_ENABLED` on. It needs collection editing, so it never draws without it.
+    const ways = editEnabled ? { precons: preconsEnabled(env) } : null;
     return (
       <section className="flex flex-col">
         {toolLanding}
@@ -152,8 +152,6 @@ export default async function CollectionPage({
           <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
             {ways
               ? collectionEditCopy.ways.emptyBody
-              : editEnabled
-              ? collectionEditCopy.empty.body
               : "A pile of possibilities waiting for a commander. Upload a CSV and the table fills. Commanders and decks follow."}
           </EmptyStateBody>
           {editEnabled ? (

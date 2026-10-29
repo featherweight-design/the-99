@@ -22,7 +22,7 @@ export const refreshCopy = {
     kicker: (cards: string, when: string) => `${cards} cards · read ${when}`,
     updateCollection: 'Update collection',
     newDeck: 'New deck',
-    // Home with decks and no cards (no-collection entry S12, NO_COLLECTION_ENTRY_ENABLED): the kicker counts the
+    // Home with decks and no cards (no-collection entry S12, COLLECTION_EDIT_ENABLED): the kicker counts the
     // decks, since a read time would be a claim about a collection that was never read, and the header's one
     // action replaces Update collection and New deck, which both need cards.
     kickerNoCards: (decks: number) => `0 cards · ${decks === 1 ? '1 deck' : `${decks.toLocaleString('en-US')} decks`}`,
@@ -281,7 +281,7 @@ export const refreshCopy = {
       tabBracketShort: 'Open with cards',
       railLabel: 'Locked',
       goToStep1: 'Go to step 1',
-      // With Collection open at zero cards (no-collection entry, call 6; NO_COLLECTION_ENTRY_ENABLED): the page
+      // With Collection open at zero cards (no-collection entry, call 6; COLLECTION_EDIT_ENABLED): the page
       // line names the three slots still locked. The four-name `pageLine` stays for the switch off.
       pageLineOpen: 'Commanders, Discover and Decks open once your cards are in.',
       // With the Commanders place on, Discover is not in the bar, so the line names only the slots the lock holds
@@ -348,7 +348,7 @@ export const refreshCopy = {
 
 /**
  * The lock's desktop page line, naming exactly the slots the bar locks: `place` is `COMMANDERS_PLACE_ENABLED` (Discover
- * leaves the bar), `open` is the open lock of `NO_COLLECTION_ENTRY_ENABLED` (Collection opens). The nav's own rule,
+ * leaves the bar), `open` is the open lock of `COLLECTION_EDIT_ENABLED` (Collection opens). The nav's own rule,
  * `lockedItems` over `barItems`, gives the same four sets.
  */
 export function lockPageLine(place: boolean, open: boolean): string {

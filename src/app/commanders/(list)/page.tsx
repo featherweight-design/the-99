@@ -6,7 +6,7 @@ import { readCommandersAvail } from "../../../lib/commanders/avail-pref";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { redirect } from "next/navigation";
 import { NoCardsEmpty } from "../../../components/commanders/no-cards-empty";
-import { noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { commandersPlaceEnabled } from "../../../lib/commanders/place-flag";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { commandersCopy } from "../../../lib/copy/commanders";
@@ -41,7 +41,7 @@ export default async function CommandersPage({
     // No cards: nothing can be ranked without a collection to rank it against. The words follow the no-collection
     // entry's switch (its copy key's `on` form) and keep the shipped ones without it.
     const env = await requestSwitchEnv(userId);
-    return <NoCardsEmpty copy={noCollectionEntryEnabled(env) ? commandersCopy.noCards.on : commandersCopy.noCards.off} />;
+    return <NoCardsEmpty copy={collectionEditEnabled(env) ? commandersCopy.noCards.on : commandersCopy.noCards.off} />;
   }
 
   // Fetch recommendations, recent decks and the saved mode in parallel.

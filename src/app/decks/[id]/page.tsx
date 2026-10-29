@@ -10,7 +10,7 @@ import { comboFor, comboLookupIds, deckComboFields } from "../../../lib/combos/a
 import { dropDismissed, readDismissedSuggestions } from "../../../lib/precons/suggestion-dismissed";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
-import { noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { carryOnArrival } from "../../../lib/precons/arrival-carry";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
@@ -367,7 +367,7 @@ export default async function DeckBuilderPage({
     : null;
   // The ticked import's receipt (no-collection entry S10): `?added=<entry>` beside `imported=1`. The same one-time
   // claim, read only for the reader's own add written for this deck; a failed read draws the plain strip.
-  const importAddReceiptRead = noCollectionEntryEnabled(env) && arrivedFromImport(query[IMPORTED_PARAM]) && typeof preconAddedParam === "string"
+  const importAddReceiptRead = collectionEditEnabled(env) && arrivedFromImport(query[IMPORTED_PARAM]) && typeof preconAddedParam === "string"
     ? early(perf.timed("importAddReceipt", () => readImportAddReceipt(userId, preconAddedParam, id)).catch(() => null))
     : null;
   // The precon link's doors (R3): an unlinked deck's suggestion and the Versions foot row's picker,

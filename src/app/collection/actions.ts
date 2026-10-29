@@ -20,7 +20,7 @@ import {
 } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
-import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
+import { collectionEditEnabled, collectionSyncEnabled } from "../../lib/collection/edit-flag";
 import { keptForReview, parseSyncOptions, SYNC_REVIEW_CAP, changedTokenCount, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt, readBuiltEntries } from "../../lib/collection/history";
 import { builtLeaving, type BuiltLeaving } from "../../lib/collection/built-leaving";
@@ -359,7 +359,7 @@ export async function previewUploadChange(
   }
   const s = result.sync;
   // S14: only a Replace by a player with no upload to be "since", and only with the line's switch on.
-  const built = kind === "replace" && lastUpload === null && noCollectionEntryEnabled(env)
+  const built = kind === "replace" && lastUpload === null && collectionEditEnabled(env)
     ? builtLeaving(result.rows, await readBuiltEntries(userId))
     : undefined;
   const tagged = s

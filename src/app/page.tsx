@@ -40,7 +40,6 @@ import { visibleSections } from "../lib/about/pages-visible";
 import { aboutSeen } from "../lib/about/read";
 import type { SeenState } from "../lib/about/visible";
 import { resolveTheme } from "../lib/theme/server";
-import { noCollectionEntryEnabled } from "../lib/collection/edit-flag";
 import { preconsEnabled } from "../lib/precons/flag";
 import { PICK_RECEIPT_PARAM } from "../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../lib/precons/pick-receipt-read";
@@ -164,7 +163,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // collection read AND no decks", both halves. A player who imported a deck
   // before reading a collection is not a new player, and that state is
   // reachable by design: `/decks/import` has no collection gate, and with
-  // NO_COLLECTION_ENTRY_ENABLED step 1's ways group links to it. Showing them
+  // COLLECTION_EDIT_ENABLED step 1's ways group links to it. Showing them
   // the three steps would hide the deck they have.
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/");
@@ -307,7 +306,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       console.error("home: tonight's table could not be read", error);
     }
   }
-  const noCollectionEntry = noCollectionEntryEnabled(env);
+  const noCollectionEntry = collectionEditEnabled(env);
   // Friends on Home (Social R3 addendum, readiness gap 1): read per request, outside the cached payload, because a
   // friend's rename, a link made or revoked and a link's expiry move nothing its key carries. A failed read draws no
   // section, as a failed Commitments read draws no card. Read before the first-run return, so the checklist's Friends

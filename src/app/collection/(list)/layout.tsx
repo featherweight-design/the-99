@@ -15,7 +15,7 @@
 // dedupe to one query per request; nothing is fetched twice.
 
 import { requireUserId } from "../../../lib/auth";
-import { collectionEditEnabled, noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { wishlistEnabled } from "../../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
@@ -36,7 +36,7 @@ export default async function CollectionListLayout({
   const env = await requestSwitchEnv(userId);
   const editEnabled = collectionEditEnabled(env);
   // The Add cards sheet's way into Precons I own (no-collection entry S18): both switches, or the sheet is as shipped.
-  const preconPick = noCollectionEntryEnabled(env) && preconsEnabled(env);
+  const preconPick = collectionEditEnabled(env) && preconsEnabled(env);
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     perfRead("collection.lastUpdated", () => getCollectionLastUpdated(userId)),

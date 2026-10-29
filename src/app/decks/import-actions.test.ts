@@ -608,21 +608,18 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
     own.readDeckOwnLines.mockReset();
     own.readDeckOwnLines.mockResolvedValue([{ oracleId: SOL_RING, setCode: "", condition: null, quantity: 1 }]);
     own.importDeckOwned.mockResolvedValue({ ok: true, deckId: OWNED_DECK, entryId: ACTION });
-    delete process.env.NO_COLLECTION_ENTRY_ENABLED;
     delete process.env.COLLECTION_EDIT_ENABLED;
   });
 
   afterEach(() => {
-    delete process.env.NO_COLLECTION_ENTRY_ENABLED;
     delete process.env.COLLECTION_EDIT_ENABLED;
   });
 
   const switchOn = () => {
-    process.env.NO_COLLECTION_ENTRY_ENABLED = "true";
     process.env.COLLECTION_EDIT_ENABLED = "true";
   };
 
-  it("with the switch off, ignores own and writes the deck exactly as shipped", async () => {
+  it("with collection editing off, ignores own and writes the deck exactly as shipped", async () => {
     const result = await run({ own: true, actionId: ACTION });
     expect(result).toMatchObject({ ok: true, deckId: stub.DECK_ID, unresolvedCount: 1 });
     expect(own.readDeckOwnLines).not.toHaveBeenCalled();
@@ -630,14 +627,7 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
     expect(deckInserts()).toHaveLength(1);
   });
 
-  it("with collection editing off, the switch alone does not turn the add on", async () => {
-    process.env.NO_COLLECTION_ENTRY_ENABLED = "true";
-    await run({ own: true, actionId: ACTION });
-    expect(own.importDeckOwned).not.toHaveBeenCalled();
-    expect(deckInserts()).toHaveLength(1);
-  });
-
-  it("with the switch on and own unticked, writes the deck exactly as shipped", async () => {
+  it("with collection editing on and own unticked, writes the deck exactly as shipped", async () => {
     switchOn();
     const result = await run({ own: false });
     expect(result).toMatchObject({ ok: true, deckId: stub.DECK_ID });

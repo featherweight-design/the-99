@@ -28,7 +28,6 @@ describe("the collection layout: the sheet's precon row (S18)", () => {
   afterEach(() => vi.unstubAllEnvs());
   const on = () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "true");
     vi.stubEnv("PRECONS_ENABLED", "true");
   };
 
@@ -42,7 +41,7 @@ describe("the collection layout: the sheet's precon row (S18)", () => {
     vi.stubEnv("PRECONS_ENABLED", "");
     expect((await head()).props.preconPick).toBe(false);
     on();
-    vi.stubEnv("NO_COLLECTION_ENTRY_ENABLED", "");
+    vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
     expect((await head()).props.preconPick).toBe(false);
   });
 });

@@ -156,18 +156,18 @@ describe("/decks/precons, upcoming precons", () => {
 });
 
 describe("/decks/precons?pick=own (no-collection entry S2)", () => {
-  const LINE = { PRECONS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
+  const LINE = { PRECONS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" };
   beforeEach(() => { h.keys = []; h.listOpts = []; h.listFails = false; h.cookies = {}; h.afters = []; });
 
-  it("is exactly the shipped list with the line's switch off: its key, its read, its view", async () => {
-    h.env = { PRECONS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" };
+  it("is exactly the shipped list with collection editing off: its key, its read, its view", async () => {
+    h.env = { PRECONS_ENABLED: "true" };
     const el = await visit({ pick: "own" });
     expect(el.type).toBe(PreconListView);
     expect(h.keys).toEqual([[]]);
     expect(h.listOpts).toEqual([undefined]);
   });
 
-  it("draws the shipped list for any other pick, with the switch on", async () => {
+  it("draws the shipped list for any other pick, with collection editing on", async () => {
     h.env = LINE;
     expect((await visit({ pick: "all" })).type).toBe(PreconListView);
     expect(h.keys).toEqual([[]]);

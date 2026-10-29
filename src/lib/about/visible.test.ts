@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", FRIEND_DECKS_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", STRATEGY_FOCUS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", FRIEND_DECKS_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", STRATEGY_FOCUS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -450,7 +450,7 @@ describe("the collection home epic’s two entries (one bump, 14)", () => {
 
 describe("a way in without a collection (no-collection entry PR 6: a switched entry, no bump)", () => {
   const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
-  const LINE = { COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
+  const LINE = { COLLECTION_EDIT_ENABLED: "true" };
   const drawn = (o: Record<string, string>, id: string) => visibleEntries(env(o)).find((e) => e.id === id);
   const PRECON_LINE = "Pick the precons you own and each one starts its deck, with its cards in your Collection at the box’s printings, tokens too.";
   const PRECON_KEY = "Each precon box is its own change in History, and Revert takes its cards back. Adding a box twice stacks its copies and starts a second deck.";
@@ -471,7 +471,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
 
   // With the switch off (production), a current reader is told nothing on any path: no Home line, no sheet,
   // and no redirect.
-  it("announces nothing to a current reader while its switch is off", () => {
+  it("announces nothing to a current reader who has met the entries it can see", () => {
     const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }));
     // Current: has met every entry it can see, the switched ones by id.
     const current: SeenState = { version: ABOUT_VERSION, ids: switchedIds(visible) };
@@ -490,16 +490,8 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     expect(behind(visible, ahead)).toBe(false);
   });
 
-  // Flipped on, it is announced by its own id to everyone current, the way a switched entry always is.
-  it("is announced by its id, alone, when its switch flips on, to a current reader", () => {
-    const before = switchedIds(visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true" })));
-    const visible = visibleEntries(env(LINE));
-    expect(unseenEntries(visible, { version: ABOUT_VERSION, ids: before }).map((e) => e.id)).toEqual(["start-without-a-collection"]);
-  });
-
-  it("draws only with the line's switch, which needs collection editing", () => {
-    expect(drawn({ NO_COLLECTION_ENTRY_ENABLED: "true" }, "start-without-a-collection")).toBeUndefined();
-    expect(drawn({ COLLECTION_EDIT_ENABLED: "true" }, "start-without-a-collection")).toBeUndefined();
+  it("draws with collection editing and not without it", () => {
+    expect(drawn({}, "start-without-a-collection")).toBeUndefined();
     expect(drawn(LINE, "start-without-a-collection")).toBeDefined();
   });
 
@@ -514,15 +506,12 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     expect(on.keys).toHaveLength(4);
   });
 
-  it("gives deck-import its fourth key and precons R3's sentence only with the line's switch", () => {
+  it("gives deck-import its fourth key and precons R3's sentence with collection editing", () => {
     const tick = "Own the deck you’re importing? Select “I own these cards” and its cards go into your Collection too.";
     const r3 = "Own a few boxes and don’t want decks from them yet? Press Add cards in your Collection, then Pick them, and they’re added without starting anything.";
-    expect(drawn({ COLLECTION_EDIT_ENABLED: "true" }, "deck-import")!.keys).toHaveLength(3);
     expect(drawn(LINE, "deck-import")!.keys).toEqual(expect.arrayContaining([tick]));
     expect(drawn(LINE, "deck-import")!.keys).toHaveLength(4);
-    const shipped = drawn({ PRECONS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" }, "precons")!.caption;
-    expect(shipped).not.toContain(r3);
-    expect(shipped).toContain("go into your collection too.\n\nUpgrading");
+    expect(drawn({ PRECONS_ENABLED: "true" }, "precons")!.caption).not.toContain(r3);
     expect(drawn({ ...LINE, PRECONS_ENABLED: "true" }, "precons")!.caption).toContain(`go into your collection too.\n${r3}\n\nUpgrading`);
   });
 });

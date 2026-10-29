@@ -7,7 +7,7 @@
 
 export const commandersCopy = {
   /**
-   * `/commanders` at zero cards. `on` is the no-collection entry's (Open 7, NO_COLLECTION_ENTRY_ENABLED): one button
+   * `/commanders` at zero cards. `on` is the no-collection entry's (Open 7, COLLECTION_EDIT_ENABLED): one button
    * to /collection, where every way in is. `off` is the shipped empty state, word for word, kept for the switch off.
    */
   noCards: {

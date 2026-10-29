@@ -14,7 +14,7 @@ import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
-import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
+import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
 import { nearCombosEnabled } from "../combos/flag";
 import {
   friendDecksEnabled, ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled,
@@ -85,8 +85,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   // Already reads SWAP_TOOLS_ENABLED: the read lives in Find a deck for it.
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
-  // Already reads COLLECTION_EDIT_ENABLED: the line's own switch needs it.
-  NO_COLLECTION_ENTRY_ENABLED: noCollectionEntryEnabled,
+  // Starting without a collection ended on exactly when collection edit is.
+  NO_COLLECTION_ENTRY_ENABLED: collectionEditEnabled,
   // The Social line: `SOCIAL_GAMES_ENABLED` already needs `SOCIAL_FRIENDS_ENABLED` inside its own function.
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
   SOCIAL_GAMES_ENABLED: socialGamesEnabled,
