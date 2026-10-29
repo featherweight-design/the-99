@@ -651,7 +651,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
   switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
   itself: a deck's Stats and Notes tabs, the all-decks cart and the buy tag each have a switch of their own, and a frame
-  missing one is not captured), `HELP_PANEL_ENABLED`, `RULE_ZERO_ENABLED` and
+  missing one is not captured), `RULE_ZERO_ENABLED` and
   `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and `PAYMENTS_ENABLED` on, so the frames show the ?, the account menu's `Take the tour` row, the pod's
   `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no sheet. A screen frame missing what it
   must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
@@ -1922,8 +1922,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   region's halo; pin 1 swaps it; ✕ (`Close`) takes it away with focus on the label's line. And W8 at both widths on
   `/about/decks#analysis`: a press on a tool card's picture and on its body leaves the URL unchanged, each card has at
   most one `[data-tool-card-press]`, and at 1300 the row's buttons share one `getBoundingClientRect().bottom`. Every
-  check presses the control and reads the URL and the lit state. Run against
-  a server with `HELP_PANEL_ENABLED` on. Its R6 walks (the one-time sheet, the legacy `about_v` cookie, a forged
+  check presses the control and reads the URL and the lit state. Its R6 walks (the one-time sheet, the legacy `about_v` cookie, a forged
   `x-about-sheet` header) and its `--flip` walk retired with the sheet and the gate in About visual PR 6b; the banner
   carries every launch now, and `pnpm probe:about-banner` presses it.
 
@@ -2746,7 +2745,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   only writes, so it refuses any branch but a scratch one (`assertScratchBranch`) before the first. Seed the rows it
   reads first, on a SCRATCH branch only (`assertScratchBranch`): `OWNER_ID=<admin id> pnpm
   seed:admin-pii-fixture` writes group `pii-probe` holding every Clerk account, an account override on
-  `HELP_PANEL_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
+  `LINEUP_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
   a re-run. On origin/main before the masking it fails 8 checks; the inventory is
   `docs/superpowers/inventories/admin-masking.json`.
 - `pnpm probe:group-allowance` proves the per-group daily allowance (payments scope Q16) against a real database:

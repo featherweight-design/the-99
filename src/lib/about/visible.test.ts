@@ -17,7 +17,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 
 // Retired switches draw always and are still seen by id (so no reader's New marks moved): with "every switch off" they
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = retiredEntries.map((e) => e.id);
 

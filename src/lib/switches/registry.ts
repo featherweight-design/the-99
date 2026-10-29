@@ -42,7 +42,6 @@ export const SWITCHES = [
   { name: "DECK_TOKENS_ENABLED", kind: "feature" },
   { name: "FIND_A_DECK_READ_ENABLED", kind: "model", needs: "SWAP_TOOLS_ENABLED" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
-  { name: "HELP_PANEL_ENABLED", kind: "feature" },
   { name: "FRIEND_DECKS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "HOME_FEED_ENABLED", kind: "feature" },
   { name: "HOW_IT_WORKS_ENABLED", kind: "plumbing" },

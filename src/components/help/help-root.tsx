@@ -13,8 +13,8 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 
 /**
  * The ? on every screen (discovery R2·8; About visual build, plan `2026-10-27-about-visual.md`, PR 6a, handoff call 5
- * and Addendum A1). Mounted by the shell only when `HELP_PANEL_ENABLED` resolves on for the reader; off, there is no
- * root, so neither ? draws.
+ * and Addendum A1). Mounted by the shell on every screen; a ? rendered outside the root draws
+ * nothing.
  *
  * The ? opens no panel: it goes to its screen's About page, scrolled to the section that answers the screen, with the
  * screen's back bar (`questionLanding`). The root holds what the two ?s (the rail's from `md`, the header's below it)
@@ -31,11 +31,7 @@ const HelpContext = createContext<HelpCtx | null>(null);
 /** The md breakpoint, read at the press: card details is answered only where its ? can be pressed. */
 const DESKTOP = "(min-width: 768px)";
 
-export function HelpRoot({ on, children }: { on: boolean; children: ReactNode }) {
-  return on ? <HelpOn>{children}</HelpOn> : <>{children}</>;
-}
-
-function HelpOn({ children }: { children: ReactNode }) {
+export function HelpRoot({ children }: { children: ReactNode }) {
   // A code-started navigation that reports its press as a link does (the 400ms screen, the stall watch).
   const { go: push } = usePendingPush();
   const [deck, setDeck] = useState<BuilderScreen | null>(null);
@@ -77,12 +73,12 @@ const PLACE = {
   },
 } as const;
 
-/** Whether the ? is drawn for this reader: the phone header's install slot makes room for it. */
+/** Whether the ? is drawn here (inside the root): the phone header's install slot makes room for it. */
 export function useHelpOn(): boolean {
   return useContext(HelpContext) !== null;
 }
 
-/** The ? itself, in the rail or the header. Nothing without the root, so a switched-off reader gets no ?. */
+/** The ? itself, in the rail or the header. Nothing without the root. */
 export function HelpButton({ place }: { place: keyof typeof PLACE }) {
   const help = useContext(HelpContext);
   const desk = useIsDesktop();

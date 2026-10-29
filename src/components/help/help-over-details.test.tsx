@@ -85,7 +85,7 @@ function Page({
   );
   return (
     <TargetsProvider>
-      <HelpRoot on>
+      <HelpRoot>
         {header ? (
           <>
             <At desk>{rail}</At>

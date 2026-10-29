@@ -892,8 +892,7 @@ export function NavRail({
       {/* Account trigger — §Rail: 30px circle, pinned to the bottom.         */}
       {/* ------------------------------------------------------------------ */}
       <div className="mt-auto flex shrink-0 flex-col items-center">
-        {/* The ?, above the offline pill so the pill stays beside the account trigger (discovery R2 gap 15). Drawn only
-            while \`HELP_PANEL_ENABLED\` is on for the reader; off, the wrapper's \`mt-auto\` pins the account trigger alone. */}
+        {/* The ?, above the offline pill so the pill stays beside the account trigger (discovery R2 gap 15). */}
         <HelpButton place="rail" />
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
