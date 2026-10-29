@@ -253,7 +253,6 @@ function CartBody({
     rank: new Map(cart.decks.map((d, i) => [d.id, i])),
     names: new Map([...cart.holders.map((h) => [h.id, h.name] as const), ...cart.decks.map((d) => [d.id, d.name] as const)]),
   }), [cart.decks, cart.holders]);
-  const sparesIds = useMemo(() => cart.lines.map((l) => l.oracleId), [cart.lines]);
   const spares = usePageSpares();
 
   // Commanders first, then the cards most SELECTED decks need, then A to Z (A2, A3): the order is
@@ -265,10 +264,11 @@ function CartBody({
   // The selected cards: whether their spares read failed decides the spare column, the toast and the Friend filter (B2).
   const sparesRead = useMemo(() => selectedLines.map((l) => l.oracleId), [selectedLines]);
   const selectedRead = spares ? spareReadStatus(sparesRead, spares.loaded, spares.failed) : null;
-  // Once every card's read has landed, a named friend no spare answers to is dropped (decision 2), and the address with it.
-  const known = useMemo(() => new Set([...(spares?.byCard.values() ?? [])].flat().map((x) => x.friend.publicId)), [spares]);
+  // Once the selected cards' read has landed, a named friend with no spare of a selected line is dropped (decision 2),
+  // and the address with it: the same friends the Friend panel offers, so every id left has a row and a name.
+  const known = useMemo(() => new Set(selectedLines.flatMap((l) => spares?.byCard.get(l.oracleId) ?? []).map((x) => x.friend.publicId)), [spares, selectedLines]);
   // With friends' spares off there is no Friend filter at all.
-  const settled = !spares ? null : spareReadStatus(sparesIds, spares.loaded, spares.failed) === "landed" ? settleFriend(friend, known) : friend;
+  const settled = !spares ? null : selectedRead === "landed" ? settleFriend(friend, known) : friend;
   if (settled !== friend) setFriend(settled);
   // A failed read leaves the Friend filter inert (B2 hides its trigger): kept for a Try again, narrowing nothing.
   const friendOn = selectedRead !== null && selectedRead !== "failed" ? friend : null;

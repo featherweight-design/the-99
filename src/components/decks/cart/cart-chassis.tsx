@@ -91,7 +91,10 @@ export function CartChassis({
   const friendNames = offer.kind === "friends" ? new Map(offer.friends.map((o) => [o.friend.publicId, o.friend.displayName])) : new Map<string, string>();
   // One chip for the Friend filter, Any or the named friends, whose ✕ turns it off (decision 2); then Owned; then the
   // search (Controls C2, D: the filters' chips lead).
-  const friendValue = friend === "any" ? copy.filters.anyFriend : (friend ?? []).map((id) => friendNames.get(id) ?? id).join(", ");
+  // Never a public id: until the read lands a named filter's chip is name-free, reading as the trigger does; once it
+  // lands every id left has a name (the cart drops the rest, decision 2).
+  const named = (friend === null || friend === "any" ? [] : friend).flatMap((id) => friendNames.get(id) ?? []);
+  const friendValue = friend === "any" ? copy.filters.anyFriend : named.length > 0 ? named.join(", ") : copy.filters.friendReading;
   const chips: FilterChip[] = [
     ...(friendOn ? [{
       key: "friend", leading: dimension(copy.filters.chipFriend), label: friendValue,

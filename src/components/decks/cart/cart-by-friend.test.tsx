@@ -893,6 +893,36 @@ describe("the Friend filter (v2 PR 9)", () => {
     expect(cardNames()).toHaveLength(5);
   });
 
+  const chipsRow = () => document.querySelector("[data-chassis-row='chips']") as HTMLElement;
+
+  it("never shows a public id: a named filter's chip is name-free while the read is out, and named once it lands", async () => {
+    let land: (v: unknown) => void = () => {};
+    fetchMock.mockImplementation((url: string) =>
+      url.startsWith("/api/spare-requests")
+        ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) })
+        : new Promise((resolve) => { land = resolve; }));
+    window.history.replaceState(null, "", "/decks/shopping?friend=p-Chris");
+    await mount({ initialFriend: "p-Chris" });
+    expect(chipsRow().textContent).not.toContain("p-Chris");
+    expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} ${copy.filters.friendReading}` })).toBeTruthy();
+    await act(async () => { land({ ok: true, json: async () => ({ spares: BOARD }) }); });
+    expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Chris` })).toBeTruthy();
+    expect(chipsRow().textContent).not.toContain("p-Chris");
+  });
+
+  it("drops a named friend once their spares sit only on unselected decks' lines, rather than naming them by id", async () => {
+    served = { spares: BOARD, asks: [] };
+    window.history.replaceState(null, "", "/decks/shopping?friend=p-Chris");
+    await mount({ initialFriend: "p-Chris" });
+    expect(cardNames()).toEqual(["Command Tower"]);
+    // Command Tower is Thopter Works' alone, and Chris holds a spare of nothing else.
+    fireEvent.click(screen.getByRole("checkbox", { name: copy.selections.aria("Thopter Works", true) }));
+    expect(chipsRow().textContent).not.toContain("p-Chris");
+    expect(screen.queryByRole("button", { name: /Remove filter: Friend/ })).toBeNull();
+    expect(window.location.search).toBe("");
+    expect(cardNames()).toEqual(["Brainstorm"]);
+  });
+
   it("draws the desktop trigger dashed, reading…, while the read is out, and the sheet's group the same", async () => {
     fetchMock.mockImplementation((url: string) =>
       url.startsWith("/api/spare-requests") ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) }) : new Promise(() => {}));

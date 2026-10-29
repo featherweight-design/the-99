@@ -19,9 +19,10 @@ const BOX: Record<FaceSize, string> = {
   64: "h-[56px] w-[56px] rounded-[13px] text-[16px] md:h-[64px] md:w-[64px] md:rounded-[14px] md:text-[18px]",
   40: "h-[40px] w-[40px] rounded-[10px] text-[12px]",
   36: "h-[36px] w-[36px] rounded-[10px] text-[10px] font-semibold",
-  // The cart's Filters sheet pill (a disc) and its desktop Friend panel row (v2 Controls B1, A1).
+  // The cart's Filters sheet Friend pill, a disc (v2 Controls B1).
   32: "h-[32px] w-[32px] rounded-full text-[11px]",
   30: "h-[30px] w-[30px] rounded-[8px] text-[10px]",
+  // The cart's desktop Friend panel row, a 6px-cornered tile (v2 Controls A1).
   22: "h-[22px] w-[22px] rounded-[6px] text-[8.5px]",
   26: "h-[26px] w-[26px] rounded-full text-[9.5px]",
   24: "h-[24px] w-[24px] rounded-full text-[10px] font-semibold",
