@@ -322,3 +322,21 @@ code{font:500 12px var(--mono);color:var(--fg);background:var(--surface);border-
 .dtile span{margin:0 7px 7px;align-self:flex-start;border-radius:4px;padding:0 5px;font:500 9px/15px var(--mono);color:var(--success);background:color-mix(in oklab,var(--success) 16%,transparent)}
 .dvoid{display:flex;align-items:center;justify-content:center;width:84px;height:94px;border-radius:9px;border:1.5px dashed var(--border-dashed);padding:0 8px;text-align:center;font:500 10px var(--mono);letter-spacing:.04em;color:var(--fg-faint);flex:none}
 .dcol>.btw{align-self:center}
+.t8{position:relative}
+.t8>img{position:absolute;inset:0;display:block}
+.dz{width:806px;height:558px;overflow:hidden;border-radius:12px;border:1px solid var(--border-strong)}
+.dvp{width:1300px;height:900px;transform:scale(.62);transform-origin:0 0;overflow:hidden;background:var(--bg)}
+.tstk{position:absolute;z-index:6;display:flex;flex-direction:column;gap:10px}
+.tst{position:relative;display:flex;align-items:flex-start;gap:10px;min-height:52px;padding-left:14px;padding-right:6px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated);box-shadow:0 12px 30px rgb(0 0 0/.45)}
+.tst .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:10px 0}
+.tst .t{font-size:13.5px;line-height:1.35;color:var(--fg)}
+.tst .d{font:11px var(--mono);color:var(--fg-muted)}
+.tst .b{font-size:12.5px;line-height:1.45;color:var(--fg-body)}
+.tst .ac{flex:none;align-self:center;display:flex;gap:2px}
+.tst .ac i{font-style:normal;display:inline-flex;height:44px;align-items:center;padding:0 10px;font-size:13.5px;color:var(--accent-text)}
+.tst .ac i:last-child{font-weight:600}
+.tst .tnote{position:absolute;right:8px;top:-9px;font:600 9px/16px var(--mono);letter-spacing:.06em;text-transform:uppercase;font-style:normal;padding:0 6px;border-radius:4px;background:var(--bg);border:1px solid var(--border-strong);color:var(--fg-faint)}
+.tst.al .tnote{color:var(--avail-hard-fg,#D9975C)}
+.fieldmark{position:absolute;z-index:7;border:1.5px dashed var(--warning);border-radius:10px;pointer-events:none}
+.qry{position:absolute;z-index:2;height:22px;display:flex;align-items:center;background:rgb(24 20 15);font-size:16px;color:var(--fg)}
+.qry i{display:inline-block;width:1.5px;height:18px;margin-left:1px;background:var(--accent)}

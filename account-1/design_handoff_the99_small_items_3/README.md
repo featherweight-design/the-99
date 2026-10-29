@@ -1,10 +1,10 @@
 # The 99 · Small items 3 (account 1, 2026-10-29)
 
-A light addendum of seven items, each drawn over the shipped surface it changes. Brief: Hugh's "Small items 3" design prompt, 2026-10-29. Items 1 to 4 are the visual About pages (R4, #2367), and 5 to 7 are other surfaces. Lives on main as `design/design_handoff_the99_small_items_3/`, beside `design_handoff_the99_small_items_2/`.
+A light addendum of eight items (item 8 added later on 2026-10-29), each drawn over the shipped surface it changes. Brief: Hugh's "Small items 3" design prompt, 2026-10-29. Items 1 to 4 are the visual About pages (R4, #2367), and 5 to 8 are other surfaces. Lives on main as `design/design_handoff_the99_small_items_3/`, beside `design_handoff_the99_small_items_2/`.
 
 **Status: for Hugh's audit.** Everything not listed here stays as shipped. Every string is shipped copy unless a note marks it as a new draft for /copy-review.
 
-Open `Main.html` for all seven boards, or open one board's page; each needs only `art/` beside it. The boards are plain HTML drawn in Low Sun over shipped captures (`public/about/pages/amonkhet`). `build.py` and `si3.css` regenerate them. Sources read: main @0c756cc; `src/components/about/pages/{rule-card,rule-diagrams,pin-dock,labelled-screen}.tsx`, `about/tools/tool-card.tsx`, `src/lib/about/pins.ts`, `src/lib/copy/{about-pages,about-entries,lanes,deck-stats,help-me-choose}.ts`, `src/components/intake/intake-form.tsx`, `src/components/ui/filter-chassis.tsx`, and the handoffs about_visual (with addendum-r4), help_me_choose, filter_chassis and all_decks_cart_v2 addendum-r3.
+Open `Main.html` for all eight boards, or open one board's page; each needs only `art/` beside it. The boards are plain HTML drawn in Low Sun over shipped captures (`public/about/pages/amonkhet`). `build.py` and `si3.css` regenerate them. Sources read: main @0c756cc; `src/components/about/pages/{rule-card,rule-diagrams,pin-dock,labelled-screen}.tsx`, `about/tools/tool-card.tsx`, `src/lib/about/pins.ts`, `src/lib/copy/{about-pages,about-entries,lanes,deck-stats,help-me-choose}.ts`, `src/components/intake/intake-form.tsx`, `src/components/ui/filter-chassis.tsx`, and the handoffs about_visual (with addendum-r4), help_me_choose, filter_chassis and all_decks_cart_v2 addendum-r3.
 
 | Board | Item |
 |---|---|
@@ -15,6 +15,7 @@ Open `Main.html` for all seven boards, or open one board's page; each needs only
 | `Help-Me-Choose-Locked.html` | 5 · Help me choose's form while it reads |
 | `Dock-Low-Region.html` | 6 · The phone dock for a low region |
 | `Filter-Controls.html` | 7 · Shared phone filter controls |
+| `Deck-Toasts.html` | 8 · Deck toasts and the quick-add dock |
 
 ## 1 · No Good to know row is ever cut short (bug)
 
@@ -123,6 +124,35 @@ There are no new strings.
 **What still stands from R3:** its calls, the "Search" placeholder and the 16px gap under the controls row, now on the shipped controls. At 320px the field keeps well over 100px, so "Search" still fits.
 
 **Errata for `all_decks_cart_v2/addendum-r3/`:** the phone controls are drawn at 40px and as a 36px pill. Build from the shipped parts. Nothing changes in code.
+
+## 8 · Deck toasts stand above the quick-add dock (addendum)
+
+**Cause:** Small items 2 item 8 lifts only the failed-search toast above the dock. Every other deck toast uses the shipped `DECK_SLOT` (phone: 10px above the tab bar; desktop: 16px from the bottom at rail + 16), which ignores the dock. So the I got it receipt and the refusal toasts cover the quick-add field. A refusal also measures only a receipt when it lifts, so it can land on the failed search.
+
+**Call:**
+1. **One floor.** Every toast in the deck slot stands on it: the receipt in each of its phases (added, undone elsewhere, undo failed), the refusals (a removal, a token, Suggested changes' Apply), and the failed search.
+   - When a bar holds the page's foot, the floor is 10px above that bar's top edge. That bar is the quick-add dock, or on the phone the top-off commit bar that stands in for it.
+   - With no bar (phone Shopping, Stats and Notes, or a resolution open), the floor is the shipped slot.
+2. **Where:** phone keeps 16px gutters. Desktop keeps the shipped left edge (rail + 16) and 440px width, raised to the floor. No toast ever covers the quick-add field.
+3. **At most two toasts, never overlapping.**
+   - One receipt at a time: the next write replaces it, as shipped.
+   - One alert at a time: a refusal or the failed search. The newer replaces the older, whichever kind it is.
+4. **Order:**
+   - The receipt keeps the floor because it holds Undo.
+   - An alert sits 10px above the receipt, or on the floor when no receipt is up.
+   - When the receipt goes, the alert drops to the floor at once, with no motion.
+5. **When a receipt arrives:**
+   - A refusal is dismissed, as shipped.
+   - The failed search stays, because the field still holds its query. It moves above the new receipt.
+6. **Unchanged:** each toast keeps its own 8s timer, held by its own hover and focus. Roles stay as shipped: receipts `status`, alerts `alert`.
+7. **Engineering:**
+   - The quick-add dock and the top-off bar publish their measured height on the root as `--deck-foot-h` (0 while hidden), the way `useDockClearance` publishes `--dock-h`.
+   - `DECK_SLOT` becomes one fixed stack (a flex column with a 10px gap). Its bottom is `calc(var(--tabbar-h) + var(--deck-foot-h) + 10px)` on the phone, and `max(16px, var(--deck-foot-h) + 10px)` from md.
+   - Toasts render into that stack, so `lift` and the refusal's measuring of the receipt go away.
+   - The failed search joins the refusal claim (`the99:deck-refusal-claim`).
+   - The cart's slot and /credits' toasts are unchanged.
+
+There are no new strings: the boards reuse the shipped receipt and removal strings and Small items 2's failed-search draft.
 
 ## Copy for /copy-review
 

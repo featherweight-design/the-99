@@ -449,8 +449,85 @@ def board7():
                  "The shipped phone chassis and the cart R3 boards disagree on three sizes. Only one can be the rule for Decks, the cart and the other compact pages.", frames, rule + f'<div class="tabwrap">{table}</div>')
 
 
+# ---------- 8 · Deck toasts and the quick-add dock (addendum, Hugh 2026-10-29) ----------
+
+# Measured on the shipped captures (CSS px): phone 390×844, tab bar 74 tall, quick-add dock 67 above it (top at 703);
+# desktop 1300×900, rail 64, dock 62 tall (top at 838).
+P_TAB, P_DOCK, D_DOCK, D_RAIL = 74, 67, 62, 64
+
+
+def toast(title, detail="", body="", actions=(), alert=False, note=""):
+    d = f'<span class="d">{detail}</span>' if detail else ""
+    b = f'<span class="b">{body}</span>' if body else ""
+    a = ('<span class="ac">' + "".join(f"<i>{x}</i>" for x in actions) + "</span>") if actions else ""
+    n = f'<em class="tnote">{note}</em>' if note else ""
+    return f'<div class="tst{" al" if alert else ""}">{n}<span class="tx"><span class="t">{title}</span>{d}{b}</span>{a}</div>'
+
+
+RECEIPT = lambda: toast("Sol Ring added · ×1", "C21 #263 · Nonfoil", "It goes to this deck.", ("History", "Undo"), note="receipt")
+REFUSAL = lambda: toast("We couldn’t remove that. It’s still in the deck.", "Badgermole", alert=True, note="refusal")
+SEARCH = lambda: toast("Couldn’t search just now.", actions=("Try again",), alert=True, note="failed search")
+
+
+def stack(bottom, toasts, left=16, right=16, width=None):
+    w = f"width:{width}px;" if width else f"right:{right}px;"
+    return f'<div class="tstk" style="bottom:{bottom}px;left:{left}px;{w}">{"".join(toasts)}</div>'
+
+
+def query(phone=True, text="Cultivat"):
+    st = "left:55px;top:725px;width:150px" if phone else "left:108px;top:857px;width:220px"
+    return f'<span class="qry" style="{st}">{text}<i></i></span>'
+
+
+def phone8(layers, shot="p-deck-your-deck.webp", mark=False, typed=False):
+    m = f'<span class="fieldmark" style="left:12px;right:12px;bottom:{P_TAB + 6}px;height:{P_DOCK - 12}px"></span>' if mark else ""
+    q = query() if typed else ""
+    return f'<div class="vp t8"><img src="art/{shot}" width="390" height="844" alt="">{q}{"".join(layers)}{m}</div>'
+
+
+def desk8(layers, mark=False, typed=False):
+    m = f'<span class="fieldmark" style="left:{D_RAIL + 26}px;width:660px;bottom:8px;height:{D_DOCK - 16}px"></span>' if mark else ""
+    q = query(False) if typed else ""
+    return f'<div class="dz"><div class="dvp t8"><img src="art/d-deck-list.webp" width="1300" height="900" alt="">{q}{"".join(layers)}{m}</div></div>'
+
+
+def board8():
+    pf = P_TAB + P_DOCK + 10          # proposed floor with the dock up
+    df = D_DOCK + 10
+    ph_slot = P_TAB + 10              # shipped phone slot
+    frames = (
+        fr("Now · 390 · a receipt from the All list", "The deck slot sits 10px above the tab bar whatever else is there, so the receipt lands on the quick-add field (dashed).",
+           phone8([stack(ph_slot, [RECEIPT()])], mark=True), "was")
+        + fr("Now · 390 · a refusal while the failed search is up", "Small items 2 lifted only the failed search. The refusal still takes the old slot over the field, and it measures only a receipt, so it can’t see the search toast: with a wrapped title they overlap.",
+             phone8([stack(pf, [SEARCH()]), stack(ph_slot + 8, [REFUSAL()])], mark=True, typed=True), "was")
+        + fr("Proposed · 390 · one toast", "Every deck toast stands on the same floor: 10px above the dock’s top edge. The field stays clear and usable.",
+             phone8([stack(pf, [RECEIPT()])]))
+        + fr("Proposed · 390 · two toasts", "A receipt keeps the floor (it holds Undo). The one alert sits 10px above it.",
+             phone8([stack(pf, [REFUSAL(), RECEIPT()])]))
+        + fr("Proposed · 390 · a refusal arrives over the failed search", "One alert at a time: the newer replaces the older, so the refusal takes the failed search’s place, never a third toast.",
+             phone8([stack(pf, [REFUSAL()])], typed=True))
+        + fr("Proposed · 390 · no dock (Shopping)", "The dock is hidden on Shopping, Stats and Notes, and while a resolution is open. With no bar at the foot the floor is the shipped slot.",
+             phone8([stack(ph_slot, [RECEIPT()])], shot="p-deck-shopping.webp"))
+        + fr("Now · 1300", "Bottom left of the pane at 16px, so a receipt covers the start of the field.",
+             desk8([stack(16, [RECEIPT()], left=D_RAIL + 16, width=440)], mark=True), "was")
+        + fr("Proposed · 1300 · two toasts", "The same floor (dock height + 10), the same left edge and 440px width, the same stack.",
+             desk8([stack(df, [SEARCH(), RECEIPT()], left=D_RAIL + 16, width=440)], typed=True))
+    )
+    rule = rule_box("The rule, for every deck toast", [
+        "<b>One floor.</b> Every toast in the deck slot stands on it: the I got it receipt in each of its phases, a refusal (a removal, a token, Suggested changes’ Apply), and the failed search. The floor is 10px above the top of the bar holding the page’s foot when one is on screen: the quick-add dock, or on a phone the top-off commit bar that stands in for it. With no bar, it is the shipped slot (10px above the tab bar on a phone, 16px from the bottom on desktop).",
+        "<b>Where:</b> phone, 16px gutters, as shipped. Desktop, the shipped left edge (rail + 16) and 440px width, raised to the floor. No toast ever covers the quick-add field.",
+        "<b>At most two, never overlapping.</b> One receipt at a time (the next write replaces it, as shipped) and one alert at a time: a refusal or the failed search, the newer replacing the older whichever kind it is.",
+        "<b>Order:</b> the receipt keeps the floor because it holds Undo. An alert sits 10px above it, or on the floor when no receipt is up. When the receipt goes, the alert drops to the floor at once, with no motion.",
+        "<b>A receipt arriving</b> dismisses a refusal (that press is older news), as shipped. The failed search stays, because the field still holds its query, and sits above the new receipt.",
+        "<b>Timers</b> stay each toast’s own 8s, held by its own hover and focus. Roles are unchanged: receipts <code>status</code>, alerts <code>alert</code>.",
+        "<b>Engineering:</b> the quick-add dock and the top-off bar publish their measured height on the root as <code>--deck-foot-h</code> (0 while hidden), as <code>useDockClearance</code> does for <code>--dock-h</code>. <code>DECK_SLOT</code> becomes one fixed stack (flex column, 10px gap) at <code>bottom: calc(var(--tabbar-h) + var(--deck-foot-h) + 10px)</code> on the phone and <code>max(16px, var(--deck-foot-h) + 10px)</code> from md. Toasts render into that stack, so <code>lift</code> and the refusal’s receipt measuring go away. The failed search joins the refusal claim. The cart’s and /credits’ slots are unchanged.",
+    ])
+    return board(8, "Deck page · addendum", "Deck toasts stand above the quick-add dock",
+                 "Small items 2 (item 8) lifts only the failed-search toast above the dock. The I got it receipts and the refusal toasts still use the shipped slot, which ignores the dock, so they cover the quick-add field, and a refusal can land on the failed search. This board puts every deck toast on one floor and says how two stack.", frames, rule)
+
+
 BOARDS = [("Good-To-Know-Rows", board1), ("Try-It-Halo", board2), ("Prices-Buy-Chips", board3), ("Copy", board4),
-          ("Help-Me-Choose-Locked", board5), ("Dock-Low-Region", board6), ("Filter-Controls", board7)]
+          ("Help-Me-Choose-Locked", board5), ("Dock-Low-Region", board6), ("Filter-Controls", board7), ("Deck-Toasts", board8)]
 
 
 def build():
@@ -467,9 +544,10 @@ def build():
     items = [("Good to know rows cut short", "Rows stack in one 250px column, never side by side"), ("Try it halo runs outside the frame", "Held 8px inside, like the labelled screen"),
              ("Buy chips in the prices diagram", "Right-aligned"), ("Copy: Discover order, Squirrels, section lines", "Drafts for copy review"),
              ("Help me choose while it reads", "The whole form locks"), ("Dock covers a low region", "It docks at the top instead"),
-             ("Phone filter controls disagree", "The shipped 44px controls win")]
+             ("Phone filter controls disagree", "The shipped 44px controls win"),
+             ("Deck toasts cover the quick-add dock", "One floor above the dock, at most two, never overlapping")]
     intro = ('<header class="top"><span class="kick">The 99 · Small items 3 · for Hugh’s audit · 2026-10-29</span><h1>Small items 3</h1>'
-             '<p>Seven boards, one per item, drawn over the shipped build (main, after About R4 #2367) in Low Sun. Items 1 to 4 are the visual About pages; 5 to 7 are other surfaces. Everything not drawn stays as shipped. New strings are drafts for copy review.</p><ol class="map">'
+             '<p>Eight boards, one per item (8 is an addendum), drawn over the shipped build (main, after About R4 #2367) in Low Sun. Items 1 to 4 are the visual About pages; 5 to 8 are other surfaces. Everything not drawn stays as shipped. New strings are drafts for copy review.</p><ol class="map">'
              + "".join(f'<li><div><b>{a}</b><span>{b}</span></div><a href="#b{i + 1}">Board {i + 1}</a></li>' for i, (a, b) in enumerate(items)) + "</ol></header>")
     open(os.path.join(OUT, "Main.html"), "w").write(head("Small Items 3") + f'<main class="canvas">{intro}{"".join(bodies)}</main>\n')
 
