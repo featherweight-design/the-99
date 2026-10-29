@@ -349,12 +349,12 @@ function Chips({ tools, value, onChange }: { tools: HistoryTool[]; value: Histor
 }
 
 // History A's pills (History.dc `.oc`, `.tier`), for every row of every tool: a ring in the outcome's own ink.
-const RING = (token: string) => `[border-color:color-mix(in_oklab,var(${token})_45%,transparent)]`;
+// Whole class strings: Tailwind scans the source text, so an interpolated utility is never generated.
 const OUTCOME_CLASS: Record<HistoryOutcome, string> = {
-  ok: `text-[color:var(--success)] ${RING("--success")}`,
-  short: `text-[color:var(--warning)] ${RING("--warning")}`,
+  ok: "text-[color:var(--success)] [border-color:color-mix(in_oklab,var(--success)_45%,transparent)]",
+  short: "text-[color:var(--warning)] [border-color:color-mix(in_oklab,var(--warning)_45%,transparent)]",
   running: "text-[color:var(--accent-text)] border-[color:var(--accent-shadow)]",
-  failed: `text-[color:var(--danger)] ${RING("--danger")}`,
+  failed: "text-[color:var(--danger)] [border-color:color-mix(in_oklab,var(--danger)_45%,transparent)]",
   // Not drawn on History.dc: the quiet ring the board gives a refunded pill.
   refused: "text-[color:var(--fg-body)] border-[color:var(--border-strong)]",
   stopped: "text-[color:var(--fg-muted)] border-[color:var(--border-strong)]",

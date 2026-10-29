@@ -9,6 +9,7 @@ import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
 import type { ValidationReport } from "../../lib/tuning/validate";
 import { v2Line } from "../../lib/tuning/v2/results-fixture";
 import { NEW_MARK_MS, SLOW_NOTE_MS, SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
+import { historyDay } from "./tuning-history";
 
 const openCard = vi.hoisted(() => vi.fn());
 vi.mock("../cards/card-detail-provider", () => ({
@@ -540,6 +541,16 @@ describe("History: a run reopened from History", () => {
     // No line says when: the run's day.
     act(() => t.rerender({ readOnly: false, past: { date: "Oct 26", stale: false }, lines: applied.map((l) => ({ ...l, verdictAt: null })) }));
     expect(document.querySelector("[data-sc-lead] b")!.textContent).toBe(h.oldRunLead(3, "Oct 26"));
+  });
+
+  it("says today for a set this visit applied, though the follow-up read never came (History B)", async () => {
+    const t = setup({ lines: [...adds(5, (i) => ({ picked: i < 3 })), ...cuts(5, (i) => ({ picked: i < 3 }))], past: { date: "Oct 26", stale: false } });
+    t.actions.apply.mockResolvedValueOnce({ ok: true, itemIds: ["a0", "a1", "a2", "c0", "c1", "c2"] });
+    await press(apply());
+    await press(within(screen.getByRole("dialog")).getByRole("button", { name: sc.confirm.apply(6) }));
+    const today = historyDay(new Date().toISOString());
+    expect(today).not.toBe("Oct 26");
+    expect(document.querySelector("[data-sc-lead] b")!.textContent).toBe(h.oldRunLead(3, today));
   });
 
   it("same version with one row left: singular; with none left: the clause is left out at both widths", () => {

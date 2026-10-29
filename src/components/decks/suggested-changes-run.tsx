@@ -122,7 +122,7 @@ export function SuggestedChangesRun({
   // What this visit's Apply and Undo wrote, held over the read until a read agrees: a follow-up read that fails must not
   // put the applied rows back as pending (Apply again, no Undo) or leave an undone set offering its spent Undo.
   // An Undo also gives its rows back their eligibility: the read after the Apply drew them as no longer applying.
-  type Written = Pick<LineItem, "verdict" | "applySet"> & Partial<Pick<LineItem, "applies" | "inDeck">>;
+  type Written = Pick<LineItem, "verdict" | "applySet"> & Partial<Pick<LineItem, "applies" | "inDeck" | "verdictAt">>;
   const [written, setWritten] = useState<ReadonlyMap<string, Written>>(() => new Map());
   const caught = [...written].filter(([id, w]) => {
     const l = readLines.find((x) => x.id === id);
@@ -224,7 +224,9 @@ export function SuggestedChangesRun({
     }
     // A set id applied then undone answers ok with no lines: nothing was written, so it is not a set to undo.
     if (r.itemIds.length > 0) {
-      setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, { verdict: "accepted" as const, applySet: setId }] as const)]));
+      // Its answer time too, so a failed follow-up read still says the set was applied today, not on the run's day.
+      const verdictAt = new Date().toISOString();
+      setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, { verdict: "accepted" as const, applySet: setId, verdictAt }] as const)]));
       setLastSet(setId);
       setUndone(null);
       onAnnounce(sc.run.appliedLead(pickedAdds.length, lines.filter(isOpen).length - r.itemIds.length));
