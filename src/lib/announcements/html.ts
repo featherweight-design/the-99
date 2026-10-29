@@ -28,13 +28,21 @@ export function decodeHtmlEntities(text: string): string {
   });
 }
 
+/**
+ * Elements that break a line when rendered, so their tags stand for a space. Every other tag is
+ * inline (`<i>`, `<em>`, `<a>`, `<span>`…) and drops out with no space, so `<em>Magic</em>'s`
+ * reads `Magic's`, not `Magic 's`.
+ */
+const BLOCK_TAG =
+  /<\/?(?:address|article|aside|blockquote|br|dd|div|dl|dt|figcaption|figure|footer|h[1-6]|header|hr|li|main|nav|ol|p|pre|section|table|tbody|td|tfoot|th|thead|tr|ul|deck-list)\b[^>]*>/gi;
+
 /** Visible text of an HTML fragment: tags dropped, entities decoded, whitespace collapsed. */
 export function htmlToText(html: string): string {
   return decodeHtmlEntities(
     html
       .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, " ")
-      .replace(/<br\s*\/?>/gi, " ")
-      .replace(/<[^>]+>/g, " "),
+      .replace(BLOCK_TAG, " ")
+      .replace(/<[^>]+>/g, ""),
   )
     .replace(/\s+/g, " ")
     .trim();

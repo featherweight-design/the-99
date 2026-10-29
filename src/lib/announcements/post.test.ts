@@ -71,6 +71,18 @@ describe("parsePost failures are typed, never thrown", () => {
     expect(parsePost(stripped, "u")).toEqual({ ok: false, reason: "missing-fields", missing: ["contentfulId", "publishedDate", "bodyHtml"] });
   });
 
+  it("an unclosed braced escape (`\\u{41`) stays as written instead of hanging", () => {
+    const r = parsePost(page.replace('slug:"star-trek-product-delays', 'slug:"star-trek-\\u{41-product-delays'), "u");
+    if (!r.ok) throw new Error(JSON.stringify(r));
+    expect(r.post.slug).toBe("star-trek-\\u{41-product-delays-in-select-regions");
+  });
+
+  it("a braced escape past U+10FFFF (`\\u{110000}`) stays as written instead of throwing", () => {
+    const r = parsePost(page.replace('slug:"star-trek-product-delays', 'slug:"star-trek-\\u{110000}-product-delays'), "u");
+    if (!r.ok) throw new Error(JSON.stringify(r));
+    expect(r.post.slug).toBe("star-trek-\\u{110000}-product-delays-in-select-regions");
+  });
+
   it("a missing image or excerpt is null, not a failure", () => {
     const r = parsePost(page.replace("metaImage:{url:", "metaImage:{href:").replace("excerpt:", "excerptGone:"), "u");
     if (!r.ok) throw new Error(JSON.stringify(r));

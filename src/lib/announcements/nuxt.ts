@@ -48,9 +48,12 @@ export function decodeJsString(literal: string): string {
     const n = body[++i];
     if (n === "u") {
       if (body[i + 1] === "{") {
-        const close = body.indexOf("}", i);
-        out += String.fromCodePoint(parseInt(body.slice(i + 2, close), 16));
-        i = close;
+        // A malformed `\u{…}` (no closing brace, non-hex digits, past U+10FFFF) stays as written.
+        const braced = /^\{([0-9a-fA-F]{1,6})\}/.exec(body.slice(i + 1));
+        const code = braced ? parseInt(braced[1], 16) : -1;
+        if (code < 0 || code > 0x10ffff) { out += "\\u"; continue; }
+        out += String.fromCodePoint(code);
+        i += braced![0].length;
       } else {
         out += String.fromCharCode(parseInt(body.slice(i + 1, i + 5), 16));
         i += 4;
