@@ -9,6 +9,7 @@
 // `text` on a switch of its own, matched by its exact text, as `captionLineSwitches` does for an entry.
 
 import { HISTORY_RETENTION_DAYS } from "../collection/retention";
+import { NOVELTY_FLOOR } from "../discovery/floor";
 import type { AboutLineSwitch, AboutScreen, DeckView } from "./about";
 
 /** History keeps what its retention keeps, so its sentence says how far back, as the legacy entry did. */
@@ -375,7 +376,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "order",
         region: "commanders/discover/order",
         lead: "Order",
-        rest: " sorts the list, and you pick it. Best fit ranks by how many of a commander’s popular cards you own. Something new ranks by how many of its themes your decks don’t play yet, and shows only commanders you could build. Popularity counts the decks EDHREC tracks. Name goes A to Z, and Recently released puts the newest first.",
+        rest: ` sorts the list, and you pick it. Best fit ranks by how many of a commander’s popular cards you own. Something new ranks by how many of its themes your decks don’t play yet, and shows only commanders whose EDHREC card list you own at least ${Math.round(NOVELTY_FLOOR * 100)}% of. Popularity counts the decks EDHREC tracks. Name goes A to Z, and Recently released puts the newest first.`,
         switch: null,
         since: 1,
         legacy: ["discover"],
