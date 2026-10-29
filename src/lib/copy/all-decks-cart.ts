@@ -22,10 +22,10 @@ const ASPICKED = "as you picked";
  * One cart filter panel's `FilterPanelCopy`, on the pattern of `/decks`' (`deckChassisCopy`), counting cards. A single
  * pick reads `Friend: Chris` (addendum R2 §4); Owned's Any is its rest, so the trigger reads the bare word there.
  */
-function cartPanel(dimension: string): FilterPanelCopy {
+function cartPanel(dimension: string, rest?: string): FilterPanelCopy {
   return {
     triggerLabel: dimension,
-    triggerOne: (name) => (name === "Any" ? dimension : `${dimension}: ${name}`),
+    triggerOne: (name) => (name === rest ? dimension : `${dimension}: ${name}`),
     triggerAriaCollapsed: `${dimension} filter`,
     triggerAriaWithSelection: (x) => `${dimension} filter, ${n(x)} on`,
     panelAriaLabel: `${dimension} options`,
@@ -181,7 +181,7 @@ export const allDecksCartCopy = {
   /** The desktop Friend and Owned panels (`FilterPanel`'s contract), on the pattern of `/decks`' panels. */
   panels: {
     friend: cartPanel("Friend"),
-    owned: cartPanel("Owned"),
+    owned: cartPanel("Owned", "Any"),
   },
 
   /** Sort, per view (call 5). The first of each is the shipped default; the keys are `lib/decks/cart-sort`'s. */
