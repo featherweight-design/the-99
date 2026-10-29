@@ -777,7 +777,7 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     }
   });
 
-  it("writes nothing for a moment that is not live (MOMENTS_ENABLED off) or already spent", async () => {
+  it("writes nothing for a moment that is not live (its tool is off) or already spent", async () => {
     const { unmount } = render(
       <MomentsProvider live={[]} spent={[]}>
         <Suppress id="lineup" />
@@ -822,7 +822,7 @@ describe("a moment's control is its target (discovery R2)", () => {
     return targets!.haloTarget("top-off");
   };
 
-  it("registers while eligible, whatever MOMENTS_ENABLED says", () => {
+  it("registers while eligible, whatever the live set says", () => {
     expect(drawn(<Anchor />)).toBe(true);
     expect(screen.getByRole("button", { name: "Top off" }).hasAttribute(HALO_ATTR)).toBe(true);
   });

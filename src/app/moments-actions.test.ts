@@ -10,7 +10,7 @@ const { spendMomentAction } = await import("./moments-actions");
 
 beforeEach(() => {
   spendMoment.mockClear();
-  env = { MOMENTS_ENABLED: "true", LINEUP_ENABLED: "true" };
+  env = { LINEUP_ENABLED: "true" };
 });
 
 describe("spendMomentAction", () => {
@@ -25,9 +25,9 @@ describe("spendMomentAction", () => {
     expect(spendMoment).not.toHaveBeenCalled();
   });
 
-  it("spends nothing with the switch off, or for a moment whose tool is off", async () => {
+  it("spends nothing for a moment whose tool is off", async () => {
     await spendMomentAction("matchups");
-    env = { LINEUP_ENABLED: "true" };
+    env = {};
     await spendMomentAction("lineup");
     expect(spendMoment).not.toHaveBeenCalled();
   });

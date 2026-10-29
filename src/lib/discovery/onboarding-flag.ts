@@ -10,8 +10,8 @@ export function helpPanelEnabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
- * `FIRST_RUN_TOUR_ENABLED`: the first-run tour, `/?tour=1`, and both `Take the tour` presses. With `MOMENTS_ENABLED` off
- * the tour still runs (R3 gap 13), so it names no parent.
+ * `FIRST_RUN_TOUR_ENABLED`: the first-run tour, `/?tour=1`, and both `Take the tour` presses. The
+ * tour does not depend on moments (R3 gap 13), so it names no parent.
  */
 export function firstRunTourEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.FIRST_RUN_TOUR_ENABLED === "true";

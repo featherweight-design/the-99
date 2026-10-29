@@ -13,8 +13,8 @@ import { useMergedRef } from "../ui/use-merged-ref";
 
 /**
  * The moments' one controller (discovery R1, plan `2026-10-16-moments.md`). Mounted once by the shell, which hands it
- * the moments live for this reader (`liveMoments`) and their spent set; with `MOMENTS_ENABLED` off it is never given
- * any, and every anchor stays inert.
+ * the moments live for this reader (`liveMoments`) and their spent set; with none live it is given an empty list,
+ * and every anchor stays inert.
  *
  * A control registers through `useMomentAnchor` while its moment's condition holds. One IntersectionObserver watches
  * every registered control. The first one on screen opens the tie window (`ARRIVE_MS`, audit resolution 8); when it
@@ -423,8 +423,8 @@ export function MomentsProvider({
   // The landing (discovery R2, E11) spends a tool's moment through here, before it scrolls, so no bubble can show for
   // it. The id goes into the spent set, which every pending delivery reads (`decide` skips a spent moment, so a tie
   // window already open passes over it); a bubble already showing for it closes as the reader's own close would; and
-  // the spend is written through the shipped persistence path. Only a live moment is spent: with `MOMENTS_ENABLED` off
-  // nothing is live, and nothing is written.
+  // the spend is written through the shipped persistence path. Only a live moment is spent: a moment whose tool is off
+  // is not live, and nothing is written.
   const suppress = useCallback(
     (id: MomentId) => {
       if (!liveSet.has(id)) return;

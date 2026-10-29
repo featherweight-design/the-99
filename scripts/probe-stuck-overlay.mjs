@@ -10,7 +10,7 @@
 // A history hook records every push/replace with its stack, and a long-task observer records main-thread
 // blocks, so a hang and a drop tell apart.
 //
-// Needs `next start` with NAV_STALL_LOG_ENABLED=true and MOMENTS_ENABLED=true, on local-dev or a scratch branch
+// Needs `next start` with NAV_STALL_LOG_ENABLED=true, on local-dev or a scratch branch
 // (it writes the audit account's About row, put back at the end). Never production, never staging.
 //
 //   PROBE_BASE=http://localhost:3917 pnpm probe:stuck-overlay
