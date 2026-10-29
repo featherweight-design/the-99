@@ -54,6 +54,12 @@ export type FillCandidate = {
   /** Total copies owned, summed across printings. 0 for an unowned card. */
   ownedQuantity: number;
   inclusionPct: number | null;
+  /**
+   * An OWNED card with a printing in one of the sets the player asked for (Help me choose's Sets
+   * answer, or a set the words named). Soft: it orders owned cards within the ownership tier
+   * (`inPreferredSetsFirst`) and never admits, excludes or outranks an unowned card. Absent is false.
+   */
+  inPreferredSets?: boolean;
 };
 
 /**
@@ -440,7 +446,16 @@ function splitByWeight(colors: string[], weights: Map<string, number>, slots: nu
   return out;
 }
 
-/** Owned first, then inclusion descending, absent last, then name. Owned wins
+/** WITHIN AN OWNERSHIP TIER: a card printed in the asked sets before one that is not (negative),
+ *  the reverse (positive), or 0. Only an owned card carries the mark, so callers apply it to two
+ *  cards of the same tier. */
+export function inPreferredSetsFirst(a: FillCandidate, b: FillCandidate): number {
+  const ia = a.inPreferredSets === true, ib = b.inPreferredSets === true;
+  if (ia === ib) return 0;
+  return ia ? -1 : 1;
+}
+
+/** Owned first, then (owned only) cards from the asked sets first, then inclusion descending, absent last, then name. Owned wins
     outright: a bought card is only ever here because the collection ran out,
     which is the promise Shopping makes about every row it prints. */
 /** The cards a bracket reach may weigh (`bracketReach`), in the fill's own order: nonlands, owned
@@ -466,6 +481,10 @@ export function ownedAndPlayed(c: FillCandidate): boolean {
 export function byAnyCardsPreference(a: FillCandidate, b: FillCandidate): number {
   const ta = ownedAndPlayed(a), tb = ownedAndPlayed(b);
   if (ta !== tb) return ta ? -1 : 1;
+  if (ta) {
+    const set = inPreferredSetsFirst(a, b);
+    if (set !== 0) return set;
+  }
   if (a.inclusionPct !== b.inclusionPct) {
     if (a.inclusionPct == null) return 1;
     if (b.inclusionPct == null) return -1;
@@ -477,6 +496,10 @@ export function byAnyCardsPreference(a: FillCandidate, b: FillCandidate): number
 
 export function byPreference(a: FillCandidate, b: FillCandidate): number {
   if (a.owned !== b.owned) return a.owned ? -1 : 1;
+  if (a.owned) {
+    const set = inPreferredSetsFirst(a, b);
+    if (set !== 0) return set;
+  }
   if (a.inclusionPct !== b.inclusionPct) {
     if (a.inclusionPct == null) return 1;
     if (b.inclusionPct == null) return -1;
@@ -850,11 +873,13 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     ? [...ordered].sort((a, b) => {
         const pa = ownedAndPlayed(a), pb = ownedAndPlayed(b);
         if (pa !== pb) return pa ? -1 : 1;
-        if (pa) return synergyRank ? bySynergy(a, b) : 0;
+        if (pa) return inPreferredSetsFirst(a, b) || (synergyRank ? bySynergy(a, b) : 0);
         return byAnyCardsPreference(a, b);
       })
     : synergyRank
-      ? [...ordered].sort(bySynergy)
+      // The asked sets' owned cards lead the synergy order, a total grouping (the mark is only ever
+      // on an owned card), so the sort stays transitive. No mark anywhere: bySynergy alone, as before.
+      ? [...ordered].sort((a, b) => inPreferredSetsFirst(a, b) || bySynergy(a, b))
       : ordered;
   // The residual runs AFTER the sweeps, so its own modal cards are land drops the base has
   // already been built without. Tracked here for the same reason the role pass's are charged

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { handOffFrom, resultsHref } from "./hand-off";
+import { handOffFrom, handOffSets, resultsHref } from "./hand-off";
+import { buildPhraseIndex } from "./match";
 import { handOffHref } from "../../components/intake/choose-row";
 import { emptyParams, parseChooseParams } from "./params";
 
@@ -22,5 +23,28 @@ describe("the hand-off's params", () => {
   it("is no hand-off without the results marker: a picker press or a commander page's link draws today's page", () => {
     expect(handOffFrom(new URLSearchParams({ commander: COMMANDER }))).toBeNull();
     expect(handOffFrom(new URLSearchParams({ commander: COMMANDER, b: "150", t: "dinosaurs" }))).toBeNull();
+  });
+});
+
+describe("the sets a create fills toward", () => {
+  const index = buildPhraseIndex([], [], [{ code: "blb", name: "Bloomburrow" }, { code: "mh3", name: "Modern Horizons 3" }]);
+
+  it("adds a set the words name to the picked ones", () => {
+    expect(handOffSets(["mh3"], "a deck, mostly Bloomburrow", index)).toEqual(["mh3", "blb"]);
+  });
+
+  it("names a set once however it was asked, lower-case", () => {
+    expect(handOffSets(["BLB"], "Bloomburrow cards", index)).toEqual(["blb"]);
+  });
+
+  it("keeps at most eight", () => {
+    const picked = ["aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg", "hhh"];
+    expect(handOffSets(picked, "Bloomburrow", index)).toEqual(picked);
+  });
+
+  it("is the picked sets when the words name none, or the catalog did not load", () => {
+    expect(handOffSets(["mh3"], "just something spooky", index)).toEqual(["mh3"]);
+    expect(handOffSets(["mh3"], "mostly Bloomburrow", null)).toEqual(["mh3"]);
+    expect(handOffSets([], "", index)).toEqual([]);
   });
 });

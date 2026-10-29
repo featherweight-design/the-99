@@ -15,7 +15,7 @@ export type CreateAnswers = {
   themes: string[];
   /** How the themes were joined, for the brief's wording alone. Absent is all of. */
   themeJoin?: "all" | "any";
-  /** Set codes, for the brief's wording alone. */
+  /** Set codes: they word the brief, and the fill ranks the owned cards printed in them first. */
   sets?: string[];
   /** `own`: the 99 from the player's own cards. Absent is any cards. */
   pool?: "any" | "own";
@@ -43,7 +43,7 @@ export type ValidAnswers = {
 export const MAX_BUDGET_DOLLARS = 100_000;
 /** The most theme labels a create takes: they write the brief, and the fill reads none of them. */
 export const MAX_THEMES = 8;
-/** The most set codes a create takes, for the brief. */
+/** The most set codes a create takes, for the brief and the fill's preference. */
 export const MAX_SETS = 8;
 const MAX_THEME_LABEL = 60;
 

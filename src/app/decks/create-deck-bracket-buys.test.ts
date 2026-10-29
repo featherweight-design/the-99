@@ -94,6 +94,18 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
+describe("createDeck: the sets asked", () => {
+  it("hands the plan the sets, so owned cards printed in them lead the fill", async () => {
+    await run({ ...asked, sets: ["blb", "mh3"] });
+    expect(planAnswers().sets).toEqual(["blb", "mh3"]);
+  });
+
+  it("hands the plan none when none were asked", async () => {
+    await run(asked);
+    expect(planAnswers()).not.toHaveProperty("sets");
+  });
+});
+
 describe("createDeck: Hit bracket N", () => {
   it("asks the plan to buy, and stores the pick and the raised budget when the plan placed the set", async () => {
     await run(asked);

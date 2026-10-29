@@ -71,7 +71,7 @@ export async function handOffBracketReach(
   const trial = await handOffTrial(
     userId,
     { oracleId: commander.oracleId, name: commander.name, colorIdentity: commander.colorIdentity, manaCost: commander.manaCost },
-    { budgetCents, bracket: asked.bracket, cardOracleId },
+    { budgetCents, bracket: asked.bracket, cardOracleId, ...(asked.sets.length > 0 ? { sets: asked.sets } : {}) },
     env,
     asked.pool === "own",
     placedIds,

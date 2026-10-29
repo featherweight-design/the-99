@@ -4,6 +4,10 @@
  * chooses, and this one takes a reader id. Its callers are actions that authenticated the reader first
  * and pass the session's own id.
  */
+import { sql } from "drizzle-orm";
+import { db } from "../../db";
+import { normalizeSetCodes } from "../sets/printed-in";
+import { isBasicLand } from "./grouping";
 import { loadCatalogBasics } from "./catalog-basics";
 import { getEdhrecData } from "../edhrec/client";
 import { loadAvailability } from "./availability-query";
@@ -23,6 +27,21 @@ import type { Bracket } from "../intake/rank";
 import { buysCopy } from "../intake/buys-card";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
 import { loadPrices } from "../discovery/price";
+
+/**
+ * Which of these cards have a printing in one of these sets ("printed in", the Sets answer's own
+ * rule). ONE read, `printings.set_code` being stored lower-case. Empty ids or codes read nothing.
+ */
+export async function oracleIdsPrintedIn(oracleIds: readonly string[], setCodes: readonly string[]): Promise<Set<string>> {
+  const codes = normalizeSetCodes(setCodes);
+  if (oracleIds.length === 0 || codes.length === 0) return new Set();
+  const res = await db.execute(sql`
+    select distinct p.oracle_id from printings p
+    where p.oracle_id = any(${sql.param([...oracleIds])}::uuid[])
+      and p.set_code = any(${sql.param(codes)}::text[])
+  `);
+  return new Set((res.rows as { oracle_id: string }[]).map((r) => r.oracle_id));
+}
 
 /** Thrown to step over a read this mode cannot use, so the skip and a real failure do not
  *  share a log line. Never escapes `buildFillPlan`. */
@@ -262,11 +281,27 @@ export async function buildFillPlan(
     : [];
 
   const { answers, selected, onlyOracleIds, ...fillOptions } = options;
+  // THE ASKED SETS (Help me choose's Sets answer, or a set the words named): which owned cards,
+  // claimed ones included, have a printing in them. A basic land is skipped (its printings span
+  // every set and say nothing about the deck). A decoration of the order, so a failed read fills
+  // without it rather than failing the create.
+  let inSets = new Set<string>();
+  if ((answers?.sets?.length ?? 0) > 0) {
+    try {
+      inSets = await oracleIdsPrintedIn(
+        [...pool, ...claimed].filter((c) => !isBasicLand(c.typeLine)).map((c) => c.oracleId),
+        answers!.sets!,
+      );
+    } catch (err) {
+      console.warn("buildFillPlan: no set preference — the owned cards keep their usual order", err);
+    }
+  }
   const ownedCandidate = (c: (typeof pool)[number]): FillCandidate => ({
     oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
     oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
     layout: c.layout, owned: true, ownedQuantity: c.ownedQuantity,
     inclusionPct: inclusionOf(c.name),
+    ...(inSets.has(c.oracleId) && !isBasicLand(c.typeLine) ? { inPreferredSets: true } : {}),
   });
   const candidates: FillCandidate[] = [
     ...pool.map(ownedCandidate),

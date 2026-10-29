@@ -46,6 +46,8 @@ const stub = vi.hoisted(() => {
     insertCalls: [] as { table: string; values: unknown; returning: unknown[] | null }[],
     edhrec: { data: null as unknown, unreachable: false },
     redirectTarget: null as string | null,
+    /** The oracle ids `printings` places in the asked sets: what the set-preference read returns. */
+    printedIn: [] as string[],
   };
 
   function makeSelectBuilder(fields?: Record<string, unknown>) {
@@ -132,6 +134,8 @@ const stub = vi.hoisted(() => {
     select: (fields?: Record<string, unknown>) => makeSelectBuilder(fields),
     insert: (table: unknown) => makeInsertBuilder(table),
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx),
+    // The fill's set-preference read (`oracleIdsPrintedIn`): the ids the case says are printed in the sets.
+    execute: async () => ({ rows: state.printedIn.map((oracle_id) => ({ oracle_id })) }),
   };
 
   return { db, state };
@@ -233,6 +237,7 @@ beforeEach(() => {
   stub.state.insertCalls.length = 0;
   stub.state.edhrec = { data: null, unreachable: false };
   stub.state.redirectTarget = null;
+  stub.state.printedIn = [];
 });
 
 describe("createDeck with a selection", () => {
@@ -536,5 +541,45 @@ describe("createDeck with a selection", () => {
     stub.state.insertCalls.length = 0;
     await runCreate("My deck", []);
     expect(insertedRows()).toEqual(shipped);
+  });
+});
+
+describe("createDeck with sets asked (Help me choose)", () => {
+  const asked = (sets: string[]) => ({
+    themes: [], sets, cardOracleId: null, budgetDollars: null, bracket: null, bracketBuys: false,
+  });
+  const runAsked = async (sets: string[]) => {
+    try {
+      await createDeck(CMDR, "My deck", [], null, asked(sets));
+    } catch (err) {
+      if (!(err as { __nextRedirect?: boolean }).__nextRedirect) throw err;
+    }
+  };
+  // 120 owned cards for 99 places; the five from the asked set are the least played in the pool (12%, still above the Any cards play floor).
+  const IN_SET = Array.from({ length: 5 }, (_, i) => `7${i.toString().padStart(7, "0")}-1111-4111-8111-111111111111`);
+  const OTHERS = Array.from({ length: 115 }, (_, i) => `8${i.toString().padStart(7, "0")}-1111-4111-8111-111111111111`);
+  const seed = () => {
+    const rows = [...IN_SET, ...OTHERS].map((id) => cardRow(id, { name: `N${id.slice(0, 8)}` }));
+    stub.state.cards.push(commanderRow());
+    stub.state.collectionItems.push(...rows);
+    stub.state.printedIn = IN_SET;
+    stub.state.edhrec = {
+      data: { inclusionByName: Object.fromEntries(rows.map((r) => [(r.name as string).toLowerCase(), IN_SET.includes(r.oracleId as string) ? 12 : 60])) },
+      unreachable: false,
+    };
+  };
+
+  it("passes the sets to the fill, so owned cards printed in them make the deck, and the deck stays 99", async () => {
+    seed();
+    await runAsked(["blb"]);
+    for (const id of IN_SET) expect(insertedIds()).toContain(id);
+    expect(insertedRows().reduce((n, r) => n + (r.quantity as number), 0)).toBe(99);
+  });
+
+  it("leaves those least-played cards out when no set is asked", async () => {
+    seed();
+    await runAsked([]);
+    expect(IN_SET.some((id) => !insertedIds().includes(id))).toBe(true);
+    expect(insertedRows().reduce((n, r) => n + (r.quantity as number), 0)).toBe(99);
   });
 });
