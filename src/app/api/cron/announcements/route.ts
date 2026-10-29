@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       now: () => new Date(),
       sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     });
-    console.info(`[announcements-ingest] posts ${report.posts}, due ${report.due}, saved ${report.saved}, failed ${report.failed}, deferred ${report.deferred}, alerts ${report.alerts}`);
+    console.info(`[announcements-ingest] posts ${report.posts}, due ${report.due}, saved ${report.saved}, failed ${report.failed}, deferred ${report.deferred}, rematched ${report.rematched ?? "skipped"}, alerts ${report.alerts}`);
     return Response.json(report);
   } catch (error) {
     const code = sqlState(error);

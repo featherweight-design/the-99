@@ -6,7 +6,7 @@ vi.mock("../../../../lib/announcements/ingest-store", () => ({ announcementsStor
 const { GET } = await import("./route");
 
 const call = (auth?: string) => GET(new Request("https://x/api/cron/announcements", { headers: auth ? { authorization: auth } : {} }) as never);
-const REPORT = { posts: 608, due: 3, saved: 3, failed: 0, deferred: 0, alerts: 0 };
+const REPORT = { posts: 608, due: 3, saved: 3, failed: 0, deferred: 0, rematched: 2, alerts: 0 };
 
 describe("GET /api/cron/announcements", () => {
   const saved = process.env.CRON_SECRET;
@@ -37,6 +37,16 @@ describe("GET /api/cron/announcements", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(REPORT);
     expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("logs the re-match count, or that the pass was skipped", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await call("Bearer s3cret");
+    expect(info.mock.calls[0]![0]).toContain("rematched 2,");
+    run.mockResolvedValueOnce({ ...REPORT, rematched: null });
+    await call("Bearer s3cret");
+    expect(info.mock.calls[1]![0]).toContain("rematched skipped,");
+    info.mockRestore();
   });
 
   it("answers 500 when the ingest fails, logging no message from the error", async () => {
