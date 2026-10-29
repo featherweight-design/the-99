@@ -34,7 +34,6 @@ import { loadInviteCount } from "../lib/invites/read";
 import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
 import { readTourSeen, tourDue } from "../lib/discovery/tour";
 import { loadArrivalsBanner } from "../lib/precons/banner";
-import { upcomingPreconsEnabled } from "../lib/precons/upcoming-flag";
 import { aboutLine } from "../lib/about/notice";
 import { visibleSections } from "../lib/about/pages-visible";
 import { aboutSeen } from "../lib/about/read";
@@ -233,9 +232,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       // failure, which walks the plain shuffle.
       feedOn ? null : perf.timed("unplayedCounts", () => loadUnplayedCounts(userId, env)),
       // The arrivals banner (upcoming precons): read only past the first-run return above, so a first-run
-      // account neither sees it nor reads it. Null when its switch is off, when nothing is new, or when the read
+      // account neither sees it nor reads it. Null when Precons is off, when nothing is new, or when the read
       // failed, which records a fallback so that render is served and not stored.
-      upcomingPreconsEnabled(env) && !feedOn ? perf.timed("arrivals", () => loadArrivalsBanner(userId, now)) : null,
+      preconsEnabled(env) && !feedOn ? perf.timed("arrivals", () => loadArrivalsBanner(userId, now)) : null,
     ]);
 
     // The slice FIRST, then the printings — the two shown rather than every commander the

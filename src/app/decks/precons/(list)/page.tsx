@@ -23,7 +23,6 @@ import {
 } from "../../../../lib/precons/announced";
 import { loadUpcomingPayload } from "../../../../lib/precons/announced-read";
 import { visitSeenKeys } from "../../../../lib/precons/arrivals";
-import { upcomingPreconsEnabled } from "../../../../lib/precons/upcoming-flag";
 import { markUpcomingSeen, utcDay } from "../../../../lib/precons/upcoming";
 import { recordSoftFailure } from "../../../../lib/cache/soft-failure";
 import { PreconListView } from "../../../../components/decks/precons/precon-list-view";
@@ -107,10 +106,8 @@ export default async function PreconsPage({
     );
   }
 
-  // Upcoming precons (plan PR 2): the Announced group, the `new ·` tags and the visit's seen write, all behind
-  // the switch. The UTC day enters the key, because the reads' windows (an upcoming set, a listed precon) are
+  // Upcoming precons (plan PR 2): the Announced group, the `new ·` tags and the visit's seen write. The UTC day enters the key, because the reads' windows (an upcoming set, a listed precon) are
   // days; the reader's seen state rides inside the payload, retired by `user_prefs`'s stamp trigger (E5).
-  const upcomingOn = upcomingPreconsEnabled(env);
   const now = new Date();
 
   // L4: an empty or unreadable list is "couldn't be read", never "there are no precons". Not stored,
@@ -121,25 +118,20 @@ export default async function PreconsPage({
     payload = await cachePageForUser(
       userId,
       "precons",
-      upcomingOn ? [utcDay(now)] : [],
+      [utcDay(now)],
       async () => {
         const list = await loadPreconList(userId);
         let upcoming: UpcomingPayload | null = null;
-        if (upcomingOn) {
-          try {
-            upcoming = await loadUpcomingPayload(userId, now);
-          } catch (error) {
-            // T9: a failed upcoming read draws the list as shipped, and is served and never stored.
-            recordSoftFailure();
-            console.error(
-              "precons: the upcoming sets could not be read",
-              error,
-            );
-          }
+        try {
+          upcoming = await loadUpcomingPayload(userId, now);
+        } catch (error) {
+          // T9: a failed upcoming read draws the list as shipped, and is served and never stored.
+          recordSoftFailure();
+          console.error("precons: the upcoming sets could not be read", error);
         }
         return {
           value: { list, upcoming },
-          store: list.rows.length > 0 && (!upcomingOn || upcoming !== null),
+          store: list.rows.length > 0 && upcoming !== null,
         };
       },
       env,
@@ -157,7 +149,7 @@ export default async function PreconsPage({
       </>
     );
   }
-  const upcoming = upcomingOn ? (payload?.upcoming ?? null) : null;
+  const upcoming = payload?.upcoming ?? null;
   // Whether this visit writes seen keys, which the view passes on to Home's banner for this document.
   let acknowledges: string[] = [];
   if (upcoming) {

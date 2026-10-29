@@ -338,7 +338,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   was before the run (deleted if the probe created it, else its seen codes restored) and checks it, since a visit
   acknowledges every arrival, not only the fixtures'. Fails closed on its target: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging and production are refused by id. Needs a server on `PROBE_BASE` on the same
-  database, started with `PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true` (a `next start` on a free port; stop it by
+  database, started with `PRECONS_ENABLED=true` (a `next start` on a free port; stop it by
   its own PID).
 - `pnpm probe:tokens-group` proves the deck's Tokens group (2026-10-14) at 1300x900 and 390x844: open by default as rows in
   List view; the heading folds it and writes ONE preference (`the99:deck-tokens-fold`) that folds the group on another
@@ -3217,14 +3217,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Back twice (the page tells the client its visit acknowledged the arrivals); ✕, by click and by Enter,
   closes it, writes the seen keys (read back from `user_prefs`) and focuses Home's `h1`, and a reload draws none with
   `LIST_CACHE_ENABLED=true` (the stamp retiring cached Home, E5); a fresh first-run account gets no arrival line (About's own first-run line may draw there) and no seen
-  key (H7); the About entry `upcoming-precons` draws with the switch on, and neither it nor the banner with an account
-  override turning `UPCOMING_PRECONS_ENABLED` off (it waits out the resolver's 30-second memo). FIXTURES on local-dev
+  key (H7); the About entry `upcoming-precons` draws. FIXTURES on local-dev
   only (production and staging refused by branch id): two `commander` sets `pqaset` and `pqalist`, a precon listing
-  `pqalist`, a day-old non-baseline `catalog_first_seen` stamp per arrival, the override, and a temporary Clerk test
+  `pqalist`, a day-old non-baseline `catalog_first_seen` stamp per arrival, and a temporary Clerk test
   user on the DEVELOPMENT instance (its key must be `sk_test_`), all removed in its `finally` with the account's seen
   keys; the account's `user_prefs` row (its seen keys and About fields, or its absence) is read before any page and put
-  back exactly, then re-read as a check. `PROBE_BASE` must be loopback with a port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true
-  UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true`; stop it by its own PID.
+  back exactly, then re-read as a check. `PROBE_BASE` must be loopback with a port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true LIST_CACHE_ENABLED=true`; stop it by its own PID.
 - `pnpm probe:welcome-strip` presses Home's welcome-credits strip (plan `2026-10-21-welcome-credits.md`, PR 2) at
   390x844 and 1300x900, through `lib/surface.mjs`: the strip is above the fold on the first-run Home and on the
   dashboard (under the page head); `Where they work` opens `Where credits work` in the shipped SocialModal, before a
@@ -3265,8 +3263,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `finally`, then re-read as a check. FIXTURES on local-dev only (production and staging refused by branch id): a
   `commander` set `pqbset` with a day-old non-baseline `catalog_first_seen` stamp, and the temporary user (its key must
   be `sk_test_`), all removed in its `finally` with every row the user wrote. `PROBE_BASE` must be loopback with a
-  port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true
-  UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true`; stop it by its own PID.
+  port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true`; stop it by its own PID.
 
 ## probe:lock-shift
 

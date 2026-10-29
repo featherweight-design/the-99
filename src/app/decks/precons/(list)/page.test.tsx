@@ -74,11 +74,12 @@ const visit = async (query: Record<string, string> = {}) => {
   const children = el.props.children as ReactElement<Record<string, unknown>>[];
   return children[children.length - 1];
 };
+const DAY = new Date().toISOString().slice(0, 10);
 const runAfters = async () => { for (const fn of h.afters.splice(0)) await fn(); };
 
 describe("/decks/precons, upcoming precons", () => {
   beforeEach(() => {
-    h.env = { PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true" };
+    h.env = { PRECONS_ENABLED: "true" };
     h.afters = []; h.keys = []; h.stored = []; h.marked = []; h.upcomingFails = false; h.cookies = {}; h.listFails = false; h.allSeen = false;
   });
 
@@ -115,16 +116,6 @@ describe("/decks/precons, upcoming precons", () => {
     expect(h.marked).toEqual([]);
   });
 
-  it("reads, draws and writes nothing with the switch off, and keeps the shipped key", async () => {
-    h.env = { PRECONS_ENABLED: "true" };
-    const el = await visit();
-    await runAfters();
-    expect(h.keys[0]).toEqual([]);
-    expect(el.props.announced).toBeNull();
-    expect(el.props.newFileNames).toEqual([]);
-    expect(h.marked).toEqual([]);
-  });
-
   it("tells the view its visit acknowledges arrivals exactly when it writes seen keys", async () => {
     const wrote = await visit();
     await runAfters();
@@ -140,9 +131,6 @@ describe("/decks/precons, upcoming precons", () => {
     expect(seen.props.acknowledgesArrivals).toEqual([]);
     expect(h.marked).toEqual([]);
 
-    h.allSeen = false;
-    h.env = { PRECONS_ENABLED: "true" };
-    expect((await visit()).props.acknowledgesArrivals).toEqual([]);
   });
 
   it("draws PreconsDown and acknowledges nothing when the list cannot be read", async () => {
@@ -163,14 +151,14 @@ describe("/decks/precons?pick=own (no-collection entry S2)", () => {
     h.env = { PRECONS_ENABLED: "true" };
     const el = await visit({ pick: "own" });
     expect(el.type).toBe(PreconListView);
-    expect(h.keys).toEqual([[]]);
+    expect(h.keys).toEqual([[DAY]]);
     expect(h.listOpts).toEqual([undefined]);
   });
 
   it("draws the shipped list for any other pick, with collection editing on", async () => {
     h.env = LINE;
     expect((await visit({ pick: "all" })).type).toBe(PreconListView);
-    expect(h.keys).toEqual([[]]);
+    expect(h.keys).toEqual([[DAY]]);
   });
 
   it("reads the boxes' figures under a key of its own, and takes its way back from a closed set", async () => {

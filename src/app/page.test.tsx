@@ -1,5 +1,5 @@
 // Home's arrivals banner (upcoming precons, plan PR 3): read inside the cached payload, only past the first-run
-// return, only with UPCOMING_PRECONS_ENABLED on, and handed to the dashboard as `arrivals`. Every other loader is
+// return, only with PRECONS_ENABLED on, and handed to the dashboard as `arrivals`. Every other loader is
 // stubbed; what is asserted is the element the page returns and whether the banner was read.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Fragment, type ReactElement } from "react";
@@ -67,7 +67,7 @@ const HomePage: typeof RawHomePage = async (...args) => {
 const { PushLanding } = await import("../components/push/push-landing");
 
 const BANNER = { lines: [{ kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 }], href: "/decks/precons?sort=newest#announced", keys: ["trc"] };
-const ON = { PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true" };
+const ON = { PRECONS_ENABLED: "true" };
 
 beforeEach(() => {
   stub.env = { ...ON };
@@ -92,8 +92,8 @@ describe("Home's arrivals banner", () => {
     expect(stub.arrivals).toHaveBeenCalledWith("user_1", expect.any(Date));
   });
 
-  it("neither reads nor draws it with the switch off", async () => {
-    stub.env = { PRECONS_ENABLED: "true" };
+  it("neither reads nor draws it with Precons off", async () => {
+    stub.env = {};
     const page = (await HomePage()) as ReactElement<{ arrivals: unknown }>;
     expect(page.type).toBe(Dashboard);
     expect(page.props.arrivals).toBeNull();

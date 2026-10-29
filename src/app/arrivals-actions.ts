@@ -7,7 +7,7 @@ import { aboutSeen, markAboutVisited } from "../lib/about/read";
 import { dismissKeys, readArrivalLines } from "../lib/precons/banner";
 import { seenKeysFor } from "../lib/precons/arrivals";
 import { markUpcomingSeen } from "../lib/precons/upcoming";
-import { upcomingPreconsEnabled } from "../lib/precons/upcoming-flag";
+import { preconsEnabled } from "../lib/precons/flag";
 import { requestSwitchEnv } from "../lib/switches/request";
 
 /**
@@ -24,14 +24,14 @@ import { requestSwitchEnv } from "../lib/switches/request";
  * 0123), which retires Home's cached payload, so the next load draws neither half.
  *
  * No revalidation: the banner collapses in the browser, and re-rendering Home inside this reply would pay for a
- * page the reader is already looking at. The arrivals half writes nothing while its switch is off. Returns, when the
+ * page the reader is already looking at. The arrivals half writes nothing while Precons is off. Returns, when the
  * banner claimed About keys, `heldAnswer` of the state the reader is left at (written or not), which the banner
  * acknowledges in this document (a non-empty set ends the first run there).
  */
 export async function dismissArrivals(shown: unknown, about?: unknown): Promise<string[]> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (upcomingPreconsEnabled(env) && Array.isArray(shown) && shown.length > 0) {
+  if (preconsEnabled(env) && Array.isArray(shown) && shown.length > 0) {
     const keys = dismissKeys(shown, seenKeysFor(await readArrivalLines(userId, new Date())));
     if (keys.length > 0) await markUpcomingSeen(userId, keys);
   }

@@ -24,7 +24,6 @@ import type { ModelFeature } from "../model/allowance-rule";
 import { noticesEnabled } from "../notices/flag";
 import { preconsEnabled } from "../precons/flag";
 import { publicPagesEnabled } from "../public/flag";
-import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
@@ -88,7 +87,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   TUNING_ENABLED: tuningEnabled,
-  UPCOMING_PRECONS_ENABLED: upcomingPreconsEnabled,
   WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,
 };
 

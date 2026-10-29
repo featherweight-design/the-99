@@ -26,7 +26,6 @@ import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
 import { preconsEnabled } from "../precons/flag";
-import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { homeFeedEnabled } from "../feed/flag";
@@ -73,8 +72,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   PRECONS_ENABLED: preconsEnabled,
-  // Already reads PRECONS_ENABLED: the Announced group and the banner both live under Precons.
-  UPCOMING_PRECONS_ENABLED: upcomingPreconsEnabled,
+  // Retired: the Announced group and the banner were on exactly when Precons is.
+  UPCOMING_PRECONS_ENABLED: preconsEnabled,
   DECK_NOTES_ENABLED: deckNotesEnabled,
   // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
   TUNING_HUB_ENABLED: tuningHubEnabled,
