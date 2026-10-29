@@ -58,7 +58,7 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  * `neon.branch_id` is production's and sets and asserts `default_transaction_read_only` before its
  * first query, reads with SELECT only, and hands back facts and the stored synopsis as JSON.
  *
- * THE CAP ($2.75 since Hugh's raise of 2026-10-29, `ledger-overview-stages.jsonl`, ask at $1.50; `LEDGER_LIMITS`). Every call is checked
+ * THE CAP ($5 since Hugh's second raise of 2026-10-29, `ledger-overview-stages.jsonl`, ask at $1.50; `LEDGER_LIMITS`). Every call is checked
  * BEFORE it is sent against its worst case (a repair is checked on its own before it is sent), recorded pending at
  * that worst case and settled at its metered cost, as `corpus.mts` does: a crash after the API billed
  * still leaves the charge counted. `--cap` is this run's own ceiling, required for a paid run.
