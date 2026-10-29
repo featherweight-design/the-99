@@ -57,7 +57,10 @@ describe("about pages copy model", () => {
       ...labels.flatMap((l) => [l.switch, ...Object.values(l.sentences ?? {})]),
       ...Object.values(ABOUT_RULES).flatMap((r) => [r.switch, ...Object.values(r.sentences ?? {})]),
     ].filter((x): x is AboutLineSwitch => x != null).flatMap(switchesOf);
-    for (const n of named) expect(SWITCH_NAMES, n).toContain(n);
+    // A retired switch stays the unit's historical identity: About's seen-state keys units and sentences by it, so
+    // dropping the name would mark an unread announcement as seen. `visible.ts` maps each to always-on.
+    const RETIRED_IDENTITIES = ["HELP_PANEL_ENABLED", "CARD_SCAN_ENABLED", "FIRST_RUN_TOUR_ENABLED", "ADDED_COPY_ENABLED"];
+    for (const n of named) expect([...SWITCH_NAMES, ...RETIRED_IDENTITIES], n).toContain(n);
   });
 
   it("keeps every gated sentence verbatim inside its unit's text", () => {
