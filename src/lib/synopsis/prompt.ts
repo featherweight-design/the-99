@@ -202,13 +202,15 @@ export const V2_FACT_RULES_V8 = `${V2_COMBO_RULES_V8}\n${V2_SHARED_RULES}`;
  * THE STAGES VARIANT (eval tooling only; lane a6, `scripts/eval/overview-stages.mts`). Contract 8's
  * sections with the Core strategy replaced by three stage lines (Early, Mid, Close, labeled by the
  * app from their position), `plans.primary` rendered as the "Wins by" line, an optional alternate
- * commander line, tips cut to 2-3, and one rule against repetition. The reply schema is contract 8's
+ * commander line, exactly 2 tips, and one rule against repetition. The reply schema is contract 8's
  * plus `alternate` (`stagesResponseSchemaWire`, `stages.ts`). NOT wired into the app: nothing but
  * the eval harness passes `stages`, so every shipped prompt is byte for byte what it was.
  */
 export type StagesOption = {
   /** The alternate commanders the facts carry (a precon box's foil alternates); empty for a player's deck. */
   alternates: readonly string[];
+  /** The rendered length of today's Overview for this deck (`renderedTotal`), when known: the new shape's whole budget. */
+  maxChars?: number;
 };
 
 function stagesSections(facts: SynopsisFacts, stages: StagesOption): string[] {
@@ -224,30 +226,30 @@ function stagesSections(facts: SynopsisFacts, stages: StagesOption): string[] {
     ? "State no turn number in this line."
     : `If you give a turn, it is only "around turn ${castTurn}", the expected commander cast turn from the facts.`;
   return [
-    `${plans} "primary" is also shown to the reader as the deck's "Wins by" line: at most ${CHAR_BUDGETS.strategy} characters as rendered, any card in it named as [[Name]], and no turn number.`,
+    `${plans} "primary" is also shown to the reader as the deck's "Wins by" line, so it is AT MOST ${CHAR_BUDGETS.strategy} CHARACTERS as rendered (count it before you answer; aim for about ${Math.floor(CHAR_BUDGETS.strategy * 0.75)}). It states how the deck wins in plain terms and names NO card that any stage line names: the Close line carries the cards. Any card it does name is written as [[Name]]. No turn number.`,
     `- primer.strategy: EXACTLY 3 lines, in this order, as { text, evidence }, each at most ${CHAR_BUDGETS.strategy} characters. The app labels them Early, Mid and Close, so never begin a line with its label or a word like "First". Every line names at least one card of this decklist as [[Name]] and cites the refs of the cards it names in "evidence". A card marked "universal staple" is never a line's subject or evidence. Each line is about THIS deck's cards, never advice true of any deck (such as "ramp early, draw cards, then win").`,
     `  1. Early: the setup and the commander: the cheap cards that start the plan, each costing at most ${earlyMax} mana, and what the commander does once it lands. ${turn}`,
     "  2. Mid: the engine running: the cards that, with the commander, turn the setup into advantage.",
     `  3. Close: how the game is closed out and what to protect while it happens: the pieces an opponent must answer. Do not repeat the "Wins by" line; name the cards that carry it out or need protecting.`,
     mulligan,
-    tips.replace(tipsFrom, `${STAGES_TIPS.min} to ${STAGES_TIPS.max} tips`),
+    `${tips.replace(tipsFrom, "EXACTLY 2 tips")} A tip names NO card that a stage line, the "Wins by" line or the alternate line names: take its cards from the rest of the deck.`,
     `${keyCards} A job never names another card.`,
     assessment,
     stages.alternates.length > 0
-      ? `- alternate: ONE { text, evidence } of at most ${CHAR_BUDGETS.strategy} characters on leading this deck with one of the commanders listed under "Alternate commanders" instead: name it as [[Name]], cite its ref, and say in a few words how the plan changes under it.`
+      ? `- alternate: REQUIRED for this deck. The facts list alternate commanders (${stages.alternates.join("; ")}), so the reply MUST include "alternate": ONE { text, evidence } of at most ${CHAR_BUDGETS.strategy} characters on leading this deck with one of them instead: name it as [[Name]], cite its ref, and say in a few words how the plan changes under it. A reply without "alternate" fails.`
       : '- alternate: leave it out. This deck has no alternate commander.',
   ];
 }
 
-/** Tips in the stages variant: 2 to 3 (contract 8's are 2 to 4). */
-const STAGES_TIPS = { min: 2, max: 3 } as const;
-
 /** The stages variant's rules against repetition and stray turn numbers. */
-function stagesRules(facts: SynopsisFacts): string {
+function stagesRules(facts: SynopsisFacts, stages: StagesOption): string {
   const castTurn = facts.stats?.commanderCastTurn ?? null;
+  const budget = stages.maxChars === undefined ? "" : ` (${stages.maxChars} characters as rendered)`;
   return [
-    "EACH CARD IS EXPLAINED ONCE. The overview, the three stage lines, the \"Wins by\" line (plans.primary), the alternate line, the tips and the Key cards' jobs each have their own job, and a card is named in only ONE of them: say what a card does where it matters most and nowhere else. Choose different cards for the tips than the stages name. The commander is the one card more than one of them may name, and what it does is explained once, in the Early line.",
+    "EACH CARD IS EXPLAINED ONCE. The overview, the three stage lines, the \"Wins by\" line (plans.primary), the alternate line, the tips and the Key cards' jobs each have their own job, and a card is named in only ONE of them: say what a card does where it matters most and nowhere else. The tips name no card a stage line, the \"Wins by\" line or the alternate line names, and \"Wins by\" names no card a stage line names. The commander is the one card more than one of them may name, and what it does is explained once, in the Early line.",
     "The overview says what the deck is and how it wins in plain words: it names the commander, and leaves the other cards to the stages, tips and Key cards.",
+    `LENGTH: everything the reader is shown (the overview, the stage lines, "Wins by", the alternate line, the mulligan lines, the tips, the Key cards with their jobs and the weaknesses) together must be NO LONGER than today's Overview of this deck${budget}. Trim the overview paragraph first: aim for about ${Math.floor(CHAR_BUDGETS.overview * 0.55)} characters, well under its ${CHAR_BUDGETS.overview} limit. Then keep every other line short.`,
+    ...(stages.alternates.length > 0 ? ['This deck carries alternate commanders: the reply MUST include the "alternate" line.'] : []),
     castTurn === null
       ? "State no turn number anywhere: say \"early\" or \"late\" instead."
       : `The only turn number you may state anywhere is the expected commander cast turn, as "around turn ${castTurn}". Never write any other turn ("turn 1", "turns two to four", "the third turn"); say "early" or "late" instead.`,
@@ -390,7 +392,7 @@ export function buildSynopsisPrompt(
   if (opts.contract8 && opts.stages) {
     const system = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...stagesSections(facts, opts.stages)].join("\n");
     return {
-      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES_V8}\n${V2_FACT_RULES_V8}\n${stagesRules(facts)}`,
+      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES_V8}\n${V2_FACT_RULES_V8}\n${stagesRules(facts, opts.stages)}`,
       user: lines.join("\n"),
     };
   }

@@ -39,7 +39,7 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  * first query, reads with SELECT only, and hands back facts and the stored synopsis as JSON.
  *
  * THE CAP ($2, `ledger-overview-stages.jsonl`, ask at $1.50; `LEDGER_LIMITS`). Every call is checked
- * BEFORE it is sent against its worst case (a write reserves its repair too), recorded pending at
+ * BEFORE it is sent against its worst case (a repair is checked on its own before it is sent), recorded pending at
  * that worst case and settled at its metered cost, as `corpus.mts` does: a crash after the API billed
  * still leaves the charge counted. `--cap` is this run's own ceiling, required for a paid run.
  */
@@ -268,7 +268,10 @@ for (const d of prodPrepared) {
 // ---------------------------------------------------------------------------------------------
 // Prompts and the projection.
 
-const newPrompt = (it: Item) => buildSynopsisPrompt(it.facts, undefined, { v2: true, contract8: true, stages: { alternates: it.alternates } });
+/** The stages option for a deck: its alternates, and today's rendered length as the whole budget when old is known. */
+const stagesOpt = (it: Item, oldContent: Checked | null = it.old?.content ?? null) =>
+  ({ alternates: it.alternates, ...(oldContent ? { maxChars: stages.renderedTotal(stages.docFromChecked(oldContent)) } : {}) });
+const newPrompt = (it: Item, oldContent?: Checked | null) => buildSynopsisPrompt(it.facts, undefined, { v2: true, contract8: true, stages: stagesOpt(it, oldContent) });
 const oldPrompt = (it: Item) => buildSynopsisPrompt(it.facts, undefined, { v2: true, contract8: true });
 const paramsOf = (p: { system: string; user: string }, schema: unknown) =>
   buildParams({ model: call.model, system: p.system, user: p.user, maxTokens: call.maxTokens, schema: schema as never }, { effort: call.effort });
@@ -378,7 +381,7 @@ for (const [i, p] of plans.entries()) {
       old = { content: it.old.content, source: it.old.source };
     } else {
       const started = Date.now();
-      const first = await ask<V8Wire>(it, "old-write", oldPrompt(it), synopsisResponseSchemaV8Wire, SYNOPSIS_DEADLINE_MS, 2, i);
+      const first = await ask<V8Wire>(it, "old-write", oldPrompt(it), synopsisResponseSchemaV8Wire, SYNOPSIS_DEADLINE_MS, 1, i);
       if (!first) break;
       let content: Checked | null = null;
       let repairUsd = 0;
@@ -401,8 +404,8 @@ for (const [i, p] of plans.entries()) {
 
   // NEW: the stages variant, first write plus the app's one repair.
   const started = Date.now();
-  const prompt = newPrompt(it);
-  const first = await ask<StagesReply>(it, "new-write", prompt, stages.stagesResponseSchemaWire, SYNOPSIS_DEADLINE_MS, repairOn ? 2 : 1, i);
+  const prompt = newPrompt(it, old.content);
+  const first = await ask<StagesReply>(it, "new-write", prompt, stages.stagesResponseSchemaWire, SYNOPSIS_DEADLINE_MS, 1, i);
   if (!first) break;
   if (!first.out.ok) {
     writeFileSync(new URL("new.json", dir), `${JSON.stringify({ id: it.id, failed: first.out.errorClass, usd: first.usd, usage: first.usage, stops: first.stops, alternates: it.alternates }, null, 2)}\n`);
@@ -417,7 +420,7 @@ for (const [i, p] of plans.entries()) {
   const failing = refusedSections(firstChecked);
   const left = SYNOPSIS_DEADLINE_MS - (Date.now() - started);
   if (repairOn && failing.length > 0 && left >= SYNOPSIS_REPAIR_MIN_MS) {
-    const repPrompt = buildSynopsisPrompt(it.facts, { keep: firstChecked, refused: failing, first: reply }, { v2: true, contract8: true, stages: { alternates: it.alternates } });
+    const repPrompt = buildSynopsisPrompt(it.facts, { keep: firstChecked, refused: failing, first: reply }, { v2: true, contract8: true, stages: stagesOpt(it, old.content) });
     const rep = await ask<StagesReply>(it, "new-repair", repPrompt, stages.stagesResponseSchemaWire, left, 1, i);
     if (!rep) break;
     repairUsd = rep.usd;
@@ -452,6 +455,7 @@ const decks = plans.map((p) => {
 }).filter((d) => d.neu);
 const tally = (f: (c: NonNullable<CheckFile["checks"]>) => boolean) => decks.filter((d) => d.chk?.checks && f(d.chk.checks)).length;
 const summary = {
+  headline: { basis: "commander exempt from the repetition rule", allPass: 0, explainedOnce: 0 },
   iteration, decks: decks.length, of: plans.length, stopped, runSpendUsd: runSpend, ledgerUsd: spent(readLedger(LEDGER)),
   answered: decks.filter((d) => d.chk?.checks).length,
   validatorPass: decks.filter((d) => d.chk?.validatorPass).length,
@@ -468,14 +472,16 @@ const summary = {
   perDeck: decks.map((d) => ({ id: d.p.it.id, name: d.p.it.name, validatorPass: d.chk?.validatorPass ?? false, failed: d.neu?.failed ?? null, usd: (d.neu?.usd ?? 0) + (d.neu?.repairUsd ?? 0), length: d.chk?.checks?.length ?? null })),
   notes,
 };
+summary.headline = { basis: "commander exempt from the repetition rule", allPass: summary.allPassExceptCommanderRepeats, explainedOnce: summary.explainedOnceExceptCommanders };
 writeFileSync(new URL("summary.json", outDir), `${JSON.stringify(summary, null, 2)}\n`);
 const n = summary.answered;
 const lines = [
+  `HEADLINE (commander exempt from the repetition rule): every auto-pass check on ${summary.allPassExceptCommanderRepeats} of ${n}; no non-commander card explained twice on ${summary.explainedOnceExceptCommanders} of ${n}.`,
   `Iteration ${iteration}: ${decks.length} of ${plans.length} decks${stopped ? ` (stopped ${stopped})` : ""}; this run $${runSpend.toFixed(4)}, ledger $${summary.ledgerUsd.toFixed(4)} of $${LIMITS.hardCapUsd}.`,
   `Contract-8 validator, every section shown: ${summary.validatorPass} of ${n}.`,
   `Cards all in the list: ${summary.cardsInList} of ${n}. No stray turn numbers: ${summary.turnNumbers} of ${n}. Every stage names a deck card: ${summary.stagesNameCards} of ${n}. Early cards fit: ${summary.stageFit} of ${n}.`,
-  `No card explained twice: ${summary.explainedOnce} of ${n} (${summary.explainedOnceExceptCommanders} with the commander exempt). Not longer than today: ${summary.lengthNotLonger} of ${n}. Shape: ${summary.shape} of ${n}.`,
-  `Every auto-pass check: ${summary.allPass} of ${n} (${summary.allPassExceptCommanderRepeats} with the commander exempt).`,
+  `No card explained twice, commander included (strict): ${summary.explainedOnce} of ${n}. Not longer than today: ${summary.lengthNotLonger} of ${n}. Shape: ${summary.shape} of ${n}.`,
+  `Every auto-pass check, commander included (strict): ${summary.allPass} of ${n}.`,
   ...notes,
 ];
 const page = compareHtml(`Overview: today against stages, iteration ${iteration}`, decks.map((d) => ({

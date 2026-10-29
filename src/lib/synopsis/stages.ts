@@ -29,13 +29,14 @@ import { marksIn, rendered } from "./validate";
 /** The stage labels, by position in `primer.strategy`. */
 export const STAGE_LABELS = ["Early", "Mid", "Close"] as const;
 
-/** The stages shape's counts and budgets. Tips drop to 2-3; every new line is a strategy step's 144. */
+/** The stages shape's counts and budgets. Tips are exactly 2; every new line is a strategy step's 144. */
 export const STAGES_LIMITS = {
   stages: STAGE_LABELS.length,
   stage: CHAR_BUDGETS.strategy,
   winsBy: CHAR_BUDGETS.strategy,
   alternate: CHAR_BUDGETS.strategy,
-  tips: { min: 2, max: 3 },
+  // Exactly 2 from iteration 2 (coordinator, 2026-10-29): iteration 1's tips repeated the stages' cards.
+  tips: { min: 2, max: 2 },
 } as const;
 
 const claimed = z.object({ text: z.string().max(2_000), evidence: z.array(z.string().max(16)).max(12) });
@@ -289,7 +290,7 @@ export function checkLength(newDoc: OverviewDoc, oldDoc: OverviewDoc): { pass: b
 
 /**
  * The shape's own counts and budgets: three stages of at most 144, Wins by and the alternate at most
- * 144, tips 2-3, and the alternate line present exactly when the facts carry an alternate commander,
+ * 144, exactly 2 tips, and the alternate line present exactly when the facts carry an alternate commander,
  * naming one of them.
  */
 export function checkShape(doc: OverviewDoc, alternates: readonly string[]): CheckResult<string> {

@@ -229,6 +229,9 @@ describe("the shape's own counts and budgets", () => {
     expect(checkShape(withAlt("Lead with something else."), ["Grave Titan"]).offenders).toEqual(["the alternate line names none of the alternate commanders"]);
     expect(checkShape(withAlt("Lead with [[Grave Titan]]."), []).offenders).toEqual(["an alternate line with no alternate commander in the facts"]);
   });
+  it("fails three tips: the shape holds exactly two", () => {
+    expect(checkShape(edit((r) => { r.primer.tips.push(r.primer.tips[0]); }), []).offenders).toEqual(["3 tips"]);
+  });
   it("fails four tips, a long stage and a long Wins by line", () => {
     const res = checkShape(edit((r) => {
       r.primer.tips.push(r.primer.tips[0], r.primer.tips[1]);
@@ -269,9 +272,12 @@ describe("the stages prompt variant", () => {
     expect(system).toContain("EXACTLY 3 lines");
     expect(system).toContain("each costing at most 5 mana");
     expect(system).toContain('"around turn 4"');
-    expect(system).toContain('"Wins by" line: at most 144 characters');
-    expect(system).toContain("2 to 3 tips");
+    expect(system).toContain('"Wins by" line, so it is AT MOST 144 CHARACTERS');
+    expect(system).toContain("names NO card that any stage line names");
+    expect(system).toContain("EXACTLY 2 tips");
+    expect(system).toContain('A tip names NO card that a stage line, the "Wins by" line or the alternate line names');
     expect(system).not.toContain("2 to 4 tips");
+    expect(system).toContain("NO LONGER than today's Overview of this deck. Trim the overview paragraph first");
     expect(system).toContain("EACH CARD IS EXPLAINED ONCE");
     expect(system).toContain("- alternate: leave it out.");
     expect(user).not.toContain("Alternate commanders");
@@ -280,7 +286,13 @@ describe("the stages prompt variant", () => {
     const { system, user } = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: ["Grave Titan"] } });
     expect(user).toContain("Alternate commanders (in this decklist");
     expect(user).toContain("- Grave Titan");
-    expect(system).toContain("- alternate: ONE { text, evidence }");
+    expect(system).toContain('- alternate: REQUIRED for this deck. The facts list alternate commanders (Grave Titan), so the reply MUST include "alternate"');
+    expect(system).toContain('This deck carries alternate commanders: the reply MUST include the "alternate" line.');
+  });
+  it("states today's length as the whole budget when it is known", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [], maxChars: 1834 } });
+    expect(system).toContain("NO LONGER than today's Overview of this deck (1834 characters as rendered). Trim the overview paragraph first");
+    expect(system).not.toContain("the reply MUST include the \"alternate\" line");
   });
   it("states no turn at all when the cast turn is unknown", () => {
     const { system } = buildSynopsisPrompt({ ...FACTS, stats: { ...FACTS.stats!, commanderCastTurn: null } }, undefined, { v2: true, contract8: true, stages: { alternates: [] } });

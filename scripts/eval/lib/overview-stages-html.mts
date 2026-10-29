@@ -68,7 +68,7 @@ function checksBlock(c: StagesChecks | null): string {
     row(`Early cards cost at most ${c.stageFit.max}`, c.stageFit.pass, c.stageFit.offenders.map((o) => `${o.card}: ${o.manaValue}`)),
     row("Every stage line names a deck card", c.stagesNameCards.pass, c.stagesNameCards.offenders.map((o) => `${o.stage}: ${o.why}`)),
     row(`Length: ${c.length.newChars} characters against ${c.length.oldChars} today`, c.length.pass, []),
-    row("Shape (3 stages, Wins by, tips 2-3, alternate when carried, budgets)", c.shape.pass, c.shape.offenders),
+    row("Shape (3 stages, Wins by, exactly 2 tips, alternate when carried, budgets)", c.shape.pass, c.shape.offenders),
   ].join("")}</ul></div>`;
 }
 
