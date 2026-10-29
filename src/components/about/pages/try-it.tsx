@@ -31,7 +31,8 @@ export function TryIt({ sectionId, cards }: { sectionId: string; cards: readonly
   useEffect(() => {
     const after = focusAfter.current;
     focusAfter.current = null;
-    if (after === "opened") listRef.current?.children[1]?.querySelector<HTMLElement>("a, button")?.focus();
+    // The card's Try it press is its whole-card link, the one that carries the card's name as its label.
+    if (after === "opened") listRef.current?.children[1]?.querySelector<HTMLElement>("a[aria-label]")?.focus();
     if (after === "folded") {
       moreRef.current?.focus();
       moreRef.current?.scrollIntoView?.({ block: "nearest" });
@@ -41,7 +42,8 @@ export function TryIt({ sectionId, cards }: { sectionId: string; cards: readonly
   if (cards.length === 0) return null;
   const headingId = `${sectionId}-try-it`;
   const phoneListId = `${sectionId}-try-it-phone`;
-  const press = `${TOUCH_HIT} cursor-pointer self-center border-0 bg-transparent p-0 font-mono text-[10px] font-medium tracking-[0.04em] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)] active:text-[color:var(--fg-muted)] md:hidden`;
+  // 44 x 44 at every pointer (Small items 2, 2a): the box itself, and `TOUCH_HIT` past it on a coarse one.
+  const press = `${TOUCH_HIT} inline-flex min-h-[44px] min-w-[44px] items-center justify-center cursor-pointer self-center border-0 bg-transparent p-0 font-mono text-[10px] font-medium tracking-[0.04em] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)] active:text-[color:var(--fg-muted)] md:hidden`;
   const litTool = landing?.isNew && landing.card ? landing.card.card.id : null;
   // On a phone the landed card is drawn under its label instead (Ways-In phone landing), so it leaves this list; a
   // list it leaves empty draws no phone heading either.

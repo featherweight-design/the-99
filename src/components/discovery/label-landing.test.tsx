@@ -247,7 +247,8 @@ describe("TryIt", () => {
     expect(container.querySelector("[data-try-it-more]")).toBeNull();
     // Focus moves to the first card it added (Small items 2, item 2).
     const second = container.querySelectorAll("[data-try-it-width='phone'] li")[1];
-    expect(second.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(second.querySelector("a[aria-label]"));
+    expect(document.activeElement?.textContent).not.toBe("Show me ›");
   });
 
   it("folds back with Show fewer, focus on the restored press", () => {
