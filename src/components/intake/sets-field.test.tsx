@@ -20,6 +20,16 @@ describe("the Sets field", () => {
   });
 });
 
+describe("the Sets field while the form is locked", () => {
+  it("closes an open panel when the form locks, so a phone sheet releases its modal hooks", () => {
+    const { rerender } = render(<SetsField sets={sets} value={[]} onChange={vi.fn()} wide={false} />);
+    fireEvent.click(screen.getByTestId("sets-field").querySelector("button")!);
+    expect(screen.queryByRole("dialog")).not.toBeNull();
+    rerender(<SetsField sets={sets} value={[]} onChange={vi.fn()} wide={false} locked />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
 describe("the Sets field's copy override (H35 PR 2, \"Kept for this deck\")", () => {
   const limitsCopy = {
     triggerLabel: "Set",

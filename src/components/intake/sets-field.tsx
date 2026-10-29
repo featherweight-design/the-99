@@ -34,6 +34,7 @@ export function SetsField({
   value,
   onChange,
   wide,
+  locked = false,
   copy: copyOverride,
 }: {
   /** Every set that printed a commander, newest first. */
@@ -42,6 +43,9 @@ export function SetsField({
   value: readonly string[];
   onChange: (next: string[]) => void;
   wide: boolean;
+  /** The form is locked while it reads: the panel is remounted closed, so a phone sheet left open by an Enter in its
+   *  search releases its scroll lock and back handler before the trigger is hidden. */
+  locked?: boolean;
   /**
    * Overrides the trigger's label/count/sheet-title and the chip's remove aria, for a caller
    * whose box names itself differently (H35 PR 2's "Kept for this deck"). Everything else — search, groups, the panel's own aria strings — stays the shared
@@ -63,7 +67,7 @@ export function SetsField({
       <span data-lock-hide="" className="contents">
       <FilterPanel
         // Keyed on the form, as every chassis panel is: it holds its own `open`.
-        key={wide ? "wide" : "compact"}
+        key={`${wide ? "wide" : "compact"}${locked ? "-locked" : ""}`}
         compact={!wide}
         copy={panelCopy}
         options={options}
