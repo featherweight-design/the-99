@@ -1,0 +1,90 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-29T18:00:00Z"
+ },
+ "title": "The 99 · Wizards announcements",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 1826,
+   "title": "R1 · the flow, calls, gaps"
+  },
+  "Home-Rows.dc.html": {
+   "x": 1692,
+   "y": 0,
+   "w": 1846,
+   "h": 1951,
+   "title": "1 · Home rows"
+  },
+  "Row-States.dc.html": {
+   "x": 3618,
+   "y": 0,
+   "w": 1418,
+   "h": 2367,
+   "title": "2 · Row states"
+  },
+  "Lead-Story.dc.html": {
+   "x": 5116,
+   "y": 0,
+   "w": 1846,
+   "h": 3252,
+   "title": "3 · The lead story and push"
+  },
+  "Offer.dc.html": {
+   "x": 0,
+   "y": 3372,
+   "w": 1420,
+   "h": 4439,
+   "title": "4 · The offer, a kind off"
+  },
+  "Settings.dc.html": {
+   "x": 1500,
+   "y": 3372,
+   "w": 1780,
+   "h": 4116,
+   "title": "5 · Settings"
+  },
+  "Announced.dc.html": {
+   "x": 0,
+   "y": 7931,
+   "w": 1846,
+   "h": 3828,
+   "title": "6 · Precons: the Announced group"
+  },
+  "Early-List.dc.html": {
+   "x": 1926,
+   "y": 7931,
+   "w": 1894,
+   "h": 4069,
+   "title": "7 · The early list’s page"
+  },
+  "Release-Arrival.dc.html": {
+   "x": 3900,
+   "y": 7931,
+   "w": 1900,
+   "h": 3757,
+   "title": "8 · The release list arrives"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Home-Rows.dc.html",
+  "Row-States.dc.html",
+  "Lead-Story.dc.html",
+  "Offer.dc.html",
+  "Settings.dc.html",
+  "Announced.dc.html",
+  "Early-List.dc.html",
+  "Release-Arrival.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
