@@ -228,7 +228,7 @@
           "settle": 900
         },
         {
-          "scrollTo": "[data-history-row]:last-of-type",
+          "scrollTo": "div:last-of-type > [data-history-row]:last-of-type",
           "settle": 400
         }
       ]

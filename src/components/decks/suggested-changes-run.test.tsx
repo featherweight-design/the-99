@@ -544,12 +544,13 @@ describe("History: a run reopened from History", () => {
   });
 
   it("says today for a set this visit applied, though the follow-up read never came (History B)", async () => {
-    const t = setup({ lines: [...adds(5, (i) => ({ picked: i < 3 })), ...cuts(5, (i) => ({ picked: i < 3 }))], past: { date: "Oct 26", stale: false } });
+    // The run's day is any day but today, so the lead can only say today by reading the write's own time.
+    const today = historyDay(new Date().toISOString());
+    const runDay = today === "Oct 26" ? "Oct 25" : "Oct 26";
+    const t = setup({ lines: [...adds(5, (i) => ({ picked: i < 3 })), ...cuts(5, (i) => ({ picked: i < 3 }))], past: { date: runDay, stale: false } });
     t.actions.apply.mockResolvedValueOnce({ ok: true, itemIds: ["a0", "a1", "a2", "c0", "c1", "c2"] });
     await press(apply());
     await press(within(screen.getByRole("dialog")).getByRole("button", { name: sc.confirm.apply(6) }));
-    const today = historyDay(new Date().toISOString());
-    expect(today).not.toBe("Oct 26");
     expect(document.querySelector("[data-sc-lead] b")!.textContent).toBe(h.oldRunLead(3, today));
   });
 
