@@ -416,10 +416,16 @@ describe("iteration 3: the deck's own land number", () => {
     expect(statedLandNumbers("Three or four lands.")).toEqual([3, 4]);
     expect(statedLandNumbers("[[Two Lands]] and a creature.")).toEqual([]);
   });
+  it("skips the deck's own land total, which is a reason and not a hand count", () => {
+    expect(statedLandNumbers("Keep 3 lands: a middling curve on 37 lands.", 37)).toEqual([3]);
+    expect(statedLandNumbers("Keep 4 lands: it plays 40 lands.", 40)).toEqual([4]);
+    expect(statedLandNumbers("Keep 3 of its 37 lands.", 37)).toEqual([3]);
+    expect(statedLandNumbers("Keep 5 lands on 37 lands.", 37)).toEqual([5]);
+  });
 });
 
 describe("iteration 3: the land line check", () => {
-  const land = landKeepNumber(withCurve([3, 4, 6, 5, 2])); // 4, top-heavy; figures include 1 (five or more), 1 (two or less), 37, 10, 4, 7
+  const land = landKeepNumber(withCurve([3, 4, 6, 5, 2])); // 4, top-heavy; figures include 2 (five or more), 1 (two or less), 37, 10, 4, 7
   const withLine = (text: string) => edit((r) => { (r as StagesReply).landKeep = { text, evidence: [] }; });
   const asShape3 = (text: string) => { const r = goodReply(); r.landKeep = { text, evidence: [] }; return docFromStagesReply(r, 3); };
   it("passes the deck's number with a reason, and records the curve behind it", () => {
@@ -437,6 +443,11 @@ describe("iteration 3: the land line check", () => {
     expect(checkLandKeep(asShape3("Keep 4 lands: spells average 4.0 mana."), FACTS, land).offenders).toContain("states a decimal (the average is a reason, never a figure)");
     expect(checkLandKeep(asShape3("Keep 4 lands in your opening hand."), FACTS, land).offenders).toEqual(["gives no reason for the number"]);
     expect(checkLandKeep(withLine("Keep 4 lands."), FACTS, land).offenders).toEqual(["no land line"]);
+  });
+  it("passes a line citing the deck's land total, and still fails a wrong hand count beside it", () => {
+    expect(checkLandKeep(asShape3("Keep 4 lands: top-heavy on 37 lands."), FACTS, land).offenders).toEqual([]);
+    expect(checkLandKeep(asShape3("Keep 4 of its 37 lands: the curve is high."), FACTS, land).offenders).toEqual([]);
+    expect(checkLandKeep(asShape3("Keep 3 lands: top-heavy on 37 lands."), FACTS, land).offenders).toEqual(["states 3 lands, not the deck's 4", "states a figure the app did not give: 3"]);
   });
   it("tables the numbers stated, and says whether they differ across decks and each deck states its own", () => {
     const row = (id: string, target: number, stated: number | null) => ({ id, name: id, kind: "precon" as const, target, stated, why: "", curve: land.curve });

@@ -475,14 +475,20 @@ export function landKeepNumber(facts: Pick<SynopsisFacts, "cards" | "commanders"
 }
 
 const LAND_COUNT_WORDS: Record<string, number> = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7 };
-/** The land counts a line states ("4 lands", "four lands", "a four-land hand", "3 or 4 lands"), outside card marks. */
-export function statedLandNumbers(text: string): number[] {
+/**
+ * The hand land counts a line states ("4 lands", "four lands", "a four-land hand", "3 or 4 lands"),
+ * outside card marks. The deck's own land total (`deckLands`, which the prompt hands the land line as
+ * a reason: "on 37 lands") is not a hand count and is skipped; "3 of its 37 lands" states 3.
+ */
+export function statedLandNumbers(text: string, deckLands?: number): number[] {
   const bare = text.replace(/\[\[[^\[\]]+\]\]/g, " ");
   const W = `(\\d+|${Object.keys(LAND_COUNT_WORDS).join("|")})`;
   const out: number[] = [];
-  const re = new RegExp(`\\b${W}(?:\\s+(?:to|or)\\s+${W})?(?:\\s+|-)(?:or\\s+more\\s+)?lands?\\b`, "gi");
   const val = (x: string) => (/^\d+$/.test(x) ? Number(x) : LAND_COUNT_WORDS[x.toLowerCase()]!);
-  for (const m of bare.matchAll(re)) { out.push(val(m[1])); if (m[2]) out.push(val(m[2])); }
+  const ofTotal = new RegExp(`\\b${W}\\s+of\\s+(?:its|the(?:\\s+deck's)?|your|this\\s+deck's)\\s+(\\d+)\\s+lands\\b`, "gi");
+  for (const m of bare.matchAll(ofTotal)) if (deckLands !== undefined && val(m[2]) === deckLands) out.push(val(m[1]));
+  const re = new RegExp(`\\b${W}(?:\\s+(?:to|or)\\s+${W})?(?:\\s+|-)(?:or\\s+more\\s+)?lands?\\b`, "gi");
+  for (const m of bare.matchAll(re)) for (const x of [m[1], m[2]]) if (x !== undefined && val(x) !== deckLands) out.push(val(x));
   return out;
 }
 
@@ -500,7 +506,7 @@ export function checkLandKeep(doc: OverviewDoc, facts: Pick<SynopsisFacts, "card
   const base = { target: land.lands, curve: land.curve, why: land.why };
   if (!l) return { pass: false, offenders: ["no land line"], stated: null, text: null, ...base };
   if (doc.landKeep.length > 1) offenders.push(`${doc.landKeep.length} land lines`);
-  const stated = [...new Set(statedLandNumbers(l.text))];
+  const stated = [...new Set(statedLandNumbers(l.text, land.curve.lands))];
   if (stated.length === 0) offenders.push("states no land count");
   if (stated.length > 1) offenders.push(`states more than one land count (${stated.join(", ")})`);
   if (stated.length === 1 && stated[0] !== land.lands) offenders.push(`states ${stated[0]} lands, not the deck's ${land.lands}`);
