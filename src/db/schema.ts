@@ -16,7 +16,7 @@ import type { CutCite } from "../lib/tuning/cuts-schema";
 import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
 import { ALL_FEATURES, SWITCH_NAMES } from "../lib/switches/registry";
-import { STORED_KINDS } from "../lib/feed/kinds";
+import { ANNOUNCEMENT_KINDS, PUSH_OUTBOX_KINDS, STORED_KINDS } from "../lib/feed/kinds";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -3948,7 +3948,7 @@ export const pushOutbox = pgTable("push_outbox", {
 }, (t) => [
   uniqueIndex("push_outbox_item_idx").on(t.userId, t.kind, t.itemKey),
   index("push_outbox_due_idx").on(t.userId, t.createdAt).where(sql`${t.sentAt} is null`),
-  check("push_outbox_kind_check", sql`${t.kind} in ('new-set', 'new-precon', 'price-drop', 'trade-match', 'spare-request', 'combo')`),
+  check("push_outbox_kind_check", sql`${t.kind} in (${sql.raw(PUSH_OUTBOX_KINDS.map((k) => `'${k}'`).join(", "))})`),
 ]);
 
 /**
@@ -4193,7 +4193,7 @@ export const wizardsAnnouncements = pgTable("wizards_announcements", {
   parseStatus: text("parse_status").notNull(),
   baseline: boolean("baseline").notNull().default(false),
 }, (t) => [
-  check("wizards_announcements_kind_check", sql`${t.kind} in ('secret-lair', 'commander-decklists', 'other')`),
+  check("wizards_announcements_kind_check", sql`${t.kind} in (${sql.raw(ANNOUNCEMENT_KINDS.map((k) => `'${k}'`).join(", "))})`),
   check("wizards_announcements_parse_status_check", sql`${t.parseStatus} in ('ok', 'empty', 'incomplete')`),
   check("wizards_announcements_promised_check", sql`${t.promisedDecks} is null or ${t.promisedDecks} > 0`),
   index("wizards_announcements_url_idx").on(t.url),
@@ -4218,6 +4218,8 @@ export const wizardsAnnouncementDecklists = pgTable("wizards_announcement_deckli
   partnerCardId: uuid("partner_card_id"),
   partnerName: text("partner_name"),
   partnerRole: text("partner_role"),
+  /** The list's second line when the parser offered it as a possible partner: kept so a re-match decides it again. */
+  commanderCandidate: text("commander_candidate"),
   cardCount: integer("card_count").notNull(),
   cards: jsonb("cards").$type<AnnouncedDeckCard[]>().notNull(),
   unmatched: text("unmatched").array().notNull().default(sql`'{}'::text[]`),

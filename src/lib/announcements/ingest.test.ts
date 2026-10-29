@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  DECKLIST_FLOOR, isGone, overdue, planFetches, runAnnouncementsIngest, USER_AGENT,
+  DECKLIST_FLOOR, feedKindOf, isGone, overdue, planFetches, runAnnouncementsIngest, USER_AGENT,
   type AnnouncementRecord, type CatalogCard, type DecklistRecord, type IngestAlert, type IngestStore, type KnownPost,
 } from "./ingest";
 import { SITEMAP_URL } from "./sitemap";
@@ -105,7 +105,7 @@ describe("runAnnouncementsIngest", () => {
     expect(Object.fromEntries(posts.map((p) => [p.url.split("/").pop(), [p.kind, p.parseStatus, p.promisedDecks]]))).toEqual({
       "star-trek-commander-decklists": ["commander-decklists", "incomplete", 4],
       "secret-lair-set-phasers-to-superdrop": ["secret-lair", "ok", null],
-      "star-trek-product-delays-in-select-regions": ["other", "ok", null],
+      "star-trek-product-delays-in-select-regions": ["wizards-news", "ok", null],
     });
 
     const trek = mem.rows.get("6AMDy9tWTDw5CheGr12ZpF")!;
@@ -247,5 +247,13 @@ describe("overdue", () => {
     expect(overdue({ ...post, kind: "secret-lair" }, now)).toBe(false);
     expect(overdue({ ...post, publishedAt: "2022-09-17T04:00:00.000Z" }, now)).toBe(false); // Warhammer, before the floor
     expect(overdue({ ...post, publishedAt: DECKLIST_FLOOR }, now)).toBe(true);
+  });
+});
+
+describe("feedKindOf", () => {
+  it("stores the classifier's Other as wizards-news, the rest as they are", () => {
+    expect(feedKindOf("other")).toBe("wizards-news");
+    expect(feedKindOf("secret-lair")).toBe("secret-lair");
+    expect(feedKindOf("commander-decklists")).toBe("commander-decklists");
   });
 });

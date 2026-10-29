@@ -12,6 +12,7 @@
  * - `baseline` is true for a post published before the ingest's first run (the earliest `first_seen_at`, or this
  *   run's start on an empty table): the back catalogue, however many runs it takes to read, never reads as new.
  */
+import type { AnnouncementFeedKind } from "../feed/kinds";
 import { classifyAnnouncement, type AnnouncementKind } from "./classify";
 import { parseDecklists, promisedDeckCount, type ParsedDeck } from "./decklists";
 import { buildNameIndex, matchCardName } from "./match-names";
@@ -41,7 +42,7 @@ export type KnownPost = {
   contentfulId: string;
   title: string;
   lastmod: string | null;
-  kind: AnnouncementKind;
+  kind: AnnouncementFeedKind;
   publishedAt: string;
   parseStatus: ParseStatus;
   firstSeenAt: string;
@@ -55,7 +56,7 @@ export type AnnouncementRecord = {
   excerpt: string | null;
   heroImageUrl: string | null;
   publishedAt: string;
-  kind: AnnouncementKind;
+  kind: AnnouncementFeedKind;
   lastmod: string | null;
   lastFetchedAt: string;
   promisedDecks: number | null;
@@ -123,7 +124,15 @@ export function isGone(status: number | null): boolean {
   return status === 404 || status === 410 || (status !== null && status >= 300 && status < 400);
 }
 
-export function parseStatusOf(kind: AnnouncementKind, decks: readonly ParsedDeck[], promised: number | null): ParseStatus {
+/**
+ * The stored (and feed) key for a classifier kind: its "Other" is `wizards-news` (`ANNOUNCEMENT_KINDS`). Mapped here, at
+ * the store's boundary, so the pure classifier keeps its own vocabulary and every row and later reader uses the feed's.
+ */
+export function feedKindOf(kind: AnnouncementKind): AnnouncementFeedKind {
+  return kind === "other" ? "wizards-news" : kind;
+}
+
+export function parseStatusOf(kind: AnnouncementFeedKind, decks: readonly ParsedDeck[], promised: number | null): ParseStatus {
   if (kind !== "commander-decklists") return "ok";
   if (decks.length === 0) return "empty";
   return promised !== null && decks.length < promised ? "incomplete" : "ok";
@@ -190,7 +199,7 @@ export function decklistRecord(deck: ParsedDeck, position: number, lookup: Catal
 export function announcementRecord(
   post: AnnouncementPost,
   entry: SitemapEntry,
-  kind: AnnouncementKind,
+  kind: AnnouncementFeedKind,
   decks: readonly ParsedDeck[],
   at: { now: Date; firstRunAt: string },
 ): AnnouncementRecord {
@@ -258,7 +267,7 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
       continue;
     }
     const { decks, unknownSections } = parseDecklists(parsed.post.bodyHtml);
-    const kind = classifyAnnouncement({ title: parsed.post.title, url: entry.url, decks });
+    const kind = feedKindOf(classifyAnnouncement({ title: parsed.post.title, url: entry.url, decks }));
     // Banned and Restricted posts draw 60-card lists with `<side-board>` and `<companion-card>` (11 posts, 2025–26):
     // expected there. Only a Commander decklists post with a section the parser skips is worth a look.
     if (unknownSections.length > 0 && kind === "commander-decklists") {

@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { isGameCardWhere } from "../cards/game-card-where";
-import type { AnnouncementKind } from "./classify";
+import type { AnnouncementFeedKind } from "../feed/kinds";
 import type { IngestStore, KnownPost, ParseStatus } from "./ingest";
 
 export const announcementsStore: IngestStore = {
@@ -25,7 +25,7 @@ export const announcementsStore: IngestStore = {
       .from(wizardsAnnouncements);
     return rows.map((r) => ({
       ...r,
-      kind: r.kind as AnnouncementKind,
+      kind: r.kind as AnnouncementFeedKind,
       parseStatus: r.parseStatus as ParseStatus,
       publishedAt: r.publishedAt.toISOString(),
       firstSeenAt: r.firstSeenAt.toISOString(),
