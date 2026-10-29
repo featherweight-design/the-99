@@ -4173,7 +4173,8 @@ export const inviteEdges = pgTable("invite_edges", {
  * Posts in the magic.wizards.com Announcements category (`src/lib/announcements/`), one row per post, keyed on its
  * Contentful entry id (a slug can change; the id does not). Catalog family: no per-account rows. `lastmod` is the
  * sitemap's value as last fetched, compared as text: a change means "fetch again", never "posted then". `baseline`
- * marks the rows the first run wrote, so nothing downstream treats the back catalogue as new. `parse_status` is
+ * marks a post published before the ingest's first run (the earliest stored `first_seen_at`), whichever run
+ * saves it, so nothing downstream treats the back catalogue as new. `parse_status` is
  * `ok`, or for a Commander decklists post `empty` (no lists yet) or `incomplete` (fewer than `promised_decks`).
  */
 export const wizardsAnnouncements = pgTable("wizards_announcements", {
