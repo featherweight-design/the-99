@@ -869,7 +869,7 @@ export function TuningPanel({
       const opts: V2RunOpts = {
         requestedCount: clampCount(typed.count),
         ...(typed.request.trim() !== "" ? { request: typed.request } : {}),
-        bracket: option ? { choice: option.choice, target: option.target } : null,
+        bracket: option ? { choice: option.choice, target: option.target, ...(option.low !== undefined ? { low: option.low } : {}) } : null,
         ...(confirmed ? { confirmed: true } : {}),
       };
       await pressRun(mine, false, "", opts);

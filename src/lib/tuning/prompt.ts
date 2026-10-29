@@ -134,7 +134,10 @@ function bracketLines(stage: PromptV2Stage): string[] {
   const t = aim.target;
   const goal =
     aim.choice === "keep"
-      ? `The player wants the deck to stay in bracket ${t}: no card you suggest may move it out of bracket ${t}.`
+      ? aim.low !== undefined && aim.low < t
+        // Keep on a range: the deck may settle anywhere in it, as `aimDrops` accepts.
+        ? `The player wants the deck to stay in bracket ${aim.low} or ${t}: no card you suggest may move it out of brackets ${aim.low} to ${t}.`
+        : `The player wants the deck to stay in bracket ${t}: no card you suggest may move it out of bracket ${t}.`
       : aim.choice === "down"
         ? stage.list === "additions"
           ? `The player wants to bring the deck down to bracket ${t}: every addition must keep it within bracket ${t}.`

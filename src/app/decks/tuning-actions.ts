@@ -391,7 +391,8 @@ export async function runTuning(
 export type V2RunOpts = {
   requestedCount: number;
   request?: string;
-  bracket?: { choice: "keep" | "down" | "up"; target: number } | null;
+  /** `low`: Keep on a range only, its bottom (no higher than `target`). */
+  bracket?: { choice: "keep" | "down" | "up"; target: number; low?: number } | null;
   confirmed?: boolean;
   runId?: string;
 };

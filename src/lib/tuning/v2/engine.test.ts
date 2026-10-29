@@ -230,6 +230,13 @@ describe("runV2", () => {
     expect(r.charge).toEqual({ outcome: "spent" });
   });
 
+  it("tells the model a Keep over a range may settle anywhere in it (review round 1)", async () => {
+    const f = fake({ additions: { cards: adds(1, 2) }, cuts: { cards: cutsOf(1, 2) } });
+    await runV2({ ...base, n: 2, aim: { choice: "keep", target: 5, low: 4 }, callModel: f.callModel, now: f.now });
+    expect(f.requests[0].system).toContain("stay in bracket 4 or 5");
+    expect(f.requests[0].system).not.toContain("out of bracket 5.");
+  });
+
   it("drops a Down addition whose card alone bars the target, through cardFloor", async () => {
     const f = fake({ additions: { cards: adds(1, 3) }, cuts: { cards: cutsOf(1, 3) } });
     const cardFloor = (_side: "add" | "cut", l: { addOracleId: string | null }) => (l.addOracleId === "Add 2" ? 4 : null);

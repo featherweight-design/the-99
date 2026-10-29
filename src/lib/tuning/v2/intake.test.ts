@@ -83,6 +83,11 @@ describe("bracketCard", () => {
     expect(low.now).toBe(b.nowRange(1, 2, "Exhibition or Core"));
     expect(low.options[0].label).toBe(b.keepRange(1, 2, "Exhibition or Core"));
     expect(low.options[0].mark).toBe(1);
+    // Keep on a range carries its bottom; a single bracket, and every Down and Up, carry none.
+    expect(low.options[0].low).toBe(1);
+    expect(bracketCard([4, 5])!.options[0].low).toBe(4);
+    expect(bracketCard([2])!.options[0].low).toBeUndefined();
+    expect(low.options.slice(1).every((o) => o.low === undefined)).toBe(true);
     expect(shape([4, 5])).toEqual(["keep:5", "down:3", "down:2", "down:1"]);
   });
 

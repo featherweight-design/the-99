@@ -190,7 +190,11 @@ describe("parseV2Wire", () => {
       { requestedCount: 0 }, { requestedCount: 2.5 }, { requestedCount: 5, request: null },
       { requestedCount: 5, bracket: { choice: "keep", target: 0 } }, { requestedCount: 5, bracket: { choice: "Keep", target: 3 } },
       { requestedCount: 5, bracket: "keep" },
+      // A range's bottom rides on Keep only, as an integer no higher than its top.
+      { requestedCount: 5, bracket: { choice: "up", target: 5, low: 4 } }, { requestedCount: 5, bracket: { choice: "keep", target: 4, low: 5 } },
+      { requestedCount: 5, bracket: { choice: "keep", target: 5, low: 0 } },
     ]) expect(parseV2Wire(bad)).toBeNull();
+    expect(parseV2Wire({ requestedCount: 5, bracket: { choice: "keep", target: 5, low: 4 } })?.bracket).toEqual({ choice: "keep", target: 5, low: 4 });
   });
 });
 
@@ -226,6 +230,13 @@ describe("startTuningV2's refusals, all before a credit is reserved", () => {
     expect(await start({ request: "more draw" })).toMatchObject({ kind: "started" });
     s.last = [{ id: "run_old", fingerprint: "fp", at: new Date(), requestHash: hash }];
     expect(await start({ request: "more draw", wire: wire({ confirmed: true }) })).toMatchObject({ kind: "started" });
+  });
+
+  it("does not call Keep over a range the same request as Keep at its top (review round 1)", async () => {
+    const top = requestHash({ count: 3, text: "", bracketChoice: "keep", bracketTarget: 5 });
+    s.last = [{ id: "run_old", fingerprint: "fp", at: new Date("2026-10-27T10:00:00Z"), requestHash: top }];
+    expect(await start({ wire: wire({ bracket: { choice: "keep", target: 5, low: 4 } }) })).toMatchObject({ kind: "started" });
+    expect(await start({ wire: wire({ bracket: { choice: "keep", target: 5 } }) })).toMatchObject({ kind: "confirm" });
   });
 
   it("reserves v2's feature with the count, the request and the bracket choice, after reaping", async () => {

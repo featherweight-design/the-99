@@ -15,6 +15,16 @@ describe("the bracket choice", () => {
     expect(aimDrops({ choice: "keep", target: 2 }, "add", [2, 3])).toBe(false);
   });
 
+  it("Keep on a range keeps a line that settles anywhere inside it, and drops one outside it", () => {
+    const keep45 = { choice: "keep" as const, target: 5, low: 4 };
+    expect(aimDrops(keep45, "cut", [4])).toBe(false);
+    expect(aimDrops(keep45, "add", [5])).toBe(false);
+    expect(aimDrops(keep45, "cut", [3])).toBe(true);
+    const keep12 = { choice: "keep" as const, target: 2, low: 1 };
+    expect(aimDrops(keep12, "cut", [1])).toBe(false);
+    expect(aimDrops(keep12, "add", [3])).toBe(true);
+  });
+
   it("Down keeps additions inside the target and never drops a cut for it", () => {
     expect(aimDrops({ choice: "down", target: 1 }, "add", [2])).toBe(true);
     expect(aimDrops({ choice: "down", target: 1 }, "add", [1, 2])).toBe(false);
