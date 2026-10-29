@@ -200,6 +200,18 @@ async function run(page, steps) {
         .first()
         .click({ timeout: 15_000 });
     }
+    // A press on a deck toast's control (Undo on the receipt): the toast is drawn into the deck toast stack the shell
+    // hosts, outside `<main>`, so `clickRole` (page-scoped) never finds it. Scoped to the stack and to the toast's kind,
+    // as `waitToast` is, so a different toast in its place fails the row; `name` is a regex, as `clickRole`'s is.
+    if (step.clickToast !== undefined) {
+      const { kind, name, role = "button" } = step.clickToast ?? {};
+      if (typeof kind !== "string" || typeof name !== "string") throw new Error("clickToast takes { kind, name }");
+      await page
+        .locator(`[data-deck-toast-stack] [data-toast-kind="${kind}"]`)
+        .getByRole(role, { name: new RegExp(expand(name, `clickToast ${kind}`, { forRegex: true })) })
+        .first()
+        .click({ timeout: 15_000 });
+    }
     // A field a surface only reaches its interesting state through typing — the
     // set panel narrows its list as you type, and an empty field shows every set.
     if (step.fill !== undefined) {

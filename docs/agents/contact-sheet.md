@@ -52,6 +52,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - **`waitToast`** waits for a deck toast by its kind (`receipt`, `refusal`, `token-refusal`, `quick-add-failed`). Deck
   toasts render into the deck toast stack the shell hosts, outside `<main>` (small items 3, item 8), so a page-scoped
   `wait: "[data-toast]"` never finds them; like `waitNote`, this one wait is not page-scoped.
+- **`clickToast`** presses a control on a deck toast: `{ "kind": "receipt", "name": "^Undo adding " }` (`name` a regex,
+  as `clickRole`'s is; `role` defaults to `button`). Scoped to the deck toast stack and that kind, for the same reason as
+  `waitToast`: `clickRole` searches only `<main>`, and the toast is not in it. It runs after `clickRole` and before
+  `fill`/`wait`, so a step can press Undo and wait for the dialog it opens.
 - **`THEME=<key>`** draws every row in one theme (`amonkhet`, `kamigawa`, `ixalan`, `phyrexia`, `eldraine`,
   `kaldheim`). It sets the `the99_theme` cookie the server reads, on the context before the first page loads, and
   writes the run into `<out>/<key>/`, so one theme's pass never overwrites another's. Unset, every run draws Low Sun

@@ -19,6 +19,7 @@ import {
 import { pendingRouteFor, type LoadingKey } from "../../lib/shell/pending-routes";
 import { Report, targetOf, useReportPending, type PendingScope, type Reporter } from "./pending-report";
 import { PendingOverlay } from "./pending-overlay";
+import { COVERED_WITH_MAIN } from "./covered-layer";
 import { useOrphanGuard } from "./orphan-guard";
 import { ShellLoading } from "./shell-loading";
 import { setRoutePath } from "../../lib/url/mirror";
@@ -236,6 +237,9 @@ export function NavigationPendingProvider({ children, stall = null }: { children
   // `aria-busy`/`inert` forever once `overlayBox` changed out from under it: the effect only
   // ever cleared whatever it currently pointed to, never what it had just stopped pointing to.
   const busyElRef = useRef<HTMLElement | null>(null);
+  // The page's layers outside <main> (`COVERED_WITH_MAIN`, the deck toast stack) made inert with it, kept so the run's
+  // end clears exactly the ones it set.
+  const coveredRef = useRef<HTMLElement[]>([]);
   useEffect(() => {
     const prev = busyElRef.current;
     // Written to the plain ref immediately, and every mutation below reads it back from
@@ -253,6 +257,14 @@ export function NavigationPendingProvider({ children, stall = null }: { children
       next.setAttribute("aria-busy", "true");
       next.inert = true;
     }
+    // Only when the screen covers <main> itself: a run confined to a registered scope leaves the rest of the page live.
+    // Written as the attribute (what `.inert` reflects to in a browser), which a toast clock's `closest("[inert]")` reads.
+    for (const el of coveredRef.current) el.removeAttribute("inert");
+    coveredRef.current =
+      next && next === mainRef.current
+        ? Array.from(document.querySelectorAll<HTMLElement>(`[${COVERED_WITH_MAIN}]`))
+        : [];
+    for (const el of coveredRef.current) el.setAttribute("inert", "");
   }, [busy, overlayBox]);
 
   useEffect(() => () => {

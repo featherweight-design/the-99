@@ -11,6 +11,7 @@
 // gets one made on the body.
 
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 
 /** The root custom property the stack's floor reads: how far the bar at the page's foot stands above the slot. */
 export const DECK_FOOT_VAR = "--deck-foot-h";
@@ -28,7 +29,9 @@ export const DECK_STACK_CLASS =
 
 /** The host the shell draws once, empty: deck toasts portal into it. */
 export function DeckToastStackHost() {
-  return <div {...{ [HOST]: "" }} className={DECK_STACK_CLASS} />;
+  // Part of the page under <main>, though drawn outside it: a navigation's screen makes it inert with <main>, so a
+  // receipt cannot start an old page's mutation over the loading screen, and its clock stops (`covered-layer.ts`).
+  return <div {...{ [HOST]: "", [COVERED_WITH_MAIN]: "" }} className={DECK_STACK_CLASS} />;
 }
 
 /** The stack to portal a deck toast into (only ever asked for in the browser: a deck toast mounts from a press). */
@@ -37,6 +40,7 @@ export function deckToastStack(): HTMLElement {
   if (found) return found;
   const made = document.createElement("div");
   made.setAttribute(HOST, "");
+  made.setAttribute(COVERED_WITH_MAIN, "");
   made.className = DECK_STACK_CLASS;
   document.body.appendChild(made);
   return made;
