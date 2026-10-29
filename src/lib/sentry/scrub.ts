@@ -12,10 +12,14 @@ const REDACTED = "[redacted]";
 // The admin account page is addressed by a raw Clerk user id, the one route that is.
 const TOKEN_PATHS: RegExp[] = [/(\/friend\/)[^/?#]+/g, /(\/join\/)[^/?#]+/g, /(\/admin\/accounts\/)[^/?#]+/g];
 
+/** Any link token in a string replaced, everything else kept. Product analytics uses it too (`lib/analytics`). */
+export function redactLinkTokens(value: string): string {
+  return TOKEN_PATHS.reduce((acc, re) => acc.replace(re, `$1${REDACTED}`), value);
+}
+
 /** A URL or route name with the query and hash cut off and any link token replaced. */
 export function scrubUrl(value: string): string {
-  const cut = value.split(/[?#]/, 1)[0];
-  return TOKEN_PATHS.reduce((acc, re) => acc.replace(re, `$1${REDACTED}`), cut);
+  return redactLinkTokens(value.split(/[?#]/, 1)[0]);
 }
 
 // Navigation and clicks say how a reader got to the error. Console, fetch and XHR breadcrumbs carry

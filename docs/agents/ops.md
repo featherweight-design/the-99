@@ -106,6 +106,21 @@ ERRORS ONLY: no tracing, no replay, no logs. `@sentry/nextjs` is pinned exactly 
 
 Never put any of them in `.env`.
 
+## Product analytics (PostHog)
+
+Usage basics only: pageviews (App Router navigations included, `capture_pageview: "history_change"`) and autocaptured clicks. No session replay, `respect_dnt`, person profiles for signed-in readers only. posthog-js never records what is typed into an input. `posthog-js` is pinned exactly (1.412.1, the version Concert Crawl runs).
+
+- **Dormant unless BOTH gates pass**: `NEXT_PUBLIC_POSTHOG_KEY` is set, and the page is served from `the-99.dev` or `www.the-99.dev` (`PRODUCTION_HOSTNAMES`, `src/lib/analytics/posthog.ts`). The hostname gate exists because staging is its own Vercel project and could be handed the key by mistake. A dormant build never downloads the SDK: it is a dynamic `import()`.
+- **Where it runs.** `<Analytics />` (`src/components/shell/analytics.tsx`) in the root layout: once Clerk has loaded (never before, or a browser's first events would go to whoever it last identified), starts PostHog and, in the same task, identifies a signed-in reader by Clerk id with `name` (the display name, never an email), and resets on sign-out (an identified browser only, so a signed-out load keeps its anonymous id). Every event carries `release`, the short `VERCEL_GIT_COMMIT_SHA`, inlined by `next.config.ts`. Nothing here may reach a model prompt.
+- **What leaves.** Every event passes `redactCapture` (`before_send`): a friend, join or admin-account path token is replaced in every string (`redactLinkTokens`, shared with Sentry's scrubber), a URL loses its query and hash, and `$elements_chain` is redacted value by value. No `/flags` request (`advanced_disable_flags`): it would carry the landing URL outside `before_send`. No autocapture on `/admin`, whose rows carry other readers' Clerk ids.
+- **CSP.** With a key set, the ingest host and its `-assets` twin go in `script-src` and `connect-src` of the report-only policy (`posthogCspHosts`, at build time).
+- **Variables Hugh sets in Vercel, the production project only, Production scope, and only once the privacy wording is approved:**
+
+| Variable | Value | Sensitive |
+|---|---|---|
+| `NEXT_PUBLIC_POSTHOG_KEY` | the project API key (`phc_...`) | OFF (inlined into the browser bundle) |
+| `NEXT_PUBLIC_POSTHOG_HOST` | optional; `https://us.i.posthog.com` when unset | OFF |
+
 ## Weekly cost check (cost audit 2026-10-23)
 
 - **`.github/workflows/cost-check.yml`**, Mondays 14:23 UTC and on dispatch, READ-ONLY, dormant until the repository variable `COST_CHECK_ENABLED` is `'true'`. It runs `scripts/cost-check.mjs`: Vercel billing charges (this week against last, team-wide) and deployment counts per project, Neon project and branch counters and endpoints. It writes the job summary and goes red when a rule in `scripts/lib/cost-thresholds.mjs` fires, or when either source cannot be read (never silently green).
