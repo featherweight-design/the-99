@@ -101,12 +101,12 @@ describe("addToCollection", () => {
       kind: "add",
       items: [{ oracleId: ORACLE, setCode: "lea", collectorNumber: "1", finish: "nonfoil", quantity: 2, scryfallId: PRINTING, condition: null }],
     });
-    expect(optsOf(stub.apply.mock.calls[0])).toEqual({ id: ACTION });
+    expect(optsOf(stub.apply.mock.calls[0])).toEqual({ id: ACTION, placements: true });
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
     expect(stub.warm).toHaveBeenCalledWith("user_1", RESOLVED);
   });
 
-  it("asks the write where the copies went, and says, only with ADDED_COPY_ENABLED on", async () => {
+  it("asks the write where the copies went, and says", async () => {
     catalogHolds();
     const after = { owned: 2, hard: 1, soft: 0, free: 1, claims: [{ id: "d1", name: "HD - Brago", quantity: 1, mature: true, pending: false, commander: false, since: 1 }] };
     stub.apply.mockResolvedValue({
@@ -114,21 +114,12 @@ describe("addToCollection", () => {
       entry: { id: ACTION, rows: [{ oracleId: ORACLE, name: "Sol Ring" }] },
       raised: { [ORACLE]: { after, brought: 2, reservations: [] } },
     });
-    try {
-      process.env.ADDED_COPY_ENABLED = "true";
-      const out = await addToCollection(ACTION, [line]);
-      expect(optsOf(stub.apply.mock.calls[0])).toEqual({ id: ACTION, placements: true });
-      expect(out).toMatchObject({ applied: { id: ACTION, placed: [{
-        oracleId: ORACLE, cardName: "Sol Ring",
-        went: { kind: "held", decks: [{ deckId: "d1", copies: 1, picked: false }], copies: 2, ownedBefore: 0 },
-      }] } });
-      delete process.env.ADDED_COPY_ENABLED;
-      stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION, rows: [] } });
-      expect(await addToCollection(ACTION, [line])).toEqual({ applied: { id: ACTION } });
-      expect(optsOf(stub.apply.mock.calls[1])).toEqual({ id: ACTION });
-    } finally {
-      delete process.env.ADDED_COPY_ENABLED;
-    }
+    const out = await addToCollection(ACTION, [line]);
+    expect(optsOf(stub.apply.mock.calls[0])).toEqual({ id: ACTION, placements: true });
+    expect(out).toMatchObject({ applied: { id: ACTION, placed: [{
+      oracleId: ORACLE, cardName: "Sol Ring",
+      went: { kind: "held", decks: [{ deckId: "d1", copies: 1, picked: false }], copies: 2, ownedBefore: 0 },
+    }] } });
   });
 
   it("settleCollectionWrite invalidates inside the action, and is refused with the switch off", async () => {

@@ -20,7 +20,7 @@
 // `--added-copy` (plan `plan-added-copy-2026-10-12`): four more confirmed receipts, each a version-4
 // payload with `went`, and the claims behind their lines so each Change opens a live chooser. US5
 // is US1 with Change pressed and a deck picked, which the inventory does; US6 (kept free) was ruled
-// out with Keep it free on 2026-10-12. Photographed only with `ADDED_COPY_ENABLED` and
+// out with Keep it free on 2026-10-12. Photographed only with
 // `COLLECTION_EDIT_ENABLED` on: off, a version-4 receipt draws as version 3 by design.
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";

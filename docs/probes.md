@@ -87,7 +87,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   is the senior deck's, a card only a brew wants is a `soft` read, a card no deck wants carries nothing, deleting the deck
   afterwards leaves the stored row alone, and a save made without the placement read stores none. It writes under a
   per-run user_id and deletes it in a `finally`; refused on staging and production. The upload check passes
-  `ADDED_COPY_ENABLED` and `COLLECTION_EDIT_ENABLED` in the env it hands the receipt, as the confirm's switches would.
+  `COLLECTION_EDIT_ENABLED` in the env it hands the receipt, as the confirm's switches would.
 - `pnpm probe:search-clear` presses a search field's ✕ ONCE with a real pointer (a touch tap at phone width, a
   mouse click at desktop) and reports the field's value, whether it is still the focused element, and whether the ✕
   held its box (`PROBE_BASE`, a signed-in `+clerk_test` user like its siblings; mutate-free, it only types into a

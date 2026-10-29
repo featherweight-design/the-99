@@ -485,7 +485,7 @@ function AddMode({
       const out = await addToCollection(attempt.current.id, payload);
       if ("applied" in out) {
         const s = summarize(lines);
-        // Where each copy went, when the save said (`ADDED_COPY_ENABLED`): absent, nothing is drawn.
+        // Where each copy went, when the save said (collection edit on): absent, nothing is drawn.
         const placed = out.applied.placed;
         setSaved({ copies: s.copies, cards: s.lines, entryId: out.applied.id, went: placed ? { lines, placed } : null });
         setPhase("saved");

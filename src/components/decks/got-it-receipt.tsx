@@ -42,7 +42,7 @@ export type GotItWritten<F = ReceiptFacts> = {
 /**
  * The receipt's sentence after the detail line: who took the copy, or what is still needed.
  *
- * With `went` (where an added copy goes, `ADDED_COPY_ENABLED`) it is never silent: a copy this deck
+ * With `went` (where an added copy goes) it is never silent: a copy this deck
  * took says so (`self`), a loose copy this brew reads says so and names the other brews reading it
  * (`softSelf`), and a copy no deck needed is free (`nobody`). Without it, the shipped rule: nothing
  * once the deck needs no more.

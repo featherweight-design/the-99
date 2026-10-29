@@ -374,7 +374,7 @@ describe("Undo", () => {
   });
 });
 
-describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
+describe("where an added copy goes", () => {
   const OTHER = "22222222-2222-4222-8222-222222222222";
   type Claimant = ContestedCard["claimants"][number];
   const claimant = (deckId: string, deckName: string, over: Partial<Claimant> = {}): Claimant => ({

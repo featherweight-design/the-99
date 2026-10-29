@@ -42,7 +42,7 @@ export type ReceiptFacts = {
   /** Copies the source deck still needs, from its own vantage: the figure its Shopping row draws. */
   stillNeeds: number;
   /**
-   * Where an added copy goes (`ADDED_COPY_ENABLED` only, so absent with the switch off): every
+   * Where an added copy goes (collection edit on only, so absent otherwise): every
    * deck the copy went to, the source deck included, and the brews that read it as theirs.
    */
   went?: Placement;

@@ -62,7 +62,7 @@ export const gotItCopy = {
       `${n(decks)} older decks were short too, so the copies went there first. This deck still needs ${n(need)}.`,
     partial: (need: number) => `The deck still needs ${n(need)}.`,
     /**
-     * Where an added copy goes (`ADDED_COPY_ENABLED`). Placeholders pending /copy-review, from
+     * Where an added copy goes (collection edit on). Placeholders pending /copy-review, from
      * the handoff's `added-copy · copy strings.ts`. `claimed` / `claimedMany` are unchanged.
      */
     self: "It goes to this deck.",

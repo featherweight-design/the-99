@@ -130,10 +130,10 @@ describe("confirmUpload", () => {
 
   it("hands the write and the receipt the reader's resolved env, not the environment", async () => {
     // The environment has every switch the two read off and the reader's env turns them on: the
-    // receipt's ADDED_COPY_ENABLED and both claim reads' NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED.
+    // receipt's COLLECTION_EDIT_ENABLED and both claim reads' NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED.
     // Left to default (`process.env`), either would decide the other way, so the env is checked by identity.
-    for (const k of ["ADDED_COPY_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED"]) vi.stubEnv(k, "false");
-    const env = envViewWith({ ADDED_COPY_ENABLED: "true", NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    for (const k of ["COLLECTION_EDIT_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED"]) vi.stubEnv(k, "false");
+    const env = envViewWith({ COLLECTION_EDIT_ENABLED: "true", NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
     vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
     stub.ledger = true;
     stub.apply.mockResolvedValue(applied("upload_replace"));

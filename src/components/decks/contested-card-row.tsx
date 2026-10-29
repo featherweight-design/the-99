@@ -167,7 +167,7 @@ export function ContestedCardRow({
     disabled?: boolean;
   };
   /**
-   * Where an added copy goes (`ADDED_COPY_ENABLED`, read by the page): senior decks that keep their
+   * Where an added copy goes (collection edit on, read by the page): senior decks that keep their
    * copies whatever the pick does fold into one line that is never an option, and a brew reading a loose copy says
    * `can use it` rather than `gets it`. Off, the row is exactly what it was.
    */

@@ -124,7 +124,7 @@ export type ArrivalsSummary = {
    * 3 adds `nowShort`. A version-2 receipt has none, and the reader treats its absence as no deck
    * named, which is what it was written as: those receipts never said.
    *
-   * 4 adds `went`, written only while `ADDED_COPY_ENABLED` is on. A version-2 or 3 receipt has
+   * 4 adds `went`, written only while collection edit is on. A version-2 or 3 receipt has
    * none, and renders its `No longer to buy` rows per (deck, card) as it always did, with no Change.
    */
   version: 2 | 3 | 4;
@@ -163,7 +163,7 @@ export type ArrivalsInput = {
   deckNames: Record<string, string>;
   /**
    * Who took each arrived card's copies (`placementsOf`), keyed by oracle id. Passed only while
-   * `ADDED_COPY_ENABLED` is on; absent, the receipt is a version 3, byte for byte.
+   * collection edit is on; absent, the receipt is a version 3, byte for byte.
    */
   placements?: Record<string, Placement>;
 };

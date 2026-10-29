@@ -28,7 +28,6 @@ import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
 import { preconsEnabled } from "../precons/flag";
 import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
-import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { homeFeedEnabled } from "../feed/flag";
@@ -51,6 +50,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   HELP_PANEL_ENABLED: () => true,
   // Card scanning ended in the collection's add, so it was on exactly when collection edit is.
   CARD_SCAN_ENABLED: collectionEditEnabled,
+  // Added copy was on exactly when collection edit is (every surface that reports an add is that line's).
+  ADDED_COPY_ENABLED: collectionEditEnabled,
   NEVER_CUT_ENABLED: neverCutEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
@@ -77,7 +78,6 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Already reads PRECONS_ENABLED: the Announced group and the banner both live under Precons.
   UPCOMING_PRECONS_ENABLED: upcomingPreconsEnabled,
   DECK_NOTES_ENABLED: deckNotesEnabled,
-  ADDED_COPY_ENABLED: addedCopyEnabled,
   // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
   TUNING_HUB_ENABLED: tuningHubEnabled,
   LINEUP_ENABLED: lineupEnabled,

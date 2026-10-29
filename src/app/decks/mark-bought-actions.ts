@@ -14,7 +14,7 @@ import { requireDeck } from "../../lib/decks/read";
 import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
 import { loadDeckBuyRows } from "../../lib/decks/availability-query";
 import { buildContestedCard, loadContestedCard, type ContestedCard } from "../../lib/collection/summary-read";
-import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
+import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { placementsOf } from "../../lib/decks/placements";
 import type { AssignRefusal } from "../../lib/decks/assign";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
@@ -121,7 +121,7 @@ export async function markBought(
           // Where the copy went, and the chooser Change opens on it, both from the write's own
           // snapshot (taken under its locks), so the receipt says what the write did and the
           // chooser opens with no second read. Only while the switch is on.
-          receipt: facts && snaps && addedCopyEnabled(env)
+          receipt: facts && snaps && collectionEditEnabled(env)
             ? {
                 ...facts,
                 went: placementsOf(snaps.before, snaps.after),

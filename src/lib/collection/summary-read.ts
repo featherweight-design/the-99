@@ -92,7 +92,7 @@ export type SummaryView = {
   contested: ContestedCard[];
   /**
    * The chooser behind each version-4 row's Change, keyed by oracle id: any card with a claimant,
-   * contested or not. Read only while `ADDED_COPY_ENABLED` is on; empty otherwise, and for a
+   * contested or not. Read only while collection edit is on; empty otherwise, and for a
    * version 2 or 3 receipt, which draws no Change.
    */
   chooser: Record<string, ContestedCard>;

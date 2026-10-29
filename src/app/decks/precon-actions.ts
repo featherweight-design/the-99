@@ -14,7 +14,6 @@ import { PRECON_ADDED_PARAM, PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "
 import { preconsEnabled } from "../../lib/precons/flag";
 import { startPreconDeck } from "../../lib/precons/start";
 import { startPreconOwned as startOwned, type PreconStartResult } from "../../lib/precons/start-owned";
-import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { warmCommanderScores } from "../../lib/recs/warm";
@@ -55,7 +54,7 @@ export async function startPreconOwned(fileName: string, rawName: string, action
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
   if (!isUuid(actionId)) throw new Error("bad action id");
-  const result = await startOwned(userId, fileName, name, actionId, env, addedCopyEnabled(env));
+  const result = await startOwned(userId, fileName, name, actionId, env, true);
   if (!result.ok) return result;
   revalidateClaims(result.deckId, userId);
   // The add's entry rides the redirect so the deck page can draw its receipt; it is only a claim there (`readPreconAddReceipt`).
@@ -109,7 +108,7 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
       if (one === null) refused.push({ rowFile: String((r as Record<string, unknown>).fileName), ok: false });
       else boxes.push(...one);
     }
-    const placements = addedCopyEnabled(env);
+    const placements = collectionEditEnabled(env);
     added = [...refused, ...(boxes.length > 0 ? await runPickAdds(boxes, (fileName, actionId, name) => startOwned(userId, fileName, name, actionId, env, placements)) : [])];
   }
   const outcomes = [...split.recovered, ...added];

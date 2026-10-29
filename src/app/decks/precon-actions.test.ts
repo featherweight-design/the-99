@@ -9,7 +9,7 @@ vi.mock("../../lib/switches/request", async () => {
 
 const state = vi.hoisted(() => ({
   selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
-  enabled: true, collectionEdit: true, addedCopy: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
+  enabled: true, collectionEdit: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
   invalidated: [] as string[], warmed: [] as string[], committed: [] as unknown[], carried: [] as string[],
   line: true, picking: false, picks: [] as unknown[][], pickResult: ((): unknown => ({ ok: true, entryId: "e" })) as (f: string) => unknown,
 }));
@@ -46,7 +46,6 @@ vi.mock("../../lib/precons/added", async (importOriginal) => ({
   committedPreconAdds: async (_user: string, ids: string[]) => { committed.asked.push(ids); return committed.map; },
   preconAddDecks: async () => committed.decks,
 }));
-vi.mock("../../lib/collection/added-copy-flag", () => ({ addedCopyEnabled: () => state.addedCopy }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: (id: string) => state.invalidated.push(id) }));
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async (id: string) => { state.warmed.push(id); } }));
 // Which starts carry over in their own `after()`: only Precons I own, the one with no arrival (small items 5).
@@ -77,7 +76,7 @@ beforeEach(() => {
   state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; state.committed = [];
   state.line = true; state.picking = false; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}`, deckId: `deck-${f}` });
   committed.map = new Map(); committed.decks = new Map(); committed.asked = [];
-  state.enabled = true; state.collectionEdit = true; state.addedCopy = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
+  state.enabled = true; state.collectionEdit = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
   state.carried = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
@@ -175,13 +174,10 @@ describe("startPreconOwned", () => {
   it("starts for the signed-in player under the action id, and lands on the deck carrying the add's entry", async () => {
     state.addResult = STARTED;
     await expect(startPreconOwned("MultiverseReforged_FRC", "  Mine ", ACTION)).rejects.toThrow(`REDIRECT:/decks/deck-9?from=precon&added=${ENTRY}`);
-    state.addedCopy = false;
-    await expect(startPreconOwned("MultiverseReforged_FRC", "Mine", ACTION)).rejects.toThrow(/REDIRECT/);
     expect(state.addCalls.map(([user, file, name, id, , placements]) => [user, file, name, id, placements])).toEqual([
       ["user_1", "MultiverseReforged_FRC", "Mine", ACTION, true],
-      ["user_1", "MultiverseReforged_FRC", "Mine", ACTION, false],
     ]);
-    expect(state.revalidated).toEqual(["deck-9", "deck-9"]);
+    expect(state.revalidated).toEqual(["deck-9"]);
   });
 
   it("invalidates the collection's readers and warms the scores after a start", async () => {

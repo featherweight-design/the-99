@@ -16,7 +16,6 @@ import {
 } from "../../lib/collection/write";
 import { warmCommanderScores } from "../../lib/recs/warm";
 import { isUuid } from "../../lib/uuid";
-import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
 import { placedOf, type AddedPlacement } from "../../lib/collection/add-placements";
 
 /**
@@ -106,7 +105,7 @@ export type { AddedPlacement };
 
 export type AddOutcome =
   /**
-   * `placed` only with `ADDED_COPY_ENABLED` on, in no order the sheet relies on: `whereItWent`
+   * `placed` always, in no order the sheet relies on: `whereItWent`
    * draws the rows in the sheet's own order.
    */
   | { applied: { id: string; placed?: AddedPlacement[] } }
@@ -134,8 +133,7 @@ export async function addToCollection(actionId: string, lines: unknown): Promise
     if (!printing || !printing.finishes.includes(l.finish)) throw new Error("not a catalog printing");
     return { ...l, scryfallId: printing.scryfallId, condition: null };
   });
-  const placements = addedCopyEnabled(env);
-  const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId, env, ...(placements ? { placements } : {}) });
+  const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId, env, placements: true });
   const done = settled(userId, env, result);
   // Where each copy went, read inside the write. A retry that found the save applied has no read of
   // its own (the first request's snapshot is gone), so it says nothing rather than guess.

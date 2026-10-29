@@ -25,7 +25,7 @@ import type { PendingItem } from "./pending";
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
 import { holdsCopy } from "../decks/availability";
 import type { Placement } from "../decks/placements";
-import { addedCopyEnabled } from "./added-copy-flag";
+import { collectionEditEnabled } from "./edit-flag";
 
 /** Deck names, frozen for the same reason: a deck deleted later still has to render its row. */
 export async function deckNamesFor(userId: string): Promise<Record<string, string>> {
@@ -112,7 +112,7 @@ export async function writeArrivalsReceipt(args: {
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
   /**
-   * The reader's resolved switches (`requestSwitchEnv`), which the confirm passes: ADDED_COPY_ENABLED decides
+   * The reader's resolved switches (`requestSwitchEnv`), which the confirm passes: COLLECTION_EDIT_ENABLED decides
    * write version 4's `went` (where each arrived card's copies went; off, the receipt is the version 3
    * it always was), and every claim read below takes it for the claim model's `locked` key and pending
    * clause. Required since admin PR 7a: a probe outside a request passes `process.env` itself.
@@ -133,7 +133,7 @@ export async function writeArrivalsReceipt(args: {
   // arrived copy to a deck the availability never saw holding it, or keep A's "No longer to buy"
   // row beside a line saying the copy went to B. Repeatable read fixes all three at the first
   // statement. Off, the money rows are read as they always were.
-  const addedCopyOn = addedCopyEnabled(env);
+  const addedCopyOn = collectionEditEnabled(env);
   type Reservations = Map<string, { deckId: string; copies: number }[]>;
   type Read = { buyAfter: Awaited<ReturnType<typeof loadDeckBuyRows>>; availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations };
   const read: Read = !addedCopyOn
