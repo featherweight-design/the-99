@@ -3,6 +3,10 @@ import { announcementPosts, isAnnouncementPostUrl, parseSitemap } from "./sitema
 import { fixture } from "./__fixtures__/load";
 
 describe("parseSitemap", () => {
+  it("leaves an out-of-range or unknown entity as written instead of throwing", () => {
+    const xml = "<urlset><url><loc>https://magic.wizards.com/en/news/announcements/a&#x110000;b&constructor;</loc><lastmod>2026-10-29</lastmod></url></urlset>";
+    expect(parseSitemap(xml)[0]?.url).toBe("https://magic.wizards.com/en/news/announcements/a&#x110000;b&constructor;");
+  });
   it("reads every <url> of the real sitemap with its lastmod", () => {
     const entries = parseSitemap(fixture("sitemap.xml"));
     expect(entries).toHaveLength(26);

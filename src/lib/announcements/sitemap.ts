@@ -31,9 +31,9 @@ function decodeXml(text: string): string {
     .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, ref: string) => {
       if (ref[0] === "#") {
         const code = ref[1] === "x" || ref[1] === "X" ? parseInt(ref.slice(2), 16) : parseInt(ref.slice(1), 10);
-        return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
+        return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : whole;
       }
-      return XML_ENTITIES[ref.toLowerCase()] ?? whole;
+      return Object.hasOwn(XML_ENTITIES, ref.toLowerCase()) ? XML_ENTITIES[ref.toLowerCase()] : whole;
     })
     .trim();
 }

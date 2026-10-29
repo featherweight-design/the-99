@@ -21,7 +21,7 @@ export function decodeHtmlEntities(text: string): string {
       const code = hex ? parseInt(ref.slice(2), 16) : parseInt(ref.slice(1), 10);
       return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : whole;
     }
-    if (ref in NAMED) return NAMED[ref];
+    if (Object.hasOwn(NAMED, ref)) return NAMED[ref];
     const accent = /^([a-z])(acute|grave|circ|uml|tilde|cedil|ring)$/i.exec(ref);
     if (accent) return (accent[1] + ACCENTS[accent[2].toLowerCase()]).normalize("NFC");
     return whole;

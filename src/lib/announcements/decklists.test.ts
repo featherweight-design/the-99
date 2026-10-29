@@ -36,7 +36,7 @@ describe("parseDecklists on real posts", () => {
     expect(decks.every((d) => d.cardCount === 100 && d.commanders.length === 1)).toBe(true);
   });
 
-  it("the whole page parses the same as the body: the script's escaped copy never matches", () => {
+  it("the whole page yields no decks: the script's escaped copy never matches, only the rendered body does", () => {
     const slug = "star-trek-commander-decklists";
     expect(parseDecklists(fixture(`${slug}.html`)).decks).toHaveLength(0); // trimmed fixture keeps only the script
     expect(parseDecklists(body(slug).bodyHtml).decks).toHaveLength(3);
@@ -80,7 +80,7 @@ describe("parseDecklists line rules", () => {
     ]);
   });
 
-  it("keeps a bracket that is not an entry id, and a name that starts with a digit word", () => {
+  it("keeps a bracket that is not an entry id", () => {
     expect(deck("1 Ransom Note (Clues)\n1 B.F.M. [Left]").cards.map((c) => c.name)).toEqual(["Ransom Note (Clues)", "B.F.M. [Left]"]);
   });
 
