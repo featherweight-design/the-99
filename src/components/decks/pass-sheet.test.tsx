@@ -56,7 +56,7 @@ describe("PassSheet (one pass)", () => {
   it("keeps the lead's placed figure when a ✕ has taken a card the server has not counted", () => {
     // 3 drawn, 4 live on the server: one removal in flight, so the pass still placed 4.
     const view = draw({ ...pass("top_off", 4), kept: 0 });
-    expect(view.container.textContent).toContain("4 cards");
+    expect(view.container.textContent).toContain("4 placed");
   });
 
   it("drops a card the player kept from the sheet and the count, and reports it as kept", () => {

@@ -147,7 +147,7 @@ describe("BuilderShell — the pass sheet (deck messages PR 3)", () => {
     const dialog = sheet();
     expect(dialog).toHaveAccessibleName(ledger.sheetTitle(2));
     expect(within(dialog).getByText(ledger.sheetLabel({ kind: "top_off", ordinal: 1 }))).toBeInTheDocument();
-    expect(within(dialog).getByText(/you chose from the last 5/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/you chose them from the last 5/)).toBeInTheDocument();
     // `DecklistRow` itself: the row's own remove press, named as in the list.
     expect(within(dialog).getByRole("button", { name: addPanelCopy.row.removeAria("Card 0") })).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: addPanelCopy.row.removeAria("Card 1") })).toBeInTheDocument();

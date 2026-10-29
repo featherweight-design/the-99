@@ -243,16 +243,20 @@ function LedgerLine({
   const label = fillPassLabel(pass);
   const isSeed = pass.kind === "seed";
   const n = String(pass.live);
-  const sentence = lineSentence(pass, buy);
+  // Nothing still here: a quiet, dashed line with no Show and no Undo (#477).
+  const gone = passEnded(pass) !== null;
+  const sentence = lineSentence(pass, buy, gone);
   // The newest line's control carries the accent, as the line above it does.
-  const lit = newest;
+  const lit = newest && !gone;
 
   return (
     <div
       className="flex flex-col md:flex-row md:items-center md:gap-[11px] md:min-h-[34px] rounded-[7px] px-[10px] py-[9px] md:px-[11px] md:py-0"
       style={{
-        background: newest ? "var(--elevated-hover)" : "var(--surface)",
-        border: `1px solid ${newest ? "var(--accent-shadow)" : "var(--border)"}`,
+        background: gone ? "transparent" : newest ? "var(--elevated-hover)" : "var(--surface)",
+        border: gone
+          ? "1px dashed var(--border-strong)"
+          : `1px solid ${newest ? "var(--accent-shadow)" : "var(--border)"}`,
       }}
     >
       {/* `md:contents` rather than a second mount: desktop flattens these
@@ -262,14 +266,14 @@ function LedgerLine({
       <div className="flex items-baseline gap-[8px] md:contents">
         <span
           className="flex-none md:w-[66px] font-mono text-[9.5px] tracking-[0.1em] uppercase whitespace-nowrap"
-          style={{ color: newest ? "var(--accent-text)" : "var(--fg-faint)" }}
+          style={{ color: gone ? "var(--fg-locked)" : newest ? "var(--accent-text)" : "var(--fg-faint)" }}
         >
           {label}
         </span>
         {/* The seed names its reversal instead of growing a button for it. On
             the phone that goes here, opposite the label; on desktop it takes
             the undo column below. */}
-        {isSeed && (
+        {isSeed && !gone && (
           <span
             className="md:hidden ml-auto font-mono text-[10px] whitespace-nowrap"
             style={{ color: "var(--fg-locked)" }}
@@ -281,14 +285,15 @@ function LedgerLine({
 
       <p
         className="m-0 mt-[5px] md:mt-0 md:flex-auto md:min-w-0 text-[12px] md:text-[12.5px] leading-[1.5]"
-        style={{ color: "var(--fg-body)" }}
+        style={{ color: gone ? "var(--fg-faint)" : "var(--fg-body)" }}
       >
         {sentence}
       </p>
 
       {/* The seed's row holds one control rather than two, and the design sets
-          it a point tighter under the sentence than a full pair. */}
-      <div
+          it a point tighter under the sentence than a full pair. A line with
+          nothing still here holds none. */}
+      {!gone && <div
         className={`flex items-center gap-[10px] md:contents ${
           isSeed ? "mt-[7px]" : "mt-[8px]"
         }`}
@@ -341,72 +346,65 @@ function LedgerLine({
             </GhostButton>
           )}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
 
+/** How a pass with nothing still here ended. Nothing kept means it was undone (or every card was
+ *  removed by hand, which the record cannot tell apart); anything kept means the player took the
+ *  cards. Null while any card is still here. Pure over the counts, so the pass sheet's optimistic
+ *  summary reads it the same way. Lives here rather than in `fill-passes.ts` for the same reason as
+ *  `fillPassLabel`: that module reaches for the database. */
+export function passEnded(p: Pick<FillPassSummary, "live" | "kept">): "undone" | "kept" | null {
+  if (p.live > 0) return null;
+  return p.kept > 0 ? "kept" : "undone";
+}
+
 /**
- * The line's sentence, with its leading count weighted and any recount clause
- * dropped to `--fg-locked`.
+ * The line's sentence (#477). Every line leads with two figures in `--fg` 600: what the pass placed
+ * and what of it is still here. The still-here figures of all lines sum to the header.
  *
- * A recount REPLACES the base sentence rather than joining it: "68 cards · 5
- * now yours" is what the pass holds now, and appending it to "68 cards: the
- * roles and the mana base, 7 to buy." would state the same 68 twice and then
- * quote a buy figure for cards that have since left.
- *
- * A recount also leads with what the pass PLACED, not with what survives. The
- * pass put 68 cards down; five of them being yours now does not retract that,
- * and a line that dropped to 63 would read as though the app had changed its
- * mind about the fill. The undo beside it still counts survivors, because that
- * is the number it would remove.
+ * What follows is `--fg-locked` after a `·` (kept and removed, or `undone`), or a plain clause after
+ * a colon (the seed's and a top-off's description). A recount REPLACES the description rather than
+ * joining it: quoting a buy figure for cards that have since left would state a cost that is gone.
+ * The undo and Show beside the line count survivors, because that is what they act on.
  */
-export function lineSentence(pass: FillPassSummary, buy: number) {
-  const live = String(pass.live);
+export function lineSentence(pass: FillPassSummary, buy: number, gone = false) {
   const placed = String(pass.live + pass.kept + pass.removed);
-  const recount = recountText(pass, placed);
-  const text = recount ?? baseText(pass, live, buy);
-  const [head, clause] = splitOnce(text, " · ");
+  const here = pass.live === 0 ? null : String(pass.live);
+  const lead = here === null ? ledger.leadNone(placed) : ledger.lead(placed, here);
+  const quiet = quietText(pass);
   return (
     <>
-      <Weighted text={head} count={recount ? placed : live} />
-      {clause != null && (
-        <span style={{ color: "var(--fg-locked)" }}>{" · "}{clause}</span>
+      <span className="font-semibold" style={{ color: gone ? "var(--fg-muted)" : "var(--fg)" }}>{lead}</span>
+      {quiet != null ? (
+        <span style={{ color: "var(--fg-locked)" }}>{" · "}{quiet}</span>
+      ) : (
+        <>{": "}{baseText(pass, buy)}</>
       )}
     </>
   );
 }
 
-function recountText(pass: FillPassSummary, placed: string): string | null {
+/** The quiet clause after the `·`, or null for an untouched line (which takes the description). */
+function quietText(pass: FillPassSummary): string | null {
   if (pass.kept > 0 && pass.removed > 0)
-    return ledger.passRecountedBoth(placed, String(pass.kept), String(pass.removed));
-  if (pass.kept > 0) return ledger.passRecountedKept(placed, String(pass.kept));
-  if (pass.removed > 0) return ledger.passRecounted(placed, String(pass.removed));
+    return ledger.passRecountedBoth(String(pass.kept), String(pass.removed));
+  const ended = passEnded(pass);
+  if (ended === "kept") return ledger.passAllKept(String(pass.kept));
+  if (ended === "undone") return ledger.passUndone;
+  if (pass.kept > 0) return ledger.passRecountedKept(String(pass.kept));
+  if (pass.removed > 0) return ledger.passRecounted(String(pass.removed));
   return null;
 }
 
-function baseText(pass: FillPassSummary, n: string, buy: number): string {
+function baseText(pass: FillPassSummary, buy: number): string {
   if (pass.kind === "seed") {
-    return buy > 0 ? ledger.seedLine(n, String(buy)) : ledger.seedLineNoBuy(n);
+    return buy > 0 ? ledger.seedLine(String(buy)) : ledger.seedLineNoBuy;
   }
   const slots = String(pass.openSlots);
-  return buy > 0 ? ledger.passLine(n, slots, String(buy)) : ledger.passLineNoBuy(n, slots);
-}
-
-/** Bolds the line's own card count where it falls in the sentence. Located
- *  rather than assumed at the front: `all 27 now yours` leads with a word. */
-function Weighted({ text, count }: { text: string; count: string }) {
-  const at = text.indexOf(count);
-  if (at === -1) return <>{text}</>;
-  return (
-    <>
-      {text.slice(0, at)}
-      <span className="font-semibold" style={{ color: "var(--fg)" }}>
-        {count}
-      </span>
-      {text.slice(at + count.length)}
-    </>
-  );
+  return buy > 0 ? ledger.passLine(slots, String(buy)) : ledger.passLineNoBuy(slots);
 }
 
 /** Splits on the first occurrence only; the tail keeps any further separators. */

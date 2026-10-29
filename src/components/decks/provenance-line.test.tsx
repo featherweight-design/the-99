@@ -114,7 +114,7 @@ describe("ProvenanceLedger", () => {
       [makeCard("a", { auto: true, owned: false }), makeCard("b", { auto: true })],
       [makePass("p1", { oracleIds: ["a", "b"], openSlots: 5 })],
     );
-    expect(sentences()).toContain(ledger.passLine("2", "5", "1"));
+    expect(sentences()).toContain(`${ledger.lead("2", "2")}: ${ledger.passLine("5", "1")}`);
   });
 
   it("counts copies, not cards, in a stacked pass's buy figure", () => {
@@ -128,7 +128,7 @@ describe("ProvenanceLedger", () => {
         liveCards: [{ oracleId: "a", quantity: 4 }],
       })],
     );
-    expect(sentences()).toContain(ledger.passLine("4", "5", "4"));
+    expect(sentences()).toContain(`${ledger.lead("4", "4")}: ${ledger.passLine("5", "4")}`);
   });
 
   it("drops the buy clause when the pass bought nothing", () => {
@@ -136,7 +136,7 @@ describe("ProvenanceLedger", () => {
       [makeCard("a", { auto: true }), makeCard("b", { auto: true })],
       [makePass("p1", { oracleIds: ["a", "b"], openSlots: 5 })],
     );
-    expect(sentences()).toContain(ledger.passLineNoBuy("2", "5"));
+    expect(sentences()).toContain(`${ledger.lead("2", "2")}: ${ledger.passLineNoBuy("5")}`);
   });
 
   it("states the recount instead of the base sentence once cards have moved", () => {
@@ -144,9 +144,53 @@ describe("ProvenanceLedger", () => {
       [makeCard("a", { auto: true })],
       [makePass("p1", { oracleIds: ["a"], live: 1, kept: 1, removed: 1 })],
     );
-    // Leads with 3 — what the pass placed — not the 1 it still holds.
-    expect(sentences()).toContain(ledger.passRecountedBoth("3", "1", "1"));
-    expect(sentences().join(" ")).not.toContain("you chose from the last");
+    // Two figures: 3 placed, 1 still here, then the quiet clause in place of the description.
+    expect(sentences()).toContain(`${ledger.lead("3", "1")} · ${ledger.passRecountedBoth("1", "1")}`);
+    expect(sentences().join(" ")).not.toContain("you chose them from the last");
+  });
+
+  it("states a fully undone pass as a quiet line with no Show and no Undo", () => {
+    mount(
+      [makeCard("a", { auto: true })],
+      [
+        makePass("p1", { ordinal: 1, oracleIds: ["a"] }),
+        makePass("p2", { ordinal: 2, oracleIds: [], live: 0, kept: 0, removed: 9, liveCards: [] }),
+      ],
+    );
+    expect(sentences()).toContain(`${ledger.leadNone("9")} · ${ledger.passUndone}`);
+    expect(screen.queryByRole("button", { name: ledger.markAria("0", ledger.passLabel("2")) })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: ledger.undoAria("0", ledger.passLabel("2")) })).not.toBeInTheDocument();
+    // The live pass keeps its controls.
+    expect(screen.getByRole("button", { name: ledger.undoAria("1", ledger.passLabel("1")) })).toBeInTheDocument();
+  });
+
+  it("states a fully kept pass as all now yours", () => {
+    mount(
+      [makeCard("a", { auto: true })],
+      [
+        makePass("p1", { ordinal: 1, oracleIds: ["a"] }),
+        makePass("p2", { ordinal: 2, oracleIds: [], live: 0, kept: 9, removed: 0, liveCards: [] }),
+      ],
+    );
+    expect(sentences()).toContain(`${ledger.leadNone("9")} · ${ledger.passAllKept("9")}`);
+  });
+
+  it("makes the still-here figures sum to the header", () => {
+    const cards = [
+      makeCard("a", { auto: true, quantity: 5 }),
+      makeCard("b", { auto: true, quantity: 3 }),
+    ];
+    mount(cards, [
+      makePass("seed", { kind: "seed", ordinal: 1, oracleIds: ["a"], live: 5, liveCards: [{ oracleId: "a", quantity: 5 }] }),
+      makePass("p1", { ordinal: 1, oracleIds: ["b"], live: 3, removed: 4, kept: 2, liveCards: [{ oracleId: "b", quantity: 3 }] }),
+      makePass("p2", { ordinal: 2, oracleIds: [], live: 0, removed: 9, liveCards: [] }),
+    ]);
+    const here = sentences()
+      .map((t) => /(\d+) still here|all (\d+) still here/.exec(t))
+      .filter((m): m is RegExpExecArray => m != null)
+      .reduce((n, m) => n + Number(m[1] ?? m[2]), 0);
+    expect(screen.getByText(ledger.header("8"))).toBeInTheDocument();
+    expect(here).toBe(8);
   });
 
   it("says so when the deck predates the ledger", () => {
