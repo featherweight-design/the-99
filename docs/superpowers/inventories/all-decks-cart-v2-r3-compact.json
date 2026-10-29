@@ -1,0 +1,89 @@
+{
+  "feature": "Shopping for all decks v2, addendum R3 \u00a72 at the compact widths (companion to all-decks-cart-v2.json)",
+  "clearAbout": true,
+  "note": "Addendum R3 \u00a72: below 1000px the cart's search field reads `Search` and keeps its row (field, Filters with its badge, the 44px sort) at 390, 360 and 320, a typed query ends in an ellipsis, and the compact FilterChassis sets its chips row 16px under the controls (the result line still 10px under the chips). That last change is in the SHARED chassis, so /decks and /collection are photographed at the same widths to show it reached them and nothing else moved. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards.",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "phone-360",
+      "width": 360,
+      "height": 780
+    },
+    {
+      "label": "phone-320",
+      "width": 320,
+      "height": 640
+    }
+  ],
+  "rows": [
+    {
+      "id": "cart-badge",
+      "label": "/decks/shopping?owned=some: `Search` with the Filters badge and the sort, nothing cut; the chip 16px under the controls",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?owned=some",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "scrollTo": "[data-chassis-row=chips]",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "cart-query",
+      "label": "/decks/shopping?owned=some with a long typed query: the text ends in an ellipsis with the \u2715, the row unchanged",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?owned=some",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "Thassa's Oracle and friends",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-chassis-row=chips]",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "decks",
+      "label": "/decks: the compact chassis, its chips row 16px under the controls, the rest as before",
+      "view": "src/components/ui/filter-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "scrollTo": "[data-chassis-row=chips]",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "collection",
+      "label": "/collection: below 1000px it draws its own filter bar, not the compact FilterChassis, so the R3 chips spacing does not reach it; photographed to show nothing moved",
+      "view": "src/components/ui/filter-chassis.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    }
+  ]
+}

@@ -1124,3 +1124,241 @@ describe("the Friend filter (v2 PR 9)", () => {
     expect(cardNames()).toHaveLength(4);
   });
 });
+
+// Addendum R3 (`design_handoff_the99_all_decks_cart_v2/addendum-r3`): the failed read said inside the phone's Filters sheet
+// (§1), the compact placeholder (§2), the desktop list's fade (§3), and a reader with no friends (§4).
+describe("addendum R3", () => {
+  const original = window.matchMedia;
+  const wide = () => Object.defineProperty(window, "matchMedia", {
+    writable: true, configurable: true,
+    value: (query: string) => ({ matches: true, media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false }),
+  });
+  afterEach(() => Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: original }));
+  const sparesCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).startsWith("/api/friend-spares")).length;
+  /** The spares read waits until `land` answers it: a failure (500) or these spares. */
+  let land: (spares: unknown[] | "fail") => void = () => {};
+  const defer = () => fetchMock.mockImplementation((url: string) =>
+    url.startsWith("/api/spare-requests")
+      ? Promise.resolve({ ok: true, json: async () => ({ asks: [] }) })
+      : new Promise((res) => {
+        land = (spares) => res(spares === "fail" ? { ok: false, json: async () => null } : { ok: true, json: async () => ({ spares }) });
+      }));
+  const failure = () => screen.queryAllByRole("alert").find((el) => el.textContent?.includes(copy.failedRead.toast)) ?? null;
+  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+  const closeSheet = () => fireEvent.click(screen.getByRole("button", { name: copy.filters.show(4) }));
+  const friendGroup = () => within(screen.getByRole("group", { name: copy.filters.friendHead }));
+
+  describe("§1 the failed read in the Filters sheet", () => {
+    it("says a failure that lands while the sheet is open in its Friend group, with Try again, and raises no toast, then or on close", async () => {
+      defer();
+      await mount();
+      openSheet();
+      expect(friendGroup().getByText(copy.filters.friendReading)).toBeTruthy();
+      await act(async () => { land("fail"); });
+      expect(failure()).toBeNull();
+      const line = document.querySelector("[data-friend-failed]") as HTMLElement;
+      expect(line.textContent).toContain(copy.result.failedByFriend);
+      // Said aloud: the sheet silences the result line behind it and no toast is drawn, so the line is the alert.
+      expect(within(line).getByRole("alert").textContent).toBe(copy.result.failedByFriend);
+      // The head stays; the pills are gone.
+      expect(friendGroup().queryAllByRole("checkbox")).toHaveLength(0);
+      // Audit 3: Try again takes the 44px touch target.
+      const retry = within(line).getByRole("button", { name: copy.failedRead.retry });
+      expect(retry.className).toContain("pointer-coarse:after:h-[max(44px,100%)]");
+      // Said once: closing the sheet raises no toast.
+      closeSheet();
+      expect(failure()).toBeNull();
+    });
+
+    it("dismisses a toast already up when the sheet opens, which opens on the failed line, and closing it brings no toast back", async () => {
+      served = { spares: [], asks: [], fail: true };
+      await mount();
+      expect(failure()).toBeTruthy();
+      openSheet();
+      expect(failure()).toBeNull();
+      expect(document.querySelector("[data-friend-failed]")).toBeTruthy();
+      closeSheet();
+      expect(failure()).toBeNull();
+    });
+
+    it("Try again reads again, shows the shipped dashed reading… pill until it lands, then the friend pills", async () => {
+      served = { spares: [], asks: [], fail: true };
+      await mount();
+      openSheet();
+      const before = sparesCalls();
+      defer();
+      await act(async () => {
+        fireEvent.click(within(document.querySelector("[data-friend-failed]") as HTMLElement).getByRole("button", { name: copy.failedRead.retry }));
+      });
+      expect(sparesCalls()).toBe(before + 1);
+      // Audit 4: Loading A's shipped pill (44 tall, round, dashed), not the board's small one.
+      const reading = friendGroup().getByText(copy.filters.friendReading);
+      expect(reading.className.split(/\s+/)).toEqual(expect.arrayContaining(["h-[44px]", "rounded-full", "border-dashed"]));
+      expect(document.querySelector("[data-friend-failed]")).toBeNull();
+      await act(async () => { land(BOARD); });
+      expect(friendGroup().getAllByRole("checkbox").length).toBeGreaterThan(1);
+      closeSheet();
+      expect(failure()).toBeNull();
+    });
+
+    it("still toasts a failure that lands while the sheet is shut", async () => {
+      defer();
+      await mount();
+      await act(async () => { land("fail"); });
+      expect(failure()).toBeTruthy();
+    });
+  });
+
+  describe("§2 the compact placeholder", () => {
+    it("shows `Search` below 1000px and `Search cards` from it, named `Search cards` at both", async () => {
+      await mount();
+      let field = screen.getByRole("searchbox", { name: copy.filters.search });
+      expect(field.getAttribute("placeholder")).toBe(copy.filters.searchCompact);
+      cleanup();
+      wide();
+      await mount();
+      field = screen.getByRole("searchbox", { name: copy.filters.search });
+      expect(field.getAttribute("placeholder")).toBe(copy.filters.search);
+    });
+
+    it("draws the cart's compact field at the board's sizes, the empty ✕ out of the row, and leaves the shared field as it was", async () => {
+      // 320px with a badge leaves the field 98px: 98 - 2 border - 22 padding - 15 icon - 8 gap = 51px of input, and
+      // `Search` measures 49.6px at 16px in IBM Plex Sans. The ✕'s 24px and its gap would leave 19px.
+      await mount();
+      const field = screen.getByRole("searchbox", { name: copy.filters.search });
+      const box = field.closest("[data-search-field]") as HTMLElement;
+      const classes = () => box.className.split(/\s+/);
+      expect(classes()).toEqual(expect.arrayContaining(["px-[11px]", "gap-[8px]"]));
+      expect(classes()).not.toContain("px-[12px]");
+      expect(box.querySelector("[data-search-icon]")!.getAttribute("width")).toBe("15");
+      // The text keeps 16px: iOS Safari zooms into an input under 16px.
+      expect(field.className.split(/\s+/)).toContain("text-[16px]");
+      const clear = () => box.querySelector("button") as HTMLElement;
+      expect(clear().className.split(/\s+/)).toContain("hidden");
+      fireEvent.change(field, { target: { value: "sol" } });
+      expect(clear().className.split(/\s+/)).not.toContain("hidden");
+      cleanup();
+      // Every other caller keeps the shared field's sizes: 12px in, the 18px magnifier, the ✕ held hidden in place.
+      const { DeckSearchField } = await import("../deck-filter-column");
+      render(<DeckSearchField value="" onChange={() => {}} size="sheet" />);
+      const other = document.querySelector("[data-search-field]") as HTMLElement;
+      expect(other.className.split(/\s+/)).toEqual(expect.arrayContaining(["px-[12px]", "gap-[9px]"]));
+      expect(other.querySelector("[data-search-icon]")!.getAttribute("width")).toBe("18");
+    });
+  });
+
+  describe("§3 the list's bottom fade", () => {
+    const fade = () => document.querySelector("[data-cart-fade]");
+    const box = () => screen.getByRole("region", { name: copy.list.regionAria });
+    const size = (el: HTMLElement, scrollHeight: number, clientHeight: number, scrollTop: number) => {
+      Object.defineProperty(el, "scrollHeight", { configurable: true, value: scrollHeight });
+      Object.defineProperty(el, "clientHeight", { configurable: true, value: clientHeight });
+      Object.defineProperty(el, "scrollTop", { configurable: true, writable: true, value: scrollTop });
+    };
+
+    it("is the one condition: more than 1px below", async () => {
+      const { hasMoreBelow } = await import("./cart-view");
+      expect(hasMoreBelow({ scrollHeight: 1000, scrollTop: 0, clientHeight: 300 })).toBe(true);
+      expect(hasMoreBelow({ scrollHeight: 1000, scrollTop: 699, clientHeight: 300 })).toBe(false);
+      expect(hasMoreBelow({ scrollHeight: 300, scrollTop: 0, clientHeight: 300 })).toBe(false);
+    });
+
+    it("draws over a list with more below, and goes at its end and over a box that does not overflow", async () => {
+      wide();
+      await mount();
+      // jsdom lays nothing out: a box that does not overflow draws no fade.
+      expect(fade()).toBeNull();
+      size(box(), 1000, 300, 0);
+      fireEvent.scroll(box());
+      expect(fade()).toBeTruthy();
+      size(box(), 1000, 300, 700);
+      fireEvent.scroll(box());
+      expect(fade()).toBeNull();
+    });
+
+    it("reads again when the box resizes, through one observer on the box", async () => {
+      const observers: { cb: () => void; targets: Element[] }[] = [];
+      vi.stubGlobal("ResizeObserver", class {
+        targets: Element[] = [];
+        constructor(cb: () => void) { observers.push({ cb, targets: this.targets }); }
+        observe(el: Element) { this.targets.push(el); }
+        unobserve() {}
+        disconnect() {}
+      });
+      wide();
+      await mount();
+      const mine = observers.filter((o) => o.targets.includes(box()));
+      expect(mine).toHaveLength(1);
+      // The same observer watches the box's auto-height content, which a row's `+N` grows without resizing the box.
+      const content = box().querySelector("[data-cart-list-content]")!;
+      expect(mine[0].targets).toContain(content);
+      size(box(), 1000, 300, 0);
+      await act(async () => { mine[0].cb(); });
+      expect(fade()).toBeTruthy();
+      size(box(), 1000, 1000, 0);
+      await act(async () => { mine[0].cb(); });
+      expect(fade()).toBeNull();
+    });
+  });
+
+  describe("§4 a reader with no friends", () => {
+    it("makes no spares read, and By card draws no key item, column, clause or toast, whatever the read would say", async () => {
+      served = { spares: BOARD, asks: [], fail: true };
+      await mount({ hasFriends: false });
+      expect(sparesCalls()).toBe(0);
+      expect(screen.queryByTestId("spare-key")).toBeNull();
+      expect(screen.queryAllByTestId("spare-skeleton")).toHaveLength(0);
+      const columns = document.querySelector('[data-cart-columns="card"]')!;
+      expect(columns.textContent).not.toContain(copy.columns.spares);
+      expect(columns.className).toContain("xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1.75fr)_0px_minmax(0,1.3fr)_100px]");
+      expect(document.querySelector("[data-chassis-row='result'] p")?.textContent).toBe(copy.result.byCardNoSpare(4));
+      expect(document.querySelector("[data-result-reading]")).toBeNull();
+      expect(failure()).toBeNull();
+      // The phone sheet has no Friend group.
+      openSheet();
+      expect(screen.queryByRole("group", { name: copy.filters.friendHead })).toBeNull();
+    });
+
+    it("draws no desktop Friend trigger, and By deck says decks and copies", async () => {
+      wide();
+      await mount({ hasFriends: false, initialView: "deck", focusDeckId: "thopter" });
+      expect(screen.queryByRole("button", { name: /^Friend/ })).toBeNull();
+      expect(document.querySelector("[data-friend-reading]")).toBeNull();
+      expect(document.querySelector('[data-cart-columns="deck"]')!.textContent).not.toContain(copy.columns.spares);
+      expect(document.querySelector("[data-chassis-row='result'] p")?.textContent).toBe(copy.result.byDeck(3, 5));
+      expect(sparesCalls()).toBe(0);
+    });
+
+    it("publishes no spare, failure or open sheet once `noFriends` turns on in a provider that stays mounted", async () => {
+      const { FriendSparesProvider, usePageSpares } = await import("../../social/spare-markers");
+      let ctx: ReturnType<typeof usePageSpares> = null;
+      const Probe = () => { ctx = usePageSpares(); return null; };
+      const ids = [JACE, BRAIN, GISA, TOWER];
+      const tree = (noFriends: boolean) => (
+        <FriendSparesProvider oracleIds={ids} newestAsOf={null} hostSheet={false} noFriends={noFriends}><Probe /></FriendSparesProvider>
+      );
+      served = { spares: BOARD, asks: [] };
+      let view!: ReturnType<typeof render>;
+      await act(async () => { view = render(tree(false)); });
+      expect(ctx!.byCard.size).toBeGreaterThan(0);
+      await act(async () => { ctx!.open({ oracleId: JACE, name: "Jace, Multiverse Architect", printedName: null, layout: "normal", imageUri: null, price: null }); });
+      expect(ctx!.opened).not.toBeNull();
+      await act(async () => { view.rerender(tree(true)); });
+      expect(ctx!.byCard.size).toBe(0);
+      expect(ctx!.seen.size).toBe(0);
+      expect(ctx!.opened).toBeNull();
+      cleanup();
+      served = { spares: [], asks: [], fail: true };
+      await act(async () => { view = render(tree(false)); });
+      expect(ctx!.failed.size).toBe(4);
+      await act(async () => { view.rerender(tree(true)); });
+      expect(ctx!.failed.size).toBe(0);
+      expect(ids.every((id) => ctx!.loaded.has(id))).toBe(true);
+    });
+
+    it("leaves By friend as Empty-One C", async () => {
+      await mount({ hasFriends: false, initialView: "friend" });
+      expect(screen.getByTestId("cart-by-friend-empty").getAttribute("data-kind")).toBe("noFriends");
+    });
+  });
+});

@@ -565,6 +565,9 @@
       "binding": "CartChassis",
       "steps": [
         {
+          "unhold": "**/api/friend-spares**"
+        },
+        {
           "goto": "/decks/shopping",
           "wait": "h1",
           "settle": 2000
@@ -585,6 +588,9 @@
       "view": "src/components/decks/cart/cart-view.tsx",
       "binding": "CartChassis",
       "steps": [
+        {
+          "unhold": "**/api/friend-spares**"
+        },
         {
           "goto": "/decks/shopping",
           "wait": "h1",
@@ -607,6 +613,9 @@
       "binding": "CartFilterSheet",
       "steps": [
         {
+          "unhold": "**/api/friend-spares**"
+        },
+        {
           "goto": "/decks/shopping",
           "wait": "h1",
           "settle": 2000
@@ -628,6 +637,9 @@
       "binding": "CartChassis",
       "steps": [
         {
+          "unhold": "**/api/friend-spares**"
+        },
+        {
           "goto": "/decks/shopping?friend=any",
           "wait": "h1",
           "settle": 2000
@@ -640,6 +652,9 @@
       "view": "src/components/decks/cart/cart-view.tsx",
       "binding": "CartChassis",
       "steps": [
+        {
+          "unhold": "**/api/friend-spares**"
+        },
         {
           "goto": "/decks/shopping?view=friend&friend=any&owned=none",
           "wait": "h1",
@@ -654,6 +669,9 @@
       "binding": "CartChassis",
       "steps": [
         {
+          "unhold": "**/api/friend-spares**"
+        },
+        {
           "goto": "/decks/shopping?view=deck&owned=some",
           "wait": "h1",
           "settle": 2000
@@ -666,6 +684,9 @@
       "view": "src/components/decks/cart/cart-view.tsx",
       "binding": "CartChassis",
       "steps": [
+        {
+          "unhold": "**/api/friend-spares**"
+        },
         {
           "goto": "/decks/shopping?owned=some&q=zzzzzz",
           "wait": "h1",
@@ -710,6 +731,128 @@
       ],
       "widths": [
         "desktop"
+      ]
+    },
+    {
+      "id": "r3-sheet-failed",
+      "label": "R3 \u00a71: the phone Filters sheet over a failed spares read (500 staged): the Friend group keeps its head and draws the dashed `Friends\u2019 spares didn\u2019t load` line with Try again, and no toast over the sheet. Needs an account WITH a friend: on one with none (local-dev) the read is never made (R3 \u00a74), so the sheet shows no Friend group at all",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "binding": "CartFilterSheet",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "unhold": "**/api/friend-spares**"
+        },
+        {
+          "mock": "**/api/friend-spares**",
+          "status": 500,
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "Filter cards",
+          "settle": 400
+        },
+        {
+          "waitDialog": "Filters",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "r3-header-badge",
+      "label": "R3 \u00a72: the compact header with a filter on: the field reads `Search` (not `Search cards`), the Filters pill carries its badge, the 44px sort, nothing cut; the chips row 16px under the controls",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "unhold": "**/api/friend-spares**"
+        },
+        {
+          "goto": "/decks/shopping?owned=some",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "r3-fade-no-match",
+      "label": "R3 \u00a73: desktop, a search that matches nothing: the no-match block with NO bottom fade over it",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "unhold": "**/api/friend-spares**"
+        },
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "zzzzzz",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "r3-fade-mid",
+      "label": "R3 \u00a73: desktop, a long list scrolled part-way: the 36px bottom fade drawn, since the box has more below",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "unhold": "**/api/friend-spares**"
+        },
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-cart-row]",
+          "settle": 2000
+        },
+        {
+          "scrollTo": "li[data-cart-row]:nth-of-type(30)",
+          "settle": 400
+        },
+        {
+          "wait": "[data-cart-fade]"
+        }
+      ]
+    },
+    {
+      "id": "r3-fade-end",
+      "label": "R3 \u00a73: desktop, the same list at its end: no fade, the last row at full strength",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "unhold": "**/api/friend-spares**"
+        },
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-cart-row]",
+          "settle": 2000
+        },
+        {
+          "scrollTo": "li[data-cart-row]:last-of-type",
+          "settle": 600
+        }
       ]
     }
   ]

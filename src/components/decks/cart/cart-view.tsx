@@ -120,14 +120,15 @@ function ByCardList({
  * Friend filter narrows its lines by them (PR 9).
  */
 export function CartView(props: CartViewProps) {
-  const { cart, buyEnabled = false, socialFriends = false, spareAsks = false } = props;
+  const { cart, buyEnabled = false, socialFriends = false, spareAsks = false, hasFriends = true } = props;
   const newestAsOf = useMemo(() => (cart.newestAsOf ? new Date(cart.newestAsOf) : null), [cart.newestAsOf]);
   const deckNames = useMemo(() => new Map(cart.decks.map((d) => [d.id, d.name])), [cart.decks]);
   const sparesIds = useMemo(() => cart.lines.map((l) => l.oracleId), [cart.lines]);
   const page = <CartBody {...props} />;
-  // Friends' spares (S5): one read of every card the cart lists, both views, outside the scroll box with the rest.
+  // Friends' spares (S5): one read of every card the cart lists, both views, outside the scroll box with the rest. A reader
+  // with no friend has no spare to read (addendum R3 §4): no read is made, and every card reads as landed with none.
   const withSpares = socialFriends ? (
-    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests={spareAsks} deckId={null}>{page}</FriendSparesProvider>
+    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests={spareAsks} deckId={null} noFriends={!hasFriends}>{page}</FriendSparesProvider>
   ) : page;
   return buyEnabled ? (
     <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>
@@ -318,7 +319,9 @@ function CartBody({
   const knownFriends = new Map<string, SpareFriend>();
   for (const l of selectedLines) for (const x of spares?.byCard.get(l.oracleId) ?? []) knownFriends.set(x.friend.publicId, x.friend);
   for (const l of heldLines) for (const x of spares?.seen.get(l.oracleId) ?? []) knownFriends.set(x.friend.publicId, x.friend);
-  const offer: FriendOffer = !spares || selectedRead === "failed" ? { kind: "none" }
+  // A failed read hides the desktop trigger (B2) and is said in the phone sheet's Friend group (R3 §1).
+  const offer: FriendOffer = !spares ? { kind: "none" }
+    : selectedRead === "failed" ? { kind: "failed", onRetry: spares.retry }
     : selectedRead === "reading" ? { kind: "reading" }
       : knownFriends.size === 0 ? { kind: "none" }
         : {
@@ -402,6 +405,33 @@ function CartBody({
     ? deckGroups.filter((g) => selected.has(g.deck.id) && open.has(g.deck.id)).flatMap((g) => g.lines.map((l) => l.oracleId))
     : lines.map((l) => l.oracleId)), [byDeck, deckGroups, selected, open, lines]);
 
+  // The list box's bottom fade draws only while the box has more below it (addendum R3 §3), read on scroll and, through
+  // one observer on the box, on resize. The phone's box does not scroll, so it never has more (and draws no fade).
+  const listRef = useRef<HTMLDivElement>(null);
+  const listContentRef = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  const measureMore = () => {
+    const el = listRef.current;
+    if (el) setMore(hasMoreBelow(el));
+  };
+  // What the box holds can change (a search, a filter, a fold, a view, a read landing, a purchase) without resizing it:
+  // read again whenever it does.
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) setMore(hasMoreBelow(el));
+  }, [view, lines, deckGroups, open, friendShut, spares, gotIt]);
+  const listShown = cart.decks.length > 0 && deckCount > 0;
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setMore(hasMoreBelow(el)));
+    ro.observe(el);
+    // The box is a fixed height, so a row growing inside it (a `+N` opening its names, `cart-facts.tsx`'s own state)
+    // resizes only its content: the same observer watches that too.
+    if (listContentRef.current) ro.observe(listContentRef.current);
+    return () => ro.disconnect();
+  }, [listShown]);
+
   const toggle = (id: string) => setSelected((prev) => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -453,7 +483,7 @@ function CartBody({
     : "md:h-[calc(100dvh-var(--cart-top))]";
   const page = empty ?? (
     <LineFilterContext.Provider value={keep}>
-    <SpareReadState ids={sparesRead} view={view}>
+    <SpareReadState ids={sparesRead} view={view} hasFriends={hasFriends}>
     <div
       ref={pageRef}
       className={`flex min-w-0 flex-none flex-col bg-[color:var(--bg)] font-sans md:min-h-[420px] ${pageHeight}`}
@@ -539,6 +569,8 @@ function CartBody({
               {/* The spares-only modal a line's spare press opens (S5): inside this provider, since it opens card details. */}
               <SparesSheetHost />
               <div
+                ref={listRef}
+                onScroll={measureMore}
                 tabIndex={0}
                 role="region"
                 aria-label={copy.list.regionAria}
@@ -549,6 +581,8 @@ function CartBody({
                   view === "friend" ? "md:scroll-pt-[53px]" : ""
                 }`}
               >
+                {/* Auto height: what the fade's observer watches for the content's own growth (R3 §3). */}
+                <div ref={listContentRef} data-cart-list-content>
                 <HoverPreviewProvider>
                 {byDeck ? (
                   // Largest first unless the reader chose another order; an unselected deck keeps its place.
@@ -593,11 +627,17 @@ function CartBody({
                   />
                 )}
                 </HoverPreviewProvider>
-                <div
-                  aria-hidden
-                  className="pointer-events-none sticky bottom-0 -mt-[36px] hidden h-[36px] md:block"
-                  style={{ background: "linear-gradient(to bottom, transparent, var(--bg))" }}
-                />
+                </div>
+                {/* The bottom fade, only while the box has more below (R3 §3): never over a dashed block, a short list or
+                    the last row. No transition. */}
+                {more ? (
+                  <div
+                    aria-hidden
+                    data-cart-fade
+                    className="pointer-events-none sticky bottom-0 -mt-[36px] hidden h-[36px] md:block"
+                    style={{ background: "linear-gradient(to bottom, transparent, var(--bg))" }}
+                  />
+                ) : null}
               </div>
               </CardDetailProvider>
             </>
@@ -683,6 +723,7 @@ function CartChassisRow({
   const friendView = useByFriend(drawn.lines, drawn.held);
   const spares = usePageSpares();
   const { rows, of } = figures;
+  const onSheet = useContext(SheetOpenContext);
   const v = shown(view, friendView !== null);
   const failed = spares !== null && spareReadStatus(sparesRead, spares.loaded, spares.failed) === "failed";
   const sentence = (() => {
@@ -718,6 +759,7 @@ function CartChassisRow({
       // By friend's own sentence says it is reading (Loading C), so the trailing clause is By card's and By deck's.
       reading={v !== "friend" && spares !== null && lines.some((l) => !spares.loaded.has(l.oracleId))}
       filters={filters}
+      onSheet={onSheet}
     />
   );
 }
@@ -894,7 +936,13 @@ function CartKeyRow({
  * again, at its shipped place. By friend says it in its list place instead, so it draws no toast; and one failure is said
  * once, so switching views never repeats it. A new failure, after a retry, is said again.
  */
-function SpareReadState({ ids, view, children }: { ids: readonly string[]; view: CartViewMode; children: React.ReactNode }) {
+function SpareReadState({ ids, view, hasFriends, children }: {
+  ids: readonly string[];
+  view: CartViewMode;
+  /** No friend: there is no spare column at all, closed as after a failed read (addendum R3 §4). */
+  hasFriends: boolean;
+  children: React.ReactNode;
+}) {
   const spares = usePageSpares();
   // A purchase's receipt holds the toast slot: the failure waits for it to close, and is said only once it shows.
   const receiptOpen = useCartGotIt()?.receiptOpen ?? false;
@@ -905,18 +953,24 @@ function SpareReadState({ ids, view, children }: { ids: readonly string[]; view:
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const [seq, setSeq] = useState(0);
   // Adjusted during render: the toast belongs to this failure, and leaves when it ends or By friend takes over saying it.
-  if (failed && !said && view !== "friend" && spares && !receiptOpen) {
+  // The phone Filters sheet is open (R3 §1): the failure is said in its Friend group, never by a toast over it, and that
+  // counts as said, so closing the sheet raises no toast; a toast already up goes when the sheet opens.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  if (failed && !said && sheetOpen) setSaid(true);
+  if (failed && !said && view !== "friend" && spares && !receiptOpen && !sheetOpen) {
     setSaid(true);
     setSeq(seq + 1);
     setToast({ id: seq + 1, text: copy.failedRead.toast });
   }
   if (!failed && said) setSaid(false);
-  if (toast && (!failed || view === "friend")) setToast(null);
+  if (toast && (!failed || view === "friend" || sheetOpen)) setToast(null);
   const shown = useMemo(() => () => setSaid(true), []);
   return (
-    <SpareColumnContext.Provider value={!failed}>
+    <SpareColumnContext.Provider value={!failed && hasFriends}>
       <FailureShownContext.Provider value={shown}>
-        {children}
+        <SheetOpenContext.Provider value={setSheetOpen}>
+          {children}
+        </SheetOpenContext.Provider>
       </FailureShownContext.Provider>
       {/* Try again is the provider's retry as it is NOW, never one kept from when the toast went up: the cards it reads
           and the failures it clears are the live ones. Under an open receipt the toast waits, its clock paused. */}
@@ -930,3 +984,11 @@ function SpareReadState({ ids, view, children }: { ids: readonly string[]; view:
 
 /** By friend's failed block reports that it is on screen, so the failure counts as said (`SpareReadState`). */
 const FailureShownContext = createContext<(() => void) | undefined>(undefined);
+
+/** The cart chassis reports its phone Filters sheet opening and closing to `SpareReadState` (addendum R3 §1). */
+const SheetOpenContext = createContext<((open: boolean) => void) | undefined>(undefined);
+
+/** The list box has more below it than it shows: the bottom fade's one condition (addendum R3 §3). */
+export function hasMoreBelow(el: { scrollHeight: number; scrollTop: number; clientHeight: number }): boolean {
+  return el.scrollHeight - el.scrollTop - el.clientHeight > 1;
+}

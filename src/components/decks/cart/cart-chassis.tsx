@@ -10,7 +10,7 @@
 // Friend and Owned narrow the same lines in every view (D4) and the sort is the view's own, so this takes the filters'
 // state and the view's order set and knows nothing about which view it is.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { OWNED_FILTERS, CART_SORTS, type CartView, type FriendFilter, type OwnedFilter } from "../../../lib/decks/cart-sort";
 import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../../ui/filter-chassis";
@@ -46,7 +46,8 @@ const dimension = (word: string) => <span aria-hidden className="text-[color:var
 export type CartFilters = {
   friend: FriendFilter;
   onFriend: (code: string) => void;
-  /** The Friend dimension as it can be offered now; `none` hides the trigger and the sheet's group (B2, call 6). */
+  /** The Friend dimension as it can be offered now; `none` hides the trigger and the sheet's group (B2, call 6), and
+   *  `failed` hides the trigger while the sheet's group says it in place (addendum R3 §1). */
   offer: FriendOffer;
   /** Whether the Friend filter narrows the list now: a failed read leaves it inert, with no chip and no badge. */
   friendLive: boolean;
@@ -62,7 +63,7 @@ export type CartFilters = {
 };
 
 export function CartChassis({
-  view, query, onQuery, sort, onSort, resultLine, reading, filters,
+  view, query, onQuery, sort, onSort, resultLine, reading, filters, onSheet,
 }: {
   view: CartView;
   /** The search, as typed. */
@@ -76,11 +77,14 @@ export function CartChassis({
   /** Friends' spares are still being read: the result line's trailing slot says so. */
   reading: boolean;
   filters: CartFilters;
+  /** The phone Filters sheet opened or closed: a failed read is said inside it, never by a toast over it (R3 §1). */
+  onSheet?: (open: boolean) => void;
 }) {
   const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
   const [sheet, setSheet] = useState(false);
   // The sheet belongs to the compact form: crossing into the wide one closes it, so it cannot reopen on the way back.
   if (wide && sheet) setSheet(false);
+  useEffect(() => { onSheet?.(sheet); }, [sheet, onSheet]);
   const order = CART_SORTS[view];
   const labels = LABELS[view];
   const term = query.trim();
@@ -114,7 +118,16 @@ export function CartChassis({
   const active = (friendOn ? 1 : 0) + (owned !== "any" ? 1 : 0);
   const search = (
     <div className="min-w-0 flex-auto">
-      <DeckSearchField value={query} onChange={onQuery} size={wide ? "column" : "sheet"} active={term !== ""} placeholder={copy.filters.search} />
+      {/* Below 1000px the placeholder is `Search`, so a badge cannot cut it (R3 §2); the name is `Search cards` at every width. */}
+      <DeckSearchField
+        value={query}
+        onChange={onQuery}
+        size={wide ? "column" : "sheet"}
+        active={term !== ""}
+        placeholder={wide ? copy.filters.search : copy.filters.searchCompact}
+        label={copy.filters.search}
+        narrow={!wide}
+      />
     </div>
   );
   return (
@@ -199,7 +212,8 @@ export function CartChassis({
  */
 function FriendTrigger({ filters }: { filters: CartFilters }) {
   const { offer, friend } = filters;
-  if (offer.kind === "none") return null;
+  // Desktop draws no failed state of its own (R3 §1.5): the toast says it, as R2 drew.
+  if (offer.kind === "none" || offer.kind === "failed") return null;
   if (offer.kind === "reading") {
     return (
       // `FilterPanel`'s desktop trigger, inert: the dashed edge and locked words of Loading A's `.trg.wait`, `reading…`

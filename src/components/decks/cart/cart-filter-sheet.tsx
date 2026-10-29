@@ -15,12 +15,18 @@ import type { SpareFriend } from "../../../lib/social/spares";
 import { Face } from "../../social/face";
 import { onSegmentKeys } from "../../ui/segment-keys";
 import { Sheet } from "../../ui/sheet";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 
 /** A friend the Friend filter offers: one with a spare of a selected line, and how many of the drawn cards they hold. */
 export type FriendOption = { friend: SpareFriend; count: number };
 
-/** What the Friend dimension can offer now: its friends, a read still out, or nothing (none has a spare, or it failed). */
-export type FriendOffer = { kind: "friends"; any: number; friends: readonly FriendOption[] } | { kind: "reading" } | { kind: "none" };
+/** What the Friend dimension can offer now: its friends, a read still out, a failed read and its Try again (R3 §1), or
+ *  nothing (no friend has a spare, or the reader has none). */
+export type FriendOffer =
+  | { kind: "friends"; any: number; friends: readonly FriendOption[] }
+  | { kind: "reading" }
+  | { kind: "failed"; onRetry: () => void }
+  | { kind: "none" };
 
 export type CartFilterSheetProps = {
   open: boolean;
@@ -94,7 +100,25 @@ function SheetBody({ open, onDismiss, shown, of, offer, friend, onFriend, owned,
         {offer.kind === "none" ? null : (
           <fieldset role="group" aria-label={copy.filters.friendHead} className={GROUP}>
             <legend className={HEADING}>{copy.filters.friendHead}</legend>
-            {offer.kind === "reading" ? (
+            {offer.kind === "failed" ? (
+              // R3 §1, the board's `.sfail`: the failure said in the group's place, never a toast over the sheet; Try again re-runs the read,
+              // and the group reads `reading…` (the pill below) until it lands.
+              <div
+                data-friend-failed
+                className="flex items-center justify-between gap-[12px] rounded-[10px] border border-dashed border-[color:var(--border-strong)] px-[12px] py-[11px]"
+              >
+                {/* An alert, as the toast it replaces is: the sheet is modal and silences the result line behind it, so this
+                    is the one place a failure that lands while it is open is said aloud. */}
+                <span role="alert" className="min-w-0 font-sans text-[12.5px] text-[color:var(--fg-body)]">{copy.result.failedByFriend}</span>
+                <button
+                  type="button"
+                  onClick={offer.onRetry}
+                  className={`${TOUCH_HIT} flex-none cursor-pointer whitespace-nowrap border-0 bg-transparent p-0 font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)]`}
+                >
+                  {copy.failedRead.retry}
+                </button>
+              </div>
+            ) : offer.kind === "reading" ? (
               // Loading A's dashed trigger, as the sheet's group: the friends are not known yet.
               <span
                 data-friend-reading
