@@ -720,7 +720,6 @@ export const adminMaskCopy = {
  * already does.
  */
 export const switchCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
-  ABOUT_SHEET_ENABLED: { label: "About sheet", description: "What’s new, as a line on Home’s banner. While off, a redirect to About instead." },
   ADDED_COPY_ENABLED: { label: "Added copy", description: "An added copy says where it went, with Change to move it." },
   ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },

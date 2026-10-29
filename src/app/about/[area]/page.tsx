@@ -7,7 +7,9 @@
 // is a 404. Each section's Good to know rules are its visible rules, their switched sentences and diagram parts cut.
 // Each section's Try it is its tools whose switch is on and whose label is drawn (`pageTools`), and a `?lit=` naming a
 // label this page draws lands on it: lit, and, when the reader has not been told about it (`unseenUnits`), marked New
-// with its tool card (PR 5, call 7). The server hands over which labels can land (`landableIn`); the client lands. Nothing is written here: the visit's seen write is PR 6b's.
+// with its tool card (PR 5, call 7). The server hands over which labels can land (`landableIn`); the client lands.
+// The visit is recorded once the page is open (`RecordPageVisit`, PR 6b): this page's announce keys, or a first-run
+// reader's whole baseline (`afterVisit`). A Show me landing is a visit like any other.
 //
 // The ? lands here too (PR 6a, call 5, Addendum A1) with `from`, the screen it was pressed on: validated here
 // (`safeFrom`, a same-origin path or nothing) and named (`backScreenName`; a deck by its own name, read for the
@@ -20,7 +22,7 @@ import { aboutSeen } from "../../../lib/about/read";
 import { backScreenName, deckIdOf, safeFrom } from "../../../lib/about/back";
 import { ownDeckName } from "../../../lib/about/back-read";
 import { pageToolCropFor } from "../../../lib/about/page-shots";
-import { visibleSections } from "../../../lib/about/pages-visible";
+import { afterVisit, heldAnswer, visibleSections } from "../../../lib/about/pages-visible";
 import { screenModel } from "../../../lib/about/pins";
 import { shotFor, toolShotId, type Shot } from "../../../lib/about/shots";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../../lib/copy/about-pages";
@@ -29,6 +31,7 @@ import { loadCardInput, switchesOn } from "../../../lib/discovery/showcase-input
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { resolveTheme } from "../../../lib/theme/server";
 import { AreaPage } from "../../../components/about/pages/area-page";
+import { RecordPageVisit } from "../../../components/about/pages/record-page-visit";
 
 const isArea = (v: string): v is AboutArea => (ABOUT_AREA_IDS as readonly string[]).includes(v);
 
@@ -86,5 +89,17 @@ export default async function AboutAreaRoute({
   const landable = landableIn(area, visible, seen);
   const lit = query[LIT_PARAM];
   const initialLit = typeof lit === "string" && Object.hasOwn(landable, lit) ? lit : null;
-  return <AreaPage area={area} sections={sections} theme={theme} landable={landable} initialLit={initialLit} back={back} />;
+  // Whether opening the page writes anything: decided from the same pre-visit state the New marks were.
+  const after = afterVisit(visible, area, seen);
+  const held = new Set(seen.ids);
+  // What the visit writes, as this render names it: sent back with the visit, which writes only those of them the
+  // reader's switches still draw then, so a unit switched on after this render stays new.
+  const claimed = after.ids.filter((id) => !held.has(id));
+  const owed = after.version > seen.version || claimed.length > 0;
+  return (
+    <>
+      <AreaPage area={area} sections={sections} theme={theme} landable={landable} initialLit={initialLit} back={back} />
+      <RecordPageVisit area={area} owed={owed} keys={heldAnswer(visible, seen, null)} claimed={claimed} />
+    </>
+  );
 }

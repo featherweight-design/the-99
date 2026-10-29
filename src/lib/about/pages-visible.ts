@@ -179,6 +179,12 @@ export function unseenUnits(visible: readonly VisibleSection[], seen: SeenState)
   });
 }
 
+/** Every unit the reader is drawn, each as a whole announcement carrying its sentences: what a first-run reader's
+ *  line stands for, and what its ✕ and first visit take as their baseline. */
+export function everyAnnouncement(visible: readonly VisibleSection[]): UnseenUnit[] {
+  return unitsOf(visible).map((u) => ({ key: u.key, area: u.area, section: u.section, ack: unitKeys(u) }));
+}
+
 /** Every announce key of one page's units, which a visit to that page records. A visit never raises the floor, and
  *  never writes another page's keys: a visit to Decks must not mark a new unit on Friends seen. */
 export function seenKeysOf(visible: readonly VisibleSection[], area: AboutArea): string[] {
@@ -201,4 +207,92 @@ export function afterVisit(visible: readonly VisibleSection[], area: AboutArea, 
 export function showMeLabel(labels: readonly string[], visible: readonly VisibleSection[]): string | null {
   const drawn = new Set(visible.flatMap((s) => s.labels.map((l) => l.key)));
   return labels.find((l) => drawn.has(l)) ?? null;
+}
+
+/** No claim names more keys than the pages hold (every unit's ack with every switch on is under a hundred); a longer
+ *  claim is not one a page drew, and is cut here. */
+export const MAX_CLAIMED = 200;
+
+/** The keys a browser sent back as what its page drew, bounded and typed, or null for anything that is not a list. */
+export function claimedKeys(claimed: unknown): ReadonlySet<string> | null {
+  if (!Array.isArray(claimed)) return null;
+  return new Set(claimed.slice(0, MAX_CLAIMED).filter((k): k is string => typeof k === "string"));
+}
+
+const baseOf = (key: string) => key.split("@")[0];
+
+/**
+ * What acknowledging the claimed announcements writes: `current` is what the reader is announced NOW (read again on the
+ * server), `named` what the page RENDERED (sent back by the browser). The two are intersected key by key, never widened
+ * to the current state: an announcement is acknowledged only when its key was rendered, and of its `ack` only the keys
+ * that were rendered too, so a sentence whose switch turned on after the render is not marked seen unread with its unit.
+ *
+ * The floor rises to `version` when every announcement standing now was claimed whole. When one was not (a deploy or a
+ * switch added it, or a sentence of it, after the render, or the client dropped it), it rises only to just under the
+ * oldest such one's `since`, never past the reader's own, so it stays new. Null when there is nothing to write.
+ */
+export function claimWrite(
+  named: ReadonlySet<string>,
+  current: readonly UnseenUnit[],
+  seen: SeenState,
+  visible: readonly VisibleSection[],
+  version: number = ABOUT_VERSION,
+): SeenState | null {
+  const valid = current.filter((u) => named.has(u.key));
+  if (valid.length === 0) return null;
+  const since = new Map(unitsOf(visible).map((u) => [u.key, u.since]));
+  const open = current.filter((u) => !u.ack.every((k) => named.has(k)));
+  const floor = open.length === 0
+    ? version
+    : Math.max(seen.version, Math.min(...open.map((u) => since.get(baseOf(u.key)) ?? 0)) - 1);
+  const ids = [...new Set(valid.flatMap((u) => u.ack.filter((k) => named.has(k))))];
+  if (floor <= seen.version && ids.every((id) => seen.ids.includes(id))) return null;
+  return { version: Math.max(floor, seen.version), ids };
+}
+
+/**
+ * What a visit to `area` writes, re-decided on the server from the keys the page RENDERED (`claimed`, which
+ * `afterVisit` named at render): a returning reader gains this page's keys that were rendered and are still drawn; a
+ * first-run reader's baseline is the rendered keys still drawn, by `claimWrite`, so a unit or sentence switched on
+ * between the render and the visit stays new. Null when there is nothing to write.
+ */
+export function visitWrite(
+  claimed: unknown,
+  visible: readonly VisibleSection[],
+  area: AboutArea,
+  seen: SeenState,
+  version: number = ABOUT_VERSION,
+): SeenState | null {
+  const named = claimedKeys(claimed);
+  if (!named) return null;
+  if (isFirstRun(seen)) return claimWrite(named, everyAnnouncement(visible), seen, visible, version);
+  const held = new Set(seen.ids);
+  const ids = seenKeysOf(visible, area).filter((k) => named.has(k) && !held.has(k));
+  return ids.length > 0 ? { version: seen.version, ids } : null;
+}
+
+/**
+ * Every announce key the reader at `seen` has been told about: what a write leaving them at `seen` answers on a banner
+ * drawn before it (the Reference's visit, which writes legacy ids and the floor, answers the units those cover). A
+ * first-run state answers nothing; past it, every unit's key and its drawn sentences' keys that `unseenUnits` does not
+ * name.
+ */
+export function answeredKeys(visible: readonly VisibleSection[], seen: SeenState): string[] {
+  if (isFirstRun(seen)) return [];
+  const open = new Set(unseenUnits(visible, seen).flatMap((u) => u.ack));
+  return unitsOf(visible).flatMap(unitKeys).filter((k) => !open.has(k));
+}
+
+/**
+ * What every About write answers the browser with (review rounds 6 and 7): the state the reader is left at, `seen`
+ * merged with `write` as `markAboutVisited` merges (a union, the floor by `greatest`), as the ids it holds plus every
+ * launch key that state answers. Answered from the RESULTING state on the write and the no-write path alike, so a key
+ * another tab wrote after Home was cached is acknowledged too, and a reader past their first run always gets a
+ * non-empty answer that ends it in this document.
+ */
+export function heldAnswer(visible: readonly VisibleSection[], seen: SeenState, write: SeenState | null): string[] {
+  const after = write
+    ? { version: Math.max(seen.version, write.version), ids: [...new Set([...seen.ids, ...write.ids])] }
+    : seen;
+  return [...new Set([...after.ids, ...answeredKeys(visible, after)])];
 }

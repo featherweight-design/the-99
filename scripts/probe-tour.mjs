@@ -6,7 +6,7 @@
 // survives a skip, and step 6 stands centred with no cutout when Home draws no About line (R3 gap 6).
 //
 // FIXTURE. The dedicated empty account on Clerk's development instance (`onboard-probe+clerk_test@the99.app`), which
-// first-run Home is drawn for. The server must run with FIRST_RUN_TOUR_ENABLED=true and ABOUT_SHEET_ENABLED=true. Each width resets the account's
+// first-run Home is drawn for. The server must run with FIRST_RUN_TOUR_ENABLED=true. Each width resets the account's
 // `tour_seen_at` to null and writes nothing else of the account's but its About seen-state, which it captures first and
 // restores after. It refuses staging and production by `neon.branch_id`, and refuses an account that holds cards or
 // decks (`assertDisposableAccount`), whose first run it would not see.
@@ -125,9 +125,8 @@ async function walk(browser, vp) {
   if (cards > 0) throw new Error(`probe:tour: ${ONBOARD_PROBE_EMAIL} holds ${cards} cards, so Home is not its first run`);
   const about = await captureAboutSeen(userId, sql);
   try {
-    // About's line stays on Home for step 6; the cookie keeps its sheet from opening over the page first.
-    // A brand-new account's About state, so Home draws About's first-run line for step 6 (the server must run with
-    // ABOUT_SHEET_ENABLED=true; off, the proxy sends a reader with unread About to /about first). Restored in the `finally`.
+    // About's line stays on Home for step 6.
+    // A brand-new account's About state, so Home draws About's first-run line for step 6. Restored in the `finally`.
     await sql`update user_prefs set tour_seen_at = null, about_version_seen = 0, about_seen_ids = '{}' where user_id = ${userId}`;
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     const card = page.locator("[data-tour-card]");

@@ -33,7 +33,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { captureAboutSeen, markEveryEntrySeen, restoreAboutSeen, sheetCookie } from "./lib/about-clear.mjs";
+import { captureAboutSeen, markEveryEntrySeen, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 import { readFileSync } from "node:fs";
 
@@ -83,7 +83,6 @@ async function signIn(browser) {
   }, EMAIL);
   aboutCapture = await captureAboutSeen(userId);
   await markEveryEntrySeen(userId);
-  await context.addCookies([sheetCookie(userId, page.url())]);
   const state = await context.storageState();
   await context.close();
   return { userId, state };

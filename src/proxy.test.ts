@@ -1,8 +1,6 @@
-// The proxy callback itself: the Location it builds and the Set-Cookie it
-// attaches. `gate.ts` holds the rules and is tested pure; what only this can
-// answer is whether the callback WIRES them — which branch becomes a redirect,
-// whether the cookie rides on both, and whether a signed-in reader on the
-// public "/" is judged at all.
+// The proxy callback itself: what it protects, what it forwards and the one cookie it writes (an invite's claim
+// secret). The About gate that once redirected from here retired with About visual PR 6b; these pin that it never
+// comes back: no redirect to /about, no About read, no About cookie.
 
 import { NextRequest, NextResponse } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -22,17 +20,13 @@ vi.mock("@clerk/nextjs/server", async (importActual) => ({
 const resolveSwitchEnv = vi.hoisted(() => vi.fn(async (): Promise<NodeJS.ProcessEnv> => (await import("@/test/env-view")).ENV_VIEW));
 const switchSnapshotState = vi.hoisted(() => vi.fn((): "hit" | "pending" | "miss" => "hit"));
 vi.mock("./lib/switches/snapshot", () => ({ resolveSwitchEnv, switchSnapshotState }));
-// The sheet reads the whole seen state; its version half is the same mock, so every test that
-// sets a version sets both. No switched entry exists yet, so the ids are always empty here.
+// The proxy reads no About state now; the mock is here so a test can say it was never asked.
 vi.mock("./lib/about/read", () => ({
   aboutVersionSeen,
   aboutSeen: async (userId: string) => ({ version: await aboutVersionSeen(userId), ids: [] }),
 }));
 
-/**
- * Let through untouched: no redirect and no cookie. Every request is forwarded with the client's
- * sheet headers stripped, so a pass is a `next()` response rather than none at all.
- */
+/** Let through untouched: no redirect and no cookie. A pass is a `next()` response rather than none at all. */
 function expectPassed(res: NextResponse | undefined) {
   expect(res?.status).toBe(200);
   expect(res?.headers.get("location")).toBeNull();
@@ -64,267 +58,39 @@ beforeEach(() => {
   session.mockResolvedValue({ userId: "user_1" });
 });
 
-describe("a reader current at the version (legacy gate)", () => {
-  // Every switch is off here. 16 (the launch-end batch) added one unswitched entry, `about-rebuilt`, so a reader below
-  // it has something to meet; a reader at 16 has nothing.
-  it("does not redirect a current reader, and remembers it", async () => {
-    aboutVersionSeen.mockResolvedValue(16);
-    const res = await proxy(auth, request("/decks"));
-    expect(res?.status).not.toBe(307);
-    expect(res?.headers.get("location")).toBeNull();
-    expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.16;");
-  });
-
-  it("skips the database read on the next navigation", async () => {
-    aboutVersionSeen.mockResolvedValue(16);
-    await proxy(auth, request("/decks", {}, "user_1.16"));
-    expect(aboutVersionSeen).not.toHaveBeenCalled();
-  });
-
-  it("sends a reader at 14 to meet about-rebuilt, the bump's one unswitched entry", async () => {
-    aboutVersionSeen.mockResolvedValue(14);
-    expect((await proxy(auth, request("/decks")))?.status).toBe(307);
-  });
-
-  it("sends a reader once a switch draws an entry they have not met, though their version is current", async () => {
-    // Seen version 16 with no ids; the switch turns an entry on afterwards.
-    aboutVersionSeen.mockResolvedValue(16);
-    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    try {
-      const res = await proxy(auth, request("/decks", {}, "user_1.16"));
-      expect(res?.status).toBe(307);
-      expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.16%2Bcollection-add");
-    } finally {
-      vi.unstubAllEnvs();
-    }
-  });
-
-  it("still redirects a brand-new account", async () => {
-    aboutVersionSeen.mockResolvedValue(0);
-    expect((await proxy(auth, request("/decks")))?.status).toBe(307);
-  });
-});
-
-describe("a reader who is behind", () => {
-  it("is redirected, carrying where they were going", async () => {
-    const res = await proxy(auth, request("/decks?sort=name"));
-    expect(res?.status).toBe(307);
-    expect(res?.headers.get("location")).toBe(
-      `https://the99.test/about?next=${encodeURIComponent("/decks?sort=name")}`,
-    );
-  });
-
-  it("gets the cookie ON that redirect, or the redirect is a trap", async () => {
-    // Without this a reader who reads the page and navigates away without
-    // pressing anything is sent straight back to it.
-    const res = await proxy(auth, request("/decks"));
-    expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.");
-    expect(res?.headers.get("set-cookie")).toContain("HttpOnly");
-  });
-
-  // The finding this test exists for: "/" is public by PATH, and it is where a
-  // signed-in reader lands after sign-in and where Home lives. Returning early
-  // on the whole public matcher left the likeliest arrival in the app ungated.
-  it("is redirected from Home too, which is public but not anonymous", async () => {
-    const res = await proxy(auth, request("/"));
-    expect(res?.status).toBe(307);
-    expect(res?.headers.get("location")).toContain("/about");
-    expect(protect).not.toHaveBeenCalled();
-  });
-});
-
-describe("a reader who is current", () => {
-  it("passes, and is given the cookie so the read does not repeat", async () => {
-    aboutVersionSeen.mockResolvedValue(99);
-    const res = await proxy(auth, request("/decks"));
-    expect(res?.headers.get("location")).toBeNull();
-    expect(res?.headers.get("set-cookie")).toContain("about_v=user_1.");
-  });
-
-  it("costs no read at all once the cookie is in place", async () => {
-    const { cookieValue } = await import("./lib/about/gate");
-    const res = await proxy(auth, request("/decks", {}, cookieValue("user_1")));
-    expectPassed(res);
-    expect(aboutVersionSeen).not.toHaveBeenCalled();
-  });
-});
-
-describe("requests the gate keeps its hands off", () => {
-  it("leaves a signed-out reader to Clerk", async () => {
-    session.mockResolvedValue({ userId: null });
-    expectPassed(await proxy(auth, request("/")));
-    expect(aboutVersionSeen).not.toHaveBeenCalled();
-  });
-
-  it("never redirects /about itself", async () => {
-    const res = await proxy(auth, request("/about"));
-    expect(res?.status).toBe(200);
-    expect(res?.headers.get("location")).toBeNull();
-    expect(aboutVersionSeen).not.toHaveBeenCalled();
-  });
-
-  it("re-keys the cookie on /about to the entries that page is drawn, so a stale redirect cannot pin it", async () => {
-    // The redirecting instance saw `notes` on; this one does not, so the page neither draws nor
-    // acknowledges it. The cookie must stop vouching for it, or the gate never asks again.
-    const { cookieValue } = await import("./lib/about/gate");
-    const res = await proxy(auth, request("/about", {}, `${cookieValue("user_1")}+notes`));
-    expect(res?.cookies.get("about_v")?.value).toBe(cookieValue("user_1"));
-  });
-
-  it("re-keys it on /about in sheet mode too, so a cookie the legacy gate left cannot outlive a mode switch", async () => {
-    const { cookieValue } = await import("./lib/about/gate");
-    resolveSwitchEnv.mockImplementation(async () => envViewWith({ ABOUT_SHEET_ENABLED: "true" }));
-    try {
-      const res = await proxy(auth, request("/about", {}, `${cookieValue("user_1")}+notes`));
-      expect(res?.cookies.get("about_v")?.value).toBe(cookieValue("user_1"));
-    } finally {
-      resolveSwitchEnv.mockImplementation(async () => ENV_VIEW);
-    }
-  });
-
-  it("re-keys it on a client transition to /about too, and never on a prefetch", async () => {
-    const { cookieValue } = await import("./lib/about/gate");
-    const nav = await proxy(auth, request("/about", { RSC: "1" }, `${cookieValue("user_1")}+notes`));
-    expect(nav?.cookies.get("about_v")?.value).toBe(cookieValue("user_1"));
-    const prefetch = await proxy(auth, request("/about", { RSC: "1", "Next-Router-Prefetch": "1" }, `${cookieValue("user_1")}+notes`));
-    expect(prefetch?.cookies.get("about_v")).toBeUndefined();
-  });
-
-  it("never redirects a prefetch", async () => {
-    const res = await proxy(auth, request("/decks", { RSC: "1", "Next-Router-Prefetch": "1" }));
-    expectPassed(res);
-  });
-
-  it("redirects a client transition, which is how the reader actually moves", async () => {
-    const res = await proxy(auth, request("/decks", { RSC: "1" }));
-    expect(res?.status).toBe(307);
-  });
-
-  it("lets the reader through when the read fails", async () => {
-    // The page is a reference; the app is the point.
-    aboutVersionSeen.mockRejectedValue(new Error("no database"));
-    expectPassed(await proxy(auth, request("/decks")));
-  });
-});
-
-// About on the banner (plan 2026-10-15, PR A). With the switch on, About's notice is a line on Home's banner and the
-// page decides it: the proxy never redirects, never decides a sheet, sets neither sheet header and never writes the
-// `about_sheet` cookie. With it off, the legacy gate above is untouched.
-describe("with the sheet switch on", () => {
-  const sheetHeader = (res: NextResponse | undefined) =>
-    res?.headers.get("x-middleware-request-x-about-sheet") ?? null;
-  const sheetOn = (res: NextResponse | undefined) =>
-    res?.headers.get("x-middleware-request-x-about-sheet-on") ?? null;
-  // The forwarded request's header list. A missing list means the request went
-  // through UNTOUCHED, carrying whatever the client sent, which is the failure
-  // these cases exist for, so it fails rather than reading as an empty list.
-  const overridden = (res: NextResponse | undefined) => {
-    const list = res?.headers.get("x-middleware-override-headers");
-    expect(list, "request forwarded with its own headers").toBeTruthy();
-    return (list ?? "").split(",");
-  };
-
-  beforeEach(() => {
-    process.env.ABOUT_SHEET_ENABLED = "true";
-  });
-  afterEach(() => {
-    delete process.env.ABOUT_SHEET_ENABLED;
-  });
-
-  it("never redirects a reader who is behind, draws no sheet and writes no cookie", async () => {
-    aboutVersionSeen.mockResolvedValue(8);
-    const res = await proxy(auth, request("/decks"));
-    expect(res?.status).not.toBe(307);
-    expect(res?.headers.get("location")).toBeNull();
-    expect(sheetHeader(res)).toBeNull();
-    expect(sheetOn(res)).toBeNull();
-    expect(res?.cookies.get("about_sheet")).toBeUndefined();
-    // The decision is Home's now: the proxy reads nothing.
-    expect(aboutVersionSeen).not.toHaveBeenCalled();
-  });
-
-  it("draws no first-run sheet for a brand-new account, on Home or anywhere", async () => {
-    aboutVersionSeen.mockResolvedValue(0);
-    for (const path of ["/", "/decks", "/collection"]) {
-      const res = await proxy(auth, request(path));
-      expect(sheetHeader(res)).toBeNull();
-      expect(res?.headers.get("location")).toBeNull();
-      expect(res?.cookies.get("about_sheet")).toBeUndefined();
-    }
-  });
-
-  it("leaves a browser's existing sheet cookie alone: Home reads it, nobody rewrites it", async () => {
-    const { cookieValue } = await import("./lib/about/gate");
-    const req = request("/");
-    req.cookies.set("about_sheet", cookieValue("user_1"));
-    const res = await proxy(auth, req);
-    expect(res?.cookies.get("about_sheet")).toBeUndefined();
-    expect(res?.headers.get("set-cookie")).toBeNull();
-  });
-
-  it("strips a forged header on a document load and on a client transition", async () => {
-    for (const extra of [{}, { RSC: "1" }] as Record<string, string>[]) {
-      const res = await proxy(auth, request("/decks", { ...extra, "x-about-sheet": "0", "x-about-sheet-on": "1" }));
-      expect(sheetHeader(res)).toBeNull();
-      expect(sheetOn(res)).toBeNull();
-      expect(overridden(res)).not.toContain("x-about-sheet");
-      expect(overridden(res)).not.toContain("x-about-sheet-on");
-    }
-  });
-
-  it("never redirects /about", async () => {
-    aboutVersionSeen.mockResolvedValue(8);
-    const res = await proxy(auth, request("/about"));
-    expect(res?.headers.get("location")).toBeNull();
-    expect(sheetHeader(res)).toBeNull();
-  });
-
-  it("strips a forged header from a signed-out request too, and reads nothing", async () => {
-    session.mockResolvedValue({ userId: null });
-    const res = await proxy(auth, request("/", { "x-about-sheet": "0" }));
-    expect(sheetHeader(res)).toBeNull();
-    expect(overridden(res)).not.toContain("x-about-sheet");
-    expect(res?.cookies.get("about_sheet")).toBeUndefined();
-    expect(aboutVersionSeen).not.toHaveBeenCalled();
-    expect(sheetOn(res)).toBeNull();
-  });
-});
-
-// The reader's RESOLVED switches decide, and the shell trusts only what the proxy forwards.
-describe("the sheet switch, per reader", () => {
+describe("About (the gate and the sheet retired, About visual PR 6b)", () => {
   afterEach(() => resolveSwitchEnv.mockImplementation(async () => ENV_VIEW));
 
-  it("moves a reader an override switches it on for off the redirect, with no sheet either", async () => {
-    resolveSwitchEnv.mockImplementation(async () => envViewWith({ ABOUT_SHEET_ENABLED: "true" }));
-    aboutVersionSeen.mockResolvedValue(8);
-    const res = await proxy(auth, request("/decks"));
-    expect(res?.headers.get("location")).toBeNull();
-    expect(res?.headers.get("x-middleware-request-x-about-sheet-on")).toBeNull();
-    expect(res?.headers.get("x-middleware-request-x-about-sheet")).toBeNull();
+  it.each([0, 8, 14, 16])("never redirects a reader at floor %i to /about, on a document load or a client transition", async (floor) => {
+    aboutVersionSeen.mockResolvedValue(floor);
+    for (const path of ["/", "/decks", "/collection?q=a%26b", "/about"]) {
+      expectPassed(await proxy(auth, request(path)));
+      expectPassed(await proxy(auth, request(path, { RSC: "1" })));
+    }
+  });
+
+  it("never reads the reader's About state, and never writes About's cookies", async () => {
+    const res = await proxy(auth, request("/decks", {}, "user_1.3"));
+    expectPassed(res);
+    expect(aboutVersionSeen).not.toHaveBeenCalled();
   });
 
   it("forwards the reader's resolved switches for the page to read, and never a client's", async () => {
-    resolveSwitchEnv.mockImplementation(async () => envViewWith({ ABOUT_SHEET_ENABLED: "false", DECK_NOTES_ENABLED: "true" }));
-    aboutVersionSeen.mockResolvedValue(99);
+    resolveSwitchEnv.mockImplementation(async () => envViewWith({ DECK_NOTES_ENABLED: "true" }));
     const forged = "1".repeat(40);
-    // `/about` itself, which the gate never redirects (the reader is behind on the notes entry).
     const res = await proxy(auth, request("/about", { "x-switches": forged }));
     const bits = res?.headers.get("x-middleware-request-x-switches");
     const { switchBits } = await import("./lib/switches/resolve");
-    expect(bits).toBe(switchBits(envViewWith({ ABOUT_SHEET_ENABLED: "false", DECK_NOTES_ENABLED: "true" })));
+    expect(bits).toBe(switchBits(envViewWith({ DECK_NOTES_ENABLED: "true" })));
     session.mockResolvedValue({ userId: null });
     const out = await proxy(auth, request("/", { "x-switches": forged }));
     expect(out?.headers.get("x-middleware-request-x-switches")).toBeNull();
   });
 
-  it("strips a forged sheet-on header from a reader the sheet is off for", async () => {
-    aboutVersionSeen.mockResolvedValue(99);
-    const res = await proxy(auth, request("/decks", { "x-about-sheet-on": "1", "x-about-sheet": "0" }));
-    expect(res?.headers.get("x-middleware-request-x-about-sheet-on")).toBeNull();
-    const list = res?.headers.get("x-middleware-override-headers");
-    expect(list).not.toBeNull();
-    expect(list?.split(",")).not.toContain("x-about-sheet-on");
-    expect(list?.split(",")).not.toContain("x-about-sheet");
+  it("leaves a signed-out reader to Clerk", async () => {
+    session.mockResolvedValue({ userId: null });
+    expectPassed(await proxy(auth, request("/")));
+    expect(protect).not.toHaveBeenCalled();
   });
 });
 

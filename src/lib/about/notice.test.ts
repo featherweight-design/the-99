@@ -1,154 +1,241 @@
-// About's notice on Home's banner: the sheet's rule, with the appendix left out (Q3) and a browser whose sheet
-// cookie is current told nothing; and the ✕'s re-validation, which writes only what the page drew and is still new.
+// About's lines on Home's banner (About visual PR 6b): the pages' own announcement rule, worded per launch with its
+// crop; and the ✕'s re-validation, which writes only what the page drew and is still announced, by each unit's `ack`.
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
+import { ABOUT_VERSION } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
-import { HOW_IT_WORKS_ID } from "../copy/how-it-works-links";
-import { sheetCookieIsCurrent, sheetCookieValue, sheetDecision } from "./gate";
-import { aboutDismissal, aboutLine, aboutNotice } from "./notice";
-import { displayedId, visibleEntries, type SeenState } from "./visible";
-import { aboutAcknowledged, acknowledgeAbout, resetArrivalsAcknowledged } from "../../components/home/arrivals-seen";
+import { SWITCH_NAMES } from "../switches/registry";
+import { bannerCap, cropStyle } from "./banner-line";
+import { aboutDismissal, aboutLine, launchHref } from "./notice";
+import { afterVisit, everyAnnouncement, sentenceKey, unseenUnits, visibleSections, type VisibleSection } from "./pages-visible";
+import { DEFAULT_THEME } from "../theme/themes";
+import { NEVER_SEEN, switchedIds, visibleEntries, type SeenState } from "./visible";
 
-const V = ABOUT_VERSION;
-const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
-const env = (on: Record<string, string> = {}) => on as unknown as NodeJS.ProcessEnv;
-// The page with every switch off, and with Change commander on.
-const OFF = visibleEntries(env());
-const FLIPPED = visibleEntries(env({ CHANGE_COMMANDER_ENABLED: "true" }));
-// The newest unswitched entry: a reader one behind it has something unswitched to be told.
-const W = Math.max(...OFF.map((e) => e.since));
+const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
+const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
+const OFF = env({});
+const THEME = DEFAULT_THEME;
+const units = (v: readonly VisibleSection[]) => v.flatMap((s) => [...s.labels, ...s.rules]);
 
-describe("aboutNotice", () => {
-  it("introduces a first-run reader to the page", () => {
-    expect(aboutNotice(seen(0), OFF, false)).toEqual({ kind: "firstRun" });
-  });
+/** A reader at `floor` who visited About with these switches: the floor, and every switched entry drawn by then. */
+function readerAt(floor: number, e = ALL_ON): SeenState {
+  return { version: floor, ids: switchedIds(visibleEntries(e).filter((x) => x.since <= floor)) };
+}
 
-  it("names what a reader behind has not seen, in page order, as the sheet did", () => {
-    const n = aboutNotice(seen(W - 1), OFF, false);
-    const sheet = sheetDecision({ userId: "u", seen: seen(W - 1), visible: OFF });
-    expect(n?.kind).toBe("behind");
-    expect(n?.kind === "behind" && n.entries.map((e) => e.id).join(",")).toBe(sheet.show && sheet.header);
-  });
-
-  it("tells a current reader nothing", () => {
-    expect(aboutNotice(seen(V), OFF, false)).toBeNull();
-  });
-
-  it("names a switch-tied entry a flip makes new, though the reader's version is current", () => {
-    expect(aboutNotice(seen(V), OFF, false)).toBeNull();
-    const n = aboutNotice(seen(V), FLIPPED, false);
-    expect(n).toEqual({ kind: "behind", entries: [FLIPPED.find((e) => e.id === "change-commander")] });
-    // Met on /about: no longer new.
-    expect(aboutNotice(seen(V, ["change-commander"]), FLIPPED, false)).toBeNull();
-  });
-
-  it("cannot name the How it works appendix (Q3): the sheet appended it, and the catalog the notice reads lacks it", () => {
-    // By construction: the notice's entries are drawn from the visible catalog, and the appendix is not an entry.
-    // This pins that premise, so an appendix moved into the catalog fails here rather than reaching the banner.
-    expect(aboutEntries.map((e) => e.id)).not.toContain(HOW_IT_WORKS_ID);
-    const sheet = sheetDecision({ userId: "u", seen: seen(W - 1), visible: OFF, appendix: true });
-    expect(sheet.show && sheet.header).toContain(HOW_IT_WORKS_ID);
-  });
-
-  it("is suppressed in a browser whose sheet cookie is current, and only there", () => {
-    const current = sheetCookieIsCurrent(sheetCookieValue("u", OFF), "u", OFF);
-    expect(aboutNotice(seen(W - 1), OFF, current)).toBeNull();
-    expect(aboutNotice(seen(0), OFF, current)).toBeNull();
-    // A cookie written before the flip no longer matches, so the flipped entry is told.
-    const stale = sheetCookieIsCurrent(sheetCookieValue("u", OFF), "u", FLIPPED);
-    expect(stale).toBe(false);
-    expect(aboutNotice(seen(V), FLIPPED, stale)?.kind).toBe("behind");
-  });
-});
+/** Task 1.2's sweep, at one floor: the units a reader there has not been told about (`pages-visible.test.ts`). */
+function sweepAt(floor: number, visible: readonly VisibleSection[]): string[] {
+  const met = new Set(readerAt(floor).ids);
+  return units(visible).filter((u) => {
+    if (u.legacy.some((id) => met.has(id))) return false;
+    const own = typeof u.switch === "string" ? u.switch : null;
+    const announces = own !== null && u.legacy.some((id) => id.endsWith(`@${own}`) || aboutEntries.find((x) => x.id === id)?.switch === own);
+    return announces || u.since > floor;
+  }).map((u) => u.key);
+}
 
 describe("aboutLine", () => {
-  it("hands the browser titles and the ids its ✕ claims", () => {
-    const line = aboutLine(aboutNotice(seen(V), FLIPPED, false), FLIPPED);
-    const entry = FLIPPED.find((e) => e.id === "change-commander")!;
-    expect(line).toEqual({ kind: "behind", titles: [entry.title], ids: ["change-commander"] });
+  it("tells a reader at floor 16 holding every switched id nothing", () => {
+    expect(aboutLine(readerAt(16), visibleSections(ALL_ON), THEME)).toBeNull();
+    expect(aboutLine(readerAt(16, OFF), visibleSections(OFF), THEME)).toBeNull();
   });
 
-  it("claims every visible entry for a first-run line, as a visit does", () => {
-    expect(aboutLine({ kind: "firstRun" }, OFF)).toEqual({ kind: "firstRun", ids: OFF.map((e) => e.id) });
-    expect(aboutLine(null, OFF)).toBeNull();
+  it("names exactly the units Task 1.2's sweep names for a reader at floor 9, in page order", () => {
+    const visible = visibleSections(ALL_ON);
+    const line = aboutLine(readerAt(9), visible, THEME);
+    expect(line?.kind).toBe("launches");
+    if (line?.kind !== "launches") return;
+    expect(line.ids).toEqual(unseenUnits(visible, readerAt(9)).map((u) => u.key));
+    expect(line.ids.filter((k) => !k.includes("@"))).toEqual(sweepAt(9, visible));
+    expect(line.ids.length).toBeGreaterThan(1);
+  });
+
+  it("never names a unit switched off for the reader (Review Focus 2)", () => {
+    // Lock cards follows NEVER_CUT_ENABLED and is announced by its id alone.
+    const reader: SeenState = { version: 16, ids: ["something-else"] };
+    const on = aboutLine(reader, visibleSections(env({ NEVER_CUT_ENABLED: "true" })), THEME);
+    expect(on?.ids).toContain("decks/your-deck/lock");
+    const off = aboutLine(reader, visibleSections(OFF), THEME);
+    expect(off?.ids ?? []).not.toContain("decks/your-deck/lock");
+    for (const k of off?.ids ?? []) expect(units(visibleSections(OFF)).map((u) => u.key)).toContain(k.split("@")[0]);
+  });
+
+  it("words one launch: its page, its lead and rest, Show me to the label lit, and a crop at each width", () => {
+    const line = aboutLine({ version: 16, ids: ["x"] }, visibleSections(env({ NEVER_CUT_ENABLED: "true" })), THEME);
+    const lock = line?.kind === "launches" ? line.launches.find((l) => l.key === "decks/your-deck/lock") : undefined;
+    expect(lock).toMatchObject({
+      lead: "New on Decks:",
+      text: "Lock cards protects the cards you pick. No tool will cut a locked card unless you say so.",
+      href: "/about/decks?lit=decks%2Fyour-deck%2Flock#your-deck",
+    });
+    // The picture matches the device (call 0): each crop from its own width's capture, centred on the label's region.
+    expect(lock!.phone?.src).toMatch(new RegExp(`^/about/pages/${THEME}/phone/`));
+    expect(lock!.desktop?.src).toMatch(new RegExp(`^/about/pages/${THEME}/desktop/`));
+    expect(lock!.phone?.box).toHaveLength(4);
+  });
+
+  it("draws a rule with no crop, so the banner keeps the diamond mark for it", () => {
+    const visible = visibleSections(ALL_ON);
+    const rule = units(visible).find((u) => u.kind === "rule")!;
+    const line = aboutLine({ version: 0, ids: ["x"] }, visible, THEME);
+    const told = line?.kind === "launches" ? line.launches.find((l) => l.key === rule.key) : undefined;
+    expect(told).toBeDefined();
+    expect(told!.phone).toBeNull();
+    expect(told!.desktop).toBeNull();
+    expect(told!.href).toBe(`/about/${rule.area}?lit=${encodeURIComponent(rule.key)}#${rule.section}`);
+  });
+
+  it("words a switched sentence told on its own as that sentence alone, landing on its unit", () => {
+    const visible = visibleSections(ALL_ON);
+    const reader: SeenState = { version: 16, ids: ["upload-choice"] };
+    const sync = sentenceKey("rule/replace", "COLLECTION_SYNC_ENABLED");
+    const line = aboutLine(reader, visible, THEME);
+    const told = line?.kind === "launches" ? line.launches.find((l) => l.key === sync) : undefined;
+    expect(told?.text).toMatch(/^With Sync/);
+    expect(told?.href).toContain(`lit=${encodeURIComponent("rule/replace")}`);
+  });
+
+  it("points a first-run reader at the index, standing for every unit they are drawn", () => {
+    const visible = visibleSections(ALL_ON);
+    expect(aboutLine(NEVER_SEEN, visible, THEME)).toEqual({
+      kind: "firstRun", ids: units(visible).map((u) => u.key), ack: everyAnnouncement(visible).flatMap((u) => u.ack),
+    });
+  });
+
+  it("lands Show me on the unit's page, lit, at its section", () => {
+    expect(launchHref({ key: "decks/games/matchups", area: "decks", section: "games" })).toBe("/about/decks?lit=decks%2Fgames%2Fmatchups#games");
+    expect(launchHref({ key: "rule/replace@COLLECTION_SYNC_ENABLED", area: "collection", section: "import" }))
+      .toBe("/about/collection?lit=rule%2Freplace#import");
   });
 });
 
-describe("aboutDismissal (the ✕)", () => {
-  const plain: AboutEntry = { ...aboutEntries[0], id: "plain", since: 3, switch: undefined };
-  const newer: AboutEntry = { ...aboutEntries[0], id: "newer", since: 5, switch: undefined };
-  const a: AboutEntry = { ...aboutEntries[0], id: "a", since: 4, switch: "NEVER_CUT_ENABLED" };
-  const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 4, switch: "CHANGE_COMMANDER_ENABLED" };
-  const visible = [plain, a, b, newer];
+describe("aboutDismissal (the banner's ✕)", () => {
+  const visible = visibleSections(ALL_ON);
 
-  it("writes what the page drew, as a visit writes it", () => {
-    expect(aboutDismissal(["plain", "a", "b", "newer"], seen(2), visible, 6)).toEqual({ version: 6, ids: ["a", "b"] });
+  it("writes every claimed unit's ack, not just its key, and raises the floor when every launch was claimed", () => {
+    const reader = readerAt(9);
+    const unseen = unseenUnits(visible, reader);
+    const write = aboutDismissal(unseen.flatMap((u) => u.ack), reader, visible);
+    expect(write?.version).toBe(ABOUT_VERSION);
+    expect(new Set(write?.ids)).toEqual(new Set(unseen.flatMap((u) => u.ack)));
+    // A unit told whole carries its sentences' keys, so none is told on its own next.
+    expect(unseen.some((u) => u.ack.length > 1)).toBe(true);
+    const after: SeenState = { version: write!.version, ids: [...reader.ids, ...write!.ids] };
+    expect(unseenUnits(visible, after)).toEqual([]);
   });
 
-  it("never writes an id the reader's notice does not name now", () => {
-    // `a` was already met, `zzz` is no entry, and the appendix is never the notice's to write.
-    expect(aboutDismissal(["a", "b", "zzz", HOW_IT_WORKS_ID], seen(5, ["a"]), visible, 6)).toEqual({ version: 6, ids: ["b"] });
+  it("holds the floor under an unclaimed launch, so it stays new", () => {
+    const reader = readerAt(9);
+    const unseen = unseenUnits(visible, reader);
+    const [left, ...claimed] = unseen;
+    const write = aboutDismissal(claimed.flatMap((u) => u.ack), reader, visible)!;
+    const since = units(visible).find((u) => u.key === left!.key.split("@")[0])!.since;
+    expect(write.version).toBeLessThan(Math.max(since, reader.version + 1));
+    expect(write.version).toBeGreaterThanOrEqual(reader.version);
+    expect(unseenUnits(visible, { version: write.version, ids: [...reader.ids, ...write.ids] }).map((u) => u.key)).toContain(left!.key);
   });
 
-  it("leaves an entry that arrived after the render new: no claim, no floor past it", () => {
-    // `newer` (since 5) is new now but was not drawn, so the floor rises to `plain` alone.
-    expect(aboutDismissal(["plain", "a"], seen(2), visible, 6)).toEqual({ version: 3, ids: ["a"] });
-    // A dropped entry BELOW a claimed one: the floor stops under it, so dropping it never marks it seen.
-    expect(aboutDismissal(["newer", "a"], seen(2), visible, 6)).toEqual({ version: 2, ids: ["a"] });
-    // And a switched entry flipped on after the render stays new too.
-    expect(aboutDismissal(["b"], seen(5, ["a"]), visible, 6)).toEqual({ version: 6, ids: ["b"] });
-    expect(aboutDismissal(["a"], seen(5, ["a"]), visible, 6)).toBeNull();
+  it("writes nothing a client adds: an unknown key, a unit already seen, or a non-array", () => {
+    const reader = readerAt(9);
+    expect(aboutDismissal(["not/a/key"], reader, visible)).toBeNull();
+    expect(aboutDismissal("decks/games/matchups", reader, visible)).toBeNull();
+    expect(aboutDismissal(["home/home/ready"], readerAt(16), visible)).toBeNull();
   });
 
-  it("writes the variant id of an entry drawn in its variant, the one isSeen checks, so the notice stops naming it", () => {
-    const varied: AboutEntry = { ...aboutEntries[0], id: "varied", since: 5, switch: undefined, variantOn: "COLLECTION_SYNC_ENABLED" };
-    const vis = [plain, varied];
-    // The line claims the form it drew (`aboutLine`): the variant id.
-    expect(aboutLine(aboutNotice(seen(2), vis, false), vis)!.ids).toEqual(["plain", "varied@COLLECTION_SYNC_ENABLED"]);
-    const out = aboutDismissal(["plain", "varied@COLLECTION_SYNC_ENABLED"], seen(2), vis, 6);
-    expect(out).toEqual({ version: 6, ids: ["varied@COLLECTION_SYNC_ENABLED"] });
-    expect(aboutNotice({ version: out!.version, ids: out!.ids }, vis, false)).toBeNull();
+  it("writes nothing for a unit switched off since the page rendered", () => {
+    const reader: SeenState = { version: 16, ids: ["x"] };
+    expect(aboutDismissal(["decks/your-deck/lock"], reader, visibleSections(OFF))).toBeNull();
   });
 
-  // A banner drawn before Collection Sync flipped named `upload-choice` in its base form. Its ✕ after the flip claims
-  // that form, which the reader read; the variant they never saw stays new.
-  const EDIT = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true" }));
-  const SYNC = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", COLLECTION_SYNC_ENABLED: "true" }));
-  const SYNC_ID = "upload-choice@COLLECTION_SYNC_ENABLED";
+  it("gives a first-run reader the baseline a first visit writes", () => {
+    const keys = everyAnnouncement(visible).flatMap((u) => u.ack);
+    const write = aboutDismissal(keys, NEVER_SEEN, visible)!;
+    const baseline = afterVisit(visible, "home", NEVER_SEEN);
+    expect(write.version).toBe(baseline.version);
+    expect(new Set(write.ids)).toEqual(new Set(baseline.ids));
+  });
+});
 
-  it("does not mark the variant seen when the banner's base form is dismissed after the switch flipped", () => {
-    const before = aboutLine(aboutNotice(seen(V), EDIT, false), EDIT)!;
-    expect(before.ids).toContain("upload-choice");
-    expect(before.ids).not.toContain(SYNC_ID);
-    const out = aboutDismissal(before.ids, seen(V), SYNC);
-    expect(out?.ids ?? []).not.toContain(SYNC_ID);
-    const after = aboutNotice({ version: out?.version ?? V, ids: out?.ids ?? [] }, SYNC, false);
-    expect(after?.kind === "behind" && after.entries.map((e) => e.id)).toContain("upload-choice");
-    // The variant's own claim does answer it.
-    expect(aboutDismissal([SYNC_ID], seen(V), SYNC)!.ids).toContain(SYNC_ID);
+// Review round 1: the ✕ writes what was RENDERED, intersected with what is announced now, never widened to it.
+describe("aboutDismissal, a switch turned on between the render and the ✕", () => {
+  const SPARE = "shopping/deck-shopping/spare";
+  const SPARE_ON = env({ SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+  const SPARE_OFF = env({ SOCIAL_FRIENDS_ENABLED: "true" });
+  const reader: SeenState = { version: 16, ids: ["x"] };
+
+  it("a base unit drawn before SPARE_REQUESTS_ENABLED turned on does not take its new sentence's key", () => {
+    const line = aboutLine(reader, visibleSections(SPARE_OFF), THEME);
+    const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === SPARE) : undefined;
+    expect(drawn?.ack).toEqual([SPARE]);
+    const now = visibleSections(SPARE_ON);
+    const write = aboutDismissal(drawn!.ack, reader, now)!;
+    expect(write.ids).toContain(SPARE);
+    expect(write.ids).not.toContain(sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED"));
+    // The sentence is the next launch: the floor stays under its unit.
+    const after: SeenState = { version: write.version, ids: [...reader.ids, ...write.ids] };
+    expect(unseenUnits(now, after).map((u) => u.key)).toContain(sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED"));
   });
 
-  it("does not hide the variant's banner behind a /about visit that drew the base form", () => {
-    resetArrivalsAcknowledged();
-    // What `/about` acknowledges for a page drawn with Sync off.
-    acknowledgeAbout(EDIT.map(displayedId));
-    const line = aboutLine(aboutNotice(seen(V), SYNC, false), SYNC)!;
-    expect(line.ids).toContain(SYNC_ID);
-    expect(aboutAcknowledged(line.ids)).toBe(false);
-    // A visit that drew the variant does.
-    acknowledgeAbout(SYNC.map(displayedId));
-    expect(aboutAcknowledged(line.ids)).toBe(true);
-    resetArrivalsAcknowledged();
+  it("writes the sentence's key when the render drew it", () => {
+    const now = visibleSections(SPARE_ON);
+    const line = aboutLine(reader, now, THEME);
+    const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === SPARE) : undefined;
+    expect(drawn?.ack).toEqual([SPARE, sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED")]);
+    expect(aboutDismissal(drawn!.ack, reader, now)!.ids).toContain(sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED"));
   });
 
-  it("takes a first-run reader past first run with what a visit writes", () => {
-    expect(aboutDismissal(visible.map((e) => e.id), seen(0), visible, 6)).toEqual({ version: 6, ids: ["a", "b"] });
+  it("a first-run ✕ takes only the baseline it rendered: a unit and a sentence switched on since stay new", () => {
+    const line = aboutLine(NEVER_SEEN, visibleSections(OFF), THEME);
+    expect(line?.kind).toBe("firstRun");
+    const now = visibleSections(env({ NEVER_CUT_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" }));
+    const write = aboutDismissal(line?.kind === "firstRun" ? line.ack : [], NEVER_SEEN, now)!;
+    expect(write.ids).not.toContain("decks/your-deck/lock");
+    expect(write.ids).not.toContain(SPARE);
+    const after: SeenState = { version: write.version, ids: write.ids };
+    const told = unseenUnits(now, after).map((u) => u.key);
+    expect(told).toContain("decks/your-deck/lock");
+    expect(told).toContain(SPARE);
   });
 
-  it("writes nothing for a current reader, a claim that is not a list, or nothing still new", () => {
-    expect(aboutDismissal(["a"], seen(6, ["a", "b"]), visible, 6)).toBeNull();
-    expect(aboutDismissal("a", seen(2), visible, 6)).toBeNull();
-    expect(aboutDismissal([], seen(2), visible, 6)).toBeNull();
-    expect(aboutDismissal([7, null, { id: "a" }], seen(2), visible, 6)).toBeNull();
+  it("cuts a claim past the bound, as a page never draws one that long", () => {
+    const padded = [...Array.from({ length: 200 }, (_, i) => `pad/${i}`), "decks/your-deck/lock"];
+    expect(aboutDismissal(padded, reader, visibleSections(env({ NEVER_CUT_ENABLED: "true" })))).toBeNull();
+  });
+});
+
+describe("bannerCap", () => {
+  it("shows four in full and past four three, so `and 1 more` never prints", () => {
+    expect(bannerCap(1)).toEqual({ shown: 1, more: 0 });
+    expect(bannerCap(4)).toEqual({ shown: 4, more: 0 });
+    expect(bannerCap(5)).toEqual({ shown: 3, more: 2 });
+    for (let n = 0; n < 60; n++) expect(bannerCap(n).more).not.toBe(1);
+  });
+});
+
+describe("cropStyle", () => {
+  const crop = (box: readonly [number, number, number, number]) => ({ src: "x", w: 1000, h: 2000, box });
+
+  it("fits the region in the box with the board's margin and centres it there", () => {
+    // A 100x100 region in the middle of a tall capture, in a 64x48 box: scaled to 80% of 48 tall, centred.
+    const at = cropStyle(crop([0.45, 0.475, 0.1, 0.05]), 64, 48);
+    expect(at.width).toBeCloseTo(384);
+    expect(at.height).toBeCloseTo(768);
+    expect(at.left + (0.5 * at.width)).toBeCloseTo(32, 0);
+    expect(at.top + (0.5 * at.height)).toBeCloseTo(24, 0);
+  });
+
+  it("matches the board's Matchups crop on the phone capture: 55.8 wide, flush left", () => {
+    // Ways-In "Banner · one launch · phone": the Matchups region (0.9179 of the 780px capture wide) at 64x48.
+    const at = cropStyle({ src: "x", w: 780, h: 1688, box: [0.041, 0.2563, 0.9179, 0.3045] }, 64, 48);
+    expect(at.width).toBeCloseTo(55.8, 0);
+    expect(at.height).toBeCloseTo(120.7, 0);
+    expect(at.left).toBe(0);
+  });
+
+  it("holds the image at the box's edge rather than leave a gap at a capture's corner", () => {
+    const at = cropStyle(crop([0, 0, 0.1, 0.05]), 64, 48);
+    expect(at.left).toBe(0);
+    expect(at.top).toBe(0);
+    const far = cropStyle(crop([0.9, 0.95, 0.1, 0.05]), 64, 48);
+    expect(far.left + far.width).toBeCloseTo(64, 0);
+    expect(far.top + far.height).toBeCloseTo(48, 0);
   });
 });

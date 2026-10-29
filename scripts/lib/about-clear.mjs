@@ -1,5 +1,5 @@
-// Clears the one-time About sheet (About R6) for a probe, so a card drawn over the page
-// cannot corrupt what the probe measures (R6 audit E5).
+// Clears About's announcements for a probe, so nothing About draws can corrupt what the probe measures (R6 audit E5):
+// once the one-time sheet, now Home's banner lines (About visual PR 6b).
 //
 // ADDITIVE, and deliberately so. Every probe already raises `user_prefs.about_version_seen`
 // for the account it signs in as, some with a capture-and-restore of their own, and that
@@ -49,24 +49,6 @@ async function announce(sql) {
 
 const VERSION_FILE = new URL("../../src/lib/copy/about.version.json", import.meta.url);
 
-/**
- * The cookie the proxy reads as "this browser has shown the sheet", for a server with no
- * entry's switch on. With one on, the proxy's value also names the switched entries, so this
- * one does not match and the proxy falls back to the row `markEveryEntrySeen` wrote.
- */
-export function sheetCookie(userId, origin, version = JSON.parse(readFileSync(VERSION_FILE, "utf8")).version) {
-  const { hostname, protocol } = new URL(origin);
-  return {
-    name: "about_sheet",
-    value: `${userId}.${version}`,
-    domain: hostname,
-    path: "/",
-    httpOnly: true,
-    secure: protocol === "https:",
-    sameSite: "Lax",
-  };
-}
-
 const CATALOG_FILE = new URL("../../src/lib/copy/about-entries.ts", import.meta.url);
 
 /**
@@ -113,45 +95,13 @@ export async function markEveryEntrySeen(
 }
 
 /**
- * Marks every entry seen, marks this browser as having shown the sheet, and dismisses a card
- * already drawn.
- *
- * A probe usually calls this after its first `goto`, and by then the About gate may already have
- * redirected that load to `/about?tab=reference&next=<path>`. Marking the entries seen does not
- * bring the page back, so the probe would wait on its own route's content and time out. When the
- * page sits on the gate's redirect, this follows its `next` back to the route the probe asked for.
+ * Marks every entry seen, so no About launch line sits on Home's banner over what a probe measures. The one-time sheet
+ * and the gate's redirect it once followed back retired with About visual PR 6b; the name stays for its many callers.
+ * `page` is unused now and kept so no caller changes. A reader holding every catalog id at the current floor is told
+ * nothing by the pages' rule either (`pages-visible.test.ts`).
  */
 export async function clearAboutSheet(page, userId) {
   await markEveryEntrySeen(userId);
-  await page.context().addCookies([sheetCookie(userId, page.url())]);
-  const back = gateReturn(page.url());
-  if (back) {
-    await page.goto(back, { waitUntil: "domcontentloaded", timeout: 120_000 });
-    return;
-  }
-  const card = page.getByRole("region", { name: /^(New in About|About The\s99)$/ });
-  if (await card.isVisible().catch(() => false)) {
-    await card.getByRole("button", { name: "Later" }).click();
-  }
-}
-
-/**
- * Where the About gate's redirect was taking the reader: the same-origin `next` path of a
- * `/about` URL, or null for any other URL. A reader who opened `/about` by hand carries no `next`.
- */
-export function gateReturn(url) {
-  const at = new URL(url);
-  if (at.pathname !== "/about") return null;
-  const next = at.searchParams.get("next");
-  if (!next || !next.startsWith("/")) return null;
-  // Judged on the resolved URL, not the prefix: `/\host` and a tab between two slashes both
-  // pass a prefix check and resolve to another host.
-  try {
-    const back = new URL(next, at.origin);
-    return back.origin === at.origin ? back.href : null;
-  } catch {
-    return null;
-  }
 }
 
 /**

@@ -1,4 +1,3 @@
-import { aboutSheetEnabled } from "../about/flag";
 import { howItWorksEnabled } from "../about/how-it-works-flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
@@ -49,7 +48,6 @@ import type { SwitchName } from "./registry";
  * decides it. Server-side by its imports.
  */
 export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) => boolean>> = {
-  ABOUT_SHEET_ENABLED: aboutSheetEnabled,
   ADDED_COPY_ENABLED: addedCopyEnabled,
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,

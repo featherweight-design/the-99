@@ -1,42 +1,48 @@
-// probe:about-banner — About's notice as a line on Home's banner, pressed in a real browser at 390x844 and 1300x900
-// (plan `2026-10-15-about-on-the-banner.md`, PR A; handoff `design_handoff_the99_upcoming_precons`, `R2 - Home-About`,
-// STATES A1–A3).
+// probe:about-banner — About's launches on Home's banner, pressed in a real browser at 390x844 and 1300x900 (About
+// visual build, plan `2026-10-27-about-visual.md` PR 6b; handoff `design_handoff_the99_about_visual`, call 7, Ways-In
+// "Banner"). The one-time sheet and the gate's redirect retired in that PR; the banner is the only announcement.
 //
 // What jsdom cannot see, and the unit tests therefore do not prove:
-//   - A1 on the Dashboard: `N new in About: {titles}.`, Show me to /about, ✕ (44 at 390, 32 at 1300); and NO sheet.
-//   - Cookie suppression: a browser holding a current `about_sheet` cookie draws no About line, read per request
-//     outside Home's cached payload (`LIST_CACHE_ENABLED=true` on the server), and the proxy writes no such cookie.
-//   - ✕ writes About's seen (read back from `user_prefs`), a reload draws no line, and `/about` then lists no new
-//     entries (its what's-new index is gone).
-//   - Back after ✕ (a client navigation away and Back restores the router's held payload) draws no line.
-//   - Show me lands on /about, the visit writes seen, and Back to Home draws no line (the client acknowledgement).
-//   - A2: About and an arrival under `New in the app`, About first, each line its own link, one ✕ writing both.
-//   - A3 on the Dashboard (an account that imported before ever opening /about), with ✕.
-//   - A3 and A1 on the first-run checklist, with no ✕.
-//   - Every page but Home draws no line and no sheet.
+//   - One launch on the Dashboard: "New on Decks: Lock cards …", the crop in the mark's place at the reader's width
+//     (64x48 from the phone capture at 390, 56x38 from the desktop capture at 1300), Show me, ✕ (44 / 32).
+//   - Every page but Home draws no line, and nothing redirects to /about.
+//   - ✕ writes the launch's ack and the floor (read back from `user_prefs`), a reload draws no line, and Back after ✕
+//     draws none.
+//   - Show me lands on /about/decks with the label marked New, the visit writes the label's key, and Back to Home
+//     draws no line (the client acknowledgement).
+//   - Two launches: the `New in the app` band, a crop and a Show me per line, one ✕ writing both acks.
+//   - A2: a launch and an arrival under `New in the app`, About first, one ✕ writing both halves.
+//   - The first-run line on the Dashboard (an account that imported before opening About), to the /about index, with
+//     ✕ writing the baseline; and on the first-run checklist with no ✕.
 //
 // The sign-in account (`E2E_AUDIT_USER_EMAIL`, which holds cards or decks, so Home is its Dashboard) has its
-// `user_prefs` row read before any page and put back exactly in `finally`, then re-read as a check. Its About state
-// is driven by that row alone: every catalog id is put in `about_seen_ids`, so no SWITCHED entry is new whatever the
-// server's switches say, and the version floor is lowered below the newest unswitched entry, so exactly those
-// entries are new. The checklist states use a fresh Clerk test user on the DEVELOPMENT instance, deleted after with
-// every row it wrote. The A2 arrival is a fixture `commander` set `pqbset` with a day-old non-baseline
-// `catalog_first_seen` stamp, removed in `finally`. Local-dev only: production and staging are refused by branch id.
+// `user_prefs` row read before any page and put back exactly in `finally`, then re-read as a check. Its About state is
+// driven by that row alone: "current" is the floor, every catalog id and every unit key the pages can draw; one launch
+// is that less Lock cards' key and its legacy `locked-cards`; two launches is that less the lock rule's key too. Both
+// follow NEVER_CUT_ENABLED, which the server must have on. The checklist states use a fresh Clerk test user on the
+// DEVELOPMENT instance, deleted after with every row it wrote. The A2 arrival is a fixture `commander` set `pqbset`
+// with a day-old non-baseline `catalog_first_seen` stamp, removed in `finally`. Local-dev only: production and staging
+// are refused by branch id.
 //
 // The server: `next start` of a build with the worktree's `.env`, started with
-//   PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true ABOUT_SHEET_ENABLED=true
+//   PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true
 //
 //   PROBE_BASE=http://localhost:3312 pnpm probe:about-banner
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
-import { chromium, type Browser, type BrowserContext, type Locator, type Page } from "playwright";
+import { chromium, type Browser, type Locator, type Page } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
-import { catalogIds } from "./lib/about-clear.mjs";
+import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
+import { catalogIds, variantIds } from "./lib/about-clear.mjs";
 import { ABOUT_VERSION } from "../src/lib/copy/about";
-import { aboutEntries } from "../src/lib/copy/about-entries";
 import { arrivalsCopy } from "../src/lib/copy/arrivals";
 import { HOW_IT_WORKS_ID } from "../src/lib/copy/how-it-works-links";
+import { aboutLine } from "../src/lib/about/notice";
+import { afterVisit, visibleSections } from "../src/lib/about/pages-visible";
+import { NEVER_SEEN } from "../src/lib/about/visible";
+import { SWITCH_NAMES } from "../src/lib/switches/registry";
+import { DEFAULT_THEME } from "../src/lib/theme/themes";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -50,8 +56,6 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
 const sql = neon(DATABASE_URL);
-const PRODUCTION = "br-noisy-violet-a6vw4ess";
-const STAGING = "br-polished-pond-a6e63y0b";
 
 const SET = "pqbset";
 const SET_NAME = "Probe About Banner Commander";
@@ -59,22 +63,27 @@ const REGION = "section[aria-label='New in the app']";
 const DAY = 86_400_000;
 const day = (offset: number) => new Date(Date.now() + offset * DAY).toISOString().slice(0, 10);
 
-// Every id the catalog holds, and the unswitched entries a floor one below the newest of them leaves new.
-const CATALOG = catalogIds();
-// Seen with the How it works appendix too: a reader who has not seen it is "behind" to /about, whose visit then
-// writes the floor in an effect that can land after the probe has lowered it.
-const ALL_IDS = [...CATALOG, HOW_IT_WORKS_ID];
-const UNSWITCHED = aboutEntries.filter((e) => !e.switch);
-const W = Math.max(...UNSWITCHED.map((e) => e.since));
-const BEHIND = W - 1;
-const NEW_TITLES = UNSWITCHED.filter((e) => e.since > BEHIND).map((e) => e.title);
-if (NEW_TITLES.length === 0) throw new Error("no unswitched entry is new one version below the newest: nothing to probe");
+// "Current": the floor, every catalog id and variant, the appendix, and every unit key the pages can draw (with every
+// switch on, a superset of what any server draws: a key of a unit not drawn is never read).
+const ALL_ON = Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])) as unknown as NodeJS.ProcessEnv;
+const UNIT_KEYS = afterVisit(visibleSections(ALL_ON), "home", NEVER_SEEN).ids;
+const CURRENT = [...new Set([...catalogIds(), ...variantIds(), HOW_IT_WORKS_ID, ...UNIT_KEYS])];
+const LOCK = "decks/your-deck/lock";
+const LOCK_RULE = "rule/lock";
+// One launch: Lock cards' label, unseen by its own key and its legacy entry's. Two: the lock rule as well.
+const ONE = CURRENT.filter((id) => id !== "locked-cards" && id !== LOCK);
+const TWO = ONE.filter((id) => id !== LOCK_RULE);
 const norm = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
-const capped = (titles: string[]) => {
-  const shown = titles.length <= 4 ? titles.length : 3;
-  return arrivalsCopy.aboutRest(titles, shown, titles.length - shown);
+// The lines as the server words them, for a reader with NEVER_CUT_ENABLED on.
+const NEVER_CUT = { NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const wordsOf = (ids: string[]) => {
+  const line = aboutLine({ version: ABOUT_VERSION, ids }, visibleSections(NEVER_CUT), DEFAULT_THEME);
+  if (line?.kind !== "launches") throw new Error("the fixture state announces nothing: is the lock label still switched?");
+  return line.launches.map((l) => ({ key: l.key, text: norm(`${l.lead} ${l.text}`), href: l.href }));
 };
-const A1_TEXT = norm(`${arrivalsCopy.aboutLead(NEW_TITLES.length)}${capped(NEW_TITLES)}`);
+const ONE_LINE = wordsOf(ONE);
+const TWO_LINES = wordsOf(TWO);
+if (ONE_LINE.length !== 1 || TWO_LINES.length !== 2) throw new Error(`fixture states announce ${ONE_LINE.length} and ${TWO_LINES.length}`);
 const A3_TEXT = norm(`${arrivalsCopy.aboutFirstRunLead}${arrivalsCopy.aboutFirstRunRest}`);
 
 const WIDTHS = [
@@ -197,97 +206,81 @@ async function hydrated(page: Page) {
   }, null, { timeout: 30_000 });
 }
 
-async function sheetCookies(context: BrowserContext) {
-  return (await context.cookies()).filter((c) => c.name === "about_sheet");
-}
-
-/** No line and no sheet, read after the page settles. */
+/** No line, read after the page settles. */
 async function nothingDrawn(page: Page) {
   await page.waitForTimeout(500);
-  return { regions: await onPage(page, REGION).count(), sheets: await page.locator("[data-about-sheet]").count() };
+  return { regions: await onPage(page, REGION).count(), url: new URL(page.url()).pathname };
 }
 
-/** The switched entries this server draws, read off /about's own anchors, in page order: the sheet cookie names them. */
-async function switchedOnServer(page: Page) {
-  await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded" });
-  await onPage(page, "#precons").first().waitFor({ timeout: 30_000 });
-  const present = new Set(await page.evaluate((ids) => ids.filter((id) => document.getElementById(id)), CATALOG));
-  // Nothing is new here, so the visit writes nothing; give a late effect its time all the same.
-  await page.waitForTimeout(1_500);
-  return aboutEntries.filter((e) => e.switch && present.has(e.id)).map((e) => e.id);
+/** The crops a line draws at this width: the visible one's box and its capture's width. */
+async function visibleCrops(scope: Locator) {
+  return scope.locator("[data-about-crop]").evaluateAll((els: Element[]) =>
+    els.filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => {
+      const r = e.getBoundingClientRect();
+      const cs = getComputedStyle(e);
+      return {
+        w: Math.round(r.width - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth)),
+        h: Math.round(r.height - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth)),
+        src: e.querySelector("img")?.getAttribute("src") ?? "",
+      };
+    }));
 }
 
 async function dashboard(browser: Browser, w: Width, userId: string) {
   const context = await browser.newContext({ viewport: { width: w.width, height: w.height }, hasTouch: w.phone, isMobile: w.phone });
   const page = await context.newPage();
   await signIn(page, EMAIL, PASSWORD ?? "");
-  await context.clearCookies({ name: "about_sheet" });
-  await setAbout(userId, ABOUT_VERSION, ALL_IDS);
-  const switched = await switchedOnServer(page);
   const region = onPage(page, REGION);
-
-  // A1: About alone.
-  await stampArrival(false, userId);
-  await setAbout(userId, BEHIND, ALL_IDS);
-  await home(page);
-  check(await region.count() === 1, `${w.name} A1: the banner draws for a reader behind`, `${await region.count()} regions`);
-  const text = norm(await onPage(page, `${REGION} p`).first().textContent().catch(() => null));
-  check(text === A1_TEXT, `${w.name} A1: the sentence names what is new`, text);
-  check(await onPage(page, `${REGION} h2`).count() === 0, `${w.name} A1: one line, no heading`, `${await onPage(page, `${REGION} h2`).count()} h2`);
-  const show = onPage(page, `${REGION} a`).first();
-  check(norm(await show.textContent()) === "Show me" && (await show.getAttribute("href")) === "/about", `${w.name} A1: Show me goes to /about`, `${await show.textContent()} -> ${await show.getAttribute("href")}`);
-  const xb = await box(onPage(page, `${REGION} button[aria-label="Dismiss"]`).first());
+  const width = w.phone ? "phone" : "desktop";
   const want = w.phone ? 44 : 32;
-  check(Math.round(xb.width) === want && Math.round(xb.height) === want, `${w.name} A1: ✕ is ${want} × ${want}`, `${xb.width} × ${xb.height}`);
-  check(await page.locator("[data-about-sheet]").count() === 0, `${w.name}: no About sheet draws on Home`, `${await page.locator("[data-about-sheet]").count()} sheets`);
-  check((await sheetCookies(context)).length === 0, `${w.name}: the proxy writes no about_sheet cookie`, JSON.stringify((await sheetCookies(context)).map((c) => c.value)));
 
-  // A non-Home page: nothing, and no sheet, though the reader is behind.
+  // One launch.
+  await stampArrival(false, userId);
+  await setAbout(userId, ABOUT_VERSION, ONE);
+  await home(page);
+  check(await region.count() === 1, `${w.name} one launch: the banner draws`, `${await region.count()} regions`);
+  const text = norm(await onPage(page, `${REGION} p`).first().textContent().catch(() => null));
+  check(text === ONE_LINE[0]!.text, `${w.name} one launch: "New on {page}:" and the unit's words`, text);
+  check(await onPage(page, `${REGION} h2`).count() === 0, `${w.name} one launch: one line, no heading`, `${await onPage(page, `${REGION} h2`).count()} h2`);
+  const crops = await visibleCrops(region);
+  const size = w.phone ? [64, 48] : [56, 38];
+  check(crops.length === 1 && crops[0]!.w === size[0] && crops[0]!.h === size[1] && crops[0]!.src.includes(`/${width}/`),
+    `${w.name} one launch: a ${size.join("x")} crop from the ${width} capture in the mark's place`, crops);
+  const show = onPage(page, `${REGION} a`).first();
+  check(norm(await show.textContent()) === "Show me" && (await show.getAttribute("href")) === ONE_LINE[0]!.href,
+    `${w.name} one launch: Show me goes to the label lit`, `${await show.textContent()} -> ${await show.getAttribute("href")}`);
+  const xb = await box(onPage(page, `${REGION} button[aria-label="Dismiss"]`).first());
+  check(Math.round(xb.width) === want && Math.round(xb.height) === want, `${w.name} one launch: ✕ is ${want} × ${want}`, `${xb.width} × ${xb.height}`);
+
+  // A non-Home page: nothing, and no redirect to /about, though the reader is behind.
   for (const path of ["/decks", "/collection"]) {
     await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
     await onPage(page, "h1").first().waitFor({ timeout: 30_000 });
     const d = await nothingDrawn(page);
-    check(d.regions === 0 && d.sheets === 0, `${w.name} ${path}: no About line and no sheet`, d);
+    check(d.regions === 0 && d.url === path, `${w.name} ${path}: no About line, and no redirect`, d);
   }
 
-  // Cookie suppression: a browser that already showed the sheet for these entries is not told again on Home.
-  const value = [`${userId}.${ABOUT_VERSION}`, ...switched].join("+");
-  await context.addCookies([{ name: "about_sheet", value, url: BASE, httpOnly: true, sameSite: "Lax" }]);
-  await home(page);
-  const suppressed = await nothingDrawn(page);
-  check(suppressed.regions === 0, `${w.name}: a current about_sheet cookie suppresses the About line`, suppressed);
-  const kept = await sheetCookies(context);
-  check(kept.length === 1 && kept[0]!.value === value, `${w.name}: and the cookie is read, never rewritten`, kept.map((c) => c.value));
-  // A stale cookie (an older version) does not suppress it.
-  await context.addCookies([{ name: "about_sheet", value: `${userId}.${ABOUT_VERSION - 1}`, url: BASE, httpOnly: true, sameSite: "Lax" }]);
-  await home(page);
-  check(await region.count() === 1, `${w.name}: a stale cookie does not suppress it`,
-    `${await region.count()} regions; cookies ${JSON.stringify((await sheetCookies(context)).map((c) => [c.domain, c.path, c.value]))}`);
-  await context.clearCookies({ name: "about_sheet" });
-
-  // ✕ writes seen, a reload draws nothing, and /about lists nothing new.
+  // ✕ writes the launch's ack and the floor; a reload draws nothing.
+  await setAbout(userId, ABOUT_VERSION - 1, ONE);
   await home(page);
   await onPage(page, `${REGION} button[aria-label="Dismiss"]`).first().click();
   await region.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
-  check(await region.count() === 0, `${w.name} A1: ✕ closes the line`, `${await region.count()} regions`);
+  check(await region.count() === 0, `${w.name}: ✕ closes the line`, `${await region.count()} regions`);
   const focused = await page.evaluate(() => document.activeElement?.id);
-  check(focused === "home-heading", `${w.name} A1: focus moves to Home's h1`, focused ?? "none");
-  const after = await pollAbout(userId, (r) => r?.about_version_seen === ABOUT_VERSION);
-  check(after?.about_version_seen === ABOUT_VERSION, `${w.name} A1: ✕ wrote About's seen floor`, `${after?.about_version_seen}`);
+  check(focused === "home-heading", `${w.name}: focus moves to Home's h1`, focused ?? "none");
+  const after = await pollAbout(userId, (r) => (r?.about_seen_ids ?? []).includes(LOCK));
+  check(after?.about_seen_ids.includes(LOCK) === true && after.about_version_seen === ABOUT_VERSION,
+    `${w.name}: ✕ wrote the launch's ack and raised the floor`, { version: after?.about_version_seen, lock: after?.about_seen_ids.includes(LOCK) });
   await home(page);
-  check(await region.count() === 0, `${w.name} A1: a reload after ✕ draws no line (the stamp retired cached Home)`, `${await region.count()} regions`);
-  await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded" });
-  await onPage(page, "#precons").first().waitFor({ timeout: 30_000 });
-  const index = await onPage(page, "nav[aria-labelledby='whats-new-heading']").count();
-  check(index === 0, `${w.name}: /about then lists nothing new`, `${index} what's-new index`);
+  check(await region.count() === 0, `${w.name}: a reload after ✕ draws no line (the stamp retired cached Home)`, `${await region.count()} regions`);
 
   // Back after ✕: ✕, a client navigation away, Back to the router's held Home.
-  await setAbout(userId, BEHIND, ALL_IDS);
+  await setAbout(userId, ABOUT_VERSION, ONE);
   await home(page);
-  check(await region.count() === 1, `${w.name}: the line is back once About is behind again`, `${await region.count()} regions`);
+  check(await region.count() === 1, `${w.name}: the line is back once the launch is unseen again`, `${await region.count()} regions`);
   await onPage(page, `${REGION} button[aria-label="Dismiss"]`).first().click();
   await region.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
-  await pollAbout(userId, (r) => r?.about_version_seen === ABOUT_VERSION);
+  await pollAbout(userId, (r) => (r?.about_seen_ids ?? []).includes(LOCK));
   await page.locator('a[href="/decks"]:visible').first().click();
   await page.waitForURL((u) => u.pathname === "/decks", { timeout: 30_000 });
   await onPage(page, "h1").first().waitFor({ timeout: 30_000 });
@@ -297,55 +290,70 @@ async function dashboard(browser: Browser, w: Width, userId: string) {
   const backX = await nothingDrawn(page);
   check(backX.regions === 0, `${w.name}: Back to Home after ✕ draws no line`, backX);
 
-  // Show me lands on /about; the visit writes seen; Back to Home draws no line.
-  await setAbout(userId, BEHIND, ALL_IDS);
+  // Show me lands on the label, lit and marked New; the visit writes its key; Back to Home draws no line.
+  await setAbout(userId, ABOUT_VERSION, ONE);
   await home(page);
   await onPage(page, `${REGION} a`).first().click();
-  await page.waitForURL((u) => u.pathname === "/about", { timeout: 30_000 });
-  check(new URL(page.url()).pathname === "/about", `${w.name}: Show me lands on /about`, page.url());
-  const visited = await pollAbout(userId, (r) => r?.about_version_seen === ABOUT_VERSION);
-  check(visited?.about_version_seen === ABOUT_VERSION, `${w.name}: the /about visit wrote seen`, `${visited?.about_version_seen}`);
-  check(await page.locator("[data-about-sheet]").count() === 0, `${w.name}: no sheet on /about`, `${await page.locator("[data-about-sheet]").count()}`);
+  await page.waitForURL((u) => u.pathname === "/about/decks", { timeout: 30_000 });
+  const landed = onPage(page, `[data-about-width='${width}'] [data-about-label='${LOCK}'] [data-about-new]`);
+  await landed.first().waitFor({ state: "attached", timeout: 30_000 }).catch(() => {});
+  check(await landed.count() > 0, `${w.name}: Show me lands on /about/decks with Lock cards marked New`, page.url());
+  const visited = await pollAbout(userId, (r) => (r?.about_seen_ids ?? []).includes(LOCK));
+  check(visited?.about_seen_ids.includes(LOCK) === true && visited.about_version_seen === ABOUT_VERSION,
+    `${w.name}: the page visit wrote the label's key and kept the floor`, { version: visited?.about_version_seen });
   await page.goBack();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await onPage(page, "h1").first().waitFor({ timeout: 30_000 });
   const backShow = await nothingDrawn(page);
-  check(backShow.regions === 0, `${w.name}: Back to Home after the /about visit draws no line`, backShow);
+  check(backShow.regions === 0, `${w.name}: Back to Home after the visit draws no line`, backShow);
 
-  // A2: About and an arrival, one ✕ for both.
-  await stampArrival(true, userId);
-  await setAbout(userId, BEHIND, ALL_IDS);
+  // Two launches: the band, a crop and a Show me per line, one ✕ writing both.
+  await setAbout(userId, ABOUT_VERSION, TWO);
   await home(page);
   const h2 = norm(await onPage(page, `${REGION} h2`).first().textContent().catch(() => null));
-  check(h2 === "New in the app", `${w.name} A2: the heading`, h2);
+  check(h2 === "New in the app", `${w.name} two launches: the heading`, h2);
+  const lines = (await onPage(page, `${REGION} li`).allTextContents()).map(norm);
+  check(JSON.stringify(lines) === JSON.stringify(TWO_LINES.map((l) => `${l.text} Show me`)), `${w.name} two launches: a line each, in page order`, lines);
+  const perLine = await visibleCrops(region);
+  check(perLine.length === 1 && perLine.every((c) => c.w === 44 && c.h === 32 && c.src.includes(`/${width}/`)),
+    `${w.name} two launches: a 44x32 crop for the label's line, the diamond for the rule's`, perLine);
+  const hrefs2 = await onPage(page, `${REGION} a`).evaluateAll((els: Element[]) => els.map((a) => a.getAttribute("href")));
+  check(JSON.stringify(hrefs2) === JSON.stringify(TWO_LINES.map((l) => l.href)), `${w.name} two launches: a Show me each`, hrefs2);
+  await onPage(page, `${REGION} button[aria-label="Dismiss"]`).first().click();
+  const twoX = await pollAbout(userId, (r) => [LOCK, LOCK_RULE].every((k) => (r?.about_seen_ids ?? []).includes(k)));
+  check([LOCK, LOCK_RULE].every((k) => twoX?.about_seen_ids.includes(k)), `${w.name} two launches: one ✕ wrote both`, twoX?.about_seen_ids.filter((k) => k.includes("lock")));
+
+  // A2: a launch and an arrival, one ✕ for both.
+  await stampArrival(true, userId);
+  await setAbout(userId, ABOUT_VERSION, ONE);
+  await home(page);
+  const a2 = norm(await onPage(page, `${REGION} h2`).first().textContent().catch(() => null));
+  check(a2 === "New in the app", `${w.name} A2: the heading`, a2);
   const items = (await onPage(page, `${REGION} li`).allTextContents()).map(norm);
-  check(items.length === 2 && items[0] === `${A1_TEXT} Show me` && items[1] === `${SET_NAME} is announced. See it in Precons`,
+  check(items.length === 2 && items[0] === `${ONE_LINE[0]!.text} Show me` && items[1] === `${SET_NAME} is announced. See it in Precons`,
     `${w.name} A2: About's line first, then the arrival, each with its link`, items);
-  const hrefs = await onPage(page, `${REGION} a`).evaluateAll((els: Element[]) => els.map((a) => a.getAttribute("href")));
-  check(hrefs.length === 2 && hrefs[0] === "/about" && hrefs[1] === "/decks/precons?sort=newest#announced", `${w.name} A2: two links`, hrefs);
   const xs = await onPage(page, `${REGION} button[aria-label="Dismiss"]`).count();
   check(xs === 1, `${w.name} A2: one ✕`, `${xs}`);
-  const x2 = await box(onPage(page, `${REGION} button[aria-label="Dismiss"]`).first());
-  check(Math.round(x2.width) === want, `${w.name} A2: ✕ is ${want}`, `${x2.width}`);
   await onPage(page, `${REGION} button[aria-label="Dismiss"]`).first().click();
-  const both = await pollAbout(userId, (r) => r?.about_version_seen === ABOUT_VERSION && (r?.upcoming_seen_codes ?? []).includes(SET));
-  check(both?.about_version_seen === ABOUT_VERSION && both.upcoming_seen_codes.includes(SET), `${w.name} A2: one ✕ wrote both halves`, both);
+  const both = await pollAbout(userId, (r) => (r?.about_seen_ids ?? []).includes(LOCK) && (r?.upcoming_seen_codes ?? []).includes(SET));
+  check(both?.about_seen_ids.includes(LOCK) === true && both.upcoming_seen_codes.includes(SET), `${w.name} A2: one ✕ wrote both halves`, both?.upcoming_seen_codes);
   await home(page);
   check(await region.count() === 0, `${w.name} A2: and a reload draws none`, `${await region.count()} regions`);
   await stampArrival(false, userId);
 
-  // A3 on the Dashboard: an account with cards that never opened /about. ✕ writes what a visit writes.
+  // The first-run line on the Dashboard: an account with cards that never opened About. ✕ writes the baseline.
   await setAbout(userId, 0, []);
   await home(page);
   const a3 = norm(await onPage(page, `${REGION} p`).first().textContent().catch(() => null));
-  check(a3 === A3_TEXT, `${w.name} A3 on the Dashboard: the first-run line`, a3);
-  check(await onPage(page, `${REGION} button[aria-label="Dismiss"]`).count() === 1, `${w.name} A3 on the Dashboard: with ✕`, "");
+  check(a3 === A3_TEXT, `${w.name} first run on the Dashboard: the line`, a3);
+  check((await onPage(page, `${REGION} a`).first().getAttribute("href")) === "/about", `${w.name} first run: Show me opens the index`, "");
+  check(await onPage(page, `${REGION} button[aria-label="Dismiss"]`).count() === 1, `${w.name} first run on the Dashboard: with ✕`, "");
   await onPage(page, `${REGION} button[aria-label="Dismiss"]`).first().click();
   const first = await pollAbout(userId, (r) => r?.about_version_seen === ABOUT_VERSION);
-  check(first?.about_version_seen === ABOUT_VERSION && switched.every((id) => first.about_seen_ids.includes(id)),
-    `${w.name} A3: ✕ wrote the floor and the switched entries the server draws`, first);
+  check(first?.about_version_seen === ABOUT_VERSION && first.about_seen_ids.includes(LOCK),
+    `${w.name} first run: ✕ wrote the floor and every drawn unit's key`, { version: first?.about_version_seen, n: first?.about_seen_ids.length });
   await home(page);
-  check(await region.count() === 0, `${w.name} A3: a reload draws none`, `${await region.count()} regions`);
+  check(await region.count() === 0, `${w.name} first run: a reload draws none`, `${await region.count()} regions`);
   await context.close();
 }
 
@@ -358,14 +366,13 @@ async function checklist(browser: Browser, w: Width, email: string) {
   const region = onPage(page, REGION);
   const step = await onPage(page, "h1").first().textContent();
   const a3 = norm(await onPage(page, `${REGION} p`).first().textContent().catch(() => null));
-  check(a3 === A3_TEXT, `${w.name} A3 on the checklist: the first-run line`, `${a3} (h1 ${step})`);
-  check(await onPage(page, `${REGION} button`).count() === 0, `${w.name} A3 on the checklist: no ✕`, `${await onPage(page, `${REGION} button`).count()} buttons`);
-  check(await page.locator("[data-about-sheet]").count() === 0, `${w.name} A3 on the checklist: no sheet`, "");
-  await setAbout(id, BEHIND, ALL_IDS);
+  check(a3 === A3_TEXT, `${w.name} first run on the checklist: the line`, `${a3} (h1 ${step})`);
+  check(await onPage(page, `${REGION} button`).count() === 0, `${w.name} first run on the checklist: no ✕`, `${await onPage(page, `${REGION} button`).count()} buttons`);
+  await setAbout(id, ABOUT_VERSION, ONE);
   await home(page);
-  const a1 = norm(await onPage(page, `${REGION} p`).first().textContent().catch(() => null));
-  check(a1 === A1_TEXT && await onPage(page, `${REGION} button`).count() === 0, `${w.name} A1 on the checklist: About behind, no ✕`, a1);
-  await setAbout(id, ABOUT_VERSION, ALL_IDS);
+  const one = norm(await onPage(page, `${REGION} p`).first().textContent().catch(() => null));
+  check(one === ONE_LINE[0]!.text && await onPage(page, `${REGION} button`).count() === 0, `${w.name} one launch on the checklist: no ✕`, one);
+  await setAbout(id, ABOUT_VERSION, CURRENT);
   await home(page);
   check(await region.count() === 0, `${w.name}: the checklist draws no line for a current reader`, `${await region.count()} regions`);
   await context.close();
@@ -374,9 +381,7 @@ async function checklist(browser: Browser, w: Width, email: string) {
 
 await clerkSetup();
 const [{ id: branch }] = await sql`select current_setting('neon.branch_id', true) as id`;
-if (!branch || branch === PRODUCTION || branch === STAGING) {
-  throw new Error(`refusing to write fixtures to ${branch ?? "(unknown)"}: point DATABASE_URL at local-dev`);
-}
+assertNotSharedBranch(branch, "probe:about-banner");
 const browser = await chromium.launch();
 let userId: string | null = null;
 let prior: Prior | null = null;

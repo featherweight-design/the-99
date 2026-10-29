@@ -13,7 +13,6 @@ import { NavIcon, type NavHref } from "./nav-icons";
 import { Lock } from "../ui/lock";
 import { PendingPip } from "./pending-pip";
 import { useRailTag } from "./rail-tag";
-import { useAboutSheetUp } from "./about-sheet-presence";
 import { onAnswerSeen } from "./answer-seen";
 import { usePendingPush } from "./pending-push";
 import { OfflinePill } from "../pwa/offline-pill";
@@ -226,10 +225,6 @@ function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
     if (!open) return;
     const { href } = open;
     const onPointerDown = (e: PointerEvent) => {
-      // A press on the About sheet is not a press away from the note (H1): the note is
-      // waiting for that sheet, and its Later or Show me is how the wait ends.
-      const t = e.target as Element | null;
-      if (t?.closest?.("[data-about-sheet]")) return;
       if (!inLock(e.target as Node, href)) setOpen(null);
     };
     const onKeyDown = (e: KeyboardEvent) => {
@@ -459,9 +454,6 @@ function TabLockSlots({
   items: NavItem[];
 }) {
   const { open, show, close, slots, notes } = useLockNotes(tabPlace);
-  // The About sheet holds this slot while it is up (H1): a tapped note stays
-  // open in state and is drawn once the sheet closes.
-  const sheetUp = useAboutSheetUp();
   const action = useNoteAction(openLock);
   const baseId = useId();
 
@@ -469,11 +461,7 @@ function TabLockSlots({
     <div className="flex w-full items-center">
       {liveBefore}
       {lockedItems(items, openLock).map(({ href, label }) => {
-        // Open in STATE (`waiting`) and drawn (`isOpen`) differ only while the About sheet
-        // is up. The toggle reads the state, so a second tap cancels a waiting note rather
-        // than asking for it again.
-        const waiting = open?.href === href;
-        const isOpen = waiting && !sheetUp;
+        const isOpen = open?.href === href;
         const noteId = `${baseId}-note-${label}`;
         const sentenceId = `${noteId}-sentence`;
         return (
@@ -487,7 +475,7 @@ function TabLockSlots({
               aria-controls={noteId}
               aria-describedby={sentenceId}
               aria-current={isActive(pathname, href) ? "page" : undefined}
-              onClick={() => (waiting ? close(href, false) : show(href))}
+              onClick={() => (isOpen ? close(href, false) : show(href))}
               // Tapped: an inset outline, never a fill (4a.7).
               className={`relative flex h-[52px] flex-1 flex-col items-center justify-center gap-[5px] rounded-[12px] bg-transparent text-[color:var(--fg-locked)] ${
                 isOpen ? "shadow-[inset_0_0_0_1px_var(--border-strong)]" : ""

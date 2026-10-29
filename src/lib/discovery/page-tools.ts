@@ -107,12 +107,15 @@ export type Landable = Readonly<Record<string, { isNew: boolean; section: string
 
 /**
  * The units `area`'s page can land on: the labels and rules it draws for the reader, so a unit switched off for them
- * lands nowhere (Review Focus 2). A label is New when the reader has not been told about it, by the banner's own rule
- * (`unseenUnits`: nothing is new to a first-run reader). A rule is never marked New: only the ? lands on one, and the
+ * lands nowhere (Review Focus 2). A label is New when the reader has not been told about it or about a switched
+ * sentence of it, by the banner's own rule (`unseenUnits`: nothing is new to a first-run reader). A rule is never marked New: only the ? lands on one, and the
  * ? draws the halo alone (Addendum A1).
  */
 export function landableIn(area: AboutArea, visible: readonly VisibleSection[], seen: SeenState): Landable {
-  const unseen = new Set(unseenUnits(visible, seen).map((u) => u.key));
+  // A launch names a label (`decks/x/y`) or one sentence of it (`shopping/deck-shopping/spare@SPARE_REQUESTS_ENABLED`),
+  // and Show me lands on the label for both, so a label is New while it or any of its sentences is unseen; the lit key
+  // stays the base key.
+  const unseen = new Set(unseenUnits(visible, seen).map((u) => u.key.split("@")[0]));
   const out: Record<string, { isNew: boolean; section: string }> = {};
   for (const s of visible) {
     if (s.area !== area) continue;

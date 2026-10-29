@@ -9,7 +9,7 @@
 //
 //   PROBE_BASE=http://localhost:3417 pnpm measure:scan
 //
-// The server needs CARD_SCAN_ENABLED, COLLECTION_EDIT_ENABLED and ABOUT_SHEET_ENABLED (so /collection does not
+// The server needs CARD_SCAN_ENABLED and COLLECTION_EDIT_ENABLED (and once needed the retired ABOUT_SHEET_ENABLED, so /collection did not
 // redirect to /about), and a network for the models and the card image. MEASURE_SECONDS (default 60) is how long the
 // scanner stays open; MEASURE_CPU (default 4) the throttle; MEASURE_RUNS (default 1) how many sessions.
 import path from "node:path";

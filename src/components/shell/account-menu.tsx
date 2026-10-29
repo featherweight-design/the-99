@@ -38,9 +38,9 @@ import { DeleteWarning } from "../credits/delete-warning";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel, settings: settingsLabel } = shellCopy.accountMenu;
 
-// About sits first and carries no badge, at any width, ever: the sheet is the
-// notification (the redirect, while ABOUT_SHEET_ENABLED is off), so a dot here
-// would announce a thing the reader has already been shown.
+// About sits first and carries no badge, at any width, ever: Home's banner is
+// the notification, so a dot here would announce a thing the reader has
+// already been shown.
 const aboutLabel = aboutMenuCopy.label;
 
 type PanelKind = "popover" | "sheet";

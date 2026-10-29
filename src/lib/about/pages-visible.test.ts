@@ -5,7 +5,7 @@ import { SWITCHES, SWITCH_NAMES } from "../switches/registry";
 import { TOOLS } from "../discovery/tools";
 import { resolveEnv, type SwitchSnapshot } from "../switches/resolve";
 import {
-  afterVisit, labelKey, resolveDiagram, showMeLabel, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
+  afterVisit, answeredKeys, heldAnswer, labelKey, resolveDiagram, showMeLabel, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
 } from "./pages-visible";
 import { NEVER_SEEN, switchedIds, visibleEntries, type SeenState } from "./visible";
 
@@ -310,5 +310,31 @@ describe("resolveDiagram", () => {
     const noEdit = env({ ...(ALL_ON as Record<string, string>), COLLECTION_EDIT_ENABLED: "off" });
     expect(captions(noEdit)).toContain("After");
     expect(captions(noEdit)).not.toContain("Replace");
+  });
+});
+
+// Review rounds 6 and 7: every About write answers from the state it leaves the reader at.
+describe("heldAnswer", () => {
+  const visible = visibleSections(ALL_ON);
+  const [shopping] = seenKeysOf(visible, "shopping");
+  const [decks] = seenKeysOf(visible, "decks");
+
+  it("answers a no-write visit with every key the stored state covers, another page's included", () => {
+    const seen: SeenState = { version: 1, ids: [shopping] };
+    const answer = heldAnswer(visible, seen, null);
+    expect(answer).toContain(shopping);
+    expect(answer).toEqual(expect.arrayContaining(answeredKeys(visible, seen)));
+  });
+
+  it("answers a write with the merged state: held ids, written ids, and the keys the raised floor covers", () => {
+    const seen: SeenState = { version: 1, ids: [shopping] };
+    const write: SeenState = { version: 9, ids: [decks] };
+    const after: SeenState = { version: 9, ids: [shopping, decks] };
+    const answer = heldAnswer(visible, seen, write);
+    expect(answer).toEqual(expect.arrayContaining([shopping, decks, ...answeredKeys(visible, after)]));
+  });
+
+  it("answers nothing for a first-run reader nothing was written for", () => {
+    expect(heldAnswer(visible, NEVER_SEEN, null)).toEqual([]);
   });
 });

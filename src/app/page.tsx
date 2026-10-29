@@ -36,12 +36,11 @@ import { firstRunTourEnabled } from "../lib/discovery/onboarding-flag";
 import { readTourSeen, tourDue } from "../lib/discovery/tour";
 import { loadArrivalsBanner } from "../lib/precons/banner";
 import { upcomingPreconsEnabled } from "../lib/precons/upcoming-flag";
-import { cookies } from "next/headers";
-import { aboutSheetEnabled } from "../lib/about/flag";
-import { SHEET_COOKIE, sheetCookieIsCurrent } from "../lib/about/gate";
-import { aboutLine, aboutNotice } from "../lib/about/notice";
+import { aboutLine } from "../lib/about/notice";
+import { visibleSections } from "../lib/about/pages-visible";
 import { aboutSeen } from "../lib/about/read";
-import { visibleEntries, type SeenState } from "../lib/about/visible";
+import type { SeenState } from "../lib/about/visible";
+import { resolveTheme } from "../lib/theme/server";
 import { noCollectionEntryEnabled } from "../lib/collection/edit-flag";
 import { preconsEnabled } from "../lib/precons/flag";
 import { cardScanEnabled } from "../lib/card-scan/flag";
@@ -61,7 +60,7 @@ import { PushLanding } from "../components/push/push-landing";
 
 /**
  * What the signed-in Home draws, cached whole. First run draws none of the Dashboard. Both carry the reader's About
- * seen state (null with `ABOUT_SHEET_ENABLED` off, or when the read failed), which About's banner line is decided
+ * seen state (null when the read failed), which About's banner lines are decided
  * from; `user_prefs` carries the stamp trigger, so a write to it retires the entry.
  */
 type HomePayload =
@@ -69,8 +68,7 @@ type HomePayload =
   | ({ firstRun: false; aboutSeen: SeenState | null } & Omit<ComponentProps<typeof Dashboard>, "now" | "about" | "feed" | "commandersPlace">);
 
 /** The reader's About seen state for the banner line, or null. A failed read draws no line and is not stored. */
-async function readAboutSeen(userId: string, env: NodeJS.ProcessEnv): Promise<SeenState | null> {
-  if (!aboutSheetEnabled(env)) return null;
+async function readAboutSeen(userId: string): Promise<SeenState | null> {
   try {
     return await aboutSeen(userId);
   } catch {
@@ -217,7 +215,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       })),
       // About's notice (About on the banner): read on both surfaces, since About's first run and Home's checklist
       // are separate states. One primary-key lookup.
-      perf.timed("aboutSeen", () => readAboutSeen(userId, env)),
+      perf.timed("aboutSeen", () => readAboutSeen(userId)),
       // The tour's stamp (R3·1a): one primary-key lookup, read only with its switch on. Beside the reads that decide
       // first run rather than after them, so first run's render waits on no extra round trip.
       perf.timed("tourSeen", () => readTourSeenFor(userId, env)),
@@ -295,15 +293,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     ? welcomeSheetFor(env, data.firstRun ? { cards: 0, decks: [] } : { cards: data.stats.uniqueCards, decks: data.decks })
     : null;
 
-  // About's line, decided per request from the cached seen state and THIS browser's sheet cookie, which stays out
-  // of the cache because it is per browser: a browser that already showed the sheet for these entries is not told
-  // again on Home. The cookie is read, never written; the proxy no longer writes it.
-  let about = null;
-  if (data.aboutSeen) {
-    const visible = visibleEntries(env);
-    const shown = sheetCookieIsCurrent((await cookies()).get(SHEET_COOKIE)?.value, userId, visible);
-    about = aboutLine(aboutNotice(data.aboutSeen, visible, shown), visible);
-  }
+  // About's lines (About visual PR 6b), decided per request from the cached seen state and THIS request's resolved
+  // switches (env and `flag_overrides`), so a unit switched off for the reader never reaches the banner; the crops are
+  // cut from the captures in the reader's theme.
+  const about = data.aboutSeen ? aboutLine(data.aboutSeen, visibleSections(env), await resolveTheme()) : null;
   // The no-collection entry (S1, S12): step 1's ways group, and the dashboard's zero-card header for an account with
   // decks and no cards. Decided per request from the resolved switches, outside the cached payload.
   // Rule 0's `Tonight's table` (plan decision 1): read per request after the cached load, never stored, so a reseat,

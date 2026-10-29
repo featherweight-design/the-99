@@ -301,15 +301,16 @@ export const howItWorksCopy = {
 };
 
 // ---- Account menu ---------------------------------------------------------
-// One row, first, above Manage account. No badge, at any width, ever — the
-// sheet is the notification (the redirect, while ABOUT_SHEET_ENABLED is off).
+// One row, first, above Manage account. No badge, at any width, ever: Home's
+// banner is the notification (About visual PR 6b).
 export const aboutMenuCopy = {
   label: 'About The 99',
 } as const;
 
-// ---- The one-time sheet (About R6, STATES-about-r6.md §N, §R8) -------------
-// Drawn by the shell over whatever page a document load opened, once per
-// browser per version, while `ABOUT_SHEET_ENABLED` is on.
+// ---- The one-time sheet's words (About R6, STATES-about-r6.md §N, §R8) -----
+// The sheet retired (About visual PR 6b). Its first-run heading and Show me
+// still word the banner's first-run line (`copy/arrivals.ts`); the rest go
+// with the Reference in PR 7b, so the pinned hash moves once.
 export const aboutSheetCopy = {
   heading: (n: number) => `${n} new in About`,
   // Only ever for two or more: at four titles the card lists all four (§N2).

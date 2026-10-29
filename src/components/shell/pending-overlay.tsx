@@ -18,7 +18,7 @@ export const OVERLAY_OUT_MS = 140;
  * A sibling of whichever element it covers, never inside it, because `LoadingScreen` is a
  * `role="status"` live region and that element is marked busy while it shows (audit correction 2).
  * Fixed-position over the box: right of the rail, below the phone header (clamped to 0 once the
- * header scrolls away), and clear of the tab bar and an open About sheet. It blocks pointer events
+ * header scrolls away), and clear of the tab bar. It blocks pointer events
  * from its first frame, so a press under it goes nowhere; leaving, it lets them through at once and
  * fades out over the new page.
  */
@@ -63,7 +63,7 @@ export function PendingOverlay({
     <div
       data-testid="pending-overlay"
       data-leaving={leaving ? "" : undefined}
-      className={`fixed right-0 z-[35] flex flex-col bottom-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:bottom-0 ${
+      className={`fixed right-0 z-[35] flex flex-col bottom-[var(--tabbar-h)] md:bottom-0 ${
         leaving ? "anim-overlay-out pointer-events-none" : "anim-overlay-in"
       }`}
       style={{ left: box?.left ?? 0, top: box?.top ?? 0 }}

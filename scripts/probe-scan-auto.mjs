@@ -9,7 +9,7 @@
 //
 //   PROBE_BASE=http://localhost:3418 pnpm probe:scan-auto
 //
-// The server needs CARD_SCAN_ENABLED, COLLECTION_EDIT_ENABLED and ABOUT_SHEET_ENABLED, and a network for the models.
+// The server needs CARD_SCAN_ENABLED and COLLECTION_EDIT_ENABLED, and a network for the models.
 import path from "node:path";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";

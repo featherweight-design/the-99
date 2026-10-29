@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { assertScratchBranch, LOCAL_DEV_BRANCH, PRODUCTION_BRANCH, STAGING_BRANCH } from "./scratch-branch.mjs";
+import { assertNotSharedBranch, assertScratchBranch, LOCAL_DEV_BRANCH, PRODUCTION_BRANCH, STAGING_BRANCH } from "./scratch-branch.mjs";
 
 /**
  * Every script that wipes or reseeds the headless account's (or the busiest account's) collection, history,
@@ -13,6 +13,21 @@ const WHOLE_ACCOUNT_WRITERS = [
   "probe-collection-sync-ui.mjs",
   "measure-collection-revert.ts",
 ];
+
+describe("assertNotSharedBranch (an About row put back in `finally`)", () => {
+  it.each([
+    ["production", PRODUCTION_BRANCH],
+    ["staging", STAGING_BRANCH],
+  ])("refuses %s", (name, id) => {
+    expect(() => assertNotSharedBranch(id, "probe:x")).toThrow(new RegExp(`probe:x refuses ${name}`));
+  });
+
+  it("refuses an unknown branch and allows local-dev and a scratch branch", () => {
+    expect(() => assertNotSharedBranch(null, "probe:x")).toThrow(/unknown branch/);
+    expect(() => assertNotSharedBranch(LOCAL_DEV_BRANCH, "probe:x")).not.toThrow();
+    expect(() => assertNotSharedBranch("br-scratch-1", "probe:x")).not.toThrow();
+  });
+});
 
 describe("assertScratchBranch", () => {
   it.each([

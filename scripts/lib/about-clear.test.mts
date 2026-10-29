@@ -4,48 +4,7 @@
 // location — every path here would resolve against `http://localhost/`.
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { captureAboutSeen, catalogIds, gateReturn, restoreAboutSeen, markEveryEntrySeen, sheetCookie, variantIds } from "./about-clear.mjs";
-import { gateDecision } from "../../src/lib/about/gate";
-
-// A probe's first load can already have been sent to the gate by the time it clears the sheet: the
-// helper follows the redirect's `next` back. Built from the gate's own decision, so a change to the
-// redirect's shape fails here rather than as a probe timeout.
-describe("gateReturn", () => {
-  const origin = "http://localhost:3000";
-  const redirectFor = (pathname: string, search: string) => {
-    const d = gateDecision({ userId: "user_1", pathname, search, version: 2, seen: 1 });
-    if (d.kind !== "redirect") throw new Error(`expected a redirect, got ${d.kind}`);
-    return `${origin}${d.to}`;
-  };
-
-  it("follows the gate's redirect back to the route it interrupted, query included", () => {
-    expect(gateReturn(redirectFor("/decks/abc", ""))).toBe(`${origin}/decks/abc`);
-    expect(gateReturn(redirectFor("/decks", "?a=1&b=2"))).toBe(`${origin}/decks?a=1&b=2`);
-  });
-
-  it("leaves every other page where it is", () => {
-    expect(gateReturn(`${origin}/decks/abc`)).toBeNull();
-    expect(gateReturn(`${origin}/about?tab=reference`)).toBeNull();
-    for (const away of ["//evil.example/x", "/\\evil.example/x", "/\t/evil.example/x", "https://evil.example/x"]) {
-      expect(gateReturn(`${origin}/about?tab=reference&next=${encodeURIComponent(away)}`)).toBeNull();
-    }
-  });
-});
-
-describe("sheetCookie", () => {
-  it("is the proxy's cookie, bound to the reader and the current version", () => {
-    const { version } = JSON.parse(readFileSync(new URL("../../src/lib/copy/about.version.json", import.meta.url), "utf8"));
-    const c = sheetCookie("user_1", "http://localhost:3000/decks");
-    expect(c.name).toBe("about_sheet");
-    expect(c.value).toBe(`user_1.${version}`);
-    expect(c.domain).toBe("localhost");
-    expect(c.secure).toBe(false);
-  });
-
-  it("is secure on https", () => {
-    expect(sheetCookie("u", "https://staging.the-99.dev/").secure).toBe(true);
-  });
-});
+import { captureAboutSeen, catalogIds, restoreAboutSeen, markEveryEntrySeen, variantIds } from "./about-clear.mjs";
 
 describe("every probe that clears the About gate also clears the sheet (E5)", () => {
   const dir = new URL("../", import.meta.url);

@@ -75,9 +75,8 @@ export type DashboardProps = {
    */
   arrivals?: ArrivalsBannerData | null;
   /**
-   * About's line on the same banner (About on the banner, PR A), or null: `ABOUT_SHEET_ENABLED` off, nothing new in
-   * About, or this browser already showed the sheet for these entries. Decided per request, outside the cached
-   * payload, because the sheet cookie is per browser.
+   * About's lines on the same banner (About visual PR 6b), or null when nothing is new to the reader or their seen
+   * state could not be read. Decided per request from the cached seen state, with the reader's switches and theme.
    */
   about?: AboutLine | null;
   /**
