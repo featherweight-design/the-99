@@ -423,7 +423,8 @@ export function curveFacts(facts: Pick<SynopsisFacts, "cards" | "commanders" | "
  * start at 3; one more for a TOP-HEAVY deck (nonland average mana value 3.5 or more, 14 or more
  * nonland cards at five or more, or a commander at six or more); one fewer for a LOW CURVE (average
  * 2.6 or less with at most 5 cards at five or more); one more at 40 lands or more, one fewer at 32 or
- * fewer. Then held inside the app's keepable range and inside 2 to 4.
+ * fewer. Then held inside the app's keepable range and inside 2 to 4; where the two do not meet
+ * (85 lands or more, where `keepableLands` gives 5 to 5), the rule's 2 to 4 wins.
  */
 export const LAND_RULE = {
   base: 3,
@@ -459,7 +460,8 @@ export function landKeepNumber(facts: Pick<SynopsisFacts, "cards" | "commanders"
   if (light) { n -= 1; reasons.push("low curve"); }
   if (curve.lands >= LAND_RULE.manyLands) { n += 1; reasons.push("many lands"); }
   if (curve.lands <= LAND_RULE.fewLands) { n -= 1; reasons.push("few lands"); }
-  const lo = Math.max(2, facts.keep.low);
+  // The keepable range, cut to the rule's 2 to 4. When they do not overlap, the rule's cap wins.
+  const lo = Math.min(4, Math.max(2, facts.keep.low));
   const hi = Math.max(lo, Math.min(4, facts.keep.high));
   const held = Math.min(hi, Math.max(lo, n));
   if (held !== n) reasons.push("held to the keepable range");
@@ -483,20 +485,39 @@ export function landKeepNumber(facts: Pick<SynopsisFacts, "cards" | "commanders"
 
 const LAND_COUNT_WORDS: Record<string, number> = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7 };
 /**
- * The hand land counts a line states ("4 lands", "four lands", "a four-land hand", "3 or 4 lands"),
- * outside card marks. The deck's own land total (`deckLands`, which the prompt hands the land line as
- * a reason: "on 37 lands") is not a hand count and is skipped; "3 of its 37 lands" states 3.
+ * The hand land counts a line states ("Keep 4 lands", "four lands", "a four-land hand", "3 or 4
+ * lands"), outside card marks. A deck-total phrase, which the prompt hands the land line as a reason,
+ * is told apart by its WORDS, never by its number (a deck's total may equal the hand count): "on 37
+ * lands", "plays (only) 37 lands", "runs 37 lands", "its 37 lands", "37 lands in the deck", "with 37
+ * lands" (unless a hand comes just before: "a hand with 3 lands" is a hand count). "3 of its 37
+ * lands" states 3.
  */
-export function statedLandNumbers(text: string, deckLands?: number): number[] {
+export function statedLandNumbers(text: string): number[] {
   const bare = text.replace(/\[\[[^\[\]]+\]\]/g, " ");
   const W = `(\\d+|${Object.keys(LAND_COUNT_WORDS).join("|")})`;
   const out: number[] = [];
   const val = (x: string) => (/^\d+$/.test(x) ? Number(x) : LAND_COUNT_WORDS[x.toLowerCase()]!);
-  const ofTotal = new RegExp(`\\b${W}\\s+of\\s+(?:its|the(?:\\s+deck's)?|your|this\\s+deck's)\\s+(\\d+)\\s+lands\\b`, "gi");
-  for (const m of bare.matchAll(ofTotal)) if (deckLands !== undefined && val(m[2]) === deckLands) out.push(val(m[1]));
+  const ofTotal = new RegExp(`\\b${W}\\s+of\\s+(?:its|the(?:\\s+deck's)?|your|this\\s+deck's)\\s+\\d+\\s+lands\\b`, "gi");
+  for (const m of bare.matchAll(ofTotal)) out.push(val(m[1]));
   const re = new RegExp(`\\b${W}(?:(?:\\s*[-\u2013\u2014]\\s*|\\s+(?:to|or)\\s+)${W})?(?:\\s+|-)(?:or\\s+(?:more|fewer|less)\\s+)?lands?\\b`, "gi");
-  for (const m of bare.matchAll(re)) for (const x of [m[1], m[2]]) if (x !== undefined && val(x) !== deckLands) out.push(val(x));
+  for (const m of bare.matchAll(re)) {
+    if (isDeckTotal(bare.slice(0, m.index), bare.slice(m.index + m[0].length))) continue;
+    for (const x of [m[1], m[2]]) if (x !== undefined) out.push(val(x));
+  }
   return out;
+}
+
+/** Words before a land count that make it the deck's total: "on", "plays (only)", "runs", "its", "of the", "the deck's". */
+const TOTAL_BEFORE = /\b(?:on|plays?|playing|runs?|running|its|of\s+(?:the|your)|the\s+deck's|this\s+deck's)(?:\s+(?:only|just))?\s+$/i;
+/** "with" before a land count, which is the deck's total unless a hand comes just before it. */
+const WITH_BEFORE = /\bwith\s+(?:only\s+|just\s+)?$/i;
+const HAND_WITH_BEFORE = /\b(?:hand|seven|opener|opening\s+\w+)\s+with\s+(?:only\s+|just\s+)?$/i;
+/** Words after a land count that make it the deck's total: "in the deck", "in the list", "in the 99". */
+const TOTAL_AFTER = /^\s+in\s+(?:the|this|your)\s+(?:deck|list|99|library)\b/i;
+
+function isDeckTotal(before: string, after: string): boolean {
+  if (TOTAL_AFTER.test(after) || TOTAL_BEFORE.test(before)) return true;
+  return WITH_BEFORE.test(before) && !HAND_WITH_BEFORE.test(before);
 }
 
 /**
@@ -531,7 +552,7 @@ export function checkLandKeep(doc: OverviewDoc, facts: Pick<SynopsisFacts, "card
   const base = { target: land.lands, curve: land.curve, why: land.why };
   if (!l) return { pass: false, offenders: ["no land line"], stated: null, text: null, ...base };
   if (doc.landKeep.length > 1) offenders.push(`${doc.landKeep.length} land lines`);
-  const stated = [...new Set(statedLandNumbers(l.text, land.curve.lands))];
+  const stated = [...new Set(statedLandNumbers(l.text))];
   const inexact = inexactLandCounts(l.text);
   if (inexact.length > 0) offenders.push(`states a range or an open-ended count, not one number: ${inexact.join("; ")}`);
   if (stated.length === 0) offenders.push("states no land count");

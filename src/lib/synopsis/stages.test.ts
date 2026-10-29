@@ -422,6 +422,14 @@ describe("iteration 3: the deck's own land number", () => {
     expect(held.reasons).toEqual(["top-heavy", "many lands", "held to the keepable range"]);
     expect(landKeepNumber({ ...FACTS, keep: { low: 3, high: 5 } }).lands).toBe(3);
   });
+  it("keeps the rule's 2 to 4 when the keepable range lies above it (85 lands or more: 5 to 5)", () => {
+    const flood = withCurve([3, 4, 6, 5, 2], { lands: 90, keep: { low: 5, high: 5 } });
+    const n = landKeepNumber(flood);
+    expect(n.lands).toBe(4);
+    const line = (text: string) => { const r = goodReply(); r.landKeep = { text, evidence: [] }; return docFromStagesReply(r, 3); };
+    expect(checkLandKeep(line("Keep 5 lands: the curve is high."), FACTS, n).pass).toBe(false);
+    expect(checkLandKeep(line("Keep 4 lands: the curve is high."), FACTS, n).offenders).toEqual([]);
+  });
   it("reads the land counts a line states, outside card marks", () => {
     expect(statedLandNumbers("Keep 4 lands: the curve is high.")).toEqual([4]);
     expect(statedLandNumbers("A four-land hand.")).toEqual([4]);
@@ -429,10 +437,21 @@ describe("iteration 3: the deck's own land number", () => {
     expect(statedLandNumbers("[[Two Lands]] and a creature.")).toEqual([]);
   });
   it("skips the deck's own land total, which is a reason and not a hand count", () => {
-    expect(statedLandNumbers("Keep 3 lands: a middling curve on 37 lands.", 37)).toEqual([3]);
-    expect(statedLandNumbers("Keep 4 lands: it plays 40 lands.", 40)).toEqual([4]);
-    expect(statedLandNumbers("Keep 3 of its 37 lands.", 37)).toEqual([3]);
-    expect(statedLandNumbers("Keep 5 lands on 37 lands.", 37)).toEqual([5]);
+    expect(statedLandNumbers("Keep 3 lands: a middling curve on 37 lands.")).toEqual([3]);
+    expect(statedLandNumbers("Keep 4 lands: it plays 40 lands.")).toEqual([4]);
+    expect(statedLandNumbers("Keep 3 of its 37 lands.")).toEqual([3]);
+    expect(statedLandNumbers("Keep 5 lands on 37 lands.")).toEqual([5]);
+    expect(statedLandNumbers("Keep 3 lands; the deck plays only 32 lands.")).toEqual([3]);
+    expect(statedLandNumbers("Keep 3 lands with 37 lands in the deck.")).toEqual([3]);
+    expect(statedLandNumbers("Keep 4 lands: a top-heavy deck with 41 lands.")).toEqual([4]);
+    expect(statedLandNumbers("Keep 3 of the 37 lands.")).toEqual([3]);
+  });
+  it("tells the deck's total from a hand count by the words, not the number", () => {
+    // A deck whose total equals the hand count still states the hand count.
+    expect(statedLandNumbers("Keep 2 lands: the curve is low.")).toEqual([2]);
+    expect(statedLandNumbers("A hand with 3 lands and [[Satyr Wayfinder]].")).toEqual([3]);
+    expect(statedLandNumbers("A four-land hand.")).toEqual([4]);
+    expect(statedLandNumbers("Two lands in hand and a creature.")).toEqual([2]);
   });
   it("reads both ends of a dashed range, and finds every range or open-ended count", () => {
     expect(statedLandNumbers("Keep 2\u20134 lands.")).toEqual([2, 4]);
@@ -468,6 +487,10 @@ describe("iteration 3: the land line check", () => {
     expect(checkLandKeep(asShape3("Keep 4 lands: top-heavy on 37 lands."), FACTS, land).offenders).toEqual([]);
     expect(checkLandKeep(asShape3("Keep 4 of its 37 lands: the curve is high."), FACTS, land).offenders).toEqual([]);
     expect(checkLandKeep(asShape3("Keep 3 lands: top-heavy on 37 lands."), FACTS, land).offenders).toEqual(["states 3 lands, not the deck's 4", "states a figure the app did not give: 3"]);
+    // A deck whose land total equals its land number: the hand count is still read.
+    const low = landKeepNumber(FACTS);
+    const tiny = { ...low, curve: { ...low.curve, lands: 2 } };
+    expect(checkLandKeep(asShape3("Keep 2 lands: the curve is low."), FACTS, tiny).offenders).toEqual([]);
   });
   it("fails a range or an open-ended count that includes the deck's number", () => {
     for (const t of ["Keep 2\u20134 lands: the curve is high.", "Keep 4 or more lands: the curve is high.", "Keep at least 4 lands: the curve is high.", "Keep 4 or fewer lands: the curve is high."]) {
