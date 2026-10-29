@@ -20,6 +20,22 @@ describe("the Sets field", () => {
   });
 });
 
+describe("the Sets field's phone sheet", () => {
+  it("keeps an Enter in its search from submitting the form behind it", () => {
+    render(<form><SetsField sets={sets} value={[]} onChange={vi.fn()} wide={false} /></form>);
+    fireEvent.click(screen.getByTestId("sets-field").querySelector("button")!);
+    const search = screen.getByRole("dialog").querySelector("input")!;
+    expect(fireEvent.keyDown(search, { key: "Enter" })).toBe(false);
+  });
+
+  it("leaves Enter alone on the desktop popover", () => {
+    render(<form><SetsField sets={sets} value={[]} onChange={vi.fn()} wide /></form>);
+    fireEvent.click(screen.getByTestId("sets-field").querySelector("button")!);
+    const search = screen.getByTestId("sets-field").querySelector("input")!;
+    expect(fireEvent.keyDown(search, { key: "Enter" })).toBe(true);
+  });
+});
+
 describe("the Sets field's copy override (H35 PR 2, \"Kept for this deck\")", () => {
   const limitsCopy = {
     triggerLabel: "Set",

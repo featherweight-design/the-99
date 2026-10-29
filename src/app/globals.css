@@ -1666,3 +1666,37 @@ html {
 [data-theme="kaldheim"] .offer-numeral {
   padding-bottom: 3px;
 }
+
+/* Help me choose, while it reads (small items 3, item 5): the form is set down, not switched off. The fields are `inert`
+   (intake-form.tsx) and this block is the drawn look, keyed on the one attribute the form carries. Colour and edge only:
+   nothing here changes a size, so nothing jumps when a refusal unlocks it, and nothing moves. Selected pips, segments and
+   brackets keep their shape and drop to a --border-strong ring with no fill; unselected go to --fg-locked on a --border
+   edge. The chips' remove buttons, the Add another… input, the Sets trigger and the [[ ]] button are `visibility:hidden`
+   (data-lock-hide), so their boxes keep their space. Labels and captions are untouched. */
+[data-intake-locked] :is(input, textarea, [data-testid="theme-chip"], [data-testid="set-chip"], [data-testid="set-chip"] span) {
+  color: var(--fg-muted);
+}
+[data-intake-locked] [data-lock-hide] { visibility: hidden; }
+[data-intake-locked] [data-lock-edge],
+[data-intake-locked] textarea { border-color: var(--border); }
+[data-intake-locked] :is([data-testid="theme-chip"], [data-testid="set-chip"]) {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+[data-intake-locked] [role="radio"] {
+  color: var(--fg-locked);
+  border-color: var(--border);
+  box-shadow: none;
+}
+/* The Theme All/Any segments draw no border of their own (`border-0`), so their unselected edge is an inset ring. */
+[data-intake-locked] [role="radio"].border-0:not([aria-checked="true"]) { box-shadow: inset 0 0 0 1px var(--border); }
+[data-intake-locked] [role="radio"][aria-checked="true"] {
+  color: var(--fg-muted);
+  background: transparent;
+  border-color: var(--border-strong);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+/* The pips are the symbol art, not letters, so the muted value of the drawing is carried by a dimmer symbol: the ring still
+   says which are selected. */
+[data-intake-locked] [role="switch"] { box-shadow: 0 0 0 1px var(--border); opacity: 0.55; }
+[data-intake-locked] [role="switch"][aria-checked="true"] { box-shadow: 0 0 0 2px var(--border-strong); }

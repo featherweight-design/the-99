@@ -57,7 +57,18 @@ export function SetsField({
   const options = sets.map((s) => ({ code: s.code, label: s.name, hint: s.code.toUpperCase(), count: 0, disabled: false }));
   const nameOf = (code: string) => sets.find((s) => s.code === code)?.name ?? code.toUpperCase();
   return (
-    <div data-testid="sets-field" className="flex flex-wrap items-center gap-[6px]">
+    <div
+      data-testid="sets-field"
+      className="flex flex-wrap items-center gap-[6px]"
+      // The phone's sheet is a modal over the form. An Enter in its search with no option lit would otherwise submit the
+      // form behind it, and the lock would then hide a sheet that is still open (its scroll lock and back handler with it).
+      onKeyDown={(e) => {
+        if (!wide && e.key === "Enter" && e.target instanceof HTMLInputElement) e.preventDefault();
+      }}
+    >
+      {/* The trigger is the field's "Add a set…": hidden while the form is locked, its box kept (item 5). `contents`
+          adds no box of its own; the visibility it carries is inherited by the trigger. */}
+      <span data-lock-hide="" className="contents">
       <FilterPanel
         // Keyed on the form, as every chassis panel is: it holds its own `open`.
         key={wide ? "wide" : "compact"}
@@ -71,6 +82,7 @@ export function SetsField({
         onToggle={(code) => onChange(value.includes(code) ? value.filter((c) => c !== code) : [...value, code])}
         onClear={() => onChange([])}
       />
+      </span>
       {value.map((code) => (
         <span
           key={code}
@@ -81,6 +93,7 @@ export function SetsField({
           <span>{nameOf(code)}</span>
           <button
             type="button"
+            data-lock-hide=""
             aria-label={removeSet(nameOf(code))}
             onClick={() => onChange(value.filter((c) => c !== code))}
             className="relative flex items-center justify-center w-[18px] h-[18px] border-0 bg-transparent text-[color:var(--fg-faint)] cursor-pointer after:absolute after:inset-[-13px] after:content-['']"

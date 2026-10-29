@@ -60,6 +60,7 @@ export function ThemePicker({
     // always drew.
     <div ref={rootRef} className="relative flex flex-col gap-[6px]">
       <div
+        data-lock-edge=""
         // The chips' remove buttons ring themselves, so only the input's focus lights the field.
         className={`flex flex-wrap items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${AFFIX_FOCUS_INPUT}`}
       >
@@ -74,6 +75,7 @@ export function ThemePicker({
               {label}
               <button
                 type="button"
+                data-lock-hide=""
                 aria-label={copy.intake.removeTheme(label)}
                 onClick={() => toggle(slug)}
                 // 44px hit area on the phone, drawn at the chip's own height.
@@ -86,6 +88,7 @@ export function ThemePicker({
         })}
         <input
           role="combobox"
+          data-lock-hide=""
           aria-labelledby={labelId}
           aria-expanded={expanded}
           aria-controls={listId}

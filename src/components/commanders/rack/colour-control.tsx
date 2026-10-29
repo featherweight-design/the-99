@@ -109,6 +109,7 @@ export function ColourControl({
       // its own `radiogroup`. An umbrella group around both would put a second
       // name on one control and have it read out twice. This div is what it
       // looks like: a box.
+      data-lock-edge=""
       className={[
         wide
           ? "flex items-center gap-[8px] h-[34px] rounded-[9px] px-[10px] border border-solid bg-[color:var(--bg)]"
