@@ -206,12 +206,14 @@ export const V2_FACT_RULES_V8 = `${V2_COMBO_RULES_V8}\n${V2_SHARED_RULES}`;
  */
 const STAGES_COMBO_PLACE = "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise the overview and the strategy name it as a backup or an alternate win, after the primary plan.";
 const STAGES_COMBO_EVERY = "Whenever the overview or a strategy step names a listed combo, that sentence names every card of the combo.";
-function stagesFactRules(): string {
+function stagesFactRules(shape: 2 | 3 = 2): string {
   if (!V2_FACT_RULES_V8.includes(STAGES_COMBO_PLACE) || !V2_FACT_RULES_V8.includes(STAGES_COMBO_EVERY)) {
     throw new Error("buildSynopsisPrompt: contract 8's combo rules moved; the stages variant replaces two of their sentences");
   }
   return V2_FACT_RULES_V8
-    .replace(STAGES_COMBO_PLACE, "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line (or \"Wins by\", when the combo is the win there), never also in the overview, another stage, a tip or a Key card's job.")
+    .replace(STAGES_COMBO_PLACE, shape === 3
+      ? "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line, never also in the overview, another stage, a tip, a Key card or a Key card's job."
+      : "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line (or \"Wins by\", when the combo is the win there), never also in the overview, another stage, a tip or a Key card's job.")
     .replace(STAGES_COMBO_EVERY, "The one line that names a listed combo names every card of the combo.");
 }
 
@@ -228,7 +230,72 @@ export type StagesOption = {
   alternates: readonly string[];
   /** The rendered length of today's Overview for this deck (`renderedTotal`), when known: the new shape's whole budget. */
   maxChars?: number;
+  /**
+   * Iteration 3 (`stages.ts`): no Wins by line, a land line stating `landKeep`, Key cards that skip
+   * what a stage explained. Absent (or 2) is iteration 2's prompt, byte for byte.
+   */
+  shape?: 2 | 3;
+  /** Iteration 3: the app's land number for this deck and the curve facts behind it (`landKeepNumber`). Required with shape 3. */
+  landKeep?: StagesLandKeep;
 };
+
+/** The land number the iteration-3 land line states, as `stages.ts` computes it (a structural copy, so the app's prompt module never imports the test tooling). */
+export type StagesLandKeep = {
+  lands: number;
+  why: string;
+  figures: readonly number[];
+  curve: { lands: number; ramp: number; averageManaValue: number | null; fivePlus: number; twoOrLess: number; commanderManaValue: number | null };
+};
+
+/** Iteration 3's land line budget (`STAGES_LIMITS.landKeep`). */
+const LAND_KEEP_BUDGET = 120;
+
+/** Iteration 3's sections: iteration 2's without Wins by, with the land line, deck-card mulligan lines, and Key cards that skip the stages' cards. */
+function stagesSectionsV3(facts: SynopsisFacts, stages: StagesOption): string[] {
+  const [plans, , , tips, keyCards, assessment] = SECTIONS_V8;
+  if (!plans.startsWith("- plans:") || !tips.startsWith("- primer.tips:") || !keyCards.startsWith("- keyCards:")) {
+    throw new Error("buildSynopsisPrompt: the contract-8 sections moved; the stages variant reads them by position");
+  }
+  const land = stages.landKeep;
+  if (!land) throw new Error("buildSynopsisPrompt: the iteration-3 stages shape needs landKeep");
+  const castTurn = facts.stats?.commanderCastTurn ?? null;
+  const earlyMax = (castTurn ?? 3) + 1;
+  const tipsFrom = `${range(SECTION_COUNTS.tips)} tips`;
+  if (!tips.includes(tipsFrom)) throw new Error("buildSynopsisPrompt: the contract-8 tips line no longer states its count");
+  const turn = castTurn === null
+    ? "State no turn number in this line."
+    : `If you give a turn, it is only "around turn ${castTurn}", the expected commander cast turn from the facts.`;
+  return [
+    `${plans} The plans are never shown to the reader: they steer the lines below.`,
+    `- primer.strategy: EXACTLY 3 lines, in this order, as { text, evidence }, each at most ${CHAR_BUDGETS.strategy} characters. The app labels them Early, Mid and Close, so never begin a line with its label or a word like "First". Every line names at least one card of this decklist as [[Name]] and cites the refs of the cards it names in "evidence". A card marked "universal staple" is never a line's subject or evidence. Each line is about THIS deck's cards, never advice true of any deck (such as "ramp early, draw cards, then win").`,
+    `  1. Early: the setup and the commander: the cheap cards that start the plan, each costing at most ${earlyMax} mana, and what the commander does once it lands. ${turn}`,
+    "  2. Mid: the engine running: the cards that, with the commander, turn the setup into advantage.",
+    "  3. Close: how the game is won and what to protect while it happens: the cards that win, and the pieces an opponent must answer.",
+    `- landKeep: ONE { text, evidence }, at most ${LAND_KEEP_BUDGET} characters as rendered, shown first under the Mulligan heading. It says a keepable opening seven holds ${land.lands} lands (write the number as the digit ${land.lands}, never a range) and gives this deck's reason, from the figures under "Keep-line land number": for example that many of its spells cost five or more, or that its curve is low. Every number in it is one of those figures. It may name the commander as [[Name]]; it states no turn.`,
+    `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, as { text, evidence }, each at most ${CHAR_BUDGETS.mulligan} characters. EVERY line names a card of this decklist as [[Name]] and cites its ref: a keep line names the engine piece or early play this hand wants (a card of a listed combo, or one of the Engine candidates), a send-back line names the card or plan piece the hand lacks. A line that names no card of this deck is advice true of any deck ("send back a hand with no plays", "keep a hand with ramp"): never write one. The land line states the land count, so these lines NEVER state a land count, "no lands" or "all spells". Never name a card marked "universal staple" in a mulligan line. Do not begin a line with "Keep", "Send back" or "Mulligan". The commander starts in the command zone, never in the opening hand. Use only the figures given under "Mulligan figures"; state no other number.`,
+    `${tips.replace(tipsFrom, "EXACTLY 2 tips")} A tip names NO card that a stage line or the alternate line names: take its cards from the rest of the deck.`,
+    `${keyCards} A Key card is NEVER a card that the overview, a stage line, a tip or the alternate line names (the commander included): choose the cards those lines leave out. A job never names another card.`,
+    assessment,
+    stages.alternates.length > 0
+      ? `- alternate: REQUIRED for this deck. The facts list alternate commanders (${stages.alternates.join("; ")}), so the reply MUST include "alternate": ONE { text, evidence } of at most ${CHAR_BUDGETS.strategy} characters on leading this deck with one of them instead: name it as [[Name]], cite its ref, and say in a few words how the plan changes under it. A reply without "alternate" fails.`
+      : "- alternate: leave it out. This deck has no alternate commander.",
+  ];
+}
+
+/** Iteration 3's rules against repetition and stray turn numbers. */
+function stagesRulesV3(facts: SynopsisFacts, stages: StagesOption): string {
+  const castTurn = facts.stats?.commanderCastTurn ?? null;
+  const budget = stages.maxChars === undefined ? "" : ` (${stages.maxChars} characters as rendered)`;
+  return [
+    "EACH CARD IS EXPLAINED ONCE. The overview, the three stage lines, the alternate line, the tips and the Key cards (each card AND its job) each have their own job, and a card is named in only ONE of them: say what a card does where it matters most and nowhere else. A card a stage line names is never a tip's card and never a Key card. The commander is the one card more than one of them may name, and what it does is explained once, in the Early line; it is never a Key card.",
+    "The overview says what the deck is and how it wins in plain words: it names the commander, and leaves the other cards to the stages, tips and Key cards.",
+    `LENGTH: everything the reader is shown (the overview, the stage lines, the alternate line, the land line, the mulligan lines, the tips, the Key cards with their jobs and the weaknesses) together must be NO LONGER than today's Overview of this deck${budget}. Trim the overview paragraph first: aim for about ${Math.floor(CHAR_BUDGETS.overview * 0.55)} characters, well under its ${CHAR_BUDGETS.overview} limit. Then keep every other line short.`,
+    ...(stages.alternates.length > 0 ? ['This deck carries alternate commanders: the reply MUST include the "alternate" line.'] : []),
+    castTurn === null
+      ? "State no turn number anywhere: say \"early\" or \"late\" instead."
+      : `The only turn number you may state anywhere is the expected commander cast turn, as "around turn ${castTurn}". Never write any other turn ("turn 1", "turns two to four", "the third turn"); say "early" or "late" instead.`,
+  ].join("\n");
+}
 
 function stagesSections(facts: SynopsisFacts, stages: StagesOption): string[] {
   const [plans, strategy, mulligan, tips, keyCards, assessment] = SECTIONS_V8;
@@ -350,9 +417,24 @@ export function buildSynopsisPrompt(
   lines.push(`- Ramp pieces: ${facts.ramp}`);
   // The land range itself is drawn by the app as a fixed line (contract 6). It is stated here so the
   // lines can agree with it, and flagged so they do not repeat it.
-  lines.push(`- Shown by the app, not to be restated: a keepable seven-card hand holds ${facts.keep.low} to ${facts.keep.high} lands; send back ${facts.sendBack.none} to ${facts.sendBack.under} lands, or ${facts.sendBack.over} or more.`);
+  if (opts.stages?.shape !== 3) {
+    lines.push(`- Shown by the app, not to be restated: a keepable seven-card hand holds ${facts.keep.low} to ${facts.keep.high} lands; send back ${facts.sendBack.none} to ${facts.sendBack.under} lands, or ${facts.sendBack.over} or more.`);
+  }
   if (facts.commanderManaValues.length > 0) {
     lines.push(`- Commander mana value (a turn to cast it on is this number): ${facts.commanderManaValues.join(" and ")}`);
+  }
+  if (opts.stages?.shape === 3) {
+    // Iteration 3: the fixed range is not shown; the land line states the deck's own number instead.
+    const k = opts.stages.landKeep;
+    if (!k) throw new Error("buildSynopsisPrompt: the iteration-3 stages shape needs landKeep");
+    const c = k.curve;
+    lines.push("", "Keep-line land number (the app's, from this deck's curve and land count; only the land line states it, and every number it states is one of these):");
+    lines.push(`- Lands in a keepable seven: ${k.lands}`);
+    lines.push(`- Lands in the deck: ${c.lands}; ramp pieces: ${c.ramp}`);
+    lines.push(`- Nonland cards costing five or more: ${c.fivePlus}; costing two or less: ${c.twoOrLess}`);
+    if (c.commanderManaValue !== null) lines.push(`- Commander mana value: ${c.commanderManaValue}`);
+    if (c.averageManaValue !== null) lines.push(`- Average nonland mana value (a reason only; never write this number): ${c.averageManaValue}`);
+    lines.push(`- Why ${k.lands}: ${k.why}`);
   }
 
   if (opts.v2) lines.push(...v2FactLines(facts, !!opts.contract8));
@@ -406,6 +488,13 @@ export function buildSynopsisPrompt(
     if (long.length > 0) lines.push(`Shorten these, which ran over their limit (counted as rendered; every other item in those sections must also fit its limit): ${long.join("; ")}.`);
   }
 
+  if (opts.contract8 && opts.stages?.shape === 3) {
+    const system = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...stagesSectionsV3(facts, opts.stages)].join("\n");
+    return {
+      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES_V8}\n${stagesFactRules(3)}\n${stagesRulesV3(facts, opts.stages)}`,
+      user: lines.join("\n"),
+    };
+  }
   if (opts.contract8 && opts.stages) {
     const system = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...stagesSections(facts, opts.stages)].join("\n");
     return {

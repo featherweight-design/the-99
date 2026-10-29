@@ -1,9 +1,13 @@
-import { STAGE_LABELS, type OverviewDoc, type StagesChecks } from "../../../src/lib/synopsis/stages";
+import { SECTION_SCOPE, STAGE_LABELS, type landKeepTable, type OverviewDoc, type StagesChecks } from "../../../src/lib/synopsis/stages";
 
 /**
  * The side-by-side page for `overview-stages.mts`: per deck, today's Overview (left) and the stages
  * shape (right) on desktop, stacked on a phone, each showing exactly the text a reader sees, the
  * stage labels, and the check results. Pure string work; a local file, never published.
+ *
+ * Iteration 3: the model's land line stands where the fixed range stood (the old side keeps the
+ * range), a section only a precon has is tagged "precon only", and a section a doc does not carry is
+ * not drawn at all (no empty heading), so a player's deck reads whole without the precon sections.
  */
 
 export type ComparePanel = {
@@ -29,6 +33,8 @@ export type CompareDeck = {
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 /** A line as it renders: marks become the card's name, set apart as the app's card-open trigger is. */
 const line = (text: string) => esc(text).replace(/\[\[([^\[\]]+)\]\]/g, '<span class="card">$1</span>');
+/** The tag a section only a precon has carries. */
+const scopeTag = (section: keyof typeof SECTION_SCOPE) => (SECTION_SCOPE[section] === "precon only" ? ' <span class="scope">precon only</span>' : "");
 
 function panel(side: "Today" | "Stages", p: ComparePanel, landLine: string): string {
   const out: string[] = [`<section class="panel"><h3>${side}</h3><p class="src">${esc(p.source)}</p>`];
@@ -45,9 +51,11 @@ function panel(side: "Today" | "Stages", p: ComparePanel, landLine: string): str
     out.push(`<h5>Game plan</h5><dl class="stages">${d.stages.map((l, i) => `<dt>${esc(STAGE_LABELS[i] ?? `Extra ${i + 1}`)}</dt><dd>${line(l.text)}</dd>`).join("")}</dl>`);
   }
   if (d.winsBy.length > 0) out.push(`<dl class="stages">${d.winsBy.map((l) => `<dt>Wins by</dt><dd>${line(l.text)}</dd>`).join("")}</dl>`);
-  if (d.alternate.length > 0) out.push(`<dl class="stages">${d.alternate.map((l) => `<dt>Alternate</dt><dd>${line(l.text)}</dd>`).join("")}</dl>`);
-  if (d.keep.length + d.sendBack.length > 0) {
-    out.push(`<h5>Mulligan</h5><p class="fixed">${esc(landLine)}</p><div class="mull"><div><b>Keep</b><ul>${d.keep.map((l) => `<li>${line(l.text)}</li>`).join("")}</ul></div><div><b>Send back</b><ul>${d.sendBack.map((l) => `<li>${line(l.text)}</li>`).join("")}</ul></div></div>`);
+  if (d.alternate.length > 0) out.push(`<dl class="stages">${d.alternate.map((l) => `<dt>Alternate${scopeTag("alternate")}</dt><dd>${line(l.text)}</dd>`).join("")}</dl>`);
+  // Iteration 3's land line replaces the fixed range; a doc without one (today, iteration 2) shows the range.
+  const landShown = (d.landKeep ?? []).length > 0 ? (d.landKeep ?? []).map((l) => `<p class="landkeep">${line(l.text)}</p>`).join("") : `<p class="fixed">${esc(landLine)}</p>`;
+  if (d.keep.length + d.sendBack.length + (d.landKeep ?? []).length > 0) {
+    out.push(`<h5>Mulligan</h5>${landShown}<div class="mull"><div><b>Keep</b><ul>${d.keep.map((l) => `<li>${line(l.text)}</li>`).join("")}</ul></div><div><b>Send back</b><ul>${d.sendBack.map((l) => `<li>${line(l.text)}</li>`).join("")}</ul></div></div>`);
   }
   if (d.tips.length > 0) out.push(`<h5>Tips</h5><ul>${d.tips.map((l) => `<li>${line(l.text)}</li>`).join("")}</ul>`);
   out.push(`<h4>Key cards</h4>${refusedNote("keyCards")}<ul class="keys">${d.keyCards.map((k) => `<li><span class="card">${esc(k.card)}</span> ${line(k.job.text)}</li>`).join("")}</ul>`);
@@ -57,6 +65,12 @@ function panel(side: "Today" | "Stages", p: ComparePanel, landLine: string): str
 }
 
 function checksBlock(c: StagesChecks | null): string {
+  const extra = (x: StagesChecks, row: (name: string, pass: boolean, detail: unknown[]) => string) => [
+    ...(x.landKeep ? [row(`Land line states ${x.landKeep.target} lands (${x.landKeep.why}); stated ${x.landKeep.stated ?? "none"}`, x.landKeep.pass, x.landKeep.offenders)] : []),
+    ...(x.mulliganSpecific ? [row("No generic mulligan line (each names a deck card or a deck-specific number)", x.mulliganSpecific.pass, x.mulliganSpecific.offenders.map((o) => `${o.where}: ${o.text}`))] : []),
+    ...(x.mulliganSpecificToday ? [row("Today's mulligan lines, same rule (for comparison)", x.mulliganSpecificToday.pass, x.mulliganSpecificToday.offenders.map((o) => `${o.where}: ${o.text}`))] : []),
+    ...(x.deckKind ? [row("Reads right for its kind (a player's deck shows no precon-only section)", x.deckKind.pass, x.deckKind.offenders)] : []),
+  ];
   if (!c) return `<div class="checks"><p>No checks: the new answer did not come back.</p></div>`;
   const row = (name: string, pass: boolean, detail: unknown[]) =>
     `<li class="${pass ? "ok" : "bad"}"><b>${pass ? "Pass" : "Fail"}</b> ${esc(name)}${detail.length ? `<ul>${detail.map((x) => `<li>${esc(typeof x === "string" ? x : JSON.stringify(x))}</li>`).join("")}</ul>` : ""}</li>`;
@@ -68,11 +82,22 @@ function checksBlock(c: StagesChecks | null): string {
     row(`Early cards cost at most ${c.stageFit.max}`, c.stageFit.pass, c.stageFit.offenders.map((o) => `${o.card}: ${o.manaValue}`)),
     row("Every stage line names a deck card", c.stagesNameCards.pass, c.stagesNameCards.offenders.map((o) => `${o.stage}: ${o.why}`)),
     row(`Length: ${c.length.newChars} characters against ${c.length.oldChars} today`, c.length.pass, []),
-    row("Shape (3 stages, Wins by, exactly 2 tips, alternate when carried, budgets)", c.shape.pass, c.shape.offenders),
+    row(c.landKeep ? "Shape (3 stages, no Wins by, one land line, exactly 2 tips, alternate when carried, budgets)" : "Shape (3 stages, Wins by, exactly 2 tips, alternate when carried, budgets)", c.shape.pass, c.shape.offenders),
+    ...extra(c, row),
   ].join("")}</ul></div>`;
 }
 
-export function compareHtml(title: string, decks: readonly CompareDeck[], summaryLines: readonly string[]): string {
+/** Iteration 3's table: each deck's land number, what it stated, and the curve behind it. */
+function landTableBlock(t: ReturnType<typeof landKeepTable> | null | undefined): string {
+  if (!t) return "";
+  const head = ["Deck", "Kind", "Lands", "Avg MV", "5+", "≤2", "Cmdr MV", "Rule", "Stated", "Why"];
+  const rows = t.rows.map((r) => [r.name, r.kind, r.curve.lands, r.curve.averageManaValue ?? "", r.curve.fivePlus, r.curve.twoOrLess, r.curve.commanderManaValue ?? "", r.target, r.stated ?? "none", r.why]
+    .map((x, i) => `<td${i === 8 && r.stated !== r.target ? ' class="bad"' : ""}>${esc(String(x))}</td>`).join(""));
+  return `<h2>Land number by deck</h2><p class="meta">Stated: ${esc(t.distinctStated.join(", ") || "none")}; the rule's: ${esc(t.distinctTargets.join(", "))}. ${t.differs ? "Differs across decks." : "Does not differ across decks."} ${t.everyStatedIsTheDecks ? "Every deck states its own number." : "Not every deck states its own number."}</p>
+<div class="scroll"><table class="land"><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r}</tr>`).join("")}</tbody></table></div>`;
+}
+
+export function compareHtml(title: string, decks: readonly CompareDeck[], summaryLines: readonly string[], landTable?: ReturnType<typeof landKeepTable> | null): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
@@ -98,9 +123,15 @@ dl.stages dt { font-weight: 700; } dl.stages dd { margin: 0; }
 .checks { border-top: 1px dashed var(--line); margin-top: 8px; font-size: 13px; }
 .checks li.ok > b { color: var(--ok); } .checks li.bad > b { color: var(--bad); }
 .summary li { margin: 2px 0; }
+.landkeep { margin: 2px 0; font-weight: 600; }
+.scope { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.scroll { overflow-x: auto; max-width: 100%; }
+table.land { border-collapse: collapse; font-size: 13px; } table.land th, table.land td { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
+table.land td.bad { color: var(--bad); font-weight: 700; }
 </style></head><body>
 <h1>${esc(title)}</h1>
 <ul class="summary">${summaryLines.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+${landTableBlock(landTable)}
 ${decks.map((d) => `<h2>${esc(d.name)}</h2><p class="meta">${esc(d.kind)} · ${esc(d.commanders.join(" and "))}${d.note ? ` · ${esc(d.note)}` : ""}</p>
 <div class="pair">${panel("Today", d.old, d.landLine)}<div>${panel("Stages", d.new, d.landLine)}${checksBlock(d.checks)}</div></div>`).join("\n")}
 </body></html>
