@@ -587,8 +587,8 @@ const LAND_COUNT_WORDS: Record<string, number> = { zero: 0, one: 1, two: 2, thre
  * lands"), outside card marks. A deck-total phrase, which the prompt hands the land line as a reason,
  * is told apart by its WORDS, never by its number (a deck's total may equal the hand count): "on 37
  * lands", "plays (only) 37 lands", "runs 37 lands", "its 37 lands", "37 lands in the deck", "with 37
- * lands" (unless a hand comes just before: "a hand with 3 lands" is a hand count). "3 of its 37
- * lands" states 3.
+ * lands" (unless a hand comes just before: "a hand with 3 lands" is a hand count), "a 37-land deck". "3 of its
+ * 37 lands" states 3.
  */
 export function statedLandNumbers(text: string): number[] {
   const bare = text.replace(/\[\[[^\[\]]+\]\]/g, " ");
@@ -610,8 +610,8 @@ const TOTAL_BEFORE = /\b(?:on|plays?|playing|runs?|running|its|of\s+(?:the|your)
 /** "with" before a land count, which is the deck's total unless a hand comes just before it. */
 const WITH_BEFORE = /\bwith\s+(?:only\s+|just\s+)?$/i;
 const HAND_WITH_BEFORE = /\b(?:hand|seven|opener|opening\s+\w+)\s+with\s+(?:only\s+|just\s+)?$/i;
-/** Words after a land count that make it the deck's total: "in the deck", "in the list", "in the 99". */
-const TOTAL_AFTER = /^\s+in\s+(?:the|this|your)\s+(?:deck|list|99|library)\b/i;
+/** Words after a land count that make it the deck's total: "in the deck", "in the list", "in the 99", and "deck" itself ("a 40-land deck"). */
+const TOTAL_AFTER = /^(?:\s+in\s+(?:the|this|your)\s+(?:deck|list|99|library)|\s+(?:deck|list|build))\b/i;
 
 function isDeckTotal(before: string, after: string): boolean {
   if (TOTAL_AFTER.test(after) || TOTAL_BEFORE.test(before)) return true;

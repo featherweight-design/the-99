@@ -436,6 +436,9 @@ describe("iteration 3: the deck's own land number", () => {
   it("reads the land counts a line states, outside card marks", () => {
     expect(statedLandNumbers("Keep 4 lands: the curve is high.")).toEqual([4]);
     expect(statedLandNumbers("A four-land hand.")).toEqual([4]);
+    // "an N-land deck" is the deck total, never a hand count (CounterIntelligence_EOC, the i3 fix run).
+    expect(statedLandNumbers("4 lands fits a 40-land deck with 11 spells costing five or more.")).toEqual([4]);
+    expect(statedLandNumbers("Keep 3 lands in a 36 land deck.")).toEqual([3]);
     expect(statedLandNumbers("Three or four lands.")).toEqual([3, 4]);
     expect(statedLandNumbers("[[Two Lands]] and a creature.")).toEqual([]);
   });
