@@ -186,7 +186,8 @@ const num = (s: string) => (/^\d+$/.test(s) ? Number(s) : NUMBER_WORDS[s.toLower
  * 5", "the third turn", "T3". Read outside card marks, so a card's name never counts.
  */
 export function turnNumbers(text: string): number[] {
-  const prose = text.replace(/\[\[[^\[\]]+\]\]/g, " ");
+  // Power/toughness ("turns 1/1s into 3/3s", "+1/+1") is a stat, never a turn.
+  const prose = text.replace(/\[\[[^\[\]]+\]\]/g, " ").replace(/[+-]?(?:\d+|X)\/[+-]?(?:\d+|X)/gi, " ");
   const out: number[] = [];
   const range = new RegExp(`\\bturns?[\\s-]*${NUM}(?:\\s*(?:-|\\u2013|to|or|and|through)\\s*${NUM})?\\b`, "gi");
   for (const m of prose.matchAll(range)) { out.push(num(m[1])); if (m[2]) out.push(num(m[2])); }

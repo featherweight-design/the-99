@@ -144,6 +144,7 @@ describe("zero turn numbers but the cast turn", () => {
   it("reads every way a turn is written, never a card's name", () => {
     expect(turnNumbers("Cast it on turn 3, then turns two to four, by turn-five, the third turn, or T6.")).toEqual([3, 2, 4, 5, 3, 6]);
     expect(turnNumbers("[[Turn to Frog]] each turn, an extra turn.")).toEqual([]);
+    expect(turnNumbers("[[Sigil Captain]] turns 1/1s into 3/3s; it turns +1/+1 counters and X/X tokens.")).toEqual([]);
   });
   it("allows the cast turn and fails any other", () => {
     expect(checkTurnNumbers(doc(), 4).pass).toBe(true);
