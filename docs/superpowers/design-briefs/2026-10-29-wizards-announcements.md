@@ -90,7 +90,7 @@ with the same owned dot, the owned count. **No** Start, no Link deck, no Overvie
    view-only with no Start.
 5. A post that named a list whose cards the catalog cannot yet match (unmatched lines).
 6. No collection uploaded (`EmptyCollectionBand`, as today).
-6. Loading (`src/components/decks/precons/precons-loading.tsx` pattern); the Commander decklists kind switched off
+7. Loading (`src/components/decks/precons/precons-loading.tsx` pattern); the Commander decklists kind switched off
    (open call 6).
 
 ## Open calls for Design
