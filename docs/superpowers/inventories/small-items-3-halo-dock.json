@@ -1,0 +1,101 @@
+{
+  "feature": "Small items 3, items 2 and 6: the Try it halo held 8px inside its frame (every ToolCard: About's Try it and Show me's landing), and the phone dock that moves to the top for a low region",
+  "restoreAbout": true,
+  "note": "Not read-only: opening an About page records the visit in the audit account's user_prefs About columns, so restoreAbout puts them back; point .env's DATABASE_URL at local-dev or a scratch branch. Halo rows photograph Top off's card (its box runs to the crop's right edge, the case the item fixes) at both widths, on About's Try it and on a Show me landing that lights the card. Dock rows are phone only: the low row centres the 'row' pin so the Your deck shot's last pin (bracket marks) sits in the bottom band, then taps it, and the dock should stand 12px under whatever holds the top of the screen; the high row taps pin 1 (commit) and the dock stays at the foot. The Try it landing's no-beat scroll is a timing, not a picture: measure it with the halo-to-first-scroll timer (see the PR body).",
+  "shares": [
+    { "binding": "ToolCard", "module": "src/components/about/tools/tool-card.tsx" },
+    { "binding": "PinDock", "module": "src/components/about/pages/pin-dock.tsx" }
+  ],
+  "rows": [
+    {
+      "id": "si3-halo-tryit-phone",
+      "label": "/about/decks: Top off's Try it card, its halo held 8px inside the frame (phone)",
+      "view": "src/components/about/pages/try-it.tsx",
+      "binding": "ToolCard",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/about/decks", "wait": "[data-about-shot][data-loaded]", "settle": 800 },
+        { "scrollTo": "[data-try-it-width='phone'] [data-tool-card='top-off']" },
+        { "settle": 400 }
+      ]
+    },
+    {
+      "id": "si3-halo-tryit-desktop",
+      "label": "/about/decks: Top off's Try it card, its halo held 8px inside the frame (desktop)",
+      "view": "src/components/about/pages/try-it.tsx",
+      "binding": "ToolCard",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/about/decks", "wait": "[data-about-shot][data-loaded]", "settle": 800 },
+        { "scrollTo": "[data-try-it-width='desktop'] [data-tool-card='top-off']" },
+        { "settle": 400 }
+      ]
+    },
+    {
+      "id": "si3-halo-landing-phone",
+      "label": "/about/decks?lit=decks/your-deck/mix: Show me landing, Top off's card lit, its halo inside the frame (phone)",
+      "view": "src/components/discovery/label-landing.tsx",
+      "binding": "ToolCard",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/about/decks?lit=decks%2Fyour-deck%2Fmix#your-deck", "wait": "[data-about-width='phone'] [data-about-halo='decks/your-deck/mix']", "settle": 800 },
+        { "scrollTo": "[data-try-it-width='phone'] [data-tool-card='top-off']" },
+        { "settle": 400 }
+      ]
+    },
+    {
+      "id": "si3-halo-landing-desktop",
+      "label": "/about/decks?lit=decks/your-deck/mix: Show me landing, Top off's card lit, its halo inside the frame (desktop)",
+      "view": "src/components/discovery/label-landing.tsx",
+      "binding": "ToolCard",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/about/decks?lit=decks%2Fyour-deck%2Fmix#your-deck", "wait": "[data-about-width='desktop'] [data-about-halo='decks/your-deck/mix']", "settle": 800 },
+        { "scrollTo": "[data-try-it-width='desktop'] [data-tool-card='top-off']" },
+        { "settle": 400 }
+      ]
+    },
+    {
+      "id": "si3-dock-low-phone",
+      "label": "/about/decks#your-deck: a low region's pin (bracket marks) tapped, its label docked at the top under what holds the screen's top (phone)",
+      "view": "src/components/about/pages/labelled-screen.tsx",
+      "binding": "PinDock",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/about/decks#your-deck", "wait": "[data-about-gutter] [data-about-pin]", "settle": 800 },
+        { "scrollTo": "[data-about-width='phone'] [data-about-pin='decks/your-deck/row']" },
+        { "settle": 600 },
+        { "click": "[data-about-width='phone'] [data-about-pin='decks/your-deck/bracket-marks']", "settle": 600 },
+        { "wait": "[data-about-dock='decks/your-deck/bracket-marks'][data-about-dock-at='top']", "settle": 400 }
+      ]
+    },
+    {
+      "id": "si3-dock-low-back-phone",
+      "label": "/about/decks?from=/decks#your-deck: the same low tap with the back bar stuck, the dock 12px under the back bar (phone)",
+      "view": "src/components/about/pages/labelled-screen.tsx",
+      "binding": "PinDock",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/about/decks?from=%2Fdecks#your-deck", "wait": "[data-about-gutter] [data-about-pin]", "settle": 800 },
+        { "scrollTo": "[data-about-width='phone'] [data-about-pin='decks/your-deck/row']" },
+        { "settle": 600 },
+        { "click": "[data-about-width='phone'] [data-about-pin='decks/your-deck/bracket-marks']", "settle": 600 },
+        { "wait": "[data-about-dock='decks/your-deck/bracket-marks'][data-about-dock-at='top']", "settle": 400 }
+      ]
+    },
+    {
+      "id": "si3-dock-high-phone",
+      "label": "/about/decks#your-deck: a higher region's pin (commit) tapped, the dock at the foot as shipped (phone)",
+      "view": "src/components/about/pages/labelled-screen.tsx",
+      "binding": "PinDock",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/about/decks#your-deck", "wait": "[data-about-gutter] [data-about-pin]", "settle": 800 },
+        { "scrollTo": "[data-about-width='phone'] [data-about-pin='decks/your-deck/commit']" },
+        { "settle": 600 },
+        { "click": "[data-about-width='phone'] [data-about-pin='decks/your-deck/commit']", "settle": 600 },
+        { "wait": "[data-about-dock='decks/your-deck/commit'][data-about-dock-at='foot']", "settle": 400 }
+      ]
+    }
+  ]
+}

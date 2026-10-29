@@ -57,3 +57,65 @@ commit. No About entry and no version bump: the content hash re-pins at 16.
 - The drawing locks the whole form block including labels; the build locks the fields. Labels and captions are text and read the same either way.
 - Not exercised in a browser here: the contact sheet is the close-out walk's.
 - Browser check (1300 and 390): geometry identical locked vs unlocked, fields inert, `aria-busy` set, unlock keeps values and returns focus to the press. Two gaps found and fixed: the Colors strip wrapper (`colour-control.tsx`) now takes the locked edge, and the colour pips (symbol art, drawn as letters on the board) are dimmed to 0.55 opacity while locked, the ring still showing which are selected. The dimming is an engineering reading of "values `--fg-muted`" for art the board does not draw.
+
+## Engineering audit: items 2 and 6, and the Try it beat
+
+Audited against `README.md` §2 and §6 and the boards `Try-It-Halo.html` and `Dock-Low-Region.html`, on the tree at
+`origin/main` c6909b921. Built on branch `about-tryit-scroll`. Verdict: **buildable as drawn**. Two cases the boards do
+not draw are listed under Open, and neither blocks.
+
+### Item 2: the Try it halo stays inside its frame
+
+- **Where.** `ToolCard`'s `Picture` (`src/components/about/tools/tool-card.tsx`) drew the halo straight from the crop's
+  percentages. Both importers of `ToolCard` get the fix with no change of their own: About's Try it (`try-it.tsx`) and
+  Show me's landing (`discovery/label-landing.tsx`).
+- **How.** `haloAt`'s clamp is written in CSS, so it needs no measuring and holds at every rendered card width:
+  - left and top are `clamp(8px, x%, calc(100% - 8px))`;
+  - right and bottom are `max(8px, …%)`;
+  - an auto size under two insets never goes below 0, which matches `haloAt` when a box is squeezed past its own edge.
+  - The helper is `haloInsets` in `src/lib/about/halo.ts`.
+- **Bundle.** `HALO_REACH` moved into that manifest-free module, and `pins.ts` re-exports it. The client card then does
+  not bundle the page-shot manifest.
+- **Proof.**
+  - `halo.test.ts` evaluates the CSS at four card sizes against `haloAt`, for six boxes: Top off's, the full frame,
+    one inside, one low, and two outside it.
+  - `tool-card.test.tsx` pins the server markup.
+  - In the browser at 1300, Top off's halo ends 8px inside the frame's padding box.
+
+### Item 6: the phone dock for a low region (resolves R4 ruling 6)
+
+- **Rule.** `dockPlace` in `src/lib/about/dock-place.ts` follows the board's threshold exactly.
+  - The dock goes to the top when the lit region's bottom edge is below the dock's top edge as placed at the foot.
+  - At the top it sits 12px under the lowest bottom edge on screen of the quick-return header and the sticky back bar.
+  - With the header away and no back bar, that is 12px from the screen's top.
+  - A region the top dock would also cover keeps the foot.
+- **Once, on the tap.** `PinDock` measures itself at the foot in a layout effect and decides before its first paint.
+  - The screen keys the dock on its label, so each tap mounts a new dock that decides again.
+  - Scrolling never moves it.
+  - Look, gutters, ✕, z-order and motion are as shipped. Desktop has no dock.
+- **Measured at 390×844 on a scratch branch.** A low region gave these dock tops:
+  - header away, no back bar: 12;
+  - back bar stuck at 0–47: 59;
+  - header shown at 0–79: 91.
+  - A higher region kept the foot (669–758).
+  - The page's scrollY did not change on any tap.
+
+### The Try it beat (Hugh's ruling, 2026-10-29)
+
+- **Change.** `reveal` takes `{ beat }`, default true. `scrollToTarget` passes it through, and only `useToolLanding`
+  asks for `beat: false`.
+- **Unchanged.** Every other scroll keeps the 100ms `MOTION.delayMs`. Reduced motion still jumps.
+- **Measured at 390, five landings each.** Top off's halo landing to the first scroll event went from 126–133ms to
+  6–12ms.
+
+### Open: cases the boards do not draw
+
+1. **The header returning over a top dock.** The dock was placed while the header was away (top 12). The reader then
+   scrolls up and the header slides back.
+   - The shipped dock is `z-[34]`, over the header's `z-30`, so it covers the header's lower edge.
+   - The board stacks the dock under the header (z 5 vs 6), which would instead hide the dock's top.
+   - Rule 3 says the dock doesn't move, so it was built as shipped (over).
+   - This is a Design call if either behavior is wrong.
+2. **Safe area.** With nothing at the top, the dock sits 12px from the viewport's top edge, with no
+   `env(safe-area-inset-top)`. The phone header covers that inset whenever it shows. This case arises only while the
+   header is away.
