@@ -15,7 +15,7 @@ export function CreditsToast({ toast, onDone }: { toast: CreditsToastState | nul
   useEffect(() => restart(), [toast?.id, restart]);
   if (!toast) return null;
   return toast.detail ? (
-    <ToastFrame key={toast.id} frameRef={ref} role="status" placement="deck" title={toast.text} detail={toast.detail} />
+    <ToastFrame key={toast.id} frameRef={ref} role="status" placement="credits" title={toast.text} detail={toast.detail} />
   ) : (
     <ToastFrame key={toast.id} frameRef={ref} role="alert" title={toast.text} />
   );

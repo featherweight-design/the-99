@@ -378,7 +378,7 @@ export function QuickAddBar({
       {/* A search that failed says so in the deck toast and nowhere on the bar (small items 2, item 8). Keyed on the
           failure, so one after another comes back with its own eight seconds. */}
       {failure !== null && (
-        <QuickAddFailedToast key={failure} dockRef={rootRef} insideProps={insideProps} onRetry={retrySearch} onDone={dismissFailure} />
+        <QuickAddFailedToast key={failure} insideProps={insideProps} onRetry={retrySearch} onDone={dismissFailure} />
       )}
     </div>
   );

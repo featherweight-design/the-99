@@ -762,7 +762,8 @@ describe("adding a basic while the stepper is settling", () => {
 // draws nothing new.
 const { gameSeatsCopy } = await import("../../lib/copy/game-seats");
 const { addPanelCopy } = await import("../../lib/copy/decks-builder");
-const { liftOverDock } = await import("./quick-add-failed-toast");
+const { DeckRefusalToast } = await import("./token-refusal-toast");
+const { DECK_TOAST_CLAIM } = await import("../collection/edit-toast");
 
 describe("QuickAddBar — a failed search", () => {
 
@@ -887,44 +888,46 @@ describe("QuickAddBar — a failed search", () => {
     expect(searchCards).toHaveBeenCalledTimes(2);
   });
 
-  it("lifts the deck slot to sit 10px above the dock while the dock is on screen", async () => {
+  it("draws into the deck toast stack as an alert, out of the bar, and is never lifted", async () => {
     quietErrors();
     searchCards.mockRejectedValue(new Error("boom"));
-    const vh = window.innerHeight;
-    // The dock pinned at the foot: 67px tall (the phone's), its top 67px off the viewport's bottom. The slot draws the
-    // toast's bottom 10px off it, so it has to rise by the dock's height for a 10px gap over it.
-    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
-      const box = (top: number, height: number) => ({ top, bottom: top + height, height, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
-      if (this.hasAttribute("data-foot-bar")) return box(vh - 67, 67);
-      if (this.getAttribute("data-toast") === "deck") return box(vh - 10 - 52, 52);
-      return box(0, 0);
-    });
-    onTestFinished(() => rect.mockRestore());
-    render(
-      <div data-foot-bar="">
-        <QuickAddBar
-          deckId="deck-1"
-          commanderIdentity={["U"]}
-          deckOracleIds={[]}
-          commanderShortName="Korvold"
-          commanderOracleId="cmd-korvold"
-          declaredBracket={null}
-          noteCounts={EMPTY_NOTE_COUNTS}
-        />
-      </div>,
-    );
+    const { container } = mount();
     fireEvent.change(field(), { target: { value: "sw" } });
     const alert = await screen.findByRole("alert");
-    await waitFor(() => expect(alert.style.translate).toBe("0 -67px"));
+    // Small items 3, item 8: the stack stands above the dock, so the toast measures nothing and carries no lift.
+    expect(container.contains(alert)).toBe(false);
+    expect(alert.parentElement!.hasAttribute("data-deck-toast-stack")).toBe(true);
+    expect(alert.getAttribute("data-toast-kind")).toBe("quick-add-failed");
+    expect(alert.className).toContain("order-1");
+    expect(alert.style.translate).toBe("");
   });
 
-  it("measures the lift off the dock, and draws none while the dock is off screen or hidden", () => {
-    // Phone: the slot sits at tab bar + 10, and the dock just above the tab bar (83): lift by the dock, 67.
-    expect(liftOverDock(844 - 83 - 10, { top: 844 - 83 - 67, bottom: 844 - 83, height: 67 }, 844)).toBe(67);
-    // Desktop: the slot's bottom is 16, the dock 61 at the foot: bottom = 61 + 10, so lift 55.
-    expect(liftOverDock(900 - 16, { top: 900 - 61, bottom: 900, height: 61 }, 900)).toBe(55);
-    // Hidden (`max-md:hidden` leaves a zero box), or scrolled out of view.
-    expect(liftOverDock(890, { top: 0, bottom: 0, height: 0 }, 900)).toBe(0);
-    expect(liftOverDock(890, { top: 950, bottom: 1011, height: 61 }, 900)).toBe(0);
+  it("is one alert with the refusals: a refusal replaces it, and it replaces a refusal", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+    // A refusal arrives: the failed search leaves, and the field keeps its query.
+    const refusal = render(<DeckRefusalToast title="We couldn’t remove that." detail="Badgermole" onDone={() => {}} />);
+    await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(1));
+    expect(screen.getByRole("alert")).toHaveTextContent("Badgermole");
+    expect(field()).toHaveValue("sw");
+    refusal.unmount();
+    // And the other way round: a refusal up when the search fails again leaves for it.
+    const refusalDone = vi.fn();
+    render(<DeckRefusalToast title="We couldn’t remove that." detail="Badgermole" onDone={refusalDone} />);
+    fireEvent.change(field(), { target: { value: "swo" } });
+    await waitFor(() => expect(refusalDone).toHaveBeenCalled());
+  });
+
+  it("stays when a receipt claims the stack, since the field still holds its query", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+    act(() => { window.dispatchEvent(new Event(DECK_TOAST_CLAIM)); });
+    expect(toast()).toHaveTextContent(addPanelCopy.quickAdd.searchFailed);
   });
 });

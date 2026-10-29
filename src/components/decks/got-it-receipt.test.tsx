@@ -107,11 +107,14 @@ describe("the receipt's forms", () => {
     expect(screen.getByRole("button", { name: c.undoAria("Atraxa, Praetors' Voice") })).toBeInTheDocument();
   });
 
-  it("sits in the deck page's toast slot: above the tab bar, bottom left of the deck pane from md", () => {
+  it("sits on the floor of the deck toast stack (small items 3, item 8), which stands above the quick-add dock", () => {
     draw();
-    expect(toast().className).toContain("bottom-[calc(var(--tabbar-h,0px)+10px)]");
-    expect(toast().className).toContain("md:left-[calc(var(--rail-w)+16px)]");
-    expect(toast().className).toContain("md:w-[440px]");
+    const stack = toast().closest<HTMLElement>("[data-deck-toast-stack]")!;
+    expect(stack.className).toContain("bottom-[calc(var(--tabbar-h,0px)+var(--deck-foot-h,0px)+10px)]");
+    expect(stack.className).toContain("md:left-[calc(var(--rail-w)+16px)]");
+    expect(stack.className).toContain("md:w-[440px]");
+    expect(toast().getAttribute("data-toast-kind")).toBe("receipt");
+    expect(toast().className).toContain("order-2");
   });
 });
 

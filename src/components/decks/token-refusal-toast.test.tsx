@@ -39,54 +39,21 @@ describe("TokenRefusalToast", () => {
     expect(done).toHaveBeenCalledTimes(1);
   });
 
-  it("sits above a receipt already in the slot by that receipt's own height, and not above another refusal", () => {
-    const { container } = render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
-    expect(container.querySelector<HTMLElement>("[data-toast=deck]")!.style.translate).toBe("");
-    cleanup();
-    // A receipt whose body wraps is taller than any fixed offset: the lift is what it measures, plus a gap.
+  it("is an alert in the deck toast stack, above a receipt, and never lifted by measuring one", () => {
+    // Small items 3, item 8: the stack orders the two, so a refusal no longer measures the receipt and lifts itself.
     const receipt = document.createElement("div");
     receipt.setAttribute("data-toast", "deck");
     receipt.getBoundingClientRect = () => ({ height: 187.2 }) as DOMRect;
     document.body.appendChild(receipt);
     try {
-      render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
-      expect(screen.getByRole("alert").style.translate).toBe("0 -198px");
+      const { container } = render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
+      const alert = screen.getByRole("alert");
+      expect(container.contains(alert)).toBe(false);
+      expect(alert.parentElement!.hasAttribute("data-deck-toast-stack")).toBe(true);
+      expect(alert.className).toContain("order-1");
+      expect(alert.style.translate).toBe("");
     } finally {
       receipt.remove();
-    }
-    cleanup();
-    // Another refusal in the slot is the one being replaced, never a receipt to sit above.
-    const other = document.createElement("div");
-    other.setAttribute("data-toast", "deck");
-    other.setAttribute("data-toast-kind", "token-refusal");
-    other.getBoundingClientRect = () => ({ height: 90 }) as DOMRect;
-    document.body.appendChild(other);
-    try {
-      render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
-      expect(screen.getByRole("alert").style.translate).toBe("");
-    } finally {
-      other.remove();
-    }
-  });
-
-  it("follows a receipt that grows while the refusal is up", () => {
-    let notify: () => void = () => {};
-    const original = globalThis.ResizeObserver;
-    globalThis.ResizeObserver = class { constructor(cb: () => void) { notify = cb; } observe() {} disconnect() {} } as unknown as typeof ResizeObserver;
-    let height = 90;
-    const receipt = document.createElement("div");
-    receipt.setAttribute("data-toast", "deck");
-    receipt.getBoundingClientRect = () => ({ height }) as DOMRect;
-    document.body.appendChild(receipt);
-    try {
-      render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
-      expect(screen.getByRole("alert").style.translate).toBe("0 -100px");
-      height = 150; // the window narrowed and the receipt's body wrapped onto another line
-      act(() => notify());
-      expect(screen.getByRole("alert").style.translate).toBe("0 -160px");
-    } finally {
-      receipt.remove();
-      globalThis.ResizeObserver = original;
     }
   });
 });
