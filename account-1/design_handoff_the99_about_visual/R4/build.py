@@ -74,13 +74,20 @@ def picture(src, w, h, regions, mode, lit=None, inset=False, radius=20, extra=""
         bits = []
         for key, cy, n, box in ys:
             on = " on" if key == lit else ""
-            tx = G + box[0] * iw
-            ty = clamp(box[1] * ih + min(box[3] * ih, 28) / 2, 0, ih)
-            # leader: from the pin's edge to the region's left edge, bent to the region's own height when the pin slid
-            bits.append(f'<span class="lead{on}" style="left:{G/2+12:.1f}px;top:{cy:.1f}px;width:{max(tx-G/2-12,0):.1f}px"></span>')
+            x, y, bw, bh = box[0] * iw, box[1] * ih, box[2] * iw, box[3] * ih
+            ty = clamp(y + min(bh, 28) / 2, 12, ih - 12)
+            # nothing is drawn across the capture: the region gets corner brackets just outside it (grown to 20px if
+            # tiny), and the only line is a short stub in the empty gutter when a pin had to slide off its row
+            pad = 4
+            cx0, cy0 = x + bw / 2, y + bh / 2
+            hw, hh = max(bw / 2 + pad, 10), max(bh / 2 + pad, 10)
+            l, t = clamp(cx0 - hw, 3, iw - 3), clamp(cy0 - hh, 3, ih - 3)
+            r, b = clamp(cx0 + hw, 3, iw - 3), clamp(cy0 + hh, 3, ih - 3)
+            arm = min(10, (r - l) / 2, (b - t) / 2)
+            bits.append(f'<span class="brk{on}" style="left:{G + l:.1f}px;top:{t:.1f}px;width:{r - l:.1f}px;height:{b - t:.1f}px;--arm:{arm:.1f}px">'
+                        '<i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></span>')
             if abs(ty - cy) > 0.5:
-                bits.append(f'<span class="leadv{on}" style="left:{tx:.1f}px;top:{min(ty,cy):.1f}px;height:{abs(ty-cy):.1f}px"></span>')
-            bits.append(f'<span class="tick{on}" style="left:{tx:.1f}px;top:{ty:.1f}px"></span>')
+                bits.append(f'<span class="stub{on}" style="left:{G/2:.1f}px;top:{min(ty, cy):.1f}px;height:{abs(ty - cy):.1f}px"></span>')
             bits.append(f'<span class="pin{on}" style="left:{G/2:.1f}px;top:{cy:.1f}px">{n}</span>')
         return f'<div class="gut" style="width:{w}px;height:{ih}px;padding-left:{G}px">{inner}{"".join(bits)}</div>'
     out = [f'<div class="shot" style="width:{w}px;height:{h}px;border-radius:{radius}px">',
@@ -228,11 +235,11 @@ def build():
 
     # 1 · Pins
     b.append(board(1, "Numbered circles", "The number sits beside what it names, never on it",
-        "Today a pin sits 14px inside its region’s top-left corner, so on a small region (the commit button, the lock toggle, a row’s 4px dot) the 24px disc covers the very thing it describes. Placing it beside the region does not hold up either: these screens are dense, and beside one control is on top of the next. Proposed: the pins move <b>off the picture</b> into a 30px gutter on its left, each at its region’s height, with a hairline leader that ends in a small tick at the region’s edge. The capture is drawn 30px narrower to make room. Lit, the leader and tick turn full accent along with the halo. Two pins closer than 28px slide apart down the gutter and the leader bends to follow. Numbers, reading order and five pins a picture are unchanged, and the same rule holds on desktop.",
+        "Today a pin sits 14px inside its region’s top-left corner, so on a small region (the commit button, the lock toggle, a row’s 4px dot) the 24px disc covers the very thing it describes. Placing it beside the region does not hold up either: these screens are dense, and beside one control is on top of the next. Proposed: the pins move <b>off the picture</b> into a 30px gutter on its left, each level with its region. The region itself is marked with <b>accent corner brackets</b> just outside it, edged in the page colour so they read on light and dark parts of a capture alike, and grown to at least 20px so a tiny target like a row’s dot still gets a mark you see at a glance. No line ever crosses the capture: R4’s leaders are gone. Lit, the brackets turn full accent and the halo takes over. Two pins closer than 28px slide apart down the gutter, and a short stub inside the empty gutter joins the pin back to its region’s row. Numbers, reading order and five pins a picture are unchanged, and the same rule holds on desktop.",
         fr("Now · Your deck, shot 1", "Pin 1 covers “Commit as v2”, pin 3 covers the lock toggle.", picture("p-deck-top.webp", PW, PH, SHOT1, "now"), "was")
-        + fr("Proposed · shot 1", "Nothing on the capture is covered; each leader ends at its control.", picture("p-deck-top.webp", PW, PH, SHOT1, "new"), "is")
+        + fr("Proposed · shot 1", "Each target is bracketed; nothing on the capture is covered or crossed.", picture("p-deck-top.webp", PW, PH, SHOT1, "new"), "is")
         + fr("Now · shot 2", "Pin 4 hides the row’s dot entirely; pin 5 hides the bracket mark.", picture("p-deck-your-deck.webp", PW, PH, SHOT2, "now"), "was")
-        + fr("Proposed · shot 2", "The row’s dot and the bracket mark stay visible, each with its leader.", picture("p-deck-your-deck.webp", PW, PH, SHOT2, "new"), "is")))
+        + fr("Proposed · shot 2", "Even the 4px row dot gets a clear 20px mark, level with pin 4.", picture("p-deck-your-deck.webp", PW, PH, SHOT2, "new"), "is")))
 
     # 2 · Highlight cut off
     b.append(board(2, "Highlight boxes", "A lit region keeps its whole ring",
@@ -261,11 +268,11 @@ def build():
         + fr("Now · desktop row", "", f'<div class="drow">{tool_now("lineup", True)}{tool_now("precons", True)}</div>', "was")
         + fr("Proposed · desktop row", "Buttons sit on one baseline across the row.", f'<div class="drow">{tool_new("lineup", True)}{tool_new("precons", True)}</div>', "is")))
 
-    intro = """<header class="top"><span class="kick">The 99 · About · R4 for Hugh’s audit · 2026-10-29</span>
+    intro = """<header class="top"><span class="kick">The 99 · About · R4.1 for Hugh’s audit · 2026-10-29</span>
 <h1>About pages, after the build</h1>
 <p>Your seven notes, drawn over the shipped pages and real Low Sun captures (Decks › Your decks and Your deck). Each board shows <span class="pillw">Now</span> beside <span class="pilli">Proposed</span>. New strings are drafts for copy review.</p>
 <ol class="map">
-<li><b>Circles cover what they describe</b><a href="#b1">Board 1</a></li>
+<li><b>Circles cover what they describe</b><a href="#b1">Board 1 (revised)</a></li>
 <li><b>Try it header looks like a button</b><a href="#b4">Board 4</a></li>
 <li><b>Confusing card CTAs, picture bleeds into text</b><a href="#b5">Board 5</a></li>
 <li><b>Highlight boxes cut off</b><a href="#b2">Board 2</a></li>
