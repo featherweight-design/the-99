@@ -68,7 +68,6 @@ export const SWITCHES = [
   { name: "SOCIAL_WISHLIST_ENABLED", kind: "feature" },
   { name: "SPARE_REQUESTS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "STAND_IN_LABELS_ENABLED", kind: "feature" },
-  { name: "STRATEGY_FOCUS_ENABLED", kind: "feature", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model", needs: "TUNING_ENABLED" },
   { name: "SWAP_TOOLS_ENABLED", kind: "model" },
   { name: "TUNING_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },

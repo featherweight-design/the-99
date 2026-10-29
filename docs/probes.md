@@ -3349,7 +3349,7 @@ ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not 
 
 A deck's strategy focus is picked from the strategy block's legend on Analysis and cleared by Keep it balanced, in a real
 browser at 390 and 1300, and each press survives a reload: the write landed, not only the optimistic draw. Needs
-`STRATEGY_FOCUS_ENABLED` and `ANALYSIS_TAB_ENABLED` on, and `SF_DECK` naming an analyzed deck of the signed-in account
+`ANALYSIS_TAB_ENABLED` on, and `SF_DECK` naming an analyzed deck of the signed-in account
 with a strategy. It WRITES that deck's `strategy_focus` and puts back what it found in a `finally`, verified. It refuses
 before the first press unless the checkout's `DATABASE_URL` (the database a server started from the same worktree
 reads) is a scratch branch (`assertScratchBranch`): run the server from that worktree. Mutation-checked: an action that answers without writing fails the reload.

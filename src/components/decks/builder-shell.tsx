@@ -306,7 +306,7 @@ interface BuilderShellProps {
    *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
    *  credit lines' mention of it are withheld, same as `analysisEnabled` withholds the whole tab. */
   tuningEnabled?: boolean;
-  /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null with `STRATEGY_FOCUS_ENABLED` off. */
+  /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null with the Analysis tab off. */
   strategy?: StrategyRead | null;
   /** `socialGamesEnabled(env)` for this reader: the game log draws its "Across the table" row. */
   socialGames?: boolean;

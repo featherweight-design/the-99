@@ -33,7 +33,6 @@ import { homeFeedEnabled } from "../feed/flag";
 import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
-import { strategyFocusEnabled } from "../strategy/flag";
 import { pushEnabled } from "../push/flag";
 
 /**
@@ -106,7 +105,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
   // Combos one piece away (close-out): its own entry, and combo-awareness's card-details key.
   NEAR_COMBOS_ENABLED: () => true,
-  STRATEGY_FOCUS_ENABLED: strategyFocusEnabled,
+  // The strategy focus ended on exactly when the Analysis tab is, where its ring mounts.
+  STRATEGY_FOCUS_ENABLED: analysisTabEnabled,
   // Push notifications (close-out): its own entry, and `whats-new`'s news key. Already needs HOME_FEED_ENABLED. The
   // switch alone, as its flag reads it: the VAPID check (`pushAvailable`) parses keys with `node:crypto`, and this module
   // is imported by `proxy.ts`.

@@ -17,7 +17,7 @@ const stub = vi.hoisted(() => ({
   updateReturns: [{ id: DECK }] as { id: string }[],
   /** The ownership read after a write that matched nothing. */
   owned: [{ id: DECK }] as { id: string }[],
-  env: { STRATEGY_FOCUS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" } as Record<string, string>,
+  env: { ANALYSIS_TAB_ENABLED: "true" } as Record<string, string>,
 }));
 
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env }));
@@ -50,7 +50,7 @@ beforeEach(() => {
   stub.wheres = [];
   stub.updateReturns = [{ id: DECK }];
   stub.owned = [{ id: DECK }];
-  stub.env = { STRATEGY_FOCUS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" };
+  stub.env = { ANALYSIS_TAB_ENABLED: "true" };
 });
 
 const runDeferred = () => stub.deferred.forEach((fn) => fn());
@@ -89,11 +89,11 @@ describe("setStrategyFocus", () => {
     expect(stub.deferred).toEqual([]);
   });
 
-  it("refuses an unnamed key, a malformed id and a switched-off reader before any write", async () => {
+  it("refuses an unnamed key, a malformed id and a reader with the Analysis tab off before any write", async () => {
     expect(await setStrategyFocus(DECK, "typal:Equipment")).toEqual({ ok: false, reason: "invalid" });
     expect(await setStrategyFocus(DECK, "Tokens")).toEqual({ ok: false, reason: "invalid" });
     expect(await setStrategyFocus("not-a-uuid", "tokens")).toEqual({ ok: false, reason: "not-found" });
-    stub.env = { STRATEGY_FOCUS_ENABLED: "true" };
+    stub.env = {};
     expect(await setStrategyFocus(DECK, "tokens")).toEqual({ ok: false, reason: "off" });
     expect(stub.updates).toEqual([]);
   });

@@ -44,7 +44,7 @@ export type FingerprintInput = {
    */
   locks?: readonly string[];
   /**
-   * The deck's strategy focus (`STRATEGY_FOCUS_ENABLED`): picking or clearing one reopens the gate, since it changes
+   * The deck's strategy focus: picking or clearing one reopens the gate, since it changes
    * what a run aims at. Joins the hash ONLY when set, as `locks` does, so a deck with no focus hashes exactly as
    * before and no gate reopens on deploy.
    */

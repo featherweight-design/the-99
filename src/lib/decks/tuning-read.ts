@@ -40,7 +40,7 @@ import { loadAvailability } from "./availability-query";
 import { labelRoleCountsEnabled } from "./label-counts-flag";
 import { neverCutEnabled } from "./never-cut-flag";
 import { liveLockedIds } from "./locks";
-import { strategyFocusEnabled } from "../strategy/flag";
+import { analysisTabEnabled } from "./analysis-flag";
 import { parseStrategyKey } from "../strategy/focus";
 import type { StrategyKey } from "../strategy/score";
 
@@ -68,7 +68,7 @@ export type TuningInputs = {
   allLocked: string | null;
   /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them — no seeding. */
   limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
-  /** The deck's strategy focus, read only with `STRATEGY_FOCUS_ENABLED` on; a retired key reads as none. */
+  /** The deck's strategy focus, read only with the Analysis tab on; a retired key reads as none. */
   focus: StrategyKey | null;
 };
 
@@ -108,7 +108,7 @@ export async function tuningInputs(deckId: string, userId: string, env: NodeJS.P
   ]);
   if (!deck) return null;
   const intent = deck.intent;
-  const focus = strategyFocusEnabled(env) ? parseStrategyKey(deck.strategyFocus) : null;
+  const focus = analysisTabEnabled(env) ? parseStrategyKey(deck.strategyFocus) : null;
   const limits = {
     capCents: deck.tuningCapCents,
     sets: deck.tuningSets ?? [],

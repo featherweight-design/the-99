@@ -102,22 +102,10 @@ describe("loadStrategyBaseline", () => {
 });
 
 describe("loadDeckStrategy", () => {
-  it("reads nothing with the switch off, and with the Analysis tab off", async () => {
+  it("reads nothing with the Analysis tab off", async () => {
     const spy = vi.spyOn(db, "select");
     expect(await loadDeckStrategy("u", "d", {} as unknown as NodeJS.ProcessEnv)).toBeNull();
-    expect(await loadDeckStrategy("u", "d", { STRATEGY_FOCUS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeNull();
     expect(spy).not.toHaveBeenCalled();
-  });
-});
-
-describe("strategyFocusEnabled", () => {
-  it("needs the exact string 'true' on both its own switch and the Analysis tab", async () => {
-    const { strategyFocusEnabled } = await import("./flag");
-    const env = (own: string | undefined, tab: string | undefined) =>
-      ({ STRATEGY_FOCUS_ENABLED: own, ANALYSIS_TAB_ENABLED: tab }) as unknown as NodeJS.ProcessEnv;
-    expect(strategyFocusEnabled(env("true", "true"))).toBe(true);
-    expect(strategyFocusEnabled(env("TRUE", "true"))).toBe(false);
-    expect(strategyFocusEnabled(env("true", undefined))).toBe(false);
   });
 });
 

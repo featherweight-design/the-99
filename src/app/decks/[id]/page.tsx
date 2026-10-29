@@ -16,7 +16,6 @@ import { carryOnArrival } from "../../../lib/precons/arrival-carry";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
 import { readDeckOriginAndStart } from "../../../lib/precons/start-version";
 import { preconsEnabled } from "../../../lib/precons/flag";
-import { strategyFocusEnabled } from "../../../lib/strategy/flag";
 import { loadDeckStrategy } from "../../../lib/strategy/load";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
@@ -268,9 +267,9 @@ export default async function DeckBuilderPage({
   const friendPrefsRead = friendDecksEnabled(env)
     ? early(perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)).catch(() => null))
     : null;
-  // The deck's strategy and its focus (`STRATEGY_FOCUS_ENABLED`), uncached: a card edit revalidates this page, and the
+  // The deck's strategy and its focus, uncached: a card edit revalidates this page, and the
   // block's +N / −N counts the list as it stands. A failed read costs the block, nothing else.
-  const strategyRead = strategyFocusEnabled(env)
+  const strategyRead = analysisTabEnabled(env)
     ? early(perf.timed("strategy", () => loadDeckStrategy(userId, id, env)).catch(() => null))
     : null;
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
