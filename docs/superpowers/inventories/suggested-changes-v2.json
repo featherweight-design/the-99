@@ -1,6 +1,6 @@
 {
-  "feature": "Suggested changes v2, UI PR 5a: the at-99 tile",
-  "note": "Handoff design/design_handoff_the99_suggested_changes_v2, boards Not-At-99 (A, B) and the Landing tile (the intake arrives with PR 5b). Needs ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED and SUGGESTED_CHANGES_V2_ENABLED all 'true', a database at migration 0182 or later (a scratch branch of local-dev), and three READ decks the audit account owns: SCV2_DECK at 99 (local-dev HD - Elves d9345373\u2026), SCV2_UNDER_DECK at 96 (HD - Brago d3f9ccb4\u2026 with Island 10 set to 7 for the run), SCV2_OVER_DECK at 102 (HD Tune - Blood Rites cb877695\u2026 with Swamp 13 set to 16 for the run); put them back after.",
+  "feature": "Suggested changes v2, UI PR 5b: the intake (the at-99 tile rows from PR 5a stay)",
+  "note": "Handoff design/design_handoff_the99_suggested_changes_v2, boards Intake (A, B), and Not-At-99 (A, B) with the Landing tile from PR 5a. Needs ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED and SUGGESTED_CHANGES_V2_ENABLED all 'true', a database at migration 0182 or later (a scratch branch of local-dev), and three READ decks the audit account owns: SCV2_DECK at 99 (local-dev HD - Elves d9345373\u2026), SCV2_UNDER_DECK at 96 (HD - Brago d3f9ccb4\u2026 with Island 10 set to 7 for the run), SCV2_OVER_DECK at 102 (HD Tune - Blood Rites cb877695\u2026 with Swamp 13 set to 16 for the run); put them back after. Same request (Intake D), N at 20 and drifting off 99 mid-flow (Not-At-99 C) need a prior paid run or an edit in another tab, and are held by suggested-changes-intake.test and tuning-panel-v2.test.",
   "rows": [
     {
       "id": "tile-under",
@@ -81,6 +81,88 @@
         },
         {
           "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "intake-fresh",
+      "label": "Intake A: fresh, N = 3, empty box, the chips, Bracket on Keep, Kept for this deck, Suggest changes, the footer",
+      "view": "src/components/decks/suggested-changes-intake.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='suggested']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-sc-intake]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-sc-intake]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "intake-filled",
+      "label": "Intake B: N raised, a chip tapped (dashed, its sentence in the box), Bracket Up",
+      "view": "src/components/decks/suggested-changes-intake.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='suggested']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-sc-intake]",
+          "settle": 900
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 200
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 200
+        },
+        {
+          "click": "[data-sc-noticed] button",
+          "settle": 1200
+        },
+        {
+          "click": "[data-sc-bracket-choice^='up:']",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-sc-intake]",
           "settle": 400
         }
       ]

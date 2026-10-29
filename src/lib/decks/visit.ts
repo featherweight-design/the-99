@@ -27,8 +27,9 @@ export type ToolBaseline = { okKey: string | null; runId: string | null };
  *  before it draws. `mana-trades` (the trades applied this visit) is drawn as it stands: each is a change
  *  already made, and its Undo is the check, refused over a deck that has moved since. `mana-follow` is the
  *  color whose help to read again when the list next moves, set by a trade or its Undo, whichever mount
- *  of the door settled it, and consumed by the mount on screen. */
-export type VisitSlot = "mana-help" | "mana-trades" | "mana-follow";
+ *  of the door settled it, and consumed by the mount on screen. `sc-intake` is Suggested changes v2's intake
+ *  draft (request, count, bracket choice), kept across the panel's remounts and dropped with the visit. */
+export type VisitSlot = "mana-help" | "mana-trades" | "mana-follow" | "sc-intake";
 
 type Visit = {
   deckId: string;

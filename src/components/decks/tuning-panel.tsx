@@ -17,6 +17,8 @@ import {
   runTuning,
   saveDeckLimits,
   undoSuggestion,
+  type SameRequest,
+  type V2RunOpts,
 } from "../../app/decks/tuning-actions";
 import { creditsCopy } from "../../lib/copy/credits";
 import { numberWord } from "../../lib/copy/deck-analysis";
@@ -25,18 +27,22 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { countCharacters } from "../../lib/text/count-characters";
 import { axisCopy } from "../../lib/copy/game-log";
 import { formatCents } from "../../lib/decks/price";
-import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
+import { isPriorResult, isPriorRun, okKeyOf, setVisitValue, visitBaseline, visitValue, type ToolBaseline } from "../../lib/decks/visit";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
 import { gateReason } from "../../lib/tuning/gate";
 import { isLine, type PairItem, type TuningState } from "../../lib/tuning/state";
 import type { RefusalDetail } from "../../lib/tuning/validate";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
-import { awaitRunSettled } from "./await-run";
+import { AWAIT_RUN_V2_MAX_MS, awaitRunSettled } from "./await-run";
 import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
-import { useReviewRun } from "./review-run";
+import { useOpenHistory, useOpenRun, useReviewRun } from "./review-run";
+import { clampCount, DriftLine, IntakeReads, SameRequestConfirm, SuggestedChangesIntake } from "./suggested-changes-intake";
+import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
+import { localDay } from "../../lib/copy/credits";
+import { bracketCard, noticedChips, pickIndex, usualFor, type BracketPick, type NoticedFacts } from "../../lib/tuning/v2/intake";
 import { useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { MutationError } from "./mutation-error";
@@ -78,9 +84,49 @@ import { ArrivalOrder } from "../ui/arrival-queue";
 export type TuningDeps = {
   /** `runId`: a past run History reopened (re-review), read in place of the newest. */
   read: (deckId: string, runId?: string | null) => Promise<TuningState | null>;
-  run: (deckId: string, opts?: { anyway?: boolean; runId?: string; notes?: string }) => Promise<DeckMutationResult>;
+  /** v10's press, or (Suggested changes v2 on) a v2 press, which may answer `SameRequest` instead of starting a run. */
+  run: {
+    (deckId: string, opts: V2RunOpts): Promise<DeckMutationResult | SameRequest>;
+    (deckId: string, opts?: { anyway?: boolean; runId?: string; notes?: string }): Promise<DeckMutationResult>;
+  };
   card: CardActions;
 };
+
+/**
+ * Suggested changes v2 (plan 2026-10-27, UI PR 5), present only while the reader's `SUGGESTED_CHANGES_V2_ENABLED` is on.
+ * Absent, the panel is v10 exactly as shipped.
+ */
+export type TuningV2 = {
+  /** The deck's count on the tool's 99 scale (99 with one commander or two, `built + 99 − bodySize`), for the lines that
+   *  say "The deck is at 98 now". */
+  at: number;
+  /** How far the deck is from its body size: over is positive, under negative, 0 at size. */
+  over: number;
+  /** What the "What we noticed" chips are read from. */
+  noticed: NoticedFacts;
+  /** The deck has an overview the run reads (the shown synopsis carries a strategy or Key cards, as
+   *  `readTuningContext` reads it): the foot's first part. */
+  hasOverview?: boolean;
+  /** The drift line's link under 99: Your deck, with Top off open. */
+  onTopOff?: () => void;
+  /** The drift line's link over 99: Proposed cuts. */
+  onProposedCuts?: () => void;
+};
+
+/** The count a fresh intake opens on (Intake board A). */
+export const V2_DEFAULT_COUNT = 3;
+
+/** The intake's draft, kept in the deck VISIT's `sc-intake` slot (review rounds 3 and 4): the drift links (Top off on
+ *  Your deck, Proposed cuts in place) unmount the panel, and the player's request, count and bracket choice must be there
+ *  when they come back to 99 (STATES: a drift never loses the request), while leaving the deck starts the next visit
+ *  fresh. Never persisted. */
+type IntakeDraft = { count: number; request: string; bracketPick: BracketPick };
+
+function isSameRequest(r: DeckMutationResult | SameRequest): r is SameRequest {
+  return !r.ok && "confirm" in r && r.confirm === "same_request";
+}
+
+const v2Copy = suggestedChangesV2Copy;
 
 const SERVER: TuningDeps = {
   read: readTuningPanel,
@@ -142,6 +188,7 @@ export function TuningPanel({
   onSettled,
   onSaveDescription,
   freshEachVisit = false,
+  v2 = null,
 }: {
   /** With the Tuning hub off: this panel, once drawn, is Suggested changes' landing target. */
   landingTarget?: boolean;
@@ -164,6 +211,8 @@ export function TuningPanel({
   /** Hide a prior visit's set and open on the offer (`lib/decks/visit.ts`). Only inside the Tuning
    *  hub, where History keeps the prior reachable; on its own the tool shows its stored set. */
   freshEachVisit?: boolean;
+  /** Suggested changes v2's intake in place of Additional notes, and its press (`TuningV2`). Null: v10 as shipped. */
+  v2?: TuningV2 | null;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
   // The rows' flips, so the tally and the answered layout read each answer the moment its row does.
@@ -210,6 +259,41 @@ export function TuningPanel({
     notesRef.current = next;
     setNotes(next);
   }
+  // Suggested changes v2's intake (UI PR 5): the count, the request (never pre-filled) and the Bracket card's choice,
+  // held here and mirrored into a ref synchronously, for the reason `notesRef` is: the press awaits the limits flush
+  // before it reads them, and the intake stays editable the whole time. A drift off 99 keeps every one.
+  const draft = visitValue<IntakeDraft>(deckId, "sc-intake");
+  const [count, setCount] = useState(draft?.count ?? V2_DEFAULT_COUNT);
+  const [request, setRequest] = useState(draft?.request ?? "");
+  // The Bracket card's choice by identity, never by position: a new reading reorders the options, and "Down to 1" must
+  // stay "Down to 1" (review round 1). Null is Keep, the default, whatever bracket the deck reads at.
+  const [bracketPick, setBracketPick] = useState<BracketPick>(draft?.bracketPick ?? null);
+  const intakeCard = bracketCard(permits);
+  // The reading as of the latest render, for the press: it reads the card AFTER the limits flush, and a new analysis can
+  // land during that wait (review round 2), so the closure's `permits` may be the one the press started from.
+  const permitsRef = useRef(permits);
+  useEffect(() => {
+    permitsRef.current = permits;
+  });
+  const intakeRef = useRef<IntakeDraft>(draft ?? { count: V2_DEFAULT_COUNT, request: "", bracketPick: null });
+  // Moves on every intake edit, so a "same request" answer to a press made before the edit is dropped (review round 1).
+  const intakeRev = useRef(0);
+  // The last press answered "Same request as your Oct 26 run" (G4): nothing was reserved, and the action row asks.
+  const [same, setSame] = useState<{ runId: string; at: string } | null>(null);
+  function changeIntake(next: Partial<{ count: number; request: string; bracketPick: BracketPick }>) {
+    intakeRef.current = { ...intakeRef.current, ...next };
+    setVisitValue(deckId, "sc-intake", intakeRef.current);
+    intakeRev.current += 1;
+    if (next.count !== undefined) setCount(next.count);
+    if (next.request !== undefined) setRequest(next.request);
+    if (next.bracketPick !== undefined) setBracketPick(next.bracketPick);
+    // The inputs moved, so the request is no longer the one the confirm named.
+    setSame(null);
+  }
+  // History's reopen, for the confirm's `Open Oct 26’s run`. Null outside the Tuning hub.
+  const openRun = useOpenRun();
+  // History, for the intake foot's `Last run Oct 26 · History ›`. Null outside the Tuning hub.
+  const openHistory = useOpenHistory();
   // The absent description row's own "Describing in place" editor (STATES §3 state 2).
   const [describing, setDescribing] = useState(false);
   const [descDraft, setDescDraft] = useState("");
@@ -454,6 +538,9 @@ export function TuningPanel({
   const saveLimits = useCallback(
     (patch: LimitsPatch) => {
       const keys = Object.keys(patch) as LimitField[];
+      // The restrictions are part of the request (round 3): an edit retires the confirm and any answer still out.
+      intakeRev.current += 1;
+      setSame(null);
       keys.forEach((key) => {
         limitFieldRevision.current[key] += 1;
       });
@@ -756,22 +843,84 @@ export function TuningPanel({
     }
   }
 
+  // Suggested changes v2's press (UI PR 5): the intake's count, request and bracket choice, with a fresh run id. No
+  // `unchanged` gate and no Suggest again anyway (spec §8): the server asks once instead (`SameRequest`), and
+  // `confirmed` is that ask's `Run it again`. Nothing is reserved before the press; a limit edited moments ago is
+  // flushed first, as v10's press does, since the run reads the saved limits.
+  async function pressV2(confirmed = false) {
+    if (!state) return;
+    if (preparingRun.current !== null) return;
+    const mine = ++token.current;
+    preparingRun.current = mine;
+    try {
+      setRefused(null);
+      let flushed = await flushLimitsNow();
+      while (flushed.ok && flushed.touched && pendingLimits.current !== null) {
+        flushed = await flushLimitsNow();
+      }
+      if (!flushed.ok) {
+        setRefused(deckDescriptionCopy.limits.refused);
+        return;
+      }
+      // Snapshotted after every await, as v10's notes are: what the intake shows as the press runs.
+      const typed = intakeRef.current;
+      const card = bracketCard(permitsRef.current);
+      const option = card ? card.options[pickIndex(card, typed.bracketPick)] : null;
+      const opts: V2RunOpts = {
+        requestedCount: clampCount(typed.count),
+        ...(typed.request.trim() !== "" ? { request: typed.request } : {}),
+        bracket: option ? { choice: option.choice, target: option.target } : null,
+        ...(confirmed ? { confirmed: true } : {}),
+      };
+      await pressRun(mine, false, "", opts);
+    } finally {
+      if (preparingRun.current === mine) preparingRun.current = null;
+    }
+  }
+
   // `notes` is `press`'s own post-await snapshot, passed explicitly (review round 3) rather than
   // read from the outer closure, which could still hold what the field showed before a limits
   // flush or re-read, not what it shows now.
-  async function pressRun(mine: number, anyway: boolean, notes: string) {
+  async function pressRun(mine: number, anyway: boolean, notes: string, v2Opts: V2RunOpts | null = null) {
     if (token.current !== mine) return;
+    const runId = crypto.randomUUID();
+    // A v2 press asks first and draws the reading only once a run is really reserved: it may come back "same request"
+    // (nothing reserved, the action row asks) or refused, and neither flashes the reading state.
+    let answered: DeckMutationResult | null = null;
+    if (v2Opts) {
+      const rev = intakeRev.current;
+      const answer = await deps.run(deckId, { ...v2Opts, runId }).catch(
+        (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
+      );
+      if (token.current !== mine) return;
+      if (isSameRequest(answer)) {
+        // The player edited the intake while the press was out: the answer names a request no longer on screen.
+        if (intakeRev.current !== rev) return;
+        setSame({ runId: answer.runId, at: answer.at });
+        setAnnounced(v2Copy.intake.same.body(localDay(new Date(answer.at))));
+        return;
+      }
+      setSame(null);
+      if (!answer.ok) {
+        setRefused(answer.message);
+        setAnnounced(answer.message);
+        // Re-read without drawing the reading state (review round 5): an `in_flight` refusal means a run started
+        // elsewhere (another tab) after this panel's read, and only a fresh read arms the pending-run watcher for it.
+        void reread();
+        return;
+      }
+      answered = answer;
+    }
     // Leaving a reopened past run only once a new run really starts: a preflight that refuses leaves
     // the reader on the run, its note and its way back intact.
     if (review && !leftReview.current) { leftReview.current = true; review.leave?.(); }
-    const runId = crypto.randomUUID();
     ownRun.current = runId;
     setTicked(new Set());
     setWritingActive(false);
     setLongWait(false);
     setAnnounced(deckTuningCopy.announce.started);
     // Settled to a result whatever happens, so an unexpected throw is a refusal like any other.
-    const running = deps.run(deckId, { ...(anyway ? { anyway: true } : {}), runId, notes }).catch(
+    const running = answered ? Promise.resolve(answered) : deps.run(deckId, { ...(anyway ? { anyway: true } : {}), runId, notes }).catch(
       (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
     );
     // The checklist ticks on a pure client-side stagger (H35, PR 3), never on a real read
@@ -817,7 +966,11 @@ export function TuningPanel({
     // The action returns once the run is reserved; the server finishes it after the response. Read
     // until it settles, so the checklist keeps going and the result is drawn when it lands.
     const waited = result.ok
-      ? await awaitRunSettled(() => deps.read(deckId, leftReview.current ? null : reviewRunId), runId, { aborted: () => token.current !== mine })
+      ? await awaitRunSettled(() => deps.read(deckId, leftReview.current ? null : reviewRunId), runId, {
+        aborted: () => token.current !== mine,
+        // A v2 run takes up to its own budget (plan P2), past v10's wait.
+        ...(v2Opts ? { maxMs: AWAIT_RUN_V2_MAX_MS } : {}),
+      })
       : null;
     // Checked BEFORE touching the timer refs, not after (review fix): `staggerTimer`/
     // `longWaitTimer` are this component's shared refs, and a superseded press (the panel left)
@@ -1068,7 +1221,8 @@ export function TuningPanel({
   } else {
     // Never run, or a run with nothing to show (an old `cancelled` row): the lead the evidence supports, and what will be read.
     neverRun = true;
-    body = (
+    // Suggested changes v2: the intake below carries its own lead, and the steps say what the run reads.
+    body = v2 ? null : (
       <>
         <Lead>
           {allLocked !== null
@@ -1101,11 +1255,43 @@ export function TuningPanel({
   // the sentence is the lead, it joins the note so every state says why the press is disabled.
   const lockedNote = allLocked === null
     ? null
-    : neverRun
+    : neverRun && !v2
       ? lockedCardsCopy.tuning.allLockedNote
       : `${lockedCardsCopy.tuning.allLocked(allLocked)} ${lockedCardsCopy.tuning.allLockedNote}`;
   const tail = lockedNote ?? credit;
+  // Suggested changes v2: the wait hint by N follows the credit line while the press is live (Intake board A).
+  const v2Drift = v2 !== null && v2.over !== 0;
+  // Its own span after the line, never part of it: `CreditsText` reads an expiry and `Get more credits` off the line's end.
+  const usual = v2 && !blocked && !v2Drift ? usualFor(count) : null;
   const noteLine = note ? `${note} · ${tail}` : tail;
+  // v2 retires the `unchanged` gate and Suggest again (spec §8): one press, always Suggest changes, held off while the
+  // deck is not at 99 (README item 1).
+  const sendOff = blocked || v2Drift;
+  const primaryLabel = v2 ? v2Copy.intake.send : unchangedShown ? copy.unchangedCta : primary.label;
+  const limitsBox = (
+    <>
+      <TuningLimitsBox
+        sets={printedInSets}
+        capDollars={capDollars}
+        onCapChange={(next) => {
+          setCapDollars(next);
+          saveLimits({ capDollars: next });
+        }}
+        onCapDraftInvalid={cancelPendingCap}
+        selectedSets={limitSets}
+        onSetsChange={(next) => {
+          setLimitSets(next);
+          saveLimits({ sets: next });
+        }}
+        ownedOnly={ownedOnly}
+        onOwnedOnlyChange={(next) => {
+          setOwnedOnly(next);
+          saveLimits({ ownedOnly: next });
+        }}
+      />
+      {limitsError ? <MutationError message={limitsError} /> : null}
+    </>
+  );
 
   return (
     <VerdictOverridesProvider value={overrides.value}>
@@ -1136,41 +1322,55 @@ export function TuningPanel({
           in flight (STATES §3 states 1/3/8). No run-wiring yet — a press still reads whatever
           the fingerprint already covers (PR 4a wires the limits into the prompt itself); this
           box only persists what the player sets. */}
-      {reading ? null : (
+      {reading || v2 ? null : (
         <div className="mt-[16px] md:mt-[18px]">
-          <TuningLimitsBox
-            sets={printedInSets}
-            capDollars={capDollars}
-            onCapChange={(next) => {
-              setCapDollars(next);
-              saveLimits({ capDollars: next });
-            }}
-            onCapDraftInvalid={cancelPendingCap}
-            selectedSets={limitSets}
-            onSetsChange={(next) => {
-              setLimitSets(next);
-              saveLimits({ sets: next });
-            }}
-            ownedOnly={ownedOnly}
-            onOwnedOnlyChange={(next) => {
-              setOwnedOnly(next);
-              saveLimits({ ownedOnly: next });
-            }}
-          />
-          {limitsError ? <MutationError message={limitsError} /> : null}
+          {limitsBox}
         </div>
       )}
 
       {/* "Additional notes" (H35, PR 3): one note per press, never saved — placed below the
           limits box, above the action row (STATES §3 states 1/3). Hidden while reading, same as
           the limits box, since its text becomes a checklist row instead. */}
-      {reading ? null : (
+      {reading || v2 ? null : (
         <div className="mt-[16px] md:mt-[18px]">
           <TuningNotesField value={notes} onChange={changeNotes} />
         </div>
       )}
 
-      {/* THE ACTION ROW: one band in every state, the one primary first. */}
+      {/* Suggested changes v2 (UI PR 5): the intake's three steps in place of Additional notes, the Kept for this deck
+          box as step 3. Hidden while reading, as the two it replaces are. */}
+      {reading || !v2 ? null : (
+        <div className="mt-[14px] md:mt-[16px]">
+          <SuggestedChangesIntake
+            count={count}
+            onCount={(n) => changeIntake({ count: n })}
+            request={request}
+            onRequest={(next) => changeIntake({ request: next })}
+            chips={noticedChips(v2.noticed)}
+            bracket={intakeCard}
+            bracketIndex={intakeCard ? pickIndex(intakeCard, bracketPick) : 0}
+            onBracket={(i) => {
+              const o = intakeCard?.options[i];
+              changeIntake({ bracketPick: o && o.choice !== "keep" ? { choice: o.choice, target: o.target } : null });
+            }}
+            restrictions={limitsBox}
+          />
+        </div>
+      )}
+      {reading || !v2 || !v2Drift ? null : <DriftLine at={v2.at} over={v2.over} onTopOff={v2.onTopOff} onProposedCuts={v2.onProposedCuts} />}
+
+      {/* THE ACTION ROW: one band in every state, the one primary first. A v2 press answered "same request" asks in
+          its place (Intake board D), until the reader answers or changes an input. */}
+      {!reading && v2 && same ? (
+        <SameRequestConfirm
+          at={same.at}
+          // Off 99 (or with no credit) a run would be refused: held off with Send, the confirm kept so its question
+          // stands when the deck is back at 99.
+          onAgain={() => { if (!sendOff) void pressV2(true); }}
+          againOff={sendOff}
+          onOpen={openRun ? () => openRun("suggested", same.runId, same.at) : null}
+        />
+      ) : (
       <div
         className={`mt-[16px] flex flex-col gap-[9px] pt-[15px] md:mt-[18px] md:min-h-[56px] md:flex-row md:flex-wrap md:items-center md:pt-[16px] ${reading ? "md:gap-[12px]" : "md:gap-[16px]"}`}
         style={{ borderTop: "1px solid var(--border)" }}
@@ -1196,22 +1396,36 @@ export function TuningPanel({
           <>
             <button
               type="button"
-              onClick={() => (blocked ? undefined : void press(unchangedShown || failure !== null || priorResult || reviewing))}
-              aria-disabled={blocked || undefined}
-              className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${blocked ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"}`}
+              onClick={() => (sendOff ? undefined : v2 ? void pressV2() : void press(unchangedShown || failure !== null || priorResult || reviewing))}
+              aria-disabled={sendOff || undefined}
+              className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${sendOff ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"}`}
             >
-              {unchangedShown ? copy.unchangedCta : primary.label}
+              {primaryLabel}
             </button>
             <span
               className={`text-center font-mono text-[9.5px] leading-[1.55] md:text-left md:text-[11px] md:leading-[1.5] ${blocked ? "md:max-w-[380px]" : ""}`}
               style={{ color: "var(--fg-faint)" }}
             >
               <CreditsText text={noteLine} />
+              {usual ? <span data-sc-usual="">{" · "}{usual}</span> : null}
             </span>
           </>
         )}
       </div>
+      )}
       {refused ? <MutationError message={refused} /> : null}
+      {reading || !v2 ? null : (
+        <IntakeReads
+          parts={[
+            ...(v2.hasOverview ? [v2Copy.intake.readsOverview] : []),
+            ...(facts.focus ? [manifest.readFocus(strategyName(facts.focus))] : []),
+            ...(intent !== null ? [descriptionManifest.readDescription] : []),
+            ...(state.gameCount > 0 ? [manifest.readGames(state.gameCount)] : []),
+          ]}
+          lastRun={state.lastOkAt ? localDay(state.lastOkAt) : null}
+          onHistory={openHistory}
+        />
+      )}
       <p role="status" className="sr-only">{announced}</p>
     </section>
     </VerdictOverridesProvider>
