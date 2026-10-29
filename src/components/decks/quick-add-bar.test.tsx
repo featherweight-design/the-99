@@ -968,3 +968,153 @@ describe("QuickAddBar — a failed search", () => {
     expect(toast()).toHaveTextContent(addPanelCopy.quickAdd.searchFailed);
   });
 });
+
+// The same failure when the search never answers: a server action cannot be aborted, so a search past the wait is
+// called failed and its answer, when it comes, is let in only for the field's own request.
+const { SEARCH_TIMEOUT_MS } = await import("./use-card-search");
+
+describe("QuickAddBar — a search that never answers", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    onTestFinished(() => { vi.useRealTimers(); });
+  });
+
+  const toast = () => screen.queryByRole("alert");
+  const options = () => screen.queryAllByRole("option");
+  /** Each call to searchCards hangs until the test settles it, in call order. */
+  function hangingSearches() {
+    const pending: { resolve: (r: SearchResult[]) => void; reject: (e: Error) => void }[] = [];
+    searchCards.mockImplementation(() => new Promise((resolve, reject) => { pending.push({ resolve, reject }); }));
+    return pending;
+  }
+  const advance = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+  async function type(q: string) {
+    fireEvent.change(field(), { target: { value: q } });
+    await advance(150); // the debounce
+  }
+
+  it("says the search failed once the wait passes with no answer, and not a moment before", async () => {
+    hangingSearches();
+    mount();
+    await type("sw");
+    expect(searchCards).toHaveBeenCalledTimes(1);
+
+    await advance(SEARCH_TIMEOUT_MS - 1);
+    expect(toast()).toBeNull();
+    await advance(1);
+    expect(toast()).toHaveTextContent(addPanelCopy.quickAdd.searchFailed);
+    expect(field()).toHaveValue("sw");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByText(/nothing in the pile/i)).toBeNull();
+  });
+
+  it("says nothing when the answer lands just inside the wait", async () => {
+    const pending = hangingSearches();
+    mount();
+    await type("sw");
+    await advance(SEARCH_TIMEOUT_MS - 1);
+    await act(async () => pending[0].resolve([rhystic]));
+    await advance(SEARCH_TIMEOUT_MS);
+    expect(toast()).toBeNull();
+    expect(options()).toHaveLength(1);
+  });
+
+  it("says nothing when a search the reader typed past goes unanswered", async () => {
+    const pending = hangingSearches();
+    mount();
+    await type("st");
+    await advance(SEARCH_TIMEOUT_MS / 2);
+    await type("stu");
+    await act(async () => pending[1].resolve([rhystic]));
+    expect(options()).toHaveLength(1);
+
+    // Well past the first search's wait: it is no news.
+    await advance(SEARCH_TIMEOUT_MS * 2);
+    expect(toast()).toBeNull();
+    expect(options()).toHaveLength(1);
+  });
+
+  it("lets a late answer for the field's text land, and the toast goes with it", async () => {
+    const pending = hangingSearches();
+    mount();
+    await type("sw");
+    await advance(SEARCH_TIMEOUT_MS);
+    expect(toast()).not.toBeNull();
+
+    await act(async () => pending[0].resolve([rhystic]));
+    expect(toast()).toBeNull();
+    expect(options()).toHaveLength(1);
+  });
+
+  it("says nothing more when a timed-out search then rejects", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => errorSpy.mockRestore());
+    const pending = hangingSearches();
+    mount();
+    await type("sw");
+    await advance(SEARCH_TIMEOUT_MS);
+    const first = toast();
+    expect(first).not.toBeNull();
+
+    await act(async () => pending[0].reject(new Error("late")));
+    // The same toast, not a second failure with its own window.
+    expect(toast()).toBe(first);
+    expect(errorSpy).toHaveBeenCalled();
+  });
+
+  it("raises a rejection inside the wait once, not again when the wait runs out", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => errorSpy.mockRestore());
+    const pending = hangingSearches();
+    mount();
+    await type("sw");
+    await act(async () => pending[0].reject(new Error("boom")));
+    const first = toast();
+    expect(first).not.toBeNull();
+    // Held under the pointer, so its own eight seconds do not take it away while the wait runs out.
+    fireEvent.pointerEnter(first!);
+
+    await advance(SEARCH_TIMEOUT_MS);
+    expect(toast()).toBe(first);
+  });
+
+  it("ignores a late answer for a query the reader has typed past", async () => {
+    const pending = hangingSearches();
+    mount();
+    await type("st");
+    await advance(SEARCH_TIMEOUT_MS);
+    await type("stu");
+    await advance(SEARCH_TIMEOUT_MS);
+    const failure = toast();
+    expect(failure).not.toBeNull();
+
+    // The first query's answer arrives after both waits: it draws no rows and ends no failure.
+    await act(async () => pending[0].resolve([sram]));
+    expect(options()).toHaveLength(0);
+    expect(toast()).toBe(failure);
+  });
+
+  it("runs the search once more on Try again, and the first one's late answer is ignored", async () => {
+    const pending = hangingSearches();
+    mount();
+    await type("sw");
+    await advance(SEARCH_TIMEOUT_MS);
+    const firstArgs = searchCards.mock.calls[0];
+
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: addPanelCopy.quickAdd.searchRetry }));
+    expect(toast()).toBeNull();
+    await advance(0);
+    expect(searchCards).toHaveBeenCalledTimes(2);
+    expect(searchCards.mock.calls[1]).toEqual(firstArgs);
+
+    await act(async () => pending[0].resolve([sram]));
+    expect(options()).toHaveLength(0);
+    await act(async () => pending[1].resolve([rhystic]));
+    expect(options()).toHaveLength(1);
+    expect(screen.getByRole("option")).toHaveTextContent("Rhystic Study");
+
+    await advance(SEARCH_TIMEOUT_MS * 2);
+    expect(toast()).toBeNull();
+    expect(searchCards).toHaveBeenCalledTimes(2);
+  });
+});

@@ -9,6 +9,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { searchCards, type SearchResult } from "../../app/decks/[id]/search-action";
 
+/**
+ * How long a search may go unanswered before the bar says it failed (small items 2, item 8: "rejected or times out").
+ *
+ * Measured 2026-10-29 against staging (read-only; `searchCards` itself, run from a dev machine over the pooled
+ * connection, busiest account at 3,510 collection rows, its largest deck, 43 queries x owned on/off x 5 rounds,
+ * two runs, n=860): p50 137-144ms, p95 196-226ms, p99 268-347ms, worst warm call 468ms, and the first call of each
+ * run (a fresh pool) 1,666ms and 1,960ms. Sentry here is errors-only and Vercel's request log carries no duration,
+ * so there is no field telemetry to read.
+ *
+ * 8s is ~25x the warm p99 and ~4x the worst cold call, which leaves room for what that harness cannot see: a cold
+ * Vercel function, a Neon compute waking from suspend, and a phone on a poor connection. A false alarm is cheap (a
+ * late answer for the field's text still lands and takes the toast away), a hung search unannounced is not, and
+ * nothing longer would be "just now". The server action cannot be aborted, so a search past this is IGNORED, never
+ * cancelled: see the effect below.
+ */
+export const SEARCH_TIMEOUT_MS = 8_000;
+
 export interface CardSearchInput {
   query: string;
   /** `null` drops the colour-identity constraint — see search-action.ts. */
@@ -78,9 +95,23 @@ export function useCardSearch({
     }
 
     let cancelled = false;
+    // Set once SEARCH_TIMEOUT_MS passes with no answer. A server action cannot be aborted, so the request runs on and
+    // its answer still arrives: a success for this same request (the field's text, as `cancelled` is still false)
+    // lands and ends the failure, which is what a landed search does; a rejection says nothing more, the timeout
+    // already said it. An answer for a request the reader has since typed past or retried is `cancelled` as before.
+    let timedOut = false;
+    let deadline: ReturnType<typeof setTimeout> | null = null;
     timerRef.current = setTimeout(() => {
+      // Cleared by the cleanup below, so a deadline never fires for a request the reader has moved on from.
+      deadline = setTimeout(() => {
+        timedOut = true;
+        setRows(null);
+        failures.current += 1;
+        setFailure(failures.current);
+      }, SEARCH_TIMEOUT_MS);
       search(trimmed, colorIdentity, ownedOnly, deckId)
         .then((found) => {
+          if (deadline !== null) clearTimeout(deadline);
           if (cancelled) return;
           setRows({ for: requestKey, items: found });
           setActiveIndex(0);
@@ -92,10 +123,11 @@ export function useCardSearch({
           // user typing another character is no reason to stop saying so — a
           // guarded log would hide a wholly broken action behind fast typing.
           console.error(err);
+          if (deadline !== null) clearTimeout(deadline);
           // Back to "no search has happened", never to "no results". An empty
           // list makes a claim a failed request has not earned.
           // Only the latest query's failure is said: one the reader has typed past is no news.
-          if (!cancelled) {
+          if (!cancelled && !timedOut) {
             setRows(null);
             failures.current += 1;
             setFailure(failures.current);
@@ -106,6 +138,7 @@ export function useCardSearch({
     return () => {
       cancelled = true;
       if (timerRef.current !== null) clearTimeout(timerRef.current);
+      if (deadline !== null) clearTimeout(deadline);
     };
   // `search` is deliberately NOT a dependency: it is a constant at every call
   // site (the module-level action, or one fixed resolver), and an inline arrow
