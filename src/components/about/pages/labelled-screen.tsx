@@ -220,11 +220,16 @@ function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
     if (landed !== null) setLit(landed);
   }
   const root = useRef<HTMLDivElement>(null);
+  // A scroll still easing when the page goes (browser Back fires none of the reader's inputs that stop it) is stopped.
+  const cancel = useRef<(() => void) | null>(null);
+  useEffect(() => () => cancel.current?.(), []);
   const press = (key: string, fromPin = false) => {
     const on = lit !== key;
     setLit(on ? key : null);
     // Its line, in this width's own tree (the other width draws the same keys, hidden).
-    if (on && fromPin) reveal(root.current?.querySelector(`[data-about-label="${CSS.escape(key)}"]`), "nearest");
+    if (on && fromPin) {
+      cancel.current = reveal(root.current?.querySelector(`[data-about-label="${CSS.escape(key)}"]`), "nearest");
+    }
   };
   const unpinned = model.labels.filter((l) => l.shot === null);
   const desk = width === "desktop";

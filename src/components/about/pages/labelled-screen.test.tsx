@@ -107,6 +107,18 @@ describe("LabelledScreen", () => {
     fireEvent.click(phone.querySelector("[data-about-label='a/s/one'] button")!);
     expect(reveal).toHaveBeenCalledTimes(1);
   });
+
+  it("stops a pin's scroll still running when the page unmounts", () => {
+    const stop = vi.fn();
+    reveal.mockReturnValueOnce(stop);
+    const { container, unmount } = draw();
+    const phone = container.querySelector<HTMLElement>("[data-about-width='phone']")!;
+    fireEvent.load(phone.querySelector("img")!);
+    fireEvent.click(phone.querySelector("[data-about-pin='a/s/one']")!);
+    expect(stop).not.toHaveBeenCalled();
+    unmount();
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("haloBox", () => {
