@@ -1,7 +1,7 @@
 """Wizards announcements R1: the Main board, then every board in canvas order."""
 import kit
 import ann as A
-import annb, preb
+import annb, preb, r1b
 from kit import doc, board_head
 from annb import note
 import push  # noqa: F401  (its CSS carries .flow2)
@@ -29,7 +29,7 @@ CALLS = [
     ("4", "A decklists row’s two presses",
      "<b>Both, one line</b>: <i>See the lists ›</i> (in-app, to the set’s block in Announced) first, <i>Read the post ↗</i> muted after. A push of it opens the post."),
     ("5", "The early mark",
-     "An <b>early list</b> tag in the <code>new</code> tag’s shape, <code>--fact</code> ink, on the tile’s sub-line; the tile stays solid (dashed means nothing to open). "
+     "The words <b>early list</b> in <code>--fact</code> ink on the tile’s sub-line, no box (R1b); the tile stays solid (dashed means nothing to open). "
      "The page carries a dashed <code>--fact</code> band. Boards 6 and 7."),
     ("6", "A kind switched off and Precons",
      "<b>Precons is unaffected</b>, as engineering prefers. The switch governs Home rows and pushes only. Board 6."),
@@ -60,6 +60,16 @@ def options():
             + "</div>")
 
 
+R1B = [("9", "Settings: In app and Push columns",
+         "Hugh: boxes bookending each row don’t say what they are. <b>A</b>: section <b>Notifications</b>, both boxes on the right under heads <b>In app</b> and <b>Push</b>, "
+         "the device row in its own band above. B (labelled chips) and C (two lists) drawn for comparison. Every Settings frame now uses A."),
+        ("10", "Precons: <i>new</i> in the line",
+         "Hugh: the boxed <code>new</code> floats beside the name and <i>in 15 days</i>. <b>A</b>: no box; <i>new</i> leads the set’s mono meta line in accent, as the precon tiles "
+         "already say <i>new · you own…</i>. <i>early list</i> loses its box too. B (Home’s diamond) drawn for comparison. Changes the shipped <code>NEW_TAG</code>."),
+        ("11", "A smaller box-and-arrow link-out icon",
+         "Hugh: the &#8599; is too large. The standard external-link icon, 0.72em, replaces it app-wide (about 30 places, some in copy strings). Every board now draws it.")]
+
+
 def main_board():
     flow = '<div class="flow2">' + "".join(f'<div class="st"><em>{a}</em><b>{b}</b><span>{c}</span></div>' for a, b, c in FLOW) + "</div>"
     calls = "".join(note(f"Call {n} · {t}", b) for n, t, b in CALLS)
@@ -71,13 +81,16 @@ def main_board():
            "<li><b>Settings</b>: all on, one off, push unavailable, a failed save.</li>"
            "<li><b>Announced</b>: early lists in the set’s block.</li>"
            "<li><b>Early-List</b>: the view-only page and its states.</li>"
-           "<li><b>Release-Arrival</b>: the release list replaces it.</li></ol>")
-    body = (board_head("Wizards announcements · R1", "Every post comes in; early decklists are view-only until the release list",
+           "<li><b>Release-Arrival</b>: the release list replaces it.</li>"
+           "<li><b>R1b-Settings</b>, <b>R1b-New-Mark</b>, <b>R1b-Link-Icon</b>: Hugh’s three notes.</li></ol>")
+    body = (board_head("Wizards announcements · R1 and R1b", "Every post comes in; early decklists are view-only until the release list",
                        "Brief <code>2026-10-29-wizards-announcements.md</code> (#2373). Hugh’s rulings held: every Announcements post comes in, sorted into Secret Lair, Commander decklists and Other, "
                        "all three on by default, each can be turned off; early decklists are view-only with owned cards marked, no Start and no Overview until the release list replaces them. "
                        "Builds on <code>design_handoff_the99_menu_home</code> (rows, lead, Settings) and <code>design_handoff_the99_upcoming_precons</code> (Announced). "
                        "Orange dashed outlines mark what is new against the shipped page. Copy is placeholder for /copy-review.")
             + flow
+            + '<h3 class="mh">R1b · Hugh’s three notes</h3>'
+            + '<div class="notes">' + "".join(note(f"Board {n} · {t}", b) for n, t, b in R1B) + "</div>"
             + '<h3 class="mh">The seven open calls</h3>'
             + f'<div class="notes">{calls}</div>'
             + '<h3 class="mh">Call 1 · the three shapes</h3>' + options()
@@ -87,4 +100,4 @@ def main_board():
     return doc("Wizards announcements · R1", body, 1612).replace("</style>", ".mh{font:600 13px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint);margin:28px 0 12px}</style>", 1)
 
 
-BOARDS = [("Main", main_board, "R1 · the flow, calls, gaps")] + annb.BOARDS + preb.BOARDS
+BOARDS = [("Main", main_board, "R1 · the flow, calls, gaps")] + annb.BOARDS + preb.BOARDS + r1b.BOARDS

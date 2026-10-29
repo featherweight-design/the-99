@@ -2,7 +2,7 @@
 
 Canvas: https://claude.ai/artifact/P6BAUrJjGasgDh9cTYKYxu
 Brief: `docs/superpowers/design-briefs/2026-10-29-wizards-announcements.md` on main (#2373).
-Status: **R1 drawn, awaiting Hugh's review.** Not a handoff yet; the handoff goes to main as `design/design_handoff_the99_announcements/` after approval.
+Status: **R1 + R1b drawn, awaiting Hugh's review.** Not a handoff yet; the handoff goes to main as `design/design_handoff_the99_announcements/` after approval.
 
 ## Boards
 
@@ -17,6 +17,9 @@ Status: **R1 drawn, awaiting Hugh's review.** Not a handoff yet; the handoff goe
 | Announced | Early lists as precon tiles in the set's block, tiles and rows view, 390 and 1300 |
 | Early-List | The view-only page; released but waiting; unmatched lines; no collection; loading |
 | Release-Arrival | The release list replaces the early one, page and list, before and after |
+| R1b-Settings | Hugh's note 1: Settings' Notifications with labelled In app and Push columns (A); chips (B) and two lists (C) for comparison |
+| R1b-New-Mark | Hugh's note 2: `new` leads the set's meta line (A), no box; Home's diamond (B); today's tag |
+| R1b-Link-Icon | Hugh's note 3: a smaller box-and-arrow link-out icon, app-wide |
 
 ## Calls (recommended)
 
@@ -27,6 +30,12 @@ Status: **R1 drawn, awaiting Hugh's review.** Not a handoff yet; the handoff goe
 5. **Early mark**: an "early list" tag in the `new` tag's shape, `--fact` ink; tile stays solid. The page has a dashed `--fact` band.
 6. **Kind off and Precons**: Precons unaffected.
 7. **Kind names** (for /copy-review): Secret Lair drops / Secret Lair; Commander decklists / Commander decklists; Other Wizards news / Wizards news. Rows sit after New precons in Settings.
+
+## R1b (Hugh's notes, 2026-10-29)
+
+- **Settings**: section "Notifications"; each kind's two boxes side by side on the right under heads "In app" and "Push"; the device row in its own band above. Changes shipped `news-section.tsx`.
+- **New mark**: no boxed `NEW_TAG`; "new" in accent leads the mono meta line (set block, row line 3), group head "1 set · new". "early list" is plain `--fact` words. Changes `announced-group`, `announced-parts`, `announced-row`.
+- **Link-out icon**: standard box-and-arrow, 0.72em, replaces every ↗ (about 30 places, some inside copy strings) via one `LinkOutIcon`.
 
 ## Gaps for engineering
 

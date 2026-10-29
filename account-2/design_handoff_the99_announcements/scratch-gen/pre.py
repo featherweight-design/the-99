@@ -40,6 +40,9 @@ kit.CSS += r"""
 .dk .z-ghd{min-height:34px;padding-bottom:7px}
 .z-ghd span{font:11px 'IBM Plex Mono';color:var(--fg-faint)}
 .z-ghd .z-chev{margin-left:auto;color:var(--fg-muted);font-size:12px}
+.z-nw,.z-ghd .z-nw{color:var(--accent-text)}
+.z-et{color:var(--fact)}
+.z-dia{flex:none;width:7px;height:7px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
 .z-ntag2{flex:none;border-radius:4px;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);padding:0 5px;font:10px/16px 'IBM Plex Mono';letter-spacing:.06em;color:var(--accent-text)}
 .z-etag{flex:none;border-radius:4px;border:1px solid color-mix(in srgb,var(--fact) 55%,transparent);padding:0 5px;font:10px/16px 'IBM Plex Mono';letter-spacing:.04em;color:var(--fact);white-space:nowrap}
 .z-sblk{display:flex;flex-direction:column;gap:10px;border-radius:10px;border:1px dashed var(--border-dashed);padding:11px 12px 12px}
@@ -165,6 +168,28 @@ kit.CSS += r"""
 WUBRG = {"W": "var(--w)", "U": "var(--u)", "B": "var(--b)", "R": "var(--r)", "G": "var(--g)", "C": "var(--fg-faint)"}
 
 
+# R1b: how "new" and "early list" are marked. text = in the mono line (recommended); tag = the shipped box; dot = Home's diamond.
+MARK = {"new": "text", "early": "text"}
+
+
+def ntag(where):
+    """The new mark's piece for a slot: 'name' (beside the set name), 'line' (leading the mono meta line), 'head' (group head)."""
+    m = MARK["new"]
+    if m == "tag":
+        return '<span class="z-ntag2">new</span>' if where in ("name", "head") else ""
+    if m == "dot":
+        return '<span class="z-dia" aria-hidden="true"></span>' if where == "pre" else ""
+    if where == "line":
+        return '<span class="z-nw">new</span> · '
+    if where == "head":
+        return '<span class="z-nw" style="margin-left:-4px">· new</span>'
+    return ""
+
+
+def etag():
+    return '<span class="z-etag">early list</span>' if MARK["early"] == "tag" else '<span class="z-et">early list</span>'
+
+
 def dots(ident):
     return '<span class="z-dts">' + "".join(f'<i style="background:{WUBRG[c]}"></i>' for c in ident) + "</span>"
 
@@ -207,7 +232,7 @@ def early_tile(l, chg=True):
     name, cmd, im, ident, own, of = l
     return (f'<div class="z-tile{" chg" if chg else ""}"><div class="z-art"><img src="{img(im)}" alt=""></div><div class="z-cap">'
             f'<span class="z-mt">you own <b>{own} of {of}</b></span><span class="z-nm">{name}</span>'
-            f'<span class="z-sb2">{dots(ident)}<span class="z-etag">early list</span></span></div></div>')
+            f'<span class="z-sb2">{dots(ident)}{etag()}</span></div></div>')
 
 
 def precon_tile(name, im, ident, own, of, meta, new=False):
@@ -231,18 +256,19 @@ def set_block(desk=False, out=None, lists=LISTS, revealed=REVEALED, more=1, new=
     count = f"<b>{o} of {n} lists so far</b>" if o < n else f"<b>all {n} lists</b>"
     when = (f"out {SET['date']} · release lists not in yet" if released else f"{SET['date']} · {SET['until']}")
     if desk:
-        ml = f'<span class="z-ml">{SET["code"]} · {when} · {count}</span>'
+        ml = f'<span class="z-ml">{ntag("line") if new else ""}{SET["code"]} · {when} · {count}</span>'
     else:
-        ml = (f'<span class="z-ml">{when[0].upper() + when[1:]}</span><span class="z-ml">{SET["code"]} · {count}</span>')
+        ml = (f'<span class="z-ml">{ntag("line") if new else ""}{when[0].upper() + when[1:]}</span><span class="z-ml">{SET["code"]} · {count}</span>')
     tiles = "".join(early_tile(l) for l in lists) + "".join(revealed_tile(*r) for r in revealed)
     pl = plate(f"{more} more list to come" if more == 1 else f"{more} more lists to come") if more else ""
-    tag = '<span class="z-ntag2">new</span>' if new else ""
-    return (f'<div class="z-sblk"><div style="display:flex;flex-direction:column;gap:3px"><div class="z-sh2"><h3>{SET["name"]}</h3>{tag}</div>{ml}</div>'
+    tag = ntag("name") if new else ""
+    pre = ntag("pre") if new else ""
+    return (f'<div class="z-sblk"><div style="display:flex;flex-direction:column;gap:3px"><div class="z-sh2">{pre}<h3>{SET["name"]}</h3>{tag}</div>{ml}</div>'
             f'<div class="z-tgrid">{tiles}{pl}</div></div>')
 
 
 def announced(desk=False, inner=None, n_sets=1, new=True):
-    tag = '<span class="z-ntag2">new</span>' if new else ""
+    tag = (ntag("head") or ntag("pre")) if new else ""
     return (f'<div class="z-pgrp" style="padding-bottom:6px"><h2 class="z-ghd">Announced<span>{n_sets} set</span>{tag}<span class="z-chev">⌃</span></h2>'
             f'{inner if inner is not None else set_block(desk)}</div>')
 
@@ -261,14 +287,14 @@ def list_page(desk=False, ann=None, yr=None, band=False):
 # rows view
 def rows_view_set(desk=False):
     lists = "".join(f'<div class="z-prow chg"><img src="{img(im)}" alt=""><span class="z-tx"><span class="z-nm">{name}</span>'
-                    f'<span class="z-m2">{dots(ident)}<span class="z-etag">early list</span>you own <b>{own} of {of}</b></span></span></div>'
+                    f'<span class="z-m2">{dots(ident)}{etag()}<span>·</span>you own <b>{own} of {of}</b></span></span></div>'
                     for name, cmd, im, ident, own, of in LISTS)
     rv = (f'<div class="z-prow" style="border-style:dashed;background:transparent"><img src="{img("ghalta.jpg")}" alt=""><span class="z-tx"><span class="z-nm">Ghalta, Primal Hunger</span>'
           f'<span class="z-m2">{dots("G")}revealed · list to come</span></span></div>')
     more = '<p class="z-rsl chg" style="padding:4px 2px">1 more list to come</p>'
-    return (f'<div class="z-arow"><div class="z-hd"><span class="z-pl"></span><span class="z-tx"><span class="z-t1"><span class="z-n">{SET["name"]}<span class="z-ntag2">new</span></span>'
+    return (f'<div class="z-arow"><div class="z-hd"><span class="z-pl"></span><span class="z-tx"><span class="z-t1"><span class="z-n">{ntag("pre")}{SET["name"]}{ntag("name")}</span>'
             f'<small>in 15 days ⌃</small></span><span class="z-t2">3 of 5 lists so far · Ghalta and 3 more</span>'
-            f'<span class="z-t3">{dots("WURG")}{SET["code"]} · {SET["date"]}</span></span></div><div class="z-reg">{lists}{rv}{more}</div></div>')
+            f'<span class="z-t3">{dots("WURG")}{ntag("line")}{SET["code"]} · {SET["date"]}</span></span></div><div class="z-reg">{lists}{rv}{more}</div></div>')
 
 
 # ---------------------------------------------------------------- the early list page
@@ -330,7 +356,7 @@ def own_band(owned=20, of=68, unmatched=True, zero=False):
 
 
 def early_page(desk=False, released=False, unmatched=True, band=False):
-    eye = ('<span class="z-ey">Early decklist · view-only<span class="z-etag" style="text-transform:none">early list</span></span>')
+    eye = ('<span class="z-ey">Early decklist · view-only</span>')
     head = (f'<div class="z-phd"><span class="z-bk">‹ Commander precons</span><div class="z-tp"><span class="z-th"><img src="{img("giada.jpg")}" alt=""></span>'
             f'<div class="z-tx">{eye}<h1>Calling All Angels</h1><span class="z-cm">Giada, Font of Hope</span>'
             f'<span class="z-mt">{dots("W")}W · FDC · Foundations Commander · Nov 13, 2026</span></div></div>'

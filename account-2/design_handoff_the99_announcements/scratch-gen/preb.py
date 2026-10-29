@@ -29,7 +29,7 @@ def announced_board():
                        "Each early list is a precon tile in its set’s block",
                        "The shipped Announced group (open: the set is unseen, so it opens by itself) and the dashed set block. <b>Once Wizards posts a set’s lists, "
                        "each list is a precon tile</b> in the block’s own grid: the commander’s card, <i>you own N of M</i>, the list’s name, and on the sub-line its dots "
-                       "and an <b>early list</b> tag (call 5), the <code>new</code> tag’s shape in <code>--fact</code> ink. The tile opens the early list’s page. "
+                       "and the words <b>early list</b> in <code>--fact</code> ink (call 5, R1b: no box). The tile opens the early list’s page. "
                        "A revealed commander whose list is still to come stays a revealed tile; a promised list with nothing yet is the shipped none plate’s note, "
                        "<i>1 more list to come</i> (state 2). The block’s meta counts lists: <i>3 of 5 lists so far</i>. The set stays in Announced until the release lists land.")
             + frames(frame("<b>390</b> · tiles · three of five lists out", p,
@@ -37,10 +37,10 @@ def announced_board():
                      frame("<b>1300</b> · tiles", d,
                            "The decklists’ own auto-fill grid inside the block. The 2026 group below is untouched."))
             + frames(frame("<b>390</b> · rows view", rv,
-                           "Rows view opens the set’s row to the same three lists as precon rows (the shipped <code>PreconRow</code> anatomy), each with the tag, "
+                           "Rows view opens the set’s row to the same three lists as precon rows (the shipped <code>PreconRow</code> anatomy), each with <i>early list</i>, "
                            "then Ghalta revealed, then the note. The row’s line 2 counts lists before naming commanders."),
                      col(note("Call 5 · the early mark",
-                              "<ul><li><b>Words in a tag</b>: <i>early list</i>, the <code>new</code> tag’s box in <code>--fact</code> (the app’s ink for facts, as the arrivals "
+                              "<ul><li><b>Words, no box</b> (R1b): <i>early list</i> in <code>--fact</code> (the app’s ink for facts, as the arrivals "
                               "banner’s note uses), on the tile’s sub-line where the set and month go once released.</li>"
                               "<li><b>Not dashed</b>: dashed in this group means “not a precon, nothing to open”. An early list opens, so it keeps the tile’s solid edge.</li>"
                               "<li>The page says it in full (board 7).</li></ul>"),
@@ -49,7 +49,7 @@ def announced_board():
                               "who opens Precons came to see it. Turning off Commander decklists hides no list here."),
                          note("Seen and new",
                               "Early lists carry their own seen key (<code>early:&lt;code&gt;</code>), so seeing them never hides the release lists’ news. The block’s and the head’s "
-                              "<code>new</code> tags light again when a further list lands (3 → 5)."), w=520)))
+                              "<i>new</i> (R1b: words in the meta line, board 10) light again when a further list lands (3 → 5)."), w=520)))
     return doc("Announced", body, 390 + 44 + 1300 + 112)
 
 
@@ -66,7 +66,7 @@ def early_board():
                        "The precon page, view-only until the release list",
                        "Built from <code>open-precon-view.tsx</code> with three things taken away and one added. <b>Gone</b>: Start with this precon, Link a deck, and the Overview "
                        "(ruling 5: no Overview and no power reading on an early list). <b>Kept</b>: the head, <i>You own N of M</i> and its bar, List or Cards, and "
-                       "<code>DecklistGroup</code> read-only with the owned dot. <b>Added</b>: the eyebrow reads <i>Early decklist · view-only</i> with the tag, and a dashed "
+                       "<code>DecklistGroup</code> read-only with the owned dot. <b>Added</b>: the eyebrow reads <i>Early decklist · view-only</i>, and a dashed "
                        "<code>--fact</code> band says what this is and when it changes, with <i>Read the post ↗</i>. Rows show no SET number: the post names cards, not printings.")
             + frames(frame("<b>1 · Early list</b> · 390", p,
                            "No dock at the foot: an early list has no Start. The band sits where the edition switch would."),

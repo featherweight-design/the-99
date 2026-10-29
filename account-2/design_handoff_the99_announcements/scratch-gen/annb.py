@@ -183,9 +183,9 @@ def settings_board():
     d4 = sph(A.settings(state="on", home=("secret-lair", "commander-decklists", "wizards-other", "spare-request"), lit="wizards-other"),
              over=S.toast("We couldn’t save that. Try again.", 96))
     dk1 = kit.desk(A.settings(True, state="on", where="browser"), None, badges={"Home": 3})
-    body = (board_head("Surface 2 · Settings › What’s new on Home · 390 and 1300",
+    body = (board_head("Surface 2 · Settings › Notifications · 390 and 1300 · drawn in R1b’s columns",
                        "Three more rows, ticked from the start",
-                       "The shipped section (<code>news-section.tsx</code>): one row per kind, the Home box and its 44px Push box, the device row first. <b>Three rows join it, after "
+                       "Drawn in R1b’s layout A (board 9): one row per kind, its <b>In app</b> and <b>Push</b> boxes side by side under their heads, the device band above. <b>Three rows join it, after "
                        "New precons</b> so Wizards’ news sits with the catalog kinds: <b>Secret Lair drops</b>, <b>Commander decklists</b>, <b>Other Wizards news</b>. "
                        "Both their boxes start ticked and their line ends <i>On from the start.</i>, the words the spare request already uses. A kind switched off is simply unticked, as any kind. Names are drafts for /copy-review (call 7).")
             + frames(frame("<b>All on</b> · 390 · the default", d1,

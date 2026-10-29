@@ -233,7 +233,96 @@ DEFAULT_HOME = ("secret-lair", "commander-decklists", "wizards-other", "spare-re
 DEFAULT_PUSH = ("secret-lair", "commander-decklists", "wizards-other", "spare-request")
 
 
-def news(state="on", where="phone", home=DEFAULT_HOME, push=DEFAULT_PUSH, column=True, lit=None):
+LAYOUT = {"v": "cols"}   # R1b: cols (recommended) | chips | split | shipped
+
+kit.CSS += r'''
+/* ---- R1b · Settings: notifications with labelled columns ---- */
+.an-nt .sech{display:flex;align-items:center}
+.an-nt li.chg{outline-offset:3px}
+.an-nt .dv{display:flex;align-items:flex-start;gap:12px;margin-top:10px;padding:10px 0 10px 12px;border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border)}
+.an-nt .dv .bell{flex:none;width:18px;height:18px;margin-top:1px;color:var(--fg-muted);display:flex;align-items:center;justify-content:center}
+.an-nt .dv .pc{margin-left:0}
+.an-nt .chd{display:flex;align-items:flex-end;justify-content:flex-end;padding:14px 0 6px;border-bottom:1px solid var(--border-strong)}
+.an-nt .chd span{width:52px;flex:none;text-align:center;font:500 10px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--fg-muted)}
+.an-nt ul{margin:0;padding:0;list-style:none}
+.an-nt li{display:flex;align-items:flex-start}
+.an-nt li+li{border-top:1px solid var(--border)}
+.an-nt li .ct{padding:9px 0;min-height:44px}
+.an-nt .cc{flex:none;width:52px;min-height:44px;display:flex;justify-content:center;padding-top:10px;position:relative}
+.an-nt .cc.lit::before{content:'';position:absolute;inset:2px 4px auto 4px;height:40px;border-radius:10px;box-shadow:0 0 0 1.5px rgba(240,230,210,.7)}
+.an-nt .ct{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.an-nt .ct b{font:500 14px 'IBM Plex Sans';color:var(--fg)}
+.an-nt .ct span{font-size:12.5px;line-height:1.45;color:var(--fg-muted)}
+.an-nt .foot{margin-top:10px;font:10.5px/1.6 'IBM Plex Mono';color:var(--fg-faint)}
+.an-nt .foot b{color:var(--fg-muted);font-weight:500}
+.an-nt .chips{display:flex;gap:8px;margin-top:8px}
+.an-nt .chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px 0 8px;border-radius:15px;border:1px solid var(--border-strong);font:500 12.5px 'IBM Plex Sans';color:var(--fg-body)}
+.an-nt .chip.on{border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:var(--fg)}
+.an-nt .chip .pcb{width:16px;height:16px;font-size:11px}
+.an-nt li.cl{display:block;padding:9px 0 11px}
+.an-nt li.cl .ct{padding:0;min-height:0}
+.an-nt .sub2{margin:22px 0 0}
+.an-nt .hl2{display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0;padding:9px 0;min-height:44px}
+.an-nt .hl2 .pcb{margin-top:1px}
+'''
+
+
+def _box(on, lit=False):
+    return f'<span class="cc{" lit" if lit else ""}"><span class="pcb{" on" if on else ""}"></span></span>'
+
+
+def _line(k, l):
+    dflt = k in ("secret-lair", "commander-decklists", "wizards-other", "spare-request")
+    return f"{l} On from the start." if dflt else l
+
+
+def _device(state, where, inner_box=True):
+    title, line, box = U.master(state, where)
+    b = _box(box == "on") if (box is not None and inner_box) else ""
+    return (f'<div class="dv"><span class="bell">{ico(U.BELL, 18, 1.5)}</span><span class="ct" style="padding:0;min-height:0"><b>{title}</b><span>{line}</span></span>{b}</div>'), box is not None
+
+
+def news_cols(state="on", where="phone", home=DEFAULT_HOME, push=DEFAULT_PUSH, column=True, lit=None, lit_home=None):
+    dev, can = _device(state, where)
+    col = column and can
+    new = {a for a, _, _ in NEW_KINDS}
+    rows = "".join(f'<li{" class=\"chg\"" if k in new else ""}><span class="ct"><b>{n}</b><span>{_line(k, l)}</span></span>'
+                   f'{_box(k in home, lit_home == k)}{_box(k in push, lit == k) if col else ""}</li>' for k, n, l in ALL_KINDS)
+    chd = f'<div class="chd"><span>In app</span>{"<span>Push</span>" if col else ""}</div>'
+    foot = ('<p class="foot"><b>In app</b>: a count on Home and the list. '
+            + ('<b>Push</b>: only to devices you turn on, never 9pm to 9am. ' if col else '') + 'No email, ever.</p>')
+    return (f'<section class="sec an-nt"><div class="sech">Notifications</div>{dev}{chd}<ul>{rows}</ul>{foot}</section>')
+
+
+def news_chips(state="on", where="phone", home=DEFAULT_HOME, push=DEFAULT_PUSH, column=True, lit=None, lit_home=None):
+    dev, can = _device(state, where)
+    col = column and can
+    def chip(lab, on):
+        return f'<span class="chip{" on" if on else ""}"><span class="pcb{" on" if on else ""}"></span>{lab}</span>'
+    rows = "".join(f'<li class="cl"><span class="ct"><b>{n}</b><span>{_line(k, l)}</span></span>'
+                   f'<span class="chips">{chip("In app", k in home)}{chip("Push", k in push) if col else ""}</span></li>' for k, n, l in ALL_KINDS)
+    return (f'<section class="sec an-nt"><div class="sech">Notifications</div>{dev}<ul style="margin-top:6px">{rows}</ul>'
+            '<p class="foot"><b>In app</b>: a count on Home and the list. <b>Push</b>: only to devices you turn on, never 9pm to 9am. No email, ever.</p></section>')
+
+
+def news_split(state="on", where="phone", home=DEFAULT_HOME, push=DEFAULT_PUSH, column=True, lit=None, lit_home=None):
+    dev, can = _device(state, where)
+    def lst(on):
+        return "<ul>" + "".join(f'<li><span class="hl2"><span class="pcb{" on" if k in on else ""}"></span><span class="ct" style="padding:0;min-height:0"><b>{n}</b>'
+                                f'<span>{_line(k, l)}</span></span></span></li>' for k, n, l in ALL_KINDS) + "</ul>"
+    return (f'<section class="sec an-nt"><div class="sech">In the app</div><p class="foot" style="margin:6px 0 4px">A count on Home and the list.</p>{lst(home)}</section>'
+            f'<section class="sec an-nt sub2"><div class="sech">Push</div>{dev}{lst(push)}'
+            '<p class="foot">Only to devices you turn on, never 9pm to 9am. No email, ever.</p></section>')
+
+
+def news(state="on", where="phone", home=DEFAULT_HOME, push=DEFAULT_PUSH, column=True, lit=None, lit_home=None):
+    v = LAYOUT["v"]
+    if v != "shipped":
+        return {"cols": news_cols, "chips": news_chips, "split": news_split}[v](state, where, home, push, column, lit, lit_home)
+    return news_shipped(state, where, home, push, column, lit)
+
+
+def news_shipped(state="on", where="phone", home=DEFAULT_HOME, push=DEFAULT_PUSH, column=True, lit=None):
     title, line, box = U.master(state, where)
     col = column and box is not None
     pm = (f'<li class="pm"><span class="hl"><span class="bell">{ico(U.BELL, 18, 1.5)}</span><span class="ct"><b>{title}</b><span>{line}</span></span></span>'
