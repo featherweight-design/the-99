@@ -221,11 +221,8 @@ export function SetListSheet({
                 unavailableAria={copy.optionAriaUnavailable(
                   option.hint ? `${option.label} (${option.hint})` : option.label,
                 )}
-                // A pick clears the search it came from; the sheet stays open for the next.
-                onClick={() => {
-                  onToggle(option.code);
-                  setQuery("");
-                }}
+                // A pick keeps the search it came from: the sheet stays open on the same matches for the next.
+                onClick={() => onToggle(option.code)}
               />
             ))
           )}

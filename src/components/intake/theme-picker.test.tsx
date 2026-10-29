@@ -26,22 +26,22 @@ const options = () => screen.queryAllByRole("option").filter((o) => !o.closest("
 
 // One rule for every pick-from-a-list field (DECK INPUT UX, Hugh 2026-10-12).
 describe("the Theme picker", () => {
-  it("clears the typed text after a pick and keeps the list open for the next", () => {
+  it("keeps the typed text after a pick and the list open on the same matches", () => {
     render(<Picker />);
     fireEvent.focus(field());
     fireEvent.change(field(), { target: { value: "elf" } });
     fireEvent.click(screen.getByRole("option", { name: /Elfball/ }));
     expect(screen.getAllByTestId("theme-chip").map((c) => c.textContent)).toEqual(["Elfball✕"]);
-    expect(field()).toHaveValue("");
-    expect(options()).toHaveLength(3);
+    expect(field()).toHaveValue("elf");
+    expect(options().map((o) => o.textContent)).toEqual(expect.arrayContaining([expect.stringContaining("Elfball")]));
   });
 
-  it("clears the text on Enter's pick too", () => {
+  it("keeps the text on Enter's pick too", () => {
     render(<Picker />);
     fireEvent.focus(field());
     fireEvent.change(field(), { target: { value: "orc" } });
     fireEvent.keyDown(field(), { key: "Enter" });
-    expect(field()).toHaveValue("");
+    expect(field()).toHaveValue("orc");
   });
 
   it("leaves the typed text alone when a chip is removed", () => {

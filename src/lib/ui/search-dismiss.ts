@@ -1,8 +1,9 @@
 "use client";
 // One rule for a search field that picks from a list (DECK INPUT UX, Hugh 2026-10-12): Escape, or a
 // press anywhere outside the field and its list, closes the list AND clears the text, in one step.
-// A pick clears the text too; each field does that in its own pick handler, since what a pick is
-// differs (a theme toggles, a card is added once the server agrees).
+// A single-select pick clears the text too; each field does that in its own pick handler, since what a
+// pick is differs (a card is added once the server agrees). A multi-select pick keeps it, so several
+// of what one search finds are picked in a row (Hugh, 2026-10-29).
 //
 // Filter-in-place fields (the /collection or /decks search, whose text is the page's state and sits
 // in the URL) do not take this rule, and neither does the `[[` card lookup, whose pick replaces

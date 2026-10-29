@@ -1195,7 +1195,7 @@ describe("FilterPanel, its search", () => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
 
-    it(`${at}: a pick clears the search and keeps the panel open for the next`, () => {
+    it(`${at}: a pick keeps the search and keeps the panel open on the same matches`, () => {
       setViewport(desktop);
       const { onToggle } = renderPanel();
       openPanel();
@@ -1203,7 +1203,7 @@ describe("FilterPanel, its search", () => {
       fireEvent.change(field, { target: { value: "bloom" } });
       fireEvent.click(screen.getByRole("option", { name: /Bloomburrow/ }));
       expect(onToggle).toHaveBeenCalledWith("BLB");
-      expect(field).toHaveValue("");
+      expect(field).toHaveValue("bloom");
       expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
   }

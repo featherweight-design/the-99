@@ -473,9 +473,8 @@ export function FilterPanel({
   function toggle(option: FilterPanelOption, fromPointer: boolean) {
     if (option.disabled) return; // 0-count rows never toggle, by pointer or by key
     onToggle(option.code);
-    // A pick clears the search it came from (DECK INPUT UX, `useSearchDismiss`'s rule); the panel
-    // stays open for the next, since picking more than one is the point.
-    if (searchable && selectionMode === "multi") setQuery("");
+    // A multi-select pick keeps the search it came from: picking several of what one search finds ("bloom",
+    // then each of its sets) is the point, so the panel stays open on the same matches (Hugh, 2026-10-29).
     // Single-select commits and dismisses: with one row always chosen there is
     // nothing further to do in the panel, and leaving it up invites a second
     // choice that would silently discard the first.
