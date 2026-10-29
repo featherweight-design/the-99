@@ -6,7 +6,7 @@
 // (`spendTourWrite`), so a replay moves no stamp. On a first-run account the replay is the first-run tour; on a
 // dashboard it runs on the real app (`mode: "dashboard"`).
 //
-// Mounted by Home only with `FIRST_RUN_TOUR_ENABLED` on for the reader, so with the switch off `?tour=1` does nothing.
+// Mounted by Home always.
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";

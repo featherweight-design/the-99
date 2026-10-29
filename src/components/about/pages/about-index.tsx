@@ -49,7 +49,7 @@ function Picture({ shot, top, className }: { shot: IndexShot | null; top: string
   );
 }
 
-export function AboutIndex({ tiles, tour }: { tiles: readonly IndexTile[]; tour: boolean }) {
+export function AboutIndex({ tiles }: { tiles: readonly IndexTile[] }) {
   return (
     <div className="flex flex-col md:px-[30px]">
       <div className="w-full max-w-[1180px]">
@@ -62,19 +62,15 @@ export function AboutIndex({ tiles, tour }: { tiles: readonly IndexTile[]; tour:
           </h1>
           <p className="m-0 text-[14.5px] leading-[1.5] text-[color:var(--fg-body)]">
             {ABOUT_PAGE_STRINGS.index}
-            {tour && (
-              <>
-                {" "}
-                <Link
-                  data-tour-again
-                  href={TOUR_HREF}
-                  className={`${TOUCH_HIT} whitespace-nowrap py-[10px] text-[14.5px] font-semibold text-[color:var(--accent-text)] hover:underline`}
-                >
-                  {tourAgainCopy.aboutPress}
-                  <PendingReporter href={TOUR_HREF} />
-                </Link>
-              </>
-            )}
+            {" "}
+            <Link
+              data-tour-again
+              href={TOUR_HREF}
+              className={`${TOUCH_HIT} whitespace-nowrap py-[10px] text-[14.5px] font-semibold text-[color:var(--accent-text)] hover:underline`}
+            >
+              {tourAgainCopy.aboutPress}
+              <PendingReporter href={TOUR_HREF} />
+            </Link>
           </p>
         </header>
         <ul

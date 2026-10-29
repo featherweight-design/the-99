@@ -35,7 +35,11 @@ describe("the switch registry", () => {
     const last = sources.filter((s) => s.includes("flag_overrides_switch_check")).at(-1) ?? "";
     const listed = /flag_overrides_switch_check" CHECK \([^)]*in \(([^)]*)\)/.exec(last)?.[1] ?? "";
     const inForce = listed.split(",").map((s) => s.trim().replace(/'/g, ""));
-    expect(inForce.sort()).toEqual([...SWITCH_NAMES, ALL_FEATURES].sort());
+    // Retired in code but still allowed by the CHECK until the one migration that drops them all (the flag-retirement
+    // series' last PR): the table may list these, and nothing else beyond the registry.
+    const RETIRED_PENDING_MIGRATION = ["FIRST_RUN_TOUR_ENABLED"];
+    expect(inForce.filter((n) => !RETIRED_PENDING_MIGRATION.includes(n)).sort()).toEqual([...SWITCH_NAMES, ALL_FEATURES].sort());
+    expect(inForce).toEqual(expect.arrayContaining(RETIRED_PENDING_MIGRATION));
   });
 
   // LABEL_ROLE_COUNTS is a scoring basis no reader sees as a feature (admin PR 6d-2): a per-account

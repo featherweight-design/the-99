@@ -606,9 +606,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   not-found page).
 
 - `pnpm probe:tour` runs the first-run tour (discovery R3·1b) in a real browser at 1300x900 and 390x844, signed in as
-  the dedicated first-run account (`onboard-probe+clerk_test@the99.app`) against a server with
-  `FIRST_RUN_TOUR_ENABLED=true` (About's sheet and the gate's redirect to `/about` retired in About visual PR 6b, so no
-  About switch is needed). It proves every step's cutout sits on its real control (the ring's box is the control's box
+  the dedicated first-run account (`onboard-probe+clerk_test@the99.app`) (About's sheet and the gate's redirect to `/about` retired in About visual PR 6b, so no
+  About switch is needed; the tour is always on). It proves every step's cutout sits on its real control (the ring's box is the control's box
   plus its room, within 2px), the app is inert under the scrim and a press on a locked slot opens no note, the tour is
   spent once as step 1 appears (`tour_seen_at` written, a reload shows nothing, the date unmoved), a theme chosen at
   step 5 survives a skip, and with every About entry seen step 6 lights nothing (R3 gap 6) and Esc ends it. Last, two
@@ -652,7 +651,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
   switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
   itself: a deck's Stats and Notes tabs, the all-decks cart and the buy tag each have a switch of their own, and a frame
-  missing one is not captured), `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED` and
+  missing one is not captured), `HELP_PANEL_ENABLED`, `RULE_ZERO_ENABLED` and
   `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and `PAYMENTS_ENABLED` on, so the frames show the ?, the account menu's `Take the tour` row, the pod's
   `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no sheet. A screen frame missing what it
   must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at

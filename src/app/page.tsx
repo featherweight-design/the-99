@@ -32,7 +32,6 @@ import { loadHomeTables } from "../lib/social/rule-zero-home";
 import { HomeTableCard } from "../components/rule-zero/home-table-card";
 import { loadInviteCount } from "../lib/invites/read";
 import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
-import { firstRunTourEnabled } from "../lib/discovery/onboarding-flag";
 import { readTourSeen, tourDue } from "../lib/discovery/tour";
 import { loadArrivalsBanner } from "../lib/precons/banner";
 import { upcomingPreconsEnabled } from "../lib/precons/upcoming-flag";
@@ -78,12 +77,10 @@ async function readAboutSeen(userId: string): Promise<SeenState | null> {
 }
 
 /**
- * When the reader's tour was spent, or undefined when no read was made: with `FIRST_RUN_TOUR_ENABLED` off the tour is
- * never due, so its stamp is never read. A failed read is treated as spent, so no tour opens, and that render is
- * not stored.
+ * When the reader's tour was spent, or undefined when the read failed: a failed read is treated as spent, so no tour
+ * opens, and that render is not stored.
  */
-async function readTourSeenFor(userId: string, env: NodeJS.ProcessEnv): Promise<Date | null | undefined> {
-  if (!firstRunTourEnabled(env)) return undefined;
+async function readTourSeenFor(userId: string): Promise<Date | null | undefined> {
   try {
     return await readTourSeen(userId);
   } catch {
@@ -216,13 +213,13 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       // About's notice (About on the banner): read on both surfaces, since About's first run and Home's checklist
       // are separate states. One primary-key lookup.
       perf.timed("aboutSeen", () => readAboutSeen(userId)),
-      // The tour's stamp (R3·1a): one primary-key lookup, read only with its switch on. Beside the reads that decide
+      // The tour's stamp (R3·1a): one primary-key lookup. Beside the reads that decide
       // first run rather than after them, so first run's render waits on no extra round trip.
-      perf.timed("tourSeen", () => readTourSeenFor(userId, env)),
+      perf.timed("tourSeen", () => readTourSeenFor(userId)),
     ]);
     if (stats.uniqueCards === 0 && decks.length === 0) {
       // `tourDue` is the first-run tour's (R3·1b) one reader.
-      const due = tourSeen !== undefined && tourDue(env, true, tourSeen);
+      const due = tourSeen !== undefined && tourDue(true, tourSeen);
       return { value: { firstRun: true, aboutSeen: seen, tourDue: due }, store: true };
     }
 
@@ -356,10 +353,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const signatureRow = ask && places.row ? <SignatureRow face={ask.face} name={ask.name} /> : null;
   const signatureStrip = ask && places.strip ? <SignatureStrip name={ask.name} /> : null;
 
-  // The tour taken again (R3·2, plan decision 6): with the switch on, `/?tour=1` starts it whatever `tour_seen_at` says.
-  // Decided per request, outside the cached payload; the client reads and strips the parameter itself.
-  const tourAgain = firstRunTourEnabled(env);
-
   // The Home feed (menu and Home PR 6), read per request after the cached load and never stored: a new feed item moves no
   // data stamp. Null with HOME_FEED_ENABLED off, and Home draws as shipped. A failed read draws no feed. The visit's
   // writes (the seen cursor, the trade-match notice) run after the response, on first run too, since a first-run
@@ -408,7 +401,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         signature={signatureRow}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
         tour={data.tourDue}
-        tourAgain={tourAgain}
         news={feedOn}
         commandersPlace={commandersPlaceEnabled(env)}
       />
@@ -461,5 +453,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   );
   // On the dashboard the tour runs on the real app, and is never due: only asked for.
   const page = receipt ? <><PreconPickReceipt receipt={receipt} />{dashboard}</> : dashboard;
-  return tourAgain ? <>{page}<HomeTour due={false} mode="dashboard" precons={false} /></> : page;
+  // The tour taken again (R3·2, plan decision 6): `/?tour=1` starts it whatever `tour_seen_at` says; the client reads and
+  // strips the parameter itself.
+  return <>{page}<HomeTour due={false} mode="dashboard" precons={false} /></>;
 }

@@ -16,7 +16,7 @@ import { deckNotesEnabled } from "../decks/notes-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
-import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-flag";
+import { helpPanelEnabled } from "../discovery/onboarding-flag";
 import { homeFeedEnabled } from "../feed/flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
@@ -61,7 +61,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   DECK_STATS_ENABLED: deckStatsEnabled,
   DECK_TOKENS_ENABLED: deckTokensEnabled,
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
-  FIRST_RUN_TOUR_ENABLED: firstRunTourEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   HELP_PANEL_ENABLED: helpPanelEnabled,
   FRIEND_DECKS_ENABLED: friendDecksEnabled,

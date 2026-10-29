@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 const actions = vi.hoisted(() => ({ createInviteAction: vi.fn() }));
+vi.mock("../discovery/home-tour", () => ({ HomeTour: () => null }));
 vi.mock("../../app/friends/actions", () => actions);
 vi.mock("../social/invite-sheet", () => ({
   InviteSheet: ({ screen }: { screen: string }) => <div role="dialog" aria-label="Invite chooser" data-screen={screen} />,

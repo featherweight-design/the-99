@@ -30,7 +30,7 @@ import { preconsEnabled } from "../precons/flag";
 import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
-import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-flag";
+import { helpPanelEnabled } from "../discovery/onboarding-flag";
 import { cardScanEnabled } from "../card-scan/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { homeFeedEnabled } from "../feed/flag";
@@ -49,6 +49,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Retired switches (always on): the name stays only because About's seen-state keys entries and variants by it, so no
   // reader's New marks move. The entry's `switch` field and this map go in one later pass, with that decision.
   CARD_SEARCH_ENABLED: () => true,
+  FIRST_RUN_TOUR_ENABLED: () => true,
   NEVER_CUT_ENABLED: neverCutEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
@@ -92,7 +93,6 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // The launch-end batch. Rule 0 and invites already need SOCIAL_FRIENDS_ENABLED, and scanning COLLECTION_EDIT_ENABLED,
   // inside their own functions.
   HELP_PANEL_ENABLED: helpPanelEnabled,
-  FIRST_RUN_TOUR_ENABLED: firstRunTourEnabled,
   RULE_ZERO_ENABLED: ruleZeroEnabled,
   SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
   CARD_SCAN_ENABLED: cardScanEnabled,

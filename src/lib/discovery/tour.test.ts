@@ -1,27 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
-import { switchBits } from "../switches/resolve";
 import { spendTourWrite, tourDue } from "./tour";
 
-const e = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
-
 describe("tourDue", () => {
-  const on = e({ FIRST_RUN_TOUR_ENABLED: "true" });
   const seen = new Date("2026-10-16T00:00:00Z");
 
-  it("is due on a first-run Home with the switch on and the tour never spent", () => {
-    expect(tourDue(on, true, null)).toBe(true);
+  it("is due on a first-run Home with the tour never spent", () => {
+    expect(tourDue(true, null)).toBe(true);
   });
 
-  it("is never due with the switch off, past first run, or once spent", () => {
-    expect(tourDue(e({}), true, null)).toBe(false);
-    expect(tourDue(e({ FIRST_RUN_TOUR_ENABLED: "off" }), true, null)).toBe(false);
-    expect(tourDue(on, false, null)).toBe(false);
-    expect(tourDue(on, true, seen)).toBe(false);
-  });
-
-  it("is decided from a switch Home's cache key carries, so flipping it for the reader retires the cached payload", () => {
-    expect(switchBits(on)).not.toBe(switchBits(e({})));
+  it("is never due past first run, or once spent", () => {
+    expect(tourDue(false, null)).toBe(false);
+    expect(tourDue(true, seen)).toBe(false);
   });
 });
 

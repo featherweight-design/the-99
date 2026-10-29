@@ -20,7 +20,6 @@ import { homeFeedEnabled } from "../../lib/feed/flag";
 import { unseenFriendsCount } from "../../lib/feed/read";
 import { waitingAsksCount } from "../../lib/social/spare-requests";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
-import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
 import { friendsAfterGameDue } from "../../lib/social/after-game";
@@ -86,8 +85,6 @@ export default async function Shell({
     friends: socialFriendsEnabled(env),
     // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10).
     credits: await perfRead("shell.creditChip", () => readChip(userId, env)),
-    // `Take the tour` under About in the account menu (discovery R3·2), with the tour's own switch.
-    tour: firstRunTourEnabled(env),
     // The Commanders place: Discover leaves the bar, and with `friends` Friends takes its slot and Settings its row.
     commandersPlace: commandersPlaceEnabled(env),
     // Settings' news section: with the Commanders place, the menu's Settings row is drawn for it even with Friends off.

@@ -1,17 +1,15 @@
 import { eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { userPrefs } from "../../db/schema";
-import { firstRunTourEnabled } from "./onboarding-flag";
 
 type Writer = Pick<typeof db, "insert">;
 
 /**
- * Whether Home opens the first-run tour (plan `2026-10-16-discovery-r2-r3.md`, R3·1a): `FIRST_RUN_TOUR_ENABLED` on for
- * the reader, the first-run checklist drawn, and the tour never spent. Ruling 4: a first-run Home only, no back-fill, so
+ * Whether Home opens the first-run tour (plan `2026-10-16-discovery-r2-r3.md`, R3·1a): the first-run checklist drawn, and the tour never spent. Ruling 4: a first-run Home only, no back-fill, so
  * an account past first run is never due whatever its stamp says. Pure.
  */
-export function tourDue(env: NodeJS.ProcessEnv, firstRun: boolean, seenAt: Date | null): boolean {
-  return firstRunTourEnabled(env) && firstRun && seenAt === null;
+export function tourDue(firstRun: boolean, seenAt: Date | null): boolean {
+  return firstRun && seenAt === null;
 }
 
 /** When this reader's tour was spent (`user_prefs.tour_seen_at`), or null. No row reads as never. */

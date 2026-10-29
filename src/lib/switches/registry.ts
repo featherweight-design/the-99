@@ -41,7 +41,6 @@ export const SWITCHES = [
   { name: "DECK_STATS_ENABLED", kind: "feature" },
   { name: "DECK_TOKENS_ENABLED", kind: "feature" },
   { name: "FIND_A_DECK_READ_ENABLED", kind: "model", needs: "SWAP_TOOLS_ENABLED" },
-  { name: "FIRST_RUN_TOUR_ENABLED", kind: "feature" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "HELP_PANEL_ENABLED", kind: "feature" },
   { name: "FRIEND_DECKS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },

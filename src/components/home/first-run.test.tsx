@@ -237,14 +237,11 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
   });
 
-  it("runs the first-run tour again on ?tour=1 with the switch on, asked for so a spent tab's mark cannot hold it off, and never with it off (R3·2)", () => {
+  it("runs the first-run tour again on ?tour=1, asked for so a spent tab's mark cannot hold it off (R3·2)", () => {
     nav.query = "tour=1";
-    const { unmount } = render(<FirstRunChecklist ways={{ precons: true }} />);
-    expect(screen.queryByTestId("tour")).toBeNull();
-    unmount();
     // The tour reads the live address (`useLiveQuery`), not only the router's params.
     window.history.replaceState(null, "", "/?tour=1");
-    render(<FirstRunChecklist tourAgain ways={{ precons: true }} />);
+    render(<FirstRunChecklist ways={{ precons: true }} />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
     // Asked for: `again`, which is what lets the replay past this tab's spent mark (first-run-tour.test.tsx proves that half).
     expect(screen.getByTestId("tour")).toHaveAttribute("data-again", "true");

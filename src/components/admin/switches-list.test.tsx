@@ -31,7 +31,7 @@ describe("SwitchesList", () => {
     draw({});
     expect(document.querySelectorAll("[data-switch]")).toHaveLength(SWITCH_NAMES.length);
     const [features, plumbing] = screen.getAllByRole("heading", { level: 2 });
-    expect(features.textContent).toBe("Features47");
+    expect(features.textContent).toBe("Features46");
     expect(plumbing).toHaveAttribute("data-testid", "switches-plumbing-head");
     expect(plumbing.textContent).toContain("app-wide only");
     const plumbingNames = [...plumbing.parentElement!.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"));
@@ -48,14 +48,14 @@ describe("SwitchesList", () => {
 
   it("counts each chip and filters by it, keeping the heads' counts (L2)", () => {
     draw({ DECK_NOTES_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(chip(/^All/).textContent).toBe("All 54");
+    expect(chip(/^All/).textContent).toBe("All 53");
     expect(chip(/^All/)).toHaveAttribute("aria-checked", "true");
     expect(chip(/^Model features/).textContent).toBe("Model features 8");
     expect(chip(/^Overridden/).textContent).toBe("Overridden 1");
     fireEvent.click(chip(/^Overridden/));
     expect(chip(/^Overridden/)).toHaveAttribute("aria-checked", "true");
     expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["DECK_STATS_ENABLED"]);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features47");
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features46");
     // The Plumbing head hides when it has no rows (L3).
     expect(screen.queryByTestId("switches-plumbing-head")).toBeNull();
   });

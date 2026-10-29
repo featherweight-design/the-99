@@ -6,6 +6,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+vi.mock("../discovery/home-tour", () => ({ HomeTour: () => null }));
 vi.mock("../../app/collection/actions", () => ({ confirmUpload: vi.fn(), previewPaste: vi.fn(), previewUpload: vi.fn() }));
 const settle = vi.fn();
 vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: (...a: unknown[]) => settle(...a) }));

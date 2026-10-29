@@ -15,17 +15,12 @@ describe("AboutTabs: the Reference, the one tab left (About visual PR 6a)", () =
 });
 
 describe("About's head: Take the tour (discovery R3·2)", () => {
-  it("draws Take the tour → after the subtitle with the switch on, going to Home's tour parameter", () => {
-    render(<AboutTabs count={71} panel={null} tour />);
+  it("draws Take the tour → after the subtitle, going to Home's tour parameter", () => {
+    render(<AboutTabs count={71} panel={null} />);
     const press = screen.getByRole("link", { name: "Take the tour →" });
     expect(press.getAttribute("href")).toBe("/?tour=1");
     const sub = press.closest("p");
     expect(sub?.textContent?.startsWith("Every entry")).toBe(true);
     expect(sub?.lastElementChild).toBe(press);
-  });
-
-  it("draws no press with the switch off", () => {
-    render(<AboutTabs count={71} panel={null} />);
-    expect(screen.queryByRole("link", { name: "Take the tour →" })).toBeNull();
   });
 });

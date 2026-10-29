@@ -14,7 +14,6 @@ import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 import { showcaseGroups } from "../../lib/discovery/showcase";
 import { loadCardInput } from "../../lib/discovery/showcase-input";
-import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
 import { dailyLimitFor } from "../../lib/model/allowance";
 import { perfRoute } from "../../lib/perf/timing";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -76,7 +75,7 @@ export default async function AboutRoute({
       <div className="flex flex-col pb-[30px] md:pb-[64px]">
         {/* The tiles are captures chosen in `theme`: a theme picked from the account menu asks the server again. */}
         <ThemeRefresh drawnIn={theme} />
-        <AboutIndex tiles={indexTiles(env, theme)} tour={firstRunTourEnabled(env)} />
+        <AboutIndex tiles={indexTiles(env, theme)} />
         {/* Launch A2: the same quiet line /credits and /sign-up carry. */}
         <LegalLinks className="mt-[32px] px-[16px] md:px-[30px]" />
       </div>
@@ -115,7 +114,6 @@ export default async function AboutRoute({
       <ThemeRefresh drawnIn={theme} />
       <AboutTabs
         count={screens.reduce((n, s) => n + s.entries.length, 0)}
-        tour={firstRunTourEnabled(env)}
         panel={
           <ReferenceTab
             screens={screens}

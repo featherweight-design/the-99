@@ -10,7 +10,7 @@
 // spare). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with EVERY
 // reader-facing switch on (the registry's, less the plumbing ones and the payments line but for `PAYMENTS_ENABLED` itself;
 // a deck's Stats and Notes tabs, the all-decks cart and the Shopping buy tag each have their own), `HELP_PANEL_ENABLED`,
-// `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED` and `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and
+// `RULE_ZERO_ENABLED` and `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and
 // `PAYMENTS_ENABLED` ON, so the frames show the ?, the account menu's `Take the tour` row, the pod's `Rule 0 check` row,
 // the invite count line and /credits that the launch-end entries point at (About batch, 2026-10-21). Moments are always live now, so a bubble can appear in a frame (the About sheet retired in About visual PR 6b). The `settings` frame (push close-out) also needs a throwaway VAPID pair from
 // `pnpm push:keys` in the server's environment only, or /settings draws no push column. The fixture account has decks, so its Home is the dashboard and the
@@ -529,7 +529,7 @@ async function attempt(page, theme, id, run) {
 
 /**
  * What the server's switch set must draw on a frame before it is photographed: the ? on every screen
- * (`HELP_PANEL_ENABLED`), the account menu's `Take the tour` row (`FIRST_RUN_TOUR_ENABLED`) and the pod's `Rule 0 check`
+ * (`HELP_PANEL_ENABLED`), the account menu's `Take the tour` row (always on) and the pod's `Rule 0 check`
  * row and the invite count line on /friends (`RULE_ZERO_ENABLED`, `SOCIAL_INVITES_ENABLED`), and the balance on /credits
  * (`PAYMENTS_ENABLED`). The launch-end About entries point at these, so a set captured without them
  * is refused rather than shipped.
@@ -537,7 +537,7 @@ async function attempt(page, theme, id, run) {
 const REQUIRED_ON_FRAME = {
   // Every screen frame but a deck view's (shot with the tabs at the top, its header scrolled away).
   "*": [["[data-help-button]:visible", "the ? (start the server with HELP_PANEL_ENABLED on)"]],
-  account: [["[role='dialog'] a[href='/?tour=1'], [role='menu'] a[href='/?tour=1']", "the Take the tour row (FIRST_RUN_TOUR_ENABLED on)"]],
+  account: [["[role='dialog'] a[href='/?tour=1'], [role='menu'] a[href='/?tour=1']", "the Take the tour row"]],
   friends: [
     ["[data-testid='pod-rule-zero']", "the pod's Rule 0 check row (RULE_ZERO_ENABLED on)"],
     // The invites entry's box takes in the count line (launch-end batch G2), drawn only with invites on.

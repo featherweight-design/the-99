@@ -72,14 +72,14 @@ describe("cachePageForUser", () => {
     expect(vi.mocked(cacheForUser).mock.calls[0][1][2]).toBe(switchBits(env));
   });
 
-  it("keys Home apart when FIRST_RUN_TOUR_ENABLED flips for the reader, so a cached tourDue never outlives the switch", async () => {
+  it("keys Home apart when a switch it reads flips for the reader, so a cached payload never outlives the switch", async () => {
     const key = async (vars: Record<string, string>) => {
       vi.mocked(cacheForUser).mockClear();
       store.clear();
       await cachePageForUser("u1", "home", [], async () => ({ value: 1, store: true }), envViewWith(vars));
       return vi.mocked(cacheForUser).mock.calls[0][1].join("|");
     };
-    expect(await key({ FIRST_RUN_TOUR_ENABLED: "true" })).not.toBe(await key({}));
+    expect(await key({ HOME_FEED_ENABLED: "true" })).not.toBe(await key({}));
   });
 
   it("serves a repeat from the cache while the reader's stamp stands", async () => {

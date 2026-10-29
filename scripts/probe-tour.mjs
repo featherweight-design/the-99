@@ -6,7 +6,7 @@
 // survives a skip, and step 6 stands centred with no cutout when Home draws no About line (R3 gap 6).
 //
 // FIXTURE. The dedicated empty account on Clerk's development instance (`onboard-probe+clerk_test@the99.app`), which
-// first-run Home is drawn for. The server must run with FIRST_RUN_TOUR_ENABLED=true. Each width resets the account's
+// first-run Home is drawn for. Each width resets the account's
 // `tour_seen_at` to null and writes nothing else of the account's but its About seen-state, which it captures first and
 // restores after. It refuses staging and production by `neon.branch_id`, and refuses an account that holds cards or
 // decks (`assertDisposableAccount`), whose first run it would not see.
@@ -23,8 +23,6 @@
 //     that account is the tour's own spend, which writes `tour_seen_at` only while it is null;
 //   - a decks-only account (the dedicated account above, given one empty deck for the leg and deleted after, so its nav
 //     is locked on a dashboard Home): the `once your cards are in` captions;
-//   - with the switch off for the dedicated account (an ACCOUNT override on `flag_overrides`, waited past the
-//     resolver's 30-second memo and deleted after): no press at About's head, no menu row, and `/?tour=1` runs nothing.
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:tour
 import { neon } from "@neondatabase/serverless";
@@ -228,10 +226,6 @@ async function walk(browser, vp) {
 
 // ---- The tour taken again (R3·2) ----------------------------------------------------------------------------------
 
-/** The resolver's per-reader memo: an override is seen once it has passed. */
-const MEMO_MS = 31_000;
-const OVERRIDE_NOTE = "probe:tour";
-
 /**
  * A nav slot by its own label or route, locked or live, in the rail or the tab bar: never through the target it
  * registers, so a target on the wrong slot fails here. The tab bar's live slots carry no name, so they go by route.
@@ -405,50 +399,6 @@ async function replays(browser, vp) {
   }
 }
 
-/**
- * The switch off for the dedicated account, by an ACCOUNT override waited past the resolver's memo and deleted after:
- * no press at About's head, no menu row, and `?tour=1` runs nothing, at each width.
- */
-async function switchedOff(browser, widths) {
-  const signer = await browser.newContext();
-  const userId = await signIn(await signer.newPage());
-  await signer.close();
-  await assertDisposableAccount(sql, { email: ONBOARD_PROBE_EMAIL, userId, what: "probe:tour" });
-  await sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by)
-            values ('FIRST_RUN_TOUR_ENABLED', 'user', ${userId}, 'off', ${OVERRIDE_NOTE}, ${OVERRIDE_NOTE})
-            on conflict do nothing`;
-  try {
-    await new Promise((r) => setTimeout(r, MEMO_MS));
-    for (const vp of widths) {
-      console.log(`\n${vp.label}: FIRST_RUN_TOUR_ENABLED off`);
-      const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
-      const page = await context.newPage();
-      await signIn(page);
-      // Held before the clear and put back after, as every other leg does: the fixture's About state is not this leg's.
-      const about = await captureAboutSeen(userId, sql);
-      try {
-        await clearAboutSheet(page, userId);
-        await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
-        report("off: no Take the tour → at About's head", (await page.getByRole("link", { name: "Take the tour →" }).count()) === 0);
-        const { present } = await menuRow(page);
-        report("off: no Take the tour row in the account menu", !present);
-        await page.keyboard.press("Escape");
-        // The phone's menu sheet closes on a history step that can land after Escape returns and abort a goto started
-        // on the same page (net::ERR_ABORTED), so the address is asked for in a page of its own.
-        const fresh = await context.newPage();
-        await fresh.goto(`${BASE}/?tour=1`, { waitUntil: "networkidle" });
-        await fresh.waitForTimeout(3_000);
-        report("off: /?tour=1 runs no tour", (await fresh.locator("[data-tour-card]").count()) === 0);
-      } finally {
-        await restoreAboutSeen(about, sql);
-        await context.close();
-      }
-    }
-  } finally {
-    await sql`delete from flag_overrides where note = ${OVERRIDE_NOTE} and user_id = ${userId}`;
-  }
-}
-
 const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
 if (!branch || REFUSED.has(branch)) throw new Error(`probe:tour refuses branch ${branch ?? "(unknown)"}: point DATABASE_URL at local-dev or a scratch branch.`);
 await clerkSetup();
@@ -458,10 +408,6 @@ try {
   await walk(browser, { label: "phone 390x844", width: 390, height: 844 });
   await replays(browser, { label: "desktop 1300x900", width: 1300, height: 900 });
   await replays(browser, { label: "phone 390x844", width: 390, height: 844 });
-  await switchedOff(browser, [
-    { label: "desktop 1300x900", width: 1300, height: 900 },
-    { label: "phone 390x844", width: 390, height: 844 },
-  ]);
 } finally {
   await browser.close();
 }
