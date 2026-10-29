@@ -199,6 +199,23 @@ export const V2_FACT_RULES = `${V2_COMBO_RULE_V7}\n${V2_SHARED_RULES}`;
 export const V2_FACT_RULES_V8 = `${V2_COMBO_RULES_V8}\n${V2_SHARED_RULES}`;
 
 /**
+ * The stages variant's copy of contract 8's combo rules: the shipped ones place a backup combo in
+ * "the overview and the strategy", and name every piece wherever it is named, which under the stages'
+ * one-section rule names its cards twice. Here a combo is named in ONE place. The shipped text is
+ * untouched (pinned by hash in `stages.test.ts`); the two replaced sentences are asserted present.
+ */
+const STAGES_COMBO_PLACE = "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise the overview and the strategy name it as a backup or an alternate win, after the primary plan.";
+const STAGES_COMBO_EVERY = "Whenever the overview or a strategy step names a listed combo, that sentence names every card of the combo.";
+function stagesFactRules(): string {
+  if (!V2_FACT_RULES_V8.includes(STAGES_COMBO_PLACE) || !V2_FACT_RULES_V8.includes(STAGES_COMBO_EVERY)) {
+    throw new Error("buildSynopsisPrompt: contract 8's combo rules moved; the stages variant replaces two of their sentences");
+  }
+  return V2_FACT_RULES_V8
+    .replace(STAGES_COMBO_PLACE, "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line (or \"Wins by\", when the combo is the win there), never also in the overview, another stage, a tip or a Key card's job.")
+    .replace(STAGES_COMBO_EVERY, "The one line that names a listed combo names every card of the combo.");
+}
+
+/**
  * THE STAGES VARIANT (eval tooling only; lane a6, `scripts/eval/overview-stages.mts`). Contract 8's
  * sections with the Core strategy replaced by three stage lines (Early, Mid, Close, labeled by the
  * app from their position), `plans.primary` rendered as the "Wins by" line, an optional alternate
@@ -392,7 +409,7 @@ export function buildSynopsisPrompt(
   if (opts.contract8 && opts.stages) {
     const system = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...stagesSections(facts, opts.stages)].join("\n");
     return {
-      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES_V8}\n${V2_FACT_RULES_V8}\n${stagesRules(facts, opts.stages)}`,
+      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES_V8}\n${stagesFactRules()}\n${stagesRules(facts, opts.stages)}`,
       user: lines.join("\n"),
     };
   }

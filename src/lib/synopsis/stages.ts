@@ -319,7 +319,8 @@ export function checkShape(doc: OverviewDoc, alternates: readonly string[]): Che
   if (doc.stages.length !== STAGES_LIMITS.stages) offenders.push(`${doc.stages.length} stages`);
   doc.stages.forEach((l, i) => { if (len(l) > STAGES_LIMITS.stage) offenders.push(`${STAGE_LABELS[i] ?? i} is ${len(l)} characters`); });
   doc.winsBy.forEach((l) => { if (len(l) > STAGES_LIMITS.winsBy) offenders.push(`Wins by is ${len(l)} characters`); });
-  if (doc.winsBy.length === 0) offenders.push("no Wins by line");
+  // An empty or blank plans.primary renders no Wins by line at all.
+  if (doc.winsBy.every((l) => len(l) === 0)) offenders.push("no Wins by line");
   if (doc.tips.length < STAGES_LIMITS.tips.min || doc.tips.length > STAGES_LIMITS.tips.max) offenders.push(`${doc.tips.length} tips`);
   if (alternates.length === 0 && doc.alternate.length > 0) offenders.push("an alternate line with no alternate commander in the facts");
   if (alternates.length > 0 && doc.alternate.length === 0) offenders.push("no alternate line though the facts carry one");

@@ -248,6 +248,10 @@ describe("the shape's own counts and budgets", () => {
     expect(checkShape(withAlt("Lead with something else."), ["Grave Titan"]).offenders).toEqual(["the alternate line names none of the alternate commanders"]);
     expect(checkShape(withAlt("Lead with [[Grave Titan]]."), []).offenders).toEqual(["an alternate line with no alternate commander in the facts"]);
   });
+  it("fails an empty or blank plans.primary: there is no Wins by line", () => {
+    expect(checkShape(edit((r) => { r.plans.primary = ""; }), []).offenders).toEqual(["no Wins by line"]);
+    expect(checkShape(edit((r) => { r.plans.primary = "   "; }), []).offenders).toEqual(["no Wins by line"]);
+  });
   it("fails three tips: the shape holds exactly two", () => {
     expect(checkShape(edit((r) => { r.primer.tips.push(r.primer.tips[0]); }), []).offenders).toEqual(["3 tips"]);
   });
@@ -303,6 +307,15 @@ describe("the stages prompt variant", () => {
     expect(system).toContain("EACH CARD IS EXPLAINED ONCE");
     expect(system).toContain("- alternate: leave it out.");
     expect(user).not.toContain("Alternate commanders");
+  });
+  it("places a combo in ONE section under stages, and leaves the shipped combo rules as they are", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [] } });
+    expect(system).toContain("its cards other than the commander are named in ONE place only: the Close line");
+    expect(system).toContain("The one line that names a listed combo names every card of the combo.");
+    expect(system).not.toContain("otherwise the overview and the strategy name it as a backup");
+    expect(system).not.toContain("Whenever the overview or a strategy step names a listed combo");
+    const shipped = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true }).system;
+    expect(shipped).toContain("otherwise the overview and the strategy name it as a backup");
   });
   it("names the alternate commanders and asks for one line when the facts carry them", () => {
     const { system, user } = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: ["Grave Titan"] } });

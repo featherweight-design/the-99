@@ -42,6 +42,10 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  * BEFORE it is sent against its worst case (a repair is checked on its own before it is sent), recorded pending at
  * that worst case and settled at its metered cost, as `corpus.mts` does: a crash after the API billed
  * still leaves the charge counted. `--cap` is this run's own ceiling, required for a paid run.
+ * The ask line holds whatever the plan's progress: at $1.50 spent a call is refused until the run is
+ * started with `--ask-approved` (`stagesSendRefusal`). A failed call, or one retried after a failed
+ * attempt, settles at its worst case, not its meter (`settleUsd`). Each paid first write reaches disk
+ * before its repair is asked for (`old-generated.json`, `new-first.json`), and a resume reads it back.
  */
 
 /** 20 precons, spread across colors, archetypes and years (staging holds a contract-12 Overview for each). */
@@ -193,7 +197,8 @@ if (prodDecks.length > 0 && !process.env.PROD_READONLY_DATABASE_URL) {
   prodDecks = [];
 }
 
-const { acquireRunLock, readLedger, record, refusal, spent } = await import("./lib/ledger.mjs");
+const { acquireRunLock, readLedger, record, spent } = await import("./lib/ledger.mjs");
+const { isFailedAttemptLine, settleUsd, stagesSendRefusal } = await import("./lib/overview-stages-guard.mjs");
 if (!dryRun) acquireRunLock(LEDGER);
 
 // The production child runs FIRST and alone: it is the only process that ever holds the production URL as DATABASE_URL.
@@ -338,7 +343,6 @@ const outDir = new URL(`runs/overview-stages-${iteration}/`, EVAL);
 mkdirSync(outDir, { recursive: true });
 let runSpend = 0;
 let stopped: string | null = null;
-const total = plans.length;
 
 const landLine = (f: Facts) => `Keep ${f.keep.low} to ${f.keep.high} lands; send back ${f.sendBack.none} to ${f.sendBack.under}, or ${f.sendBack.over} or more. (The app's fixed line, the same on both sides.)`;
 const refusedOf = (c: Checked | null) => (c?.verdicts ?? []).flatMap((v) => (v.status === "refused" ? [{ section: v.section, reason: v.reason }] : []));
@@ -348,19 +352,22 @@ const readJson = <T,>(u: URL): T | null => (existsSync(u) ? JSON.parse(readFileS
 async function ask<T>(it: Item, what: string, p: { system: string; user: string }, schema: unknown, deadlineMs: number, reserve: number, done: number) {
   const inTok = Math.ceil((p.system.length + p.user.length) / 3);
   const worst = worstCaseUsd(call.model, inTok, call.maxTokens, { batch: false });
-  const planDone = askApproved ? 1 : (iteration - 1 + done / total) / 3;
-  const stop = refusal(readLedger(LEDGER), worst * reserve, planDone, LIMITS)
-    ?? (runSpend + worst * reserve > cap! ? `this run's cap of $${cap} would be crossed (spent $${runSpend.toFixed(4)}, this call could cost $${(worst * reserve).toFixed(4)})` : null);
+  // The ask line holds whatever the plan's progress (`stagesSendRefusal`); `done` is kept for the log.
+  void done;
+  const stop = stagesSendRefusal({ ledger: readLedger(LEDGER), worstUsd: worst * reserve, limits: LIMITS, askApproved, runSpendUsd: runSpend, capUsd: cap! });
   if (stop) { stopped = `before ${it.id} ${what}: ${stop}`; console.log(`STOP ${stopped}`); return null; }
   const pendingId = `${Date.now()}-${it.id}-${what}`;
   record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worst, requests: 1, pending: pendingId, note: `overview-stages i${iteration} ${it.id} ${what}` });
   const stops: { stopReason: string | null; outputTokens: number }[] = [];
+  let failedAttempts = 0;
   const out = await callModel<T>({
     model: call.model, system: p.system, user: p.user, maxTokens: call.maxTokens, effort: call.effort, deadlineMs, stream: call.stream,
     schema: schema as never, onResponse: (m: { stopReason: string | null; outputTokens: number }) => { stops.push(m); },
-  });
+  }, { log: (line) => { if (isFailedAttemptLine(line)) failedAttempts++; console.error(line); } });
   const u = out.usage;
-  const usd = u ? costUsd(call.model, { input_tokens: u.inputTokens, output_tokens: u.outputTokens, cache_read_input_tokens: u.cacheReadTokens, cache_creation_input_tokens: u.cacheWriteTokens }, { batch: false }) : 0;
+  const metered = u ? costUsd(call.model, { input_tokens: u.inputTokens, output_tokens: u.outputTokens, cache_read_input_tokens: u.cacheReadTokens, cache_creation_input_tokens: u.cacheWriteTokens }, { batch: false }) : null;
+  // A failed call, or one retried after a failed attempt, may be billed past its meter: settle at the reservation.
+  const usd = settleUsd({ ok: out.ok, failedAttempts, meteredUsd: metered, worstUsd: worst });
   runSpend += usd;
   record(LEDGER, { at: new Date().toISOString(), runId: `overview-stages-i${iteration}-${it.id}-${what}`, source: "realtime:1", usd, requests: 1, settles: pendingId, note: `overview-stages i${iteration} ${it.id} ${what}` });
   console.log(`${it.id} ${what}: ok=${out.ok} $${usd.toFixed(4)} (run $${runSpend.toFixed(4)}, ledger $${spent(readLedger(LEDGER)).toFixed(4)})`);
@@ -383,45 +390,63 @@ for (const [i, p] of plans.entries()) {
     if (it.old) {
       old = { content: it.old.content, source: it.old.source };
     } else {
-      const started = Date.now();
-      const first = await ask<V8Wire>(it, "old-write", oldPrompt(it), synopsisResponseSchemaV8Wire, SYNOPSIS_DEADLINE_MS, 1, i);
-      if (!first) break;
-      let content: Checked | null = null;
-      let repairUsd = 0;
-      if (first.out.ok) {
-        content = await checkReply(first.out.value, it.facts, true);
+      // The paid first write reaches disk BEFORE any repair is asked for, so a refused or failed repair
+      // (or a crash) never loses it: a resume reads it back instead of paying for it again.
+      const genFile = new URL("old-generated.json", dir);
+      type OldGen = { reply: V8Wire | null; failed: string | null; content: Checked | null; usd: number; stops: unknown; latencyMs: number; repairUsd?: number };
+      let gen = readJson<OldGen>(genFile);
+      if (!gen) {
+        const started = Date.now();
+        const first = await ask<V8Wire>(it, "old-write", oldPrompt(it), synopsisResponseSchemaV8Wire, SYNOPSIS_DEADLINE_MS, 1, i);
+        if (!first) break;
+        gen = {
+          reply: first.out.ok ? first.out.value : null, failed: first.out.ok ? null : first.out.errorClass,
+          content: first.out.ok ? await checkReply(first.out.value, it.facts, true) : null,
+          usd: first.usd, stops: first.stops, latencyMs: Date.now() - started,
+        };
+        writeFileSync(genFile, `${JSON.stringify(gen, null, 2)}\n`);
+      } else console.log(`${it.id}: old first write read back from old-generated.json`);
+      let content = gen.content;
+      if (gen.reply && content) {
         const failing = refusedSections(content);
-        const left = SYNOPSIS_DEADLINE_MS - (Date.now() - started);
+        const left = SYNOPSIS_DEADLINE_MS - gen.latencyMs;
         if (repairOn && failing.length > 0 && left >= SYNOPSIS_REPAIR_MIN_MS) {
-          const rep = await ask<V8Wire>(it, "old-repair", repairPrompt(it.facts, content, failing, true, first.out.value), synopsisResponseSchemaV8Wire, left, 1, i);
+          const rep = await ask<V8Wire>(it, "old-repair", repairPrompt(it.facts, content, failing, true, gen.reply), synopsisResponseSchemaV8Wire, left, 1, i);
           if (!rep) break;
-          repairUsd = rep.usd;
           content = await applyRepair(content, rep.out, failing, it.facts, true);
+          writeFileSync(genFile, `${JSON.stringify({ ...gen, repairUsd: rep.usd, repairReply: rep.out.ok ? rep.out.value : null, repaired: content }, null, 2)}\n`);
         }
       }
       old = { content, source: `generated with today's prompt (contract ${CONTRACT}, first write${repairOn ? " plus the app's repair" : ""}) because ${it.note}` };
-      writeFileSync(new URL("old-generated.json", dir), `${JSON.stringify({ reply: first.out.ok ? first.out.value : null, failed: first.out.ok ? null : first.out.errorClass, usd: first.usd + repairUsd, stops: first.stops }, null, 2)}\n`);
     }
     writeFileSync(new URL("old.json", dir), `${JSON.stringify({ id: it.id, name: it.name, kind: it.kind, commanders: it.facts.commanders, landLine: landLine(it.facts), note: it.note, ...old, shown: old.content ? stages.docFromChecked(old.content) : null }, null, 2)}\n`);
   }
 
   // NEW: the stages variant, first write plus the app's one repair.
-  const started = Date.now();
-  const prompt = newPrompt(it, old.content);
-  const first = await ask<StagesReply>(it, "new-write", prompt, stages.stagesResponseSchemaWire, SYNOPSIS_DEADLINE_MS, 1, i);
-  if (!first) break;
-  if (!first.out.ok) {
-    writeFileSync(new URL("new.json", dir), `${JSON.stringify({ id: it.id, failed: first.out.errorClass, usd: first.usd, usage: first.usage, stops: first.stops, alternates: it.alternates }, null, 2)}\n`);
-    writeFileSync(new URL("checks.json", dir), `${JSON.stringify({ id: it.id, checks: null, validatorPass: false, failed: first.out.errorClass }, null, 2)}\n`);
-    continue;
-  }
-  const reply = first.out.value;
-  const firstChecked = await checkReply(reply, it.facts, true);
+  // The paid first write and its checked content reach disk (new-first.json) BEFORE the repair is
+  // asked for; a resume reads them back rather than paying for the write again.
+  const firstFile = new URL("new-first.json", dir);
+  type NewFirst = { reply: StagesReply; firstChecked: Checked; usd: number; usage: unknown; stops: unknown; latencyMs: number };
+  let saved = readJson<NewFirst>(firstFile);
+  if (!saved) {
+    const started = Date.now();
+    const first = await ask<StagesReply>(it, "new-write", newPrompt(it, old.content), stages.stagesResponseSchemaWire, SYNOPSIS_DEADLINE_MS, 1, i);
+    if (!first) break;
+    if (!first.out.ok) {
+      writeFileSync(new URL("new.json", dir), `${JSON.stringify({ id: it.id, failed: first.out.errorClass, usd: first.usd, usage: first.usage, stops: first.stops, alternates: it.alternates }, null, 2)}\n`);
+      writeFileSync(new URL("checks.json", dir), `${JSON.stringify({ id: it.id, checks: null, validatorPass: false, failed: first.out.errorClass }, null, 2)}\n`);
+      continue;
+    }
+    saved = { reply: first.out.value, firstChecked: await checkReply(first.out.value, it.facts, true), usd: first.usd, usage: first.usage, stops: first.stops, latencyMs: Date.now() - started };
+    writeFileSync(firstFile, `${JSON.stringify(saved, null, 2)}\n`);
+  } else console.log(`${it.id}: new first write read back from new-first.json`);
+  const reply = saved.reply;
+  const firstChecked = saved.firstChecked;
   let content = firstChecked;
   let repairReply: StagesReply | null = null;
   let repairUsd: number | undefined;
   const failing = refusedSections(firstChecked);
-  const left = SYNOPSIS_DEADLINE_MS - (Date.now() - started);
+  const left = SYNOPSIS_DEADLINE_MS - saved.latencyMs;
   if (repairOn && failing.length > 0 && left >= SYNOPSIS_REPAIR_MIN_MS) {
     const repPrompt = buildSynopsisPrompt(it.facts, { keep: firstChecked, refused: failing, first: reply }, { v2: true, contract8: true, stages: stagesOpt(it, old.content) });
     const rep = await ask<StagesReply>(it, "new-repair", repPrompt, stages.stagesResponseSchemaWire, left, 1, i);
@@ -437,7 +462,7 @@ for (const [i, p] of plans.entries()) {
   const validatorPass = content.verdicts.every((v) => v.status === "ok");
   writeFileSync(new URL("new.json", dir), `${JSON.stringify({
     id: it.id, arm: call, repair: repairOn, alternates: it.alternates, castTurn: it.facts.stats?.commanderCastTurn ?? null,
-    usd: first.usd, repairUsd, usage: first.usage, stops: first.stops, latencyMs: Date.now() - started,
+    usd: saved.usd, repairUsd, usage: saved.usage, stops: saved.stops, latencyMs: saved.latencyMs,
     firstVerdicts: firstChecked.verdicts, content, reply, repairReply, shown: shownNew,
   }, null, 2)}\n`);
   writeFileSync(new URL("checks.json", dir), `${JSON.stringify({ id: it.id, validatorPass, verdicts: content.verdicts, checks }, null, 2)}\n`);
