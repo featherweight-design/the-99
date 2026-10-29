@@ -19,13 +19,11 @@ import {
   pickTop,
   type ComboPieceRow,
 } from "../synopsis/combo-facts";
-import { nearCombosEnabled } from "./flag";
 import { holdingDecks, type HoldingDeck } from "./holding-decks";
 
 /**
  * SERVER-ONLY. The combos a deck is exactly one piece away from, and where that piece is (plan
- * `2026-10-22-near-combos-backend.md`, read A). Behind `NEAR_COMBOS_ENABLED`; no surface draws it
- * until Design prompt 17.
+ * `2026-10-22-near-combos-backend.md`, read A).
  *
  * "One piece away" is `addableMissingPiece`, the rule the Overview's facts use, over the same
  * `anySizeComboQuery`: a template-free, counted combo of 2 to 6 pieces whose one missing piece the
@@ -195,7 +193,6 @@ export async function loadNearCombos(args: {
   /** The largest combo to list, in pieces. The deck page's list asks for 2 (combos-close G2). */
   maxPieces?: number;
 }): Promise<NearCombos> {
-  if (!nearCombosEnabled(args.env)) return EMPTY;
   const [deck] = await db
     .select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
     .from(decks)
@@ -553,7 +550,6 @@ export async function loadCardCombos(args: {
   /** The largest combo to list, in pieces. The card details block asks for 2 (combos-close G2). */
   maxPieces?: number;
 }): Promise<CardCombos> {
-  if (!nearCombosEnabled(args.env)) return NO_CARD_COMBOS;
   const scope = {
     deck: new Set([...(args.deck?.oracleIds ?? []), ...(args.deck?.commanderOracleIds ?? [])]),
     commanders: new Set(args.deck?.commanderOracleIds ?? []),

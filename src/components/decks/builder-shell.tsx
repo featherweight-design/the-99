@@ -331,8 +331,7 @@ interface BuilderShellProps {
   /** A token that moves on each render carrying `?tool=`, so a landing on the mounted shell runs again. */
   landingRequest?: string | null;
   /** `loadNearCombos` (two pieces): the combos this deck is one piece away from, for the status line's
-   *  segment and its list (combos close). Null when the read failed or never ran: no segment. Empty
-   *  while `NEAR_COMBOS_ENABLED` is off. */
+   *  segment and its list (combos close). Null when the read failed or never ran: no segment. */
   nearCombos?: NearCombos | null;
 }
 

@@ -759,7 +759,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SOCIAL_GAMES_ENABLED: { label: "Opponents", description: "Opponents in the game log." },
   SOCIAL_INVITES_ENABLED: { label: "Invites", description: "Inviting someone new, and invite counts." },
   SOCIAL_WISHLIST_ENABLED: { label: "Wishlist", description: "Cards wanted outside any deck." },
-  NEAR_COMBOS_ENABLED: { label: "Near combos", description: "Combos a deck is one card from, and where that card is. No surface yet." },
   PUSH_ENABLED: { label: "Push notifications", description: "Phone and browser push for the news kinds, on top of Home. Needs Home’s news, and sends nothing until the push keys are set." },
   SPARE_REQUESTS_ENABLED: { label: "Spare requests", description: "Ask a friend for a spare, and their Yes or No. Needs Friends." },
   STRATEGY_FOCUS_ENABLED: { label: "Strategy focus", description: "A deck's top strategies and the focus a player picks for Suggested changes to aim at. Picking one is free. Needs the Analysis tab." },

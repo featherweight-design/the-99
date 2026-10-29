@@ -241,8 +241,7 @@ export default async function DeckBuilderPage({
   );
   // COMBOS ONE PIECE AWAY (combos close, G7): the status line's segment and its list, two-card combos
   // only (G2). Started with the request beside the row's combo marks; it needs only the deck id. NOT
-  // cached: where each missing piece is moves with availability and prices. Empty while
-  // `NEAR_COMBOS_ENABLED` is off; a read that fails answers null, and the page draws no segment.
+  // cached: where each missing piece is moves with availability and prices. A read that fails answers null, and the page draws no segment.
   const nearCombosRead = early(
     // Uncapped: the sheet lists every combo its count names, so the segment's count and the sheet's
     // rows always agree. Two-card near combos run to 54 on staging's busiest deck, a small payload.

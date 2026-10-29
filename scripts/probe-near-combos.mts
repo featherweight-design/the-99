@@ -3,7 +3,7 @@
 // piece away from, where the top ones' missing pieces are, and checks the invariants: every listed
 // combo misses exactly its named piece and holds the rest, the missing piece is inside the deck's
 // identity, the list runs bucket by bucket (spare, elsewhere, priced buy, unpriced buy), the cap holds and `total`
-// covers it, and the switch off reads nothing. Read B, `loadCardCombos`: the card in the most variants
+// covers it,. Read B, `loadCardCombos`: the card in the most variants
 // and the first deck's commander (that deck in scope), timed, checking the cap, that the card is never
 // its own piece, that fewest unowned pieces rank first, and that a piece reads in-deck exactly when the deck in scope holds it.
 //
@@ -31,8 +31,7 @@ async function main() {
   if (rows[0]?.b !== named) throw new Error(`probe:near-combos: database reports ${rows[0]?.b}, not ${named}`);
 
   const { loadNearCombos, NEAR_COMBOS_CAP } = await import("../src/lib/combos/near-combos");
-  const ON = { ...process.env, NEAR_COMBOS_ENABLED: "true" };
-  const OFF = { ...process.env, NEAR_COMBOS_ENABLED: "" };
+  const ON = { ...process.env };
 
   const userId =
     process.env.PROBE_USER_ID ??
@@ -46,9 +45,6 @@ async function main() {
       from decks d where d.user_id = ${userId} and d.commander_oracle_id is not null order by d.name`)
   ).rows;
   console.log(`account ${userId.slice(0, 12)}…, ${decks.length} decks with a commander\n`);
-
-  const off = await loadNearCombos({ userId, deckId: decks[0]?.id ?? "", env: OFF });
-  check("switch off: empty", off.total === 0 && off.combos.length === 0);
 
   const bucket = (w: { kind: string; cents?: number | null }) => (w.kind === "spare" ? 0 : w.kind === "elsewhere" ? 1 : w.cents == null ? 3 : 2);
   let withAny = 0;
@@ -98,7 +94,6 @@ async function main() {
     { label: busiest ? `${busiest.name} (most variants)` : "", oracleId: busiest?.oracle_id, deck: undefined },
     { label: `${decks[0]?.name}'s commander, deck in scope`, oracleId: scoped?.commander, deck: scoped ? { oracleIds: scoped.cards, commanderOracleIds: [scoped.commander, ...(scoped.partner ? [scoped.partner] : [])] } : undefined },
   ].filter((c): c is { label: string; oracleId: string; deck: { oracleIds: string[]; commanderOracleIds: string[] } | undefined } => !!c.oracleId);
-  check("read B: switch off, empty", (await loadCardCombos({ userId, oracleId: cases[0].oracleId, env: OFF })).total === 0);
   for (const c of cases) {
     const started = Date.now();
     const out = await loadCardCombos({ userId, oracleId: c.oracleId, deck: c.deck, env: ON });

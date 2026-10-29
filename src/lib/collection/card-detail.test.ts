@@ -509,7 +509,7 @@ describe("loadCardDetail's round trips", () => {
   const cardComboCalls: unknown[] = [];
   async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]>; token?: unknown; gateRows?: unknown[]; cardCombos?: unknown }) {
     cardComboCalls.length = 0;
-    const asked = { select: 0, printings: 0, execute: 0, flags: 0, partners: 0, token: [] as string[] };
+    const asked = { select: 0, printings: 0, execute: 0, flags: 0, token: [] as string[] };
     vi.doMock("../../db", () => ({
       db: {
         select: () => {
@@ -530,9 +530,6 @@ describe("loadCardDetail's round trips", () => {
     }));
     vi.doMock("../bracket/flags-read", () => ({
       loadBracketFlags: async () => { asked.flags += 1; return new Map(); },
-    }));
-    vi.doMock("../combos/near-miss", () => ({
-      loadCardComboPartners: async () => { asked.partners += 1; return []; },
     }));
     // The near-combos read (combos close UI-3), counted apart so `asked` keeps its shipped shape.
     vi.doMock("../combos/near-combos", () => ({
@@ -565,7 +562,7 @@ describe("loadCardDetail's round trips", () => {
       expect(await load("user_1", "o-missing", undefined, ENV_VIEW)).toBeNull();
       // Long enough for any read started behind the return to have reached its stub.
       for (let i = 0; i < 5; i += 1) await flush();
-      expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, partners: 0, token: ["o-missing"] });
+      expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, token: ["o-missing"] });
       expect(loadPrintingPrices).not.toHaveBeenCalled();
       expect(loadAvailability).not.toHaveBeenCalled();
     } finally { done(); }
@@ -578,7 +575,7 @@ describe("loadCardDetail's round trips", () => {
     try {
       expect(await load("user_1", "t-1", undefined, ENV_VIEW)).toBe(token);
       for (let i = 0; i < 5; i += 1) await flush();
-      expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, partners: 0, token: ["t-1"] });
+      expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, token: ["t-1"] });
     } finally { done(); }
   });
 
@@ -596,7 +593,7 @@ describe("loadCardDetail's round trips", () => {
       // The prices read has not answered, and everything else has already been asked.
       expect(loadAvailability).toHaveBeenCalled();
       expect(asked.flags).toBe(1);
-      expect(asked.partners).toBe(1);
+      expect(cardComboCalls).toHaveLength(1);
       expect(asked.execute).toBeGreaterThanOrEqual(1);
       answer(null);
       expect((await pending)?.name).toBe("Arcane Signet");
@@ -616,7 +613,7 @@ describe("loadCardDetail's round trips", () => {
       expect(asked.printings).toBe(1);
       expect(loadPrintingPrices).toHaveBeenCalled();
       expect(asked.flags).toBe(1);
-      expect(asked.partners).toBe(1);
+      expect(cardComboCalls).toHaveLength(1);
       answer([]);
       expect((await pending)?.oracleId).toBe("o-1");
     } finally { done(); }
@@ -687,37 +684,19 @@ describe("loadCardDetail's round trips", () => {
     } finally { done(); }
   });
 
-  // Combos one piece away UI-3: ONE combo read per card, chosen by the reader's switch.
+  // Combos one piece away UI-3: ONE combo read per card.
   describe("the combo block's read", () => {
-    const NEAR_OFF = envViewWith({ NEAR_COMBOS_ENABLED: "false" });
-    const NEAR_ON = envViewWith({ NEAR_COMBOS_ENABLED: "true" });
     const line = { variantId: "v1", others: [], produces: [], steps: null, manaNeeded: null, manaValueNeeded: null, notablePrerequisites: null, usesCommander: false };
 
-    it("off: reads the shipped partners and never the near-combos read", async () => {
+    it("reads the near combos (two-card, uncapped, the commanders apart) and sets them on the card", async () => {
       selectCollectionRows.mockResolvedValue([ownedRow]);
       loadPrintingPrices.mockReset();
       loadPrintingPrices.mockResolvedValue(null);
       loadAvailability.mockReset();
       loadAvailability.mockResolvedValue(new Map());
-      const { load, asked } = await fresh({ catalog: [catalogRow] });
+      const { load } = await fresh({ catalog: [catalogRow], cardCombos: { combos: [line], total: 1, inScope: true } });
       try {
-        const card = await load("user_1", "o-1", ["d-1", "c-1"], NEAR_OFF, ["c-1"]);
-        expect(asked.partners).toBe(1);
-        expect(cardComboCalls).toHaveLength(0);
-        expect(card && "cardCombos" in card).toBe(false);
-      } finally { done(); }
-    });
-
-    it("on: reads the near combos (two-card, uncapped, the commanders apart) instead, and sets them on the card", async () => {
-      selectCollectionRows.mockResolvedValue([ownedRow]);
-      loadPrintingPrices.mockReset();
-      loadPrintingPrices.mockResolvedValue(null);
-      loadAvailability.mockReset();
-      loadAvailability.mockResolvedValue(new Map());
-      const { load, asked } = await fresh({ catalog: [catalogRow], cardCombos: { combos: [line], total: 1, inScope: true } });
-      try {
-        const card = await load("user_1", "o-1", ["d-1", "c-1"], NEAR_ON, ["c-1"]);
-        expect(asked.partners).toBe(0);
+        const card = await load("user_1", "o-1", ["d-1", "c-1"], ENV_VIEW, ["c-1"]);
         expect(cardComboCalls).toEqual([
           expect.objectContaining({ userId: "user_1", oracleId: "o-1", maxPieces: 2, cap: 200, deck: { oracleIds: ["d-1", "c-1"], commanderOracleIds: ["c-1"] } }),
         ]);
@@ -726,13 +705,13 @@ describe("loadCardDetail's round trips", () => {
       } finally { done(); }
     });
 
-    it("on, opened outside a deck: no deck in scope", async () => {
+    it("opened outside a deck: no deck in scope", async () => {
       selectCollectionRows.mockResolvedValue([]);
       loadPrintingPrices.mockReset();
       loadPrintingPrices.mockResolvedValue(null);
       const { load } = await fresh({ catalog: [catalogRow] });
       try {
-        await load("user_1", "o-1", undefined, NEAR_ON);
+        await load("user_1", "o-1", undefined, ENV_VIEW);
         expect(cardComboCalls).toEqual([expect.objectContaining({ deck: undefined })]);
       } finally { done(); }
     });
