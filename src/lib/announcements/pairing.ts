@@ -25,7 +25,9 @@ const lineStarts = (c: CommanderFacts, pattern: RegExp) => text(c).split("\n").s
 export function isCommanderEligible(c: CommanderFacts): boolean {
   const type = front(c.typeLine);
   // A legendary Vehicle or Spacecraft may lead a deck (rule 903.3a as amended; `isCommanderCandidate` in recs/score.ts).
-  return (/\blegendary\b/i.test(type) && /\b(?:creature|vehicle|spacecraft)\b/i.test(type)) || /can be your commander/i.test(text(c));
+  if (!/\blegendary\b/i.test(type)) return /can be your commander/i.test(text(c));
+  // A legendary card that is a creature off the battlefield (Grist, the Hunger Tide) is a legendary creature in the command zone.
+  return /\b(?:creature|vehicle|spacecraft)\b/i.test(type) || /can be your commander/i.test(text(c)) || /isn't on the battlefield, it's an? [^.]*\bcreature\b/i.test(text(c));
 }
 
 /** `Partner—Survivors` → `survivors`; plain `Partner` → `""`; no partner ability → null. Not `Partner with`. */

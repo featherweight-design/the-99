@@ -53,7 +53,8 @@ describe("isCommanderEligible", () => {
     [card("Hearthhull, the Worldseed", "Legendary Artifact — Spacecraft"), true],
     [card("Weatherlight", "Legendary Artifact — Vehicle"), true],
     [card("Smuggler's Copter", "Artifact — Vehicle"), false],
-    [card("Grist, the Hunger Tide", "Legendary Planeswalker — Grist", "Grist, the Hunger Tide can be your commander."), true],
+    [card("Grist, the Hunger Tide", "Legendary Planeswalker — Grist", "As long as Grist, the Hunger Tide isn't on the battlefield, it's a 1/1 Insect creature in addition to its other types."), true],
+    [card("Nissa, Who Shakes the World", "Legendary Planeswalker — Nissa", "Whenever you tap a Forest for mana, add an additional {G}."), false],
     [card("Llanowar Elves", "Creature — Elf Druid"), false],
     [card("Raised by Giants", "Legendary Enchantment — Background"), false],
     // the front face decides: a melded back is not a commander from the front
