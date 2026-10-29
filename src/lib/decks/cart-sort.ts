@@ -124,3 +124,72 @@ export function sortGroups<G extends SortableGroup>(groups: readonly G[], sort: 
 export function searchLines<L extends Pick<CartLine, "name">>(lines: readonly L[], query: string): L[] {
   return query.trim() === "" ? [...lines] : lines.filter((l) => matchesQuery(l.name, query));
 }
+
+// The two filters (call 6, D3; plan PR 9). Both narrow the same lines in every view (D4), so they live beside search.
+
+/**
+ * The Friend filter, three states (engineering decision 2): off (`?friend` absent) keeps every line; `any`
+ * (`?friend=any`) keeps the lines some friend has a spare of; a list of public ids (`?friend=a,b`) keeps the lines
+ * those friends have a spare of. Off is null, so clearing it is a plain absence.
+ */
+export type FriendFilter = null | "any" | readonly string[];
+
+/** The Owned filter: Any (off), You own some, None. The strings are the URL's values; `any` is an absence. */
+export const OWNED_FILTERS = ["any", "some", "none"] as const;
+export type OwnedFilter = (typeof OWNED_FILTERS)[number];
+
+/** The most friends a `?friend` names, so a pasted list cannot ride the URL. */
+export const MAX_FRIEND_IDS = 24;
+const PUBLIC_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** `?friend=` as a filter: `any`, or the well-formed ids it names (deduped, capped); anything else is off. */
+export function parseFriend(raw: string | null | undefined): FriendFilter {
+  const value = (raw ?? "").trim();
+  if (value === "any") return "any";
+  const ids = [...new Set(value.split(",").map((s) => s.trim()).filter((s) => PUBLIC_ID.test(s)))].slice(0, MAX_FRIEND_IDS);
+  return ids.length > 0 ? ids : null;
+}
+
+/** The filter as `?friend=`'s value, or null for off. */
+export const friendParam = (f: FriendFilter): string | null => (f === null ? null : f === "any" ? "any" : f.join(","));
+
+/** `?owned=` as a filter: a value the filter offers, else Any. */
+export function parseOwned(raw: string | null | undefined): OwnedFilter {
+  return (OWNED_FILTERS as readonly string[]).includes(raw ?? "") ? (raw as OwnedFilter) : "any";
+}
+
+/** Does a line the reader owns `owned` copies of pass the Owned filter? */
+export function ownedKeeps(filter: OwnedFilter, owned: number): boolean {
+  return filter === "any" || (filter === "some" ? owned > 0 : owned <= 0);
+}
+
+/**
+ * Does a card pass the Friend filter? `holders` are the public ids of the friends with a spare of it, or undefined
+ * while its read is out: a card not yet read is kept, so the list narrows as the read lands rather than flashing empty.
+ */
+export function friendKeeps(filter: FriendFilter, holders: readonly string[] | undefined): boolean {
+  if (filter === null || holders === undefined) return true;
+  return filter === "any" ? holders.length > 0 : holders.some((id) => filter.includes(id));
+}
+
+/**
+ * A press on the Friend panel's row or the sheet's pill. `any` toggles Any friend (off, or replacing the named
+ * friends); a friend's id toggles that friend in the named list (replacing Any), and the last one off is off.
+ */
+export function toggleFriend(filter: FriendFilter, code: string): FriendFilter {
+  if (code === "any") return filter === "any" ? null : "any";
+  const named = filter === null || filter === "any" ? [] : filter;
+  const next = named.includes(code) ? named.filter((id) => id !== code) : [...named, code];
+  return next.length > 0 ? next : null;
+}
+
+/**
+ * The filter once the read has landed: a named id no friend with a spare answers to is dropped (decision 2), and a
+ * filter left naming nobody, or Any with no friend holding a spare, is off. The same value back when nothing changed.
+ */
+export function settleFriend(filter: FriendFilter, known: ReadonlySet<string>): FriendFilter {
+  if (filter === null) return filter;
+  if (filter === "any") return known.size > 0 ? filter : null;
+  const kept = filter.filter((id) => known.has(id));
+  return kept.length === filter.length ? filter : kept.length > 0 ? kept : null;
+}

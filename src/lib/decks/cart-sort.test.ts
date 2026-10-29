@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { SelectedLine } from "./cart";
 import {
-  CART_SORTS, DEFAULT_SORTS, MAX_QUERY, byCardOrder, cardCompare, deckCents, lineCents, matchesQuery, parseQuery,
-  parseSort, searchLines, sortDecks, sortGroups,
+  CART_SORTS, DEFAULT_SORTS, MAX_FRIEND_IDS, MAX_QUERY, byCardOrder, cardCompare, deckCents, friendKeeps, friendParam, lineCents,
+  matchesQuery, ownedKeeps, parseFriend, parseOwned, parseQuery, parseSort, searchLines, settleFriend, sortDecks, sortGroups, toggleFriend,
 } from "./cart-sort";
 
 function line(name: string, over: Partial<SelectedLine> & { decks?: number } = {}): SelectedLine {
@@ -117,5 +117,62 @@ describe("By friend orders", () => {
     expect(sortGroups(groups, "spare").map((x) => x.friend.displayName)).toEqual(["Colin", "Chris", "Max", "Peter"]);
     expect(sortGroups(groups, "cards").map((x) => x.friend.displayName)).toEqual(["Max", "Chris", "Colin", "Peter"]);
     expect(sortGroups(groups, "name").map((x) => x.friend.displayName)).toEqual(["Chris", "Colin", "Max", "Peter"]);
+  });
+});
+
+describe("the Friend filter (decision 2)", () => {
+  it("reads ?friend as off, Any friend or the well-formed ids it names, deduped and capped", () => {
+    expect(parseFriend(null)).toBeNull();
+    expect(parseFriend("")).toBeNull();
+    expect(parseFriend("any")).toBe("any");
+    expect(parseFriend("p-Chris, p-Max,p-Chris")).toEqual(["p-Chris", "p-Max"]);
+    expect(parseFriend("bad id!,<x>")).toBeNull();
+    expect(parseFriend(Array.from({ length: 40 }, (_, i) => `f${i}`).join(","))).toHaveLength(MAX_FRIEND_IDS);
+    expect(friendParam(null)).toBeNull();
+    expect(friendParam("any")).toBe("any");
+    expect(friendParam(["a", "b"])).toBe("a,b");
+  });
+
+  it("keeps every line while off, a line some friend has a spare of under Any, and the named friends' lines", () => {
+    expect(friendKeeps(null, [])).toBe(true);
+    expect(friendKeeps("any", [])).toBe(false);
+    expect(friendKeeps("any", ["a"])).toBe(true);
+    expect(friendKeeps(["b"], ["a"])).toBe(false);
+    expect(friendKeeps(["a", "b"], ["b"])).toBe(true);
+    // A card whose read is out is kept: the list narrows as the read lands.
+    expect(friendKeeps(["b"], undefined)).toBe(true);
+  });
+
+  it("toggles Any against the named friends, and the last friend off is off", () => {
+    expect(toggleFriend(null, "any")).toBe("any");
+    expect(toggleFriend("any", "any")).toBeNull();
+    expect(toggleFriend("any", "a")).toEqual(["a"]);
+    expect(toggleFriend(["a"], "any")).toBe("any");
+    expect(toggleFriend(["a"], "b")).toEqual(["a", "b"]);
+    expect(toggleFriend(["a", "b"], "a")).toEqual(["b"]);
+    expect(toggleFriend(["a"], "a")).toBeNull();
+  });
+
+  it("drops a named id no friend answers to once the read lands, and Any with no friend holding a spare", () => {
+    const known = new Set(["a", "b"]);
+    const named = ["a", "b"] as const;
+    expect(settleFriend(named, known)).toBe(named);
+    expect(settleFriend(["a", "z"], known)).toEqual(["a"]);
+    expect(settleFriend(["z"], known)).toBeNull();
+    expect(settleFriend("any", known)).toBe("any");
+    expect(settleFriend("any", new Set())).toBeNull();
+    expect(settleFriend(null, known)).toBeNull();
+  });
+});
+
+describe("the Owned filter", () => {
+  it("reads ?owned as a value it offers, else Any, and keeps lines by the copies owned", () => {
+    expect(parseOwned("some")).toBe("some");
+    expect(parseOwned("none")).toBe("none");
+    expect(parseOwned("maybe")).toBe("any");
+    expect(parseOwned(null)).toBe("any");
+    expect([ownedKeeps("any", 0), ownedKeeps("any", 2)]).toEqual([true, true]);
+    expect([ownedKeeps("some", 0), ownedKeeps("some", 1)]).toEqual([false, true]);
+    expect([ownedKeeps("none", 0), ownedKeeps("none", 1)]).toEqual([true, false]);
   });
 });

@@ -17,6 +17,7 @@ const OTHER: Record<string, string> = {
   "src/components/admin/group-editor.tsx": "an admin member row, `role=\"checkbox\"` on a custom row",
   "src/components/decks/notes/note-row.tsx": "a note's done mark, `role=\"checkbox\"` on a custom row",
   "src/components/decks/deck-card-overflow.tsx": "the ⋯ menu's Hidden from friends row, `role=\"checkbox\"` on a menu row: a 16px box at desktop at the row's right end, a dashed border, and a locked fill when Settings set it (friend decks README 4b)",
+  "src/components/decks/cart/cart-filter-sheet.tsx": "the cart's Filters sheet Friend pills: a 44px round pill with the friend's face and count, `role=\"checkbox\"` on the pill (cart v2 Controls B1, R1b)",
   "src/components/rule-zero/setup-sheet.tsx": "a member's art seat in Rule 0's setup: the whole tile is the checkbox, its 24px check in the art's corner",
 };
 
