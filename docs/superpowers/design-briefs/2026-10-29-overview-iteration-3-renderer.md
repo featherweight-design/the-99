@@ -24,8 +24,8 @@ phone, a 210px name column from `md`), Weaknesses.
    without one must read complete without it.
 6. No Wins by line.
 
-Live example: the harness's `overview-stages-3-fix-ci/compare.html`, with each deck's `new.json` beside it. Eval runs
-are gitignored, so the orchestrator attaches it to the prompt.
+Live examples: [`overview-i3-samples/`](overview-i3-samples/README.md), three decks (a precon with an alternate
+commander, a second precon, a player's own deck), each a static page showing today's Overview beside the new shape.
 
 ## Asks
 
