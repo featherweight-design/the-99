@@ -1490,6 +1490,13 @@ literals in the components.
 | margin | 10px 0 0 | 12px 0 0 |
 | max-width | — | 360px (v2) |
 
+> **Superseded for No Results by Small items 2 §6a (2026-10-28).** /collection's
+> filtered-empty state now renders the shared `ZeroState` (`src/components/ui/zero-state.tsx`;
+> spec in `design/design_handoff_the99_small_items_2/` §6a, board `Filtered-Empty`). With a
+> query: `Keep only search` (primary, both widths), then `Clear all filters`; filters only:
+> `Clear all filters` alone. The crown and vignette are retired, and the breakpoint is `sm`.
+> The rows below up to the next section are kept as history; where they disagree, §6a wins.
+
 ### Copy (no results)
 | Element | Copy |
 |---------|------|
@@ -1498,8 +1505,8 @@ literals in the components.
 | Heading (color only) | `Nothing matches in Red.` |
 | Heading (fallback) | `Nothing matches those filters.` |
 | Body | `Which, honestly, checks out. Drop the color filter or try another name.` |
-| Primary CTA | `Clear filters` |
-| Secondary CTA (desktop) | `Keep only search` |
+| Primary CTA (with a query) | `Keep only search` (both widths) |
+| Secondary CTA | `Clear all filters` (alone, outlined, with filters only) |
 
 > **v2 copy, verbatim from Surfaces v2 §Collection.** One caption at both
 > breakpoints — the v1 mobile/desktop split and the `totalCount` sentence ("you
@@ -2387,7 +2394,7 @@ Reached only by a failed first import (the collection read 0 cards when the prev
 ### No Results (v2)
 - `Nothing matches "[query]" in [Color].` — falls back to `Nothing matches "[query]".`, `Nothing matches in [Color].`, `Nothing matches those filters.`
 - `Which, honestly, checks out. Drop the color filter or try another name.` (both breakpoints)
-- `Clear filters` / `Keep only search` (desktop only)
+- `Keep only search` / `Clear all filters` (both widths; filters only: `Clear all filters` alone). Superseded by Small items 2 §6a.
 
 ### Replace — Step 1 Note
 Drawn only when the collection has cards; the count span sits between the two parts.
