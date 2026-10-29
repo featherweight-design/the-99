@@ -786,7 +786,7 @@ const lines = [
     `Land line states the deck's own number with a reason: ${summary.landKeep} of ${n}. Numbers stated: ${summary.landTable.distinctStated.join(", ") || "none"} (the rule's: ${summary.landTable.distinctTargets.join(", ")}); ${summary.landTable.differs ? "it differs across decks" : "it does NOT differ across decks"}${summary.landTable.everyStatedIsTheDecks ? ", every deck stating its own" : ", not every deck stating its own"}.`,
     `No generic mulligan line: ${summary.mulliganSpecific} of ${n} (${summary.genericLinesNew} generic lines; today ${summary.genericLinesToday} on ${n - summary.mulliganSpecificToday} decks).`,
     `Player decks read right with no precon-only section: ${summary.deckKind} of ${n}.`,
-    `No non-commander card in two sections after the post-pass: ${summary.noCardTwice} of ${n} (${summary.tipsWithoutSubject} tips lost their only subject and were left for a repair).`,
+    `No non-commander card in two sections after the post-pass: ${summary.noCardTwice} of ${n} (${summary.tipsWithoutSubject} tips would mark under 2 cards and were left for a repair).`,
   ] : []),
   ...notes,
 ];

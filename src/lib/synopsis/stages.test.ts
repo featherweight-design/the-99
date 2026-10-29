@@ -700,7 +700,7 @@ describe("iteration 3: the explained-once post-pass and the no-card-twice check"
     const r = counterIntelligence();
     r.keyCards = [{ card: "Spore Frog", claims: [], job: "Fogs a big attack, then returns.", evidence: ["c6"] }];
     r.primer.tips = [
-      { text: "[[Eternal Witness]] returns [[Spore Frog]] after it is sacrificed.", evidence: ["c5", "c6"] },
+      { text: "[[Eternal Witness]] returns [[Spore Frog]] or a [[Forest]] after it is sacrificed.", evidence: ["c5", "c6", "c7"] },
       { text: "[[Eternal Witness]] returns a [[Forest]] when you are short of lands.", evidence: ["c5", "c7"] },
     ];
     return r;
@@ -719,22 +719,56 @@ describe("iteration 3: the explained-once post-pass and the no-card-twice check"
     expect(checkNoCardTwice(twice, FACTS).offenders.some((o) => o.card === "Meren of Clan Nel Toth")).toBe(false);
     expect(checkExplainedOnce(twice, FACTS, { keyCardNames: true }).offenders.some((o) => o.card === "Meren of Clan Nel Toth")).toBe(true);
   });
-  it("drops a Key card a stage explained and unmarks a stage card in a tip, keeping the tip whole", () => {
+  it("drops a Key card a stage explained, and leaves a tip that would mark one card as written, for a repair", () => {
     const { doc: out, report } = dedupeSections(docFromStagesReply(counterIntelligence(), 3), FACTS);
     expect(out.keyCards.map((k) => k.card)).toEqual(["Spore Frog"]);
     expect(out.tips).toHaveLength(2);
-    expect(out.tips[0]).toEqual({ text: "[[Eternal Witness]] returns Satyr Wayfinder to refill the yard.", refs: ["c5"] });
+    // Unmarking Satyr Wayfinder would leave one marked card, under TIP_MIN_CARDS (tip_too_few_cards).
+    expect(out.tips[0]).toEqual({ text: "[[Eternal Witness]] returns [[Satyr Wayfinder]] to refill the yard.", refs: ["c5", "c2"] });
     expect(report).toEqual({
       droppedKeyCards: [{ card: "Grave Titan", explainedIn: "stages" }],
-      unmarked: [{ where: "tips[0]", card: "Satyr Wayfinder", explainedIn: "stages" }],
-      tipsWithoutSubject: [],
+      unmarked: [],
+      tipsWithoutSubject: [{ tip: 0, text: "[[Eternal Witness]] returns [[Satyr Wayfinder]] to refill the yard.", cards: ["Eternal Witness", "Satyr Wayfinder"] }],
     });
+    expect(checkNoCardTwice(out, FACTS)).toEqual({ pass: false, offenders: [{ card: "Satyr Wayfinder", sections: ["stages", "tips"] }] });
+  });
+  it("unmarks a stage card in a tip that still marks two cards, keeping the tip whole", () => {
+    const r = counterIntelligence();
+    r.primer.tips[0] = { text: "[[Eternal Witness]] returns [[Satyr Wayfinder]] or [[Spore Frog]].", evidence: ["c5", "c2", "c6"] };
+    r.keyCards = [{ card: "Grave Titan", claims: [], job: "Floods the board with bodies.", evidence: ["c4"] }];
+    const { doc: out, report } = dedupeSections(docFromStagesReply(r, 3), FACTS);
+    expect(out.tips[0]).toEqual({ text: "[[Eternal Witness]] returns Satyr Wayfinder or [[Spore Frog]].", refs: ["c5", "c6"] });
+    expect(report.unmarked).toEqual([{ where: "tips[0]", card: "Satyr Wayfinder", explainedIn: "stages" }]);
+    expect(report.tipsWithoutSubject).toEqual([]);
     expect(checkNoCardTwice(out, FACTS)).toEqual({ pass: true, offenders: [] });
+  });
+  it("fails the shape when the post-pass leaves the Key cards under their minimum, and never refills them", () => {
+    const r = counterIntelligence();
+    r.primer.strategy = [
+      { text: "Around turn 4, [[Meren of Clan Nel Toth]] lands and creatures start to die.", evidence: ["c1"] },
+      { text: "Each death becomes experience, and a creature returns each end step.", evidence: [] },
+      { text: "[[Grave Titan]] closes while its tokens feed the engine.", evidence: ["c4"] },
+    ];
+    r.keyCards = goodReply().keyCards; // exactly five, and only Grave Titan is one a stage explains
+    r.primer.tips = [
+      { text: "[[Meren of Clan Nel Toth]] returns a [[Forest]] creature land each turn.", evidence: ["c1", "c7"] },
+      { text: "Sacrifice a [[Forest]] creature land with [[Meren of Clan Nel Toth]] out.", evidence: ["c7", "c1"] },
+    ];
+    const before = docFromStagesReply(r, 3);
+    expect(checkShape(before, [], 3).offenders.some((o) => o.includes("Key cards"))).toBe(false);
+    const { doc: out, report } = dedupeSections(before, FACTS);
+    expect(out.keyCards).toHaveLength(4);
+    expect(report.droppedKeyCards).toEqual([{ card: "Grave Titan", explainedIn: "stages" }]);
+    expect(checkShape(out, [], 3)).toEqual({ pass: false, offenders: ["4 Key cards, not 5 to 8"] });
+    const input = { reply: r, shownNew: docShownNew(OLD, r, 3), oldDoc: docFromChecked(OLD), facts: FACTS, alternates: [], shape: 3 as const, kind: "precon" as const, postPass: true };
+    const checks = stagesChecks(input);
+    expect(checks.shape.pass).toBe(false);
+    expect(allChecksPass(checks, true)).toBe(false);
   });
   it("lets a Key card keep its card over a later tip", () => {
     const { doc: out, report } = dedupeSections(docFromStagesReply(scrappy(), 3), FACTS);
     expect(out.keyCards.map((k) => k.card)).toEqual(["Spore Frog"]);
-    expect(out.tips[0].text).toBe("[[Eternal Witness]] returns Spore Frog after it is sacrificed.");
+    expect(out.tips[0].text).toBe("[[Eternal Witness]] returns Spore Frog or a [[Forest]] after it is sacrificed.");
     expect(report.unmarked).toEqual([{ where: "tips[0]", card: "Spore Frog", explainedIn: "keyCards" }]);
     expect(checkNoCardTwice(out, FACTS).pass).toBe(true);
   });
@@ -761,6 +795,7 @@ describe("iteration 3: the explained-once post-pass and the no-card-twice check"
   });
   it("runs through stagesChecks only when the caller ran the post-pass on what it shows", () => {
     const reply = counterIntelligence();
+    reply.primer.tips[0] = { text: "[[Eternal Witness]] returns [[Satyr Wayfinder]] or a [[Forest]].", evidence: ["c5", "c2", "c7"] };
     const input = { reply, shownNew: docShownNew(OLD, reply, 3), oldDoc: docFromChecked(OLD), facts: FACTS, alternates: [], shape: 3 as const, kind: "precon" as const };
     const raw = stagesChecks(input);
     expect(raw.noCardTwice?.pass).toBe(false);

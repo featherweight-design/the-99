@@ -3,7 +3,7 @@ import { z } from "zod";
 import { refIndex } from "./claims";
 import { deckNameIndex, HAND_SIZE, normalizeName, type FactCard, type SynopsisFacts } from "./facts";
 import { isLandFace, playableAsLand } from "../cards/facet";
-import { CHAR_BUDGETS } from "./limits";
+import { CHAR_BUDGETS, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { synopsisResponseSchemaV8Wire } from "./response-schema";
 import type { CheckedSynopsis } from "./types";
 import { figuresIn, marksIn, rendered } from "./validate";
@@ -311,12 +311,15 @@ export function checkExplainedOnce(doc: OverviewDoc, facts: Pick<SynopsisFacts, 
  * The sections are read in order, stages, then Key cards, then tips, and the EARLIER one keeps a
  * non-commander card (the commander is never touched):
  *  - a Key card whose own card a stage already explained is DROPPED (the row is about that card and
- *    has nothing left); a job that marks such a card keeps its words and loses the mark;
+ *    has nothing left); a job that marks such a card keeps its words and loses the mark. Nothing
+ *    refills the section: a Key cards section the drop leaves under `SECTION_COUNTS.keyCards.min`
+ *    fails `checkShape` (iteration 3) and the reply needs a repair;
  *  - a tip that marks such a card keeps its words and loses that card's MARK (and its evidence ref),
  *    so the tip's subject is the cards it still marks. A tip is never deleted: tips are exactly 2;
- *  - a tip with NO marked card left once the earlier-explained ones are taken out has lost its only
- *    subject: it is left exactly as written and REPORTED (`tipsWithoutSubject`), so
- *    `checkNoCardTwice` still fails it and the reply needs a repair, never a silent fix.
+ *  - a tip that would mark fewer than `TIP_MIN_CARDS` cards once the earlier-explained ones are taken
+ *    out (the validator refuses such a tip, `tip_too_few_cards`) has lost a subject it needs: it is
+ *    left exactly as written and REPORTED (`tipsWithoutSubject`), so `checkNoCardTwice` still fails
+ *    it and the reply needs a repair, never a silent fix.
  * A mark is what makes a card a line's subject (`checkExplainedOnce` and `checkNoCardTwice` count
  * marks); a name left as plain text is a reference to a card explained elsewhere.
  */
@@ -365,7 +368,7 @@ export function dedupeSections(doc: OverviewDoc, facts: Pick<SynopsisFacts, "car
   const tips = doc.tips.map((t, i) => {
     const marked = marksIn(t.text);
     const subjects = marked.filter((m) => { const id = idOf(m); return !id || !explained.has(id); });
-    if (marked.length > 0 && subjects.length === 0) {
+    if (subjects.length < marked.length && new Set(subjects.map(normalizeName)).size < TIP_MIN_CARDS) {
       report.tipsWithoutSubject.push({ tip: i, text: t.text, cards: marked });
       return t;
     }
@@ -379,7 +382,9 @@ export function dedupeSections(doc: OverviewDoc, facts: Pick<SynopsisFacts, "car
  * marked in, or is the Key card of, more than one of the overview, the stages, the alternate line,
  * the Key cards (name and job) and the tips is an offender. The commander's own repeats are
  * `checkExplainedOnce`'s to report. Run after `dedupeSections`, it fails exactly what the pass could
- * not fix (a tip that lost its only subject, or a card the overview and a later section share).
+ * not fix: a tip left under `TIP_MIN_CARDS` marked cards, a card the overview and a later section
+ * share, and a card the alternate line shares with any other section (the post-pass never reads the
+ * alternate line, so a stage, Key card or tip naming the alternate's card fails here for a repair).
  */
 export function checkNoCardTwice(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders">): CheckResult<{ card: string; sections: RepetitionSection[] }> {
   const offenders = checkExplainedOnce(doc, facts, { keyCardNames: true }).offenders
@@ -440,7 +445,8 @@ export function checkLength(newDoc: OverviewDoc, oldDoc: OverviewDoc): { pass: b
  * The shape's own counts and budgets: three stages of at most 144, Wins by (iteration 2) and the
  * alternate at most 144, exactly 2 tips, and the alternate line present exactly when the facts carry
  * an alternate commander, naming one of them. Iteration 3: no Wins by line, and exactly one land line
- * of at most 120.
+ * of at most 120, and the Key cards within `SECTION_COUNTS.keyCards` (the explained-once post-pass
+ * can drop one below the minimum, and nothing refills it).
  */
 export function checkShape(doc: OverviewDoc, alternates: readonly string[], shape: StagesShape = 2): CheckResult<string> {
   const offenders: string[] = [];
@@ -454,6 +460,8 @@ export function checkShape(doc: OverviewDoc, alternates: readonly string[], shap
     if (doc.winsBy.length > 0) offenders.push("a Wins by line, which iteration 3 drops");
     if (doc.landKeep.length !== 1) offenders.push(`${doc.landKeep.length} land lines, not 1`);
     doc.landKeep.forEach((l) => { if (len(l) > STAGES_LIMITS.landKeep) offenders.push(`the land line is ${len(l)} characters`); });
+    const { min, max } = SECTION_COUNTS.keyCards;
+    if (doc.keyCards.length < min || doc.keyCards.length > max) offenders.push(`${doc.keyCards.length} Key cards, not ${min} to ${max}`);
   }
   if (doc.tips.length < STAGES_LIMITS.tips.min || doc.tips.length > STAGES_LIMITS.tips.max) offenders.push(`${doc.tips.length} tips`);
   if (alternates.length === 0 && doc.alternate.length > 0) offenders.push("an alternate line with no alternate commander in the facts");
