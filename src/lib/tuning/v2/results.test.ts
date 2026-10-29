@@ -136,7 +136,7 @@ describe("shortFacts", () => {
     const r = report({ shortReason: { add: "overCap", cut: null }, charge: { outcome: "spent" } }, {
       drops: Array.from({ length: 19 }, (_, i) => ({ side: "add" as const, position: i, rule: "overCap" as const })),
     });
-    expect(shortFacts(20, [...adds(14), ...cuts(21)], r)).toEqual({ kind: "bound", side: "add", found: 14, reason: "overCap", dropped: 19 });
+    expect(shortFacts(20, [...adds(14), ...cuts(21)], r)).toEqual({ kind: "bound", side: "add", found: 14, reason: "overCap", dropped: 19, exhausted: false });
   });
   it("is refunded when no restriction explains the gap", () => {
     const r = report({ shortReason: { add: null, cut: null }, charge: { outcome: "refunded", why: "underProduced" } });
@@ -149,12 +149,18 @@ describe("shortFacts", () => {
     const r = report({ shortReason: { add: null, cut: "bracketAim" }, charge: { outcome: "spent" } }, {
       drops: [{ side: "cut", position: 0, rule: "bracketAim" }],
     });
-    expect(shortFacts(3, adds(5), r)).toEqual({ kind: "bound", side: "cut", found: 0, reason: "bracketAim", dropped: 1 });
+    expect(shortFacts(3, adds(5), r)).toEqual({ kind: "bound", side: "cut", found: 0, reason: "bracketAim", dropped: 1, exhausted: false });
   });
   it("names the shorter list when both came back short", () => {
     const r = report({ shortReason: { add: "overCap", cut: "notOwned" }, charge: { outcome: "spent" } });
     expect(shortFacts(20, [...adds(14), ...cuts(10)], r)).toMatchObject({ kind: "bound", side: "cut", found: 10, reason: "notOwned" });
     expect(shortFacts(20, [...adds(10), ...cuts(14)], r)).toMatchObject({ kind: "bound", side: "add", found: 10, reason: "overCap" });
+  });
+  it("marks owned additions short because every owned card that fits was used", () => {
+    const r = report({ shortReason: { add: "notOwned", cut: null }, poolExhausted: true, charge: { outcome: "spent" } });
+    expect(shortFacts(10, [...adds(4), ...cuts(6)], r)).toEqual({ kind: "bound", side: "add", found: 4, reason: "notOwned", dropped: 0, exhausted: true });
+    expect(shortFacts(10, [...adds(4), ...cuts(6)], report({ shortReason: { add: "notOwned", cut: null }, charge: { outcome: "spent" } })))
+      .toMatchObject({ exhausted: false });
   });
   it("reads a failed cut call as a run with no cuts (plan P4)", () => {
     expect(shortFacts(3, adds(5), report({ cutsFailed: { errorClass: "timeout" } }))).toEqual({ kind: "noCuts" });
@@ -169,6 +175,13 @@ describe("shortOfAsk", () => {
   it("measures the cuts against the cut call's real ask when the run stored it", () => {
     // The cut call asked 15 beside an additions refill that ended at 6: the cuts are 3 short of 15, not over a derived 9.
     expect(shortOfAsk(10, [...adds(6), ...cuts(12)], report({ cutAsk: 15 }))).toEqual({ side: "cut", short: 3, asked: 15, reason: null });
+  });
+  it("reads the run's stored reason before counting drops, and an exhausted owned pool before either", () => {
+    const drops = { drops: [{ side: "add" as const, position: 0, rule: "overCap" as const }, { side: "add" as const, position: 1, rule: "overCap" as const }] };
+    expect(shortOfAsk(10, [...adds(12), ...cuts(15)], report({ shortReason: { add: "offSet", cut: null } }, drops))).toMatchObject({ side: "add", short: 3, reason: "offSet" });
+    expect(shortOfAsk(10, [...adds(12), ...cuts(15)], report({ poolExhausted: true, shortReason: { add: null, cut: null } }, drops)))
+      .toEqual({ side: "add", short: 3, asked: 15, reason: "ownedExhausted" });
+    expect(shortOfAsk(10, [...adds(12), ...cuts(15)], report({}, drops))).toMatchObject({ reason: "overCap" });
   });
   it("is null when both lists met their ask", () => {
     expect(shortOfAsk(10, [...adds(15), ...cuts(15)], report({}))).toBeNull();

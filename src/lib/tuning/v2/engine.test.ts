@@ -96,20 +96,62 @@ describe("runV2", () => {
   });
 
   it("starts the cut call as soon as call 1 settles, alongside the additions refill (H2)", async () => {
-    const f = fake({ additions: { cards: [...adds(1, 2), "Bolt"] }, additionsRefill: { cards: adds(3, 3) }, cuts: { cards: cutsOf(1, 6) } });
-    const r = await runV2({ ...base, n: 4, callModel: f.callModel, now: f.now });
+    const f = fake({
+      additions: { cards: [...adds(1, 2), "Bolt"] }, additionsRefill: { cards: adds(3, 3) }, cuts: { cards: cutsOf(1, 6) }, cutsRefill: { cards: cutsOf(7, 1) },
+    });
+    const asks: number[] = [];
+    const r = await runV2({ ...base, n: 4, callModel: f.callModel, now: f.now, onCutAsk: (a) => { asks.push(a); } });
     expect(f.events.slice(0, 3)).toEqual(["start additions", "end additions", "start additionsRefill"]);
     expect(f.events.indexOf("start cuts")).toBeLessThan(f.events.indexOf("end additionsRefill"));
     const refill = f.requests.find((q) => q.stage === "additionsRefill")!;
     expect(refill.system).toContain("Propose exactly 2 cards to add");
     expect(refill.user).toContain("Kept, additions: Add 1; Add 2.");
     expect(refill.user).toContain("- Bolt: it is outside the commander's colors");
-    // The cut call saw call 1's kept additions, not the refill's.
-    expect(f.requests.find((q) => q.stage === "cuts")!.user).toContain("Coming in (2): Add 1; Add 2.");
+    // The cut call saw call 1's kept additions, not the refill's, and was asked for room for them: ceil(1.5 x 2), not
+    // ceil(1.5 x 4). The cut refill then tops the cuts up to min(N, the final 5 additions).
+    const cut = f.requests.find((q) => q.stage === "cuts")!;
+    expect(cut.user).toContain("Coming in (2): Add 1; Add 2.");
+    expect(cut.ask).toBe(3);
+    expect(cut.system).toContain("Propose exactly 3 cards to cut");
+    expect(asks).toEqual([3]);
+    expect(f.requests.find((q) => q.stage === "cutsRefill")!.ask).toBe(1);
     expect(r.additions).toMatchObject({ refilled: true });
     expect(r.additions.kept).toHaveLength(5);
     expect(r.cuts.target).toBe(4);
+    expect(r.cuts.kept).toHaveLength(4);
     expect(r.charge).toEqual({ outcome: "spent" });
+  });
+
+  it("asks no refill once an owned-only run has used its whole shortlist, and charges the short list (owned pool spent)", async () => {
+    // Three cards fit the owned shortlist: two are kept and Add 3 is dropped (its last free copy went elsewhere), so
+    // nothing is left to ask for. Two of four is the player's own limit, though the model wrote three lines of six.
+    const shortlist = adds(1, 3).map((name) => ({ oracleId: name, name, typeLine: "Creature" }));
+    const owned: EvidencePack = { ...pack, limits: { capCents: null, sets: [], ownedOnly: true }, ownedCandidates: shortlist, ownedCandidatesComplete: true };
+    const ownedResolve = (name: string) => { const c = resolveName(name); return c ? { ...c, owned: name !== "Add 3" } : null; };
+    const f = fake({ additions: { cards: adds(1, 3) }, additionsRefill: { cards: adds(4, 1) }, cuts: { cards: cutsOf(1, 5) } });
+    const r = await runV2({ ...base, pack: owned, resolveName: ownedResolve, n: 4, callModel: f.callModel, now: f.now });
+    expect(f.requests.map((q) => q.stage)).toEqual(["additions", "cuts"]);
+    expect(r.additions).toMatchObject({ poolExhausted: true, underProduced: true, refilled: false });
+    expect(r.additions.kept).toHaveLength(2);
+    expect(r.additions.drops.map((d) => d.rule)).toEqual(["notOwned"]);
+    expect(r.charge).toEqual({ outcome: "spent" });
+
+    // A shortlist card the model never named is still there to ask for: the refill runs, and the short list is refunded.
+    const more: EvidencePack = { ...owned, ownedCandidates: [...shortlist, { oracleId: "Add 9", name: "Add 9", typeLine: "Creature" }] };
+    const g = fake({ additions: { cards: adds(1, 3) }, additionsRefill: { cards: [] }, cuts: { cards: cutsOf(1, 5) } });
+    const s = await runV2({ ...base, pack: more, resolveName: ownedResolve, n: 4, callModel: g.callModel, now: g.now });
+    expect(g.requests.map((q) => q.stage)).toContain("additionsRefill");
+    expect(s.additions.poolExhausted).toBe(false);
+    expect(s.charge).toEqual({ outcome: "refunded", why: "shortByModel" });
+
+    // The same shortlist, every card kept or dropped, but a tier of it was cut (the read stopped at its page limit, or a
+    // focus run's candidates hit their cap): cards past the cut were never tested, so the pool is not spent.
+    const cut: EvidencePack = { ...owned, ownedCandidatesComplete: false };
+    const h = fake({ additions: { cards: adds(1, 3) }, additionsRefill: { cards: [] }, cuts: { cards: cutsOf(1, 5) } });
+    const t = await runV2({ ...base, pack: cut, resolveName: ownedResolve, n: 4, callModel: h.callModel, now: h.now });
+    expect(h.requests.map((q) => q.stage)).toContain("additionsRefill");
+    expect(t.additions.poolExhausted).toBe(false);
+    expect(t.charge).toEqual({ outcome: "refunded", why: "shortByModel" });
   });
 
   it("refills a short cut list against min(N, additions kept) and shows it every addition coming in", async () => {

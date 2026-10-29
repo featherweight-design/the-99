@@ -151,3 +151,13 @@ export function intentTooLong(intent: string): boolean {
 
 /** The cards the player may tag in "Additional notes": a run reads a handful, and a tag costs the body 41 more units than its name. */
 export const NOTES_TAGS_MAX = 3;
+
+/**
+ * Most names an owned-only run's shortlist sends (`owned-candidates.ts`). A name and type line run about 12 tokens, so the
+ * list is under 1,000 tokens at this size, which the model reads against the 99 it already gets. More than this has
+ * stopped being a shortlist: the model needs candidates it can compare, not the whole collection. A shortlist that reached
+ * it is the top of a longer list, so it is never complete; one under it is every owned card that fits only when its read
+ * also ran out of ranked rows (not its page limit) and, on a focus run, the focus candidates stopped short of their own
+ * cap (`readOwnedCandidates`, `readFocusCandidates`). Only a complete pool lets a v2 run call it spent (`v2/engine.ts`).
+ */
+export const OWNED_SHORTLIST_MAX = 80;

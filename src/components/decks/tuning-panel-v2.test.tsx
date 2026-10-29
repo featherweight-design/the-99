@@ -568,6 +568,16 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     expect(screen.getByRole("button", { name: sc.run.newRun })).toBeTruthy();
   });
 
+  it("History C counts the list's change when the read says how far it moved", async () => {
+    const stale: TuningState = { ...finished, review: { runId: RUN, at, readVersion: 3, moved: 7 }, retired: { from: 3, to: 5 } };
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => stale);
+    await draw(d, v2At(), [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+    ));
+    expect(document.querySelector("[data-sc-past-note]")!.textContent).toBe(tuningHubCopy.history.pastNote(7));
+  });
+
   it("a run reopened without History's v2 chrome (a v10 row) draws no meta line", async () => {
     const d = { ...deps(), v2: v2Actions() };
     d.read = vi.fn(async () => ({ ...finished, review: { runId: RUN, at, readVersion: 4 } }));

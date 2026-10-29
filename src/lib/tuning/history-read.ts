@@ -4,6 +4,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import type { ChipContext } from "./cuts-count";
 import { reapCutoff } from "./reaper";
+import { pastRunMoved } from "./v2/read-list";
+import { readProfileHead } from "../profile/load";
 import {
   cards, deckCutItems, deckSuggestionItems, deckSuggestionRuns, deckToolCounts,
 } from "../../db/schema";
@@ -167,9 +169,10 @@ export async function readHistoryCountIn(
   return { runs: (paid?.n ?? 0) + (counted?.n ?? 0), running: paid?.running ?? 0 };
 }
 
-// A past run carries no version and no "changed by N" figure: a run reads the LIVE list, which may
-// hold edits no committed version has, and no run stores the list it read, so neither figure could
-// be stated truthfully. The note reads without one (`pastNoteUncounted`).
+// A past run carries no version: a run reads the LIVE list, which may hold edits no committed version has. A Suggested
+// changes v2 run stores the list it read (`read_list_card_ids`), so its note counts the cards the list has changed by
+// since (`pastRunMoved`, against `readProfileHead`, the head the run's own list came from); any other run, and one saved
+// before the column, reads without a count (`pastNoteUncounted`).
 
 const addCard = alias(cards, "add_card");
 const cutCard = alias(cards, "cut_card");
@@ -200,6 +203,7 @@ export async function readPastRun(
       validationReport: deckSuggestionRuns.validationReport,
       errorClass: deckSuggestionRuns.errorClass,
       requestedCount: deckSuggestionRuns.requestedCount,
+      readListCardIds: deckSuggestionRuns.readListCardIds,
     }).from(deckSuggestionRuns)
       .where(and(eq(deckSuggestionRuns.id, ref.uuid), eq(deckSuggestionRuns.deckId, deckId), eq(deckSuggestionRuns.userId, userId))).limit(1);
     if (!run) return null;
@@ -223,8 +227,10 @@ export async function readPastRun(
       .leftJoin(cutCard, eq(cutCard.oracleId, deckSuggestionItems.cutOracleId))
       .leftJoin(addCard, eq(addCard.oracleId, deckSuggestionItems.addOracleId))
       .where(eq(deckSuggestionItems.runId, run.id)).orderBy(asc(deckSuggestionItems.position));
+    // The list now, read only for a run that stored its own: in this transaction's snapshot, beside the run's lines.
+    const moved = run.readListCardIds ? pastRunMoved(run.readListCardIds, await readProfileHead(tx, deckId, userId)) : null;
     return {
-      kind: "suggested", at, outcome, readVersion: null, moved: null,
+      kind: "suggested", at, outcome, readVersion: null, moved,
       lines: lines.map((l) => ({ cut: l.cut, add: l.add, verdict: pastVerdict(l.verdict), reason: l.reason, cites: (l.evidence ?? []).map((e) => e.value) })),
     };
   }, { isolationLevel: "repeatable read" });

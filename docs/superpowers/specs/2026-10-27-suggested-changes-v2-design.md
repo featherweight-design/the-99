@@ -91,7 +91,7 @@ The prompt states this order. The app's reads feed in "when they help answer the
 | Call | Sees | Asks for | Keeps |
 |---|---|---|---|
 | 1. Additions | The deck pack, the request, the restrictions | ceil(1.5N) additions, no cuts | Every addition that passes validation |
-| 2. Cuts | The same, plus "Coming in": the additions call 1 kept | ceil(1.5N) cuts that make room for them: the cards that make the least sense once those are in | Every cut that passes validation |
+| 2. Cuts | The same, plus "Coming in": the additions call 1 kept (K1) | ceil(1.5·min(N, K1)) cuts that make room for them (a cut refill tops the list up to min(N, the final K) if the additions refill brings more): the cards that make the least sense once those are in | Every cut that passes validation |
 
 **Arm C** **(Hugh, choosing the eval's recommendation)**: ask 1.5N. If fewer than N survive validation, make ONE refill call for that list. The refill is told what was kept, and what was rejected and why (in the rule's own words), and asks for exactly the shortfall. Measured results:
 
@@ -282,7 +282,7 @@ v10 asks for 6 + 6 and keeps 5 + 5, whatever the player wants. v2 at N=20 costs 
 
 **Refunds (a2).** v10 refunds a single-ask run that kept under 3 lines or under a third of the lines the model returned (`refundsCredit`). In v2:
 - A run whose two lists BOTH reach N is charged.
-- A short run is charged only when, on each short list, the restriction drops (`overCap`, `offSet`, `notOwned`) account for the whole deficit: the list's shortfall below N is no larger than its restriction drops. The restriction cost those cards, not the pipeline, and the run says so (§5.5).
+- A short run is charged only when, on each short list, the restriction drops (`overCap`, `offSet`, `notOwned`, `bracketAim`) account for the whole deficit: the list's shortfall below N is no larger than its restriction drops, or the owned shortlist was exhausted (an owned-only run whose shortlist came back under its cap, every card of it kept or dropped: no refill is asked, since nothing is left to ask for, and the run says owned-only bound it). A model-caused drop on the list still refunds it. The restriction cost those cards, not the pipeline, and the run says so (§5.5).
 - Any other short run is refunded whole. That includes the model returning too few lines after the refill (under-production, with no drops to explain it), a mix of under-production and restriction drops, a model-caused drop on a short list, a malformed reply, and a skipped call 2.
 - An empty run is refunded and fails as `ungrounded`, as today.
 - Credits are whole, so a run is charged or refunded, never split.
@@ -387,7 +387,7 @@ Design owns these, under Hugh's rule that results presentation is a UI call:
 | Short additions: call 2 asks ceil(1.5·K), skipped when K is 0 | a2 |
 | One apply for the picked set, with one undo | Hugh (Q1) |
 | No "unchanged" gate; identical inputs ask once before spending | a2 |
-| Charged when both lists fill, or each short list's deficit is covered by restriction drops; else refunded whole | a2 |
+| Charged when both lists fill, or each short list's deficit is covered by restriction drops or the owned shortlist was exhausted; else refunded whole | a2 |
 | Open v10 runs become read-only at cutover | a2 |
 | Proposed cuts keeps today's rules; the narrowing is scoped to Suggested changes | a2 |
 | The owned-only fallback is removed; an owned-only run returns short rather than with cards to buy | a2 |

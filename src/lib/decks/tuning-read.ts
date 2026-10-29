@@ -31,6 +31,7 @@ import { readShownSynopsis } from "../synopsis/generate";
 import { pastReapCutoff, reapIn } from "../tuning/reap-runs";
 import type { TuningItem, TuningLive, TuningRun, TuningState, V2Ask } from "../tuning/state";
 import { lineFacts } from "../tuning/v2/line-facts";
+import { pastRunMoved } from "../tuning/v2/read-list";
 import type { ValidatedSuggestion, ValidationReport } from "../tuning/validate";
 import { loadJobRows } from "./job-rows";
 import { listDeckGames, type DeckGame } from "./games";
@@ -247,7 +248,12 @@ export async function readTuningState(
   userId: string,
   fingerprint: string,
   now: Date = new Date(),
-  opts: { allLocked?: string | null; runId?: string | null } = {},
+  opts: {
+    allLocked?: string | null;
+    runId?: string | null;
+    /** The deck's list now (`tuningInputs`' head): a reopened run counts how far the list has moved since it read it. */
+    head?: ProfileHead | null;
+  } = {},
   env: NodeJS.ProcessEnv,
 ): Promise<TuningState> {
   // A v2 run past its own, longer cutoff with lines saved settles `ok` and refunded (plan P4); every other one fails.
@@ -268,6 +274,8 @@ export async function readTuningState(
     validationReport: deckSuggestionRuns.validationReport,
     requestedCount: deckSuggestionRuns.requestedCount,
     readVersion: deckSuggestionRuns.readVersion,
+    // The list the run read, one id per copy: only a reopened run's, which History C counts against the list now.
+    readListCardIds: runId ? deckSuggestionRuns.readListCardIds : sql<string[] | null>`null`,
     ...askColumns,
   }).from(deckSuggestionRuns).where(okRunWhere(deckId, userId, runId))
     .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
@@ -324,7 +332,9 @@ export async function readTuningState(
     gameCount: games?.count ?? 0,
     newestPriceAsOf,
     allLocked: opts.allLocked ?? null,
-    review: reviewed ? { runId: reviewed.id, at: reviewed.createdAt, readVersion: reviewed.readVersion } : null,
+    review: reviewed
+      ? { runId: reviewed.id, at: reviewed.createdAt, readVersion: reviewed.readVersion, moved: pastRunMoved(reviewed.readListCardIds, opts.head) }
+      : null,
     live,
     itemsAsk: lastOk ? askOf(lastOk) ?? null : null,
   };

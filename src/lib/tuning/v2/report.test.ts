@@ -10,7 +10,7 @@ const line = (id: string, position: number): V2Line => ({
 const list = (kept: number, target: number, drops: Drop["rule"][] = [], extra: Partial<V2List> = {}): V2List => ({
   kept: Array.from({ length: kept }, (_, i) => line(`c${i}`, i)),
   drops: drops.map((rule, position) => ({ rule, position, side: "add" as const })),
-  target, refilled: false, overAsk: 0, underProduced: false, ...extra,
+  target, refilled: false, overAsk: 0, underProduced: false, poolExhausted: false, ...extra,
 });
 const start = v2StartReport({ requestHash: "h", restrictions: { capCents: 200, sets: ["mh3"], ownedOnly: false }, hadRequest: true, focus: "tokens" });
 const report = (over: Partial<V2Report>): V2Report => ({
@@ -53,6 +53,13 @@ describe("v2Outcome", () => {
     expect(r.validationReport.v2!.shortReason).toEqual({ add: "overCap", cut: null });
     expect(r.validationReport.drops).toHaveLength(3);
     expect(r.settleAs).toBe("spent");
+  });
+
+  it("names owning as what bound additions whose owned shortlist was exhausted, though nothing was dropped", () => {
+    const r = v2Outcome(report({ additions: list(3, 5, [], { poolExhausted: true, underProduced: true }), charge: { outcome: "spent" } }), start, null);
+    expect(r.validationReport.v2!.shortReason).toEqual({ add: "notOwned", cut: null });
+    expect(r.validationReport.v2!.poolExhausted).toBe(true);
+    expect(v2Outcome(report({}), start, null).validationReport.v2!.poolExhausted).toBeUndefined();
   });
 
   it("plan P4: a failed cut call is ok, shown, and refunded", () => {

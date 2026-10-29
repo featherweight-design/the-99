@@ -3,6 +3,7 @@ import type { z } from "zod";
 import type { ModelErrorClass, ModelUsage } from "../../model/client";
 import type { EvidencePack } from "../evidence";
 import { buildPromptV2, type PromptV2Stage } from "../prompt";
+import { OWNED_SHORTLIST_MAX } from "../limits";
 import { lineSchemaV2, suggestedChangesV2Schema } from "../response-schema";
 import { validateSuggestions, type Drop, type ResolvedCard, type ValidatedSuggestion } from "../validate";
 import { aimDrops, type BracketAim } from "./bracket-aim";
@@ -18,12 +19,18 @@ import { lineStream } from "./stream-lines";
  *
  * 1. Call 1 asks ceil(1.5N) additions. Each line is validated the moment it completes in the stream (H1) and kept up to
  *    the ask; `onLine` fires per kept line.
- * 2. As soon as call 1 settles (H2), the cut call starts, asked ceil(1.5N) and shown call 1's kept additions as "Coming
- *    in", IN PARALLEL with the additions refill when call 1 kept fewer than N (asked the shortfall, told what was kept and
- *    what was rejected and why, `reasonFor`). A call 1 that kept nothing has nothing to cut for: its refill runs alone,
- *    and only if that keeps additions does a cut call follow, sized to them (`cutPlanFor`, spec §5.1a). Nothing kept at
- *    all skips the cut call, and the run is `ungrounded`.
- * 3. The cut list's target is min(N, the additions finally kept); a cut list short of it refills once.
+ * 2. As soon as call 1 settles (H2), the cut call starts, asked ceil(1.5 min(N, K1)) for call 1's K1 kept additions
+ *    (`cutPlanFor`) and shown them as "Coming in", IN PARALLEL with the additions refill when call 1 kept fewer than N
+ *    (asked the shortfall, told what was kept and what was rejected and why, `reasonFor`). A call 1 that kept nothing has
+ *    nothing to cut for: its refill runs alone, and only if that keeps additions does a cut call follow, sized to them
+ *    (`cutPlanFor`, spec §5.1a). Nothing kept at all skips the cut call, and the run is `ungrounded`.
+ * 3. The cut list's target is min(N, the additions finally kept); a cut list short of it (the refill brought more
+ *    additions than call 1 kept, or cuts dropped) refills once.
+ *
+ * An owned-only run whose shortlist is complete (`ownedCandidatesComplete`: every tier under its cap and page limit, so
+ * under `OWNED_SHORTLIST_MAX`) holds every owned card that fits: once each
+ * of them is kept or dropped, the additions list is `poolExhausted`, no refill is asked (there is nothing left to ask
+ * for), and a short list is the player's limit, not the model's shortfall (`charge.ts`, `report.ts`).
  *
  * A failed or malformed cut call ends the cuts (plan P4): the additions stand, the run is refunded (`cutsFailed`).
  * Each call's deadline is the smaller of its own cap and what the run's budget has left (P2); a call the budget cannot
@@ -86,6 +93,9 @@ export type V2List = {
   overAsk: number;
   /** Some call on this list returned fewer lines than it asked for (`charge.ts`: a short list with it is refunded). */
   underProduced: boolean;
+  /** Additions only: an owned-only run's whole shortlist (complete, `ownedCandidatesComplete`: every owned card that fits) was
+   *  kept or dropped. No card is left to ask for, so the list is short by the player's own limit (`charge.ts`). */
+  poolExhausted: boolean;
 };
 
 export type V2Report = {
@@ -136,8 +146,10 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
   let budgetReached = false;
   let strippedCites = 0;
   let cutsFailed: V2Report["cutsFailed"] = null;
-  const additions: V2List = { kept: [], drops: [], target: n, refilled: false, overAsk: 0, underProduced: false };
-  const cuts: V2List & { skipped: boolean } = { kept: [], drops: [], target: 0, refilled: false, overAsk: 0, underProduced: false, skipped: false };
+  const additions: V2List = { kept: [], drops: [], target: n, refilled: false, overAsk: 0, underProduced: false, poolExhausted: false };
+  const cuts: V2List & { skipped: boolean } = {
+    kept: [], drops: [], target: 0, refilled: false, overAsk: 0, underProduced: false, poolExhausted: false, skipped: false,
+  };
   const listOf = (side: V2Side) => (side === "add" ? additions : cuts);
   const caps: Record<V2Side, number> = { add: askFor(n), cut: 0 };
 
@@ -255,8 +267,31 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
   const names = (list: V2List) => list.kept.map((l) => l.card);
   const rejected = (list: V2List) => list.drops.map((d) => ({ card: d.name ?? "?", reason: reasonFor(d) }));
 
-  /** The additions refill: one call for the shortfall below N, told what stands and what fell. */
+  /**
+   * Whether an owned-only run has used its whole shortlist: the shortlist is complete (`ownedCandidatesComplete`: every
+   * tier of it, the owned read and a focus run's candidates, holds every card that fits, none cut at its cap or page
+   * limit) and under its cap, and each of its cards was kept or dropped on the additions side. A drop is matched by the
+   * card it resolves to, else by the name the model wrote.
+   */
+  function poolExhausted(): boolean {
+    const pool = pack.ownedCandidates;
+    if (!pack.limits.ownedOnly || !pool || !pack.ownedCandidatesComplete || pool.length >= OWNED_SHORTLIST_MAX) return false;
+    const seen = new Set<string>(additions.kept.map((l) => l.addOracleId).filter((id): id is string => id !== null));
+    const names = new Set<string>();
+    for (const d of additions.drops) {
+      if (!d.name) continue;
+      names.add(d.name.toLowerCase());
+      const id = args.resolveName(d.name)?.oracleId;
+      if (id) seen.add(id);
+    }
+    return pool.every((c) => seen.has(c.oracleId) || names.has(c.name.toLowerCase()));
+  }
+
+  /** The additions refill: one call for the shortfall below N, told what stands and what fell. None when the owned pool
+   *  is spent: every card it could name is already kept or rejected. */
   async function refillAdditions() {
+    additions.poolExhausted = poolExhausted();
+    if (additions.poolExhausted) return;
     const short = refillShortfall(additions.kept.length, n, additions.refilled);
     if (short === 0) return;
     additions.refilled = true;
@@ -296,23 +331,30 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
       if (await cutCall(plan.ask, names(additions))) await refillCuts();
     }
   } else {
-    // H2: the cut call starts now, beside any additions refill; "Coming in" is what call 1 kept.
+    // H2: the cut call starts now, beside any additions refill; "Coming in" is what call 1 kept, and the cut ask is sized
+    // to it (ceil(1.5 min(N, K1)), `cutPlanFor`), taken before the refill can add to the list. `refillCuts` tops the cuts
+    // up to min(N, the final K) once both are in.
     const comingIn = names(additions);
+    const k1 = additions.kept.length;
     // Both branches settle before an error goes up, so neither is still writing lines after the caller has finalized
     // the run (a save that throws in one branch must not leave the other streaming into a run already settled).
     const [adds, cut] = await Promise.allSettled([
       refillAdditions().then(() => args.onListIn?.("add")),
-      cutCall(askFor(n), comingIn),
+      cutCall(cutPlanFor(n, k1).ask, comingIn),
     ]);
     if (adds.status === "rejected") throw adds.reason;
     if (cut.status === "rejected") throw cut.reason;
     if (cut.value) await refillCuts();
   }
   cuts.target = Math.min(n, additions.kept.length);
+  additions.poolExhausted = poolExhausted();
   await args.onListIn?.("cut");
 
   const charge = chargeFor({
-    additions: { kept: additions.kept.length, target: additions.target, drops: additions.drops, underProduced: additions.underProduced },
+    additions: {
+      kept: additions.kept.length, target: additions.target, drops: additions.drops, underProduced: additions.underProduced,
+      poolExhausted: additions.poolExhausted,
+    },
     cuts: { kept: cuts.kept.length, target: cuts.target, drops: cuts.drops, underProduced: cuts.underProduced },
     cutsFailed: cutsFailed !== null,
     budgetReached,

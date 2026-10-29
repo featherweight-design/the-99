@@ -140,14 +140,17 @@ export type V2RunReport = {
   callCount?: number;
   refilled?: { add: boolean; cut: boolean };
   underProduced?: { add: boolean; cut: boolean };
-  /** What the cut call asked for: ceil(1.5N) when it starts beside the additions refill, or ceil(1.5K) when the additions
-   *  call kept none and the refill kept K (§5.1a). Written when the call starts, so the wait's "asked for" states the real
-   *  ask. Absent on a run from before it, and on one with no cut call. */
+  /** What the cut call asked for: ceil(1.5 min(N, K)) for the K additions it was shown, call 1's when it starts beside the
+   *  additions refill, or the refill's when the additions call kept none (§5.1a). Written when the call starts, so the
+   *  wait's "asked for" states the real ask. Absent on a run from before it, and on one with no cut call. */
   cutAsk?: number;
   /** What each list had to reach: N, and min(N, additions kept). */
   target?: { add: number; cut: number };
   /** The restriction that bound a short list (§5.5), or null when none did. */
   shortReason?: { add: ShortReason | null; cut: ShortReason | null };
+  /** An owned-only run used every card on its owned shortlist (`V2List.poolExhausted`): its additions are every owned
+   *  card that fits, and a short additions list is bound by owning (`shortReason.add` is `notOwned`). Absent otherwise. */
+  poolExhausted?: true;
   cutsFailed?: { errorClass: string } | null;
   budgetReached?: boolean;
   charge?: { outcome: "spent" } | { outcome: "refunded"; why: string };

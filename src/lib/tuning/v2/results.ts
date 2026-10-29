@@ -137,7 +137,9 @@ export function groupLines(
 /** What a finished run says about a list that came back under N (Short-Run), or whose cut call failed (plan P4). */
 export type ShortFacts =
   | { kind: "noCuts" }
-  | { kind: "bound"; side: "add" | "cut"; found: number; reason: ShortReason; dropped: number }
+  /** `exhausted`: an owned-only run used every owned card that fits (`V2RunReport.poolExhausted`), so the additions are
+   *  short because nothing more is owned, not because the run dropped cards. */
+  | { kind: "bound"; side: "add" | "cut"; found: number; reason: ShortReason; dropped: number; exhausted: boolean }
   | { kind: "refunded"; side: "add" | "cut"; found: number };
 
 export function shortFacts(n: number, lines: readonly LineItem[], report: ValidationReport | null): ShortFacts | null {
@@ -154,13 +156,14 @@ export function shortFacts(n: number, lines: readonly LineItem[], report: Valida
   const reason = v2?.shortReason?.[side] ?? null;
   if (reason === null || v2?.charge?.outcome === "refunded" || report?.refunded) return { kind: "refunded", side, found };
   const dropped = (report?.drops ?? []).filter((d) => d.rule === reason && (d.side === undefined || d.side === side)).length;
-  return { kind: "bound", side, found, reason, dropped };
+  return { kind: "bound", side, found, reason, dropped, exhausted: side === "add" && reason === "notOwned" && v2?.poolExhausted === true };
 }
 
 /**
  * What the cuts list was asked for: the cut call's stored ask, else (a run from before it was stored, or a cut call not yet
- * started) ceil(1.5N), the ask whenever the additions call kept any line. Only a run whose additions call kept none asked
- * less (ceil(1.5K), §5.1a), and the stored ask is what states that one.
+ * started) ceil(1.5N). The cut call asks ceil(1.5 min(N, K)) for the K additions it was shown (call 1's, or the refill's
+ * when call 1 kept none, §5.1a), so a run whose first additions call came back short asked fewer, and the stored ask is
+ * what states it. Runs from before the ask was stored asked ceil(1.5N) whenever call 1 kept a line.
  */
 export function cutAskOf(n: number, stored: number | undefined): number {
   return stored ?? askFor(n);
@@ -168,10 +171,12 @@ export function cutAskOf(n: number, stored: number | undefined): number {
 
 /**
  * The wait's last word on a run that ended with a list under what it asked for but not under N (Wait E: "Cuts came up 3
- * short of 15"): the side, by how many, and why (the restriction with the most drops on that side, else none).
+ * short of 15"): the side, by how many, and why. The why is the run's own `shortReason` for the side when it stored one,
+ * `ownedExhausted` for additions from an owned-only run that used every owned card that fits, else the restriction with
+ * the most drops on that side, else none.
  */
 export function shortOfAsk(n: number, lines: readonly LineItem[], report: ValidationReport | null):
-  { side: "add" | "cut"; short: number; asked: number; reason: ShortReason | null } | null {
+  { side: "add" | "cut"; short: number; asked: number; reason: ShortReason | "ownedExhausted" | null } | null {
   const adds = lines.filter((l) => l.side === "add").length;
   const cuts = lines.length - adds;
   const v2 = report?.v2;
@@ -180,6 +185,10 @@ export function shortOfAsk(n: number, lines: readonly LineItem[], report: Valida
   const side = cuts < askCut ? "cut" : adds < askAdd ? "add" : null;
   if (side === null || (side === "cut" && cuts === 0)) return null;
   const asked = side === "add" ? askAdd : askCut;
+  const short = asked - (side === "add" ? adds : cuts);
+  if (side === "add" && v2?.poolExhausted) return { side, short, asked, reason: "ownedExhausted" };
+  const stored = v2?.shortReason?.[side] ?? null;
+  if (stored !== null) return { side, short, asked, reason: stored };
   const drops = (report?.drops ?? []).filter((d) => d.side === side);
   const order: ShortReason[] = ["overCap", "offSet", "notOwned", "bracketAim"];
   let reason: ShortReason | null = null;
@@ -188,5 +197,5 @@ export function shortOfAsk(n: number, lines: readonly LineItem[], report: Valida
     const k = drops.filter((d) => d.rule === r).length;
     if (k > most) { reason = r; most = k; }
   }
-  return { side, short: asked - (side === "add" ? adds : cuts), asked, reason };
+  return { side, short, asked, reason };
 }

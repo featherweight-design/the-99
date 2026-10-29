@@ -9,7 +9,7 @@ vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () 
 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
-const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | null } | undefined, inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
+const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | null; head?: unknown } | undefined, head: { list: "now" }, inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
   resolveAsked: [] as unknown[], catalog: new Map<string, string>(), savedText: [] as string[], modelQueue: [] as unknown[], modelCalls: 0, onModelCall: undefined as ((req: unknown) => void) | undefined, lockedIds: [] as string[], runPending: true, reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
   contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null,
   // H35, PR 4a (8-asked/5-kept): a test-supplied pack and catalog, so a full run can reach the
@@ -101,12 +101,12 @@ vi.mock("../../lib/decks/tuning-read", () => ({
     sawEnv("tuningInputs", env);
     calls.inputs += 1;
     return {
-      head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: calls.lockedIds, allLocked: calls.allLocked,
+      head: calls.head, games: [], intent: null, declared: null, fingerprint: "fp", locked: calls.lockedIds, allLocked: calls.allLocked,
       limits: calls.limits,
     };
   },
   // A deck whose last run saw exactly this fingerprint: the gate reads `unchanged`.
-  readTuningState: async (_d: string, _u: string, _f: string, _n: Date, opts?: { allLocked?: string | null; runId?: string | null }, env?: unknown) => (sawEnv("readTuningState", env), calls.stateOpts = opts, {
+  readTuningState: async (_d: string, _u: string, _f: string, _n: Date, opts?: { allLocked?: string | null; runId?: string | null; head?: unknown }, env?: unknown) => (sawEnv("readTuningState", env), calls.stateOpts = opts, {
     run: { id: "r", status: "ok" }, items: [], lastOkFingerprint: "fp", lastOkAt: new Date(),
     stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, gameCount: 0, newestPriceAsOf: null,
     allLocked: opts?.allLocked ?? null,
@@ -1057,6 +1057,8 @@ describe("readTuningPanel's re-review (History)", () => {
   it("reads the named run when History names one by id", async () => {
     await readTuningPanel(DECK, "33333333-3333-4333-8333-333333333333");
     expect(calls.stateOpts?.runId).toBe("33333333-3333-4333-8333-333333333333");
+    // The list now, from the same read as the fingerprint: History C counts the run's stored list against it.
+    expect(calls.stateOpts?.head).toBe(calls.head);
   });
 
   it("reads the ordinary panel for no id, or for anything that is not a uuid", async () => {

@@ -143,17 +143,20 @@ type Listed = { oracleId: string; name: string; typeLine: string };
  * A focus run's candidates and the owned shortlist the prompt states, decided together (review round 2): an owned-only
  * run reads its focus candidates under its own limits FIRST, so an owned, free, on-focus card the commander's list lacks
  * still counts as something owned that fits. Only when the shortlist and those candidates are both empty does the run
- * fall back to cards to buy (`ownedNone`), and its candidates are then read without the owned rule.
+ * fall back to cards to buy (`ownedNone`), and its candidates are then read without the owned rule. A run with no such
+ * fallback (Suggested changes v2, spec §4: `buyFallback: false`) keeps the owned rule whatever fits, so an empty owned
+ * read stays empty rather than offering cards to buy the validator would drop as `notOwned`.
  */
 export async function planFocusCandidates(
   limits: Limits,
   shortlist: readonly Listed[] | undefined,
   load: (limits: Limits) => Promise<FocusCandidate[]>,
+  { buyFallback = true }: { buyFallback?: boolean } = {},
 ): Promise<{ candidates: FocusCandidate[]; shortlist: Listed[] | undefined; ownedNone: boolean }> {
   if (!limits.ownedOnly) return { candidates: await load(limits), shortlist: shortlist ? [...shortlist] : undefined, ownedNone: false };
   const owned = await load(limits);
   const merged = withFocusCandidates(shortlist ?? [], owned);
-  if (merged.length > 0) return { candidates: owned, shortlist: merged, ownedNone: false };
+  if (merged.length > 0 || !buyFallback) return { candidates: owned, shortlist: merged, ownedNone: false };
   return { candidates: await load({ ...limits, ownedOnly: false }), shortlist: undefined, ownedNone: true };
 }
 
@@ -161,12 +164,20 @@ export async function planFocusCandidates(
  * The focus candidates for one run, at most `max`, or none for a deck with no commander. `env` is the reader's resolved
  * switches, for the claim model's free-copy read on an owned-only run.
  */
-export async function loadFocusCandidates(
-  args: CandidateArgs & { deckId: string; focus: StrategyKey; roleBasis: RoleBasis; env: NodeJS.ProcessEnv; max?: number },
-  read: Reader = db,
-): Promise<FocusCandidate[]> {
+export async function loadFocusCandidates(args: FocusCandidateArgs, read: Reader = db): Promise<FocusCandidate[]> {
+  return (await readFocusCandidates(args, read)).cards;
+}
+
+type FocusCandidateArgs = CandidateArgs & { deckId: string; focus: StrategyKey; roleBasis: RoleBasis; env: NodeJS.ProcessEnv; max?: number };
+
+/**
+ * The focus candidates and whether they are COMPLETE: every card that qualifies is listed. A list that reached `max` is
+ * the top of a longer one, so it is not; an owned-only v2 run joins these to its shortlist and may call that pool spent
+ * only when both are complete (`v2/engine.ts` `poolExhausted`).
+ */
+export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader = db): Promise<{ cards: FocusCandidate[]; complete: boolean }> {
   const max = args.max ?? FOCUS_CANDIDATES_MAX;
-  if (args.commanderOracleIds.length === 0) return [];
+  if (args.commanderOracleIds.length === 0) return { cards: [], complete: true };
   const rows = await candidateQuery(read, args);
   const onFocus = rankCandidates(rows.filter((r) => {
     const card = toStrategyCard(r);
@@ -199,5 +210,6 @@ export async function loadFocusCandidates(
       if (out.length >= max) break;
     }
   }
-  return out;
+  // The query is not limited, so the loop stops short of `max` only when every ranked row was tested.
+  return { cards: out, complete: out.length < max };
 }

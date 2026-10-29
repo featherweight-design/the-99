@@ -606,6 +606,17 @@ describe("History: a run reopened from History", () => {
     expect(screen.getByRole("tab", { name: /Additions/ }).textContent).toContain("5");
   });
 
+  it("stale with a counted list (History C): the note says how many cards the list has changed by", () => {
+    setup({ readOnly: true, past: { date: "Oct 19", stale: true, moved: 7 } });
+    expect(document.querySelector("[data-sc-past-note]")!.textContent).toBe(tuningHubCopy.history.pastNote(7));
+    expect(tuningHubCopy.history.pastNote(7)).toBe("A past run, read-only. The list has changed by 7 cards since; nothing here can be applied now.");
+  });
+
+  it("stale with no count (a run saved before its list was stored): the uncounted note", () => {
+    setup({ readOnly: true, past: { date: "Oct 19", stale: true, moved: null } });
+    expect(document.querySelector("[data-sc-past-note]")!.textContent).toBe(tuningHubCopy.history.pastNoteUncounted);
+  });
+
   it("stale with nothing applied: the lists alone, and no chip", () => {
     setup({ readOnly: true, past: { date: "Oct 19", stale: true } });
     expect(document.querySelector("[data-sc-lead]")!.textContent).toBe(h.staleListsOnly(5, 5));

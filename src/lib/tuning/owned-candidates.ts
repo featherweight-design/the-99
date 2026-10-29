@@ -6,6 +6,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
 import { printedIn } from "../sets/printed-in-sql";
+import { OWNED_SHORTLIST_MAX } from "./limits";
 
 /**
  * The cards the player owns that this deck could take, for a run whose "owned only" limit is set.
@@ -30,18 +31,14 @@ import { printedIn } from "../sets/printed-in-sql";
  */
 export type OwnedCandidate = { oracleId: string; name: string; typeLine: string };
 
-/**
- * Most names sent. A name and type line run about 12 tokens, so the list is under 1,000 tokens at
- * this size, which the model reads against the 99 it already gets. More than this has stopped being
- * a shortlist: the model needs candidates it can compare, not the whole collection.
- */
-export const OWNED_SHORTLIST_MAX = 80;
+/** Most names sent (`limits.ts`, where the pure engine reads it too). */
+export { OWNED_SHORTLIST_MAX } from "./limits";
 
 /** Rows per page, and the most pages read: 2,000 ranked owned cards is deeper than any commander's index list that a collection overlaps. */
 const PAGE = 200;
 const MAX_PAGES = 10;
 
-export async function loadOwnedCandidates(args: {
+type OwnedCandidateArgs = {
   userId: string;
   deckId: string;
   commanderOracleIds: readonly string[];
@@ -52,10 +49,22 @@ export async function loadOwnedCandidates(args: {
   /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
    *  pending clause; a probe, with no signed-in reader, passes `process.env`. */
   env: NodeJS.ProcessEnv;
-}): Promise<OwnedCandidate[]> {
+};
+
+/** The shortlist alone, for a run that never asks whether it is the whole pool (v10). */
+export async function loadOwnedCandidates(args: OwnedCandidateArgs): Promise<OwnedCandidate[]> {
+  return (await readOwnedCandidates(args)).cards;
+}
+
+/**
+ * The shortlist and whether it is COMPLETE: every owned card that qualifies is on it. It is not when it reached `max`
+ * (the top of a longer list) or when the read stopped at `MAX_PAGES` with ranked rows still unread (the cards after them
+ * were never tested). Only a complete list lets a v2 run call its owned pool spent (`v2/engine.ts` `poolExhausted`).
+ */
+export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ cards: OwnedCandidate[]; complete: boolean }> {
   const { userId, deckId, commanderOracleIds, colorIdentity, inDeck, limits } = args;
   const max = args.max ?? OWNED_SHORTLIST_MAX;
-  if (commanderOracleIds.length === 0) return [];
+  if (commanderOracleIds.length === 0) return { cards: [], complete: true };
 
   const capCents = limits.capCents;
   const out: OwnedCandidate[] = [];
@@ -63,6 +72,8 @@ export async function loadOwnedCandidates(args: {
   // free-copy and price tests need the other tables' reads, so they cannot sit in this query; a single
   // fixed read-ahead would let a collection whose top-ranked cards are claimed elsewhere (or over the
   // cap) come back empty, and an empty list sends the run to cards to buy while the player owns fits.
+  // Whether the ranked rows ran out: a short page, or an empty one, is the end of the index.
+  let rowsRanOut = false;
   for (let page = 0; page < MAX_PAGES && out.length < max; page++) {
     const rows = await db
       .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine })
@@ -87,7 +98,7 @@ export async function loadOwnedCandidates(args: {
       .orderBy(sql`max(${commanderSupportCards.inclusion}) desc nulls last`, cards.name)
       .limit(PAGE)
       .offset(page * PAGE);
-    if (rows.length === 0) break;
+    if (rows.length === 0) { rowsRanOut = true; break; }
 
     const ids = rows.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
@@ -105,7 +116,7 @@ export async function loadOwnedCandidates(args: {
       out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine });
       if (out.length >= max) break;
     }
-    if (rows.length < PAGE) break;
+    if (rows.length < PAGE) { rowsRanOut = true; break; }
   }
-  return out;
+  return { cards: out, complete: rowsRanOut && out.length < max };
 }

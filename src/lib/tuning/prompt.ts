@@ -45,8 +45,8 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
 
 /**
  * Suggested changes v2's prompt (`PROMPT_VERSION_V2` 11; spec 2026-10-27 §4, §5, §10; plan PR 2 and H2, H3), for ONE call of
- * the two-call flow: the additions stage, or the cut stage that makes room for what is coming in, each asked
- * ceil(1.5N) (`askFor`), and either one's refill (asked the shortfall, told what stands and what fell and why). Composed from
+ * the two-call flow: the additions stage, asked ceil(1.5N) (`askFor`), or the cut stage that makes room for what is coming
+ * in, first asked ceil(1.5·min(N, K1)) for the K1 additions call 1 kept (`cutPlanFor`), and either one's refill (asked the shortfall, told what stands and what fell and why). Composed from
  * v10's own lines, so every rule both share is one text: only the size and aim sentences, the citation kinds (`notes` is the
  * `request` in v2), the signal-trust order and the bracket choice differ, with the "Coming in" list and the refill's question
  * appended to the user message. Derived from the count-mechanism prototype (`scripts/eval/count-mechanism.mts`'s
@@ -61,7 +61,8 @@ export type PromptV2Stage = {
   list: "additions" | "cuts";
   /** The player's count: N cards in, N out. */
   n: number;
-  /** How many lines this call asks for: ceil(1.5N) on a first ask, the shortfall on a refill. */
+  /** How many lines this call asks for: on a first ask ceil(1.5N) for additions and ceil(1.5·min(N, K1)) for cuts, K1
+   *  being the additions kept so far (`cutPlanFor`); the shortfall on a refill. */
   ask: number;
   /** The bracket choice beside the request (H3), or none. */
   aim: BracketAim | null;

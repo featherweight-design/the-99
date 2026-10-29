@@ -1194,7 +1194,9 @@ export function TuningPanel({
         onAnnounce={setAnnounced}
         onNewRun={openNewRun}
         readOnly={reviewing && state.retired !== null}
-        past={reviewing && review?.past ? { date: historyDay(review.past.at), stale: state.retired !== null, version: state.review?.readVersion ?? null } : null}
+        past={reviewing && review?.past ? {
+          date: historyDay(review.past.at), stale: state.retired !== null, version: state.review?.readVersion ?? null, moved: state.review?.moved ?? null,
+        } : null}
         credits={{ left: freeCount(state.allowance), total: state.allowance.limit }}
       />
       </>

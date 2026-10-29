@@ -439,6 +439,8 @@ export async function readTuningPanel(deckId: string, runId: string | null = nul
   return readTuningState(deckId, userId, inputs.fingerprint, new Date(), {
     allLocked: inputs.allLocked,
     runId: runId && isUuid(runId) ? runId : null,
+    // The same head the run's own read list came from, so a reopened run's count compares like with like.
+    head: inputs.head,
   }, env);
 }
 

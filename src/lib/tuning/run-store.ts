@@ -105,7 +105,11 @@ export async function startRun(
     runId?: string; now?: Date; env: NodeJS.ProcessEnv;
     /** A Suggested changes v2 run (plan 2026-10-27, P1): reserved under its own feature, stamped with its own prompt
      *  version, and stored with the player's count, request and bracket choice and the report it starts with. */
-    v2?: { requestedCount: number; requestText: string | null; bracket: BracketAim | null; report: ValidationReport };
+    v2?: {
+      requestedCount: number; requestText: string | null; bracket: BracketAim | null; report: ValidationReport;
+      /** The list the run read (`read-list.ts`): its `listFingerprint` and its card ids, one per copy. */
+      readList?: { fingerprint: string; cardIds: readonly string[] };
+    };
   },
 ): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
   const now = opts.now ?? new Date();
@@ -128,6 +132,7 @@ export async function startRun(
           bracketTarget: opts.v2.bracket?.target ?? null,
           bracketLow: opts.v2.bracket?.low ?? null,
           validationReport: opts.v2.report,
+          ...(opts.v2.readList ? { readListFingerprint: opts.v2.readList.fingerprint, readListCardIds: [...opts.v2.readList.cardIds] } : {}),
         } : {}),
       }).returning({ id: deckSuggestionRuns.id });
       return { runId: row.id, callId: unit.id };
