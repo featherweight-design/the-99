@@ -360,7 +360,7 @@ describe("a section's sub-line", () => {
     expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
     expect(sub(env({ ...(ALL_ON as Record<string, string>), HOME_FEED_ENABLED: "off" }), "home")).toContain("best-fit commanders");
     // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too.
-    expect(sub(ALL_ON, "whats-new")).toContain("Anything waiting on you comes first.");
+    expect(sub(ALL_ON, "whats-new")).toContain("Within Today and Earlier, anything waiting on you comes first.");
     expect(sub(env({ ...(ALL_ON as Record<string, string>), SPARE_REQUESTS_ENABLED: "off" }), "whats-new")).not.toContain("waiting on you");
   });
 });

@@ -221,11 +221,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "home",
     id: "whats-new",
     name: "What’s new",
-    sub: `News you choose to hear about, newest first, such as a new set or a combo you can now make. Anything waiting on you comes first.${ABOUT_SCREEN_OFF}`,
+    sub: `News you choose to hear about, newest first, such as a new set or a combo you can now make. Within Today and Earlier, anything waiting on you comes first.${ABOUT_SCREEN_OFF}`,
     subSentences: {
       "News you choose to hear about, newest first, such as a new set or a combo you can now make.": "HOME_FEED_ENABLED",
       // Only a spare request ever waits on you (`feedOrder`), and it is a kind only with spare requests on.
-      " Anything waiting on you comes first.": ["HOME_FEED_ENABLED", "SPARE_REQUESTS_ENABLED"],
+      " Within Today and Earlier, anything waiting on you comes first.": ["HOME_FEED_ENABLED", "SPARE_REQUESTS_ENABLED"],
       [ABOUT_SCREEN_OFF]: "!HOME_FEED_ENABLED",
     },
     screens: [{ screen: "home" }],
@@ -883,7 +883,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     },
   },
   intent: {
-    text: "At either end of the scale, brackets come down to intent, so your cards can fit two. A Squirrel deck with no Game Changers, mass land denial, extra turns or two-card infinites passes at both Exhibition and Core. Only you know which, so you pick. Game Changers are Wizards’ own list.",
+    text: "At either end of the scale, brackets come down to intent, so your cards can fit two. A theme deck with no Game Changers, mass land denial, extra turns or two-card infinites passes at both Exhibition and Core. Only you know which, so you pick. Game Changers are Wizards’ own list.",
     switch: "ANALYSIS_TAB_ENABLED",
     since: 16,
     legacy: ["deck-analysis"],
