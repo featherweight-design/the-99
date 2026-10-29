@@ -132,6 +132,7 @@ export function ModalChrome({
   lead,
   foot,
   fit = false,
+  cap = false,
   stand = false,
   back,
   children,
@@ -150,6 +151,12 @@ export function ModalChrome({
    * sheet is as shipped.
    */
   fit?: boolean;
+  /**
+   * The confirmation's caps (Suggested changes v2, handoff H6 and the Apply board): min(640px, 100dvh − 96px) tall on
+   * desktop, and a phone sheet sized to its rows up to 88% of the screen, so a 20 + 20 confirmation scrolls its lists
+   * under a head and foot that stay. Not combined with `fit`, `stand` or `overCard`. Unset, the sheet is as shipped.
+   */
+  cap?: boolean;
   /**
    * Desktop: the sheet stands at its cap (85dvh, or the over-a-card cap) whether its body is loading or loaded, rather
    * than hugging its content, so the answer arriving moves nothing (Hugh, 2026-10-27, the stand-ins sheet: its loader
@@ -256,12 +263,13 @@ export function ModalChrome({
           // Phone: a sheet from 52px down, over a card too (stacked sheets R1, call 7: the card under
           // it no longer steps down to 52, so neither does this sheet to 96). Desktop: centered.
           "flex flex-col w-full border-t "
-          + (fit ? "rounded-t-[18px] max-h-[calc(100%-52px)] " : "rounded-t-[14px] h-[calc(100%-52px)] ")
+          + (cap ? "rounded-t-[18px] max-h-[88%] " : fit ? "rounded-t-[18px] max-h-[calc(100%-52px)] " : "rounded-t-[14px] h-[calc(100%-52px)] ")
           + "md:rounded-[14px] md:border overflow-hidden "
           // Over a card its top is pushed down, so its height is capped to end 20px above the fold. A sheet that
           // `stand`s is that cap tall; any other hugs its content up to it.
           + (onCard
             ? (stand ? "md:h-[calc((100dvh+min(620px,85dvh))/2-60px)] " : "md:h-auto ") + "md:max-h-[calc((100dvh+min(620px,85dvh))/2-60px)] "
+            : cap ? "md:h-auto md:max-h-[min(640px,calc(100dvh-96px))] "
             : (stand ? "md:h-[85dvh] " : "md:h-auto ") + "md:max-h-[85dvh] ")
           + WIDTH_CLASS[width]
           // Behind a card its edge steps down with its ground, as the addendum's §5a draws it.

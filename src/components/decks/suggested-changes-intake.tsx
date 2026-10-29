@@ -193,18 +193,18 @@ function Step({ n, title, sub, children }: { n: number; title: string; sub?: str
 
 /** A sentence-led line split at its first sentence, for a box that sets that sentence as its title (the drift line's
  *  "The deck is at 98 now.", the confirm's "Same request as your Oct 26 run"). Never restates the copy. */
-function leadSentence(text: string, at: ". " | ", "): [string, string] {
+export function leadSentence(text: string, at: ". " | ", "): [string, string] {
   const i = text.indexOf(at);
   return i < 0 ? [text, ""] : [text.slice(0, i + 1), text.slice(i + 1)];
 }
 
 /** The two v2 notice boxes' shared skin (the board's `.drift` and `.same`): the drift line's edge is the warning, the
  *  same-request confirm's the accent. */
-const NOTICE_BOX = "mt-[16px] flex flex-col rounded-[10px] md:mt-[18px]";
-const noticeStyle = (edge: "var(--warning)" | "var(--accent)") =>
+export const NOTICE_BOX = "mt-[16px] flex flex-col rounded-[10px] md:mt-[18px]";
+export const noticeStyle = (edge: "var(--warning)" | "var(--accent)") =>
   ({ background: "var(--elevated-hover)", border: "1px solid var(--border-strong)", borderLeft: `3px solid ${edge}` }) as const;
 /** The board's `.lk`: an accent mono link with a quiet underline. */
-const LINK = "text-[color:var(--accent-text)] underline underline-offset-[4px] decoration-[color:var(--accent-shadow)]";
+export const LINK = "text-[color:var(--accent-text)] underline underline-offset-[4px] decoration-[color:var(--accent-shadow)]";
 
 /**
  * The deck drifted off 99 with the intake open (Not-At-99 C): Send is off, and this says the count and links the tool

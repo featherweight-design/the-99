@@ -34,7 +34,10 @@ import { gateReason } from "../../lib/tuning/gate";
 import { isLine, type PairItem, type TuningState } from "../../lib/tuning/state";
 import type { RefusalDetail } from "../../lib/tuning/validate";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
-import { AWAIT_RUN_V2_MAX_MS, awaitRunSettled } from "./await-run";
+import { AWAIT_RUN_POLL_MS, awaitRunSettled } from "./await-run";
+import { applySuggestionSet, pickSuggestion, undoSuggestionSet } from "../../app/decks/tuning-v2-actions";
+import type { CardTypeGroup } from "../../lib/decks/grouping";
+import { SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
 import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
@@ -57,7 +60,7 @@ import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { CreditsText } from "../ui/credits-text";
-import { hasCredit } from "../../lib/model/allowance-rule";
+import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
 import { creditAgain, creditFirst, creditSpent } from "../../lib/model/credit-line";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
@@ -90,6 +93,8 @@ export type TuningDeps = {
     (deckId: string, opts?: { anyway?: boolean; runId?: string; notes?: string }): Promise<DeckMutationResult>;
   };
   card: CardActions;
+  /** Suggested changes v2's set apply, undo and pick (UI PR 6). Absent: the server's. */
+  v2?: SuggestionSetActions;
 };
 
 /**
@@ -111,6 +116,8 @@ export type TuningV2 = {
   onTopOff?: () => void;
   /** The drift line's link over 99: Proposed cuts. */
   onProposedCuts?: () => void;
+  /** The deck's count per type group, for the results' By type heads (`n in the deck`, UI PR 6). Absent: 0. */
+  typeCounts?: Partial<Record<CardTypeGroup, number>>;
 };
 
 /** The count a fresh intake opens on (Intake board A). */
@@ -132,6 +139,7 @@ const SERVER: TuningDeps = {
   read: readTuningPanel,
   run: runTuning,
   card: { apply: applySuggestion, undo: undoSuggestion, reject: dismissSuggestion, restore: restoreSuggestion },
+  v2: { apply: applySuggestionSet, undo: undoSuggestionSet, pick: pickSuggestion },
 };
 
 /** What the page already knows about the evidence, for the copy and the unchecked manifest. */
@@ -280,6 +288,12 @@ export function TuningPanel({
   const intakeRev = useRef(0);
   // The last press answered "Same request as your Oct 26 run" (G4): nothing was reserved, and the action row asks.
   const [same, setSame] = useState<{ runId: string; at: string } | null>(null);
+  // Suggested changes v2's results stand in for the intake until `New run` (UI PR 6); a press goes back to the results.
+  const [newRun, setNewRun] = useState(false);
+  // The v2 run this visit watched being made, so its results can say the wait's last word once (Wait E).
+  const [watchedLive, setWatchedLive] = useState<string | null>(null);
+  // That run's results were announced, once, when it landed.
+  const [finishSaid, setFinishSaid] = useState<string | null>(null);
   function changeIntake(next: Partial<{ count: number; request: string; bracketPick: BracketPick }>) {
     intakeRef.current = { ...intakeRef.current, ...next };
     setVisitValue(deckId, "sc-intake", intakeRef.current);
@@ -773,7 +787,19 @@ export function TuningPanel({
   // over it (as a prior visit's is not), until the reader presses for a new run here.
   const priorRun = reviewing || isPriorRun(baseline, state.run?.id);
 
-  const reading = ticked !== null || (!reviewing && state.run?.status === "pending");
+  // Suggested changes v2 reads a run as running only while it is pending: its lines are drawn as they land (the wait),
+  // so the watch's reconstructed stagger never holds the panel in a reading state of its own.
+  const reading = (v2 ? false : ticked !== null) || (!reviewing && state.run?.status === "pending");
+  // Suggested changes v2 (UI PR 6): a run being made draws the wait; a finished v2 run's lines draw the results, until
+  // `New run` opens a fresh intake. A v10 run's set, once the switch is on, is read-only (spec §10, the cutover).
+  const live = v2 && !reviewing && state.run?.status === "pending" && state.live ? state.live : null;
+  if (live && watchedLive !== live.runId) setWatchedLive(live.runId);
+  const v2Ask = v2 ? state.itemsAsk ?? null : null;
+  if (v2 && !live && watchedLive !== null && v2Ask?.runId === watchedLive && finishSaid !== watchedLive) {
+    setFinishSaid(watchedLive);
+    const landed = state.items.filter(isLine);
+    setAnnounced(deckTuningCopy.announce.readyLists(landed.filter((l) => l.side === "add").length, landed.filter((l) => l.side === "cut").length));
+  }
   // Spent is read off the allowance itself, never off `gateReason`: that answers "unchanged" first,
   // and a player with no credits left on an unchanged deck must still see the press disabled.
   const spent = !hasCredit(state.allowance);
@@ -886,7 +912,6 @@ export function TuningPanel({
     const runId = crypto.randomUUID();
     // A v2 press asks first and draws the reading only once a run is really reserved: it may come back "same request"
     // (nothing reserved, the action row asks) or refused, and neither flashes the reading state.
-    let answered: DeckMutationResult | null = null;
     if (v2Opts) {
       const rev = intakeRev.current;
       const answer = await deps.run(deckId, { ...v2Opts, runId }).catch(
@@ -909,7 +934,21 @@ export function TuningPanel({
         void reread();
         return;
       }
-      answered = answer;
+      if (review && !leftReview.current) { leftReview.current = true; review.leave?.(); }
+      setNewRun(false);
+      setAnnounced(deckTuningCopy.announce.started);
+      // The run's lines arrive through the panel's watch for a pending run (H1, P3): one read puts the pending run on
+      // screen, and the watch re-reads it until it settles. A read that does not land is tried again before giving up.
+      for (let tries = 0; tries < 3; tries += 1) {
+        if (tries > 0) await new Promise((r) => setTimeout(r, AWAIT_RUN_POLL_MS));
+        if (token.current !== mine) return;
+        const first = await reread();
+        if (token.current !== mine) return;
+        if (first) return;
+      }
+      setRefused(deckTuningCopy.run.refused);
+      setAnnounced(deckTuningCopy.run.refused);
+      return;
     }
     // Leaving a reopened past run only once a new run really starts: a preflight that refuses leaves
     // the reader on the run, its note and its way back intact.
@@ -920,7 +959,7 @@ export function TuningPanel({
     setLongWait(false);
     setAnnounced(deckTuningCopy.announce.started);
     // Settled to a result whatever happens, so an unexpected throw is a refusal like any other.
-    const running = answered ? Promise.resolve(answered) : deps.run(deckId, { ...(anyway ? { anyway: true } : {}), runId, notes }).catch(
+    const running = deps.run(deckId, { ...(anyway ? { anyway: true } : {}), runId, notes }).catch(
       (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
     );
     // The checklist ticks on a pure client-side stagger (H35, PR 3), never on a real read
@@ -968,8 +1007,6 @@ export function TuningPanel({
     const waited = result.ok
       ? await awaitRunSettled(() => deps.read(deckId, leftReview.current ? null : reviewRunId), runId, {
         aborted: () => token.current !== mine,
-        // A v2 run takes up to its own budget (plan P2), past v10's wait.
-        ...(v2Opts ? { maxMs: AWAIT_RUN_V2_MAX_MS } : {}),
       })
       : null;
     // Checked BEFORE touching the timer refs, not after (review fix): `staggerTimer`/
@@ -1110,7 +1147,34 @@ export function TuningPanel({
     <ManifestRows rows={neverRunRows} onLogGame={onLogGame} onDescribe={describeDeck} />
   );
 
-  if (reading) {
+  const v2Lines = state.items.filter(isLine);
+  const runView = live !== null || (v2Ask !== null && hasSet && (!newRun || reviewing));
+  if (v2 && runView) {
+    const runId = live ? live.runId : v2Ask!.runId;
+    body = (
+      <SuggestedChangesRun
+        key={runId}
+        runId={runId}
+        ask={live ? live.ask ?? null : v2Ask}
+        lines={live ? live.items.filter(isLine) : v2Lines}
+        live={live}
+        startedAt={live ? state.run?.createdAt ?? null : null}
+        report={live ? null : state.itemsValidationReport}
+        permits={permits}
+        newestPriceAsOf={live ? live.newestPriceAsOf : state.newestPriceAsOf}
+        figures={{ typeCounts: v2.typeCounts ?? {}, roles: v2.noticed.roles }}
+        drift={v2.over !== 0 ? { at: v2.at, over: v2.over, onTopOff: v2.onTopOff, onProposedCuts: v2.onProposedCuts } : null}
+        finishedHere={!live && watchedLive === runId}
+        readFrom={live ? null : <ReadFrom state={state} facts={facts} />}
+        actions={deps.v2 ?? SERVER.v2!}
+        onChanged={reread}
+        onAnnounce={setAnnounced}
+        onNewRun={() => setNewRun(true)}
+        readOnly={reviewing && state.retired !== null}
+        credits={{ left: freeCount(state.allowance), total: state.allowance.limit }}
+      />
+    );
+  } else if (reading) {
     const runRows: ManifestRow[] = [
       ...manifestRows(facts, intent, ticked ?? new Set(), runStepsList),
       { kind: "writing", label: descriptionManifest.writing, active: writingActive },
@@ -1142,7 +1206,8 @@ export function TuningPanel({
         {checklist}
       </>
     );
-  } else if (hasSet) {
+  } else if (hasSet && v2Ask === null) {
+    // A v2 run's set is drawn only by its run view: after New run it gives way to the fresh intake, never this v10 set.
     const total = state.items.length;
     const applied = state.items.filter((i) => overrides.verdictOf(i) === "accepted").length;
     const rejected = state.items.filter((i) => overrides.verdictOf(i) === "dismissed").length;
@@ -1186,7 +1251,10 @@ export function TuningPanel({
         ) : lead ? (
           <Lead desktopOnly={!answered} wide>{lead}</Lead>
         ) : null}
+        {v2 ? <AnalysisBanner variant="note" sentence={v2Copy.pastRun} /> : null}
         {pairs.length > 0 ? (
+          // A v10 set once Suggested changes v2 is on is read-only (spec §10): a pair's answers are held off with it.
+          <fieldset disabled={v2 !== null} className="m-0 min-w-0 border-0 p-0">
           <ul className={`mt-[14px] flex flex-col ${answered ? "gap-[6px]" : "gap-[12px] md:gap-[8px]"}`}>
             <ArrivalOrder>{pairs.map((item) => (
               <li key={item.id}>
@@ -1200,6 +1268,7 @@ export function TuningPanel({
               </li>
             ))}</ArrivalOrder>
           </ul>
+          </fieldset>
         ) : null}
         {lists ? (
           <SuggestionLists
@@ -1209,6 +1278,7 @@ export function TuningPanel({
             newestPriceAsOf={state.newestPriceAsOf}
             actions={deps.card}
             onSettled={settled}
+            readOnly={v2 !== null}
           />
         ) : null}
       </>
@@ -1238,6 +1308,8 @@ export function TuningPanel({
       </>
     );
   }
+  // Suggested changes v2's wait and results stand in for the intake, its action row and its foot.
+  const v2RunView = v2 !== null && runView;
   // A failure's own note rides in the action row beside Try again, ahead of the credit line.
   if (failure?.note) note = note ? `${failure.note} · ${note}` : failure.note;
 
@@ -1305,6 +1377,7 @@ export function TuningPanel({
         border: `1px solid ${reading ? "var(--accent)" : "var(--border)"}`,
       }}
     >
+      <div className="flex items-center gap-[12px]">
       <h2
         id="tuning-heading"
         ref={headingRef}
@@ -1314,6 +1387,17 @@ export function TuningPanel({
       >
         {copy.heading}
       </h2>
+      {/* Suggested changes v2's results: `New run` opens a fresh intake (Results boards). Not while one is being made. */}
+      {v2RunView && !live && !reviewing ? (
+        <button
+          type="button"
+          onClick={() => setNewRun(true)}
+          className="ml-auto inline-flex h-[44px] items-center justify-center whitespace-nowrap rounded-[7px] px-[12px] text-[12.5px] font-semibold md:h-[32px] text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
+        >
+          {v2Copy.run.newRun}
+        </button>
+      ) : null}
+      </div>
       {body}
       {/* The in-panel ask is gone (H35): the description's one door before a first reading is
           now the empty-state field, above the press, with the pencil as its second door. */}
@@ -1339,7 +1423,7 @@ export function TuningPanel({
 
       {/* Suggested changes v2 (UI PR 5): the intake's three steps in place of Additional notes, the Kept for this deck
           box as step 3. Hidden while reading, as the two it replaces are. */}
-      {reading || !v2 ? null : (
+      {reading || !v2 || v2RunView ? null : (
         <div className="mt-[14px] md:mt-[16px]">
           <SuggestedChangesIntake
             count={count}
@@ -1357,11 +1441,11 @@ export function TuningPanel({
           />
         </div>
       )}
-      {reading || !v2 || !v2Drift ? null : <DriftLine at={v2.at} over={v2.over} onTopOff={v2.onTopOff} onProposedCuts={v2.onProposedCuts} />}
+      {reading || !v2 || !v2Drift || v2RunView ? null : <DriftLine at={v2.at} over={v2.over} onTopOff={v2.onTopOff} onProposedCuts={v2.onProposedCuts} />}
 
       {/* THE ACTION ROW: one band in every state, the one primary first. A v2 press answered "same request" asks in
           its place (Intake board D), until the reader answers or changes an input. */}
-      {!reading && v2 && same ? (
+      {v2RunView ? null : !reading && v2 && same ? (
         <SameRequestConfirm
           at={same.at}
           // Off 99 (or with no credit) a run would be refused: held off with Send, the confirm kept so its question
@@ -1414,7 +1498,7 @@ export function TuningPanel({
       </div>
       )}
       {refused ? <MutationError message={refused} /> : null}
-      {reading || !v2 ? null : (
+      {reading || !v2 || v2RunView ? null : (
         <IntakeReads
           parts={[
             ...(v2.hasOverview ? [v2Copy.intake.readsOverview] : []),

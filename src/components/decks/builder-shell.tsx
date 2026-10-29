@@ -116,7 +116,7 @@ import { PendingChangeProvider } from "./pending-change";
 import { LockCardsProvider, useCardLocks } from "./lock-cards";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import { hasChanges, type DraftState } from "../../lib/decks/draft-shape";
-import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
+import { cardCopies, deckCounts, unresolvedCardCount, type CardTypeGroup, type DeckDetailCard } from "../../lib/decks/grouping";
 import { ROLE_ORDER, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import type { JobRowsByCard } from "../../lib/decks/job-tally";
 import { roleCounterFor, roleNamedFor } from "../../lib/decks/label-role-counts";
@@ -1605,6 +1605,11 @@ export function BuilderShell({
       // fill has no row to open, so the count is named with no link rather than promising one.
       onTopOff: bodySize - counts.total > 0 ? topOffPress : undefined,
       onProposedCuts: proposedCutsPress,
+      // The deck page's own type groups, for the results' By type heads (`n in the deck`).
+      typeCounts: cards.reduce<Partial<Record<CardTypeGroup, number>>>((acc, c) => {
+        acc[c.cardTypeGroup] = (acc[c.cardTypeGroup] ?? 0) + c.quantity;
+        return acc;
+      }, {}),
     };
   }
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (

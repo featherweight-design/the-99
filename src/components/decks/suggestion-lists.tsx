@@ -19,8 +19,10 @@ import { ArrivalOrder } from "../ui/arrival-queue";
 const copy = deckTuningCopy.lists;
 
 export function SuggestionLists({
-  lines, deckSize, permits, newestPriceAsOf, actions, onSettled,
+  lines, deckSize, permits, newestPriceAsOf, actions, onSettled, readOnly = false,
 }: {
+  /** A v10 run once Suggested changes v2 is on (spec §10, the cutover): no Apply all, and no answer on any line. */
+  readOnly?: boolean;
   lines: LineItem[];
   /** The deck's card count now, which the tally counts from. */
   deckSize: number;
@@ -76,7 +78,7 @@ export function SuggestionLists({
           {copy.count(additions.length, cuts.length)}
         </span>
         <span aria-hidden className="h-px min-w-[16px] flex-1" style={{ background: "var(--border)" }} />
-        {open.length > 0 ? (
+        {open.length > 0 && !readOnly ? (
           <>
             <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
               {copy.tally(into, out, deckSize + into - out, deckSize)}
@@ -96,16 +98,17 @@ export function SuggestionLists({
       {/* A disabled fieldset disables every line's buttons while Apply all works, so a row cannot be
           answered under it. */}
       <fieldset disabled={applying} className="m-0 flex min-w-0 flex-col gap-[14px] border-0 p-0">
-        <List title={copy.additions} empty={copy.emptyAdditions} rows={additions} {...{ permits, newestPriceAsOf, actions, onSettled }} />
-        <List title={copy.cuts} empty={copy.emptyCuts} rows={cuts} {...{ permits, newestPriceAsOf, actions, onSettled }} />
+        <List title={copy.additions} empty={copy.emptyAdditions} rows={additions} {...{ permits, newestPriceAsOf, actions, onSettled, readOnly }} />
+        <List title={copy.cuts} empty={copy.emptyCuts} rows={cuts} {...{ permits, newestPriceAsOf, actions, onSettled, readOnly }} />
       </fieldset>
     </div>
   );
 }
 
 function List({
-  title, empty, rows, permits, newestPriceAsOf, actions, onSettled,
+  title, empty, rows, permits, newestPriceAsOf, actions, onSettled, readOnly,
 }: {
+  readOnly: boolean;
   title: string;
   empty: string;
   rows: LineItem[];
@@ -126,7 +129,7 @@ function List({
         <ul className="m-0 flex list-none flex-col gap-[10px] p-0 md:gap-[6px]">
           <ArrivalOrder>{rows.map((line) => (
             <li key={line.id}>
-              <SuggestionLine item={line} permits={permits} newestPriceAsOf={newestPriceAsOf} actions={actions} onSettled={onSettled} />
+              <SuggestionLine item={line} permits={permits} newestPriceAsOf={newestPriceAsOf} actions={actions} onSettled={onSettled} readOnly={readOnly} />
             </li>
           ))}</ArrivalOrder>
         </ul>

@@ -1,7 +1,8 @@
 // Suggested changes v2 (plan 2026-10-27, UI PRs 5a and 5b): the tile and the intake. ONE exported object so it can go to
 // /copy-review as a block. PLACEHOLDERS owed to /copy-review, carried verbatim from the handoff's copy file
 // (design/design_handoff_the99_suggested_changes_v2, `suggested-changes-v2 · copy strings.ts`, the `tile` and `intake`
-// blocks; approved 2026-10-28). The wait, results, bar, confirm, history and about blocks arrive with PR 6 and PR 7.
+// blocks; approved 2026-10-28). PR 6 adds the `wait`, `results`, `bar`, `confirm`, `undone` and `applyFailed`
+// blocks verbatim; the history and about blocks arrive with PR 7.
 // US English, no em dashes, and never the words AI, model or LLM.
 //
 // Reuses, never restates: creditsCopy (the credit line), deckDescriptionCopy.limits (the Kept for this deck box),
@@ -82,4 +83,150 @@ export const suggestedChangesV2Copy = {
     },
     drift: (total: number) => `The deck is at ${total} now. Suggested changes keeps a deck at 99, so it waits until you’re back there.`,
   },
+  wait: {
+    soFar: (a: number, c: number) => `${a} to add and ${c} to cut so far`,
+    done: (a: number, c: number) => `${a} to add and ${c} to cut · done`,
+    leave: "Pick while it works. Leave whenever you like: the run keeps going, its tile shows it, and it lands in History.",
+    stillFinding: "Still finding more",
+    soFarAsked: (n: number, asked: number) => `${n} so far · asked for ${asked}`,
+    // An all-in side's end line (Wait D, E: "asked for 15").
+    askedFor: (asked: number) => `asked for ${asked}`,
+    cutsNext: "Cuts start once the first additions are in.",
+    allIn: (n: number) => `All ${n} in`,
+    groupedNow: " · grouped by type now",
+    newMark: "new",
+    applyWaits: "Apply opens when both lists are in. Your picks are kept.",
+    stillFindingTally: "still finding more",
+    // About 45 seconds.
+    slow: "This is taking a while. Some cards didn’t pass the checks, so it’s looking further. Keep picking, or leave: it keeps going and lands in History.",
+    // About 2 minutes.
+    slower: "Still going, about 2 minutes in. Runs this size can take up to about two and a half. It won’t stop early, and your picks are kept.",
+    finishedShort: (a: number, c: number, side: string, short: number, asked: number, reason: string) =>
+      `Found ${a} to add and ${c} to cut. ${side} came up ${short} short of ${asked}: ${reason}.`,
+  },
+  results: {
+    lead: (a: number, c: number, n: number) => `${a} to add and ${c} to cut. Pick any ${n} of each. Nothing moves until you apply.`,
+    aimed: (b: number, name: string) => `aimed at ${b} · ${name}`,
+    youAsked: "You asked",
+    noRequest: "No request. The run worked from the deck’s own gaps.",
+    additions: "Additions",
+    cuts: "Cuts",
+    chosen: (k: number, n: number) => `${k} of ${n} chosen`,
+    applied: (k: number) => `${k} applied`,
+    pick: "Pick",
+    picked: "✓ Picked",
+    added: "Added",
+    cut: "Cut",
+    notPicked: "Not picked",
+    group: "Group",
+    typeHead: (inDeck: number) => `${inDeck} in the deck`,
+    roleHead: (have: number, target: number) => `you have ${have} of ${target}`,
+    withPicks: (n: number) => `${n} with your picks`,
+    flagAsked: "the bracket you asked for",
+    shortCap: (found: number, cap: string) => `Found ${found} additions under your ${cap} cap`,
+  },
+  bar: {
+    none: (n: number) => `Pick up to ${n} of each. The two counts must match, so the deck stays at 99.`,
+    unequal: (a: number, c: number, more: number, side: string) => `${a} in, ${c} out. Pick ${more} more ${side} to apply, so the deck stays at 99.`,
+    wouldGo: (total: number) => `the deck would go to ${total}`,
+    stays: "stays at 99",
+    equal: "Nothing moves until you apply.",
+    bracketStays: (b: number, name: string) => `bracket stays ${b} · ${name}`,
+    bracketReached: (from: number, to: number, name: string) => `bracket ${from} → ${to} · ${name}, as asked`,
+    bracketMissed: (b: number, name: string, from: number) =>
+      `You asked for ${b} · ${name}. None of your picks moves it: pick a flagged addition to get there, or apply these and stay at ${from}.`,
+    apply: (changes: number) => `Apply ${changes} changes`,
+    applied: "back at 99",
+    appliedLine: "Applied as one change. The rest stay here: pick another equal set to take more.",
+    undo: (changes: number) => `Undo all ${changes}`,
+  },
+  confirm: {
+    eyebrow: "Suggested changes",
+    title: (n: number) => `Apply ${n} in, ${n} out`,
+    lead: (bracket: string) => `The deck stays at 99. ${bracket}`,
+    comingIn: (n: number) => `Coming in · ${n}`,
+    goingOut: (n: number) => `Going out · ${n}`,
+    apply: (changes: number) => `Apply ${changes} changes`,
+  },
+  undone: (changes: number) => `Undone. All ${changes} are back as they were, and your picks are still here: apply them again or change them.`,
+  applyFailed: { title: "Couldn’t apply. Nothing changed, and your picks are kept.", detail: "Try Apply again in a moment." },
+  // PR 6: strings the Wait, Results, Short-Run and Apply boards draw (or a state needs) that the handoff's copy file
+  // lacks. Each names the board it is read off. Passed /copy-review 2026-10-28.
+  run: {
+    // The results head's `New run` (Results boards): a fresh intake, the request box empty as always.
+    newRun: "New run",
+    // You asked's quieter line (Results boards: "3 in, 3 out · keep 2 · Core · no cap · any set · any card").
+    askedCount: (n: number) => `${n} in, ${n} out`,
+    askedKeep: (b: number, name: string) => `keep ${b} · ${name}`,
+    askedCap: (dollars: string) => `most ${dollars} a card`,
+    askedNoCap: "no cap",
+    askedSets: (sets: string) => `from ${sets}`,
+    askedAnySet: "any set",
+    askedOwned: "cards you own",
+    askedAnyCard: "any card",
+    // The phone halves' accessible name (the board draws only the two segments).
+    halves: "Additions or cuts",
+    // A side's count chip once its picks are in (Results-3 D: "3 applied"); the halves carry `n of N`.
+    ofN: (k: number, n: number) => `${k} of ${n}`,
+    // The wait's phone segment for a side not started yet (Wait A: "Cuts next").
+    next: "next",
+    // A side's head while it is arriving (Wait A: "Additions 4 so far").
+    soFar: (n: number) => `${n} so far`,
+    // Apply while it is off (Results-3 A, B and the wait: the board draws the bare word).
+    applyOff: "Apply",
+    // The bar with nothing picked (Results-3 A: the quiet count alone).
+    nonePicked: "0 in · 0 out",
+    // The lead once a set is applied (Results-3 D).
+    appliedLead: (n: number, rest: number) => `Applied ${n} in, ${n} out. The deck is back at 99. The other ${rest} stay here.`,
+    // The lead when a list came back under N (Short-Run: "14 to add and 21 to cut. Pick up to 14 of each.").
+    shortLead: (a: number, c: number, n: number) => `${a} to add and ${c} to cut. Pick up to ${n} of each.`,
+    // A pick refused (the line was taken, or the run retired): the row rolls back and says so.
+    pickRefused: "Couldn’t save that pick. Try again.",
+  },
+  // The short-run head (Short-Run A/B, Wait E). `found` is the shorter list's count. Passed /copy-review 2026-10-28.
+  short: {
+    // Short-Run A, the cap (charged): `results.shortCap` is the head.
+    capBody: (asked: number, dropped: number, cap: string, n: number) =>
+      `You asked for ${asked}. The run named ${dropped} more that cost over ${cap} a card, so you can apply up to ${n} of each.`,
+    capCredit: "1 credit used: your cap set the count",
+    capLink: "Raise the cap in a new run ›",
+    // The other restrictions that can bind a list (spec §5.5), charged as the cap is.
+    setHead: (found: number, side: string) => `Found ${found} ${side} in the sets you chose.`,
+    ownedHead: (found: number, side: string) => `Found ${found} ${side} you own.`,
+    aimHead: (found: number, side: string) => `Found ${found} ${side} that fit the bracket you chose.`,
+    bodyBound: (asked: number, n: number) => `You asked for ${asked}. Your limits held the run short, so you can apply up to ${n} of each.`,
+    boundCredit: "1 credit used: your limits set the count",
+    boundLink: "Change them in a new run ›",
+    // Short-Run B, no restriction explains it (refunded).
+    refundHead: (found: number, side: string) => `Found ${found} ${side}.`,
+    refundBody: (asked: number) => `You asked for ${asked}. Nothing you set explains the gap: the run fell short on its own, so the credit is back.`,
+    refundCredit: "Credit returned",
+    // Short-Run B with the allowance's standing: "Credit returned · 5 of 5 left".
+    refundCreditLeft: (left: number, total: number) => `Credit returned · ${left} of ${total} left`,
+    additions: "additions",
+    cuts: "cuts",
+    // Wait E's reason, after "Cuts came up 3 short of 15: ".
+    reasons: {
+      overCap: "the rest cost over your cap",
+      offSet: "the rest are outside the sets you chose",
+      notOwned: "the rest are cards you don’t own",
+      bracketAim: "the rest don’t fit the bracket you chose",
+      none: "too few passed the checks",
+    },
+    sideAdditions: "Additions",
+    sideCuts: "Cuts",
+    // Plan P4: the cut call failed, so the run ended with its additions and no cuts, refunded.
+    noCuts: "The cuts didn’t come through this time, so nothing here can be applied and the credit is back. Your additions stay here to read.",
+  },
+  // Down's missed aim (the handoff words only Up's: "pick a flagged addition").
+  barMissedDown: (b: number, name: string, from: number) =>
+    `You asked for ${b} · ${name}. None of your picks moves it: pick a cut that lowers it to get there, or apply these and stay at ${from}.`,
+  // The bar's sides, as `bar.unequal` names them ("Pick 1 more cut").
+  barSide: { add: (n: number) => (n === 1 ? "addition" : "additions"), cut: (n: number) => (n === 1 ? "cut" : "cuts") },
+  // The confirmation's close and its press while it applies.
+  confirmClose: "Close",
+  applying: "Applying…",
+  undoing: "Undoing…",
+  // A v10 run once the switch is on (spec §10, the cutover): read-only.
+  pastRun: "From before Suggested changes asked how many, so it’s here to read. Start a new run to pick changes.",
 } as const;

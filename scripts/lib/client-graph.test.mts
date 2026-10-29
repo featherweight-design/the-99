@@ -18,6 +18,8 @@ const PANEL_IMPORTERS = new Set([
   "src/components/decks/cuts-panel.tsx",
   "src/components/decks/mana-improve-door.tsx",
   "src/components/decks/manifest-rows.tsx",
+  "src/components/decks/suggested-changes-pick-line.tsx",
+  "src/components/decks/suggested-changes-run.tsx",
   "src/components/decks/suggestion-card.tsx",
   "src/components/decks/suggestion-line.tsx",
   "src/components/decks/suggestion-lists.tsx",

@@ -96,6 +96,11 @@ export type LineItem = {
    *  deck page's own role counter (`roleCounterFor`; null for a card that fills none). Absent on a v10 line. */
   typeGroup?: CardTypeGroup;
   role?: MixRole | null;
+  /** Suggested changes v2 (H4): the player's pick, kept across leaving, a return and an Undo. Absent on a v10 line. */
+  picked?: boolean;
+  /** Suggested changes v2 (spec §7a): the one applied set this line belongs to, which its one Undo reverts; null while
+   *  open. Absent on a v10 line. */
+  applySet?: string | null;
 };
 
 export type TuningItem = PairItem | LineItem;
@@ -161,6 +166,19 @@ export type TuningState = {
    * stay the last finished run's.
    */
   live?: TuningLive | null;
+  /** What the player asked the run `items` came from (a v2 run's count, request, bracket aim and limits), for the results'
+   *  You asked. Null or absent for a v10 run's items, and with no items. */
+  itemsAsk?: V2Ask | null;
+};
+
+/** A Suggested changes v2 run's ask, as stored on the run (spec §8): N, the typed request, the bracket aim and the limits it
+ *  read. */
+export type V2Ask = {
+  runId: string;
+  requestedCount: number;
+  request: string | null;
+  bracket: { choice: "keep" | "down" | "up"; target: number } | null;
+  restrictions: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean } | null;
 };
 
 export type TuningLive = {
@@ -172,4 +190,6 @@ export type TuningLive = {
   items: TuningItem[];
   /** When the prices on `items` were read, as `TuningState.newestPriceAsOf` is for the last set's. */
   newestPriceAsOf: Date | null;
+  /** What the player asked this run, for the wait's You asked. Absent from a read made before PR 6. */
+  ask?: V2Ask;
 };

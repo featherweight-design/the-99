@@ -40,6 +40,7 @@ export function SuggestionLine({
   newestPriceAsOf,
   actions,
   onSettled,
+  readOnly = false,
 }: {
   item: LineItem;
   permits: readonly Bracket[];
@@ -47,6 +48,9 @@ export function SuggestionLine({
   actions: CardActions;
   /** Resolves false when the panel's re-read failed: the row then keeps its answer drawn. */
   onSettled: (announce: string) => void | boolean | Promise<void | boolean>;
+  /** A v10 run once Suggested changes v2 is on (spec §10, the cutover): drawn as it stands, with no Add, Reject, Undo or
+   *  Show again. */
+  readOnly?: boolean;
 }) {
   const [busy, setBusy] = useState<keyof CardActions | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
@@ -86,7 +90,7 @@ export function SuggestionLine({
         label={isAdd ? copy.added : copy.cutDone}
         name={item.cardName}
         struck={!isAdd}
-        action={{ label: copy.undo, onPress: () => answer("undo"), busy: busy !== null }}
+        action={readOnly ? undefined : { label: copy.undo, onPress: () => answer("undo"), busy: busy !== null }}
         refused={refused}
       />
     );
@@ -97,7 +101,7 @@ export function SuggestionLine({
         tone="rejected"
         label={copy.rejected}
         name={item.cardName}
-        action={{ label: copy.showAgain, onPress: () => answer("restore"), busy: busy !== null }}
+        action={readOnly ? undefined : { label: copy.showAgain, onPress: () => answer("restore"), busy: busy !== null }}
         refused={refused}
       />
     );
@@ -107,30 +111,7 @@ export function SuggestionLine({
   }
 
   const shift = bracketShift(permits, item.bracketAfter);
-  const selfExcluded = item.inDeck;
-  const marked = isAdd && item.owned && item.availability !== null
-    && availabilityState(item.availability, { selfExcluded }) !== "free";
-  // Owned but with no copy free for it, or already overcommitted: the marker says why, and the buy
-  // tag beside it says what the copy costs, the pair a Shopping row draws for a spoken-for card.
-  const needsBuy = suggestionNeedsBuy({ owned: item.owned, availability: item.availability, selfExcluded, typeLine: item.cardTypeLine });
-  const marker = marked ? (
-    <AvailabilityMarker bareOne
-      availability={item.availability!}
-      nameless
-      selfExcluded={selfExcluded}
-      spoken={false}
-      seam="var(--surface)"
-      className="flex-none font-mono text-[10.5px]"
-    />
-  ) : null;
-  const addMark = !isAdd ? null : !needsBuy ? marker : !item.owned ? (
-    <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
-  ) : (
-    <span className="inline-flex flex-none items-center gap-[8px]">
-      {marker}
-      <BuyTag variant="row" label={recommendationsCopy.shopping.rowSecondCopyTagAria} price={item.price} newestAsOf={newestPriceAsOf} />
-    </span>
-  );
+  const addMark = addMarkOf(item, newestPriceAsOf);
 
   const yes = (
     <button
@@ -172,7 +153,7 @@ export function SuggestionLine({
         {isAdd ? <OwnershipDot owned={item.owned} size={7} /> : null}
         <Name item={item} />
         {addMark ? <span className="hidden md:inline-flex">{addMark}</span> : null}
-        <span className="ml-auto hidden gap-[7px] md:flex">{yes}{no}</span>
+        {readOnly ? null : <span className="ml-auto hidden gap-[7px] md:flex">{yes}{no}</span>}
       </div>
       {addMark ? <div className="flex items-center gap-[8px] md:hidden">{addMark}</div> : null}
       <p className="max-w-[980px] text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
@@ -186,23 +167,62 @@ export function SuggestionLine({
           <BracketChip permits={item.bracketAfter as Bracket[]} />
         </div>
       ) : null}
-      <ul className="flex flex-wrap gap-[5px]">
-        {item.evidence.map((c, i) => (
-          <li
-            key={i}
-            className="flex items-baseline gap-[5px] rounded-[5px] px-[7px] py-[3px] font-mono text-[9.5px]"
-            data-cite={c.kind}
-            // The strategy focus's chip (handoff Call 3): dashed accent, its label in accent.
-            style={{ background: "var(--surface-sunken)", border: c.kind === "focus" ? "1px dashed var(--accent)" : "1px solid var(--border)" }}
-          >
-            <span className="uppercase tracking-[0.1em]" style={{ color: c.kind === "focus" ? "var(--accent-text)" : "var(--fg-locked)" }}>{cardCopy.cite[c.kind]}</span>
-            <span style={{ color: c.kind === "focus" ? "var(--fg)" : "var(--fg-muted)" }}>{c.value}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="flex gap-[8px] md:hidden">{yes}{no}</div>
+      <CiteChips item={item} />
+      {readOnly ? null : <div className="flex gap-[8px] md:hidden">{yes}{no}</div>}
       {refused ? <MutationError message={refused} /> : null}
     </article>
+  );
+}
+
+/**
+ * An addition's collection mark: the claim marker when its copies are spoken for, the buy tag when it must be bought, or
+ * both. Null for a cut, and for a free owned addition. Shared with Suggested changes v2's pick row.
+ */
+export function addMarkOf(item: LineItem, newestPriceAsOf: Date | null): React.ReactNode {
+  if (item.side !== "add") return null;
+  const selfExcluded = item.inDeck;
+  const marked = item.owned && item.availability !== null
+    && availabilityState(item.availability, { selfExcluded }) !== "free";
+  // Owned but with no copy free for it, or already overcommitted: the marker says why, and the buy
+  // tag beside it says what the copy costs, the pair a Shopping row draws for a spoken-for card.
+  const needsBuy = suggestionNeedsBuy({ owned: item.owned, availability: item.availability, selfExcluded, typeLine: item.cardTypeLine });
+  const marker = marked ? (
+    <AvailabilityMarker bareOne
+      availability={item.availability!}
+      nameless
+      selfExcluded={selfExcluded}
+      spoken={false}
+      seam="var(--surface)"
+      className="flex-none font-mono text-[10.5px]"
+    />
+  ) : null;
+  return !needsBuy ? marker : !item.owned ? (
+    <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
+  ) : (
+    <span className="inline-flex flex-none items-center gap-[8px]">
+      {marker}
+      <BuyTag variant="row" label={recommendationsCopy.shopping.rowSecondCopyTagAria} price={item.price} newestAsOf={newestPriceAsOf} />
+    </span>
+  );
+}
+
+/** The line's citation chips, the strategy focus's dashed. Shared with Suggested changes v2's pick row. */
+export function CiteChips({ item }: { item: LineItem }) {
+  return (
+    <ul className="flex flex-wrap gap-[5px]">
+      {item.evidence.map((c, i) => (
+        <li
+          key={i}
+          className="flex items-baseline gap-[5px] rounded-[5px] px-[7px] py-[3px] font-mono text-[9.5px]"
+          data-cite={c.kind}
+          // The strategy focus's chip (handoff Call 3): dashed accent, its label in accent.
+          style={{ background: "var(--surface-sunken)", border: c.kind === "focus" ? "1px dashed var(--accent)" : "1px solid var(--border)" }}
+        >
+          <span className="uppercase tracking-[0.1em]" style={{ color: c.kind === "focus" ? "var(--accent-text)" : "var(--fg-locked)" }}>{cardCopy.cite[c.kind]}</span>
+          <span style={{ color: c.kind === "focus" ? "var(--fg)" : "var(--fg-muted)" }}>{c.value}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -227,7 +247,8 @@ function useOpen(item: LineItem) {
   };
 }
 
-function Name({ item }: { item: LineItem }) {
+/** `strike={false}`: a cut not yet made reads plain (Suggested changes v2's pending rows); every other caller strikes. */
+export function Name({ item, strike = true }: { item: LineItem; strike?: boolean }) {
   const trigger = useOpen(item);
   const add = item.side === "add";
   return (
@@ -235,14 +256,15 @@ function Name({ item }: { item: LineItem }) {
       type="button"
       {...trigger}
       aria-label={copy.open(item.cardName)}
-      className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${add ? "font-semibold text-[color:var(--fg)]" : "font-normal text-[color:var(--fg-body)] line-through [text-decoration-color:var(--fg-locked)]"}`}
+      className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${add ? "font-semibold text-[color:var(--fg)]" : `font-normal text-[color:var(--fg-body)]${strike ? " line-through [text-decoration-color:var(--fg-locked)]" : ""}`}`}
     >
       {item.cardName}
     </button>
   );
 }
 
-function Thumb({ item }: { item: LineItem }) {
+/** `small`: the 20×28 thumbnail of a confirmation's name list (Apply's `.cr2 img`); the default is the line's 22×31. */
+export function Thumb({ item, small = false }: { item: LineItem; small?: boolean }) {
   const trigger = useOpen(item);
   // Dashed only for a card that is NOT in the deck (the table's "not in deck" row): an addition
   // already made, or a cut, is a card the deck holds.
@@ -254,7 +276,7 @@ function Thumb({ item }: { item: LineItem }) {
       {...trigger}
       tabIndex={-1}
       aria-hidden
-      className={`relative h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] transition-colors ${add ? "[border:1px_dashed_var(--border-dashed)]" : "[border:1px_solid_var(--border-strong)]"} ${src ? "" : add ? "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]"}`}
+      className={`relative ${small ? "h-[28px] w-[20px] rounded-[2px]" : "h-[31px] w-[22px] rounded-[3px]"} flex-none overflow-hidden bg-cover bg-center hover:[border-color:var(--accent)] transition-colors ${add ? "[border:1px_dashed_var(--border-dashed)]" : "[border:1px_solid_var(--border-strong)]"} ${src ? "" : add ? "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]"}`}
       title={item.cardName}
     >
       {src ? <ArtLayer src={src} /> : null}
