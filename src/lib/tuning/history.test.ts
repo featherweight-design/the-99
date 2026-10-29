@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   afterKey, decodeCursor, encodeCursor, historyPress, mergePage, RUN_TOOL_OF, parseHistoryId, pastCutChips, pastVerdict, runOutcome,
-  shapeCount, shapeRun, type HistoryRow, type RunRecord,
+  shapeCount, shapeRun, v2RunFacts, type HistoryRow, type RunRecord,
 } from "./history";
 import { REAPER_CUTOFF_MS } from "./limits";
 
@@ -53,6 +53,60 @@ describe("shapeRun", () => {
   it("carries no facts for a run that did not finish", () => {
     expect(shapeRun(run({ status: "failed" }), now).summary).toEqual({ kind: "none" });
     expect(shapeRun(run({ status: "pending", createdAt: ago(5000) }), now).outcome).toBe("running");
+  });
+});
+
+describe("a Suggested changes v2 run (History A)", () => {
+  const ask = (over: Partial<NonNullable<RunRecord["ask"]>> = {}): NonNullable<RunRecord["ask"]> => ({
+    request: "More removal", count: 3, capCents: null, phase: "additions", refunded: false, cutsFailed: false, ...over,
+  });
+
+  it("carries its request and count, and summarises found and applied per list", () => {
+    const r = shapeRun(run({ v2: true, ask: ask(), items: items({ total: 10, adds: 5, cuts: 5, acceptedAdds: 3, acceptedCuts: 3, accepted: 6 }) }), now);
+    expect(r).toMatchObject({ tool: "suggested", tier: "credit", outcome: "ok", ask: { request: "More removal", count: 3, phase: "additions" } });
+    expect(r.summary).toEqual({ kind: "suggestedV2", found: { add: 5, cut: 5 }, applied: { add: 3, cut: 3 }, capCents: null });
+  });
+
+  it("is short when either list came back under its count, or the cut call failed", () => {
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 20, capCents: 200 }), items: items({ adds: 14, cuts: 21 }) }), now).outcome).toBe("short");
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 10 }), items: items({ adds: 15, cuts: 8 }) }), now).outcome).toBe("short");
+    expect(shapeRun(run({ v2: true, ask: ask({ cutsFailed: true }), items: items({ adds: 5, cuts: 0 }) }), now).outcome).toBe("short");
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 3 }), items: items({ adds: 3, cuts: 3 }) }), now).outcome).toBe("ok");
+  });
+
+  it("strikes the tier of a finished run that gave its credit back, never of one still running or failed", () => {
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 10, refunded: true }), items: items({ adds: 8, cuts: 15 }) }), now).tier).toBe("refunded");
+    expect(shapeRun(run({ v2: true, ask: ask({ refunded: true }), status: "failed", errorClass: "ungrounded" }), now).tier).toBe("credit");
+    expect(shapeRun(run({ v2: true, ask: ask(), status: "pending", createdAt: ago(5000) }), now)).toMatchObject({ outcome: "running", tier: "credit" });
+  });
+
+  it("leaves a v10 run as stored: no ask, its own summary", () => {
+    const r = shapeRun(run({ items: items({ adds: 5, cuts: 5 }) }), now);
+    expect(r.ask).toBeUndefined();
+    expect(r.summary.kind).toBe("suggestedOk");
+  });
+
+  it("reads its report: the cap, the list it is on, the charge and a failed cut call", () => {
+    expect(v2RunFacts(null)).toEqual({ capCents: null, phase: "additions", refunded: false, cutsFailed: false });
+    const report = {
+      askedCount: 0, survivedCount: 0, keptCount: 0, hadNotes: true,
+      v2: {
+        requestHash: "h", restrictions: { capCents: 200, sets: [], ownedOnly: false }, in: { add: true, cut: false },
+        refilling: { add: false, cut: false }, charge: { outcome: "refunded" as const, why: "shortByModel" }, cutsFailed: { errorClass: "x" },
+      },
+    };
+    expect(v2RunFacts(report)).toEqual({ capCents: 200, phase: "cuts", refunded: true, cutsFailed: true });
+    expect(v2RunFacts({ askedCount: 0, survivedCount: 0, keptCount: 0, hadNotes: false, refunded: true }).refunded).toBe(true);
+  });
+
+  it("reopens a short run with lines in its tool, as an ok one", () => {
+    const RUN = "11111111-1111-4111-8111-111111111111";
+    const r: HistoryRow = {
+      id: `run:${RUN}`, tool: "suggested", tier: "refunded", outcome: "short", at: now.toISOString(),
+      summary: { kind: "suggestedV2", found: { add: 8, cut: 15 }, applied: { add: 0, cut: 0 }, capCents: null },
+    };
+    expect(historyPress(r)).toEqual({ kind: "review", runId: RUN });
+    expect(historyPress({ ...r, summary: { ...r.summary, found: { add: 0, cut: 0 } } as HistoryRow["summary"] })).toEqual({ kind: "past" });
   });
 });
 

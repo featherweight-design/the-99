@@ -223,8 +223,12 @@ describe("startTuningV2's refusals, all before a credit is reserved", () => {
   it("asks once when the deck and the request both match the newest ok v2 run (G4), naming that run", async () => {
     const hash = requestHash({ count: 3, text: "more draw", bracketChoice: "none", bracketTarget: 0 });
     s.last = [{ id: "run_old", fingerprint: "fp", at: new Date("2026-10-27T10:00:00Z"), requestHash: hash }];
-    expect(await start({ request: "more draw" })).toEqual({ kind: "confirm", runId: "run_old", at: "2026-10-27T10:00:00.000Z" });
+    expect(await start({ request: "more draw" })).toEqual({ kind: "confirm", runId: "run_old", at: "2026-10-27T10:00:00.000Z", refunded: false });
     expect(s.started).toEqual([]);
+    // A run that gave its credit back says so, for its reopened head (History's `refunded` tier).
+    s.last = [{ id: "run_old", fingerprint: "fp", at: new Date("2026-10-27T10:00:00Z"), requestHash: hash, refunded: true }];
+    expect(await start({ request: "more draw" })).toMatchObject({ kind: "confirm", refunded: true });
+    s.last = [{ id: "run_old", fingerprint: "fp", at: new Date("2026-10-27T10:00:00Z"), requestHash: hash }];
     // A different request, a moved deck, or the player's yes: it runs.
     expect(await start({ request: "more removal" })).toMatchObject({ kind: "started" });
     s.last = [{ id: "run_old", fingerprint: "moved", at: new Date(), requestHash: hash }];

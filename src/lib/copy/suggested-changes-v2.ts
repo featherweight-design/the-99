@@ -2,7 +2,7 @@
 // /copy-review as a block. PLACEHOLDERS owed to /copy-review, carried verbatim from the handoff's copy file
 // (design/design_handoff_the99_suggested_changes_v2, `suggested-changes-v2 · copy strings.ts`, the `tile` and `intake`
 // blocks; approved 2026-10-28). PR 6 adds the `wait`, `results`, `bar`, `confirm`, `undone` and `applyFailed`
-// blocks verbatim; the history and about blocks arrive with PR 7.
+// blocks verbatim; PR 7b adds the history block; the about block arrives with PR 7.
 // US English, no em dashes, and never the words AI, model or LLM.
 //
 // Reuses, never restates: creditsCopy (the credit line), deckDescriptionCopy.limits (the Kept for this deck box),
@@ -231,4 +231,37 @@ export const suggestedChangesV2Copy = {
   undoing: "Undoing…",
   // A v10 run once the switch is on (spec §10, the cutover): read-only.
   pastRun: "From before Suggested changes asked how many, so it’s here to read. Start a new run to pick changes.",
+  // PR 7b: History (History A, B and C). `summary` and `oldRunLead` verbatim from the handoff's copy file; the rest are
+  // read off the boards and are PLACEHOLDERS for /copy-review. The past-run note and the dates are tuningHubCopy's.
+  history: {
+    summary: (asked: number, found: string, applied: string) => `${asked} asked · ${found} found · ${applied} applied`,
+    oldRunLead: (n: number, date: string) => `Applied ${n} in, ${n} out on ${date}.`,
+    // History A: the two lists' counts, as `found` and `applied` quote them ("14 + 21", "3 + 3").
+    pair: (a: number, c: number) => `${a} + ${c}`,
+    // History A: an ok run leads with its count as You asked writes it ("3 in, 3 out · 5 + 5 found · 3 + 3 applied").
+    summaryOk: (count: string, found: string, applied: string) => `${count} · ${found} found · ${applied} applied`,
+    // History A: `summary` for a short run that read a price cap ("20 asked · 14 + 21 found under $2 · 14 + 14 applied").
+    summaryCapped: (asked: number, found: string, cap: string, applied: string) =>
+      `${asked} asked · ${found} found under ${cap} · ${applied} applied`,
+    // History A: a run nothing was applied from ("nothing applied").
+    appliedNone: "nothing",
+    // History A: a run asked with the box left empty.
+    noRequest: "No request",
+    // History A: a run being made ("10 in, 10 out · choosing cuts"), with the tile's words.
+    running: (n: number, words: string) => `${n} in, ${n} out · ${words}`,
+    // Wait A's tile and History A: the run is choosing its cuts. Before that it is `tuningHubCopy.runningWords.suggested`.
+    choosingCuts: "choosing cuts",
+    // History B: after `oldRunLead`, the unpicked rows ("The other 4 are still pickable.").
+    // With none left the clause is left out (empty); one left is singular. PLACEHOLDERS for /copy-review.
+    oldRunRest: (rest: number) => (rest === 0 ? "" : rest === 1 ? "The other one is still pickable." : `The other ${rest} are still pickable.`),
+    // History B on desktop, verbatim from the board: "The other 4 are still pickable while the deck is on version 4."
+    oldRunRestVersion: (rest: number, version: number) => (rest === 0 ? ""
+      : rest === 1 ? `The other one is still pickable while the deck is on version ${version}.`
+        : `The other ${rest} are still pickable while the deck is on version ${version}.`),
+    // History C: the lists and what was applied from them ("5 to add and 5 to cut · 2 + 2 applied on Oct 19.").
+    staleLists: (a: number, c: number) => `${a} to add and ${c} to cut`,
+    staleApplied: (applied: string, date: string) => ` · ${applied} applied on ${date}.`,
+    // History C with nothing applied from the run (the board draws only a run with some applied).
+    staleListsOnly: (a: number, c: number) => `${a} to add and ${c} to cut.`,
+  },
 } as const;

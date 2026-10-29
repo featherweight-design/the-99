@@ -10,6 +10,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { readTuningHistory, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
+import { formatCents } from "../../lib/decks/price";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { afterKey } from "../../lib/tuning/history";
 import type { HistoryOutcome, HistoryRow, HistorySummary, HistoryTier, HistoryTool, PastRun } from "../../lib/tuning/history";
@@ -19,6 +21,7 @@ import { SegmentedSwitch } from "../ui/segmented-switch";
 import { TuningToolMark } from "./tuning-tool-mark";
 
 const copy = tuningHubCopy.history;
+const v2Copy = suggestedChangesV2Copy.history;
 const NAME: Record<HistoryTool, string> = {
   suggested: tuningHubCopy.tools.suggested.name,
   mana: tuningHubCopy.tools.mana.name,
@@ -34,6 +37,11 @@ export function historyDate(iso: string): string {
   return `${day} · ${time}`;
 }
 
+/** `Oct 26`: the day alone, as History B and C's head and lead draw a reopened run's date. */
+export function historyDay(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 /** `October 2026`, the sticky month heading. */
 export function historyMonth(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -43,8 +51,12 @@ export function historyMonth(iso: string): string {
 /** While a listed run is in flight, the list re-reads at the tools' own cadence. */
 const HISTORY_WATCH_MS = 3000;
 
-export function summaryText(row: Pick<HistoryRow, "tool" | "tier" | "outcome" | "summary">): string {
+export function summaryText(row: Pick<HistoryRow, "tool" | "tier" | "outcome" | "summary" | "ask">): string {
   const s = copy.summary;
+  // A Suggested changes v2 run (History A): its count and the list it is on while it is made, then asked · found ·
+  // applied once it has finished. Any other v2 outcome says what the shipped row says.
+  if (row.ask && row.outcome === "running") return v2Copy.running(row.ask.count, v2RunningWords(row.ask.phase));
+  if (row.ask && row.summary.kind === "suggestedV2") return v2Summary(row.ask.count, row.summary, row.outcome === "short" || row.tier === "refunded");
   if (row.outcome === "running") return s.running[row.tool];
   if (row.outcome === "failed") return s.failed;
   if (row.outcome === "refused") return s.refused;
@@ -52,10 +64,29 @@ export function summaryText(row: Pick<HistoryRow, "tool" | "tier" | "outcome" | 
   return summaryOf(row.summary);
 }
 
+/** The words a v2 run in flight says on its tile and its History row (Wait A: `choosing cuts · 0:41`). */
+export function v2RunningWords(phase: "additions" | "cuts"): string {
+  return phase === "cuts" ? v2Copy.choosingCuts : tuningHubCopy.runningWords.suggested;
+}
+
+/** `$2`, or `$2.50`: the cap as History A quotes it ("found under $2"). */
+const capText = (cents: number) => (cents % 100 === 0 ? `$${cents / 100}` : formatCents(cents));
+
+/** History A: an ok run leads `3 in, 3 out`; a short or refunded one says `N asked`, and names the cap only there, where it
+ *  explains the count. */
+function v2Summary(asked: number, s: Extract<HistorySummary, { kind: "suggestedV2" }>, short: boolean): string {
+  const found = v2Copy.pair(s.found.add, s.found.cut);
+  const applied = s.applied.add + s.applied.cut === 0 ? v2Copy.appliedNone : v2Copy.pair(s.applied.add, s.applied.cut);
+  if (!short) return v2Copy.summaryOk(suggestedChangesV2Copy.run.askedCount(asked), found, applied);
+  return s.capCents === null ? v2Copy.summary(asked, found, applied) : v2Copy.summaryCapped(asked, found, capText(s.capCents), applied);
+}
+
 function summaryOf(summary: HistorySummary): string {
   const s = copy.summary;
   switch (summary.kind) {
     case "suggestedOk": return s.suggestedOk(summary.in, summary.out, summary.added, summary.cut, summary.rejected);
+    // Only a row with its ask carries this summary, and `summaryText` answers that row first.
+    case "suggestedV2": return s.counted;
     case "cutsDeeperOk": return s.cutsDeeperOk(summary.named, summary.asked, summary.cut, summary.kept);
     case "cutsFree": return s.cutsFree(summary.over, summary.roles);
     case "manaFree": return s.manaFree(summary.pips, summary.sources);
@@ -317,23 +348,37 @@ function Chips({ tools, value, onChange }: { tools: HistoryTool[]; value: Histor
   );
 }
 
-const OUTCOME_STYLE: Record<HistoryOutcome, { color: string; background: string }> = {
-  ok: { color: "var(--fg-faint)", background: "transparent" },
-  refused: { color: "var(--fg-body)", background: "var(--elevated)" },
-  stopped: { color: "var(--fg-muted)", background: "var(--elevated)" },
-  failed: { color: "var(--danger)", background: "transparent" },
-  running: { color: "var(--accent-text)", background: "color-mix(in srgb, var(--accent) 14%, transparent)" },
+// History A's pills (History.dc `.oc`, `.tier`), for every row of every tool: a ring in the outcome's own ink.
+const RING = (token: string) => `[border-color:color-mix(in_oklab,var(${token})_45%,transparent)]`;
+const OUTCOME_CLASS: Record<HistoryOutcome, string> = {
+  ok: `text-[color:var(--success)] ${RING("--success")}`,
+  short: `text-[color:var(--warning)] ${RING("--warning")}`,
+  running: "text-[color:var(--accent-text)] border-[color:var(--accent-shadow)]",
+  failed: `text-[color:var(--danger)] ${RING("--danger")}`,
+  // Not drawn on History.dc: the quiet ring the board gives a refunded pill.
+  refused: "text-[color:var(--fg-body)] border-[color:var(--border-strong)]",
+  stopped: "text-[color:var(--fg-muted)] border-[color:var(--border-strong)]",
+};
+/** A short run that gave its credit back reads quiet, not as a warning (History A, `.oc.rf`). */
+const OUTCOME_REFUNDED = "text-[color:var(--fg-muted)] border-[color:var(--border-strong)]";
+
+export function outcomeClass(outcome: HistoryOutcome, tier: HistoryTier): string {
+  return tier === "refunded" ? OUTCOME_REFUNDED : OUTCOME_CLASS[outcome];
+}
+
+const TIER_CLASS: Record<HistoryTier, string> = {
+  free: "text-[color:var(--fg-faint)] border-[color:var(--border-strong)]",
+  credit: "text-[color:var(--accent-text)] border-[color:var(--accent-shadow)]",
+  // A refunded v2 run (History A): the tier struck, in faint ink, with no credit mark.
+  refunded: "text-[color:var(--fg-faint)] border-[color:var(--border-strong)] line-through",
+  // Not drawn on History.dc: the deeper look keeps its shipped fill.
+  deeper: "text-[color:var(--accent-text)] border-[color:var(--accent-dim)] bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)]",
 };
 
 export function TierPill({ tier }: { tier: HistoryTier }) {
-  const style = tier === "free"
-    ? { color: "var(--fg-faint)" }
-    : tier === "credit"
-      ? { color: "var(--fg-body)" }
-      : { color: "var(--accent-text)", border: "1px solid var(--accent-dim)", background: "color-mix(in srgb, var(--accent) 12%, transparent)", padding: "1px 8px" };
   return (
-    <span data-tier={tier} className="inline-flex items-center gap-[5px] whitespace-nowrap rounded-full font-mono text-[10px]" style={style}>
-      {tier === "free" ? null : <span aria-hidden="true" className="h-[6px] w-[6px] flex-none rotate-45" style={{ background: "currentColor" }} />}
+    <span data-tier={tier} className={`inline-flex items-center gap-[5px] whitespace-nowrap rounded-full border px-[8px] py-[1px] font-mono text-[10px] ${TIER_CLASS[tier]}`}>
+      {tier === "free" || tier === "refunded" ? null : <span aria-hidden="true" className="h-[6px] w-[6px] flex-none rotate-45" style={{ background: "currentColor" }} />}
       {copy.tier[tier]}
     </span>
   );
@@ -343,27 +388,46 @@ function Row({ row, onOpen }: { row: HistoryRow; onOpen: () => void }) {
   const running = row.outcome === "running";
   const summary = summaryText(row);
   const date = historyDate(row.at);
+  const ask = row.ask ?? null;
+  const request = ask ? (ask.request ? `“${ask.request}”` : v2Copy.noRequest) : null;
   return (
     <button
       type="button"
       data-history-row={row.id}
       data-outcome={row.outcome}
       onClick={onOpen}
-      aria-label={`${NAME[row.tool]}, ${date}, ${copy.tier[row.tier]}, ${copy.outcome[row.outcome]}: ${summary}`}
-      className={`grid min-h-[60px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-[10px] gap-y-[6px] rounded-[9px] border bg-[var(--surface)] px-[12px] py-[11px] text-left md:min-h-[44px] md:grid-cols-[114px_104px_minmax(0,1fr)_108px_76px] md:gap-[12px] md:py-[9px] ${
-        running ? "border-[var(--accent)]" : "border-[var(--border)]"
+      aria-label={`${NAME[row.tool]}, ${date}, ${copy.tier[row.tier]}, ${copy.outcome[row.outcome]}: ${request ? `${request}, ` : ""}${summary}`}
+      // History.dc `.hrow`: 114 · 128 · rest · 92 · 76 on desktop; a run in flight on `.nw`'s raised fill and accent-shadow edge.
+      className={`grid min-h-[60px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-[10px] gap-y-[6px] rounded-[9px] border px-[12px] py-[9px] text-left md:min-h-[44px] md:grid-cols-[114px_128px_minmax(0,1fr)_92px_76px] md:gap-[10px] ${
+        running ? "border-[var(--accent-shadow)] bg-[var(--elevated-hover)]" : "border-[var(--border)] bg-[var(--surface)]"
       }`}
     >
       <span className="col-start-2 row-start-1 whitespace-nowrap font-mono text-[11px] md:col-start-1" style={{ color: "var(--fg-faint)" }}>{date}</span>
-      <span className="col-start-1 row-start-1 flex w-[96px] items-center gap-[7px] text-[12px] font-medium md:col-start-2 md:w-[104px]" style={{ color: "var(--fg-body)" }}>
-        <span style={{ color: running ? "var(--accent-text)" : "var(--fg-body)" }}><TuningToolMark tool={row.tool} size={14} /></span>
+      <span className="col-start-1 row-start-1 flex w-[110px] items-center gap-[7px] text-[12px] font-medium md:col-start-2 md:w-auto" style={{ color: "var(--fg-body)" }}>
+        <span style={{ color: "var(--fg-body)" }}><TuningToolMark tool={row.tool} size={14} /></span>
         {copy.tool[row.tool]}
       </span>
-      <span className="col-span-full row-start-2 min-w-0 text-[12.5px] leading-[1.45] md:col-span-1 md:col-start-3 md:row-start-1" style={{ color: "var(--fg-body)" }}>{summary}</span>
+      {ask ? (
+        // A v2 run (History A): its request quoted and cut to one line, then asked · found · applied under it.
+        <span data-history-ask="" className="col-span-full row-start-2 flex min-w-0 flex-col text-[12.5px] leading-[1.45] md:col-span-1 md:col-start-3 md:row-start-1" style={{ color: "var(--fg-body)" }}>
+          {ask.request ? (
+            <span data-history-request="" className="flex min-w-0" style={{ color: "var(--fg)" }}>
+              <span aria-hidden="true">“</span>
+              <span className="min-w-0 truncate">{ask.request}</span>
+              <span aria-hidden="true">”</span>
+            </span>
+          ) : (
+            <span data-history-request="" style={{ color: "var(--fg-muted)" }}>{v2Copy.noRequest}</span>
+          )}
+          <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{summary}</span>
+        </span>
+      ) : (
+        <span className="col-span-full row-start-2 min-w-0 text-[12.5px] leading-[1.45] md:col-span-1 md:col-start-3 md:row-start-1" style={{ color: "var(--fg-body)" }}>{summary}</span>
+      )}
       <span className="col-span-full row-start-3 justify-self-start md:col-span-1 md:col-start-4 md:row-start-1"><TierPill tier={row.tier} /></span>
       <span
-        className="col-start-3 row-start-1 flex items-center gap-[5px] justify-self-end rounded-full px-[8px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.12em] md:col-start-5"
-        style={OUTCOME_STYLE[row.outcome]}
+        data-history-outcome={row.outcome}
+        className={`col-start-3 row-start-1 flex items-center gap-[5px] justify-self-end rounded-full border px-[8px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.12em] md:col-start-5 ${outcomeClass(row.outcome, row.tier)}`}
       >
         {row.outcome === "failed" ? <FailureMark size={13} /> : null}
         {copy.outcome[row.outcome]}

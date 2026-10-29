@@ -17,7 +17,7 @@ import { visitBaseline } from "../../lib/decks/visit";
 import type { HubTileRun, HubTiles } from "../../lib/tuning/hub-tiles";
 import { historyPress, type HistoryRow, type HistoryTool } from "../../lib/tuning/history";
 import { OpenHistoryProvider, OpenRunProvider, ReviewRunProvider, type OpenRun, type ReviewRun } from "./review-run";
-import { historyDate, summaryText, TuningHistory } from "./tuning-history";
+import { historyDate, summaryText, TuningHistory, v2RunningWords } from "./tuning-history";
 import { TuningToolMark, type TuningTool } from "./tuning-tool-mark";
 import { useTarget } from "../discovery/targets-provider";
 import type { TargetId } from "../../lib/discovery/targets";
@@ -116,9 +116,14 @@ function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number, hasCuts 
     if (spec.panel === null) {
       return { tool: "suggested", purpose: t.needsReading, cost: "", status: "", statusPhone: "", running: false, offer: false, inert: true };
     }
-    const run = runStatus(tiles?.suggested_changes ?? null, copy.runningWords.suggested,
+    const last = tiles?.suggested_changes ?? null;
+    // A v2 run says which list it is on (Wait A: `choosing cuts · 0:41`); v10's reads the deck as shipped.
+    const words = last?.kind === "running" && last.phase ? v2RunningWords(last.phase) : copy.runningWords.suggested;
+    const run = runStatus(last, words,
       (r) => (r.total === 0 ? copy.outcome.nothing : copy.outcome.applied(r.accepted, r.total)), now);
-    return { tool: "suggested", purpose: v2 ? suggestedChangesV2Copy.tile.purpose : t.purpose, cost: t.cost, ...run, offer: false, inert: false };
+    // In flight, v2's tile is the accent edge, the dot and the clock, with no cost beside them (Wait A, the landing).
+    const cost = v2 && run.running ? "" : t.cost;
+    return { tool: "suggested", purpose: v2 ? suggestedChangesV2Copy.tile.purpose : t.purpose, cost, ...run, offer: false, inert: false };
   }
   if (spec.tool === "mana") {
     // Its last count's date and nothing more: a free count has no outcome to report (R3: no verdict).
@@ -245,7 +250,8 @@ export function TuningHub({
   // A run History reopened in its own tool (re-review, Hugh 2026-10-12): the tool reads it through
   // `ReviewRunProvider`, and the hub draws the note above it. Any other opening drops it.
   // `left`: the reader ran the tool again from the reopened run, so it reads as ordinary now.
-  const [review, setReview] = useState<{ run: ReviewRun; row: HistoryRow; left: boolean } | null>(null);
+  // `v2`: a Suggested changes v2 run (History B and C), which draws its own way back and meta line, so no note goes over it.
+  const [review, setReview] = useState<{ run: ReviewRun; row: HistoryRow; left: boolean; v2?: boolean } | null>(null);
   const leaveReview = useCallback(() => setReview((r) => (r ? { ...r, left: true } : r)), []);
   // The History row to focus on the way back from a reviewed run.
   const [returnRow, setReturnRow] = useState<string | null>(null);
@@ -384,16 +390,17 @@ export function TuningHub({
     const run: ReviewRun = press.kind === "review" ? { tool: row.tool, runId: press.runId }
       : press.kind === "manaHelp" ? { tool: row.tool, runId: press.countId, color: press.color }
         : { tool: row.tool, runId: null };
-    setReview({ run, row, left: false });
+    setReview({ run, row, left: false, v2: row.tool === "suggested" && !!row.ask });
     setOpening((prev) => ({ tool: row.tool, focus: true, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
   };
   // A tool reopening one of its own runs in place, as a History press does (Suggested changes v2's same-request confirm,
   // `Open Oct 26’s run`): the run read-only under the hub's note, with the way back to History.
-  const openRun: OpenRun = useCallback((tool, runId, at) => {
+  const openRun: OpenRun = useCallback((tool, runId, at, tier = "credit") => {
     setPast(null);
     setReturnRow(null);
-    const row: HistoryRow = { id: `run:${runId}`, tool, tier: "credit", outcome: "ok", at, summary: { kind: "none" } };
-    setReview({ run: { tool, runId }, row, left: false });
+    const row: HistoryRow = { id: `run:${runId}`, tool, tier, outcome: "ok", at, summary: { kind: "none" } };
+    // Only Suggested changes v2's confirm reopens a run this way.
+    setReview({ run: { tool, runId }, row, left: false, v2: true });
     setOpening((prev) => ({ tool, focus: true, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
   }, []);
   // A tool's own way to History (Suggested changes v2's footer link): the History tab, as its tab press opens it.
@@ -497,7 +504,8 @@ export function TuningHub({
           </div>
           {/* PHONE: the tool alone, with a 44px way back; the landing is the switcher. */}
           <div className="anim-gentle-in flex items-center justify-between md:hidden">
-            {(opened.tool === "history" && past) || reviewing ? (
+            {/* A reopened v2 run carries its own `‹ History` (History B and C): the phone keeps `‹ Tuning` here. */}
+            {(opened.tool === "history" && past) || (reviewing && !reviewing.v2) ? (
               <button type="button" data-history-back="" onClick={() => (reviewing ? backToHistory() : setPast(null))} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
                 {copy.history.back}
               </button>
@@ -518,10 +526,14 @@ export function TuningHub({
               <TuningHistory deckId={deckId} tools={historyTools} past={past} onOpenPast={openFromHistory} focusRow={returnRow} />
             ) : baselineRead ? (
               <>
-                {reviewing ? <ReviewNote row={reviewing.row} counted={reviewing.run.runId === null} onBack={backToHistory} /> : null}
+                {reviewing && !reviewing.v2 ? <ReviewNote row={reviewing.row} counted={reviewing.run.runId === null} onBack={backToHistory} /> : null}
                 {/* Keyed on the run, so a tool reopened on another run, or back on its own read, reads afresh. */}
                 <Fragment key={reviewed ? reviewed.row.id : "live"}>
-                  <ReviewRunProvider value={reviewing ? { ...reviewing.run, leave: leaveReview } : null}>
+                  <ReviewRunProvider value={reviewing ? {
+                    ...reviewing.run,
+                    leave: leaveReview,
+                    ...(reviewing.v2 ? { past: { at: reviewing.row.at, tier: reviewing.row.tier, back: backToHistory } } : {}),
+                  } : null}>
                     <OpenRunProvider value={openRun}>
                       <OpenHistoryProvider value={openHistory}>{opened.panel}</OpenHistoryProvider>
                     </OpenRunProvider>
@@ -601,7 +613,7 @@ function ToolTile({ view, onOpen, onLink }: { view: TileView; onOpen: () => void
               <span className="rounded-full" style={{ color: "var(--fg-faint)", border: "1px solid var(--border-strong)", padding: "1px 8px" }}>{view.cost}</span>
             ) : null}
             {view.running ? (
-              <span aria-hidden="true" className="anim-dots h-[6px] w-[6px] rounded-full" style={{ background: "var(--accent)", boxShadow: "0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent)" }} />
+              <span aria-hidden="true" data-tile-dot="" className="anim-dots h-[7px] w-[7px] rounded-full" style={{ background: "var(--accent)", boxShadow: "0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent)" }} />
             ) : null}
             {view.status ? (
               <span style={{ color: view.running ? "var(--accent-text)" : view.offer ? "var(--fg-muted)" : "var(--fg-faint)" }}>

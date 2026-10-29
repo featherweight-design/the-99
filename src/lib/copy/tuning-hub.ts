@@ -70,8 +70,10 @@ export const tuningHubCopy = {
     filterLabel: "Show runs of",
     regionLabel: "Runs",
     tool: { suggested: "Suggested", mana: "Mana", cuts: "Cuts" },
-    tier: { free: "free", credit: "1 credit", deeper: "deeper look" },
-    outcome: { ok: "ok", refused: "refused", failed: "failed", stopped: "stopped", running: "running" },
+    /** `refunded` (Suggested changes v2, History A): the tier struck, its credit back. */
+    tier: { free: "free", credit: "1 credit", deeper: "deeper look", refunded: "refunded" },
+    /** `short` (Suggested changes v2, History A): a list came back under the count asked. */
+    outcome: { ok: "ok", short: "short", refused: "refused", failed: "failed", stopped: "stopped", running: "running" },
     more: "Show 20 more",
     foot: "Kept for as long as the deck is. A free count is recorded once per version of the list.",
     empty: { head: "No runs yet", body: "Every run of every Tuning tool on this deck lands here, newest first. Open one to see it again." },

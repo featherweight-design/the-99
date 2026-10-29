@@ -7,7 +7,7 @@
 
 import { createContext, useContext } from "react";
 
-import type { HistoryTool } from "../../lib/tuning/history";
+import type { HistoryTier, HistoryTool } from "../../lib/tuning/history";
 
 export type ReviewRun = {
   tool: HistoryTool;
@@ -20,6 +20,9 @@ export type ReviewRun = {
   /** The reader started a new run from the reopened tool: the hub drops the note, and the tool
    *  goes back to its ordinary read without remounting. Absent where nothing listens (tests). */
   leave?: () => void;
+  /** Suggested changes v2 (History B and C): the reopened run draws its own way back and meta line above its heading, and
+   *  the hub draws no note over it. `at` is the run's ISO date, `tier` its History tier. Absent for every other run. */
+  past?: { at: string; tier: HistoryTier; back: () => void };
 };
 
 const ReviewRunContext = createContext<ReviewRun | null>(null);
@@ -35,9 +38,10 @@ export function useReviewRun(tool: HistoryTool): ReviewRun | null {
 /**
  * Reopen one of a tool's own runs as History does, from inside the tool: Suggested changes v2's same-request confirm,
  * `Open Oct 26’s run` (Intake board D). The hub provides it; null where there is no hub (and so no History to go back to).
- * `at` is the run's ISO date, for the note the hub draws above the reopened run.
+ * `at` is the run's ISO date, for the note the hub draws above the reopened run; `tier` its History tier (a refunded run's
+ * credit came back), `credit` when absent.
  */
-export type OpenRun = (tool: HistoryTool, runId: string, at: string) => void;
+export type OpenRun = (tool: HistoryTool, runId: string, at: string, tier?: HistoryTier) => void;
 
 const OpenRunContext = createContext<OpenRun | null>(null);
 

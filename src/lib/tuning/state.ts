@@ -101,6 +101,8 @@ export type LineItem = {
   /** Suggested changes v2 (spec §7a): the one applied set this line belongs to, which its one Undo reverts; null while
    *  open. Absent on a v10 line. */
   applySet?: string | null;
+  /** Suggested changes v2: when the line was answered (ISO), for History B's "Applied … on Oct 26". Absent on a v10 line. */
+  verdictAt?: string | null;
 };
 
 export type TuningItem = PairItem | LineItem;
@@ -159,7 +161,7 @@ export type TuningState = {
   /** A past run the reader opened from History (re-review): `items` are THAT run's, whatever
    *  newer run exists. Absent or null for the panel's ordinary newest-ok-run read. Each line's
    *  `applies` is read live, so a swap the deck has moved past shows as no longer applying. */
-  review?: { runId: string; at: Date } | null;
+  review?: { runId: string; at: Date; readVersion?: number | null } | null;
   /**
    * A Suggested changes v2 run still being made (plan P3): its lines saved so far, which list is in and which is being
    * refilled, so the panel's poll draws the additions while the cuts are made. Null with no such run. `items` above

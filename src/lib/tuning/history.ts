@@ -7,6 +7,7 @@ import type { CutCite } from "./cuts-schema";
 import type { ManaHelp } from "./mana-help";
 import { isManaCountSummary, type ManaCountSummary } from "./mana-view";
 import { reapCutoff } from "./reaper";
+import type { ValidationReport } from "./validate";
 
 /** A FREE tool pass, recorded once per tool per version of the list (`deck_tool_counts`).
  *  `mana_help` is one Improve-my-mana help read: a color's trades and staples, once per list and color. */
@@ -28,12 +29,16 @@ export type ToolCountSummary = CutsCountSummary | ManaCountSummary | ManaHelpSum
 
 /** The filter chips' tools, and a row's tool. */
 export type HistoryTool = "suggested" | "mana" | "cuts";
-export type HistoryTier = "free" | "credit" | "deeper";
-export type HistoryOutcome = "ok" | "refused" | "failed" | "stopped" | "running";
+/** `refunded`: a Suggested changes v2 run that came back short on its own and gave its credit back (History A, struck). */
+export type HistoryTier = "free" | "credit" | "deeper" | "refunded";
+/** `short`: a Suggested changes v2 run that finished with a list under the count it was asked for (Short-Run). */
+export type HistoryOutcome = "ok" | "short" | "refused" | "failed" | "stopped" | "running";
 
 /** Each tool's per-row facts, rendered into a summary line by the panel. */
 export type HistorySummary =
   | { kind: "suggestedOk"; in: number; out: number; added: number; cut: number; rejected: number }
+  /** A finished Suggested changes v2 run (History A): asked · found · applied, `found` under the price cap it read. */
+  | { kind: "suggestedV2"; found: { add: number; cut: number }; applied: { add: number; cut: number }; capCents: number | null }
   | { kind: "cutsDeeperOk"; named: number; asked: number; cut: number; kept: number }
   | { kind: "cutsFree"; over: number; roles: { label: string; over: number }[] }
   /** Mana Balance's free count: the Colors card's totals, never a verdict on a color. */
@@ -51,7 +56,12 @@ export type HistoryRow = {
   /** ISO; the panel formats it in the reader's own time zone. */
   at: string;
   summary: HistorySummary;
+  /** A Suggested changes v2 run (README item 7): its request (quoted, cut to one line), its count, and while it is
+   *  being made which list it is on. Absent on every other row, a v10 run included: it keeps its stored summary. */
+  ask?: V2RowAsk;
 };
+
+export type V2RowAsk = { request: string | null; count: number; phase: "additions" | "cuts" };
 
 export type HistoryPage = { rows: HistoryRow[]; nextCursor: string | null };
 
@@ -93,6 +103,8 @@ export type RunRecord = {
   askedOver: number | null;
   /** A Suggested changes v2 run (`requested_count` set): its own reaper window. Absent reads as v10's. */
   v2?: boolean;
+  /** A v2 run's ask and what its report says (`v2RunFacts`). Absent on a v10 run. */
+  ask?: { request: string | null; count: number } & V2RunFacts;
   items: { total: number; adds: number; cuts: number; acceptedAdds: number; acceptedCuts: number; accepted: number; dismissed: number };
 };
 
@@ -109,11 +121,36 @@ export function isCutsCountSummary(s: unknown): s is CutsCountSummary {
   return typeof o.over === "number" && Array.isArray(o.roles);
 }
 
+/** What History reads off a v2 run's stored report: the cap it read, which list it is on, and how its credit settled. */
+export type V2RunFacts = { capCents: number | null; phase: "additions" | "cuts"; refunded: boolean; cutsFailed: boolean };
+
+export function v2RunFacts(report: ValidationReport | null): V2RunFacts {
+  const v2 = report?.v2;
+  return {
+    capCents: v2?.restrictions?.capCents ?? null,
+    // The additions come first; once they are in, the run is choosing its cuts (Wait A's tile).
+    phase: v2?.in?.add ? "cuts" : "additions",
+    refunded: v2?.charge?.outcome === "refunded" || report?.refunded === true,
+    cutsFailed: !!v2?.cutsFailed,
+  };
+}
+
 export function shapeRun(r: RunRecord, now: Date): HistoryRow {
-  const outcome = runOutcome(r.status, r.createdAt, now, r.errorClass, r.v2);
+  const settled = runOutcome(r.status, r.createdAt, now, r.errorClass, r.v2);
   const suggested = r.tool === "suggested_changes";
+  const ask = suggested ? r.ask : undefined;
+  // A v2 run that finished with either list under its count is short (Short-Run), as its results head says.
+  const outcome: HistoryOutcome = settled === "ok" && ask && (r.items.adds < ask.count || r.items.cuts < ask.count || ask.cutsFailed)
+    ? "short" : settled;
   let summary: HistorySummary = { kind: "none" };
-  if (outcome === "ok" && suggested) {
+  if (ask && (outcome === "ok" || outcome === "short")) {
+    summary = {
+      kind: "suggestedV2",
+      found: { add: r.items.adds, cut: r.items.cuts },
+      applied: { add: r.items.acceptedAdds, cut: r.items.acceptedCuts },
+      capCents: ask.capCents,
+    };
+  } else if (outcome === "ok" && suggested) {
     summary = {
       kind: "suggestedOk",
       in: r.items.adds,
@@ -128,10 +165,12 @@ export function shapeRun(r: RunRecord, now: Date): HistoryRow {
   return {
     id: `run:${r.id}`,
     tool: suggested ? "suggested" : "cuts",
-    tier: suggested ? "credit" : "deeper",
+    // A finished v2 run that gave its credit back says so in its tier (History A); a failed one says it in its summary.
+    tier: !suggested ? "deeper" : ask?.refunded && (outcome === "ok" || outcome === "short") ? "refunded" : "credit",
     outcome,
     at: r.createdAt.toISOString(),
     summary,
+    ...(ask ? { ask: { request: ask.request, count: ask.count, phase: ask.phase } } : {}),
   };
 }
 
@@ -294,8 +333,9 @@ export function historyPress(row: Pick<HistoryRow, "id" | "outcome" | "summary">
     return row.summary.kind === "manaHelp" ? { kind: "manaHelp", countId: ref.uuid, color: row.summary.color } : { kind: "live", counted: true };
   }
   if (row.outcome === "running") return { kind: "live", counted: false };
-  if (row.outcome !== "ok") return { kind: "past" };
+  if (row.outcome !== "ok" && row.outcome !== "short") return { kind: "past" };
   const s = row.summary;
-  const named = s.kind === "cutsDeeperOk" ? s.named : s.kind === "suggestedOk" ? s.in + s.out : 0;
+  const named = s.kind === "cutsDeeperOk" ? s.named : s.kind === "suggestedOk" ? s.in + s.out
+    : s.kind === "suggestedV2" ? s.found.add + s.found.cut : 0;
   return named > 0 ? { kind: "review", runId: ref.uuid } : { kind: "past" };
 }

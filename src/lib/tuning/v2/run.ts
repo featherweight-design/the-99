@@ -83,6 +83,9 @@ export async function readLastV2Run(deckId: string, userId: string) {
     fingerprint: deckSuggestionRuns.inputFingerprint,
     at: deckSuggestionRuns.createdAt,
     requestHash: sql<string | null>`${deckSuggestionRuns.validationReport} -> 'v2' ->> 'requestHash'`,
+    // Its credit came back (as `v2RunFacts` reads it): the confirm's reopen then says `refunded`, as its History row does.
+    refunded: sql<boolean>`coalesce(${deckSuggestionRuns.validationReport} -> 'v2' -> 'charge' ->> 'outcome' = 'refunded'
+      or ${deckSuggestionRuns.validationReport} ->> 'refunded' = 'true', false)`,
   }).from(deckSuggestionRuns)
     .where(and(suggestedRunsOfDeck(deckId), eq(deckSuggestionRuns.userId, userId), eq(deckSuggestionRuns.status, "ok"), isNotNull(deckSuggestionRuns.requestedCount)))
     .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
@@ -91,7 +94,7 @@ export async function readLastV2Run(deckId: string, userId: string) {
 
 export type V2Start =
   | { kind: "refused"; message: string }
-  | { kind: "confirm"; runId: string; at: string }
+  | { kind: "confirm"; runId: string; at: string; refunded: boolean }
   | { kind: "started"; runId: string; work: (revalidate: () => void) => Promise<void> };
 
 export async function startTuningV2(args: {
@@ -113,7 +116,7 @@ export async function startTuningV2(args: {
   if (!wire.confirmed) {
     const last = await readLastV2Run(deckId, userId);
     if (last && last.fingerprint === inputs.fingerprint && last.requestHash === hash) {
-      return { kind: "confirm", runId: last.id, at: last.at.toISOString() };
+      return { kind: "confirm", runId: last.id, at: last.at.toISOString(), refunded: last.refunded === true };
     }
   }
 

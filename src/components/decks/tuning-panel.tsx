@@ -48,6 +48,7 @@ import { localDay } from "../../lib/copy/credits";
 import { bracketCard, noticedChips, pickIndex, usualFor, type BracketPick, type NoticedFacts } from "../../lib/tuning/v2/intake";
 import { useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
+import { historyDay } from "./tuning-history";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
 import { SuggestionLists } from "./suggestion-lists";
@@ -287,7 +288,7 @@ export function TuningPanel({
   // Moves on every intake edit, so a "same request" answer to a press made before the edit is dropped (review round 1).
   const intakeRev = useRef(0);
   // The last press answered "Same request as your Oct 26 run" (G4): nothing was reserved, and the action row asks.
-  const [same, setSame] = useState<{ runId: string; at: string } | null>(null);
+  const [same, setSame] = useState<{ runId: string; at: string; refunded?: boolean } | null>(null);
   // Suggested changes v2's results stand in for the intake until `New run` (UI PR 6); a press goes back to the results.
   const [newRun, setNewRun] = useState(false);
   // A run History opens (or leaves) is drawn, whatever an earlier `New run` left open.
@@ -789,6 +790,7 @@ export function TuningPanel({
     return reviewFailed ? (
       <section aria-labelledby="tuning-heading" className="rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px]"
         style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}>
+        {review?.past ? <PastMeta past={review.past} version={null} /> : null}
         <h2 id="tuning-heading" tabIndex={-1} className="font-display text-[17px] font-semibold outline-none md:text-[19px]" style={{ color: "var(--fg)" }}>{copy.heading}</h2>
         <p className="mt-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>{tuningHubCopy.history.pastFailed}</p>
       </section>
@@ -939,7 +941,7 @@ export function TuningPanel({
       if (isSameRequest(answer)) {
         // The player edited the intake while the press was out: the answer names a request no longer on screen.
         if (intakeRev.current !== rev) return;
-        setSame({ runId: answer.runId, at: answer.at });
+        setSame({ runId: answer.runId, at: answer.at, refunded: answer.refunded === true });
         setAnnounced(v2Copy.intake.same.body(localDay(new Date(answer.at))));
         return;
       }
@@ -1192,6 +1194,7 @@ export function TuningPanel({
         onAnnounce={setAnnounced}
         onNewRun={openNewRun}
         readOnly={reviewing && state.retired !== null}
+        past={reviewing && review?.past ? { date: historyDay(review.past.at), stale: state.retired !== null, version: state.review?.readVersion ?? null } : null}
         credits={{ left: freeCount(state.allowance), total: state.allowance.limit }}
       />
       </>
@@ -1398,6 +1401,8 @@ export function TuningPanel({
         border: `1px solid ${reading ? "var(--accent)" : "var(--border)"}`,
       }}
     >
+      {/* A v2 run History reopened (History B and C): its way back and what it was, above the heading. Gone with `New run`. */}
+      {reviewing && review?.past && !newRun ? <PastMeta past={review.past} version={state.review?.readVersion ?? null} /> : null}
       <div className="flex items-center gap-[12px]">
       <h2
         id="tuning-heading"
@@ -1474,7 +1479,7 @@ export function TuningPanel({
           // stands when the deck is back at 99.
           onAgain={() => { if (!sendOff) void pressV2(true); }}
           againOff={sendOff}
-          onOpen={openRun ? () => openRun("suggested", same.runId, same.at) : null}
+          onOpen={openRun ? () => openRun("suggested", same.runId, same.at, same.refunded ? "refunded" : "credit") : null}
         />
       ) : (
       <div
@@ -1902,4 +1907,22 @@ function cap(word: string): string {
 function normalizeIntent(raw: string): string | null {
   const trimmed = raw.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+/** History B and C's head (`.pastm`): `‹ History` (44px at every width), then the run's date, the version it read and its
+ *  tier. The date is the day alone, as the boards draw it. */
+function PastMeta({ past, version }: { past: { at: string; tier: keyof typeof tuningHubCopy.history.tier; back: () => void }; version: number | null }) {
+  const h = tuningHubCopy.history;
+  const date = historyDay(past.at);
+  const tier = h.tier[past.tier];
+  return (
+    <div data-sc-past-meta="" className="mb-[16px] flex flex-wrap items-center gap-[10px]">
+      <button type="button" data-sc-past-back="" onClick={past.back} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
+        {h.back}
+      </button>
+      <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
+        {version === null ? h.pastMetaNoVersion(date, tier) : h.pastMeta(date, version, tier)}
+      </span>
+    </div>
+  );
 }

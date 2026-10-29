@@ -6,6 +6,7 @@ import { strategyName } from "../../lib/copy/strategy-focus";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 import type { TuningState } from "../../lib/tuning/state";
 import { usualFor } from "../../lib/tuning/v2/intake";
@@ -130,6 +131,16 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     expect(d.run.mock.calls[0][1]).toEqual({ requestedCount: 3, bracket: { choice: "keep", target: 2, low: 1 }, runId: expect.any(String) });
   });
 
+  it("reopens a refunded same-request run under History's refunded tier", async () => {
+    const same = { ok: false, confirm: "same_request", runId: "11111111-1111-4111-8111-111111111111", at: at.toISOString(), refunded: true };
+    const d = deps(() => same);
+    const open = vi.fn<OpenRun>();
+    await draw(d, v2At(), [2], (node) => <OpenRunProvider value={open}>{node}</OpenRunProvider>);
+    await act(async () => { fireEvent.click(send()); });
+    fireEvent.click(screen.getByRole("button", { name: sc.intake.same.open(localDay(at)) }));
+    expect(open).toHaveBeenCalledWith("suggested", same.runId, same.at, "refunded");
+  });
+
   it("asks once on a same request, and Run it again sends it confirmed", async () => {
     const same = { ok: false, confirm: "same_request", runId: "11111111-1111-4111-8111-111111111111", at: at.toISOString() };
     const d = deps((opts) => ((opts as { confirmed?: boolean }).confirmed ? { ok: true } : same));
@@ -143,7 +154,7 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     // The confirm stands in for the action row: nothing reserved, nothing reading.
     expect(screen.queryByRole("button", { name: sc.intake.send })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: sc.intake.same.open(date) }));
-    expect(open).toHaveBeenCalledWith("suggested", same.runId, same.at);
+    expect(open).toHaveBeenCalledWith("suggested", same.runId, same.at, "credit");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: sc.intake.same.again })); });
     expect(d.run).toHaveBeenCalledTimes(2);
     expect(d.run.mock.calls[1][1]).toMatchObject({ requestedCount: 3, confirmed: true });
@@ -507,5 +518,60 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     // Each line draws its answers twice (phone and desktop).
     expect(screen.getAllByRole("button", { name: deckTuningCopy.lists.reject })).toHaveLength(20);
     expect(document.body.textContent).not.toContain(sc.pastRun);
+  });
+
+  it("a run History reopened (History B): its way back and meta above the heading, its note and live picks; gone with New run", async () => {
+    const reopened: TuningState = { ...finished, review: { runId: RUN, at, readVersion: 4 } };
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => reopened);
+    const back = vi.fn();
+    await draw(d, v2At(), [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back } }}>{node}</ReviewRunProvider>
+    ));
+    const meta = document.querySelector("[data-sc-past-meta]") as HTMLElement;
+    expect(meta.textContent).toBe(`${tuningHubCopy.history.back}${tuningHubCopy.history.pastMeta("Oct 26", 4, "1 credit")}`);
+    // Above the heading, inside the panel.
+    expect(meta.compareDocumentPosition(document.getElementById("tuning-heading")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: tuningHubCopy.history.back }));
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-past")).toBe("live");
+    expect(document.querySelector("[data-sc-pick]")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: sc.run.newRun }));
+    expect(document.querySelector("[data-sc-past-meta]")).toBeNull();
+    expect(document.querySelector("[data-sc-intake]")).not.toBeNull();
+  });
+
+  it("a reopened run with a set applied names the version it read on desktop (History B)", async () => {
+    const SET = "55555555-5555-4555-8555-555555555555";
+    const applied = lines.map((l, i) => (i % 5 < 3 ? { ...l, verdict: "accepted" as const, applySet: SET } : l));
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => ({ ...finished, items: applied, review: { runId: RUN, at, readVersion: 4 } }));
+    await draw(d, v2At(), [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+    ));
+    expect(document.querySelector("[data-sc-lead-wide]")!.textContent).toBe(` ${sc.history.oldRunRestVersion(4, 4)}`);
+  });
+
+  it("a run History reopened after a newer version (History C): read-only, the past-run note, no Apply", async () => {
+    const stale: TuningState = { ...finished, review: { runId: RUN, at, readVersion: 3 }, retired: { from: 3, to: 5 } };
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => stale);
+    await draw(d, v2At(), [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+    ));
+    expect(document.querySelector("[data-sc-past-meta]")!.textContent).toContain(tuningHubCopy.history.pastMeta("Oct 26", 3, "1 credit"));
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-past")).toBe("stale");
+    expect(document.querySelector("[data-sc-past-note]")!.textContent).toBe(tuningHubCopy.history.pastNoteUncounted);
+    expect(document.querySelector("[data-sc-pick]")).toBeNull();
+    expect(document.querySelector("[data-sc-bar]")).toBeNull();
+    // New run still opens a fresh intake (README item 7: no Suggest again).
+    expect(screen.getByRole("button", { name: sc.run.newRun })).toBeTruthy();
+  });
+
+  it("a run reopened without History's v2 chrome (a v10 row) draws no meta line", async () => {
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => ({ ...finished, review: { runId: RUN, at, readVersion: 4 } }));
+    await draw(d, v2At(), [2], (node) => <ReviewRunProvider value={{ tool: "suggested", runId: RUN }}>{node}</ReviewRunProvider>);
+    expect(document.querySelector("[data-sc-past-meta]")).toBeNull();
   });
 });

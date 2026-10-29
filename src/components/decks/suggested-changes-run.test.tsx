@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { DECK_GROUPING_ARIA, DECK_GROUPING_KEY } from "../../lib/copy/deck-sort";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
 import type { ValidationReport } from "../../lib/tuning/validate";
 import { v2Line } from "../../lib/tuning/v2/results-fixture";
@@ -483,6 +484,115 @@ describe("the results", () => {
     expect(document.querySelector("[data-sc-pick]")).toBeNull();
     expect(bar()).toBeNull();
     expect(screen.getByRole("article", { name: "Card a1" }).textContent).toContain(sc.results.notPicked);
+  });
+});
+
+describe("History: a run reopened from History", () => {
+  const h = sc.history;
+  // Three of each applied as one set, two of each left open (History B's fixture).
+  const appliedLines = () => [
+    ...adds(5, (i) => (i < 3 ? { verdict: "accepted", applySet: SET } : {})),
+    ...cuts(5, (i) => (i < 3 ? { verdict: "accepted", applySet: SET } : {})),
+  ];
+
+  it("same version (History B): its note, You asked beside the lead, when it was applied, its Undo and the rest still pickable", () => {
+    setup({ lines: appliedLines(), past: { date: "Oct 26", stale: false }, readFrom: <span data-testid="read-from">read from</span> });
+    expect(document.querySelector("[data-sc-past-note]")!.textContent).toBe(tuningHubCopy.history.review.note.suggested("Oct 26"));
+    const sbs = document.querySelector("[data-sc-side-by-side]") as HTMLElement;
+    expect(sbs.className).toContain("md:grid-cols-2");
+    expect(sbs.querySelector("[data-sc-asked]")).not.toBeNull();
+    expect(sbs.querySelector("[data-testid=read-from]")).not.toBeNull();
+    expect(sbs.querySelector("[data-sc-lead]")!.textContent).toBe(`${h.oldRunLead(3, "Oct 26")} ${h.oldRunRest(4)}`);
+    expect(sbs.querySelector("[data-sc-lead] b")!.textContent).toBe(h.oldRunLead(3, "Oct 26"));
+    expect(document.querySelectorAll("[data-sc-lead]")).toHaveLength(1);
+    // No version known: one line at every width.
+    expect(document.querySelector("[data-sc-lead-wide]")).toBeNull();
+    expect(bar().textContent).toContain(sc.bar.undo(6));
+    expect(pick("a3")).toBeTruthy();
+    expect(document.querySelector('[data-sc-chip="add"]')!.textContent).toBe(sc.results.applied(3));
+    // The figure and its word are one inline box inside the chip's inline-flex, so the space between them stays.
+    const box = document.querySelector('[data-sc-chip="add"] > [data-sc-lead-count]')!;
+    expect(box.textContent).toBe("3 applied");
+    expect(document.querySelector('[data-sc-chip="add"]')!.childNodes).toHaveLength(1);
+  });
+
+  it("same version on desktop (History B): the lead names the version; the phone keeps the shorter line", () => {
+    setup({ lines: appliedLines(), past: { date: "Oct 26", stale: false, version: 4 } });
+    const narrow = document.querySelector("[data-sc-lead-narrow]") as HTMLElement;
+    const wide = document.querySelector("[data-sc-lead-wide]") as HTMLElement;
+    expect(narrow.textContent).toBe(` ${h.oldRunRest(4)}`);
+    expect(narrow.className).toContain("md:hidden");
+    expect(wide.textContent).toBe(` ${h.oldRunRestVersion(4, 4)}`);
+    expect(wide.className).toContain("hidden md:inline");
+    expect(h.oldRunRestVersion(4, 4)).toBe("The other 4 are still pickable while the deck is on version 4.");
+  });
+
+  it("says the applied set's own day, its newest answered line, not the run's (History B and C)", () => {
+    // Applied Oct 28 (UTC noon, so every zone agrees on the day), from a run of Oct 26.
+    const applied = [
+      ...adds(5, (i) => (i < 3 ? { verdict: "accepted", applySet: SET, verdictAt: i === 2 ? "2026-10-28T12:00:00.000Z" : "2026-10-27T12:00:00.000Z" } : {})),
+      ...cuts(5, (i) => (i < 3 ? { verdict: "accepted", applySet: SET, verdictAt: "2026-10-27T12:00:00.000Z" } : {})),
+    ];
+    const t = setup({ lines: applied, past: { date: "Oct 26", stale: false } });
+    expect(document.querySelector("[data-sc-lead] b")!.textContent).toBe(h.oldRunLead(3, "Oct 28"));
+    act(() => t.rerender({ readOnly: true, past: { date: "Oct 26", stale: true } }));
+    expect(document.querySelector("[data-sc-lead]")!.textContent).toContain(h.staleApplied(h.pair(3, 3), "Oct 28"));
+    // No line says when: the run's day.
+    act(() => t.rerender({ readOnly: false, past: { date: "Oct 26", stale: false }, lines: applied.map((l) => ({ ...l, verdictAt: null })) }));
+    expect(document.querySelector("[data-sc-lead] b")!.textContent).toBe(h.oldRunLead(3, "Oct 26"));
+  });
+
+  it("same version with one row left: singular; with none left: the clause is left out at both widths", () => {
+    const one = [
+      ...adds(4, (i) => (i < 3 ? { verdict: "accepted", applySet: SET } : {})),
+      ...cuts(3, () => ({ verdict: "accepted", applySet: SET })),
+    ];
+    const t = setup({ lines: one, past: { date: "Oct 26", stale: false, version: 4 } });
+    expect(document.querySelector("[data-sc-lead-narrow]")!.textContent).toBe(" The other one is still pickable.");
+    expect(document.querySelector("[data-sc-lead-wide]")!.textContent).toBe(" The other one is still pickable while the deck is on version 4.");
+    const none = [...adds(3, () => ({ verdict: "accepted", applySet: SET })), ...cuts(3, () => ({ verdict: "accepted", applySet: SET }))];
+    act(() => t.rerender({ lines: none }));
+    expect(document.querySelector("[data-sc-lead]")!.textContent).toBe(h.oldRunLead(3, "Oct 26"));
+    expect(document.querySelector("[data-sc-lead-wide]")).toBeNull();
+    expect(h.oldRunRest(0)).toBe("");
+    expect(h.oldRunRestVersion(0, 4)).toBe("");
+  });
+
+  it("stale (History C): the past-run note, no Picks and no bar, rows Added / Cut / Not picked, and what was applied when", () => {
+    const lines = [
+      ...adds(5, (i) => (i < 2 ? { verdict: "accepted", applySet: SET } : {})),
+      ...cuts(5, (i) => (i < 2 ? { verdict: "accepted", applySet: SET } : {})),
+    ];
+    setup({ lines, readOnly: true, past: { date: "Oct 19", stale: true } });
+    expect(document.querySelector("[data-sc-past-note]")!.textContent).toBe(tuningHubCopy.history.pastNoteUncounted);
+    expect(document.querySelector("[data-sc-pick]")).toBeNull();
+    expect(bar()).toBeNull();
+    expect(document.querySelector("[data-sc-apply]")).toBeNull();
+    expect(screen.getByRole("article", { name: "Card a0" }).textContent).toContain(sc.results.added);
+    expect(screen.getByRole("article", { name: "Card c0" }).textContent).toContain(sc.results.cut);
+    expect(screen.getByRole("article", { name: "Card a4" }).textContent).toContain(sc.results.notPicked);
+    const lead = document.querySelector("[data-sc-lead]")!;
+    expect(lead.textContent).toBe(`${h.staleLists(5, 5)}${h.staleApplied(h.pair(2, 2), "Oct 19")}`);
+    expect(lead.querySelector("b")!.textContent).toBe(h.staleLists(5, 5));
+    // The chip says what was applied, in quiet ink; the phone halves count the rows.
+    const chip = document.querySelector('[data-sc-chip="add"]') as HTMLElement;
+    expect(chip.textContent).toBe(sc.results.applied(2));
+    expect(chip.style.color).toBe("var(--fg-muted)");
+    expect(screen.getByRole("tab", { name: /Additions/ }).textContent).toContain("5");
+  });
+
+  it("stale with nothing applied: the lists alone, and no chip", () => {
+    setup({ readOnly: true, past: { date: "Oct 19", stale: true } });
+    expect(document.querySelector("[data-sc-lead]")!.textContent).toBe(h.staleListsOnly(5, 5));
+    expect(document.querySelector("[data-sc-chip]")).toBeNull();
+  });
+
+  it("a set applied in this visit (Results-3 D) keeps its own lead, and the phone halves say what was applied", () => {
+    setup({ lines: appliedLines() });
+    expect(document.querySelector("[data-sc-past-note]")).toBeNull();
+    expect(document.querySelector("[data-sc-side-by-side]")).toBeNull();
+    expect(document.querySelector("[data-sc-lead]")!.textContent).toBe(sc.run.appliedLead(3, 4));
+    expect(screen.getByRole("tab", { name: /Additions/ }).textContent).toContain(sc.results.applied(3));
   });
 });
 
