@@ -923,6 +923,64 @@ describe("the Friend filter (v2 PR 9)", () => {
     expect(within(chipsRow()).getByText(`${copy.filters.chipFriend} ${whole}`, { selector: ".sr-only" })).toBeTruthy();
   });
 
+  it("disables a friend pill with none of the drawn cards, as the desktop panel's unavailable rows", async () => {
+    served = { spares: BOARD, asks: [] };
+    await mount();
+    fireEvent.change(screen.getByRole("searchbox", { name: copy.filters.search }), { target: { value: "brainstorm" } });
+    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    const pill = (label: string) => within(document.querySelector("[data-friend-pills]") as HTMLElement).getByRole("checkbox", { name: label });
+    expect((pill("Colin, 1 card") as HTMLButtonElement).disabled).toBe(false);
+    const max = pill("Max, 0 cards") as HTMLButtonElement;
+    expect(max.disabled).toBe(true);
+    expect(max.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(max);
+    expect(max.getAttribute("aria-checked")).toBe("false");
+    expect(window.location.search).toBe("?q=brainstorm");
+  });
+
+  describe("a purchase under the filter", () => {
+    const buyProps = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true };
+    async function buyJaceAndReread(initialFriend: string) {
+      bought.loadPrintingChoices.mockResolvedValue([{
+        scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+        collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+        finishes: ["nonfoil"], owned: { nonfoil: 0 },
+      }]);
+      bought.markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
+      served = { spares: BOARD, asks: [] };
+      window.history.replaceState(null, "", `/decks/shopping?friend=${initialFriend}`);
+      let view!: ReturnType<typeof render>;
+      await act(async () => { view = render(<CartView cart={cart()} {...buyProps} initialFriend={initialFriend} />); });
+      fireEvent.click(list().getByRole("button", { name: gotItCopy.row.tagAria("Jace, Multiverse Architect") }));
+      const add = await screen.findByRole("button", { name: /^Add/ });
+      await act(async () => { fireEvent.click(add); });
+      const after = cart();
+      after.lines = after.lines.filter((l) => l.oracleId !== JACE);
+      // The next read asks for the lines left, so Jace's spares (Colin's and Max's) are no longer in it.
+      served = { spares: BOARD.filter((x) => x.oracleId !== JACE), asks: [] };
+      await act(async () => { view.rerender(<CartView cart={after} {...buyProps} initialFriend={initialFriend} />); });
+      // Let the purchase's own follow-ups (the receipt, the re-read) settle inside this test.
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    }
+    const held = () => list().getAllByRole("listitem").filter((li) => li.hasAttribute("data-held-slot"));
+
+    it("keeps a one-friend filter whose last card was bought: its held slot, and no unrelated card back", async () => {
+      await buyJaceAndReread("p-Max");
+      expect(window.location.search).toBe("?friend=p-Max");
+      expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Max` })).toBeTruthy();
+      expect(held()).toHaveLength(1);
+      expect(list().getAllByRole("listitem")).toHaveLength(1);
+    });
+
+    it("keeps both friends of a two-friend filter, and the bought card's held slot", async () => {
+      await buyJaceAndReread("p-Max,p-Peter");
+      expect(window.location.search).toBe("?friend=p-Max%2Cp-Peter");
+      expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Max, Peter` })).toBeTruthy();
+      expect(held()).toHaveLength(1);
+      expect(cardNames()).toContain("Ghoulcaller Gisa");
+    });
+  });
+
   it("drops a named friend once their spares sit only on unselected decks' lines, rather than naming them by id", async () => {
     served = { spares: BOARD, asks: [] };
     window.history.replaceState(null, "", "/decks/shopping?friend=p-Chris");

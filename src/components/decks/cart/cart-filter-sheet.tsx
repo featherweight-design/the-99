@@ -194,15 +194,19 @@ function Pill({ on, onPress, label, count, face, wide = false, dim = false }: {
       role="checkbox"
       aria-checked={on}
       aria-label={count === undefined ? label : copy.panels.friend.optionAria(label, count)}
+      // The desktop panel's unavailable row (`FilterPanel`): dimmed at .42, never toggled. Native `disabled` also takes
+      // it out of the tab order, where a row there is never a stop; the .42 contrast is WCAG's inactive-control exemption.
+      disabled={dim}
+      aria-disabled={dim || undefined}
       onClick={onPress}
       data-pill={wide ? "any" : "friend"}
       className={[
-        "flex h-[44px] min-w-0 cursor-pointer items-center gap-[8px] rounded-full border border-solid font-sans text-[14px]",
+        "flex h-[44px] min-w-0 items-center gap-[8px] rounded-full border border-solid font-sans text-[14px]",
         wide ? "col-span-full justify-center px-[14px]" : face ? "pl-[6px] pr-[14px]" : "px-[14px]",
         on
           ? "border-[color:var(--accent)] bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] text-[color:var(--fg)]"
           : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]",
-        dim ? "opacity-[0.42]" : "",
+        dim ? "cursor-default opacity-[0.42]" : "cursor-pointer",
       ].join(" ")}
     >
       {face}

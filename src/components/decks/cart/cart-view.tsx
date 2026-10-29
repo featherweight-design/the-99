@@ -266,7 +266,19 @@ function CartBody({
   const selectedRead = spares ? spareReadStatus(sparesRead, spares.loaded, spares.failed) : null;
   // Once the selected cards' read has landed, a named friend with no spare of a selected line is dropped (decision 2),
   // and the address with it: the same friends the Friend panel offers, so every id left has a row and a name.
-  const known = useMemo(() => new Set(selectedLines.flatMap((l) => spares?.byCard.get(l.oracleId) ?? []).map((x) => x.friend.publicId)), [spares, selectedLines]);
+  // A card bought this visit that the read no longer lists still holds a slot while one of its decks is selected (S3), so
+  // its friends (read for it before, `spares.seen`) still count: buying a friend's last card keeps the friend picked.
+  const gotIt = useCartGotIt();
+  const heldLines = useMemo(() => {
+    const listed = new Set(cart.lines.map((l) => l.oracleId));
+    return [...(gotIt?.held.values() ?? [])]
+      .filter((h) => !listed.has(h.line.oracleId) && [...h.deckIds].some((d) => selected.has(d)))
+      .map((h) => h.line);
+  }, [gotIt, cart.lines, selected]);
+  const known = useMemo(() => new Set([
+    ...selectedLines.flatMap((l) => spares?.byCard.get(l.oracleId) ?? []),
+    ...heldLines.flatMap((l) => spares?.seen.get(l.oracleId) ?? []),
+  ].map((x) => x.friend.publicId)), [spares, selectedLines, heldLines]);
   // With friends' spares off there is no Friend filter at all.
   const settled = !spares ? null : selectedRead === "landed" ? settleFriend(friend, known) : friend;
   if (settled !== friend) setFriend(settled);
@@ -290,18 +302,21 @@ function CartBody({
     if (selectedRead === "reading") return { kind: "reading" };
     const friends = new Map<string, { friend: SpareFriend; count: number }>();
     for (const l of selectedLines) for (const x of spares.byCard.get(l.oracleId) ?? []) friends.set(x.friend.publicId, { friend: x.friend, count: 0 });
+    for (const l of heldLines) for (const x of spares.seen.get(l.oracleId) ?? []) friends.set(x.friend.publicId, { friend: x.friend, count: 0 });
     if (friends.size === 0) return { kind: "none" };
     let any = 0;
-    for (const l of searched) {
+    // A held slot the search and Owned leave counts as the line it was, under the friends read for it.
+    const held = new Set(heldLines.map((l) => l.oracleId));
+    for (const l of [...searched, ...heldLines.filter((h) => matchesQuery(h.name, query))]) {
       if (!keepOwned(l)) continue;
-      const ids = holdersOf(l.oracleId) ?? [];
+      const ids = held.has(l.oracleId) ? (spares.seen.get(l.oracleId) ?? []).map((x) => x.friend.publicId) : holdersOf(l.oracleId) ?? [];
       if (ids.length > 0) any += 1;
       for (const id of ids) { const f = friends.get(id); if (f) f.count += 1; }
     }
     const list = [...friends.values()].sort((a, b) => b.count - a.count
       || a.friend.displayName.localeCompare(b.friend.displayName, "en-US", { sensitivity: "base" }));
     return { kind: "friends", any, friends: list };
-  }, [spares, selectedRead, selectedLines, searched, keepOwned, holdersOf]);
+  }, [spares, selectedRead, selectedLines, searched, keepOwned, holdersOf, heldLines, query]);
   // The lines each Owned value would leave, the search and the Friend filter applied (the desktop panel's counts).
   const ownedCounts = useMemo(() => {
     const pre = searched.filter((l) => friendKeeps(friendOn, holdersOf(l.oracleId)));
