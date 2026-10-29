@@ -434,6 +434,60 @@ describe("LabelledScreen docks a pressed pin's label on a phone (R4 board 3)", (
       done();
     });
 
+    it("measures again when the header's mode commits, with no scroll", () => {
+      const raf = frames();
+      const boxes = { two: [300, 340], three: [700, 730], css: 12, bar: [0, 79] };
+      const done = stage(boxes);
+      const header = document.querySelector("header[data-quick-return]")!;
+      // The header is back over the page at the tap, so the CSS places the dock and no floor is set.
+      header.setAttribute("data-quick-return", "shown");
+      const { container } = draw();
+      pin(phoneOf(container), "a/s/three");
+      expect(floorOf(container)).toBe("");
+      // Scrolled to 0: the dock's frame reads before React commits the header's `page`, so it still sees `shown`.
+      scroll();
+      raf.flush();
+      expect(floorOf(container)).toBe("");
+      // The commit lands with no further scroll: the mode change alone schedules the read, and the floor is set.
+      act(() => header.setAttribute("data-quick-return", "page"));
+      return Promise.resolve().then(() => {
+        expect(raf.pending()).toBe(1);
+        raf.flush();
+        expect(floorOf(container)).toBe("79px");
+        done();
+      });
+    });
+
+    it("watches the header's mode only while docked at the top, and disconnects on undock and on unmount", () => {
+      frames();
+      const observe = vi.spyOn(MutationObserver.prototype, "observe");
+      const disconnect = vi.spyOn(MutationObserver.prototype, "disconnect");
+      const done = stage({ two: [300, 340], three: [700, 730], css: 12, bar: [0, 79] });
+      const header = document.querySelector("header[data-quick-return]")!;
+      const mine = () => observe.mock.calls.filter(([t]) => t === header);
+      const { container, unmount } = draw();
+      const phone = phoneOf(container);
+      // At the foot: nothing watches.
+      pin(phone, "a/s/two");
+      expect(mine()).toHaveLength(0);
+      // At the top: the header's mode attribute alone.
+      pin(phone, "a/s/three");
+      expect(mine()).toHaveLength(1);
+      expect(mine()[0][1]).toEqual({ attributes: true, attributeFilter: ["data-quick-return"] });
+      const watching = observe.mock.contexts[observe.mock.calls.indexOf(mine()[0])];
+      expect(disconnect.mock.contexts).not.toContain(watching);
+      // Undocked by its ✕: disconnected.
+      fireEvent.click(dockOf(container).querySelector("[data-about-dock-close]")!);
+      expect(disconnect.mock.contexts).toContain(watching);
+      // Docked again, then the page goes: disconnected.
+      pin(phone, "a/s/three");
+      const again = observe.mock.contexts[observe.mock.calls.indexOf(mine()[1])];
+      expect(disconnect.mock.contexts).not.toContain(again);
+      unmount();
+      expect(disconnect.mock.contexts).toContain(again);
+      done();
+    });
+
     it("listens for scroll only while docked at the top, and stops on undock and on unmount", () => {
       frames();
       const add = vi.spyOn(window, "addEventListener");

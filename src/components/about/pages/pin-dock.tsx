@@ -124,7 +124,9 @@ export function PinDock({
   // Docked at the top, the floor follows the bars' LIVE bottom edge (orchestrator ruling, 2026-10-29), so the dock
   // climbs 12px under a header scrolling off with the page. One read a frame, on a passive listener attached only
   // while docked at the top and removed on undock or unmount. At 0 the floor clears and the CSS formula alone places
-  // it (the returned header, the back bar, the notch).
+  // it (the returned header, the back bar, the notch). The header's mode is watched too: `useQuickReturn` writes
+  // `--header-offset` in its own frame but `data-quick-return` only on React's commit, so a read in between sees the
+  // old mode, and at the page's top no further scroll comes to correct it.
   const atTop = place.at === "top";
   useEffect(() => {
     if (!atTop) return;
@@ -140,8 +142,12 @@ export function PinDock({
       if (frame === null) frame = requestAnimationFrame(tick);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
+    const header = document.querySelector("header[data-quick-return]");
+    const modes = header ? new MutationObserver(onScroll) : null;
+    if (header && modes) modes.observe(header, { attributes: true, attributeFilter: ["data-quick-return"] });
     return () => {
       window.removeEventListener("scroll", onScroll);
+      modes?.disconnect();
       if (frame !== null) cancelAnimationFrame(frame);
     };
   }, [atTop]);
