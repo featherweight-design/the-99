@@ -18,7 +18,7 @@ import { acknowledgeAbout, endAboutFirstRun } from "../home/arrivals-seen";
  * acknowledges what its write CONFIRMED once it LANDS (the action's answer: the ids written and the unit keys the
  * state it leaves covers), and ends their first run (`endAboutFirstRun`: the write raises the floor). A current
  * reader's, which writes nothing, acknowledges at once what the page drew (`drawn`) and the unit keys their state
- * covers (`answered`, the server's `answeredKeys`). Nothing is ever taken back, so overlapping visits and re-run
+ * covers (`answered`, the server's `answeredKeys`), and ends their first run, which their state is already past. Nothing is ever taken back, so overlapping visits and re-run
  * effects cannot leave a false acknowledgement behind. Back pressed while the write is still in flight draws the line
  * once more, the cheaper failure.
  */
@@ -37,8 +37,11 @@ export function RecordVisit({
   useEffect(() => {
     // A current reader's visit answers the line in this document too: another tab or device may have marked About
     // seen after this tab's Home was rendered, and Back restores that Home's payload with the line in it.
+    // A reader who owes no write is at ABOUT_VERSION, so past their first run: a first-run line restored by Back must not
+    // draw even when a switch has since cut part of its baseline (review round 5).
     if (!behind) {
       acknowledgeAbout([...drawn, ...answered]);
+      endAboutFirstRun();
       return;
     }
     if (sent.current) return;

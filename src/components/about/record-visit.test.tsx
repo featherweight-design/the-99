@@ -73,10 +73,11 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
     expect(aboutFirstRunOver()).toBe(true);
   });
 
-  it("acknowledges a current reader's drawn ids and covered unit keys at once, and ends nothing", () => {
+  // Review round 5: a current reader is past their first run, so a cached Home's first-run line must not return on Back.
+  it("acknowledges a current reader's drawn ids and covered unit keys at once, and ends their first run", () => {
     render(<RecordVisit behind={false} shown={[]} drawn={["notes"]} answered={["decks/games/matchups"]} />);
     expect(launchAcknowledged("decks/games/matchups")).toBe(true);
-    expect(aboutFirstRunOver()).toBe(false);
+    expect(aboutFirstRunOver()).toBe(true);
   });
 
   it("acknowledges nothing when the write fails", async () => {

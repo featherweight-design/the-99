@@ -62,9 +62,13 @@ describe("RecordPageVisit (About visual PR 6b)", () => {
     expect(aboutFirstRunOver()).toBe(true);
   });
 
-  it("ends nothing for an empty set, or a write that failed", async () => {
+  // Review round 5: owing nothing means past the first run, even on a page that draws no key for this reader.
+  it("ends the first run on the already-current path even when the page holds no key for the reader", () => {
     render(<RecordPageVisit area="decks" owed={false} keys={[]} claimed={[]} />);
-    expect(aboutFirstRunOver()).toBe(false);
+    expect(aboutFirstRunOver()).toBe(true);
+  });
+
+  it("ends nothing for a write that failed", async () => {
     record.mockRejectedValueOnce(new Error("offline"));
     render(<RecordPageVisit area="home" owed keys={[]} claimed={["home/home/ready"]} />);
     await waitFor(() => expect(record).toHaveBeenCalled());

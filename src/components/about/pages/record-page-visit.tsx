@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { recordAboutPageVisit } from "../../../app/about/actions";
-import { acknowledgeHeld } from "../../home/arrivals-seen";
+import { acknowledgeAbout, acknowledgeHeld, endAboutFirstRun } from "../../home/arrivals-seen";
 
 /**
  * Records a visit to one of About's pages once it is open in a browser (About visual PR 6b): an effect, so a prefetch
@@ -12,8 +12,8 @@ import { acknowledgeHeld } from "../../home/arrivals-seen";
  * first-run baseline), and `claimed` is exactly what it rendered for the visit to write: the action writes only those
  * of them it still draws, so a unit switched on after this render is not marked seen unread. When it does, the write's own answer, the keys it wrote, is acknowledged in this document once
  * it LANDS, so Back to Home drops those launches from the banner it restores. When nothing is owed, `keys` (this page's
- * keys, which the reader already holds) are acknowledged at once. Either way a non-empty set of held keys ends the
- * reader's first run in this document (`acknowledgeHeld`): a reader holding any key is past it, even when a unit
+ * keys, which the reader already holds) are acknowledged at once and the first run ends, since only a reader past it
+ * owes nothing. Otherwise a non-empty set of written keys ends the reader's first run in this document (`acknowledgeHeld`): a reader holding any key is past it, even when a unit
  * switched off since Home rendered left one of the first-run line's ids unwritten. A failed write acknowledges nothing: the banner shows
  * the line again on a later load, the cheaper failure. The ref keeps the same visit (page and claimed keys) from
  * writing twice; a new claim drawn in place writes.
@@ -31,8 +31,11 @@ export function RecordPageVisit({
   // `ThemeRefresh` or any `router.refresh()`) records them.
   const sent = useRef<string | null>(null);
   useEffect(() => {
+    // Nothing owed means the reader is past their first run (a first-run visit always raises the version), even on a page
+    // that draws no key for them (review round 5).
     if (!owed) {
-      acknowledgeHeld(keys);
+      acknowledgeAbout(keys);
+      endAboutFirstRun();
       return;
     }
     const visit = `${area}\n${[...new Set(claimed)].sort().join("\n")}`;
