@@ -52,6 +52,16 @@ describe("contentSecurityPolicy", () => {
   it("names no Clerk host when the key does not", () => {
     expect(contentSecurityPolicy(null)).not.toContain("clerk.accounts");
   });
+  it("allows the PostHog origins in script-src and connect-src, and none by default", () => {
+    const origins = ["https://us.i.posthog.com", "https://us-assets.i.posthog.com"];
+    const withPosthog = contentSecurityPolicy(null, null, origins);
+    const find = (name: string) => withPosthog.split("; ").find((d) => d.startsWith(`${name} `)) ?? "";
+    for (const origin of origins) {
+      expect(find("script-src")).toContain(origin);
+      expect(find("connect-src")).toContain(origin);
+    }
+    expect(contentSecurityPolicy(null)).not.toContain("posthog");
+  });
 });
 
 describe("securityHeaders", () => {
@@ -61,6 +71,10 @@ describe("securityHeaders", () => {
     const prod = securityHeaders({ production: true, clerkHost: null });
     expect(names(dev)).toEqual(["Strict-Transport-Security", "X-Content-Type-Options", "X-Frame-Options", "Referrer-Policy", "Permissions-Policy"]);
     expect(names(prod)).toEqual([...names(dev), "Content-Security-Policy-Report-Only"]);
+  });
+  it("passes the PostHog origins through to the reported policy", () => {
+    const prod = securityHeaders({ production: true, clerkHost: null, posthogOrigins: ["https://eu.i.posthog.com"] });
+    expect(prod.find((h) => h.key === "Content-Security-Policy-Report-Only")!.value).toContain("https://eu.i.posthog.com");
   });
   it("never enforces a policy in this change: the CSP is report-only", () => {
     expect(names(securityHeaders({ production: true, clerkHost: null }))).not.toContain("Content-Security-Policy");

@@ -3,6 +3,7 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 import { CLERK_JS_VERSION, CLERK_UI_VERSION } from "./src/lib/shell/clerk-scripts";
 import { sentryIngestHost } from "./src/lib/sentry/options";
 import { clerkFrontendHost, securityHeaders } from "./src/lib/security/headers";
+import { posthogCspHosts } from "./src/lib/analytics/posthog";
 
 // Deliberately empty. `experimental.staleTimes.dynamic` used to live here, to
 // stop /collection and /commanders refetching their whole payload on every
@@ -26,6 +27,10 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_CLERK_JS_VERSION: CLERK_JS_VERSION,
     NEXT_PUBLIC_CLERK_UI_VERSION: CLERK_UI_VERSION,
+    // The analytics `release` super-property (`src/lib/analytics/posthog.ts`). Vercel exposes the NEXT_PUBLIC_
+    // twin of a system variable only when the project opts in, so it is inlined from the server-side one; empty
+    // outside a Vercel build.
+    NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || "",
   },
   // The admin's Eval ledgers read the committed ledgers at request time (`readEvalLedgers`), so the
   // deploy carries them into the `/admin` function: they move only with a merge.
@@ -36,6 +41,7 @@ const nextConfig: NextConfig = {
       production: process.env.NODE_ENV === "production",
       clerkHost: clerkFrontendHost(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
       sentryHost: sentryIngestHost(process.env.NEXT_PUBLIC_SENTRY_DSN),
+      posthogOrigins: posthogCspHosts(process.env.NEXT_PUBLIC_POSTHOG_KEY, process.env.NEXT_PUBLIC_POSTHOG_HOST),
     });
     return [{ source: "/:path*", headers }];
   },

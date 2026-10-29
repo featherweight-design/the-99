@@ -13,7 +13,8 @@
  *     pages (#1606), a full navigation away from this origin, so nothing here governs them;
  *   - Next's own inline scripts and styles, hence `'unsafe-inline'` until a nonce is wired through
  *     the proxy (a later step, once the reports say what else is left);
- *   - the service worker (`/sw.js`, same origin) and the manifest, both `'self'`.
+ *   - the service worker (`/sw.js`, same origin) and the manifest, both `'self'`;
+ *   - PostHog, when a key is set (`posthogCspHosts`): its remote config script and its ingest API.
  */
 
 export type HeaderEntry = { key: string; value: string };
@@ -33,17 +34,24 @@ export function clerkFrontendHost(publishableKey: string | undefined): string | 
 /**
  * The report-only policy. `clerkHost` is added to the script and connect sources when known, and `sentryHost`
  * (the DSN's own ingest host, `sentryIngestHost`) to the connect sources: the browser posts error events there.
+ * `posthogOrigins` (`posthogCspHosts`, full https origins) go in both: the SDK loads its remote config as a script
+ * and posts events to the ingest host.
  */
-export function contentSecurityPolicy(clerkHost: string | null, sentryHost: string | null = null): string {
+export function contentSecurityPolicy(
+  clerkHost: string | null,
+  sentryHost: string | null = null,
+  posthogOrigins: readonly string[] = [],
+): string {
   const clerk = clerkHost ? [`https://${clerkHost}`] : [];
   const sentry = sentryHost ? [`https://${sentryHost}`] : [];
+  const posthog = [...posthogOrigins];
   const sources = {
     "default-src": ["'self'"],
-    "script-src": ["'self'", "'unsafe-inline'", ...clerk, "https://challenges.cloudflare.com"],
+    "script-src": ["'self'", "'unsafe-inline'", ...clerk, "https://challenges.cloudflare.com", ...posthog],
     "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:", "https://cards.scryfall.io", "https://svgs.scryfall.io", "https://img.clerk.com"],
     "font-src": ["'self'", "data:"],
-    "connect-src": ["'self'", ...clerk, "https://clerk-telemetry.com", ...sentry],
+    "connect-src": ["'self'", ...clerk, "https://clerk-telemetry.com", ...sentry, ...posthog],
     "frame-src": ["https://challenges.cloudflare.com"],
     "worker-src": ["'self'", "blob:"],
     "manifest-src": ["'self'"],
@@ -64,7 +72,12 @@ export const CSP_REPORT_PATH = "/api/csp-report";
  * scanner's route. Microphone, geolocation, payment, USB and the interest cohort are denied. Every directive
  * NOT named keeps its browser default, deliberately (the app uses the clipboard, for one).
  */
-export function securityHeaders(opts: { production: boolean; clerkHost: string | null; sentryHost?: string | null }): HeaderEntry[] {
+export function securityHeaders(opts: {
+  production: boolean;
+  clerkHost: string | null;
+  sentryHost?: string | null;
+  posthogOrigins?: readonly string[];
+}): HeaderEntry[] {
   const enforced: HeaderEntry[] = [
     { key: "Strict-Transport-Security", value: "max-age=31536000" },
     { key: "X-Content-Type-Options", value: "nosniff" },
@@ -74,6 +87,6 @@ export function securityHeaders(opts: { production: boolean; clerkHost: string |
   ];
   // Development serves eval'd scripts and a websocket, which would drown the reports in noise.
   return opts.production
-    ? [...enforced, { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy(opts.clerkHost, opts.sentryHost ?? null) }]
+    ? [...enforced, { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy(opts.clerkHost, opts.sentryHost ?? null, opts.posthogOrigins ?? []) }]
     : enforced;
 }

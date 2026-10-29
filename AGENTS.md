@@ -84,7 +84,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in 
 - `list-payloads.md` — `/discover` and `/collection` first-window payloads.
 - `measure.md` — `measure:load`, the reverted Tuning tools split, the gap-line measure.
 - `moments.md` — moments.
-- `ops.md` — migrations and `MIGRATE_DATABASE_URL`, Vercel skips, staging sync, cost check, nav-stall, security headers, Costs page, Sentry.
+- `ops.md` — migrations and `MIGRATE_DATABASE_URL`, Vercel skips, staging sync, cost check, nav-stall, security headers, Costs page, Sentry, PostHog.
 - `payments.md` — credits ledger, Stripe webhook, refunds, the plan.
 - `precheck.md` — the §10b pre-open review grant.
 - `pull-staging.md` — `pull:staging`.
