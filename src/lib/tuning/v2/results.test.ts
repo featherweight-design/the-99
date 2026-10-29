@@ -84,6 +84,10 @@ describe("bracketOutcome", () => {
     expect(bracketOutcome([2], up, [gc("a"), gc("b"), ...cuts(2)], [2])).toEqual({ kind: "missed", from: 2, aim: up });
     const down = { choice: "down" as const, target: 1 };
     expect(bracketOutcome([2], down, [...adds(2), ...cuts(2)], [1, 2])).toEqual({ kind: "reached", from: 2, to: 1 });
+    // Short of the aim but moved: "missed" would say the deck stays at 4.
+    const toTwo = { choice: "down" as const, target: 2 };
+    expect(bracketOutcome([4], toTwo, [...adds(2), ...cuts(2)], [3])).toBeNull();
+    expect(bracketOutcome([4], toTwo, [...adds(2), ...cuts(2)], [4])).toEqual({ kind: "missed", from: 4, aim: toTwo });
     // One line a side: the flags still decide, whatever a stale set read says.
     expect(bracketOutcome([2], up, adds(1), [3])).toEqual({ kind: "missed", from: 2, aim: up });
   });

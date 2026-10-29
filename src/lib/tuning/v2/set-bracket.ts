@@ -3,7 +3,7 @@ import { db } from "../../../db";
 import { deckSuggestionItems, deckSuggestionRuns } from "../../../db/schema";
 import { slotDeck } from "../../bracket/slot";
 import { swapped } from "../../decks/tuning-read";
-import { loadDeckProfileFromHead, readProfileHead } from "../../profile/load";
+import { loadDeckProfileFromHead, loadProfileHead } from "../../profile/load";
 import type { Bracket } from "../../profile/types";
 
 /**
@@ -27,8 +27,8 @@ export async function readSetPermits(args: {
   }).from(deckSuggestionItems).where(and(eq(deckSuggestionItems.runId, runId), inArray(deckSuggestionItems.id, named)));
   const lines = setLines(rows, addIds, cutIds);
   if (!lines) return null;
-  const deckId = run.deckId;
-  const head = await db.transaction((tx) => readProfileHead(tx, deckId, userId));
+  // One repeatable-read snapshot: the commander columns and the card list read apart could mix two states.
+  const head = await loadProfileHead(run.deckId, userId);
   if (!head) return null;
   const cards = lines.reduce((list, l) => swapped(list, l), head.cards);
   const after = await loadDeckProfileFromHead({ ...head, cards }, env);

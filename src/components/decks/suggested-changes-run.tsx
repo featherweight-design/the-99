@@ -98,6 +98,9 @@ export function SuggestedChangesRun({
   const [pickRev] = useState(() => new Map<string, number>());
   const [pickError, setPickError] = useState<string | null>(null);
   const [setRead, setSetRead] = useState<{ key: string; permits: number[] } | null>(null);
+  // What the set read was made against: the deck's reading and every line's state. An Apply, an Undo or a refreshed deck
+  // changes it, and a read made before then never speaks for the picks after.
+  const deckStamp = `${permits.join(",")}#${readLines.map((l) => `${l.id}:${l.verdict}:${l.applySet ?? ""}`).join(",")}`;
   const [half, setHalf] = useState<"add" | "cut">("add");
   const [stored, setGrouping] = useStoredView(DECK_GROUPING_KEY, isDeckGrouping);
   const grouping: Grouping = stored ?? "type";
@@ -154,12 +157,12 @@ export function SuggestedChangesRun({
   const t = tally([...pickedAdds, ...pickedCuts]);
   // A set past one line a side: the bar's claim waits on the server's read of the whole set (follow-up b).
   const setKey = pickedAdds.length > 1 || pickedCuts.length > 1
-    ? `${pickedAdds.map((l) => l.id).join(",")}|${pickedCuts.map((l) => l.id).join(",")}` : null;
+    ? `${pickedAdds.map((l) => l.id).join(",")}|${pickedCuts.map((l) => l.id).join(",")}|${deckStamp}` : null;
   useEffect(() => {
     const read = actions.setBracket;
     if (setKey === null || !read || setRead?.key === setKey) return;
     let live = true;
-    const [a, c] = setKey.split("|").map((s) => (s === "" ? [] : s.split(",")));
+    const [a, c] = setKey.split("|").slice(0, 2).map((s) => (s === "" ? [] : s.split(",")));
     const timer = setTimeout(() => {
       read(runId, a, c).then((r) => { if (live && r) setSetRead({ key: setKey, permits: r.permits }); }, () => undefined);
     }, SET_BRACKET_DEBOUNCE_MS);

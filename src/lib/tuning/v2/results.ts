@@ -77,14 +77,16 @@ export function bracketOutcome(
 /**
  * The outcome from the whole set's own permits. Keep, or no aim: stays while the set leaves the lowest bracket where it was
  * (else no claim). Up: reached when the set permits the target. Down: reached when the set's lowest bracket is the target
- * or under it. Pure.
+ * or under it. A missed aim is claimed only while the lowest bracket stays put: "missed" says the deck stays where it was,
+ * and a set that moves it short of the aim (4 aiming at 2, landing on 3) claims nothing. Pure.
  */
 export function outcomeOfSet(from: number, aim: V2Ask["bracket"], setPermits: readonly number[]): BracketOutcome | null {
   if (setPermits.length === 0) return null;
   const to = Math.min(...setPermits);
   if (!aim || aim.choice === "keep") return to === from ? { kind: "stays", bracket: from } : null;
   const reached = aim.choice === "up" ? setPermits.includes(aim.target) : to <= aim.target;
-  return reached ? { kind: "reached", from, to: aim.target } : { kind: "missed", from, aim };
+  if (reached) return { kind: "reached", from, to: aim.target };
+  return to === from ? { kind: "missed", from, aim } : null;
 }
 
 export type Grouping = "type" | "role";

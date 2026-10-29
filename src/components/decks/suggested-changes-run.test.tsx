@@ -442,6 +442,11 @@ describe("the results", () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(500); });
     expect(t.actions.setBracket).toHaveBeenCalledWith(RUN, ["a0", "a1"], ["c0", "c1"]);
     expect(bar().textContent).toContain(sc.bar.bracketReached(2, 3, "Upgraded"));
+    // The same picks after the deck moved (an Apply elsewhere): the old read no longer speaks for them.
+    const moved = [...adds(5, two), ...cuts(5, two), v2Line("x", "add", { verdict: "accepted", applySet: SET })];
+    t.rerender({ ask: up, lines: moved });
+    expect(bar().textContent).not.toContain(sc.bar.bracketReached(2, 3, "Upgraded"));
+    t.rerender({ ask: up, lines: [...adds(5, two), ...cuts(5, two)] });
     // Other picks: the read for the old set no longer speaks for them.
     t.rerender({ ask: up, lines: [...adds(5, (i) => ({ picked: i === 2 || i === 3 })), ...cuts(5, two)] });
     expect(bar().textContent).not.toContain(sc.bar.bracketReached(2, 3, "Upgraded"));
