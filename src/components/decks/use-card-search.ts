@@ -42,7 +42,7 @@ export function useCardSearch({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The latest search was rejected or timed out (small items 2, item 8): a counter rather than a flag, so a failure
   // after a failure is a new one and the caller's toast comes back with its own window. It outlives typing on purpose:
-  // only a search that lands, or a cleared field, says the failure is over.
+  // only a search that lands, or a field the bar would no longer search, says the failure is over.
   const [failure, setFailure] = useState<number | null>(null);
   const failures = useRef(0);
   // `retry` bumps this to run the same request again, at once rather than after the debounce.
@@ -60,12 +60,12 @@ export function useCardSearch({
   const identityKey = colorIdentity === null ? "any" : colorIdentity.join(",");
   const requestKey = `${ownedOnly ? "owned" : "all"} ${identityKey} ${deckId} ${trimmed}`;
 
-  // A cleared field is the reader putting the search down, failure and all.
-  const cleared = trimmed.length === 0;
+  // A field whose text the bar would not search (cleared, under 2 characters, over 100) is the reader putting the
+  // search down, failure and all: Try again would have nothing to run.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (cleared) setFailure(null);
-  }, [cleared]);
+    if (!queryActive) setFailure(null);
+  }, [queryActive]);
 
   useEffect(() => {
     if (timerRef.current !== null) clearTimeout(timerRef.current);

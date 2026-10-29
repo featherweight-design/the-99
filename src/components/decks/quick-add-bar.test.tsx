@@ -849,10 +849,29 @@ describe("QuickAddBar — a failed search", () => {
     await waitFor(() => expect(toast()).toBeNull());
   });
 
-  it("runs the same query once more on Try again, keeps the text, and hands focus back to the field", async () => {
+  it("goes when the field's text is no longer a query the bar would search", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+
+    // Backspaced under two characters: Try again would have nothing to run.
+    fireEvent.change(field(), { target: { value: "s" } });
+    await waitFor(() => expect(toast()).toBeNull());
+
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+    // Past the hundred-character cap, likewise.
+    fireEvent.change(field(), { target: { value: "s".repeat(101) } });
+    await waitFor(() => expect(toast()).toBeNull());
+  });
+
+  it("runs the same query once more on Try again, keeps the text, and keeps focus on the field", async () => {
     quietErrors();
     searchCards.mockRejectedValueOnce(new Error("boom"));
     mount();
+    field().focus();
     fireEvent.change(field(), { target: { value: "sw" } });
     await screen.findByRole("alert");
     expect(searchCards).toHaveBeenCalledTimes(1);
@@ -860,10 +879,12 @@ describe("QuickAddBar — a failed search", () => {
 
     searchCards.mockResolvedValue([rhystic]);
     const press = retryButton();
-    // A keyboard press has moved focus onto the button; a pointer press is kept off it.
-    press.focus();
     // The press starts outside the bar's root (the toast is portalled), and must not read as a press outside the field.
     fireEvent.pointerDown(press);
+    // A pointer press must not take focus off the field. jsdom moves no focus on a press, so the proof is that the
+    // mousedown, whose default action is the focus move, is cancelled (fireEvent returns false when it is).
+    expect(fireEvent.mouseDown(press)).toBe(false);
+    fireEvent.mouseUp(press);
     fireEvent.click(press);
 
     // The toast leaves as the request starts.
@@ -873,6 +894,22 @@ describe("QuickAddBar — a failed search", () => {
     await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
     expect(searchCards).toHaveBeenCalledTimes(2);
     expect(searchCards.mock.calls[1]).toEqual(firstArgs);
+  });
+
+  it("hands focus back to the field after a keyboard press on Try again", async () => {
+    quietErrors();
+    searchCards.mockRejectedValueOnce(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+
+    searchCards.mockResolvedValue([rhystic]);
+    const press = retryButton();
+    // A keyboard press moves focus onto the button; `onRetry` hands it back.
+    press.focus();
+    fireEvent.click(press);
+    expect(field()).toHaveFocus();
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
   });
 
   it("comes back when Try again fails too", async () => {
