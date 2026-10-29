@@ -98,6 +98,7 @@ import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-
 import { BasicCountsProvider, createBasicCounts, type BasicCounts } from "./basic-counts";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { DeckRefusalToast } from "./token-refusal-toast";
+import { useDeckFootClearance } from "./deck-toast-stack";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLedger } from "./provenance-line";
 import { PassSheet, type PassSheetTarget } from "./pass-sheet";
@@ -477,6 +478,10 @@ export function BuilderShell({
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
+  // The quick-add dock holds the page's foot: every deck toast stands 10px above it (small items 3, item 8). A state
+  // ref, since the dock comes and goes (a resolution open on a phone unmounts it).
+  const [quickAddDock, setQuickAddDock] = useState<HTMLDivElement | null>(null);
+  useDeckFootClearance(quickAddDock);
   const isDesktop = useIsDesktop();
 
   // True while the top-off commit is writing. Clearing the auto cards mid-write
@@ -2377,6 +2382,7 @@ export function BuilderShell({
                 both, so it keeps the bar. */}
             {(isDesktop || !unresolvedExpanded) && (
               <div
+                ref={setQuickAddDock}
                 data-testid="quick-add-dock"
                 // A bar pinned over the window's foot: an open `[[` list keeps clear of it (card-tag-picker.tsx).
                 data-foot-bar=""

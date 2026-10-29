@@ -36,6 +36,9 @@ const { OVERLAY_OUT_MS } = await import("./pending-overlay");
 const { use, useEffect, useLayoutEffect, useState } = await import("react");
 const { usePendingPush } = await import("./pending-push");
 const { mirrorUrl } = await import("../../lib/url/mirror");
+const { DeckToastStackHost } = await import("../decks/deck-toast-stack");
+const { QuickAddFailedToast } = await import("../decks/quick-add-failed-toast");
+const { TOAST_MS } = await import("../collection/edit-toast");
 
 function Reporter({ href }: { href: string }) {
   return usePendingReport(href) ? <span data-testid={`mark ${href}`} /> : null;
@@ -302,6 +305,80 @@ describe("a registered content scope", () => {
     act(() => local(<ScopedApp links={["/collection/sets"]} />));
     expect(scope().hasAttribute("aria-busy")).toBe(false);
     expect(scope().inert).toBe(false);
+  });
+});
+
+// The deck toast stack is drawn by the shell outside <main> (so a toast can climb out of the page's stacking contexts),
+// but it is the page's: a screen over <main> makes it inert too, so a receipt cannot start the old page's mutation over
+// the loading screen, and the toast clock (which counts only while its toast can be pressed) stops with it.
+describe("the page's layers outside main", () => {
+  const done = vi.fn();
+  function DeckApp({ links, scoped = false, toast = true }: { links: string[]; scoped?: boolean; toast?: boolean }) {
+    return (
+      <NavigationPendingProvider>
+        <ShellMain className="">
+          {scoped ? <DeckScope links={links} /> : links.map((href) => (
+            <Link key={href} href={href}>
+              <Reporter href={href} />
+            </Link>
+          ))}
+          {/* A deck toast mounts from a press, after the shell (and its stack) are drawn. */}
+          {toast ? <QuickAddFailedToast insideProps={{}} onRetry={() => {}} onDone={done} /> : null}
+        </ShellMain>
+        <DeckToastStackHost />
+      </NavigationPendingProvider>
+    );
+  }
+  function DeckScope({ links }: { links: string[] }) {
+    const ref = usePendingContentScope((p) => p.startsWith("/collection"));
+    return (
+      <div ref={ref as React.Ref<HTMLDivElement>}>
+        {links.map((href) => (
+          <Link key={href} href={href}>
+            <Reporter href={href} />
+          </Link>
+        ))}
+      </div>
+    );
+  }
+  const stack = () => document.querySelector<HTMLElement>("[data-deck-toast-stack]")!;
+
+  it("makes the deck toast stack inert with main, holds its toast's clock, and frees both at commit", () => {
+    cleanup();
+    done.mockClear();
+    state.path = "/decks/abc";
+    state.pending.clear();
+    const { rerender: local } = render(<DeckApp links={["/commanders"]} toast={false} />);
+    local(<DeckApp links={["/commanders"]} />);
+    // The toast is in the shell's stack, not in <main>.
+    expect(stack().contains(screen.getByRole("alert"))).toBe(true);
+    expect(main().contains(screen.getByRole("alert"))).toBe(false);
+    state.pending.set("/commanders", true);
+    act(() => local(<DeckApp links={["/commanders"]} />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(main().inert).toBe(true);
+    expect(stack().hasAttribute("inert")).toBe(true);
+    // The whole window spent under the screen spends none of the toast's.
+    act(() => vi.advanceTimersByTime(TOAST_MS + 1000));
+    expect(done).not.toHaveBeenCalled();
+    state.path = "/commanders";
+    state.pending.set("/commanders", false);
+    act(() => local(<DeckApp links={["/commanders"]} />));
+    expect(stack().hasAttribute("inert")).toBe(false);
+    act(() => vi.advanceTimersByTime(TOAST_MS));
+    expect(done).toHaveBeenCalled();
+  });
+
+  it("leaves the stack live when the screen covers only a registered scope", () => {
+    cleanup();
+    state.path = "/collection";
+    state.pending.clear();
+    const { rerender: local } = render(<DeckApp scoped links={["/collection/sets"]} />);
+    state.pending.set("/collection/sets", true);
+    act(() => local(<DeckApp scoped links={["/collection/sets"]} />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(overlay()).not.toBeNull();
+    expect(stack().hasAttribute("inert")).toBe(false);
   });
 });
 

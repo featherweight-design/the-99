@@ -214,9 +214,10 @@ export function GotItReceipt({
       if (stage.current === "warning") host.end(oracleId);
     };
   }, [host, oracleId]);
-  // The deck slot is this receipt's (it holds an Undo): a token refusal showing there steps aside. Once, when the receipt
-  // enters the slot, which is on mount and again when it comes back from its Undo warning (the warning swaps the frame out and
-  // back without remounting): `host` is a fresh object on every provider render, so the effect above must not carry this.
+  // The receipt keeps the stack's floor (it holds an Undo): a refusal showing there steps aside, and the failed search
+  // moves above it. Once, when the receipt enters the stack, which is on mount and again when it comes back from its
+  // Undo warning (the warning swaps the frame out and back without remounting): `host` is a fresh object on every
+  // provider render, so the effect above must not carry this.
   const frameShown = phase.k !== "warning";
   useEffect(() => {
     if (frameShown) window.dispatchEvent(new Event(DECK_TOAST_CLAIM));
@@ -387,6 +388,7 @@ export function GotItReceipt({
         frameRef={ref}
         role="alert"
         placement={placement}
+        kind="receipt"
         onHold={hold}
         title={c.undoFailed}
         body={phase.known ? c.undoFailedBody : undefined}
@@ -404,6 +406,7 @@ export function GotItReceipt({
       <ToastFrame
         frameRef={ref}
         placement={placement}
+        kind="receipt"
         onHold={hold}
         title={c.undoneElsewhere(cardName, written.quantity)}
       />
@@ -414,6 +417,7 @@ export function GotItReceipt({
     <ToastFrame
       frameRef={ref}
       placement={placement}
+      kind="receipt"
       onHold={hold}
       title={added}
       detail={detail}

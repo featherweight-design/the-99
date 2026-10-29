@@ -99,7 +99,7 @@
         {
           "clickRole": "button",
           "name": "^Add \\d+ cop",
-          "wait": "[data-toast]",
+          "waitToast": "receipt",
           "settle": 600
         }
       ]
@@ -128,12 +128,11 @@
         {
           "clickRole": "button",
           "name": "^Add \\d+ cop",
-          "wait": "[data-toast]",
+          "waitToast": "receipt",
           "settle": 600
         },
         {
-          "clickRole": "button",
-          "name": "^Undo adding ",
+          "clickToast": { "kind": "receipt", "name": "^Undo adding " },
           "wait": "[role=dialog]",
           "settle": 800
         }

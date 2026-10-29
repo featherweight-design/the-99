@@ -1,0 +1,113 @@
+{
+  "feature": "Small items 2, item 8 and small items 3, item 8: quick-add's failed search says so in the shared deck toast, with Try again, and every deck toast stands in one stack 10px above the quick-add dock (the receipt on the floor, the one alert above it)",
+  "note": "Run against a deck the signed-in account owns (QAF_DECK). The search is a Server Action POSTed to the deck's own URL, so the failure is forced by mocking that URL with a 500 AFTER the page has loaded; the toasts render into the shell's deck toast stack, outside `main`, so each row waits on it with `waitToast`. The page is reused across rows, so each row unroutes its mock last. Its rows write nothing. The receipt with the failed search above it is not photographed: a receipt only arrives from a write (Bought adds a copy and takes the row off Shopping), and the runner has no cleanup that restores a row's writes between cells or after a failed one (`clearAbout` is its only restore), so the phone cell would spend the fixture row the desktop cell needs and every run would leave the account a copy richer. The pair (the receipt on the floor, the alert 10px above it, whichever mounted first, and a receipt leaving the failed search standing) is proved by deck-toast-stack.test.tsx; i-got-it.json photographs the receipt itself, from the stack, on its scratch branch. `refusal-failed` presses a row's ✕ under the same 500, which the server answers as a refused removal: nothing is written. The press is outside the bar, so it clears the field (and the failed search with it); the refusal is the one alert left, never a third toast.",
+  "out": "contact-sheets/quick-add-failed",
+  "clearAbout": true,
+  "shares": {
+    "binding": "ToastFrame",
+    "module": "src/components/collection/edit-toast.tsx",
+    "note": "The deck slot's toast frame, the one the got-it receipt draws. The failed-search toast renders it as-is (placement \"deck\"), never a copy of its look."
+  },
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 860
+    }
+  ],
+  "rows": [
+    {
+      "id": "failed",
+      "label": "/decks/[id]: a quick-add search that failed. The toast stands 10px above the dock; the field keeps \"sw\" and focus, no list opens",
+      "view": "src/components/decks/quick-add-failed-toast.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${QAF_DECK}",
+          "wait": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "settle": 1500
+        },
+        {
+          "mock": "**/decks/*",
+          "status": 500
+        },
+        {
+          "fill": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "text": "sw",
+          "waitToast": "quick-add-failed",
+          "settle": 800
+        },
+        {
+          "unhold": "**/decks/*"
+        }
+      ]
+    },
+    {
+      "id": "recovered",
+      "label": "/decks/[id]: the same failure, then a search that lands (typing on). The toast is gone and the list opens",
+      "view": "src/components/decks/quick-add-failed-toast.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${QAF_DECK}",
+          "wait": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "settle": 1500
+        },
+        {
+          "mock": "**/decks/*",
+          "status": 500
+        },
+        {
+          "fill": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "text": "sw",
+          "settle": 2500
+        },
+        {
+          "unhold": "**/decks/*"
+        },
+        {
+          "fill": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "text": "swo",
+          "settle": 2500
+        },
+        {
+          "unhold": "**/decks/*"
+        }
+      ]
+    },
+    {
+      "id": "refusal-failed",
+      "label": "/decks/[id]: a removal refused while the failed search was up. The refusal takes the one alert's place, 10px above the dock",
+      "view": "src/components/decks/quick-add-failed-toast.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${QAF_DECK}",
+          "wait": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "settle": 1500
+        },
+        {
+          "mock": "**/decks/*",
+          "status": 500
+        },
+        {
+          "fill": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "text": "sw",
+          "waitToast": "quick-add-failed",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Remove ",
+          "waitToast": "refusal",
+          "settle": 800
+        },
+        {
+          "unhold": "**/decks/*"
+        }
+      ]
+    }
+  ]
+}

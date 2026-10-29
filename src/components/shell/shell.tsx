@@ -1,4 +1,5 @@
 import { shellUserId } from "./shell-session";
+import { DeckToastStackHost } from "../decks/deck-toast-stack";
 import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
@@ -189,6 +190,9 @@ export default async function Shell({
           badges={badges}
         />
         {pushOn && <AppBadge badges={badges} />}
+        {/* The deck page's toast stack (small items 3, item 8): empty until a deck toast portals in. Here, inside the
+            lock's `--tabbar-h`, and outside every page's own stacking context. */}
+        <DeckToastStackHost />
       </div>
       </HelpRoot>
       </CardSearchRoot>

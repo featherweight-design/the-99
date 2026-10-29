@@ -200,6 +200,18 @@ async function run(page, steps) {
         .first()
         .click({ timeout: 15_000 });
     }
+    // A press on a deck toast's control (Undo on the receipt): the toast is drawn into the deck toast stack the shell
+    // hosts, outside `<main>`, so `clickRole` (page-scoped) never finds it. Scoped to the stack and to the toast's kind,
+    // as `waitToast` is, so a different toast in its place fails the row; `name` is a regex, as `clickRole`'s is.
+    if (step.clickToast !== undefined) {
+      const { kind, name, role = "button" } = step.clickToast ?? {};
+      if (typeof kind !== "string" || typeof name !== "string") throw new Error("clickToast takes { kind, name }");
+      await page
+        .locator(`[data-deck-toast-stack] [data-toast-kind="${kind}"]`)
+        .getByRole(role, { name: new RegExp(expand(name, `clickToast ${kind}`, { forRegex: true })) })
+        .first()
+        .click({ timeout: 15_000 });
+    }
     // A field a surface only reaches its interesting state through typing — the
     // set panel narrows its list as you type, and an empty field shows every set.
     if (step.fill !== undefined) {
@@ -229,6 +241,13 @@ async function run(page, steps) {
     if (step.waitNote !== undefined) {
       if (typeof step.waitNote !== "string") throw new Error("waitNote takes the note's accessible name");
       await page.getByRole("note", { name: step.waitNote, exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
+    }
+    // A deck toast (small items 3, item 8): drawn into the deck toast stack the shell hosts, outside `<main>`, so like
+    // `waitNote` it is not page-scoped. It names the toast's kind (`receipt`, `refusal`, `quick-add-failed`), so a
+    // different toast in its place fails the row rather than photographing the wrong one.
+    if (step.waitToast !== undefined) {
+      if (typeof step.waitToast !== "string") throw new Error("waitToast takes the toast's kind");
+      await page.locator(`[data-deck-toast-stack] [data-toast-kind="${step.waitToast}"]`).first().waitFor({ state: "visible", timeout: 15_000 });
     }
     // A fresh visit for the row's moment, on its NEXT load only (the init script above reads the flag before the page's
     // own scripts run). The page it is on keeps its taken visit, so nothing arrives there in the meantime: a row clears

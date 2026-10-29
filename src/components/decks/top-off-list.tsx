@@ -67,6 +67,8 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 import { TOUCH_HIT } from "../ui/touch-hit";
 import { useRowOpen } from "./update-diff-row";
 import { useDockClearance } from "../shell/dock-clearance";
+import { useDeckFootClearance } from "./deck-toast-stack";
+import { useMergedRef } from "../ui/use-merged-ref";
 
 /** How long ticking settles before one message is announced. Thirty fast taps
  *  is one message, which is the shipped selection rule from the Add panel. */
@@ -684,6 +686,11 @@ export function TopOffList({
   // The height the page foot has to reserve for the pinned bar.
   const barRef = useRef<HTMLDivElement>(null);
   useDockClearance(barRef);
+  // On a phone the bar stands in for the quick-add dock at the page's foot, so the deck toasts stand above it too
+  // (small items 3, item 8). Static from md, where it publishes nothing.
+  const [barEl, setBarEl] = useState<HTMLDivElement | null>(null);
+  useDeckFootClearance(barEl);
+  const barRefs = useMergedRef<HTMLDivElement>(barRef, setBarEl);
   // Read through a ref so a caller passing an inline handler does not retear
   // down the observer on every render.
   const publish = useRef(onBarHeight);
@@ -1158,7 +1165,7 @@ export function TopOffList({
 
       {/* ── Commit row (§9) / commit bar (§10) ─────────────────────────── */}
       <div
-        ref={barRef}
+        ref={barRefs}
         className={[
           // Phone: the one pinned element, taking the quick-add dock's slot.
           "fixed left-0 right-0 bottom-[var(--tabbar-h)] z-30 px-[12px] pt-[11px] pb-[13px]",

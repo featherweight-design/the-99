@@ -5,6 +5,11 @@
 // strings land with the PR that draws them. NO STRING HERE PRINTS A PERCENTAGE: every count carries its denominator.
 // Opponent labels are player-typed (30 max) and reach no model.
 
+/** A card search that failed, said apart from its retry: the seat picker joins them into one line, and quick-add's
+ *  toast puts the second on its press (small items 2, item 8). */
+export const SEARCH_FAILED = "Couldn\u2019t search just now.";
+export const SEARCH_RETRY = "Try again";
+
 export const gameSeatsCopy = {
   seats: {
     label: "Across the table",
@@ -75,7 +80,8 @@ export const gameSeatsCopy = {
     searching: "Searching…",
     /** Not drawn in the handoff: the one line a search with no hit needs. */
     noMatch: "No commander by that name.",
-    /** Not drawn either: a search that failed is not a search with no hit. */
-    failed: "Couldn\u2019t search just now. Try again.",
+    /** Not drawn either: a search that failed is not a search with no hit. Quick-add's failed search toast says the
+     *  same two halves apart (small items 2, item 8), so they are written once, below. */
+    failed: `${SEARCH_FAILED} ${SEARCH_RETRY}.`,
   },
 } as const;

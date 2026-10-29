@@ -11,6 +11,8 @@
 // this toast with a detail line, a body, History and an in-toast Undo, held on hover and focus.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
+import { deckToastStack } from "../decks/deck-toast-stack";
 import { useMomentHold } from "../../lib/moments/hold";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -21,8 +23,8 @@ const r = collectionEditCopy.remove;
 
 /** The toast lasts this long (R2 §D: eight seconds), unless a revert is being decided. */
 export const TOAST_MS = 8000;
-/** A deck-slot toast that must not share the slot (a got-it receipt, which holds an Undo) announces itself with this, and a
- *  lesser one (a token press's refusal) leaves. */
+/** A got-it receipt announces itself with this when it enters the deck stack, and a refusal there leaves (that press is
+ *  older news). The failed search stays: its field still holds the query (small items 3, item 8). */
 export const DECK_TOAST_CLAIM = "the99:deck-toast-claim";
 const TICK_MS = 250;
 const EVENT = "collection-edit-toast";
@@ -76,15 +78,17 @@ export function useToastClock(ref: RefObject<HTMLElement | null>, running: boole
 }
 
 /**
- * The toast itself. `center` is /collection's slot, bottom centre. `deck` is the deck page's: the
- * phone column's foot above the tab bar, and bottom left of the deck pane from md (I got it, C1),
+ * The toast itself. `center` is /collection's slot, bottom centre. `deck` is the deck page's: drawn
+ * into the deck toast stack (`deck-toast-stack.tsx`), whose floor stands above the quick-add dock,
  * with the receipt's three lines (`title`, a mono `detail`, a `body` sentence) as IGI Toast draws
- * them. `inline` is that deck toast drawn in flow, for /about's specimen: same look, no fixed slot.
+ * them. The receipt (`kind="receipt"`) keeps the floor; an alert (any other kind) sits above it.
+ * `credits` is that toast in the shipped fixed slot, for /credits, which has no dock and no stack.
+ * `inline` is that deck toast drawn in flow, for /about's specimen: same look, no fixed slot.
  * The role is the caller's: `status` for a receipt, `alert` for a failure, and never an
  * explicit `aria-live`, which would override `alert` (audit errata 2).
  */
-/** The deck page's toast slot: the phone column's foot above the tab bar, bottom left of the pane from md. */
-const DECK_SLOT =
+/** /credits' toast slot, the deck slot as it shipped before the stack: above the tab bar, bottom left of the pane from md. */
+const CREDITS_SLOT =
   "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[16px] md:left-[calc(var(--rail-w)+16px)] md:right-auto md:w-[440px]";
 /**
  * The all-decks cart's slot: bottom right at 380 on desktop; on the phone above the tab bar, over
@@ -94,16 +98,20 @@ const CART_SLOT =
   "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[22px] md:left-auto md:right-[22px] md:w-[380px]";
 
 export function ToastFrame({
-  frameRef, role = "status", placement = "center", lift = 0, kind, title, detail, body, actions, onHold,
+  frameRef, role = "status", placement = "center", lift = 0, kind, marks, title, detail, body, actions, onHold,
 }: {
   frameRef: RefObject<HTMLDivElement | null>;
   role?: "status" | "alert";
-  placement?: "center" | "deck" | "cart" | "inline";
-  /** Draw this many px above the slot: over a toast that already holds it (`deck`: a token refusal over a receipt), or
-   *  over a page's own sticky bar (`center`: the precon pick's foot). */
+  placement?: "center" | "deck" | "credits" | "cart" | "inline";
+  /** `center` only: draw this many px above the slot, over a page's own sticky bar (the precon pick's foot). A deck
+   *  toast is never lifted: the stack it is drawn into stands above the dock and above the receipt. */
   lift?: number;
-  /** Marks the toast's kind, for another toast to tell it from a receipt (`data-toast-kind`). */
+  /** The toast's kind (`data-toast-kind`). In the deck stack `receipt` keeps the floor and every other kind is an alert,
+   *  drawn above it. */
   kind?: string;
+  /** Attributes for the frame itself, which a portal has taken out of its owner's DOM (quick-add's `useSearchDismiss`
+   *  mark: a press on the toast is not a press outside the bar). */
+  marks?: Record<string, string>;
   title: ReactNode;
   detail?: ReactNode;
   body?: ReactNode;
@@ -140,15 +148,21 @@ export function ToastFrame({
       </div>
     );
   }
-  return (
+  const slot =
+    placement === "inline" ? "w-full max-w-[440px]"
+      : placement === "cart" ? CART_SLOT
+        : placement === "credits" ? CREDITS_SLOT
+          // In the stack: the receipt last (the floor), an alert first (above it); a press takes the toast, never the gap.
+          : `pointer-events-auto ${kind === "receipt" ? "order-2" : "order-1"}`;
+  const frame = (
     <div
       ref={frameRef}
       role={role}
       {...holds}
+      {...marks}
       data-toast={placement}
       data-toast-kind={kind}
-      style={lift > 0 ? { translate: `0 -${lift}px` } : undefined}
-      className={`${placement === "inline" ? "w-full max-w-[440px]" : placement === "cart" ? CART_SLOT : DECK_SLOT} flex min-h-[52px] items-start gap-[10px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] pl-[14px] pr-[6px] shadow-[0_12px_30px_rgba(0,0,0,0.45)]`}
+      className={`${slot} flex min-h-[52px] items-start gap-[10px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] pl-[14px] pr-[6px] shadow-[0_12px_30px_rgba(0,0,0,0.45)]`}
     >
       <span className="flex min-w-0 flex-1 flex-col gap-[3px] py-[10px]">
         <span className="text-[13.5px] leading-[1.35] text-[color:var(--fg)]">{title}</span>
@@ -158,6 +172,8 @@ export function ToastFrame({
       {actions ? <span className="flex flex-none items-center gap-[2px] self-center">{actions}</span> : null}
     </div>
   );
+  // A deck toast only ever mounts from a press, in the browser.
+  return placement === "deck" ? createPortal(frame, deckToastStack()) : frame;
 }
 
 export function CollectionEditToast() {

@@ -6,7 +6,7 @@
 // staleness rules below would drift, and the whole point of `stale` is that
 // Enter can never act on rows the user has typed past.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { searchCards, type SearchResult } from "../../app/decks/[id]/search-action";
 
 export interface CardSearchInput {
@@ -40,6 +40,14 @@ export function useCardSearch({
   const [rows, setRows] = useState<{ for: string; items: SearchResult[] } | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The latest search was rejected or timed out (small items 2, item 8): a counter rather than a flag, so a failure
+  // after a failure is a new one and the caller's toast comes back with its own window. It outlives typing on purpose:
+  // only a search that lands, or a field the bar would no longer search, says the failure is over.
+  const [failure, setFailure] = useState<number | null>(null);
+  const failures = useRef(0);
+  // `retry` bumps this to run the same request again, at once rather than after the debounce.
+  const [attempt, setAttempt] = useState(0);
+  const lastAttempt = useRef(0);
 
   const trimmed = query.trim();
   const queryActive = trimmed.length >= 2 && trimmed.length <= 100;
@@ -52,8 +60,17 @@ export function useCardSearch({
   const identityKey = colorIdentity === null ? "any" : colorIdentity.join(",");
   const requestKey = `${ownedOnly ? "owned" : "all"} ${identityKey} ${deckId} ${trimmed}`;
 
+  // A field whose text the bar would not search (cleared, under 2 characters, over 100) is the reader putting the
+  // search down, failure and all: Try again would have nothing to run.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!queryActive) setFailure(null);
+  }, [queryActive]);
+
   useEffect(() => {
     if (timerRef.current !== null) clearTimeout(timerRef.current);
+    const retrying = attempt !== lastAttempt.current;
+    lastAttempt.current = attempt;
     if (!queryActive) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRows(null);
@@ -67,6 +84,7 @@ export function useCardSearch({
           if (cancelled) return;
           setRows({ for: requestKey, items: found });
           setActiveIndex(0);
+          setFailure(null);
         })
         .catch((err) => {
           // Outside the `cancelled` guard on purpose. Nothing here aborts the
@@ -76,9 +94,14 @@ export function useCardSearch({
           console.error(err);
           // Back to "no search has happened", never to "no results". An empty
           // list makes a claim a failed request has not earned.
-          if (!cancelled) setRows(null);
+          // Only the latest query's failure is said: one the reader has typed past is no news.
+          if (!cancelled) {
+            setRows(null);
+            failures.current += 1;
+            setFailure(failures.current);
+          }
         });
-    }, 150);
+    }, retrying ? 0 : 150);
 
     return () => {
       cancelled = true;
@@ -88,7 +111,7 @@ export function useCardSearch({
   // site (the module-level action, or one fixed resolver), and an inline arrow
   // would re-fire the debounce on every render of the caller.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
-  }, [trimmed, queryActive, ownedOnly, colorIdentity, requestKey, deckId]);
+  }, [trimmed, queryActive, ownedOnly, colorIdentity, requestKey, deckId, attempt]);
 
   const results = rows?.items ?? [];
   const stale = rows !== null && rows.for !== requestKey;
@@ -100,10 +123,21 @@ export function useCardSearch({
   // or the ones on screen answer an older query.
   const searching = queryActive && (rows === null || stale);
 
+  /** Runs the current query once more, now. The failure is over as the request starts; a second one raises it again. */
+  const retry = useCallback(() => {
+    setFailure(null);
+    setAttempt((a) => a + 1);
+  }, []);
+  /** The reader let the failure go (the toast's timer ran out). */
+  const dismissFailure = useCallback(() => setFailure(null), []);
+
   function move(delta: number) {
     if (!open) return;
     setActiveIndex((i) => (i + delta + results.length) % results.length);
   }
 
-  return { trimmed, queryActive, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move };
+  return {
+    trimmed, queryActive, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move,
+    failure, retry, dismissFailure,
+  };
 }

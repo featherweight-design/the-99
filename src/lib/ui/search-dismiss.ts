@@ -9,7 +9,10 @@
 // in the URL) do not take this rule, and neither does the `[[` card lookup, whose pick replaces
 // the text it was typed in.
 
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, type KeyboardEvent } from "react";
+
+/** Marks a part of a field that is drawn elsewhere in the DOM (a portalled toast) as inside it: `{...insideProps}`. */
+const INSIDE = "data-search-inside";
 
 /**
  * `active`: whether there is anything to dismiss (typed text, or an open list).
@@ -18,10 +21,12 @@ import { useEffect, useRef, type KeyboardEvent } from "react";
  * Returns the ref for the element that holds the field AND its list (a press inside it is not
  * outside), and the Escape half for the field's own key handler: it answers true when it took the
  * key (`escapeDismisses`). With nothing to dismiss it leaves Escape alone, so the sheet or dialog
- * around the field closes on it.
+ * around the field closes on it. `insideProps` go on a part of the field portalled out of `ref` (quick-add's failed-search
+ * toast, whose Try again must not clear the text it retries): a press there is not outside either.
  */
 export function useSearchDismiss<T extends HTMLElement>(active: boolean, dismiss: () => void) {
   const ref = useRef<T | null>(null);
+  const id = useId();
   const dismissRef = useRef(dismiss);
   useEffect(() => {
     dismissRef.current = dismiss;
@@ -33,15 +38,18 @@ export function useSearchDismiss<T extends HTMLElement>(active: boolean, dismiss
     // list is gone before whatever was pressed acts on it.
     const onPointerDown = (e: PointerEvent) => {
       const root = ref.current;
-      if (root && e.target instanceof Node && !root.contains(e.target)) dismissRef.current();
+      if (!root || !(e.target instanceof Node) || root.contains(e.target)) return;
+      const part = e.target instanceof Element ? e.target : e.target.parentElement;
+      if (part?.closest(`[${INSIDE}="${id}"]`)) return;
+      dismissRef.current();
     };
     document.addEventListener("pointerdown", onPointerDown, true);
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [active]);
+  }, [active, id]);
 
   const onEscape = (e: KeyboardEvent<HTMLElement>) => escapeDismisses(e, active, () => dismissRef.current());
 
-  return { ref, onEscape };
+  return { ref, onEscape, insideProps: { [INSIDE]: id } };
 }
 
 /**

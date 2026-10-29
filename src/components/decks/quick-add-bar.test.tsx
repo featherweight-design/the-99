@@ -757,3 +757,214 @@ describe("adding a basic while the stepper is settling", () => {
   });
 });
 
+
+// Small items 2, item 8 (`Quick-Add-Failed`): a rejected search says so in the deck toast, with Try again, and the bar
+// draws nothing new.
+const { gameSeatsCopy } = await import("../../lib/copy/game-seats");
+const { addPanelCopy } = await import("../../lib/copy/decks-builder");
+const { DeckRefusalToast } = await import("./token-refusal-toast");
+const { DECK_TOAST_CLAIM } = await import("../collection/edit-toast");
+
+describe("QuickAddBar — a failed search", () => {
+
+  function quietErrors() {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => errorSpy.mockRestore());
+  }
+  const toast = () => screen.queryByRole("alert");
+  const retryButton = () => within(screen.getByRole("alert")).getByRole("button", { name: addPanelCopy.quickAdd.searchRetry });
+
+  it("says the seat picker's words, split, and leaves the bar as it was", async () => {
+    // The two halves are the seat picker's one line, not new words.
+    expect(`${addPanelCopy.quickAdd.searchFailed} ${addPanelCopy.quickAdd.searchRetry}.`).toBe(gameSeatsCopy.picker.failed);
+    expect(addPanelCopy.quickAdd.searchFailed).toBe("Couldn’t search just now.");
+
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    field().focus();
+    fireEvent.change(field(), { target: { value: "sw" } });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(addPanelCopy.quickAdd.searchFailed);
+    expect(retryButton()).toBeInTheDocument();
+    expect(field()).toHaveValue("sw");
+    expect(field()).toHaveFocus();
+    expect(field()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByText(/nothing in the pile/i)).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
+  it("says nothing for a query the bar would not search", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "s" } });
+    await new Promise((r) => setTimeout(r, 250));
+    expect(searchCards).not.toHaveBeenCalled();
+    expect(toast()).toBeNull();
+  });
+
+  it("says nothing when a request the reader typed past fails", async () => {
+    quietErrors();
+    let rejectOld!: (e: Error) => void;
+    searchCards.mockImplementationOnce(() => new Promise((_, reject) => { rejectOld = reject; }));
+    mount();
+    fireEvent.change(field(), { target: { value: "st" } });
+    await waitFor(() => expect(searchCards).toHaveBeenCalledTimes(1));
+
+    searchCards.mockResolvedValue([rhystic]);
+    fireEvent.change(field(), { target: { value: "stu" } });
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+
+    await act(async () => rejectOld(new Error("late")));
+    expect(toast()).toBeNull();
+    expect(screen.getAllByRole("option").length).toBe(1);
+  });
+
+  it("goes when a search for the field's text lands", async () => {
+    quietErrors();
+    searchCards.mockRejectedValueOnce(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "st" } });
+    await screen.findByRole("alert");
+
+    // Typing on is no news by itself: the toast stays until a search lands.
+    searchCards.mockResolvedValue([rhystic]);
+    fireEvent.change(field(), { target: { value: "stu" } });
+    expect(toast()).not.toBeNull();
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+    expect(toast()).toBeNull();
+  });
+
+  it("goes when the field is cleared", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+
+    fireEvent.click(screen.getByRole("button", { name: addPanelCopy.quickAdd.clear }));
+    await waitFor(() => expect(toast()).toBeNull());
+  });
+
+  it("goes when the field's text is no longer a query the bar would search", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+
+    // Backspaced under two characters: Try again would have nothing to run.
+    fireEvent.change(field(), { target: { value: "s" } });
+    await waitFor(() => expect(toast()).toBeNull());
+
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+    // Past the hundred-character cap, likewise.
+    fireEvent.change(field(), { target: { value: "s".repeat(101) } });
+    await waitFor(() => expect(toast()).toBeNull());
+  });
+
+  it("runs the same query once more on Try again, keeps the text, and keeps focus on the field", async () => {
+    quietErrors();
+    searchCards.mockRejectedValueOnce(new Error("boom"));
+    mount();
+    field().focus();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+    expect(searchCards).toHaveBeenCalledTimes(1);
+    const firstArgs = searchCards.mock.calls[0];
+
+    searchCards.mockResolvedValue([rhystic]);
+    const press = retryButton();
+    // The press starts outside the bar's root (the toast is portalled), and must not read as a press outside the field.
+    fireEvent.pointerDown(press);
+    // A pointer press must not take focus off the field. jsdom moves no focus on a press, so the proof is that the
+    // mousedown, whose default action is the focus move, is cancelled (fireEvent returns false when it is).
+    expect(fireEvent.mouseDown(press)).toBe(false);
+    fireEvent.mouseUp(press);
+    fireEvent.click(press);
+
+    // The toast leaves as the request starts.
+    expect(toast()).toBeNull();
+    expect(field()).toHaveFocus();
+    expect(field()).toHaveValue("sw");
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+    expect(searchCards).toHaveBeenCalledTimes(2);
+    expect(searchCards.mock.calls[1]).toEqual(firstArgs);
+  });
+
+  it("hands focus back to the field after a keyboard press on Try again", async () => {
+    quietErrors();
+    searchCards.mockRejectedValueOnce(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+
+    searchCards.mockResolvedValue([rhystic]);
+    const press = retryButton();
+    // A keyboard press moves focus onto the button; `onRetry` hands it back.
+    press.focus();
+    fireEvent.click(press);
+    expect(field()).toHaveFocus();
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+  });
+
+  it("comes back when Try again fails too", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+
+    fireEvent.click(retryButton());
+    expect(toast()).toBeNull();
+    expect(await screen.findByRole("alert")).toHaveTextContent(addPanelCopy.quickAdd.searchFailed);
+    expect(searchCards).toHaveBeenCalledTimes(2);
+  });
+
+  it("draws into the deck toast stack as an alert, out of the bar, and is never lifted", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    const { container } = mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    const alert = await screen.findByRole("alert");
+    // Small items 3, item 8: the stack stands above the dock, so the toast measures nothing and carries no lift.
+    expect(container.contains(alert)).toBe(false);
+    expect(alert.parentElement!.hasAttribute("data-deck-toast-stack")).toBe(true);
+    expect(alert.getAttribute("data-toast-kind")).toBe("quick-add-failed");
+    expect(alert.className).toContain("order-1");
+    expect(alert.style.translate).toBe("");
+  });
+
+  it("is one alert with the refusals: a refusal replaces it, and it replaces a refusal", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+    // A refusal arrives: the failed search leaves, and the field keeps its query.
+    const refusal = render(<DeckRefusalToast title="We couldn’t remove that." detail="Badgermole" onDone={() => {}} />);
+    await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(1));
+    expect(screen.getByRole("alert")).toHaveTextContent("Badgermole");
+    expect(field()).toHaveValue("sw");
+    refusal.unmount();
+    // And the other way round: a refusal up when the search fails again leaves for it.
+    const refusalDone = vi.fn();
+    render(<DeckRefusalToast title="We couldn’t remove that." detail="Badgermole" onDone={refusalDone} />);
+    fireEvent.change(field(), { target: { value: "swo" } });
+    await waitFor(() => expect(refusalDone).toHaveBeenCalled());
+  });
+
+  it("stays when a receipt claims the stack, since the field still holds its query", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+    act(() => { window.dispatchEvent(new Event(DECK_TOAST_CLAIM)); });
+    expect(toast()).toHaveTextContent(addPanelCopy.quickAdd.searchFailed);
+  });
+});
