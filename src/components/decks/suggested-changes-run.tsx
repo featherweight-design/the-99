@@ -106,7 +106,8 @@ export function SuggestedChangesRun({
   const grouping: Grouping = stored ?? "type";
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState<"apply" | "undo" | null>(null);
-  const [failed, setFailed] = useState(false);
+  // A key per refused Apply, so a second refusal arrives as a newer alert with its own eight seconds (small items 3, item 8).
+  const [failed, setFailed] = useState<number | null>(null);
   const [undoError, setUndoError] = useState<string | null>(null);
   const [undone, setUndone] = useState<number | null>(null);
   const [lastSet, setLastSet] = useState<string | null>(null);
@@ -213,7 +214,7 @@ export function SuggestedChangesRun({
     setConfirming(false);
     if (!r.ok) {
       setBusy(null);
-      setFailed(true);
+      setFailed((n) => (n ?? 0) + 1);
       onAnnounce(sc.applyFailed.title);
       return;
     }
@@ -578,7 +579,7 @@ export function SuggestedChangesRun({
           onClose={() => setConfirming(false)}
         />
       ) : null}
-      {failed ? <DeckRefusalToast title={sc.applyFailed.title} detail={sc.applyFailed.detail} onDone={() => setFailed(false)} /> : null}
+      {failed !== null ? <DeckRefusalToast key={failed} title={sc.applyFailed.title} detail={sc.applyFailed.detail} onDone={() => setFailed(null)} /> : null}
     </div>
   );
 }

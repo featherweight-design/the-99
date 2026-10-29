@@ -218,6 +218,19 @@ describe("the results", () => {
     expect(t.onChanged).not.toHaveBeenCalled();
   });
 
+  it("a second refused apply arrives as a newer alert, not the first one left standing (small items 3, item 8)", async () => {
+    const t = setup({ lines: [...adds(5, (i) => ({ picked: i === 0 })), ...cuts(5, (i) => ({ picked: i === 0 }))] });
+    t.actions.apply.mockResolvedValue({ ok: false, message: "refused" });
+    await press(apply());
+    await press(within(screen.getByRole("dialog")).getByRole("button", { name: sc.confirm.apply(2) }));
+    const first = screen.getByRole("alert");
+    await new Promise((r) => setTimeout(r, 5));
+    await press(apply());
+    await press(within(screen.getByRole("dialog")).getByRole("button", { name: sc.confirm.apply(2) }));
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.getByRole("alert")).not.toBe(first);
+  });
+
   it("holds an applied set's one Undo, keeps the rest pickable, and says it was undone", async () => {
     const applied = (i: number) => (i < 3 ? { verdict: "accepted" as const, applySet: SET, picked: true } : {});
     const t = setup({ lines: [...adds(5, applied), ...cuts(5, applied)] });
