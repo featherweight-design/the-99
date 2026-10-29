@@ -129,16 +129,14 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * path, where the key parsing may not), so they would describe a column that is not there. Both Vercel projects carry the
  * keys (Production scope) and previews are not built, so that only happens on a local server run without them.
  * `SIGNATURE_CARD_ENABLED` held it from 2026-10-27 and left it with the `friends` entry's signature-card caption line.
- * It holds what is listed below, each with its reason.
+ * It holds nothing today; a switch that joins it carries its reason beside it.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
-  // Plan 2026-10-27, P5 (Hugh): v2 replaces the panel's intake and results across three UI PRs, so an account raised
-  // by All features would meet a half-drawn panel. Leaves at the line's close-out, with its About entry; the switch
-  // itself is removed once v2 is everywhere.
-  SUGGESTED_CHANGES_V2_ENABLED: "Suggested changes v2 is mid-build (plan 2026-10-27); out until its close-out",
+  // Empty. SUGGESTED_CHANGES_V2_ENABLED left on 2026-10-29 (Hugh: switches are on by default for his account), once
+  // its intake, wait, results and apply had shipped; its History view and in-flight tile follow in later PRs.
 };
 
 /**
