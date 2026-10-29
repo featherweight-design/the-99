@@ -22,9 +22,9 @@ describe("queueing one reader's catalog arrivals", () => {
 
   it("reads the feed's arrival rules: never a baseline stamp, released, a release type", () => {
     const q = flat(set.sql);
-    expect(q).toContain(`from "sets" s join "catalog_first_seen" sf on sf.kind = 'set' and sf.key = s.code join "user_prefs" sup on sup.user_id = $`);
+    expect(q).toContain(`from "sets" s join "catalog_first_seen" sf on sf.kind = 'set' and sf.key = s.code left join "user_prefs" sup on sup.user_id = $`);
     expect(q).toContain("where sf.baseline = false and s.digital = false");
-    expect(flat(precon.sql)).toContain(`from "precons" p join "catalog_first_seen" pf on pf.kind = 'precon' and pf.key = p.file_name join "user_prefs" pup on pup.user_id = $`);
+    expect(flat(precon.sql)).toContain(`from "precons" p join "catalog_first_seen" pf on pf.kind = 'precon' and pf.key = p.file_name left join "user_prefs" pup on pup.user_id = $`);
     expect(flat(precon.sql)).toContain("where pf.baseline = false and p.twin_of is null");
   });
 
@@ -45,10 +45,46 @@ describe("queueing one reader's catalog arrivals", () => {
 });
 
 describe("the readers the cron looks at", () => {
-  it("have a device and a catalog kind's push ticked", () => {
+  const gate = (n: number) =>
+    `coalesce((cup.push_kinds ->> $${n}::text)::timestamptz, case when $${n + 1}::text = any($${n + 2}::text[]) ` +
+    `and not ($${n + 3}::text = any(coalesce(cup.push_kinds_declined, '{}'::text[]))) then '-infinity'::timestamptz end) is not null`;
+
+  it("have a device and a catalog kind's push on, the prefs row LEFT joined", () => {
     const r = render(catalogReadersQuery());
-    expect(flat(r.sql)).toBe(`select distinct cps.user_id as user_id from "push_subscriptions" cps join "user_prefs" cup on cup.user_id = cps.user_id where (cup.push_kinds ->> $1::text) is not null or (cup.push_kinds ->> $2::text) is not null`);
-    expect(r.params).toEqual(["new-set", "new-precon"]);
+    expect(flat(r.sql)).toBe(
+      `select distinct cps.user_id as user_id from "push_subscriptions" cps left join "user_prefs" cup on cup.user_id = cps.user_id where ${gate(1)} or ${gate(5)}`,
+    );
+    expect(r.params).toEqual(["new-set", "new-set", ["spare-request"], "new-set", "new-precon", "new-precon", ["spare-request"], "new-precon"]);
+  });
+
+  /**
+   * The rule, evaluated as Postgres would on one joined row (`cup` all nulls for a reader with no prefs row): the stamp,
+   * else `-infinity` for a default-on kind not declined, else null. Mirrors the rendered SQL above, pinned by it.
+   */
+  type Row = { pushKinds: Record<string, string> | null; declined: string[] | null } | null;
+  const selected = (row: Row, kinds: string[], defaultOn: string[]) =>
+    kinds.some((k) => row?.pushKinds?.[k] !== undefined || (defaultOn.includes(k) && !(row?.declined ?? []).includes(k)));
+
+  it("for today's kinds (none default on), selects exactly whom the inner join selected: a reader with no row is not one", () => {
+    const kinds = ["new-set", "new-precon"];
+    const innerJoin = (row: Row) => row !== null && kinds.some((k) => row.pushKinds?.[k] !== undefined);
+    const readers: Row[] = [
+      null, // a device, no prefs row
+      { pushKinds: null, declined: null },
+      { pushKinds: {}, declined: [] },
+      { pushKinds: { "new-set": "2026-10-01T00:00:00.000Z" }, declined: [] },
+      { pushKinds: { "price-drop": "2026-10-01T00:00:00.000Z" }, declined: ["new-precon"] },
+    ];
+    for (const row of readers) expect(selected(row, kinds, ["spare-request"])).toBe(innerJoin(row));
+  });
+
+  it("for a default-on kind, selects a reader with no prefs row and one who never chose, never one who declined", () => {
+    const r = render(catalogReadersQuery(["new-set"], ["new-set"]));
+    expect(flat(r.sql)).toContain(`left join "user_prefs" cup on cup.user_id = cps.user_id where ${gate(1)}`);
+    expect(r.params).toEqual(["new-set", "new-set", ["new-set"], "new-set"]);
+    expect(selected(null, ["new-set"], ["new-set"])).toBe(true);
+    expect(selected({ pushKinds: {}, declined: [] }, ["new-set"], ["new-set"])).toBe(true);
+    expect(selected({ pushKinds: {}, declined: ["new-set"] }, ["new-set"], ["new-set"])).toBe(false);
   });
 });
 

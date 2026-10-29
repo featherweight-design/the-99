@@ -49,8 +49,9 @@ describe("feedUnion", () => {
   });
 
   it("joins only the READER's prefs row in every branch", () => {
-    expect(q).toMatch(/join "user_prefs" sup on sup\.user_id = \$\d+/);
-    expect(q).toMatch(/join "user_prefs" pup on pup\.user_id = \$\d+/);
+    // LEFT joined (a reader with no row reads nulls, and the stamp-only feed gate then reads nothing of these kinds).
+    expect(q).toMatch(/left join "user_prefs" sup on sup\.user_id = \$\d+/);
+    expect(q).toMatch(/left join "user_prefs" pup on pup\.user_id = \$\d+/);
     expect(q).toMatch(/where fi\.user_id = \$\d+ and fi\.kind = any\(\$\d+::text\[\]\)/);
     // Three prefs joins, and each catalog branch's own dismissals (✕) read by the same reader.
     expect(params.filter((p) => p === "user_1")).toHaveLength(5);
