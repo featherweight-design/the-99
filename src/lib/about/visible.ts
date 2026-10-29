@@ -30,7 +30,6 @@ import { preconsEnabled } from "../precons/flag";
 import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
-import { cardScanEnabled } from "../card-scan/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { homeFeedEnabled } from "../feed/flag";
 import { commandersPlaceEnabled } from "../commanders/place-flag";
@@ -50,6 +49,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   CARD_SEARCH_ENABLED: () => true,
   FIRST_RUN_TOUR_ENABLED: () => true,
   HELP_PANEL_ENABLED: () => true,
+  // Card scanning ended in the collection's add, so it was on exactly when collection edit is.
+  CARD_SCAN_ENABLED: collectionEditEnabled,
   NEVER_CUT_ENABLED: neverCutEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
@@ -94,7 +95,6 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // inside their own functions.
   RULE_ZERO_ENABLED: ruleZeroEnabled,
   SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
-  CARD_SCAN_ENABLED: cardScanEnabled,
   PAYMENTS_ENABLED: paymentsEnabled,
   // Already reads PAYMENTS_ENABLED inside its own function.
   WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,

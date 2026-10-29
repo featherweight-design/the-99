@@ -8,7 +8,7 @@
 // pinned version. The card index is built offline and is not in the repository: it is read from
 // `SCAN_LAB_INDEX_BASE`, a URL holding `scan-index.json` and `scan-index.bin`.
 //
-// With `CARD_SCAN_ENABLED` on for the reader, the lab also offers "Match on the server": the embedding goes to
+// With collection edit on for the reader (card scanning ends in its add), the lab also offers "Match on the server": the embedding goes to
 // `POST /api/card-scan/match` once per steady card in place of the index on the device (card-scan plan PR 2), so the
 // server path is tried in a real browser before the viewfinder exists.
 
@@ -16,7 +16,7 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { scanLabEnabled } from "../../../lib/scan-lab/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
-import { cardScanEnabled } from "../../../lib/card-scan/flag";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { SCAN_MODEL } from "../../../lib/card-scan/match";
 import { ScanLab } from "../../../components/scan-lab/scan-lab";
 
@@ -24,5 +24,5 @@ export default async function ScanLabPage() {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!scanLabEnabled(env)) notFound();
-  return <ScanLab indexBase={process.env.SCAN_LAB_INDEX_BASE ?? null} serverModel={cardScanEnabled(env) ? SCAN_MODEL : null} />;
+  return <ScanLab indexBase={process.env.SCAN_LAB_INDEX_BASE ?? null} serverModel={collectionEditEnabled(env) ? SCAN_MODEL : null} />;
 }

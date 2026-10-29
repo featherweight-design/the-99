@@ -42,7 +42,6 @@ import type { SeenState } from "../lib/about/visible";
 import { resolveTheme } from "../lib/theme/server";
 import { noCollectionEntryEnabled } from "../lib/collection/edit-flag";
 import { preconsEnabled } from "../lib/precons/flag";
-import { cardScanEnabled } from "../lib/card-scan/flag";
 import { PICK_RECEIPT_PARAM } from "../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../lib/precons/pick-receipt-read";
 import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
@@ -396,7 +395,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         about={about}
         welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="first-run" afterAbout={about !== null} />}
         ways={noCollectionEntry ? { precons: preconsEnabled(env) } : null}
-        scan={cardScanEnabled(env)}
+        scan={collectionEditEnabled(env)}
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
         signature={signatureRow}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}

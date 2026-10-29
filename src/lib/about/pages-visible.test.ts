@@ -56,8 +56,7 @@ describe("each sentence follows its own switch", () => {
   it.each([
     ["Ready to build leaves with the feed on", { HOME_FEED_ENABLED: "true" }, "home/home/ready", undefined, undefined],
     ["the feed's lead names no kind a switch can hide", { HOME_FEED_ENABLED: "true" }, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
-    ["the + without scanning", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "by name.", "scan"],
-    ["the + with scanning", { COLLECTION_EDIT_ENABLED: "true", CARD_SCAN_ENABLED: "true" }, "collection/cards/add", "scan them", undefined],
+    ["the + with scanning (it follows collection edit)", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "scan them", undefined],
     ["the place strip without Help me choose", { COMMANDERS_PLACE_ENABLED: "true" }, "commanders/for-you/places", "two ways", "Help me choose"],
     ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
     ["credits with Suggested changes and not Proposed cuts", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" }, "rule/credits", "Suggested changes run", "Look deeper"],

@@ -2674,7 +2674,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   printings action is still held in flight; the scanner never says it is adding; a failed printings read takes the card
   back off the list with the `view.removed` toast and is not taken again while it stays in view. Mutation-checked:
   drop the sheet's rollback and both widths fail. It writes nothing (the list is never saved). Needs a server with
-  `CARD_SCAN_ENABLED` and `COLLECTION_EDIT_ENABLED`, at `PROBE_BASE`.
+  `COLLECTION_EDIT_ENABLED`, at `PROBE_BASE`.
 - `pnpm probe:card-scan-match` proves card scanning's server match (plan `2026-10-16-card-scan.md` PR 1) against the
   real every-printing index: the file checks refuse a wrong model, a row off unit length and a short file; the ingest
   CLI exits 2 on a target that is not the branch it names; `publishScanIndex` replaces the rows and the meta row in one
@@ -3285,7 +3285,7 @@ scratch branch only, and refuses staging and production by `neon.branch_id`.
   card (Scryfall's image) covering `share` of the picture, centred at (`cx`, `cy`) and turned `angle` degrees. The scanner then
   reads a real frame through the real detector and embedder, so `docs/superpowers/inventories/card-scan-outline.json` photographs
   the outline following a card held off-centre (phone-card, desktop-card) and the empty table with its one-line hint (phone-empty,
-  desktop-empty). It needs `CARD_SCAN_ENABLED` and `COLLECTION_EDIT_ENABLED` on the server and a network (the card image, the
+  desktop-empty). It needs `COLLECTION_EDIT_ENABLED` on the server and a network (the card image, the
   models and onnxruntime-web). The first request to a cold `next dev` can pass the sign-in's 30s, so warm the server first.
   It adds nothing: an add would write a ledger entry. The smallest card the detector reads, measured 2026-10-16 on the real
   models over a 1280x720 frame (two cards, flat and tilted 15 degrees, off-centre): the sharpness gate holds down to a card

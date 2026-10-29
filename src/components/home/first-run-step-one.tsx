@@ -27,7 +27,7 @@ export function FirstRunStepOne({
   scan = false,
 }: {
   fan: React.ReactNode;
-  /** `CARD_SCAN_ENABLED` for the reader: the Add cards sheet's Scan press. */
+  /** Collection edit on for the reader (card scanning ends in its add): the Add cards sheet's Scan press. */
   scan?: boolean;
   addByHand?: boolean;
   /**

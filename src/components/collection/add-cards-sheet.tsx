@@ -75,7 +75,7 @@ export type AddCardsSheetProps =
        * it from `PRECONS_ENABLED` and the line's own switch; absent, the empty state is as shipped.
        */
       preconPick?: boolean;
-      /** `CARD_SCAN_ENABLED`, decided by the host: the Scan press beside the search (card-scan PR 3). Absent, as shipped. */
+      /** Collection edit on, decided by the host: the Scan press beside the search (card-scan PR 3). Absent, as shipped. */
       scan?: boolean;
     }
   | {

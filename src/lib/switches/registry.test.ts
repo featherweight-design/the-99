@@ -37,7 +37,7 @@ describe("the switch registry", () => {
     const inForce = listed.split(",").map((s) => s.trim().replace(/'/g, ""));
     // Retired in code but still allowed by the CHECK until the one migration that drops them all (the flag-retirement
     // series' last PR): the table may list these, and nothing else beyond the registry.
-    const RETIRED_PENDING_MIGRATION = ["FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED"];
+    const RETIRED_PENDING_MIGRATION = ["FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "CARD_SCAN_ENABLED"];
     expect(inForce.filter((n) => !RETIRED_PENDING_MIGRATION.includes(n)).sort()).toEqual([...SWITCH_NAMES, ALL_FEATURES].sort());
     expect(inForce).toEqual(expect.arrayContaining(RETIRED_PENDING_MIGRATION));
   });

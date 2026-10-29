@@ -147,7 +147,7 @@ export function FirstRunChecklist({
   about?: AboutLine | null;
   /** The welcome-credits strip (welcome credits D2), read per request, or null: drawn under About's line. */
   welcome?: React.ReactNode;
-  /** `CARD_SCAN_ENABLED` for the reader: the Add cards sheet's Scan press. */
+  /** Collection edit on for the reader (card scanning ends in its add): the Add cards sheet's Scan press. */
   scan?: boolean;
   /** The no-collection entry (S1): step 1's ways group, and Collection open in the nav. Null: as shipped. */
   ways?: { precons: boolean } | null;

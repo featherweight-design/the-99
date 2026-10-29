@@ -36,7 +36,6 @@ import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled } from "../tuning/flag";
 import { wishlistEnabled } from "../wishlist/flag";
-import { cardScanEnabled } from "../card-scan/flag";
 import type { SwitchName } from "./registry";
 
 /**
@@ -49,7 +48,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   BRACKET_REACH_ENABLED: bracketReachEnabled,
-  CARD_SCAN_ENABLED: cardScanEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
   COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
