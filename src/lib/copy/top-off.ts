@@ -323,11 +323,15 @@ export const topOffCopy = {
     // The app's one ordinal formatter (`deck-analysis.ts`), not a second one to drift from it.
     passLabel: (i: string) => `${ordinal(Number(i))} top-off`,
 
-    /** The seed's sentence — the shipped provenance wording, recast as a line. */
-    seedLine: (n: string, buy: string) =>
-      `${plural(n, 'card', 'cards')}: the roles and the mana base, ${buy} to buy.`,
-    seedLineNoBuy: (n: string) =>
-      `${plural(n, 'card', 'cards')}: the roles and the mana base.`,
+    /** The two figures every line leads with (#477): what the pass placed, then what of it is
+     *  still here. The still-here figures sum to the header. Equal reads `all {n}`; zero `none`. */
+    lead: (placed: string, here: string) =>
+      here === placed ? `${placed} placed, all ${here} still here` : `${placed} placed, ${here} still here`,
+    leadNone: (placed: string) => `${placed} placed, none still here`,
+
+    /** The seed's clause, after the colon that follows the two figures. */
+    seedLine: (buy: string) => `the roles and the mana base, ${buy} to buy.`,
+    seedLineNoBuy: 'the roles and the mana base.',
     /** The seed NAMES its reversal rather than growing a button for it: that
      *  control is a rule and a row away in the toolbar, and duplicating it here
      *  would put two destructive controls in one box.
@@ -338,10 +342,9 @@ export const topOffCopy = {
      *  control the reader could not go and find. */
     seedReversal: 'Clear all auto reverses it',
 
-    passLine: (n: string, slots: string, buy: string) =>
-      `${plural(n, 'card', 'cards')} you chose from the last ${slots}, ${buy} of them to buy.`,
-    passLineNoBuy: (n: string, slots: string) =>
-      `${plural(n, 'card', 'cards')} you chose from the last ${slots}.`,
+    passLine: (slots: string, buy: string) =>
+      `you chose them from the last ${slots}, ${buy} to buy.`,
+    passLineNoBuy: (slots: string) => `you chose them from the last ${slots}.`,
     /** A pass is a SET OF ROWS, not a transaction. A row leaves it two ways and
      *  the line NAMES WHICH, because they mean opposite things: 'removed' is a
      *  rejection, 'now yours' is an endorsement — the shipped keep control
@@ -352,12 +355,13 @@ export const topOffCopy = {
      *  'now yours' rather than 'kept': the ledger's voice is the app accounting
      *  for what it did, so the clause that hands a card over should sound like
      *  handing it over. 'kept' is the CONTROL's word and stays its own. */
-    passRecounted: (placed: string, removed: string) =>
-      `${plural(placed, 'card', 'cards')} · ${removed} removed since`,
-    passRecountedKept: (placed: string, kept: string) =>
-      `${plural(placed, 'card', 'cards')} · ${kept} now yours`,
-    passRecountedBoth: (placed: string, kept: string, removed: string) =>
-      `${plural(placed, 'card', 'cards')} · ${kept} now yours, ${removed} removed since`,
+    passRecounted: (removed: string) => `${removed} removed since`,
+    passRecountedKept: (kept: string) => `${kept} now yours`,
+    passRecountedBoth: (kept: string, removed: string) => `${kept} now yours, ${removed} removed since`,
+    /** A pass with nothing still here, which keeps a quiet line: undone from its own control, or
+     *  every card kept. */
+    passUndone: 'undone',
+    passAllKept: (n: string) => `all ${n} now yours`,
     /** A deck that predates the ledger. NO seed line is synthesised: keeping has
      *  already eaten some of its auto rows, and decks.filled stays true forever,
      *  so a count inferred from either would be a lie in a table whose whole job

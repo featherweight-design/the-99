@@ -61,8 +61,8 @@ export interface FillPassSummary extends FillPassRow {
  * since`, which is what actually happened to it. The overlap can only arise
  * after a removal, because a card already in the deck is never a candidate.
  *
- * A pass with no live cards renders no line, so it is dropped here rather than
- * in the component.
+ * A pass with no live cards keeps its line, so the still-here figures sum to the
+ * header and an undone pass does not vanish. The ledger reads how it ended off the counts (`passEnded`).
  */
 export function summariseFillPasses(args: {
   passes: FillPassRow[];
@@ -125,7 +125,10 @@ export function summariseFillPasses(args: {
       }
     }
 
-    if (live > 0) summaries.set(pass.id, { ...pass, live, kept, removed, liveCards });
+    // A pass with nothing live still keeps its line (#477): the ledger states what it placed and
+    // that none is still here, so the record stays whole. Only a pass with no membership at all
+    // has nothing to state.
+    if (live + kept + removed > 0) summaries.set(pass.id, { ...pass, live, kept, removed, liveCards });
   }
 
   // Oldest first: the ledger is read top-down as the deck's history, so the
@@ -197,8 +200,8 @@ export function fillPassesQuery(deckId: string, userId: string) {
     .orderBy(asc(fillPasses.createdAt), asc(fillPasses.ordinal));
 }
 
-/** The ledger's lines for one deck, oldest first, passes with no live cards
-    already dropped. Reads only — nothing in this feature writes to a pass after
+/** The ledger's lines for one deck, oldest first; a pass with nothing still here
+    stays, as a quiet line. Reads only — nothing in this feature writes to a pass after
     it is created.
 
     OWNER-SCOPED IN ITS OWN SQL: the first read joins `decks` on the reader, so a

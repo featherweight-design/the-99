@@ -102,23 +102,31 @@ describe("summariseFillPasses", () => {
       passes: [pass({ id: "p1" })],
       members: [member("p1", "swamp", 9)],
       deckCards: [kept("swamp", 9)],
-    })).toEqual([]);
+    })).toMatchObject([{ id: "p1", live: 0, kept: 9, removed: 0 }]);
   });
 
-  it("drops a pass with no live cards, so its line goes", () => {
+  it("keeps a pass with no live cards, so the record stays whole", () => {
     expect(summariseFillPasses({
       passes: [pass({ id: "p1" })],
       members: [member("p1", "a"), member("p1", "b")],
       deckCards: [kept("a")],
-    })).toEqual([]);
+    })).toMatchObject([{ id: "p1", live: 0, kept: 1, removed: 1, liveCards: [] }]);
   });
 
-  it("empties every pass when Keep all clears the deck's auto flags", () => {
+  it("keeps a fully undone pass: every card gone, none live or kept", () => {
+    expect(summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "a"), member("p1", "b")],
+      deckCards: [],
+    })).toMatchObject([{ id: "p1", live: 0, kept: 0, removed: 2 }]);
+  });
+
+  it("leaves no pass live when Keep all clears the deck's auto flags", () => {
     expect(summariseFillPasses({
       passes: [pass({ id: "p1", createdAt: at(0) }), pass({ id: "p2", ordinal: 2, createdAt: at(5) })],
       members: [member("p1", "a"), member("p2", "b")],
       deckCards: [kept("a"), kept("b")],
-    })).toEqual([]);
+    }).map((l) => [l.live, l.kept])).toEqual([[0, 1], [0, 1]]);
   });
 
   it("gives a re-placed card to the newest pass and leaves the older one reading removed", () => {
@@ -185,19 +193,37 @@ describe("summariseFillPasses", () => {
       ...rows,
     });
     // The top-off owns it either way: a seed is older than any top-off.
-    expect(forward.map((l) => l.id)).toEqual(["t"]);
-    expect(reversed.map((l) => l.id)).toEqual(["t"]);
+    const owner = (ls: typeof forward) => ls.filter((l) => l.live > 0).map((l) => l.id);
+    expect(owner(forward)).toEqual(["t"]);
+    expect(owner(reversed)).toEqual(["t"]);
   });
 
-  it("holds the invariant: no auto rows means no ledger", () => {
+  it("holds the invariant: the still-here figures sum to the deck's live auto copies", () => {
+    const passes = [
+      pass({ id: "seed", kind: "seed", createdAt: at(0) }),
+      pass({ id: "p1", ordinal: 1, createdAt: at(10) }),
+      pass({ id: "p2", ordinal: 2, createdAt: at(20) }),
+    ];
+    const members = [
+      member("seed", "s1"), member("seed", "s2"), member("p1", "a"), member("p1", "b"),
+      member("p1", "c"), member("p2", "d"),
+    ];
+    // s2 removed, a kept, b removed, d removed (p2 undone), c and s1 live.
+    const deck = [live("s1"), kept("a"), live("c")];
+    const lines = summariseFillPasses({ passes, members, deckCards: deck });
+    const header = deck.filter((r) => r.auto).reduce((n, r) => n + r.quantity, 0);
+    expect(lines.map((l) => l.id)).toEqual(["seed", "p1", "p2"]);
+    expect(lines.reduce((n, l) => n + l.live, 0)).toBe(header);
+  });
+
+  it("holds the invariant: no auto rows leaves only quiet lines", () => {
     const passes = [
       pass({ id: "seed", kind: "seed", createdAt: at(0) }),
       pass({ id: "p1", createdAt: at(10) }),
     ];
     const members = [member("seed", "s"), member("p1", "a")];
-    // The sweep deletes every auto row. Nothing is written to a pass, and every
-    // line goes on its own.
-    expect(summariseFillPasses({ passes, members, deckCards: [] })).toEqual([]);
+    // The sweep deletes every auto row. Nothing is written to a pass; every line reads none still here.
+    expect(summariseFillPasses({ passes, members, deckCards: [] }).every((l) => l.live === 0)).toBe(true);
   });
 });
 
