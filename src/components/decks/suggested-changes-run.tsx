@@ -160,14 +160,15 @@ export function SuggestedChangesRun({
     ? `${pickedAdds.map((l) => l.id).join(",")}|${pickedCuts.map((l) => l.id).join(",")}|${deckStamp}` : null;
   useEffect(() => {
     const read = actions.setBracket;
-    if (setKey === null || !read || setRead?.key === setKey) return;
+    // Not while the run streams: the waiting bar draws no outcome, and each arriving line would move the stamp.
+    if (setKey === null || waiting || !read || setRead?.key === setKey) return;
     let live = true;
     const [a, c] = setKey.split("|").slice(0, 2).map((s) => (s === "" ? [] : s.split(",")));
     const timer = setTimeout(() => {
       read(runId, a, c).then((r) => { if (live && r) setSetRead({ key: setKey, permits: r.permits }); }, () => undefined);
     }, SET_BRACKET_DEBOUNCE_MS);
     return () => { live = false; clearTimeout(timer); };
-  }, [setKey, runId, actions.setBracket, setRead?.key]);
+  }, [setKey, waiting, runId, actions.setBracket, setRead?.key]);
   const outcome = bracketOutcome(
     permits, ask?.bracket ?? null, [...pickedAdds, ...pickedCuts], setRead && setRead.key === setKey ? setRead.permits : null,
   );

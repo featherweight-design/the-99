@@ -452,6 +452,15 @@ describe("the results", () => {
     expect(bar().textContent).not.toContain(sc.bar.bracketReached(2, 3, "Upgraded"));
   });
 
+  it("asks nothing while the run is still streaming", async () => {
+    vi.useFakeTimers();
+    const two = (i: number) => ({ picked: i < 2 });
+    const both = [...adds(5, two), ...cuts(3, two)];
+    const t = setup({ live: liveOf(both, { phase: "cuts", in: { add: true, cut: false } }), lines: both, startedAt: new Date() });
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(t.actions.setBracket).not.toHaveBeenCalled();
+  });
+
   it("asks nothing for a set of one line a side", async () => {
     vi.useFakeTimers();
     const t = setup({ lines: [...adds(5, (i) => ({ picked: i === 0 })), ...cuts(5, (i) => ({ picked: i === 0 }))] });
