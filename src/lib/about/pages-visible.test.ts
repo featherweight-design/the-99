@@ -354,8 +354,8 @@ describe("a section's sub-line", () => {
     expect(sub(ALL_ON, "stats")).toContain("curve by card type");
     const noStats = env({ ...(ALL_ON as Record<string, string>), DECK_STATS_ENABLED: "off" });
     expect(sub(noStats, "stats")).toBe(ABOUT_SCREEN_OFF.trim());
-    const noScan = env({ ...(ALL_ON as Record<string, string>), CARD_SCAN_ENABLED: "off" });
-    expect(sub(noScan, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding.");
+    const noEdit = env({ ...(ALL_ON as Record<string, string>), COLLECTION_EDIT_ENABLED: "off" });
+    expect(sub(noEdit, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding.");
     // Ready to build shows only while the feed is off.
     expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
     expect(sub(env({ ...(ALL_ON as Record<string, string>), HOME_FEED_ENABLED: "off" }), "home")).toContain("best-fit commanders");

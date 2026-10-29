@@ -250,7 +250,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     id: "cards",
     name: "Cards",
     sub: "Everything you own, card by card, and which copies your decks are holding. Add cards by name or scan them in.",
-    subSentences: { " Add cards by name or scan them in.": ["COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED"] },
+    subSentences: { " Add cards by name or scan them in.": ["COLLECTION_EDIT_ENABLED"] },
     screens: [{ screen: "collection" }],
     captures: { phone: ["p-collection"], desktop: ["d-collection2"] },
     labels: [
