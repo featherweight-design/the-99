@@ -496,9 +496,12 @@ def board_main():
               "Collection’s pinned head goes from 108 to 116. Collection’s Sort pill takes the panel’s own 44 so row B has one height. Board <b>Filters</b>."),
         ("2", "Suggested changes: cards from my other decks", "<b>One checkbox</b> under Only cards I own: <i>Also cards in my other decks</i>. A result from another deck carries the shipped "
               "<i>none free, in HD - Gishath</i> marker (+N when several decks hold it). <b>Apply adds it here and leaves it there</b>; the shipped availability and deck messages take it from there. Board <b>Other-Decks</b>."),
+        ("3", "About · the top dock and the returning header", "<b>Recommended: the label rides the header.</b> A label docked at the top keeps its place under the back bar (or the header): "
+              "it slides 79px down as the returned header comes in and back up as it leaves, on the header’s own slide, the way the back bar already rides <code>--header-offset</code>. The top-or-foot choice is still made once, on the tap. "
+              "Not recommended: holding the header away while a label is docked. Board <b>Dock-Header</b>."),
     ])
     body = (head("small items 4 · account 2 · 2026-10-29", "Small items 4",
-                 "Two small items: a follow-up on Small items 3’s filter controls, and a new choice on Suggested changes’ form. Each is drawn over the shipped surface it changes, at 390 "
+                 "Three small items: a follow-up on Small items 3’s filter controls, a new choice on Suggested changes’ form, and (addendum) the About phone dock under the returning header. Each is drawn over the shipped surface it changes, at 390 "
                  "and, for item 2, 1300. Dashed orange outlines mark what is new. Strings marked as drafts are for /copy-review.")
             + '<div class="sec"><h3>The calls</h3>' + rows + '</div>')
     return doc("Small items 4 · main", body, 1300)

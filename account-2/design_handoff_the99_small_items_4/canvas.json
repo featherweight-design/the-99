@@ -14,7 +14,7 @@
    "x": 0,
    "y": 0,
    "w": 1300,
-   "h": 467,
+   "h": 573,
    "title": "Small items 4 \u00b7 the calls"
   },
   "Filters.dc.html": {
@@ -30,12 +30,20 @@
    "w": 1846,
    "h": 7338,
    "title": "2 \u00b7 Suggested changes: cards from my other decks"
+  },
+  "Dock-Header.dc.html": {
+   "x": 4442,
+   "y": 0,
+   "w": 1760,
+   "h": 2493,
+   "title": "3 \u00b7 About: the top dock and the returning header"
   }
  },
  "order": [
   "Main.dc.html",
   "Filters.dc.html",
-  "Other-Decks.dc.html"
+  "Other-Decks.dc.html",
+  "Dock-Header.dc.html"
  ],
  "notes": {},
  "designSystems": []
