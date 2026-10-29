@@ -98,7 +98,7 @@ describe("LabelLanding", () => {
     // Phone: the landed card has moved under its label, so Try it counts the rest without it.
     const phoneTry = [...container.querySelectorAll("[data-try-it-width='phone'] [data-tool-card]")].map((e) => e.getAttribute("data-tool-card"));
     expect(phoneTry).toEqual(["suggested-changes"]);
-    expect(container.querySelector("[data-try-it-more]")?.textContent).toBe("1 more below");
+    expect(container.querySelector("[data-try-it-more]")?.textContent).toBe("1 more below ▾");
   });
 
   it("lands the ?'s landing (with from) as the halo alone: lit, never New, no card, and keeps from on the strip", () => {
@@ -239,9 +239,27 @@ describe("TryIt", () => {
     const { container, getByText } = draw(NEW, null);
     const phone = () => [...container.querySelectorAll("[data-try-it-width='phone'] [data-tool-card]")].map((e) => e.getAttribute("data-tool-card"));
     expect(phone()).toEqual(["suggested-changes"]);
+    const more = container.querySelector<HTMLButtonElement>("[data-try-it-more]")!;
+    expect(more.getAttribute("aria-expanded")).toBe("false");
+    expect(more.getAttribute("aria-controls")).toBe(container.querySelector("[data-try-it-width='phone']")!.id);
     fireEvent.click(getByText("2 more below"));
     expect(phone()).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
     expect(container.querySelector("[data-try-it-more]")).toBeNull();
+    // Focus moves to the first card it added (Small items 2, item 2).
+    const second = container.querySelectorAll("[data-try-it-width='phone'] li")[1];
+    expect(second.contains(document.activeElement)).toBe(true);
+  });
+
+  it("folds back with Show fewer, focus on the restored press", () => {
+    at("/about/decks");
+    const { container, getByText } = draw(NEW, null);
+    fireEvent.click(getByText("2 more below"));
+    const fewer = container.querySelector<HTMLButtonElement>("[data-try-it-fewer]")!;
+    expect(fewer.textContent).toBe("Show fewer ▴");
+    expect(fewer.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(fewer);
+    expect(container.querySelectorAll("[data-try-it-width='phone'] [data-tool-card]")).toHaveLength(1);
+    expect(document.activeElement).toBe(container.querySelector("[data-try-it-more]"));
   });
 
   it("draws every card in the desktop row, each footer's link Show me at its label", () => {
