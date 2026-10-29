@@ -134,8 +134,11 @@ describe("History A's pills, on every tool's row (History.dc)", () => {
 });
 
 describe("historyDate", () => {
-  it("is US short, month first, with the time", () => {
-    expect(historyDate("2026-10-07T21:40:00")).toBe("Oct 7 · 9:40 PM");
+  it("is US short, month first, with the time on a 24-hour clock (History.dc `Oct 27 · 21:40`)", () => {
+    expect(historyDate("2026-10-07T21:40:00")).toBe("Oct 7 · 21:40");
+    // The morning keeps its leading zero (`Oct 27 · 09:15`), and midnight is 00, never 24.
+    expect(historyDate("2026-10-27T09:15:00")).toBe("Oct 27 · 09:15");
+    expect(historyDate("2026-10-27T00:05:00")).toBe("Oct 27 · 00:05");
   });
 });
 
@@ -163,7 +166,9 @@ describe("HistoryList", () => {
     await waitFor(() => expect(rowEls()).toHaveLength(5));
     const group = screen.getByRole("radiogroup");
     const chips = within(group).getAllByRole("radio");
-    expect(chips.map((c) => c.textContent)).toEqual([copy.filterAll, tuningHubCopy.tools.suggested.name, tuningHubCopy.tools.cuts.name]);
+    // History.dc `.hchips`: `All · Suggested · Mana · Cuts`, the short tool words with no mark.
+    expect(chips.map((c) => c.textContent)).toEqual(["All", "Suggested", "Cuts"]);
+    expect(chips.some((c) => c.querySelector("svg"))).toBe(false);
     expect(chips[0].getAttribute("aria-checked")).toBe("true");
     // The default size: the 44px phone floor the old chips held, not compact's 40px.
     for (const c of chips) expect(c.className.split(" ")).toContain("min-h-[44px]");
@@ -177,7 +182,7 @@ describe("HistoryList", () => {
   it("draws the Mana Balance chip only when that tool is drawn", async () => {
     render(<Host tools={["suggested", "mana", "cuts"]} />);
     await waitFor(() => expect(rowEls()).toHaveLength(5));
-    expect(within(screen.getByRole("radiogroup")).getAllByRole("radio")).toHaveLength(4);
+    expect(within(screen.getByRole("radiogroup")).getAllByRole("radio").map((c) => c.textContent)).toEqual(["All", "Suggested", "Mana", "Cuts"]);
   });
 
   it("shows Show 20 more only when another page exists, and appends it", async () => {
@@ -305,6 +310,12 @@ describe("PastRun", () => {
     await waitFor(() => expect(screen.getByText(copy.pastNothing)).toBeTruthy());
     expect(screen.getByText(copy.pastNoteUncounted)).toBeTruthy();
     expect(screen.getAllByRole("button").filter((b) => b.textContent !== copy.back)).toEqual([]);
+  });
+
+  it("counts the list's change in the note when the read says how far it moved", async () => {
+    readPast.mockResolvedValue({ kind: "suggested", at: rows[0].at, outcome: "ok", readVersion: null, moved: 7, lines: [] });
+    render(<PastRunView deckId="d" row={rows[0]} onBack={() => {}} />);
+    await waitFor(() => expect(screen.getByText(copy.pastNote(7))).toBeTruthy());
   });
 
   it("draws a past run's lines with their reasons open and no write control, when it lands here", async () => {

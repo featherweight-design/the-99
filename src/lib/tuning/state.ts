@@ -161,7 +161,12 @@ export type TuningState = {
   /** A past run the reader opened from History (re-review): `items` are THAT run's, whatever
    *  newer run exists. Absent or null for the panel's ordinary newest-ok-run read. Each line's
    *  `applies` is read live, so a swap the deck has moved past shows as no longer applying. */
-  review?: { runId: string; at: Date; readVersion?: number | null } | null;
+  review?: {
+    runId: string; at: Date; readVersion?: number | null;
+    /** How many cards the list has moved since the run read it (History C's "changed by N cards"); null when that cannot
+     *  be said (a run saved before its list was stored, or none moved). */
+    moved?: number | null;
+  } | null;
   /**
    * A Suggested changes v2 run still being made (plan P3): its lines saved so far, which list is in and which is being
    * refilled, so the panel's poll draws the additions while the cuts are made. Null with no such run. `items` above

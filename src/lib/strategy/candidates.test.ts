@@ -6,7 +6,7 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn(async ()
 vi.mock("../decks/price-query", () => ({ loadPrices: vi.fn(async () => ({ prices: prices.map, newestAsOf: prices.newestAsOf })) }));
 
 import { db } from "../../db";
-import { candidateQuery, FOCUS_CANDIDATES_MAX, loadFocusCandidates, planFocusCandidates, rankCandidates, withFocusCandidates } from "./candidates";
+import { candidateQuery, FOCUS_CANDIDATES_MAX, loadFocusCandidates, planFocusCandidates, rankCandidates, readFocusCandidates, withFocusCandidates } from "./candidates";
 
 const args = {
   userId: "u1",
@@ -96,6 +96,13 @@ describe("loadFocusCandidates", () => {
     expect(await loadFocusCandidates({ ...base, commanderOracleIds: [] }, reader(many))).toEqual([]);
   });
 
+  // Review: an owned-only v2 run joins these to its shortlist, and a list cut at its cap is not every card that fits.
+  it("is complete only when it stopped short of its cap", async () => {
+    const many = Array.from({ length: FOCUS_CANDIDATES_MAX + 5 }, (_, i) => row(`a${i}`, "Artifact", 100 - i));
+    expect((await readFocusCandidates(base, reader(many))).complete).toBe(false);
+    expect((await readFocusCandidates(base, reader(many.slice(0, 3)))).complete).toBe(true);
+  });
+
   // Review round 1: roles by the profile's own rules, so a listed role is one the addition moves in its counts.
   it("reads a candidate's roles off its front face, as the profile counts them", async () => {
     // A transform card whose BACK face taps for mana: the profile does not count it as ramp.
@@ -134,6 +141,12 @@ describe("planFocusCandidates", () => {
   it("falls back to cards to buy only when the shortlist and the owned candidates are both empty", async () => {
     const none = (l: Limits) => Promise.resolve(l.ownedOnly ? [] : [buyable]);
     expect(await planFocusCandidates(limits, [], none)).toEqual({ candidates: [buyable], shortlist: undefined, ownedNone: true });
+  });
+
+  // Suggested changes v2 (spec §4) has no owned-only fallback: nothing owned fits stays nothing, never cards to buy.
+  it("keeps the owned rule when the run has no buy fallback, even with nothing owned to offer", async () => {
+    const none = (l: Limits) => Promise.resolve(l.ownedOnly ? [] : [buyable]);
+    expect(await planFocusCandidates(limits, [], none, { buyFallback: false })).toEqual({ candidates: [], shortlist: [], ownedNone: false });
   });
 
   it("reads an ordinary run's candidates under its own limits and leaves the shortlist alone", async () => {

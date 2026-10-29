@@ -87,6 +87,22 @@ export function appendSentence(request: string, sentence: string, room: number):
   return { next: `${request}${sep}${sentence}` };
 }
 
+/**
+ * A ✓ chip's second tap: its sentence taken back out of the request, with the one space that joined it to its neighbour,
+ * so the chip reads + again. The rest of the request is left exactly as the player wrote it. Null when the sentence is
+ * not in the box.
+ */
+export function removeSentence(request: string, sentence: string): { next: string } | null {
+  const at = request.indexOf(sentence);
+  if (at < 0) return null;
+  const before = request.slice(0, at);
+  const after = request.slice(at + sentence.length);
+  // The separator `appendSentence` wrote sits before the sentence; at the start, take the space after it instead.
+  if (before.endsWith(" ")) return { next: before.slice(0, -1) + after };
+  if (before === "" && after.startsWith(" ")) return { next: after.slice(1) };
+  return { next: before + after };
+}
+
 /** The Bracket card's head, choices and what the press sends for each (README item 2; plan H3). */
 export type BracketOption = {
   choice: BracketChoice; target: Bracket; label: string; note: string; mark: Bracket;

@@ -83,6 +83,9 @@ export type EvidencePack = {
    * nowhere (`suggestionRules.ownershipNotRanking`).
    */
   ownedCandidates?: { oracleId: string; name: string; typeLine: string }[];
+  /** `ownedCandidates` holds every owned card that qualifies: no tier of it (the shortlist, a focus run's candidates)
+   *  stopped at its cap or its page limit. Set only by a v2 run, the one reader (`v2/engine.ts` `poolExhausted`). */
+  ownedCandidatesComplete?: boolean;
   /** "Owned only" was set and nothing the player owns fits: the run falls back to cards to buy, and
    *  `limits.ownedOnly` is false for it. The panel says so (`ValidationReport.ownedNone`). */
   ownedNone?: boolean;
@@ -109,6 +112,7 @@ export function buildEvidencePack(input: {
   limits?: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
   /** The owned shortlist for an owned-only run, or null/absent. See `EvidencePack.ownedCandidates`. */
   ownedCandidates?: EvidencePack["ownedCandidates"];
+  ownedCandidatesComplete?: boolean;
   ownedNone?: boolean;
 }): EvidencePack {
   const { profile, play, intent, owned } = input;
@@ -186,6 +190,7 @@ export function buildEvidencePack(input: {
     limits: input.limits ?? { capCents: null, sets: [], ownedOnly: false },
     // Only when set: a pack without them is the object it was before they existed.
     ...(input.ownedCandidates ? { ownedCandidates: input.ownedCandidates } : {}),
+    ...(input.ownedCandidates && input.ownedCandidatesComplete ? { ownedCandidatesComplete: true } : {}),
     ...(input.ownedNone ? { ownedNone: true } : {}),
   };
 }

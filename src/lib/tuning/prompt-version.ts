@@ -40,6 +40,7 @@ export const PROMPT_VERSION = 10;
 
 // Suggested changes v2's OWN number (plan 2026-10-27, P1), stamped on a v2 run beside v10's unchanged `PROMPT_VERSION`, and
 // compared against a run of its own path. 11 (2026-10-27): the count and the two-call wording (additions, then cuts that make
-// room for what is coming in, each asked ceil(1.5N)), the refill's question, `notes` renamed `request`, the signal-trust order,
-// and the bracket choice (`buildPromptV2`).
+// room for what is coming in; additions asked ceil(1.5N), and since then the first cut call ceil(1.5·min(N, K1)) for the K1
+// additions kept, `cutPlanFor`, a sizing change that left the prompt text as it was), the refill's question, `notes` renamed
+// `request`, the signal-trust order, and the bracket choice (`buildPromptV2`).
 export const PROMPT_VERSION_V2 = 11;

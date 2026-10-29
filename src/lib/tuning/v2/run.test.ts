@@ -29,6 +29,14 @@ const s = vi.hoisted(() => ({
   lines: [] as { addOracleId: string | null; cutOracleId: string | null; evidence: { kind: string; value: string }[] }[],
   runStrategy: null as unknown,
   addCards: new Map<string, unknown>(),
+  // Focus candidates by the limits they were read under, and what the run handed the prompt.
+  focusLoad: null as null | ((limits: { ownedOnly: boolean }) => unknown[]),
+  ownedShortlist: undefined as unknown[] | undefined,
+  // Whether each loader reports its list complete (every card that qualifies), and what the run told the pack.
+  ownedComplete: true,
+  focusComplete: true,
+  packArgs: null as null | { ownedCandidates?: unknown[]; ownedCandidatesComplete?: boolean },
+  focusPacked: null as null | unknown[],
 }));
 
 vi.mock("../stub", async (importOriginal) => {
@@ -45,15 +53,20 @@ vi.mock("../stub", async (importOriginal) => {
     },
   };
 });
-vi.mock("../../strategy/candidates", () => ({
-  loadFocusCandidates: async () => [],
-  planFocusCandidates: async () => ({ shortlist: undefined, candidates: [], ownedNone: false }),
+vi.mock("../../strategy/candidates", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../strategy/candidates")>()),
+  readFocusCandidates: async (args: { limits: { ownedOnly: boolean } }) => ({ cards: s.focusLoad?.(args.limits) ?? [], complete: s.focusComplete }),
 }));
-vi.mock("../../strategy/run", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../strategy/run")>()),
-  loadRunStrategy: async () => s.runStrategy,
-  loadAddCards: async (ids: string[]) => new Map(ids.flatMap((id) => (s.addCards.has(id) ? [[id, s.addCards.get(id)]] : []))),
-}));
+vi.mock("../owned-candidates", () => ({ readOwnedCandidates: async () => ({ cards: s.ownedShortlist ?? [], complete: s.ownedComplete }) }));
+vi.mock("../../strategy/run", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../strategy/run")>();
+  return {
+    ...actual,
+    focusPack: (...a: Parameters<typeof actual.focusPack>) => { s.focusPacked = [...(a[1] ?? [])]; return actual.focusPack(...a); },
+    loadRunStrategy: async () => s.runStrategy,
+    loadAddCards: async (ids: string[]) => new Map(ids.flatMap((id) => (s.addCards.has(id) ? [[id, s.addCards.get(id)]] : []))),
+  };
+});
 
 vi.mock("../../../db", () => ({
   db: { select: () => ({ from: () => ({ where: () => ({ orderBy: () => ({ limit: async () => s.last }) }) }) }) },
@@ -88,7 +101,9 @@ vi.mock("../answer", () => ({
     }));
   },
 }));
-vi.mock("../evidence", () => ({ buildEvidencePack: () => structuredClone(pack) }));
+vi.mock("../evidence", () => ({
+  buildEvidencePack: (a: { ownedCandidates?: unknown[]; ownedCandidatesComplete?: boolean }) => { s.packArgs = a; return structuredClone(pack); },
+}));
 vi.mock("../run-store", () => ({
   startRun: async (...args: unknown[]) => { s.started.push(args); return s.start; },
   insertV2Line: async (_run: string, line: { addOracleId: string | null; cutOracleId: string | null }) => {
@@ -104,6 +119,7 @@ vi.mock("../run-store", () => ({
   failV2Run: async (...args: unknown[]) => { s.failed.push(args); return true; },
 }));
 
+import { listFingerprint } from "../../profile/fingerprint";
 import { deckTotal, parseV2Wire, startTuningV2, V2_DECK_TOTAL, type V2Wire } from "./run";
 import { requestHash } from "./request-hash";
 
@@ -158,6 +174,12 @@ beforeEach(() => {
   s.lines = [];
   s.runStrategy = null;
   s.addCards = new Map();
+  s.focusLoad = null;
+  s.ownedShortlist = undefined;
+  s.ownedComplete = true;
+  s.focusComplete = true;
+  s.packArgs = null;
+  s.focusPacked = null;
 });
 
 /** One staged call's answer: these lines, each after its own wait, then the close. */
@@ -254,6 +276,8 @@ describe("startTuningV2's refusals, all before a credit is reserved", () => {
       v2: {
         requestedCount: 3, requestText: "more draw", bracket: { choice: "down", target: 2 },
         report: { hadNotes: true, v2: { requestHash: requestHash({ count: 3, text: "more draw", bracketChoice: "down", bracketTarget: 2 }) } },
+        // The list it read: the list's own fingerprint (not the run's input fingerprint) and every card, commander included.
+        readList: { fingerprint: listFingerprint(head), cardIds: [...body, "Basic", "cmd"].sort() },
       },
     });
   });
@@ -352,6 +376,48 @@ describe("the v2 run's work", () => {
     // An addition off the focus gets no chip; a cut on none of the top strategies leads with the app's own.
     expect(s.lines.find((l) => l.addOracleId === STUB_ADDITIONS[1])!.evidence.some((c) => c.kind === "focus")).toBe(false);
     expect(s.lines.find((l) => l.cutOracleId === body[0])!.evidence[0]).toEqual({ kind: "decklist", value: "on none of the top 1" });
+  });
+
+  // Spec §4: v2 has no owned-only fallback. An owned-only focus run whose shortlist and owned focus candidates are both
+  // empty must not read its focus candidates without the owned rule: the model would be shown cards to buy that the
+  // validator then drops as notOwned.
+  it("an owned-only focus run never offers a focus candidate that is not owned with a free copy", async () => {
+    const buyable = { oracleId: "buy", name: "Buy", typeLine: "Artifact", roles: [] };
+    s.inputs = inputs({ focus: "tokens", limits: { capCents: null, sets: [], ownedOnly: true } });
+    s.runStrategy = { key: "tokens", name: "Tokens", copies: 4, top: ["tokens"], cards: [], names: new Map() };
+    s.focusLoad = (limits) => (limits.ownedOnly ? [] : [buyable]);
+    await run();
+    expect(s.focusPacked).toEqual([]);
+    expect(s.packArgs!.ownedCandidates).toEqual([]);
+  });
+
+  it("an owned-only focus run offers its owned focus candidates and joins them to the shortlist", async () => {
+    const ownedFree = { oracleId: "own", name: "Own", typeLine: "Artifact", roles: [] };
+    s.inputs = inputs({ focus: "tokens", limits: { capCents: null, sets: [], ownedOnly: true } });
+    s.runStrategy = { key: "tokens", name: "Tokens", copies: 4, top: ["tokens"], cards: [], names: new Map() };
+    s.focusLoad = (limits) => (limits.ownedOnly ? [ownedFree] : [{ ...ownedFree, oracleId: "buy", name: "Buy" }]);
+    await run();
+    expect(s.focusPacked).toEqual([ownedFree]);
+    expect(s.packArgs!.ownedCandidates).toEqual([{ oracleId: "own", name: "Own", typeLine: "Artifact" }]);
+    expect(s.packArgs!.ownedCandidatesComplete).toBe(true);
+  });
+
+  // Review: the pool may be called spent only when every tier of it is complete (`engine.ts` `poolExhausted`).
+  it("an owned-only run's pool is incomplete when its focus candidates hit their cap or its shortlist stopped at the page limit", async () => {
+    const ownedFree = { oracleId: "own", name: "Own", typeLine: "Artifact", roles: [] };
+    s.inputs = inputs({ focus: "tokens", limits: { capCents: null, sets: [], ownedOnly: true } });
+    s.runStrategy = { key: "tokens", name: "Tokens", copies: 4, top: ["tokens"], cards: [], names: new Map() };
+    s.focusLoad = () => [ownedFree];
+    s.focusComplete = false;
+    await run();
+    expect(s.packArgs!.ownedCandidatesComplete).toBe(false);
+
+    s.focusComplete = true;
+    s.ownedComplete = false;
+    s.inputs = inputs({ limits: { capCents: null, sets: [], ownedOnly: true } });
+    s.ownedShortlist = [{ oracleId: "own", name: "Own", typeLine: "Artifact" }];
+    await run();
+    expect(s.packArgs!.ownedCandidatesComplete).toBe(false);
   });
 
   it("a run that is no longer pending when a line is saved fails, and makes no further call (round 2)", async () => {

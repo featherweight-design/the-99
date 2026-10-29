@@ -32,6 +32,16 @@ describe("chargeFor", () => {
     expect(chargeFor({ additions: { ...full(10), underProduced: true }, cuts: full(10) })).toEqual({ outcome: "spent" });
   });
 
+  it("charges a short additions list whose owned shortlist was exhausted, however few lines the model wrote", () => {
+    // Owned only, 4 owned cards fit: the model named 3 and one was dropped as not owned; nothing was left to ask for.
+    const spent = { kept: 3, target: 10, drops: drops("notOwned"), underProduced: true, poolExhausted: true };
+    expect(chargeFor({ additions: spent, cuts: full(3) })).toEqual({ outcome: "spent" });
+    // A model-caused drop on it is still the model's shortfall.
+    expect(chargeFor({ additions: { ...spent, drops: drops("notOwned", "citation") }, cuts: full(3) })).toEqual({ outcome: "refunded", why: "shortByModel" });
+    // Not exhausted, the same list is refunded.
+    expect(chargeFor({ additions: { ...spent, poolExhausted: false }, cuts: full(3) })).toEqual({ outcome: "refunded", why: "shortByModel" });
+  });
+
   it("refunds a short list with any model-caused drop, even beside restriction drops", () => {
     const mixed = { kept: 8, target: 10, drops: drops("overCap", "overCap", "citation") };
     expect(chargeFor({ additions: mixed, cuts: full(8) })).toEqual({ outcome: "refunded", why: "shortByModel" });

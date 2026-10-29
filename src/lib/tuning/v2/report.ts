@@ -20,7 +20,8 @@ export function v2StartReport(args: { requestHash: string; restrictions: V2RunRe
   };
 }
 
-const short = (list: V2List) => (list.kept.length < list.target ? shortReason(list.drops) : null);
+/** The restriction that bound a short list; an exhausted owned shortlist is the owned limit, whatever the drops say. */
+const short = (list: V2List) => (list.kept.length < list.target ? (list.poolExhausted ? "notOwned" : shortReason(list.drops)) : null);
 
 export function v2Outcome(report: V2Report, start: ValidationReport, capCents: number | null): {
   outcome: { status: "ok" } | { status: "failed"; errorClass: "ungrounded" };
@@ -43,6 +44,7 @@ export function v2Outcome(report: V2Report, start: ValidationReport, capCents: n
     underProduced: { add: additions.underProduced, cut: cuts.underProduced },
     target: { add: additions.target, cut: cuts.target },
     shortReason: { add: short(additions), cut: short(cuts) },
+    ...(additions.poolExhausted ? { poolExhausted: true as const } : {}),
     cutsFailed: report.cutsFailed,
     budgetReached: report.budgetReached,
     charge,

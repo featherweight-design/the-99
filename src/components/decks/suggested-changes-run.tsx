@@ -91,8 +91,10 @@ export function SuggestedChangesRun({
   onNewRun: () => void;
   readOnly?: boolean;
   /** A run History reopened (History B and C): its day (`Oct 26`), and `stale` when a newer version is committed (then
-   *  `readOnly` too). Its note leads, You asked sits beside the lead on desktop, and the lead says when it was applied. */
-  past?: { date: string; stale: boolean; version?: number | null } | null;
+   *  `readOnly` too). Its note leads, You asked sits beside the lead on desktop, and the lead says when it was applied.
+   *  `moved`: how many cards the list has changed by since the run read it, for History C's note; null when that cannot
+   *  be said, and the note reads uncounted. */
+  past?: { date: string; stale: boolean; version?: number | null; moved?: number | null } | null;
   /** The reader's free credits now (`freeCount` of the allowance): a refunded short run says how many are left. */
   credits?: { left: number; total: number } | null;
 }) {
@@ -472,7 +474,7 @@ export function SuggestedChangesRun({
       {past ? (past.stale ? (
         // History C: the shipped past-run note, in History's own box.
         <p data-sc-past-note="" className="m-0 rounded-[10px] px-[14px] py-[11px] text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)", border: "1px solid var(--border-strong)", background: "var(--surface-sunken)" }}>
-          {tuningHubCopy.history.pastNoteUncounted}
+          {past.moved ? tuningHubCopy.history.pastNote(past.moved) : tuningHubCopy.history.pastNoteUncounted}
         </p>
       ) : (
         // History B: still live, each change checked against the deck as it is now.
@@ -849,7 +851,7 @@ function ShortHead({ facts, n, ask, credits, onNewRun }: {
       head = facts.reason === "offSet" ? s.setHead(facts.found, word)
         : facts.reason === "notOwned" ? s.ownedHead(facts.found, word)
           : s.aimHead(facts.found, word);
-      body = s.bodyBound(n, facts.found);
+      body = facts.exhausted ? s.ownedExhaustedBody(n, facts.found) : s.bodyBound(n, facts.found);
       credit = s.boundCredit;
       link = s.boundLink;
     }

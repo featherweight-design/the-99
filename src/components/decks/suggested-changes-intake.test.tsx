@@ -95,10 +95,13 @@ describe("SuggestedChangesIntake", () => {
     expect(box().selectionEnd).toBe(box().value.length);
     // A chip only tracks its own words: the focus chip is still +.
     expect(chip("focus").getAttribute("aria-pressed")).toBe("false");
-    // A second press on a ticked chip adds nothing.
+    // A second press on a ticked chip takes its sentence back out, and the player's own words stay as written.
     await act(async () => { fireEvent.click(chip(removal.id)); });
-    expect(screen.getByTestId("request").textContent).toBe(`Cut the legends. ${removal.sentence}`);
-    // The player deletes the removal sentence: its chip comes back to +.
+    expect(screen.getByTestId("request").textContent).toBe("Cut the legends.");
+    expect(chip(removal.id).getAttribute("aria-pressed")).toBe("false");
+    // Pressed again, it goes back in; the player deleting the sentence by hand also brings the chip back to +.
+    await act(async () => { fireEvent.click(chip(removal.id)); });
+    expect(chip(removal.id).getAttribute("aria-pressed")).toBe("true");
     fireEvent.change(box(), { target: { value: "Cut the legends.", selectionStart: 16 } });
     expect(chip(removal.id).getAttribute("aria-pressed")).toBe("false");
   });

@@ -28,7 +28,7 @@ vi.mock("../decks/price-query", () => ({
   },
 }));
 
-import { loadOwnedCandidates } from "./owned-candidates";
+import { loadOwnedCandidates, readOwnedCandidates } from "./owned-candidates";
 import { ENV_VIEW } from "@/test/env-view";
 
 const row = (i: number) => ({ oracleId: `id${i}`, name: `Card ${i}`, typeLine: "Artifact" });
@@ -85,5 +85,26 @@ describe("loadOwnedCandidates", () => {
     calls.free = new Map(page(0, 200).map((r) => [r.oracleId, 0]));
     expect(await loadOwnedCandidates(args)).toEqual([]);
     expect(calls.offsets).toEqual([0, 200]);
+  });
+
+  // Review: a v2 run calls its owned pool spent only on a complete shortlist (`v2/engine.ts` `poolExhausted`).
+  it("is complete only when the ranked rows ran out under the cap, never at the page limit or the cap", async () => {
+    calls.pages = [page(0, 3)];
+    expect(await readOwnedCandidates(args)).toMatchObject({ complete: true });
+    calls.pages = [page(0, 200), []];
+    calls.free = new Map(page(0, 200).map((r) => [r.oracleId, 0]));
+    expect(await readOwnedCandidates(args)).toEqual({ cards: [], complete: true });
+
+    // Ten full pages, every card claimed but the last page's first: the read stopped at MAX_PAGES with rows unread.
+    calls.offsets = [];
+    calls.pages = Array.from({ length: 11 }, (_, i) => page(i * 200, 200));
+    calls.free = new Map(page(0, 2000).filter((r) => r.oracleId !== "id1800").map((r) => [r.oracleId, 0]));
+    const capped = await readOwnedCandidates(args);
+    expect(calls.offsets).toHaveLength(10);
+    expect(capped).toEqual({ cards: [row(1800)], complete: false });
+
+    calls.free = new Map();
+    calls.pages = [page(0, 200)];
+    expect(await readOwnedCandidates({ ...args, max: 5 })).toMatchObject({ complete: false });
   });
 });

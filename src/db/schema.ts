@@ -2933,6 +2933,13 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   bracketTarget: smallint("bracket_target"),
   /** Keep on a deck read as a range: the range's bottom (`BracketAim.low`), so You asked can say "keep 1 or 2". Null otherwise. */
   bracketLow: smallint("bracket_low"),
+  /**
+   * The list a v2 run read: its own `listFingerprint` (the cards and commanders alone, where `input_fingerprint` hashes
+   * games, notes and limits too), and every card id in it, one per copy (`readListCardIds`). Together they let a later
+   * read say how many cards the deck has changed by since (`changedCardCount`). Null on v10 runs and on runs from before.
+   */
+  readListFingerprint: text("read_list_fingerprint"),
+  readListCardIds: uuid("read_list_card_ids").array(),
 }, (t) => [
   check("deck_suggestion_runs_requested_count_check", sql`${t.requestedCount} is null or ${t.requestedCount} between 1 and 20`),
   check("deck_suggestion_runs_request_text_check", sql`${t.requestText} is null or char_length(${t.requestText}) <= 500`),

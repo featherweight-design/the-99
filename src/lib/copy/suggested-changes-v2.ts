@@ -197,6 +197,8 @@ export const suggestedChangesV2Copy = {
     ownedHead: (found: number, side: string) => `Found ${found} ${side} you own.`,
     aimHead: (found: number, side: string) => `Found ${found} ${side} that fit the bracket you chose.`,
     bodyBound: (asked: number, n: number) => `You asked for ${asked}. Your limits held the run short, so you can apply up to ${n} of each.`,
+    // Owned only, and every owned card that fits was used: the pool ran out, not the run.
+    ownedExhaustedBody: (asked: number, n: number) => `You asked for ${asked}. That’s every card you own that fits, so you can apply up to ${n} of each.`,
     boundCredit: "1 credit used: your limits set the count",
     boundLink: "Change them in a new run ›",
     // Short-Run B, no restriction explains it (refunded).
@@ -212,6 +214,7 @@ export const suggestedChangesV2Copy = {
       overCap: "the rest cost over your cap",
       offSet: "the rest are outside the sets you chose",
       notOwned: "the rest are cards you don’t own",
+      ownedExhausted: "that’s every card you own that fits",
       bracketAim: "the rest don’t fit the bracket you chose",
       none: "too few passed the checks",
     },

@@ -29,11 +29,12 @@ const NAME: Record<HistoryTool, string> = {
 };
 const CHIP_ORDER: HistoryTool[] = ["suggested", "mana", "cuts"];
 
-/** `Oct 7 · 9:40 PM`, US short and month first, in the reader's own zone. */
+/** `Oct 27 · 21:40` (`Oct 27 · 09:15` in the morning): US short and month first, the time on a 24-hour clock as History.dc
+ *  draws it (Suggested changes v2, History A), in the reader's own zone. */
 export function historyDate(iso: string): string {
   const d = new Date(iso);
   const day = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
   return `${day} · ${time}`;
 }
 
@@ -332,12 +333,9 @@ function Chips({ tools, value, onChange }: { tools: HistoryTool[]; value: Histor
           { value: ALL, label: copy.filterAll, data: { "data-history-chip": ALL } },
           ...tools.map((id) => ({
             value: id,
-            label: (
-              <span className="inline-flex items-center gap-[7px]">
-                <TuningToolMark tool={id} size={14} />
-                {NAME[id]}
-              </span>
-            ),
+            // History.dc `.hchips`: the short tool word alone (`Suggested`, `Mana`, `Cuts`), no mark, so All and three tools
+            // fit a 390 phone's row without scrolling.
+            label: copy.tool[id],
             data: { "data-history-chip": id },
           })),
         ]}

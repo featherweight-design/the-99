@@ -12,13 +12,14 @@ import { loadBracketGateFacts } from "../../intake/fill-facts";
 import type { Billed } from "../../model/allowance";
 import { streamModel } from "../../model/client";
 import type { ProfileHead } from "../../profile/load";
+import { listFingerprint } from "../../profile/fingerprint";
 import { buildPlayGroup } from "../../profile/play";
-import { loadFocusCandidates, planFocusCandidates } from "../../strategy/candidates";
+import { planFocusCandidates, readFocusCandidates } from "../../strategy/candidates";
 import { focusPack, loadAddCards, loadRunStrategy, strategyChips } from "../../strategy/run";
 import { readResolvedRows } from "../answer";
 import { buildEvidencePack } from "../evidence";
 import { TUNING_EFFORT, TUNING_MODEL, V2_RUN_BUDGET_MS } from "../limits";
-import { loadOwnedCandidates } from "../owned-candidates";
+import { readOwnedCandidates } from "../owned-candidates";
 import { reapReaderRuns } from "../reap-runs";
 import { nameResolver } from "../resolve-names";
 import { failV2Run, insertV2Line, markV2CutAsk, markV2Progress, persistV2, startRun, type RunHandle } from "../run-store";
@@ -27,6 +28,7 @@ import type { ResolvedCard } from "../validate";
 import { cardFloorOf, type BracketAim, type BracketChoice } from "./bracket-aim";
 import { isCount } from "./count";
 import { runV2, type V2CallModel, type V2Side } from "./engine";
+import { readListCardIds } from "./read-list";
 import { v2Outcome, v2StartReport } from "./report";
 import { requestHash } from "./request-hash";
 import { lineStream } from "./stream-lines";
@@ -126,7 +128,10 @@ export async function startTuningV2(args: {
   const startReport = v2StartReport({ requestHash: hash, restrictions: inputs.limits, hadRequest: request !== "", focus: inputs.focus ?? undefined });
   const started = await startRun(userId, deckId, inputs.fingerprint, inputs.readVersion, {
     runId: args.runId, env,
-    v2: { requestedCount: wire.requestedCount, requestText: request === "" ? null : request, bracket: wire.bracket, report: startReport },
+    v2: {
+      requestedCount: wire.requestedCount, requestText: request === "" ? null : request, bracket: wire.bracket, report: startReport,
+      readList: { fingerprint: listFingerprint(inputs.head), cardIds: readListCardIds(inputs.head) },
+    },
   });
   if (started.kind === "ownerShare") return { kind: "refused", message: creditsCopy.ownerShare(new Date()) };
   if (started.kind === "allowance") return { kind: "refused", message: deckTuningCopy.allowance.spent };
@@ -158,17 +163,27 @@ async function workV2(args: {
     const shared = {
       userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity], inDeck: inDeckIds, env,
     };
-    const ownedCandidates = limits.ownedOnly ? await loadOwnedCandidates({ ...shared, limits }) : undefined;
+    const ownedRead = limits.ownedOnly ? await readOwnedCandidates({ ...shared, limits }) : undefined;
+    const ownedCandidates = ownedRead?.cards;
+    // Whether every tier of the pool holds every card that qualifies: the shortlist, and on a focus run the candidates
+    // joined to it. Only a complete pool can be called spent (`engine.ts` `poolExhausted`).
+    let poolComplete = ownedRead?.complete ?? false;
     const focusPlan = focusRun
-      ? await planFocusCandidates(limits, ownedCandidates, (l) => loadFocusCandidates({
-        ...shared, limits: l, focus: focusRun.key,
-        stapleCondition: profile.skeleton.condition, roleBasis: profile.skeleton.roleBasis ?? "classifier",
-      }))
+      ? await planFocusCandidates(limits, ownedCandidates, async (l) => {
+        const read = await readFocusCandidates({
+          ...shared, limits: l, focus: focusRun.key,
+          stapleCondition: profile.skeleton.condition, roleBasis: profile.skeleton.roleBasis ?? "classifier",
+        });
+        if (!read.complete) poolComplete = false;
+        return read.cards;
+      }, { buyFallback: false })
       : null;
-    // Spec §4: no owned-only fallback. The limits stay as the player set them, whatever fits.
+    // Spec §4: no owned-only fallback. The limits stay as the player set them, whatever fits, the focus candidates'
+    // owned and free-copy rule included (`buyFallback: false`).
     const pack = buildEvidencePack({
       profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), limits,
       ownedCandidates: focusPlan ? focusPlan.shortlist : ownedCandidates,
+      ownedCandidatesComplete: poolComplete,
     });
     if (focusRun && focusPlan) pack.focus = focusPack(focusRun, focusPlan.candidates);
 
