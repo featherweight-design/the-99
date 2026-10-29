@@ -22,20 +22,20 @@ describe("NoResults", () => {
   it("reproduces the Surfaces v2 heading for query + color", () => {
     renderNoResults("counterspell", ["R"]);
     expect(screen.getByRole("heading").textContent).toBe(
-      'Nothing matches "counterspell" in Red.',
+      'Nothing matches “counterspell” in Red.',
     );
   });
 
   it("names the guild for a multi-color filter", () => {
     renderNoResults("counterspell", ["R", "W"]);
     expect(screen.getByRole("heading").textContent).toBe(
-      'Nothing matches "counterspell" in Boros.',
+      'Nothing matches “counterspell” in Boros.',
     );
   });
 
   it("drops the color clause when no color is active", () => {
     renderNoResults("counterspell", []);
-    expect(screen.getByRole("heading").textContent).toBe('Nothing matches "counterspell".');
+    expect(screen.getByRole("heading").textContent).toBe('Nothing matches “counterspell”.');
   });
 
   it("drops the query clause when only a color is active", () => {

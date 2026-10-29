@@ -20,8 +20,8 @@ export const collectionBrowseCopy = {
     // and inventing copy Design did not write is out of scope for this pass.
     heading: (query: string, colorLabel: string | null) => {
       const q = query.trim();
-      if (q && colorLabel) return `Nothing matches "${q}" in ${colorLabel}.`;
-      if (q) return `Nothing matches "${q}".`;
+      if (q && colorLabel) return `Nothing matches “${q}” in ${colorLabel}.`;
+      if (q) return `Nothing matches “${q}”.`;
       if (colorLabel) return `Nothing matches in ${colorLabel}.`;
       return "Nothing matches those filters.";
     },

@@ -72,4 +72,4 @@ export const ZERO_PRIMARY =
   "sm:h-[32px] sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]";
 export const ZERO_SECONDARY =
   "inline-flex items-center justify-center h-[48px] rounded-[10px] text-[14px] " +
-  "sm:h-[32px] sm:rounded-[8px] sm:px-[13px] sm:text-[12.5px]";
+  "sm:h-[32px] sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]";
