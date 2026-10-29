@@ -11,6 +11,7 @@
 // rule, and a copy of it here would keep naming the old one after a change.
 import { DECK_NAME_MAX } from "../decks/deck-name";
 import { bodyWords } from "./number-words";
+import { SEARCH_FAILED, SEARCH_RETRY } from "./game-seats";
 
 /** The mock names the commander in the short register ("Korvold"), not the full
  *  "Korvold, Fae-Cursed King" shown in the builder header. Everything up to the
@@ -269,6 +270,11 @@ export const addPanelCopy = {
         : `filter off · ${n} results you don’t own`,
 
     clear: "Clear search",
+
+    // A search that was rejected or timed out (small items 2, item 8), said in the deck toast with its retry:
+    // the seat picker's failed search, split. Never the no-results state, which is a claim about the collection.
+    searchFailed: SEARCH_FAILED,
+    searchRetry: SEARCH_RETRY,
   },
 
   // ── Quick add, no results ─────────────────────────────────────────────

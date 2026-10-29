@@ -757,3 +757,174 @@ describe("adding a basic while the stepper is settling", () => {
   });
 });
 
+
+// Small items 2, item 8 (`Quick-Add-Failed`): a rejected search says so in the deck toast, with Try again, and the bar
+// draws nothing new.
+const { gameSeatsCopy } = await import("../../lib/copy/game-seats");
+const { addPanelCopy } = await import("../../lib/copy/decks-builder");
+const { liftOverDock } = await import("./quick-add-failed-toast");
+
+describe("QuickAddBar — a failed search", () => {
+
+  function quietErrors() {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => errorSpy.mockRestore());
+  }
+  const toast = () => screen.queryByRole("alert");
+  const retryButton = () => within(screen.getByRole("alert")).getByRole("button", { name: addPanelCopy.quickAdd.searchRetry });
+
+  it("says the seat picker's words, split, and leaves the bar as it was", async () => {
+    // The two halves are the seat picker's one line, not new words.
+    expect(`${addPanelCopy.quickAdd.searchFailed} ${addPanelCopy.quickAdd.searchRetry}.`).toBe(gameSeatsCopy.picker.failed);
+    expect(addPanelCopy.quickAdd.searchFailed).toBe("Couldn’t search just now.");
+
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    field().focus();
+    fireEvent.change(field(), { target: { value: "sw" } });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(addPanelCopy.quickAdd.searchFailed);
+    expect(retryButton()).toBeInTheDocument();
+    expect(field()).toHaveValue("sw");
+    expect(field()).toHaveFocus();
+    expect(field()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByText(/nothing in the pile/i)).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
+  it("says nothing for a query the bar would not search", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "s" } });
+    await new Promise((r) => setTimeout(r, 250));
+    expect(searchCards).not.toHaveBeenCalled();
+    expect(toast()).toBeNull();
+  });
+
+  it("says nothing when a request the reader typed past fails", async () => {
+    quietErrors();
+    let rejectOld!: (e: Error) => void;
+    searchCards.mockImplementationOnce(() => new Promise((_, reject) => { rejectOld = reject; }));
+    mount();
+    fireEvent.change(field(), { target: { value: "st" } });
+    await waitFor(() => expect(searchCards).toHaveBeenCalledTimes(1));
+
+    searchCards.mockResolvedValue([rhystic]);
+    fireEvent.change(field(), { target: { value: "stu" } });
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+
+    await act(async () => rejectOld(new Error("late")));
+    expect(toast()).toBeNull();
+    expect(screen.getAllByRole("option").length).toBe(1);
+  });
+
+  it("goes when a search for the field's text lands", async () => {
+    quietErrors();
+    searchCards.mockRejectedValueOnce(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "st" } });
+    await screen.findByRole("alert");
+
+    // Typing on is no news by itself: the toast stays until a search lands.
+    searchCards.mockResolvedValue([rhystic]);
+    fireEvent.change(field(), { target: { value: "stu" } });
+    expect(toast()).not.toBeNull();
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+    expect(toast()).toBeNull();
+  });
+
+  it("goes when the field is cleared", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+
+    fireEvent.click(screen.getByRole("button", { name: addPanelCopy.quickAdd.clear }));
+    await waitFor(() => expect(toast()).toBeNull());
+  });
+
+  it("runs the same query once more on Try again, keeps the text, and hands focus back to the field", async () => {
+    quietErrors();
+    searchCards.mockRejectedValueOnce(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+    expect(searchCards).toHaveBeenCalledTimes(1);
+    const firstArgs = searchCards.mock.calls[0];
+
+    searchCards.mockResolvedValue([rhystic]);
+    const press = retryButton();
+    // A keyboard press has moved focus onto the button; a pointer press is kept off it.
+    press.focus();
+    // The press starts outside the bar's root (the toast is portalled), and must not read as a press outside the field.
+    fireEvent.pointerDown(press);
+    fireEvent.click(press);
+
+    // The toast leaves as the request starts.
+    expect(toast()).toBeNull();
+    expect(field()).toHaveFocus();
+    expect(field()).toHaveValue("sw");
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+    expect(searchCards).toHaveBeenCalledTimes(2);
+    expect(searchCards.mock.calls[1]).toEqual(firstArgs);
+  });
+
+  it("comes back when Try again fails too", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    mount();
+    fireEvent.change(field(), { target: { value: "sw" } });
+    await screen.findByRole("alert");
+
+    fireEvent.click(retryButton());
+    expect(toast()).toBeNull();
+    expect(await screen.findByRole("alert")).toHaveTextContent(addPanelCopy.quickAdd.searchFailed);
+    expect(searchCards).toHaveBeenCalledTimes(2);
+  });
+
+  it("lifts the deck slot to sit 10px above the dock while the dock is on screen", async () => {
+    quietErrors();
+    searchCards.mockRejectedValue(new Error("boom"));
+    const vh = window.innerHeight;
+    // The dock pinned at the foot: 67px tall (the phone's), its top 67px off the viewport's bottom. The slot draws the
+    // toast's bottom 10px off it, so it has to rise by the dock's height for a 10px gap over it.
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const box = (top: number, height: number) => ({ top, bottom: top + height, height, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+      if (this.hasAttribute("data-foot-bar")) return box(vh - 67, 67);
+      if (this.getAttribute("data-toast") === "deck") return box(vh - 10 - 52, 52);
+      return box(0, 0);
+    });
+    onTestFinished(() => rect.mockRestore());
+    render(
+      <div data-foot-bar="">
+        <QuickAddBar
+          deckId="deck-1"
+          commanderIdentity={["U"]}
+          deckOracleIds={[]}
+          commanderShortName="Korvold"
+          commanderOracleId="cmd-korvold"
+          declaredBracket={null}
+          noteCounts={EMPTY_NOTE_COUNTS}
+        />
+      </div>,
+    );
+    fireEvent.change(field(), { target: { value: "sw" } });
+    const alert = await screen.findByRole("alert");
+    await waitFor(() => expect(alert.style.translate).toBe("0 -67px"));
+  });
+
+  it("measures the lift off the dock, and draws none while the dock is off screen or hidden", () => {
+    // Phone: the slot sits at tab bar + 10, and the dock just above the tab bar (83): lift by the dock, 67.
+    expect(liftOverDock(844 - 83 - 10, { top: 844 - 83 - 67, bottom: 844 - 83, height: 67 }, 844)).toBe(67);
+    // Desktop: the slot's bottom is 16, the dock 61 at the foot: bottom = 61 + 10, so lift 55.
+    expect(liftOverDock(900 - 16, { top: 900 - 61, bottom: 900, height: 61 }, 900)).toBe(55);
+    // Hidden (`max-md:hidden` leaves a zero box), or scrolled out of view.
+    expect(liftOverDock(890, { top: 0, bottom: 0, height: 0 }, 900)).toBe(0);
+    expect(liftOverDock(890, { top: 950, bottom: 1011, height: 61 }, 900)).toBe(0);
+  });
+});

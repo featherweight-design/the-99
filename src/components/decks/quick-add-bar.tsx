@@ -30,6 +30,7 @@ import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useFlushBasicCounts } from "./basic-counts";
 import { type CardSearchInput, useCardSearch } from "./use-card-search";
+import { QuickAddFailedToast } from "./quick-add-failed-toast";
 import { type DeckComboMap, useDeckComboMap } from "./use-deck-combo-map";
 import { useDeckMutation } from "./use-deck-mutation";
 
@@ -107,10 +108,16 @@ export function QuickAddBar({
   }, []);
   // Escape, or a press outside the bar and its results, clears the query, which closes the list
   // with it (one rule for every pick-from-a-list field, `useSearchDismiss`).
-  const { ref: rootRef, onEscape } = useSearchDismiss<HTMLDivElement>(query.length > 0, () => setQuery(""));
+  const { ref: rootRef, onEscape, insideProps } = useSearchDismiss<HTMLDivElement>(query.length > 0, () => setQuery(""));
 
-  const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move } =
+  const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move, failure, retry, dismissFailure } =
     useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, deckId, search });
+  // Try again hands focus back to the field, so the keyboard stays up on a phone and ↵ adds as usual.
+  const fieldRef = useRef<HTMLInputElement>(null);
+  const retrySearch = useCallback(() => {
+    retry();
+    fieldRef.current?.focus();
+  }, [retry]);
 
   // Keyed on the COMMITTED list, which is what this prop is (see its doc): the re-read after an
   // add must see the deck the add produced, and the optimistic list moves before that exists.
@@ -190,6 +197,7 @@ export function QuickAddBar({
           containerClassName="flex-1 min-w-[220px] max-w-[520px] h-[44px] md:h-[38px] py-0"
           // 16px on mobile so Safari does not zoom the page on focus.
           className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
+          ref={fieldRef}
           role="combobox"
           aria-expanded={open}
           // Only while the listbox is mounted: a reference to an element that is
@@ -365,6 +373,12 @@ export function QuickAddBar({
         </div>
       )}
         </div>
+      )}
+
+      {/* A search that failed says so in the deck toast and nowhere on the bar (small items 2, item 8). Keyed on the
+          failure, so one after another comes back with its own eight seconds. */}
+      {failure !== null && (
+        <QuickAddFailedToast key={failure} dockRef={rootRef} insideProps={insideProps} onRetry={retrySearch} onDone={dismissFailure} />
       )}
     </div>
   );
