@@ -287,7 +287,11 @@ export function checkExplainedOnce(doc: OverviewDoc, facts: Pick<SynopsisFacts, 
     sections: REPETITION_SECTIONS.filter((x) => s.has(x)),
     commander: deck.commanders.has(id),
   }));
-  return { pass: offenders.length === 0, passExceptCommanders: offenders.every((o) => o.commander), offenders };
+  // The commander may be named in more than one section (the overview and Early), and that is
+  // exempt. Iteration 3 (`keyCardNames`) never lets the commander be a Key card or a job's card, so a
+  // commander repeat that involves the Key cards is not exempt there.
+  const exempt = (o: { sections: RepetitionSection[]; commander: boolean }) => o.commander && !(opts.keyCardNames && o.sections.includes("keyCardJobs"));
+  return { pass: offenders.length === 0, passExceptCommanders: offenders.every(exempt), offenders };
 }
 
 /**

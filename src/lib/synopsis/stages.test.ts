@@ -543,6 +543,20 @@ describe("iteration 3: no generic mulligan line", () => {
 });
 
 describe("iteration 3: Key cards skip what a stage explained", () => {
+  it("exempts the commander repeated in the overview and Early, but never the commander as a Key card", () => {
+    const M = "Meren of Clan Nel Toth";
+    const base = { overview: [], strategy: [], stages: [], winsBy: [], alternate: [], landKeep: [], keep: [], sendBack: [], tips: [], keyCards: [], weaknesses: [] };
+    const early = { ...base, overview: [{ text: `A deck led by [[${M}]].` }], stages: [{ text: `[[${M}]] lands early.` }] };
+    const exempt = checkExplainedOnce(early, FACTS, { keyCardNames: true });
+    expect(exempt.pass).toBe(false);
+    expect(exempt.passExceptCommanders).toBe(true);
+    const asKey = { ...early, keyCards: [{ card: M, job: { text: "Returns creatures." } }] };
+    const res = checkExplainedOnce(asKey, FACTS, { keyCardNames: true });
+    expect(res.offenders).toEqual([{ card: M, sections: ["overview", "stages", "keyCardJobs"], commander: true }]);
+    expect(res.passExceptCommanders).toBe(false);
+    // Iteration 2's reading is unchanged: the row's own name is not a mention, so the exemption holds.
+    expect(checkExplainedOnce(asKey, FACTS).passExceptCommanders).toBe(true);
+  });
   it("counts a Key card's own name as a mention, so a stage card that is a Key card is a repeat", () => {
     const res = checkExplainedOnce(doc(), FACTS, { keyCardNames: true });
     expect(res.offenders).toEqual(expect.arrayContaining([
