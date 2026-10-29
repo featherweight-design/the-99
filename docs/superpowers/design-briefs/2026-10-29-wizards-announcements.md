@@ -17,15 +17,17 @@ and a handoff disagree, the component wins.
 5. An early list gets **no Overview and no power reading**. Both are still built once, from the release list.
 6. A post may promise N lists and publish fewer at first (the Star Trek post promised 4 and had 3). Lists fill in later.
 
-## Engineering fit (fixed)
+## Engineering fit
 
-- Each kind is a new **stored** feed kind beside `price-drop`, `trade-match`, `spare-request` and `combo`
-  (`STORED_KINDS`, `src/lib/feed/kinds.ts`), written by the ingest job and pushed through the existing flush
-  (`src/lib/push/flush.ts`). It joins `DEFAULT_ON_KINDS`, which today holds only `spare-request`, and takes a place
-  in `LEAD_PRIORITY`. Items keep the feed's 14-day window (`FEED_WINDOW_DAYS`).
+- Each kind is a new Home feed kind (`src/lib/feed/kinds.ts`), pushed through the existing flush
+  (`src/lib/push/flush.ts`). Whether it is stored per reader or read from one row per post (the catalog family that
+  new sets and precons use) is an engineering choice that does not change what Design draws. It joins
+  `DEFAULT_ON_KINDS`, which today holds only `spare-request`, and takes a place in `LEAD_PRIORITY`. Items keep the
+  feed's 14-day window (`FEED_WINDOW_DAYS`).
 - Early lists sit under `UPCOMING_PRECONS_ENABLED`, in the Announced group (`src/components/decks/precons/announced-group.tsx`),
-  and are acknowledged with a `lists:<code>` seen key, the key the arrivals banner already writes for a set's listed
-  decklists (`seenKeysFor`, `src/lib/precons/arrivals.ts`).
+  and are acknowledged with their own seen key, separate from the `lists:<code>` key the arrivals banner writes for a
+  set's release decklists (`seenKeysFor`, `src/lib/precons/arrivals.ts`), so seeing an early list never hides the
+  release-list news.
 
 ## Surface 1: the Home announcement row (390 and desktop)
 
@@ -93,8 +95,10 @@ with the same owned dot, the owned count. **No** Start, no Link deck, no Overvie
 1. **The hero image's shape.** Wizards heroes are landscape; the row's picture is a 46x64 card. Crop to card shape,
    a wider slot, or no picture in the row and the hero only on the lead story.
 2. **The lead story.** Whether an announcement can lead Home at all, and its place in `LEAD_PRIORITY`.
-3. **Default-on and the opt-in.** What's new shows its inline opt-in while every kind is off. With three kinds on by
-   default, a new reader almost never sees it. Whether the opt-in still offers the other kinds, and how.
+3. **Default-on and the opt-in.** What's new already offers the other kinds to a reader who never chose: while only
+   on-by-default kinds are on and nothing is in the window, it shows the "Pick what else you want to hear about"
+   line (`alsoOn`, `src/lib/feed/home.ts`). With three announcement kinds on by default, that line disappears at the
+   first announcement row. Whether, and where, the offer survives once announcements fill the window.
 4. **The decklists row's two presses** (out to the post, in to the early list): both, or one.
 5. **The early state's mark.** Words, a tag like the Announced group's `new`, the dashed treatment, or a mix.
 6. **A kind switched off.** Whether turning off Commander decklists also hides early lists on Precons, or only the
