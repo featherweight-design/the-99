@@ -157,7 +157,7 @@ export const allDecksCartCopy = {
   /** The chassis's controls (v2, PR 8; Friend and Owned, PR 9). */
   filters: {
     search: "Search cards",
-    /** The field's visible placeholder below 1000px (addendum R3 §2), where a badge leaves it ~104px; its name stays `search`. */
+    /** The field's visible placeholder below 1000px (addendum R3 §2), where a badge leaves the field 98px at 320 (51px of input, measured); its name stays `search`. */
     searchCompact: "Search",
     /** The chip for a search: the term itself, since "Search" would name the field rather than the filter. */
     chipSearch: (term: string) => `“${term}”`,
