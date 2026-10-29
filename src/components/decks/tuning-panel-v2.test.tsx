@@ -11,7 +11,7 @@ import type { TuningState } from "../../lib/tuning/state";
 import { usualFor } from "../../lib/tuning/v2/intake";
 import { v2Line } from "../../lib/tuning/v2/results-fixture";
 import type { Bracket } from "../../lib/profile/types";
-import { OpenHistoryProvider, OpenRunProvider, type OpenRun } from "./review-run";
+import { OpenHistoryProvider, OpenRunProvider, ReviewRunProvider, type OpenRun } from "./review-run";
 import { TuningPanel, type TuningDeps, type TuningFacts, type TuningV2 } from "./tuning-panel";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
@@ -399,6 +399,57 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     await act(async () => { await new Promise((r) => setTimeout(r, 3200)); });
     expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
     expect(document.querySelector('[role="status"]')!.textContent).toBe(deckTuningCopy.announce.readyLists(5, 5));
+  });
+
+  it("New run after a run made here opens an empty request box, not the request just sent", async () => {
+    const d = { ...deps(), v2: v2Actions() };
+    let now: TuningState = fresh;
+    d.read = vi.fn(async () => now);
+    d.run = vi.fn(async () => { now = finished; return { ok: true }; }) as unknown as typeof d.run;
+    await draw(d, v2At());
+    fireEvent.change(box(), { target: { value: "More removal.", selectionStart: 13 } });
+    await act(async () => { fireEvent.click(send()); });
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    fireEvent.click(screen.getByRole("button", { name: sc.run.newRun }));
+    expect(box().value).toBe("");
+  });
+
+  it("a short run's new-run link opens the intake from a run History reopened", async () => {
+    const short: TuningState = {
+      ...finished,
+      items: lines.slice(0, 7),
+      review: { runId: RUN, at },
+      itemsValidationReport: {
+        askedCount: 0, survivedCount: 0, keptCount: 0,
+        v2: {
+          requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: true }, in: { add: true, cut: true }, refilling: { add: false, cut: false },
+          shortReason: { add: null, cut: "notOwned" }, charge: { outcome: "spent" },
+        },
+      },
+    };
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => short);
+    await draw(d, v2At(), [2], (node) => <ReviewRunProvider value={{ tool: "suggested", runId: RUN }}>{node}</ReviewRunProvider>);
+    expect(document.querySelector('[data-sc-short="bound"]')).not.toBeNull();
+    // The head's New run too (History board B): an opened run offers it.
+    expect(screen.getByRole("button", { name: sc.run.newRun })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: sc.short.boundLink }));
+    expect(document.querySelector("[data-sc-run]")).toBeNull();
+    expect(document.querySelector("[data-sc-intake]")).not.toBeNull();
+  });
+
+  it("says a failed rerun above the earlier set it leaves on screen", async () => {
+    const RUN2 = "44444444-4444-4444-8444-444444444444";
+    const failed: TuningState = { ...finished, run: { id: RUN2, status: "failed", errorClass: "timeout", createdAt: at, droppedCount: 0, requestedCount: 3 } };
+    const d = { ...deps(), v2: v2Actions() };
+    let now: TuningState = finished;
+    d.read = vi.fn(async () => now);
+    d.run = vi.fn(async () => { now = failed; return { ok: true }; }) as unknown as typeof d.run;
+    await draw(d, v2At());
+    fireEvent.click(screen.getByRole("button", { name: sc.run.newRun }));
+    await act(async () => { fireEvent.click(send()); });
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    expect(screen.getByTestId("tuning-failure")).toBeTruthy();
   });
 
   it("draws an open v10 run read-only once the switch is on (the cutover), with the intake for a new run", async () => {

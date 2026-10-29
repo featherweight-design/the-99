@@ -45,6 +45,12 @@ export function tally(picked: readonly LineItem[]): Tally {
  * alone, `bracket-shift.ts`). Keep, or no aim: the run left out any line that moves the bracket, so the set keeps it. Up:
  * reached when a picked addition brings the target within reach (`reachesAim`, the shipped flag's rule). Down: reached
  * when a picked line takes the deck's lowest permitted bracket to the target or under it.
+ *
+ * Single-line flags settle the set only while it holds at most one line a side: an addition can only raise the bracket
+ * and a cut only lower it, so a pair's bracket lies between its two lines' own. Past that, lines add up in ways no single
+ * flag shows (two Game Changers, each inside a bracket-3 deck's allowance alone, over it together), and the client has no
+ * classifier for the whole set: no outcome is claimed (null). Nor is a reach claimed when the pair's other line moves the
+ * bracket too.
  */
 export type BracketOutcome =
   | { kind: "stays"; bracket: number }
@@ -54,11 +60,13 @@ export type BracketOutcome =
 export function bracketOutcome(permits: readonly number[], aim: V2Ask["bracket"], picked: readonly LineItem[]): BracketOutcome | null {
   if (permits.length === 0) return null;
   const from = Math.min(...permits);
+  if (picked.filter((l) => l.side === "add").length > 1 || picked.filter((l) => l.side === "cut").length > 1) return null;
   if (!aim || aim.choice === "keep") return { kind: "stays", bracket: from };
-  const reached = aim.choice === "up"
-    ? picked.some((l) => reachesAim(aim, l.side, l.bracketAfter))
-    : picked.some((l) => l.bracketAfter !== null && l.bracketAfter.length > 0 && Math.min(...l.bracketAfter) <= aim.target);
-  return reached ? { kind: "reached", from, to: aim.target } : { kind: "missed", from, aim };
+  const reaches = (l: LineItem) => aim.choice === "up"
+    ? reachesAim(aim, l.side, l.bracketAfter)
+    : l.bracketAfter !== null && l.bracketAfter.length > 0 && Math.min(...l.bracketAfter) <= aim.target;
+  if (!picked.some(reaches)) return { kind: "missed", from, aim };
+  return picked.filter((l) => l.bracketAfter !== null).length === 1 ? { kind: "reached", from, to: aim.target } : null;
 }
 
 export type Grouping = "type" | "role";
@@ -106,7 +114,7 @@ export function groupLines(
   return out;
 }
 
-/** What a finished run says about a list that came back under N (Short-Run), or with no cuts at all (plan P4). */
+/** What a finished run says about a list that came back under N (Short-Run), or whose cut call failed (plan P4). */
 export type ShortFacts =
   | { kind: "noCuts" }
   | { kind: "bound"; side: "add" | "cut"; found: number; reason: ShortReason; dropped: number }
@@ -116,8 +124,11 @@ export function shortFacts(n: number, lines: readonly LineItem[], report: Valida
   const v2 = report?.v2;
   const adds = lines.filter((l) => l.side === "add").length;
   const cuts = lines.length - adds;
-  if (v2?.cutsFailed || (adds > 0 && cuts === 0)) return { kind: "noCuts" };
-  const side: "add" | "cut" | null = adds < n ? "add" : cuts < Math.min(n, adds) ? "cut" : null;
+  // Only a failed cut call is "no cuts, credit back" (plan P4): zero cuts kept otherwise (a Keep bracket dropping them
+  // all) is a short cut list like any other, with its own reason and charge (`chargeFor`).
+  if (v2?.cutsFailed) return { kind: "noCuts" };
+  // The shorter list is the one every count follows (`pickCap`): with both short, the head names that one.
+  const side: "add" | "cut" | null = cuts < adds && cuts < n ? "cut" : adds < n ? "add" : null;
   if (side === null) return null;
   const found = side === "add" ? adds : cuts;
   const reason = v2?.shortReason?.[side] ?? null;

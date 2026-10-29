@@ -53,7 +53,17 @@ describe("bracketOutcome", () => {
   it("reaches Up's target when a picked addition brings it within reach, else says it missed", () => {
     const flagged = v2Line("f", "add", { bracketAfter: [3] });
     expect(bracketOutcome([2], up, [flagged])).toEqual({ kind: "reached", from: 2, to: 3 });
-    expect(bracketOutcome([2], up, adds(2))).toEqual({ kind: "missed", from: 2, aim: up });
+    expect(bracketOutcome([2], up, adds(1))).toEqual({ kind: "missed", from: 2, aim: up });
+  });
+  it("claims no outcome for a set the single-line flags cannot settle", () => {
+    // Two Game Changers into a bracket-3 deck holding two: each alone stays inside the allowance, together they are over.
+    const gc = (id: string) => v2Line(id, "add", { bracketAfter: null });
+    expect(bracketOutcome([3], { choice: "keep", target: 3 }, [gc("g1"), gc("g2"), ...cuts(2)])).toBeNull();
+    expect(bracketOutcome([2], up, [v2Line("f", "add", { bracketAfter: [3] }), v2Line("g", "add"), ...cuts(2)])).toBeNull();
+    // One pair, but its cut moves the bracket too: the pair lies between the two, not at the aim.
+    expect(bracketOutcome([2], up, [v2Line("f", "add", { bracketAfter: [3] }), v2Line("c", "cut", { bracketAfter: [1] })])).toBeNull();
+    // One pair whose cut moves nothing: the flags settle it.
+    expect(bracketOutcome([3], { choice: "keep", target: 3 }, [gc("g1"), ...cuts(1)])).toEqual({ kind: "stays", bracket: 3 });
   });
   it("reaches Down's target when a picked line takes the lowest bracket there", () => {
     const down = { choice: "down" as const, target: 1 };
@@ -109,6 +119,17 @@ describe("shortFacts", () => {
   });
   it("reads a short cut list against the additions kept", () => {
     expect(shortFacts(10, [...adds(10), ...cuts(9)], report({}))).toEqual({ kind: "refunded", side: "cut", found: 9 });
+  });
+  it("reads zero cuts kept by the player's own bracket as a bound cut list, charged, never as a failed cut call", () => {
+    const r = report({ shortReason: { add: null, cut: "bracketAim" }, charge: { outcome: "spent" } }, {
+      drops: [{ side: "cut", position: 0, rule: "bracketAim" }],
+    });
+    expect(shortFacts(3, adds(5), r)).toEqual({ kind: "bound", side: "cut", found: 0, reason: "bracketAim", dropped: 1 });
+  });
+  it("names the shorter list when both came back short", () => {
+    const r = report({ shortReason: { add: "overCap", cut: "notOwned" }, charge: { outcome: "spent" } });
+    expect(shortFacts(20, [...adds(14), ...cuts(10)], r)).toMatchObject({ kind: "bound", side: "cut", found: 10, reason: "notOwned" });
+    expect(shortFacts(20, [...adds(10), ...cuts(14)], r)).toMatchObject({ kind: "bound", side: "add", found: 10, reason: "overCap" });
   });
   it("reads a failed cut call as a run with no cuts (plan P4)", () => {
     expect(shortFacts(3, adds(5), report({ cutsFailed: { errorClass: "timeout" } }))).toEqual({ kind: "noCuts" });

@@ -58,7 +58,7 @@ export const SLOWER_NOTE_MS = 120_000;
  * (`pick`), so they survive leaving, a return and an Undo.
  */
 export function SuggestedChangesRun({
-  runId, ask, lines, live, startedAt, report, permits, newestPriceAsOf, figures, drift, finishedHere = false,
+  runId, ask, lines: readLines, live, startedAt, report, permits, newestPriceAsOf, figures, drift, finishedHere = false,
   readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, credits = null,
 }: {
   runId: string;
@@ -102,6 +102,20 @@ export function SuggestedChangesRun({
   // The wait's start, kept past the finish: the panel stops passing it once the run is made, and Wait E's clock stays.
   const [clockFrom, setClockFrom] = useState<Date | null>(startedAt);
   if (startedAt && startedAt.getTime() !== clockFrom?.getTime()) setClockFrom(startedAt);
+
+  // What this visit's Apply and Undo wrote, held over the read until a read agrees: a follow-up read that fails must not
+  // put the applied rows back as pending (Apply again, no Undo) or leave an undone set offering its spent Undo.
+  const [written, setWritten] = useState<ReadonlyMap<string, Pick<LineItem, "verdict" | "applySet">>>(() => new Map());
+  const caught = [...written].filter(([id, w]) => {
+    const l = readLines.find((x) => x.id === id);
+    return !l || (l.verdict === w.verdict && (l.applySet ?? null) === w.applySet);
+  });
+  if (caught.length > 0) {
+    const next = new Map(written);
+    for (const [id] of caught) next.delete(id);
+    setWritten(next);
+  }
+  const lines = written.size === 0 ? readLines : readLines.map((l) => (written.has(l.id) ? { ...l, ...written.get(l.id)! } : l));
 
   // Each line that lands after the first draw carries `new` for a beat (Wait B). Adjusted during render, so the mark is
   // on the very draw that shows the line.
@@ -170,6 +184,7 @@ export function SuggestedChangesRun({
     }
     // A set id applied then undone answers ok with no lines: nothing was written, so it is not a set to undo.
     if (r.itemIds.length > 0) {
+      setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, { verdict: "accepted" as const, applySet: setId }] as const)]));
       setLastSet(setId);
       setUndone(null);
       onAnnounce(sc.run.appliedLead(pickedAdds.length, lines.filter(isOpen).length - r.itemIds.length));
@@ -190,6 +205,7 @@ export function SuggestedChangesRun({
       return;
     }
     if (r.itemIds.length > 0) {
+      setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, { verdict: "pending" as const, applySet: null }] as const)]));
       setUndone(r.itemIds.length);
       onAnnounce(sc.undone(r.itemIds.length));
     }
@@ -313,7 +329,10 @@ export function SuggestedChangesRun({
     );
   };
 
-  const applyOn = !waiting && !readOnly && t.equal && t.adds > 0 && drift === null && busy === null;
+  // A set fits the cap the server holds it to (`planPicks`): picks an Undo gave back can sit beside newer ones past it.
+  const overCap = t.adds > cap || t.cuts > cap;
+  // A failed cut call shows no cuts, so none can be applied, even one picked while the cuts were still arriving.
+  const applyOn = !waiting && !readOnly && t.equal && t.adds > 0 && !overCap && short?.kind !== "noCuts" && drift === null && busy === null;
   const bracketText = (o: BracketOutcome | null) =>
     o === null ? null : o.kind === "reached"
       ? sc.bar.bracketReached(o.from, o.to, BRACKET_NAMES[o.to as Bracket])
@@ -332,6 +351,10 @@ export function SuggestedChangesRun({
   } else if (t.adds === 0 && t.cuts === 0) {
     meta = null;
     sentence = sc.bar.none(cap);
+  } else if (overCap) {
+    meta = null;
+    sentence = sc.bar.none(cap);
+    warn = true;
   } else if (!t.equal) {
     const more = Math.abs(t.adds - t.cuts);
     meta = sc.bar.wouldGo(t.total);
@@ -364,7 +387,7 @@ export function SuggestedChangesRun({
   return (
     <div data-sc-run={waiting ? "wait" : "results"} className="mt-[12px] flex flex-col gap-[14px]">
       {undone !== null ? <Undone text={sc.undone(undone)} /> : null}
-      {ask ? <YouAsked ask={ask} permits={permits} /> : null}
+      {ask ? <YouAsked ask={ask} /> : null}
       {/* Once in, the clock stays only for a run that came up short of the ask (Wait E); the Results boards draw none. */}
       {clockFrom && (waiting || ofAsk !== null) ? (
         <Clock startedAt={clockFrom} adds={adds.length} cuts={cuts.length} n={n} done={!waiting} />
@@ -532,13 +555,13 @@ function Notice({ edge, text, data }: { edge: "var(--warning)" | "var(--accent)"
 }
 
 /** You asked (Results boards): the request quoted, or that there was none, over the count, the bracket and the limits. */
-function YouAsked({ ask, permits }: { ask: V2Ask; permits: readonly Bracket[] }) {
+function YouAsked({ ask }: { ask: V2Ask }) {
   const r = sc.run;
-  const now = permits.length > 0 ? Math.min(...permits) : null;
   // The count is bold, and an aim (not a keep) is bold in its bracket's ink (Results-20 A).
   const parts: ReactNode[] = [<b key="n" className="font-medium" style={{ color: "var(--fg-muted)" }}>{r.askedCount(ask.requestedCount)}</b>];
   if (ask.bracket) {
-    const b = ask.bracket.choice === "keep" ? now ?? ask.bracket.target : ask.bracket.target;
+    // What the run was asked, as it was stored: never the deck's bracket today, which may have moved since.
+    const b = ask.bracket.target;
     const name = BRACKET_NAMES[b as Bracket];
     parts.push(ask.bracket.choice === "keep" ? r.askedKeep(b, name) : (
       <b key="aim" data-sc-asked-aim="" className="font-medium" style={{ color: `var(--bracket-${b})` }}>{sc.results.aimed(b, name)}</b>

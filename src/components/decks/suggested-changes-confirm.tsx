@@ -18,7 +18,7 @@ export function SuggestedChangesConfirm({
 }: {
   adds: readonly LineItem[];
   cuts: readonly LineItem[];
-  /** The bracket outcome as a sentence ("Bracket stays 2 · Core."). */
+  /** The bracket outcome as a sentence ("Bracket stays 2 · Core."), or empty when the set's outcome is not known. */
   bracket: string;
   busy: boolean;
   onApply: () => void;
@@ -29,7 +29,7 @@ export function SuggestedChangesConfirm({
     <ModalChrome
       eyebrow={copy.confirm.eyebrow}
       title={copy.confirm.title(n)}
-      lead={copy.confirm.lead(bracket)}
+      lead={copy.confirm.lead(bracket).trimEnd()}
       closeLabel={copy.confirmClose}
       onClose={onClose}
       width={560}

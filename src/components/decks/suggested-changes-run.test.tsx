@@ -166,12 +166,14 @@ describe("the results", () => {
 
     await press(pick("c2"));
     expect(apply().textContent).toBe(sc.bar.apply(6));
-    expect(bar().textContent).toContain(sc.bar.bracketStays(2, "Core"));
+    // Three a side: the single-line flags cannot settle the set's bracket, so none is claimed.
+    expect(bar().textContent).not.toContain("bracket");
     t.actions.apply.mockResolvedValueOnce({ ok: true, itemIds: ["c0", "c1", "c2", "a0", "a1", "a2"] });
     await press(apply());
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText(sc.confirm.title(3))).toBeTruthy();
-    expect(dialog.textContent).toContain(sc.confirm.lead("Bracket stays 2 · Core."));
+    expect(dialog.textContent).toContain(sc.confirm.lead("").trimEnd());
+    expect(dialog.textContent).not.toContain("Bracket");
     expect(dialog.textContent).toContain(sc.confirm.comingIn(3));
     expect(dialog.textContent).toContain(sc.confirm.goingOut(3));
     // ✕ only: no second cancel.
@@ -334,6 +336,53 @@ describe("the results", () => {
     t.rerender({ ask: up, lines: [...adds(5, (i) => ({ picked: i === 1 })), ...cuts(5, (i) => ({ picked: i === 0 }))] });
     expect(bar().textContent).toContain(sc.bar.bracketMissed(3, "Upgraded", 2));
     expect(apply().getAttribute("aria-disabled")).toBeNull();
+  });
+
+  it("says a one-pair set keeps the bracket, in the bar and the confirmation", async () => {
+    setup({ lines: [...adds(5, (i) => ({ picked: i === 0 })), ...cuts(5, (i) => ({ picked: i === 0 }))] });
+    expect(bar().textContent).toContain(sc.bar.bracketStays(2, "Core"));
+    await press(apply());
+    expect(screen.getByRole("dialog").textContent).toContain(sc.confirm.lead("Bracket stays 2 · Core."));
+  });
+
+  it("holds Apply off a failed cut call even with a cut picked while the cuts were arriving", () => {
+    const report: ValidationReport = {
+      askedCount: 0, survivedCount: 0, keptCount: 0, refunded: true,
+      v2: {
+        requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: false }, in: { add: true, cut: true }, refilling: { add: false, cut: false },
+        cutsFailed: { errorClass: "timeout" },
+      },
+    };
+    setup({ lines: [...adds(5, (i) => ({ picked: i === 0 })), ...cuts(1, () => ({ picked: true }))], report });
+    expect(document.querySelector('[data-sc-notice="no-cuts"]')).not.toBeNull();
+    expect(apply().getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it("holds Apply off picks an Undo gave back past the cap, and says how many a set takes", () => {
+    // N = 3: a set of 3 undone beside 2 picked since leaves 5 picked a side; the server refuses more than N (`planPicks`).
+    setup({ lines: [...adds(5, () => ({ picked: true })), ...cuts(5, () => ({ picked: true }))] });
+    expect(apply().getAttribute("aria-disabled")).toBe("true");
+    expect(bar().textContent).toContain(sc.bar.none(3));
+  });
+
+  it("keeps an applied set applied, with its Undo, when the read after it fails; and an undone one undone", async () => {
+    const t = setup({ lines: [...adds(5, (i) => ({ picked: i === 0 })), ...cuts(5, (i) => ({ picked: i === 0 }))] });
+    t.actions.apply.mockResolvedValueOnce({ ok: true, itemIds: ["c0", "a0"] });
+    await press(apply());
+    await press(within(screen.getByRole("dialog")).getByRole("button", { name: sc.confirm.apply(2) }));
+    // `onChanged` resolved with nothing new: the rows still read pending from the panel.
+    expect(screen.getByRole("article", { name: "Card a0" }).textContent).toContain(sc.results.added);
+    expect(screen.getByRole("button", { name: sc.bar.undo(2) })).toBeTruthy();
+    expect(document.querySelector("[data-sc-apply]")).toBeNull();
+    t.actions.undo.mockResolvedValueOnce({ ok: true, itemIds: ["c0", "a0"] });
+    await press(screen.getByRole("button", { name: sc.bar.undo(2) }));
+    expect(screen.queryByRole("button", { name: /^Undo all/ })).toBeNull();
+    expect(screen.getByRole("article", { name: "Card a0" }).textContent).not.toContain(sc.results.added);
+  });
+
+  it("says the Keep the run was asked, not the deck's bracket today", () => {
+    setup({ permits: [3] });
+    expect(document.querySelector("[data-sc-asked]")!.textContent).toContain(sc.run.askedKeep(2, "Core"));
   });
 
   it("draws a run the deck moved past read-only: no Pick, no bar, open lines Not picked", () => {

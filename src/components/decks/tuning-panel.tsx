@@ -290,6 +290,12 @@ export function TuningPanel({
   const [same, setSame] = useState<{ runId: string; at: string } | null>(null);
   // Suggested changes v2's results stand in for the intake until `New run` (UI PR 6); a press goes back to the results.
   const [newRun, setNewRun] = useState(false);
+  // A run History opens (or leaves) is drawn, whatever an earlier `New run` left open.
+  const [newRunReview, setNewRunReview] = useState(reviewRunId);
+  if (newRunReview !== reviewRunId) {
+    setNewRunReview(reviewRunId);
+    setNewRun(false);
+  }
   // The v2 run this visit watched being made, so its results can say the wait's last word once (Wait E).
   const [watchedLive, setWatchedLive] = useState<string | null>(null);
   // That run's results were announced, once, when it landed.
@@ -303,6 +309,11 @@ export function TuningPanel({
     if (next.bracketPick !== undefined) setBracketPick(next.bracketPick);
     // The inputs moved, so the request is no longer the one the confirm named.
     setSame(null);
+  }
+  // `New run` from the results (its head, or a short run's link): a fresh intake, the request box empty as always.
+  function openNewRun() {
+    changeIntake({ request: "" });
+    setNewRun(true);
   }
   // History's reopen, for the confirm's `Open Oct 26’s run`. Null outside the Tuning hub.
   const openRun = useOpenRun();
@@ -1148,10 +1159,13 @@ export function TuningPanel({
   );
 
   const v2Lines = state.items.filter(isLine);
-  const runView = live !== null || (v2Ask !== null && hasSet && (!newRun || reviewing));
+  const runView = live !== null || (v2Ask !== null && hasSet && !newRun);
   if (v2 && runView) {
     const runId = live ? live.runId : v2Ask!.runId;
     body = (
+      <>
+      {/* A rerun that failed leaves the earlier set on screen: its failure is said above it, as a v10 set's is. */}
+      {failure ? (refusal ? <AnalysisBanner variant="note" sentence={refusal} /> : <Failure failure={failure} />) : null}
       <SuggestedChangesRun
         key={runId}
         runId={runId}
@@ -1169,10 +1183,11 @@ export function TuningPanel({
         actions={deps.v2 ?? SERVER.v2!}
         onChanged={reread}
         onAnnounce={setAnnounced}
-        onNewRun={() => setNewRun(true)}
+        onNewRun={openNewRun}
         readOnly={reviewing && state.retired !== null}
         credits={{ left: freeCount(state.allowance), total: state.allowance.limit }}
       />
+      </>
     );
   } else if (reading) {
     const runRows: ManifestRow[] = [
@@ -1387,11 +1402,12 @@ export function TuningPanel({
       >
         {copy.heading}
       </h2>
-      {/* Suggested changes v2's results: `New run` opens a fresh intake (Results boards). Not while one is being made. */}
-      {v2RunView && !live && !reviewing ? (
+      {/* Suggested changes v2's results: `New run` opens a fresh intake (Results and History boards). Not while one is being
+          made. */}
+      {v2RunView && !live ? (
         <button
           type="button"
-          onClick={() => setNewRun(true)}
+          onClick={openNewRun}
           className="ml-auto inline-flex h-[44px] items-center justify-center whitespace-nowrap rounded-[7px] px-[12px] text-[12.5px] font-semibold md:h-[32px] text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
         >
           {v2Copy.run.newRun}
