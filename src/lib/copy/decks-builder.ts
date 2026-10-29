@@ -163,7 +163,7 @@ export const addPanelCopy = {
     inDeckAria: (name: string) => `${name} is already in this deck`,
     // The art and the name are both CardDetailTrigger; the modal owns its own
     // aria (cardDetailCopy.triggerAria), so nothing is redeclared here.
-    detailHint: "details ↗",
+    detailHint: "details",
     // Honest omissions — never a 0% bar, never a blank plate.
     noArt: "no art on file",
     noInclusion: "no EDHREC figure",

@@ -129,7 +129,7 @@ export const manaBalanceCopy = {
     staples: (commander: string) => `Staples ${commander} decks run · owned first`,
     owned: (free: number) => `owned · ${free} free`,
     toBuy: "to buy",
-    buyLink: "Mana Pool ↗",
+    buyLink: "Mana Pool",
     buyAria: (name: string) => `Buy ${name} at Mana Pool, opens in a new tab`,
     rate: {
       commander: (p: number, name: string) => `in ${p}% of ${name} decks`,

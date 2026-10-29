@@ -544,8 +544,6 @@ export const deckAnalysisCopy = {
       + "other three we work out from your cards, with Commander Spellbook’s index and our own "
       + "reading of the rules text. Tutors set no limit, but they decide whether a combo is in "
       + "reach, so they are here too. Here is where each answer comes from, and what it might miss.",
-    /** The source a row links to, where one exists to link. */
-    source: (name: string) => `${name} ↗`,
     /** The published rules, dated, because the rules are a blog post and can move. */
     rulesChecked: (date: string) => `Rules as published, checked ${date}.`,
   },

@@ -7,7 +7,7 @@ const c = publicPagesCopy.shell;
 
 /**
  * The public pages' top bar (README call 5): the mark and wordmark home on the left, and the Scryfall hand-off where a
- * search box would be on the right, `Find another card on Scryfall ↗` from `md` and `Search Scryfall ↗` on the phone, in a
+ * search box would be on the right, `Find another card on Scryfall` from `md` and `Search Scryfall` on the phone (each ending in the link-out icon), in a
  * 44px target. 64px tall from `md`, 56px on the phone. A plain `<a>` home: a public page's exits never soft-navigate.
  */
 export function PublicTopBar() {

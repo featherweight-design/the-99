@@ -137,8 +137,12 @@ describe("FeedItemRow", () => {
     expect(press.getAttribute("target")).toBe("_blank");
     expect(press.getAttribute("rel")).toBe("noopener");
     expect(press.textContent).not.toContain("›");
-    // Bound to the label by a no-break space: a plain one collapses at the flex press's edge (shot 2026-10-27).
-    expect(press.textContent).toBe("Buy at Mana Pool\u00a0↗ (opens in a new tab)");
+    // The link-out icon, bound to the label's last word in one no-wrap run, never a flex item of its own.
+    expect(press.textContent).toBe("Buy at Mana Pool (opens in a new tab)");
+    const icon = press.querySelector("svg[data-link-out]")!;
+    expect(icon.getAttribute("aria-hidden")).toBe("true");
+    expect(icon.parentElement!.textContent).toBe("Pool");
+    expect(icon.parentElement!.className).toContain("whitespace-nowrap");
     const picture = container.querySelector("[data-feed-picture]")!;
     expect(picture.getAttribute("href")).toBe(url);
     expect(picture.getAttribute("target")).toBe("_blank");

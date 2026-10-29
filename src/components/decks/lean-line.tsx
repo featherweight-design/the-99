@@ -11,6 +11,7 @@ import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { ModalChrome, type FindingArt } from "./receipt-modal";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 const copy = deckAnalysisCopy;
 
@@ -297,7 +298,7 @@ function ReasoningModal({
               rel="noreferrer"
               className="inline-flex min-h-[44px] md:min-h-0 items-center font-mono text-[10.5px] no-underline text-[color:var(--accent-text)]"
             >
-              <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{copy.provenance.source(copy.receipt.spellbook)}</span>
+              <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]"><LinkOutLabel>{copy.receipt.spellbook}</LinkOutLabel></span>
             </a>
           </span>
         </div>

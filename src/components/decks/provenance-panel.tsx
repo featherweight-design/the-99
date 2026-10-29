@@ -9,6 +9,7 @@ import { formatDeckDate } from "../../lib/decks/format";
 import { MethodTags } from "../ui/method-tag";
 import { useDeckPageSwitches } from "./deck-page-switches";
 import { ModalChrome } from "./receipt-modal";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 const copy = deckAnalysisCopy;
 
@@ -132,7 +133,7 @@ function ProvenanceSheet({ onClose }: { onClose: () => void }) {
                       rel="noreferrer"
                       className="font-mono text-[10.5px] no-underline border-b border-b-[color:var(--accent)] border-[color:var(--accent)] text-[color:var(--accent-text)]"
                     >
-                      {copy.provenance.source(row.link.name)}
+                      <LinkOutLabel>{row.link.name}</LinkOutLabel>
                     </a>
                   </>
                 ) : null}

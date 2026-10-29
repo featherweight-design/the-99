@@ -23,6 +23,7 @@ import type { PlanCardModel } from "../../lib/payments/page-model";
 import { cardPresses, reachedChange, type PlanChange } from "../../lib/payments/plan-card-rule";
 import type { BuyFailure } from "./pack-offers";
 import { OfferArt } from "./offer-art";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 const c = creditsPageCopy;
 
@@ -168,7 +169,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
   const updateButton = presses.updateCard && !cardHidden ? (
     <button type="button" onClick={() => void updateCard()} disabled={held} aria-busy={busy === "card" || undefined}
       className={state === "pastDue" ? FILLED : `${TEXT} text-[color:var(--accent-text)]`}>
-      {p.updateCard}<span aria-hidden="true" className={`text-[11px] ${state === "pastDue" ? "ml-[6px]" : ""}`}>↗</span>
+      <LinkOutLabel>{p.updateCard}</LinkOutLabel>
     </button>
   ) : null;
   const cancelButton = presses.cancel ? (
