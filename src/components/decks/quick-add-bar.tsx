@@ -381,21 +381,27 @@ export function QuickAddBar({
               />
             ))}
           </ul>
-          <p className="font-mono text-[10px] mt-[8px]" style={{ color: "var(--fg-locked)" }}>
+          <p
+            className={`font-mono text-[10px] mt-[8px]${detail ? " flex items-center gap-[12px]" : ""}`}
+            style={{ color: "var(--fg-locked)" }}
+          >
             {detail ? (
-              // The board's hint (A1, A2): the part naming the other cell is drawn stronger, and swaps with it.
+              // The board's hint (A1, A2, `.qp .hint`): three runs 12px apart, the middle one naming the other cell drawn
+              // stronger, and swapping with it.
               <>
-                {addPanelCopy.quickAdd.keyboardHintMove} ·{" "}
+                <span>{addPanelCopy.quickAdd.keyboardHintMove} ·</span>
                 <b className="font-medium" style={{ color: "var(--fg-muted)" }}>
                   {column === "name"
                     ? addPanelCopy.quickAdd.keyboardHintBackToAdd
                     : addPanelCopy.quickAdd.keyboardHintDetails}
-                </b>{" "}
-                ·{" "}
-                {column === "name"
-                  ? addPanelCopy.quickAdd.keyboardHintOpensDetails
-                  : addPanelCopy.quickAdd.keyboardHintAdd}{" "}
-                · {addPanelCopy.quickAdd.keyboardHintDismiss}
+                </b>
+                <span>
+                  ·{" "}
+                  {column === "name"
+                    ? addPanelCopy.quickAdd.keyboardHintOpensDetails
+                    : addPanelCopy.quickAdd.keyboardHintAdd}{" "}
+                  · {addPanelCopy.quickAdd.keyboardHintDismiss}
+                </span>
               </>
             ) : (
               addPanelCopy.quickAdd.keyboardHint
@@ -572,7 +578,6 @@ function QuickAddRow({
   return (
     <li
       role="row"
-      aria-selected={active}
       // The label has to carry everything the row draws, or a screen reader
       // hears less than the screen shows: the owned figure and the in-deck
       // state both change whether the row is worth acting on. Composed from the

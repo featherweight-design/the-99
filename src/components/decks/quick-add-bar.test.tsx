@@ -182,7 +182,7 @@ describe("QuickAddBar — the grid and card details", () => {
   const rows = () => screen.getAllByRole("row");
   const active = () => field().getAttribute("aria-activedescendant");
   const key = (k: string) => fireEvent.keyDown(field(), { key: k });
-  const hint = () => screen.getByText(addPanelCopy.quickAdd.keyboardHintMove, { exact: false });
+  const hint = () => screen.getByText(addPanelCopy.quickAdd.keyboardHintMove, { exact: false }).closest("p") as HTMLElement;
 
   it("draws each row as two cells, the name naming the details it opens", async () => {
     mountWithDetail();
@@ -232,17 +232,24 @@ describe("QuickAddBar — the grid and card details", () => {
   });
 
   it("swaps the hint with the active cell", async () => {
+    const runs = () => Array.from(hint().children, (el) => el.textContent);
     mountWithDetail();
     await search();
-    expect(hint()).toHaveTextContent(
-      `${addPanelCopy.quickAdd.keyboardHintMove} · ${addPanelCopy.quickAdd.keyboardHintDetails} · ${addPanelCopy.quickAdd.keyboardHintAdd} · ${addPanelCopy.quickAdd.keyboardHintDismiss}`,
-    );
+    // Three runs 12px apart (board `.qp .hint`), the middle one the other cell's key.
+    expect(hint().className.split(/\s+/)).toEqual(expect.arrayContaining(["flex", "items-center", "gap-[12px]"]));
+    expect(runs()).toEqual([
+      `${addPanelCopy.quickAdd.keyboardHintMove} ·`,
+      addPanelCopy.quickAdd.keyboardHintDetails,
+      `· ${addPanelCopy.quickAdd.keyboardHintAdd} · ${addPanelCopy.quickAdd.keyboardHintDismiss}`,
+    ]);
     expect(within(hint()).getByText(addPanelCopy.quickAdd.keyboardHintDetails).tagName).toBe("B");
 
     key("ArrowRight");
-    expect(hint()).toHaveTextContent(
-      `${addPanelCopy.quickAdd.keyboardHintMove} · ${addPanelCopy.quickAdd.keyboardHintBackToAdd} · ${addPanelCopy.quickAdd.keyboardHintOpensDetails} · ${addPanelCopy.quickAdd.keyboardHintDismiss}`,
-    );
+    expect(runs()).toEqual([
+      `${addPanelCopy.quickAdd.keyboardHintMove} ·`,
+      addPanelCopy.quickAdd.keyboardHintBackToAdd,
+      `· ${addPanelCopy.quickAdd.keyboardHintOpensDetails} · ${addPanelCopy.quickAdd.keyboardHintDismiss}`,
+    ]);
     expect(within(hint()).getByText(addPanelCopy.quickAdd.keyboardHintBackToAdd).tagName).toBe("B");
   });
 
@@ -1246,7 +1253,7 @@ describe("QuickAddBar — a search that never answers", () => {
   });
 
   const toast = () => screen.queryByRole("alert");
-  const options = () => screen.queryAllByRole("option");
+  const options = () => screen.queryAllByRole("row");
   /** Each call to searchCards hangs until the test settles it, in call order. */
   function hangingSearches() {
     const pending: { resolve: (r: SearchResult[]) => void; reject: (e: Error) => void }[] = [];
@@ -1270,7 +1277,7 @@ describe("QuickAddBar — a search that never answers", () => {
     await advance(1);
     expect(toast()).toHaveTextContent(addPanelCopy.quickAdd.searchFailed);
     expect(field()).toHaveValue("sw");
-    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("grid")).toBeNull();
     expect(screen.queryByText(/nothing in the pile/i)).toBeNull();
   });
 
@@ -1377,7 +1384,7 @@ describe("QuickAddBar — a search that never answers", () => {
     expect(options()).toHaveLength(0);
     await act(async () => pending[1].resolve([rhystic]));
     expect(options()).toHaveLength(1);
-    expect(screen.getByRole("option")).toHaveTextContent("Rhystic Study");
+    expect(screen.getByRole("row")).toHaveTextContent("Rhystic Study");
 
     await advance(SEARCH_TIMEOUT_MS * 2);
     expect(toast()).toBeNull();

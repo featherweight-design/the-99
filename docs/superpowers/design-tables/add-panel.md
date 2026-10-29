@@ -426,6 +426,7 @@ them / the brand sheet names them.
 | Count copy | `1 match` / `{n} matches` | copy.quickAdd.resultCount |
 | Count copy with identity | `{n} matches · {identity} only` | copy.quickAdd.resultCountWithIdentity |
 | Keyboard hint copy | `↑↓ to move · ↵ to add · Esc to dismiss` — Plex Mono `10.5px`, `#6A6152` | copy.quickAdd.keyboardHint; Canvas E:552 |
+| Keyboard hint, grid (Small items 2 item 6b) | Add cell active: `↑↓ to move · **→ details** · ↵ to add · Esc to dismiss`; name cell active: `↑↓ to move · **← back to Add** · ↵ opens details · Esc to dismiss`. Three runs, `display:flex; gap:12px`; the bold run `--fg-muted`, weight 500. The plain hint above shows only where no card detail is mounted | copy.quickAdd.keyboardHintMove / keyboardHintDetails / keyboardHintBackToAdd / keyboardHintAdd / keyboardHintOpensDetails / keyboardHintDismiss; small items 2 `Quick-Add-Details` A1, A2 |
 | Results header, mobile | Count (Plex Mono `10px --fg-faint`) left, **owned toggle** right, `padding 10px 16px 0`, `justify-content: space-between`. Keyboard hint **not drawn** on mobile | Canvas E:528–531 |
 | Owned-filter-off note | `filter off — {n} results you don't own` (singular: `filter off — 1 result you don't own`) — Plex Mono `10.5px`, `#6A6152`, `margin-left:auto`, in the bar row | copy.quickAdd.ownedFilterOffNote; Canvas E:559 |
 | Entrance animation | `.anim-quickadd-in` — **140ms, ease-out, opacity + 6px rise** | README §Notes for engineering; Canvas H:670 |
