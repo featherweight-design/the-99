@@ -205,6 +205,17 @@ function LabelList({
   );
 }
 
+/**
+ * The band of the window a revealed line must land in: below the page's scroll padding (the returned phone header's
+ * room) and, on a phone, above the fixed tab bar. The bar's height is read where the line inherits it, because the
+ * shell raises `--tabbar-h` while the bar is locked.
+ */
+function visibleBand(line: HTMLElement | null | undefined, width: PageWidth) {
+  const top = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  const tabbar = width === "phone" && line ? parseFloat(getComputedStyle(line).getPropertyValue("--tabbar-h")) || 0 : 0;
+  return { top, bottom: window.innerHeight - tabbar };
+}
+
 function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
   // A Show me landing lights its label through this same state, as a press would (`label-landing.tsx`). A later
   // landing on this page (another Show me while it is open, the same label's included) lights its label, adjusted
@@ -228,7 +239,8 @@ function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
     setLit(on ? key : null);
     // Its line, in this width's own tree (the other width draws the same keys, hidden).
     if (on && fromPin) {
-      cancel.current = reveal(root.current?.querySelector(`[data-about-label="${CSS.escape(key)}"]`), "nearest");
+      const line = root.current?.querySelector<HTMLElement>(`[data-about-label="${CSS.escape(key)}"]`);
+      cancel.current = reveal(line, "nearest", undefined, () => visibleBand(line, width));
     }
   };
   const unpinned = model.labels.filter((l) => l.shot === null);

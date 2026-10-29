@@ -102,7 +102,11 @@ describe("LabelledScreen", () => {
     fireEvent.load(phone.querySelector("img")!);
     fireEvent.click(phone.querySelector("[data-about-pin='a/s/two']")!);
     expect(reveal).toHaveBeenCalledTimes(1);
-    expect(reveal).toHaveBeenCalledWith(phone.querySelector("[data-about-label='a/s/two']"), "nearest");
+    expect(reveal).toHaveBeenCalledWith(phone.querySelector("[data-about-label='a/s/two']"), "nearest", undefined, expect.any(Function));
+    // The line lands above the phone's fixed tab bar, at the height it inherits (the locked bar's taller one here).
+    phone.style.setProperty("--tabbar-h", "88px");
+    const band = reveal.mock.calls[0][3] as () => { top: number; bottom: number };
+    expect(band().bottom).toBe(window.innerHeight - 88);
     fireEvent.click(phone.querySelector("[data-about-pin='a/s/two']")!);
     fireEvent.click(phone.querySelector("[data-about-label='a/s/one'] button")!);
     expect(reveal).toHaveBeenCalledTimes(1);
