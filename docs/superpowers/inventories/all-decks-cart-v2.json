@@ -1,12 +1,55 @@
 {
   "feature": "Shopping for all decks v2 (handoff design_handoff_the99_all_decks_cart_v2; plan 2026-10-28-all-decks-cart-v2.md)",
   "clearAbout": true,
-  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. PR 6 rows: By friend's panels (By friend's column header with `Spare` on desktop, the head's `N cards \u00b7 N spares`, the row's need, spare and own facts, the Ask or its status above the tag, a folded panel, and on desktop the open header stuck to the list box top while its rows scroll); they need a friend with a spare of a selected line, and the status row a request already sent. The single-spare panel (`1 card \u00b7 1 spare`) and the spare key while the read is out are proved in `cart-by-friend.test.tsx`, since neither holds still on a live account. PR 7 rows: the reading, empty and failed states, staged by holding or answering `/api/friend-spares` (a read held 8s draws Loading A to D; an empty answer draws Empty-One B; a 500 draws addendum R2's failed read: the toast in By card and By deck, the dashed block with Try again in By friend). Empty-One C (no friends yet) needs an account with no friends, decided on the server, so it and the said-once rule across view switches are proved in `cart-by-friend.test.tsx`. PR 9 rows: the Friend and Owned filters (the desktop panels, the phone Filters sheet, each filter carried across the views, a filter's no match, the Friend trigger reading and after a failed read); a named friend's filter, an unknown id dropped from `?friend` and the trigger absent with no spare are proved in `cart-by-friend.test.tsx`, since they need a known fixture friend. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. PR 6 rows: By friend's panels (By friend's column header with `Spare` on desktop, the head's `N cards \u00b7 N spares`, the row's need, spare and own facts, the Ask or its status above the tag, a folded panel, and on desktop the open header stuck to the list box top while its rows scroll); they need a friend with a spare of a selected line, and the status row a request already sent. The single-spare panel (`1 card \u00b7 1 spare`) and the spare key while the read is out are proved in `cart-by-friend.test.tsx`, since neither holds still on a live account. PR 7 rows: the reading, empty and failed states, staged by holding or answering `/api/friend-spares` (a read held 8s draws Loading A to D; an empty answer draws Empty-One B; a 500 draws addendum R2's failed read: the toast in By card and By deck, the dashed block with Try again in By friend). Empty-One C (no friends yet) needs an account with no friends, decided on the server: it is photographed by the companion inventory `all-decks-cart-v2-no-friends.json`, run on an account with none, and it and the said-once rule across view switches are proved in `cart-by-friend.test.tsx`. PR 9 rows: the Friend and Owned filters (the desktop panels, the phone Filters sheet, each filter carried across the views, a filter's no match, the Friend trigger reading and after a failed read); a named friend's filter, an unknown id dropped from `?friend` and the trigger absent with no spare are proved in `cart-by-friend.test.tsx`, since they need a known fixture friend. PR 10 (close-out): `shares` lists the eight controls the three views share, and each row names the one its photograph is about in `binding` (`pnpm check:shared`). Every By friend panel row (friend-rest, friend-stuck, friend-folded, friend-status, reading-friend, none-friend) and the desktop Friend panel need an account with a friend holding a spare of a selected line; local-dev held no `friend_links` row at all on 2026-10-28, so on it those cells draw Empty-One C instead and do not reach (the close-out records them). Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "shares": [
+    {
+      "binding": "CartChassis",
+      "module": "src/components/decks/cart/cart-chassis.tsx",
+      "note": "The chassis (search, Friend, Owned, sort, chips, result line) for all three views: `CartView` renders it once over whichever view is on, so every chassis and filter row names cart-view.tsx."
+    },
+    {
+      "binding": "CartFilterSheet",
+      "module": "src/components/decks/cart/cart-filter-sheet.tsx",
+      "note": "The phone's Filters sheet (plan A6), opened from the chassis's Filters button for every view, so its row names cart-chassis.tsx."
+    },
+    {
+      "binding": "CartColumns",
+      "module": "src/components/decks/cart/cart-columns.tsx",
+      "note": "The desktop column header: By card's and By friend's are drawn by `CartView`, By deck's by each group (`CartDeckGroup`)."
+    },
+    {
+      "binding": "CartFactsRow",
+      "module": "src/components/decks/cart/cart-line.tsx",
+      "note": "The one v2 row every view draws. By deck renders it as-is from `CartDeckGroup`; By card (`CartCardLine`) and By friend (`CartFriendLine`) render it through wrappers in cart-line.tsx itself, which is why their rows check `CartFact` and `CartFriendLine` instead."
+    },
+    {
+      "binding": "CartFact",
+      "module": "src/components/decks/cart/cart-facts.tsx",
+      "note": "One labelled fact (need, spare, own; the `+N` / `more` / `less` pill and the opened list). `CartFactsRow` in cart-line.tsx renders it for every view."
+    },
+    {
+      "binding": "CartFriendLine",
+      "module": "src/components/decks/cart/cart-line.tsx",
+      "note": "By friend's row: `CartFactsRow` with the Ask above the tag, rendered by each friend panel."
+    },
+    {
+      "binding": "EmptyState",
+      "module": "src/components/ui/empty-state.tsx",
+      "note": "The app's dashed empty-state block, as By friend's none, no-friends and failed blocks draw it."
+    },
+    {
+      "binding": "SocialToast",
+      "module": "src/components/social/social-toast.tsx",
+      "note": "The shared social toast that says a failed spares read once in By card and By deck (addendum R2 B2)."
+    }
+  ],
   "rows": [
     {
       "id": "chassis-rest-card",
       "label": "/decks/shopping, By card at rest: the chassis under the switch (search, sort, NO FILTERS ON, the result line)",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -18,7 +61,8 @@
     {
       "id": "chassis-rest-deck",
       "label": "/decks/shopping?view=deck, By deck at rest: the same chassis, By deck's sentence",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping?view=deck",
@@ -30,7 +74,8 @@
     {
       "id": "chassis-searched",
       "label": "/decks/shopping, a search on: the chip, `N of M cards`, the narrowed list",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -47,7 +92,8 @@
     {
       "id": "chassis-searched-deck",
       "label": "/decks/shopping?view=deck, the same search carried to By deck: only the decks it leaves a card of",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping?view=deck",
@@ -64,7 +110,8 @@
     {
       "id": "chassis-no-match",
       "label": "/decks/shopping, a search that matches nothing: the no-match block with its one fix",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -81,7 +128,8 @@
     {
       "id": "chassis-sort-menu",
       "label": "/decks/shopping, the desktop sort menu open (Controls A2)",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -101,7 +149,8 @@
     {
       "id": "chassis-sort-dropdown",
       "label": "/decks/shopping, the phone's 44px \u21c5 open: `OrderMenu`'s dropdown, as /decks draws it (addendum R2 \u00a74 retired the cart's sort sheet)",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -121,7 +170,8 @@
     {
       "id": "chassis-sorted",
       "label": "/decks/shopping?sort=price-high, By card sorted by price, high first: unpriced lines last",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping?sort=price-high",
@@ -133,7 +183,8 @@
     {
       "id": "facts-rest-card",
       "label": "/decks/shopping, By card at rest: the column header (desktop), the labelled need, spare and own lines (phone), a `+N` pill where names are left out",
-      "view": "src/components/decks/cart/cart-facts.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartColumns",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -148,7 +199,8 @@
     {
       "id": "facts-opened-card",
       "label": "/decks/shopping, a `+N` pressed: the full list in place under the fact on --surface-sunken, the pill reading `less`",
-      "view": "src/components/decks/cart/cart-facts.tsx",
+      "view": "src/components/decks/cart/cart-line.tsx",
+      "binding": "CartFact",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -167,7 +219,8 @@
     {
       "id": "facts-cut-more-card",
       "label": "/decks/shopping, a lone deck name too wide for its cell: cut with an ellipsis, then `more` (addendum R2, ruling 3); needs a long deck name on the account",
-      "view": "src/components/decks/cart/cart-facts.tsx",
+      "view": "src/components/decks/cart/cart-line.tsx",
+      "binding": "CartFact",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -176,6 +229,9 @@
         },
         {
           "wait": "[data-fact-pill=more]"
+        },
+        {
+          "scrollTo": "[data-fact-pill=more]"
         }
       ]
     },
@@ -183,6 +239,7 @@
       "id": "facts-nothing-owned-card",
       "label": "/decks/shopping, a row with nothing owned: no own line on the phone, an empty own cell on desktop",
       "view": "src/components/decks/cart/cart-line.tsx",
+      "binding": "CartFact",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -198,6 +255,7 @@
       "id": "facts-rest-deck",
       "label": "/decks/shopping?view=deck, the first group opened: its own column header with `This deck \u00b7 also` (desktop), the labelled DECK, SPARE and OWN lines (phone), the deck's count then `also` the other decks",
       "view": "src/components/decks/cart/cart-deck-group.tsx",
+      "binding": "CartColumns",
       "steps": [
         {
           "goto": "/decks/shopping?view=deck",
@@ -215,8 +273,9 @@
     },
     {
       "id": "facts-plus-deck",
-      "label": "/decks/shopping?view=deck, a group's row whose `also` names are left out: the `+N` pill after the names that fit",
-      "view": "src/components/decks/cart/cart-facts.tsx",
+      "label": "/decks/shopping?view=deck, a group's row whose `also` names are left out: the `+N` pill after the names that fit. The groups start folded, so it opens the first four (on the pull:staging fixture the first group whose `also` overflows is the fourth, HD -Thorin)",
+      "view": "src/components/decks/cart/cart-deck-group.tsx",
+      "binding": "CartFactsRow",
       "steps": [
         {
           "goto": "/decks/shopping?view=deck",
@@ -224,8 +283,23 @@
           "settle": 2000
         },
         {
-          "click": "section[aria-labelledby] h3 button",
-          "settle": 600
+          "click": "section[aria-labelledby] h3 button[aria-expanded=false]",
+          "settle": 500
+        },
+        {
+          "click": "section[aria-labelledby] h3 button[aria-expanded=false]",
+          "settle": 500
+        },
+        {
+          "click": "section[aria-labelledby] h3 button[aria-expanded=false]",
+          "settle": 500
+        },
+        {
+          "click": "section[aria-labelledby] h3 button[aria-expanded=false]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-cart-row] [data-fact=need] [data-fact-pill=count]"
         },
         {
           "wait": "[data-cart-row] [data-fact=need] [data-fact-pill=count]"
@@ -234,8 +308,9 @@
     },
     {
       "id": "facts-opened-deck",
-      "label": "/decks/shopping?view=deck, a need fact's `+N` pressed in a group: `also N decks`, the other decks with their counts on --surface-sunken, the pill reading `less`",
-      "view": "src/components/decks/cart/cart-facts.tsx",
+      "label": "/decks/shopping?view=deck, a need fact's `+N` pressed in a group: `also N decks`, the other decks with their counts on --surface-sunken, the pill reading `less`. The groups start folded, so it opens the first four (on the pull:staging fixture the first group whose `also` overflows is the fourth, HD -Thorin)",
+      "view": "src/components/decks/cart/cart-deck-group.tsx",
+      "binding": "CartFactsRow",
       "steps": [
         {
           "goto": "/decks/shopping?view=deck",
@@ -243,8 +318,23 @@
           "settle": 2000
         },
         {
-          "click": "section[aria-labelledby] h3 button",
-          "settle": 600
+          "click": "section[aria-labelledby] h3 button[aria-expanded=false]",
+          "settle": 500
+        },
+        {
+          "click": "section[aria-labelledby] h3 button[aria-expanded=false]",
+          "settle": 500
+        },
+        {
+          "click": "section[aria-labelledby] h3 button[aria-expanded=false]",
+          "settle": 500
+        },
+        {
+          "click": "section[aria-labelledby] h3 button[aria-expanded=false]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-cart-row] [data-fact=need] [data-fact-pill=count]"
         },
         {
           "click": "[data-cart-row] [data-fact=need] [data-fact-pill=count]",
@@ -259,6 +349,7 @@
       "id": "facts-alone-deck",
       "label": "/decks/shopping?view=deck, a row only the open deck needs: the bare count, no `also`",
       "view": "src/components/decks/cart/cart-deck-group.tsx",
+      "binding": "CartFactsRow",
       "steps": [
         {
           "goto": "/decks/shopping?view=deck",
@@ -277,7 +368,8 @@
     {
       "id": "friend-rest",
       "label": "/decks/shopping?view=friend, By friend at rest: the column header with `Spare` (desktop), each panel's head (face, name, pods, `N cards \u00b7 N spares`, chevron), and rows of need, spare and own facts with the Ask above the tag",
-      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartColumns",
       "steps": [
         {
           "goto": "/decks/shopping?view=friend",
@@ -293,6 +385,7 @@
       "id": "friend-stuck",
       "label": "/decks/shopping?view=friend, scrolled into the first panel's rows: on desktop its header stuck at the list box top, square, as at rest; on a phone it scrolls away under the pinned controls",
       "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "binding": "CartFriendLine",
       "steps": [
         {
           "goto": "/decks/shopping?view=friend",
@@ -311,6 +404,7 @@
       "id": "friend-folded",
       "label": "/decks/shopping?view=friend, the first panel folded from its head: the figure kept, no rule under the head, the chevron turned back, the next panel up",
       "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "binding": "CartFriendLine",
       "steps": [
         {
           "goto": "/decks/shopping?view=friend",
@@ -333,6 +427,7 @@
       "id": "friend-status",
       "label": "/decks/shopping?view=friend, a row whose ask is out: Requested (or Accepted, Declined) in the Ask's place above the tag, the tag where it was",
       "view": "src/components/decks/cart/cart-line.tsx",
+      "binding": "CartFact",
       "steps": [
         {
           "goto": "/decks/shopping?view=friend",
@@ -351,6 +446,7 @@
       "id": "reading-card",
       "label": "/decks/shopping while friends' spares are read: every row's spare cell a breathing bar (desktop 58px in the kept column, phone a SPARE line with a 74px bar), the spare key item, the result line's `reading friends\u2019 spares`; buy and checkout live (Loading A, B)",
       "view": "src/components/decks/cart/cart-line.tsx",
+      "binding": "CartFact",
       "steps": [
         {
           "hold": "**/api/friend-spares**",
@@ -367,7 +463,8 @@
     {
       "id": "reading-friend",
       "label": "/decks/shopping?view=friend while friends' spares are read: two skeleton panels in the panel's shape under By friend's column header (desktop), `Reading friends\u2019 spares\u2026` (Loading C, D)",
-      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartColumns",
       "steps": [
         {
           "hold": "**/api/friend-spares**",
@@ -385,6 +482,7 @@
       "id": "none-friend",
       "label": "/decks/shopping?view=friend, the read landed with no spare: the dashed block with the spare glyph, `No friend has a spare of these`, no press, `0 friends` (Empty-One B)",
       "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "binding": "EmptyState",
       "steps": [
         {
           "mock": "**/api/friend-spares**",
@@ -404,6 +502,7 @@
       "id": "failed-card",
       "label": "/decks/shopping, the spares read failed: the toast with Try again at its shipped place, the spare column closed (desktop) and no SPARE line (phone), no spare key item, no spare clause (R2 A, B)",
       "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "SocialToast",
       "steps": [
         {
           "mock": "**/api/friend-spares**",
@@ -421,6 +520,7 @@
       "id": "failed-deck",
       "label": "/decks/shopping?view=deck, the spares read failed: the same toast (R2: By deck is the same)",
       "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "SocialToast",
       "steps": [
         {
           "mock": "**/api/friend-spares**",
@@ -438,6 +538,7 @@
       "id": "failed-friend",
       "label": "/decks/shopping?view=friend, the spares read failed: the dashed block with Try again in the list's place, no toast, `Friends\u2019 spares didn\u2019t load`, the By friend segment kept (R2 C, D)",
       "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "binding": "EmptyState",
       "steps": [
         {
           "mock": "**/api/friend-spares**",
@@ -454,7 +555,8 @@
     {
       "id": "filters-friend-panel",
       "label": "/decks/shopping, the Friend panel open: Any friend, then each friend with a spare, face and count, most cards first (Controls A1, shipped `FilterPanel`)",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -474,7 +576,8 @@
     {
       "id": "filters-owned-panel",
       "label": "/decks/shopping, the Owned panel open: Any, You own some, None with their counts",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -494,7 +597,8 @@
     {
       "id": "filters-sheet",
       "label": "/decks/shopping, the phone Filters sheet: `N of M cards match`, Any friend across the row, the friends as equal pills two to a row, Owned as segments, Show and Clear all (Controls B1, R1b)",
-      "view": "src/components/decks/cart/cart-filter-sheet.tsx",
+      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "binding": "CartFilterSheet",
       "steps": [
         {
           "goto": "/decks/shopping",
@@ -514,7 +618,8 @@
     {
       "id": "filters-friend-any",
       "label": "/decks/shopping?friend=any: the lines some friend has a spare of, the Any friend chip, `N of M cards`, the Filters badge on a phone",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping?friend=any",
@@ -527,6 +632,7 @@
       "id": "filters-friend-carried",
       "label": "/decks/shopping?view=friend&friend=any&owned=none, both filters carried to By friend (D4): its panels over the lines they leave, both chips (Controls C2). A named friend leaves only that friend's panel; it needs a fixture friend's public id in `?friend`",
       "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping?view=friend&friend=any&owned=none",
@@ -539,6 +645,7 @@
       "id": "filters-owned-deck",
       "label": "/decks/shopping?view=deck&owned=some, Owned carried to By deck: only the decks it leaves a card of, the Owned chip, `N of M cards`",
       "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping?view=deck&owned=some",
@@ -551,6 +658,7 @@
       "id": "filters-no-match",
       "label": "/decks/shopping?owned=some&q=zzzzzz, a filter and a search that leave nothing: the no-match block with Clear all",
       "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "goto": "/decks/shopping?owned=some&q=zzzzzz",
@@ -562,7 +670,8 @@
     {
       "id": "filters-friend-reading",
       "label": "/decks/shopping while friends' spares are read: the Friend trigger dashed, `reading\u2026` (Loading A); on a phone the sheet's Friend group the same",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "hold": "**/api/friend-spares**",
@@ -582,7 +691,8 @@
     {
       "id": "filters-friend-failed",
       "label": "/decks/shopping, the spares read failed: no Friend trigger (addendum R2 B2), Owned still there",
-      "view": "src/components/decks/cart/cart-chassis.tsx",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "binding": "CartChassis",
       "steps": [
         {
           "mock": "**/api/friend-spares**",

@@ -116,30 +116,9 @@ Token palette on the board (for reference, all via CSS vars): `--bg --surface-ra
 | Trigger while open | — | `.trg.open` (section 4) |
 | Hover / focus on item | — | — |
 
-## 6. Phone Sort sheet, open (`.scr` + `.sht2`, Controls B2)
+## 6. Phone Sort sheet: retired (addendum R2 §4)
 
-| Property | Mobile (390) | Desktop (1300) |
-|---|---|---|
-| Rendered | sheet over the page, opened by the ⇅ button | — |
-| Scrim `.scr` | position absolute, inset 0, background rgba(8,6,4,.62), z-index 28 | — |
-| Sheet `.sht2` position | absolute, left 0, right 0, bottom 0, z-index 29 | — |
-| Sheet radius | 18px 18px 0 0 | — |
-| Sheet border | top 1px solid `--border-strong` | — |
-| Sheet background | `--surface-raised` | — |
-| Sheet padding | 10px 18px 26px | — |
-| Sheet layout | flex column, gap 14 | — |
-| Grab `.grab` | 38×4, radius 2, background `--border-dashed`, align-self center | — |
-| Header `.hd` | flex, align-items baseline, justify space-between | — |
-| Header title `b` | font 700 18px 'Cinzel', serif; color `--fg`; copy slot `sort.label` | — |
-| Sub-line `small` (right of title) | font 11px 'IBM Plex Mono'; color `--fg-muted`; renders the current view's name (By card in B2); copy: the shipped view-switch label, no key in the v2 strings | — |
-| List wrapper | `.pop` reset inline: position static, width auto, border 0, box-shadow none, background transparent, padding 0 | — |
-| Row `.it` | flex, align-items center, gap 10, min-height 48, padding 0 8, radius 8, font-size 15px (family 'IBM Plex Sans'), color `--fg` | — |
-| Row count | one per option of the current view (5 in B2) | — |
-| Selected row `.it.on` | background `--elevated` | — |
-| Selected marker | `.rad` 16×16 radius 50%; selected = border 5px solid `--accent`; unselected = border 1.5px solid `--border-dashed`. Source draws a ring radio, not a check glyph | — |
-| Dismiss | — (no close button drawn; scrim + grab) | — |
-| Page behind | frame shows chassis row 1 with ⇅ button in `.trg.ic.open` state, list rows behind scrim | — |
-| Hover / focus | — | — |
+Controls B2's sort sheet (`.scr` + `.sht2`) is not built. Addendum R2 §4 (#2331, approved 2026-10-28) ruled that the shipped chassis wins and retired the cart's phone sort sheet: below 1000px the 44px ⇅ button opens `OrderMenu`'s dropdown, the same 186px dropdown with no header or radios that /decks draws. PR 9 (#2357) deleted `cart-sort-sheet.tsx`; its table, `all-decks-cart-v2-pr9.md`, records the dropdown. The B2 values this section held (scrim, 18px radius, grab, Cinzel title and view sub-line, 48px ring-radio rows) describe nothing that ships. The same ruling voids the mock's chassis values in §1 to §5 wherever they differ from the shipped `FilterChassis`, `OrderMenu`, `FilterPanel` trigger and `DeckSearchField` (R2's value table), including §5's 220px menu with its header and radios.
 
 ## 7. Row 2 (`.chips`)
 
@@ -266,5 +245,5 @@ Token palette on the board (for reference, all via CSS vars): `--bg --surface-ra
 | Searched | Controls C1 (friend filter), C2 / D (search "boots" / "greaves") | field `.fld.on` (accent border, `--fg` value, `✕`); search chip in row 2 with Clear all; row 3 `result.filtered` | same pattern; field `.fld.on`; chip row; row 3 filtered sentence |
 | No-match | Controls D | `.emp` block (title, body, Drop press) under the chassis; chips (2) + Clear all; row 3 0 of N | — (not drawn; same shape) |
 | Sort menu open | Controls A2 | — | `.pop` 220 wide with header `sort.label`, 5 ring-radio rows (By card), selected row `--elevated`; trigger `.trg.open` |
-| Sort sheet open | Controls B2 | scrim + `.sht2`: grab, title `sort.label` + view sub-line, 5 rows at 48px; selected row `--elevated`; ⇅ button `.trg.ic.open` | — |
+| Sort open, phone | Controls B2 (retired by R2 §4) | the ⇅ button opens `OrderMenu`'s dropdown, as /decks draws it; no sheet (see §6) | — |
 | Reading | Loading A/B (dot), C/D (By friend) | By card/By deck: row 3 sentence + right-aligned 6px `--fact` dot + `result.reading`; By friend: `result.readingByFriend` only; Search, Owned, Sort work from first paint | same |

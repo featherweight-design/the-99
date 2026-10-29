@@ -1,0 +1,27 @@
+{
+  "feature": "Shopping for all decks v2, the no-friends half (companion to all-decks-cart-v2.json)",
+  "clearAbout": true,
+  "note": "Empty-One C, By friend for a reader with no friends: the server decides it from the friend count, so it is reachable only on an account with no friends, where every By friend panel row of all-decks-cart-v2.json cannot be. Run the two inventories on the account each one needs (on local-dev, which holds no friend_links, this one). Needs a server with ALL_DECKS_CART_ENABLED=true, SOCIAL_FRIENDS_ENABLED=true and SPARE_REQUESTS_ENABLED=true, and decks missing cards.",
+  "shares": {
+    "binding": "EmptyState",
+    "module": "src/components/ui/empty-state.tsx",
+    "note": "The app's dashed empty-state block, as By friend's no-friends block draws it."
+  },
+  "rows": [
+    {
+      "id": "nofriends-friend",
+      "label": "/decks/shopping?view=friend for a reader with no friends: the dashed block with the spare glyph, `No friends yet`, the one press Go to Friends, `0 friends`, and no By friend column header (Empty-One C)",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=friend",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "wait": "[data-testid=cart-by-friend-empty][data-kind=noFriends]"
+        }
+      ]
+    }
+  ]
+}
