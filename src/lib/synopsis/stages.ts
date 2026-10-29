@@ -596,19 +596,23 @@ export function landKeepTable(rows: readonly LandRow[]): { rows: LandRow[]; dist
 }
 
 const SPECIFIC_NUMBER_WORDS: Record<string, number> = { ...LAND_COUNT_WORDS, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
-/** A word that ties a number after it to a land or curve figure ("4 lands", "2-drops", "10 ramp pieces", "15 cards cost five or more"). */
-const FIGURE_AFTER = /^(lands?|drops?|ramp|mana|costs?|costing|curve)$/;
-/** A word that ties the number after it to a curve figure: "costs 4", "mana value 6". */
-const FIGURE_BEFORE = /^(costs?|costing|value|mv)$/;
+/** The unit right after a number that makes it a land or curve figure: "4 lands", "2-drops", "10 ramp pieces", "4 mana". */
+const FIGURE_UNIT = /^(lands?|drops?|ramp|mana)$/;
+/** The one verb form, right before the number: "costs 4". */
+const FIGURE_VERB = /^(costs?|costing)$/;
 
-/** The numbers a line ties to a land or curve figure by the words around them, outside card marks. */
+/**
+ * The numbers a line states as a number-and-unit phrase, outside card marks: the unit IMMEDIATELY
+ * after the number (a hyphen allowed: "2-drops"), or "costs" immediately before it. A later word does
+ * not tie a number to it: "a hand with four spells and no ramp" states no figure.
+ */
 export function figuresInContext(text: string): number[] {
   const words = rendered(text.replace(/\[\[[^\[\]]+\]\]/g, " ")).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
   const out: number[] = [];
   words.forEach((w, i) => {
     const n = /^\d+$/.test(w) ? Number(w) : SPECIFIC_NUMBER_WORDS[w];
     if (n === undefined) return;
-    if (words.slice(i + 1, i + 5).some((x) => FIGURE_AFTER.test(x)) || words.slice(Math.max(0, i - 2), i).some((x) => FIGURE_BEFORE.test(x))) out.push(n);
+    if (FIGURE_UNIT.test(words[i + 1] ?? "") || FIGURE_VERB.test(words[i - 1] ?? "")) out.push(n);
   });
   return out;
 }

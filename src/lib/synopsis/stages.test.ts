@@ -524,6 +524,11 @@ describe("iteration 3: no generic mulligan line", () => {
     const tied = edit((r) => { r.primer.mulligan.keep = [{ text: "Two of the deck's 10 ramp pieces.", evidence: [] }]; r.primer.mulligan.sendBack = [{ text: "A hand whose cheapest spell costs 4.", evidence: [] }]; });
     expect(checkMulliganSpecific(tied, FACTS, landKeepNumber(FACTS)).offenders).toEqual([]);
     expect(figuresInContext("A hand with four spells.")).toEqual([]);
+    // A later unit word does not tie the number to it: only a number-and-unit phrase counts.
+    expect(figuresInContext("A hand with four spells and no ramp.")).toEqual([]);
+    expect(figuresInContext("A hand of 4 creatures that cost too much mana.")).toEqual([]);
+    expect(figuresInContext("Two of the deck's 10 ramp pieces.")).toEqual([10]);
+    expect(figuresInContext("Keep 4 lands and a 2 drop.")).toEqual([4, 2]);
     expect(figuresInContext("Keep 3 lands and some 2-drops; [[Meren]] costs 4.")).toEqual([3, 2, 4]);
   });
   it("reads today's lines against the same figures as the new ones", () => {
