@@ -142,6 +142,9 @@ export function usePageSpares(): Ctx | null {
   return useContext(SparesContext);
 }
 
+/** The failure set a reader with no friends publishes: nothing was read, so nothing failed. */
+const NO_FAILED: ReadonlySet<string> = new Set();
+
 export function FriendSparesProvider({
   oracleIds,
   newestAsOf,
@@ -279,7 +282,9 @@ export function FriendSparesProvider({
     const asked = new Set(key ? key.split(",") : []);
     const byCard = new Map<string, FriendSpare[]>();
     const seen = new Map<string, FriendSpare[]>();
-    for (const s of spares) {
+    // No friend: nothing read before is published (a provider that stays mounted while `noFriends` turns on keeps its
+    // state), so no spare, failure or open spares sheet outlives it.
+    for (const s of noFriends ? [] : spares) {
       seen.set(s.oracleId, [...(seen.get(s.oracleId) ?? []), s]);
       if (asked.has(s.oracleId)) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
     }
@@ -288,7 +293,7 @@ export function FriendSparesProvider({
     const asksByCard = new Map<string, AskStateLine[]>();
     for (const a of asks) asksByCard.set(a.oracleId, [...(asksByCard.get(a.oracleId) ?? []), a]);
     const req: RequestsCtx | null = requests ? { asksFor: (id) => asksByCard.get(id) ?? [], ask } : null;
-    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req, loaded: noFriends ? asked : loaded, failed, retry };
+    return { byCard, seen, opened: noFriends ? null : opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req, loaded: noFriends ? asked : loaded, failed: noFriends ? NO_FAILED : failed, retry };
   }, [spares, asks, opened, key, newestAsOf, requests, ask, loaded, failed, retry, noFriends]);
   return (
     <SparesContext.Provider value={value}>

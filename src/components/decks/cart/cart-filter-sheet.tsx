@@ -107,7 +107,9 @@ function SheetBody({ open, onDismiss, shown, of, offer, friend, onFriend, owned,
                 data-friend-failed
                 className="flex items-center justify-between gap-[12px] rounded-[10px] border border-dashed border-[color:var(--border-strong)] px-[12px] py-[11px]"
               >
-                <span className="min-w-0 font-sans text-[12.5px] text-[color:var(--fg-body)]">{copy.result.failedByFriend}</span>
+                {/* An alert, as the toast it replaces is: the sheet is modal and silences the result line behind it, so this
+                    is the one place a failure that lands while it is open is said aloud. */}
+                <span role="alert" className="min-w-0 font-sans text-[12.5px] text-[color:var(--fg-body)]">{copy.result.failedByFriend}</span>
                 <button
                   type="button"
                   onClick={offer.onRetry}

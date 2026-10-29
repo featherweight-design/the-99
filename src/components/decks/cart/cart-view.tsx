@@ -408,6 +408,7 @@ function CartBody({
   // The list box's bottom fade draws only while the box has more below it (addendum R3 §3), read on scroll and, through
   // one observer on the box, on resize. The phone's box does not scroll, so it never has more (and draws no fade).
   const listRef = useRef<HTMLDivElement>(null);
+  const listContentRef = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
   const measureMore = () => {
     const el = listRef.current;
@@ -425,6 +426,9 @@ function CartBody({
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(() => setMore(hasMoreBelow(el)));
     ro.observe(el);
+    // The box is a fixed height, so a row growing inside it (a `+N` opening its names, `cart-facts.tsx`'s own state)
+    // resizes only its content: the same observer watches that too.
+    if (listContentRef.current) ro.observe(listContentRef.current);
     return () => ro.disconnect();
   }, [listShown]);
 
@@ -577,6 +581,8 @@ function CartBody({
                   view === "friend" ? "md:scroll-pt-[53px]" : ""
                 }`}
               >
+                {/* Auto height: what the fade's observer watches for the content's own growth (R3 §3). */}
+                <div ref={listContentRef} data-cart-list-content>
                 <HoverPreviewProvider>
                 {byDeck ? (
                   // Largest first unless the reader chose another order; an unselected deck keeps its place.
@@ -621,6 +627,7 @@ function CartBody({
                   />
                 )}
                 </HoverPreviewProvider>
+                </div>
                 {/* The bottom fade, only while the box has more below (R3 §3): never over a dashed block, a short list or
                     the last row. No transition. */}
                 {more ? (

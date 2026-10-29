@@ -1158,6 +1158,8 @@ describe("addendum R3", () => {
       expect(failure()).toBeNull();
       const line = document.querySelector("[data-friend-failed]") as HTMLElement;
       expect(line.textContent).toContain(copy.result.failedByFriend);
+      // Said aloud: the sheet silences the result line behind it and no toast is drawn, so the line is the alert.
+      expect(within(line).getByRole("alert").textContent).toBe(copy.result.failedByFriend);
       // The head stays; the pills are gone.
       expect(friendGroup().queryAllByRole("checkbox")).toHaveLength(0);
       // Audit 3: Try again takes the 44px touch target.
@@ -1287,6 +1289,9 @@ describe("addendum R3", () => {
       await mount();
       const mine = observers.filter((o) => o.targets.includes(box()));
       expect(mine).toHaveLength(1);
+      // The same observer watches the box's auto-height content, which a row's `+N` grows without resizing the box.
+      const content = box().querySelector("[data-cart-list-content]")!;
+      expect(mine[0].targets).toContain(content);
       size(box(), 1000, 300, 0);
       await act(async () => { mine[0].cb(); });
       expect(fade()).toBeTruthy();
@@ -1322,6 +1327,33 @@ describe("addendum R3", () => {
       expect(document.querySelector('[data-cart-columns="deck"]')!.textContent).not.toContain(copy.columns.spares);
       expect(document.querySelector("[data-chassis-row='result'] p")?.textContent).toBe(copy.result.byDeck(3, 5));
       expect(sparesCalls()).toBe(0);
+    });
+
+    it("publishes no spare, failure or open sheet once `noFriends` turns on in a provider that stays mounted", async () => {
+      const { FriendSparesProvider, usePageSpares } = await import("../../social/spare-markers");
+      let ctx: ReturnType<typeof usePageSpares> = null;
+      const Probe = () => { ctx = usePageSpares(); return null; };
+      const ids = [JACE, BRAIN, GISA, TOWER];
+      const tree = (noFriends: boolean) => (
+        <FriendSparesProvider oracleIds={ids} newestAsOf={null} hostSheet={false} noFriends={noFriends}><Probe /></FriendSparesProvider>
+      );
+      served = { spares: BOARD, asks: [] };
+      let view!: ReturnType<typeof render>;
+      await act(async () => { view = render(tree(false)); });
+      expect(ctx!.byCard.size).toBeGreaterThan(0);
+      await act(async () => { ctx!.open({ oracleId: JACE, name: "Jace, Multiverse Architect", printedName: null, layout: "normal", imageUri: null, price: null }); });
+      expect(ctx!.opened).not.toBeNull();
+      await act(async () => { view.rerender(tree(true)); });
+      expect(ctx!.byCard.size).toBe(0);
+      expect(ctx!.seen.size).toBe(0);
+      expect(ctx!.opened).toBeNull();
+      cleanup();
+      served = { spares: [], asks: [], fail: true };
+      await act(async () => { view = render(tree(false)); });
+      expect(ctx!.failed.size).toBe(4);
+      await act(async () => { view.rerender(tree(true)); });
+      expect(ctx!.failed.size).toBe(0);
+      expect(ids.every((id) => ctx!.loaded.has(id))).toBe(true);
     });
 
     it("leaves By friend as Empty-One C", async () => {
