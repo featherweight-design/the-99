@@ -14,9 +14,15 @@
 // and sticky heads (`z-30`), under every shell layer (pending overlay `z-[35]`, tab bar and sheet scrims `z-40`). No
 // `useDockClearance`: the card is transient, like `edit-toast.tsx`, and publishing `--dock-h` would jump the foot on
 // every tap. Capped at 40% of the viewport, its words scrolling inside, so a landscape phone keeps the region in view.
+//
+// A low region (Small items 3 item 6, board `Dock-Low-Region.html`): when the dock at the foot would cover the region
+// it describes, it docks at the top of the visible band instead, 12px under whatever holds the top of the screen at the
+// tap (`dockPlace`). Decided once, before the first paint of each tap's dock (the screen keys the dock on its label, so
+// another tap mounts a new one and decides again); scrolling afterwards never moves it. Same look, gutters and ✕.
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
+import { dockPlace, type DockPlace } from "../../../lib/about/dock-place";
 import type { ScreenLabel } from "../../../lib/about/pins";
 
 type Slot = { claim: (putOut: () => void) => void; release: (putOut: () => void) => void };
@@ -50,10 +56,45 @@ export function useDockSlot(): Slot {
   return useContext(DockSlot) ?? own;
 }
 
-export function PinDock({ label, onClose }: { label: ScreenLabel; onClose: () => void }) {
+/** What can hold the top of a phone screen above the dock: the quick-return header and About's sticky back bar. */
+const TOP_BARS = "header[data-quick-return], [data-about-back]";
+
+/** The lowest bottom edge of what holds the top of the screen now. A header gone away ends at or above the screen's
+ *  top and a back bar not drawn has no box, so neither counts (0 when nothing does). Both sit at the page's top, so
+ *  neither is ever below the screen. */
+export function topEdgeNow(): number {
+  let edge = 0;
+  for (const el of document.querySelectorAll<HTMLElement>(TOP_BARS)) {
+    if (el.getClientRects().length > 0) edge = Math.max(edge, el.getBoundingClientRect().bottom);
+  }
+  return edge;
+}
+
+export function PinDock({
+  label, onClose, region,
+}: {
+  label: ScreenLabel;
+  onClose: () => void;
+  /** The lit region as drawn, read once on mount to place the dock (null: the foot). */
+  region: () => Element | null;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [place, setPlace] = useState<DockPlace>({ at: "foot" });
+  // Once, on the tap that mounted this dock, before it paints: measured at the foot, its shipped place.
+  const read = useRef(region);
+  useLayoutEffect(() => {
+    const dock = ref.current?.getBoundingClientRect();
+    const lit = read.current()?.getBoundingClientRect();
+    if (!dock || !lit) return;
+    const next = dockPlace({ region: lit, foot: dock, topEdge: topEdgeNow() });
+    if (next.at === "top") setPlace(next);
+  }, []);
   return (
     <div
+      ref={ref}
       data-about-dock={label.key}
+      data-about-dock-at={place.at}
+      style={place.at === "top" ? { top: place.top, bottom: "auto" } : undefined}
       className="fixed bottom-[calc(var(--tabbar-h)+12px)] left-[12px] right-[12px] z-[34] flex max-h-[40dvh] items-start gap-[12px] rounded-[12px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_55%,var(--border-strong))] bg-[color:var(--elevated)] py-[12px] pl-[14px] pr-[12px] text-[14px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_-12px_36px_rgb(0_0_0/0.45)] md:hidden"
     >
       <span

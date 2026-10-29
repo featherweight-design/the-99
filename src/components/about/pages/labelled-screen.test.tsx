@@ -262,6 +262,97 @@ describe("LabelledScreen docks a pressed pin's label on a phone (R4 board 3)", (
     expect(second.querySelector("[data-about-halo]")).toBeNull();
   });
 
+  // Small items 3 item 6 (board Dock-Low-Region): jsdom lays nothing out, so the boxes the dock reads are stood in for.
+  // A 390x844 phone: the dock at the foot spans 658..758; "two" is lit high, "three" low; `top` is the bar's bottom.
+  describe("a low region gets the dock at the top", () => {
+    const stage = (boxes: { two: number[]; three: number[]; bar?: number[]; back?: number[] | "undrawn" }) => {
+      const bar = document.createElement("header");
+      bar.setAttribute("data-quick-return", "page");
+      document.body.appendChild(bar);
+      const back = document.createElement("div");
+      back.setAttribute("data-about-back", "");
+      if (boxes.back) document.body.appendChild(back);
+      vi.spyOn(HTMLElement.prototype, "getClientRects").mockImplementation(function (this: HTMLElement) {
+        return (this === back && boxes.back === "undrawn" ? [] : [{}]) as unknown as DOMRectList;
+      });
+      vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+        const edges = (e: number[]) => ({ top: e[0], bottom: e[1], left: 0, right: 0, width: 0, height: e[1] - e[0], x: 0, y: e[0] }) as DOMRect;
+        if (this.hasAttribute("data-about-dock")) return edges([658, 758]);
+        if (this === bar) return edges(boxes.bar ?? [0, 79]);
+        if (this === back && Array.isArray(boxes.back)) return edges(boxes.back);
+        if (this === back) return edges([79, 200]);
+        const halo = this.dataset.aboutHalo;
+        if (halo === "a/s/two") return edges(boxes.two);
+        if (halo === "a/s/three") return edges(boxes.three);
+        return edges([0, 0]);
+      });
+      // A second stage in one test re-aims the same spies (afterEach restores them).
+      return () => {
+        bar.remove();
+        back.remove();
+      };
+    };
+    const dockOf = (c: HTMLElement) => c.querySelector<HTMLElement>("[data-about-dock]")!;
+
+    it("keeps the foot for a region above the foot dock's top edge", () => {
+      const done = stage({ two: [300, 340], three: [700, 730] });
+      const { container } = draw();
+      pin(phoneOf(container), "a/s/two");
+      expect(dockOf(container).getAttribute("data-about-dock-at")).toBe("foot");
+      expect(dockOf(container).style.top).toBe("");
+      done();
+    });
+
+    it("docks a low region's label 12px under the header, and another tap decides again", () => {
+      const done = stage({ two: [300, 340], three: [700, 730] });
+      const { container } = draw();
+      const phone = phoneOf(container);
+      pin(phone, "a/s/three");
+      expect(dockOf(container).getAttribute("data-about-dock-at")).toBe("top");
+      expect(dockOf(container).style.top).toBe("91px");
+      expect(dockOf(container).style.bottom).toBe("auto");
+      // Same look, gutters and close: only its edge moves.
+      expect(dockOf(container).className).toContain("left-[12px] right-[12px]");
+      expect(dockOf(container).querySelector("[data-about-dock-close]")).not.toBeNull();
+      pin(phone, "a/s/two");
+      expect(dockOf(container).getAttribute("data-about-dock")).toBe("a/s/two");
+      expect(dockOf(container).getAttribute("data-about-dock-at")).toBe("foot");
+      expect(dockOf(container).style.top).toBe("");
+      done();
+    });
+
+    it("sits under the back bar when it shows, and passes over one that is not drawn", () => {
+      const done = stage({ two: [300, 340], three: [700, 730], back: [79, 125] });
+      const { container, unmount } = draw();
+      pin(phoneOf(container), "a/s/three");
+      expect(dockOf(container).style.top).toBe("137px");
+      unmount();
+      done();
+      // A bar that is not drawn (no box) holds nothing: the header's edge wins.
+      const done2 = stage({ two: [300, 340], three: [700, 730], back: "undrawn" });
+      const again = draw();
+      pin(phoneOf(again.container), "a/s/three");
+      expect(dockOf(again.container).style.top).toBe("91px");
+      done2();
+    });
+
+    it("sits 12px from the screen's top when the quick-return header has gone away", () => {
+      const done = stage({ two: [300, 340], three: [700, 730], bar: [-79, 0] });
+      const { container } = draw();
+      pin(phoneOf(container), "a/s/three");
+      expect(dockOf(container).style.top).toBe("12px");
+      done();
+    });
+
+    it("keeps the foot for a region so tall the top dock would cover it too", () => {
+      const done = stage({ two: [300, 340], three: [120, 760] });
+      const { container } = draw();
+      pin(phoneOf(container), "a/s/three");
+      expect(dockOf(container).getAttribute("data-about-dock-at")).toBe("foot");
+      done();
+    });
+  });
+
   it("desktop never docks", () => {
     const { container } = draw();
     const desk = container.querySelector<HTMLElement>("[data-about-width='desktop']")!;
