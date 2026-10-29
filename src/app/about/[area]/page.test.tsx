@@ -263,7 +263,7 @@ describe("/about/[area], the visit (PR 6b)", () => {
     expect((await visitOf("decks")).props.owed).toBe(false);
   });
 
-  it("owes a first-run reader their baseline", async () => {
+  it("owes a first-run reader a write (the baseline it writes is pinned in actions.test.ts)", async () => {
     m.seen = { version: 0, ids: [] };
     expect((await visitOf("home")).props.owed).toBe(true);
   });
