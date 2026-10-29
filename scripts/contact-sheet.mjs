@@ -230,6 +230,13 @@ async function run(page, steps) {
       if (typeof step.waitNote !== "string") throw new Error("waitNote takes the note's accessible name");
       await page.getByRole("note", { name: step.waitNote, exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
     }
+    // A deck toast (small items 3, item 8): drawn into the deck toast stack the shell hosts, outside `<main>`, so like
+    // `waitNote` it is not page-scoped. It names the toast's kind (`receipt`, `refusal`, `quick-add-failed`), so a
+    // different toast in its place fails the row rather than photographing the wrong one.
+    if (step.waitToast !== undefined) {
+      if (typeof step.waitToast !== "string") throw new Error("waitToast takes the toast's kind");
+      await page.locator(`[data-deck-toast-stack] [data-toast-kind="${step.waitToast}"]`).first().waitFor({ state: "visible", timeout: 15_000 });
+    }
     // A fresh visit for the row's moment, on its NEXT load only (the init script above reads the flag before the page's
     // own scripts run). The page it is on keeps its taken visit, so nothing arrives there in the meantime: a row clears
     // first and then loads its route once.

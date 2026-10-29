@@ -49,6 +49,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`"chip": false` waits for the open menu alone; `"chipLine": true` also waits for the line under an expiring chip).
   It is the one verb that does not go through `onPage`, because the menu is shell and `onPage` scopes to `<main>`: it
   finds the trigger by `data-account-trigger`, as `openHelp` finds the ? by `data-help-button`.
+- **`waitToast`** waits for a deck toast by its kind (`receipt`, `refusal`, `token-refusal`, `quick-add-failed`). Deck
+  toasts render into the deck toast stack the shell hosts, outside `<main>` (small items 3, item 8), so a page-scoped
+  `wait: "[data-toast]"` never finds them; like `waitNote`, this one wait is not page-scoped.
 - **`THEME=<key>`** draws every row in one theme (`amonkhet`, `kamigawa`, `ixalan`, `phyrexia`, `eldraine`,
   `kaldheim`). It sets the `the99_theme` cookie the server reads, on the context before the first page loads, and
   writes the run into `<out>/<key>/`, so one theme's pass never overwrites another's. Unset, every run draws Low Sun
