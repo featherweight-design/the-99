@@ -1,7 +1,6 @@
 "use client";
 // Card search, the shell's half (handoff `design_handoff_the99_card_search/`, R2; plan `2026-10-16-card-search.md`,
-// PR C). Mounted by the shell beside every page while `CARD_SEARCH_ENABLED` is on for the reader, and absent
-// otherwise. It owns what has to be there before anything is pressed: the sheet's frame and its field (so the field
+// PR C). Mounted by the shell beside every page. It owns what has to be there before anything is pressed: the sheet's frame and its field (so the field
 // can take focus inside the icon's own tap, which is what raises the iOS keyboard in the same gesture, resolution
 // 5), the query and its reads, recent cards, the polite live region, and the history handover to card details.
 //

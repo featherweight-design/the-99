@@ -15,6 +15,12 @@ const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "CHANGE_
 const catalog = [plain, a, b];
 const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
 
+// Retired switches draw always and are still seen by id (so no reader's New marks moved): with "every switch off" they
+// are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
+const RETIRED = ["CARD_SEARCH_ENABLED"];
+const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
+const retiredIds = retiredEntries.map((e) => e.id);
+
 describe("all-decks-cart’s press line", () => {
   it("drops the buy key while I got it is off, so the entry never promises an inert tag", () => {
     const cartOnly = visibleEntries({ ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
@@ -90,13 +96,13 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
     // `credits` and `deck-analysis` carry a line gated by `TUNING_ENABLED` alone (2026-10-08),
     // on top of (or with no) entry-level switch — resolved the same way `visibleEntries` itself
     // resolves it, rather than hand-duplicating the string surgery here.
-    expect(visibleEntries(OFF)).toEqual(unswitched.map((e) => resolveEntry(e, OFF)));
+    expect(visibleEntries(OFF)).toEqual(aboutEntries.filter((e) => !e.switch || retiredEntries.includes(e)).map((e) => resolveEntry(e, OFF)));
     expect(visibleEntries(ON)).toEqual(aboutEntries.filter((e) => e.id !== "buying-credits" && e.id !== "ready-to-build").map((e) => resolveEntry(e, ON)));
   });
 
   it("marks the same entries new as the version rule did", () => {
     for (let s = 1; s <= ABOUT_VERSION; s++) {
-      const now = unseenEntries(visibleEntries(OFF), seen(s)).map((e) => e.id);
+      const now = unseenEntries(visibleEntries(OFF), seen(s, retiredIds)).map((e) => e.id);
       const before = unswitched.filter((e) => e.since > s).map((e) => e.id);
       expect(now, `seen ${s}`).toEqual(before);
     }
@@ -523,7 +529,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
 
 describe("Help me choose’s read (rework plan PR 5: the entry rewritten, no bump)", () => {
   // A current reader who never met the entry: production, where the switch is off.
-  const behind = seen(ABOUT_VERSION);
+  const behind = seen(ABOUT_VERSION, retiredIds);
 
   it("shows a current reader no sheet while the switch is off", () => {
     expect(unseenEntries(visibleEntries({} as NodeJS.ProcessEnv), behind)).toEqual([]);
@@ -537,7 +543,7 @@ describe("Help me choose’s read (rework plan PR 5: the entry rewritten, no bum
   it("is seen by id, so a reader who met the entry before the rewrite is not shown it again", () => {
     // No bump: an entry with a switch is announced by its switch flipping, and its id stays stable.
     const on = { HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    expect(unseenEntries(visibleEntries(on), seen(ABOUT_VERSION, ["help-me-choose"]))).toEqual([]);
+    expect(unseenEntries(visibleEntries(on), seen(ABOUT_VERSION, ["help-me-choose", ...retiredIds]))).toEqual([]);
   });
 
   it("names the read’s credit in the credits entry only with the switch on", () => {

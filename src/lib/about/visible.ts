@@ -31,7 +31,6 @@ import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
 import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-flag";
-import { cardSearchEnabled } from "../card-search/flag";
 import { cardScanEnabled } from "../card-scan/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { homeFeedEnabled } from "../feed/flag";
@@ -47,6 +46,9 @@ import { pushEnabled } from "../push/flag";
  * surface the reader cannot reach, or hide one they can.
  */
 const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
+  // Retired switches (always on): the name stays only because About's seen-state keys entries and variants by it, so no
+  // reader's New marks move. The entry's `switch` field and this map go in one later pass, with that decision.
+  CARD_SEARCH_ENABLED: () => true,
   NEVER_CUT_ENABLED: neverCutEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
@@ -93,7 +95,6 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   FIRST_RUN_TOUR_ENABLED: firstRunTourEnabled,
   RULE_ZERO_ENABLED: ruleZeroEnabled,
   SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
-  CARD_SEARCH_ENABLED: cardSearchEnabled,
   CARD_SCAN_ENABLED: cardScanEnabled,
   PAYMENTS_ENABLED: paymentsEnabled,
   // Already reads PAYMENTS_ENABLED inside its own function.

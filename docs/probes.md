@@ -2559,8 +2559,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   search's round trip and its database execution time for a 2-, 3- and 5-letter query (45 to 49ms on a
   branch of local-dev, 2026-10-16, under the plan's ~50ms bar, so no trigram index). It writes, so `PROBE_DB_BRANCH` must name the branch `DATABASE_URL`
   reports, never staging, production or local-dev, and it removes its two made-up accounts' rows in a finally.
-- `pnpm probe:card-search-ui` proves card search's phone sheet (PR C) in a browser at 390, against a server started with
-  `CARD_SEARCH_ENABLED=true` (`PROBE_BASE`; `PROBE_QUERY`, default `sol`): the header icon opens the sheet with the
+- `pnpm probe:card-search-ui` proves card search's phone sheet (PR C) in a browser at 390 (`PROBE_BASE`; `PROBE_QUERY`, default `sol`): the header icon opens the sheet with the
   field focused, a result opens card details with Find a deck (the details are folded back, since "All details" is a
   rung of its own), and Back returns to the search with the query standing and focus on the row that opened it, then
   closes the search on the page, then reaches the route before. It walks that on `/collection`, again with two
@@ -2568,7 +2567,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   icon). Find a deck needs `SWAP_TOOLS_ENABLED` and `FIND_A_DECK_READ_ENABLED` on the server too. It writes nothing but
   the browser's own recent cards. `PROBE_SHOT` names a file for a screenshot when it stops.
 - `pnpm probe:card-search-followups` proves card search's three staging follow-ups at 390 and at 1300, against a server
-  started with `CARD_SEARCH_ENABLED`, `SOCIAL_WISHLIST_ENABLED` and `COLLECTION_EDIT_ENABLED` true (`PROBE_BASE`;
+  started with `SOCIAL_WISHLIST_ENABLED` and `COLLECTION_EDIT_ENABLED` true (`PROBE_BASE`;
   `PROBE_QUERY`, default `sol`). It presses Close (or a press outside, on the desktop), Escape and Back with a query
   typed and checks each opens empty; it adds a card to the wishlist from card details opened from the search, on
   Collection › Wishlist, and counts the tiles behind before, after and after Remove; and it samples every animation

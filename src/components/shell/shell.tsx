@@ -25,7 +25,6 @@ import { readSpentMoments } from "../../lib/moments/spent";
 import { friendsAfterGameDue } from "../../lib/social/after-game";
 import { MomentsProvider } from "../moments/moments-provider";
 import { TargetsProvider } from "../discovery/targets-provider";
-import { cardSearchEnabled } from "../../lib/card-search/flag";
 import { CardSearchRoot } from "../card-search/card-search";
 import { helpPanelEnabled } from "../../lib/discovery/onboarding-flag";
 import { HelpRoot } from "../help/help-root";
@@ -93,8 +92,6 @@ export default async function Shell({
     // Settings' news section: with the Commanders place, the menu's Settings row is drawn for it even with Friends off.
     homeFeed: homeFeedEnabled(env),
   };
-  // Card search (plan `2026-10-16-card-search.md`, PR C): the header icon and the sheet, or neither.
-  const cardSearch = cardSearchEnabled(env);
   // The ? (discovery R2·8): only the boolean reaches the client; off, no ? is drawn anywhere.
   const help = helpPanelEnabled(env);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
@@ -160,7 +157,7 @@ export default async function Shell({
       {/* `navLocked`: the shell's own lock, which the tour taken again (R3·2) reads for its captions. */}
       <TargetsProvider navLocked={locked}>
       <MomentsProvider live={moments} spent={spentMoments}>
-      <CardSearchShell userId={cardSearch ? userId : null}>
+      <CardSearchRoot userId={userId}>
       <HelpRoot on={help}>
       {pushOn && <PushHeartbeat />}
       <div className="flex min-h-dvh flex-1">
@@ -194,16 +191,11 @@ export default async function Shell({
         {pushOn && <AppBadge badges={badges} />}
       </div>
       </HelpRoot>
-      </CardSearchShell>
+      </CardSearchRoot>
       </MomentsProvider>
       </TargetsProvider>
     </NavigationPendingProvider>
     </PlacePathsProvider>
     </div>
   );
-}
-
-/** The search's root while the switch is on for the reader; its children alone otherwise. */
-function CardSearchShell({ userId, children }: { userId: string | null; children: React.ReactNode }) {
-  return userId ? <CardSearchRoot userId={userId}>{children}</CardSearchRoot> : <>{children}</>;
 }
