@@ -28,6 +28,7 @@ export type SwitchKind = "feature" | "model" | "plumbing";
 export const SWITCHES = [
   { name: "ALL_DECKS_CART_ENABLED", kind: "feature" },
   { name: "ANALYSIS_TAB_ENABLED", kind: "model" },
+  { name: "ANNOUNCEMENTS_ENABLED", kind: "feature" },
   { name: "BRACKET_REACH_ENABLED", kind: "feature", needs: "HELP_ME_CHOOSE_ENABLED" },
   { name: "CHANGE_COMMANDER_ENABLED", kind: "feature" },
   { name: "COLLECTION_EDIT_ENABLED", kind: "feature" },
