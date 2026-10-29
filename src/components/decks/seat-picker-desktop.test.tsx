@@ -6,7 +6,7 @@ import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { SeatPicker } from "./seat-picker";
 
 vi.mock("../ui/use-is-desktop", () => ({ useIsDesktop: () => true }));
-const friends = vi.hoisted(() => ({ list: [] as { publicId: string; displayName: string; commanderArt: string | null; deckCount: number }[] }));
+const friends = vi.hoisted(() => ({ list: [] as { publicId: string; displayName: string; commanderArt: string | null; deckCount: number; withheld?: boolean }[] }));
 vi.mock("../../app/decks/[id]/opponent-actions", () => ({
   searchOpponentCommandersAction: async () => [],
   listPickerFriendsAction: async () => friends.list,
@@ -76,6 +76,22 @@ describe("SeatPicker at desktop width", () => {
     const foot = await screen.findByText(gameSeatsCopy.picker.footNoDecks("Rowan"));
     expect(body.contains(foot)).toBe(true);
     expect(body.contains(dialog.querySelector("ul"))).toBe(true);
+    anchor.remove();
+  });
+
+  it("gives the three rows under a friend's decks the dashed slot: ?, the search glyph, the friend's initials", async () => {
+    friends.list = [{ publicId: "p1", displayName: "Peter Quill", commanderArt: null, deckCount: 0, withheld: true }];
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={() => {}} seated={new Set()} openAt={{ publicId: "p1", name: "Peter Quill" }} />);
+    const notListed = await screen.findByRole("button", { name: new RegExp(gameSeatsCopy.picker.notListed), hidden: true });
+    const rows = [...notListed.closest("ul")!.querySelectorAll("button")];
+    const slots = rows.map((b) => b.querySelector<HTMLElement>("[data-seat-slot]"));
+    expect(slots).toHaveLength(3);
+    expect(slots.every((s) => s?.getAttribute("aria-hidden") === "true")).toBe(true);
+    expect(slots[0]!.textContent).toBe("?");
+    expect(slots[1]!.querySelector("[data-search-icon]")).not.toBeNull();
+    expect(slots[2]!.textContent).toBe("PQ");
     anchor.remove();
   });
 });

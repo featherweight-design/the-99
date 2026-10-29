@@ -9,17 +9,19 @@
 // The search is `searchOpponentCommandersAction`: the whole catalog, commander-legal, no owned filter. A reply
 // that arrives after a newer keystroke is dropped, so a slow answer for "yu" never lands over "yuriko".
 
-import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { listFriendDecksAction, listPickerFriendsAction, searchOpponentCommandersAction } from "../../app/decks/[id]/opponent-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { shortName, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
 import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
 import type { FriendDeck, PickerFriend } from "../../lib/social/games";
+import { faceInitials } from "../../lib/social/initials";
 import { IdentityPips } from "../commanders/commander-art";
 import { Face } from "../social/face";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { ArtLayer } from "../ui/art-layer";
+import { SearchIcon } from "../ui/search-icon";
 import { Sheet, SheetHeader } from "../ui/sheet";
 import { SearchField } from "../ui/text-field";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -121,6 +123,18 @@ function Foot({ id, children }: { id: string; children: string }) {
   );
 }
 
+/**
+ * The dashed slot the three rows under a friend's decks carry in place of commander art (Small items 2, item 3):
+ * Rule 0 setup's slot at the deck rows' 56 × 40, so every row's text starts at the same edge.
+ */
+function Slot({ children }: { children: ReactNode }) {
+  return (
+    <span aria-hidden data-seat-slot className="flex h-[40px] w-[56px] shrink-0 items-center justify-center rounded-[6px] [border:1px_dashed_var(--border-dashed)] text-[color:var(--fg-muted)]">
+      {children}
+    </span>
+  );
+}
+
 /** A friend's decks, read when the friend is picked, then Another commander and Just <name>. */
 function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
   friend: PickerFriend;
@@ -177,6 +191,7 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
               <li>
                 {/* The same seat as Just <name>: the friend, no deck. Nothing of the withheld deck is known here. */}
                 <button type="button" onClick={() => onPick({ friend: who, deck: null, commander: null })} className={ROW}>
+                  <Slot><span className="text-[16px]">?</span></Slot>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{copy.notListed}</span>
                     <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.notListedSub}</span>
@@ -186,6 +201,7 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
             )}
             <li>
               <button type="button" onClick={onCommander} className={ROW}>
+                <Slot><SearchIcon size={16} /></Slot>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{none ? copy.pickCommander : copy.anotherCommander}</span>
                   <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.anotherCommanderSub(friend.displayName)}</span>
@@ -194,6 +210,7 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
             </li>
             <li>
               <button type="button" onClick={() => onPick({ friend: who, deck: null, commander: null })} className={ROW}>
+                <Slot><span className="font-mono text-[12px]">{faceInitials(friend.displayName)}</span></Slot>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{copy.justFriend(friend.displayName)}</span>
                   <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.justFriendSub}</span>
