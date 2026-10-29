@@ -15,7 +15,7 @@ import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { plainText } from "../../lib/decks/notes-body";
 import { countCharacters } from "../../lib/text/count-characters";
 import { askFor, MAX_COUNT, MIN_COUNT } from "../../lib/tuning/v2/count";
-import { appendSentence, type BracketCard, type NoticedChip } from "../../lib/tuning/v2/intake";
+import { appendSentence, removeSentence, type BracketCard, type NoticedChip } from "../../lib/tuning/v2/intake";
 import { CountStepper } from "../ui/count-stepper";
 import { BracketMark } from "./bracket-mark";
 import { HIGHLIGHT_MS, TuningNotesField, type HighlightTail } from "./tuning-notes-field";
@@ -61,6 +61,13 @@ export function SuggestedChangesIntake({
     return () => clearTimeout(off);
   }, [hot, tail]);
   const tap = (chip: NoticedChip) => {
+    // A ✓ chip toggles off: its own sentence leaves the box (Intake board C's two states, + and ✓).
+    const removed = removeSentence(request, chip.sentence);
+    if (removed) {
+      onRequest(removed.next);
+      setHot(null);
+      return;
+    }
     const room = REQUEST_MAX - countCharacters(plainText(request));
     const appended = appendSentence(request, chip.sentence, room);
     if (!appended) return;
@@ -316,14 +323,14 @@ export function IntakeReads({ parts, lastRun, onHistory }: { parts: readonly str
 }
 
 /** A "What we noticed" chip: its kind, its words and figure, and + until its own sentence is in the box, then dashed
- *  with ✓ (Intake board C). It tracks its own sentence and no other. */
+ *  with ✓ (Intake board C); a second tap takes the sentence back out. It tracks its own sentence and no other. */
 function Chip({ chip, inBox, hot, onTap }: { chip: NoticedChip; inBox: boolean; hot: boolean; onTap: () => void }) {
   return (
     <button
       type="button"
       aria-pressed={inBox}
       data-sc-chip={chip.id}
-      onClick={inBox ? undefined : onTap}
+      onClick={onTap}
       data-hot={hot || undefined}
       className={`flex min-h-[44px] items-center gap-[8px] rounded-[9px] border border-[color:var(--border-strong)] px-[10px] py-[6px] text-left text-[12.5px] leading-[1.35] md:min-h-[40px] ${
         inBox ? "border-dashed bg-transparent text-[color:var(--fg-faint)]" : "border-solid bg-[color:var(--surface-sunken)] text-[color:var(--fg-body)]"

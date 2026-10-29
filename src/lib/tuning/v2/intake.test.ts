@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { suggestedChangesV2Copy } from "../../copy/suggested-changes-v2";
-import { appendSentence, bracketCard, GAME_NOTE_MAX, pickIndex, hasOverviewContent, noticedChips, usualFor, type NoticedFacts, type NoticedRole } from "./intake";
+import { appendSentence, bracketCard, removeSentence, GAME_NOTE_MAX, pickIndex, hasOverviewContent, noticedChips, usualFor, type NoticedFacts, type NoticedRole } from "./intake";
 
 const copy = suggestedChangesV2Copy.intake;
 
@@ -41,6 +41,16 @@ describe("noticedChips", () => {
     expect([...chip.text].length).toBeLessThanOrEqual(GAME_NOTE_MAX + 2);
     expect(chip.text.endsWith("…”")).toBe(true);
     expect(noticedChips({ ...none, game: { note: "   ", date: "Oct 2" } })).toEqual([]);
+  });
+});
+
+describe("removeSentence", () => {
+  it("takes the sentence out with the space that joined it, and leaves the rest as written", () => {
+    expect(removeSentence("Cut the legends. More removal.", "More removal.")).toEqual({ next: "Cut the legends." });
+    expect(removeSentence("More removal. Cut the legends.", "More removal.")).toEqual({ next: "Cut the legends." });
+    expect(removeSentence("More removal.", "More removal.")).toEqual({ next: "" });
+    expect(removeSentence("A. More removal. B.", "More removal.")).toEqual({ next: "A. B." });
+    expect(removeSentence("Cut the legends.", "More removal.")).toBeNull();
   });
 });
 
