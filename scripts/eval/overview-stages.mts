@@ -24,7 +24,18 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  *       docs/superpowers/eval/runs/overview-stages-<N>[-<label>]/: per deck old.json, new.json, checks.json;
  *       summary.json; compare.html. A deck whose new.json exists is kept (a run resumes).
  *
- * THE DECKS: 20 precons from staging and Hugh's two production decks (`PRECONS`, `PROD_DECKS`).
+ * ITERATION 3 (Hugh, 2026-10-29) is a second shape (`shapeOfIteration`, `stages.ts`): no Wins by, a
+ * land line stating the deck's own land number (`landKeepNumber`) in place of the fixed range, deck-card
+ * mulligan lines only, Key cards that skip what a stage explained, exactly 2 tips, the alternate line
+ * for a precon whose box carries one. Iterations 1 and 2 keep iteration 2's prompt byte for byte.
+ *
+ *   PROD_READONLY_DATABASE_URL=... pnpm eval:overview-stages --list-prod-decks
+ *       Lists Hugh's production decks (read-only, SELECT only, nothing else runs): id, name,
+ *       commanders, card count, colors, lands, average nonland mana value, the land number iteration
+ *       3 would state, and whether a current-contract synopsis is stored for the current list.
+ *
+ * THE DECKS: 20 precons from staging and Hugh's two production decks (`PRECONS`, `PROD_DECKS`). Any
+ * other production deck of Hugh's is named by its id in `--only` (a deck id is a UUID).
  *  - OLD is what ships today, READ, never generated: a precon's stored contract-12 Overview
  *    (`precon_synopses`, labels basis, current); a production deck's stored synopsis at contract 12
  *    for its current list. Only when a production deck has none is old generated with today's prompt
@@ -102,6 +113,7 @@ const { values: args } = parseArgs({
     "ask-approved": { type: "boolean", default: false },
     "prod-prepare": { type: "string" },
     "prod-ids": { type: "string" },
+    "list-prod-decks": { type: "boolean", default: false },
   },
 });
 
@@ -137,6 +149,49 @@ async function connectProductionReadOnly() {
   return db;
 }
 
+/** A production deck id, as `--only` names one. */
+const isDeckId = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
+if (args["list-prod-decks"]) {
+  const db = await connectProductionReadOnly();
+  const { sql } = await import("drizzle-orm");
+  const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
+  const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
+  const { envAtBasis } = await import("../lib/precon-overview-request");
+  const { colorLabel } = await import("../../src/lib/decks/format");
+  const { keepableLands } = await import("../../src/lib/synopsis/facts");
+  const { landKeepNumber } = await import("../../src/lib/synopsis/stages");
+  const decks = (await db.execute(sql`select id, name from decks where user_id = ${PROD_OWNER} order by name`)).rows as { id: string; name: string }[];
+  console.log(["id", "name", "commanders", "cards", "colors", "lands", "avgMV", "5+", "<=2", "landNumber", "why", `contract-${CONTRACT} stored`].join("\t"));
+  for (const d of decks) {
+    try {
+      const head = await loadProfileHead(d.id, PROD_OWNER);
+      if (!head) { console.log(`${d.id}\t${d.name}\tno profile head`); continue; }
+      const list = listFingerprint(head);
+      const profile = await loadDeckProfileFromHead(head, envAtBasis(process.env, BASIS));
+      const byId = new Map(profile.cards.map((c) => [c.oracleId, c]));
+      const commanders = profile.commanderOracleIds.map((id) => byId.get(id)?.name ?? id);
+      const lands = profile.counts.landCapable;
+      // The facts' shape, enough for the land rule: cards with type line and mana value, the commanders, lands, ramp, keep.
+      const land = landKeepNumber({
+        cards: profile.cards.map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, quantity: c.quantity, manaValue: c.cmc, categories: [], oracleText: null })),
+        commanders, lands, ramp: profile.roles.counts.ramp,
+        commanderManaValues: profile.commanderOracleIds.map((id) => byId.get(id)?.cmc).filter((n): n is number => typeof n === "number"),
+        keep: keepableLands(lands),
+      });
+      const stored = (await db.execute(sql`
+        select count(*)::int as n from deck_synopses
+        where deck_id = ${d.id} and user_id = ${PROD_OWNER} and status = 'done' and content is not null
+          and contract_version = ${CONTRACT} and fingerprint = ${list}`)).rows[0] as { n: number };
+      console.log([d.id, d.name, commanders.join(" + "), profile.counts.total, colorLabel(profile.colours.identity), lands,
+        land.curve.averageManaValue ?? "", land.curve.fivePlus, land.curve.twoOrLess, land.lands, land.why, stored.n > 0 ? "yes" : "no"].join("\t"));
+    } catch (e) {
+      console.log(`${d.id}\t${d.name}\tERROR ${e instanceof Error ? e.message.split("\n")[0] : String(e)}`);
+    }
+  }
+  process.exit(0);
+}
+
 if (args["prod-prepare"]) {
   const out = args["prod-prepare"];
   const ids = new Set((args["prod-ids"] ?? "").split(",").filter(Boolean));
@@ -147,7 +202,9 @@ if (args["prod-prepare"]) {
   const { factsWithSource } = await import("../../src/lib/synopsis/generate");
   const { envAtBasis } = await import("../lib/precon-overview-request");
   const prepared: ProdPrepared[] = [];
-  for (const d of PROD_DECKS.filter((x) => ids.has(x.id))) {
+  // Hugh's two named decks keep their labels; any other id `--only` named is labeled by its name.
+  const wanted = [...ids].map((id) => PROD_DECKS.find((x) => x.id === id) ?? { id, label: id });
+  for (const d of wanted) {
     const name = ((await db.execute(sql`select name from decks where id = ${d.id} and user_id = ${PROD_OWNER}`)).rows[0] as { name: string } | undefined)?.name ?? null;
     const head = await loadProfileHead(d.id, PROD_OWNER);
     if (!head) { prepared.push({ id: d.id, label: d.label, name, missing: "no such deck for this owner", stored: null, storedNote: "" }); continue; }
@@ -167,7 +224,7 @@ if (args["prod-prepare"]) {
         ? `no contract-${CONTRACT} synopsis for the current list (newest is contract ${newest.contract_version}, ${newest.same_list ? "same" : "another"} list): old is generated with today's prompt`
         : "no stored synopsis: old is generated with today's prompt";
     prepared.push({
-      id: d.id, label: d.label, name, facts: built.facts, shared: built.shared, list,
+      id: d.id, label: d.label === d.id ? (name ?? d.id) : d.label, name, facts: built.facts, shared: built.shared, list,
       stored: hit ? { content: hit.content, contractVersion: hit.contract_version, createdAt: String(hit.created_at), model: hit.model } : null,
       storedNote,
     });
@@ -183,6 +240,8 @@ const dryRun = args["dry-run"];
 const iteration = args.iteration === undefined ? 1 : Number(args.iteration);
 if (!Number.isInteger(iteration) || iteration < 1) throw new Error(`overview-stages: --iteration must be 1, 2 or 3 (got ${args.iteration})`);
 if (iteration > 3) throw new Error(`overview-stages: iteration ${iteration} refused; the test plan allows at most 3`);
+const { shapeOfIteration } = await import("../../src/lib/synopsis/stages");
+const shape = shapeOfIteration(iteration);
 const cap = args.cap === undefined ? null : Number(args.cap);
 if (!dryRun && (cap === null || !Number.isFinite(cap) || cap <= 0)) throw new Error("overview-stages: a paid run needs --cap <usd> (this run's own ceiling, under the ledger's $${LIMITS.hardCapUsd})");
 const repairOn = !args["no-repair"];
@@ -191,11 +250,14 @@ const askApproved = args["ask-approved"];
 const only = args.only ? new Set(args.only.split(",").map((s) => s.trim()).filter(Boolean)) : null;
 // An `--only` id that is neither a listed precon nor a production deck is read as a precon FILE on
 // staging (`precons.file_name`), so a named set (Hugh's five, 2026-10-29) runs without editing the list.
-const extraPrecons = only ? [...only].filter((id) => !PRECONS.some((p) => p.file === id) && !PROD_DECKS.some((d) => d.id === id)).map((file) => ({ file, why: "named with --only" })) : [];
+const extraPrecons = only ? [...only].filter((id) => !PRECONS.some((p) => p.file === id) && !isDeckId(id)).map((file) => ({ file, why: "named with --only" })) : [];
 const precons = [...PRECONS.filter((p) => !only || only.has(p.file)), ...extraPrecons];
 const outLabel = args["out-label"];
 if (outLabel !== undefined && !/^[a-z0-9][a-z0-9-]{0,40}$/.test(outLabel)) throw new Error(`overview-stages: --out-label must be lowercase letters, digits and hyphens (got ${outLabel})`);
-let prodDecks = PROD_DECKS.filter((d) => !only || only.has(d.id));
+// A deck id in `--only` that is not one of `PROD_DECKS` is another of Hugh's production decks (iteration 3's DIY set).
+let prodDecks: { id: string; label: string }[] = only
+  ? [...only].filter(isDeckId).map((id) => PROD_DECKS.find((d) => d.id === id) ?? { id, label: id })
+  : [...PROD_DECKS];
 const notes: string[] = [];
 if (prodDecks.length > 0 && !process.env.PROD_READONLY_DATABASE_URL) {
   if (!dryRun) throw new Error("overview-stages: PROD_READONLY_DATABASE_URL is not set; pass it in the shell, or --only the precons");
@@ -282,9 +344,18 @@ for (const d of prodPrepared) {
 // ---------------------------------------------------------------------------------------------
 // Prompts and the projection.
 
-/** The stages option for a deck: its alternates, and today's rendered length as the whole budget when old is known. */
+/**
+ * The stages option for a deck: its alternates, and today's rendered length as the whole budget when
+ * old is known. Iteration 3 adds its shape and the deck's land number; iterations 1 and 2 pass exactly
+ * what they always did, so their prompt is unchanged.
+ */
 const stagesOpt = (it: Item, oldContent: Checked | null = it.old?.content ?? null) =>
-  ({ alternates: it.alternates, ...(oldContent ? { maxChars: stages.renderedTotal(stages.docFromChecked(oldContent)) } : {}) });
+  ({
+    alternates: it.alternates,
+    ...(oldContent ? { maxChars: stages.renderedTotal(stages.docFromChecked(oldContent)) } : {}),
+    ...(shape === 3 ? { shape, landKeep: stages.landKeepNumber(it.facts) } : {}),
+  });
+const newSchema = stages.stagesSchemaFor(shape);
 const newPrompt = (it: Item, oldContent?: Checked | null) => buildSynopsisPrompt(it.facts, undefined, { v2: true, contract8: true, stages: stagesOpt(it, oldContent) });
 const oldPrompt = (it: Item) => buildSynopsisPrompt(it.facts, undefined, { v2: true, contract8: true });
 const paramsOf = (p: { system: string; user: string }, schema: unknown) =>
@@ -317,7 +388,7 @@ const worstOf = (inTok: number) => worstCaseUsd(call.model, inTok, call.maxToken
 type Plan = { it: Item; newIn: number; oldIn: number | null; projected: number; worst: number };
 const plans: Plan[] = [];
 for (const it of items) {
-  const newIn = await inputTokens(newPrompt(it), stages.stagesResponseSchemaWire);
+  const newIn = await inputTokens(newPrompt(it), newSchema);
   const oldIn = it.old ? null : await inputTokens(oldPrompt(it), synopsisResponseSchemaV8Wire);
   plans.push({
     it, newIn, oldIn,
@@ -327,9 +398,10 @@ for (const it of items) {
 }
 
 const ledgerNow = spent(readLedger(LEDGER));
-console.log(`arm: ${JSON.stringify({ ...call, deadlineMs: SYNOPSIS_DEADLINE_MS, repair: repairOn })}; iteration ${iteration}; input tokens ${counting}; expected output ${expectedOut} tokens a call (median stored contract-${CONTRACT} precon Overview)`);
+console.log(`arm: ${JSON.stringify({ ...call, deadlineMs: SYNOPSIS_DEADLINE_MS, repair: repairOn })}; iteration ${iteration} (shape ${shape}); input tokens ${counting}; expected output ${expectedOut} tokens a call (median stored contract-${CONTRACT} precon Overview)`);
 for (const p of plans) {
-  console.log(`${p.it.kind === "precon" ? p.it.id : `${p.it.name} (${p.it.id})`}: new ${p.newIn} in${p.oldIn !== null ? `, old generated ${p.oldIn} in` : ""}; projected $${p.projected.toFixed(4)}, worst $${p.worst.toFixed(4)}${p.it.alternates.length ? `; alternates ${p.it.alternates.join(", ")}` : ""}${p.it.old ? "" : `; old: ${p.it.note}`}`);
+  const land = shape === 3 ? `; land line ${stages.landKeepNumber(p.it.facts).lands} (${stages.landKeepNumber(p.it.facts).why})` : "";
+  console.log(`${p.it.kind === "precon" ? p.it.id : `${p.it.name} (${p.it.id})`}: new ${p.newIn} in${land}${p.oldIn !== null ? `, old generated ${p.oldIn} in` : ""}; projected $${p.projected.toFixed(4)}, worst $${p.worst.toFixed(4)}${p.it.alternates.length ? `; alternates ${p.it.alternates.join(", ")}` : ""}${p.it.old ? "" : `; old: ${p.it.note}`}`);
 }
 const totalProjected = plans.reduce((n, p) => n + p.projected, 0);
 const totalWorst = plans.reduce((n, p) => n + p.worst, 0);
@@ -436,7 +508,7 @@ for (const [i, p] of plans.entries()) {
   let saved = readJson<NewFirst>(firstFile);
   if (!saved) {
     const started = Date.now();
-    const first = await ask<StagesReply>(it, "new-write", newPrompt(it, old.content), stages.stagesResponseSchemaWire, SYNOPSIS_DEADLINE_MS, 1, i);
+    const first = await ask<StagesReply>(it, "new-write", newPrompt(it, old.content), newSchema, SYNOPSIS_DEADLINE_MS, 1, i);
     if (!first) break;
     if (!first.out.ok) {
       writeFileSync(new URL("new.json", dir), `${JSON.stringify({ id: it.id, failed: first.out.errorClass, usd: first.usd, usage: first.usage, stops: first.stops, alternates: it.alternates }, null, 2)}\n`);
@@ -455,19 +527,22 @@ for (const [i, p] of plans.entries()) {
   const left = SYNOPSIS_DEADLINE_MS - saved.latencyMs;
   if (repairOn && failing.length > 0 && left >= SYNOPSIS_REPAIR_MIN_MS) {
     const repPrompt = buildSynopsisPrompt(it.facts, { keep: firstChecked, refused: failing, first: reply }, { v2: true, contract8: true, stages: stagesOpt(it, old.content) });
-    const rep = await ask<StagesReply>(it, "new-repair", repPrompt, stages.stagesResponseSchemaWire, left, 1, i);
+    const rep = await ask<StagesReply>(it, "new-repair", repPrompt, newSchema, left, 1, i);
     if (!rep) break;
     repairUsd = rep.usd;
     if (rep.out.ok) repairReply = rep.out.value;
     content = await applyRepair(firstChecked, rep.out, failing, it.facts, true);
   }
   const effective = stages.mergeStagesReply(reply, repairReply, failing);
-  const shownNew = stages.docShownNew(content, effective);
+  const shownNew = stages.docShownNew(content, effective, shape);
   const oldDoc = old.content ? stages.docFromChecked(old.content) : stages.docFromChecked({ verdicts: [], overview: null, primer: null, keyCards: null, weaknesses: null, cards: {} });
-  const checks = stages.stagesChecks({ reply: effective, shownNew, oldDoc, facts: it.facts, alternates: it.alternates });
+  const checks = stages.stagesChecks({ reply: effective, shownNew, oldDoc, facts: it.facts, alternates: it.alternates, shape, kind: it.kind });
   const validatorPass = content.verdicts.every((v) => v.status === "ok");
   writeFileSync(new URL("new.json", dir), `${JSON.stringify({
-    id: it.id, arm: call, repair: repairOn, alternates: it.alternates, castTurn: it.facts.stats?.commanderCastTurn ?? null,
+    id: it.id, kind: it.kind, shape, arm: call, repair: repairOn, alternates: it.alternates, castTurn: it.facts.stats?.commanderCastTurn ?? null,
+    ...(shape === 3 ? { landKeep: stages.landKeepNumber(it.facts) } : {}),
+    // Each section shown, with whether only a precon has it (`SECTION_SCOPE`): a player's deck shows none of those.
+    sections: stages.sectionsOf(shownNew),
     usd: saved.usd, repairUsd, usage: saved.usage, stops: saved.stops, latencyMs: saved.latencyMs,
     firstVerdicts: firstChecked.verdicts, content, reply, repairReply, shown: shownNew,
   }, null, 2)}\n`);
@@ -501,8 +576,18 @@ const summary = {
   stagesNameCards: tally((c) => c.stagesNameCards.pass),
   lengthNotLonger: tally((c) => c.length.pass),
   shape: tally((c) => c.shape.pass),
-  allPass: tally((c) => c.cardsInList.pass && c.turnNumbers.pass && c.explainedOnce.pass && c.stageFit.pass && c.stagesNameCards.pass && c.length.pass && c.shape.pass),
-  allPassExceptCommanderRepeats: tally((c) => c.cardsInList.pass && c.turnNumbers.pass && c.explainedOnce.passExceptCommanders && c.stageFit.pass && c.stagesNameCards.pass && c.length.pass && c.shape.pass),
+  allPass: tally((c) => stages.allChecksPass(c, false)),
+  allPassExceptCommanderRepeats: tally((c) => stages.allChecksPass(c, true)),
+  // Iteration 3 alone (zero, and no table, on 1 and 2).
+  landKeep: tally((c) => c.landKeep?.pass ?? false),
+  mulliganSpecific: tally((c) => c.mulliganSpecific?.pass ?? false),
+  mulliganSpecificToday: tally((c) => c.mulliganSpecificToday?.pass ?? false),
+  genericLinesNew: decks.reduce((n, d) => n + (d.chk?.checks?.mulliganSpecific?.offenders.length ?? 0), 0),
+  genericLinesToday: decks.reduce((n, d) => n + (d.chk?.checks?.mulliganSpecificToday?.offenders.length ?? 0), 0),
+  deckKind: tally((c) => c.deckKind?.pass ?? false),
+  landTable: shape === 3 ? stages.landKeepTable(decks.flatMap((d) => (d.chk?.checks?.landKeep ? [{
+    id: d.p.it.id, name: d.p.it.name, kind: d.p.it.kind, target: d.chk.checks.landKeep.target, stated: d.chk.checks.landKeep.stated, why: d.chk.checks.landKeep.why, curve: d.chk.checks.landKeep.curve,
+  }] : []))) : null,
   perDeck: decks.map((d) => ({ id: d.p.it.id, name: d.p.it.name, validatorPass: d.chk?.validatorPass ?? false, failed: d.neu?.failed ?? null, usd: (d.neu?.usd ?? 0) + (d.neu?.repairUsd ?? 0), length: d.chk?.checks?.length ?? null })),
   notes,
 };
@@ -516,6 +601,11 @@ const lines = [
   `Cards all in the list: ${summary.cardsInList} of ${n}. No stray turn numbers: ${summary.turnNumbers} of ${n}. Every stage names a deck card: ${summary.stagesNameCards} of ${n}. Early cards fit: ${summary.stageFit} of ${n}.`,
   `No card explained twice, commander included (strict): ${summary.explainedOnce} of ${n}. Not longer than today: ${summary.lengthNotLonger} of ${n}. Shape: ${summary.shape} of ${n}.`,
   `Every auto-pass check, commander included (strict): ${summary.allPass} of ${n}.`,
+  ...(shape === 3 && summary.landTable ? [
+    `Land line states the deck's own number with a reason: ${summary.landKeep} of ${n}. Numbers stated: ${summary.landTable.distinctStated.join(", ") || "none"} (the rule's: ${summary.landTable.distinctTargets.join(", ")}); ${summary.landTable.differs ? "it differs across decks" : "it does NOT differ across decks"}${summary.landTable.everyStatedIsTheDecks ? ", every deck stating its own" : ", not every deck stating its own"}.`,
+    `No generic mulligan line: ${summary.mulliganSpecific} of ${n} (${summary.genericLinesNew} generic lines; today ${summary.genericLinesToday} on ${n - summary.mulliganSpecificToday} decks).`,
+    `Player decks read right with no precon-only section: ${summary.deckKind} of ${n}.`,
+  ] : []),
   ...notes,
 ];
 const page = compareHtml(`Overview: today against stages, iteration ${iteration}`, decks.map((d) => ({
@@ -523,7 +613,7 @@ const page = compareHtml(`Overview: today against stages, iteration ${iteration}
   old: { doc: d.old?.shown ?? null, refused: refusedOf(d.old?.content ?? null), source: d.old?.source ?? "no old" },
   new: { doc: d.neu?.shown ?? null, refused: refusedOf(d.neu?.content ?? null), source: d.neu?.failed ? `the call failed: ${d.neu.failed}` : `stages variant, contract-8 reply plus alternate${repairOn ? ", with the app's repair" : ""}` },
   checks: d.chk?.checks ?? null,
-})), lines);
+})), lines, summary.landTable);
 writeFileSync(new URL("compare.html", outDir), page);
 for (const l of lines) console.log(l);
 console.log(`wrote ${fileURLToPath(outDir)}`);

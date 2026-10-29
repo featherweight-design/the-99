@@ -14,6 +14,18 @@ import {
   checkStageFit,
   checkStagesNameCards,
   checkTurnNumbers,
+  checkDeckKind,
+  checkLandKeep,
+  checkMulliganSpecific,
+  allChecksPass,
+  curveFacts,
+  docShownNew,
+  landKeepNumber,
+  landKeepTable,
+  sectionsOf,
+  stagesChecks,
+  stagesResponseSchemaWireV3,
+  statedLandNumbers,
   docFromChecked,
   docFromStagesReply,
   earlyMaxManaValue,
@@ -293,6 +305,14 @@ describe("the stages prompt variant", () => {
     expect(shipped.system).not.toContain("EXACTLY 3 lines");
     expect(shipped.system).toContain("2 to 4 tips");
   });
+  // Iteration 2's stages prompt, hashed before iteration 3 existed (16bcca2a5): iteration 3 is a new
+  // shape beside it, so iteration 2 stays runnable byte for byte.
+  it("leaves iteration 2's stages prompt byte for byte unchanged: sha256 pinned from 16bcca2a5", () => {
+    const sha = (t: string) => createHash("sha256").update(t).digest("hex");
+    const two = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: ["Grave Titan"], maxChars: 1834 } });
+    expect(sha(two.system)).toBe("5278d7d1a69adb7dfe32d88acbf0110cd3048e5ea419ce27360dd685efb65d83");
+    expect(sha(two.user)).toBe("191268ba044b05977ee67af1de29428778d82c04776a4a79dd09f57bea51af9b");
+  });
   it("asks for three labeled stages, Wins by, exactly 2 tips, the cast turn alone and no alternate for a player's deck", () => {
     const { system, user } = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [] } });
     expect(system).toContain("EXACTLY 3 lines");
@@ -350,5 +370,201 @@ describe("the reply after the app's one repair", () => {
     expect(merged.plans).toEqual(first.plans);
     expect(merged.alternate).toEqual(first.alternate);
     expect(mergeStagesReply(first, null, ["overview"])).toBe(first);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Iteration 3.
+
+/** FACTS with each nonland, non-commander card's mana value replaced, in card order (Satyr, Seer, Titan, Witness, Frog). */
+const withCurve = (mvs: number[], extra: Partial<SynopsisFacts> = {}): SynopsisFacts => {
+  let i = 0;
+  return { ...FACTS, ...extra, cards: FACTS.cards.map((c) => (c.oracleId === "m" || c.oracleId === "f" ? c : { ...c, manaValue: mvs[i++] })) };
+};
+
+describe("iteration 3: the deck's own land number", () => {
+  it("reads the curve off nonland, non-commander cards by quantity", () => {
+    const c = curveFacts(FACTS);
+    expect(c).toEqual({ lands: 37, ramp: 10, nonland: 5, averageManaValue: 2.6, fivePlus: 1, twoOrLess: 3, commanderManaValue: 4, expectedLandsInSeven: 2.62 });
+  });
+  it("says 2 for a low curve, 3 for a middling one, 4 for a top-heavy one, and gives the reason", () => {
+    const low = landKeepNumber(FACTS);
+    expect(low.lands).toBe(2);
+    expect(low.reasons).toEqual(["low curve"]);
+    expect(low.why).toContain("a low curve");
+    const mid = landKeepNumber(withCurve([2, 3, 4, 3, 3]));
+    expect(mid.lands).toBe(3);
+    expect(mid.reasons).toEqual([]);
+    expect(mid.why).toContain("a middling curve");
+    const heavy = landKeepNumber(withCurve([3, 4, 6, 5, 2]));
+    expect(heavy.lands).toBe(4);
+    expect(heavy.reasons).toEqual(["top-heavy"]);
+    expect(heavy.why).toContain("average 4 mana value");
+    expect(landKeepNumber({ ...withCurve([2, 3, 4, 3, 3]), commanderManaValues: [7] }).lands).toBe(4);
+  });
+  it("adds one at 40 lands, takes one at 32, and holds the number inside the keepable range and 2 to 4", () => {
+    expect(landKeepNumber(withCurve([2, 3, 4, 3, 3], { lands: 41, keep: { low: 2, high: 4 } })).lands).toBe(4);
+    expect(landKeepNumber(withCurve([2, 3, 4, 3, 3], { lands: 31 })).lands).toBe(2);
+    const held = landKeepNumber(withCurve([3, 4, 6, 5, 2], { lands: 41, keep: { low: 2, high: 4 } }));
+    expect(held.lands).toBe(4);
+    expect(held.reasons).toEqual(["top-heavy", "many lands", "held to the keepable range"]);
+    expect(landKeepNumber({ ...FACTS, keep: { low: 3, high: 5 } }).lands).toBe(3);
+  });
+  it("reads the land counts a line states, outside card marks", () => {
+    expect(statedLandNumbers("Keep 4 lands: the curve is high.")).toEqual([4]);
+    expect(statedLandNumbers("A four-land hand.")).toEqual([4]);
+    expect(statedLandNumbers("Three or four lands.")).toEqual([3, 4]);
+    expect(statedLandNumbers("[[Two Lands]] and a creature.")).toEqual([]);
+  });
+});
+
+describe("iteration 3: the land line check", () => {
+  const land = landKeepNumber(withCurve([3, 4, 6, 5, 2])); // 4, top-heavy; figures include 1 (five or more), 1 (two or less), 37, 10, 4, 7
+  const withLine = (text: string) => edit((r) => { (r as StagesReply).landKeep = { text, evidence: [] }; });
+  const asShape3 = (text: string) => { const r = goodReply(); r.landKeep = { text, evidence: [] }; return docFromStagesReply(r, 3); };
+  it("passes the deck's number with a reason, and records the curve behind it", () => {
+    const res = checkLandKeep(asShape3("Keep 4 lands: the deck is top-heavy and [[Meren of Clan Nel Toth]] costs 4."), FACTS, land);
+    expect(res.offenders).toEqual([]);
+    expect(res.pass).toBe(true);
+    expect(res.stated).toBe(4);
+    expect(res.target).toBe(4);
+    expect(res.curve.averageManaValue).toBe(4);
+  });
+  it("fails another number, a range, a figure the app did not give, a decimal, no reason, and no line", () => {
+    expect(checkLandKeep(asShape3("Keep 3 lands because the curve is high."), FACTS, land).offenders).toEqual(["states 3 lands, not the deck's 4", "states a figure the app did not give: 3"]);
+    expect(checkLandKeep(asShape3("Keep 3 or 4 lands since the curve is high."), FACTS, land).offenders).toContain("states more than one land count (3, 4)");
+    expect(checkLandKeep(asShape3("Keep 4 lands: 12 spells cost five or more."), FACTS, land).offenders).toEqual(["states a figure the app did not give: 12"]);
+    expect(checkLandKeep(asShape3("Keep 4 lands: spells average 4.0 mana."), FACTS, land).offenders).toContain("states a decimal (the average is a reason, never a figure)");
+    expect(checkLandKeep(asShape3("Keep 4 lands in your opening hand."), FACTS, land).offenders).toEqual(["gives no reason for the number"]);
+    expect(checkLandKeep(withLine("Keep 4 lands."), FACTS, land).offenders).toEqual(["no land line"]);
+  });
+  it("tables the numbers stated, and says whether they differ across decks and each deck states its own", () => {
+    const row = (id: string, target: number, stated: number | null) => ({ id, name: id, kind: "precon" as const, target, stated, why: "", curve: land.curve });
+    const t = landKeepTable([row("a", 4, 4), row("b", 3, 3), row("c", 3, 3)]);
+    expect(t).toMatchObject({ distinctStated: [3, 4], distinctTargets: [3, 4], everyStatedIsTheDecks: true, differs: true });
+    const same = landKeepTable([row("a", 4, 3), row("b", 3, 3)]);
+    expect(same).toMatchObject({ distinctStated: [3], differs: false, everyStatedIsTheDecks: false });
+  });
+});
+
+describe("iteration 3: no generic mulligan line", () => {
+  it("passes lines naming a deck card or a deck-specific number, and flags a line true of any deck", () => {
+    const d = edit((r) => {
+      r.primer.mulligan.keep = [{ text: "[[Satyr Wayfinder]] with a way to sacrifice it.", evidence: ["c2"] }];
+      r.primer.mulligan.sendBack = [{ text: "A hand with no early plays.", evidence: [] }, { text: "Fewer than 10 ramp pieces in sight.", evidence: [] }];
+    });
+    const res = checkMulliganSpecific(d, FACTS, null);
+    expect(res.pass).toBe(false);
+    expect(res.offenders).toEqual([{ where: "sendBack[0]", text: "A hand with no early plays." }]);
+  });
+  it("does not count the hand's 7 as specific", () => {
+    const d = edit((r) => { r.primer.mulligan.keep = [{ text: "A 7-card hand with early plays.", evidence: [] }]; });
+    expect(checkMulliganSpecific(d, FACTS, null).offenders.map((o) => o.where)).toContain("keep[0]");
+  });
+});
+
+describe("iteration 3: Key cards skip what a stage explained", () => {
+  it("counts a Key card's own name as a mention, so a stage card that is a Key card is a repeat", () => {
+    const res = checkExplainedOnce(doc(), FACTS, { keyCardNames: true });
+    expect(res.offenders).toEqual(expect.arrayContaining([
+      { card: "Satyr Wayfinder", sections: ["stages", "keyCardJobs"], commander: false },
+      { card: "Viscera Seer", sections: ["stages", "keyCardJobs"], commander: false },
+      { card: "Spore Frog", sections: ["stages", "keyCardJobs"], commander: false },
+      { card: "Eternal Witness", sections: ["tips", "keyCardJobs"], commander: false },
+    ]));
+    expect(res.passExceptCommanders).toBe(false);
+    // Iteration 2's reading is unchanged: the row's own name is not a mention.
+    expect(checkExplainedOnce(doc(), FACTS).offenders.some((o) => o.card === "Viscera Seer")).toBe(false);
+  });
+  it("does not count a job naming its own card as a second section", () => {
+    const r = goodReply();
+    r.keyCards = [{ card: "Grave Titan", claims: [], job: "[[Grave Titan]] floods the board.", evidence: ["c4"] }];
+    r.plans.primary = "Grinds value.";
+    const res = checkExplainedOnce(docFromStagesReply(r, 3), FACTS, { keyCardNames: true });
+    expect(res.offenders.some((o) => o.card === "Grave Titan")).toBe(false);
+  });
+});
+
+describe("iteration 3: the shape", () => {
+  const shape3 = (f: (r: StagesReply) => void = () => {}) => { const r = goodReply(); r.landKeep = { text: "Keep 2 lands: the curve is low.", evidence: [] }; f(r); return r; };
+  it("drops Wins by from the doc and carries the land line", () => {
+    const d = docFromStagesReply(shape3(), 3);
+    expect(d.winsBy).toEqual([]);
+    expect(d.landKeep).toEqual([{ text: "Keep 2 lands: the curve is low.", refs: [] }]);
+    expect(docFromStagesReply(shape3(), 2).landKeep).toEqual([]);
+  });
+  it("passes one land line and no Wins by; fails a missing or long land line", () => {
+    expect(checkShape(docFromStagesReply(shape3(), 3), [], 3).offenders).toEqual([]);
+    expect(checkShape(docFromStagesReply(shape3((r) => { delete r.landKeep; }), 3), [], 3).offenders).toEqual(["0 land lines, not 1"]);
+    expect(checkShape(docFromStagesReply(shape3((r) => { r.landKeep!.text = "x".repeat(130); }), 3), [], 3).offenders).toEqual(["the land line is 130 characters"]);
+  });
+  it("requires the land line in iteration 3's schema and leaves iteration 2's without it", () => {
+    expect(stagesResponseSchemaWireV3.safeParse(goodReply()).success).toBe(false);
+    expect(stagesResponseSchemaWireV3.safeParse(shape3()).success).toBe(true);
+    expect(stagesResponseSchemaWire.safeParse(goodReply()).success).toBe(true);
+    expect(Object.keys(stagesResponseSchemaWire.shape)).not.toContain("landKeep");
+  });
+  it("shows the land line and no Wins by on the new side", () => {
+    const shown = docShownNew(OLD, shape3(), 3);
+    expect(shown.winsBy).toEqual([]);
+    expect(shown.landKeep).toEqual([{ text: "Keep 2 lands: the curve is low." }]);
+    expect(docShownNew(OLD, shape3(), 2).winsBy.length).toBe(1);
+  });
+  it("runs every iteration-3 check through stagesChecks, and none of them for iteration 2", () => {
+    const reply = shape3();
+    const shown = docShownNew(OLD, reply, 3);
+    const c3 = stagesChecks({ reply, shownNew: shown, oldDoc: docFromChecked(OLD), facts: FACTS, alternates: [], shape: 3, kind: "player deck" });
+    expect(c3.landKeep?.pass).toBe(true);
+    expect(c3.mulliganSpecific?.pass).toBe(false);
+    expect(c3.mulliganSpecificToday?.pass).toBe(false);
+    expect(c3.deckKind?.pass).toBe(true);
+    expect(allChecksPass(c3, true)).toBe(false);
+    const c2 = stagesChecks({ reply, shownNew: docShownNew(OLD, reply), oldDoc: docFromChecked(OLD), facts: FACTS, alternates: [] });
+    expect(c2.landKeep).toBeUndefined();
+    expect(c2.deckKind).toBeUndefined();
+  });
+});
+
+describe("iteration 3: sections only a precon has", () => {
+  it("marks the alternate line precon only and every other section for every deck", () => {
+    const s = sectionsOf(docFromStagesReply({ ...goodReply(), alternate: { text: "Lead with [[Grave Titan]].", evidence: ["c4"] } }, 3));
+    expect(s.filter((x) => x.scope === "precon only").map((x) => x.section)).toEqual(["alternate"]);
+    expect(s.find((x) => x.section === "alternate")?.lines).toBe(1);
+  });
+  it("passes a player's deck with no precon-only section, and fails one showing it or talking about a box", () => {
+    expect(checkDeckKind(docFromStagesReply(goodReply(), 3), "player deck").pass).toBe(true);
+    const alt = docFromStagesReply({ ...goodReply(), alternate: { text: "Lead with [[Grave Titan]].", evidence: ["c4"] } }, 3);
+    expect(checkDeckKind(alt, "player deck").offenders).toEqual(["shows the precon-only alternate section"]);
+    expect(checkDeckKind(alt, "precon").pass).toBe(true);
+    const box = edit((r) => { r.overview = "Straight out of the box, [[Meren of Clan Nel Toth]] grinds."; });
+    expect(checkDeckKind(box, "player deck").offenders[0]).toMatch(/^overview\[0\] reads as a precon's/);
+  });
+});
+
+describe("iteration 3: the prompt", () => {
+  const land = landKeepNumber(withCurve([3, 4, 6, 5, 2]));
+  const opts = (alternates: string[] = []) => ({ v2: true, contract8: true, stages: { alternates, maxChars: 1834, shape: 3 as const, landKeep: land } });
+  it("drops Wins by, asks for the land line at the deck's number, deck-card mulligan lines, and Key cards the stages leave out", () => {
+    const { system, user } = buildSynopsisPrompt(FACTS, undefined, opts());
+    expect(system).not.toContain("Wins by");
+    expect(system).toContain("The plans are never shown to the reader");
+    expect(system).toContain("- landKeep: ONE { text, evidence }, at most 120 characters");
+    expect(system).toContain("holds 4 lands (write the number as the digit 4, never a range)");
+    expect(system).toContain("EVERY line names a card of this decklist as [[Name]]");
+    expect(system).toContain("A Key card is NEVER a card that the overview, a stage line, a tip or the alternate line names");
+    expect(system).toContain("EXACTLY 2 tips");
+    expect(system).toContain("A tip names NO card that a stage line or the alternate line names");
+    expect(system).toContain("named in ONE place only: the Close line, never also");
+    expect(system).toContain("- alternate: leave it out.");
+    expect(user).toContain("Keep-line land number");
+    expect(user).toContain("- Lands in a keepable seven: 4");
+    expect(user).toContain("- Why 4: top-heavy:");
+    expect(user).not.toContain("Shown by the app, not to be restated");
+  });
+  it("asks for the alternate line only when the box carries one", () => {
+    expect(buildSynopsisPrompt(FACTS, undefined, opts(["Grave Titan"])).system).toContain("- alternate: REQUIRED for this deck");
+  });
+  it("refuses iteration 3 without the land number", () => {
+    expect(() => buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [], shape: 3 } })).toThrow(/needs landKeep/);
   });
 });

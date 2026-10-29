@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 import { refIndex } from "./claims";
-import { deckNameIndex, normalizeName, type FactCard, type SynopsisFacts } from "./facts";
+import { deckNameIndex, HAND_SIZE, normalizeName, type FactCard, type SynopsisFacts } from "./facts";
 import { CHAR_BUDGETS } from "./limits";
 import { synopsisResponseSchemaV8Wire } from "./response-schema";
 import type { CheckedSynopsis } from "./types";
-import { marksIn, rendered } from "./validate";
+import { figuresIn, marksIn, rendered } from "./validate";
 
 /**
  * THE STAGES SHAPE, TEST TOOLING ONLY (lane a6, Overview stage-shape test; plan "Combined plan",
@@ -23,8 +23,23 @@ import { marksIn, rendered } from "./validate";
  *  - the alternate commander: the optional `alternate` ({ text, evidence }), asked for only when
  *    the facts carry an alternate commander (`stages.alternates`), and absent otherwise.
  *
+ * ITERATION 3 (Hugh, 2026-10-29: test the trims before adopting anywhere, on precons AND players'
+ * own decks) is a second SHAPE beside iteration 2's, which stays runnable byte for byte:
+ *  - no Wins by line (`plans.primary` is still written first, and not shown);
+ *  - a Key card is never a card a stage already explained: the Key card's own name counts as a
+ *    mention (`checkExplainedOnce` with `keyCardNames`);
+ *  - the land line is the model's `landKeep`, a deck-specific land number the app computes from
+ *    the curve and land count (`landKeepNumber`), stated with its reason, in place of the fixed
+ *    range; every other mulligan line names a deck card (`checkMulliganSpecific`);
+ *  - exactly 2 tips; the alternate line only for a precon whose box carries alternates
+ *    (`SECTION_SCOPE` marks it precon only, and a player's deck reads right without it).
+ *
  * Every check here is PURE: it reads the reply (or a stored content) and the facts, never a database.
  */
+
+/** Which shape a run asks for: iteration 2's (with Wins by) or iteration 3's (land line, no Wins by). Iteration 1 used 2's prompt. */
+export type StagesShape = 2 | 3;
+export const shapeOfIteration = (iteration: number): StagesShape => (iteration >= 3 ? 3 : 2);
 
 /** The stage labels, by position in `primer.strategy`. */
 export const STAGE_LABELS = ["Early", "Mid", "Close"] as const;
@@ -35,6 +50,8 @@ export const STAGES_LIMITS = {
   stage: CHAR_BUDGETS.strategy,
   winsBy: CHAR_BUDGETS.strategy,
   alternate: CHAR_BUDGETS.strategy,
+  /** Iteration 3's land line: a mulligan line's 80 plus room for its reason. */
+  landKeep: 120,
   // Exactly 2 from iteration 2 (coordinator, 2026-10-29): iteration 1's tips repeated the stages' cards.
   tips: { min: 2, max: 2 },
 } as const;
@@ -43,7 +60,10 @@ const claimed = z.object({ text: z.string().max(2_000), evidence: z.array(z.stri
 
 /** The contract-8 wire reply plus the optional alternate-commander line. Shape only, as its parent. */
 export const stagesResponseSchemaWire = synopsisResponseSchemaV8Wire.extend({ alternate: claimed.optional() });
-export type StagesReply = z.infer<typeof stagesResponseSchemaWire>;
+/** Iteration 3's reply: iteration 2's plus the REQUIRED land line. Iteration 2's schema is left as it was. */
+export const stagesResponseSchemaWireV3 = stagesResponseSchemaWire.extend({ landKeep: claimed });
+export type StagesReply = z.infer<typeof stagesResponseSchemaWire> & { landKeep?: z.infer<typeof claimed> };
+export const stagesSchemaFor = (shape: StagesShape) => (shape === 3 ? stagesResponseSchemaWireV3 : stagesResponseSchemaWire);
 
 /**
  * The alternate commanders a precon's box carries: the MTGJSON deck file's main-board cards that are
@@ -67,7 +87,8 @@ export type Line = { text: string; refs?: string[] };
 /**
  * Everything a reader is shown, section by section, as one shape for both sides. The old shape has
  * `strategy` (Core strategy) and no stages, Wins by or alternate; the new one has `stages` and no
- * `strategy`. The fixed land line above the Mulligan is the same on both sides and is left out.
+ * `strategy`. The fixed land line above the Mulligan is the app's and is left out; iteration 3's
+ * `landKeep` replaces it on the new side and, being the model's, is counted.
  */
 export type OverviewDoc = {
   overview: Line[];
@@ -75,6 +96,8 @@ export type OverviewDoc = {
   stages: Line[];
   winsBy: Line[];
   alternate: Line[];
+  /** Iteration 3: the model's land line, shown first under the Mulligan in place of the fixed range. */
+  landKeep: Line[];
   keep: Line[];
   sendBack: Line[];
   tips: Line[];
@@ -82,7 +105,7 @@ export type OverviewDoc = {
   weaknesses: Line[];
 };
 
-const EMPTY: OverviewDoc = { overview: [], strategy: [], stages: [], winsBy: [], alternate: [], keep: [], sendBack: [], tips: [], keyCards: [], weaknesses: [] };
+const EMPTY: OverviewDoc = { overview: [], strategy: [], stages: [], winsBy: [], alternate: [], landKeep: [], keep: [], sendBack: [], tips: [], keyCards: [], weaknesses: [] };
 
 /** What a stored (old) content shows: only the sections that passed. */
 export function docFromChecked(content: CheckedSynopsis): OverviewDoc {
@@ -103,14 +126,15 @@ export function docFromChecked(content: CheckedSynopsis): OverviewDoc {
  * What the stages reply SAYS, every line as written with its refs: what the checks read. The
  * weaknesses are the checklist's weakness lines (the validator's ranking and cut are its own).
  */
-export function docFromStagesReply(reply: StagesReply): OverviewDoc {
+export function docFromStagesReply(reply: StagesReply, shape: StagesShape = 2): OverviewDoc {
   const l = (x: { text: string; evidence: string[] }): Line => ({ text: x.text, refs: x.evidence });
   return {
     ...EMPTY,
     overview: [{ text: reply.overview }],
     stages: reply.primer.strategy.map(l),
-    winsBy: [{ text: reply.plans.primary }],
+    winsBy: shape === 3 ? [] : [{ text: reply.plans.primary }],
     alternate: reply.alternate ? [l(reply.alternate)] : [],
+    landKeep: shape === 3 && reply.landKeep ? [l(reply.landKeep)] : [],
     keep: reply.primer.mulligan.keep.map(l),
     sendBack: reply.primer.mulligan.sendBack.map(l),
     tips: reply.primer.tips.map(l),
@@ -121,16 +145,19 @@ export function docFromStagesReply(reply: StagesReply): OverviewDoc {
 
 /**
  * What a reader of the NEW shape is shown: the validated content (a refused section shows nothing),
- * its strategy shown as the stages, plus Wins by and the alternate line from the reply.
+ * its strategy shown as the stages, plus Wins by (iteration 2) or the land line (iteration 3) and the
+ * alternate line from the reply. The land line, like the alternate, is not a contract-8 section, so
+ * the app's validator never sees it; the checks here are its only gate.
  */
-export function docShownNew(content: CheckedSynopsis, reply: StagesReply): OverviewDoc {
+export function docShownNew(content: CheckedSynopsis, reply: StagesReply, shape: StagesShape = 2): OverviewDoc {
   const old = docFromChecked(content);
   return {
     ...old,
     strategy: [],
     stages: old.strategy,
-    winsBy: reply.plans.primary.trim() ? [{ text: reply.plans.primary }] : [],
+    winsBy: shape === 2 && reply.plans.primary.trim() ? [{ text: reply.plans.primary }] : [],
     alternate: reply.alternate ? [{ text: reply.alternate.text }] : [],
+    landKeep: shape === 3 && reply.landKeep ? [{ text: reply.landKeep.text }] : [],
   };
 }
 
@@ -138,7 +165,7 @@ export function docShownNew(content: CheckedSynopsis, reply: StagesReply): Overv
 function allLines(doc: OverviewDoc): { where: string; text: string; refs?: string[] }[] {
   const out: { where: string; text: string; refs?: string[] }[] = [];
   const add = (key: Exclude<keyof OverviewDoc, "keyCards">) => doc[key].forEach((l, i) => out.push({ where: `${key}[${i}]`, ...l }));
-  (["overview", "strategy", "stages", "winsBy", "alternate", "keep", "sendBack", "tips"] as const).forEach(add);
+  (["overview", "strategy", "stages", "winsBy", "alternate", "landKeep", "keep", "sendBack", "tips"] as const).forEach(add);
   doc.keyCards.forEach((k, i) => out.push({ where: `keyCards[${i}]`, ...k.job }));
   add("weaknesses");
   return out;
@@ -223,8 +250,10 @@ export function checkTurnNumbers(doc: OverviewDoc, castTurn: number | null): Che
 
 /**
  * The sections the repetition rule spans: a card is explained in ONE of them. The old shape's Core
- * strategy stands where the stages stand. A Key card's own name is the row's subject, not a mention:
- * only the cards its JOB names count, so a card may be a Key card and appear in one other section.
+ * strategy stands where the stages stand. Iteration 2: a Key card's own name is the row's subject,
+ * not a mention: only the cards its JOB names count, so a card may be a Key card and appear in one
+ * other section. Iteration 3 (`keyCardNames`): the row's own name counts too, in the same bucket as
+ * its job, so a Key card a stage (or any other section) already explained is a repeat.
  */
 export const REPETITION_SECTIONS = ["overview", "stages", "winsBy", "alternate", "tips", "keyCardJobs"] as const;
 export type RepetitionSection = (typeof REPETITION_SECTIONS)[number];
@@ -235,7 +264,7 @@ export type RepetitionSection = (typeof REPETITION_SECTIONS)[number];
  * with the commanders left out, since the overview and the Early stage both have reason to name the
  * commander (reported apart, for a ruling).
  */
-export function checkExplainedOnce(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders">): CheckResult<{ card: string; sections: RepetitionSection[]; commander: boolean }> & { passExceptCommanders: boolean } {
+export function checkExplainedOnce(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders">, opts: { keyCardNames?: boolean } = {}): CheckResult<{ card: string; sections: RepetitionSection[]; commander: boolean }> & { passExceptCommanders: boolean } {
   const deck = deckOf(facts);
   const seen = new Map<string, Set<RepetitionSection>>();
   const note = (section: RepetitionSection, lines: readonly Line[]) => {
@@ -251,7 +280,7 @@ export function checkExplainedOnce(doc: OverviewDoc, facts: Pick<SynopsisFacts, 
   note("winsBy", doc.winsBy);
   note("alternate", doc.alternate);
   note("tips", doc.tips);
-  note("keyCardJobs", doc.keyCards.map((k) => k.job));
+  note("keyCardJobs", doc.keyCards.map((k) => (opts.keyCardNames ? { text: `[[${k.card}]] ${k.job.text}` } : k.job)));
   const offenders = [...seen].filter(([, s]) => s.size > 1).map(([id, s]) => ({
     card: deck.byId.get(id)!.name,
     sections: REPETITION_SECTIONS.filter((x) => s.has(x)),
@@ -309,18 +338,24 @@ export function checkLength(newDoc: OverviewDoc, oldDoc: OverviewDoc): { pass: b
 }
 
 /**
- * The shape's own counts and budgets: three stages of at most 144, Wins by and the alternate at most
- * 144, exactly 2 tips, and the alternate line present exactly when the facts carry an alternate commander,
- * naming one of them.
+ * The shape's own counts and budgets: three stages of at most 144, Wins by (iteration 2) and the
+ * alternate at most 144, exactly 2 tips, and the alternate line present exactly when the facts carry
+ * an alternate commander, naming one of them. Iteration 3: no Wins by line, and exactly one land line
+ * of at most 120.
  */
-export function checkShape(doc: OverviewDoc, alternates: readonly string[]): CheckResult<string> {
+export function checkShape(doc: OverviewDoc, alternates: readonly string[], shape: StagesShape = 2): CheckResult<string> {
   const offenders: string[] = [];
   const len = (l: Line) => rendered(l.text).trim().length;
   if (doc.stages.length !== STAGES_LIMITS.stages) offenders.push(`${doc.stages.length} stages`);
   doc.stages.forEach((l, i) => { if (len(l) > STAGES_LIMITS.stage) offenders.push(`${STAGE_LABELS[i] ?? i} is ${len(l)} characters`); });
   doc.winsBy.forEach((l) => { if (len(l) > STAGES_LIMITS.winsBy) offenders.push(`Wins by is ${len(l)} characters`); });
   // An empty or blank plans.primary renders no Wins by line at all.
-  if (doc.winsBy.every((l) => len(l) === 0)) offenders.push("no Wins by line");
+  if (shape === 2 && doc.winsBy.every((l) => len(l) === 0)) offenders.push("no Wins by line");
+  if (shape === 3) {
+    if (doc.winsBy.length > 0) offenders.push("a Wins by line, which iteration 3 drops");
+    if (doc.landKeep.length !== 1) offenders.push(`${doc.landKeep.length} land lines, not 1`);
+    doc.landKeep.forEach((l) => { if (len(l) > STAGES_LIMITS.landKeep) offenders.push(`the land line is ${len(l)} characters`); });
+  }
   if (doc.tips.length < STAGES_LIMITS.tips.min || doc.tips.length > STAGES_LIMITS.tips.max) offenders.push(`${doc.tips.length} tips`);
   if (alternates.length === 0 && doc.alternate.length > 0) offenders.push("an alternate line with no alternate commander in the facts");
   if (alternates.length > 0 && doc.alternate.length === 0) offenders.push("no alternate line though the facts carry one");
@@ -332,6 +367,235 @@ export function checkShape(doc: OverviewDoc, alternates: readonly string[]): Che
   return { pass: offenders.length === 0, offenders };
 }
 
+// ---------------------------------------------------------------------------------------------
+// Iteration 3: the deck's own land number, generic mulligan lines, and sections a precon alone has.
+
+/** The curve facts a land number is derived from. Nonland, non-commander cards, by quantity; a card with no mana value is not counted. */
+export type CurveFacts = {
+  lands: number;
+  ramp: number;
+  /** Nonland, non-commander cards with a known mana value. */
+  nonland: number;
+  /** Their average mana value, to one decimal; null with none. */
+  averageManaValue: number | null;
+  fivePlus: number;
+  twoOrLess: number;
+  /** The highest commander mana value (a partner pair's dearer one); null when unknown. */
+  commanderManaValue: number | null;
+  /** 7 x lands / 99, to two decimals: the lands an opening seven holds on average. */
+  expectedLandsInSeven: number;
+};
+
+/** A card with a land on either face is left off the curve (a spell // land modal card is a land drop, as `landCapable` counts it). */
+const isLand = (c: Pick<FactCard, "typeLine">) => /\bLand\b/.test(c.typeLine);
+
+export function curveFacts(facts: Pick<SynopsisFacts, "cards" | "commanders" | "lands" | "ramp" | "commanderManaValues">): CurveFacts {
+  const deck = deckOf(facts);
+  let n = 0, sum = 0, fivePlus = 0, twoOrLess = 0;
+  for (const c of facts.cards) {
+    if (deck.commanders.has(c.oracleId) || isLand(c) || c.manaValue === undefined) continue;
+    n += c.quantity;
+    sum += c.manaValue * c.quantity;
+    if (c.manaValue >= 5) fivePlus += c.quantity;
+    if (c.manaValue <= 2) twoOrLess += c.quantity;
+  }
+  return {
+    lands: facts.lands,
+    ramp: facts.ramp,
+    nonland: n,
+    averageManaValue: n === 0 ? null : Math.round((sum / n) * 10) / 10,
+    fivePlus,
+    twoOrLess,
+    commanderManaValue: facts.commanderManaValues.length > 0 ? Math.max(...facts.commanderManaValues) : null,
+    expectedLandsInSeven: Math.round(((HAND_SIZE * facts.lands) / 99) * 100) / 100,
+  };
+}
+
+/**
+ * THE LAND RULE (the app's, stated, so the number is never the model's judgement, as `keepableLands` is not):
+ * start at 3; one more for a TOP-HEAVY deck (nonland average mana value 3.5 or more, 14 or more
+ * nonland cards at five or more, or a commander at six or more); one fewer for a LOW CURVE (average
+ * 2.6 or less with at most 5 cards at five or more); one more at 40 lands or more, one fewer at 32 or
+ * fewer. Then held inside the app's keepable range and inside 2 to 4.
+ */
+export const LAND_RULE = {
+  base: 3,
+  heavyAverage: 3.5,
+  heavyFivePlus: 14,
+  heavyCommander: 6,
+  lightAverage: 2.6,
+  lightFivePlusMax: 5,
+  manyLands: 40,
+  fewLands: 32,
+} as const;
+
+export type LandKeep = {
+  /** The land number the land line states. */
+  lands: number;
+  curve: CurveFacts;
+  /** Which adjustments moved it off the base, in order. */
+  reasons: ("top-heavy" | "low curve" | "many lands" | "few lands" | "held to the keepable range")[];
+  /** The reason in words, for the prompt and the summary table. */
+  why: string;
+  /** Every number the land line may state: the land number, the curve counts and their thresholds (5, 2), the commander's cost, the lands, the ramp, and 7. */
+  figures: number[];
+};
+
+export function landKeepNumber(facts: Pick<SynopsisFacts, "cards" | "commanders" | "lands" | "ramp" | "commanderManaValues" | "keep">): LandKeep {
+  const curve = curveFacts(facts);
+  const reasons: LandKeep["reasons"] = [];
+  const avg = curve.averageManaValue;
+  const heavy = (avg !== null && avg >= LAND_RULE.heavyAverage) || curve.fivePlus >= LAND_RULE.heavyFivePlus || (curve.commanderManaValue ?? 0) >= LAND_RULE.heavyCommander;
+  const light = !heavy && avg !== null && avg <= LAND_RULE.lightAverage && curve.fivePlus <= LAND_RULE.lightFivePlusMax;
+  let n: number = LAND_RULE.base;
+  if (heavy) { n += 1; reasons.push("top-heavy"); }
+  if (light) { n -= 1; reasons.push("low curve"); }
+  if (curve.lands >= LAND_RULE.manyLands) { n += 1; reasons.push("many lands"); }
+  if (curve.lands <= LAND_RULE.fewLands) { n -= 1; reasons.push("few lands"); }
+  const lo = Math.max(2, facts.keep.low);
+  const hi = Math.max(lo, Math.min(4, facts.keep.high));
+  const held = Math.min(hi, Math.max(lo, n));
+  if (held !== n) reasons.push("held to the keepable range");
+  const parts: string[] = [];
+  if (heavy) {
+    const why: string[] = [];
+    if (avg !== null && avg >= LAND_RULE.heavyAverage) why.push(`its nonland cards average ${avg} mana value`);
+    if (curve.fivePlus >= LAND_RULE.heavyFivePlus) why.push(`${curve.fivePlus} nonland cards cost five or more`);
+    if ((curve.commanderManaValue ?? 0) >= LAND_RULE.heavyCommander) why.push(`the commander costs ${curve.commanderManaValue}`);
+    parts.push(`top-heavy: ${why.join(", ")}`);
+  }
+  if (light) parts.push(`a low curve: its nonland cards average ${avg} mana value and ${curve.twoOrLess} cost two or less`);
+  if (curve.lands >= LAND_RULE.manyLands) parts.push(`it plays ${curve.lands} lands`);
+  if (curve.lands <= LAND_RULE.fewLands) parts.push(`it plays only ${curve.lands} lands`);
+  if (parts.length === 0) parts.push(`a middling curve (nonland average ${avg ?? "unknown"}, ${curve.fivePlus} at five or more) on ${curve.lands} lands`);
+  if (held !== n) parts.push(`held to the keepable ${facts.keep.low} to ${facts.keep.high}`);
+  // The thresholds the counts are stated against ("cost five or more", "two or less") are figures too.
+  const figures = [...new Set([held, HAND_SIZE, curve.lands, curve.ramp, curve.fivePlus, curve.twoOrLess, 5, 2, ...facts.commanderManaValues])].sort((a, b) => a - b);
+  return { lands: held, curve, reasons, why: parts.join("; "), figures };
+}
+
+const LAND_COUNT_WORDS: Record<string, number> = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7 };
+/** The land counts a line states ("4 lands", "four lands", "a four-land hand", "3 or 4 lands"), outside card marks. */
+export function statedLandNumbers(text: string): number[] {
+  const bare = text.replace(/\[\[[^\[\]]+\]\]/g, " ");
+  const W = `(\\d+|${Object.keys(LAND_COUNT_WORDS).join("|")})`;
+  const out: number[] = [];
+  const re = new RegExp(`\\b${W}(?:\\s+(?:to|or)\\s+${W})?(?:\\s+|-)(?:or\\s+more\\s+)?lands?\\b`, "gi");
+  const val = (x: string) => (/^\d+$/.test(x) ? Number(x) : LAND_COUNT_WORDS[x.toLowerCase()]!);
+  for (const m of bare.matchAll(re)) { out.push(val(m[1])); if (m[2]) out.push(val(m[2])); }
+  return out;
+}
+
+const REASON_WORDS = /\b(curve|costs?|mana value|expensive|cheap|top-heavy|heavy|low|ramp|five or more|two or less)\b/i;
+
+/**
+ * THE LAND LINE STATES THE DECK'S NUMBER, WITH A REASON: exactly one land line; the one land count
+ * it states is the app's `landKeepNumber` (never a range, never another); every other number in it is
+ * one of that number's figures; it gives a reason (a curve figure, a curve word, or a deck card); and
+ * it fits its budget. Records the stated number and the curve facts behind it, for the summary table.
+ */
+export function checkLandKeep(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders">, land: LandKeep): CheckResult<string> & { stated: number | null; target: number; curve: CurveFacts; why: string; text: string | null } {
+  const offenders: string[] = [];
+  const l = doc.landKeep[0];
+  const base = { target: land.lands, curve: land.curve, why: land.why };
+  if (!l) return { pass: false, offenders: ["no land line"], stated: null, text: null, ...base };
+  if (doc.landKeep.length > 1) offenders.push(`${doc.landKeep.length} land lines`);
+  const stated = [...new Set(statedLandNumbers(l.text))];
+  if (stated.length === 0) offenders.push("states no land count");
+  if (stated.length > 1) offenders.push(`states more than one land count (${stated.join(", ")})`);
+  if (stated.length === 1 && stated[0] !== land.lands) offenders.push(`states ${stated[0]} lands, not the deck's ${land.lands}`);
+  const allowed = new Set(land.figures);
+  const stray = figuresIn(l.text).filter((n) => !allowed.has(n));
+  if (stray.length > 0) offenders.push(`states a figure the app did not give: ${[...new Set(stray)].join(", ")}`);
+  if (/\d[.,]\d/.test(rendered(l.text))) offenders.push("states a decimal (the average is a reason, never a figure)");
+  const others = figuresIn(l.text).filter((n) => n !== land.lands && n !== HAND_SIZE);
+  const deck = deckOf(facts);
+  const namesCard = marksIn(l.text).some((m) => deck.names.has(normalizeName(m)));
+  if (others.length === 0 && !REASON_WORDS.test(rendered(l.text)) && !namesCard) offenders.push("gives no reason for the number");
+  const len = rendered(l.text).trim().length;
+  if (len > STAGES_LIMITS.landKeep) offenders.push(`${len} characters`);
+  return { pass: offenders.length === 0, offenders, stated: stated.length === 1 ? stated[0]! : null, text: l.text, ...base };
+}
+
+/** One deck's row in the land-number table. */
+export type LandRow = { id: string; name: string; kind: "precon" | "player deck"; target: number; stated: number | null; why: string; curve: CurveFacts };
+
+/**
+ * THE LAND NUMBER DIFFERS ACROSS DECKS FOR A REASON: the rows, the distinct numbers stated, whether
+ * every stated number is the deck's own (the rule's), and whether the decks that differ differ in the
+ * rule's reasons (two decks with the same stated number and different targets would be a model error,
+ * caught by `checkLandKeep`). `differs` is true when at least two numbers are stated.
+ */
+export function landKeepTable(rows: readonly LandRow[]): { rows: LandRow[]; distinctStated: number[]; distinctTargets: number[]; everyStatedIsTheDecks: boolean; differs: boolean } {
+  const stated = [...new Set(rows.flatMap((r) => (r.stated === null ? [] : [r.stated])))].sort((a, b) => a - b);
+  return {
+    rows: [...rows],
+    distinctStated: stated,
+    distinctTargets: [...new Set(rows.map((r) => r.target))].sort((a, b) => a - b),
+    everyStatedIsTheDecks: rows.every((r) => r.stated === r.target),
+    differs: stated.length > 1,
+  };
+}
+
+/**
+ * NO GENERIC MULLIGAN LINE: every keep, send-back and land line names a card of this deck or states a
+ * deck-specific number (the land number and the figures behind it, the deck's lands, ramp or
+ * commander cost; the hand's 7 and a 0 are not specific). A line with neither is true of any deck.
+ */
+export function checkMulliganSpecific(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders" | "lands" | "ramp" | "commanderManaValues">, land: LandKeep | null): CheckResult<{ where: string; text: string }> {
+  const deck = deckOf(facts);
+  const specific = new Set([facts.lands, facts.ramp, ...facts.commanderManaValues, ...(land ? [land.lands, land.curve.fivePlus, land.curve.twoOrLess] : [])]);
+  specific.delete(HAND_SIZE);
+  specific.delete(0);
+  const offenders: { where: string; text: string }[] = [];
+  const read = (key: "landKeep" | "keep" | "sendBack") => doc[key].forEach((l, i) => {
+    const card = marksIn(l.text).some((m) => deck.names.has(normalizeName(m)));
+    const num = figuresIn(l.text).some((n) => specific.has(n));
+    if (!card && !num) offenders.push({ where: `${key}[${i}]`, text: l.text });
+  });
+  read("landKeep");
+  read("keep");
+  read("sendBack");
+  return { pass: offenders.length === 0, offenders };
+}
+
+/**
+ * Which sections only make sense for a precon. The alternate line is the box's foil alternates: a
+ * player's own deck has no box, so it never carries one, and the Overview must read whole without it.
+ * Every other section serves every deck.
+ */
+export const SECTION_SCOPE: Record<Exclude<keyof OverviewDoc, "strategy">, "every deck" | "precon only"> = {
+  overview: "every deck",
+  stages: "every deck",
+  winsBy: "every deck",
+  alternate: "precon only",
+  landKeep: "every deck",
+  keep: "every deck",
+  sendBack: "every deck",
+  tips: "every deck",
+  keyCards: "every deck",
+  weaknesses: "every deck",
+};
+
+/** The sections a doc shows, in order, each with its scope: what the output records per section. */
+export function sectionsOf(doc: OverviewDoc): { section: keyof typeof SECTION_SCOPE; scope: "every deck" | "precon only"; lines: number }[] {
+  return (Object.keys(SECTION_SCOPE) as (keyof typeof SECTION_SCOPE)[]).map((section) => ({ section, scope: SECTION_SCOPE[section], lines: doc[section].length }));
+}
+
+const PRECON_WORDS = /\b(precon|preconstructed|the box|out of the box|in the box|face commander|alternate commanders?)\b/i;
+
+/**
+ * A PLAYER'S DECK READS RIGHT WITHOUT THE PRECON SECTIONS: no precon-only section is shown, and no
+ * line talks about a box, a precon or an alternate commander. A precon passes whatever it shows.
+ */
+export function checkDeckKind(doc: OverviewDoc, kind: "precon" | "player deck"): CheckResult<string> {
+  if (kind === "precon") return { pass: true, offenders: [] };
+  const offenders: string[] = [];
+  for (const s of sectionsOf(doc)) if (s.scope === "precon only" && s.lines > 0) offenders.push(`shows the precon-only ${s.section} section`);
+  for (const l of allLines(doc)) if (PRECON_WORDS.test(rendered(l.text))) offenders.push(`${l.where} reads as a precon's: ${l.text}`);
+  return { pass: offenders.length === 0, offenders };
+}
+
 export type StagesChecks = {
   cardsInList: ReturnType<typeof checkCardsInList>;
   turnNumbers: ReturnType<typeof checkTurnNumbers>;
@@ -340,21 +604,45 @@ export type StagesChecks = {
   stagesNameCards: ReturnType<typeof checkStagesNameCards>;
   length: ReturnType<typeof checkLength>;
   shape: ReturnType<typeof checkShape>;
+  /** Iteration 3 only. */
+  landKeep?: ReturnType<typeof checkLandKeep>;
+  /** Iteration 3 only: the new side's mulligan lines, and today's for comparison (informational). */
+  mulliganSpecific?: ReturnType<typeof checkMulliganSpecific>;
+  mulliganSpecificToday?: ReturnType<typeof checkMulliganSpecific>;
+  /** Iteration 3 only. */
+  deckKind?: ReturnType<typeof checkDeckKind>;
 };
 
 /** Every auto-pass check on one deck's new reply, against its old shown content. */
-export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc; oldDoc: OverviewDoc; facts: SynopsisFacts; alternates: readonly string[] }): StagesChecks {
-  const doc = docFromStagesReply(input.reply);
+export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc; oldDoc: OverviewDoc; facts: SynopsisFacts; alternates: readonly string[]; shape?: StagesShape; kind?: "precon" | "player deck" }): StagesChecks {
+  const shape = input.shape ?? 2;
+  const doc = docFromStagesReply(input.reply, shape);
   const castTurn = input.facts.stats?.commanderCastTurn ?? null;
-  return {
+  const base: StagesChecks = {
     cardsInList: checkCardsInList(doc, input.facts),
     turnNumbers: checkTurnNumbers(doc, castTurn),
-    explainedOnce: checkExplainedOnce(doc, input.facts),
+    explainedOnce: checkExplainedOnce(doc, input.facts, { keyCardNames: shape === 3 }),
     stageFit: checkStageFit(doc, input.facts, castTurn),
     stagesNameCards: checkStagesNameCards(doc, input.facts),
     length: checkLength(input.shownNew, input.oldDoc),
-    shape: checkShape(doc, input.alternates),
+    shape: checkShape(doc, input.alternates, shape),
   };
+  if (shape === 2) return base;
+  const land = landKeepNumber(input.facts);
+  return {
+    ...base,
+    landKeep: checkLandKeep(doc, input.facts, land),
+    mulliganSpecific: checkMulliganSpecific(doc, input.facts, land),
+    mulliganSpecificToday: checkMulliganSpecific(input.oldDoc, input.facts, null),
+    deckKind: checkDeckKind(input.shownNew, input.kind ?? "precon"),
+  };
+}
+
+/** Whether every check that applies to the shape passes. `exceptCommanders` reads the repetition rule with the commanders exempt. */
+export function allChecksPass(c: StagesChecks, exceptCommanders: boolean): boolean {
+  return c.cardsInList.pass && c.turnNumbers.pass && (exceptCommanders ? c.explainedOnce.passExceptCommanders : c.explainedOnce.pass)
+    && c.stageFit.pass && c.stagesNameCards.pass && c.length.pass && c.shape.pass
+    && (c.landKeep?.pass ?? true) && (c.mulliganSpecific?.pass ?? true) && (c.deckKind?.pass ?? true);
 }
 
 /**
