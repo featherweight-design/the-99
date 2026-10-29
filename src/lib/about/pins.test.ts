@@ -3,105 +3,141 @@ import { ABOUT_SECTIONS } from "../copy/about-pages";
 import { SWITCH_NAMES } from "../switches/registry";
 import { PAGE_WIDTHS, type PageShot } from "./page-shots";
 import { visibleSections, type VisibleSection } from "./pages-visible";
-import { MAX_PINS, PIN_GAP, PIN_SIZE, pinsAt, placePins, regionOf, screenModel, type Box, type PlacedPin } from "./pins";
+import {
+  BRACKET_ARM, BRACKET_EDGE, BRACKET_MIN, HALO_REACH, MAX_PINS, PIN_GAP, PIN_GUTTER, PIN_SIZE, haloAt, pinsAt, placePins, regionOf,
+  screenModel, type Box, type PlacedPin,
+} from "./pins";
 
 const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
 
-// The Labels board's crowding study draws a phone capture 268x580 with each pin's centre where it sits. A region whose
-// top-left corner is 14px up and left of that centre puts its pin back there.
-const FRAME = { w: 268, h: 580 };
-const STUDY: readonly [number, number][] = [
-  [15.0, 231.4], [15.0, 189.5], [15.0, 96.7], [43.2, 501.5], [17.7, 52.0], [129.1, 141.3], [71.8, 141.3], [236.9, 230.5],
-];
-const box = (x: number, y: number, w = 60, h = 30): Box => ({ x, y, w, h });
-const study = (n: number) => STUDY.slice(0, n).map(([x, y], i) => ({ key: `r${i + 1}`, box: box(x - 14, y - 14) }));
+// Addendum R4 board 1's regions (`build.py` SHOT1, SHOT2, DSHOT1), fractions of the capture, and the capture sizes the
+// board draws them at: a phone column of 358 less the 30px gutter (328 x 710) and a desktop column of 700 (670 x 464).
+type Frac = [number, number, number, number];
+const SHOT1: [string, Frac][] = [["commit", [0.6795, 0.1774, 0.2462, 0.0427]], ["mix", [0, 0.317, 1, 0.1964]], ["lock", [0.041, 0.671, 0.2974, 0.0521]]];
+const SHOT2: [string, Frac][] = [["row", [0.0641, 0.4256, 0.0205, 0.0095]], ["bracket", [0.3478, 0.7739, 0.041, 0.019]]];
+const D_MIX: Frac = [0.0477, 0.5124, 0.9523, 0.2092];
+const DSHOT1: [string, Frac][] = [["commit", [0.8654, 0.3972, 0.1015, 0.04]], ["mix", D_MIX], ["lock", [0.5954, 0.8051, 0.0892, 0.0356]]];
+const PHONE = { w: 328, h: 710 };
+const DESK = { w: 670, h: 464 };
+const scaled = (regions: [string, Frac][], f: { w: number; h: number }) =>
+  regions.map(([key, [x, y, w, h]]) => ({ key, box: { x: x * f.w, y: y * f.h, w: w * f.w, h: h * f.h } }));
 
-function apart(pins: readonly PlacedPin[]): number {
-  let min = Infinity;
-  for (let i = 0; i < pins.length; i++) {
-    for (let j = i + 1; j < pins.length; j++) min = Math.min(min, Math.hypot(pins[i].x - pins[j].x, pins[i].y - pins[j].y));
+const box = (x: number, y: number, w = 60, h = 30): Box => ({ x, y, w, h });
+
+/** Every pin's centre in the gutter, never over the capture, 28px or more below the pin before it, inside the height. */
+function gutterRule(pins: readonly PlacedPin[], h: number, where = "") {
+  for (const p of pins) {
+    expect(p.x, where).toBe(PIN_GUTTER / 2);
+    expect(p.x + PIN_SIZE / 2, where).toBeLessThanOrEqual(PIN_GUTTER);
+    expect(p.y, where).toBeGreaterThanOrEqual(PIN_SIZE / 2);
+    expect(p.y, where).toBeLessThanOrEqual(h - PIN_SIZE / 2 + 0.05);
   }
-  return min;
+  for (let i = 1; i < pins.length; i++) expect(pins[i].y - pins[i - 1].y, where).toBeGreaterThanOrEqual(PIN_GAP - 0.1);
 }
 
-const inside = (pins: readonly PlacedPin[], frame = FRAME) =>
-  pins.every((p) => p.x >= PIN_SIZE / 2 && p.x <= frame.w - PIN_SIZE / 2 && p.y >= PIN_SIZE / 2 && p.y <= frame.h - PIN_SIZE / 2);
-
-describe("placePins on the boards' crowding study (Labels board)", () => {
-  for (const n of [3, 5, 8]) {
-    it(`${n} regions: each pin 14px inside its corner, numbered top then left`, () => {
-      const pins = placePins(study(n), FRAME);
-      expect(pins).toHaveLength(n);
-      // Reading order: by the region's top, then its left; the board's label order is not it.
-      const order = [...STUDY.slice(0, n).entries()].sort(([, a], [, b]) => a[1] - b[1] || a[0] - b[0]).map(([i]) => `r${i + 1}`);
-      expect(pins.map((p) => p.key)).toEqual(order);
-      expect(pins.map((p) => p.n)).toEqual(order.map((_, i) => i + 1));
-      for (const p of pins) {
-        const [x, y] = STUDY[Number(p.key.slice(1)) - 1];
-        expect([p.x, p.y]).toEqual([x, y]);
-      }
-      expect(inside(pins)).toBe(true);
-      expect(apart(pins)).toBeGreaterThanOrEqual(PIN_GAP);
-    });
+function bracketRule(pins: readonly PlacedPin[], f: { w: number; h: number }, where = "") {
+  for (const { bracket: k } of pins) {
+    expect(k.l, where).toBeGreaterThanOrEqual(BRACKET_EDGE);
+    expect(k.t, where).toBeGreaterThanOrEqual(BRACKET_EDGE);
+    expect(k.r, where).toBeLessThanOrEqual(f.w - BRACKET_EDGE);
+    expect(k.b, where).toBeLessThanOrEqual(f.h - BRACKET_EDGE);
+    expect(k.arm, where).toBeLessThanOrEqual(BRACKET_ARM);
+    // Review round 1: a target at the edge slides its bracket in, never cuts it below the least size.
+    expect(k.r - k.l, where).toBeGreaterThanOrEqual(BRACKET_MIN - 0.1);
+    expect(k.b - k.t, where).toBeGreaterThanOrEqual(BRACKET_MIN - 0.1);
   }
+}
+
+describe("placePins on R4 board 1 (pins in the gutter, brackets on the target)", () => {
+  it("shot 1 at the phone: the mock's rows, no stub, brackets round each region", () => {
+    const pins = placePins(scaled(SHOT1, PHONE), PHONE);
+    expect(pins.map((p) => [p.key, p.n, p.y])).toEqual([["commit", 1, 140], ["mix", 2, 239.1], ["lock", 3, 490.4]]);
+    expect(pins.map((p) => p.stub)).toEqual([null, null, null]);
+    expect(pins.map((p) => p.bracket)).toEqual([
+      { l: 218.9, t: 122, r: 307.6, b: 160.3, arm: 10 },
+      { l: 3, t: 221.1, r: 325, b: 368.5, arm: 10 },
+      { l: 9.4, t: 472.4, r: 115, b: 517.4, arm: 10 },
+    ]);
+    gutterRule(pins, PHONE.h);
+    bracketRule(pins, PHONE);
+  });
+
+  it("shot 2: the 4px row dot still gets a 20 x 20 bracket centred on it", () => {
+    const pins = placePins(scaled(SHOT2, PHONE), PHONE);
+    expect(pins.map((p) => [p.key, p.y])).toEqual([["row", 305.5], ["bracket", 556.2]]);
+    const dot = pins[0].bracket;
+    expect(dot).toEqual({ l: 14.4, t: 295.5, r: 34.4, b: 315.5, arm: 10 });
+    expect(dot.r - dot.l).toBeGreaterThanOrEqual(BRACKET_MIN);
+    expect(dot.b - dot.t).toBeGreaterThanOrEqual(BRACKET_MIN);
+    bracketRule(pins, PHONE);
+  });
+
+  it("desktop shot 1 at 670: the same rule, the full-width mix region held 3px inside", () => {
+    const pins = placePins(scaled(DSHOT1, DESK), DESK);
+    expect(pins.map((p) => [p.key, p.y])).toEqual([["commit", 193.6], ["mix", 251.8], ["lock", 381.8]]);
+    expect(pins[1].bracket).toEqual({ l: 28, t: 233.8, r: 667, b: 338.8, arm: 10 });
+    gutterRule(pins, DESK.h);
+    bracketRule(pins, DESK);
+  });
+
+  it("two regions on one row: the later pin slides 28px down the gutter, a stub joining it to its row", () => {
+    const pins = placePins([{ key: "a", box: box(20, 40) }, { key: "b", box: box(200, 44) }], PHONE);
+    expect(pins.map((p) => p.y)).toEqual([54, 82]);
+    expect(pins[0].stub).toBeNull();
+    // The row is b's top plus half its height (44 + 14), the pin 28 below a's.
+    expect(pins[1].stub).toEqual({ top: 58, height: 24 });
+    gutterRule(pins, PHONE.h);
+  });
+
+  it("slides a pin whose row sits ABOVE the one before it (a negative difference) under it", () => {
+    // Reading order is by the region's top; a tall region's row can sit lower than a later short one's.
+    const pins = placePins([{ key: "tall", box: box(0, 100, 60, 200) }, { key: "short", box: box(100, 104, 60, 4) }], PHONE);
+    expect(pins.map((p) => [p.key, p.y])).toEqual([["tall", 114], ["short", 142]]);
+    expect(pins[1].stub).toEqual({ top: 106, height: 36 });
+  });
 
   it("orders by top before left: a region further left but lower reads later", () => {
-    const pins = placePins([{ key: "low-left", box: box(0, 200) }, { key: "high-right", box: box(200, 100) }], FRAME);
+    const pins = placePins([{ key: "low-left", box: box(0, 200) }, { key: "high-right", box: box(200, 100) }], PHONE);
     expect(pins.map((p) => [p.key, p.n])).toEqual([["high-right", 1], ["low-left", 2]]);
   });
-});
 
-describe("placePins when pins crowd (G6)", () => {
-  it("slides a later pin under 28px from an earlier one right along its region's top edge, to exactly 28px", () => {
-    const pins = placePins([{ key: "a", box: box(20, 40) }, { key: "b", box: box(30, 44) }], FRAME);
-    const [a, b] = pins;
-    expect(a).toMatchObject({ key: "a", x: 34, y: 54 });
-    expect(b.key).toBe("b");
-    expect(b.y).toBe(58); // its own top edge: the height never moves
-    expect(b.x).toBeGreaterThan(44);
-    expect(Math.hypot(b.x - a.x, b.y - a.y)).toBeCloseTo(PIN_GAP, 0);
+  it("clamps a pin slid past the capture's foot to the frame (R4 ruling 7)", () => {
+    const f = { w: 300, h: 100 };
+    const pins = placePins(["a", "b", "c", "d"].map((key) => ({ key, box: box(10, 40, 40, 8) })), f);
+    for (const p of pins) expect(p.y).toBeLessThanOrEqual(f.h - PIN_SIZE / 2);
+    expect(pins.at(-1)!.y).toBe(f.h - PIN_SIZE / 2);
   });
 
-  it("leaves pins 28px or more apart where they are", () => {
-    const pins = placePins([{ key: "a", box: box(0, 0) }, { key: "b", box: box(28, 0) }], FRAME);
-    expect(pins.map((p) => p.x)).toEqual([14, 42]);
-  });
-});
-
-describe("placePins on a re-taken capture (Review Focus 5)", () => {
-  it("keeps a pin on the picture when its region moved past an edge", () => {
+  it("keeps a region that moved past an edge (a re-taken capture) bracketed and pinned inside", () => {
+    const f = { w: 268, h: 580 };
     const pins = placePins(
-      [
-        { key: "right", box: box(FRAME.w + 40, 100) },
-        { key: "below", box: box(100, FRAME.h + 10) },
-        { key: "left-above", box: box(-80, -50) },
-      ],
-      FRAME,
+      [{ key: "right", box: box(f.w + 40, 100) }, { key: "below", box: box(100, f.h + 10) }, { key: "left-above", box: box(-80, -50) }],
+      f,
     );
-    expect(inside(pins)).toBe(true);
-    expect(pins.find((p) => p.key === "right")!.x).toBe(FRAME.w - PIN_SIZE / 2);
-    expect(pins.find((p) => p.key === "below")!.y).toBe(FRAME.h - PIN_SIZE / 2);
-    expect(pins.find((p) => p.key === "left-above")).toMatchObject({ x: PIN_SIZE / 2, y: PIN_SIZE / 2 });
+    gutterRule(pins, f.h);
+    bracketRule(pins, f);
+  });
+});
+
+describe("haloAt holds a lit region 8px inside the frame (R4 board 2)", () => {
+  it("Recommended mix at 670 touches the right edge; its halo stops 8px short of every side", () => {
+    const h = haloAt(D_MIX, DESK.w, DESK.h);
+    expect(h).toEqual({ x: 32, y: 237.8, w: 630, h: 97.1 });
+    expect(h.x).toBeGreaterThanOrEqual(HALO_REACH);
+    expect(h.y).toBeGreaterThanOrEqual(HALO_REACH);
+    expect(h.x + h.w).toBeLessThanOrEqual(DESK.w - HALO_REACH + 0.05);
+    expect(h.y + h.h).toBeLessThanOrEqual(DESK.h - HALO_REACH + 0.05);
   });
 
-  it("never draws two pins on one spot when two regions overlap fully", () => {
-    const pins = placePins([{ key: "a", box: box(50, 50) }, { key: "b", box: box(50, 50) }], FRAME);
-    expect(apart(pins)).toBeGreaterThanOrEqual(PIN_GAP - 0.1);
-    expect(inside(pins)).toBe(true);
+  it("a region covering the whole frame is held 8px in on all four sides", () => {
+    expect(haloAt([0, 0, 1, 1], 300, 200)).toEqual({ x: 8, y: 8, w: 284, h: 184 });
   });
 
-  it("three full overlaps still spread out", () => {
-    const pins = placePins(["a", "b", "c"].map((key) => ({ key, box: box(50, 50) })), FRAME);
-    expect(apart(pins)).toBeGreaterThanOrEqual(PIN_GAP - 0.1);
-    expect(inside(pins)).toBe(true);
-  });
-
-  it("slides left instead when the frame's right edge stops it", () => {
-    const pins = placePins([{ key: "a", box: box(FRAME.w - 5, 50) }, { key: "b", box: box(FRAME.w - 5, 50) }], FRAME);
-    expect(apart(pins)).toBeGreaterThanOrEqual(PIN_GAP - 0.1);
-    expect(inside(pins)).toBe(true);
-    expect(pins[1].x).toBeLessThan(pins[0].x);
+  it("a region wholly past an edge collapses to a point inside, never a negative box", () => {
+    const h = haloAt([1.2, 0.5, 0.1, 0.1], 300, 200);
+    expect(h.x).toBe(292);
+    expect(h.w).toBe(0);
   });
 });
 
@@ -179,31 +215,32 @@ describe("the shipped pages, every switch on", () => {
   });
 });
 
-describe("pinsAt: pins placed at the picture's RENDERED size", () => {
-  // A desktop picture is 700 wide only from about a 1180 window; at 768 it is about 388. A phone picture is the window
-  // less its gutters: 288 at a 320 window. The disc does not scale with the picture, so the gap and the clamp must hold
-  // in the rendered pixels.
-  const SIZES: Record<"phone" | "desktop", number[]> = { phone: [288, 358], desktop: [388, 700] };
+describe("pinsAt: pins placed at the capture's RENDERED size", () => {
+  // The capture widths themselves (the column less the 30px gutter). Phone: a 320 window (258), 362 (300), 390 (328)
+  // and wider phones up to md. Desktop: about 340 at a 768 window (60% of the content beside the rail, less the gutter)
+  // and 670 from about 1180. The disc does not scale with the picture, so the gap and the clamp must hold in real pixels.
+  const WIDTHS: Record<"phone" | "desktop", number[]> = { phone: [258, 300, 328, 358, 388], desktop: [340, 358, 388, 670] };
 
-  it("keeps every shipped picture's pins 28px apart and clear of the edge at narrow and full widths", () => {
+  it("keeps every shipped picture's pins in the gutter, 28px apart and inside, its brackets inside, at every width", () => {
     for (const s of visibleSections(ALL_ON)) {
       for (const width of PAGE_WIDTHS) {
         for (const sh of screenModel(s, "amonkhet", width).shots) {
-          for (const w of SIZES[width]) {
+          for (const w of WIDTHS[width]) {
             const h = (w * sh.shot.h) / sh.shot.w;
             const pins = pinsAt(sh.pins, w, h);
             const where = `${s.area}/${s.id} ${width} ${sh.shot.src} at ${w}px`;
             expect(pins.map((p) => p.n), where).toEqual(sh.pins.map((p) => p.n));
-            if (pins.length > 1) expect(apart(pins as PlacedPin[]), where).toBeGreaterThanOrEqual(PIN_GAP - 0.1);
-            expect(inside(pins as PlacedPin[], { w, h }), where).toBe(true);
+            gutterRule(pins as PlacedPin[], h, where);
+            bracketRule(pins as PlacedPin[], { w, h }, where);
           }
         }
       }
     }
   });
 
-  it("puts a pin 14px inside its region's corner in rendered pixels, not in a fixed frame's", () => {
+  it("puts a pin level with its region's row in rendered pixels", () => {
     const [p] = pinsAt([{ key: "k", n: 3, box: [0.5, 0.5, 0.1, 0.1] }], 388, 269);
-    expect(p).toMatchObject({ key: "k", n: 3, x: 208, y: 148.5 });
+    // Row: 134.5 top plus half of min(26.9, 28).
+    expect(p).toMatchObject({ key: "k", n: 3, x: 15, y: 148, stub: null });
   });
 });

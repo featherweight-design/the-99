@@ -98,7 +98,7 @@ describe("LabelLanding", () => {
     // Phone: the landed card has moved under its label, so Try it counts the rest without it.
     const phoneTry = [...container.querySelectorAll("[data-try-it-width='phone'] [data-tool-card]")].map((e) => e.getAttribute("data-tool-card"));
     expect(phoneTry).toEqual(["suggested-changes"]);
-    expect(container.querySelector("[data-try-it-more]")?.textContent).toBe("1 more below ▾");
+    expect(container.querySelector("[data-try-it-more]")?.textContent).toBe("1 more tool▾");
   });
 
   it("lands the ?'s landing (with from) as the halo alone: lit, never New, no card, and keeps from on the strip", () => {
@@ -234,7 +234,7 @@ describe("LabelLanding", () => {
 });
 
 describe("TryIt", () => {
-  it("shows a phone reader the first card and N more below, which opens the rest", () => {
+  it("shows a phone reader the first card, two peeking edges and Show N more tools, which opens the rest", () => {
     at("/about/decks");
     const { container, getByText } = draw(NEW, null);
     const phone = () => [...container.querySelectorAll("[data-try-it-width='phone'] [data-tool-card]")].map((e) => e.getAttribute("data-tool-card"));
@@ -242,13 +242,17 @@ describe("TryIt", () => {
     const more = container.querySelector<HTMLButtonElement>("[data-try-it-more]")!;
     expect(more.getAttribute("aria-expanded")).toBe("false");
     expect(more.getAttribute("aria-controls")).toBe(container.querySelector("[data-try-it-width='phone']")!.id);
-    fireEvent.click(getByText("2 more below"));
+    expect(more.textContent).toBe("2 more tools▾");
+    // Two edges peek out under the first card while folded (R4 board 4, drawn as two whatever the count).
+    expect(container.querySelectorAll("[data-try-it-peek]")).toHaveLength(2);
+    fireEvent.click(getByText("2 more tools"));
     expect(phone()).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
     expect(container.querySelector("[data-try-it-more]")).toBeNull();
-    // Focus moves to the first card it added (Small items 2, item 2).
+    expect(container.querySelectorAll("[data-try-it-peek]")).toHaveLength(0);
+    // Focus moves to the first card it added (Small items 2, item 2): its one press, the button.
     const second = container.querySelectorAll("[data-try-it-width='phone'] li")[1];
-    expect(document.activeElement).toBe(second.querySelector("a[aria-label]"));
-    expect(document.activeElement?.textContent).not.toBe("Show me ›");
+    expect(document.activeElement).toBe(second.querySelector("[data-tool-card-press]"));
+    expect(document.activeElement?.hasAttribute("data-tool-card-where")).toBe(false);
   });
 
   it("moves focus into an added card with no way in, as the card itself", () => {
@@ -256,30 +260,40 @@ describe("TryIt", () => {
     const none = card("proposed-cuts", "Proposed cuts");
     const cards = [card("suggested-changes", "Suggested changes"), { ...none, card: { ...none.card, state: { kind: "none", line: "No decks yet" } as unknown as PageCard["card"]["state"] } }];
     const { container, getByText } = render(<TryIt sectionId="decks" cards={cards} />);
-    fireEvent.click(getByText("1 more below"));
+    fireEvent.click(getByText("1 more tool"));
     const second = container.querySelectorAll<HTMLElement>("[data-try-it-width='phone'] li")[1];
     expect(second.contains(document.activeElement)).toBe(true);
     expect(container.querySelector("[data-try-it-fewer]")).not.toBe(document.activeElement);
   });
 
-  it("folds back with Show fewer, focus on the restored press", () => {
+  it("folds back with Show fewer, in the more button's own style, focus on the restored press", () => {
     at("/about/decks");
     const { container, getByText } = draw(NEW, null);
-    fireEvent.click(getByText("2 more below"));
+    const moreClass = container.querySelector("[data-try-it-more]")!.className;
+    // `.morebtn`: full width, 44px tall, bordered on the surface.
+    expect(moreClass).toMatch(/(^| )w-full( |$)/);
+    expect(moreClass).toContain("min-h-[44px]");
+    expect(moreClass).toContain("border-[color:var(--border-strong)]");
+    expect(moreClass).toContain("bg-[color:var(--surface)]");
+    fireEvent.click(getByText("2 more tools"));
     const fewer = container.querySelector<HTMLButtonElement>("[data-try-it-fewer]")!;
-    expect(fewer.textContent).toBe("Show fewer ▴");
+    expect(fewer.textContent).toBe("Show fewer▴");
+    expect(fewer.className).toBe(moreClass);
     expect(fewer.getAttribute("aria-expanded")).toBe("true");
     fireEvent.click(fewer);
     expect(container.querySelectorAll("[data-try-it-width='phone'] [data-tool-card]")).toHaveLength(1);
     expect(document.activeElement).toBe(container.querySelector("[data-try-it-more]"));
   });
 
-  it("draws every card in the desktop row, each footer's link Show me at its label", () => {
+  it("draws every card in the desktop row, stretched, each card's Where line at its label", () => {
     at("/about/decks");
     const { container } = draw(NEW, null);
     const desk = container.querySelectorAll("[data-try-it-width='desktop'] [data-tool-card]");
     expect(desk).toHaveLength(3);
-    const links = [...container.querySelectorAll("[data-try-it-width='desktop'] a")].filter((a) => a.textContent === "Show me ›");
+    // One baseline across the row (R4 README 5.4): the grid stretches its cells and each card fills its own.
+    expect(container.querySelector("[data-try-it-width='desktop']")!.className).toContain("items-stretch");
+    for (const li of container.querySelectorAll("[data-try-it-width='desktop'] > li")) expect(li.className).toContain("h-full");
+    const links = [...container.querySelectorAll("[data-try-it-width='desktop'] a")].filter((a) => a.textContent === "Show it above ↑");
     expect(links.map((a) => a.getAttribute("href"))).toEqual(CARDS.map((c) => c.card.showMe));
   });
 
@@ -288,3 +302,21 @@ describe("TryIt", () => {
     expect(container.innerHTML).toBe("");
   });
 });
+
+describe("Try it and Good to know panels (R4 board 4)", () => {
+  it("draws Try it on its accent-lit panel with the spark plate, no round mark, the sub-line stacked", () => {
+    at("/about/decks");
+    const { container } = draw(NEW, null);
+    const panel = container.querySelector<HTMLElement>("[data-try-it='analysis']")!;
+    expect(panel.className).toContain("rounded-[16px]");
+    expect(panel.className).toContain("bg-[color:color-mix(in_oklab,var(--accent)_7%,var(--bg))]");
+    expect(panel.className).toContain("border-[color:color-mix(in_oklab,var(--accent)_34%,var(--border))]");
+    expect(panel.className).not.toContain("border-t");
+    const head = panel.querySelector("h3")!.parentElement!;
+    expect(head.className).toContain("grid-cols-[22px_1fr]");
+    expect(head.querySelector("[data-try-it-mark] svg path")).not.toBeNull();
+    expect(head.querySelector(".rounded-full")).toBeNull();
+    expect(head.className).not.toContain("border-t");
+  });
+});
+

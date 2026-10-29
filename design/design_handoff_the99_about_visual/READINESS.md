@@ -121,3 +121,48 @@ Two consequences for the build, neither a gap:
   (phone: the Tuning shot; desktop: the second Analysis shot), as the boards draw, to stay within five pins
   per picture.
 - The two new labels and the landings table go through `/copy-review` with the rest of the strings.
+
+### Engineering audit of Addendum R4 (2026-10-28, against origin/main d30bc70cb)
+
+**Verdict: Yellow, every gap resolved in engineering.** The addendum's code claims hold:
+
+- Pins are pointer-only (`labelled-screen.tsx`: `aria-hidden`, `tabIndex={-1}`); the label line is the keyboard
+  control. The dock adds a pointer path only and keeps that split.
+- Today's pin sits `PIN_INSET` (14px) inside its region's top-left (`pins.ts`), which is why it covers small targets.
+  The gutter rule replaces `placePins`' slide and is fully defined in `build.py` `picture()`; `HALO_REACH = 8` is new.
+- The halo is drawn inside the frame's `overflow-hidden` rounded edge, which is what cut Recommended mix's ring.
+- The Try it list already opens in place with Show fewer (#2355); the fold stays.
+
+Rulings (orchestrator audit): Board 4's panels, band and kicker apply on desktop too; the band is `--bg`, not the
+canvas's `--table`; the kicker takes `--accent-text`; Show fewer takes the more button's style and the peeks draw
+only while folded.
+
+Rulings on the nine undrawn cases (orchestrator, 2026-10-29; Hugh can override):
+
+1. A deck card's `+N` (other decks that fit): dropped. Board 5 draws none.
+2. The credit chip, a none card's line and `card.note` keep the shipped order: the chip beside the name, the mono
+   lines under the description and above the Where line, without the old footer rule.
+3. The first section's top keeps today's single rule; the band is drawn only between screens.
+4. A one-section page (Friends) omits the "· screen n of total" suffix: its kicker is the page's name alone.
+5. Lit stays press-only: no hover or focus lighting.
+6. Phone dock: built as the README draws it, above the tab bar, with no scroll. It can cover a tapped region in the
+   bottom ~150px of the viewport; accepted. No top dock or other placement.
+7. Pins that slide past the capture's foot are clamped to the frame (`placePins`); `pins.test.ts` asserts it, and the
+   shipped-pages sweep asserts no shipped capture reaches it at any drawn width.
+8. Exactly one more tool: built as drawn, two peek edges.
+9. The dock while its section scrolls out of view (or On this page is opened) stays while its region is lit.
+
+Resolved in engineering:
+
+- A deck card's one button reads "Try it on {deck}" (`showcaseCopy.tryOn`, its shipped accessible name, so the visible
+  label equals the accessible name); a page card's, its press label. `showcaseCopy.opens` retires.
+- A none card's door is its one button in the secondary (`.morebtn`) style, never the solid accent; a none card with
+  no door has no button and its mono line says why.
+- The dock is capped at `max-h-[40dvh]` (the words scroll inside it); its ✕ (`Close`) returns focus to the label's
+  line with `preventScroll`; it sits at `z-[34]`, under every shell layer; one dock per page (`PinDockProvider`);
+  no `useDockClearance` (transient, like `edit-toast.tsx`).
+- The tool card's line takes a new key, `toolWhere`; `LandingShowMe` keeps `toolShowMe` ("Show me ›").
+
+Copy through `/copy-review`: "{area} · screen {n} of {total}" kept; "Show {n} more tool(s)" tightened to "{n} more
+tool(s)" and "Where it is on the screen above ↑" to "Show it above ↑" (the in-app button and link cap); "Close" kept;
+the stale `tryItSub` becomes "Each button opens the tool for real". No About entry; the hash re-pins with no version bump.

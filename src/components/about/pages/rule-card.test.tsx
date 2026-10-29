@@ -58,6 +58,22 @@ describe("GoodToKnow", () => {
     expect(container.querySelectorAll("article[data-rule]")).toHaveLength(3);
   });
 
+  it("sits on the sunken panel at every width, its heading unruled with the sub-line stacked under it (R4 board 4)", () => {
+    const { container } = render(<GoodToKnow sectionId="your-deck" rules={rulesOf(ALL_ON, "your-deck")} />);
+    const panel = container.querySelector<HTMLElement>("[data-good-to-know='your-deck']")!;
+    for (const t of ["rounded-[16px]", "bg-[color:var(--surface-sunken)]", "border-[color:var(--border-strong)]", "px-[14px]", "pb-[16px]"]) {
+      expect(panel.className).toContain(t);
+    }
+    // No `md:` variant takes the panel away: it is the block at both widths.
+    expect(panel.className).not.toMatch(/md:(bg|border|rounded)/);
+    const head = panel.querySelector("h3")!.parentElement!;
+    expect(head.className).not.toContain("border-t");
+    expect(head.className).toContain("grid-cols-[22px_1fr]");
+    expect(head.lastElementChild!.className).toContain("col-start-2");
+    // The swipe row bleeds to the panel's edge, not the page's.
+    expect(panel.querySelector("ul")!.className).toContain("-mr-[14px]");
+  });
+
   it("drops a switched sentence and its diagram part while the switch is off, and keeps them while it is on", () => {
     const draw = (e: NodeJS.ProcessEnv) => render(<GoodToKnow sectionId="deck-shopping" rules={rulesOf(e, "deck-shopping")} />);
     const on = draw(ALL_ON).container.querySelector('[data-rule="rule/proxy"]')!.textContent!;

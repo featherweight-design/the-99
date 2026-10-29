@@ -68,8 +68,6 @@ describe("showcaseGroups", () => {
     );
     expect(card(groups, "top-off")!.state).toEqual({ kind: "deck", href: "/decks/d1?tool=top-off", deck: "HD - Kratos", more: 0 });
     expect(card(groups, "mana-balance")!.state).toEqual({ kind: "deck", href: "/decks/d2?tool=mana-balance", deck: "Gishath", more: 2 });
-    expect(showcaseCopy.opens("Gishath", 2)).toBe("Opens Gishath · +2");
-    expect(showcaseCopy.opens("HD - Kratos", 0)).toBe("Opens HD - Kratos");
   });
 
   it("says what a tool needs when no deck fits, with a door only where another screen helps", () => {

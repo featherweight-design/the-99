@@ -73,9 +73,7 @@ export const showcaseCopy = {
   needsADeck: NEEDS_A_DECK,
   /** Collection Sync with no earlier upload to merge against (G14): the card still offers the upload. */
   syncNoBase: 'Needs a file you uploaded before. Your first one starts it.',
-  /** Option C's footer: where the card opens, and how many other decks fit. */
-  opens: (deck: string, more: number) => (more > 0 ? `Opens ${deck} · +${more}` : `Opens ${deck}`),
-  /** The card's accessible name when it opens a deck. */
+  /** A deck card's one button (About R4 board 5), and so its accessible name. */
   tryOn: (deck: string) => `Try it on ${deck}`,
   tools: {
     'help-me-choose': { name: 'Help me choose', line: 'Say what you want, and we’ll rank commanders by how well they fit it, owned or not.', press: 'Open Help me choose' },

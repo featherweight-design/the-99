@@ -54,8 +54,9 @@ export function useLandingRequest(): number {
 /** Where a landing's Show me scrolls to: the card under the label (phone) or the lit card in Try it (desktop). */
 export const landingCardAnchor = (tool: string, width: PageWidth) => `landing-${width}-${tool}`;
 
-/** The Show me link on a page's tool card: lights its label (call 6). */
-export const showMeLink = (card: PageToolCard): ToolCardLink => ({ href: card.showMe, label: ABOUT_PAGE_STRINGS.toolShowMe });
+/** The Where line on a page's tool card: lights its label, the tool's control on the capture above (call 6, R4 board
+ *  5). A landing's own Show me, under a label, keeps `toolShowMe`: it is another control, scrolling down to the card. */
+export const showMeLink = (card: PageToolCard): ToolCardLink => ({ href: card.showMe, label: ABOUT_PAGE_STRINGS.toolWhere });
 
 /** Strips `?lit=` from the live address, keeping its hash. No history state is passed: Next's `replaceState` skips
  * adopting a URL whose state carries its own `__NA` mark (it copies its internals itself), and a router left holding

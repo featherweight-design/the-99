@@ -130,7 +130,7 @@ describe("/about/[area]", () => {
     expect(s.desktop.shots[0].shot.src).toMatch(/^\/about\/pages\/kamigawa\/desktop\//);
   });
 
-  it("draws each section's Try it from the tools whose labels it draws, Show me aimed at the label (call 6)", async () => {
+  it("draws each section's Try it from the tools whose labels it draws, its Where line aimed at the label (call 6)", async () => {
     const analysis = (await draw("decks")).props.sections.find((s) => s.id === "analysis")!;
     expect(analysis.tools.map((c) => c.card.id)).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
     const cuts = analysis.tools.find((c) => c.card.id === "proposed-cuts")!;
@@ -142,8 +142,54 @@ describe("/about/[area]", () => {
     expect(cuts.desktop?.src).toBe("/about/pages/amonkhet/desktop/tools/proposed-cuts.webp");
     const html = renderToStaticMarkup(await draw("decks"));
     expect(html).toContain('href="/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis"');
-    expect(html).toContain("Show me ›");
+    // The card's Where line (R4 board 5) replaces its Show me link.
+    expect(html).toContain("Show it above ↑");
     expect(html).not.toContain("How it works ›");
+  });
+
+  // R4 board 4, both widths: a band between two sections, none above the first (ruling 3), and each kicker counting
+  // the sections this reader is drawn, in the accent.
+  const parse = (html: string) => {
+    const root = document.createElement("div");
+    root.innerHTML = html;
+    return root;
+  };
+
+  it("draws a band between each two sections and a kicker giving each one's place, in the accent", async () => {
+    const el = await draw("decks");
+    const total = el.props.sections.length;
+    expect(total).toBeGreaterThan(2);
+    const root = parse(renderToStaticMarkup(el));
+    const bands = root.querySelectorAll("[data-about-band]");
+    expect(bands).toHaveLength(total - 1);
+    for (const b of bands) {
+      expect(b.nextElementSibling?.tagName).toBe("SECTION");
+      expect(b.previousElementSibling?.tagName).toBe("SECTION");
+      expect(b.className).toMatch(/(^| )h-\[10px\]( |$)/);
+      expect(b.className).toContain("bg-[color:var(--bg)]");
+      expect(b.className).toContain("border-y");
+    }
+    const sections = [...root.querySelectorAll("section")];
+    // The first keeps its single top rule; the rest have the band instead.
+    expect(sections[0].className).toContain("border-t");
+    for (const sec of sections.slice(1)) expect(sec.className).not.toMatch(/(^| )border-t( |$)/);
+    const kickers = [...root.querySelectorAll("[data-about-kicker]")];
+    expect(kickers.map((k) => k.textContent)).toEqual(sections.map((_, i) => `Decks · screen ${i + 1} of ${total}`));
+    for (const k of kickers) expect(k.className).toContain("text-[color:var(--accent-text)]");
+  });
+
+  it("counts only the sections the reader is drawn, and a one-section page draws no count (R4 ruling 4)", async () => {
+    const el = await draw("decks");
+    const props = el.props as unknown as Parameters<typeof AreaPage>[0];
+    const fewer = parse(renderToStaticMarkup(<AreaPage {...props} sections={props.sections.slice(1)} />));
+    const n = el.props.sections.length - 1;
+    expect([...fewer.querySelectorAll("[data-about-kicker]")].map((k) => k.textContent)).toEqual(
+      Array.from({ length: n }, (_, i) => `Decks · screen ${i + 1} of ${n}`),
+    );
+    expect(fewer.querySelectorAll("[data-about-band]")).toHaveLength(n - 1);
+    const one = parse(renderToStaticMarkup(<AreaPage {...props} sections={props.sections.slice(0, 1)} />));
+    expect([...one.querySelectorAll("[data-about-kicker]")].map((k) => k.textContent)).toEqual(["Decks"]);
+    expect(one.querySelectorAll("[data-about-band]")).toHaveLength(0);
   });
 
   it("reads fits only for the tools the area draws, and none for an area that draws none", async () => {
