@@ -66,9 +66,14 @@ describe("RuleCard", () => {
     expect(gone.querySelector(".line-through")!.textContent).toBe("Thrasios");
     expect(gone.textContent).toContain("not in the file");
     const one = visibleSections(ALL_ON).flatMap((s) => s.rules).find((r) => r.key === ruleKey("one-copy"))!;
-    const draft = [...render(<RuleCard rule={{ key: one.key, text: one.text, diagram: one.diagram! }} />).container
-      .querySelectorAll('[data-diagram-part="row"]')].find((r) => r.textContent!.startsWith("Zimone"))!;
-    expect(draft.className).toContain("border-dashed");
+    const rows = [...render(<RuleCard rule={{ key: one.key, text: one.text, diagram: one.diagram! }} />).container
+      .querySelectorAll('[data-diagram-part="row"]')];
+    const draft = rows.find((r) => r.textContent!.startsWith("Zimone"))!;
+    expect(draft.classList.contains("border-dashed")).toBe(true);
+    // Only the set-back row is dashed: every other row keeps a solid edge.
+    const others = rows.filter((r) => r !== draft);
+    expect(others.length).toBeGreaterThan(0);
+    for (const r of others) expect(r.classList.contains("border-dashed"), r.textContent!).toBe(false);
   });
 });
 
