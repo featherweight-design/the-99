@@ -17,3 +17,4 @@
 - Chips draw as `--elevated` pills today; locked, they go transparent with a `--border-strong` hairline, as drawn.
 - The drawing locks the whole form block including labels; the build locks the fields. Labels and captions are text and read the same either way.
 - Not exercised in a browser here: the contact sheet is the close-out walk's.
+- Browser check (1300 and 390): geometry identical locked vs unlocked, fields inert, `aria-busy` set, unlock keeps values and returns focus to the press. Two gaps found and fixed: the Colors strip wrapper (`colour-control.tsx`) now takes the locked edge, and the colour pips (symbol art, drawn as letters on the board) are dimmed to 0.55 opacity while locked, the ring still showing which are selected. The dimming is an engineering reading of "values `--fg-muted`" for art the board does not draw.
