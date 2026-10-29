@@ -1,7 +1,7 @@
 {
-  "feature": "About visual PR 3 to PR 6a: /about/[area], the strip, On this page, the labelled screen, Good to know, Try it, the ways in (the index and the ?), and the launches on Home's banner (PR 6b)",
+  "feature": "About visual PR 3 to PR 6a: /about/[area], the strip, On this page, the labelled screen, Good to know, Try it, the ways in (the index and the ?), and the launches on Home's banner (PR 6b), and Addendum R4 (pins in a gutter, the whole halo, the phone dock, section panels and bands, one press per tool card)",
   "restoreAbout": true,
-  "note": "PR 3 to PR 5 rows are gotos; PR 6a's rows open the index and press the ? from one screen per area (`openHelp`), each landing under its back bar. Not read-only: opening an About page records the visit (`RecordPageVisit`, PR 6b) in the audit account's `user_prefs` About columns, so `restoreAbout` captures both columns before the first row and puts them back exactly after the walk, and the walk refuses production and staging by `neon.branch_id` before the first load (point `.env`'s DATABASE_URL at the database the server writes: local-dev or a scratch branch). No clearAbout: the rows photograph the account's own About state. The decks rows press the Lock cards label (needs NEVER_CUT_ENABLED on for the account) and photograph its lit region, pin and line. PR 4 rows scroll each section that carries rules to its Good to know block ([data-good-to-know=<section id>]): phone draws a swipe row (dots only with two or more cards), desktop a grid of three. The friends row scrolls to the bottom: every Friends rule follows a Friends switch that is off for the reader, so no Good to know heading should be drawn there. PR 5 rows: Try it under the Analysis section (phone draws one card and N more below, which the second row presses; desktop a row of three), and a Show me landing on Proposed cuts (lit label; New tag and card only when the audit account has not been told about it, so either state is a pass if it matches the seen state). PR 6b rows photograph Home's banner as the account's About row stands, so each needs its own state and the run that photographs one leaves the other red: set the row to `pnpm probe:about-banner`'s ONE state (the floor, every catalog id and unit key, less `decks/your-deck/lock` and `locked-cards`) for about-banner-one, and its TWO state (less `rule/lock` too) for about-banner-two, with NEVER_CUT_ENABLED on; the probe itself presses both, and ✕ and Show me.",
+  "note": "PR 3 to PR 5 rows are gotos; PR 6a's rows open the index and press the ? from one screen per area (`openHelp`), each landing under its back bar. Not read-only: opening an About page records the visit (`RecordPageVisit`, PR 6b) in the audit account's `user_prefs` About columns, so `restoreAbout` captures both columns before the first row and puts them back exactly after the walk, and the walk refuses production and staging by `neon.branch_id` before the first load (point `.env`'s DATABASE_URL at the database the server writes: local-dev or a scratch branch). No clearAbout: the rows photograph the account's own About state. The decks rows press the Lock cards label (needs NEVER_CUT_ENABLED on for the account) and photograph its lit region, pin and line. PR 4 rows scroll each section that carries rules to its Good to know block ([data-good-to-know=<section id>]): phone draws a swipe row (dots only with two or more cards), desktop a grid of three. The friends row scrolls to the bottom: every Friends rule follows a Friends switch that is off for the reader, so no Good to know heading should be drawn there. PR 5 rows: Try it under the Analysis section (phone draws one card and N more below, which the second row presses; desktop a row of three), and a Show me landing on Proposed cuts (lit label; New tag and card only when the audit account has not been told about it, so either state is a pass if it matches the seen state). PR 6b rows photograph Home's banner as the account's About row stands, so each needs its own state and the run that photographs one leaves the other red: set the row to `pnpm probe:about-banner`'s ONE state (the floor, every catalog id and unit key, less `decks/your-deck/lock` and `locked-cards`) for about-banner-one, and its TWO state (less `rule/lock` too) for about-banner-two, with NEVER_CUT_ENABLED on; the probe itself presses both, and ✕ and Show me. Addendum R4 rows (`r4-` ids): Your deck shot 1 with its pins in the gutter and brackets on each target; Recommended mix lit at 1300 (the halo held 8px inside, a closed ring); pin 3 (Lock cards) pressed at 390, its label docked above the tab bar (phone only, a viewport shot); a band between two sections with the next kicker; Good to know and Try it as panels at both widths (the existing PR 4 and PR 5 rows); Try it folded (two peeking edges and the N more tools button) and open (Show fewer) at 390; and a Try it desktop row, its buttons on one baseline.",
   "rows": [
     {
       "id": "about-home",
@@ -10,7 +10,7 @@
       "steps": [
         {
           "goto": "/about/home",
-          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "wait": "[data-about-gutter] [data-about-pin]",
           "settle": 800
         }
       ]
@@ -22,7 +22,7 @@
       "steps": [
         {
           "goto": "/about/collection",
-          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "wait": "[data-about-gutter] [data-about-pin]",
           "settle": 800
         }
       ]
@@ -34,7 +34,7 @@
       "steps": [
         {
           "goto": "/about/commanders",
-          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "wait": "[data-about-gutter] [data-about-pin]",
           "settle": 800
         }
       ]
@@ -46,7 +46,7 @@
       "steps": [
         {
           "goto": "/about/decks",
-          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "wait": "[data-about-gutter] [data-about-pin]",
           "settle": 800
         }
       ]
@@ -58,7 +58,7 @@
       "steps": [
         {
           "goto": "/about/shopping",
-          "wait": "[data-about-shot][data-loaded] [data-about-pin]",
+          "wait": "[data-about-gutter] [data-about-pin]",
           "settle": 800
         }
       ]
@@ -249,7 +249,7 @@
     },
     {
       "id": "about-tryit-decks-analysis",
-      "label": "/about/decks#analysis: Try it",
+      "label": "/about/decks#analysis: Try it panel (phone: folded, two peeking edges and N more tools; desktop: one row, buttons on one baseline)",
       "view": "src/components/about/pages/try-it.tsx",
       "steps": [
         {
@@ -267,7 +267,7 @@
     },
     {
       "id": "about-tryit-more-phone",
-      "label": "/about/decks#analysis: Try it, N more below pressed (phone)",
+      "label": "/about/decks#analysis: Try it, N more tools pressed: open, no peeks, Show fewer (phone)",
       "view": "src/components/about/pages/try-it.tsx",
       "widths": [
         "phone"
@@ -455,6 +455,99 @@
           "goto": "/",
           "wait": "section[aria-label='New in the app'] h2",
           "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "r4-pins-gutter",
+      "label": "/about/decks#your-deck: Your deck shot 1, pins in the 30px gutter, brackets on each target (R4 board 1)",
+      "view": "src/components/about/pages/labelled-screen.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#your-deck",
+          "wait": "[data-about-gutter] [data-about-pin]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "#your-deck [data-about-gutter]:visible"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "r4-halo-mix-desktop",
+      "label": "/about/decks#your-deck: Recommended mix lit, its ring closed 8px inside the frame (R4 board 2, desktop)",
+      "view": "src/components/about/pages/labelled-screen.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/about/decks#your-deck",
+          "wait": "[data-about-gutter] [data-about-pin]",
+          "settle": 800
+        },
+        {
+          "click": "[data-about-width='desktop'] [data-about-label='decks/your-deck/mix'] button",
+          "settle": 600
+        },
+        {
+          "wait": "[data-about-width='desktop'] [data-about-halo='decks/your-deck/mix']"
+        },
+        {
+          "scrollTo": "[data-about-width='desktop'] [data-about-halo='decks/your-deck/mix']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "r4-dock-phone",
+      "label": "/about/decks#your-deck: pin 3 (Lock cards) tapped, its label docked above the tab bar, the page unscrolled (R4 board 3, phone)",
+      "view": "src/components/about/pages/pin-dock.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/about/decks#your-deck",
+          "wait": "[data-about-gutter] [data-about-pin]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-about-width='phone'] [data-about-pin='decks/your-deck/lock']"
+        },
+        {
+          "settle": 400
+        },
+        {
+          "click": "[data-about-width='phone'] [data-about-pin='decks/your-deck/lock']",
+          "settle": 600
+        },
+        {
+          "wait": "[data-about-dock='decks/your-deck/lock']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "r4-band",
+      "label": "/about/decks: the band between two sections and the next kicker, Decks · screen n of total (R4 board 4)",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks",
+          "wait": "[data-about-gutter] [data-about-pin]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-about-band]"
+        },
+        {
+          "settle": 400
         }
       ]
     }

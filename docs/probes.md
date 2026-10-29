@@ -1920,7 +1920,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (W2); the ? pressed on Upload a file lands on `/about/collection#upload` with `from`, its back bar names the screen,
   stays at the top while the page scrolls, and goes back (W3); the ? on History lights the Replace and Add rule card
   with no New tag, `lit` stripped and `from` kept (W4); the ? on New deck lights the New deck label (W5); and the ? on
-  an About page opens the index (W6). Every check presses the control and reads the URL and the lit state. Run against
+  an About page opens the index (W6). About Addendum R4 adds W7 at 390 on `/about/decks#your-deck`: pin 3 (Lock
+  cards) pressed docks its label, `window.scrollY` unchanged, the dock 12px above the tab bar and clear of the lit
+  region's halo; pin 1 swaps it; ✕ (`Close`) takes it away with focus on the label's line. And W8 at both widths on
+  `/about/decks#analysis`: a press on a tool card's picture and on its body leaves the URL unchanged, each card has at
+  most one `[data-tool-card-press]`, and at 1300 the row's buttons share one `getBoundingClientRect().bottom`. Every
+  check presses the control and reads the URL and the lit state. Run against
   a server with `HELP_PANEL_ENABLED` on. Its R6 walks (the one-time sheet, the legacy `about_v` cookie, a forged
   `x-about-sheet` header) and its `--flip` walk retired with the sheet and the gate in About visual PR 6b; the banner
   carries every launch now, and `pnpm probe:about-banner` presses it.

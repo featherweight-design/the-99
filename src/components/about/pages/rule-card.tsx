@@ -14,6 +14,10 @@
 //
 // A landing on a rule (the ? on a screen whose question a rule answers, Addendum A1: `?lit=rule/<id>`) lights its card
 // (Addendum-A1 `.gk.on`: an accent border and ring) and, on a phone, scrolls the swipe row to it.
+//
+// Addendum R4 board 4: the block is a panel on the sunken surface at every width (`.panel.gtk`), its heading's top
+// rule gone and its sub-line stacked under the heading (`.sh.stacked`); the phone's swipe row bleeds to the panel's
+// right edge rather than the page's.
 
 import { useEffect, useRef, useState } from "react";
 import { ABOUT_PAGE_STRINGS, type AboutRuleDiagram } from "../../../lib/copy/about-pages";
@@ -83,13 +87,16 @@ export function GoodToKnow({ sectionId, rules }: { sectionId: string; rules: rea
   if (rules.length === 0) return null;
   const headingId = `${sectionId}-good-to-know`;
   return (
-    <div data-good-to-know={sectionId} className="flex flex-col gap-[16px] md:gap-[14px]">
-      <div className="flex items-center gap-[10px] border-t border-t-[color:var(--border)] pt-[14px]">
+    <div
+      data-good-to-know={sectionId}
+      className="-mx-[4px] flex flex-col gap-[14px] rounded-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[14px] pb-[16px] pt-[14px]"
+    >
+      <div className="grid grid-cols-[22px_1fr] items-center gap-x-[10px] gap-y-[2px]">
         <Mark />
         <h3 id={headingId} className="m-0 font-display text-[18px] font-semibold tracking-[0.01em] text-[color:var(--fg)]">
           {ABOUT_PAGE_STRINGS.goodToKnow}
         </h3>
-        <span className="ml-[2px] text-[13px] text-[color:var(--fg-muted)]">{ABOUT_PAGE_STRINGS.goodToKnowSub}</span>
+        <span className="col-start-2 text-[13px] text-[color:var(--fg-muted)]">{ABOUT_PAGE_STRINGS.goodToKnowSub}</span>
       </div>
       <ul
         ref={row}
@@ -97,7 +104,7 @@ export function GoodToKnow({ sectionId, rules }: { sectionId: string; rules: rea
         // Below md the row scrolls sideways and no card holds a focus target, so the row itself takes focus for the arrow keys.
         tabIndex={0}
         onScroll={(e) => setCurrent(currentCard(e.currentTarget, rules.length))}
-        className="m-0 -mr-[16px] flex list-none rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] snap-x snap-mandatory gap-[12px] overflow-x-auto p-0 pr-[16px] [scrollbar-width:none] md:mr-0 md:grid md:grid-cols-2 md:gap-[16px] xl:grid-cols-3 md:overflow-visible md:pr-0 [&::-webkit-scrollbar]:hidden"
+        className="m-0 -mr-[14px] flex list-none rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] snap-x snap-mandatory gap-[12px] overflow-x-auto p-0 pr-[14px] [scrollbar-width:none] md:mr-0 md:grid md:grid-cols-2 md:gap-[16px] xl:grid-cols-3 md:overflow-visible md:pr-0 [&::-webkit-scrollbar]:hidden"
       >
         {rules.map((r) => (
           <li key={r.key} className="w-[292px] flex-none snap-start md:w-auto">

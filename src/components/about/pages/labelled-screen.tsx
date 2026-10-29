@@ -9,12 +9,18 @@
 // Phone: each capture full width with its labels under it. Desktop: each capture 700 wide with its labels beside it.
 // Pressing a label (or its pin) lights its region with `REGION_HALO` (the Ways-In board's ring and 0.34 dim), its pin and its line.
 // While a capture loads its frame holds the capture's size with a quiet skeleton and no pins; the labels read without it.
+//
+// Addendum R4 (boards 1 to 3): the pins ride a 30px gutter left of the capture, never on it, each region marked by
+// corner brackets and a slid pin joined to its row by a stub in the gutter (`pinsAt`); the halo is held 8px inside the
+// clipped frame (`haloAt`), so an edge-touching region's ring closes; on a phone a pressed PIN also docks its label
+// above the tab bar (`pin-dock.tsx`). A label line never docks: it is the list the dock repeats.
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { PageWidth } from "../../../lib/about/page-shots";
-import { pinsAt, type ScreenLabel, type ScreenModel, type ScreenShot } from "../../../lib/about/pins";
+import { PIN_GUTTER, haloAt, pinsAt, type ScreenLabel, type ScreenModel, type ScreenShot } from "../../../lib/about/pins";
+import { PinDock, useDockSlot } from "./pin-dock";
 import { LandingCard, LandingShowMe, NewTag, useLabelLanding, useLandingRequest } from "../../discovery/label-landing";
 
 // The Ways-In board dims the screen around a lit region at 0.34; the Tools tab card keeps its own halo.
@@ -24,6 +30,17 @@ const REGION_HALO =
 const PIN_SHADOW = "0 0 0 2px var(--bg), 0 3px 10px rgb(0 0 0 / 0.55)";
 const PIN_SHADOW_LIT =
   "0 0 0 2px var(--bg), 0 0 0 6px color-mix(in oklab, var(--accent) 38%, transparent), 0 3px 10px rgb(0 0 0 / 0.55)";
+
+// R4 board 1's corner brackets (`.brk i`): 2px arms with a 3px corner, at accent 85% (full accent lit), each edged in
+// the page ground so it reads on light and dark parts of a capture alike.
+const CORNERS = [
+  "left-0 top-0 border-l-2 border-t-2 rounded-tl-[3px]",
+  "right-0 top-0 border-r-2 border-t-2 rounded-tr-[3px]",
+  "bottom-0 left-0 border-b-2 border-l-2 rounded-bl-[3px]",
+  "bottom-0 right-0 border-b-2 border-r-2 rounded-br-[3px]",
+] as const;
+/** The frame's border: the capture's padding box, where pins, brackets and the halo are measured, sits 1px inside it. */
+const FRAME_BORDER = 1;
 
 // The States board's skeleton: six quiet bars on the sunken frame, at its own tops and widths, a shade above
 // `--surface-raised` (the board's skeleton shade in the dark reference sits between it and `--elevated`).
@@ -65,74 +82,115 @@ function Picture({
   }, []);
   const pins = rendered === null ? [] : pinsAt(shot.pins, rendered.w, rendered.h);
   const litPin = shot.pins.find((p) => p.key === lit);
+  const halo = rendered !== null && litPin ? haloAt(litPin.box, rendered.w, rendered.h) : null;
+  const desk = width === "desktop";
   return (
+    // The gutter the pins ride (R4 board 1, `.gut`): the capture is drawn 30px narrower than its column.
     <div
-      ref={frame}
-      data-about-shot={width}
-      data-loaded={loaded ? "" : undefined}
-      className={`relative w-full flex-none overflow-hidden border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${
-        width === "phone" ? "rounded-[20px]" : "rounded-[12px] md:w-[700px] md:max-w-[60%]"
-      }`}
-      style={{ aspectRatio: `${shot.shot.w} / ${shot.shot.h}` }}
+      data-about-gutter
+      className={`relative w-full flex-none ${desk ? "md:w-[700px] md:max-w-[60%]" : ""}`}
+      style={{ paddingLeft: PIN_GUTTER }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size capture served as-is from public/ */}
-      <img
-        ref={img}
-        src={shot.shot.src}
-        width={shot.shot.w}
-        height={shot.shot.h}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        onLoad={() => setLoaded(true)}
-        className={`absolute left-0 top-0 block h-full w-full ${loaded ? "" : "opacity-0"}`}
-      />
-      {!loaded && (
-        <div
-          aria-hidden
-          data-about-skeleton
-          className="absolute inset-0 bg-[linear-gradient(110deg,var(--surface-sunken)_30%,var(--surface-raised)_45%,var(--surface-sunken)_60%)]"
-        >
-          {SKELETON_BARS.map(([top, w]) => (
-            <i
-              key={top}
-              className="absolute left-[8%] block h-[10px] rounded-[5px] bg-[color:color-mix(in_oklab,var(--surface-raised)_75%,var(--elevated))]"
-              style={{ top: `${top}%`, width: `${w}%` }}
-            />
-          ))}
-        </div>
-      )}
-      {loaded && litPin && (
-        <span
-          aria-hidden
-          data-about-halo={litPin.key}
-          className="pointer-events-none absolute z-[2] rounded-[8px]"
-          style={{
-            left: `${litPin.box[0] * 100}%`,
-            top: `${litPin.box[1] * 100}%`,
-            width: `${litPin.box[2] * 100}%`,
-            height: `${litPin.box[3] * 100}%`,
-            boxShadow: REGION_HALO,
-          }}
+      <div
+        ref={frame}
+        data-about-shot={width}
+        data-loaded={loaded ? "" : undefined}
+        className={`relative w-full overflow-hidden border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${
+          desk ? "rounded-[12px]" : "rounded-[20px]"
+        }`}
+        style={{ aspectRatio: `${shot.shot.w} / ${shot.shot.h}` }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size capture served as-is from public/ */}
+        <img
+          ref={img}
+          src={shot.shot.src}
+          width={shot.shot.w}
+          height={shot.shot.h}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          className={`absolute left-0 top-0 block h-full w-full ${loaded ? "" : "opacity-0"}`}
         />
-      )}
-      {loaded &&
-        pins.map((p) => (
-          // The list's line is the control a keyboard or screen reader uses; the pin is its pointer twin.
-          <button
-            key={p.key}
-            type="button"
-            tabIndex={-1}
+        {!loaded && (
+          <div
             aria-hidden
-            data-about-pin={p.key}
-            data-lit={p.key === lit ? "" : undefined}
-            onClick={() => onPress(p.key)}
-            className="absolute z-[3] -ml-[12px] -mt-[12px] h-[24px] w-[24px] cursor-pointer rounded-full border-0 bg-[color:var(--accent)] p-0 text-center font-mono text-[12px] font-semibold leading-[24px] text-[color:var(--bg)]"
-            style={{ left: `${p.x}px`, top: `${p.y}px`, boxShadow: p.key === lit ? PIN_SHADOW_LIT : PIN_SHADOW }}
+            data-about-skeleton
+            className="absolute inset-0 bg-[linear-gradient(110deg,var(--surface-sunken)_30%,var(--surface-raised)_45%,var(--surface-sunken)_60%)]"
           >
-            {p.n}
-          </button>
-        ))}
+            {SKELETON_BARS.map(([top, w]) => (
+              <i
+                key={top}
+                className="absolute left-[8%] block h-[10px] rounded-[5px] bg-[color:color-mix(in_oklab,var(--surface-raised)_75%,var(--elevated))]"
+                style={{ top: `${top}%`, width: `${w}%` }}
+              />
+            ))}
+          </div>
+        )}
+        {loaded && litPin && halo && (
+          // Inside the clipped frame, held 8px in on every side so its ring and glow close (R4 board 2).
+          <span
+            aria-hidden
+            data-about-halo={litPin.key}
+            className="pointer-events-none absolute z-[2] rounded-[8px]"
+            style={{ left: `${halo.x}px`, top: `${halo.y}px`, width: `${halo.w}px`, height: `${halo.h}px`, boxShadow: REGION_HALO }}
+          />
+        )}
+      </div>
+      {loaded &&
+        pins.map((p) => {
+          const on = p.key === lit;
+          const k = p.bracket;
+          return (
+            <Fragment key={p.key}>
+              <span
+                aria-hidden
+                data-about-bracket={p.key}
+                data-lit={on ? "" : undefined}
+                className="pointer-events-none absolute z-[3] block"
+                style={{
+                  left: `${PIN_GUTTER + FRAME_BORDER + k.l}px`,
+                  top: `${FRAME_BORDER + k.t}px`,
+                  width: `${k.r - k.l}px`,
+                  height: `${k.b - k.t}px`,
+                }}
+              >
+                {CORNERS.map((c) => (
+                  <i
+                    key={c}
+                    className={`absolute block border-solid [filter:drop-shadow(0_0_1px_var(--bg))_drop-shadow(0_0_1px_var(--bg))] ${c} ${
+                      on ? "border-[color:var(--accent)]" : "border-[color:color-mix(in_oklab,var(--accent)_85%,transparent)]"
+                    }`}
+                    style={{ width: `${k.arm}px`, height: `${k.arm}px` }}
+                  />
+                ))}
+              </span>
+              {p.stub && (
+                <span
+                  aria-hidden
+                  data-about-stub={p.key}
+                  className={`pointer-events-none absolute z-[2] -ml-[0.75px] block w-[1.5px] ${
+                    on ? "bg-[color:var(--accent)]" : "bg-[color:color-mix(in_oklab,var(--accent)_55%,transparent)]"
+                  }`}
+                  style={{ left: `${p.x}px`, top: `${FRAME_BORDER + p.stub.top}px`, height: `${p.stub.height}px` }}
+                />
+              )}
+              {/* The list's line is the control a keyboard or screen reader uses; the pin is its pointer twin. */}
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-hidden
+                data-about-pin={p.key}
+                data-lit={on ? "" : undefined}
+                onClick={() => onPress(p.key)}
+                className="absolute z-[3] -ml-[12px] -mt-[12px] h-[24px] w-[24px] cursor-pointer rounded-full border-0 bg-[color:var(--accent)] p-0 text-center font-mono text-[12px] font-semibold leading-[24px] text-[color:var(--bg)]"
+                style={{ left: `${p.x}px`, top: `${FRAME_BORDER + p.y}px`, boxShadow: on ? PIN_SHADOW_LIT : PIN_SHADOW }}
+              >
+                {p.n}
+              </button>
+            </Fragment>
+          );
+        })}
     </div>
   );
 }
@@ -193,37 +251,74 @@ function LabelList({
   );
 }
 
+/** A phone screen's press state: the lit region, and the label docked for it (drawn only while it is the lit one). */
+type Press = { lit: string | null; docked: string | null };
+
 function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
   // A Show me landing lights its label through this same state, as a press would (`label-landing.tsx`). A later
   // landing on this page (another Show me while it is open, the same label's included) lights its label, adjusted
   // during render. Keyed on the landing's token, not its label: a second Show me to a label the reader has since turned
-  // off lands the same label again, and keying on the label would leave it dark.
+  // off lands the same label again, and keying on the label would leave it dark. A landing never docks.
   const landing = useLabelLanding();
   const request = useLandingRequest();
   const landed = landing !== null && model.labels.some((l) => l.key === landing.key) ? landing.key : null;
-  const [lit, setLit] = useState<string | null>(landed);
+  const [{ lit, docked }, setPress] = useState<Press>({ lit: landed, docked: null });
   const [from, setFrom] = useState<number>(request);
   if (request !== from) {
     setFrom(request);
-    if (landed !== null) setLit(landed);
+    if (landed !== null) setPress({ lit: landed, docked: null });
   }
-  const press = (key: string) => setLit((cur) => (cur === key ? null : key));
-  const unpinned = model.labels.filter((l) => l.shot === null);
+  const root = useRef<HTMLDivElement>(null);
+  const slot = useDockSlot();
+  // Another section's dock opening puts this one out, its region with it; a region lit by its line stays lit.
+  const putOut = useCallback(
+    () => setPress((p) => (p.docked !== null && p.docked === p.lit ? { lit: null, docked: null } : { ...p, docked: null })),
+    [],
+  );
+  const { release } = slot;
+  useEffect(() => () => release(putOut), [release, putOut]);
+  // A label line toggles its region and never docks (it is the list the dock repeats).
+  const pressLine = (key: string) => setPress((p) => ({ lit: p.lit === key ? null : key, docked: null }));
   const desk = width === "desktop";
+  // Phone pins dock (R4 board 3): the docked pin again puts both out, any other pin lights and docks its own.
+  const pressPin = desk
+    ? pressLine
+    : (key: string) => {
+        if (docked === key && lit === key) {
+          setPress({ lit: null, docked: null });
+          slot.release(putOut);
+          return;
+        }
+        slot.claim(putOut);
+        setPress({ lit: key, docked: key });
+      };
+  const close = () => {
+    const key = docked;
+    setPress({ lit: null, docked: null });
+    slot.release(putOut);
+    // The ✕ unmounts under focus: hand it to the label's line, its keyboard twin, without moving the page.
+    const items = root.current?.querySelectorAll<HTMLElement>("[data-about-label]") ?? [];
+    const item = [...items].find((el) => el.dataset.aboutLabel === key);
+    item?.querySelector<HTMLElement>("button[aria-pressed]")?.focus({ preventScroll: true });
+  };
+  const dockLabel = !desk && docked !== null && docked === lit ? model.labels.find((l) => l.key === docked) : undefined;
+  const unpinned = model.labels.filter((l) => l.shot === null);
   return (
     <div
+      ref={root}
       data-about-width={width}
       className={desk ? "hidden flex-col gap-[20px] md:flex" : "flex flex-col gap-[16px] md:hidden"}
     >
       {model.shots.map((s, i) => (
         <div key={s.shot.src} className={desk ? "flex flex-row items-start gap-[36px]" : "flex flex-col gap-[16px]"}>
-          <Picture shot={s} width={width} lit={lit} onPress={press} />
+          <Picture shot={s} width={width} lit={lit} onPress={pressPin} />
           <div className={desk ? "flex min-w-0 flex-1 flex-col gap-[16px]" : "contents"}>
-            <LabelList labels={model.labels.filter((l) => l.shot === i)} lit={lit} onPress={press} width={width} />
+            <LabelList labels={model.labels.filter((l) => l.shot === i)} lit={lit} onPress={pressLine} width={width} />
           </div>
         </div>
       ))}
-      {unpinned.length > 0 && <LabelList labels={unpinned} lit={lit} onPress={press} width={width} />}
+      {unpinned.length > 0 && <LabelList labels={unpinned} lit={lit} onPress={pressLine} width={width} />}
+      {dockLabel && <PinDock label={dockLabel} onClose={close} />}
     </div>
   );
 }

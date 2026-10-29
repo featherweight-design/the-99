@@ -1,10 +1,15 @@
 // A tool card on an About page's Try it (discovery R2·5, handoff `design/design_handoff_the99_discovery_onboarding/`,
-// README-r2 C2 and C3 with R2b's option C; About visual build, handoff call 6: `Show me ›` replaces `How it works ›`).
+// README-r2 C2 and C3; About visual build, handoff call 6; About Addendum R4 board 5, `build.py` `tool_new`).
 //
-// Option C: the whole card is the press, its footer saying where it opens. `Show me ›` and a none-state's door sit
-// above the stretched link as their own links. A card with nothing to open is not a link at all.
+// One way in (R4 board 5): the card has ONE press, a solid accent button with the shipped press label and an arrow; the
+// card body and the picture are no hit area. The picture sits in its own inset frame. Under the description, the
+// Where line lights the tool's control on the capture above (what Show me did). A deck card's button reads "Try it on
+// {deck}", its accessible name already; a page card's, its press label. A card with nothing to open has no solid
+// button: its door (another screen that helps) is its one button in the secondary style, and a card with no door has
+// none, its mono line saying why.
 //
-// Widths are the grid's and the row's; no height is fixed (R2 gap 13): cards in a row stretch to the tallest.
+// Widths are the grid's and the row's; no height is fixed (R2 gap 13): cards in a row stretch to the tallest, and
+// each button sits at its card's foot so a desktop row's buttons share one baseline (R4 README 5.4).
 
 import Link from "next/link";
 import { PendingReporter } from "../../shell/pending-reporter";
@@ -19,8 +24,9 @@ export const TOOL_CARD_HALO =
   "0 0 0 2px color-mix(in oklab, var(--accent) 75%, transparent), 0 0 0 6px color-mix(in oklab, var(--accent) 20%, transparent), 0 0 0 2000px color-mix(in oklab, var(--bg) 28%, transparent)";
 
 function Picture({ shot, name }: { shot: Shot | null; name: string }) {
+  // Inert (R4 board 5, `.npic`): its own 3:2 frame, no link, keeping its alt and halo.
   return (
-    <div className="relative aspect-[3/2] overflow-hidden border-b border-b-[color:var(--border)] bg-[color:var(--bg)]">
+    <div className="relative aspect-[3/2] overflow-hidden rounded-[9px] border border-[color:var(--border-strong)] bg-[color:var(--bg)] shadow-[inset_0_0_0_1px_rgb(0_0_0/0.35)]">
       {shot && (
         // eslint-disable-next-line @next/next/no-img-element -- a fixed-size capture served as-is from public/
         <img
@@ -51,12 +57,19 @@ function Picture({ shot, name }: { shot: Shot | null; name: string }) {
   );
 }
 
-// TOUCH_HIT: drawn at 38px (10px padding round a 12px line), a coarse pointer reaches 44px. `Show me ›` in muted ink
-// (boards Decks, Ways-In `.sm`).
-const SHOW_ME = `${TOUCH_HIT} z-[2] flex-none whitespace-nowrap py-[10px] font-mono text-[12px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]`;
-const MONO_LINE = "pt-[4px] font-mono text-[12px] leading-[1.5] text-[color:var(--fg-muted)]";
+// TOUCH_HIT: a coarse pointer reaches 44px round the 12px line (`.where`).
+const WHERE = `${TOUCH_HIT} self-start font-mono text-[12px] leading-[1.5] text-[color:var(--fg-muted)] underline decoration-[color:var(--border-strong)] underline-offset-[3px] hover:text-[color:var(--fg)]`;
+const MONO_LINE = "font-mono text-[12px] leading-[1.5] text-[color:var(--fg-muted)]";
+// `relative` so the button paints over the Where line's coarse-pointer hit box above it. `mt-auto` from md puts it at
+// the stretched card's foot (`.drow .ntc .btn`).
+const BUTTON =
+  "relative mt-[4px] flex min-h-[44px] items-center justify-center gap-[8px] rounded-[10px] px-[12px] text-center no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:mt-auto";
+/** The solid press (`.btn`). */
+export const TOOL_PRESS = `${BUTTON} bg-[color:var(--accent)] text-[14.5px] font-semibold text-[color:var(--bg)]`;
+/** The secondary press, Try it's more button's style (`.morebtn`): a none card's door. */
+export const TOOL_DOOR = `${BUTTON} border border-[color:var(--border-strong)] bg-[color:var(--surface)] text-[14px] font-medium text-[color:var(--fg)]`;
 
-/** The footer's left link: an About page's `Show me ›` (call 6). */
+/** The card's Where line: an About page's way to light the tool's control on the capture above (call 6, R4 board 5). */
 export type ToolCardLink = { href: string; label: string };
 
 export function ToolCard({
@@ -64,7 +77,7 @@ export function ToolCard({
 }: {
   card: ToolCardModel;
   shot: Shot | null;
-  /** The footer's left link, `Show me ›`. */
+  /** The Where line: lights the tool's control on the capture above. */
   link: ToolCardLink;
   /** The card a Show me landing lit (Ways-In board, `.tc.on`): an accent border and ring. */
   lit?: boolean;
@@ -72,9 +85,14 @@ export function ToolCard({
   anchor?: string;
 }) {
   const { copy, state } = card;
-  const press = state.kind === "deck" || state.kind === "page";
-  const footerLabel =
-    state.kind === "deck" ? showcaseCopy.opens(state.deck, state.more) : state.kind === "page" ? state.label : null;
+  const press =
+    state.kind === "deck"
+      ? { href: state.href, label: showcaseCopy.tryOn(state.deck), cls: TOOL_PRESS }
+      : state.kind === "page"
+        ? { href: state.href, label: state.label, cls: TOOL_PRESS }
+        : state.door
+          ? { href: state.door.href, label: state.door.label, cls: TOOL_DOOR }
+          : null;
   return (
     <article
       aria-label={copy.name}
@@ -82,15 +100,14 @@ export function ToolCard({
       data-state={state.kind}
       data-lit={lit ? "" : undefined}
       id={anchor}
-      className={`relative flex h-full scroll-mt-[16px] flex-col overflow-hidden rounded-[14px] border bg-[color:var(--surface)] ${
+      className={`flex h-full scroll-mt-[16px] flex-col gap-[12px] rounded-[14px] border bg-[color:var(--surface)] px-[10px] pb-[12px] pt-[10px] ${
         lit
           ? "border-[color:var(--accent)] shadow-[0_0_0_2px_color-mix(in_oklab,var(--accent)_45%,transparent)]"
-          : "border-[color:var(--border)] focus-within:border-[color:var(--border-strong)]"
+          : "border-[color:var(--border-strong)]"
       }`}
     >
       <Picture shot={shot} name={copy.name} />
-      {/* The phone's body at every width, as the boards draw it (`.tc .bd`, `.tc .ft`). */}
-      <div className="flex flex-1 flex-col gap-[8px] px-[14px] pb-[12px] pt-[14px]">
+      <div className="flex flex-1 flex-col gap-[8px] px-[4px]">
         <div className="flex items-baseline justify-between gap-[10px]">
           <h3 className="m-0 text-[16px] font-semibold leading-[1.3] text-[color:var(--fg)]">{copy.name}</h3>
           {card.credit && (
@@ -100,51 +117,21 @@ export function ToolCard({
           )}
         </div>
         <p className="m-0 text-[14px] leading-[1.5] text-[color:var(--fg-body)]">{copy.line}</p>
-        <div className="mt-[2px] flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[8px]">
-          {state.kind === "none" && <p className={`m-0 ${MONO_LINE}`}>{state.line}</p>}
-          {card.note && <p className={`m-0 ${MONO_LINE}`}>{card.note}</p>}
-          <div className="flex min-h-[40px] items-center gap-[10px]">
-            <Link href={link.href} className={SHOW_ME}>
-              {link.label}
-              <PendingReporter href={link.href} />
-            </Link>
-            {footerLabel && (
-              <>
-                <span
-                  aria-hidden
-                  className="ml-auto min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[13.5px] text-[color:var(--fg-muted)]"
-                >
-                  {footerLabel}
-                </span>
-                <span
-                  aria-hidden
-                  className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full border border-[color:var(--accent)] text-[15px] text-[color:var(--accent-text)]"
-                >
-                  →
-                </span>
-              </>
-            )}
-            {state.kind === "none" && state.door && (
-              <Link
-                href={state.door.href}
-                className={`${TOUCH_HIT} z-[2] ml-auto py-[10px] text-[14px] font-semibold text-[color:var(--accent-text)] hover:underline`}
-              >
-                {state.door.label}
-                <PendingReporter href={state.door.href} />
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-      {press && (
-        <Link
-          href={state.href}
-          aria-label={state.kind === "deck" ? showcaseCopy.tryOn(state.deck) : state.label}
-          className="absolute inset-0 z-[1] rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--accent)]"
-        >
-          <PendingReporter href={state.href} />
+        {state.kind === "none" && <p className={`m-0 ${MONO_LINE}`}>{state.line}</p>}
+        {card.note && <p className={`m-0 ${MONO_LINE}`}>{card.note}</p>}
+        <Link href={link.href} data-tool-card-where className={WHERE}>
+          {link.label}
+          <PendingReporter href={link.href} />
         </Link>
-      )}
+        {press && (
+          <Link href={press.href} data-tool-card-press className={press.cls}>
+            {press.label}
+            {/* A door's label carries its own arrow ("Open Friends →"). */}
+            {press.cls === TOOL_PRESS && <span aria-hidden>→</span>}
+            <PendingReporter href={press.href} />
+          </Link>
+        )}
+      </div>
     </article>
   );
 }

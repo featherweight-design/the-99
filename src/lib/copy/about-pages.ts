@@ -1089,9 +1089,16 @@ export const ABOUT_PAGE_STRINGS = {
   goodToKnow: "Good to know",
   goodToKnowSub: "What the screen can’t show",
   tryIt: "Try it",
-  tryItSub: "Each card opens the tool for real",
-  /** A phone's Try it shows its first card; the rest wait under this press. */
-  moreBelow: (n: number) => `${n} more below`,
+  tryItSub: "Each button opens the tool for real",
+  /** A phone's Try it shows its first card; the rest wait under this button (Addendum R4 board 4). */
+  moreTools: (n: number) => (n === 1 ? "1 more tool" : `${n} more tools`),
+  /** A section's kicker: its place on the page among the sections this reader is drawn (R4 board 4). One section
+   *  draws no count (R4 ruling 4). */
+  screenOf: (area: string, n: number, total: number) => (total === 1 ? area : `${area} · screen ${n} of ${total}`),
+  /** A tool card's line under its description: lights the tool's control on the capture above (R4 board 5). */
+  toolWhere: "Show it above ↑",
+  /** The phone's docked label's ✕, its accessible name (R4 board 3). */
+  dockClose: "Close",
   /** A label a Show me landed on that the reader has not been told about (call 7). */
   newTag: "New",
   onThisPage: "On this page",
