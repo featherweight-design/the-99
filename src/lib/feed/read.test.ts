@@ -181,19 +181,17 @@ describe("the reads with the feed off", () => {
     expect(await unseenFriendsCount("u", env({ HOME_FEED_ENABLED: "true" }), NOW, never)).toBe(0);
   });
 
-  it("reads New precon (feed and badge) only with Precons on; its stored choice is not touched either way", async () => {
-    for (const [precons, expected] of [[false, false], [true, true]] as const) {
-      const ran: SQL[] = [];
-      const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 0 }] }; } } as never;
-      const e = env(precons ? { HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true" } : { HOME_FEED_ENABLED: "true" });
-      await loadFeed("u", e, NOW, q);
-      await unseenCount("u", e, NOW, q);
-      expect(ran).toHaveLength(2);
-      for (const s of ran) {
-        const text = render(s).sql;
-        expect(text.includes(`from "precons" p`)).toBe(expected);
-        expect(text).not.toMatch(/^\s*(update|insert|delete)/i);
-      }
+  it("reads New precon (feed and badge), and never writes its stored choice", async () => {
+    const ran: SQL[] = [];
+    const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 0 }] }; } } as never;
+    const e = env({ HOME_FEED_ENABLED: "true" });
+    await loadFeed("u", e, NOW, q);
+    await unseenCount("u", e, NOW, q);
+    expect(ran).toHaveLength(2);
+    for (const s of ran) {
+      const text = render(s).sql;
+      expect(text.includes(`from "precons" p`)).toBe(true);
+      expect(text).not.toMatch(/^\s*(update|insert|delete)/i);
     }
   });
 

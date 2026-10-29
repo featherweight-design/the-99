@@ -10,7 +10,7 @@ import type { SwitchName } from "../switches/registry";
  * Client-safe: a type import only.
  */
 export const MOMENTS = [
-  { id: "precons", m: "M14", tool: "PRECONS_ENABLED" },
+  { id: "precons", m: "M14", tool: null },
   { id: "help-me-choose", m: "M12", tool: "HELP_ME_CHOOSE_ENABLED" },
   { id: "top-off", m: "M1", tool: null },
   { id: "proposed-cuts", m: "M3", tool: "PROPOSED_CUTS_ENABLED" },

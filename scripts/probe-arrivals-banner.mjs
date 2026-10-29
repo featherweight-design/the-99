@@ -22,7 +22,7 @@
 // user's rows are removed in a `finally`.
 //
 // The server: `next start` of a build with the worktree's `.env`, started with
-//   PRECONS_ENABLED=true LIST_CACHE_ENABLED=true
+//   LIST_CACHE_ENABLED=true
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:arrivals-banner
 import { neon } from "@neondatabase/serverless";

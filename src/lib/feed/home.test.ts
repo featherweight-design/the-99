@@ -17,7 +17,7 @@ import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, preconCommand
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 
-const ON = { HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const NOW = new Date("2026-10-22T12:00:00Z");
 const text = (q: SQL) => new PgDialect().sqlToQuery(q).sql;
 

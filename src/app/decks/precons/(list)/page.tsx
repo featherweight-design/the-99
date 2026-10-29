@@ -1,15 +1,13 @@
 // /decks/precons (handoff `design_handoff_the99_precons`, R2): every Commander precon, with how many
-// of its cards the reader owns. Behind `PRECONS_ENABLED`. Cached per reader on the database's
+// of its cards the reader owns. Cached per reader on the database's
 // stamp, as `/decks` is, and on the catalog generation the precon ingest moves.
 
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { requireUserId } from "../../../../lib/auth";
 import { cachePageForUser } from "../../../../lib/cache/page-cache";
 import { preconsCopy } from "../../../../lib/copy/precons";
-import { preconsEnabled } from "../../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { parsePreconParams } from "../../../../lib/precons/list";
 import {
@@ -52,9 +50,8 @@ export default async function PreconsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const userId = await requireUserId();
-  // The reader's resolved switches, once: the gate and the cached list's key read the same env.
+  // The reader's resolved switches, once: the cached list's key read the same env.
   const env = await requestSwitchEnv(userId);
-  if (!preconsEnabled(env)) notFound();
   const raw = await searchParams;
   // Try it's landing (discovery R2·3): `?tool=precons` haloes the list's search; anything else, or any branch without the list (the pick, the list down), is stripped.
   const { landing, request } = pageLanding(raw[TOOL_PARAM], env, "precons");

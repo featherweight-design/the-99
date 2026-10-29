@@ -50,7 +50,6 @@ describe("/collection, empty collection", () => {
 
   it("collection editing on: one Upload tile, the ways group, and the body that names it (S13)", async () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    vi.stubEnv("PRECONS_ENABLED", "true");
     await renderEmpty();
     expect(screen.getAllByRole("link", { name: /Upload a file/ })).toHaveLength(1);
     const group = screen.getByRole("group", { name: "No file? Start another way" });
@@ -59,14 +58,6 @@ describe("/collection, empty collection", () => {
       "/decks/import",
     ]);
     expect(screen.getByText("A pile of possibilities waiting for a commander. Bring a file over, or start another way.")).toBeTruthy();
-  });
-
-  it("collection editing on with precons off: the group without Precons I own (S15)", async () => {
-    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    vi.stubEnv("PRECONS_ENABLED", "");
-    await renderEmpty();
-    expect(screen.getByRole("group", { name: "No file? Start another way" })).toBeTruthy();
-    expect(screen.queryByText("Precons I own")).toBeNull();
   });
 
   it("without collection editing the page draws the shipped single button (S16)", async () => {
@@ -81,7 +72,6 @@ describe("/collection, empty collection", () => {
 describe("/collection, after a precon pick", () => {
   const LINE = () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    vi.stubEnv("PRECONS_ENABLED", "true");
   };
   const visit = async (query: Record<string, string>) => render(await CollectionPage({ searchParams: Promise.resolve(query) }));
   afterEach(() => { vi.unstubAllEnvs(); h.unique = 0; h.receiptReads = []; h.receiptFails = false; });
@@ -102,15 +92,6 @@ describe("/collection, after a precon pick", () => {
     h.unique = 40;
     await visit({});
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
-    await visit({ precons: "e1" });
-    expect(h.receiptReads).toEqual([]);
-    expect(screen.queryByRole("status")).toBeNull();
-  });
-
-  it("reads nothing and draws nothing with precons off, collection editing on", async () => {
-    LINE();
-    vi.stubEnv("PRECONS_ENABLED", "");
-    h.unique = 40;
     await visit({ precons: "e1" });
     expect(h.receiptReads).toEqual([]);
     expect(screen.queryByRole("status")).toBeNull();

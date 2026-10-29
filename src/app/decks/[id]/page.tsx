@@ -15,7 +15,6 @@ import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { carryOnArrival } from "../../../lib/precons/arrival-carry";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
 import { readDeckOriginAndStart } from "../../../lib/precons/start-version";
-import { preconsEnabled } from "../../../lib/precons/flag";
 import { loadDeckStrategy } from "../../../lib/strategy/load";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
@@ -169,7 +168,7 @@ export default async function DeckBuilderPage({
   // now, beside Stage A, and awaited only by the reads of what it writes (the chip and the notices below).
   // Every other visit runs nothing; a repeat is a no-op (`arrival-carry.ts`), and it never throws.
   const carried = perf.timed("preconCarry", () => carryOnArrival(
-    preconsEnabled(env) && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]), id, userId, env,
+    arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]), id, userId, env,
   ));
 
   // STAGE A: every read the next wave waits on starts NOW, beside the ownership guard rather than
@@ -296,17 +295,15 @@ export default async function DeckBuilderPage({
   // v0 (precons PR 6b): a linked deck's precon list, read from `precon_cards` and never a version.
   // Started here with no test of the link first, because the read IS the test: owner-scoped, and an
   // unlinked deck joins no row. A failed read draws no v0, rather than failing the deck.
-  const originRead = preconsEnabled(env)
-    ? early(perf.timed("preconOrigin", () => readDeckOriginAndStart(userId, id)).catch((error) => {
-      // not a fallback: v0 is drawn beside the history, never part of it.
-      console.error("precons: the deck's v0 could not be read", error);
-      return null;
-    }))
-    : null;
+  const originRead = early(perf.timed("preconOrigin", () => readDeckOriginAndStart(userId, id)).catch((error) => {
+    // not a fallback: v0 is drawn beside the history, never part of it.
+    console.error("precons: the deck's v0 could not be read", error);
+    return null;
+  }));
   // The rail rides the deck's own `Versions` tab, so its rows are part of this page. v1's delta is
   // counted against v0 when v0 is drawn apart; a started deck's first version IS v0, and has none.
   const versionsRead = early(perf.timed("versions", () => listVersions(
-    id, userId, originRead?.then((o) => (o && o.summary.startVersionId === null ? o.cards : null)) ?? null,
+    id, userId, originRead.then((o) => (o && o.summary.startVersionId === null ? o.cards : null)),
   )));
   // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
   // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
@@ -354,13 +351,13 @@ export default async function DeckBuilderPage({
   // detail that resolved it; a deck that is not the reader's has no detail and reads absent.
   // The precon arrival strip's read, on the one navigation "Start a deck from this" made. Owner-
   // scoped in its own SQL, so it starts here with the rest and is awaited only where it is drawn.
-  const preconArrivalRead = preconsEnabled(env) && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM])
+  const preconArrivalRead = arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM])
     ? early(perf.timed("preconArrival", () => readPreconArrival(userId, id)))
     : null;
   // The receipt of the add that began this start (`?added=<entry>`, beside `from=precon`). The id is a claim off the
   // URL: the read answers only for the reader's own unreverted precon entry, and draws nothing otherwise.
   const preconAddedParam = query[PRECON_ADDED_PARAM];
-  const preconAddReceiptRead = preconsEnabled(env) && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]) && typeof preconAddedParam === "string"
+  const preconAddReceiptRead = arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]) && typeof preconAddedParam === "string"
     ? early(perf.timed("preconAddReceipt", () => readPreconAddReceipt(userId, preconAddedParam, id)).catch(() => null))
     : null;
   // The ticked import's receipt (no-collection entry S10): `?added=<entry>` beside `imported=1`. The same one-time
@@ -371,13 +368,11 @@ export default async function DeckBuilderPage({
   // The precon link's doors (R3): an unlinked deck's suggestion and the Versions foot row's picker,
   // counted at read and never stored (lock 2). Owner-scoped in its own SQL. A failed read draws
   // neither door, as a linked deck does, rather than failing the deck.
-  const preconLinkRead = preconsEnabled(env)
-    ? early(perf.timed("preconLink", () => readDeckPreconLink(userId, id)).catch((error) => {
-      // not a fallback: an ornament drawn beside the page, never cached in it.
-      console.error("precons: the deck's link could not be read", error);
-      return null;
-    }))
-    : null;
+  const preconLinkRead = early(perf.timed("preconLink", () => readDeckPreconLink(userId, id)).catch((error) => {
+    // not a fallback: an ornament drawn beside the page, never cached in it.
+    console.error("precons: the deck's link could not be read", error);
+    return null;
+  }));
   const tokensRead = deckTokensEnabled(env)
     ? early(detailRead.then((d) => (d
       ? perf.timed("deckTokens", () => loadDeckTokens(id, userId, new Map([
@@ -742,15 +737,13 @@ export default async function DeckBuilderPage({
       importAddReceipt={importAddReceiptRead ? await importAddReceiptRead : null}
       // A linked deck gets neither door: no suggestion (lock 2). Its link is drawn in Versions as v0
       // (precons PR 6b), and on the open precon with Unlink (PR 6a-2).
-      preconLink={preconLinkRead
-        ? await preconLinkRead.then(async (l) => {
-          if (!l || l.linked !== null) return null;
-          // A suggestion the reader closed stays closed, on the account (deck messages A11): per deck and precon.
-          const closed = l.suggestions.length > 0 ? await readDismissedSuggestions(userId, id).catch(() => new Set<string>()) : null;
-          return { suggestions: closed ? dropDismissed(l.suggestions, closed) : l.suggestions, picker: l.picker };
-        })
-        : null}
-      preconOrigin={originRead ? (await originRead)?.summary ?? null : null}
+      preconLink={await preconLinkRead.then(async (l) => {
+        if (!l || l.linked !== null) return null;
+        // A suggestion the reader closed stays closed, on the account (deck messages A11): per deck and precon.
+        const closed = l.suggestions.length > 0 ? await readDismissedSuggestions(userId, id).catch(() => new Set<string>()) : null;
+        return { suggestions: closed ? dropDismissed(l.suggestions, closed) : l.suggestions, picker: l.picker };
+      })}
+      preconOrigin={(await originRead)?.summary ?? null}
       // Deck printings: the strip's printing clauses, from the same one navigation.
       arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled(env))}
       updateArrival={readUpdateArrival(query[UPDATED_PARAM])}
@@ -805,7 +798,7 @@ export default async function DeckBuilderPage({
       initialView={initialBuilderView(
         landing?.lands.tab ?? readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.
-        versions.length + ((originRead && (await originRead)?.summary.startVersionId === null) ? 1 : 0),
+        versions.length + ((await originRead)?.summary.startVersionId === null ? 1 : 0),
         analysisEnabled,
       )}
     />

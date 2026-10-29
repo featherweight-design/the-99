@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", FRIEND_DECKS_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", FRIEND_DECKS_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -17,7 +17,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 
 // Retired switches draw always and are still seen by id (so no reader's New marks moved): with "every switch off" they
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = retiredEntries.map((e) => e.id);
 
@@ -417,16 +417,13 @@ describe("the collection home epic’s two entries (one bump, 14)", () => {
     expect(on[on.indexOf("stand-ins") + 1]).toBe("shopping-got-it");
   });
 
-  it("draws the precons entry on its own switch, after starting a new deck", () => {
-    expect(ids({})).not.toContain("precons");
-    const on = ids({ PRECONS_ENABLED: "true" });
+  it("always draws the precons entry (retired switch), after starting a new deck", () => {
+    const on = ids({});
     expect(on[on.indexOf("new-deck") + 1]).toBe("precons");
   });
 
-  it("draws Commander sets on the way with Precons, after the precons entry, and not without it", () => {
-    // Retired switch: the entry follows Precons alone (the group and the banner both live under Precons).
-    expect(ids({})).not.toContain("upcoming-precons");
-    const on = ids({ PRECONS_ENABLED: "true" });
+  it("always draws Commander sets on the way (retired switch), after the precons entry", () => {
+    const on = ids({});
     expect(on[on.indexOf("precons") + 1]).toBe("upcoming-precons");
   });
 
@@ -471,7 +468,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
   // With the switch off (production), a current reader is told nothing on any path: no Home line, no sheet,
   // and no redirect.
   it("announces nothing to a current reader who has met the entries it can see", () => {
-    const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }));
+    const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true" }));
     // Current: has met every entry it can see, the switched ones by id.
     const current: SeenState = { version: ABOUT_VERSION, ids: switchedIds(visible) };
     expect(unseenEntries(visible, current)).toEqual([]);
@@ -481,7 +478,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
   // #1840 briefly shipped ABOUT_VERSION 15, so a reader may hold 15 as their seen version. The next bump skipped it, so
   // that reader is behind 16 by exactly the unswitched entry 16 added, and by nothing 15 claimed.
   it("reads a reader who holds the spent 15 as behind 16 by about-rebuilt alone", () => {
-    const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }));
+    const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true" }));
     const held: SeenState = { version: 15, ids: switchedIds(visible) };
     expect(unseenEntries(visible, held).map((e) => e.id)).toEqual(["about-rebuilt"]);
     const ahead: SeenState = { version: ABOUT_VERSION + 1, ids: switchedIds(visible) };
@@ -494,14 +491,10 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     expect(drawn(LINE, "start-without-a-collection")).toBeDefined();
   });
 
-  it("follows PRECONS_ENABLED line by line: the precon sentence and key go, and the rest reads whole", () => {
-    const off = drawn(LINE, "start-without-a-collection")!;
-    expect(off.caption).not.toContain(PRECON_LINE);
-    expect(off.caption).toBe("No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nImport a deck you play and select that you own its cards. Or add cards one at a time. A file can come later.");
-    expect(off.keys).not.toContain(PRECON_KEY);
-    expect(off.keys).toHaveLength(3);
-    const on = drawn({ ...LINE, PRECONS_ENABLED: "true" }, "start-without-a-collection")!;
+  it("always draws the precon sentence and key (retired switch), and the rest reads whole", () => {
+    const on = drawn(LINE, "start-without-a-collection")!;
     expect(on.caption).toContain(PRECON_LINE);
+    expect(on.keys).toContain(PRECON_KEY);
     expect(on.keys).toHaveLength(4);
   });
 
@@ -510,8 +503,10 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     const r3 = "Own a few boxes and don’t want decks from them yet? Press Add cards in your Collection, then Pick them, and they’re added without starting anything.";
     expect(drawn(LINE, "deck-import")!.keys).toEqual(expect.arrayContaining([tick]));
     expect(drawn(LINE, "deck-import")!.keys).toHaveLength(4);
-    expect(drawn({ PRECONS_ENABLED: "true" }, "precons")!.caption).not.toContain(r3);
-    expect(drawn({ ...LINE, PRECONS_ENABLED: "true" }, "precons")!.caption).toContain(`go into your collection too.\n${r3}\n\nUpgrading`);
+    const shipped = drawn({}, "precons")!.caption;
+    expect(shipped).not.toContain(r3);
+    expect(shipped).toContain("go into your collection too.\n\nUpgrading");
+    expect(drawn(LINE, "precons")!.caption).toContain(`go into your collection too.\n${r3}\n\nUpgrading`);
   });
 });
 
@@ -624,13 +619,13 @@ describe("an entry drawn in another's place (`replaces`, the launch-end batch)",
   });
 });
 
-describe("whats-new's line switches, in every state of the four switches they name", () => {
+describe("whats-new's line switches, in every state of the three switches they name", () => {
   const entry = aboutEntries.find((e) => e.id === "whats-new")!;
-  const flags = ["COMMANDERS_PLACE_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SOCIAL_FRIENDS_ENABLED", "SOCIAL_WISHLIST_ENABLED", "PRECONS_ENABLED"] as const;
+  const flags = ["COMMANDERS_PLACE_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SOCIAL_FRIENDS_ENABLED", "SOCIAL_WISHLIST_ENABLED"] as const;
   // The renderer's own reading: a blank line starts a paragraph, an empty block is dropped (`EntryCaption`).
   const blocks = (caption: string) => caption.split(/\n\s*\n/).map((b) => b.trim()).filter((b) => b.length > 0);
 
-  it("draws clean text in all 32 combinations: no gated line left behind, no orphaned heading, no empty paragraph", () => {
+  it("draws clean text in all 16 combinations: no gated line left behind, no orphaned heading, no empty paragraph", () => {
     for (let mask = 0; mask < 1 << flags.length; mask++) {
       const env = { HOME_FEED_ENABLED: "true", ...Object.fromEntries(flags.map((f, i) => [f, mask & (1 << i) ? "true" : "false"])) } as unknown as NodeJS.ProcessEnv;
       const on = (f: (typeof flags)[number]) => env[f] === "true";
@@ -643,7 +638,7 @@ describe("whats-new's line switches, in every state of the four switches they na
       expect(hasHeading, `mask ${mask}: the tabs heading follows the place`).toBe(on("COMMANDERS_PLACE_ENABLED"));
       expect(hasTabs, `mask ${mask}: tab lines only with the heading`).toBe(on("COMMANDERS_PLACE_ENABLED"));
       expect(caption.includes("- Help me choose:"), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED") && on("HELP_ME_CHOOSE_ENABLED"));
-      expect(caption.includes("- A precon"), `mask ${mask}`).toBe(on("PRECONS_ENABLED"));
+      expect(caption.includes("- A precon"), `mask ${mask}`).toBe(true);
       expect(caption.includes("- A price drop"), `mask ${mask}`).toBe(on("SOCIAL_WISHLIST_ENABLED"));
       expect(caption.includes("- A friend with a spare"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED") && on("SOCIAL_WISHLIST_ENABLED"));
       expect(caption.includes("Friends has its own spot"), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED") && on("SOCIAL_FRIENDS_ENABLED"));
@@ -716,9 +711,8 @@ describe("push (close-out): each line follows the kind's own availability (`feed
     expect(push({ PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeUndefined();
   });
 
-  it("names a precon only with Precons on, and a set always", () => {
-    expect(push(env({}))!.caption).toContain("- A set that just came out\n");
-    expect(push(env({ PRECONS_ENABLED: "true" }))!.caption).toContain("- A set or a precon that just came out\n");
+  it("names a set and a precon, always", () => {
+    expect(push(env({}))!.caption).toContain("- A set or a precon that just came out\n");
   });
 
   it("names the spare-request kind, and its starting tick, only with spare requests on", () => {

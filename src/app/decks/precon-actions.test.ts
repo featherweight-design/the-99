@@ -9,7 +9,7 @@ vi.mock("../../lib/switches/request", async () => {
 
 const state = vi.hoisted(() => ({
   selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
-  enabled: true, collectionEdit: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
+  collectionEdit: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
   invalidated: [] as string[], warmed: [] as string[], committed: [] as unknown[], carried: [] as string[],
   picking: false, picks: [] as unknown[][], pickResult: ((): unknown => ({ ok: true, entryId: "e" })) as (f: string) => unknown,
 }));
@@ -29,7 +29,6 @@ vi.mock("../../db", () => {
   return { db: { ...reads, transaction: (fn: (tx: unknown) => unknown) => fn(reads) } };
 });
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => state.enabled }));
 // The dialog's owned start and the pick share one lib call; a pick's call answers from `pickResult`, keyed by file.
 vi.mock("../../lib/precons/start-owned", () => ({
   startPreconOwned: async (...args: unknown[]) => {
@@ -76,7 +75,7 @@ beforeEach(() => {
   state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; state.committed = [];
   state.picking = false; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}`, deckId: `deck-${f}` });
   committed.map = new Map(); committed.decks = new Map(); committed.asked = [];
-  state.enabled = true; state.collectionEdit = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
+  state.collectionEdit = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
   state.carried = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
@@ -151,12 +150,6 @@ describe("startPreconOwned", () => {
   const STARTED = { ok: true, deckId: "deck-9", entryId: ENTRY };
   const flush = async () => { for (const fn of state.after) await fn(); };
 
-  it("refuses while precons are off, writing nothing", async () => {
-    state.enabled = false;
-    await expect(startPreconOwned("MultiverseReforged_FRC", "M", ACTION)).rejects.toThrow("precons are off");
-    expect(state.addCalls).toEqual([]);
-  });
-
   it("refuses while collection editing is off, as every collection write does, writing nothing", async () => {
     state.collectionEdit = false;
     await expect(startPreconOwned("MultiverseReforged_FRC", "M", ACTION)).rejects.toThrow("collection editing is off");
@@ -229,12 +222,10 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
     expect(state.carried).toEqual(["deck-Abzan", "deck-Revival_CE"]);
   });
 
-  it("refuses with collection editing or precons off, and writes nothing", async () => {
+  it("refuses with collection editing off, and writes nothing", async () => {
     const one = [{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }];
     state.collectionEdit = false;
     await expect(addPrecons(one)).rejects.toThrow("the precon pick is off");
-    state.collectionEdit = true; state.enabled = false;
-    await expect(addPrecons(one)).rejects.toThrow("precons are off");
     expect(state.picks).toEqual([]);
   });
 

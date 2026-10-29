@@ -79,7 +79,7 @@ const runAfters = async () => { for (const fn of h.afters.splice(0)) await fn();
 
 describe("/decks/precons, upcoming precons", () => {
   beforeEach(() => {
-    h.env = { PRECONS_ENABLED: "true" };
+    h.env = {};
     h.afters = []; h.keys = []; h.stored = []; h.marked = []; h.upcomingFails = false; h.cookies = {}; h.listFails = false; h.allSeen = false;
   });
 
@@ -144,11 +144,11 @@ describe("/decks/precons, upcoming precons", () => {
 });
 
 describe("/decks/precons?pick=own (no-collection entry S2)", () => {
-  const LINE = { PRECONS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" };
+  const LINE = { COLLECTION_EDIT_ENABLED: "true" };
   beforeEach(() => { h.keys = []; h.listOpts = []; h.listFails = false; h.cookies = {}; h.afters = []; });
 
   it("is exactly the shipped list with collection editing off: its key, its read, its view", async () => {
-    h.env = { PRECONS_ENABLED: "true" };
+    h.env = {};
     const el = await visit({ pick: "own" });
     expect(el.type).toBe(PreconListView);
     expect(h.keys).toEqual([[DAY]]);

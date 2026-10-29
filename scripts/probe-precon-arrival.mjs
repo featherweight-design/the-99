@@ -15,7 +15,7 @@
 // earlier version of this probe set the view in storage, which applies only after hydration, so its rows
 // samples mixed both layouts; its figures are not comparable and are not quoted.)
 //
-// Needs PRECONS_ENABLED=true and a database holding the precons (`pnpm db:seed:precons`). Reads only.
+// Needs a database holding the precons (`pnpm db:seed:precons`). Reads only.
 //   local:  PROBE_BASE=http://localhost:3612 pnpm probe:precon-arrival      (a `next start`, local-dev)
 //   staging: MEASURE_DEPLOYED=1 PROBE_BASE=https://staging.the-99.dev pnpm probe:precon-arrival
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

@@ -11,7 +11,6 @@ import { requestSwitchEnv } from "../../lib/switches/request";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { PRECON_ADDED_PARAM, PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "../../lib/decks/arrival";
-import { preconsEnabled } from "../../lib/precons/flag";
 import { startPreconDeck } from "../../lib/precons/start";
 import { startPreconOwned as startOwned, type PreconStartResult } from "../../lib/precons/start-owned";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
@@ -27,7 +26,6 @@ import { carryOverAfterStart } from "../../lib/precons/carry-over";
 export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!preconsEnabled(env)) throw new Error("precons are off");
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
 
@@ -47,7 +45,6 @@ export async function createDeckFromPrecon(fileName: string, rawName: string): P
 export async function startPreconOwned(fileName: string, rawName: string, actionId: string): Promise<Extract<PreconStartResult, { ok: false }>> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!preconsEnabled(env)) throw new Error("precons are off");
   // A collection write, so it keeps the collection-edit rollout boundary every other write action keeps.
   if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
   const name = validateDeckName(rawName);
@@ -78,7 +75,6 @@ export async function startPreconOwned(fileName: string, rawName: string, action
 export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!preconsEnabled(env)) throw new Error("precons are off");
   // The pick is a collection write, so it keeps the collection-edit boundary every other write keeps.
   if (!collectionEditEnabled(env)) throw new Error("the precon pick is off");
   // A retry is answered from the entries it already wrote BEFORE the catalog is read, so a refresh that landed between

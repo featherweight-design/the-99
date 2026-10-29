@@ -25,7 +25,7 @@
 // are refused by branch id.
 //
 // The server: `next start` of a build with the worktree's `.env`, started with
-//   PRECONS_ENABLED=true LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true
+//   LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true
 //
 //   PROBE_BASE=http://localhost:3312 pnpm probe:about-banner
 import { neon } from "@neondatabase/serverless";

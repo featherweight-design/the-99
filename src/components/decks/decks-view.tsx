@@ -116,7 +116,7 @@ export type DecksViewProps = {
    * shelves whenever a deck is missing cards, and each To buy tile's figure links into the cart.
    */
   cartEnabled?: boolean;
-  /** The precons line (`PRECONS_ENABLED`), with its summary, or null when the switch is off. */
+  /** The precons line, with its summary. */
   precons?: { summary: PreconSummary | null } | null;
   /** `HELP_ME_CHOOSE_ENABLED`, read on the server: the zero state's door (discovery R3 E1). */
   helpMeChoose?: boolean;

@@ -57,7 +57,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (`BEFORE_HEIGHT`, measured on main: 128.1px phone, 108.3px desktop; now 74.1px and 62.3px). local-dev holds no precon catalog, so
   it writes a fixture deck and a fixture precon with the same list (`probe-precon-notice.json`) under the account it
   signs in as and deletes both in a `finally`; it refuses staging and production by `neon.branch_id`. Needs
-  `PRECONS_ENABLED=true` on the server, started fresh for the run (the precon catalog is memoized per server for ten minutes). Putting `Link it` back on its own row fails it at both widths.
+  a server started fresh for the run (the precon catalog is memoized per server for ten minutes). Putting `Link it` back on its own row fails it at both widths.
 - `pnpm probe:precon-own` walks "I own this precon" at 390 and 1300 (precon ownership UI; Hugh specified it, then reshaped it after
   testing): the Start dialog's box is unticked by default, the Printings fact reads "this precon’s copies" ticked or not, and the
   dialog says nothing about a draft; starting (one action: the box, the deck and its reservations) lands on the deck with ONE arrival band ("Started from the Probe Own
@@ -66,7 +66,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   no receipt; a forged `?added=` draws nothing and is stripped all the same; History titles the
   entry "Added from Probe Own". It writes a fixture precon of 31 cards the account does not own (`ProbePreconOwn`), and removes it, the
   decks it started, the History entries it wrote and the collection rows the adds made in a `finally`; it refuses staging and production
-  by `neon.branch_id`. Needs `PRECONS_ENABLED=true` and `COLLECTION_EDIT_ENABLED=true`, on a server started fresh for the run (the
+  by `neon.branch_id`. Needs `COLLECTION_EDIT_ENABLED=true`, on a server started fresh for the run (the
   precon catalog is memoized per server for ten minutes).
 - `pnpm probe:cart-scroll` walks Shopping for all decks (`/decks/shopping`) at 390 and 1300 (bug batch D item 3,
   Hugh 2026-10-13). Phone: the document scrolls, the list is not its own scroll box, the switch and heading stay pinned
@@ -265,7 +265,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   read-only tile (the deck tile draws the same constants, `TILE_SHELL_SCALED` and `TILE_ART_CLIP_SCALED`, and needs no
   deck). The tile's root carries `TILE_FIELD`, a size container, and the corners round by `max(9px, 3.4cqw)`, so the
   fixed 9px that let the matte through at 480-767px (a ~361px tile wants 11px) no longer does. Needs
-  `PRECONS_ENABLED` and seeded precons; writes nothing.
+  seeded precons; writes nothing.
 - `pnpm probe:foil-film` proves what the foil film draws (foil handoff R1), against the BUILT stylesheet: run
   `pnpm build` first (the stub-DB build will do). It loads the compiled CSS into a static page of five tiles in the
   shipped markup and reads computed styles, with no server, no database and no sign-in: the film holds while the art
@@ -313,7 +313,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   production build at 1,000ms read 0. The view is named in the address (`?view=`), because a stored view applies
   only after hydration and the probe would sample both layouts.
   Tiles keep the LCP caps (80/150ms), so a slow first row lets lower ones go: 0 inversions in most runs and a few pairs
-  in some, before and after. Reads only; needs `PRECONS_ENABLED=true` and `pnpm db:seed:precons` on local-dev, or
+  in some, before and after. Reads only; needs `pnpm db:seed:precons` on local-dev, or
   `MEASURE_DEPLOYED=1` against staging.
 - `pnpm probe:upcoming-precons-ui` presses the Announced group on /decks/precons (upcoming precons, plan PR 2) at 390x844
   and 1300x900: a visit with an unseen arrival opens the group by itself, tags the set `new`, draws its revealed
@@ -338,7 +338,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   was before the run (deleted if the probe created it, else its seen codes restored) and checks it, since a visit
   acknowledges every arrival, not only the fixtures'. Fails closed on its target: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging and production are refused by id. Needs a server on `PROBE_BASE` on the same
-  database, started with `PRECONS_ENABLED=true` (a `next start` on a free port; stop it by
+  database, started (a `next start` on a free port; stop it by
   its own PID).
 - `pnpm probe:tokens-group` proves the deck's Tokens group (2026-10-14) at 1300x900 and 390x844: open by default as rows in
   List view; the heading folds it and writes ONE preference (`the99:deck-tokens-fold`) that folds the group on another
@@ -919,7 +919,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `md:` — the game log's existing behaviour, not this surface's.
 
   It also writes three precon-linked decks from the first local precon whose every card is in the
-  catalog (it needs `PRECONS_ENABLED` on the server), and reads each rail at both widths: a start
+  catalog , and reads each rail at both widths: a start
   committed as v0 draws ONE row, `v0`, with the precon's note, its card count the precon's 99 and,
   opened, the Open and Unlink line, and no virtual v0 or divider; a start from before v0 (a v1
   committed with its deck, holding exactly the box's list) draws its `v1` the same way; and a brew
@@ -3094,7 +3094,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   checks run at 1300 and the phone walk is the paging and no overflow. A proposed cut's reason is `probe:cuts-panel`'s,
   which hovers the reason (nothing) and the name (the card). Its one write is `clearAboutSheet`, which marks every About
   entry seen on the account (`user_prefs`) and is not put back, so it runs on a scratch branch. It needs a server with
-  `DECK_TOKENS_ENABLED` and `PRECONS_ENABLED` on and a database holding the token catalog, the precons (`PROBE_PRECON`,
+  `DECK_TOKENS_ENABLED` on and a database holding the token catalog, the precons (`PROBE_PRECON`,
   default `CallingAllAngels_FDC`, whose card names the row control uses) and a deck that makes two or
   more tokens: a `pull:staging` copy on a scratch branch of staging, with the account's About row cleared
   (`markEveryEntrySeen`). Mutation-checked 2026-10-12: putting the hover back on a deck tile fails "no tile previews",
@@ -3175,7 +3175,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   production and staging by `neon.branch_id`.
 - `pnpm probe:precon-foil` proves a precon's box foils animate in its card details (Hugh, 2026-10-28) at 1300 and 390:
   every List row the box marks foil opens with the large foil film, and a plain row opens with none. `PROBE_BASE` (a
-  local server with `PRECONS_ENABLED=true`; it refuses any other host) and `PROBE_PRECON` (default `MiracleWorker_DSC`).
+  local server; it refuses any other host) and `PROBE_PRECON` (default `MiracleWorker_DSC`).
   It needs a database whose `precon_cards` mark at least one all-foil card in that file. It writes only the probe
   account's About row, restores it, and refuses production and staging by `neon.branch_id`.
 - `pnpm probe:card-sheet-min` proves the phone card sheet's min snap (Hugh, 2026-10-13) at 390. It opens a
@@ -3222,7 +3222,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `pqalist`, a day-old non-baseline `catalog_first_seen` stamp per arrival, and a temporary Clerk test
   user on the DEVELOPMENT instance (its key must be `sk_test_`), all removed in its `finally` with the account's seen
   keys; the account's `user_prefs` row (its seen keys and About fields, or its absence) is read before any page and put
-  back exactly, then re-read as a check. `PROBE_BASE` must be loopback with a port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true LIST_CACHE_ENABLED=true`; stop it by its own PID.
+  back exactly, then re-read as a check. `PROBE_BASE` must be loopback with a port. Needs a `next start` on `PROBE_BASE` over the same database with `LIST_CACHE_ENABLED=true`; stop it by its own PID.
 - `pnpm probe:welcome-strip` presses Home's welcome-credits strip (plan `2026-10-21-welcome-credits.md`, PR 2) at
   390x844 and 1300x900, through `lib/surface.mjs`: the strip is above the fold on the first-run Home and on the
   dashboard (under the page head); `Where they work` opens `Where credits work` in the shipped SocialModal, before a
@@ -3263,7 +3263,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `finally`, then re-read as a check. FIXTURES on local-dev only (production and staging refused by branch id): a
   `commander` set `pqbset` with a day-old non-baseline `catalog_first_seen` stamp, and the temporary user (its key must
   be `sk_test_`), all removed in its `finally` with every row the user wrote. `PROBE_BASE` must be loopback with a
-  port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true`; stop it by its own PID.
+  port. Needs a `next start` on `PROBE_BASE` over the same database with `LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true`; stop it by its own PID.
 
 ## probe:lock-shift
 
@@ -3335,7 +3335,7 @@ ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not 
   public not-found (C3) in its payload with no card or commander page, under both prefixes, and no `View decks` in the drawn markup (the 404 is an empty shell the browser draws, so `Back home` itself is proved by the contact sheet's C3 row in a real browser, not here), and its image a bare 404. No response may carry
   `Set-Cookie`. Exits 1 on any failure, after a summary.
 
-- `pnpm probe:fan-content-notice` (launch epic A1) reads the Fan Content notice's RESOLVED geometry at 390 and 1300: on `/`, `/sign-up`, `/join/<token>`, `/friend/<token>` and `/offline` signed out, and, when `E2E_AUDIT_USER_EMAIL` names the read-only audit account on Clerk's development instance, on `/`, `/decks` and `/collection` signed in. Read-only. Point it at a server serving THIS worktree. Signed in it also opens the pages with a `fixed` bottom dock (the deck picker, the Help me choose form, a precon, About's gate bar; a deck's top-off bar through `PROBE_TOPOFF_PATH`, opened by pressing the strip's door) and checks the notice's last line clears the topmost dock at the scroll end (A1b, `useDockClearance`). A page that draws no dock at that width reports SKIP, never PASS: serve with `HELP_ME_CHOOSE_ENABLED=true PRECONS_ENABLED=true` to reach three of them; the gate bar needs a reader behind on About with the sheet switch off.
+- `pnpm probe:fan-content-notice` (launch epic A1) reads the Fan Content notice's RESOLVED geometry at 390 and 1300: on `/`, `/sign-up`, `/join/<token>`, `/friend/<token>` and `/offline` signed out, and, when `E2E_AUDIT_USER_EMAIL` names the read-only audit account on Clerk's development instance, on `/`, `/decks` and `/collection` signed in. Read-only. Point it at a server serving THIS worktree. Signed in it also opens the pages with a `fixed` bottom dock (the deck picker, the Help me choose form, a precon, About's gate bar; a deck's top-off bar through `PROBE_TOPOFF_PATH`, opened by pressing the strip's door) and checks the notice's last line clears the topmost dock at the scroll end (A1b, `useDockClearance`). A page that draws no dock at that width reports SKIP, never PASS: serve with `HELP_ME_CHOOSE_ENABLED=true` to reach three of them; the gate bar needs a reader behind on About with the sheet switch off.
 
 
 - `pnpm probe:r3-addendum` closes out three R3 addendum changes in a real browser at 390 and 1300: the support link's `--fg` words and `--accent` underline on `/credits` (item 4, computed values against the resolved properties), Help me choose's phone dock for a spent reader (item 10: the dock 92px with no `Get more credits` in it, the link 44px under the `Anything else?` caption on the field's left edge, the dock clear of the Sets field, and at 1300 the credit line's link with the phone copy not displayed), and the Find a deck landing (item 12: `/collection?avail=free&tool=find-a-deck` opens the first card at `data-sheet="full"` at 390 with the door in the viewport and `data-target-halo` held about 2.4s, the next card at the teaser; at 1300 the door is haloed with no snap change). It runs as ONE per-run Clerk development-instance user (`+clerk_test`, code 424242) with its own spent `model_calls`, three owned cards and a deck, and removes every row keyed to that id by schema (each `user_id` table, retried for foreign keys; `purgeAccount` reads tables a migration-behind local-dev lacks) and deletes the Clerk user in a `finally`. It never signs in as the audit account. `PROBE_DB_BRANCH` must name the reported branch and is refused on production and staging. Serve THIS worktree from the same `.env` with `PAYMENTS_ENABLED=true HELP_ME_CHOOSE_ENABLED=true SWAP_TOOLS_ENABLED=true`, and set `PROBE_BASE`; screenshots go to `PROBE_SHOTS`.

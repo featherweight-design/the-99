@@ -1,13 +1,12 @@
 // /decks/precons/[fileName] (handoff `design_handoff_the99_precons`, R2): one precon as a
 // read-only decklist with how many of its cards the reader owns. A Collector's Edition twin's URL
-// redirects to its plain edition (design call 4), with the Collector's Edition chosen. Behind `PRECONS_ENABLED`.
+// redirects to its plain edition (design call 4), with the Collector's Edition chosen.
 
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { cachePageForUser } from "../../../../lib/cache/page-cache";
 import { preconsCopy } from "../../../../lib/copy/precons";
-import { preconsEnabled } from "../../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { loadOpenPrecon } from "../../../../lib/precons/open-read";
 import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
@@ -24,9 +23,8 @@ type Props = {
 
 export default async function OpenPreconPage({ params, searchParams }: Props) {
   const userId = await requireUserId();
-  // The reader's resolved switches, once: the gate and the cached precon's key read the same env.
+  // The reader's resolved switches, once: the cached precon's key read the same env.
   const env = await requestSwitchEnv(userId);
-  if (!preconsEnabled(env)) notFound();
   // Next hands the segment over decoded; decoding it again would throw on a `%`.
   const { fileName: name } = await params;
   const { from, edition } = await searchParams;

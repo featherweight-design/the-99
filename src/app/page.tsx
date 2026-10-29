@@ -39,7 +39,6 @@ import { visibleSections } from "../lib/about/pages-visible";
 import { aboutSeen } from "../lib/about/read";
 import type { SeenState } from "../lib/about/visible";
 import { resolveTheme } from "../lib/theme/server";
-import { preconsEnabled } from "../lib/precons/flag";
 import { PICK_RECEIPT_PARAM } from "../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../lib/precons/pick-receipt-read";
 import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
@@ -234,7 +233,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       // The arrivals banner (upcoming precons): read only past the first-run return above, so a first-run
       // account neither sees it nor reads it. Null when Precons is off, when nothing is new, or when the read
       // failed, which records a fallback so that render is served and not stored.
-      preconsEnabled(env) && !feedOn ? perf.timed("arrivals", () => loadArrivalsBanner(userId, now)) : null,
+      !feedOn ? perf.timed("arrivals", () => loadArrivalsBanner(userId, now)) : null,
     ]);
 
     // The slice FIRST, then the printings — the two shown rather than every commander the
@@ -392,7 +391,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         addByHand={collectionEditEnabled(env)}
         about={about}
         welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="first-run" afterAbout={about !== null} />}
-        ways={noCollectionEntry ? { precons: preconsEnabled(env) } : null}
+        ways={noCollectionEntry ? { precons: true } : null}
         scan={collectionEditEnabled(env)}
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
         signature={signatureRow}
@@ -411,7 +410,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // and only when the address claims one, with the pick's switches on (the line's and precons'). A failed read draws
   // no strip.
   let receipt: PickReceipt | null = null;
-  const claim = noCollectionEntry && preconsEnabled(env) ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
+  const claim = noCollectionEntry ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
   if (claim !== undefined) {
     try {
       receipt = await readPickReceipt(userId, claim);

@@ -39,7 +39,7 @@ describe("WaysGroup", () => {
     expect(within(group()).getByRole("link", { name: /Import a deck/ })).toHaveAttribute("href", "/decks/import");
   });
 
-  it("drops Precons I own with PRECONS_ENABLED off, and the other two take two columns (S15)", () => {
+  it("drops Precons I own with precons false, and the other two take two columns (S15)", () => {
     render(<WaysGroup surface="step1" precons={false} onAddCards={() => {}} />);
     expect(presses().map(label)).toEqual(["Import a deck", "Add cards by hand"]);
     expect(screen.queryByText("Precons I own")).toBeNull();

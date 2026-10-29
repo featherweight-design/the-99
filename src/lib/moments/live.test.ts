@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { liveMoments } from "./live";
 
 describe("liveMoments", () => {
-  it("is each moment whose tool is on, and the two with no tool", () => {
+  it("is each moment whose tool is on, and the three with no tool", () => {
     const live = liveMoments({ LINEUP_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
-    expect(live).toEqual(["top-off", "card-assignments", "lineup"]);
+    expect(live).toEqual(["precons", "top-off", "card-assignments", "lineup"]);
   });
 
   it("follows a tool's parent, as the screen does: Matchups needs friends as well as games", () => {

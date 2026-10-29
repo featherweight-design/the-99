@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
-import { preconsEnabled } from "../../lib/precons/flag";
 import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { readPreconSummary } from "../../lib/precons/summary";
 import { listDecksWithStats } from "../../lib/decks/read";
@@ -77,7 +76,7 @@ export default async function DecksPage({
   // for why that is correct after any write, from anywhere.
   // The precons line's meta is catalog data, the same for every reader, so it is read beside the
   // cached payload rather than inside it; a failed read keeps the line and drops the meta.
-  const preconSummary = preconsEnabled(env) ? readPreconSummary() : null;
+  const preconSummary = readPreconSummary();
   const data = await cachePageForUser(userId, "decks", [], async (env) => {
     const [decks, shopping, folders] = await Promise.all([
       // The sort has no default in the reader, so no caller's order can move

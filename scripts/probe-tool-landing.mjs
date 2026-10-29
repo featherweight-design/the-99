@@ -38,7 +38,7 @@
 // parameter goes at once and the next card details opened halo `Find a deck for it` once, so the probe presses a card
 // open. A control the page does not draw even without `?tool=` (the eligibility preflight) is a SKIP, never a PASS.
 // With `PROBE_SWITCHES=off` (the server started with the page tools' switches off too: `HELP_ME_CHOOSE_ENABLED`,
-// `PRECONS_ENABLED`, `SOCIAL_WISHLIST_ENABLED`, `COLLECTION_SYNC_ENABLED`, `LINEUP_ENABLED`), every page landing
+// `SOCIAL_WISHLIST_ENABLED`, `COLLECTION_SYNC_ENABLED`, `LINEUP_ENABLED`), every page landing
 // must draw no halo and write nothing: the route is gone (its not-found page), or the parameter is stripped.
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:tool-landing

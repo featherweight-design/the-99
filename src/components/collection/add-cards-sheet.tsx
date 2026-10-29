@@ -72,7 +72,7 @@ export type AddCardsSheetProps =
       totalCards?: number;
       /**
        * The way into Precons I own (no-collection entry S18): a row in the empty state, at both widths. The host decides
-       * it from `PRECONS_ENABLED` and the line's own switch; absent, the empty state is as shipped.
+       * it from the line's own switch; absent, the empty state is as shipped.
        */
       preconPick?: boolean;
       /** Collection edit on, decided by the host: the Scan press beside the search (card-scan PR 3). Absent, as shipped. */

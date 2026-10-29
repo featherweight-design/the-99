@@ -202,7 +202,7 @@ export const tourCopy = {
       place: 'Collection',
       title: 'Start with what you own',
       body: 'Everything here is built from your collection. Drop in a file from ManaBox, Moxfield, Archidekt or Deckbox.',
-      /** `PRECONS_ENABLED`; the middle part is the shipped `Precons I own`, drawn in `--fg` 600. */
+      /** The middle part is the shipped `Precons I own`, drawn in `--fg` 600. */
       precons: { lead: 'No file?', rest: 'adds every card in the boxes you have, at their own printings.' },
       foot: 'Six stops · about a minute · ✕ skips the tour',
       /** The tour taken again with the nav unlocked (R3·2); a locked dashboard keeps `body`. /copy-review 2026-10-17. */

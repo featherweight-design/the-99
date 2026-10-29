@@ -22,7 +22,6 @@ import { bracketReachEnabled } from "../intake/bracket-reach-flag";
 import { labelSurfacesEnabled, standInLabelsEnabled } from "../labels/read";
 import type { ModelFeature } from "../model/allowance-rule";
 import { noticesEnabled } from "../notices/flag";
-import { preconsEnabled } from "../precons/flag";
 import { publicPagesEnabled } from "../public/flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
@@ -69,7 +68,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   NOTICES_ENABLED: noticesEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PAYMENTS_ENABLED: paymentsEnabled,
-  PRECONS_ENABLED: preconsEnabled,
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   PUBLIC_PAGES_ENABLED: publicPagesEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,

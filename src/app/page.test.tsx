@@ -1,5 +1,5 @@
 // Home's arrivals banner (upcoming precons, plan PR 3): read inside the cached payload, only past the first-run
-// return, only with PRECONS_ENABLED on, and handed to the dashboard as `arrivals`. Every other loader is
+// return, and handed to the dashboard as `arrivals`. Every other loader is
 // stubbed; what is asserted is the element the page returns and whether the banner was read.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Fragment, type ReactElement } from "react";
@@ -67,7 +67,7 @@ const HomePage: typeof RawHomePage = async (...args) => {
 const { PushLanding } = await import("../components/push/push-landing");
 
 const BANNER = { lines: [{ kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 }], href: "/decks/precons?sort=newest#announced", keys: ["trc"] };
-const ON = { PRECONS_ENABLED: "true" };
+const ON = {};
 
 beforeEach(() => {
   stub.env = { ...ON };
@@ -90,14 +90,6 @@ describe("Home's arrivals banner", () => {
     expect(page.type).toBe(Dashboard);
     expect(page.props.arrivals).toEqual(BANNER);
     expect(stub.arrivals).toHaveBeenCalledWith("user_1", expect.any(Date));
-  });
-
-  it("neither reads nor draws it with Precons off", async () => {
-    stub.env = {};
-    const page = (await HomePage()) as ReactElement<{ arrivals: unknown }>;
-    expect(page.type).toBe(Dashboard);
-    expect(page.props.arrivals).toBeNull();
-    expect(stub.arrivals).not.toHaveBeenCalled();
   });
 
   it("neither reads nor draws it on the first-run checklist (H7)", async () => {
@@ -130,14 +122,6 @@ describe("Home's precon pick receipt (no-collection entry S5)", () => {
     expect(page.props.children[1].type).toBe(Dashboard);
   });
 
-  it("reads no receipt with precons off, collection editing on", async () => {
-    stub.env = { ...LINE, PRECONS_ENABLED: "" };
-    stub.receipt.mockResolvedValue(RECEIPT);
-    const page = await visit({ precons: "e1" });
-    expect(page.type).toBe(Dashboard);
-    expect(stub.receipt).not.toHaveBeenCalled();
-  });
-
   it("is exactly the shipped dashboard with the switch off, a claim or not", async () => {
     stub.receipt.mockResolvedValue(RECEIPT);
     const page = await visit({ precons: "e1" });
@@ -164,20 +148,17 @@ describe("Home's ways in at zero cards (no-collection entry S1, S12)", () => {
       noCards?: boolean;
     }>;
 
-  it("hands first run the ways group, with Precons I own only under PRECONS_ENABLED", async () => {
+  it("hands first run the ways group, with Precons I own", async () => {
     stub.uniqueCards = 0;
-    stub.env = { ...LINE, PRECONS_ENABLED: "true" };
-    let page = await visit();
+    stub.env = { ...LINE };
+    const page = await visit();
     expect(page.type).toBe(FirstRunChecklist);
     expect(page.props.ways).toEqual({ precons: true });
-    stub.env = { ...LINE };
-    page = await visit();
-    expect(page.props.ways).toEqual({ precons: false });
   });
 
   it("hands first run no group with collection editing off", async () => {
     stub.uniqueCards = 0;
-    const offs: Record<string, string>[] = [{ PRECONS_ENABLED: "true" }, {}];
+    const offs: Record<string, string>[] = [{}];
     for (const env of offs) {
       stub.env = env;
       const page = await visit();

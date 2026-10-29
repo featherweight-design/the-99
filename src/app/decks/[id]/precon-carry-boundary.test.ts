@@ -13,7 +13,7 @@ describe("the deck page's arrival carry-over", () => {
   it("runs it on the precon arrival alone, with the deck, its reader and the reader's switches", () => {
     const calls = text.match(/carryOnArrival\(\s*([\s\S]*?)\)\s*\)/g) ?? [];
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toMatch(/preconsEnabled\(env\) && arrivedFromPrecon\(query\[PRECON_ARRIVAL_PARAM\]\), id, userId, env/);
+    expect(calls[0]).toMatch(/arrivedFromPrecon\(query\[PRECON_ARRIVAL_PARAM\]\), id, userId, env/);
   });
 
   it("holds the stored chip and the notices until it lands", () => {

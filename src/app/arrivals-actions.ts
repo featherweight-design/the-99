@@ -7,7 +7,6 @@ import { aboutSeen, markAboutVisited } from "../lib/about/read";
 import { dismissKeys, readArrivalLines } from "../lib/precons/banner";
 import { seenKeysFor } from "../lib/precons/arrivals";
 import { markUpcomingSeen } from "../lib/precons/upcoming";
-import { preconsEnabled } from "../lib/precons/flag";
 import { requestSwitchEnv } from "../lib/switches/request";
 
 /**
@@ -31,7 +30,7 @@ import { requestSwitchEnv } from "../lib/switches/request";
 export async function dismissArrivals(shown: unknown, about?: unknown): Promise<string[]> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (preconsEnabled(env) && Array.isArray(shown) && shown.length > 0) {
+  if (Array.isArray(shown) && shown.length > 0) {
     const keys = dismissKeys(shown, seenKeysFor(await readArrivalLines(userId, new Date())));
     if (keys.length > 0) await markUpcomingSeen(userId, keys);
   }

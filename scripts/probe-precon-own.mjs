@@ -10,10 +10,10 @@
 //
 // It writes a fixture precon of 31 cards the account does NOT own (`ProbePreconOwn`), and removes it, the decks
 // it started and the collection rows the adds made (the fixture cards are unowned, so deleting their rows restores the
-// collection exactly) in a `finally`. Point it at local-dev (it checks the branch). Needs PRECONS_ENABLED=true and
+// collection exactly) in a `finally`. Point it at local-dev (it checks the branch). Needs
 // COLLECTION_EDIT_ENABLED=true in the server's environment, started FRESH (the precon catalog is memoized per server).
 //
-//   PRECONS_ENABLED=true COLLECTION_EDIT_ENABLED=true pnpm dev   (another shell)
+//   COLLECTION_EDIT_ENABLED=true pnpm dev   (another shell)
 //   PROBE_BASE=http://localhost:3000 node scripts/probe-precon-own.mjs
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

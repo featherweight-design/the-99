@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
 
 const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
-const stub = vi.hoisted(() => ({ on: true, precons: false, answers: vi.fn(), listable: vi.fn(), env: null as NodeJS.ProcessEnv | null }));
+const stub = vi.hoisted(() => ({ on: true, answers: vi.fn(), listable: vi.fn(), env: null as NodeJS.ProcessEnv | null }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
 vi.mock("../../../lib/switches/request", async () => {
@@ -14,7 +14,6 @@ vi.mock("../../../lib/switches/request", async () => {
   return { requestSwitchEnv: async () => stub.env ?? ENV_VIEW };
 });
 vi.mock("../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => stub.on }));
-vi.mock("../../../lib/precons/flag", () => ({ preconsEnabled: () => stub.precons }));
 vi.mock("../../../lib/decks/pre-filled-commander", () => ({
   loadPreFilledCommander: async (_u: string, id: string) => ({ oracleId: id, name: "Gishath", typeLine: "Legendary Creature", colorIdentity: ["R", "G", "W"], imageUri: null }),
 }));
@@ -32,7 +31,6 @@ const props = async (sp: Record<string, string>) => ((await NewDeckPage({ search
 
 beforeEach(() => {
   stub.on = true;
-  stub.precons = false;
   stub.env = null;
   stub.listable.mockReset().mockResolvedValue(true);
   stub.answers.mockReset().mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: null });
@@ -108,9 +106,7 @@ describe("/decks/new", () => {
     expect((await props({})).helpDoor).toBe(false);
   });
 
-  it("offers the precon door to the picker only while PRECONS_ENABLED is on", async () => {
-    expect((await props({})).preconDoor).toBe(false);
-    stub.precons = true;
+  it("always offers the precon door to the picker", async () => {
     expect((await props({})).preconDoor).toBe(true);
   });
 
