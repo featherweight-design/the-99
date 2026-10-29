@@ -124,7 +124,8 @@ kit.CSS += r"""
 .cart .mhd{height:73px}
 /* ---------- item 2 ---------- */
 .lim .ock{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:4px 2px 0}
-.dkm .lim .ock{grid-column:3;min-height:0;padding:0 2px}
+.dkm .lim .ock{grid-column:1/-1;min-height:0;align-items:center;padding:12px 2px 0;border-top:1px solid var(--border)}
+.dkm .lim .ock .tx{flex-direction:row;align-items:baseline;gap:10px}
 .lim .ock .bx2{width:18px;height:18px;flex:none;border-radius:4px;border:1.5px solid var(--fg-faint);display:flex;align-items:center;justify-content:center;font:700 12px 'IBM Plex Sans';color:var(--bg);margin-top:1px}
 .lim .ock .bx2.on{background:var(--accent);border-color:var(--accent)}
 .lim .ock .tx{display:flex;flex-direction:column;gap:3px}
@@ -140,6 +141,34 @@ kit.CSS += r"""
 .mdl .mb .cr2 .nw{display:flex;flex-direction:column;gap:2px;min-width:0;padding:3px 0}
 .mdl .mb .cr2 .st{align-self:flex-start;font:10.5px 'IBM Plex Mono';color:var(--fg-faint);white-space:nowrap}
 .mdl .mb .cr2 .st b{font-weight:400;color:var(--accent)}
+.mdl .mb .cr2.hd{align-items:center}
+.mdl .mb .cr2.hd .nw{flex:1}
+.mdl .mb .cr2 .hs{align-self:flex-start;font:10.5px 'IBM Plex Mono';color:var(--fg-muted)}
+.mdl .mb .cr2 .hs.go{color:var(--accent)}
+.pbt{margin-left:auto;flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 11px;border-radius:7px;border:1px solid var(--border-strong);font:600 12px 'IBM Plex Sans';color:var(--accent);white-space:nowrap}
+.ph .pbt{height:44px;padding:0 16px;font-size:12.5px}
+.pbt.mu{color:var(--fg-muted);font-weight:500}
+.pbt.op{border-color:var(--accent)}
+.spk{display:flex;flex-direction:column;gap:12px}
+.spk .t{margin:0;font:600 13px 'IBM Plex Sans';color:var(--fg)}
+.spk .t u{text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:3px}
+.spk .o{margin:0;font:10px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--fg-faint)}
+.spk .rs{display:flex;flex-direction:column;gap:6px}
+.spk .r{display:flex;flex-direction:column;gap:2px;border-radius:8px;border:1px solid var(--border-strong);padding:8px 10px;font-size:12.5px}
+.spk .r.on{border-color:var(--accent);background:var(--elevated)}
+.spk .r b{font-weight:500;color:var(--fg)}
+.spk .r span{font:10.5px 'IBM Plex Mono';color:var(--fg-muted)}
+.spk .cq{margin:0;font-size:11.5px;line-height:1.4;color:var(--fg-body)}
+.spk .bs{display:flex;gap:8px}
+.spk .bs span{flex:1;height:36px;border-radius:7px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font:12.5px 'IBM Plex Sans';color:var(--fg-body)}
+.spk .bs span.go{font-weight:600;color:var(--accent)}
+.pop{position:absolute;z-index:40;width:372px;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface);box-shadow:0 18px 44px rgba(0,0,0,.55)}
+.sh2{position:absolute;z-index:40;left:0;right:0;bottom:0;border-radius:18px 18px 0 0;border-top:1px solid var(--border-strong);background:var(--surface);box-shadow:0 -18px 44px rgba(0,0,0,.5);padding:8px 16px 28px}
+.sh2 .gr{width:36px;height:4px;border-radius:2px;background:var(--border-strong);margin:0 auto 12px}
+.scrim2{position:absolute;inset:0;z-index:39;background:rgba(8,6,4,.45)}
+.mdl.pv,.mdl.pv .mb{overflow:visible}
+.mdl .mf .n2{flex:1;font-size:12px;line-height:1.5;color:var(--fg-muted)}
+.ph .mdl .mf .n2{text-align:center}
 .dlr{width:390px;border:1px solid var(--border-strong);border-radius:16px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 """
 
@@ -290,7 +319,7 @@ def lim(cap=None, sets="Any set", own=False, ph=False):
     if own and OWN["show"]:
         on = OWN["other"]
         ck = (f'<div class="ock new"><span class="bx2{" on" if on else ""}">{"✓" if on else ""}</span>'
-              '<span class="tx"><b>Also cards in my other decks</b><span>Each one says which deck has it. It stays in that deck too.</span></span></div>')
+              '<span class="tx"><b>Also cards in my other decks</b><span>Apply asks whether to pull each one from its deck.</span></span></div>')
     return ('<div class="lim"><span class="lh">Kept for this deck</span>'
             f'<div class="fl"><span class="lh">Most per card</span><div class="box">{capv}</div></div>'
             f'<div class="fl"><span class="lh">Set</span><div class="box" style="font-family:IBM Plex Sans;font-size:13px">{sets}<span class="cv">▾</span></div></div>'
@@ -301,15 +330,11 @@ S.lim = lim
 
 
 def marker(key):
-    decks = HELD[key]
-    more = f'<span class="pl">{"less" if key in SHOW_HELD["open"] else "+" + str(len(decks) - 1)}</span>' if len(decks) > 1 else ""
-    return f'<span class="am"><i></i>none free, in {decks[0]}{more}</span>'
+    return '<span class="am"><i></i>none free</span>'
 
 
 def expander(key):
-    if key not in SHOW_HELD["open"]:
-        return ""
-    return '<div class="amx">' + "".join(f'<span>{d}<em>1 copy</em></span>' for d in HELD[key]) + "</div>"
+    return ""
 
 
 _row = S.row
@@ -333,21 +358,50 @@ def row(side, it, ph, state="", flag_on=True):
 S.row = row
 
 
+PULLS = {}            # card key -> deck chosen in the confirmation (staged until Apply)
+PICK = {"open": None, "sel": None}   # desktop popover: card key open, deck selected
+STAMPS = {"HD - Gishath": "v3 · Oct 9", "HD - Kratos": "v4 · Oct 12", "HD - Thorin": "v2 · Oct 20"}
+
+
+def picker(name, decks, sel, ph=False):
+    rows = "".join(f'<div class="r{" on" if d == sel else ""}"><b>{d}</b><span>{STAMPS[d]} · → 98 cards · new draft</span></div>' for d in decks)
+    t = f'Pull <u>{name}</u> from' if ph else f'Pull {name} from'
+    return (f'<div class="spk"><p class="t">{t}</p><p class="o">In the order they committed it</p><div class="rs">{rows}</div>'
+            f'<p class="cq">{sel} goes into a draft with {name} going out. Discard that draft and the card goes back.</p>'
+            f'<div class="bs"><span>Cancel</span><span class="go">Pull from {sel}</span></div></div>')
+
+
 def confirm(adds, cuts, ph=False, bracket="Bracket stays 2 · Core.", big=False):
     def li(sign, it):
         c = "var(--accent)" if sign == "+" else "var(--fg-faint)"
-        st = ""
-        if sign == "+" and it[0] in HELD:
-            d = HELD[it[0]]
-            st = f'<span class="st new">stays in <b>{d[0]}</b>{" +" + str(len(d) - 1) if len(d) > 1 else ""}</span>'
+        k = it[0]
+        if sign == "+" and k in HELD:
+            d = HELD[k]
+            if k in PULLS:
+                hs, bt = f'<span class="hs go new">pulls from {PULLS[k]}</span>', '<span class="pbt mu new">Undo</span>'
+            else:
+                many = len(d) > 1
+                hs = f'<span class="hs new">{"in " + str(len(d)) + " decks" if many else "in " + d[0]}</span>'
+                op = PICK["open"] == k
+                pop = f'<div class="pop new" style="top:40px;right:0">{picker(it[1], d, PICK["sel"])}</div>' if op and not ph else ""
+                bt = (f'<span style="position:relative;margin-left:auto;flex:none"><span class="pbt new{" op" if op else ""}">Pull it{" ▾" if many else ""}</span>{pop}</span>')
+            return (f'<div class="cr2 hd"><span style="color:{c};font:600 13px IBM Plex Mono;width:10px">{sign}</span>'
+                    f'<img src="{P.card(k)}" alt=""><span class="nw">{it[1]}{hs}</span>{bt}</div>')
         return (f'<div class="cr2"><span style="color:{c};font:600 13px IBM Plex Mono;width:10px">{sign}</span>'
-                f'<img src="{P.card(it[0])}" alt=""><span class="nw">{it[1]}{st}</span></div>')
+                f'<img src="{P.card(k)}" alt=""><span class="nw">{it[1]}</span></div>')
     n = len(adds)
-    return (f'<div class="scrim"><div class="mdl"><div class="mh"><div><p class="ey">Suggested changes</p><h4>Apply {n} in, {n} out</h4>'
+    held = any(a[0] in HELD for a in adds)
+    note = '<span class="n2 new">A card you don’t pull stays in its deck too.</span>' if held else ""
+    pv = " pv" if PICK["open"] and not ph else ""
+    return (f'<div class="scrim"><div class="mdl{pv}"><div class="mh"><div><p class="ey">Suggested changes</p><h4>Apply {n} in, {n} out</h4>'
             f'<p>The deck stays at 99. {bracket}</p></div><span class="x">✕</span></div>'
             f'<div class="mb"><div><span class="k">Coming in · {n}</span>{"".join(li("+", a) for a in adds)}</div>'
             f'<div><span class="k">Going out · {n}</span>{"".join(li("−", c) for c in cuts)}</div></div>'
-            f'<div class="mf"><span class="ab2">Apply {2 * n} changes</span></div></div></div>')
+            f'<div class="mf">{note}<span class="ab2">Apply {2 * n} changes</span></div></div></div>')
+
+
+def sheet_over(frame_html, name, decks, sel):
+    return overlay(frame_html, f'<div class="scrim2"></div><div class="sh2 new"><div class="gr"></div>{picker(name, decks, sel, True)}</div>')
 
 
 ASKED = "<b>3 in, 3 out</b> · keep 2 · Core · no cap · any set · only cards I own, <b>and in my other decks</b>"
@@ -436,55 +490,74 @@ def board_other_decks():
                frame("<b>390</b> · Any card: no box", tool_ph(fp_any),
                      "With Any card, cards in other decks are already offered (marked, with a buy tag for a second copy), so the box has nothing to add."),
                gap=36)
-    a2 = frames(frame("<b>1300</b> · box on, under Only cards I own", tool_dk(fd_on)))
+    a2 = frames(frame("<b>1300</b> · box on: a foot row across the box", tool_dk(fd_on)))
 
     # B · results
     SHOW_HELD["on"] = True
     SHOW_HELD["open"] = set()
     p_res = res(True, K([adds[0], adds[2]]), K(cuts[:1]))
-    SHOW_HELD["open"] = {"atreus"}
-    p_open = res(True, K([adds[0], adds[2]]), K(cuts[:1]))
-    SHOW_HELD["open"] = set()
     d_res = res(False, K(adds[:3]), K(cuts[:2]))
-    b = frames(frame("<b>390</b> · two of five come from other decks", vp_ph(p_res, 1220)),
-               frame("<b>390</b> · +1 pressed: which decks", vp_ph(p_open, 1220),
-                     "The cart’s +N press (cart v2 call 2): opens in place, each deck with its copy, and reads <b>less</b> to fold it."),
+    b = frames(frame("<b>390</b> · two of five come from other decks", vp_ph(p_res, 1220),
+                     "The shipped hard marker, nameless: <b>none free</b>. Which deck, and whether to pull it, is Apply’s question."),
+               frame("<b>1300</b> · the marker after the name, as the shipped add mark sits", tool_dk(d_res)),
                gap=36)
-    b2 = frames(frame("<b>1300</b> · the marker after the name, as the shipped add mark sits", tool_dk(d_res)))
+    b2 = ""
 
     # C · apply
     pa, pc = K(adds[:3]), K(cuts[:3])
     ina = adds[:3]
     eqP = res(True, pa, pc, tab="add")
     eqD = res(False, pa, pc)
-    ap = pa + pc
-    doneD = res(False, done=True, applied=ap, lead="<b>Applied 3 in, 3 out.</b> The deck is back at 99, on a new draft. The other 4 stay here.")
-    c = frames(frame("<b>390</b> · confirm", overlay(vp_ph(eqP, 844), confirm(ina, cuts[:3], True))),
-               frame("<b>1300</b> · confirm", overlay(tool_dk(eqD, 900), confirm(ina, cuts[:3]))))
-    c2 = frames(frame("<b>1300</b> · applied: the mark stays on the row", tool_dk(doneD)))
+    atreus = next(a for a in adds if a[0] == "atreus")
+    PULLS.clear(); PICK.update(open=None, sel=None)
+    c_ph = overlay(vp_ph(eqP, 844), confirm(ina, cuts[:3], True))
+    c_sheet = sheet_over(c_ph, atreus[1], HELD["atreus"], "HD - Kratos")
+    PULLS.update({"path": "HD - Gishath", "atreus": "HD - Kratos"})
+    c_ph2 = overlay(vp_ph(eqP, 844), confirm(ina, cuts[:3], True))
+    PULLS.clear(); PICK.update(open="atreus", sel="HD - Kratos")
+    PULLS["path"] = "HD - Gishath"
+    c_dk = overlay(tool_dk(eqD, 900), confirm(ina, cuts[:3]))
+    PULLS.clear(); PICK.update(open=None, sel=None)
+    c = frames(frame("<b>390</b> · confirm: each held card offers the shipped Pull", c_ph,
+                     "One deck: <b>Pull it</b>. Two or more: <b>in 2 decks</b> and <b>Pull it ▾</b>, as on Review changes."),
+               frame("<b>390</b> · Pull it ▾: the shipped source sheet", c_sheet,
+                     "The review page’s picker, unchanged: the decks in the order they committed it, what each is left with, the consequence, Cancel and <b>Pull from HD - Kratos</b>."),
+               frame("<b>390</b> · both chosen", c_ph2,
+                     "The row reads <b>pulls from {deck}</b> and <b>Undo</b> takes the choice back. Nothing moves until Apply."),
+               gap=36)
+    HELD.clear()   # both pulled: the copies are this deck’s now, no marker
+    doneD = res(False, done=True, applied=pa + pc,
+                lead="<b>Applied 3 in, 3 out.</b> The deck is back at 99, on a new draft. Path to Exile and Atreus came out of HD - Gishath and HD - Kratos, each now on a draft.")
+    HELD.clear()
+    HELD.update({"path": ["HD - Gishath"], "atreus": ["HD - Kratos", "HD - Thorin"]})
+    c2 = frames(frame("<b>1300</b> · confirm: Path to Exile chosen, the picker open on Atreus", c_dk,
+                      "The desktop popover (372 wide, under its button), as shipped on Review changes."))
+    c3 = frames(frame("<b>1300</b> · applied: both pulled", tool_dk(doneD),
+                      "The two other decks each get a draft with the card going out (the shipped pull). Undo all takes this deck’s changes and both pulls back."))
 
     calls = tbl([
-        ("1", "The box", "One checkbox, <b>Also cards in my other decks</b>, under <b>Only cards I own</b> in the Kept for this deck box, off by default and kept for the deck like the other limits. "
-              "It shows only while Only cards I own is on. Phone: its own 44px row under the toggle. Desktop: under the toggle, in its column. The shipped 18px <code>Checkbox</code>."),
-        ("2", "The mark", "A card that comes from another deck carries the shipped <b>none free, in HD - Gishath</b> marker (AvailabilityMarker, hard, named) where the add mark already sits: after the name on desktop, on its own line on a phone. "
-              "Held in two or more decks: the first deck and the cart’s <b>+N</b> press, which opens the list in place. No buy tag on these rows: the player asked for cards they own."),
-        ("3", "Apply", "<b>Apply adds the card here and leaves it in the other deck.</b> Nothing changes in HD - Gishath. The confirmation says so on the row (<i>stays in HD - Gishath</i>). "
-              "From then on the shipped availability carries it: this deck’s row reads <i>none free, in HD - Gishath</i>, and once both decks are committed the copy is spoken for twice, "
-              "which the deck page’s message card (deck messages A6) and Shopping already show, with a buy tag for a second copy."),
-        ("4", "Not drawn: move it", "Apply could also cut the card from the other deck. Rejected: it changes a deck the player isn’t looking at, leaves that deck at 98 and needs its own Top off, "
-              "and Undo would have to reach two decks. The player can still cut it there themselves; nothing is locked in."),
+        ("1", "The box", "One checkbox, <b>Also cards in my other decks</b>, in the Kept for this deck box, off by default and kept for the deck like the other limits. "
+              "It shows only while Only cards I own is on. Phone: its own 44px row under the toggle. Desktop: a foot row across the box under a hairline, so the three fields keep their one-row height. The shipped 18px <code>Checkbox</code>."),
+        ("2", "The mark", "A card that comes from another deck carries the shipped hard marker, nameless: <b>none free</b> (AvailabilityMarker, <code>nameless</code>, <code>selfExcluded</code>), where the add mark already sits: after the name on desktop, on its own line on a phone. "
+              "No deck name and no +N: which deck is Apply’s question. No buy tag on these rows: the player asked for cards they own."),
+        ("3", "Apply: the shipped Pull", "In the confirmation each held card coming in carries Review changes’ Pull (<code>PullControl</code>’s look): <i>in HD - Gishath</i> with <b>Pull it</b>, or <i>in 2 decks</i> with <b>Pull it ▾</b>, "
+              "which opens the shipped source picker (sheet on a phone, the 372 popover from md) with its order line, stamps, card counts, consequence and <b>Pull from {deck}</b>. "
+              "Choosing stages the pull: the row reads <i>pulls from {deck}</i> and <b>Undo</b> takes it back. Nothing moves until <b>Apply</b>."),
+        ("4", "Pulling is the player’s choice", "A card left unpulled is added here and stays in its deck too (the foot line says so); the shipped availability then shows it spoken for twice, as the deck page’s message card and Shopping already do. "
+              "Pulled cards leave their deck through the shipped pull: that deck gets a draft with the card going out (or joins its draft). <b>Undo all</b> takes this deck’s changes and the pulls back."),
         ("5", "Engineering", "<code>limits.otherDecks</code> (boolean, stored with the deck’s limits, in the run fingerprint). When on, owned candidates include oracle ids with <code>free ≤ 0</code> whose copies sit in other decks "
-              "(<code>loadAvailability</code> with <code>excludeDeckId</code>), and <code>owned</code> on the answer row stops requiring <code>free &gt; 0</code>. "
-              "Ordering stays the run’s (recommended first); when two cards fit as well, a spare copy goes ahead of a held one. The row’s marker drops <code>nameless</code> and keeps <code>selfExcluded</code>."),
-        ("6", "Copy (drafts)", "<i>Also cards in my other decks</i> · <i>Each one says which deck has it. It stays in that deck too.</i> · <i>stays in {deck}</i> · You asked: <i>only cards I own, and in my other decks</i>. The marker is shipped copy."),
+              "(<code>loadAvailability</code> with <code>excludeDeckId</code>), and <code>owned</code> on the answer row stops requiring <code>free &gt; 0</code>. Ordering stays the run’s; when two cards fit as well, a spare copy goes ahead of a held one. "
+              "The confirm carries <code>DeckClaim</code>s per held card and the chosen pulls go with the apply (the pull’s own guards: locked and commander rows are passed by, as on Review changes)."),
+        ("6", "Copy (drafts)", "<i>Also cards in my other decks</i> · <i>Apply asks whether to pull each one from its deck.</i> · <i>pulls from {deck}</i> · <i>Undo</i> · <i>A card you don’t pull stays in its deck too.</i> · You asked: <i>only cards I own, and in my other decks</i>. "
+              "The marker, <i>in {deck}</i>, <i>in N decks</i>, <i>Pull it</i> and the picker are shipped copy."),
     ])
     body = (head("small items 4 · item 2", "Suggested changes: cards from my other decks",
                  "With <b>Only cards I own</b>, a run offers spare copies only (engineering is widening that to every spare, recommended first). "
                  "This adds a choice to also offer copies that sit in another deck. Drawn over the shipped Kept for this deck box, the v2 pick line and Apply’s confirmation. "
                  "Fixture: HD - Half Shell at 99, N = 3; Path to Exile is in HD - Gishath, Atreus in HD - Kratos and HD - Thorin.")
-            + sec("A · The box on the form", "Steps 1 and 2 are as v2 drew them (dimmed here). The box is new; everything else in step 3 is shipped.", a + a2)
-            + sec("B · A result from another deck", "Picked rows behave as shipped. Only the marker is new to these rows; it is the one the deck page and Shopping already use.", b + b2)
-            + sec("C · Apply", "The shipped confirmation, with where each held card stays. Applying never touches the other deck.", c + c2)
+            + sec("A · The box on the form", "Steps 1 and 2 are as v2 drew them (dimmed here). The box is new; everything else in step 3 is shipped. On desktop it is a foot row across the box, so the fields keep one height.", a + a2)
+            + sec("B · A result from another deck", "Picked rows behave as shipped. Only the marker is new to these rows: the shipped one, without a deck name.", b + b2)
+            + sec("C · Apply", "The shipped confirmation, with Review changes’ Pull on each held card. The player picks the deck; a card left unpulled stays in both.", c + c2 + c3)
             + '<div class="sec"><h3>The calls</h3>' + calls + '</div>')
     return doc("Small items 4 · other decks", body, 1300 + 390 + 44 + 112)
 
@@ -495,7 +568,7 @@ def board_main():
         ("1", "Filters on Collection and the cart", "<b>Recommended: the 44px box on both.</b> The cart’s controls row is already 44 (search and ⇅), so its pinned block doesn’t change. "
               "Collection’s pinned head goes from 108 to 116. Collection’s Sort pill takes the panel’s own 44 so row B has one height. Board <b>Filters</b>."),
         ("2", "Suggested changes: cards from my other decks", "<b>One checkbox</b> under Only cards I own: <i>Also cards in my other decks</i>. A result from another deck carries the shipped "
-              "<i>none free, in HD - Gishath</i> marker (+N when several decks hold it). <b>Apply adds it here and leaves it there</b>; the shipped availability and deck messages take it from there. Board <b>Other-Decks</b>."),
+              "<i>none free</i> marker. <b>Apply’s confirmation carries Review changes’ Pull</b> on each held card (Pull it, or Pull it ▾ with the source picker), so the player picks which deck it leaves; a card left unpulled stays in both. Board <b>Other-Decks</b>."),
         ("3", "About · the top dock and the returning header", "<b>Recommended: the label rides the header.</b> A label docked at the top keeps its place under the back bar (or the header): "
               "it slides 79px down as the returned header comes in and back up as it leaves, on the header’s own slide, the way the back bar already rides <code>--header-offset</code>. The top-or-foot choice is still made once, on the tap. "
               "Not recommended: holding the header away while a label is docked. Board <b>Dock-Header</b>."),

@@ -1099,7 +1099,8 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .cart .mhd{height:73px}
 /* ---------- item 2 ---------- */
 .lim .ock{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:4px 2px 0}
-.dkm .lim .ock{grid-column:3;min-height:0;padding:0 2px}
+.dkm .lim .ock{grid-column:1/-1;min-height:0;align-items:center;padding:12px 2px 0;border-top:1px solid var(--border)}
+.dkm .lim .ock .tx{flex-direction:row;align-items:baseline;gap:10px}
 .lim .ock .bx2{width:18px;height:18px;flex:none;border-radius:4px;border:1.5px solid var(--fg-faint);display:flex;align-items:center;justify-content:center;font:700 12px 'IBM Plex Sans';color:var(--bg);margin-top:1px}
 .lim .ock .bx2.on{background:var(--accent);border-color:var(--accent)}
 .lim .ock .tx{display:flex;flex-direction:column;gap:3px}
@@ -1115,10 +1116,38 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .mdl .mb .cr2 .nw{display:flex;flex-direction:column;gap:2px;min-width:0;padding:3px 0}
 .mdl .mb .cr2 .st{align-self:flex-start;font:10.5px 'IBM Plex Mono';color:var(--fg-faint);white-space:nowrap}
 .mdl .mb .cr2 .st b{font-weight:400;color:var(--accent)}
+.mdl .mb .cr2.hd{align-items:center}
+.mdl .mb .cr2.hd .nw{flex:1}
+.mdl .mb .cr2 .hs{align-self:flex-start;font:10.5px 'IBM Plex Mono';color:var(--fg-muted)}
+.mdl .mb .cr2 .hs.go{color:var(--accent)}
+.pbt{margin-left:auto;flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 11px;border-radius:7px;border:1px solid var(--border-strong);font:600 12px 'IBM Plex Sans';color:var(--accent);white-space:nowrap}
+.ph .pbt{height:44px;padding:0 16px;font-size:12.5px}
+.pbt.mu{color:var(--fg-muted);font-weight:500}
+.pbt.op{border-color:var(--accent)}
+.spk{display:flex;flex-direction:column;gap:12px}
+.spk .t{margin:0;font:600 13px 'IBM Plex Sans';color:var(--fg)}
+.spk .t u{text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:3px}
+.spk .o{margin:0;font:10px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--fg-faint)}
+.spk .rs{display:flex;flex-direction:column;gap:6px}
+.spk .r{display:flex;flex-direction:column;gap:2px;border-radius:8px;border:1px solid var(--border-strong);padding:8px 10px;font-size:12.5px}
+.spk .r.on{border-color:var(--accent);background:var(--elevated)}
+.spk .r b{font-weight:500;color:var(--fg)}
+.spk .r span{font:10.5px 'IBM Plex Mono';color:var(--fg-muted)}
+.spk .cq{margin:0;font-size:11.5px;line-height:1.4;color:var(--fg-body)}
+.spk .bs{display:flex;gap:8px}
+.spk .bs span{flex:1;height:36px;border-radius:7px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font:12.5px 'IBM Plex Sans';color:var(--fg-body)}
+.spk .bs span.go{font-weight:600;color:var(--accent)}
+.pop{position:absolute;z-index:40;width:372px;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface);box-shadow:0 18px 44px rgba(0,0,0,.55)}
+.sh2{position:absolute;z-index:40;left:0;right:0;bottom:0;border-radius:18px 18px 0 0;border-top:1px solid var(--border-strong);background:var(--surface);box-shadow:0 -18px 44px rgba(0,0,0,.5);padding:8px 16px 28px}
+.sh2 .gr{width:36px;height:4px;border-radius:2px;background:var(--border-strong);margin:0 auto 12px}
+.scrim2{position:absolute;inset:0;z-index:39;background:rgba(8,6,4,.45)}
+.mdl.pv,.mdl.pv .mb{overflow:visible}
+.mdl .mf .n2{flex:1;font-size:12px;line-height:1.5;color:var(--fg-muted)}
+.ph .mdl .mf .n2{text-align:center}
 .dlr{width:390px;border:1px solid var(--border-strong);border-radius:16px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 </style>
 </helmet>
-<div class="board" style="width:1300px"><div class="bh"><div class="kick"><span class="tag">SI4</span>small items 4 · account 2 · 2026-10-29</div><h2>Small items 4</h2><p>Three small items: a follow-up on Small items 3’s filter controls, a new choice on Suggested changes’ form, and (addendum) the About phone dock under the returning header. Each is drawn over the shipped surface it changes, at 390 and, for item 2, 1300. Dashed orange outlines mark what is new. Strings marked as drafts are for /copy-review.</p></div><div class="sec"><h3>The calls</h3><div class="tbl2"><div class="tr"><div>1</div><div>Filters on Collection and the cart</div><div><b>Recommended: the 44px box on both.</b> The cart’s controls row is already 44 (search and ⇅), so its pinned block doesn’t change. Collection’s pinned head goes from 108 to 116. Collection’s Sort pill takes the panel’s own 44 so row B has one height. Board <b>Filters</b>.</div></div><div class="tr"><div>2</div><div>Suggested changes: cards from my other decks</div><div><b>One checkbox</b> under Only cards I own: <i>Also cards in my other decks</i>. A result from another deck carries the shipped <i>none free, in HD - Gishath</i> marker (+N when several decks hold it). <b>Apply adds it here and leaves it there</b>; the shipped availability and deck messages take it from there. Board <b>Other-Decks</b>.</div></div><div class="tr"><div>3</div><div>About · the top dock and the returning header</div><div><b>Recommended: the label rides the header.</b> A label docked at the top keeps its place under the back bar (or the header): it slides 79px down as the returned header comes in and back up as it leaves, on the header’s own slide, the way the back bar already rides <code>--header-offset</code>. The top-or-foot choice is still made once, on the tap. Not recommended: holding the header away while a label is docked. Board <b>Dock-Header</b>.</div></div></div></div></div>
+<div class="board" style="width:1300px"><div class="bh"><div class="kick"><span class="tag">SI4</span>small items 4 · account 2 · 2026-10-29</div><h2>Small items 4</h2><p>Three small items: a follow-up on Small items 3’s filter controls, a new choice on Suggested changes’ form, and (addendum) the About phone dock under the returning header. Each is drawn over the shipped surface it changes, at 390 and, for item 2, 1300. Dashed orange outlines mark what is new. Strings marked as drafts are for /copy-review.</p></div><div class="sec"><h3>The calls</h3><div class="tbl2"><div class="tr"><div>1</div><div>Filters on Collection and the cart</div><div><b>Recommended: the 44px box on both.</b> The cart’s controls row is already 44 (search and ⇅), so its pinned block doesn’t change. Collection’s pinned head goes from 108 to 116. Collection’s Sort pill takes the panel’s own 44 so row B has one height. Board <b>Filters</b>.</div></div><div class="tr"><div>2</div><div>Suggested changes: cards from my other decks</div><div><b>One checkbox</b> under Only cards I own: <i>Also cards in my other decks</i>. A result from another deck carries the shipped <i>none free</i> marker. <b>Apply’s confirmation carries Review changes’ Pull</b> on each held card (Pull it, or Pull it ▾ with the source picker), so the player picks which deck it leaves; a card left unpulled stays in both. Board <b>Other-Decks</b>.</div></div><div class="tr"><div>3</div><div>About · the top dock and the returning header</div><div><b>Recommended: the label rides the header.</b> A label docked at the top keeps its place under the back bar (or the header): it slides 79px down as the returned header comes in and back up as it leaves, on the header’s own slide, the way the back bar already rides <code>--header-offset</code>. The top-or-foot choice is still made once, on the tap. Not recommended: holding the header away while a label is docked. Board <b>Dock-Header</b>.</div></div></div></div></div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":1200}}'>
 class Component extends DCLogic {
