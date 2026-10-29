@@ -720,13 +720,11 @@ export const adminMaskCopy = {
  * already does.
  */
 export const switchCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
-  ADDED_COPY_ENABLED: { label: "Added copy", description: "An added copy says where it went, with Change to move it." },
   ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },
   BRACKET_REACH_ENABLED: { label: "Bracket reach", description: "Help me choose places owned cards that reach the bracket asked for." },
-  CARD_SCAN_ENABLED: { label: "Card scanning", description: "Scan cards with the camera into Add cards." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
-  COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Added copy, Mark bought, Collection sync, No-collection entry and Card scanning need it." },
+  COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Mark bought, Collection sync and No-collection entry need it." },
   COLLECTION_SYNC_ENABLED: { label: "Collection sync", description: "Sync an upload: take what the file changed and keep your own edits." },
   COMMANDERS_PLACE_ENABLED: { label: "Commanders place", description: "Discover leaves the menu bar for Commanders, and Friends takes the fifth slot." },
   DECK_BENCHMARKS_ENABLED: { label: "Deck benchmarks", description: "A deck measured against similar decks." },
@@ -735,8 +733,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   DECK_STATS_ENABLED: { label: "Deck stats", description: "The Stats view on a deck." },
   DECK_TOKENS_ENABLED: { label: "Deck tokens", description: "The tokens a deck makes, on the deck and in Shopping." },
   FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A one-credit run inside Find a deck for it." },
-  FIRST_RUN_TOUR_ENABLED: { label: "First-run tour", description: "The tour on a new account’s Home, and Take the tour." },
-  HELP_PANEL_ENABLED: { label: "About this screen", description: "The ? in the rail and the header, with this screen’s About entries." },
   FRIEND_DECKS_ENABLED: { label: "Friend decks", description: "Open a friend’s deck, and hide a deck from friends. Needs Friends." },
   HOME_FEED_ENABLED: { label: "Home feed", description: "What’s new on Home, its badge, and the news switches in Settings." },
   HELP_ME_CHOOSE_ENABLED: { label: "Help me choose", description: "Find a commander from a few words, and Look deeper." },

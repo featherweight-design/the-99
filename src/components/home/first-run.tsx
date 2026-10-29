@@ -134,7 +134,6 @@ export function FirstRunChecklist({
   signature = null,
   tables = null,
   tour = false,
-  tourAgain = false,
   news = false,
   commandersPlace = false,
 }: {
@@ -145,12 +144,10 @@ export function FirstRunChecklist({
   addByHand?: boolean;
   /** `tourDue`: the first-run tour runs over this page once (discovery R3·1b). */
   tour?: boolean;
-  /** `FIRST_RUN_TOUR_ENABLED` on (discovery R3·2): `/?tour=1` runs the tour again, here the first-run tour itself. */
-  tourAgain?: boolean;
   about?: AboutLine | null;
   /** The welcome-credits strip (welcome credits D2), read per request, or null: drawn under About's line. */
   welcome?: React.ReactNode;
-  /** `CARD_SCAN_ENABLED` for the reader: the Add cards sheet's Scan press. */
+  /** Collection edit on for the reader (card scanning ends in its add): the Add cards sheet's Scan press. */
   scan?: boolean;
   /** The no-collection entry (S1): step 1's ways group, and Collection open in the nav. Null: as shipped. */
   ways?: { precons: boolean } | null;
@@ -220,7 +217,8 @@ export function FirstRunChecklist({
         {friends && <FirstRunFriendsRow {...friends} />}
         {news && <FirstRunNewsRow />}
         {/* The tour's precon line follows the ways group: off with it, and with PRECONS_ENABLED. */}
-        {(tour || tourAgain) && <HomeTour due={tour} mode="first-run" precons={ways?.precons ?? false} />}
+        {/* Mounted always: `/?tour=1` runs the tour again (discovery R3·2), here the first-run tour itself. */}
+        <HomeTour due={tour} mode="first-run" precons={ways?.precons ?? false} />
         {/* No foot. Step 1 is the collection alone (first-run ruling 1, 2026-09-28): the
             "Already have a deck elsewhere?" row and its `mt-auto` are deleted rather than
             replaced, so the stack closes up and the space below it stays page. Import is

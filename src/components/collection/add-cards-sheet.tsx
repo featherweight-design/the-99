@@ -75,7 +75,7 @@ export type AddCardsSheetProps =
        * it from `PRECONS_ENABLED` and the line's own switch; absent, the empty state is as shipped.
        */
       preconPick?: boolean;
-      /** `CARD_SCAN_ENABLED`, decided by the host: the Scan press beside the search (card-scan PR 3). Absent, as shipped. */
+      /** Collection edit on, decided by the host: the Scan press beside the search (card-scan PR 3). Absent, as shipped. */
       scan?: boolean;
     }
   | {
@@ -485,7 +485,7 @@ function AddMode({
       const out = await addToCollection(attempt.current.id, payload);
       if ("applied" in out) {
         const s = summarize(lines);
-        // Where each copy went, when the save said (`ADDED_COPY_ENABLED`): absent, nothing is drawn.
+        // Where each copy went, when the save said (collection edit on): absent, nothing is drawn.
         const placed = out.applied.placed;
         setSaved({ copies: s.copies, cards: s.lines, entryId: out.applied.id, went: placed ? { lines, placed } : null });
         setPhase("saved");

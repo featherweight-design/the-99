@@ -81,7 +81,6 @@ beforeEach(() => {
   process.env.SHOPPING_MARK_BOUGHT_ENABLED = "true";
   process.env.COLLECTION_EDIT_ENABLED = "true";
   process.env.ALL_DECKS_CART_ENABLED = "true";
-  delete process.env.ADDED_COPY_ENABLED;
 });
 
 describe("markBought", () => {
@@ -141,18 +140,16 @@ describe("markBought", () => {
       requireMember: { deckIds: [DECK], oracleId: CARD },
     });
     expect(env === RESOLVED).toBe(true);
-    expect(out).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0 } } });
+    expect(out).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0, went: { held: [], soft: [], unplaced: 3 }, chooser: null } } });
   });
 
-  it("adds where the copy went and the chooser Change opens, from the write's own snapshot, only with the switch on", async () => {
+  it("adds where the copy went and the chooser Change opens, from the write's own snapshot", async () => {
     const claim = { id: DECK, name: "HD - Brago", quantity: 1, mature: true, since: 1 };
     state.result = applied({
       before: { owned: 1, claims: [claim] },
       after: { owned: 3, claims: [claim] },
       afterFromDecks: { [DECK]: { owned: 3, free: 0, soft: 0 } },
     });
-    expect(await press()).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0 } } });
-    process.env.ADDED_COPY_ENABLED = "true";
     expect(await press()).toEqual({ applied: { id: ID, receipt: {
       tookCopy: [],
       stillNeeds: 0,
@@ -180,7 +177,7 @@ describe("markBought", () => {
   });
 
   it("takes a holding of any size a Postgres integer stores", async () => {
-    expect(await press({ expected: 50_000 })).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0 } } });
+    expect(await press({ expected: 50_000 })).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0, went: { held: [], soft: [], unplaced: 3 }, chooser: null } } });
   });
 
   it("lowercases the ids it keys on", async () => {

@@ -12,11 +12,9 @@ export type AboutTabsProps = {
   /** The Reference's own count, beside its name. */
   count: number;
   panel: ReactNode;
-  /** `FIRST_RUN_TOUR_ENABLED` for the reader (discovery R3·2): `Take the tour →` after the subtitle. */
-  tour?: boolean;
 };
 
-export function AboutTabs({ count, panel, tour = false }: AboutTabsProps) {
+export function AboutTabs({ count, panel }: AboutTabsProps) {
   return (
     <div data-about-tabs="reference">
       <div className="px-[16px] md:px-0">
@@ -25,15 +23,11 @@ export function AboutTabs({ count, panel, tour = false }: AboutTabsProps) {
         </h1>
         <p className="m-0 mt-[6px] text-[14.5px] leading-[1.5] text-[color:var(--fg-body)] md:mt-[8px] md:text-[15px] md:leading-normal">
           {aboutShapeCopy.referenceSub}
-          {tour && (
-            <>
-              {" "}
-              <Link data-tour-again href={TOUR_HREF} className={`${TOUCH_HIT} whitespace-nowrap py-[10px] text-[14.5px] font-semibold text-[color:var(--accent-text)] hover:underline`}>
-                {tourAgainCopy.aboutPress}
-                <PendingReporter href={TOUR_HREF} />
-              </Link>
-            </>
-          )}
+          {" "}
+          <Link data-tour-again href={TOUR_HREF} className={`${TOUCH_HIT} whitespace-nowrap py-[10px] text-[14.5px] font-semibold text-[color:var(--accent-text)] hover:underline`}>
+            {tourAgainCopy.aboutPress}
+            <PendingReporter href={TOUR_HREF} />
+          </Link>
         </p>
       </div>
       <div className="mt-[14px] flex items-center border-b border-b-[color:var(--border)] px-[16px] md:mt-[26px] md:px-0">

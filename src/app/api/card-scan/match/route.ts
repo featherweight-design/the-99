@@ -4,7 +4,7 @@
 //   - the reader comes from the Clerk session. A signed-out request is turned away by the proxy's `auth.protect()`
 //     before it arrives (this path is not public), so a client reads ANY non-JSON answer as signed out; the 401
 //     below is the handler not trusting that, as `/api/card-detail`'s is;
-//   - `CARD_SCAN_ENABLED` is re-checked for that reader, and off answers 404, as a route that is not there;
+//   - collection edit (which a scan ends in) is re-checked for that reader, and off answers 404, as a route that is not there;
 //   - the body is `{ model, embedding }`, the embedding base64 of 256 little-endian float32 at unit length; anything
 //     else is 400 before anything is read;
 //   - a model other than the index's is 409, naming both, and an empty or unreadable index is 503;
@@ -14,7 +14,7 @@
 import { captureServerError } from "../../../../lib/sentry/capture";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
-import { cardScanEnabled } from "../../../../lib/card-scan/flag";
+import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
 import { readCapped } from "../../../../lib/http/read-capped";
 import { lookupGuesses } from "../../../../lib/card-scan/lookup";
 import { decodeEmbedding } from "../../../../lib/card-scan/match";
@@ -32,7 +32,7 @@ const MAX_BODY = 4096;
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
-  if (!cardScanEnabled(await requestSwitchEnv(userId))) return NextResponse.json(null, { status: 404, headers: HEADERS });
+  if (!collectionEditEnabled(await requestSwitchEnv(userId))) return NextResponse.json(null, { status: 404, headers: HEADERS });
   await observeHit(userId, "card-scan");
   // Read as a stream and abandoned at the cap, so an oversized or chunked body is never buffered whole.
   const text = await readCapped(req, MAX_BODY);

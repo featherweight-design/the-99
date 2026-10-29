@@ -1331,6 +1331,13 @@
       "when": 1793302468800,
       "tag": "0189_retire_card_search_moments_switches",
       "breakpoints": true
+    },
+    {
+      "idx": 190,
+      "version": "7",
+      "when": 1793305208558,
+      "tag": "0190_retire_first_run_help_scan_added_copy_switches",
+      "breakpoints": true
     }
   ]
 }

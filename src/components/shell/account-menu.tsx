@@ -84,8 +84,6 @@ type MenuItemsProps = {
   chip: ChipState | null;
   /** Leaves for /credits, as `onAbout` leaves for /about. */
   onCredits: () => void;
-  /** `FIRST_RUN_TOUR_ENABLED` for this reader (discovery R3·2): `Take the tour`, directly under About, else no row. */
-  tour: boolean;
   /** Leaves for `/?tour=1`, which starts the tour on Home, as `onAbout` leaves for /about. */
   onTour: () => void;
 };
@@ -97,14 +95,14 @@ type MenuItemsProps = {
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, friends, onFriends, settings, onSettings, tour, onTour }: MenuItemsProps) {
+function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, friends, onFriends, settings, onSettings, onTour }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
   // About first, Friends under it (Social R1 placement), or Settings in that row once Friends is in the bar, Admin after them; each drawn only where it applies.
   const links: { href: string; label: string; trailing: string | null; go: () => void }[] = [
     { href: "/about", label: aboutLabel, trailing: null, go: onAbout },
     // The tour taken again sits directly under About, drawn as that row is (plan decision 6).
-    ...(tour ? [{ href: TOUR_HREF, label: tourAgainCopy.menu, trailing: null, go: onTour }] : []),
+    { href: TOUR_HREF, label: tourAgainCopy.menu, trailing: null, go: onTour },
     // Once Friends is in the bar, Settings takes its row, in the same place, so the menu keeps its count of rows
     // (menu and Home handoff, R1 Menu 3).
     ...(settings
@@ -418,7 +416,6 @@ export function AccountMenu({
   homeFeed = false,
   credits = null,
   friendsMoment = false,
-  tour = false,
 }: {
   panel: PanelKind;
   theme: ThemeKey;
@@ -438,8 +435,6 @@ export function AccountMenu({
   credits?: ChipState | null;
   /** M11, Friends after a game: resolved by the shell (a game logged, no friend yet) and drawn only beside the Friends row. */
   friendsMoment?: boolean;
-  /** `FIRST_RUN_TOUR_ENABLED` for this reader, resolved by the shell: the `Take the tour` row. */
-  tour?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -690,7 +685,6 @@ export function AccountMenu({
             onFriends={onFriends}
             settings={settings}
             onSettings={onSettings}
-            tour={tour}
             onTour={onTour}
             onAdmin={onAdmin}
             chip={chip}
@@ -713,7 +707,6 @@ export function AccountMenu({
             onFriends={onFriends}
             settings={settings}
             onSettings={onSettings}
-            tour={tour}
             onTour={onTour}
             onAdmin={onAdmin}
             chip={chip}

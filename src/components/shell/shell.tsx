@@ -20,14 +20,12 @@ import { homeFeedEnabled } from "../../lib/feed/flag";
 import { unseenFriendsCount } from "../../lib/feed/read";
 import { waitingAsksCount } from "../../lib/social/spare-requests";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
-import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
 import { friendsAfterGameDue } from "../../lib/social/after-game";
 import { MomentsProvider } from "../moments/moments-provider";
 import { TargetsProvider } from "../discovery/targets-provider";
 import { CardSearchRoot } from "../card-search/card-search";
-import { helpPanelEnabled } from "../../lib/discovery/onboarding-flag";
 import { HelpRoot } from "../help/help-root";
 import { unseenCount } from "../../lib/feed/read";
 import { pushEnabled } from "../../lib/push/flag";
@@ -86,15 +84,11 @@ export default async function Shell({
     friends: socialFriendsEnabled(env),
     // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10).
     credits: await perfRead("shell.creditChip", () => readChip(userId, env)),
-    // `Take the tour` under About in the account menu (discovery R3·2), with the tour's own switch.
-    tour: firstRunTourEnabled(env),
     // The Commanders place: Discover leaves the bar, and with `friends` Friends takes its slot and Settings its row.
     commandersPlace: commandersPlaceEnabled(env),
     // Settings' news section: with the Commanders place, the menu's Settings row is drawn for it even with Friends off.
     homeFeed: homeFeedEnabled(env),
   };
-  // The ? (discovery R2·8): only the boolean reaches the client; off, no ? is drawn anywhere.
-  const help = helpPanelEnabled(env);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
   // The moments live for this reader and the ones already spent (discovery R1). With none live the spent set is not
@@ -159,7 +153,7 @@ export default async function Shell({
       <TargetsProvider navLocked={locked}>
       <MomentsProvider live={moments} spent={spentMoments}>
       <CardSearchRoot userId={userId}>
-      <HelpRoot on={help}>
+      <HelpRoot>
       {pushOn && <PushHeartbeat />}
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} badges={badges} />

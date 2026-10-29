@@ -87,7 +87,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   is the senior deck's, a card only a brew wants is a `soft` read, a card no deck wants carries nothing, deleting the deck
   afterwards leaves the stored row alone, and a save made without the placement read stores none. It writes under a
   per-run user_id and deletes it in a `finally`; refused on staging and production. The upload check passes
-  `ADDED_COPY_ENABLED` and `COLLECTION_EDIT_ENABLED` in the env it hands the receipt, as the confirm's switches would.
+  `COLLECTION_EDIT_ENABLED` in the env it hands the receipt, as the confirm's switches would.
 - `pnpm probe:search-clear` presses a search field's ✕ ONCE with a real pointer (a touch tap at phone width, a
   mouse click at desktop) and reports the field's value, whether it is still the focused element, and whether the ✕
   held its box (`PROBE_BASE`, a signed-in `+clerk_test` user like its siblings; mutate-free, it only types into a
@@ -606,9 +606,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   not-found page).
 
 - `pnpm probe:tour` runs the first-run tour (discovery R3·1b) in a real browser at 1300x900 and 390x844, signed in as
-  the dedicated first-run account (`onboard-probe+clerk_test@the99.app`) against a server with
-  `FIRST_RUN_TOUR_ENABLED=true` (About's sheet and the gate's redirect to `/about` retired in About visual PR 6b, so no
-  About switch is needed). It proves every step's cutout sits on its real control (the ring's box is the control's box
+  the dedicated first-run account (`onboard-probe+clerk_test@the99.app`) (About's sheet and the gate's redirect to `/about` retired in About visual PR 6b, so no
+  About switch is needed; the tour is always on). It proves every step's cutout sits on its real control (the ring's box is the control's box
   plus its room, within 2px), the app is inert under the scrim and a press on a locked slot opens no note, the tour is
   spent once as step 1 appears (`tour_seen_at` written, a reload shows nothing, the date unmoved), a theme chosen at
   step 5 survives a skip, and with every About entry seen step 6 lights nothing (R3 gap 6) and Esc ends it. Last, two
@@ -652,7 +651,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
   switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
   itself: a deck's Stats and Notes tabs, the all-decks cart and the buy tag each have a switch of their own, and a frame
-  missing one is not captured), `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED` and
+  missing one is not captured), `RULE_ZERO_ENABLED` and
   `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and `PAYMENTS_ENABLED` on, so the frames show the ?, the account menu's `Take the tour` row, the pod's
   `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no sheet. A screen frame missing what it
   must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
@@ -1923,8 +1922,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   region's halo; pin 1 swaps it; ✕ (`Close`) takes it away with focus on the label's line. And W8 at both widths on
   `/about/decks#analysis`: a press on a tool card's picture and on its body leaves the URL unchanged, each card has at
   most one `[data-tool-card-press]`, and at 1300 the row's buttons share one `getBoundingClientRect().bottom`. Every
-  check presses the control and reads the URL and the lit state. Run against
-  a server with `HELP_PANEL_ENABLED` on. Its R6 walks (the one-time sheet, the legacy `about_v` cookie, a forged
+  check presses the control and reads the URL and the lit state. Its R6 walks (the one-time sheet, the legacy `about_v` cookie, a forged
   `x-about-sheet` header) and its `--flip` walk retired with the sheet and the gate in About visual PR 6b; the banner
   carries every launch now, and `pnpm probe:about-banner` presses it.
 
@@ -2676,7 +2674,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   printings action is still held in flight; the scanner never says it is adding; a failed printings read takes the card
   back off the list with the `view.removed` toast and is not taken again while it stays in view. Mutation-checked:
   drop the sheet's rollback and both widths fail. It writes nothing (the list is never saved). Needs a server with
-  `CARD_SCAN_ENABLED` and `COLLECTION_EDIT_ENABLED`, at `PROBE_BASE`.
+  `COLLECTION_EDIT_ENABLED`, at `PROBE_BASE`.
 - `pnpm probe:card-scan-match` proves card scanning's server match (plan `2026-10-16-card-scan.md` PR 1) against the
   real every-printing index: the file checks refuse a wrong model, a row off unit length and a short file; the ingest
   CLI exits 2 on a target that is not the branch it names; `publishScanIndex` replaces the rows and the meta row in one
@@ -2747,7 +2745,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   only writes, so it refuses any branch but a scratch one (`assertScratchBranch`) before the first. Seed the rows it
   reads first, on a SCRATCH branch only (`assertScratchBranch`): `OWNER_ID=<admin id> pnpm
   seed:admin-pii-fixture` writes group `pii-probe` holding every Clerk account, an account override on
-  `HELP_PANEL_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
+  `LINEUP_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
   a re-run. On origin/main before the masking it fails 8 checks; the inventory is
   `docs/superpowers/inventories/admin-masking.json`.
 - `pnpm probe:group-allowance` proves the per-group daily allowance (payments scope Q16) against a real database:
@@ -3287,7 +3285,7 @@ scratch branch only, and refuses staging and production by `neon.branch_id`.
   card (Scryfall's image) covering `share` of the picture, centred at (`cx`, `cy`) and turned `angle` degrees. The scanner then
   reads a real frame through the real detector and embedder, so `docs/superpowers/inventories/card-scan-outline.json` photographs
   the outline following a card held off-centre (phone-card, desktop-card) and the empty table with its one-line hint (phone-empty,
-  desktop-empty). It needs `CARD_SCAN_ENABLED` and `COLLECTION_EDIT_ENABLED` on the server and a network (the card image, the
+  desktop-empty). It needs `COLLECTION_EDIT_ENABLED` on the server and a network (the card image, the
   models and onnxruntime-web). The first request to a cold `next dev` can pass the sign-in's 30s, so warm the server first.
   It adds nothing: an add would write a ledger entry. The smallest card the detector reads, measured 2026-10-16 on the real
   models over a 1280x720 frame (two cards, flat and tilted 15 degrees, off-centre): the sharpness gate holds down to a card

@@ -26,11 +26,9 @@
 export type SwitchKind = "feature" | "model" | "plumbing";
 
 export const SWITCHES = [
-  { name: "ADDED_COPY_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "ALL_DECKS_CART_ENABLED", kind: "feature" },
   { name: "ANALYSIS_TAB_ENABLED", kind: "model" },
   { name: "BRACKET_REACH_ENABLED", kind: "feature", needs: "HELP_ME_CHOOSE_ENABLED" },
-  { name: "CARD_SCAN_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "CHANGE_COMMANDER_ENABLED", kind: "feature" },
   { name: "COLLECTION_EDIT_ENABLED", kind: "feature" },
   { name: "COLLECTION_SYNC_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
@@ -41,9 +39,7 @@ export const SWITCHES = [
   { name: "DECK_STATS_ENABLED", kind: "feature" },
   { name: "DECK_TOKENS_ENABLED", kind: "feature" },
   { name: "FIND_A_DECK_READ_ENABLED", kind: "model", needs: "SWAP_TOOLS_ENABLED" },
-  { name: "FIRST_RUN_TOUR_ENABLED", kind: "feature" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
-  { name: "HELP_PANEL_ENABLED", kind: "feature" },
   { name: "FRIEND_DECKS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "HOME_FEED_ENABLED", kind: "feature" },
   { name: "HOW_IT_WORKS_ENABLED", kind: "plumbing" },

@@ -35,7 +35,6 @@ import { CollectionEmptyDoors } from "../../../components/collection/collection-
 import { collectionEditEnabled, noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
-import { cardScanEnabled } from "../../../lib/card-scan/flag";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { PICK_RECEIPT_PARAM } from "../../../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../../../lib/precons/pick-receipt-read";
@@ -158,7 +157,7 @@ export default async function CollectionPage({
               : "A pile of possibilities waiting for a commander. Upload a CSV and the table fills. Commanders and decks follow."}
           </EmptyStateBody>
           {editEnabled ? (
-            <CollectionEmptyDoors ways={ways} scan={cardScanEnabled(env)} />
+            <CollectionEmptyDoors ways={ways} scan={collectionEditEnabled(env)} />
           ) : (
             <div className="mt-[26px]">
               <PrimaryButton

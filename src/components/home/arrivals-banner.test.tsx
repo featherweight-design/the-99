@@ -8,6 +8,7 @@ const dismiss = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("../../app/arrivals-actions", () => ({ dismissArrivals: dismiss }));
 // The checklist's live step needs the app router; About's line is what these tests read.
 vi.mock("./first-run-step-one", () => ({ FirstRunStepOne: () => null }));
+vi.mock("../discovery/home-tour", () => ({ HomeTour: () => null }));
 // The crops' theme check asks the server again through the router (`ThemeRefresh`).
 const nav = vi.hoisted(() => ({ refresh: vi.fn(), router: null as unknown }));
 vi.mock("next/navigation", () => ({

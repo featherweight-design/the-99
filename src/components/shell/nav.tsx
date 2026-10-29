@@ -714,8 +714,6 @@ export type AdminDoorProps = {
   credits?: ChipState | null;
   /** M11 (discovery R1): a game logged and no friend yet, so the account button carries Friends after a game. */
   friendsMoment?: boolean;
-  /** `FIRST_RUN_TOUR_ENABLED` for this reader (discovery R3·2): the account menu's `Take the tour` row. */
-  tour?: boolean;
   /** `COMMANDERS_PLACE_ENABLED` for this reader: Discover leaves the bar, and with `friends` Friends takes its slot. */
   commandersPlace?: boolean;
   /** `HOME_FEED_ENABLED` for this reader: Settings has its news section, so the menu's Settings row has somewhere to go. */
@@ -790,7 +788,6 @@ export function NavRail({
   friends,
   credits,
   friendsMoment,
-  tour,
   commandersPlace = false,
   homeFeed = false,
   helpMoment = false,
@@ -895,12 +892,11 @@ export function NavRail({
       {/* Account trigger — §Rail: 30px circle, pinned to the bottom.         */}
       {/* ------------------------------------------------------------------ */}
       <div className="mt-auto flex shrink-0 flex-col items-center">
-        {/* The ?, above the offline pill so the pill stays beside the account trigger (discovery R2 gap 15). Drawn only
-            while \`HELP_PANEL_ENABLED\` is on for the reader; off, the wrapper's \`mt-auto\` pins the account trigger alone. */}
+        {/* The ?, above the offline pill so the pill stays beside the account trigger (discovery R2 gap 15). */}
         <HelpButton place="rail" />
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
-        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} commandersPlace={commandersPlace} homeFeed={homeFeed} credits={credits} friendsMoment={friendsMoment} tour={tour} />
+        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} commandersPlace={commandersPlace} homeFeed={homeFeed} credits={credits} friendsMoment={friendsMoment} />
       </div>
       {tag}
       {/* The search's desktop field and dropdown, and ⌘K (card search PR D). */}
@@ -1019,7 +1015,7 @@ export function TabBar({
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, friendsMoment, tour, commandersPlace = false, homeFeed = false }: { theme: ThemeKey } & AdminDoorProps) {
+export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, friendsMoment, commandersPlace = false, homeFeed = false }: { theme: ThemeKey } & AdminDoorProps) {
   const ref = useRef<HTMLElement>(null);
   const { mode, slides, under } = useQuickReturn(ref);
   return (
@@ -1061,7 +1057,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, fri
         <div className="flex items-center gap-[6px]">
           <HelpButton place="header" />
           {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} commandersPlace={commandersPlace} homeFeed={homeFeed} credits={credits} friendsMoment={friendsMoment} tour={tour} />
+          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} commandersPlace={commandersPlace} homeFeed={homeFeed} credits={credits} friendsMoment={friendsMoment} />
         </div>
       </div>
     </header>

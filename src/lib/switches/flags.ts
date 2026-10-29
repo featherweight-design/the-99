@@ -1,6 +1,5 @@
 import { howItWorksEnabled } from "../about/how-it-works-flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
-import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
 import { nearCombosEnabled } from "../combos/flag";
 import { changeCommanderEnabled } from "../commander-change/flag";
@@ -16,7 +15,6 @@ import { deckNotesEnabled } from "../decks/notes-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
-import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-flag";
 import { homeFeedEnabled } from "../feed/flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
@@ -37,7 +35,6 @@ import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled } from "../tuning/flag";
 import { wishlistEnabled } from "../wishlist/flag";
-import { cardScanEnabled } from "../card-scan/flag";
 import type { SwitchName } from "./registry";
 
 /**
@@ -46,11 +43,9 @@ import type { SwitchName } from "./registry";
  * decides it. Server-side by its imports.
  */
 export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) => boolean>> = {
-  ADDED_COPY_ENABLED: addedCopyEnabled,
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   BRACKET_REACH_ENABLED: bracketReachEnabled,
-  CARD_SCAN_ENABLED: cardScanEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
   COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
@@ -61,9 +56,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   DECK_STATS_ENABLED: deckStatsEnabled,
   DECK_TOKENS_ENABLED: deckTokensEnabled,
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
-  FIRST_RUN_TOUR_ENABLED: firstRunTourEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
-  HELP_PANEL_ENABLED: helpPanelEnabled,
   FRIEND_DECKS_ENABLED: friendDecksEnabled,
   HOME_FEED_ENABLED: homeFeedEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,

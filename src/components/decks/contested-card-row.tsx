@@ -167,7 +167,7 @@ export function ContestedCardRow({
     disabled?: boolean;
   };
   /**
-   * Where an added copy goes (`ADDED_COPY_ENABLED`, read by the page): senior decks that keep their
+   * Where an added copy goes (collection edit on, read by the page): senior decks that keep their
    * copies whatever the pick does fold into one line that is never an option, and a brew reading a loose copy says
    * `can use it` rather than `gets it`. Off, the row is exactly what it was.
    */
@@ -467,7 +467,7 @@ export function ContestedCardRow({
   }, [foldN]);
   const thisDeckName = card.claimants.find((c) => c.deckId === thisDeckId && !foldedIds.has(c.deckId))?.deckName ?? null;
   // A brew reading a loose copy as its own: every brew reads the same copy, so `gets it` on three
-  // brews would claim three copies and `buys it` would be false. Only while the switch is on.
+  // brews would claim three copies and `buys it` would be false. Only while collection edit is on.
   const canUse = (c: (typeof claimants)[number]) => addedCopy && c.brew === true && c.granted === 0 && c.allocated > 0;
   const canUseCount = claimants.filter(canUse).length;
 

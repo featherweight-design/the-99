@@ -49,7 +49,7 @@ export function CollectionEmptyDoors({
   scan = false,
 }: {
   ways?: { precons: boolean } | null;
-  /** `CARD_SCAN_ENABLED` for the reader: the Add cards sheet's Scan press. */
+  /** Collection edit on for the reader (card scanning ends in its add): the Add cards sheet's Scan press. */
   scan?: boolean;
 } = {}) {
   const c = collectionEditCopy.empty;

@@ -28,9 +28,9 @@ function Deck({ view, tab = "deck" }: { view: DeckView; tab?: BuilderView }) {
   return null;
 }
 
-const draw = (children: React.ReactNode = null, on = true) =>
+const draw = (children: React.ReactNode = null) =>
   render(
-    <HelpRoot on={on}>
+    <HelpRoot>
       <HelpButton place="header" />
       {children}
     </HelpRoot>,
@@ -93,7 +93,7 @@ describe("the ?", () => {
     const reported = vi.fn();
     render(
       <Report.Provider value={{ report: () => {}, pathname: "/collection/replace", push: reported, registerContentScope: () => {} }}>
-        <HelpRoot on>
+        <HelpRoot>
           <HelpButton place="header" />
         </HelpRoot>
       </Report.Provider>,
@@ -117,8 +117,8 @@ describe("the ?", () => {
     expect(push).toHaveBeenCalledWith(`/about/decks?from=${enc(`${DECK}?tab=consider`)}#your-deck`);
   });
 
-  it("draws nothing for a reader with the switch off", () => {
-    draw(null, false);
+  it("draws nothing outside the root", () => {
+    render(<HelpButton place="header" />);
     expect(screen.queryByRole("button", { name: helpPanelCopy.button })).toBeNull();
   });
 });

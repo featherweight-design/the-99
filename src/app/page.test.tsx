@@ -2,7 +2,7 @@
 // return, only with UPCOMING_PRECONS_ENABLED on, and handed to the dashboard as `arrivals`. Every other loader is
 // stubbed; what is asserted is the element the page returns and whether the banner was read.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ReactElement } from "react";
+import { Fragment, type ReactElement } from "react";
 
 const stub = vi.hoisted(() => ({
   env: {} as Record<string, string>,
@@ -51,11 +51,19 @@ vi.mock("../lib/discovery/tour", async (orig) => ({
   readTourSeen: async () => stub.tourSeen,
 }));
 
-const { default: HomePage } = await import("./page");
+const { default: RawHomePage } = await import("./page");
 const { Dashboard } = await import("../components/home/dashboard");
 const { FirstRunChecklist } = await import("../components/home/first-run");
 const { PreconPickReceipt } = await import("../components/home/precon-pick-receipt");
 const { HomeTour } = await import("../components/discovery/home-tour");
+
+// A dashboard Home always ends in the tour's mount (`?tour=1`, always on): the other tests read the page itself, so this
+// hands them the element before the mount. The tour's own tests call `RawHomePage`.
+const HomePage: typeof RawHomePage = async (...args) => {
+  const page = (await RawHomePage(...args)) as ReactElement<{ children?: ReactElement[] }>;
+  const kids = page.type === Fragment ? ([] as ReactElement[]).concat(page.props.children ?? []) : [];
+  return kids.length === 2 && kids[1]?.type === HomeTour ? kids[0] : page;
+};
 const { PushLanding } = await import("../components/push/push-landing");
 
 const BANNER = { lines: [{ kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 }], href: "/decks/precons?sort=newest#announced", keys: ["trc"] };
@@ -260,9 +268,8 @@ describe("The first-run checklist's Friends row (Discovery R3·3)", () => {
 });
 
 describe("The tour taken again (Discovery R3·2)", () => {
-  const TOUR = { FIRST_RUN_TOUR_ENABLED: "true" };
-  type Tourish = ReactElement<{ tour?: boolean; tourAgain?: boolean; children?: ReactElement[] }>;
-  const visit = async () => (await HomePage({ searchParams: Promise.resolve({ tour: "1" }) })) as Tourish;
+  type Tourish = ReactElement<{ tour?: boolean; children?: ReactElement[] }>;
+  const visit = async () => (await RawHomePage({ searchParams: Promise.resolve({ tour: "1" }) })) as Tourish;
   const tourIn = (page: Tourish) =>
     ([] as ReactElement[]).concat(page.props.children ?? []).find((c) => c?.type === HomeTour) as ReactElement<{ due: boolean; mode: string; precons: boolean }> | undefined;
 
@@ -270,26 +277,18 @@ describe("The tour taken again (Discovery R3·2)", () => {
     stub.tourSeen = new Date("2026-10-16T00:00:00Z");
   });
 
-  it("mounts the dashboard's tour, never due, with the switch on, and nothing with it off", async () => {
-    stub.env = { ...TOUR };
-    const on = await visit();
-    const tour = tourIn(on);
+  it("mounts the dashboard's tour, never due", async () => {
+    const page = await visit();
+    const tour = tourIn(page);
     expect(tour?.props).toEqual({ due: false, mode: "dashboard", precons: false });
-    stub.env = {};
-    const off = await visit();
-    expect(off.type).toBe(Dashboard);
   });
 
-  it("lets a first-run Home whose tour is spent take it again, with the switch on", async () => {
+  it("lets a first-run Home whose tour is spent take it again", async () => {
     stub.uniqueCards = 0;
     stub.decks = [];
-    stub.env = { ...TOUR };
-    const on = await visit();
-    expect(on.type).toBe(FirstRunChecklist);
-    expect(on.props.tour).toBe(false);
-    expect(on.props.tourAgain).toBe(true);
-    stub.env = {};
-    expect((await visit()).props.tourAgain).toBe(false);
+    const page = await visit();
+    expect(page.type).toBe(FirstRunChecklist);
+    expect(page.props.tour).toBe(false);
   });
 });
 

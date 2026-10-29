@@ -121,7 +121,7 @@ export function CollectionPlaceHead({
   historyHasEntries?: boolean;
   /** The Add cards sheet's way into Precons I own (no-collection entry S18), decided by the layout from the switches. */
   preconPick?: boolean;
-  /** `CARD_SCAN_ENABLED` for the reader, read by the layout: the Add cards sheet's Scan press (card-scan PR 3). */
+  /** Collection edit on for the reader (card scanning ends in its add), read by the layout: the Add cards sheet's Scan press (card-scan PR 3). */
   scan?: boolean;
   /** `SOCIAL_WISHLIST_ENABLED` for the reader, read by the layout: the Wishlist tab, fifth. */
   wishlistEnabled?: boolean;

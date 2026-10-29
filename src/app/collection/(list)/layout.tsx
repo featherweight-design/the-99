@@ -16,7 +16,6 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { collectionEditEnabled, noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
-import { cardScanEnabled } from "../../../lib/card-scan/flag";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { wishlistEnabled } from "../../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
@@ -50,7 +49,7 @@ export default async function CollectionListLayout({
   const lastUpdatedLabel = lastUpdated ? formatLastUpdated(lastUpdated) : null;
   return (
     <>
-      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={editEnabled} historyHasEntries={historyHasEntries} preconPick={preconPick} scan={cardScanEnabled(env)} wishlistEnabled={wishlistEnabled(env)} />
+      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={editEnabled} historyHasEntries={historyHasEntries} preconPick={preconPick} scan={editEnabled} wishlistEnabled={wishlistEnabled(env)} />
       <CollectionContentScope>{children}</CollectionContentScope>
     </>
   );

@@ -168,7 +168,7 @@ export function ArrivalsSummary({
   preview: UploadPreview | null;
   filename: string;
   stampDate: string;
-  /** `ADDED_COPY_ENABLED`, read by the page. Off, the receipt draws what it always drew. */
+  /** Collection edit on, read by the page. Off, the receipt draws what it always drew. */
   addedCopy?: boolean;
   /** The chooser behind each line's Change, by oracle id (`loadSummaryView`). */
   chooser?: Record<string, ContestedCard>;
