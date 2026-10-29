@@ -55,11 +55,12 @@ const subscribeUndo = (l: () => void) => {
 };
 
 /** The first refusal any of these passes' undos holds, whichever control ran it, so the ledger reports
- *  a failure from the sheet and drops it when a retry from either control starts. */
+ *  a failure from the sheet and drops it when a retry from either control starts. A pass with nothing
+ *  still here has no control left to retry, so its cached refusal is not reported. */
 function usePassUndoError(deckId: string, passes: readonly FillPassSummary[]): string | null {
   return useSyncExternalStore(
     subscribeUndo,
-    () => passes.map((p) => undoStates.get(`${deckId}:${p.id}`)?.error).find((e) => e) ?? null,
+    () => passes.filter((p) => p.live > 0).map((p) => undoStates.get(`${deckId}:${p.id}`)?.error).find((e) => e) ?? null,
     () => null,
   );
 }

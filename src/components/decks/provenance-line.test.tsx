@@ -278,6 +278,34 @@ describe("ProvenanceLedger", () => {
     });
   });
 
+  it("drops a pass's refusal once the pass has nothing still here to retry", async () => {
+    const { undoFillPass } = await import("../../app/decks/actions");
+    vi.mocked(undoFillPass).mockRejectedValue(new Error("network"));
+    const cards = [makeCard("a", { auto: true }), makeCard("b", { auto: true })];
+    const passes = [makePass("p1", { oracleIds: ["a"] }), makePass("p2", { ordinal: 2, oracleIds: ["b"] })];
+    const { rerender } = mount(cards, passes);
+    fireEvent.click(
+      screen.getByRole("button", { name: ledger.undoAria("1", ledger.passLabel("1")) }),
+    );
+    await waitFor(() => {
+      expect(screen.getByText(ledger.undoFailed)).toBeInTheDocument();
+    });
+
+    // The card left the pass by hand: p1 stays as a quiet line with no Undo, p2 is still live.
+    rerender(
+      <ProvenanceLedger
+        deckId="deck-1"
+        bodySize={99}
+        cards={[makeCard("b", { auto: true })]}
+        total={1}
+        passes={[makePass("p1", { oracleIds: [], live: 0, removed: 1 }), passes[1]]}
+        onShow={vi.fn()}
+        onAnnounce={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(ledger.undoFailed)).toBeNull();
+  });
+
   it("leaves when the last auto card does", () => {
     const passes = [makePass("p1", { oracleIds: ["a"] })];
     const { rerender } = mount([makeCard("a", { auto: true })], passes);
