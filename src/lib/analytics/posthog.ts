@@ -108,6 +108,9 @@ export function posthogOptions(apiHost: string): Partial<PostHogConfig> {
     person_profiles: "identified_only",
     // Link tokens and URL queries never leave the browser.
     before_send: redactCapture,
+    // No /flags request: the app uses no PostHog flags, surveys or remote config, and that request carries the
+    // landing URL (a link token included) as person properties, outside `before_send`.
+    advanced_disable_flags: true,
   };
 }
 

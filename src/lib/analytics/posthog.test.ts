@@ -50,6 +50,7 @@ describe("startAnalytics", () => {
       respect_dnt: true,
       person_profiles: "identified_only",
       before_send: m.redactCapture,
+      advanced_disable_flags: true,
     });
   });
 
