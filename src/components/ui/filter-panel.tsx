@@ -146,9 +146,8 @@ export function FilterPanel({
   desktopTriggerHeightPx?: number;
   /**
    * Pins the COMPACT trigger's drawn height below its own 44px, with a 44px hit target kept by
-   * an `after:` overlay — the chip dismiss and chassis Clear-all buttons' own pattern. Collection's
-   * pinned head draws row 2 at 36px (decision 7): drawing the trigger at the shared 44px there
-   * would make the head 8px taller again.
+   * an `after:` overlay — the chip dismiss and chassis Clear-all buttons' own pattern. No caller now:
+   * Collection's pinned head drew row 2 at 36px until Small items 4 item 1 gave it the shared 44px.
    */
   compactTriggerHeightPx?: number;
   /**

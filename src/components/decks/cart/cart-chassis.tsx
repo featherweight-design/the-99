@@ -4,7 +4,7 @@
 // frame (`ui/filter-chassis`) under the view switch, built from the shipped parts as they are:
 //   - 1000px and up: the search field, `Friend ▾` and `Owned ▾` (`FilterPanel` mounts), then `Sort · <current> ▾` past
 //     the hairline (`OrderMenu`);
-//   - below it: the search field and the 36px Filters pill with its count badge, which opens `CartFilterSheet`, then the
+//   - below it: the search field and the 44px Filters box with its count badge, which opens `CartFilterSheet`, then the
 //     44px ⇅ that opens `OrderMenu`'s dropdown, as /decks does (R2 retired the cart's own sort sheet).
 // Row 2 holds a chip per filter on and the search's; row 3 the cart's sentence, which REPLACES the list head. Search,
 // Friend and Owned narrow the same lines in every view (D4) and the sort is the view's own, so this takes the filters'

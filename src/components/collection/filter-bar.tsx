@@ -632,7 +632,7 @@ export function FilterBar({
  *
  * The badge counts DIMENSIONS, not values — "3" beside a trigger that opens four
  * groups reads as three groups on, which is what it is. Zero draws no badge at
- * all rather than a `0`. Exported for the all-decks cart, whose compact Filters pill is this one (cart v2 addendum R2 §4).
+ * all rather than a `0`. Exported for the all-decks cart, whose compact Filters box is this one (cart v2 addendum R2 §4).
  */
 export function FiltersTrigger({
   active,
