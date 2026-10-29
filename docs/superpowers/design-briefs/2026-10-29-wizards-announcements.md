@@ -20,8 +20,8 @@ and a handoff disagree, the component wins.
 ## Engineering fit
 
 - Each kind is a new Home feed kind (`src/lib/feed/kinds.ts`), pushed through the existing flush
-  (`src/lib/push/flush.ts`). Whether it is stored per reader or read from one row per post (the catalog family that
-  new sets and precons use) is an engineering choice that does not change what Design draws. It joins
+  (`src/lib/push/flush.ts`). It is a catalog-family kind: one row per post, with each reader's choices applied when
+  Home reads it (as new sets and precons work), so nothing is written per account. It joins
   `DEFAULT_ON_KINDS`, which today holds only `spare-request`, and takes a place in `LEAD_PRIORITY`. Items keep the
   feed's 14-day window (`FEED_WINDOW_DAYS`).
 - Early lists sit under `UPCOMING_PRECONS_ENABLED`, in the Announced group (`src/components/decks/precons/announced-group.tsx`),
@@ -84,9 +84,12 @@ with the same owned dot, the owned count. **No** Start, no Link deck, no Overvie
 **States to draw.**
 1. Early list: a clear "early list, replaced at release" state on the list and on its entry in the set block.
 2. Partly published: "3 of 4 lists so far" on the set block, and the missing list's slot.
-3. Release day: the release list has replaced the early one; Start and the Overview appear as today.
-4. A post that named a list whose cards the catalog cannot yet match (unmatched lines).
-5. No collection uploaded (`EmptyCollectionBand`, as today).
+3. The release list arrives: it replaces the early one, and Start and the Overview appear as today. This follows
+   the MTGJSON list arriving, not the street date.
+4. Released but still waiting: the set is out and the MTGJSON list has not arrived yet, so the early list stays
+   view-only with no Start.
+5. A post that named a list whose cards the catalog cannot yet match (unmatched lines).
+6. No collection uploaded (`EmptyCollectionBand`, as today).
 6. Loading (`src/components/decks/precons/precons-loading.tsx` pattern); the Commander decklists kind switched off
    (open call 6).
 
