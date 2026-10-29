@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ABOUT_RULES, ABOUT_SECTIONS, diagramColumn } from "../copy/about-pages";
+import { ABOUT_RULES, ABOUT_SCREEN_OFF, ABOUT_SECTIONS, diagramColumn, type AboutSection } from "../copy/about-pages";
+import type { AboutLineSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 import { SWITCHES, SWITCH_NAMES } from "../switches/registry";
 import { TOOLS } from "../discovery/tools";
@@ -284,11 +285,75 @@ describe("seen translation", () => {
 
 describe("a section's sub-line", () => {
   const sub = (e: NodeJS.ProcessEnv, id: string) => visibleSections(e).find((s) => s.id === id)!.sub;
+  const off = (...names: string[]) => env({ ...(ALL_ON as Record<string, string>), ...Object.fromEntries(names.map((n) => [n, "off"])) });
+  const named = (sw: AboutLineSwitch | null | undefined): string[] =>
+    sw == null ? [] : (Array.isArray(sw) ? sw : [sw]).map((one: string) => one.replace(/^!/, ""));
+  const positive = (sw: AboutLineSwitch): string[] => (Array.isArray(sw) ? sw : [sw]).filter((one: string) => !one.startsWith("!"));
+  /** Every switch a section's words or units hang on: its sub's sentences, its labels and their sentences, its rules. */
+  const switchesOfSection = (sec: AboutSection): string[] => [...new Set([
+    ...Object.values(sec.subSentences ?? {}).flatMap(named),
+    ...sec.labels.flatMap((l) => [...named(l.switch), ...Object.values(l.sentences ?? {}).flatMap(named)]),
+    ...sec.rules.flatMap((id) => [...named(ABOUT_RULES[id].switch), ...Object.values(ABOUT_RULES[id].sentences ?? {}).flatMap(named)]),
+  ])];
+  const sentencesOf = (text: string) => text.split(/(?<=[.?])\s+/).filter(Boolean);
+
+  it("draws one or two sentences under every combination of the switches its sentences name (Small items 3, item 4)", () => {
+    for (const sec of ABOUT_SECTIONS) {
+      const names = [...new Set(Object.values(sec.subSentences ?? {}).flatMap(named))];
+      for (let mask = 0; mask < 2 ** names.length; mask++) {
+        const e = off(...names.filter((_, i) => mask & (1 << i)));
+        const n = sentencesOf(sub(e, sec.id)).length;
+        expect(n, `${sec.id} ${mask}`).toBeGreaterThanOrEqual(1);
+        expect(n, `${sec.id} ${mask}`).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+
+  it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
+    for (const sec of ABOUT_SECTIONS) {
+      // With every switch on, every screen is on, and no sub says otherwise.
+      expect(sub(ALL_ON, sec.id), sec.id).not.toContain(ABOUT_SCREEN_OFF.trim());
+      for (const sw of switchesOfSection(sec)) {
+        const e = off(sw);
+        const drawn = visibleSections(e).find((s) => s.id === sec.id)!;
+        const text = sub(e, sec.id);
+        // No sentence gated on the switch survives it.
+        for (const [sentence, gate] of Object.entries(sec.subSentences ?? {})) {
+          if (gate && positive(gate).includes(sw)) expect(text, `${sec.id} ${sw}`).not.toContain(sentence.trim());
+        }
+        // A screen with nothing left to label is off: its sub describes none of it.
+        if (drawn.labels.length === 0) expect(text, `${sec.id} ${sw}`).toBe(ABOUT_SCREEN_OFF.trim());
+      }
+    }
+  });
+
+  it("describes each screen while its switch is on, and only says it is off while it is off", () => {
+    const cases: [string, string, string][] = [
+      ["whats-new", "HOME_FEED_ENABLED", "news for you"],
+      ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
+      ["stats", "DECK_STATS_ENABLED", "charts"],
+      ["notes", "DECK_NOTES_ENABLED", "remember"],
+      ["all-decks", "ALL_DECKS_CART_ENABLED", "one cart"],
+      ["friends", "SOCIAL_FRIENDS_ENABLED", "pods"],
+    ];
+    for (const [id, sw, phrase] of cases) {
+      expect(sub(ALL_ON, id), id).toContain(phrase);
+      expect(sub(ALL_ON, id), id).not.toContain(ABOUT_SCREEN_OFF.trim());
+      expect(sub(off(sw), id), id).toBe(ABOUT_SCREEN_OFF.trim());
+    }
+  });
+
+  it("names Analysis's tuning tools only while all three are on, and keeps the bracket while they are off", () => {
+    expect(sub(ALL_ON, "analysis")).toBe("Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.");
+    for (const sw of ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "MANA_BALANCE_ENABLED"]) {
+      expect(sub(off(sw), "analysis"), sw).toBe("Which bracket your deck sits in, and why.");
+    }
+  });
 
   it("cuts a sentence naming a switched feature while that switch is off, and keeps the rest (Small items 3, item 4)", () => {
     expect(sub(ALL_ON, "stats")).toContain("curve by card type");
     const noStats = env({ ...(ALL_ON as Record<string, string>), DECK_STATS_ENABLED: "off" });
-    expect(sub(noStats, "stats")).toBe("The deck in charts.");
+    expect(sub(noStats, "stats")).toBe(ABOUT_SCREEN_OFF.trim());
     const noScan = env({ ...(ALL_ON as Record<string, string>), CARD_SCAN_ENABLED: "off" });
     expect(sub(noScan, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding.");
     // Ready to build shows only while the feed is off.

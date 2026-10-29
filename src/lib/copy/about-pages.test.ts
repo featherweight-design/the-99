@@ -88,14 +88,6 @@ describe("about pages copy model", () => {
     for (const sec of ABOUT_SECTIONS) for (const s of Object.keys(sec.subSentences ?? {})) expect(sec.sub, sec.id).toContain(s);
   });
 
-  it("gives every section a sub-line of one or two sentences, its first never switched (Small items 3, item 4)", () => {
-    for (const sec of ABOUT_SECTIONS) {
-      const sentences = sec.sub.split(/(?<=[.?])\s+/);
-      expect(sentences.length, sec.id).toBeLessThanOrEqual(2);
-      expect(Object.keys(sec.subSentences ?? {}).some((s) => s.trim() === sentences[0]), sec.id).toBe(false);
-    }
-  });
-
   it("puts at most five labels on a capture (call 1)", () => {
     for (const s of ABOUT_SECTIONS) {
       const shots = Math.max(s.captures.phone.length, s.captures.desktop.length, 1);

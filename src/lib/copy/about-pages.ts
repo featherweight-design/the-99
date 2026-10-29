@@ -130,7 +130,8 @@ export interface AboutSection {
   /** One or two sentences on what the screen offers, drawn from its own labels, rules and tools (Small items 3, item 4). */
   sub: string;
   /** A sentence of `sub` naming a switched feature, gated on that switch as a label's `sentences` are. Never announced:
-   *  the section's labels are. */
+   *  the section's labels are. A section whose every label hangs on one switch gates all of its own sentences on it, and
+   *  carries `ABOUT_SCREEN_OFF` under the negated switch for while it is off. */
   subSentences?: Partial<Record<string, AboutLineSwitch>>;
   screens: readonly AboutScreenRef[];
   /** The section's captures in reading order; a second shot of the same screen numbers on from the first. */
@@ -171,6 +172,10 @@ export type AboutRuleId = (typeof ABOUT_RULE_IDS)[number];
 
 /** Each unit's `since` is the highest `since` of its unswitched legacy entries, or 16 (`ABOUT_VERSION` at the build) when it
  *  has none. The values are written out here; `about-pages.test.ts` re-derives every one from the entries and pins it. */
+/** A section's sub-line while the switch its screen hangs on is off: the section is still drawn (it keeps its place in the
+ *  page's count), so its sub says the screen is off rather than describing it. */
+export const ABOUT_SCREEN_OFF = " This screen isn’t on for you yet.";
+
 export const ABOUT_SECTIONS: readonly AboutSection[] = [
   {
     area: "home",
@@ -216,7 +221,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "home",
     id: "whats-new",
     name: "What’s new",
-    sub: "Anything waiting on you comes first, then news for you, newest first: a new set, a combo you can now make, and more.",
+    sub: `Anything waiting on you comes first, then news for you, newest first: a new set, a combo you can now make, and more.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "Anything waiting on you comes first, then news for you, newest first: a new set, a combo you can now make, and more.": "HOME_FEED_ENABLED",
+      [ABOUT_SCREEN_OFF]: "!HOME_FEED_ENABLED",
+    },
     screens: [{ screen: "home" }],
     captures: { phone: ["p-home-feed"], desktop: ["d-home-feed"] },
     labels: [
@@ -482,9 +491,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "analysis",
     name: "Analysis",
-    sub: "Which bracket your deck sits in and why, and the tools that tune it. Those are Suggested changes, Proposed cuts and Mana Balance.",
+    sub: `Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.${ABOUT_SCREEN_OFF}`,
     subSentences: {
-      " Those are Suggested changes, Proposed cuts and Mana Balance.": ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "MANA_BALANCE_ENABLED"],
+      "Which bracket your deck sits in, and why.": "ANALYSIS_TAB_ENABLED",
+      " Suggested changes, Proposed cuts and Mana Balance help you tune it.": ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "MANA_BALANCE_ENABLED"],
+      [ABOUT_SCREEN_OFF]: "!ANALYSIS_TAB_ENABLED",
     },
     screens: [{ screen: "deck", view: "analysis" }],
     captures: { phone: ["p-deck-analysis", "p-deck-analysis-read", "p-analysis-tuning"], desktop: ["d-analysis", "d-analysis-tuning", "d-analysis-describe"] },
@@ -615,8 +626,12 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "stats",
     name: "Stats",
-    sub: "The deck in charts. See its curve by card type, its mana colors against their sources, the jobs its cards do, what it’s worth and how its games went.",
-    subSentences: { " See its curve by card type, its mana colors against their sources, the jobs its cards do, what it’s worth and how its games went.": "DECK_STATS_ENABLED" },
+    sub: `The deck in charts. See its curve by card type, its mana colors against their sources, the jobs its cards do, what it’s worth and how its games went.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "The deck in charts.": "DECK_STATS_ENABLED",
+      " See its curve by card type, its mana colors against their sources, the jobs its cards do, what it’s worth and how its games went.": "DECK_STATS_ENABLED",
+      [ABOUT_SCREEN_OFF]: "!DECK_STATS_ENABLED",
+    },
     screens: [{ screen: "deck", view: "stats" }],
     captures: { phone: ["p-deck-stats"], desktop: ["d-stats"] },
     labels: [
@@ -637,7 +652,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "notes",
     name: "Notes",
-    sub: "Anything you want to remember about the deck, kept with it through every commit.",
+    sub: `Anything you want to remember about the deck, kept with it through every commit.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "Anything you want to remember about the deck, kept with it through every commit.": "DECK_NOTES_ENABLED",
+      [ABOUT_SCREEN_OFF]: "!DECK_NOTES_ENABLED",
+    },
     screens: [{ screen: "deck", view: "notes" }],
     captures: { phone: ["p-deck-notes"], desktop: ["d-notes"] },
     labels: [
@@ -717,7 +736,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "shopping",
     id: "all-decks",
     name: "Shopping for all decks",
-    sub: "Every deck’s missing cards in one cart, so one Mana Pool order covers them all.",
+    sub: `Every deck’s missing cards in one cart, so one Mana Pool order covers them all.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "Every deck’s missing cards in one cart, so one Mana Pool order covers them all.": "ALL_DECKS_CART_ENABLED",
+      [ABOUT_SCREEN_OFF]: "!ALL_DECKS_CART_ENABLED",
+    },
     screens: [],
     captures: { phone: ["p-decks"], desktop: ["d-decks2"] },
     labels: [
@@ -738,8 +761,12 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "friends",
     id: "friends",
     name: "Friends",
-    sub: "The people you play with, and your pods. See their spares, and pick who sees yours.",
-    subSentences: { " See their spares, and pick who sees yours.": "SOCIAL_FRIENDS_ENABLED" },
+    sub: `The people you play with, and your pods. See their spares, and pick who sees yours.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "The people you play with, and your pods.": "SOCIAL_FRIENDS_ENABLED",
+      " See their spares, and pick who sees yours.": "SOCIAL_FRIENDS_ENABLED",
+      [ABOUT_SCREEN_OFF]: "!SOCIAL_FRIENDS_ENABLED",
+    },
     screens: [{ screen: "friends" }],
     captures: { phone: ["p-friends"], desktop: ["d-friends"] },
     labels: [
