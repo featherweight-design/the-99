@@ -39,7 +39,7 @@ def rows_board():
                            "Secret Lair and Commander decklists unseen (the diamond), Wizards news seen (kicker in <code>--fg-locked</code>). The ✕ ends every action line, as shipped. "
                            "Five rows, then <i>2 more · Show all 7</i>."),
                      frame("<b>1300</b> · the main column", d,
-                           "From <code>md</code> the presses and the ✕ take the third column. The decklists row’s two presses share it, in-app first."))
+                           "From <code>md</code> the presses and the ✕ take the third column. The decklists row’s two presses stack in it, right-aligned, in-app on top (R1b)."))
             )
     return doc("Home rows", body, 390 + 44 + 1300 + 112)
 

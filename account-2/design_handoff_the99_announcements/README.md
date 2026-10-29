@@ -26,7 +26,7 @@ Status: **R1 + R1b drawn, awaiting Hugh's review.** Not a handoff yet; the hando
 1. **Hero shape**: crop to the 46x64 slot (radius 4, no card shadow). Missing or failed: a plate with a post glyph in `--fact`. Title never clamps; summary 2 lines. B (wide 86x64) and C (no picture) drawn on Main for comparison.
 2. **Lead story**: Secret Lair and Commander decklists can lead; Wizards news never. `LEAD_PRIORITY`: spare-request, trade-match, combo, price-drop, commander-decklists, new-precon, new-set, secret-lair. Hero goes landscape in the lead.
 3. **Offer**: while the reader has never chosen, What's new ends with one line, "Pick what else you want to hear about. New sets, price drops, trade matches and more." with Pick ▾ and ✕. Pick opens the shipped boxes in place; ✕ saves an empty choice.
-4. **Decklists row presses**: both, "See the lists ›" then muted "Read the post ↗". A push opens the post.
+4. **Decklists row presses**: both, "See the lists ›" then muted "Read the post ↗". Phone: one action line. From `md`: stacked, right-aligned, in-app on top (R1b, Hugh). A push opens the post.
 5. **Early mark**: the words "early list" in `--fact` ink on the tile's sub-line, no box (R1b); tile stays solid. The page has a dashed `--fact` band.
 6. **Kind off and Precons**: Precons unaffected.
 7. **Kind names** (for /copy-review): Secret Lair drops / Secret Lair; Commander decklists / Commander decklists; Other Wizards news / Wizards news. Rows sit after New precons in Settings.

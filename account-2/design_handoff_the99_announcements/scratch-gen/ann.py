@@ -32,6 +32,8 @@ kit.CSS += r"""
 .fi .lc{font:10.5px 'IBM Plex Mono';color:var(--fg-muted);margin-top:1px}
 .fi .ac .out{color:var(--fg-muted)}
 .fi .ac .two{display:flex;flex-wrap:wrap;align-items:center;column-gap:16px;row-gap:0;min-width:0}
+.dk .fi .ac .two{flex-direction:column;flex-wrap:nowrap;align-items:flex-end;row-gap:0}
+.dk .fi .ac .two .lnk{min-height:28px}
 /* the lead story holding a post: the hero, landscape */
 .ld.an{flex-direction:column;gap:14px}
 .ld.an .hl{position:relative;height:164px;border-radius:8px;overflow:hidden;transform:rotate(-1.5deg);margin:4px 4px 0;box-shadow:0 10px 24px rgba(0,0,0,.55)}

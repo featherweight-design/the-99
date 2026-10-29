@@ -27,7 +27,7 @@ CALLS = [
      "Default-on kinds fill the window, so the offer can’t wait for an empty feed. <b>While the reader has never chosen, What’s new ends with one line</b>: "
      "“Pick what else you want to hear about…” with Pick ▾ and ✕. Pick opens the shipped boxes in place; ✕ saves an empty choice and the line is gone. Board 4."),
     ("4", "A decklists row’s two presses",
-     "<b>Both, one line</b>: <i>See the lists ›</i> (in-app, to the set’s block in Announced) first, <i>Read the post ↗</i> muted after. A push of it opens the post."),
+     "<b>Both</b>: <i>See the lists ›</i> (in-app, to the set’s block in Announced) first, <i>Read the post ↗</i> muted after. On a phone they share the action line; <b>from <code>md</code> they stack</b> in the row’s right column, in-app on top, right-aligned, 28px each (R1b, Hugh). A push of it opens the post."),
     ("5", "The early mark",
      "The words <b>early list</b> in <code>--fact</code> ink on the tile’s sub-line, no box (R1b); the tile stays solid (dashed means nothing to open). "
      "The page carries a dashed <code>--fact</code> band. Boards 6 and 7."),
