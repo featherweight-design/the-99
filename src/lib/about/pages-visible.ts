@@ -99,12 +99,14 @@ export function resolveDiagram(d: AboutRuleDiagram, env: NodeJS.ProcessEnv): Abo
       const chips = p.chips.filter((c) => !c.switch || lineKept(c.switch, env));
       return chips.length ? [{ ...p, chips }] : [];
     });
+  // A head or foot keeps its shape: a parts list stays a list, a full column stays a column.
+  const keptEnd = (x: NonNullable<AboutRuleDiagram["foot"]>) => ("parts" in x ? { ...x, parts: kept(x.parts) } : kept(x));
   return {
     kind: d.kind,
     ...(d.gap === undefined ? {} : { gap: d.gap }),
-    ...(d.head ? { head: kept(d.head) } : {}),
+    ...(d.head ? { head: keptEnd(d.head) } : {}),
     columns: d.columns.map((c) => ({ ...c, parts: kept(c.parts) })).filter((c) => c.parts.length > 0),
-    ...(d.foot ? { foot: kept(d.foot) } : {}),
+    ...(d.foot ? { foot: keptEnd(d.foot) } : {}),
   };
 }
 
@@ -117,6 +119,8 @@ export function visibleSections(
 ): VisibleSection[] {
   return sections.map((s) => ({
     ...s,
+    // A sub-line's switched sentence is cut as a label's is; a sub-line is never announced, so its switches are not kept.
+    sub: resolveText(s.sub, s.subSentences, env)[0],
     labels: s.labels.flatMap((l) => unit(labelKey(s, l), s, "label", l, env) ?? []),
     rules: s.rules.flatMap((id) => unit(ruleKey(id), s, "rule", ABOUT_RULES[id], env) ?? []),
   }));

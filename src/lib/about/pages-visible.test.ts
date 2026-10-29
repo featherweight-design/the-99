@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ABOUT_RULES, ABOUT_SECTIONS } from "../copy/about-pages";
+import { ABOUT_RULES, ABOUT_SECTIONS, diagramColumn } from "../copy/about-pages";
 import { aboutEntries } from "../copy/about-entries";
 import { SWITCHES, SWITCH_NAMES } from "../switches/registry";
 import { TOOLS } from "../discovery/tools";
@@ -282,8 +282,24 @@ describe("seen translation", () => {
   });
 });
 
+describe("a section's sub-line", () => {
+  const sub = (e: NodeJS.ProcessEnv, id: string) => visibleSections(e).find((s) => s.id === id)!.sub;
+
+  it("cuts a sentence naming a switched feature while that switch is off, and keeps the rest (Small items 3, item 4)", () => {
+    expect(sub(ALL_ON, "stats")).toContain("curve by card type");
+    const noStats = env({ ...(ALL_ON as Record<string, string>), DECK_STATS_ENABLED: "off" });
+    expect(sub(noStats, "stats")).toBe("The deck in charts.");
+    const noScan = env({ ...(ALL_ON as Record<string, string>), CARD_SCAN_ENABLED: "off" });
+    expect(sub(noScan, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding.");
+    // Ready to build shows only while the feed is off.
+    expect(sub(ALL_ON, "home")).not.toContain("two commanders");
+    expect(sub(env({ ...(ALL_ON as Record<string, string>), HOME_FEED_ENABLED: "off" }), "home")).toContain("two commanders");
+  });
+});
+
 describe("resolveDiagram", () => {
-  const parts = (d: ReturnType<typeof resolveDiagram>) => [...(d.head ?? []), ...d.columns.flatMap((c) => c.parts), ...(d.foot ?? [])];
+  const parts = (d: ReturnType<typeof resolveDiagram>) =>
+    [...(d.head ? diagramColumn(d.head).parts : []), ...d.columns.flatMap((c) => c.parts), ...(d.foot ? diagramColumn(d.foot).parts : [])];
   const rule = (e: NodeJS.ProcessEnv, id: string) => visibleSections(e).flatMap((s) => s.rules).find((r) => r.key === ruleKey(id as never))!;
 
   it("drops a part, a chip and an emptied column whose switch is off, as a sentence is cut", () => {
@@ -293,6 +309,9 @@ describe("resolveDiagram", () => {
     expect(names(rule(ALL_ON, "proxy").diagram!)).toContain("Treasure token");
     expect(names(rule(off, "proxy").diagram!)).not.toContain("Treasure token");
     expect(rule(off, "proxy").diagram!.foot).toEqual([]);
+    // A full-column foot keeps its column, its switched parts cut from it.
+    const hidden = rule(ALL_ON, "hidden-deck").diagram!.foot;
+    expect(hidden && "parts" in hidden ? hidden.w : null).toBe(250);
     expect(names(rule(ALL_ON, "friends-see").diagram!)).toContain("Wishlist");
     expect(names(rule(off, "friends-see").diagram!)).not.toContain("Wishlist");
     const emptied = resolveDiagram(
@@ -304,11 +323,11 @@ describe("resolveDiagram", () => {
 
   it("keeps a negated part only while its switch is off", () => {
     const captions = (e: NodeJS.ProcessEnv) => parts(rule(e, "replace").diagram!).flatMap((p) => (p.part === "caption" ? [p.text] : []));
-    expect(captions(ALL_ON)).toContain("Replace");
-    expect(captions(ALL_ON)).not.toContain("After");
+    expect(captions(ALL_ON)).toContain("Your Collection, then Replace");
+    expect(captions(ALL_ON)).not.toContain("Your Collection, then an upload");
     const noEdit = env({ ...(ALL_ON as Record<string, string>), COLLECTION_EDIT_ENABLED: "off" });
-    expect(captions(noEdit)).toContain("After");
-    expect(captions(noEdit)).not.toContain("Replace");
+    expect(captions(noEdit)).toContain("Your Collection, then an upload");
+    expect(captions(noEdit)).not.toContain("Your Collection, then Replace");
   });
 });
 

@@ -4,7 +4,8 @@ import { TOOLS } from "../discovery/tools";
 import { ABOUT_SCREENS, DECK_VIEWS, type AboutLineSwitch } from "./about";
 import { aboutEntries } from "./about-entries";
 import {
-  ABOUT_AREAS, ABOUT_AREA_IDS, ABOUT_PAGE_STRINGS, ABOUT_RULE_IDS, ABOUT_RULES, ABOUT_SECTIONS, type AboutDiagramPart,
+  ABOUT_AREAS, ABOUT_AREA_IDS, ABOUT_PAGE_STRINGS, ABOUT_RULE_IDS, ABOUT_RULES, ABOUT_SECTIONS, diagramColumn,
+  type AboutDiagramColumn, type AboutDiagramPart, type AboutRuleDiagram,
 } from "./about-pages";
 
 /** The nine screens with no section until Design places them (plan PR 9); they keep the ? panel. */
@@ -15,8 +16,25 @@ const switchesOf = (sw: AboutLineSwitch): string[] =>
 const ENTRY = new Map(aboutEntries.map((e) => [e.id, e]));
 const diagramParts = (id: (typeof ABOUT_RULE_IDS)[number]): AboutDiagramPart[] => {
   const d = ABOUT_RULES[id].diagram;
-  return [...(d.head ?? []), ...d.columns.flatMap((c) => c.parts), ...(d.foot ?? [])];
+  return [...(d.head ? diagramColumn(d.head).parts : []), ...d.columns.flatMap((c) => c.parts), ...(d.foot ? diagramColumn(d.foot).parts : [])];
 };
+/** The row width a diagram's rows need: one column of 250px or more, never one of several side by side (Small items 3,
+ *  item 1). Names each column that breaks it, so a failure says which. */
+const ROW_COLUMN_W = 250;
+function narrowRowColumns(d: AboutRuleDiagram): string[] {
+  const hasRow = (c: AboutDiagramColumn) => c.parts.some((p) => p.part === "row");
+  const where: [string, AboutDiagramColumn][] = [
+    ...(d.head ? [["head", diagramColumn(d.head)] as [string, AboutDiagramColumn]] : []),
+    ...d.columns.map((c, i) => [`column ${i}`, c] as [string, AboutDiagramColumn]),
+    ...(d.foot ? [["foot", diagramColumn(d.foot)] as [string, AboutDiagramColumn]] : []),
+  ];
+  return where.flatMap(([name, c]) => {
+    if (!hasRow(c)) return [];
+    if (name.startsWith("column") && d.columns.length > 1) return [`${name} sits beside another`];
+    if ((c.w ?? 0) < ROW_COLUMN_W) return [`${name} is ${c.w === undefined ? "unsized" : `${c.w}px`}`];
+    return [];
+  });
+}
 /** Every word a diagram draws. */
 const diagramStrings = (id: (typeof ABOUT_RULE_IDS)[number]): string[] =>
   diagramParts(id).flatMap((p) => {
@@ -56,6 +74,7 @@ describe("about pages copy model", () => {
     const named = [
       ...labels.flatMap((l) => [l.switch, ...Object.values(l.sentences ?? {})]),
       ...Object.values(ABOUT_RULES).flatMap((r) => [r.switch, ...Object.values(r.sentences ?? {})]),
+      ...ABOUT_SECTIONS.flatMap((s) => Object.values(s.subSentences ?? {})),
     ].filter((x): x is AboutLineSwitch => x != null).flatMap(switchesOf);
     // A retired switch stays the unit's historical identity: About's seen-state keys units and sentences by it, so
     // dropping the name would mark an unread announcement as seen. `visible.ts` maps each to always-on.
@@ -66,6 +85,15 @@ describe("about pages copy model", () => {
   it("keeps every gated sentence verbatim inside its unit's text", () => {
     for (const l of labels) for (const s of Object.keys(l.sentences ?? {})) expect(l.rest, l.id).toContain(s);
     for (const [id, r] of Object.entries(ABOUT_RULES)) for (const s of Object.keys(r.sentences ?? {})) expect(r.text, id).toContain(s);
+    for (const sec of ABOUT_SECTIONS) for (const s of Object.keys(sec.subSentences ?? {})) expect(sec.sub, sec.id).toContain(s);
+  });
+
+  it("gives every section a sub-line of one or two sentences, its first never switched (Small items 3, item 4)", () => {
+    for (const sec of ABOUT_SECTIONS) {
+      const sentences = sec.sub.split(/(?<=[.?])\s+/);
+      expect(sentences.length, sec.id).toBeLessThanOrEqual(2);
+      expect(Object.keys(sec.subSentences ?? {}).some((s) => s.trim() === sentences[0]), sec.id).toBe(false);
+    }
   });
 
   it("puts at most five labels on a capture (call 1)", () => {
@@ -142,6 +170,22 @@ describe("about pages copy model", () => {
     const short = diagramParts("one-copy").filter((p) => p.part === "row" && p.tag?.tone === "short");
     expect(ABOUT_RULES["one-copy"].text).toContain("two of them show it short");
     expect(short.map((p) => (p.part === "row" ? p.name : ""))).toEqual(["Sai", "Zimone"]);
+  });
+
+  it("puts every row in one column 250px wide or more, never beside another column (Small items 3, item 1)", () => {
+    for (const id of ABOUT_RULE_IDS) expect(narrowRowColumns(ABOUT_RULES[id].diagram), id).toEqual([]);
+  });
+
+  it("fails a row in a narrow column, an unsized one or one of two side by side, and passes a full-width foot", () => {
+    const row: AboutDiagramPart = { part: "row", name: "Ghalta, Ancient Behemoth", tag: { text: "held longest ✓", tone: "muted" } };
+    const tile: AboutDiagramPart = { part: "tile", name: "Ghalta", status: "Complete", colors: ["G"] };
+    expect(narrowRowColumns({ kind: "card-row", columns: [{ w: 150, parts: [row] }] })).toEqual(["column 0 is 150px"]);
+    expect(narrowRowColumns({ kind: "card-row", columns: [{ parts: [row] }] })).toEqual(["column 0 is unsized"]);
+    expect(narrowRowColumns({ kind: "card-row", columns: [{ parts: [tile] }, { w: 250, parts: [row] }] }))
+      .toEqual(["column 1 sits beside another"]);
+    expect(narrowRowColumns({ kind: "card-row", columns: [{ parts: [tile] }], foot: [row] })).toEqual(["foot is unsized"]);
+    expect(narrowRowColumns({ kind: "deck-tile", columns: [{ parts: [tile] }, { parts: [tile] }], foot: { w: 250, parts: [row] } }))
+      .toEqual([]);
   });
 
   it("gates diagram parts only on registered switches", () => {

@@ -1,0 +1,241 @@
+{
+  "feature": "Small items 3, items 1, 3 and 4: About's Good to know rows in one 250px column (dashed dim edges, no opacity, body-ink muted tags and captions), the prices diagram's right-aligned buy chips, and the About copy pass (Discover's Order label, the theme-deck caption, every section's sub-line).",
+  "restoreAbout": true,
+  "note": "Not read-only: opening an About page records the visit, so restoreAbout puts the audit account's About columns back; run against local-dev or a scratch branch (refused on production and staging). Each Good to know row scrolls its rule's card into view (on a phone the swipe row brings it in). hidden-deck follows FRIEND_DECKS_ENABLED, off for the audit account, so it has no row: its layout is pinned by rule-card.test.tsx.",
+  "rows": [
+    {
+      "id": "si3-one-copy",
+      "label": "Item 1: one-copy, rows in one 250px column, Sol Ring tagged you own ×1, ↓",
+      "view": "src/components/about/pages/rule-diagrams.tsx",
+      "steps": [
+        {
+          "goto": "/about/collection#cards",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/one-copy']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-replace",
+      "label": "Item 1: Replace, Your Collection, then Replace, tagged in the file / not in the file",
+      "view": "src/components/about/pages/rule-diagrams.tsx",
+      "steps": [
+        {
+          "goto": "/about/collection#upload",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/replace']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-commit",
+      "label": "Item 1: commit, ↓ commit, Sai sees it · v2 · today",
+      "view": "src/components/about/pages/rule-diagrams.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#versions",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/commit']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-own-it",
+      "label": "Item 1: own-it, tile beside holds your only Sol Ring, foot column",
+      "view": "src/components/about/pages/rule-diagrams.tsx",
+      "steps": [
+        {
+          "goto": "/about/shopping#deck-shopping",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/own-it']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-prices",
+      "label": "Item 3: prices, buy chips share a right edge",
+      "view": "src/components/about/pages/rule-diagrams.tsx",
+      "steps": [
+        {
+          "goto": "/about/shopping#deck-shopping",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/prices']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-intent",
+      "label": "Item 4: intent foot caption, a theme deck",
+      "view": "src/components/about/pages/rule-diagrams.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/intent']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-credits",
+      "label": "Item 1: credits, the empty-handed row dashed, no opacity",
+      "view": "src/components/about/pages/rule-diagrams.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/credits']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-discover-order",
+      "label": "Item 4: Discover section head and the Order label",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/commanders#discover",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-about-label='commanders/discover/order']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-decks-head",
+      "label": "Item 4: Decks page, a section head's sub-line (Your decks)",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "#your-decks-name"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-stats-head",
+      "label": "Item 4: Stats sub-line",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#stats",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "#stats-name"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-home-head",
+      "label": "Item 4: /about/home, the home section head's sub-line",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/home",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "#home-name"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-friends-head",
+      "label": "Item 4: /about/friends, the friends section head's sub-line",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/friends",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "#friends-name"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "si3-collection-head",
+      "label": "Item 4: /about/collection, the cards section head's sub-line",
+      "view": "src/components/about/pages/area-page.tsx",
+      "steps": [
+        {
+          "goto": "/about/collection",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "#cards-name"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    }
+  ]
+}
