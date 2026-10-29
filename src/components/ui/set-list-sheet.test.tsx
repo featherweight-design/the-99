@@ -53,14 +53,14 @@ describe("the set list sheet's search", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it("clears the search after a pick and keeps the sheet open", () => {
+  it("keeps the search after a pick and keeps the sheet open", () => {
     const onDismiss = vi.fn();
     render(<Sheet onDismiss={onDismiss} />);
     const field = screen.getByRole("searchbox", { name: "Search sets" });
     fireEvent.change(field, { target: { value: "bloom" } });
     fireEvent.click(screen.getByRole("switch", { name: /Bloomburrow/ }));
-    expect(field).toHaveValue("");
-    expect(screen.getByText("Modern Horizons 3")).toBeTruthy();
+    expect(field).toHaveValue("bloom");
+    expect(screen.queryByText("Modern Horizons 3")).toBeNull();
     expect(onDismiss).not.toHaveBeenCalled();
   });
 });

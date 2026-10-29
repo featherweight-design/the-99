@@ -2,8 +2,8 @@
 // The Theme field (Help me choose, HANDOFF §2 field 3): the picked themes as chips, then a text
 // input that filters the vocabulary. An ARIA combobox over a multiselectable listbox: the input
 // keeps focus throughout, the arrows move the active option, and Enter toggles it. Picking does
-// not close the list, since picking more than one is the point, but it clears the typed text so the
-// next theme can be searched for. Escape, or a press outside the field and its list, clears the
+// not close the list, since picking more than one is the point, and it keeps the typed text so the
+// next theme of the same search is one press away. Escape, or a press outside the field and its list, clears the
 // text and closes the list (`useSearchDismiss`).
 //
 // The phone's list is not drawn in the handoff; it is the same list, full width under the field.
@@ -46,15 +46,9 @@ export function ThemePicker({
     setOpen(false);
   });
 
+  // A pick keeps the search it came from, so the next theme of the same search is one press away.
   const toggle = (slug: string) =>
     onChange(value.includes(slug) ? value.filter((s) => s !== slug) : [...value, slug]);
-  // A pick from the list clears the search it came from; removing a chip is not a pick, and leaves
-  // whatever is being typed alone.
-  const pick = (slug: string) => {
-    toggle(slug);
-    setQuery("");
-    setActive(0);
-  };
 
   const activeIndex = Math.min(active, Math.max(0, shown.length - 1));
   const optionId = (i: number) => `${listId}-o${i}`;
@@ -116,7 +110,7 @@ export function ThemePicker({
               // Enter picks; it never submits the form from inside the list.
               if (expanded) {
                 e.preventDefault();
-                pick(shown[activeIndex].slug);
+                toggle(shown[activeIndex].slug);
               }
             } else if (onEscape(e)) {
               return;
@@ -145,7 +139,7 @@ export function ThemePicker({
               aria-selected={selected}
               // Keeps focus in the input, so the list stays open under a pointer.
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => pick(t.slug)}
+              onClick={() => toggle(t.slug)}
               onMouseMove={() => i !== activeIndex && setActive(i)}
               className={[
                 "flex items-center gap-[10px] h-[36px] px-[10px] rounded-[7px] cursor-pointer",
