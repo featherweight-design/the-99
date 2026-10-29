@@ -152,6 +152,7 @@ export function FriendSparesProvider({
   sparesOnOpen = false,
   asksVersion,
   onAsk,
+  noFriends = false,
   children,
 }: {
   /** The cards the deck is buying: one read covers every row that can carry a marker. */
@@ -175,6 +176,9 @@ export function FriendSparesProvider({
   /** Draw the spares-only modal here. False where it must sit inside a card-detail provider mounted lower (the cart),
    *  which then renders `SparesSheetHost` itself. */
   hostSheet?: boolean;
+  /** The reader has no friend (the cart, addendum R3 §4): no spares read is made, and every asked card reads as landed
+   *  with no spare, so nothing reads, fails or offers a friend. */
+  noFriends?: boolean;
   children: React.ReactNode;
 }) {
   const key = useMemo(() => [...new Set(oracleIds)].sort().join(","), [oracleIds]);
@@ -188,7 +192,7 @@ export function FriendSparesProvider({
   // On open, the read is the opened card alone, skipped once it has landed this visit.
   const sparesKey = sparesOnOpen ? (opened && !loaded.has(opened.oracleId) ? opened.oracleId : "") : key;
   useEffect(() => {
-    if (!sparesKey) return;
+    if (!sparesKey || noFriends) return;
     let live = true;
     const ids = new Set(sparesKey.split(","));
     void fetchSpares([...ids]).then(({ spares: rows, failed: miss }) => {
@@ -202,7 +206,7 @@ export function FriendSparesProvider({
     return () => {
       live = false;
     };
-  }, [sparesKey, round]);
+  }, [sparesKey, round, noFriends]);
   const retry = useCallback(() => {
     // Only the cards the read asks for again: its failed ones go back to reading (v2 Loading A) until it lands. A card
     // that left the list keeps its history, since no read will land for it again.
@@ -284,8 +288,8 @@ export function FriendSparesProvider({
     const asksByCard = new Map<string, AskStateLine[]>();
     for (const a of asks) asksByCard.set(a.oracleId, [...(asksByCard.get(a.oracleId) ?? []), a]);
     const req: RequestsCtx | null = requests ? { asksFor: (id) => asksByCard.get(id) ?? [], ask } : null;
-    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req, loaded, failed, retry };
-  }, [spares, asks, opened, key, newestAsOf, requests, ask, loaded, failed, retry]);
+    return { byCard, seen, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req, loaded: noFriends ? asked : loaded, failed, retry };
+  }, [spares, asks, opened, key, newestAsOf, requests, ask, loaded, failed, retry, noFriends]);
   return (
     <SparesContext.Provider value={value}>
       <SpareRequestsContext.Provider value={value.requests}>

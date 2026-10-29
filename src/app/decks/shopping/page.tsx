@@ -49,10 +49,11 @@ export default async function AllDecksShoppingPage({
     const value = await loadCart(userId, keyed);
     return { value, store: value.priced };
   }, env);
-  // Whether the reader has a friend decides By friend's empty block (v2 Empty-One B or C). Read per request beside the
-  // cart (`PER_REQUEST_READS`) and only where By friend is a view, so the cached payload carries no friend data and its
-  // key no friend stamp. One row at most, on the viewer's own link rows.
-  const friends = byFriend ? await hasFriend(userId) : true;
+  // Whether the reader has a friend decides By friend's empty block (v2 Empty-One B or C) and, with friends' spares on,
+  // whether the spares read is made at all (addendum R3 §4: no friend, no spare key, column, clause or toast). Read per
+  // request beside the cart (`PER_REQUEST_READS`) and only where friends' spares are on, so the cached payload carries
+  // no friend data and its key no friend stamp. One row at most, on the viewer's own link rows.
+  const friends = socialFriendsEnabled(env) ? await hasFriend(userId) : true;
   // The provenance line is built here, once, as PriceStrip's caller builds it: the locale and the
   // clock are the server's, so the client never re-derives a date that could hydrate differently.
   const newest = cart.newestAsOf ? new Date(cart.newestAsOf) : null;

@@ -292,8 +292,10 @@ export function FilterChassis({
 
       {/* Row 2 — present at rest, which is the invariant. Never conditionally
           rendered: `{chips.length > 0 && …}` is the bug this decision forbids. */}
+      {/* Compact: the chips row sits 16px under the controls (the 10px gap plus 6), the result line still 10px under it
+          (cart addendum R3 §2.5, shared by every compact page). The wide form keeps the 10px. */}
       <div
-        className="flex flex-wrap items-center gap-[6px]"
+        className={`flex flex-wrap items-center gap-[6px]${form === "compact" ? " mt-[6px]" : ""}`}
         style={{ minHeight: CHIP_ROW_MIN_PX }}
         data-chassis-row="chips"
       >
