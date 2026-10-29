@@ -8,7 +8,7 @@ Open `Main.html` for all seven boards, or open one board's page; each needs only
 
 | Board | Item |
 |---|---|
-| `Good-To-Know-Contrast.html` | 1 · Good to know diagrams too dim |
+| `Good-To-Know-Rows.html` | 1 · Good to know rows cut short |
 | `Try-It-Halo.html` | 2 · Try it halo runs outside its frame |
 | `Prices-Buy-Chips.html` | 3 · Right-align the prices diagram's buy chips |
 | `Copy.html` | 4 · Copy direction: the Discover order, Squirrels, section lines |
@@ -16,21 +16,22 @@ Open `Main.html` for all seven boards, or open one board's page; each needs only
 | `Dock-Low-Region.html` | 6 · The phone dock for a low region |
 | `Filter-Controls.html` | 7 · Shared phone filter controls |
 
-## 1 · Every Good to know diagram reads at full strength (bug)
+## 1 · No Good to know row is ever cut short (bug)
 
-**Cause:** three things stack in `rule-diagrams.tsx`.
-- A row's edge is `--border`, which is 1.1 to 1.2:1 against the plate (`--bg`), so a row has no visible shape.
-- A `dim` row fades to 75% opacity and a `gone` row to 55%.
-- A muted-tone tag on a dim row falls to about 4.0:1, and on a gone row to about 2.8:1.
-
-The card-assignment (`one-copy`) and pending/commit (`commit`) diagrams show it worst, but every diagram uses the same parts.
+**Cause:** five diagrams put rows in side-by-side columns (`one-copy`, `hidden-deck`, `commit`, `own-it`, `replace`). A column has a fixed width (`w: 150`, `w: 104`, `w: 78`) or only what the plate leaves it. A row's tag is `flex-none`, so the card name gives way. Measured on the boards: one-copy shows "Gha…" and "Zi…", hidden-deck "Sol R…", at 390 and 1300 alike. Commit, own-it and Replace fit today by a few pixels only.
 
 **Call, for every diagram:**
-1. Diagram parts get no opacity. `dim` and `gone` stop fading the whole row.
-2. A **dim** row keeps full-strength words and draws its edge dashed (`--border-dashed`). A **gone** row strikes its name through in `--fg-muted`, and its tag stays at full strength.
-3. Every row's edge is `--border-dashed` drawn solid, about 1.5 to 1.9:1 against the plate across the six themes. The row's fill stays `--surface-raised`.
-4. Muted-tone tags and muted captions move from `--fg-muted` to `--fg-body`. Upper-case captions stay `--fg-faint` (5.3:1 or better). Compact rows go from 11px to 11.5px.
-5. In all six themes, every word in a diagram is 4.5:1 or better against what's behind it. Card layout, plate size and rule text don't change.
+1. **A row never sits in a side-by-side column.** A diagram with a row puts every row in one column 250px wide (`w: 250`, as credits, never and invites already are). It reads top to bottom, and a step between rows is a `between` part in that column, with ↓ in place of →.
+2. **Only tiles, the empty slot and captions sit side by side** in `columns`. Rows that follow them go in `foot`.
+3. **One code change:** `foot` (and `head`) accept a full column `{ w, gap, parts }` as well as a parts list, and `RuleDiagram` renders it through `Stack`.
+4. **Pin it:** `about-pages.test.ts` fails a diagram that has a row part in a column narrower than 250px, or in one of two or more `columns`. The row keeps its ellipsis as a last resort, but no shipped diagram reaches it.
+5. **The five, redrawn** (same parts and words unless marked):
+   - `one-copy`: Sol Ring with the tag "you own ×1", ↓, then Ghalta, Sai and Zimone.
+   - `hidden-deck`: the Ghalta tile beside the empty slot, then a foot column: "Its cards", Sol Ring "in use", "not spares".
+   - `commit`: "Ghalta · pending", its two rows, ↓ "commit", "Sai sees it · v2 · today", Sol Ring "short".
+   - `own-it`: the Ghalta tile beside "holds your only Sol Ring", then a foot column: "Sai · Shopping", Sol Ring with its buy tag, "your copy is in Ghalta". The ≠ goes.
+   - `replace`: "Your Collection, then Replace", then Sol Ring, Swords and Cultivate tagged "in the file", and Thrasios struck through, tagged "not in the file".
+6. **Readability, kept from the first draft:** no opacity on a part (a dim row draws its edge dashed, a gone row strikes its name in `--fg-muted` and keeps its tag at full strength); row edges in `--border-dashed`; muted tags and captions in `--fg-body`. Every word is 4.5:1 or better in all six themes.
 
 ## 2 · The Try it highlight stays inside its frame (bug)
 
@@ -128,6 +129,10 @@ There are no new strings.
 | Where | Draft |
 |---|---|
 | `about-pages.ts` Discover `order` label | Item 4 above |
+| `about-pages.ts` `one-copy` row tag | `you own ×1` (was a caption) |
+| `about-pages.ts` `commit` caption | `Sai sees it · v2 · today` (two captions merged) |
+| `about-pages.ts` `own-it` caption | `holds your only Sol Ring` (was `has Sol Ring`) |
+| `about-pages.ts` `replace` head and tags | `Your Collection, then Replace`, `in the file`, `not in the file` (was Now / File / Replace) |
 | `about-pages.ts` `intent` diagram foot caption | `a theme deck · no Game Changers · you pick` |
 | `about-entries.ts` the legacy bracket entry | "A theme deck" in place of "A Squirrel deck" |
 | `about-pages.ts` every section's `sub` | The table in item 4 |

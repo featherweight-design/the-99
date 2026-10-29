@@ -35,11 +35,20 @@ def between(glyph, label=None, mode="now"):
     return f'<div class="btw"><span>{glyph}</span>{lab}</div>'
 
 
+def tile(name, status="Complete"):
+    return f'<div class="dtile"><i></i><b>{name}</b><span>{status}</span></div>'
+
+
+def void(text):
+    return f'<div class="dvoid">{text}</div>'
+
+
 def diagram(cols, gap=10, head="", foot=""):
     return f'<div class="dgm">{head}<div class="dcols" style="gap:{gap}px">{"".join(cols)}</div>{foot}</div>'
 
 
-def d_commit(m):
+# Shipped layouts (main @0c756cc): rows sit in side-by-side columns, so a row gets what the column leaves it.
+def d_commit_now(m):
     return diagram([
         col([cap("Ghalta · pending", mode=m), row("Sol Ring", dot="own", edge=True, compact=True, tag="+", tone="accent", mode=m),
              row("Mind Stone", edge=True, compact=True, tag="cut", mode=m)], gap=5),
@@ -48,13 +57,76 @@ def d_commit(m):
     ], gap=6)
 
 
-def d_onecopy(m):
+def d_onecopy_now(m):
     return diagram([
         col([row("Sol Ring", dot="own", mode=m), cap("you own ×1", True, m)], w=96, center=True),
         between("→", mode=m),
         col([row("Ghalta", tag="held longest ✓", mode=m), row("Sai", tag="short 1", tone="short", mode=m),
              row("Zimone", dim=True, tag="short 1 · draft", tone="short", mode=m)], w=150, gap=5),
     ], gap=12)
+
+
+def d_replace_now(m):
+    def c(title, names, gone_last=False, w=78):
+        rows = [row(n, compact=True, gone=(gone_last and i == len(names) - 1), mode=m) for i, n in enumerate(names)]
+        return col([cap(title, mode=m)] + rows, w=w, gap=4)
+    return diagram([c("Now", ["Sol Ring", "Swords", "Cultivate", "Thrasios"]), c("File", ["Sol Ring", "Swords", "Cultivate"]),
+                    c("Replace", ["Sol Ring", "Swords", "Cultivate", "Thrasios"], True, 84)])
+
+
+def d_ownit_now(m):
+    return diagram([col([tile("Ghalta"), cap("has Sol Ring", True, m)], center=True), between("≠", mode=m),
+                    col([cap("Sai · Shopping", mode=m), row("Sol Ring", dot="own", compact=True, price="1.49", mode=m),
+                         cap("your copy is in Ghalta", True, m)], gap=5)], gap=8)
+
+
+def d_hidden_now(m):
+    return diagram([col([tile("Ghalta")]), col([void("hidden: no tile")]),
+                    col([cap("Its cards", mode=m), row("Sol Ring", tag="in use", mode=m), cap("not spares", True, m)], w=104, gap=5)], gap=8)
+
+
+# Proposed: a row is never in a side-by-side column. Every row sits in one column the plate's width (250px, as credits
+# and never already are), so a name and its tag always show whole. Only tiles and the empty slot sit side by side.
+W = 250
+
+
+def d_commit_new(m):
+    return diagram([col([cap("Ghalta · pending", mode=m),
+                         row("Sol Ring", dot="own", edge=True, compact=True, tag="+", tone="accent", mode=m),
+                         row("Mind Stone", edge=True, compact=True, tag="cut", mode=m),
+                         between("↓", "commit", m),
+                         cap("Sai sees it · v2 · today", mode=m),
+                         row("Sol Ring", compact=True, tag="short", tone="short", mode=m)], w=W, gap=5)])
+
+
+def d_onecopy_new(m):
+    return diagram([col([row("Sol Ring", dot="own", tag="you own ×1", mode=m), between("↓", mode=m),
+                         row("Ghalta", tag="held longest ✓", mode=m), row("Sai", tag="short 1", tone="short", mode=m),
+                         row("Zimone", dim=True, tag="short 1 · draft", tone="short", mode=m)], w=W, gap=5)])
+
+
+def d_replace_new(m):
+    rows = [row(n, compact=True, tag="in the file", mode=m) for n in ("Sol Ring", "Swords", "Cultivate")]
+    rows.append(row("Thrasios", compact=True, gone=True, tag="not in the file", mode=m))
+    return diagram([col([cap("Your Collection, then Replace", mode=m)] + rows, w=W, gap=5)])
+
+
+def d_ownit_new(m):
+    return diagram([tile("Ghalta"), col([cap("holds your only Sol Ring", True, m)])], gap=12,
+                   foot=col([cap("Sai · Shopping", mode=m), row("Sol Ring", dot="own", price="1.49", mode=m),
+                             cap("your copy is in Ghalta", True, m)], w=W, gap=5))
+
+
+def d_hidden_new(m):
+    return diagram([tile("Ghalta"), void("hidden: no tile")], gap=12,
+                   foot=col([cap("Its cards", mode=m), row("Sol Ring", tag="in use", mode=m), cap("not spares", True, m)], w=W, gap=5))
+
+
+def d_commit(m): return d_commit_now(m) if m == "now" else d_commit_new(m)
+def d_onecopy(m): return d_onecopy_now(m) if m == "now" else d_onecopy_new(m)
+def d_replace(m): return d_replace_now(m) if m == "now" else d_replace_new(m)
+def d_ownit(m): return d_ownit_now(m) if m == "now" else d_ownit_new(m)
+def d_hidden(m): return d_hidden_now(m) if m == "now" else d_hidden_new(m)
 
 
 def d_credits(m):
@@ -67,14 +139,6 @@ def d_never(m):
                          row("Arcane Signet", dot="unowned", tag="short", tone="short", price="0.89", mode=m)], w=250, gap=8)])
 
 
-def d_replace(m):
-    def c(title, names, gone_last=False, w=78):
-        rows = [row(n, compact=True, gone=(gone_last and i == len(names) - 1), mode=m) for i, n in enumerate(names)]
-        return col([cap(title, mode=m)] + rows, w=w, gap=4)
-    return diagram([c("Now", ["Sol Ring", "Swords", "Cultivate", "Thrasios"]), c("File", ["Sol Ring", "Swords", "Cultivate"]),
-                    c("Replace", ["Sol Ring", "Swords", "Cultivate", "Thrasios"], True, 84)])
-
-
 def gtk_card(diag, text, width):
     return f'<article class="rcard" style="width:{width}px"><div class="dplate">{diag}</div><p>{text}</p></article>'
 
@@ -84,6 +148,8 @@ RULE_TEXT = {
     "onecopy": "A copy you own can live in only one committed deck at a time. The deck that’s held it longest keeps it, unless you hand it to another, and drafts wait behind committed decks.",
     "credits": "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back.",
     "never": "Changing your Collection never changes a decklist. A deck that loses its copy keeps the card, shows it short and puts it on its shopping list.",
+    "ownit": "A card you own can still be on Shopping. If your Ghalta deck already holds your only Sol Ring, your Sai deck needs another.",
+    "hidden": "A deck you hide looks deleted to friends: no tile, and its link stops working. Hiding it never frees its cards as spares.",
     "replace": "An upload replaces your whole Collection with the file. With Replace, any card that isn’t in the file leaves your Collection.",
 }
 
@@ -109,27 +175,28 @@ def rule_box(title, items):
 
 
 def board1():
-    def set_(m, w):
-        return "".join(gtk_card(d(m), RULE_TEXT[k], w) for k, d in (("commit", d_commit), ("onecopy", d_onecopy), ("credits", d_credits), ("never", d_never)))
-    phone_now = f'<div class="pcol">{gtk_panel(gtk_card(d_onecopy("now"), RULE_TEXT["onecopy"], 292) + gtk_card(d_commit("now"), RULE_TEXT["commit"], 292), "swipe")}</div>'
-    phone_new = f'<div class="pcol">{gtk_panel(gtk_card(d_onecopy("new"), RULE_TEXT["onecopy"], 292) + gtk_card(d_commit("new"), RULE_TEXT["commit"], 292), "swipe")}</div>'
-    desk_now = f'<div class="dcolw">{gtk_panel(set_("now", 388), "grid")}</div>'
-    desk_new = f'<div class="dcolw">{gtk_panel(set_("new", 388), "grid")}</div>'
-    rep = gtk_card(d_replace("now"), RULE_TEXT["replace"], 292) + gtk_card(d_replace("new"), RULE_TEXT["replace"], 292)
-    frames = (fr("Now · 390", "Card assignment (one copy) and pending/commit: rows barely separate from the plate, Zimone is a 75% ghost, and the muted tags fall under 4.5:1.", phone_now, "was")
-              + fr("Proposed · 390", "Every row has an edge you can see, nothing is faded with opacity, and every word clears 4.5:1.", phone_new)
-              + fr("Now · 1300, two across", "", desk_now, "was")
-              + fr("Proposed · 1300", "The same rule in every diagram: credits’ “Came back empty-handed” and the collection’s removed copy read whole.", desk_new)
-              + fr("Every diagram · Replace, now then proposed", "The removed Thrasios keeps its strike but no longer fades to a smudge.", f'<div class="pair">{rep}</div>'))
+    AFFECTED = (("onecopy", d_onecopy), ("hidden", d_hidden), ("commit", d_commit), ("ownit", d_ownit), ("replace", d_replace))
+    def cards(m, w, keys=None):
+        return "".join(gtk_card(d(m), RULE_TEXT[k], w) for k, d in AFFECTED if keys is None or k in keys)
+    phone_now = f'<div class="pcol">{gtk_panel(cards("now", 292, ("onecopy", "hidden")), "stack")}</div>'
+    phone_new = f'<div class="pcol">{gtk_panel(cards("new", 292, ("onecopy", "hidden")), "stack")}</div>'
+    phone_new2 = f'<div class="pcol">{gtk_panel(cards("new", 292, ("commit", "ownit", "replace")), "stack")}</div>'
+    desk_now = f'<div class="dcolw">{gtk_panel(cards("now", 388, ("onecopy", "hidden")), "grid")}</div>'
+    desk_new = f'<div class="dcolw">{gtk_panel(cards("new", 388), "grid")}</div>'
+    frames = (fr("Now · 390", "One copy: “Gha…” and “Zi…” (the tags take the 150px column). Hidden deck: “Sol R…” in a 104px column beside two tiles.", phone_now, "was")
+              + fr("Proposed · 390", "Each row takes the plate’s full 250px, under what it follows, so the name and its tag both show whole.", phone_new)
+              + fr("Proposed · 390, the other three", "Commit, own-it and Replace fit today only by a few pixels, so they move to the same layout and can’t truncate under another theme’s font or a longer name.", phone_new2)
+              + fr("Now · 1300", "The 388px desktop card doesn’t help: the columns keep their fixed widths.", desk_now, "was")
+              + fr("Proposed · 1300", "All five, two across.", desk_new))
     rule = rule_box("The rule, for every Good to know diagram", [
-        "<b>No opacity on a diagram part.</b> <code>dim</code> (a draft, an empty-handed run) and <code>gone</code> (a removed copy) stop fading the whole row to 75% and 55%.",
-        "<b>A dim row</b> keeps full-strength words and draws its edge dashed (<code>--border-dashed</code>), the app’s own mark for “not committed”. <b>A gone row</b> strikes its name through in <code>--fg-muted</code>; its tag stays full strength.",
-        "<b>Every row’s edge</b> is <code>--border-dashed</code> drawn solid (about 1.5 to 1.9:1 against the plate across the six themes), not <code>--border</code> (1.1 to 1.2:1, which is why the rows melt into the plate). The row’s fill stays <code>--surface-raised</code>.",
-        "<b>Text floors:</b> a tag in the muted tone moves from <code>--fg-muted</code> to <code>--fg-body</code>; a muted caption likewise. Upper-case captions stay <code>--fg-faint</code> (5.3:1 or better). Compact rows go from 11px to 11.5px.",
-        "Checked in all six themes: every word in a diagram is 4.5:1 or better against what is behind it. Nothing else in the cards or their layout changes.",
+        "<b>A row never sits in a side-by-side column.</b> A diagram with a row puts every row in one column 250px wide (<code>w: 250</code>, as credits, never and invites already are). The order reads top to bottom, and a step between is a <code>between</code> part in that column: ↓ in place of →.",
+        "<b>Only tiles, the empty slot and captions sit side by side</b>, in <code>columns</code>. Rows that follow them go in <code>foot</code>, which takes a full column (<code>{ w, gap, parts }</code>) as well as a parts list. That is the one code change: <code>RuleDiagram</code> renders a column foot through <code>Stack</code>.",
+        "<b>Pin it:</b> <code>about-pages.test.ts</code> fails a diagram whose row part sits in a column narrower than 250px, or in one of two or more <code>columns</code>. The row keeps its ellipsis as a last resort, but no shipped diagram reaches it.",
+        "<b>The five that change:</b> one-copy, hidden-deck, commit, own-it and Replace. Their parts and words stay; own-it drops its ≠ (the tile now sits above the rows). Three captions merge or gain words, marked for /copy-review below.",
+        "<b>Readability, kept from the first draft:</b> no opacity on a part (a dim row draws its edge dashed, a gone row strikes its name in <code>--fg-muted</code>), row edges in <code>--border-dashed</code>, and muted tags in <code>--fg-body</code>, so every word is 4.5:1 or better in all six themes.",
     ])
-    return board(1, "About · bug", "Every Good to know diagram reads at full strength",
-                 "The diagrams draw the app’s rows at reduced strength, and three things stack: the row’s edge (<code>--border</code>) is 1.1 to 1.2:1 against the plate, so a row has no shape; a “dim” row fades to 75% and a “gone” row to 55%; and the muted tags sit just under 4.5:1. The card-assignment and pending/commit diagrams show it worst, but the cause is shared, so the fix is in the diagram parts.", frames, rule)
+    return board(1, "About · bug", "No Good to know row is ever cut short",
+                 "Five diagrams put rows in side-by-side columns. A column has a fixed width, or only what the plate leaves it, and a row’s tag never shrinks, so the card name gives way: one-copy shows “Gha…” and “Zi…”, and hidden-deck “Sol R…”. The fix is the layout: rows stack in one full-width column.", frames, rule)
 
 
 # ---------- 2 · Try it halo ----------
@@ -382,7 +449,7 @@ def board7():
                  "The shipped phone chassis and the cart R3 boards disagree on three sizes. Only one can be the rule for Decks, the cart and the other compact pages.", frames, rule + f'<div class="tabwrap">{table}</div>')
 
 
-BOARDS = [("Good-To-Know-Contrast", board1), ("Try-It-Halo", board2), ("Prices-Buy-Chips", board3), ("Copy", board4),
+BOARDS = [("Good-To-Know-Rows", board1), ("Try-It-Halo", board2), ("Prices-Buy-Chips", board3), ("Copy", board4),
           ("Help-Me-Choose-Locked", board5), ("Dock-Low-Region", board6), ("Filter-Controls", board7)]
 
 
@@ -397,7 +464,7 @@ def build():
         b = fn()
         bodies.append(b)
         open(os.path.join(OUT, f"{nm}.html"), "w").write(head(f"Small items 3 {nm}") + f'<main class="canvas">{b}</main>\n')
-    items = [("Good to know diagrams too dim", "No opacity, real row edges, 4.5:1 text"), ("Try it halo runs outside the frame", "Held 8px inside, like the labelled screen"),
+    items = [("Good to know rows cut short", "Rows stack in one 250px column, never side by side"), ("Try it halo runs outside the frame", "Held 8px inside, like the labelled screen"),
              ("Buy chips in the prices diagram", "Right-aligned"), ("Copy: Discover order, Squirrels, section lines", "Drafts for copy review"),
              ("Help me choose while it reads", "The whole form locks"), ("Dock covers a low region", "It docks at the top instead"),
              ("Phone filter controls disagree", "The shipped 44px controls win")]

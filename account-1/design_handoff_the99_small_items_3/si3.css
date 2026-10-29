@@ -315,3 +315,10 @@ code{font:500 12px var(--mono);color:var(--fg);background:var(--surface);border-
 .chip b{color:var(--fg-faint);font-weight:400}
 .ca2{margin-left:auto;text-decoration:underline;color:var(--fg-body)}
 .res2{margin-top:10px;font-size:11.5px;color:var(--fg-muted)}
+.gtk.stack .gtkrow{flex-direction:column;align-items:flex-start}
+.dtile{display:flex;flex-direction:column;width:84px;overflow:hidden;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-raised);flex:none}
+.dtile i{display:block;height:46px;background:linear-gradient(135deg,#2f6b3a,#7fae5a)}
+.dtile b{padding:5px 7px 2px;font-size:11px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtile span{margin:0 7px 7px;align-self:flex-start;border-radius:4px;padding:0 5px;font:500 9px/15px var(--mono);color:var(--success);background:color-mix(in oklab,var(--success) 16%,transparent)}
+.dvoid{display:flex;align-items:center;justify-content:center;width:84px;height:94px;border-radius:9px;border:1.5px dashed var(--border-dashed);padding:0 8px;text-align:center;font:500 10px var(--mono);letter-spacing:.04em;color:var(--fg-faint);flex:none}
+.dcol>.btw{align-self:center}
