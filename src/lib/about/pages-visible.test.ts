@@ -329,7 +329,7 @@ describe("a section's sub-line", () => {
 
   it("describes each screen while its switch is on, and only says it is off while it is off", () => {
     const cases: [string, string, string][] = [
-      ["whats-new", "HOME_FEED_ENABLED", "news for you"],
+      ["whats-new", "HOME_FEED_ENABLED", "News you choose"],
       ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
       ["stats", "DECK_STATS_ENABLED", "charts"],
       ["notes", "DECK_NOTES_ENABLED", "remember"],
@@ -357,8 +357,11 @@ describe("a section's sub-line", () => {
     const noScan = env({ ...(ALL_ON as Record<string, string>), CARD_SCAN_ENABLED: "off" });
     expect(sub(noScan, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding.");
     // Ready to build shows only while the feed is off.
-    expect(sub(ALL_ON, "home")).not.toContain("two commanders");
-    expect(sub(env({ ...(ALL_ON as Record<string, string>), HOME_FEED_ENABLED: "off" }), "home")).toContain("two commanders");
+    expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
+    expect(sub(env({ ...(ALL_ON as Record<string, string>), HOME_FEED_ENABLED: "off" }), "home")).toContain("best-fit commanders");
+    // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too.
+    expect(sub(ALL_ON, "whats-new")).toContain("Anything waiting on you comes first.");
+    expect(sub(env({ ...(ALL_ON as Record<string, string>), SPARE_REQUESTS_ENABLED: "off" }), "whats-new")).not.toContain("waiting on you");
   });
 });
 

@@ -174,15 +174,15 @@ export type AboutRuleId = (typeof ABOUT_RULE_IDS)[number];
  *  has none. The values are written out here; `about-pages.test.ts` re-derives every one from the entries and pins it. */
 /** A section's sub-line while the switch its screen hangs on is off: the section is still drawn (it keeps its place in the
  *  page's count), so its sub says the screen is off rather than describing it. */
-export const ABOUT_SCREEN_OFF = " This screen isn’t on for you yet.";
+export const ABOUT_SCREEN_OFF = " This screen isn’t on for you.";
 
 export const ABOUT_SECTIONS: readonly AboutSection[] = [
   {
     area: "home",
     id: "home",
     name: "Home",
-    sub: "Where every visit starts: the decks you left off, and how many of your cards they hold. It also picks two commanders you could build today.",
-    subSentences: { " It also picks two commanders you could build today.": "!HOME_FEED_ENABLED" },
+    sub: "Where every visit starts: your latest decks, and how far along each one is. It also picks two of your best-fit commanders to build.",
+    subSentences: { " It also picks two of your best-fit commanders to build.": "!HOME_FEED_ENABLED" },
     screens: [{ screen: "home" }],
     captures: { phone: ["p-home", "p-home-in-use"], desktop: ["d-home"] },
     labels: [
@@ -221,9 +221,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "home",
     id: "whats-new",
     name: "What’s new",
-    sub: `Anything waiting on you comes first, then news for you, newest first: a new set, a combo you can now make, and more.${ABOUT_SCREEN_OFF}`,
+    sub: `News you choose to hear about, newest first, such as a new set or a combo you can now make. Anything waiting on you comes first.${ABOUT_SCREEN_OFF}`,
     subSentences: {
-      "Anything waiting on you comes first, then news for you, newest first: a new set, a combo you can now make, and more.": "HOME_FEED_ENABLED",
+      "News you choose to hear about, newest first, such as a new set or a combo you can now make.": "HOME_FEED_ENABLED",
+      // Only a spare request ever waits on you (`feedOrder`), and it is a kind only with spare requests on.
+      " Anything waiting on you comes first.": ["HOME_FEED_ENABLED", "SPARE_REQUESTS_ENABLED"],
       [ABOUT_SCREEN_OFF]: "!HOME_FEED_ENABLED",
     },
     screens: [{ screen: "home" }],
@@ -302,7 +304,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "collection",
     id: "upload",
     name: "Upload a file",
-    sub: "Bring in an export from another app or paste a list, then check what changes before you confirm.",
+    sub: "Bring in an export from another app or paste a list, and look over the import before you confirm it.",
     screens: [{ screen: "upload" }],
     captures: { phone: ["p-upload"], desktop: ["d-upload"] },
     labels: [
@@ -323,7 +325,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "commanders",
     id: "for-you",
     name: "For you",
-    sub: "Commanders you own, ranked by how well the rest of your cards suit each one, with the play styles EDHREC tracks for it.",
+    sub: "Commanders you own, ranked by how well the rest of your cards suit each one.",
     screens: [{ screen: "commanders" }],
     captures: { phone: ["p-commanders"], desktop: ["d-commanders"] },
     labels: [
@@ -365,7 +367,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "commanders",
     id: "discover",
     name: "Discover",
-    sub: "Commanders worth buying: every one EDHREC tracks that you don’t own yet. Search them, or narrow them by color or set.",
+    sub: "Commanders worth buying: ones EDHREC tracks that you don’t own and haven’t built a deck around. Search them, or narrow them by color or set.",
     screens: [{ screen: "discover" }],
     captures: { phone: ["p-discover"], desktop: ["d-discover"] },
     labels: [
@@ -373,7 +375,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "order",
         region: "commanders/discover/order",
         lead: "Order",
-        rest: " sorts the list, and you pick it. Best fit ranks by how many of a commander’s popular cards you own. Something new ranks by how many of its themes your decks don’t play yet. Popularity counts the decks EDHREC tracks. Name goes A to Z, and Recently released puts the newest first.",
+        rest: " sorts the list, and you pick it. Best fit ranks by how many of a commander’s popular cards you own. Something new ranks by how many of its themes your decks don’t play yet, and shows only commanders you could build. Popularity counts the decks EDHREC tracks. Name goes A to Z, and Recently released puts the newest first.",
         switch: null,
         since: 1,
         legacy: ["discover"],
@@ -386,7 +388,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "your-decks",
     name: "Your decks",
-    sub: "Every deck you’re building, with its status and what it needs next. Start one from a commander, or import a list you already play.",
+    sub: "Your decks, each with its status. Start one from a commander, or import a list you already play.",
     screens: [{ screen: "decks" }],
     captures: { phone: ["p-decks"], desktop: ["d-decks2"] },
     labels: [
@@ -562,7 +564,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "versions",
     name: "Versions",
-    sub: "Every commit, kept, with its date, card count and average mana value. Open one to see the cards it brought in.",
+    sub: "Every commit, kept, with its date, card count and average mana value. Open one to see what it brought in and took out.",
     screens: [{ screen: "deck", view: "versions" }],
     captures: { phone: ["p-deck-versions"], desktop: ["d-versions-precon"] },
     labels: [
@@ -592,7 +594,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "games",
     name: "Games",
-    sub: "What happened at the table, logged in about fifteen seconds. Matchups shows how the deck does against each commander, color and friend.",
+    sub: "What happened at the table, game by game. Matchups shows how the deck does against each commander, color and friend.",
     subSentences: { " Matchups shows how the deck does against each commander, color and friend.": "SOCIAL_GAMES_ENABLED" },
     screens: [{ screen: "deck", view: "games" }],
     captures: { phone: ["p-deck-games"], desktop: ["d-games"] },
@@ -677,7 +679,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "shopping",
     id: "deck-shopping",
     name: "A deck’s Shopping",
-    sub: "What one deck still needs, priced at Mana Pool, with a cart that buys it. Cheaper stand-ins are a press away.",
+    sub: "What one deck still needs, basic lands aside, priced at Mana Pool, with one link that fills your Mana Pool cart. Cheaper stand-ins are a press away.",
     subSentences: { " Cheaper stand-ins are a press away.": "SWAP_TOOLS_ENABLED" },
     screens: [{ screen: "deck", view: "shopping" }],
     captures: { phone: ["p-deck-shopping"], desktop: ["d-shopping"] },
@@ -736,9 +738,9 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "shopping",
     id: "all-decks",
     name: "Shopping for all decks",
-    sub: `Every deck’s missing cards in one cart, so one Mana Pool order covers them all.${ABOUT_SCREEN_OFF}`,
+    sub: `Every deck’s missing cards in one cart, basic lands aside. A big cart goes to Mana Pool in parts.${ABOUT_SCREEN_OFF}`,
     subSentences: {
-      "Every deck’s missing cards in one cart, so one Mana Pool order covers them all.": "ALL_DECKS_CART_ENABLED",
+      "Every deck’s missing cards in one cart, basic lands aside. A big cart goes to Mana Pool in parts.": "ALL_DECKS_CART_ENABLED",
       [ABOUT_SCREEN_OFF]: "!ALL_DECKS_CART_ENABLED",
     },
     screens: [],
@@ -761,10 +763,10 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "friends",
     id: "friends",
     name: "Friends",
-    sub: `The people you play with, and your pods. See their spares, and pick who sees yours.${ABOUT_SCREEN_OFF}`,
+    sub: `The people you play with, and your pods. See their spares, and pick which pods see yours.${ABOUT_SCREEN_OFF}`,
     subSentences: {
       "The people you play with, and your pods.": "SOCIAL_FRIENDS_ENABLED",
-      " See their spares, and pick who sees yours.": "SOCIAL_FRIENDS_ENABLED",
+      " See their spares, and pick which pods see yours.": "SOCIAL_FRIENDS_ENABLED",
       [ABOUT_SCREEN_OFF]: "!SOCIAL_FRIENDS_ENABLED",
     },
     screens: [{ screen: "friends" }],
