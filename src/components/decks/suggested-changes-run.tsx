@@ -17,7 +17,7 @@ import type { ValidationReport } from "../../lib/tuning/validate";
 import { askFor } from "../../lib/tuning/v2/count";
 import { usualFor } from "../../lib/tuning/v2/intake";
 import {
-  bracketOutcome, groupLines, groupsAt, isOpen, pickCap, shortFacts, shortOfAsk, tally,
+  bracketOutcome, cutAskOf, groupLines, groupsAt, isOpen, pickCap, shortFacts, shortOfAsk, tally,
   type BracketOutcome, type Grouping, type ShortFacts,
 } from "../../lib/tuning/v2/results";
 import { SegmentedSwitch } from "../ui/segmented-switch";
@@ -35,7 +35,12 @@ export type SuggestionSetActions = {
   apply: (runId: string, addIds: string[], cutIds: string[], actionId: string) => Promise<ApplySetActionResult>;
   undo: (applySet: string) => Promise<ApplySetActionResult>;
   pick: (itemId: string, picked: boolean) => Promise<{ ok: boolean }>;
+  /** The brackets the deck would permit with these picks applied, for a set the lines' own flags cannot settle. */
+  setBracket?: (runId: string, addIds: string[], cutIds: string[]) => Promise<{ permits: number[] } | null>;
 };
+
+/** How long the picks rest before the bar asks the server for the set's bracket (a profile build per ask). */
+const SET_BRACKET_DEBOUNCE_MS = 400;
 
 /** What the grouping heads read off the deck page: its count per type group, and what it has of each shelf role. */
 export type RunFigures = {
@@ -92,6 +97,10 @@ export function SuggestedChangesRun({
   // Each row's latest pick save, by count: a mutable map kept for the component's life (read only in `toggle`).
   const [pickRev] = useState(() => new Map<string, number>());
   const [pickError, setPickError] = useState<string | null>(null);
+  const [setRead, setSetRead] = useState<{ key: string; permits: number[] } | null>(null);
+  // What the set read was made against: the deck's reading and every line's state. An Apply, an Undo or a refreshed deck
+  // changes it, and a read made before then never speaks for the picks after.
+  const deckStamp = `${permits.join(",")}#${readLines.map((l) => `${l.id}:${l.verdict}:${l.applySet ?? ""}`).join(",")}`;
   const [half, setHalf] = useState<"add" | "cut">("add");
   const [stored, setGrouping] = useStoredView(DECK_GROUPING_KEY, isDeckGrouping);
   const grouping: Grouping = stored ?? "type";
@@ -146,7 +155,23 @@ export function SuggestedChangesRun({
   const pickedAdds = adds.filter(isPicked);
   const pickedCuts = cuts.filter(isPicked);
   const t = tally([...pickedAdds, ...pickedCuts]);
-  const outcome = bracketOutcome(permits, ask?.bracket ?? null, [...pickedAdds, ...pickedCuts]);
+  // A set past one line a side: the bar's claim waits on the server's read of the whole set (follow-up b).
+  const setKey = pickedAdds.length > 1 || pickedCuts.length > 1
+    ? `${pickedAdds.map((l) => l.id).join(",")}|${pickedCuts.map((l) => l.id).join(",")}|${deckStamp}` : null;
+  useEffect(() => {
+    const read = actions.setBracket;
+    // Not while the run streams: the waiting bar draws no outcome, and each arriving line would move the stamp.
+    if (setKey === null || waiting || !read || setRead?.key === setKey) return;
+    let live = true;
+    const [a, c] = setKey.split("|").slice(0, 2).map((s) => (s === "" ? [] : s.split(",")));
+    const timer = setTimeout(() => {
+      read(runId, a, c).then((r) => { if (live && r) setSetRead({ key: setKey, permits: r.permits }); }, () => undefined);
+    }, SET_BRACKET_DEBOUNCE_MS);
+    return () => { live = false; clearTimeout(timer); };
+  }, [setKey, waiting, runId, actions.setBracket, setRead?.key]);
+  const outcome = bracketOutcome(
+    permits, ask?.bracket ?? null, [...pickedAdds, ...pickedCuts], setRead && setRead.key === setKey ? setRead.permits : null,
+  );
 
   // The applied sets, each its own Undo (spec §7a); the bar offers the one this visit applied, else the one found.
   const sets = new Map<string, LineItem[]>();
@@ -244,7 +269,7 @@ export function SuggestedChangesRun({
     const title = side === "add" ? sc.results.additions : sc.results.cuts;
     const c = chip(side);
     const started = side === "add" || !waiting || live.phase === "cuts" || rows.length > 0;
-    const askedOf = side === "add" ? askFor(n) : askFor(Math.min(n, adds.length));
+    const askedOf = side === "add" ? askFor(n) : cutAskOf(n, waiting ? live.cutAsk : report?.v2?.cutAsk);
     const line = (l: LineItem) => (
       <li key={l.id}>
         <SuggestedChangesPickLine
@@ -579,7 +604,12 @@ function YouAsked({ ask }: { ask: V2Ask }) {
     // What the run was asked, as it was stored: never the deck's bracket today, which may have moved since.
     const b = ask.bracket.target;
     const name = BRACKET_NAMES[b as Bracket];
-    parts.push(ask.bracket.choice === "keep" ? r.askedKeep(b, name) : (
+    const low = ask.bracket.low;
+    parts.push(ask.bracket.choice === "keep" ? (
+      low !== undefined && low < b
+        ? r.askedKeepRange(low, b, `${BRACKET_NAMES[low as Bracket]} or ${name}`)
+        : r.askedKeep(b, name)
+    ) : (
       <b key="aim" data-sc-asked-aim="" className="font-medium" style={{ color: `var(--bracket-${b})` }}>{sc.results.aimed(b, name)}</b>
     ));
   }

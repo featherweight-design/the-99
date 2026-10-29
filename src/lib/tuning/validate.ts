@@ -140,6 +140,10 @@ export type V2RunReport = {
   callCount?: number;
   refilled?: { add: boolean; cut: boolean };
   underProduced?: { add: boolean; cut: boolean };
+  /** What the cut call asked for: ceil(1.5N) when it starts beside the additions refill, or ceil(1.5K) when the additions
+   *  call kept none and the refill kept K (§5.1a). Written when the call starts, so the wait's "asked for" states the real
+   *  ask. Absent on a run from before it, and on one with no cut call. */
+  cutAsk?: number;
   /** What each list had to reach: N, and min(N, additions kept). */
   target?: { add: number; cut: number };
   /** The restriction that bound a short list (§5.5), or null when none did. */

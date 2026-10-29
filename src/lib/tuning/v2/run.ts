@@ -21,7 +21,7 @@ import { TUNING_EFFORT, TUNING_MODEL, V2_RUN_BUDGET_MS } from "../limits";
 import { loadOwnedCandidates } from "../owned-candidates";
 import { reapReaderRuns } from "../reap-runs";
 import { nameResolver } from "../resolve-names";
-import { failV2Run, insertV2Line, markV2Progress, persistV2, startRun, type RunHandle } from "../run-store";
+import { failV2Run, insertV2Line, markV2CutAsk, markV2Progress, persistV2, startRun, type RunHandle } from "../run-store";
 import { stagedStubOutcome, STUB_ADDITIONS } from "../stub";
 import type { ResolvedCard } from "../validate";
 import { cardFloorOf, type BracketAim, type BracketChoice } from "./bracket-aim";
@@ -259,6 +259,7 @@ async function workV2(args: {
         if (!(await insertV2Line(run.runId, chipped))) throw new Error(`v2 run ${run.runId} is no longer pending`);
       },
       onListIn: (side) => markV2Progress(run.runId, "in", side, true),
+      onCutAsk: (ask) => markV2CutAsk(run.runId, ask),
     });
     if (appError !== null) throw appError;
     const { outcome, validationReport, settleAs } = v2Outcome(report, args.startReport, limits.capCents);

@@ -38,6 +38,7 @@ function setup(over: Partial<Props> = {}) {
     apply: vi.fn(async () => ({ ok: true as const, itemIds: ["x", "y"] })),
     undo: vi.fn(async () => ({ ok: true as const, itemIds: ["x", "y"] })),
     pick: vi.fn(async () => ({ ok: true })),
+    setBracket: vi.fn(async () => ({ permits: [3] })),
   };
   const onChanged = vi.fn(async () => null);
   const onAnnounce = vi.fn();
@@ -432,6 +433,46 @@ describe("the results", () => {
     expect(bar().textContent).toContain(sc.bar.unequal(2, 1, 1, "cut"));
   });
 
+  it("asks the server for a set the flags cannot settle, and claims its outcome only for the picks it read (follow-up b)", async () => {
+    vi.useFakeTimers();
+    const up = ask(3, { bracket: { choice: "up", target: 3 } });
+    const two = (i: number) => ({ picked: i < 2 });
+    const t = setup({ ask: up, lines: [...adds(5, two), ...cuts(5, two)] });
+    expect(bar().textContent).not.toContain(sc.bar.bracketReached(2, 3, "Upgraded"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(t.actions.setBracket).toHaveBeenCalledWith(RUN, ["a0", "a1"], ["c0", "c1"]);
+    expect(bar().textContent).toContain(sc.bar.bracketReached(2, 3, "Upgraded"));
+    // The same picks after the deck moved (an Apply elsewhere): the old read no longer speaks for them.
+    const moved = [...adds(5, two), ...cuts(5, two), v2Line("x", "add", { verdict: "accepted", applySet: SET })];
+    t.rerender({ ask: up, lines: moved });
+    expect(bar().textContent).not.toContain(sc.bar.bracketReached(2, 3, "Upgraded"));
+    t.rerender({ ask: up, lines: [...adds(5, two), ...cuts(5, two)] });
+    // Other picks: the read for the old set no longer speaks for them.
+    t.rerender({ ask: up, lines: [...adds(5, (i) => ({ picked: i === 2 || i === 3 })), ...cuts(5, two)] });
+    expect(bar().textContent).not.toContain(sc.bar.bracketReached(2, 3, "Upgraded"));
+  });
+
+  it("asks nothing while the run is still streaming", async () => {
+    vi.useFakeTimers();
+    const two = (i: number) => ({ picked: i < 2 });
+    const both = [...adds(5, two), ...cuts(3, two)];
+    const t = setup({ live: liveOf(both, { phase: "cuts", in: { add: true, cut: false } }), lines: both, startedAt: new Date() });
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(t.actions.setBracket).not.toHaveBeenCalled();
+  });
+
+  it("asks nothing for a set of one line a side", async () => {
+    vi.useFakeTimers();
+    const t = setup({ lines: [...adds(5, (i) => ({ picked: i === 0 })), ...cuts(5, (i) => ({ picked: i === 0 }))] });
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(t.actions.setBracket).not.toHaveBeenCalled();
+  });
+
+  it("says Keep over a range as the intake offered it (follow-up d)", () => {
+    setup({ ask: ask(3, { bracket: { choice: "keep", target: 2, low: 1 } }), permits: [1, 2] });
+    expect(document.querySelector("[data-sc-asked]")!.textContent).toContain(sc.run.askedKeepRange(1, 2, "Exhibition or Core"));
+  });
+
   it("says the Keep the run was asked, not the deck's bracket today", () => {
     setup({ permits: [3] });
     expect(document.querySelector("[data-sc-asked]")!.textContent).toContain(sc.run.askedKeep(2, "Core"));
@@ -457,6 +498,14 @@ describe("the design-review fixes", () => {
     expect(end("cut")!.getAttribute("data-sc-end-state")).toBe("in");
     expect(end("cut")!.textContent).toContain(sc.wait.allIn(4));
     expect(end("cut")!.textContent).toContain(sc.wait.askedFor(5));
+  });
+
+  it("states the cut call's stored ask on the cuts' end line (follow-up c)", () => {
+    // Five additions kept would imply an ask of 8; the cut call asked 15, and the line says so.
+    const both = [...adds(5), ...cuts(4)];
+    setup({ ask: ask(10), live: liveOf(both, { phase: "cuts", in: { add: true, cut: true }, cutAsk: 15 }), lines: both, startedAt: new Date() });
+    const end = document.querySelector('[data-sc-end="cut"]') as HTMLElement;
+    expect(end.textContent).toContain(sc.wait.askedFor(15));
   });
 
   it("drops the end lines once a full run is made", () => {

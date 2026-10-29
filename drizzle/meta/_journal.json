@@ -1317,6 +1317,13 @@
       "when": 1793231930827,
       "tag": "0187_retire_about_sheet_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 188,
+      "version": "7",
+      "when": 1793281732437,
+      "tag": "0188_suggestion_runs_bracket_low",
+      "breakpoints": true
     }
   ]
 }

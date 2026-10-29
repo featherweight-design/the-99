@@ -339,12 +339,13 @@ const askColumns = {
   requestText: deckSuggestionRuns.requestText,
   bracketChoice: deckSuggestionRuns.bracketChoice,
   bracketTarget: deckSuggestionRuns.bracketTarget,
+  bracketLow: deckSuggestionRuns.bracketLow,
 };
 
 /** A v2 run's ask as the results' You asked draws it; undefined for a v10 run (no count). */
 export function askOf(row: {
   id: string; requestedCount: number | null; requestText: string | null; bracketChoice: string | null;
-  bracketTarget: number | null; validationReport: ValidationReport | null;
+  bracketTarget: number | null; bracketLow?: number | null; validationReport: ValidationReport | null;
 }): V2Ask | undefined {
   if (row.requestedCount === null) return undefined;
   const choice = row.bracketChoice;
@@ -354,7 +355,7 @@ export function askOf(row: {
     requestedCount: row.requestedCount,
     request: row.requestText && row.requestText.trim() !== "" ? row.requestText : null,
     bracket: (choice === "keep" || choice === "down" || choice === "up") && row.bracketTarget !== null
-      ? { choice, target: row.bracketTarget } : null,
+      ? { choice, target: row.bracketTarget, ...(row.bracketLow != null ? { low: row.bracketLow } : {}) } : null,
     restrictions: restrictions ? { capCents: restrictions.capCents, sets: [...restrictions.sets], ownedOnly: restrictions.ownedOnly } : null,
   };
 }
@@ -374,6 +375,7 @@ export function liveOf(
     // The live lines' own price snapshot: the last set's `newestPriceAsOf` is another read, and null on a first run.
     newestPriceAsOf: read.newestPriceAsOf,
     ...(ask ? { ask } : {}),
+    ...(v2?.cutAsk !== undefined ? { cutAsk: v2.cutAsk } : {}),
   };
 }
 

@@ -32,8 +32,10 @@ export function v2Outcome(report: V2Report, start: ValidationReport, capCents: n
   const kept = additions.kept.length + cuts.kept.length;
   const empty = additions.kept.length === 0;
   const refunded = charge.outcome === "refunded";
+  const cutCall = report.calls.find((c) => c.stage === "cuts");
   const v2: V2RunReport = {
     ...start.v2!,
+    ...(cutCall ? { cutAsk: cutCall.ask } : {}),
     in: { add: true, cut: true },
     refilling: { add: false, cut: false },
     callCount: report.callCount,
