@@ -42,7 +42,7 @@ describe("startAnalytics", () => {
     expect(posthog.init).toHaveBeenCalledTimes(1);
     expect(posthog.init).toHaveBeenCalledWith("phc_test", {
       api_host: "https://us.i.posthog.com",
-      autocapture: true,
+      autocapture: { url_ignorelist: [m.ADMIN_URL] },
       mask_all_text: false,
       mask_all_element_attributes: false,
       capture_pageview: "history_change",
@@ -52,6 +52,33 @@ describe("startAnalytics", () => {
       before_send: m.redactCapture,
       advanced_disable_flags: true,
     });
+  });
+
+  it("keeps autocapture off the admin, whose rows carry Clerk ids, and on everywhere else", async () => {
+    const { ADMIN_URL } = await load();
+    for (const href of ["https://the-99.dev/admin", "https://the-99.dev/admin/accounts/user_2abc", "https://the-99.dev/admin?tab=x"]) {
+      expect(ADMIN_URL.test(href)).toBe(true);
+    }
+    for (const href of ["https://the-99.dev/", "https://the-99.dev/administrator", "https://the-99.dev/decks/admin"]) {
+      expect(ADMIN_URL.test(href)).toBe(false);
+    }
+  });
+
+  it("can identify or reset before the SDK's first pageview, which waits on a timer", async () => {
+    vi.useFakeTimers();
+    try {
+      posthog.get_property.mockReturnValue("identified");
+      const m = await load();
+      const started = m.startAnalytics(LIVE);
+      m.resetReader();
+      await started;
+      for (let i = 0; i < 5; i += 1) await Promise.resolve();
+      // No timer has run, so posthog-js's deferred initial pageview would still be ahead of the reset.
+      expect(posthog.init).toHaveBeenCalledTimes(1);
+      expect(posthog.reset).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("honours NEXT_PUBLIC_POSTHOG_HOST", async () => {

@@ -15,14 +15,24 @@ import { Analytics } from "./analytics";
 beforeEach(() => vi.clearAllMocks());
 
 describe("Analytics", () => {
-  it("starts analytics once with the page hostname and renders nothing", () => {
+  it("starts nothing until Clerk has loaded, and renders nothing", () => {
     useUser.mockReturnValue({ isLoaded: false, user: undefined });
     const { container } = render(<Analytics />);
     expect(container.innerHTML).toBe("");
-    expect(startAnalytics).toHaveBeenCalledTimes(1);
-    expect(startAnalytics).toHaveBeenCalledWith(expect.objectContaining({ hostname: window.location.hostname }));
+    expect(startAnalytics).not.toHaveBeenCalled();
     expect(identifyReader).not.toHaveBeenCalled();
     expect(resetReader).not.toHaveBeenCalled();
+  });
+
+  it("starts once Clerk loads, with the page hostname, and reconciles the identity in the same effect", () => {
+    useUser.mockReturnValue({ isLoaded: false, user: undefined });
+    const { rerender } = render(<Analytics />);
+    useUser.mockReturnValue({ isLoaded: true, user: null });
+    rerender(<Analytics />);
+    expect(startAnalytics).toHaveBeenCalledTimes(1);
+    expect(startAnalytics).toHaveBeenCalledWith(expect.objectContaining({ hostname: window.location.hostname }));
+    expect(resetReader).toHaveBeenCalledTimes(1);
+    expect(startAnalytics.mock.invocationCallOrder[0]).toBeLessThan(resetReader.mock.invocationCallOrder[0]);
   });
 
   it("identifies a signed-in reader by Clerk id and display name, never the email", () => {

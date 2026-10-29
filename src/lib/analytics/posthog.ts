@@ -91,13 +91,17 @@ export function redactCapture(event: CaptureResult | null): CaptureResult | null
   };
 }
 
+/** Any URL on the admin (`/admin` and below), matched against the page's full href. */
+export const ADMIN_URL = /^https?:\/\/[^/]+\/admin(?:[/?#]|$)/i;
+
 /** The init options. */
 export function posthogOptions(apiHost: string): Partial<PostHogConfig> {
   return {
     api_host: apiHost,
     // Clicks, submits and changes on interactive elements. Element text and attributes are kept so a captured
-    // button still says what it was; input VALUES are never recorded by the SDK.
-    autocapture: true,
+    // button still says what it was; input VALUES are never recorded by the SDK. Not on `/admin`: its rows carry
+    // other readers' Clerk ids in attributes and text, which no URL redaction reaches.
+    autocapture: { url_ignorelist: [ADMIN_URL] },
     mask_all_text: false,
     mask_all_element_attributes: false,
     // A pageview on load and on every App Router navigation, which moves the URL through the History API.

@@ -13,7 +13,11 @@ export function Analytics() {
   const userId = user?.id ?? null;
   const name = user?.fullName ?? user?.username ?? null;
 
+  // Nothing starts until Clerk knows who is reading. Then PostHog starts and, in the same task, takes this
+  // reader's identity or drops a previous one, ahead of its first pageview (which the SDK defers by a timer).
+  // Starting earlier would credit a browser's first pageview and clicks to whoever it last identified.
   useEffect(() => {
+    if (!isLoaded) return;
     // Literal `process.env.NEXT_PUBLIC_*` reads: Next inlines them into the bundle at build time.
     void startAnalytics({
       key: process.env.NEXT_PUBLIC_POSTHOG_KEY,
@@ -21,10 +25,6 @@ export function Analytics() {
       commitSha: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
       hostname: window.location.hostname,
     });
-  }, []);
-
-  useEffect(() => {
-    if (!isLoaded) return;
     if (userId) identifyReader(userId, name);
     else resetReader();
   }, [isLoaded, userId, name]);
