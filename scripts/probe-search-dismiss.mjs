@@ -6,9 +6,9 @@
 // 1. ESCAPE clears the text and closes the list in ONE press.
 // 2. A PRESS OUTSIDE the field and its list clears the text and closes the list.
 // 3. A PRESS INSIDE (Quick add's owned toggle) keeps the text.
-// 4. A THEME PICK clears the typed text and leaves the list open for the next pick, focus in the field.
+// 4. A THEME PICK keeps the typed text and leaves the list open for the next pick, focus in the field.
 // 5. INSIDE A PANEL OR SHEET (the Set filter), the first Escape clears a typed search and keeps the
-//    surface open, the next closes it, and a pick clears the search with the surface still open.
+//    surface open, the next closes it, and a pick keeps the search with the surface still open.
 // 6. A COMMANDER PICK on /decks/new clears the search and leaves the picked row pressed and in view.
 //
 // Quick add's clear-after-an-add is pinned by its unit test rather than pressed here: an add writes a
@@ -160,8 +160,8 @@ try {
       focused: document.activeElement?.getAttribute("role") === "combobox" && document.activeElement.tagName === "INPUT",
       expanded: document.querySelector('main input[role="combobox"]')?.getAttribute("aria-expanded"),
     }));
-    report(`${vp.label} Theme: a pick adds the chip, clears the text, keeps the list open and focus in the field`,
-      (await chips()) === before + 1 && (await theme.inputValue()) === "" && after.focused && after.expanded === "true", JSON.stringify(after));
+    report(`${vp.label} Theme: a pick adds the chip, keeps the text, keeps the list open and focus in the field`,
+      (await chips()) === before + 1 && (await theme.inputValue()) === "elf" && after.focused && after.expanded === "true", JSON.stringify(after));
 
     await theme.fill("orc");
     await theme.press("Escape");
@@ -203,8 +203,8 @@ try {
     await setField.fill(setQuery);
     await surface.locator(pickRole).first().click();
     await page.waitForTimeout(300);
-    report(`${vp.label} Set filter: a pick clears the search and keeps the surface open`,
-      (await setField.inputValue()) === "" && (await surface.isVisible()), JSON.stringify({ picked: firstLabel }));
+    report(`${vp.label} Set filter: a pick keeps the search and keeps the surface open`,
+      (await setField.inputValue()) === setQuery && (await surface.isVisible()), JSON.stringify({ picked: firstLabel }));
     // Put the pick back, so the probe leaves the filter as it found it.
     await surface.locator(pickRole).first().click();
     await setField.press("Escape");

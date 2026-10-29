@@ -1177,7 +1177,7 @@ describe("selectionOrnament", () => {
 });
 
 // One rule for a search field that picks from a list (DECK INPUT UX, Hugh 2026-10-12): inside a
-// panel, the first Escape clears a typed search and the next closes it, and a pick clears it.
+// panel, the first Escape clears a typed search and the next closes it, and a pick keeps it.
 describe("FilterPanel, its search", () => {
   for (const desktop of [true, false]) {
     const at = desktop ? "the popover" : "the sheet";
