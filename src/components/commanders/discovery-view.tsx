@@ -47,7 +47,7 @@ import {
 import { DiscoveryEmpty, FloorEmpty, NoDecksBanner, SearchPending } from "./discovery-empty";
 import { ExclusionLine } from "./exclusion-line";
 import { resolveExclusionLine } from "../../lib/commanders/exclusion-line";
-import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "./filtered-empty";
+import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { ExcludedMatchAside } from "./excluded-match";
 import { FLOOR_PCT } from "../../lib/discovery/floor";

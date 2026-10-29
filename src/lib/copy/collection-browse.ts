@@ -30,7 +30,9 @@ export const collectionBrowseCopy = {
     // filter alone. Naming a search and a colour filter here would state as
     // fact something that is often not true of the filters actually set.
     caption: "Nothing in your collection clears every filter. Drop one of them.",
-    cta: "Clear filters",
+    cta: "Clear all filters",
+    // With a query on, the one fix: drop every filter but the search.
+    keepSearch: "Keep only search",
   },
 } as const;
 

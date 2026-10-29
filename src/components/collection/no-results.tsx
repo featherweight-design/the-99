@@ -1,10 +1,15 @@
 "use client";
-import { PrimaryButton, GhostButton } from "../ui/button";
-import { Crown } from "../ui/crown";
+import { GhostButton, PrimaryButton } from "../ui/button";
+import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 import { collectionBrowseCopy, colorLabelFor } from "../../lib/copy/collection-browse";
-// No results state per property table §No Results State, as re-skinned by the
-// richness pass (Surfaces v2 §Collection). The v1 "?" card fan is gone, and
-// so is the crab: the quiet crown is the mark for this state now.
+// /collection filtered to nothing, drawn in the shared `ZeroState` (small
+// items 2, item 6a): collection keeps its own words, the commanders geometry
+// draws them. The crown and the accent vignette retired with that call.
+//
+// With a query on, the one fix leads at both widths: Keep only search drops
+// every filter but the query. Clear all filters follows. Without a query there
+// is no single fix to name, so Clear all filters stands alone, as it does on
+// /commanders when no one control would bring a row back.
 
 export function NoResults({
   query,
@@ -21,48 +26,23 @@ export function NoResults({
   onKeepSearch: () => void;
 }) {
   const q = query.trim();
-  const colorLabel = colorLabelFor(colors);
+  const copy = collectionBrowseCopy.noResults;
   return (
-    // §No Results Container: flex-1, column, centered, padding 36px mobile / 48px desktop.
-    // Vignette per Surfaces v2 — accent at 7%, existing token, no new hex.
-    <div className="flex-1 flex flex-col items-center justify-center text-center p-[36px] md:p-[48px] bg-[radial-gradient(440px_260px_at_50%_78%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
-      <Crown tone="quiet" className="mb-[14px]" />
-
-      {/* Heading — §No Results Heading: Cinzel 700, 21/26px, --fg */}
-      <h2
-        className="font-display font-bold text-[21px] md:text-[26px] m-0"
-        style={{ color: "var(--fg)" }}
-      >
-        {collectionBrowseCopy.noResults.heading(query, colorLabel)}
-      </h2>
-
-      {/* Body — §No Results Body Copy: 13.5/15px, --fg-body, line-height 1.55/1.6 */}
-      <p
-        className="mt-[10px] md:mt-[12px] text-[13.5px] md:text-[15px] md:max-w-[360px] leading-[1.55] md:leading-[1.6]"
-        style={{ color: "var(--fg-body)" }}
-      >
-        {collectionBrowseCopy.noResults.caption}
-      </p>
-
-      {/* CTAs — §No Results CTA Container / §"Clear filters" Button / §"Keep only search" Button */}
-      <div className="mt-[22px] md:mt-[26px] flex flex-col md:flex-row gap-[12px]">
-        <PrimaryButton
-          type="button"
-          onClick={onClearAll}
-          className="text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px] md:py-[12px]"
-        >
-          {collectionBrowseCopy.noResults.cta}
-        </PrimaryButton>
-        {q && (
-          <GhostButton
-            type="button"
-            onClick={onKeepSearch}
-            className="hidden md:inline-block text-[14px] px-[22px] py-[12px]"
-          >
-            Keep only search
-          </GhostButton>
-        )}
-      </div>
-    </div>
+    <ZeroState
+      heading={copy.heading(query, colorLabelFor(colors))}
+      body={copy.caption}
+      primary={
+        q ? (
+          <PrimaryButton type="button" onClick={onKeepSearch} className={ZERO_PRIMARY}>
+            {copy.keepSearch}
+          </PrimaryButton>
+        ) : undefined
+      }
+      secondary={
+        <GhostButton type="button" onClick={onClearAll} className={ZERO_SECONDARY}>
+          {copy.cta}
+        </GhostButton>
+      }
+    />
   );
 }
