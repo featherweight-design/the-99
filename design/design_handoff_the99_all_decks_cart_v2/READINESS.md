@@ -47,3 +47,11 @@ sheet is open, counts the sheet as having said it, and dismisses a toast up when
 friends (the page reads `hasFriend` whenever friends' spares are on; `FriendSparesProvider`'s `noFriends` makes no
 spares read and lands every card with none; the spare column closes). No About entry.
 
+**§2.2 at 320px, after the contact sheet (`all-decks-cart-v2-r3-compact.json`, `cart-badge-phone-320`,
+`cart-query-phone-320`).** With a badge the field is 98px, and the shared field's sizes (12px in, an 18px magnifier, a 9px
+gap, and the hidden ✕ holding its 24px and gap) left the input 12px, so `Search` read `S`. The cart's compact field alone
+(`DeckSearchField`'s `narrow`) now takes the board's `.sf` sizes: 11px in, a 15px magnifier, an 8px gap, and the ✕ out of
+the row while the field is empty. That leaves 98 - 2 - 22 - 15 - 8 = 51px of input, and `Search` measures 49.6px at 16px
+in IBM Plex Sans (headless Chromium, the shipped woff2). Every other caller keeps the shared sizes. **Divergence from the
+board:** the text stays 16px where `.sf .ph` draws 14px, because iOS Safari zooms into an input under 16px.
+

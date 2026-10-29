@@ -126,6 +126,7 @@ export function CartChassis({
         active={term !== ""}
         placeholder={wide ? copy.filters.search : copy.filters.searchCompact}
         label={copy.filters.search}
+        narrow={!wide}
       />
     </div>
   );

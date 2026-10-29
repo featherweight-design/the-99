@@ -1218,6 +1218,31 @@ describe("addendum R3", () => {
       field = screen.getByRole("searchbox", { name: copy.filters.search });
       expect(field.getAttribute("placeholder")).toBe(copy.filters.search);
     });
+
+    it("draws the cart's compact field at the board's sizes, the empty ✕ out of the row, and leaves the shared field as it was", async () => {
+      // 320px with a badge leaves the field 98px: 98 - 2 border - 22 padding - 15 icon - 8 gap = 51px of input, and
+      // `Search` measures 49.6px at 16px in IBM Plex Sans. The ✕'s 24px and its gap would leave 19px.
+      await mount();
+      const field = screen.getByRole("searchbox", { name: copy.filters.search });
+      const box = field.closest("[data-search-field]") as HTMLElement;
+      const classes = () => box.className.split(/\s+/);
+      expect(classes()).toEqual(expect.arrayContaining(["px-[11px]", "gap-[8px]"]));
+      expect(classes()).not.toContain("px-[12px]");
+      expect(box.querySelector("[data-search-icon]")!.getAttribute("width")).toBe("15");
+      // The text keeps 16px: iOS Safari zooms into an input under 16px.
+      expect(field.className.split(/\s+/)).toContain("text-[16px]");
+      const clear = () => box.querySelector("button") as HTMLElement;
+      expect(clear().className.split(/\s+/)).toContain("hidden");
+      fireEvent.change(field, { target: { value: "sol" } });
+      expect(clear().className.split(/\s+/)).not.toContain("hidden");
+      cleanup();
+      // Every other caller keeps the shared field's sizes: 12px in, the 18px magnifier, the ✕ held hidden in place.
+      const { DeckSearchField } = await import("../deck-filter-column");
+      render(<DeckSearchField value="" onChange={() => {}} size="sheet" />);
+      const other = document.querySelector("[data-search-field]") as HTMLElement;
+      expect(other.className.split(/\s+/)).toEqual(expect.arrayContaining(["px-[12px]", "gap-[9px]"]));
+      expect(other.querySelector("[data-search-icon]")!.getAttribute("width")).toBe("18");
+    });
   });
 
   describe("§3 the list's bottom fade", () => {
