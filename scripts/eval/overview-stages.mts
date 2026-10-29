@@ -18,7 +18,7 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  *       Builds every prompt and counts its input tokens (the free counting endpoint, or an estimate
  *       when it cannot be reached), prints each deck's projected and worst-case cost and the totals.
  *       Sends nothing to a model and writes no file.
- *   pnpm eval:overview-stages --iteration N --cap <usd> [--only id,id] [--no-repair]
+ *   pnpm eval:overview-stages --iteration N --cap <usd> [--only id,id] [--no-repair] [--ask-approved]
  *       The paid run, REAL-TIME through the app's `callModel` at contract 12's model, effort and
  *       ceiling. N is 1, 2 or 3 (a fourth is refused). Writes under
  *       docs/superpowers/eval/runs/overview-stages-<N>/: per deck old.json, new.json, checks.json;
@@ -94,6 +94,7 @@ const { values: args } = parseArgs({
     only: { type: "string" },
     cap: { type: "string" },
     "no-repair": { type: "boolean", default: false },
+    "ask-approved": { type: "boolean", default: false },
     "prod-prepare": { type: "string" },
     "prod-ids": { type: "string" },
   },
@@ -180,6 +181,8 @@ if (iteration > 3) throw new Error(`overview-stages: iteration ${iteration} refu
 const cap = args.cap === undefined ? null : Number(args.cap);
 if (!dryRun && (cap === null || !Number.isFinite(cap) || cap <= 0)) throw new Error("overview-stages: a paid run needs --cap <usd> (this run's own ceiling, under the ledger's $2)");
 const repairOn = !args["no-repair"];
+// The orchestrator answered the ask line for this run: only the hard cap still stops a call.
+const askApproved = args["ask-approved"];
 const only = args.only ? new Set(args.only.split(",").map((s) => s.trim()).filter(Boolean)) : null;
 const precons = PRECONS.filter((p) => !only || only.has(p.file));
 let prodDecks = PROD_DECKS.filter((d) => !only || only.has(d.id));
@@ -345,7 +348,7 @@ const readJson = <T,>(u: URL): T | null => (existsSync(u) ? JSON.parse(readFileS
 async function ask<T>(it: Item, what: string, p: { system: string; user: string }, schema: unknown, deadlineMs: number, reserve: number, done: number) {
   const inTok = Math.ceil((p.system.length + p.user.length) / 3);
   const worst = worstCaseUsd(call.model, inTok, call.maxTokens, { batch: false });
-  const planDone = (iteration - 1 + done / total) / 3;
+  const planDone = askApproved ? 1 : (iteration - 1 + done / total) / 3;
   const stop = refusal(readLedger(LEDGER), worst * reserve, planDone, LIMITS)
     ?? (runSpend + worst * reserve > cap! ? `this run's cap of $${cap} would be crossed (spent $${runSpend.toFixed(4)}, this call could cost $${(worst * reserve).toFixed(4)})` : null);
   if (stop) { stopped = `before ${it.id} ${what}: ${stop}`; console.log(`STOP ${stopped}`); return null; }
