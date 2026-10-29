@@ -252,4 +252,24 @@ describe("SuggestionCard", () => {
     expect(screen.getByText(lockedCardsCopy.tuning.cutLocked("Divination"))).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: copy.apply })).not.toBeInTheDocument();
   });
+
+  it("read-only: no Apply, Reject, Undo or Show it again, and the names still open the cards", async () => {
+    const draws = (i: TuningItem) => render(
+      <SuggestionCard item={i} permits={[3]} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} readOnly />,
+    );
+    draws(item);
+    expect(screen.queryByRole("button", { name: copy.apply })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: copy.reject })).not.toBeInTheDocument();
+    open.mockClear();
+    const name = screen.getByRole("button", { name: copy.open("Rhystic Study") });
+    expect(name).not.toBeDisabled();
+    await act(async () => { fireEvent.click(name); });
+    expect(open).toHaveBeenCalledWith("add", expect.anything(), undefined, expect.anything());
+    cleanup();
+    draws({ ...item, verdict: "accepted" });
+    expect(screen.queryByRole("button", { name: copy.undo })).not.toBeInTheDocument();
+    cleanup();
+    draws({ ...item, verdict: "dismissed" });
+    expect(screen.queryByRole("button", { name: copy.restore })).not.toBeInTheDocument();
+  });
 });

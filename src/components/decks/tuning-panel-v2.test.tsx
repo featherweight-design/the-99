@@ -482,6 +482,22 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     expect(document.querySelector("[data-sc-intake]")).not.toBeNull();
   });
 
+  it("draws an older paired run read-only with its cards still open to inspection", async () => {
+    const d = deps();
+    const pair = {
+      id: "p1", addOracleId: "add", addName: "Rhystic Study", addTypeLine: "Enchantment", cutOracleId: "cut", cutName: "Divination",
+      rationale: "Draw.", rationaleShort: "", evidence: [], position: 0, verdict: "pending" as const, addImageUri: null, cutImageUri: null,
+      owned: true, ownedQuantity: 1, availability: null, price: null, bracketAfter: null, applies: true, cutInDeck: true, addInDeck: false,
+      cutLocked: false,
+    };
+    d.read = vi.fn(async () => ({ ...okRun(RUN), items: [pair] }));
+    await draw(d, v2At());
+    expect(document.body.textContent).toContain(sc.pastRun);
+    expect(screen.queryByRole("button", { name: deckTuningCopy.card.apply })).toBeNull();
+    expect(screen.getByRole("button", { name: deckTuningCopy.card.open("Divination") })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: deckTuningCopy.card.open("Rhystic Study") })).not.toBeDisabled();
+  });
+
   it("with the switch off, a v10 set keeps Add, Reject and Apply all", async () => {
     const d = deps();
     const v10 = lines.map((l) => ({ ...l, typeGroup: undefined, role: undefined, picked: undefined, applySet: undefined }));

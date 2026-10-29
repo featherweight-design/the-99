@@ -1275,8 +1275,7 @@ export function TuningPanel({
         ) : null}
         {v2 ? <AnalysisBanner variant="note" sentence={v2Copy.pastRun} /> : null}
         {pairs.length > 0 ? (
-          // A v10 set once Suggested changes v2 is on is read-only (spec §10): a pair's answers are held off with it.
-          <fieldset disabled={v2 !== null} className="m-0 min-w-0 border-0 p-0">
+          // A v10 set once Suggested changes v2 is on is read-only (spec §10): a pair's answers are gone, its cards still open.
           <ul className={`mt-[14px] flex flex-col ${answered ? "gap-[6px]" : "gap-[12px] md:gap-[8px]"}`}>
             <ArrivalOrder>{pairs.map((item) => (
               <li key={item.id}>
@@ -1286,11 +1285,11 @@ export function TuningPanel({
                   newestPriceAsOf={state.newestPriceAsOf}
                   actions={deps.card}
                   onSettled={settled}
+                  readOnly={v2 !== null}
                 />
               </li>
             ))}</ArrivalOrder>
           </ul>
-          </fieldset>
         ) : null}
         {lists ? (
           <SuggestionLists

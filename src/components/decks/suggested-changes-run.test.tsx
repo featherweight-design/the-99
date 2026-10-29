@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { DECK_GROUPING_ARIA, DECK_GROUPING_KEY } from "../../lib/copy/deck-sort";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
@@ -8,8 +9,9 @@ import type { ValidationReport } from "../../lib/tuning/validate";
 import { v2Line } from "../../lib/tuning/v2/results-fixture";
 import { NEW_MARK_MS, SLOW_NOTE_MS, SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
 
+const openCard = vi.hoisted(() => vi.fn());
 vi.mock("../cards/card-detail-provider", () => ({
-  useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false }),
+  useCardDetail: () => ({ open: openCard, registerSheet: () => () => {}, openOracleId: null, revealing: false }),
   useCardIntent: () => ({}),
 }));
 
@@ -395,6 +397,39 @@ describe("the results", () => {
     await press(screen.getByRole("button", { name: sc.bar.undo(2) }));
     expect(screen.queryByRole("button", { name: /^Undo all/ })).toBeNull();
     expect(screen.getByRole("article", { name: "Card a0" }).textContent).not.toContain(sc.results.added);
+  });
+
+  it("names each card in the confirmation as a keyboard way to its details (the thumbnail is pointer-only)", async () => {
+    setup({ lines: [...adds(5, (i) => ({ picked: i === 0 })), ...cuts(5, (i) => ({ picked: i === 0 }))] });
+    await press(apply());
+    const dialog = screen.getByRole("dialog");
+    openCard.mockClear();
+    await press(within(dialog).getByRole("button", { name: deckTuningCopy.lists.open("Card c0") }));
+    expect(openCard).toHaveBeenCalledWith("o-c0", expect.anything(), undefined, expect.anything());
+    expect(within(dialog).getByRole("button", { name: deckTuningCopy.lists.open("Card a0") })).toBeTruthy();
+  });
+
+  it("gives an undone set back its eligibility when the read after the Undo fails: its picks apply again", async () => {
+    // The read after the Apply landed: the set's rows are accepted and no longer apply (the add in, the cut out).
+    const done = (side: "add" | "cut") => (): Partial<LineItem> => ({ verdict: "accepted", applySet: SET, picked: true, applies: false, inDeck: side === "add" });
+    const t = setup({ lines: [...adds(3, done("add")), ...cuts(3, done("cut"))] });
+    t.actions.undo.mockResolvedValueOnce({ ok: true, itemIds: ["a0", "a1", "a2", "c0", "c1", "c2"] });
+    await press(screen.getByRole("button", { name: sc.bar.undo(6) }));
+    // `onChanged` resolved with nothing new: the rows still read accepted, applies false, from the panel.
+    expect(document.querySelector('[data-sc-chip="add"]')!.textContent).toBe(sc.results.chosen(3, 3));
+    expect(apply().getAttribute("aria-disabled")).toBeNull();
+    expect(apply().textContent).toBe(sc.bar.apply(6));
+  });
+
+  it("does not count a saved pick the deck has moved past (its cut locked since): Apply stays off", () => {
+    setup({
+      lines: [
+        ...adds(5, (i) => ({ picked: i < 2 })),
+        ...cuts(5, (i) => ({ picked: i < 2, ...(i === 0 ? { applies: false, locked: true } : {}) })),
+      ],
+    });
+    expect(apply().getAttribute("aria-disabled")).toBe("true");
+    expect(bar().textContent).toContain(sc.bar.unequal(2, 1, 1, "cut"));
   });
 
   it("says the Keep the run was asked, not the deck's bracket today", () => {

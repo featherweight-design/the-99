@@ -107,7 +107,9 @@ export function SuggestedChangesRun({
 
   // What this visit's Apply and Undo wrote, held over the read until a read agrees: a follow-up read that fails must not
   // put the applied rows back as pending (Apply again, no Undo) or leave an undone set offering its spent Undo.
-  const [written, setWritten] = useState<ReadonlyMap<string, Pick<LineItem, "verdict" | "applySet">>>(() => new Map());
+  // An Undo also gives its rows back their eligibility: the read after the Apply drew them as no longer applying.
+  type Written = Pick<LineItem, "verdict" | "applySet"> & Partial<Pick<LineItem, "applies" | "inDeck">>;
+  const [written, setWritten] = useState<ReadonlyMap<string, Written>>(() => new Map());
   const caught = [...written].filter(([id, w]) => {
     const l = readLines.find((x) => x.id === id);
     return !l || (l.verdict === w.verdict && (l.applySet ?? null) === w.applySet);
@@ -135,7 +137,9 @@ export function SuggestedChangesRun({
     return () => clearTimeout(t);
   }, [fresh]);
 
-  const isPicked = (l: LineItem) => l.verdict === "pending" && (overrides.get(l.id) ?? l.picked ?? false);
+  // Only an open line counts as picked: a saved pick the deck has moved past (its cut locked since) is not sent, so the
+  // tally, the confirmation and Apply hold to what the server can make (`planPicks`, then `planSwap`).
+  const isPicked = (l: LineItem) => isOpen(l) && (overrides.get(l.id) ?? l.picked ?? false);
   const adds = lines.filter((l) => l.side === "add");
   const cuts = lines.filter((l) => l.side === "cut");
   const cap = pickCap(n, lines, !waiting);
@@ -211,7 +215,13 @@ export function SuggestedChangesRun({
       return;
     }
     if (r.itemIds.length > 0) {
-      setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, { verdict: "pending" as const, applySet: null }] as const)]));
+      // The undone swap is makeable again: an addition's card is out of the deck (a basic stays as it was), a cut's is in.
+      const undoneFacts = (id: string): Written => {
+        const l = lines.find((x) => x.id === id);
+        const inDeck = !l || l.side === "cut" || (l.inDeck && l.cardTypeLine.includes("Basic"));
+        return { verdict: "pending", applySet: null, applies: true, inDeck };
+      };
+      setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, undoneFacts(id)] as const)]));
       setUndone(r.itemIds.length);
       onAnnounce(sc.undone(r.itemIds.length));
     }

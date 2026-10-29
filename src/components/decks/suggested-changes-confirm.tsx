@@ -3,7 +3,7 @@
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import type { LineItem } from "../../lib/tuning/state";
 import { ModalChrome } from "./receipt-modal";
-import { Thumb } from "./suggestion-line";
+import { Name, Thumb } from "./suggestion-line";
 
 const copy = suggestedChangesV2Copy;
 
@@ -75,7 +75,8 @@ function Side({ label, sign, lines }: { label: string; sign: "+" | "−"; lines:
               {sign}
             </span>
             <Thumb item={l} small />
-            <span className="min-w-0 truncate text-[13px]" style={{ color: "var(--fg-body)" }}>{l.cardName}</span>
+            {/* The thumbnail is pointer-only (`Thumb`): the name is the keyboard's way to the card, as on the line. */}
+            <span className="min-w-0 truncate"><Name item={l} strike={false} /></span>
           </li>
         ))}
       </ul>
