@@ -904,6 +904,9 @@ export function TuningPanel({
       if (!answer.ok) {
         setRefused(answer.message);
         setAnnounced(answer.message);
+        // Re-read without drawing the reading state (review round 5): an `in_flight` refusal means a run started
+        // elsewhere (another tab) after this panel's read, and only a fresh read arms the pending-run watcher for it.
+        void reread();
         return;
       }
       answered = answer;

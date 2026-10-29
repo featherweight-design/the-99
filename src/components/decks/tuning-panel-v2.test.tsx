@@ -313,6 +313,19 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     expect(document.querySelector('[aria-busy="true"]')).toBeNull();
     expect(screen.getAllByText(deckTuningCopy.run.refused).length).toBeGreaterThan(0);
     expect(document.querySelector("[data-sc-intake]")).not.toBeNull();
-    expect(d.read).toHaveBeenCalledTimes(1);
+    // The refusal re-reads once (review round 5), and a settled read leaves the intake as it was.
+    expect(d.read).toHaveBeenCalledTimes(2);
+  });
+
+  it("a refusal for a run started in another tab re-reads, and watches that run", async () => {
+    const d = deps(() => ({ ok: false, message: deckTuningCopy.run.refused }));
+    await draw(d, v2At());
+    const elsewhere: TuningState = {
+      ...fresh, run: { id: "other-tab", status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } as never,
+    };
+    (d.read as ReturnType<typeof vi.fn>).mockImplementation(async () => elsewhere);
+    await act(async () => { fireEvent.click(send()); });
+    expect(d.read).toHaveBeenCalledTimes(2);
+    expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
   });
 });
