@@ -31,8 +31,14 @@ export function TryIt({ sectionId, cards }: { sectionId: string; cards: readonly
   useEffect(() => {
     const after = focusAfter.current;
     focusAfter.current = null;
-    // The card's Try it press is its whole-card link, the one that carries the card's name as its label.
-    if (after === "opened") listRef.current?.children[1]?.querySelector<HTMLElement>("a[aria-label]")?.focus();
+    // The card's Try it press is its whole-card link, the one that carries the card's name as its label. A card with no
+    // way in draws none: then its first link or button, else the card itself, so focus still reaches what opened.
+    if (after === "opened") {
+      const added = listRef.current?.children[1] as HTMLElement | undefined;
+      const target = added?.querySelector<HTMLElement>("a[aria-label]") ?? added?.querySelector<HTMLElement>("a, button") ?? added;
+      if (target && target === added) added.tabIndex = -1;
+      target?.focus();
+    }
     if (after === "folded") {
       moreRef.current?.focus();
       moreRef.current?.scrollIntoView?.({ block: "nearest" });

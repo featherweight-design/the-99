@@ -251,6 +251,17 @@ describe("TryIt", () => {
     expect(document.activeElement?.textContent).not.toBe("Show me ›");
   });
 
+  it("moves focus into an added card with no way in, as the card itself", () => {
+    at("/about/decks");
+    const none = card("proposed-cuts", "Proposed cuts");
+    const cards = [card("suggested-changes", "Suggested changes"), { ...none, card: { ...none.card, state: { kind: "none", line: "No decks yet" } as unknown as PageCard["card"]["state"] } }];
+    const { container, getByText } = render(<TryIt sectionId="decks" cards={cards} />);
+    fireEvent.click(getByText("1 more below"));
+    const second = container.querySelectorAll<HTMLElement>("[data-try-it-width='phone'] li")[1];
+    expect(second.contains(document.activeElement)).toBe(true);
+    expect(container.querySelector("[data-try-it-fewer]")).not.toBe(document.activeElement);
+  });
+
   it("folds back with Show fewer, focus on the restored press", () => {
     at("/about/decks");
     const { container, getByText } = draw(NEW, null);
