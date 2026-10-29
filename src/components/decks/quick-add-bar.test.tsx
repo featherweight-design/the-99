@@ -7,6 +7,7 @@ import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
+import type { BrowseCard } from "../../lib/collection/browse";
 
 // Typed, so a hand-built result that leaves out a required field fails typecheck rather than
 // reaching the row as `undefined` — which is how a stand-in with no `facts` draws no note.
@@ -15,8 +16,18 @@ const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
 
 vi.mock("../../app/decks/[id]/search-action", () => ({ searchCards }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
+// The card detail's sheet reaches these; the grid tests below open it.
+vi.mock("../../app/collection/actions", () => ({
+  setCardArtPreference: vi.fn(async () => true),
+  clearCardArtPreference: vi.fn(async () => {}),
+}));
 
 const { QuickAddBar } = await import("./quick-add-bar");
+const { CardDetailProvider, cardDetailCopy, warmCardModal } = await import("../cards/card-detail-provider");
+// The modal is loaded on demand; loaded here, a press draws it in the same tick.
+await warmCardModal();
+const { addPanelCopy } = await import("../../lib/copy/decks-builder");
+const { cardCarouselCopy } = await import("../../lib/copy/card-carousel");
 const { BasicCountsProvider } = await import("./basic-counts");
 
 const row = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
@@ -54,12 +65,15 @@ function mount(props: Partial<React.ComponentProps<typeof QuickAddBar>> = {}) {
 }
 
 const field = () => screen.getByRole("combobox");
+/** A row's two cells, in the board's order: the thumbnail and name, then Add. */
+const nameCell = (r: HTMLElement) => within(r).getAllByRole("gridcell")[0];
+const addCell = (r: HTMLElement) => within(r).getAllByRole("gridcell")[1];
 const toggle = () => screen.getByRole("checkbox", { name: /only cards you own/i });
 
 // The debounce is real, so every test types and then waits for rows to land.
 async function search(q = "stu") {
   fireEvent.change(field(), { target: { value: q } });
-  await waitFor(() => expect(screen.getAllByRole("option").length).toBeGreaterThan(0));
+  await waitFor(() => expect(screen.getAllByRole("row").length).toBeGreaterThan(0));
 }
 
 beforeEach(() => {
@@ -68,33 +82,34 @@ beforeEach(() => {
 });
 
 describe("QuickAddBar — combobox contract", () => {
-  it("is a combobox owning a listbox, not a dialog", async () => {
+  it("is a combobox owning a grid, not a dialog", async () => {
     mount();
     expect(field()).toHaveAttribute("aria-expanded", "false");
+    expect(field()).toHaveAttribute("aria-haspopup", "grid");
     expect(screen.queryByRole("dialog")).toBeNull();
 
     await search();
     expect(field()).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("listbox")).toHaveAttribute(
+    expect(screen.getByRole("grid")).toHaveAttribute(
       "id",
       field().getAttribute("aria-controls"),
     );
   });
 
-  it("moves the active option with the arrows rather than DOM focus", async () => {
+  it("moves the active row with the arrows rather than DOM focus", async () => {
     mount();
     await search();
 
-    // The first row is active on arrival, so Enter adds the top match with no
-    // arrowing — which is what the "↵ adds the top match" hint promises.
-    const options = screen.getAllByRole("option");
-    expect(field()).toHaveAttribute("aria-activedescendant", options[0].id);
+    // The first row is active on arrival, on its Add cell, so Enter adds the top
+    // match with no arrowing — which is what the "↵ to add" hint promises.
+    const adds = () => screen.getAllByRole("row").map((r) => addCell(r));
+    expect(field()).toHaveAttribute("aria-activedescendant", adds()[0].id);
 
     fireEvent.keyDown(field(), { key: "ArrowDown" });
-    expect(field()).toHaveAttribute("aria-activedescendant", options[1].id);
+    expect(field()).toHaveAttribute("aria-activedescendant", adds()[1].id);
 
     fireEvent.keyDown(field(), { key: "ArrowUp" });
-    expect(field()).toHaveAttribute("aria-activedescendant", options[0].id);
+    expect(field()).toHaveAttribute("aria-activedescendant", adds()[0].id);
   });
 
   // The rows stay on screen through the next debounce so the list does not
@@ -117,7 +132,7 @@ describe("QuickAddBar — combobox contract", () => {
     // run of the query, so no single node holds the whole string. A predicate
     // rather than a RegExp, because a card name is free to contain `(` or `[`.
     expect(
-      await screen.findByRole("option", { name: (name) => name.includes(stuxor.name) }),
+      await screen.findByRole("row", { name: (name) => name.includes(stuxor.name) }),
     ).toBeInTheDocument();
     fireEvent.keyDown(field(), { key: "Enter" });
     await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", stuxor.oracleId));
@@ -133,6 +148,258 @@ describe("QuickAddBar — combobox contract", () => {
   });
 });
 
+// Small items 2, item 6b (board A): the popup is a grid, each row a name cell that opens the shipped card
+// detail and an Add cell, and the field keeps DOM focus throughout.
+describe("QuickAddBar — the grid and card details", () => {
+  const browse = (r: SearchResult): BrowseCard =>
+    ({
+      oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, manaCost: null, cmc: r.cmc, oracleText: null,
+      keywords: [], rarity: "common", colorIdentity: [], imageUri: null, printedName: null, quantity: 0,
+      printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
+    }) as BrowseCard;
+
+  function mountWithDetail(props: Partial<React.ComponentProps<typeof QuickAddBar>> = {}) {
+    const fetchCard = vi.fn(async (id: string) => {
+      const hit = [rhystic, sram, steam].find((r) => r.oracleId === id);
+      return hit ? browse(hit) : null;
+    });
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <QuickAddBar
+          deckId="deck-1"
+          commanderIdentity={["U"]}
+          deckOracleIds={[]}
+          commanderShortName="Korvold"
+          commanderOracleId="cmd-korvold"
+          declaredBracket={null}
+          noteCounts={EMPTY_NOTE_COUNTS}
+          {...props}
+        />
+      </CardDetailProvider>,
+    );
+    return { fetchCard };
+  }
+  const rows = () => screen.getAllByRole("row");
+  const active = () => field().getAttribute("aria-activedescendant");
+  const key = (k: string) => fireEvent.keyDown(field(), { key: k });
+  const hint = () => screen.getByText(addPanelCopy.quickAdd.keyboardHintMove, { exact: false });
+
+  it("draws each row as two cells, the name naming the details it opens", async () => {
+    mountWithDetail();
+    await search();
+    for (const [i, r] of rows().entries()) {
+      const cells = within(r).getAllByRole("gridcell");
+      expect(cells).toHaveLength(2);
+      expect(cells[0]).toHaveAccessibleName(cardDetailCopy.triggerAria([rhystic, sram, steam][i].name));
+      expect(cells[1]).toHaveAccessibleName(addPanelCopy.quickAdd.rowAdd);
+    }
+    // The row keeps the whole sentence the option used to carry.
+    expect(rows()[0]).toHaveAccessibleName(expect.stringContaining(rhystic.name));
+    // The active descendant is a CELL, row 1's Add on arrival.
+    expect(active()).toBe(addCell(rows()[0]).id);
+  });
+
+  it("moves to the name on →, back to Add on ←, and keeps the column on ↑↓", async () => {
+    mountWithDetail();
+    await search();
+
+    key("ArrowRight");
+    expect(active()).toBe(nameCell(rows()[0]).id);
+    // The name is the last stop: a second → moves nothing.
+    key("ArrowRight");
+    expect(active()).toBe(nameCell(rows()[0]).id);
+
+    key("ArrowDown");
+    expect(active()).toBe(nameCell(rows()[1]).id);
+    key("ArrowUp");
+    key("ArrowUp");
+    expect(active()).toBe(nameCell(rows()[2]).id);
+
+    key("ArrowLeft");
+    expect(active()).toBe(addCell(rows()[2]).id);
+    key("ArrowDown");
+    expect(active()).toBe(addCell(rows()[0]).id);
+  });
+
+  it("leaves → and ← to the caret while they would move nothing", async () => {
+    mountWithDetail();
+    await search();
+    // On Add, ← has no cell to go to; on the name, → has none.
+    expect(fireEvent.keyDown(field(), { key: "ArrowLeft" })).toBe(true);
+    expect(fireEvent.keyDown(field(), { key: "ArrowRight" })).toBe(false);
+    expect(fireEvent.keyDown(field(), { key: "ArrowRight" })).toBe(true);
+    expect(fireEvent.keyDown(field(), { key: "ArrowLeft" })).toBe(false);
+  });
+
+  it("swaps the hint with the active cell", async () => {
+    mountWithDetail();
+    await search();
+    expect(hint()).toHaveTextContent(
+      `${addPanelCopy.quickAdd.keyboardHintMove} · ${addPanelCopy.quickAdd.keyboardHintDetails} · ${addPanelCopy.quickAdd.keyboardHintAdd} · ${addPanelCopy.quickAdd.keyboardHintDismiss}`,
+    );
+    expect(within(hint()).getByText(addPanelCopy.quickAdd.keyboardHintDetails).tagName).toBe("B");
+
+    key("ArrowRight");
+    expect(hint()).toHaveTextContent(
+      `${addPanelCopy.quickAdd.keyboardHintMove} · ${addPanelCopy.quickAdd.keyboardHintBackToAdd} · ${addPanelCopy.quickAdd.keyboardHintOpensDetails} · ${addPanelCopy.quickAdd.keyboardHintDismiss}`,
+    );
+    expect(within(hint()).getByText(addPanelCopy.quickAdd.keyboardHintBackToAdd).tagName).toBe("B");
+  });
+
+  it("draws the Add slot as the plain Add once the name is the active cell", async () => {
+    mountWithDetail();
+    await search();
+    expect(addCell(rows()[0])).toHaveTextContent(addPanelCopy.quickAdd.rowAddActive);
+    key("ArrowRight");
+    expect(addCell(rows()[0])).toHaveTextContent(addPanelCopy.quickAdd.rowAdd);
+    expect(addCell(rows()[0])).not.toHaveTextContent(addPanelCopy.quickAdd.rowAddActive);
+  });
+
+  it("puts typing back on row 1's Add cell at once, so type-and-↵ adds the top match", async () => {
+    mountWithDetail();
+    await search();
+    key("ArrowDown");
+    key("ArrowRight");
+    expect(active()).toBe(nameCell(rows()[1]).id);
+
+    searchCards.mockResolvedValue([sram, rhystic]);
+    fireEvent.change(field(), { target: { value: "stud" } });
+    // Before the new rows land: the old rows are still drawn, and the keyboard is already on row 1's Add.
+    expect(active()).toBe(addCell(rows()[0]).id);
+    await waitFor(() => expect(rows()[0]).toHaveAccessibleName(expect.stringContaining(sram.name)));
+    expect(active()).toBe(addCell(rows()[0]).id);
+    key("Enter");
+    await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", sram.oracleId));
+  });
+
+  it("opens the shipped card detail on ↵ at the name, with the results as its list, and adds nothing", async () => {
+    const { fetchCard } = mountWithDetail();
+    await search();
+    key("ArrowDown");
+    key("ArrowRight");
+    await act(async () => {
+      key("Enter");
+    });
+
+    expect(fetchCard).toHaveBeenCalledWith(sram.oracleId, undefined);
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveAccessibleName(sram.name);
+    // The results are its siblings: the counter reads its place among them.
+    expect(within(dialog).getAllByText(cardCarouselCopy.position(2, 3)).length).toBeGreaterThan(0);
+    expect(addCardToDeck).not.toHaveBeenCalled();
+  });
+
+  it("opens the card on a press of the name, and still adds on a press anywhere else on the row", async () => {
+    const { fetchCard } = mountWithDetail();
+    await search();
+
+    await act(async () => {
+      fireEvent.click(within(nameCell(rows()[2])).getByText(steam.typeLine, { exact: false }));
+    });
+    expect(fetchCard).toHaveBeenCalledWith(steam.oracleId, undefined);
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName(steam.name);
+    expect(addCardToDeck).not.toHaveBeenCalled();
+  });
+
+  it("adds from a press on the row outside the name", async () => {
+    const { fetchCard } = mountWithDetail();
+    await search();
+    fireEvent.click(addCell(rows()[1]));
+    await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", sram.oracleId));
+    expect(fetchCard).not.toHaveBeenCalled();
+  });
+
+  it("keeps focus in the field when the name is pressed", async () => {
+    mountWithDetail();
+    await search();
+    // The row's mousedown is what keeps the caret in the field; the name cell inherits it.
+    expect(fireEvent.mouseDown(nameCell(rows()[0]))).toBe(false);
+  });
+
+  it("returns focus to the field on close, with the query and the list kept", async () => {
+    mountWithDetail();
+    await search();
+    field().focus();
+    key("ArrowRight");
+    await act(async () => {
+      key("Enter");
+    });
+    const dialog = await screen.findByRole("dialog");
+
+    // A press inside the card is outside the bar, and must not clear the search the card was opened from.
+    const close = within(dialog).getAllByRole("button", { name: "Close card details" })[0];
+    fireEvent.pointerDown(close);
+    await act(async () => {
+      fireEvent.click(close);
+    });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(field()));
+    expect(field()).toHaveValue("stu");
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+    expect(rows()).toHaveLength(3);
+  });
+
+  it("opens an in-deck row's card, though its Add stays inert", async () => {
+    searchCards.mockResolvedValue([rhystic]);
+    const { fetchCard } = mountWithDetail({ deckOracleIds: [rhystic.oracleId] });
+    await search();
+
+    expect(addCell(rows()[0])).toHaveAttribute("aria-disabled", "true");
+    expect(addCell(rows()[0])).toHaveAccessibleName(addPanelCopy.quickAdd.rowInDeck);
+    expect(nameCell(rows()[0])).not.toHaveAttribute("aria-disabled");
+    key("Enter");
+    expect(addCardToDeck).not.toHaveBeenCalled();
+
+    key("ArrowRight");
+    await act(async () => {
+      key("Enter");
+    });
+    expect(fetchCard).toHaveBeenCalledWith(rhystic.oracleId, undefined);
+    expect(addCardToDeck).not.toHaveBeenCalled();
+  });
+
+  it("opens nothing on ↵ at the name while the rows on screen answer an older query", async () => {
+    const { fetchCard } = mountWithDetail();
+    await search();
+    fireEvent.change(field(), { target: { value: "stux" } });
+    key("ArrowRight");
+    expect(active()).toBe(nameCell(rows()[0]).id);
+    key("Enter");
+    expect(fetchCard).not.toHaveBeenCalled();
+  });
+
+  // Board A3: on a phone the two targets are the name cell, the full row's height, and Add at 56 x 44.
+  it("gives the phone its two targets: the name at the row's full height, Add at 56 by 44", async () => {
+    mountWithDetail();
+    await search();
+    const name = nameCell(rows()[1]);
+    // jsdom lays nothing out, so the classes that make the size are what can be read.
+    expect(name.className).toMatch(/\bself-stretch\b/);
+    expect(name.className).toContain("-my-[8px]");
+    expect(name.className).toContain("py-[8px]");
+    const add = addCell(rows()[1]);
+    expect(add.className).toContain("min-w-[56px]");
+    expect(add.className).toContain("min-h-[44px]");
+    expect(within(add).getByText(addPanelCopy.quickAdd.rowAdd).className).toContain("w-[56px] h-[44px]");
+  });
+
+  it("underlines the name on hover, as a decklist name does", async () => {
+    mountWithDetail();
+    await search();
+    expect(nameCell(rows()[0]).className).toContain("group/name");
+    expect(within(rows()[0]).getByTestId("search-row-name").className).toContain("group-hover/name:underline");
+  });
+
+  it("keeps the cell on Add, and the shipped hint, with no card detail to open", async () => {
+    mount();
+    await search();
+    key("ArrowRight");
+    expect(active()).toBe(addCell(rows()[0]).id);
+    expect(screen.getByText(addPanelCopy.quickAdd.keyboardHint)).toBeInTheDocument();
+    expect(nameCell(rows()[0])).toHaveAccessibleName(rhystic.name);
+  });
+});
+
 // One rule for every pick-from-a-list field (DECK INPUT UX, Hugh 2026-10-12): Escape or a press
 // outside clears the text and closes the list in one step, and an add clears it for the next search.
 describe("QuickAddBar — dismissing and clearing", () => {
@@ -141,7 +408,7 @@ describe("QuickAddBar — dismissing and clearing", () => {
     await search();
 
     fireEvent.keyDown(field(), { key: "Escape" });
-    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("grid")).toBeNull();
     expect(field()).toHaveValue("");
   });
 
@@ -150,7 +417,7 @@ describe("QuickAddBar — dismissing and clearing", () => {
     await search();
 
     fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("grid")).toBeNull();
     expect(field()).toHaveValue("");
   });
 
@@ -168,7 +435,7 @@ describe("QuickAddBar — dismissing and clearing", () => {
     mount();
     await search();
 
-    fireEvent.click(screen.getAllByRole("option")[0]);
+    fireEvent.click(screen.getAllByRole("row")[0]);
     await waitFor(() => expect(addCardToDeck).toHaveBeenCalled());
     await waitFor(() => expect(field()).toHaveValue(""));
   });
@@ -180,7 +447,7 @@ describe("QuickAddBar — dismissing and clearing", () => {
     mount();
     await search();
 
-    fireEvent.click(screen.getAllByRole("option")[0]);
+    fireEvent.click(screen.getAllByRole("row")[0]);
     fireEvent.change(field(), { target: { value: "rhy" } });
     await act(async () => land({ ok: true }));
     expect(field()).toHaveValue("rhy");
@@ -193,7 +460,7 @@ describe("QuickAddBar — dismissing and clearing", () => {
     mount();
     await search();
 
-    fireEvent.click(screen.getAllByRole("option")[0]);
+    fireEvent.click(screen.getAllByRole("row")[0]);
     fireEvent.change(field(), { target: { value: "" } });
     fireEvent.change(field(), { target: { value: "stu" } });
     await act(async () => land({ ok: true }));
@@ -206,7 +473,7 @@ describe("QuickAddBar — dismissing and clearing", () => {
     mount();
     await search();
 
-    fireEvent.click(screen.getAllByRole("option")[0]);
+    fireEvent.click(screen.getAllByRole("row")[0]);
     expect(await screen.findByText("Nope.")).toBeInTheDocument();
     expect(field()).toHaveValue("stu");
   });
@@ -246,7 +513,7 @@ describe("QuickAddBar — the owned filter", () => {
 
     await waitFor(() => expect(searchCards).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByText(/nothing in the pile/i)).toBeNull());
-    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("grid")).toBeNull();
   });
 
   // A search that landed empty is a result, so the status line has to say so
@@ -341,11 +608,11 @@ describe("QuickAddBar — result rows", () => {
 
     // Asserted on the row's text rather than one node: the matched run of the flavor
     // name is its own accent-coloured element, so no single node holds the whole line.
-    expect(screen.getByRole("option").textContent).toContain(
+    expect(screen.getByRole("row").textContent).toContain(
       "printed as Freya, Queen of the Valkyries · Legendary Creature — God · ×1 owned",
     );
     // The label has to say it too, or a screen reader hears a card the player never typed.
-    expect(screen.getByRole("option")).toHaveAttribute(
+    expect(screen.getByRole("row")).toHaveAttribute(
       "aria-label",
       expect.stringContaining("printed as Freya, Queen of the Valkyries"),
     );
@@ -408,8 +675,8 @@ describe("QuickAddBar — result rows", () => {
     mount({ deckOracleIds: [rhystic.oracleId] });
     await search();
 
-    const option = screen.getByRole("option");
-    expect(option).toHaveAttribute("aria-disabled", "true");
+    const option = screen.getByRole("row");
+    expect(addCell(option)).toHaveAttribute("aria-disabled", "true");
     // The label carries the state, so it does not rest on the greyscale alone.
     expect(option).toHaveTextContent("✓ In deck");
 
@@ -426,8 +693,8 @@ describe("QuickAddBar — result rows", () => {
     mount({ deckOracleIds: [] });
     await search();
 
-    const option = screen.getByRole("option");
-    expect(option).toHaveAttribute("aria-disabled", "true");
+    const option = screen.getByRole("row");
+    expect(addCell(option)).toHaveAttribute("aria-disabled", "true");
     expect(option).toHaveTextContent("✓ In deck");
 
     fireEvent.keyDown(field(), { key: "Enter" });
@@ -454,14 +721,14 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...rhystic, availability: claimed(["Atraxa"]) }]);
     mount();
     await search();
-    expect(screen.getByRole("option")).toHaveTextContent("none free, in Atraxa");
+    expect(screen.getByRole("row")).toHaveTextContent("none free, in Atraxa");
   });
 
   it("stays silent on a card this deck is already running", async () => {
     searchCards.mockResolvedValue([{ ...rhystic, availability: claimed([]) }]);
     mount({ deckOracleIds: [rhystic.oracleId] });
     await search();
-    expect(screen.getByRole("option")).not.toHaveTextContent("none free");
+    expect(screen.getByRole("row")).not.toHaveTextContent("none free");
   });
 
   // `inDeck` carves basic lands out so a second Forest stays addable. That
@@ -477,7 +744,7 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...forest, availability: claimed([]) }]);
     mount({ deckOracleIds: [forest.oracleId] });
     await search();
-    expect(screen.getByRole("option")).not.toHaveTextContent("none free");
+    expect(screen.getByRole("row")).not.toHaveTextContent("none free");
   });
 
   // The rollup returns a row for every owned card, unclaimed ones included
@@ -489,7 +756,7 @@ describe("QuickAddBar — availability marker", () => {
     ]);
     mount();
     await search();
-    for (const el of screen.getByRole("option").querySelectorAll("*")) {
+    for (const el of screen.getByRole("row").querySelectorAll("*")) {
       expect(el.textContent?.trimEnd().endsWith("·")).toBe(false);
     }
   });
@@ -503,7 +770,7 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...korvold, availability: claimed([]) }]);
     mount({ deckOracleIds: [] });
     await search();
-    expect(screen.getByRole("option")).not.toHaveTextContent("none free");
+    expect(screen.getByRole("row")).not.toHaveTextContent("none free");
   });
 });
 
@@ -535,7 +802,7 @@ describe("combo partner (quick-add, option E / G)", () => {
     mount({ loadComboMap });
     fireEvent.focus(field());
     await search();
-    const rhysticRow = await screen.findByRole("option", { name: /Rhystic Study/ });
+    const rhysticRow = await screen.findByRole("row", { name: /Rhystic Study/ });
     await waitFor(() =>
       expect(
         rhysticRow.querySelector('[data-testid="combo-partner-inline"] span.truncate')?.textContent,
@@ -558,7 +825,7 @@ describe("combo partner (quick-add, option E / G)", () => {
     // The words the phone draws as a glyph are in the row's spoken name.
     expect(rhysticRow.getAttribute("aria-label")).toMatch(/Sanguine Bond/);
 
-    const sramRow = screen.getByRole("option", { name: /Sram's Study/ });
+    const sramRow = screen.getByRole("row", { name: /Sram's Study/ });
     expect(sramRow.querySelector('[data-testid="combo-glyph"]')).toBeNull();
     expect(sramRow.textContent).toContain("×1 owned");
   });
@@ -576,7 +843,7 @@ describe("combo partner (quick-add, option E / G)", () => {
     mount({ loadComboMap });
     fireEvent.focus(field());
     await search();
-    const rhysticRow = await screen.findByRole("option", { name: /Rhystic Study/ });
+    const rhysticRow = await screen.findByRole("row", { name: /Rhystic Study/ });
     const inline = await waitFor(() => {
       const el = rhysticRow.querySelector('[data-testid="combo-partner-inline"]');
       expect(el).not.toBeNull();
@@ -598,7 +865,7 @@ describe("combo partner (quick-add, option E / G)", () => {
     await search();
     await waitFor(() => expect(loadComboMap).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 20));
-    const rhysticRow = screen.getByRole("option", { name: /Rhystic Study/ });
+    const rhysticRow = screen.getByRole("row", { name: /Rhystic Study/ });
     expect(rhysticRow.querySelector('[data-testid="combo-glyph"]')).toBeNull();
   });
 
@@ -634,7 +901,7 @@ describe("QuickAddBar — the card note and its marks", () => {
     tutor: false,
     ...over,
   });
-  const option = () => screen.getByRole("option");
+  const option = () => screen.getByRole("row");
 
   it("draws the note at row density, inside the option, below the row's line", async () => {
     searchCards.mockResolvedValue([row({ name: "Rhystic Study", facts: facts({ gameChanger: true }) })]);
@@ -761,7 +1028,6 @@ describe("adding a basic while the stepper is settling", () => {
 // Small items 2, item 8 (`Quick-Add-Failed`): a rejected search says so in the deck toast, with Try again, and the bar
 // draws nothing new.
 const { gameSeatsCopy } = await import("../../lib/copy/game-seats");
-const { addPanelCopy } = await import("../../lib/copy/decks-builder");
 const { DeckRefusalToast } = await import("./token-refusal-toast");
 const { DECK_TOAST_CLAIM } = await import("../collection/edit-toast");
 
@@ -791,7 +1057,7 @@ describe("QuickAddBar — a failed search", () => {
     expect(field()).toHaveValue("sw");
     expect(field()).toHaveFocus();
     expect(field()).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("grid")).toBeNull();
     expect(screen.queryByText(/nothing in the pile/i)).toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent("");
   });
@@ -816,11 +1082,11 @@ describe("QuickAddBar — a failed search", () => {
 
     searchCards.mockResolvedValue([rhystic]);
     fireEvent.change(field(), { target: { value: "stu" } });
-    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
 
     await act(async () => rejectOld(new Error("late")));
     expect(toast()).toBeNull();
-    expect(screen.getAllByRole("option").length).toBe(1);
+    expect(screen.getAllByRole("row").length).toBe(1);
   });
 
   it("goes when a search for the field's text lands", async () => {
@@ -834,7 +1100,7 @@ describe("QuickAddBar — a failed search", () => {
     searchCards.mockResolvedValue([rhystic]);
     fireEvent.change(field(), { target: { value: "stu" } });
     expect(toast()).not.toBeNull();
-    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
     expect(toast()).toBeNull();
   });
 
@@ -891,7 +1157,7 @@ describe("QuickAddBar — a failed search", () => {
     expect(toast()).toBeNull();
     expect(field()).toHaveFocus();
     expect(field()).toHaveValue("sw");
-    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
     expect(searchCards).toHaveBeenCalledTimes(2);
     expect(searchCards.mock.calls[1]).toEqual(firstArgs);
   });
@@ -909,7 +1175,7 @@ describe("QuickAddBar — a failed search", () => {
     press.focus();
     fireEvent.click(press);
     expect(field()).toHaveFocus();
-    await waitFor(() => expect(screen.getAllByRole("option").length).toBe(1));
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
   });
 
   it("comes back when Try again fails too", async () => {

@@ -88,6 +88,12 @@ interface CardSearchRowBodyProps {
    * option's own `aria-label` speaks them.
    */
   marks?: readonly CardFact[];
+  /**
+   * Wraps the thumbnail and the name column in one element, for a row whose name is a control of its own
+   * (quick-add's grid, small items 2 item 6b: the thumbnail and name are the cell that opens card details). The
+   * resolution search passes nothing and draws the two side by side as before.
+   */
+  nameCell?: (cell: React.ReactNode) => React.ReactNode;
 }
 
 export function CardSearchRowBody({
@@ -102,6 +108,7 @@ export function CardSearchRowBody({
   comboPartner = null,
   ownershipShort,
   marks = [],
+  nameCell,
 }: CardSearchRowBodyProps) {
   // The state, not the element: the rollup returns figures for every owned card,
   // free ones included, and the marker declines to draw those. Gating the joiner
@@ -133,8 +140,8 @@ export function CardSearchRowBody({
     </>
   ) : null;
 
-  return (
-    <div className="flex items-center gap-[10px] md:gap-[12px]">
+  const thumbAndName = (
+    <>
       {/* A crop settles which "Study" this is faster than the type line does —
           a deliberate divergence from Archidekt, which ships no thumbnail. */}
       <span
@@ -165,7 +172,9 @@ export function CardSearchRowBody({
             // Named for `probe:card-note`, which measures the marks' gap against this TEXT's
             // own end rather than against a class string or a constant.
             data-testid="search-row-name"
-            className="min-w-0 text-[14px] font-semibold truncate"
+            // Underlined while a `group/name` cell around it is hovered: quick-add's name cell, which opens card
+            // details, underlines like a decklist name (small items 2 item 6b). No other host draws that group.
+            className="min-w-0 text-[14px] font-semibold truncate group-hover/name:underline group-hover/name:decoration-[color:var(--fg-faint)] group-hover/name:underline-offset-[3px]"
             style={{ color: dim ? "var(--fg-muted)" : "var(--fg)" }}
           >
             <HighlightedName name={result.name} query={query} dim={dim} />
@@ -237,6 +246,12 @@ export function CardSearchRowBody({
           </span>
         )}
       </span>
+    </>
+  );
+
+  return (
+    <div className="flex items-center gap-[10px] md:gap-[12px]">
+      {nameCell ? nameCell(thumbAndName) : thumbAndName}
 
       <span
         className="hidden md:block flex-1 min-w-0 font-mono text-[11px] truncate"

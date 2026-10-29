@@ -510,25 +510,25 @@ async function run() {
         if ((await owned.count()) > 0) await owned.setChecked(false, { force: true });
         await bar.fill("tutor");
         await page
-          .locator('main [role="option"]')
+          .locator('[data-testid="quick-add-dock"] [role="row"]')
           .first()
           .waitFor({ state: "attached", timeout: 15_000 })
           .catch(() => {});
         await page.waitForTimeout(800);
 
-        const barNotes = await page.evaluate(READ_NOTES, '[role="option"]');
+        const barNotes = await page.evaluate(READ_NOTES, '[data-testid="quick-add-dock"] [role="row"]');
         checkNotes(`${width}px · quick-add row`, barNotes, { bodyPx: 12.5, density: "row" });
 
         // The row's own line is its first child — the same reading `READ_BOXES` makes for
         // the top-off row, so the two hosts are held to one rule.
         checkNoReservedHeight(
           `${width}px · quick-add row`,
-          await page.evaluate(READ_BOXES, '[role="option"]'),
+          await page.evaluate(READ_BOXES, '[data-testid="quick-add-dock"] [role="row"]'),
         );
 
         const barGeometry = await page.evaluate(() => {
           const out = { indents: [], marks: [] };
-          for (const option of document.querySelectorAll('main [role="option"]')) {
+          for (const option of document.querySelectorAll('[data-testid="quick-add-dock"] [role="row"]')) {
             const name = option.querySelector('[data-testid="search-row-name"]');
             if (!name) continue;
             const box = option.getBoundingClientRect();
@@ -603,14 +603,14 @@ async function run() {
         if (width === 1300) {
           await bar.fill("mystical tutor");
           await page.waitForTimeout(1_500);
-          const firstMark = onPage(page, '[role="option"]').first().locator("[data-testid^='card-fact-']").first();
+          const firstMark = onPage(page, '[data-testid="quick-add-dock"] [role="row"]').first().locator("[data-testid^='card-fact-']").first();
           if ((await firstMark.count()) === 0) {
             report(`${width}px · quick-add row · a marked FIRST row`, false, "none — NOT a pass");
           } else {
             await firstMark.hover();
             await page.waitForTimeout(700);
             const tip = await page.evaluate(() => {
-              const option = document.querySelector('main [role="option"]');
+              const option = document.querySelector('[data-testid="quick-add-dock"] [role="row"]');
               // The bubble is portalled to the body, so it is found there, not in the option.
               const bubble = document.querySelector('[data-testid="fact-tooltip"]');
               if (!option || !bubble) return null;
@@ -637,9 +637,9 @@ async function run() {
           }
         }
 
-        // Spoken in the OPTION's own name, which is where a listbox option is heard.
+        // Spoken in the ROW's own name: the grid row (small items 2, item 6b) carries the label the option did.
         const barSpoken = await page.evaluate(() =>
-          [...document.querySelectorAll('main [role="option"]')]
+          [...document.querySelectorAll('[data-testid="quick-add-dock"] [role="row"]')]
             .filter((o) => o.querySelector('[data-testid="card-note"]'))
             .map((o) => {
               const note = o.querySelector('[data-testid="card-note"]');
@@ -651,7 +651,7 @@ async function run() {
             }),
         );
         report(
-          `${width}px · quick-add row · the drawn note is hidden and spoken in the option's name`,
+          `${width}px · quick-add row · the drawn note is hidden and spoken in the row's name`,
           barSpoken.length > 0 && barSpoken.every((s) => s.hidden && s.inName),
           `${barSpoken.filter((s) => s.hidden && s.inName).length} of ${barSpoken.length}`,
         );

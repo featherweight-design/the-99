@@ -44,6 +44,12 @@ export interface CardSearchInput {
   search?: typeof searchCards;
 }
 
+/**
+ * Which cell of the active row the keyboard is on, for a combobox whose popup is a grid (quick-add, small
+ * items 2 item 6b): the card's name, which opens its details, or Add. A listbox caller never reads it.
+ */
+export type CardSearchColumn = "add" | "name";
+
 export function useCardSearch({
   query,
   colorIdentity,
@@ -56,6 +62,19 @@ export function useCardSearch({
   // lags by 150ms — but `stale` below stops Enter acting on them.
   const [rows, setRows] = useState<{ for: string; items: SearchResult[] } | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  // Beside the row, not in the caller: the same events that put the row back on 1 (typing, a landing) put the
+  // cell back on Add, so type-and-Enter always adds the top match.
+  const [activeColumn, setActiveColumn] = useState<CardSearchColumn>("add");
+  // Typing resets to row 1's Add cell at once, not when the next rows land: Enter is refused on rows typed past
+  // anyway, and an active name cell left over from the last list would otherwise survive the keystroke. Adjusted
+  // during render (React's pattern for state derived from a prop's change) rather than in an effect, so no frame
+  // draws the old cell under the new text.
+  const [queryFor, setQueryFor] = useState(query);
+  if (queryFor !== query) {
+    setQueryFor(query);
+    setActiveIndex(0);
+    setActiveColumn("add");
+  }
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The latest search was rejected or timed out (small items 2, item 8): a counter rather than a flag, so a failure
   // after a failure is a new one and the caller's toast comes back with its own window. It outlives typing on purpose:
@@ -115,6 +134,7 @@ export function useCardSearch({
           if (cancelled) return;
           setRows({ for: requestKey, items: found });
           setActiveIndex(0);
+          setActiveColumn("add");
           setFailure(null);
         })
         .catch((err) => {
@@ -171,6 +191,7 @@ export function useCardSearch({
 
   return {
     trimmed, queryActive, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move,
+    activeColumn, setActiveColumn,
     failure, retry, dismissFailure,
   };
 }

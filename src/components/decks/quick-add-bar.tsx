@@ -2,10 +2,16 @@
 // QuickAddBar — retrieval, per §Quick add in the Add Panel handoff.
 //
 // A combobox, not a dialog. DOM focus never leaves the input: the arrows move
-// `aria-activedescendant` over the options and the input keeps the caret, so a
+// `aria-activedescendant` over the cells and the input keeps the caret, so a
 // user can keep typing to narrow while a row is active. That rules out a focus
 // trap, a scroll lock and `useDialogA11y` — all three exist to manage focus
 // somewhere else, and there is nowhere else.
+//
+// The popup is a GRID, not a listbox (small items 2 item 6b, board A): a combobox may own either, and a row
+// here does two things. Each row is two cells, the thumbnail and name (opens the shipped card detail, the
+// results as its list) and Add. ↑↓ move rows keeping the cell, → moves to the name, ← back to Add, ↵ acts on
+// the active cell, and typing puts it back on row 1's Add, so type-and-↵ still adds the top match. A press
+// anywhere else on the row still adds. Closing the detail hands focus back to the field, query and list kept.
 //
 // Replaced search-pane.tsx and search-result-row.tsx, both now deleted.
 
@@ -13,6 +19,7 @@ import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { cardDetailCopy, useCardDetailIfAny, useCardIntentIfAny } from "../cards/card-detail-provider";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { colorLabel } from "../../lib/decks/format";
 import { isBasicLand } from "../../lib/decks/grouping";
@@ -29,7 +36,7 @@ import { cardFactName } from "../../lib/copy/card-mark";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useFlushBasicCounts } from "./basic-counts";
-import { type CardSearchInput, useCardSearch } from "./use-card-search";
+import { type CardSearchColumn, type CardSearchInput, useCardSearch } from "./use-card-search";
 import { QuickAddFailedToast } from "./quick-add-failed-toast";
 import { type DeckComboMap, useDeckComboMap } from "./use-deck-combo-map";
 import { useDeckMutation } from "./use-deck-mutation";
@@ -106,12 +113,23 @@ export function QuickAddBar({
       if (editGeneration.current === at) setQuery("");
     };
   }, []);
+  // The shipped card detail, which a row's name opens. Absent only where the bar is drawn outside a deck page's
+  // provider (the About figure's test), and there the name is not a control and the cell stays on Add.
+  const detail = useCardDetailIfAny();
   // Escape, or a press outside the bar and its results, clears the query, which closes the list
-  // with it (one rule for every pick-from-a-list field, `useSearchDismiss`).
-  const { ref: rootRef, onEscape, insideProps } = useSearchDismiss<HTMLDivElement>(query.length > 0, () => setQuery(""));
+  // with it (one rule for every pick-from-a-list field, `useSearchDismiss`). Not while a card's detail is up:
+  // a press inside it (its ✕ above all) is outside the bar, and closing it returns to the query and list kept.
+  const detailUp = detail !== null && (detail.openOracleId !== null || detail.pendingOracleId !== null);
+  const { ref: rootRef, onEscape, insideProps } = useSearchDismiss<HTMLDivElement>(
+    query.length > 0 && !detailUp,
+    () => setQuery(""),
+  );
 
-  const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move, failure, retry, dismissFailure } =
-    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, deckId, search });
+  const {
+    trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move, activeColumn, setActiveColumn,
+    failure, retry, dismissFailure,
+  } = useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, deckId, search });
+  const column: CardSearchColumn = detail ? activeColumn : "add";
   // Try again hands focus back to the field, so the keyboard stays up on a phone and ↵ adds as usual.
   const fieldRef = useRef<HTMLInputElement>(null);
   const retrySearch = useCallback(() => {
@@ -155,9 +173,23 @@ export function QuickAddBar({
   const identity = colorLabel(commanderIdentity);
   const unownedShown = results.filter((r) => !r.owned).length;
 
-  function optionId(i: number) {
-    return `${listId}-opt-${i}`;
+  function cellId(i: number, cell: CardSearchColumn) {
+    return `${listId}-${i}-${cell}`;
   }
+
+  // The shipped card detail, opened as `CardDetailTrigger` opens it, with the results as its list. The opener is
+  // the field, so closing the card hands focus back to it: DOM focus was never anywhere else.
+  const openDetails = useCallback(
+    (r: SearchResult) => {
+      detail?.open(
+        r.oracleId,
+        results.map((x) => ({ oracleId: x.oracleId, name: x.name, imageUri: x.imageUri })),
+        undefined,
+        { opener: fieldRef.current },
+      );
+    },
+    [detail, results],
+  );
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowDown") {
@@ -166,14 +198,23 @@ export function QuickAddBar({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       move(-1);
+    } else if (e.key === "ArrowRight" && open && column === "add" && detail) {
+      // Only while the list is open and the move is a real one; otherwise the caret moves in the text as usual.
+      e.preventDefault();
+      setActiveColumn("name");
+    } else if (e.key === "ArrowLeft" && open && column === "name") {
+      e.preventDefault();
+      setActiveColumn("add");
     } else if (e.key === "Enter") {
       if (!open) return;
       e.preventDefault();
-      // Typing past the rows on screen and hitting Enter must not add whatever
-      // the previous query matched.
+      // Typing past the rows on screen and hitting Enter must not act on whatever
+      // the previous query matched: not an add, and not a card's details either.
       if (stale) return;
       const active = results[activeIndex];
-      if (active && !inDeck(active)) addRef.current?.(active);
+      if (!active) return;
+      if (column === "name") openDetails(active);
+      else if (!inDeck(active)) addRef.current?.(active);
     } else onEscape(e);
   }
 
@@ -199,11 +240,13 @@ export function QuickAddBar({
           className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
           ref={fieldRef}
           role="combobox"
+          aria-haspopup="grid"
           aria-expanded={open}
-          // Only while the listbox is mounted: a reference to an element that is
+          // Only while the grid is mounted: a reference to an element that is
           // not in the DOM is one an assistive tech cannot follow.
           aria-controls={open ? listId : undefined}
-          aria-activedescendant={open ? optionId(activeIndex) : undefined}
+          // The active CELL, not the row: which of the two ↵ acts on is the thing the reader needs to hear.
+          aria-activedescendant={open ? cellId(activeIndex, column) : undefined}
           aria-autocomplete="list"
           aria-label={addPanelCopy.quickAdd.fieldAria(identity)}
           placeholder={addPanelCopy.quickAdd.placeholder(identity)}
@@ -313,14 +356,17 @@ export function QuickAddBar({
         <>
           <ul
             id={listId}
-            role="listbox"
+            role="grid"
             aria-label={addPanelCopy.quickAdd.resultsAria}
             className="anim-quickadd-in list-none m-0 p-0 flex flex-col gap-[6px]"
           >
             {results.map((r, i) => (
               <QuickAddRow
                 key={r.oracleId}
-                id={optionId(i)}
+                nameCellId={cellId(i, "name")}
+                addCellId={cellId(i, "add")}
+                activeColumn={i === activeIndex ? column : null}
+                onOpenDetails={detail ? () => openDetails(r) : undefined}
                 result={r}
                 comboPartner={comboMap?.[r.oracleId] ?? null}
                 query={trimmed}
@@ -329,7 +375,6 @@ export function QuickAddBar({
                 selfClaimed={selfClaims(r)}
                 declaredBracket={declaredBracket}
                 noteCounts={noteCounts}
-                active={i === activeIndex}
                 onActivate={() => setActiveIndex(i)}
                 registerAdd={i === activeIndex ? registerAdd : undefined}
                 beginAdd={beginAdd}
@@ -337,7 +382,24 @@ export function QuickAddBar({
             ))}
           </ul>
           <p className="font-mono text-[10px] mt-[8px]" style={{ color: "var(--fg-locked)" }}>
-            {addPanelCopy.quickAdd.keyboardHint}
+            {detail ? (
+              // The board's hint (A1, A2): the part naming the other cell is drawn stronger, and swaps with it.
+              <>
+                {addPanelCopy.quickAdd.keyboardHintMove} ·{" "}
+                <b className="font-medium" style={{ color: "var(--fg-muted)" }}>
+                  {column === "name"
+                    ? addPanelCopy.quickAdd.keyboardHintBackToAdd
+                    : addPanelCopy.quickAdd.keyboardHintDetails}
+                </b>{" "}
+                ·{" "}
+                {column === "name"
+                  ? addPanelCopy.quickAdd.keyboardHintOpensDetails
+                  : addPanelCopy.quickAdd.keyboardHintAdd}{" "}
+                · {addPanelCopy.quickAdd.keyboardHintDismiss}
+              </>
+            ) : (
+              addPanelCopy.quickAdd.keyboardHint
+            )}
           </p>
         </>
       )}
@@ -385,7 +447,12 @@ export function QuickAddBar({
 }
 
 interface QuickAddRowProps {
-  id: string;
+  nameCellId: string;
+  addCellId: string;
+  /** The keyboard's cell on this row, or null when another row is active. */
+  activeColumn: CardSearchColumn | null;
+  /** Opens the card's details; absent with no card-detail provider, where the name is not a control. */
+  onOpenDetails?: () => void;
   result: SearchResult;
   /** Null for a card with no combo, and for a map that has not landed. */
   comboPartner: { oracleId: string; name: string } | null;
@@ -396,7 +463,6 @@ interface QuickAddRowProps {
   selfClaimed: boolean;
   declaredBracket: Bracket | null;
   noteCounts: NoteCounts;
-  active: boolean;
   onActivate: () => void;
   registerAdd?: (fn: (r: SearchResult) => void) => void;
   /** Called as the add starts; the function it returns is called once the add lands, and clears the
@@ -406,7 +472,10 @@ interface QuickAddRowProps {
 }
 
 function QuickAddRow({
-  id,
+  nameCellId,
+  addCellId,
+  activeColumn,
+  onOpenDetails,
   result,
   comboPartner: comboHit,
   query,
@@ -415,11 +484,13 @@ function QuickAddRow({
   selfClaimed,
   declaredBracket,
   noteCounts,
-  active,
   onActivate,
   registerAdd,
   beginAdd,
 }: QuickAddRowProps) {
+  const active = activeColumn !== null;
+  // Hovering the name reads the card ahead of the press, as a decklist name's trigger does.
+  const intent = useCardIntentIfAny(result.oracleId);
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
   // An add is ONE MORE copy; the basics stepper's pending save is an absolute count. Settle that first, or
@@ -500,10 +571,8 @@ function QuickAddRow({
 
   return (
     <li
-      id={id}
-      role="option"
+      role="row"
       aria-selected={active}
-      aria-disabled={applied || undefined}
       // The label has to carry everything the row draws, or a screen reader
       // hears less than the screen shows: the owned figure and the in-deck
       // state both change whether the row is worth acting on. Composed from the
@@ -556,49 +625,89 @@ function QuickAddRow({
         ownershipShort={ownershipShort}
         marks={marks}
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
+        // The first cell: the thumbnail and the name, the full row height (the phone's first target, A3).
+        nameCell={(cell) => (
+          <span
+            id={nameCellId}
+            role="gridcell"
+            aria-label={onOpenDetails ? cardDetailCopy.triggerAria(result.name) : result.name}
+            {...(onOpenDetails ? intent : {})}
+            onClick={
+              onOpenDetails
+                ? (e) => {
+                    // The name's press is the details, not the row's add.
+                    e.stopPropagation();
+                    onOpenDetails();
+                  }
+                : undefined
+            }
+            className="group/name flex-1 min-w-0 md:flex-none self-stretch -my-[8px] py-[8px] flex items-center gap-[10px] md:gap-[12px] rounded-[6px]"
+            style={
+              activeColumn === "name"
+                ? {
+                    // The board's active name cell (A2): the focus ring moves here off the row's Add.
+                    boxShadow: "0 0 0 2px var(--accent)",
+                    outline: "3px solid color-mix(in oklab, var(--accent) 22%, transparent)",
+                    outlineOffset: 2,
+                  }
+                : undefined
+            }
+          >
+            {cell}
+          </span>
+        )}
         trailing={
-          applied ? (
-            // Label as well as greyscale, and aria-disabled on the option above.
-            <span
-              className="flex-none font-sans text-[12.5px] font-semibold text-right md:w-[56px]"
-              style={{ color: "var(--success)" }}
-            >
-              {addPanelCopy.quickAdd.rowInDeck}
-            </span>
-          ) : active ? (
-            // The active row states the key that acts on it, so it is a caption
-            // rather than a control: boxing it draws a second button beside the
-            // one the keyboard is already pointed at.
-            <span
-              aria-hidden
-              className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[56px]"
-              style={{ opacity: isPending ? 0.5 : undefined, color: "var(--accent-text)" }}
-            >
-              {/* The phone row's meta line has already used the width the words
-                  would need, so it keeps the glyph alone. */}
-              <span className="md:hidden">↵</span>
-              <span className="hidden md:inline">{addPanelCopy.quickAdd.rowAddActive}</span>
-            </span>
-          ) : (
-            // Drawn as a control, but not one: a real <button> inside a
-            // role="option" gives a screen reader a second interactive thing
-            // inside a listbox option, and the option itself already adds on
-            // click and on Enter. So the affordance the handoff draws stays and
-            // the duplicate semantics go.
-            <span
-              aria-hidden
-              className="flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px]"
-              style={{
-                opacity: isPending ? 0.5 : undefined,
-                color: "var(--accent-text)",
-                background: "transparent",
-                border: "1px solid var(--border-strong)",
-                borderRadius: 7,
-              }}
-            >
-              {addPanelCopy.quickAdd.rowAdd}
-            </span>
-          )
+          <span
+            id={addCellId}
+            role="gridcell"
+            aria-label={applied ? addPanelCopy.quickAdd.rowInDeck : addPanelCopy.quickAdd.rowAdd}
+            // An in-deck row's Add is not actionable; its name still opens the card.
+            aria-disabled={applied || undefined}
+            // The phone's second target (A3): 56 x 44, whatever the slot draws.
+            className="flex-none flex items-center justify-end min-w-[56px] min-h-[44px] md:min-h-[36px]"
+          >
+            {applied ? (
+              // Label as well as greyscale, and aria-disabled on this cell.
+              <span
+                className="flex-none font-sans text-[12.5px] font-semibold text-right md:w-[56px]"
+                style={{ color: "var(--success)" }}
+              >
+                {addPanelCopy.quickAdd.rowInDeck}
+              </span>
+            ) : activeColumn === "add" ? (
+              // The active row states the key that acts on it, so it is a caption
+              // rather than a control: boxing it draws a second button beside the
+              // one the keyboard is already pointed at.
+              <span
+                aria-hidden
+                className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[56px]"
+                style={{ opacity: isPending ? 0.5 : undefined, color: "var(--accent-text)" }}
+              >
+                {/* The phone row's meta line has already used the width the words
+                    would need, so it keeps the glyph alone. */}
+                <span className="md:hidden">↵</span>
+                <span className="hidden md:inline">{addPanelCopy.quickAdd.rowAddActive}</span>
+              </span>
+            ) : (
+              // Drawn as a control, but not one: the gridcell around it is what
+              // the keyboard reaches (DOM focus stays in the field), and a press
+              // anywhere on the row outside the name adds. A real <button> here
+              // would be a second interactive thing in the cell.
+              <span
+                aria-hidden
+                className="flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px]"
+                style={{
+                  opacity: isPending ? 0.5 : undefined,
+                  color: "var(--accent-text)",
+                  background: "transparent",
+                  border: "1px solid var(--border-strong)",
+                  borderRadius: 7,
+                }}
+              >
+                {addPanelCopy.quickAdd.rowAdd}
+              </span>
+            )}
+          </span>
         }
       />
 

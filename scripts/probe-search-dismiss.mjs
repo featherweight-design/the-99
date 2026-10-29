@@ -124,13 +124,13 @@ try {
     const openBar = async () => {
       await bar.click();
       await bar.fill("sol");
-      await onPage(page, '[role="option"]').first().waitFor({ timeout: 15_000 });
+      await onPage(page, '[data-testid="quick-add-dock"] [role="row"]').first().waitFor({ timeout: 15_000 });
     };
 
     await openBar();
     await bar.press("Escape");
     report(`${vp.label} Quick add: one Escape clears the text and closes the list`,
-      (await bar.inputValue()) === "" && (await onPageRole(page, "listbox").count()) === 0);
+      (await bar.inputValue()) === "" && (await onPageRole(page, "grid").count()) === 0);
 
     await openBar();
     const owned = onPageRole(page, "checkbox", /only cards you own/i).first();
@@ -142,7 +142,7 @@ try {
     await pressOutside(page, barRoot);
     await page.waitForTimeout(200);
     report(`${vp.label} Quick add: a press outside clears the text and closes the list`,
-      (await bar.inputValue()) === "" && (await onPageRole(page, "listbox").count()) === 0);
+      (await bar.inputValue()) === "" && (await onPageRole(page, "grid").count()) === 0);
 
     // ── Help me choose, Theme ──────────────────────────────────────────────
     await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
