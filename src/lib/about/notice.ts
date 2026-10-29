@@ -15,7 +15,7 @@ import { ABOUT_AREAS, ABOUT_PAGE_STRINGS, ABOUT_RULES, ABOUT_SECTIONS, type Abou
 import { LIT_PARAM } from "../discovery/page-tools";
 import type { AboutLaunch, AboutLine, BannerCrop } from "./banner-line";
 import { pageShotFor, type PageWidth } from "./page-shots";
-import { everyAnnouncement, unseenUnits, type UnseenUnit, type VisibleSection } from "./pages-visible";
+import { claimedKeys, claimWrite, everyAnnouncement, unseenUnits, type UnseenUnit, type VisibleSection } from "./pages-visible";
 import { isFirstRun, type SeenState } from "./visible";
 
 export type { AboutLaunch, AboutLine, BannerCrop } from "./banner-line";
@@ -69,32 +69,34 @@ const pageName = (area: AboutArea) => ABOUT_AREAS.find((a) => a.id === area)?.na
  * `flag_overrides`, `requestSwitchEnv`), so a unit switched off for the reader never reaches the banner (Review Focus 2).
  */
 export function aboutLine(seen: SeenState, visible: readonly VisibleSection[], theme: string): AboutLine | null {
-  if (isFirstRun(seen)) return { kind: "firstRun", ids: everyAnnouncement(visible).map((u) => u.key) };
+  if (isFirstRun(seen)) {
+    const every = everyAnnouncement(visible);
+    return { kind: "firstRun", ids: every.map((u) => u.key), ack: every.flatMap((u) => u.ack) };
+  }
   const unseen = unseenUnits(visible, seen);
   if (unseen.length === 0) return null;
   const launches = unseen.map((u): AboutLaunch => ({
     key: u.key,
+    ack: [...u.ack],
     lead: ABOUT_PAGE_STRINGS.bannerLead(pageName(u.area)),
     text: launchText(u, visible),
     href: launchHref(u),
     phone: cropAt(u, visible, theme, "phone"),
     desktop: cropAt(u, visible, theme, "desktop"),
   }));
-  return { kind: "launches", launches, ids: launches.map((l) => l.key) };
+  return { kind: "launches", launches, ids: launches.map((l) => l.key), theme };
 }
 
-/** No line names more keys than the pages hold; a longer claim is not one a page drew. */
-const MAX_CLAIMED = 200;
-
 /**
- * What the banner's ✕ writes for About (✕ counts as seen), re-decided on the server: `claimed` is what the page drew,
- * sent back by the browser and so not trusted. The reader's announcements are read again, and only the claimed ones
- * still announced are written, each by its `UnseenUnit.ack` (a unit's key and its drawn sentences' keys), so a client
- * can drop a key but never add one, and a unit switched on after the page rendered is not marked seen unread.
+ * What the banner's ✕ writes for About (✕ counts as seen), re-decided on the server: `claimed` is the ack keys the page
+ * RENDERED (each launch's `ack`, or a first-run line's whole baseline), sent back by the browser and so not trusted.
+ * The reader's announcements are read again, and the two are INTERSECTED (`claimWrite`): only the claimed ones still
+ * announced are written, and of each only the ack keys that were rendered, so a client can drop a key but never add
+ * one, and neither a unit nor a sentence switched on after the page rendered is marked seen unread (a base unit drawn
+ * before `SPARE_REQUESTS_ENABLED` turned on does not take its new sentence's key with it).
  *
- * The floor rises to `ABOUT_VERSION` when every announcement now standing was claimed. When one was not (a deploy added
- * it after the render, or the client dropped it), it rises only to just under the oldest unclaimed one's `since`, never
- * past the reader's own, so that one stays new. A first-run reader's ✕ writes the baseline a first visit writes
+ * The floor rises to `ABOUT_VERSION` when every announcement now standing was claimed whole, else only to just under
+ * the oldest one not claimed whole (`claimWrite`). A first-run reader's ✕ writes the baseline a first visit writes
  * (`afterVisit`) for what they claimed. Null when there is nothing to write.
  */
 export function aboutDismissal(
@@ -103,17 +105,8 @@ export function aboutDismissal(
   visible: readonly VisibleSection[],
   version: number = ABOUT_VERSION,
 ): SeenState | null {
-  if (!Array.isArray(claimed)) return null;
-  const named = new Set(claimed.slice(0, MAX_CLAIMED).filter((k): k is string => typeof k === "string"));
+  const named = claimedKeys(claimed);
+  if (!named) return null;
   const current = isFirstRun(seen) ? everyAnnouncement(visible) : unseenUnits(visible, seen);
-  const valid = current.filter((u) => named.has(u.key));
-  if (valid.length === 0) return null;
-  const since = new Map(visible.flatMap((s) => [...s.labels, ...s.rules]).map((u) => [u.key, u.since]));
-  const unclaimed = current.filter((u) => !named.has(u.key));
-  const floor = unclaimed.length === 0
-    ? version
-    : Math.max(seen.version, Math.min(...unclaimed.map((u) => since.get(baseKey(u.key)) ?? 0)) - 1);
-  const ids = [...new Set(valid.flatMap((u) => u.ack))];
-  if (floor <= seen.version && ids.every((id) => seen.ids.includes(id))) return null;
-  return { version: Math.max(floor, seen.version), ids };
+  return claimWrite(named, current, seen, visible, version);
 }

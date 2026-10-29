@@ -7,7 +7,7 @@ const recordAboutVisit = vi.fn(async (_shown?: readonly string[]) => {});
 vi.mock("../../app/about/actions", () => ({ recordAboutVisit }));
 
 const { RecordVisit } = await import("./record-visit");
-const { aboutAcknowledged, resetArrivalsAcknowledged } = await import("../home/arrivals-seen");
+const { aboutAcknowledged, aboutFirstRunOver, launchAcknowledged, resetArrivalsAcknowledged } = await import("../home/arrivals-seen");
 
 beforeEach(() => {
   recordAboutVisit.mockClear();
@@ -49,6 +49,25 @@ describe("RecordVisit (R6 §O4, audit E2)", () => {
     expect(aboutAcknowledged(["notes"])).toBe(true);
     expect(aboutAcknowledged(["browse", "notes"])).toBe(true);
     expect(aboutAcknowledged(["notes", "lineup"])).toBe(false);
+  });
+
+  // Review round 1: Home's banner checks unit keys, which the Reference's legacy ids never match.
+  it("acknowledges the unit keys its write covers once it lands, so Back to Home drops those launches", async () => {
+    render(<RecordVisit behind shown={["locked-cards"]} drawn={["locked-cards"]} answered={["decks/your-deck/lock"]} />);
+    expect(launchAcknowledged("decks/your-deck/lock")).toBe(false);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(launchAcknowledged("decks/your-deck/lock")).toBe(true);
+    expect(aboutAcknowledged(["locked-cards"])).toBe(true);
+    expect(aboutFirstRunOver()).toBe(false);
+  });
+
+  it("ends the first run in this document when the write does, once it lands", async () => {
+    render(<RecordVisit behind shown={[]} drawn={[]} answered={[]} endsFirstRun />);
+    expect(aboutFirstRunOver()).toBe(false);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(aboutFirstRunOver()).toBe(true);
   });
 
   it("acknowledges nothing when the write fails", async () => {

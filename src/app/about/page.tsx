@@ -8,7 +8,7 @@ import { requireUserId } from "../../lib/auth";
 import { aboutSeen } from "../../lib/about/read";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { referenceScreens } from "../../lib/about/reference";
-import { displayedId, switchedIds, unseenEntries, visibleEntries } from "../../lib/about/visible";
+import { displayedId, isFirstRun, switchedIds, unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
 import { ABOUT_VERSION, fillAllowance } from "../../lib/copy/about";
 import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
@@ -23,7 +23,7 @@ import { db } from "../../db";
 import { AboutTabs } from "../../components/about/tools/about-tabs";
 import { aboutTabOf } from "../../lib/about/tab";
 import { AboutIndex, type IndexTile } from "../../components/about/pages/about-index";
-import { visibleSections } from "../../lib/about/pages-visible";
+import { answeredKeys, visibleSections } from "../../lib/about/pages-visible";
 import { pageShotFor, type PageWidth } from "../../lib/about/page-shots";
 import { ABOUT_AREAS, ABOUT_PAGE_STRINGS } from "../../lib/copy/about-pages";
 import { ReferenceTab } from "../../components/about/reference/reference-tab";
@@ -101,6 +101,15 @@ export default async function AboutRoute({
   // What this render shows, by id, for the visit to acknowledge: nothing it did not draw, so an entry switched on
   // between this render and the write is still new afterwards.
   const shown = [...switchedIds(visible), ...(howItWorks ? [HOW_IT_WORKS_ID] : [])];
+  const owes = behind || (howItWorks && !seen.ids.includes(HOW_IT_WORKS_ID));
+  // What Home's banner checks is the pages' unit keys, not these legacy ids: the units this visit's write leaves the
+  // reader told about (`answeredKeys` of the state it writes, the floor and `shown`), which the visit acknowledges in
+  // this document so Back to Home does not redraw their launches. A first-run reader's visit ends their first run.
+  const written: SeenState = owes
+    ? { version: Math.max(seen.version, ABOUT_VERSION), ids: [...new Set([...seen.ids, ...shown])] }
+    : seen;
+  const answered = answeredKeys(visibleSections(env), written);
+  const endsFirstRun = isFirstRun(seen) && !isFirstRun(written);
 
   // The boards' `main` (ReferencePhone `24px 0 104px`; the Desk boards `40px 56px 64px`). The phone's 104px includes
   // the 74px tab bar the shell's main column already reserves (`--tabbar-h`), so 30px is the page's own.
@@ -124,9 +133,11 @@ export default async function AboutRoute({
           who reads it here is not told those entries again. The appendix is recorded by the same visit, so a reader
           current on every entry who has not seen it still owes the write. */}
       <RecordVisit
-        behind={behind || (howItWorks && !seen.ids.includes(HOW_IT_WORKS_ID))}
+        behind={owes}
         shown={shown}
         drawn={visible.map(displayedId)}
+        answered={answered}
+        endsFirstRun={endsFirstRun}
       />
       {/* Launch A2: the same quiet line /credits and /sign-up carry. */}
       <LegalLinks className="mt-[32px] px-[16px] md:px-0" />

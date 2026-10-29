@@ -3,7 +3,7 @@
 import { requireUserId } from "../../lib/auth";
 import { ABOUT_VERSION } from "../../lib/copy/about";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../lib/copy/about-pages";
-import { afterVisit, visibleSections } from "../../lib/about/pages-visible";
+import { visibleSections, visitWrite } from "../../lib/about/pages-visible";
 import { aboutSeen, markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
@@ -14,24 +14,28 @@ import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
  * A visit to one of About's six pages (About visual PR 6b), recorded when the page is ACTUALLY OPEN: called from
  * `RecordPageVisit`'s effect after the page has mounted, never during render, so a prefetch records nothing.
  *
- * Decided here, never taken from the browser: the page named, the reader's own switches (`requestSwitchEnv`, env and
- * `flag_overrides`) and their seen state as it stands now. A returning reader gains that page's announce keys and
- * keeps their floor (`afterVisit`: a visit to Decks never marks Friends' new units seen); a first-run reader's first
- * visit takes everything they are drawn, on every page, as their baseline. Merged as every About write is
- * (`markAboutVisited`: a union, the floor by `greatest`). Returns the keys written, which the page acknowledges in this
- * document so Back to Home does not draw them again.
+ * `claimed` is the keys the page RENDERED for this visit to write (`afterVisit` at render: this page's keys the reader
+ * did not hold, or a first-run reader's whole baseline), sent back by the browser and so not trusted. Decided here: the
+ * page named, the reader's own switches (`requestSwitchEnv`, env and `flag_overrides`) and their seen state as it
+ * stands now, INTERSECTED with the claim (`visitWrite`), never widened to the current state: a unit or sentence an
+ * override turned on between the render (or a prefetch) and this call was never seen, and stays new. A returning
+ * reader keeps their floor (a visit to Decks never marks Friends' new units seen); a first-run reader's floor rises as
+ * the ✕'s does (`claimWrite`). Merged as every About write is (`markAboutVisited`: a union, the floor by `greatest`).
+ * Returns the keys the reader now holds, which the page acknowledges in this document so Back to Home does not draw
+ * them again.
  *
  * No revalidation: the page has already drawn its New marks from the pre-visit state, and re-rendering it inside this
  * reply would take them away while the reader is reading.
  */
-export async function recordAboutPageVisit(area: unknown): Promise<string[]> {
+export async function recordAboutPageVisit(area: unknown, claimed: unknown): Promise<string[]> {
   const userId = await requireUserId();
   if (typeof area !== "string" || !(ABOUT_AREA_IDS as readonly string[]).includes(area)) return [];
   const env = await requestSwitchEnv(userId);
   const seen = await aboutSeen(userId);
-  const after = afterVisit(visibleSections(env), area as AboutArea, seen);
-  await markAboutVisited(userId, after.version, after.ids);
-  return [...after.ids];
+  const write = visitWrite(claimed, visibleSections(env), area as AboutArea, seen);
+  if (!write) return [...seen.ids];
+  await markAboutVisited(userId, write.version, write.ids);
+  return [...new Set([...seen.ids, ...write.ids])];
 }
 
 /** No page draws more than this many switched entries and appendix ids; anything longer is not one. */

@@ -43,6 +43,23 @@ export function aboutAcknowledged(ids: readonly string[]): boolean {
   return ids.length > 0 && ids.every((id) => aboutAcked.has(id));
 }
 
+/**
+ * A visit in this document took the reader past their first run without writing every key the first-run line stands
+ * for: the Reference's (`?tab=reference`), which writes the floor and legacy ids. A fresh Home draws no first-run line
+ * for them any more, so a restored one must not either. Only ever set.
+ */
+let aboutFirstRunEnded = false;
+
+/** A visit in this document ended the reader's first run. */
+export function endAboutFirstRun(): void {
+  aboutFirstRunEnded = true;
+}
+
+/** Whether a visit in this document ended the reader's first run. */
+export function aboutFirstRunOver(): boolean {
+  return aboutFirstRunEnded;
+}
+
 /** One launch's key was acknowledged by a page visit in this document. */
 export function launchAcknowledged(key: string): boolean {
   return aboutAcked.has(key);
@@ -52,4 +69,5 @@ export function launchAcknowledged(key: string): boolean {
 export function resetArrivalsAcknowledged(): void {
   acknowledged.clear();
   aboutAcked.clear();
+  aboutFirstRunEnded = false;
 }

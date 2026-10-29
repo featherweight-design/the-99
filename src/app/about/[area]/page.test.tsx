@@ -47,7 +47,7 @@ vi.mock("next/navigation", () => ({ notFound: m.notFound, usePathname: () => "/a
 import AboutAreaRoute from "./page";
 import { AreaPage, type AreaSection } from "../../../components/about/pages/area-page";
 import { RecordPageVisit } from "../../../components/about/pages/record-page-visit";
-import { seenKeysOf, visibleSections } from "../../../lib/about/pages-visible";
+import { afterVisit, seenKeysOf, visibleSections } from "../../../lib/about/pages-visible";
 import type { Landable } from "../../../lib/discovery/page-tools";
 
 type El = ReactElement<{
@@ -64,7 +64,7 @@ const route = async (area: string, query: Record<string, string | string[]> = {}
 };
 const draw = async (area: string, query: Record<string, string | string[]> = {}) => (await route(area, query))[0] as El;
 const visitOf = async (area: string) =>
-  (await route(area))[1] as ReactElement<{ area: string; owed: boolean; keys: readonly string[] }>;
+  (await route(area))[1] as ReactElement<{ area: string; owed: boolean; keys: readonly string[]; claimed: readonly string[] }>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -188,6 +188,18 @@ describe("/about/[area]", () => {
     expect(html).not.toContain("data-about-landing-card");
   });
 
+  it("marks a label New when only a switched sentence of it is unseen, lit by its base key (a sentence's Show me)", async () => {
+    // Friend spares, told whole before SPARE_REQUESTS_ENABLED was on; its sentence is the launch now.
+    const spare = "shopping/deck-shopping/spare";
+    m.seen = { version: 16, ids: [spare, "friend-spares"] };
+    const el = await draw("shopping", { lit: spare });
+    expect(el.props.initialLit).toBe(spare);
+    expect(el.props.landable[spare]).toEqual({ isNew: true, section: "deck-shopping" });
+    expect(el.props.landable).not.toHaveProperty([`${spare}@SPARE_REQUESTS_ENABLED`]);
+    m.seen = { version: 16, ids: [spare, `${spare}@SPARE_REQUESTS_ENABLED`] };
+    expect((await draw("shopping", { lit: spare })).props.landable[spare]).toEqual({ isNew: false, section: "deck-shopping" });
+  });
+
   it("lights nothing on first paint for a label this page does not draw", async () => {
     for (const lit of ["friends/friends/add", "decks/analysis/nope", "toString", ["decks/analysis/cuts", "decks/analysis/cuts"]]) {
       const el = await draw("decks", { lit });
@@ -266,6 +278,16 @@ describe("/about/[area], the visit (PR 6b)", () => {
   it("owes a first-run reader a write (the baseline it writes is pinned in actions.test.ts)", async () => {
     m.seen = { version: 0, ids: [] };
     expect((await visitOf("home")).props.owed).toBe(true);
+  });
+
+  it("hands the visit exactly the keys this render would write, for the action to intersect with what it draws then", async () => {
+    m.seen = { version: 16, ids: ["decks/games/matchups"] };
+    const behind = await visitOf("decks");
+    expect(behind.props.claimed).toEqual(seenKeysOf(visibleSections(m.env), "decks").filter((k) => k !== "decks/games/matchups"));
+    m.seen = { version: 0, ids: [] };
+    expect((await visitOf("home")).props.claimed).toEqual(afterVisit(visibleSections(m.env), "home", m.seen).ids);
+    m.seen = { version: 16, ids: seenKeysOf(visibleSections(m.env), "decks") };
+    expect((await visitOf("decks")).props.claimed).toEqual([]);
   });
 });
 

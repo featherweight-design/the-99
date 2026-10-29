@@ -207,6 +207,34 @@ describe("/about, the visit (R2 gap 10)", () => {
     m.seen = { version: 0, ids: [] };
     expect(((await tabs()).panel as El).props.whatsNew).toEqual([]);
   });
+
+  // Review round 1: the Reference writes legacy ids (`locked-cards`); Home's banner checks unit keys
+  // (`decks/your-deck/lock`), so the visit acknowledges the unit keys its write covers too.
+  it("acknowledges, beside the legacy ids it writes, the unit keys that write covers", async () => {
+    vi.stubEnv("NEVER_CUT_ENABLED", "true");
+    m.seen = { version: 14, ids: [] };
+    const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as {
+      behind: boolean; shown: string[]; drawn: string[]; answered: string[]; endsFirstRun: boolean;
+    };
+    expect(props.behind).toBe(true);
+    expect(props.shown).toContain("locked-cards");
+    expect(props.drawn).toContain("locked-cards");
+    expect(props.answered).toContain("decks/your-deck/lock");
+    expect(props.endsFirstRun).toBe(false);
+  });
+
+  it("acknowledges no unit key the write leaves new, and nothing for a unit switched off", async () => {
+    m.seen = { version: 14, ids: [] };
+    const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { answered: string[] };
+    expect(props.answered).not.toContain("decks/your-deck/lock");
+    expect(props.answered.length).toBeGreaterThan(0);
+  });
+
+  it("ends a first-run reader's first run, so a restored first-run line is not drawn", async () => {
+    m.seen = { version: 0, ids: [] };
+    const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { endsFirstRun: boolean };
+    expect(props.endsFirstRun).toBe(true);
+  });
 });
 
 describe("/about, the legacy gate's way in (retired, About visual PR 6b)", () => {

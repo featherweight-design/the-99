@@ -22,7 +22,8 @@ import { dismissArrivals } from "../../app/arrivals-actions";
 import { bannerCap, cropStyle, type AboutLaunch, type AboutLine, type BannerCrop } from "../../lib/about/banner-line";
 import { arrivalsCopy as copy } from "../../lib/copy/arrivals";
 import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
-import { aboutAcknowledged, arrivalsAcknowledged, launchAcknowledged } from "./arrivals-seen";
+import { aboutAcknowledged, aboutFirstRunOver, arrivalsAcknowledged, launchAcknowledged } from "./arrivals-seen";
+import { ThemeRefresh } from "../about/pages/theme-refresh";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useTarget } from "../discovery/targets-provider";
 import { Mark } from "./banner-mark";
@@ -153,7 +154,7 @@ export function ArrivalsBanner({
   // Each half on its own: a Precons visit answers the arrivals, an About page visit answers the launches on that page
   // (and a first-run reader's first visit answers their whole line), and either leaves the rest standing.
   const arrivals = data && data.lines.length > 0 && !arrivalsAcknowledged(data.keys) ? data : null;
-  const firstRun = about?.kind === "firstRun" && !aboutAcknowledged(about.ids);
+  const firstRun = about?.kind === "firstRun" && !aboutFirstRunOver() && !aboutAcknowledged(about.ids);
   const launches = about?.kind === "launches" ? about.launches.filter((l) => !launchAcknowledged(l.key)) : [];
   const aboutShown = firstRun || launches.length > 0;
   const [phase, setPhase] = useState<"open" | "closing" | "gone">(() => (dismissed.has(id) ? "gone" : "open"));
@@ -177,7 +178,8 @@ export function ArrivalsBanner({
     setPhase("closing");
     // The banner closes on the press; a write that fails leaves both halves unseen, so the next load shows them
     // again (rule 6), and a re-mount in this document draws it again too.
-    const claimed = firstRun ? about!.ids : launches.map((l) => l.key);
+    // What this banner RENDERED for the write: the server writes only those of them it still announces.
+    const claimed = about?.kind === "firstRun" ? (firstRun ? about.ack : []) : launches.flatMap((l) => l.ack);
     void dismissArrivals(arrivals?.keys ?? [], claimed).catch(() => {
       dismissed.delete(id);
     });
@@ -194,6 +196,9 @@ export function ArrivalsBanner({
   const { shown, more } = bannerCap(lines.length);
   const aboutCap = bannerCap(launches.length);
   const closeButton = (className: string) => (closable ? <CloseButton onClose={close} className={className} /> : null);
+  // The crops are captures chosen in the theme the server drew in: a theme picked in place (the account menu repaints
+  // without navigating) asks the server again, as the About pages do. Only while a crop is drawn.
+  const cropTheme = about?.kind === "launches" && launches.some((l) => l.phone || l.desktop) ? about.theme : null;
 
   return (
     // The collapse: one grid row from its height to none. `overflow-hidden` only while closing, so a focus ring
@@ -206,6 +211,7 @@ export function ArrivalsBanner({
       }
     >
       <div className={`min-h-0 ${closing ? "overflow-hidden" : ""}`} inert={closing}>
+        {cropTheme !== null && <ThemeRefresh drawnIn={cropTheme} />}
         {single ? (
           <section
             ref={tourTarget}

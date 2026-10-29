@@ -1910,8 +1910,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   one — the later prop wins in JSX, so the build under test was the working one. It makes no
   writes; point it at `local-dev`.
 
-- `pnpm probe:about` walks About's ways in (About visual PR 6a), at 390 and 1300, and WRITES NOTHING (`--ways-in` is
-  accepted and means the same): the index's tiles open their pages (W1); `?tab=tools` draws the index, no Tools tab
+- `pnpm probe:about` walks About's ways in (About visual PR 6a), at 390 and 1300 (`--ways-in` is accepted and means
+  the same). It writes nothing itself, but it is NOT read-only: opening an About page records the visit
+  (`RecordPageVisit`, PR 6b) in the audit account's `user_prefs` About columns, through the server. So it reads both
+  columns (`captureAboutSeen`) after the first sign-in and before the first About page, puts them back exactly in its
+  `finally` (`restoreAboutSeen`) and reads them back as a check, and refuses production and staging by `neon.branch_id`
+  (`assertNotSharedBranch`, `scripts/lib/scratch-branch.mjs`) before anything loads. `.env`'s `DATABASE_URL` must be the
+  database the server writes: local-dev or a scratch branch. The walk: the index's tiles open their pages (W1); `?tab=tools` draws the index, no Tools tab
   (W2); the ? pressed on Upload a file lands on `/about/collection#upload` with `from`, its back bar names the screen,
   stays at the top while the page scrolls, and goes back (W3); the ? on History lights the Replace and Add rule card
   with no New tag, `lit` stripped and `from` kept (W4); the ? on New deck lights the New deck label (W5); and the ? on

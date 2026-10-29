@@ -8,10 +8,16 @@ const dismiss = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("../../app/arrivals-actions", () => ({ dismissArrivals: dismiss }));
 // The checklist's live step needs the app router; About's line is what these tests read.
 vi.mock("./first-run-step-one", () => ({ FirstRunStepOne: () => null }));
+// The crops' theme check asks the server again through the router (`ThemeRefresh`).
+const nav = vi.hoisted(() => ({ refresh: vi.fn(), router: null as unknown }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => (nav.router ??= { refresh: nav.refresh, push: () => {} }),
+  usePathname: () => "/",
+}));
 
 const { ArrivalsBanner, COLLAPSE_MS, HOME_HEADING_ID } = await import("./arrivals-banner");
 const { Dashboard } = await import("./dashboard");
-const { acknowledgeAbout, acknowledgeArrivals, resetArrivalsAcknowledged } = await import("./arrivals-seen");
+const { acknowledgeAbout, acknowledgeArrivals, endAboutFirstRun, resetArrivalsAcknowledged } = await import("./arrivals-seen");
 const { FirstRunChecklist } = await import("./first-run");
 
 const TRC: BannerLine = { kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 };
@@ -44,6 +50,8 @@ let reduce = false;
 beforeEach(() => {
   resetArrivalsAcknowledged();
   dismiss.mockClear();
+  nav.refresh.mockClear();
+  document.documentElement.dataset.theme = "dark";
   reduce = false;
   vi.spyOn(window, "matchMedia").mockImplementation((q: string) => ({
     matches: q.includes("reduce") ? reduce : false,
@@ -231,19 +239,21 @@ describe("Dashboard", () => {
 // A launch as the server words it (`aboutLine`): a label with its region on both captures, or a rule with none.
 const CROP = { src: "/about/pages/dark/phone/p-deck-games.webp", w: 780, h: 1688, box: [0.05, 0.3, 0.9, 0.1] as const };
 const DCROP = { src: "/about/pages/dark/desktop/d-analysis.webp", w: 2600, h: 1800, box: [0.4, 0.4, 0.2, 0.1] as const };
-const launch = (key: string, page = "Decks", text = "Matchups splits a deck’s games by who you played against.", crop = true): AboutLaunch => ({
+const launch = (key: string, page = "Decks", text = "Matchups splits a deck’s games by who you played against.", crop = true, ack: string[] = [key]): AboutLaunch => ({
   key,
+  ack,
   lead: `New on ${page}:`,
   text,
   href: `/about/${page.toLowerCase()}?lit=${encodeURIComponent(key)}#games`,
   phone: crop ? CROP : null,
   desktop: crop ? DCROP : null,
 });
-const behind = (...launches: AboutLaunch[]): AboutLine => ({ kind: "launches", launches, ids: launches.map((l) => l.key) });
+const behind = (...launches: AboutLaunch[]): AboutLine => ({ kind: "launches", launches, ids: launches.map((l) => l.key), theme: "dark" });
 const MATCHUPS = launch("decks/games/matchups");
 const SPARES = launch("shopping/list/spares", "Shopping", "Ask a friend for a spare.");
 const RULE = launch("rule/credits", "Decks", "Anything written just for you costs credits.", false);
-const FIRST: AboutLine = { kind: "firstRun", ids: ["home/home/help", "decks/games/matchups"] };
+const firstRunLine = (ids: string[]): AboutLine => ({ kind: "firstRun", ids, ack: [...ids, `${ids[0]}@SOME_SWITCH`] });
+const FIRST: AboutLine = firstRunLine(["home/home/help", "decks/games/matchups"]);
 
 describe("ArrivalsBanner, one launch (call 7, Ways-In “Banner · one launch”)", () => {
   it("names the page and the unit's words, with its crop in the mark's place, Show me to the label lit, and ✕", () => {
@@ -357,12 +367,28 @@ describe("ArrivalsBanner, About's ✕ and acknowledgements", () => {
     expect(region()).toBeNull();
   });
 
-  it("✕ on a first-run line claims every unit it stands for", () => {
+  it("✕ on a first-run line claims the whole baseline it rendered, sentence keys included", () => {
     // Its own ids: a ✕ keeps its banner closed for the rest of this document.
-    const first: AboutLine = { kind: "firstRun", ids: ["home/home/help", "x-first"] };
+    const first = firstRunLine(["home/home/help", "x-first"]);
     render(<ArrivalsBanner data={null} about={first} />);
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
-    expect(dismiss).toHaveBeenCalledWith([], first.ids);
+    expect(dismiss).toHaveBeenCalledWith([], first.kind === "firstRun" ? first.ack : null);
+  });
+
+  it("✕ claims each launch's rendered ack, so the server can intersect it with what it announces now", () => {
+    const whole = launch("shopping/deck-shopping/spare", "Shopping", "The friends mark.", true, ["shopping/deck-shopping/spare", "shopping/deck-shopping/spare@SPARE_REQUESTS_ENABLED"]);
+    const sentence = launch("rule/replace@COLLECTION_SYNC_ENABLED", "Collection", "With Sync.", false);
+    render(<ArrivalsBanner data={null} about={behind(whole, sentence)} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(dismiss).toHaveBeenCalledWith([], [
+      "shopping/deck-shopping/spare", "shopping/deck-shopping/spare@SPARE_REQUESTS_ENABLED", "rule/replace@COLLECTION_SYNC_ENABLED",
+    ]);
+  });
+
+  it("drops a first-run line once a visit in this document ended the reader's first run (the Reference's)", () => {
+    endAboutFirstRun();
+    render(<ArrivalsBanner data={null} about={FIRST} />);
+    expect(region()).toBeNull();
   });
 
   it("drops a launch a page visit in this document acknowledged, and keeps the rest", () => {
@@ -420,13 +446,13 @@ describe("About's line on both Home surfaces", () => {
   });
 
   it("Dashboard draws the first-run line for an account that imported before opening About, with ✕", () => {
-    render(<Dashboard {...DASH} arrivals={null} about={{ kind: "firstRun", ids: ["home/home/help", "dash-first"] }} />);
+    render(<Dashboard {...DASH} arrivals={null} about={firstRunLine(["home/home/help", "dash-first"])} />);
     expect(region()).toHaveTextContent(/What The\s99 does:/);
     expect(screen.getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
   });
 
   it("the checklist draws About's line with no ✕ and no arrivals (A3)", () => {
-    render(<FirstRunChecklist about={{ kind: "firstRun", ids: ["home/home/help", "checklist-first"] }} />);
+    render(<FirstRunChecklist about={firstRunLine(["home/home/help", "checklist-first"])} />);
     expect(region()).toHaveTextContent(/What The\s99 does:/);
     expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
   });
@@ -438,5 +464,31 @@ describe("About's line on both Home surfaces", () => {
     unmount();
     render(<FirstRunChecklist />);
     expect(region()).toBeNull();
+  });
+});
+
+describe("ArrivalsBanner, the crops' theme (ThemeRefresh)", () => {
+  it("asks the server again when the theme is picked in place, so the crops are cut in the new theme", async () => {
+    render(<ArrivalsBanner data={null} about={behind(MATCHUPS)} />);
+    expect(nav.refresh).not.toHaveBeenCalled();
+    await act(async () => {
+      document.documentElement.dataset.theme = "amonkhet";
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(nav.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("asks at mount when Back restores a banner drawn in an older theme", () => {
+    document.documentElement.dataset.theme = "amonkhet";
+    render(<ArrivalsBanner data={null} about={behind(MATCHUPS)} />);
+    expect(nav.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("asks nothing for a line with no crop to redraw: a rule's launch, a first-run line", () => {
+    document.documentElement.dataset.theme = "amonkhet";
+    const { unmount } = render(<ArrivalsBanner data={null} about={behind(RULE)} />);
+    unmount();
+    render(<ArrivalsBanner data={null} about={FIRST} />);
+    expect(nav.refresh).not.toHaveBeenCalled();
   });
 });

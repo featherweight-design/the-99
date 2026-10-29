@@ -33,6 +33,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium, type Browser, type Locator, type Page } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
+import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
 import { catalogIds, variantIds } from "./lib/about-clear.mjs";
 import { ABOUT_VERSION } from "../src/lib/copy/about";
 import { arrivalsCopy } from "../src/lib/copy/arrivals";
@@ -55,8 +56,6 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
 const sql = neon(DATABASE_URL);
-const PRODUCTION = "br-noisy-violet-a6vw4ess";
-const STAGING = "br-polished-pond-a6e63y0b";
 
 const SET = "pqbset";
 const SET_NAME = "Probe About Banner Commander";
@@ -382,9 +381,7 @@ async function checklist(browser: Browser, w: Width, email: string) {
 
 await clerkSetup();
 const [{ id: branch }] = await sql`select current_setting('neon.branch_id', true) as id`;
-if (!branch || branch === PRODUCTION || branch === STAGING) {
-  throw new Error(`refusing to write fixtures to ${branch ?? "(unknown)"}: point DATABASE_URL at local-dev`);
-}
+assertNotSharedBranch(branch, "probe:about-banner");
 const browser = await chromium.launch();
 let userId: string | null = null;
 let prior: Prior | null = null;

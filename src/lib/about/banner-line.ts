@@ -10,6 +10,9 @@ export type BannerCrop = { src: string; w: number; h: number; box: PageBox };
 export type AboutLaunch = {
   /** The announce key (`UnseenUnit.key`): what the ✕ claims and a page visit acknowledges. */
   key: string;
+  /** What acknowledging it writes, as the server RENDERED it (`UnseenUnit.ack`): the ✕ claims these keys, and the
+   *  server writes only those of them it still announces, so a sentence switched on after the render stays new. */
+  ack: readonly string[];
   /** "New on {page}:", drawn in `--fg` before the unit's words (`ABOUT_PAGE_STRINGS.bannerLead`). */
   lead: string;
   /** The unit's words as this reader is drawn them: a label's lead and rest, a rule's text, or a new sentence alone. */
@@ -22,13 +25,14 @@ export type AboutLaunch = {
 };
 
 /**
- * What the browser is handed. `ids` is what its ✕ claims and what a page visit in the same document acknowledges:
- * first run, every unit's key (the line stands for every page, and the ✕ writes the baseline a first visit writes);
- * behind, each launch's key.
+ * What the browser is handed. `ids` is what a page visit in the same document acknowledges: first run, every unit's
+ * key (the line stands for every page); behind, each launch's key. The ✕ claims the RENDERED ack keys: first run,
+ * `ack`, the whole baseline a first visit writes; behind, each launch's `ack`. `theme` is the theme the launches'
+ * crops were cut in, so a theme picked in place asks the server again (`ThemeRefresh`).
  */
 export type AboutLine =
-  | { kind: "firstRun"; ids: string[] }
-  | { kind: "launches"; launches: AboutLaunch[]; ids: string[] };
+  | { kind: "firstRun"; ids: string[]; ack: string[] }
+  | { kind: "launches"; launches: AboutLaunch[]; ids: string[]; theme: string };
 
 /** The banner's cap, the shipped one: four lines show in full; past four, three show and "and N more". */
 export function bannerCap(n: number): { shown: number; more: number } {

@@ -95,7 +95,9 @@ describe("aboutLine", () => {
 
   it("points a first-run reader at the index, standing for every unit they are drawn", () => {
     const visible = visibleSections(ALL_ON);
-    expect(aboutLine(NEVER_SEEN, visible, THEME)).toEqual({ kind: "firstRun", ids: units(visible).map((u) => u.key) });
+    expect(aboutLine(NEVER_SEEN, visible, THEME)).toEqual({
+      kind: "firstRun", ids: units(visible).map((u) => u.key), ack: everyAnnouncement(visible).flatMap((u) => u.ack),
+    });
   });
 
   it("lands Show me on the unit's page, lit, at its section", () => {
@@ -111,7 +113,7 @@ describe("aboutDismissal (the banner's ✕)", () => {
   it("writes every claimed unit's ack, not just its key, and raises the floor when every launch was claimed", () => {
     const reader = readerAt(9);
     const unseen = unseenUnits(visible, reader);
-    const write = aboutDismissal(unseen.map((u) => u.key), reader, visible);
+    const write = aboutDismissal(unseen.flatMap((u) => u.ack), reader, visible);
     expect(write?.version).toBe(ABOUT_VERSION);
     expect(new Set(write?.ids)).toEqual(new Set(unseen.flatMap((u) => u.ack)));
     // A unit told whole carries its sentences' keys, so none is told on its own next.
@@ -124,7 +126,7 @@ describe("aboutDismissal (the banner's ✕)", () => {
     const reader = readerAt(9);
     const unseen = unseenUnits(visible, reader);
     const [left, ...claimed] = unseen;
-    const write = aboutDismissal(claimed.map((u) => u.key), reader, visible)!;
+    const write = aboutDismissal(claimed.flatMap((u) => u.ack), reader, visible)!;
     const since = units(visible).find((u) => u.key === left!.key.split("@")[0])!.since;
     expect(write.version).toBeLessThan(Math.max(since, reader.version + 1));
     expect(write.version).toBeGreaterThanOrEqual(reader.version);
@@ -144,11 +146,58 @@ describe("aboutDismissal (the banner's ✕)", () => {
   });
 
   it("gives a first-run reader the baseline a first visit writes", () => {
-    const keys = everyAnnouncement(visible).map((u) => u.key);
+    const keys = everyAnnouncement(visible).flatMap((u) => u.ack);
     const write = aboutDismissal(keys, NEVER_SEEN, visible)!;
     const baseline = afterVisit(visible, "home", NEVER_SEEN);
     expect(write.version).toBe(baseline.version);
     expect(new Set(write.ids)).toEqual(new Set(baseline.ids));
+  });
+});
+
+// Review round 1: the ✕ writes what was RENDERED, intersected with what is announced now, never widened to it.
+describe("aboutDismissal, a switch turned on between the render and the ✕", () => {
+  const SPARE = "shopping/deck-shopping/spare";
+  const SPARE_ON = env({ SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+  const SPARE_OFF = env({ SOCIAL_FRIENDS_ENABLED: "true" });
+  const reader: SeenState = { version: 16, ids: ["x"] };
+
+  it("a base unit drawn before SPARE_REQUESTS_ENABLED turned on does not take its new sentence's key", () => {
+    const line = aboutLine(reader, visibleSections(SPARE_OFF), THEME);
+    const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === SPARE) : undefined;
+    expect(drawn?.ack).toEqual([SPARE]);
+    const now = visibleSections(SPARE_ON);
+    const write = aboutDismissal(drawn!.ack, reader, now)!;
+    expect(write.ids).toContain(SPARE);
+    expect(write.ids).not.toContain(sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED"));
+    // The sentence is the next launch: the floor stays under its unit.
+    const after: SeenState = { version: write.version, ids: [...reader.ids, ...write.ids] };
+    expect(unseenUnits(now, after).map((u) => u.key)).toContain(sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED"));
+  });
+
+  it("writes the sentence's key when the render drew it", () => {
+    const now = visibleSections(SPARE_ON);
+    const line = aboutLine(reader, now, THEME);
+    const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === SPARE) : undefined;
+    expect(drawn?.ack).toEqual([SPARE, sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED")]);
+    expect(aboutDismissal(drawn!.ack, reader, now)!.ids).toContain(sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED"));
+  });
+
+  it("a first-run ✕ takes only the baseline it rendered: a unit and a sentence switched on since stay new", () => {
+    const line = aboutLine(NEVER_SEEN, visibleSections(OFF), THEME);
+    expect(line?.kind).toBe("firstRun");
+    const now = visibleSections(env({ NEVER_CUT_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" }));
+    const write = aboutDismissal(line?.kind === "firstRun" ? line.ack : [], NEVER_SEEN, now)!;
+    expect(write.ids).not.toContain("decks/your-deck/lock");
+    expect(write.ids).not.toContain(SPARE);
+    const after: SeenState = { version: write.version, ids: write.ids };
+    const told = unseenUnits(now, after).map((u) => u.key);
+    expect(told).toContain("decks/your-deck/lock");
+    expect(told).toContain(SPARE);
+  });
+
+  it("cuts a claim past the bound, as a page never draws one that long", () => {
+    const padded = [...Array.from({ length: 200 }, (_, i) => `pad/${i}`), "decks/your-deck/lock"];
+    expect(aboutDismissal(padded, reader, visibleSections(env({ NEVER_CUT_ENABLED: "true" })))).toBeNull();
   });
 });
 

@@ -28,7 +28,8 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 import { fakeCameraArgs, writeFakeCamera } from "./lib/fake-camera.mjs";
-import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
+import { aboutSql, captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
+import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
@@ -381,9 +382,17 @@ const shots = [];
 const browser = await chromium.launch();
 /** The per-width camera browsers still open: closed in the `finally`, so a width that fails part-way leaves none behind. */
 const cameraBrowsers = new Set();
-/** The account's About columns as the run found them, when an inventory clears the gate. */
+/** The account's About columns as the run found them, when an inventory clears the gate or restores them. */
 let aboutPrior = null;
 try {
+  // `"restoreAbout": true`: a walk whose pages WRITE the account's About row as they are opened (an About page records
+  // its visit, About visual PR 6b) puts both columns back exactly in the `finally`. Production and staging are refused
+  // by `neon.branch_id` before the first page loads, since the server writes on that same database.
+  if (inventory.restoreAbout && inventory.signedOut) throw new Error("restoreAbout needs a signed-in account; the inventory is signedOut.");
+  if (inventory.restoreAbout) {
+    const [row] = await aboutSql()`select current_setting('neon.branch_id', true) as branch`;
+    assertNotSharedBranch(row?.branch, `contact sheet ${path.basename(inventoryPath)}`);
+  }
   await clerkSetup();
   for (const size of WIDTHS) {
     // `"camera": { w, h, card?, share, cx, cy, angle }` on a width gives that width its own browser with a fake
@@ -449,11 +458,12 @@ try {
     // photographs the gate itself. Both About columns are captured first and put back in the `finally`
     // (the ids `clearAboutSheet` adds included), once, from the first width's capture.
     if (inventory.clearAbout && inventory.signedOut) throw new Error("clearAbout needs a signed-in account; the inventory is signedOut.");
-    if (inventory.clearAbout) {
+    if (inventory.clearAbout || inventory.restoreAbout) {
       const userId = await page.evaluate(() => window.Clerk?.user?.id ?? null);
-      if (!userId) throw new Error("clearAbout: signed in, but Clerk reports no user.");
+      if (!userId) throw new Error("clearAbout/restoreAbout: signed in, but Clerk reports no user.");
+      // Captured before the first row, from the first width's sign-in (which loads Home, and Home writes no About).
       aboutPrior ??= await captureAboutSeen(userId);
-      await clearAboutSheet(page, userId);
+      if (inventory.clearAbout) await clearAboutSheet(page, userId);
     }
     for (const row of inventory.rows) {
       // A surface that only EXISTS at one width says so, and the other width is
@@ -553,6 +563,9 @@ try {
   if (aboutPrior) {
     try {
       await restoreAboutSeen(aboutPrior);
+      const now = await captureAboutSeen(aboutPrior.userId);
+      if (JSON.stringify(now) !== JSON.stringify(aboutPrior)) throw new Error(`read back ${JSON.stringify(now)}`);
+      console.log("INFO  the account's About row is restored as the run found it");
     } catch (error) {
       console.error("COULD NOT RESTORE the About row; the account's About state is changed:", error);
       process.exitCode = 1;

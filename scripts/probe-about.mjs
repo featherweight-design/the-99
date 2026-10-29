@@ -1,17 +1,22 @@
 // probe:about — About's ways in, pressed in a real browser at 390x844 and 1300x820 (About visual build, plan
 // `2026-10-27-about-visual.md`, PR 6a): the index's tiles (W1), the retired Tools tab drawing the index (W2), and the ?
 // pressed on Upload a file, History, New deck and an About page, each landing read off the URL, the back bar and the
-// lit unit (W3 to W6). Read-only: it writes nothing.
+// lit unit (W3 to W6). It writes nothing ITSELF, but the server does: opening an About page records the visit
+// (`RecordPageVisit`, PR 6b) in the account's `user_prefs` About columns. So both columns are read before the first
+// About page loads and put back exactly in `finally` (then read back as a check), and production and staging are
+// refused by `neon.branch_id` before anything loads. `.env`'s DATABASE_URL must be the database the server writes.
 //
 //   PROBE_BASE=http://localhost:3291 pnpm probe:about        (`--ways-in` is accepted and means the same)
 //
 // The R6 walks this probe once ran retired with what they walked (About visual PR 6b): the one-time sheet, its cookie
 // and forged-header checks, and the `--flip` walk of entries announced by a switch flipping on. The banner now carries
 // every launch, and `pnpm probe:about-banner` presses it, the flip included (`src/proxy-flip.test.ts` walks the same
-// rule through the real proxy). Point it at `local-dev`, never production.
+// rule through the real proxy). Point it at `local-dev` or a scratch branch, never production or staging.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { aboutSql, captureAboutSeen, restoreAboutSeen } from "./lib/about-clear.mjs";
+import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL"]);
 if (!EMAIL.includes("+clerk_test")) throw new Error("Use a +clerk_test account (see the local-auth note).");
@@ -54,10 +59,15 @@ async function signIn(page) {
   return page.evaluate(() => window.Clerk.user.id);
 }
 
+/** The account's About columns as the run found them, taken after the first sign-in (which loads Home, and Home writes
+ *  no About) and before the first About page. */
+let aboutPrior = null;
+
 async function waysInWalk(browser, width) {
   const context = await browser.newContext({ viewport: width.viewport });
   const page = await context.newPage();
-  await signIn(page);
+  const userId = await signIn(page);
+  aboutPrior ??= await captureAboutSeen(userId);
   const L = (s) => `${width.label}: ${s}`;
   const desk = width.label >= 768;
   const pressQuestion = async () => {
@@ -126,6 +136,10 @@ async function waysInWalk(browser, width) {
   await context.close();
 }
 
+{
+  const [row] = await aboutSql()`select current_setting('neon.branch_id', true) as branch`;
+  assertNotSharedBranch(row?.branch, "probe:about");
+}
 await clerkSetup();
 const browser = await chromium.launch();
 try {
@@ -141,6 +155,16 @@ try {
   }
 } finally {
   await browser.close();
+  // A restore that fails leaves the account's About state changed, so the run fails with it.
+  if (aboutPrior) {
+    try {
+      await restoreAboutSeen(aboutPrior);
+      const now = await captureAboutSeen(aboutPrior.userId);
+      report("the account's About row is restored as the run found it", JSON.stringify(now) === JSON.stringify(aboutPrior), JSON.stringify(now));
+    } catch (error) {
+      report("the account's About row is restored as the run found it", false, String(error?.message ?? error));
+    }
+  }
 }
 console.log(failures ? `\n${failures} check(s) failed.` : "\nAll checks passed.");
 process.exitCode = failures ? 1 : 0;

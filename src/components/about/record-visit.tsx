@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { recordAboutVisit } from "../../app/about/actions";
-import { acknowledgeAbout } from "../home/arrivals-seen";
+import { acknowledgeAbout, endAboutFirstRun } from "../home/arrivals-seen";
 
 /**
  * Records the visit once the page is open in a browser (About R6 §O4, audit E2).
@@ -17,22 +17,35 @@ import { acknowledgeAbout } from "../home/arrivals-seen";
  * re-mount must not draw it. A behind reader's visit acknowledges once its write LANDS, a current reader's at once;
  * nothing is ever taken back, so overlapping visits and re-run effects cannot leave a false acknowledgement behind.
  * Back pressed while the write is still in flight draws the line once more, the cheaper failure.
+ *
+ * The banner checks the pages' unit keys (`decks/your-deck/lock`), not the legacy ids this page draws and writes
+ * (`locked-cards`), so the acknowledgement carries `answered` too: the unit keys the write covers, decided on the server
+ * from the state it leaves (`answeredKeys`). `endsFirstRun` says the write takes the reader past their first run, so a
+ * restored first-run line is not drawn either (`endAboutFirstRun`).
  */
 export function RecordVisit({
   behind,
   shown,
   drawn = [],
+  answered = [],
+  endsFirstRun = false,
 }: {
   behind: boolean;
   shown: readonly string[];
   drawn?: readonly string[];
+  answered?: readonly string[];
+  endsFirstRun?: boolean;
 }) {
   const sent = useRef(false);
   useEffect(() => {
     // A current reader's visit answers the line in this document too: another tab or device may have marked About
     // seen after this tab's Home was rendered, and Back restores that Home's payload with the line in it.
+    const acknowledge = () => {
+      acknowledgeAbout([...drawn, ...answered]);
+      if (endsFirstRun) endAboutFirstRun();
+    };
     if (!behind) {
-      acknowledgeAbout(drawn);
+      acknowledge();
       return;
     }
     if (sent.current) return;
@@ -40,13 +53,13 @@ export function RecordVisit({
     // The ids the page showed: the visit acknowledges these, so an entry switched on after it
     // rendered is not marked seen unread.
     recordAboutVisit(shown).then(
-      () => acknowledgeAbout(drawn),
+      acknowledge,
       () => {
         // A failed write leaves the reader behind, which puts About's line in front
         // of them once more on a later Home load. That is the cheaper failure.
         sent.current = false;
       },
     );
-  }, [behind, shown, drawn]);
+  }, [behind, shown, drawn, answered, endsFirstRun]);
   return null;
 }

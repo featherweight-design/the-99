@@ -31,3 +31,16 @@ export function assertScratchBranch(branch, what) {
     );
   }
 }
+
+/**
+ * The lighter guard, for a script whose writes touch only the signed-in account's own About row (`user_prefs`), put
+ * back exactly in its `finally`: production and staging are refused by `neon.branch_id`, and so is a database that
+ * names no branch, but local-dev is allowed. Call it before the first write, the server's included: a walk whose pages
+ * record visits writes through the dev server.
+ */
+export function assertNotSharedBranch(branch, what) {
+  if (!branch) throw new Error(`${what} refuses an unknown branch: point DATABASE_URL at local-dev or a scratch branch.`);
+  if (branch === PRODUCTION_BRANCH || branch === STAGING_BRANCH) {
+    throw new Error(`${what} refuses ${REFUSED.get(branch)} (${branch}): point DATABASE_URL at local-dev or a scratch branch.`);
+  }
+}

@@ -92,11 +92,14 @@ export default async function AboutAreaRoute({
   // Whether opening the page writes anything: decided from the same pre-visit state the New marks were.
   const after = afterVisit(visible, area, seen);
   const held = new Set(seen.ids);
-  const owed = after.version > seen.version || after.ids.some((id) => !held.has(id));
+  // What the visit writes, as this render names it: sent back with the visit, which writes only those of them the
+  // reader's switches still draw then, so a unit switched on after this render stays new.
+  const claimed = after.ids.filter((id) => !held.has(id));
+  const owed = after.version > seen.version || claimed.length > 0;
   return (
     <>
       <AreaPage area={area} sections={sections} theme={theme} landable={landable} initialLit={initialLit} back={back} />
-      <RecordPageVisit area={area} owed={owed} keys={seenKeysOf(visible, area)} />
+      <RecordPageVisit area={area} owed={owed} keys={seenKeysOf(visible, area)} claimed={claimed} />
     </>
   );
 }
