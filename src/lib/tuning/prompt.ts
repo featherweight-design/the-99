@@ -44,7 +44,7 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
 }
 
 /**
- * Suggested changes v2's prompt (`PROMPT_VERSION_V2` 11; spec 2026-10-27 §4, §5, §10; plan PR 2 and H2, H3), for ONE call of
+ * Suggested changes v2's prompt (`PROMPT_VERSION_V2` 12; spec 2026-10-27 §4, §5, §10; plan PR 2 and H2, H3), for ONE call of
  * the two-call flow: the additions stage, asked ceil(1.5N) (`askFor`), or the cut stage that makes room for what is coming
  * in, first asked ceil(1.5·min(N, K1)) for the K1 additions call 1 kept (`cutPlanFor`), and either one's refill (asked the shortfall, told what stands and what fell and why). Composed from
  * v10's own lines, so every rule both share is one text: only the size and aim sentences, the citation kinds (`notes` is the
@@ -73,7 +73,9 @@ export type PromptV2Stage = {
 };
 
 export function buildPromptV2(pack: EvidencePack, stage: PromptV2Stage): { system: string; user: string } {
-  const v10 = buildPrompt(pack);
+  // The owned lists are what the ADDITIONS choose from (prompt v12): a cut call, and its refill, is sent neither, and its
+  // owned-only rule falls back to the listless sentence, since it names no add of its own.
+  const v10 = buildPrompt(stage.list === "cuts" ? { ...pack, ownedCandidates: undefined, ownedOffIndex: undefined } : pack);
   const swap = new Map<string, string>([
     [SIZE_LINE, sizeLineV2(stage)],
     [AIM_LINE, aimLineV2(stage)],
@@ -197,7 +199,7 @@ function strategyRules(universal: string[], hasOverview: boolean): string[] {
  * so that deck's prompt stays byte for byte today's (no `PROMPT_VERSION` bump needed; a limit
  * change already reopens the gate through the fingerprint).
  */
-function limitsRules(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ownedNone">): string[] {
+function limitsRules(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ownedOffIndex" | "ownedNone">): string[] {
   const { limits } = pack;
   const lines: string[] = [];
   if (limits.capCents !== null) lines.push(`Every suggested add must cost $${(limits.capCents / 100).toFixed(2)} or less.`);
@@ -205,9 +207,14 @@ function limitsRules(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ow
   if (limits.ownedOnly) {
     // The player's own rule, so it overrides `ownershipNotRanking` for the adds: the shortlist is
     // what the rule selects from, shown so the model stops guessing at what the player owns.
-    lines.push(pack.ownedCandidates
-      ? `Every suggested add must be one of the cards listed under "${OWNED_HEADING}". Choose among them by what the deck needs.`
-      : "Every suggested add must be a card the player already owns.");
+    // A second tier (v2, prompt v12) is named beside the first, and the first is preferred: its cards are on this
+    // commander's own index, the second's only on its neighbours'.
+    const first = ownedFirstTier(pack);
+    lines.push(!first
+      ? "Every suggested add must be a card the player already owns."
+      : (pack.ownedOffIndex ?? []).length > 0
+        ? `Every suggested add must be one of the cards listed under "${OWNED_HEADING}" or under "${OWNED_OFF_INDEX_HEADING}". Prefer the first list: draw from the second only when the first has no card that gives the deck what it needs. Choose among them by what the deck needs.`
+        : `Every suggested add must be one of the cards listed under "${OWNED_HEADING}". Choose among them by what the deck needs.`);
   }
   // Owned-only was set and the player owns nothing that fits: the adds are cards to buy, and the
   // price cap and sets above still hold. The app tells the player so itself.
@@ -216,6 +223,12 @@ function limitsRules(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ow
 }
 
 const OWNED_HEADING = "Cards the player owns that fit this deck";
+const OWNED_OFF_INDEX_HEADING = "Other cards the player owns that fit this deck's colors";
+
+/** The first owned list as the prompt states it: the pack's own, or an empty one when only the second tier has cards. */
+function ownedFirstTier(pack: Pick<EvidencePack, "ownedCandidates" | "ownedOffIndex">): EvidencePack["ownedCandidates"] {
+  return pack.ownedCandidates ?? ((pack.ownedOffIndex ?? []).length > 0 ? [] : undefined);
+}
 
 const FOCUS_LAST_RULE = "The app shows how far each addition moves the focus";
 const REQUEST_OVER_FOCUS_LINE = "When the player's request asks for something the focus rules above would prevent, the request wins: those rules give way to it, including the share of additions that must count toward the focus and the rule against cutting a card that counts toward it.";
@@ -321,10 +334,16 @@ function renderPack(pack: EvidencePack): string {
   // today's user message byte for byte.
   const limitLines = limitsRules(pack);
   if (limitLines.length > 0) lines.push("", "Limits set for this deck:", ...limitLines.map((l) => `- ${l}`));
-  if (pack.limits.ownedOnly && pack.ownedCandidates) {
+  const ownedFirst = ownedFirstTier(pack);
+  if (pack.limits.ownedOnly && ownedFirst) {
     lines.push("", `${OWNED_HEADING} (the ones most decks with this commander play first):`);
-    if (pack.ownedCandidates.length === 0) lines.push("- none");
-    for (const c of pack.ownedCandidates) lines.push(`- ${c.name} (${c.typeLine})`);
+    if (ownedFirst.length === 0) lines.push("- none");
+    for (const c of ownedFirst) lines.push(`- ${c.name} (${c.typeLine})`);
+  }
+  // The second tier (v2, prompt v12): only when it has cards, so a pack without one sends the message it did before.
+  if (pack.limits.ownedOnly && pack.ownedOffIndex && pack.ownedOffIndex.length > 0) {
+    lines.push("", `${OWNED_OFF_INDEX_HEADING}:`);
+    for (const c of pack.ownedOffIndex) lines.push(`- ${c.name} (${c.typeLine})`);
   }
 
   lines.push("", pack.intent === null

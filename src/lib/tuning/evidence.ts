@@ -86,6 +86,15 @@ export type EvidencePack = {
   /** `ownedCandidates` holds every owned card that qualifies: no tier of it (the shortlist, a focus run's candidates)
    *  stopped at its cap or its page limit. Set only by a v2 run, the one reader (`v2/engine.ts` `poolExhausted`). */
   ownedCandidatesComplete?: boolean;
+  /**
+   * The owned-only pool's second tier (Suggested changes v2, prompt v12; `loadOwnedOffIndex`): owned cards that fit the
+   * deck's colors but sit on none of this commander's index rows, ranked by the commanders whose lists overlap the deck
+   * most. Listed after `ownedCandidates` and preferred less; absent or empty when there are none.
+   */
+  ownedOffIndex?: { oracleId: string; name: string; typeLine: string }[];
+  /** `ownedOffIndex` holds every owned off-index card that scores: the tier ran out of ranked cards below its room
+   *  (`readOwnedOffIndex`). Set only by a v2 run, for `poolExhausted`. */
+  ownedOffIndexComplete?: boolean;
   /** "Owned only" was set and nothing the player owns fits: the run falls back to cards to buy, and
    *  `limits.ownedOnly` is false for it. The panel says so (`ValidationReport.ownedNone`). */
   ownedNone?: boolean;
@@ -113,6 +122,9 @@ export function buildEvidencePack(input: {
   /** The owned shortlist for an owned-only run, or null/absent. See `EvidencePack.ownedCandidates`. */
   ownedCandidates?: EvidencePack["ownedCandidates"];
   ownedCandidatesComplete?: boolean;
+  /** The owned pool's second tier, or absent. See `EvidencePack.ownedOffIndex`. */
+  ownedOffIndex?: EvidencePack["ownedOffIndex"];
+  ownedOffIndexComplete?: boolean;
   ownedNone?: boolean;
 }): EvidencePack {
   const { profile, play, intent, owned } = input;
@@ -191,6 +203,8 @@ export function buildEvidencePack(input: {
     // Only when set: a pack without them is the object it was before they existed.
     ...(input.ownedCandidates ? { ownedCandidates: input.ownedCandidates } : {}),
     ...(input.ownedCandidates && input.ownedCandidatesComplete ? { ownedCandidatesComplete: true } : {}),
+    ...(input.ownedOffIndex && input.ownedOffIndex.length > 0 ? { ownedOffIndex: input.ownedOffIndex } : {}),
+    ...(input.ownedOffIndexComplete ? { ownedOffIndexComplete: true } : {}),
     ...(input.ownedNone ? { ownedNone: true } : {}),
   };
 }

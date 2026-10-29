@@ -18,8 +18,8 @@ import { planFocusCandidates, readFocusCandidates } from "../../strategy/candida
 import { focusPack, loadAddCards, loadRunStrategy, strategyChips } from "../../strategy/run";
 import { readResolvedRows } from "../answer";
 import { buildEvidencePack } from "../evidence";
-import { TUNING_EFFORT, TUNING_MODEL, V2_RUN_BUDGET_MS } from "../limits";
-import { readOwnedCandidates } from "../owned-candidates";
+import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX, TUNING_EFFORT, TUNING_MODEL, V2_RUN_BUDGET_MS } from "../limits";
+import { readOwnedCandidates, readOwnedOffIndex } from "../owned-candidates";
 import { reapReaderRuns } from "../reap-runs";
 import { nameResolver } from "../resolve-names";
 import { failV2Run, insertV2Line, markV2CutAsk, markV2Progress, persistV2, startRun, type RunHandle } from "../run-store";
@@ -143,6 +143,12 @@ export async function startTuningV2(args: {
 
 type Inputs = NonNullable<Awaited<ReturnType<typeof tuningInputs>>>;
 
+/** The room the owned pool's second tier fills: at most `OWNED_OFF_INDEX_MAX`, and what the first tier leaves under
+ *  `OWNED_SHORTLIST_MAX` in total. */
+export function ownedOffIndexRoom(firstTier: number): number {
+  return Math.max(0, Math.min(OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX - firstTier));
+}
+
 async function workV2(args: {
   run: RunHandle; inputs: Inputs; wire: V2Wire; request: string; startReport: ReturnType<typeof v2StartReport>;
   env: NodeJS.ProcessEnv; revalidate: () => void;
@@ -178,12 +184,24 @@ async function workV2(args: {
         return read.cards;
       }, { buyFallback: false })
       : null;
+    const firstTier = focusPlan ? focusPlan.shortlist : ownedCandidates;
+    // The owned pool's second tier (prompt v12): owned cards off the commander's index, filling only the room the index
+    // cards and the focus candidates leave under `OWNED_SHORTLIST_MAX`, and never one of theirs again.
+    const offIndexRead = limits.ownedOnly
+      ? await readOwnedOffIndex({
+        ...shared, limits,
+        exclude: new Set((firstTier ?? []).map((c) => c.oracleId)),
+        max: ownedOffIndexRoom(firstTier?.length ?? 0),
+      })
+      : undefined;
     // Spec §4: no owned-only fallback. The limits stay as the player set them, whatever fits, the focus candidates'
     // owned and free-copy rule included (`buyFallback: false`).
     const pack = buildEvidencePack({
       profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), limits,
-      ownedCandidates: focusPlan ? focusPlan.shortlist : ownedCandidates,
+      ownedCandidates: firstTier,
       ownedCandidatesComplete: poolComplete,
+      ownedOffIndex: offIndexRead?.cards,
+      ownedOffIndexComplete: offIndexRead?.complete ?? false,
     });
     if (focusRun && focusPlan) pack.focus = focusPack(focusRun, focusPlan.candidates);
 

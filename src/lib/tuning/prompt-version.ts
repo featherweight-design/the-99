@@ -43,4 +43,7 @@ export const PROMPT_VERSION = 10;
 // room for what is coming in; additions asked ceil(1.5N), and since then the first cut call ceil(1.5·min(N, K1)) for the K1
 // additions kept, `cutPlanFor`, a sizing change that left the prompt text as it was), the refill's question, `notes` renamed
 // `request`, the signal-trust order, and the bracket choice (`buildPromptV2`).
-export const PROMPT_VERSION_V2 = 11;
+// 12 (2026-10-29): an owned-only run's additions are offered a second owned list, "Other cards the player owns that fit
+// this deck's colors" (owned cards off the commander's index, ranked by its neighbour commanders), and told to prefer the
+// first; the cut calls are sent neither owned list.
+export const PROMPT_VERSION_V2 = 12;

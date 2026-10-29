@@ -6,7 +6,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
 import { printedIn } from "../sets/printed-in-sql";
-import { OWNED_SHORTLIST_MAX } from "./limits";
+import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "./limits";
 
 /**
  * The cards the player owns that this deck could take, for a run whose "owned only" limit is set.
@@ -32,7 +32,7 @@ import { OWNED_SHORTLIST_MAX } from "./limits";
 export type OwnedCandidate = { oracleId: string; name: string; typeLine: string };
 
 /** Most names sent (`limits.ts`, where the pure engine reads it too). */
-export { OWNED_SHORTLIST_MAX } from "./limits";
+export { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "./limits";
 
 /** Rows per page, and the most pages read: 2,000 ranked owned cards is deeper than any commander's index list that a collection overlaps. */
 const PAGE = 200;
@@ -119,4 +119,149 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
     if (rows.length < PAGE) { rowsRanOut = true; break; }
   }
   return { cards: out, complete: rowsRanOut && out.length < max };
+}
+
+type Reader = Pick<typeof db, "select">;
+
+/**
+ * THE SECOND TIER: owned cards that fit the deck's colors but sit on no row of this commander's index (Suggested changes
+ * v2, prompt v12). The index tier above reads only the commander's own EDHREC list, so a collection rich in cards that
+ * list lacks offered the model a handful, and an owned-only run came back short while the player owned fits.
+ *
+ * WHAT QUALIFIES is the index tier's rule less the index: owned, a copy FREE of every other deck (`loadAvailability`),
+ * commander-legal, inside the colour identity, not in the deck, not one of the deck's commanders (named apart: a commander
+ * need not sit in `deck_cards`), not a basic land, a name no other card shares, printed in a selected set, under the
+ * cap, and on NO row of these commanders' index.
+ *
+ * RANKED BY NEIGHBOUR COMMANDERS, facts about the card and never about who owns it. The neighbours are the
+ * `NEIGHBOUR_COMMANDERS` commanders inside the deck's identity (its own excluded) whose index lists share the most cards
+ * with the deck as it stands (`neighbourQuery`). A candidate scores its summed inclusion on those lists; ties go to its
+ * summed inclusion on every list inside the identity, then to the name (`rankOffIndex`). A card scoring nothing on both
+ * is no evidence-backed fit and is not offered.
+ */
+export type OffIndexArgs = {
+  userId: string;
+  deckId: string;
+  commanderOracleIds: readonly string[];
+  colorIdentity: readonly string[];
+  inDeck: ReadonlySet<string>;
+  limits: { capCents: number | null; sets: readonly string[] };
+  /** Cards already offered by an earlier tier (the index cards and the focus candidates), never offered twice. */
+  exclude?: ReadonlySet<string>;
+  /** The room this tier fills: at most `OWNED_OFF_INDEX_MAX`, and what is left under `OWNED_SHORTLIST_MAX`. */
+  max?: number;
+  env: NodeJS.ProcessEnv;
+};
+
+/** How many neighbour commanders rank the second tier. */
+export const NEIGHBOUR_COMMANDERS = 20;
+
+/** The neighbour commanders: inside the identity, not the deck's own, most index rows on the deck's cards first. */
+export function neighbourQuery(q: Reader, args: Pick<OffIndexArgs, "commanderOracleIds" | "colorIdentity" | "inDeck">) {
+  return q
+    .select({ commanderOracleId: commanderSupportCards.commanderOracleId, overlap: sql<number>`count(*)::int` })
+    .from(commanderSupportCards)
+    .innerJoin(cards, eq(cards.oracleId, commanderSupportCards.commanderOracleId))
+    .where(and(
+      sql`${cards.colorIdentity} <@ ${sql.param([...args.colorIdentity])}::text[]`,
+      sql`${commanderSupportCards.commanderOracleId} <> all(${sql.param([...args.commanderOracleIds])}::uuid[])`,
+      sql`${commanderSupportCards.oracleId} = any(${sql.param([...args.inDeck])}::uuid[])`,
+    ))
+    .groupBy(commanderSupportCards.commanderOracleId)
+    // The id breaks ties, so the same deck always reads the same neighbours.
+    .orderBy(sql`count(*) desc`, commanderSupportCards.commanderOracleId)
+    .limit(NEIGHBOUR_COMMANDERS);
+}
+
+/**
+ * Every owned card off the index that passes the catalog filters, with its two ranking sums. A single-table select, so
+ * every correlated subquery aliases its own table and qualifies the outer one (`${cards}.oracle_id`): Drizzle drops the
+ * qualification of a bare column here, and `csc.oracle_id = "oracle_id"` would compare csc with itself.
+ */
+export function offIndexQuery(q: Reader, args: Pick<OffIndexArgs, "userId" | "commanderOracleIds" | "colorIdentity" | "inDeck" | "limits"> & { neighbours: readonly string[] }) {
+  const identity = sql.param([...args.colorIdentity]);
+  const commanders = sql.param([...args.commanderOracleIds]);
+  return q
+    .select({
+      oracleId: cards.oracleId,
+      name: cards.name,
+      typeLine: cards.typeLine,
+      neighbourInclusion: sql<number | null>`(select sum(csc.inclusion)::float8 from ${commanderSupportCards} csc where csc.oracle_id = ${cards}.oracle_id and csc.commander_oracle_id = any(${sql.param([...args.neighbours])}::uuid[]))`,
+      identityInclusion: sql<number | null>`(select sum(csc.inclusion)::float8 from ${commanderSupportCards} csc join ${cards} cc on cc.oracle_id = csc.commander_oracle_id where csc.oracle_id = ${cards}.oracle_id and cc.color_identity <@ ${identity}::text[])`,
+    })
+    .from(cards)
+    .where(and(
+      sql`${cards}.commander_legal = true`,
+      // `isBasicLand`'s own word test (grouping.ts): "Basic Snow Land" is a basic too.
+      sql`${cards}.type_line !~ '\\yBasic\\y'`,
+      sql`${cards}.color_identity <@ ${identity}::text[]`,
+      ...(args.inDeck.size > 0 ? [sql`${cards}.oracle_id <> all(${sql.param([...args.inDeck])}::uuid[])`] : []),
+      sql`${cards}.oracle_id <> all(${commanders}::uuid[])`,
+      sql`${printedIn(sql`${cards}.oracle_id`, args.limits.sets)}`,
+      sql`not exists (select 1 from ${cards} twin where twin.name = ${cards}.name and twin.oracle_id <> ${cards}.oracle_id)`,
+      sql`exists (select 1 from ${collectionItems} ci where ci.user_id = ${args.userId} and ci.oracle_id = ${cards}.oracle_id)`,
+      // Off this commander's index: those cards are the first tier's.
+      sql`not exists (select 1 from ${commanderSupportCards} csc where csc.oracle_id = ${cards}.oracle_id and csc.commander_oracle_id = any(${commanders}::uuid[]))`,
+      // On some list inside the identity, or it would score nothing on both sums (the neighbours sit inside the identity).
+      sql`exists (select 1 from ${commanderSupportCards} csc join ${cards} cc on cc.oracle_id = csc.commander_oracle_id where csc.oracle_id = ${cards}.oracle_id and cc.color_identity <@ ${identity}::text[])`,
+    ));
+}
+
+export type OffIndexRow = { oracleId: string; name: string; neighbourInclusion: number | null; identityInclusion: number | null };
+
+const score = (n: number | null) => (n === null ? 0 : Number(n) || 0);
+
+/** The second tier's order: neighbour inclusion, then identity-wide inclusion, then the name; a card scoring zero on both
+ *  is dropped. Pure, and nothing about owning. */
+export function rankOffIndex<T extends OffIndexRow>(rows: readonly T[]): T[] {
+  return rows
+    .filter((r) => score(r.neighbourInclusion) > 0 || score(r.identityInclusion) > 0)
+    .sort((a, b) => score(b.neighbourInclusion) - score(a.neighbourInclusion)
+      || score(b.identityInclusion) - score(a.identityInclusion)
+      || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+}
+
+/** The off-index tier alone, for a caller that never asks whether it is the whole tier. */
+export async function loadOwnedOffIndex(args: OffIndexArgs, read: Reader = db): Promise<OwnedCandidate[]> {
+  return (await readOwnedOffIndex(args, read)).cards;
+}
+
+/**
+ * The off-index tier and whether it is COMPLETE: every ranked card was tested and the tier stayed under its room, so it
+ * holds every owned off-index card that scores. A tier that filled its room is the top of a longer list, and one given no
+ * room was never read: neither is complete. Only a complete tier lets a v2 run call its owned pool spent.
+ */
+export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): Promise<{ cards: OwnedCandidate[]; complete: boolean }> {
+  const max = Math.min(args.max ?? OWNED_OFF_INDEX_MAX, OWNED_OFF_INDEX_MAX);
+  if (max <= 0) return { cards: [], complete: false };
+  if (args.commanderOracleIds.length === 0) return { cards: [], complete: true };
+  const neighbours = args.inDeck.size > 0 ? (await neighbourQuery(read, args)).map((r) => r.commanderOracleId) : [];
+  const exclude = args.exclude ?? new Set<string>();
+  const ranked = rankOffIndex((await offIndexQuery(read, { ...args, neighbours })).filter((r) => !exclude.has(r.oracleId)));
+
+  const capCents = args.limits.capCents;
+  const out: OwnedCandidate[] = [];
+  // As the focus candidates do: the free-copy and price tests need other tables' reads, so they run over the ranked list
+  // a slice at a time until the tier is full, and a top slice claimed elsewhere never leaves it short.
+  const SLICE = max * 3;
+  for (let at = 0; at < ranked.length && out.length < max; at += SLICE) {
+    const slice = ranked.slice(at, at + SLICE);
+    const ids = slice.map((r) => r.oracleId);
+    const [availability, priced] = await Promise.all([
+      loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.deckId, env: args.env }),
+      capCents === null ? null : loadPrices(ids),
+    ]);
+    for (const r of slice) {
+      const free = availability.get(r.oracleId);
+      if (free !== undefined && free.free <= 0) continue;
+      if (priced !== null && capCents !== null) {
+        const fact = priced.prices.get(r.oracleId) ?? null;
+        const cents = fact ? priceOf(fact, priceState(fact, priced.newestAsOf)) : null;
+        if (cents !== null && cents > capCents) continue;
+      }
+      out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine });
+      if (out.length >= max) break;
+    }
+  }
+  return { cards: out, complete: out.length < max };
 }

@@ -148,7 +148,7 @@ export type V2RunReport = {
   target?: { add: number; cut: number };
   /** The restriction that bound a short list (§5.5), or null when none did. */
   shortReason?: { add: ShortReason | null; cut: ShortReason | null };
-  /** An owned-only run used every card on its owned shortlist (`V2List.poolExhausted`): its additions are every owned
+  /** An owned-only run used every card of its complete owned pool, both tiers (`V2List.poolExhausted`): its additions are every owned
    *  card that fits, and a short additions list is bound by owning (`shortReason.add` is `notOwned`). Absent otherwise. */
   poolExhausted?: true;
   cutsFailed?: { errorClass: string } | null;

@@ -183,6 +183,35 @@ describe("limits in the prompt", () => {
       expect(off.system).not.toContain("Cards the player owns");
     });
 
+    // Prompt v12: a second owned list, cards off the commander's index ranked by its neighbour commanders.
+    const offIndex = [{ oracleId: "o1", name: "Sol Ring", typeLine: "Artifact" }, { oracleId: "o2", name: "Swords to Plowshares", typeLine: "Instant" }];
+    const SECOND = "Other cards the player owns that fit this deck's colors:\n- Sol Ring (Artifact)\n- Swords to Plowshares (Instant)";
+    const BOTH_RULE = 'Every suggested add must be one of the cards listed under "Cards the player owns that fit this deck" or under "Other cards the player owns that fit this deck\'s colors". Prefer the first list: draw from the second only when the first has no card that gives the deck what it needs. Choose among them by what the deck needs.';
+
+    it("lists the second tier after the first, in the order given, and names both lists in the rule, preferring the first", () => {
+      const { system, user } = buildPrompt({ ...owned, ownedOffIndex: offIndex });
+      expect(user).toContain("- Akroma's Will (Instant)\n\n" + SECOND);
+      for (const text of [system, user]) {
+        expect(text).toContain(BOTH_RULE);
+        expect(text).not.toContain('listed under "Cards the player owns that fit this deck". Choose');
+      }
+    });
+
+    it("sends no second section, and the one-list rule, when the second tier is empty or absent", () => {
+      for (const p of [owned, { ...owned, ownedOffIndex: [] }]) {
+        const { system, user } = buildPrompt(p);
+        expect(user).not.toContain("Other cards the player owns");
+        expect(system).not.toContain("Other cards the player owns");
+        expect(system).toContain('Every suggested add must be one of the cards listed under "Cards the player owns that fit this deck". Choose among them by what the deck needs.');
+      }
+    });
+
+    it("shows the first list as none when only the second tier has cards", () => {
+      const { user } = buildPrompt({ ...owned, ownedCandidates: undefined, ownedOffIndex: offIndex });
+      expect(user).toContain("(the ones most decks with this commander play first):\n- none\n\n" + SECOND);
+      expect(user).toContain(BOTH_RULE);
+    });
+
     it("asks for cards to buy when nothing the player owns fits, keeping the cap", () => {
       const none = { ...pack, limits: { capCents: 300, sets: [], ownedOnly: false }, ownedNone: true };
       const { system, user } = buildPrompt(none);
@@ -475,6 +504,30 @@ describe("buildPromptV2", () => {
     expect(buildPromptV2(withFocus, { ...stage, list: "cuts" }).system).toContain(line);
     expect(buildPrompt(withFocus).system).not.toContain(line);
     expect(buildPromptV2(pack, { ...stage, list: "cuts" }).system).not.toContain(line);
+  });
+
+  // Prompt v12: the owned lists are what the additions choose from, so only the additions calls (and their refill) see them.
+  it("sends the owned lists to the additions calls only, never to a cut call or its refill", () => {
+    const owned = {
+      ...pack, limits: { capCents: null, sets: [], ownedOnly: true },
+      ownedCandidates: [{ oracleId: "a", name: "Lightning Greaves", typeLine: "Artifact" }],
+      ownedOffIndex: [{ oracleId: "o", name: "Thought Vessel", typeLine: "Artifact" }],
+    };
+    const refill = { kept: ["Cultivate"], rejected: [] };
+    for (const p of [buildPromptV2(owned, { ...stage, list: "additions" }), buildPromptV2(owned, { ...stage, list: "additions", refill })]) {
+      expect(p.user).toContain("Cards the player owns that fit this deck (the ones most decks with this commander play first):\n- Lightning Greaves (Artifact)");
+      expect(p.user).toContain("Other cards the player owns that fit this deck's colors:\n- Thought Vessel (Artifact)");
+      expect(p.system).toContain("Prefer the first list");
+    }
+    for (const p of [buildPromptV2(owned, { ...stage, list: "cuts", comingIn: ["X"] }), buildPromptV2(owned, { ...stage, list: "cuts", comingIn: ["X"], refill })]) {
+      for (const text of [p.system, p.user]) {
+        expect(text).not.toContain("Lightning Greaves");
+        expect(text).not.toContain("Thought Vessel");
+        expect(text).not.toContain("Cards the player owns that fit");
+        expect(text).not.toContain("Other cards the player owns");
+      }
+      expect(p.user).toContain("Every suggested add must be a card the player already owns.");
+    }
   });
 
   it("changes only its own lines: every other line of v10's system message is there, in order", () => {
