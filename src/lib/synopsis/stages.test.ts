@@ -26,6 +26,8 @@ import {
   stagesChecks,
   stagesResponseSchemaWireV3,
   statedLandNumbers,
+  inexactLandCounts,
+  figuresInContext,
   docFromChecked,
   docFromStagesReply,
   earlyMaxManaValue,
@@ -383,6 +385,16 @@ const withCurve = (mvs: number[], extra: Partial<SynopsisFacts> = {}): SynopsisF
 };
 
 describe("iteration 3: the deck's own land number", () => {
+  it("keeps a transforming card with a land back on the curve, and leaves a modal land off it", () => {
+    const extra = (c: Partial<SynopsisFacts["cards"][number]>) => ({ ...FACTS, cards: [...FACTS.cards, { oracleId: "x", name: "X", quantity: 1, categories: [], oracleText: null, ...c } as SynopsisFacts["cards"][number]] });
+    const ojer = curveFacts(extra({ typeLine: "Legendary Creature \u2014 God // Legendary Land", layout: "transform", manaValue: 6 }));
+    expect(ojer.nonland).toBe(6);
+    expect(ojer.fivePlus).toBe(2);
+    const modal = curveFacts(extra({ typeLine: "Sorcery // Land", layout: "modal_dfc", manaValue: 3 }));
+    expect(modal.nonland).toBe(5);
+    // Facts stored before layout was carried still read a land on either face as a land drop.
+    expect(curveFacts(extra({ typeLine: "Sorcery // Land", manaValue: 3 })).nonland).toBe(5);
+  });
   it("reads the curve off nonland, non-commander cards by quantity", () => {
     const c = curveFacts(FACTS);
     expect(c).toEqual({ lands: 37, ramp: 10, nonland: 5, averageManaValue: 2.6, fivePlus: 1, twoOrLess: 3, commanderManaValue: 4, expectedLandsInSeven: 2.62 });
@@ -422,6 +434,14 @@ describe("iteration 3: the deck's own land number", () => {
     expect(statedLandNumbers("Keep 3 of its 37 lands.", 37)).toEqual([3]);
     expect(statedLandNumbers("Keep 5 lands on 37 lands.", 37)).toEqual([5]);
   });
+  it("reads both ends of a dashed range, and finds every range or open-ended count", () => {
+    expect(statedLandNumbers("Keep 2\u20134 lands.")).toEqual([2, 4]);
+    expect(statedLandNumbers("Keep 2-4 lands.")).toEqual([2, 4]);
+    for (const t of ["Keep 2\u20134 lands.", "Keep 2-4 lands.", "Keep 2 to 4 lands.", "Keep three or four lands.", "Keep 4 or more lands.", "Keep 4 or fewer lands.", "Keep at least 4 lands.", "Keep 4 lands or more.", "Keep 4+ lands."]) {
+      expect(inexactLandCounts(t), t).not.toEqual([]);
+    }
+    expect(inexactLandCounts("Keep 4 lands: a four-land hand on 37 lands.")).toEqual([]);
+  });
 });
 
 describe("iteration 3: the land line check", () => {
@@ -449,6 +469,12 @@ describe("iteration 3: the land line check", () => {
     expect(checkLandKeep(asShape3("Keep 4 of its 37 lands: the curve is high."), FACTS, land).offenders).toEqual([]);
     expect(checkLandKeep(asShape3("Keep 3 lands: top-heavy on 37 lands."), FACTS, land).offenders).toEqual(["states 3 lands, not the deck's 4", "states a figure the app did not give: 3"]);
   });
+  it("fails a range or an open-ended count that includes the deck's number", () => {
+    for (const t of ["Keep 2\u20134 lands: the curve is high.", "Keep 4 or more lands: the curve is high.", "Keep at least 4 lands: the curve is high.", "Keep 4 or fewer lands: the curve is high."]) {
+      expect(checkLandKeep(asShape3(t), FACTS, land).pass, t).toBe(false);
+      expect(checkLandKeep(asShape3(t), FACTS, land).offenders.some((o) => o.startsWith("states a range or an open-ended count")), t).toBe(true);
+    }
+  });
   it("tables the numbers stated, and says whether they differ across decks and each deck states its own", () => {
     const row = (id: string, target: number, stated: number | null) => ({ id, name: id, kind: "precon" as const, target, stated, why: "", curve: land.curve });
     const t = landKeepTable([row("a", 4, 4), row("b", 3, 3), row("c", 3, 3)]);
@@ -464,13 +490,32 @@ describe("iteration 3: no generic mulligan line", () => {
       r.primer.mulligan.keep = [{ text: "[[Satyr Wayfinder]] with a way to sacrifice it.", evidence: ["c2"] }];
       r.primer.mulligan.sendBack = [{ text: "A hand with no early plays.", evidence: [] }, { text: "Fewer than 10 ramp pieces in sight.", evidence: [] }];
     });
-    const res = checkMulliganSpecific(d, FACTS, null);
+    const res = checkMulliganSpecific(d, FACTS, landKeepNumber(FACTS));
     expect(res.pass).toBe(false);
     expect(res.offenders).toEqual([{ where: "sendBack[0]", text: "A hand with no early plays." }]);
   });
+  it("does not count a bare number that only equals a figure; counts it tied to a land or curve figure", () => {
+    // 4 is the commander's mana value in FACTS, so equality alone used to pass this.
+    const bare = edit((r) => { r.primer.mulligan.keep = [{ text: "A hand with four spells.", evidence: [] }]; r.primer.mulligan.sendBack = [{ text: "A hand of 4 creatures and no plan.", evidence: [] }]; });
+    expect(checkMulliganSpecific(bare, FACTS, landKeepNumber(FACTS)).offenders.map((o) => o.where)).toEqual(["keep[0]", "sendBack[0]"]);
+    const tied = edit((r) => { r.primer.mulligan.keep = [{ text: "Two of the deck's 10 ramp pieces.", evidence: [] }]; r.primer.mulligan.sendBack = [{ text: "A hand whose cheapest spell costs 4.", evidence: [] }]; });
+    expect(checkMulliganSpecific(tied, FACTS, landKeepNumber(FACTS)).offenders).toEqual([]);
+    expect(figuresInContext("A hand with four spells.")).toEqual([]);
+    expect(figuresInContext("Keep 3 lands and some 2-drops; [[Meren]] costs 4.")).toEqual([3, 2, 4]);
+  });
+  it("reads today's lines against the same figures as the new ones", () => {
+    const reply = goodReply();
+    reply.landKeep = { text: "Keep 2 lands: the curve is low.", evidence: [] };
+    reply.primer.mulligan.keep = [{ text: "[[Satyr Wayfinder]] early.", evidence: ["c2"] }];
+    reply.primer.mulligan.sendBack = [{ text: "[[Viscera Seer]] with no fodder.", evidence: ["c3"] }];
+    const oldDoc = { ...docFromChecked(OLD), keep: [{ text: "A hand with 2 lands." }], sendBack: [] };
+    const c = stagesChecks({ reply, shownNew: docShownNew(OLD, reply, 3), oldDoc, facts: FACTS, alternates: [], shape: 3, kind: "player deck" });
+    // 2 is the land number, a figure only the land rule gives: today's line is read against it too.
+    expect(c.mulliganSpecificToday?.offenders).toEqual([]);
+  });
   it("does not count the hand's 7 as specific", () => {
     const d = edit((r) => { r.primer.mulligan.keep = [{ text: "A 7-card hand with early plays.", evidence: [] }]; });
-    expect(checkMulliganSpecific(d, FACTS, null).offenders.map((o) => o.where)).toContain("keep[0]");
+    expect(checkMulliganSpecific(d, FACTS, landKeepNumber(FACTS)).offenders.map((o) => o.where)).toContain("keep[0]");
   });
 });
 

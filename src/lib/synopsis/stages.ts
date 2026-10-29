@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { refIndex } from "./claims";
 import { deckNameIndex, HAND_SIZE, normalizeName, type FactCard, type SynopsisFacts } from "./facts";
+import { isLandFace, playableAsLand } from "../cards/facet";
 import { CHAR_BUDGETS } from "./limits";
 import { synopsisResponseSchemaV8Wire } from "./response-schema";
 import type { CheckedSynopsis } from "./types";
@@ -386,14 +387,20 @@ export type CurveFacts = {
   expectedLandsInSeven: number;
 };
 
-/** A card with a land on either face is left off the curve (a spell // land modal card is a land drop, as `landCapable` counts it). */
-const isLand = (c: Pick<FactCard, "typeLine">) => /\bLand\b/.test(c.typeLine);
+/**
+ * A card that takes a land drop is left off the curve: a land face, or a modal double-faced card with
+ * a land back (`playableAsLand`), which `landCapable` (`facts.lands`) already counts. A transforming
+ * card with a land back (Ojer Axonil) is cast as its front and only flips, so it stays on the curve.
+ * Facts built before `layout` was carried fall back to reading a land on either face.
+ */
+const takesLandDrop = (c: Pick<FactCard, "typeLine" | "layout">) =>
+  c.layout === undefined ? /\bLand\b/.test(c.typeLine) : isLandFace(c.typeLine) || playableAsLand(c.typeLine, c.layout);
 
 export function curveFacts(facts: Pick<SynopsisFacts, "cards" | "commanders" | "lands" | "ramp" | "commanderManaValues">): CurveFacts {
   const deck = deckOf(facts);
   let n = 0, sum = 0, fivePlus = 0, twoOrLess = 0;
   for (const c of facts.cards) {
-    if (deck.commanders.has(c.oracleId) || isLand(c) || c.manaValue === undefined) continue;
+    if (deck.commanders.has(c.oracleId) || takesLandDrop(c) || c.manaValue === undefined) continue;
     n += c.quantity;
     sum += c.manaValue * c.quantity;
     if (c.manaValue >= 5) fivePlus += c.quantity;
@@ -487,9 +494,27 @@ export function statedLandNumbers(text: string, deckLands?: number): number[] {
   const val = (x: string) => (/^\d+$/.test(x) ? Number(x) : LAND_COUNT_WORDS[x.toLowerCase()]!);
   const ofTotal = new RegExp(`\\b${W}\\s+of\\s+(?:its|the(?:\\s+deck's)?|your|this\\s+deck's)\\s+(\\d+)\\s+lands\\b`, "gi");
   for (const m of bare.matchAll(ofTotal)) if (deckLands !== undefined && val(m[2]) === deckLands) out.push(val(m[1]));
-  const re = new RegExp(`\\b${W}(?:\\s+(?:to|or)\\s+${W})?(?:\\s+|-)(?:or\\s+more\\s+)?lands?\\b`, "gi");
+  const re = new RegExp(`\\b${W}(?:(?:\\s*[-\u2013\u2014]\\s*|\\s+(?:to|or)\\s+)${W})?(?:\\s+|-)(?:or\\s+(?:more|fewer|less)\\s+)?lands?\\b`, "gi");
   for (const m of bare.matchAll(re)) for (const x of [m[1], m[2]]) if (x !== undefined && val(x) !== deckLands) out.push(val(x));
   return out;
+}
+
+/**
+ * The land counts a line states as a RANGE or an open-ended bound rather than one exact number:
+ * "2-4 lands" (hyphen, en or em dash), "3 to 4 lands", "3 or 4 lands", "4 or more lands", "4 or
+ * fewer lands", "at least 4 lands", "4+ lands". Each is the phrase as written.
+ */
+export function inexactLandCounts(text: string): string[] {
+  const bare = text.replace(/\[\[[^\[\]]+\]\]/g, " ");
+  const W = `(?:\\d+|${Object.keys(LAND_COUNT_WORDS).join("|")})`;
+  const forms = [
+    `\\b${W}(?:\\s*[-\u2013\u2014]\\s*|\\s+(?:to|or)\\s+)${W}(?:\\s+|-)lands?\\b`,
+    `\\b${W}(?:\\s+|-)(?:or\\s+(?:more|fewer|less)\\s+)lands?\\b`,
+    `\\b${W}\\s+lands?\\s+or\\s+(?:more|fewer|less)\\b`,
+    `\\b(?:at\\s+(?:least|most)|up\\s+to|no\\s+(?:more|fewer|less)\\s+than|more\\s+than|fewer\\s+than|less\\s+than)\\s+${W}(?:\\s+|-)lands?\\b`,
+    `\\b\\d+\\+\\s*lands?\\b`,
+  ];
+  return forms.flatMap((f) => [...bare.matchAll(new RegExp(f, "gi"))].map((m) => m[0]));
 }
 
 const REASON_WORDS = /\b(curve|costs?|mana value|expensive|cheap|top-heavy|heavy|low|ramp|five or more|two or less)\b/i;
@@ -507,6 +532,8 @@ export function checkLandKeep(doc: OverviewDoc, facts: Pick<SynopsisFacts, "card
   if (!l) return { pass: false, offenders: ["no land line"], stated: null, text: null, ...base };
   if (doc.landKeep.length > 1) offenders.push(`${doc.landKeep.length} land lines`);
   const stated = [...new Set(statedLandNumbers(l.text, land.curve.lands))];
+  const inexact = inexactLandCounts(l.text);
+  if (inexact.length > 0) offenders.push(`states a range or an open-ended count, not one number: ${inexact.join("; ")}`);
   if (stated.length === 0) offenders.push("states no land count");
   if (stated.length > 1) offenders.push(`states more than one land count (${stated.join(", ")})`);
   if (stated.length === 1 && stated[0] !== land.lands) offenders.push(`states ${stated[0]} lands, not the deck's ${land.lands}`);
@@ -543,20 +570,41 @@ export function landKeepTable(rows: readonly LandRow[]): { rows: LandRow[]; dist
   };
 }
 
+const SPECIFIC_NUMBER_WORDS: Record<string, number> = { ...LAND_COUNT_WORDS, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
+/** A word that ties a number after it to a land or curve figure ("4 lands", "2-drops", "10 ramp pieces", "15 cards cost five or more"). */
+const FIGURE_AFTER = /^(lands?|drops?|ramp|mana|costs?|costing|curve)$/;
+/** A word that ties the number after it to a curve figure: "costs 4", "mana value 6". */
+const FIGURE_BEFORE = /^(costs?|costing|value|mv)$/;
+
+/** The numbers a line ties to a land or curve figure by the words around them, outside card marks. */
+export function figuresInContext(text: string): number[] {
+  const words = rendered(text.replace(/\[\[[^\[\]]+\]\]/g, " ")).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const out: number[] = [];
+  words.forEach((w, i) => {
+    const n = /^\d+$/.test(w) ? Number(w) : SPECIFIC_NUMBER_WORDS[w];
+    if (n === undefined) return;
+    if (words.slice(i + 1, i + 5).some((x) => FIGURE_AFTER.test(x)) || words.slice(Math.max(0, i - 2), i).some((x) => FIGURE_BEFORE.test(x))) out.push(n);
+  });
+  return out;
+}
+
 /**
  * NO GENERIC MULLIGAN LINE: every keep, send-back and land line names a card of this deck or states a
- * deck-specific number (the land number and the figures behind it, the deck's lands, ramp or
- * commander cost; the hand's 7 and a 0 are not specific). A line with neither is true of any deck.
+ * deck-specific number IN CONTEXT: one of the deck's figures (its lands, ramp, commander cost, the
+ * land number, and the counts at five or more and two or less; the hand's 7 and a 0 are not
+ * specific) tied by the words around it to a land or curve figure ("4 lands", "costs 6"). A bare
+ * number that happens to equal a figure ("a hand with four spells") is not specific. Today's lines
+ * and the new ones are read against the SAME figures, so the comparison is even.
  */
-export function checkMulliganSpecific(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders" | "lands" | "ramp" | "commanderManaValues">, land: LandKeep | null): CheckResult<{ where: string; text: string }> {
+export function checkMulliganSpecific(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders" | "lands" | "ramp" | "commanderManaValues">, land: LandKeep): CheckResult<{ where: string; text: string }> {
   const deck = deckOf(facts);
-  const specific = new Set([facts.lands, facts.ramp, ...facts.commanderManaValues, ...(land ? [land.lands, land.curve.fivePlus, land.curve.twoOrLess] : [])]);
+  const specific = new Set([facts.lands, facts.ramp, ...facts.commanderManaValues, land.lands, land.curve.fivePlus, land.curve.twoOrLess]);
   specific.delete(HAND_SIZE);
   specific.delete(0);
   const offenders: { where: string; text: string }[] = [];
   const read = (key: "landKeep" | "keep" | "sendBack") => doc[key].forEach((l, i) => {
     const card = marksIn(l.text).some((m) => deck.names.has(normalizeName(m)));
-    const num = figuresIn(l.text).some((n) => specific.has(n));
+    const num = figuresInContext(l.text).some((n) => specific.has(n));
     if (!card && !num) offenders.push({ where: `${key}[${i}]`, text: l.text });
   });
   read("landKeep");
@@ -639,7 +687,7 @@ export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc;
     ...base,
     landKeep: checkLandKeep(doc, input.facts, land),
     mulliganSpecific: checkMulliganSpecific(doc, input.facts, land),
-    mulliganSpecificToday: checkMulliganSpecific(input.oldDoc, input.facts, null),
+    mulliganSpecificToday: checkMulliganSpecific(input.oldDoc, input.facts, land),
     deckKind: checkDeckKind(input.shownNew, input.kind ?? "precon"),
   };
 }

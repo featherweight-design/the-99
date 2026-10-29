@@ -25,6 +25,8 @@ export type FactCard = {
   keywords?: string[];
   /** Mana value. Optional so facts stored before it existed still read. */
   manaValue?: number;
+  /** Scryfall's layout (`modal_dfc`, `transform`, ...): whether a land back takes a land drop. Optional so facts stored before it existed still read. */
+  layout?: string;
   /** A universal staple (`src/lib/staples/universal.ts`): never a Key card (Hugh, 2026-09-24). */
   universalStaple?: boolean;
 };
@@ -172,6 +174,7 @@ export function buildSynopsisFacts(
     typeLine: c.typeLine,
     quantity: c.quantity,
     manaValue: c.cmc,
+    layout: c.layout,
     categories: CATEGORIES.filter((k) => cats.get(c.oracleId)?.has(k)),
     oracleText: oracleTexts.get(c.oracleId) ?? null,
     ...(keywords?.has(c.oracleId) ? { keywords: [...keywords.get(c.oracleId)!] } : {}),

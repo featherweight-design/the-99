@@ -174,7 +174,7 @@ if (args["list-prod-decks"]) {
       const lands = profile.counts.landCapable;
       // The facts' shape, enough for the land rule: cards with type line and mana value, the commanders, lands, ramp, keep.
       const land = landKeepNumber({
-        cards: profile.cards.map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, quantity: c.quantity, manaValue: c.cmc, categories: [], oracleText: null })),
+        cards: profile.cards.map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, quantity: c.quantity, manaValue: c.cmc, layout: c.layout, categories: [], oracleText: null })),
         commanders, lands, ramp: profile.roles.counts.ramp,
         commanderManaValues: profile.commanderOracleIds.map((id) => byId.get(id)?.cmc).filter((n): n is number => typeof n === "number"),
         keep: keepableLands(lands),
