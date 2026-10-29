@@ -372,28 +372,6 @@ function CartBody({
   const total = cartTotal(cart.decks, selected);
   const links = useMemo(() => checkoutLinks(cart.lines, selected), [cart.lines, selected]);
   const deckCount = cart.decks.filter((d) => selected.has(d.id)).length;
-  // The list box's bottom fade draws only while the box has more below it (addendum R3 §3), read on scroll and, through
-  // one observer on the box, on resize. The phone's box does not scroll, so it never has more (and draws no fade).
-  const listRef = useRef<HTMLDivElement>(null);
-  const [more, setMore] = useState(false);
-  const measureMore = () => {
-    const el = listRef.current;
-    if (el) setMore(hasMoreBelow(el));
-  };
-  // A render can change what the box holds (a search, a fold, a view) without resizing it: read again after each one.
-  // `setMore` with the same value does not render again.
-  useEffect(() => {
-    const el = listRef.current;
-    if (el) setMore(hasMoreBelow(el));
-  });
-  const listShown = cart.decks.length > 0 && deckCount > 0;
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => setMore(hasMoreBelow(el)));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [listShown]);
   // An explicit `?view=deck` or `?deck=` arrival is honoured with one deck too; only the switch
   // hides there (E1), since both views list the same cards.
   const byDeck = view === "deck";
@@ -426,6 +404,29 @@ function CartBody({
   const drawnIds = useMemo(() => new Set(byDeck
     ? deckGroups.filter((g) => selected.has(g.deck.id) && open.has(g.deck.id)).flatMap((g) => g.lines.map((l) => l.oracleId))
     : lines.map((l) => l.oracleId)), [byDeck, deckGroups, selected, open, lines]);
+
+  // The list box's bottom fade draws only while the box has more below it (addendum R3 §3), read on scroll and, through
+  // one observer on the box, on resize. The phone's box does not scroll, so it never has more (and draws no fade).
+  const listRef = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  const measureMore = () => {
+    const el = listRef.current;
+    if (el) setMore(hasMoreBelow(el));
+  };
+  // What the box holds can change (a search, a filter, a fold, a view, a read landing, a purchase) without resizing it:
+  // read again whenever it does.
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) setMore(hasMoreBelow(el));
+  }, [view, lines, deckGroups, open, friendShut, spares, gotIt]);
+  const listShown = cart.decks.length > 0 && deckCount > 0;
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setMore(hasMoreBelow(el)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [listShown]);
 
   const toggle = (id: string) => setSelected((prev) => {
     const next = new Set(prev);
