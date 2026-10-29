@@ -127,6 +127,8 @@ export function PinDock({
   // it (the returned header, the back bar, the notch). The header's mode is watched too: `useQuickReturn` writes
   // `--header-offset` in its own frame but `data-quick-return` only on React's commit, so a read in between sees the
   // old mode, and at the page's top no further scroll comes to correct it.
+  // The back bar rides the header's slide (UNDER_HEADER), so a read during that slide sees its edge mid-flight, and once
+  // the scroll stops nothing else reads again: the end of its slide schedules one more read (Copilot round 4).
   const atTop = place.at === "top";
   useEffect(() => {
     if (!atTop) return;
@@ -145,8 +147,15 @@ export function PinDock({
     const header = document.querySelector("header[data-quick-return]");
     const modes = header ? new MutationObserver(onScroll) : null;
     if (header && modes) modes.observe(header, { attributes: true, attributeFilter: ["data-quick-return"] });
+    const onSlideEnd = (e: Event) => {
+      if (e.target instanceof Element && e.target.matches("[data-about-back]")) onScroll();
+    };
+    window.addEventListener("transitionend", onSlideEnd);
+    window.addEventListener("transitioncancel", onSlideEnd);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("transitionend", onSlideEnd);
+      window.removeEventListener("transitioncancel", onSlideEnd);
       modes?.disconnect();
       if (frame !== null) cancelAnimationFrame(frame);
     };

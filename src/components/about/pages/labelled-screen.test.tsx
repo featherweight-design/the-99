@@ -434,6 +434,37 @@ describe("LabelledScreen docks a pressed pin's label on a phone (R4 board 3)", (
       done();
     });
 
+    it("measures again when the back bar's slide ends, so a mid-slide edge is never kept as the floor (Copilot round 4)", () => {
+      const raf = frames();
+      const boxes = { two: [300, 340], three: [700, 730], css: 12, bar: [0, 79], back: [79, 120] as number[] };
+      const done = stage(boxes);
+      const header = document.querySelector("header[data-quick-return]")!;
+      header.setAttribute("data-quick-return", "shown");
+      const { container } = draw();
+      pin(phoneOf(container), "a/s/three");
+      // The header leaves: the scroll's frame reads the back bar halfway up its slide.
+      header.setAttribute("data-quick-return", "away");
+      boxes.back = [59, 100];
+      scroll();
+      raf.flush();
+      expect(floorOf(container)).toBe("100px");
+      // The slide ends with no further scroll: its end alone schedules the read, and the floor drops to the bar's rest.
+      boxes.back = [0, 47];
+      const back = document.querySelector("[data-about-back]")!;
+      act(() => {
+        back.dispatchEvent(new Event("transitionend", { bubbles: true }));
+      });
+      expect(raf.pending()).toBe(1);
+      raf.flush();
+      expect(floorOf(container)).toBe("47px");
+      // A transition ending anywhere else reads nothing.
+      act(() => {
+        dockOf(container).dispatchEvent(new Event("transitionend", { bubbles: true }));
+      });
+      expect(raf.pending()).toBe(0);
+      done();
+    });
+
     it("measures again when the header's mode commits, with no scroll", () => {
       const raf = frames();
       const boxes = { two: [300, 340], three: [700, 730], css: 12, bar: [0, 79] };
