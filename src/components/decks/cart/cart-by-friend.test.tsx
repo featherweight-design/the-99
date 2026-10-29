@@ -1002,6 +1002,41 @@ describe("the Friend filter (v2 PR 9)", () => {
       expect(resultLine()).toBe(copy.result.filtered(0, 4));
     });
 
+    // Max's last card (Jace) bought under his filter: By card draws its held slot, By deck no row (a slot has no group),
+    // By friend Max's panel holding the slot. Every figure is a count of the rows the view on screen draws (`viewRows`).
+    const VIEWS = [
+      { view: "card", radio: copy.view.byCard, rows: 1, of: 4, line: copy.result.filtered(1, 4) },
+      { view: "deck", radio: copy.view.byDeck, rows: 0, of: 3, line: copy.result.filtered(0, 3) },
+      { view: "friend", radio: copy.view.byFriend, rows: 1, of: 4, line: copy.result.byFriend(1, 1) },
+    ] as const;
+    const drawnRows = (view: string) => {
+      if (document.querySelector("[data-cart-no-match]")) return 0;
+      if (view === "friend") return new Set(panels().flatMap((p) => p.getAttribute("data-friend") ? within(p).getAllByRole("listitem").map((li) => li.textContent) : [])).size;
+      return list().getAllByRole("listitem").length;
+    };
+    for (const width of ["phone", "desktop"] as const) {
+      for (const c of VIEWS) {
+        it(`agrees with the rows By ${c.view} draws after the purchase, at ${width} width`, async () => {
+          await buyJaceAndReread("p-Max", width === "desktop");
+          fireEvent.click(screen.getByRole("radio", { name: c.radio }));
+          expect(drawnRows(c.view)).toBe(c.rows);
+          expect(resultLine()).toBe(c.line);
+          const none = (n: number) => (n === 0 ? "no cards" : n === 1 ? "1 card" : `${n} cards`);
+          if (width === "desktop") {
+            fireEvent.click(screen.getByRole("button", { name: /^Owned options, Any, collapsed$/ }));
+            expect(screen.getAllByRole("option").map((o) => o.getAttribute("aria-label"))).toEqual([
+              `Any, ${c.rows === 1 ? "1 card" : `${c.rows} cards`}`, "You own some, no cards", `None, ${none(c.rows)}`,
+            ]);
+          } else {
+            fireEvent.click(screen.getByRole("button", { name: "Filter cards, 1 on" }));
+            const sheet = screen.getByRole("dialog", { name: "Filters" });
+            expect(within(sheet).getByText(copy.filters.sheetMatch(c.rows, c.of))).toBeTruthy();
+            expect(within(sheet).getByRole("button", { name: copy.filters.show(c.rows) })).toBeTruthy();
+          }
+        });
+      }
+    }
+
     it("keeps both friends of a two-friend filter, and the bought card's held slot", async () => {
       await buyJaceAndReread("p-Max,p-Peter");
       expect(window.location.search).toBe("?friend=p-Max%2Cp-Peter");
