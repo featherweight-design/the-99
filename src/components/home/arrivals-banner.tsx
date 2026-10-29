@@ -16,13 +16,13 @@
 // About's line alone, with no ✕ (`closable={false}`): the checklist is itself the first-run surface.
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import { dismissArrivals } from "../../app/arrivals-actions";
 import { bannerCap, cropStyle, type AboutLaunch, type AboutLine, type BannerCrop } from "../../lib/about/banner-line";
 import { arrivalsCopy as copy } from "../../lib/copy/arrivals";
 import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
-import { aboutAcknowledged, aboutFirstRunOver, arrivalsAcknowledged, launchAcknowledged } from "./arrivals-seen";
+import { aboutAcknowledged, aboutFirstRunOver, acknowledgeHeld, arrivalsAcknowledged, launchAcknowledged } from "./arrivals-seen";
 import { ThemeRefresh } from "../about/pages/theme-refresh";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useTarget } from "../discovery/targets-provider";
@@ -90,36 +90,74 @@ function LaunchSentence({ launch }: { launch: AboutLaunch }) {
   );
 }
 
-/** The crop at one width's box size, or the diamond mark where that width has no region to show (a rule). */
-function CropBox({ crop, w, h, round, className }: { crop: BannerCrop | null; w: number; h: number; round: string; className: string }) {
-  if (!crop) {
-    return (
-      <span aria-hidden="true" className={`flex flex-none items-center justify-center ${className}`} style={{ width: w, height: h }}>
-        <Mark />
-      </span>
-    );
-  }
-  const at = cropStyle(crop, w, h);
+/** Tailwind's `md`, where the desktop capture takes over from the phone's (call 0). */
+export const CROP_MEDIA = "(min-width: 48rem)";
+/** A transparent pixel: the source at a width whose crop is not drawn, so no capture is fetched for it. */
+export const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+/** The diamond mark in a crop's place, where a width has no region to show (a rule). */
+function MarkBox({ w, h, className }: { w: number; h: number; className: string }) {
   return (
-    <span
-      aria-hidden="true"
-      data-about-crop
-      className={`relative box-content flex-none overflow-hidden border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] ${round} ${className}`}
-      style={{ width: w, height: h }}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size capture served as-is from public/ */}
-      <img src={crop.src} alt="" decoding="async" className="absolute block max-w-none" style={at} />
+    <span aria-hidden="true" className={`flex flex-none items-center justify-center ${className}`} style={{ width: w, height: h }}>
+      <Mark />
     </span>
   );
 }
 
-/** A launch's picture: the phone capture's crop below `md`, the desktop capture's from `md` (call 0). */
+/** Each size's box at each width: a launch alone (Ways-In `.bn`), or a line in the band (`.bn2`). */
+const CROP_SIZES = {
+  line: { phone: [64, 48], desktop: [56, 38], box: "h-[48px] w-[64px] md:h-[38px] md:w-[56px]", round: "rounded-[7px]" },
+  list: { phone: [44, 32], desktop: [44, 32], box: "h-[32px] w-[44px]", round: "rounded-[5px]" },
+} as const;
+
+/** Where a crop's image sits in its box at one width, as custom properties the image's classes read per breakpoint. */
+function cropVars(crop: BannerCrop | null, [w, h]: readonly [number, number], prefix: "p" | "d"): Record<string, string> {
+  if (!crop) return {};
+  const at = cropStyle(crop, w, h);
+  return { [`--${prefix}l`]: `${at.left}px`, [`--${prefix}t`]: `${at.top}px`, [`--${prefix}w`]: `${at.width}px`, [`--${prefix}h`]: `${at.height}px` };
+}
+
+/**
+ * A launch's picture: the phone capture's crop below `md`, the desktop capture's from `md` (call 0). ONE `<picture>`,
+ * so the browser fetches only the capture its width draws (two `<img>`s, one hidden by CSS, fetched both full
+ * screenshots). The box and the image's place in it switch at `md` through classes and custom properties. A width with
+ * no region (a rule, or a label no capture measured) draws the mark there, and its source is a blank pixel.
+ */
 function LaunchCrop({ launch, size }: { launch: AboutLaunch; size: "line" | "list" }) {
-  const line = size === "line";
+  const s = CROP_SIZES[size];
+  const { phone, desktop } = launch;
+  if (!phone && !desktop) {
+    return (
+      <>
+        <MarkBox w={s.phone[0]} h={s.phone[1]} className="md:hidden" />
+        <MarkBox w={s.desktop[0]} h={s.desktop[1]} className="hidden md:flex" />
+      </>
+    );
+  }
+  const shown = phone && desktop ? "" : phone ? "md:hidden" : "hidden md:flex";
   return (
     <>
-      <CropBox crop={launch.phone} w={line ? 64 : 44} h={line ? 48 : 32} round={line ? "rounded-[7px]" : "rounded-[5px]"} className="md:hidden" />
-      <CropBox crop={launch.desktop} w={line ? 56 : 44} h={line ? 38 : 32} round={line ? "rounded-[7px]" : "rounded-[5px]"} className="hidden md:flex" />
+      {!phone && <MarkBox w={s.phone[0]} h={s.phone[1]} className="md:hidden" />}
+      <span
+        aria-hidden="true"
+        data-about-crop
+        className={`relative box-content flex-none overflow-hidden border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] ${s.round} ${s.box} ${shown}`}
+        style={{ ...cropVars(phone, s.phone, "p"), ...cropVars(desktop, s.desktop, "d") } as CSSProperties}
+      >
+        <picture>
+          <source media={CROP_MEDIA} srcSet={desktop?.src ?? BLANK_PIXEL} />
+          <img
+            src={phone?.src ?? BLANK_PIXEL}
+            alt=""
+            decoding="async"
+            className={
+              "absolute block max-w-none left-[var(--pl)] top-[var(--pt)] h-[var(--ph)] w-[var(--pw)] " +
+              "md:left-[var(--dl)] md:top-[var(--dt)] md:h-[var(--dh)] md:w-[var(--dw)]"
+            }
+          />
+        </picture>
+      </span>
+      {!desktop && <MarkBox w={s.desktop[0]} h={s.desktop[1]} className="hidden md:flex" />}
     </>
   );
 }
@@ -180,7 +218,9 @@ export function ArrivalsBanner({
     // again (rule 6), and a re-mount in this document draws it again too.
     // What this banner RENDERED for the write: the server writes only those of them it still announces.
     const claimed = about?.kind === "firstRun" ? (firstRun ? about.ack : []) : launches.flatMap((l) => l.ack);
-    void dismissArrivals(arrivals?.keys ?? [], claimed).catch(() => {
+    // The About keys the write confirmed are acknowledged, and end the first run in this document: a first-run line
+    // in another payload of this document (one whose ids differ) is not drawn again after a ✕ that landed.
+    void dismissArrivals(arrivals?.keys ?? [], claimed).then((written) => acknowledgeHeld(written ?? []), () => {
       dismissed.delete(id);
     });
   };

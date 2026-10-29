@@ -78,10 +78,12 @@ describe("dismissArrivals, About's lines", () => {
   it("writes a launch the reader is still told, by its ack, with the floor", async () => {
     stub.env = { NEVER_CUT_ENABLED: "true" };
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };
-    await dismissArrivals([], [LOCK]);
+    const written = await dismissArrivals([], [LOCK]);
     expect(about.read).toHaveBeenCalledWith("user_1");
     const [, version, ids] = about.mark.mock.calls[0] as unknown as [string, number, string[]];
     expect(ids).toContain(LOCK);
+    // The keys written go back to the banner, which acknowledges them (and ends a first run) in this document.
+    expect(written).toEqual(ids);
     expect(version).toBeLessThanOrEqual(ABOUT_VERSION);
     // No arrival keys claimed: the arrival read is not made.
     expect(stub.lines).not.toHaveBeenCalled();
@@ -90,7 +92,7 @@ describe("dismissArrivals, About's lines", () => {
   it("never writes a key the page did not draw, one no longer new, or one switched off for the reader", async () => {
     stub.env = {};
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };
-    await dismissArrivals([], [LOCK, "made/up/key"]);
+    expect(await dismissArrivals([], [LOCK, "made/up/key"])).toEqual([]);
     expect(about.mark).not.toHaveBeenCalled();
     stub.env = { NEVER_CUT_ENABLED: "true" };
     about.seen = { version: ABOUT_VERSION, ids: ["x", LOCK] };

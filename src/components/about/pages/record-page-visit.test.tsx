@@ -5,7 +5,7 @@ const record = vi.hoisted(() => vi.fn(async (_area: unknown, _claimed?: unknown)
 vi.mock("../../../app/about/actions", () => ({ recordAboutPageVisit: record }));
 
 const { RecordPageVisit } = await import("./record-page-visit");
-const { launchAcknowledged, resetArrivalsAcknowledged } = await import("../../home/arrivals-seen");
+const { aboutFirstRunOver, launchAcknowledged, resetArrivalsAcknowledged } = await import("../../home/arrivals-seen");
 
 beforeEach(() => {
   resetArrivalsAcknowledged();
@@ -26,6 +26,30 @@ describe("RecordPageVisit (About visual PR 6b)", () => {
     render(<RecordPageVisit area="decks" owed={false} keys={["decks/games/log"]} claimed={[]} />);
     expect(record).not.toHaveBeenCalled();
     expect(launchAcknowledged("decks/games/log")).toBe(true);
+  });
+
+  // Review round 2: Lock on when Home rendered, off before the first visit. The baseline omits Lock's key, so the
+  // first-run line's ids are never all acknowledged, yet the reader is past their first run.
+  it("ends the first run in this document once the write confirms held keys, though the line's ids are not all written", async () => {
+    record.mockResolvedValueOnce(["home/home/ready"]);
+    render(<RecordPageVisit area="home" owed keys={["home/home/ready"]} claimed={["home/home/ready", "decks/your-deck/lock"]} />);
+    await waitFor(() => expect(aboutFirstRunOver()).toBe(true));
+    expect(launchAcknowledged("decks/your-deck/lock")).toBe(false);
+  });
+
+  it("ends the first run on the already-current path too: holding this page's keys is past it", () => {
+    render(<RecordPageVisit area="decks" owed={false} keys={["decks/games/log"]} claimed={[]} />);
+    expect(aboutFirstRunOver()).toBe(true);
+  });
+
+  it("ends nothing for an empty set, or a write that failed", async () => {
+    render(<RecordPageVisit area="decks" owed={false} keys={[]} claimed={[]} />);
+    expect(aboutFirstRunOver()).toBe(false);
+    record.mockRejectedValueOnce(new Error("offline"));
+    render(<RecordPageVisit area="home" owed keys={[]} claimed={["home/home/ready"]} />);
+    await waitFor(() => expect(record).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(aboutFirstRunOver()).toBe(false);
   });
 
   it("acknowledges nothing when the write fails, so the banner tells the reader again", async () => {

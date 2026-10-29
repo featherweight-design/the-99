@@ -24,9 +24,10 @@ import { requestSwitchEnv } from "../lib/switches/request";
  * 0123), which retires Home's cached payload, so the next load draws neither half.
  *
  * No revalidation: the banner collapses in the browser, and re-rendering Home inside this reply would pay for a
- * page the reader is already looking at. The arrivals half writes nothing while its switch is off.
+ * page the reader is already looking at. The arrivals half writes nothing while its switch is off. Returns the About
+ * keys written, which the banner acknowledges in this document (a non-empty set ends the first run there).
  */
-export async function dismissArrivals(shown: unknown, about?: unknown): Promise<void> {
+export async function dismissArrivals(shown: unknown, about?: unknown): Promise<string[]> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (upcomingPreconsEnabled(env) && Array.isArray(shown) && shown.length > 0) {
@@ -35,6 +36,10 @@ export async function dismissArrivals(shown: unknown, about?: unknown): Promise<
   }
   if (Array.isArray(about) && about.length > 0) {
     const write = aboutDismissal(about, await aboutSeen(userId), visibleSections(env));
-    if (write) await markAboutVisited(userId, write.version, write.ids);
+    if (write) {
+      await markAboutVisited(userId, write.version, write.ids);
+      return [...write.ids];
+    }
   }
+  return [];
 }

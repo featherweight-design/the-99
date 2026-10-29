@@ -15,9 +15,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 
-const { ArrivalsBanner, COLLAPSE_MS, HOME_HEADING_ID } = await import("./arrivals-banner");
+const { ArrivalsBanner, BLANK_PIXEL, COLLAPSE_MS, CROP_MEDIA, HOME_HEADING_ID } = await import("./arrivals-banner");
+const { cropStyle } = await import("../../lib/about/banner-line");
 const { Dashboard } = await import("./dashboard");
-const { acknowledgeAbout, acknowledgeArrivals, endAboutFirstRun, resetArrivalsAcknowledged } = await import("./arrivals-seen");
+const { aboutFirstRunOver, acknowledgeAbout, acknowledgeArrivals, endAboutFirstRun, resetArrivalsAcknowledged } = await import("./arrivals-seen");
 const { FirstRunChecklist } = await import("./first-run");
 
 const TRC: BannerLine = { kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 };
@@ -45,6 +46,24 @@ const DASH = {
 };
 
 const region = () => screen.queryByRole("region", { name: "New in the app" });
+
+/**
+ * A crop is ONE `<picture>`: the desktop capture as a `<source>` for `md` and up, the phone capture as the `<img>`, so
+ * each width is eligible for exactly one capture and the browser fetches only that one (two `<img>`s, one hidden by
+ * CSS, fetched both full screenshots).
+ */
+function expectOnePicture(crop: HTMLElement, phoneSrc: string, deskSrc: string) {
+  const pictures = crop.querySelectorAll("picture");
+  expect(pictures).toHaveLength(1);
+  const sources = pictures[0]!.querySelectorAll("source");
+  expect(sources).toHaveLength(1);
+  expect(sources[0]!.getAttribute("media")).toBe(CROP_MEDIA);
+  expect(sources[0]!.getAttribute("srcset")).toBe(deskSrc);
+  const imgs = crop.querySelectorAll("img");
+  expect(imgs).toHaveLength(1);
+  expect(imgs[0]!.getAttribute("src")).toBe(phoneSrc);
+  expect(imgs[0]!.parentElement!.tagName).toBe("PICTURE");
+}
 
 let reduce = false;
 beforeEach(() => {
@@ -264,15 +283,34 @@ describe("ArrivalsBanner, one launch (call 7, Ways-In “Banner · one launch”
     expect(within(r).getByRole("link", { name: "Show me" })).toHaveAttribute("href", MATCHUPS.href);
     expect(within(r).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
     expect(within(r).queryByRole("heading")).toBeNull();
-    // Both crops in the DOM, switched at md: the phone's 64x48 from the phone capture, the desktop's 56x38 from its own.
+    // One box, switched at md: the phone's 64x48 cut from the phone capture, the desktop's 56x38 from its own.
     const crops = r.querySelectorAll<HTMLElement>("[data-about-crop]");
-    expect(crops).toHaveLength(2);
-    expect(crops[0]!.className).toContain("md:hidden");
-    expect([crops[0]!.style.width, crops[0]!.style.height]).toEqual(["64px", "48px"]);
-    expect(crops[0]!.querySelector("img")!.getAttribute("src")).toBe(CROP.src);
-    expect(crops[1]!.className).toContain("hidden md:flex");
-    expect([crops[1]!.style.width, crops[1]!.style.height]).toEqual(["56px", "38px"]);
-    expect(crops[1]!.querySelector("img")!.getAttribute("src")).toBe(DCROP.src);
+    expect(crops).toHaveLength(1);
+    expect(crops[0]!.className).toContain("h-[48px] w-[64px] md:h-[38px] md:w-[56px]");
+    expectOnePicture(crops[0]!, CROP.src, DCROP.src);
+    // Each width's place in its own box, the server's `cropStyle` of that capture at that box size.
+    const vars = (k: string) => crops[0]!.style.getPropertyValue(k);
+    const p = cropStyle(CROP, 64, 48);
+    const d = cropStyle(DCROP, 56, 38);
+    expect([vars("--pl"), vars("--pt"), vars("--pw"), vars("--ph")]).toEqual([p.left, p.top, p.width, p.height].map((n) => `${n}px`));
+    expect([vars("--dl"), vars("--dt"), vars("--dw"), vars("--dh")]).toEqual([d.left, d.top, d.width, d.height].map((n) => `${n}px`));
+    const img = crops[0]!.querySelector("img")!;
+    expect(img.className).toContain("left-[var(--pl)] top-[var(--pt)] h-[var(--ph)] w-[var(--pw)]");
+    expect(img.className).toContain("md:left-[var(--dl)] md:top-[var(--dt)] md:h-[var(--dh)] md:w-[var(--dw)]");
+  });
+
+  it("fetches only one width's capture: a width with no region gets a blank pixel and the mark in its place", () => {
+    const phoneOnly = { ...MATCHUPS, key: "decks/games/phone-only", desktop: null };
+    const { unmount } = render(<ArrivalsBanner data={null} about={behind(phoneOnly)} />);
+    let crop = region()!.querySelector<HTMLElement>("[data-about-crop]")!;
+    expect(crop.className).toContain("md:hidden");
+    expectOnePicture(crop, CROP.src, BLANK_PIXEL);
+    unmount();
+    const deskOnly = { ...MATCHUPS, key: "decks/games/desk-only", phone: null };
+    render(<ArrivalsBanner data={null} about={behind(deskOnly)} />);
+    crop = region()!.querySelector<HTMLElement>("[data-about-crop]")!;
+    expect(crop.className).toContain("hidden md:flex");
+    expectOnePicture(crop, BLANK_PIXEL, DCROP.src);
   });
 
   it("keeps the diamond mark for a rule, which has no region to crop", () => {
@@ -302,7 +340,10 @@ describe("ArrivalsBanner, two or more launches (call 7, Ways-In “Banner · two
     expect(within(items[1]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", SPARES.href);
     for (const li of items) {
       const crops = li.querySelectorAll<HTMLElement>("[data-about-crop]");
-      expect([...crops].map((c) => [c.style.width, c.style.height])).toEqual([["44px", "32px"], ["44px", "32px"]]);
+      expect(crops).toHaveLength(1);
+      expect(crops[0]!.className).toContain("h-[32px] w-[44px]");
+      expect(crops[0]!.className).not.toContain("md:w-");
+      expectOnePicture(crops[0]!, CROP.src, DCROP.src);
     }
     expect(within(r).getAllByRole("button", { name: "Dismiss" })).toHaveLength(1);
   });
@@ -383,6 +424,26 @@ describe("ArrivalsBanner, About's ✕ and acknowledgements", () => {
     expect(dismiss).toHaveBeenCalledWith([], [
       "shopping/deck-shopping/spare", "shopping/deck-shopping/spare@SPARE_REQUESTS_ENABLED", "rule/replace@COLLECTION_SYNC_ENABLED",
     ]);
+  });
+
+  it("a ✕ whose write lands with About keys ends the first run in this document; one that wrote none does not", async () => {
+    dismiss.mockResolvedValueOnce(["home/home/help"] as never);
+    const first = render(<ArrivalsBanner data={null} about={firstRunLine(["home/home/help", "x-landed"])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    await act(async () => {});
+    expect(aboutFirstRunOver()).toBe(true);
+    first.unmount();
+    // Another payload of this document, its line standing for other ids: not drawn again.
+    render(<ArrivalsBanner data={null} about={firstRunLine(["home/home/help", "x-other"])} />);
+    expect(region()).toBeNull();
+  });
+
+  it("a ✕ that wrote no About key leaves the first run standing", async () => {
+    dismiss.mockResolvedValueOnce([] as never);
+    render(<ArrivalsBanner data={null} about={firstRunLine(["home/home/help", "x-none"])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    await act(async () => {});
+    expect(aboutFirstRunOver()).toBe(false);
   });
 
   it("drops a first-run line once a visit in this document ended the reader's first run (the Reference's)", () => {
