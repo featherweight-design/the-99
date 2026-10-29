@@ -58,17 +58,17 @@ function fakeSql(rows: unknown[] = []) {
 }
 
 describe("captureAboutSeen and restoreAboutSeen", () => {
-  it("captures both columns and puts both back as read", async () => {
-    const read = fakeSql([{ about_version_seen: 7, about_seen_ids: ["browse", "import"] }]);
+  it("captures the About columns and the spent moments and puts them back as read", async () => {
+    const read = fakeSql([{ about_version_seen: 7, about_seen_ids: ["browse", "import"], moments_spent: ["m1"] }]);
     const capture = await captureAboutSeen("user_1", read.sql as never);
-    expect(read.calls[0].text).toMatch(/select about_version_seen, about_seen_ids from user_prefs/);
-    expect(capture).toEqual({ userId: "user_1", existed: true, version: 7, ids: ["browse", "import"] });
+    expect(read.calls[0].text).toMatch(/select about_version_seen, about_seen_ids, moments_spent from user_prefs/);
+    expect(capture).toEqual({ userId: "user_1", existed: true, version: 7, ids: ["browse", "import"], spent: ["m1"] });
 
     const write = fakeSql();
     await restoreAboutSeen(capture, write.sql as never);
     expect(write.calls).toHaveLength(1);
-    expect(write.calls[0].text).toMatch(/about_version_seen = \$, about_seen_ids = \$/);
-    expect(write.calls[0].values).toEqual(["user_1", 7, ["browse", "import"], 7, ["browse", "import"]]);
+    expect(write.calls[0].text).toMatch(/about_version_seen = \$, about_seen_ids = \$, moments_spent = \$/);
+    expect(write.calls[0].values).toEqual(["user_1", 7, ["browse", "import"], ["m1"], 7, ["browse", "import"], ["m1"]]);
   });
 
   it("deletes the row when there was none", async () => {

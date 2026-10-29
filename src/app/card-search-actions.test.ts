@@ -1,4 +1,4 @@
-// Card search's actions: off for the reader answers empty and reads nothing; the wishlist rides its own switch.
+// Card search's actions: the wishlist rides its own switch.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({
@@ -20,18 +20,12 @@ const A = "00000000-0000-4000-8000-00000000000a";
 const HIT = { oracleId: A, name: "Sol Ring", imageUri: null, flavorName: null };
 
 beforeEach(() => {
-  stub.env = { CARD_SEARCH_ENABLED: "true" };
+  stub.env = {};
   stub.search.mockReset().mockResolvedValue([HIT]);
   stub.signals.mockReset().mockResolvedValue(new Map([[A, { owned: 2, decks: ["Ghalta"], wishlist: false }]]));
 });
 
 describe("searchAllCardsAction", () => {
-  it("answers empty and reads nothing with the switch off", async () => {
-    stub.env = {};
-    expect(await searchAllCardsAction("sol")).toEqual([]);
-    expect(stub.search).not.toHaveBeenCalled();
-  });
-
   it("refuses a query that is not a string", async () => {
     expect(await searchAllCardsAction(42)).toEqual([]);
     expect(stub.search).not.toHaveBeenCalled();
@@ -43,7 +37,7 @@ describe("searchAllCardsAction", () => {
   });
 
   it("asks for the wishlist only while it is on for the reader", async () => {
-    stub.env = { CARD_SEARCH_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" };
+    stub.env = { SOCIAL_WISHLIST_ENABLED: "true" };
     await searchAllCardsAction("sol");
     expect(stub.signals).toHaveBeenCalledWith("user_1", [A], { wishlist: true });
   });
@@ -56,12 +50,6 @@ describe("searchAllCardsAction", () => {
 });
 
 describe("cardSignalsAction", () => {
-  it("answers empty with the switch off", async () => {
-    stub.env = {};
-    expect(await cardSignalsAction([A])).toEqual({});
-    expect(stub.signals).not.toHaveBeenCalled();
-  });
-
   it("drops anything that is not a card id, and caps the list at the recent list's length", async () => {
     const ids = Array.from({ length: 10 }, (_, i) => `00000000-0000-4000-8000-00000000000${i}`);
     await cardSignalsAction(["nope", 7, ...ids]);

@@ -8,7 +8,7 @@
 //
 //   PROBE_BASE=http://localhost:3437 pnpm probe:card-search-ui
 //
-// Needs a server started with CARD_SEARCH_ENABLED=true. Reads only: it opens cards and writes nothing but the
+// Reads only: it opens cards and writes nothing but the
 // browser's own recent-cards entry.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

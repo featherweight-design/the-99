@@ -1,7 +1,6 @@
 "use server";
 
 import { requireUserId } from "../lib/auth";
-import { cardSearchEnabled } from "../lib/card-search/flag";
 import {
   loadCardSignals,
   searchAllCards,
@@ -15,8 +14,7 @@ import { isUuid } from "../lib/uuid";
 import { wishlistEnabled } from "../lib/wishlist/flag";
 
 /**
- * Card search's two reads (plan `2026-10-16-card-search.md`, PR A). Both are signed in, re-check
- * `CARD_SEARCH_ENABLED` for the reader and answer empty while it is off, and read only the reader's own rows
+ * Card search's two reads (plan `2026-10-16-card-search.md`, PR A). Both are signed in and read only the reader's own rows
  * (lock 8). The bookmark is drawn only while the wishlist is on for the reader.
  */
 
@@ -24,7 +22,7 @@ import { wishlistEnabled } from "../lib/wishlist/flag";
 export async function searchAllCardsAction(query: unknown): Promise<CardSearchRow[]> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!cardSearchEnabled(env) || typeof query !== "string") return [];
+  if (typeof query !== "string") return [];
   const hits = await searchAllCards(query);
   if (hits.length === 0) return [];
   const signals = await loadCardSignals(userId, hits.map((h) => h.oracleId), { wishlist: wishlistEnabled(env) });
@@ -39,7 +37,7 @@ export async function searchAllCardsAction(query: unknown): Promise<CardSearchRo
 export async function cardSignalsAction(oracleIds: unknown): Promise<Record<string, CardSignals>> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!cardSearchEnabled(env) || !Array.isArray(oracleIds)) return {};
+  if (!Array.isArray(oracleIds)) return {};
   const ids = oracleIds.filter((id): id is string => typeof id === "string" && isUuid(id)).slice(0, SIGNALS_LIMIT);
   if (ids.length === 0) return {};
   const signals = await loadCardSignals(userId, ids, { wishlist: wishlistEnabled(env) });

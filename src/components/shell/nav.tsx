@@ -593,7 +593,7 @@ function RailLabel({ label }: { label: string }) {
 
 // The rail's card search slot (card search PR D, R-A): a plain slot under the mark and above Home, with a short rule under
 // it. It lights like a nav slot on hover and while the search is open. The shortcut is in its name tag and nowhere at
-// rest. Drawn only where the shell mounted the search (the switch on, signed in).
+// rest. Drawn only where the shell mounted the search (signed in).
 function RailSearchSlot({ bind }: { bind: ReturnType<typeof useRailTag>["bind"] }) {
   const search = useCardSearch();
   const shortcut = useSearchShortcutLabel();

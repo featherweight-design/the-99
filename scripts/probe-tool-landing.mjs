@@ -9,7 +9,7 @@
 //     Shopping row,
 //     the Matchups split, the Top off door;
 //   - the parameter stripped (through `mirrorUrl`), the rest of the address kept;
-//   - the tool's moment spent when `MOMENTS_ENABLED` is on, and nothing written when it is off;
+//   - the tool's moment spent;
 //   - nothing pressed: no dialog, no open hub tool, the target not expanded;
 //   - no bubble at all on a landing that haloes, at the landing and inside its halo: the landing TAKES the visit, so its
 //     halo is the visit's one guide (E11's "with no bubble"; d9 as Hugh's proxy, 2026-10-17). A landing that haloes
@@ -30,8 +30,7 @@
 //
 // The server: `next start` of a build with the worktree's `.env`, started with the deck tools' switches on
 // (`TUNING_ENABLED`, `PROPOSED_CUTS_ENABLED`, `MANA_BALANCE_ENABLED`, `SWAP_TOOLS_ENABLED`, `SOCIAL_FRIENDS_ENABLED`,
-// `SOCIAL_GAMES_ENABLED`, `ANALYSIS_TAB_ENABLED`), then again with them off; run the probe with the SAME
-// `MOMENTS_ENABLED` the server has, since that is how it knows whether a spend is owed.
+// `SOCIAL_GAMES_ENABLED`, `ANALYSIS_TAB_ENABLED`), then again with them off.
 //
 // THE PAGES (R2·3): each tool with a page of its own, landed by its `?tool=` on that page: the halo on the tool's own
 // control (Help me choose's first answer, the Precons and Wishlist searches, Collection Sync's drop zone, the Tiles ·
@@ -42,7 +41,7 @@
 // `PRECONS_ENABLED`, `SOCIAL_WISHLIST_ENABLED`, `COLLECTION_SYNC_ENABLED`, `LINEUP_ENABLED`), every page landing
 // must draw no halo and write nothing: the route is gone (its not-found page), or the parameter is stripped.
 //
-//   PROBE_BASE=http://localhost:3311 MOMENTS_ENABLED=true pnpm probe:tool-landing
+//   PROBE_BASE=http://localhost:3311 pnpm probe:tool-landing
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -62,7 +61,6 @@ const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
-const MOMENTS_ON = process.env.MOMENTS_ENABLED === "true";
 const SWITCHES_OFF = process.env.PROBE_SWITCHES === "off";
 /** `decks` or `pages` runs only that half (each is a few minutes a width); unset runs both. */
 const PHASE = process.env.PROBE_PHASE ?? "all";
@@ -331,7 +329,7 @@ async function walkPages(page, w, userId) {
       }
       r = await readPage(page, tool.find, noteName);
     }
-    const spent = await spentSoon(userId, tool.id, r.drawn && MOMENTS_ON && noteName !== null && !SWITCHES_OFF);
+    const spent = await spentSoon(userId, tool.id, r.drawn && noteName !== null && !SWITCHES_OFF);
     if (SWITCHES_OFF) {
       check(r.haloed === 0, `${label}: switch off, no halo`, `${r.haloed} haloed`);
       check(!spent, `${label}: switch off, nothing written`, `${spent}`);
@@ -347,7 +345,7 @@ async function walkPages(page, w, userId) {
     }
     check(r.onTarget, `${label}: the halo is on the tool's own control, and only there`, `${r.haloed} haloed`);
     check(!r.expanded, `${label}: nothing is pressed`, `expanded ${r.expanded}`);
-    if (noteName !== null) check(spent === MOMENTS_ON, `${label}: the moment is ${MOMENTS_ON ? "spent" : "not written (moments off)"}`, `${spent}`);
+    if (noteName !== null) check(spent, `${label}: the moment is spent`, `${spent}`);
     else check(!spent, `${label}: a tool with no moment writes nothing`, `${spent}`);
     const later = await new Promise((done) => setTimeout(done, SECOND_LOOK_MS)).then(() => readPage(page, tool.find, noteName));
     check(r.bubbles.length === 0 && later.bubbles.length === 0, `${label}: no bubble at all on a haloed landing`, `bubbles ${JSON.stringify([...new Set([...r.bubbles, ...later.bubbles])])}`);
@@ -387,7 +385,7 @@ async function walk(browser, w, userId, decks, spentAtStart) {
         check(r.search === "?probe=1", `${label}: the parameter is stripped, the rest kept`, r.search);
         check(!r.pressed, `${label}: nothing is pressed`, `${r.pressed}`);
         // The spend is a Server Action the landing does not await: give it a moment to commit before reading.
-        const spent = await spentSoon(userId, tool.id, r.drawn && MOMENTS_ON);
+        const spent = await spentSoon(userId, tool.id, r.drawn);
         if (!r.drawn) {
           // Not drawn on this deck: stripped with no halo, and nothing spent. The landing landed nothing, so this is
           // an ordinary visit: any moment may arrive on it, the tool's own included (at a shortcut), and that is R1's.
@@ -406,7 +404,7 @@ async function walk(browser, w, userId, decks, spentAtStart) {
           continue;
         }
         check(r.onTarget, `${label}: the halo is on the tool's target, and only there`, `${r.haloed} haloed`);
-        check(spent === MOMENTS_ON, `${label}: the moment is ${MOMENTS_ON ? "spent" : "not written (moments off)"}`, `${spent}`);
+        check(spent, `${label}: the moment is spent`, `${spent}`);
         // E11's "with no bubble", and d9: a haloed landing takes the visit, so no bubble at all shows on it, then or
         // while the halo is up, and the visit reads taken.
         const later = await new Promise((done) => setTimeout(done, SECOND_LOOK_MS)).then(() => read(page, tool.targets, noteName));
@@ -449,7 +447,7 @@ async function walk(browser, w, userId, decks, spentAtStart) {
 
 const [{ id: branch }] = await sql`select current_setting('neon.branch_id', true) as id`;
 assertScratchBranch(branch, "probe:tool-landing");
-console.log(`branch ${branch} · MOMENTS_ENABLED ${MOMENTS_ON ? "on" : "off"}`);
+console.log(`branch ${branch}`);
 
 await clerkSetup();
 const browser = await chromium.launch();

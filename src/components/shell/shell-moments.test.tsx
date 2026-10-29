@@ -28,7 +28,7 @@ vi.mock("./nav", () => ({
 
 const Shell = (await import("./shell")).default;
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
-const ON = { MOMENTS_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 
 async function renderShell() {
   render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
@@ -61,7 +61,7 @@ describe("Shell and Help me choose's moment", () => {
     await renderShell();
     expect(seen.rail).toBe(false);
     state.spent = [];
-    state.env = { MOMENTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    state.env = {} as unknown as NodeJS.ProcessEnv;
     await renderShell();
     expect(seen.tab).toBe(false);
     expect(hasAnyDeck).not.toHaveBeenCalled();

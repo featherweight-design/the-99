@@ -2,8 +2,7 @@
 
 The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section's rules; this file keeps the history, measurements and derivations behind them.
 
-- **Moments** (discovery R1, plan `2026-10-16-moments.md`, handoff `design_handoff_the99_discovery_onboarding/`), behind
-  `MOMENTS_ENABLED` (`'true'` on staging, unset on production). PR 1 is the foundation; PR 2 mounts the deck page's and Games' moments (M1 to M4, M10, M11). A moment is a
+- **Moments** (discovery R1, plan `2026-10-16-moments.md`, handoff `design_handoff_the99_discovery_onboarding/`), always on (its switch is retired; each moment still follows its tool's switch). PR 1 is the foundation; PR 2 mounts the deck page's and Games' moments (M1 to M4, M10, M11). A moment is a
   one-time bubble beside a control a reader has not used. Fifteen (M16, Home's Friends card, became a permanent
   Friends section on Home, not a moment), in a FIXED ORDER that breaks ties
   (`src/lib/moments/registry.ts`), each also following its tool's switch (`liveMoments`, from the reader's resolved env;
@@ -28,4 +27,4 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
-- **Moments** (`MOMENTS_ENABLED`; staging on, production unset): one-time bubbles beside a control a reader has not used, in a FIXED ORDER (`src/lib/moments/registry.ts`), one per visit, each following its tool's switch; a control can be a FALLBACK for its moment (`useMomentAnchor`'s `fallback`). The spent set is `user_prefs.moments_spent`, append-only, written only when it adds an id. Nothing arrives while a surface is open over the page.
+- **Moments** (always on): one-time bubbles beside a control a reader has not used, in a FIXED ORDER (`src/lib/moments/registry.ts`), one per visit, each following its tool's switch; a control can be a FALLBACK for its moment (`useMomentAnchor`'s `fallback`). The spent set is `user_prefs.moments_spent`, append-only, written only when it adds an id. Nothing arrives while a surface is open over the page.

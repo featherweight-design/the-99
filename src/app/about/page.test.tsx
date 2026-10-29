@@ -225,7 +225,7 @@ describe("/about, the visit (R2 gap 10)", () => {
 
   it("hands a current reader's visit the unit keys their state covers", async () => {
     vi.stubEnv("NEVER_CUT_ENABLED", "true");
-    m.seen = { version: 16, ids: ["locked-cards", "how-it-works"] };
+    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search"] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { behind: boolean; answered: string[] };
     expect(props.behind).toBe(false);
     expect(props.answered).toContain("decks/your-deck/lock");

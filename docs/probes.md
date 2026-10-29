@@ -586,15 +586,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   draws the tool's target, and asserts the halo on that target alone (a Tuning hub tile, or the panel's head with the
   hub off; the first other-ways press holding that tool's glyph, ⇄ or the spare, on a Shopping row; the Matchups
   split; the Top off door), `?tool=` stripped with the rest of the address kept, no bubble at all on a haloed landing
-  (then and 1.5s on, inside the halo) and the visit taken, since the halo is the visit's one guide (d9), nothing pressed, and the tool's moment spent exactly when
-  `MOMENTS_ENABLED` is on. A deck that does not draw the target must strip with no halo, spend nothing and leave the visit untouched (taken only
+  (then and 1.5s on, inside the halo) and the visit taken, since the halo is the visit's one guide (d9), nothing pressed, and the tool's moment spent. A deck that does not draw the target must strip with no halo, spend nothing and leave the visit untouched (taken only
   when a bubble arrived on it); each landing starts on a fresh visit (R1's visit record cleared); a tool no
   deck draws is SKIP, never PASS. Then a stale id (`nope`, `wishlist`, `tour:banner`) is stripped with no halo and
   writes nothing, and a deck id that does not exist (a deleted deck's) lands on `/decks` with no `?tool` and no halo (the route
   streams behind `loading.tsx`, so the redirect answers 200 and the address is the proof). It WRITES only the account's `user_prefs.moments_spent`
   (each tool's id taken out first, so the spend is seen), put back exactly in a `finally`, and refuses production,
   staging and local-dev by `neon.branch_id` (`assertScratchBranch`). Run against `next start` with the deck tools'
-  switches on, then off, and with the probe's own `MOMENTS_ENABLED` matching the server's.
+  switches on, then off.
   Since R2·3 it also lands each tool that has a page of its own, at both widths: Help me choose (the form's first
   answer), Precons and Wishlist (each page's search), Collection Sync (the drop zone, G14), Stats for your decks (the
   Tiles · Stats switch on `/decks?view=stats`) and Friends and pods (Add a friend), each by its `?tool=` on that page,
@@ -654,9 +653,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
   itself: a deck's Stats and Notes tabs, the all-decks cart and the buy tag each have a switch of their own, and a frame
   missing one is not captured), `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED` and
-  `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and `PAYMENTS_ENABLED` on, and `MOMENTS_ENABLED` set to
-  `off`, so the frames show the ?, the account menu's `Take the tour` row, the pod's
-  `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no bubble or sheet. A screen frame missing what it
+  `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and `PAYMENTS_ENABLED` on, so the frames show the ?, the account menu's `Take the tour` row, the pod's
+  `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no sheet. A screen frame missing what it
   must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
   the top and its header scrolled away; the tour row on `account`; the Rule 0 row and the invite count on `friends`;
   the balance on `credits`; the push device row reading Not on yet on `settings`, which needs `PUSH_ENABLED` and a
@@ -2559,8 +2557,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   search's round trip and its database execution time for a 2-, 3- and 5-letter query (45 to 49ms on a
   branch of local-dev, 2026-10-16, under the plan's ~50ms bar, so no trigram index). It writes, so `PROBE_DB_BRANCH` must name the branch `DATABASE_URL`
   reports, never staging, production or local-dev, and it removes its two made-up accounts' rows in a finally.
-- `pnpm probe:card-search-ui` proves card search's phone sheet (PR C) in a browser at 390, against a server started with
-  `CARD_SEARCH_ENABLED=true` (`PROBE_BASE`; `PROBE_QUERY`, default `sol`): the header icon opens the sheet with the
+- `pnpm probe:card-search-ui` proves card search's phone sheet (PR C) in a browser at 390 (`PROBE_BASE`; `PROBE_QUERY`, default `sol`): the header icon opens the sheet with the
   field focused, a result opens card details with Find a deck (the details are folded back, since "All details" is a
   rung of its own), and Back returns to the search with the query standing and focus on the row that opened it, then
   closes the search on the page, then reaches the route before. It walks that on `/collection`, again with two
@@ -2568,7 +2565,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   icon). Find a deck needs `SWAP_TOOLS_ENABLED` and `FIND_A_DECK_READ_ENABLED` on the server too. It writes nothing but
   the browser's own recent cards. `PROBE_SHOT` names a file for a screenshot when it stops.
 - `pnpm probe:card-search-followups` proves card search's three staging follow-ups at 390 and at 1300, against a server
-  started with `CARD_SEARCH_ENABLED`, `SOCIAL_WISHLIST_ENABLED` and `COLLECTION_EDIT_ENABLED` true (`PROBE_BASE`;
+  started with `SOCIAL_WISHLIST_ENABLED` and `COLLECTION_EDIT_ENABLED` true (`PROBE_BASE`;
   `PROBE_QUERY`, default `sol`). It presses Close (or a press outside, on the desktop), Escape and Back with a query
   typed and checks each opens empty; it adds a card to the wishlist from card details opened from the search, on
   Collection › Wishlist, and counts the tiles behind before, after and after Remove; and it samples every animation
@@ -3159,8 +3156,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `data-leaving`, `<main>` inert, nav-stall beacons, and whether the page still answers. The overlay must show and
   then leave; one left up is the stuck loader, and an up overlay with no beacon is the unwatched half of it. Options
   (`PROBE_QUICK`, `PROBE_SLOW`, `PROBE_REFRESH`, `PROBE_CHECKOUT`, `PROBE_HIDDEN`) put the app's own background work
-  in flight first; they are listed in the script's header. Needs `next start` with `NAV_STALL_LOG_ENABLED`,
-  `MOMENTS_ENABLED` and `PAYMENTS_ENABLED` on, on local-dev or a scratch branch (it writes the audit account's About
+  in flight first; they are listed in the script's header. Needs `next start` with `NAV_STALL_LOG_ENABLED`
+  and `PAYMENTS_ENABLED` on, on local-dev or a scratch branch (it writes the audit account's About
   row and puts it back). When it was written it did NOT reproduce the staging report in any variant (70s sit, Slow 4G,
   `router.refresh()` while pending, a Checkout return, a backgrounded tab): it is the instrument for the next one.
 - `pnpm probe:pwa-offline` proves the service worker's offline fallback and the offline pill, at 390 and 1300,

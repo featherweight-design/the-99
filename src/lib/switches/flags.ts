@@ -21,7 +21,6 @@ import { homeFeedEnabled } from "../feed/flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
-import { momentsEnabled } from "../moments/flag";
 import { labelSurfacesEnabled, standInLabelsEnabled } from "../labels/read";
 import type { ModelFeature } from "../model/allowance-rule";
 import { noticesEnabled } from "../notices/flag";
@@ -39,7 +38,6 @@ import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled } from "../tuning/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { cardScanEnabled } from "../card-scan/flag";
-import { cardSearchEnabled } from "../card-search/flag";
 import type { SwitchName } from "./registry";
 
 /**
@@ -53,7 +51,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   BRACKET_REACH_ENABLED: bracketReachEnabled,
   CARD_SCAN_ENABLED: cardScanEnabled,
-  CARD_SEARCH_ENABLED: cardSearchEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
   COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
@@ -75,7 +72,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   LINEUP_ENABLED: lineupEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
-  MOMENTS_ENABLED: momentsEnabled,
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
   NEVER_CUT_ENABLED: neverCutEnabled,
   NOTICES_ENABLED: noticesEnabled,
