@@ -23,6 +23,11 @@ import type { DraftWant } from "../decks/draft-wants";
 export type BrowsePrinting = {
   setCode: string;           // uppercased for display; stored lowercase
   /**
+   * The finish the opener says this printing is VIEWED in, where that is not the reader's to decide: a precon's box
+   * copy (Hugh, 2026-10-28: a box's foils animate in its card details). Only on the row card details is opened at.
+   */
+  viewedFinish?: Finish;
+  /**
    * The printing's catalog id, where the holding names one. Optional for the reason
    * `layout` and `availability` are: fixtures and tests build `BrowsePrinting`
    * literals that never touch the catalog.
@@ -131,8 +136,10 @@ export function soleFoilFinish(finishes: Partial<Record<Finish, number>>): FoilF
  * face needs its own back art too: `backImageUri` can be the oracle's back, which belongs to no printing in hand.
  */
 export function faceFilm(printing: BrowsePrinting | undefined, face: "front" | "back" = "front"): FoilFinish | undefined {
-  if (!printing?.hasOwnArt) return undefined;
+  // A viewed finish comes with the opener's own art for the printing, so it is that printing's art too.
+  if (!printing?.hasOwnArt && printing?.viewedFinish === undefined) return undefined;
   if (face === "front" ? !printing.imageUri : !(printing.hasOwnBack && printing.backImageUri)) return undefined;
+  if (printing.viewedFinish !== undefined) return printing.viewedFinish === "nonfoil" ? undefined : printing.viewedFinish;
   return soleFoilFinish(printing.finishes);
 }
 

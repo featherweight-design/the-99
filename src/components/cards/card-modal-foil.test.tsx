@@ -90,6 +90,14 @@ describe("faceFilm", () => {
     expect(faceFilm(undefined)).toBeUndefined();
   });
 
+  it("is the viewed finish, a precon box's, over the reader's own holding or none", () => {
+    expect(faceFilm({ ...own, finishes: {}, hasOwnArt: false, viewedFinish: "foil" })).toBe("foil");
+    expect(faceFilm({ ...own, finishes: { nonfoil: 1 }, viewedFinish: "foil" })).toBe("foil");
+    expect(faceFilm({ ...own, imageUri: null, viewedFinish: "foil" })).toBeUndefined();
+    // A plain box card stays plain over the reader's own foil copy.
+    expect(faceFilm({ ...own, viewedFinish: "nonfoil" })).toBeUndefined();
+  });
+
   it("draws on the back only over the printing's own back art", () => {
     expect(faceFilm({ ...own, backImageUri: BACK, hasOwnBack: true }, "back")).toBe("foil");
     expect(faceFilm({ ...own, backImageUri: BACK, hasOwnBack: false }, "back")).toBeUndefined();
@@ -139,6 +147,46 @@ describe("where details reads foil", () => {
       openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1" },
     });
     for (const host of [desktop(), phone()]) expect(ownFilm(host)).toHaveAttribute("data-foil", "foil");
+  });
+
+  // A precon's box foil (Hugh, 2026-10-28): the box names the finish, so the face draws it for a reader who holds no
+  // copy, and for one who holds a plain one.
+  it("draws the box's foil on a precon card the reader does not hold", () => {
+    mount(card({ quantity: 0, printings: [printing({ quantity: 0, finishes: {} })] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1", finish: "foil" },
+    });
+    for (const host of [desktop(), phone()]) expect(ownFilm(host)).toHaveAttribute("data-foil", "foil");
+  });
+  it("draws the box's foil over the reader's own plain copy of that printing", () => {
+    mount(card({ printings: [printing({ finishes: { nonfoil: 1 } })] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1", finish: "foil" },
+    });
+    for (const host of [desktop(), phone()]) expect(ownFilm(host)).toHaveAttribute("data-foil", "foil");
+  });
+  it("draws the box's foil on a printing the reader holds none of, while holding another", () => {
+    // The reader's only copy is another printing, so the box's is injected as a row of its own.
+    mount(card({ printings: [printing({ setCode: "CMR", collectorNumber: "1", scryfallId: "s-other", imageUri: "https://img/other.jpg", finishes: { nonfoil: 1 } })] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1", finish: "foil" },
+    });
+    for (const host of [desktop(), phone()]) expect(ownFilm(host)).toHaveAttribute("data-foil", "foil");
+  });
+  it("draws no film over the oracle's art when the box names a foil printing with no art of its own", () => {
+    mount(card({ quantity: 0, printings: [printing({ quantity: 0, finishes: {} })] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "99", imageUri: null, scryfallId: "s-9", finish: "foil" },
+    });
+    expect(films(desktop())).toHaveLength(0);
+  });
+  it("draws a plain box card plain over the reader's own foil copy", () => {
+    mount(card({ printings: [printing()] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1", finish: "nonfoil" },
+    });
+    expect(films(desktop())).toHaveLength(0);
+  });
+  it("draws no film where the opener names no finish and the reader holds none", () => {
+    mount(card({ quantity: 0, printings: [printing({ quantity: 0, finishes: {} })] }), {
+      openAtPrinting: { setCode: "MSC", collectorNumber: "12", imageUri: FRONT, scryfallId: "s-1" },
+    });
+    expect(films(desktop())).toHaveLength(0);
   });
 
   it("draws nothing over another printing's or the oracle-level picture", () => {

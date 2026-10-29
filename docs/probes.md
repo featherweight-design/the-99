@@ -3202,6 +3202,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `PROBE_BASE` (a local server; it refuses any other host), `PROBE_DECK_ID` (a deck of three or more cards), and
   `PROBE_SHOTS` for frames and a video. It writes only the probe account's About row, restores it, and refuses
   production and staging by `neon.branch_id`.
+- `pnpm probe:precon-foil` proves a precon's box foils animate in its card details (Hugh, 2026-10-28) at 1300 and 390:
+  every List row the box marks foil opens with the large foil film, and a plain row opens with none. `PROBE_BASE` (a
+  local server with `PRECONS_ENABLED=true`; it refuses any other host) and `PROBE_PRECON` (default `MiracleWorker_DSC`).
+  It needs a database whose `precon_cards` mark at least one all-foil card in that file. It writes only the probe
+  account's About row, restores it, and refuses production and staging by `neon.branch_id`.
 - `pnpm probe:card-sheet-min` proves the phone card sheet's min snap (Hugh, 2026-10-13) at 390. It opens a
   card from the deck page's list and swipes down on the card from the teaser. Mid-drag, the card must have grown as
   far toward its min size as the sheet has moved toward min (within 5 points), and on a drag back up it must shrink

@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { ArtLayer } from "../ui/art-layer";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
-import type { BrowseCard, PreferredPrinting, BrowsePrinting } from "../../lib/collection/browse";
+import type { BrowseCard, Finish, PreferredPrinting, BrowsePrinting } from "../../lib/collection/browse";
 import {
   cssUrl,
   printedNameOf,
@@ -989,6 +989,8 @@ export function CardModal({
      *  back — the mismatch `printings.back_image_uri` exists to close. */
     backImageUri?: string | null;
     scryfallId?: string;
+    /** The finish the opener's list holds it in (a precon box's): the face's film, whatever the reader owns. */
+    finish?: Finish;
   }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -1383,6 +1385,7 @@ export function CardModal({
               ? { backImageUri: at.backImageUri, hasOwnBack: true }
               : {}),
             flavorName: at.imageUri === p.imageUri ? p.flavorName : null,
+            ...(at.finish ? { viewedFinish: at.finish } : {}),
           };
         }))
       : (() => {
@@ -1394,6 +1397,8 @@ export function CardModal({
       releasedAt: null,
       quantity: 0,
       finishes: {},
+      // Only over the opener's own art: the fallback below is the oracle's, which no finish belongs to.
+      ...(at.finish && at.imageUri ? { viewedFinish: at.finish } : {}),
       // `resolveImageUri`'s card-level fallback, not a hard null: a set cell whose
       // full-size art the catalog does not hold would otherwise open on the identity
       // gradient, where the modal used to show the card's own image.
