@@ -74,3 +74,12 @@ describe("a Suggested changes v2 run's tile (plan P2)", () => {
     expect(shapeHubTiles([{ ...v2, v2: false }], new Map(), now).suggested_changes).not.toMatchObject({ kind: "running" });
   });
 });
+
+describe("a Suggested changes v2 run in flight (Wait A, the tile)", () => {
+  it("says which list it is on, and a v10 run says nothing of it", () => {
+    const row = { id: "a", tool: "suggested_changes" as const, status: "pending" as const, createdAt: ago(41_000), v2: true, phase: "cuts" as const };
+    expect(shapeHubTiles([row], new Map(), now).suggested_changes).toEqual({ kind: "running", startedAt: ago(41_000).toISOString(), phase: "cuts" });
+    const { phase: _phase, ...v10 } = row;
+    expect(shapeHubTiles([{ ...v10, v2: false }], new Map(), now).suggested_changes).toEqual({ kind: "running", startedAt: ago(41_000).toISOString() });
+  });
+});

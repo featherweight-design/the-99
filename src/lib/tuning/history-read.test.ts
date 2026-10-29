@@ -18,6 +18,12 @@ describe("History's page queries", () => {
     expect(q.params).toContain(21);
   });
 
+  it("reads each run's request beside its count, for a v2 row's quote", () => {
+    const q = runsPageQuery(db, "d", "u", ["suggested_changes"], null, 20).toSQL();
+    expect(q.sql).toMatch(/select .*"request_text".* from "deck_suggestion_runs"/);
+    expect(q.sql).toMatch(/select .*"requested_count".* from "deck_suggestion_runs"/);
+  });
+
   it("reads the first page with no key at all", () => {
     expect(runsPageQuery(db, "d", "u", ["proposed_cuts"], null, 20).toSQL().sql).not.toContain("::uuid");
   });

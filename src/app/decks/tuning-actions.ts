@@ -398,7 +398,8 @@ export type V2RunOpts = {
 };
 
 /** The deck and the request both match the newest ok v2 run (G4): nothing was reserved, and the player is asked once. */
-export type SameRequest = { ok: false; confirm: "same_request"; runId: string; at: string };
+/** `refunded`: that run gave its credit back, so its reopened head says `refunded` as History does. */
+export type SameRequest = { ok: false; confirm: "same_request"; runId: string; at: string; refunded?: boolean };
 
 async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEnv, opts: V2RunOpts): Promise<DeckMutationResult | SameRequest> {
   const wire = parseV2Wire(opts as Record<string, unknown>);
@@ -417,7 +418,7 @@ async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEn
   }
   const started = await startTuningV2({ deckId, userId, env, runId: requested, wire, request });
   if (started.kind === "refused") return { ok: false, message: started.message };
-  if (started.kind === "confirm") return { ok: false, confirm: "same_request", runId: started.runId, at: started.at };
+  if (started.kind === "confirm") return { ok: false, confirm: "same_request", runId: started.runId, at: started.at, refunded: started.refunded };
   after(() => started.work(() => revalidateDeck(deckId)));
   return { ok: true };
 }

@@ -13,13 +13,16 @@ export type HubRunRow = {
   createdAt: Date;
   /** A Suggested changes v2 run: its own, longer reaper window (plan P2). Absent reads as v10's. */
   v2?: boolean;
+  /** A v2 run being made: which list it is on (`v2RunFacts`), for its tile's words (Wait A: `choosing cuts`). */
+  phase?: "additions" | "cuts";
 };
 
 /** An ok run's answered lines: how many it returned and how many the reader took. */
 export type HubRunCounts = { total: number; accepted: number };
 
 export type HubTileRun =
-  | { kind: "running"; startedAt: string }
+  /** `phase`: a Suggested changes v2 run's list, absent on v10's and on Proposed cuts'. */
+  | { kind: "running"; startedAt: string; phase?: "additions" | "cuts" }
   | { kind: "ok"; at: string; total: number; accepted: number }
   | { kind: "failed"; at: string }
   | { kind: "stopped"; at: string };
@@ -52,7 +55,7 @@ export function shapeHubTiles(
   const tileOf = (tool: HubTool): HubTileRun | null => {
     const mine = rows.filter((r) => r.tool === tool);
     const running = mine.find((r) => r.status === "pending" && live(r));
-    if (running) return { kind: "running", startedAt: running.createdAt.toISOString() };
+    if (running) return { kind: "running", startedAt: running.createdAt.toISOString(), ...(running.phase ? { phase: running.phase } : {}) };
     const last = mine.find((r) => r.status !== "pending");
     if (!last) return null;
     const at = last.createdAt.toISOString();

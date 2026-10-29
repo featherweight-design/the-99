@@ -2,7 +2,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { deckCutItems, deckSuggestionItems, deckSuggestionRuns, deckToolCounts } from "../../db/schema";
-import type { HistoryTool } from "./history";
+import { v2RunFacts, type HistoryTool } from "./history";
 import { readHistoryCountIn } from "./history-read";
 import { hubSeen, shapeHubTiles, type HubRunCounts, type HubRunRow, type HubTiles } from "./hub-tiles";
 
@@ -21,12 +21,17 @@ export async function readHubTiles(
       status: deckSuggestionRuns.status,
       createdAt: deckSuggestionRuns.createdAt,
       v2: sql<boolean>`${deckSuggestionRuns.requestedCount} is not null`,
+      validationReport: deckSuggestionRuns.validationReport,
     }).from(deckSuggestionRuns)
       .where(and(eq(deckSuggestionRuns.deckId, deckId), eq(deckSuggestionRuns.userId, userId), eq(deckSuggestionRuns.tool, tool)))
       .orderBy(desc(deckSuggestionRuns.createdAt))
       .limit(RUNS_PER_TOOL);
     // One after the other: a transaction is one connection.
-    const rows = [...await newest("suggested_changes"), ...await newest("proposed_cuts")] as HubRunRow[];
+    const rows: HubRunRow[] = [...await newest("suggested_changes"), ...await newest("proposed_cuts")].map(({ validationReport, ...r }) => ({
+      ...(r as Omit<HubRunRow, "phase">),
+      // A v2 run being made says which list it is on (Wait A's tile: `choosing cuts`).
+      ...(r.v2 && r.status === "pending" ? { phase: v2RunFacts(validationReport).phase } : {}),
+    }));
     const okIds = (tool: HubRunRow["tool"]) => rows.filter((r) => r.tool === tool && r.status === "ok").map((r) => r.id);
     const tally = async (table: typeof deckSuggestionItems | typeof deckCutItems, ids: string[]) =>
       ids.length === 0 ? [] : tx.select({

@@ -1,6 +1,6 @@
 {
   "feature": "Suggested changes v2, UI PR 5b: the intake (the at-99 tile rows from PR 5a stay)",
-  "note": "Handoff design/design_handoff_the99_suggested_changes_v2, boards Intake (A, B), and Not-At-99 (A, B) with the Landing tile from PR 5a. Needs ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED and SUGGESTED_CHANGES_V2_ENABLED all 'true', a database at migration 0182 or later (a scratch branch of local-dev), and three READ decks the audit account owns: SCV2_DECK at 99 (local-dev HD - Elves d9345373\u2026), SCV2_UNDER_DECK at 96 (HD - Brago d3f9ccb4\u2026 with Island 10 set to 7 for the run), SCV2_OVER_DECK at 102 (HD Tune - Blood Rites cb877695\u2026 with Swamp 13 set to 16 for the run); put them back after. Same request (Intake D), N at 20 and drifting off 99 mid-flow (Not-At-99 C) need a prior paid run or an edit in another tab, and are held by suggested-changes-intake.test and tuning-panel-v2.test.",
+  "note": "Handoff design/design_handoff_the99_suggested_changes_v2, boards Intake (A, B), and Not-At-99 (A, B) with the Landing tile from PR 5a. Needs ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED and SUGGESTED_CHANGES_V2_ENABLED all 'true', a database at migration 0182 or later (a scratch branch of local-dev), and three READ decks the audit account owns: SCV2_DECK at 99 (local-dev HD - Elves d9345373\u2026), SCV2_UNDER_DECK at 96 (HD - Brago d3f9ccb4\u2026 with Island 10 set to 7 for the run), SCV2_OVER_DECK at 102 (HD Tune - Blood Rites cb877695\u2026 with Swamp 13 set to 16 for the run); put them back after. Same request (Intake D), N at 20 and drifting off 99 mid-flow (Not-At-99 C) need a prior paid run or an edit in another tab, and are held by suggested-changes-intake.test and tuning-panel-v2.test. PR 7b's rows (history-a, history-a-end, history-b, history-c, tile-in-flight) read SCV2_HISTORY_DECK, a 99-card deck of the audit account at version 2 or later, seeded on a scratch branch with: a v2 ok run read at the newest version with one applied set (SCV2_REQUEST_B, the start of its request, opens it from its row), a v2 ok run read at an older version with a pair applied (SCV2_REQUEST_C, likewise), a v2 short run, a v2 refunded run, a v2 pending run with `in.add` true created inside V2_REAPER_CUTOFF_MS, a v1 run, a Proposed cuts run and a Mana Balance count; delete them after.",
   "rows": [
     {
       "id": "tile-under",
@@ -163,6 +163,185 @@
         },
         {
           "scrollTo": "[data-sc-intake]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "history-a",
+      "label": "History A: v2 ok (quoted request, asked \u00b7 found \u00b7 applied under the cap), v2 short, v2 refunded (tier struck), v2 running, a v1 Suggested changes run, Mana Balance and Proposed cuts rows",
+      "view": "src/components/decks/tuning-history.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HISTORY_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-history]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "history-a-end",
+      "label": "History A, the list scrolled to its end: the v1 Suggested changes row keeps its stored summary, the Proposed cuts and Mana Balance rows",
+      "view": "src/components/decks/tuning-history.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HISTORY_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "div:last-of-type > [data-history-row]:last-of-type",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "history-b",
+      "label": "History B: a reopened v2 run read at the deck's newest version, a set applied: \u2039 History and its meta, the note, You asked beside the lead (desktop), when it was applied",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HISTORY_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "\u201c${SCV2_REQUEST_B}",
+          "settle": 1200
+        },
+        {
+          "wait": "[data-sc-past='live']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-sc-past-meta]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "history-c",
+      "label": "History C: a reopened v2 run read at an older version than the deck's newest: read-only, the past-run note, `N applied` chips, the stale lead",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HISTORY_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "\u201c${SCV2_REQUEST_C}",
+          "settle": 1200
+        },
+        {
+          "wait": "[data-sc-past='stale']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-sc-past-meta]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "tile-in-flight",
+      "label": "Wait A's tile: a v2 run in flight with its additions in says `choosing cuts \u00b7 0:41`, the dot, no cost beside it",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HISTORY_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "wait": "[data-tool-tile='suggested'] [data-tile-dot]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
           "settle": 400
         }
       ]

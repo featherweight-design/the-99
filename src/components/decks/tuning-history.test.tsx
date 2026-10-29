@@ -3,6 +3,7 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readTuningHistory, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
+import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import type { HistoryRow, PastRun } from "../../lib/tuning/history";
 import { historyDate, PastRunView, summaryText, TuningHistory } from "./tuning-history";
@@ -47,6 +48,91 @@ describe("summaryText", () => {
   });
 });
 
+describe("History A: Suggested changes v2 runs", () => {
+  const v2 = suggestedChangesV2Copy.history;
+  const v2Rows: HistoryRow[] = [
+    { id: `run:${U(11)}`, tool: "suggested", tier: "credit", outcome: "running", at: "2026-10-28T14:02:00Z", summary: { kind: "none" },
+      ask: { request: "More removal, and lean into the counters, and a very long tail that should be cut to one line", count: 10, phase: "cuts" } },
+    { id: `run:${U(12)}`, tool: "suggested", tier: "credit", outcome: "short", at: "2026-10-27T21:40:00Z",
+      summary: { kind: "suggestedV2", found: { add: 14, cut: 21 }, applied: { add: 14, cut: 14 }, capCents: 200 },
+      ask: { request: "Rebuild around the counters", count: 20, phase: "cuts" } },
+    { id: `run:${U(13)}`, tool: "suggested", tier: "refunded", outcome: "short", at: "2026-10-27T09:15:00Z",
+      summary: { kind: "suggestedV2", found: { add: 8, cut: 15 }, applied: { add: 0, cut: 0 }, capCents: null },
+      ask: { request: null, count: 10, phase: "cuts" } },
+    { id: `run:${U(14)}`, tool: "suggested", tier: "credit", outcome: "ok", at: "2026-09-30T18:22:00Z", summary: { kind: "suggestedOk", in: 5, out: 5, added: 2, cut: 2, rejected: 4 } },
+  ];
+
+  it("says asked · found · applied, the cap it read, nothing applied, and the list a run in flight is on", () => {
+    expect(summaryText(v2Rows[0])).toBe("10 in, 10 out · choosing cuts");
+    expect(summaryText({ ...v2Rows[0], ask: { ...v2Rows[0].ask!, phase: "additions" } })).toBe(`10 in, 10 out · ${tuningHubCopy.runningWords.suggested}`);
+    expect(summaryText(v2Rows[1])).toBe("20 asked · 14 + 21 found under $2 · 14 + 14 applied");
+    expect(summaryText(v2Rows[2])).toBe("10 asked · 8 + 15 found · nothing applied");
+    expect(summaryText({ ...v2Rows[1], summary: { ...(v2Rows[1].summary as never as object), capCents: 250 } as HistoryRow["summary"] }))
+      .toBe("20 asked · 14 + 21 found under $2.50 · 14 + 14 applied");
+    // The cap is named only on a short run, where it explains the count.
+    // An ok run leads with its count as You asked writes it, and names no cap (History A's Oct 26 row).
+    expect(summaryText({ ...v2Rows[1], outcome: "ok" })).toBe("20 in, 20 out · 14 + 21 found · 14 + 14 applied");
+    expect(summaryText({
+      ...v2Rows[1], outcome: "ok", ask: { request: "x", count: 3, phase: "cuts" },
+      summary: { kind: "suggestedV2", found: { add: 5, cut: 5 }, applied: { add: 3, cut: 3 }, capCents: null },
+    })).toBe("3 in, 3 out · 5 + 5 found · 3 + 3 applied");
+    // A refunded run keeps `N asked` whatever its outcome.
+    expect(summaryText({ ...v2Rows[2], outcome: "ok" })).toBe("10 asked · 8 + 15 found · nothing applied");
+    // A v10 run keeps its stored summary.
+    expect(summaryText(v2Rows[3])).toBe("5 in, 5 out · 2 added, 2 cut, 4 rejected");
+  });
+
+  it("quotes each v2 run's request on one line, says No request when there was none, and strikes a refunded tier", async () => {
+    readPage.mockResolvedValue({ rows: v2Rows, nextCursor: null });
+    render(<Host />);
+    await waitFor(() => expect(rowEls()).toHaveLength(4));
+    const [running, short, refunded, v1] = rowEls();
+    const quote = running.querySelector("[data-history-request]")!;
+    expect(quote.textContent).toBe(`“${v2Rows[0].ask!.request}”`);
+    expect(quote.querySelector(".truncate")).not.toBeNull();
+    expect(running.textContent).toContain("10 in, 10 out · choosing cuts");
+    expect(within(running).getByText(copy.outcome.running)).toBeTruthy();
+    expect(within(short).getByText(copy.outcome.short)).toBeTruthy();
+    expect(short.getAttribute("aria-label")).toContain("“Rebuild around the counters”, 20 asked");
+    expect(refunded.querySelector("[data-history-request]")!.textContent).toBe(v2.noRequest);
+    const tier = refunded.querySelector('[data-tier="refunded"]') as HTMLElement;
+    expect(tier.textContent).toBe(copy.tier.refunded);
+    expect(tier.className).toContain("line-through");
+    // A refunded short run's pill reads quiet, not as a warning (History.dc `.oc.rf`).
+    expect(refunded.querySelector("[data-history-outcome]")!.className).toContain("text-[color:var(--fg-muted)]");
+    expect(short.querySelector('[data-tier="credit"]')).not.toBeNull();
+    // A v10 run: no quote, its summary as stored.
+    expect(v1.querySelector("[data-history-ask]")).toBeNull();
+    expect(v1.textContent).toContain("5 in, 5 out · 2 added, 2 cut, 4 rejected");
+  });
+});
+
+describe("History A's pills, on every tool's row (History.dc)", () => {
+  it("rings ok in success ink and the credit tier in accent-shadow, on a v1 row and a v2 row alike", async () => {
+    const v1 = rows[3];
+    const v2: HistoryRow = {
+      id: `run:${U(21)}`, tool: "suggested", tier: "credit", outcome: "ok", at: "2026-10-26T18:22:00Z",
+      summary: { kind: "suggestedV2", found: { add: 5, cut: 5 }, applied: { add: 3, cut: 3 }, capCents: null }, ask: { request: "x", count: 3, phase: "cuts" },
+    };
+    const free = rows[2];
+    readPage.mockResolvedValue({ rows: [v2, v1, free, rows[0]], nextCursor: null });
+    render(<Host />);
+    await waitFor(() => expect(rowEls()).toHaveLength(4));
+    for (const el of rowEls().slice(0, 2)) {
+      const pill = el.querySelector("[data-history-outcome]")!;
+      expect(pill.className).toContain("border");
+      expect(pill.className).toContain("text-[color:var(--success)]");
+      expect(pill.className).toContain("[border-color:color-mix(in_oklab,var(--success)_45%,transparent)]");
+      const tier = el.querySelector('[data-tier="credit"]')!;
+      expect(tier.className).toContain("border-[color:var(--accent-shadow)]");
+      expect(tier.className).toContain("text-[color:var(--accent-text)]");
+    }
+    // A free count's tier is ringed too, in its quiet ink; a run in flight's pill takes the accent-shadow ring.
+    expect(rowEls()[2].querySelector('[data-tier="free"]')!.className).toContain("border-[color:var(--border-strong)]");
+    expect(rowEls()[3].querySelector("[data-history-outcome]")!.className).toContain("border-[color:var(--accent-shadow)]");
+  });
+});
+
 describe("historyDate", () => {
   it("is US short, month first, with the time", () => {
     expect(historyDate("2026-10-07T21:40:00")).toBe("Oct 7 · 9:40 PM");
@@ -63,7 +149,10 @@ describe("HistoryList", () => {
     expect(rowEls().map((r) => r.getAttribute("data-outcome"))).toEqual(["running", "ok", "ok", "ok", "failed"]);
     expect(within(rowEls()[1]).getByText(copy.tier.deeper)).toBeTruthy();
     expect(within(rowEls()[2]).getByText(copy.tier.free)).toBeTruthy();
-    expect(rowEls()[0].className).toContain("border-[var(--accent)]");
+    // A run in flight (History.dc `.hrow.nw`): the accent-shadow edge on the raised fill.
+    expect(rowEls()[0].className).toContain("border-[var(--accent-shadow)]");
+    expect(rowEls()[0].className).toContain("bg-[var(--elevated-hover)]");
+    expect(rowEls()[1].className).toContain("md:grid-cols-[114px_128px_minmax(0,1fr)_92px_76px]");
     // The failed row carries the failure mark before its word.
     expect(rowEls()[4].querySelector("svg path[fill-rule='evenodd']")).not.toBeNull();
     expect(screen.getByText(copy.foot)).toBeTruthy();

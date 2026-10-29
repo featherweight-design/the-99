@@ -267,6 +267,7 @@ export async function readTuningState(
     profileVersion: deckSuggestionRuns.profileVersion,
     validationReport: deckSuggestionRuns.validationReport,
     requestedCount: deckSuggestionRuns.requestedCount,
+    readVersion: deckSuggestionRuns.readVersion,
     ...askColumns,
   }).from(deckSuggestionRuns).where(okRunWhere(deckId, userId, runId))
     .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
@@ -323,7 +324,7 @@ export async function readTuningState(
     gameCount: games?.count ?? 0,
     newestPriceAsOf,
     allLocked: opts.allLocked ?? null,
-    review: reviewed ? { runId: reviewed.id, at: reviewed.createdAt } : null,
+    review: reviewed ? { runId: reviewed.id, at: reviewed.createdAt, readVersion: reviewed.readVersion } : null,
     live,
     itemsAsk: lastOk ? askOf(lastOk) ?? null : null,
   };
@@ -427,7 +428,7 @@ async function readItems(
     evidence: TuningItem["evidence"]; position: number; verdict: TuningItem["verdict"];
     bracket_after: number[] | null; owned_quantity: number; applies: boolean;
     add_image_uri: string | null; cut_image_uri: string | null; cut_in_deck: boolean;
-    add_in_deck: boolean; cut_locked: boolean; picked: boolean; apply_set: string | null;
+    add_in_deck: boolean; cut_locked: boolean; picked: boolean; apply_set: string | null; verdict_at: string | null;
     card_type_line: string | null; card_oracle_text: string | null; card_keywords: string[] | null;
   }>(sql`
     select i.id, i.add_oracle_id, a.name as add_name, a.type_line as add_type_line,
@@ -437,6 +438,8 @@ async function readItems(
            a.image_uri as add_image_uri, c.image_uri as cut_image_uri,
            i.cut_oracle_id, c.name as cut_name, i.rationale, i.rationale_short, i.evidence,
            i.position, i.verdict, i.bracket_after, i.picked, i.apply_set,
+           -- When the line was answered, as UTC ISO (the column is stored without a zone, written in UTC).
+           to_char(i.verdict_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as verdict_at,
            coalesce((
              select sum(ci.quantity) from ${collectionItems} ci
              where ci.user_id = ${userId} and ci.oracle_id = i.add_oracle_id
@@ -544,7 +547,7 @@ async function readItems(
       price: add ? prices.get(id) ?? null : null,
       inDeck: add ? r.add_in_deck : r.cut_in_deck,
       locked: !add && r.cut_locked,
-      ...(v2 ? { picked: r.picked, applySet: r.apply_set } : {}),
+      ...(v2 ? { picked: r.picked, applySet: r.apply_set, verdictAt: r.verdict_at } : {}),
       ...(v2 ? lineFacts({
         oracleId: id, name: (add ? r.add_name : r.cut_name) ?? "", typeLine: r.card_type_line ?? "",
         oracleText: r.card_oracle_text, keywords: r.card_keywords ?? [],

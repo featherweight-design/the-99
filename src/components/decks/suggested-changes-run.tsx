@@ -7,6 +7,7 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { BRACKET_NAMES } from "../../lib/copy/deck-analysis";
 import { DECK_GROUPING_ARIA, DECK_GROUPING_KEY, DECK_GROUPING_LABELS, isDeckGrouping } from "../../lib/copy/deck-sort";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import type { CardTypeGroup } from "../../lib/decks/grouping";
 import { formatCents } from "../../lib/decks/price";
@@ -26,6 +27,7 @@ import { MutationError } from "./mutation-error";
 import { SuggestedChangesConfirm } from "./suggested-changes-confirm";
 import { DriftLine, leadSentence, LINK, NOTICE_BOX, noticeStyle } from "./suggested-changes-intake";
 import { SuggestedChangesPickLine } from "./suggested-changes-pick-line";
+import { historyDay } from "./tuning-history";
 import { DeckRefusalToast } from "./token-refusal-toast";
 
 const sc = suggestedChangesV2Copy;
@@ -64,7 +66,7 @@ export const SLOWER_NOTE_MS = 120_000;
  */
 export function SuggestedChangesRun({
   runId, ask, lines: readLines, live, startedAt, report, permits, newestPriceAsOf, figures, drift, finishedHere = false,
-  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, credits = null,
+  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, credits = null, past = null,
 }: {
   runId: string;
   ask: V2Ask | null;
@@ -88,6 +90,9 @@ export function SuggestedChangesRun({
   onAnnounce: (text: string) => void;
   onNewRun: () => void;
   readOnly?: boolean;
+  /** A run History reopened (History B and C): its day (`Oct 26`), and `stale` when a newer version is committed (then
+   *  `readOnly` too). Its note leads, You asked sits beside the lead on desktop, and the lead says when it was applied. */
+  past?: { date: string; stale: boolean; version?: number | null } | null;
   /** The reader's free credits now (`freeCount` of the allowance): a refunded short run says how many are left. */
   credits?: { left: number; total: number } | null;
 }) {
@@ -117,7 +122,7 @@ export function SuggestedChangesRun({
   // What this visit's Apply and Undo wrote, held over the read until a read agrees: a follow-up read that fails must not
   // put the applied rows back as pending (Apply again, no Undo) or leave an undone set offering its spent Undo.
   // An Undo also gives its rows back their eligibility: the read after the Apply drew them as no longer applying.
-  type Written = Pick<LineItem, "verdict" | "applySet"> & Partial<Pick<LineItem, "applies" | "inDeck">>;
+  type Written = Pick<LineItem, "verdict" | "applySet"> & Partial<Pick<LineItem, "applies" | "inDeck" | "verdictAt">>;
   const [written, setWritten] = useState<ReadonlyMap<string, Written>>(() => new Map());
   const caught = [...written].filter(([id, w]) => {
     const l = readLines.find((x) => x.id === id);
@@ -219,7 +224,9 @@ export function SuggestedChangesRun({
     }
     // A set id applied then undone answers ok with no lines: nothing was written, so it is not a set to undo.
     if (r.itemIds.length > 0) {
-      setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, { verdict: "accepted" as const, applySet: setId }] as const)]));
+      // Its answer time too, so a failed follow-up read still says the set was applied today, not on the run's day.
+      const verdictAt = new Date().toISOString();
+      setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, { verdict: "accepted" as const, applySet: setId, verdictAt }] as const)]));
       setLastSet(setId);
       setUndone(null);
       onAnnounce(sc.run.appliedLead(pickedAdds.length, lines.filter(isOpen).length - r.itemIds.length));
@@ -263,6 +270,8 @@ export function SuggestedChangesRun({
     const applied = appliedSet ? appliedSet.filter((l) => l.side === side).length : 0;
     return k === 0 && applied > 0 ? { text: sc.results.applied(applied), full: true } : { text: sc.results.chosen(k, cap), full: k > 0 && k >= cap };
   };
+  // What a side had applied, any set: a stale run's chip says it in quiet ink (History C, `2 applied`).
+  const appliedOn = (side: "add" | "cut") => lines.filter((l) => l.side === side && l.verdict === "accepted").length;
 
   const column = (side: "add" | "cut") => {
     const rows = side === "add" ? adds : cuts;
@@ -299,7 +308,15 @@ export function SuggestedChangesRun({
               {sideIn(side) ? rows.length : sc.run.soFar(rows.length)}
             </span>
           </h3>
-          {readOnly ? null : (
+          {readOnly ? (appliedOn(side) > 0 ? (
+            <span
+              data-sc-chip={side}
+              className="ml-auto inline-flex h-[26px] items-center whitespace-nowrap rounded-full px-[10px] font-mono text-[11px]"
+              style={{ color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }}
+            >
+              {sc.results.applied(appliedOn(side))}
+            </span>
+          ) : null) : (
             <span
               data-sc-chip={side}
               data-sc-chip-full={c.full || undefined}
@@ -420,15 +437,69 @@ export function SuggestedChangesRun({
       sentence = sc.bar.equal;
     }
   }
-  const lead = waiting ? null : appliedSet
-    ? sc.run.appliedLead(appliedSet.length / 2, lines.filter(isOpen).length)
-    : cap < n ? sc.run.shortLead(adds.length, cuts.length, cap) : sc.results.lead(adds.length, cuts.length, n);
+  const h = sc.history;
+  // "Applied … on DATE" (History B and C): the applied set's own day, its newest answered line; the run's day only when no
+  // line says when it was answered.
+  const appliedDay = (set: readonly LineItem[]) => {
+    const at = set.map((l) => l.verdictAt).filter((v): v is string => !!v).sort().at(-1);
+    return at ? historyDay(at) : past!.date;
+  };
+  const lead = waiting ? null : past?.stale
+    // History C: the lists, then what was applied from them and when.
+    ? (appliedOn("add") + appliedOn("cut") > 0
+      ? `${h.staleLists(adds.length, cuts.length)}${h.staleApplied(h.pair(appliedOn("add"), appliedOn("cut")), appliedDay(lines.filter((l) => l.verdict === "accepted")))}`
+      : h.staleListsOnly(adds.length, cuts.length))
+    : appliedSet
+      // History B says when the set went in, and that the rest can still be picked.
+      ? (past
+        ? [h.oldRunLead(appliedSet.length / 2, appliedDay(appliedSet)), h.oldRunRest(lines.filter(isOpen).length)].filter(Boolean).join(" ")
+        : sc.run.appliedLead(appliedSet.length / 2, lines.filter(isOpen).length))
+      : cap < n ? sc.run.shortLead(adds.length, cuts.length, cap) : sc.results.lead(adds.length, cuts.length, n);
+  // History B on desktop names the version the rest stay pickable on (the phone keeps the shorter line).
+  // Nothing left to pick: no clause at either width.
+  const leadWide = !waiting && past && !past.stale && appliedSet && past.version != null && lines.some(isOpen)
+    ? ` ${h.oldRunRestVersion(lines.filter(isOpen).length, past.version)}` : null;
+  // History C's lead is bold up to its ` · ` (`5 to add and 5 to cut · 2 + 2 applied on Oct 19.`); every other at its first stop.
+  const leadParts = lead === null ? null : past?.stale && lead.includes(" · ")
+    ? [lead.slice(0, lead.indexOf(" · ")), lead.slice(lead.indexOf(" · "))] as const : leadSentence(lead, ". ");
   const confirmBracket = bracketText(outcome);
 
   return (
-    <div data-sc-run={waiting ? "wait" : "results"} className="mt-[12px] flex flex-col gap-[14px]">
+    <div data-sc-run={waiting ? "wait" : "results"} data-sc-past={past ? (past.stale ? "stale" : "live") : undefined}
+      // History B and C: 16px between the note, You asked and the lead; B's note sits 10px under the heading.
+      className={`flex flex-col ${past ? `${past.stale ? "mt-[12px]" : "mt-[10px]"} gap-[16px]` : "mt-[12px] gap-[14px]"}`}>
+      {past ? (past.stale ? (
+        // History C: the shipped past-run note, in History's own box.
+        <p data-sc-past-note="" className="m-0 rounded-[10px] px-[14px] py-[11px] text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)", border: "1px solid var(--border-strong)", background: "var(--surface-sunken)" }}>
+          {tuningHubCopy.history.pastNoteUncounted}
+        </p>
+      ) : (
+        // History B: still live, each change checked against the deck as it is now.
+        <p data-sc-past-note="" className="m-0 max-w-[760px] text-[13px] leading-[1.6]" style={{ color: "var(--fg-body)", textWrap: "pretty" }}>
+          {tuningHubCopy.history.review.note.suggested(past.date)}
+        </p>
+      )) : null}
       {undone !== null ? <Undone text={sc.undone(undone)} /> : null}
-      {ask ? <YouAsked ask={ask} /> : null}
+      {past ? (
+        // You asked beside the outcome on desktop, stacked on a phone (History B and C, `.sbs`).
+        <div data-sc-side-by-side="" className="flex flex-col gap-[16px] md:grid md:grid-cols-2 md:items-start md:gap-[16px]">
+          {ask ? <YouAsked ask={ask} /> : null}
+          <div className="flex min-w-0 flex-col gap-[8px]">
+            {leadParts ? (
+              <p className="m-0 max-w-[760px] text-[13px] leading-[1.6]" style={{ color: "var(--fg-body)", textWrap: "pretty" }} data-sc-lead="">
+                <b className="font-semibold" style={{ color: "var(--fg)" }}>{leadParts[0]}</b>
+                {leadWide ? (
+                  <>
+                    <span data-sc-lead-narrow="" className="md:hidden">{leadParts[1]}</span>
+                    <span data-sc-lead-wide="" className="hidden md:inline">{leadWide}</span>
+                  </>
+                ) : leadParts[1]}
+              </p>
+            ) : null}
+            {readFrom}
+          </div>
+        </div>
+      ) : ask ? <YouAsked ask={ask} /> : null}
       {/* Once in, the clock stays only for a run that came up short of the ask (Wait E); the Results boards draw none. */}
       {clockFrom && (waiting || ofAsk !== null) ? (
         <Clock startedAt={clockFrom} adds={adds.length} cuts={cuts.length} n={n} done={!waiting} />
@@ -444,13 +515,13 @@ export function SuggestedChangesRun({
           )}
         />
       ) : null}
-      {lead ? (
+      {leadParts && !past ? (
         <p className="m-0 max-w-[760px] text-[13px] leading-[1.6]" style={{ color: "var(--fg-body)" }} data-sc-lead="">
-          <b className="font-semibold" style={{ color: "var(--fg)" }}>{leadSentence(lead, ". ")[0]}</b>
-          {leadSentence(lead, ". ")[1]}
+          <b className="font-semibold" style={{ color: "var(--fg)" }}>{leadParts[0]}</b>
+          {leadParts[1]}
         </p>
       ) : null}
-      {readFrom}
+      {past ? null : readFrom}
       {showGroupSwitch ? (
         <div className="flex items-center gap-[10px] md:justify-end">
           <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{sc.results.group}</span>
@@ -492,11 +563,17 @@ export function SuggestedChangesRun({
                   {name}
                 </span>
               ) : name,
-              count: (
-                <span className="font-mono text-[11px]" style={{ color: k > 0 && k >= cap ? "var(--success)" : "var(--fg-faint)" }}>
-                  {notYet ? sc.run.next : sc.run.ofN(k, cap)}
-                </span>
-              ),
+              // A stale run counts its rows (History C); a side with nothing picked and a set applied says so (History B,
+              // Results-3 D); otherwise `k of N`.
+              count: (() => {
+                const applied = appliedSet ? appliedSet.filter((l) => l.side === side).length : 0;
+                const full = readOnly ? false : k === 0 ? applied > 0 : k >= cap;
+                return (
+                  <span className="font-mono text-[11px]" style={{ color: full ? "var(--success)" : "var(--fg-faint)" }}>
+                    {notYet ? sc.run.next : readOnly ? rows.length : k === 0 && applied > 0 ? sc.results.applied(applied) : sc.run.ofN(k, cap)}
+                  </span>
+                );
+              })(),
             };
           })}
         />
@@ -653,11 +730,13 @@ function Undone({ text }: { text: string }) {
 function LeadCount({ text, color }: { text: string; color: string }) {
   const m = /^\d+/.exec(text);
   if (!m) return <>{text}</>;
+  // One inline box: inside the chip's inline-flex, a bare text node after the figure would be its own flex item and lose
+  // its leading space ("2applied").
   return (
-    <>
+    <span data-sc-lead-count="">
       <b className="font-semibold" style={{ color }}>{m[0]}</b>
       {text.slice(m[0].length)}
-    </>
+    </span>
   );
 }
 
