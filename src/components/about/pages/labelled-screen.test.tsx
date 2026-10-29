@@ -262,10 +262,12 @@ describe("LabelledScreen docks a pressed pin's label on a phone (R4 board 3)", (
     expect(second.querySelector("[data-about-halo]")).toBeNull();
   });
 
-  // Small items 3 item 6 (board Dock-Low-Region): jsdom lays nothing out, so the boxes the dock reads are stood in for.
-  // A 390x844 phone: the dock at the foot spans 658..758; "two" is lit high, "three" low; `top` is the bar's bottom.
+  // Small items 3 item 6 (board Dock-Low-Region) and Small items 4 item 3 (board Dock-Header): jsdom lays nothing out
+  // and evaluates no CSS, so the boxes the dock reads are stood in for. A 390x844 phone: the dock at the foot spans
+  // 658..758, and at the top it starts at `css`, where the top dock's live CSS would put it now; "two" is lit high,
+  // "three" low; `bar` is the quick-return header's box.
   describe("a low region gets the dock at the top", () => {
-    const stage = (boxes: { two: number[]; three: number[]; bar?: number[]; back?: number[] | "undrawn" }) => {
+    const stage = (boxes: { two: number[]; three: number[]; css?: number; bar?: number[]; back?: number[] | "undrawn" }) => {
       const bar = document.createElement("header");
       bar.setAttribute("data-quick-return", "page");
       document.body.appendChild(bar);
@@ -277,7 +279,10 @@ describe("LabelledScreen docks a pressed pin's label on a phone (R4 board 3)", (
       });
       vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
         const edges = (e: number[]) => ({ top: e[0], bottom: e[1], left: 0, right: 0, width: 0, height: e[1] - e[0], x: 0, y: e[0] }) as DOMRect;
-        if (this.hasAttribute("data-about-dock")) return edges([658, 758]);
+        if (this.hasAttribute("data-about-dock")) {
+          const css = boxes.css ?? 91;
+          return this.getAttribute("data-about-dock-at") === "top" ? edges([css, css + 100]) : edges([658, 758]);
+        }
         if (this === bar) return edges(boxes.bar ?? [0, 79]);
         if (this === back && Array.isArray(boxes.back)) return edges(boxes.back);
         if (this === back) return edges([79, 200]);
@@ -293,55 +298,81 @@ describe("LabelledScreen docks a pressed pin's label on a phone (R4 board 3)", (
       };
     };
     const dockOf = (c: HTMLElement) => c.querySelector<HTMLElement>("[data-about-dock]")!;
+    const floorOf = (c: HTMLElement) => dockOf(c).style.getPropertyValue("--about-dock-floor");
 
     it("keeps the foot for a region above the foot dock's top edge", () => {
       const done = stage({ two: [300, 340], three: [700, 730] });
       const { container } = draw();
       pin(phoneOf(container), "a/s/two");
       expect(dockOf(container).getAttribute("data-about-dock-at")).toBe("foot");
-      expect(dockOf(container).style.top).toBe("");
+      expect(dockOf(container).getAttribute("style")).toBeNull();
       done();
     });
 
-    it("docks a low region's label 12px under the header, and another tap decides again", () => {
+    it("docks a low region's label at the top, and another tap decides again", () => {
       const done = stage({ two: [300, 340], three: [700, 730] });
       const { container } = draw();
       const phone = phoneOf(container);
       pin(phone, "a/s/three");
       expect(dockOf(container).getAttribute("data-about-dock-at")).toBe("top");
-      expect(dockOf(container).style.top).toBe("91px");
-      expect(dockOf(container).style.bottom).toBe("auto");
+      // The CSS clears the returned header: no floor, and no pixel top fixed at the tap.
+      expect(floorOf(container)).toBe("");
+      expect(dockOf(container).style.top).toBe("");
       // Same look, gutters and close: only its edge moves.
       expect(dockOf(container).className).toContain("left-[12px] right-[12px]");
       expect(dockOf(container).querySelector("[data-about-dock-close]")).not.toBeNull();
       pin(phone, "a/s/two");
       expect(dockOf(container).getAttribute("data-about-dock")).toBe("a/s/two");
       expect(dockOf(container).getAttribute("data-about-dock-at")).toBe("foot");
-      expect(dockOf(container).style.top).toBe("");
       done();
     });
 
-    it("sits under the back bar when it shows, and passes over one that is not drawn", () => {
-      const done = stage({ two: [300, 340], three: [700, 730], back: [79, 125] });
-      const { container, unmount } = draw();
-      pin(phoneOf(container), "a/s/three");
-      expect(dockOf(container).style.top).toBe("137px");
-      unmount();
-      done();
-      // A bar that is not drawn (no box) holds nothing: the header's edge wins.
-      const done2 = stage({ two: [300, 340], three: [700, 730], back: "undrawn" });
-      const again = draw();
-      pin(phoneOf(again.container), "a/s/three");
-      expect(dockOf(again.container).style.top).toBe("91px");
-      done2();
-    });
-
-    it("sits 12px from the screen's top when the quick-return header has gone away", () => {
-      const done = stage({ two: [300, 340], three: [700, 730], bar: [-79, 0] });
+    it("rides the header: its top is live CSS on the header's own slide, and reduced motion jumps", () => {
+      const done = stage({ two: [300, 340], three: [700, 730] });
       const { container } = draw();
       pin(phoneOf(container), "a/s/three");
-      expect(dockOf(container).style.top).toBe("12px");
+      const cls = dockOf(container).className.split(/\s+/);
+      // 12px under the notch, under the back bar and returned header, and under a floor the tap set.
+      expect(cls).toContain(
+        "data-[about-dock-at=top]:top-[max(env(safe-area-inset-top,0px)_+_12px,var(--header-offset,0px)_+_var(--about-back-h,0px)_+_12px,var(--about-dock-floor,0px)_+_12px)]",
+      );
+      expect(cls).toContain("data-[about-dock-at=top]:bottom-auto");
+      // The foot's place is untouched.
+      expect(cls).toContain("bottom-[calc(var(--tabbar-h)+12px)]");
+      // nav's slide: --header-ms (200 back, 160 away) and --header-ease, as every head riding under it.
+      expect(cls).toEqual(
+        expect.arrayContaining([
+          "transition-[top]",
+          "duration-[var(--header-ms,200ms)]",
+          "ease-[var(--header-ease,var(--motion-ease-out))]",
+          "motion-reduce:transition-none",
+        ]),
+      );
       done();
+    });
+
+    it("floors the top dock at a header still in the page, which the CSS cannot see", () => {
+      // At the page's top the header is in the page (--header-offset 0): the CSS says 12, the header ends at 79.
+      const done = stage({ two: [300, 340], three: [700, 730], css: 12, bar: [0, 79] });
+      const { container, unmount } = draw();
+      pin(phoneOf(container), "a/s/three");
+      expect(dockOf(container).getAttribute("data-about-dock-at")).toBe("top");
+      expect(floorOf(container)).toBe("79px");
+      unmount();
+      done();
+      // With the back bar under it (the CSS says 59): the bar's edge is the floor.
+      const done2 = stage({ two: [300, 340], three: [700, 730], css: 59, bar: [0, 79], back: [79, 126] });
+      const again = draw();
+      pin(phoneOf(again.container), "a/s/three");
+      expect(floorOf(again.container)).toBe("126px");
+      again.unmount();
+      done2();
+      // A bar that is not drawn (no box) holds nothing.
+      const done3 = stage({ two: [300, 340], three: [700, 730], css: 12, bar: [-79, 0], back: "undrawn" });
+      const third = draw();
+      pin(phoneOf(third.container), "a/s/three");
+      expect(floorOf(third.container)).toBe("");
+      done3();
     });
 
     it("keeps the foot for a region so tall the top dock would cover it too", () => {

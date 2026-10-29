@@ -101,6 +101,41 @@ not draw are listed under Open, and neither blocks.
   - The page's scrollY did not change on any tap.
 - **Safe area (engineering decision, ruled by the orchestrator 2026-10-29; resolves Open 2).** The top dock sits 12px under `max(bar edge, env(safe-area-inset-top))`, measured on the tap by a hidden `env()` probe (`safeTopNow`) and passed to `dockPlace` as `safeTop`: 59 under a 47px inset with nothing on screen, 91 under the header at 79.
 
+### Small items 4 item 3, folded in: the top dock rides the header (resolves Open 1)
+
+Built here from `design/design_handoff_the99_small_items_4/` §3 and board `Dock-Header.html` (approved, Green), on the
+orchestrator's ruling. It supersedes the pixel top above: only the top-or-foot choice is still made on the tap.
+
+- **Live CSS, not a number.** `DOCK_AT_TOP` in `pin-dock.tsx`, applied on `data-about-dock-at=top`:
+  `top: max(env(safe-area-inset-top) + 12px, var(--header-offset) + var(--about-back-h) + 12px, var(--about-dock-floor) + 12px)`.
+  - It moves on the header's own slide, as `UNDER_HEADER` heads do: `transition-[top]` over `--header-ms` (200ms back,
+    160ms away) and `--header-ease`, both published by `use-quick-return.ts`. `motion-reduce:transition-none` jumps.
+  - At the foot `top` is `auto`, so the foot never animates and the tap's own placement never slides.
+  - The notch is now `env()` in the CSS: the `safeTopNow` probe and `dockPlace`'s `safeTop` are gone.
+- **`--about-back-h` is the back bar's height only while it shows.** `area-page.tsx` set it whenever the request
+  carried a `from`, so a bar the live address had dropped still pushed the dock 47px down. It is now keyed on the bar
+  itself (`has-[[data-about-back]]`). The sections' `scroll-mt` falls back to 17px with it, so a section brought in
+  after the bar has gone clears by 16px, as on a page with no bar.
+- **Not drawn, decided here: a header still in the page.** `--header-offset` is 0 in quick return's `page` mode (at the
+  page's top, or scrolled less than the header's height), yet the header and the back bar under it hold the screen's
+  top. The board's rule 2 says the label never sits over either. So the tap measures that edge (`topEdgeNow`, as
+  before) and, when it is lower than the CSS reaches, publishes it as `--about-dock-floor`. The dock then stays 12px
+  under where the bars ended at the tap while they scroll off with the page, which is the shipped item 6 behavior.
+  Once the header has left with the page, a returning header (79) is never below that floor, so it still rides.
+- **The decision reads the dock as placed.** `PinDock`'s layout effect sets `data-about-dock-at=top` on itself, reads
+  its box, and puts it back, so `dockPlace`'s cover check uses the CSS's own top (inset, bars and all) plus the floor.
+- **Proof.** `dock-place.test.ts`: the threshold, the floor (header in the page at 0 and at 30px, with and without the
+  back bar), and the cover check with the floor. `labelled-screen.test.tsx`: the class carries the formula, the
+  vars, `bottom-auto`, the transition and its reduced-motion opt-out, and the floor is set only for a header in the
+  page. Seven mutations (floor style off, transition off, reduced-motion opt-out off, no measuring flip, floor never
+  set, floor ignored in the cover check, back bar dropped from the formula) each fail at least one test.
+- **Measured at 390×844 on a scratch branch (dock top, px).**
+  - No back bar: tap with the header away 12; scroll up, header back 91; 60ms into the slide away 50; away again 12.
+  - Back bar: header shown 138; 60ms into the slide away 100; away 59.
+  - Header in the page at scrollY 0, back bar 79–126: floor 126, dock 138.
+  - Reduced motion: `transition-property: none`.
+  - `--about-back-h` 47px with the bar drawn, unset once it is gone; `scroll-margin-top` 46px then 16px.
+
 ### The Try it beat (Hugh's ruling, 2026-10-29)
 
 - **Change.** `reveal` takes `{ beat }`, default true. `scrollToTarget` passes it through, and only `useToolLanding`
@@ -111,7 +146,8 @@ not draw are listed under Open, and neither blocks.
 
 ### Open: cases the boards do not draw
 
-1. **The header returning over a top dock.** The dock was placed while the header was away (top 12). The reader then
+1. **The header returning over a top dock.** Resolved by Small items 4 item 3 (the label rides the header), above.
+   As first found: the dock was placed while the header was away (top 12). The reader then
    scrolls up and the header slides back.
    - The shipped dock is `z-[34]`, over the header's `z-30`, so it covers the header's lower edge.
    - The board stacks the dock under the header (z 5 vs 6), which would instead hide the dock's top.

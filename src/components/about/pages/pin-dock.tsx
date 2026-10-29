@@ -16,11 +16,12 @@
 // every tap. Capped at 40% of the viewport, its words scrolling inside, so a landscape phone keeps the region in view.
 //
 // A low region (Small items 3 item 6, board `Dock-Low-Region.html`): when the dock at the foot would cover the region
-// it describes, it docks at the top of the visible band instead, 12px under whatever holds the top of the screen at the
-// tap (`dockPlace`), and never under the notch's safe-area inset. Decided once, before the first paint of each tap's dock (the screen keys the dock on its label, so
-// another tap mounts a new one and decides again); scrolling afterwards never moves it. Same look, gutters and ✕.
+// it describes, it docks at the top of the visible band instead (`dockPlace`). Top or foot is decided once, before the
+// first paint of each tap's dock (the screen keys the dock on its label, so another tap mounts a new one and decides
+// again). At the top it rides the header (Small items 4 item 3, board `Dock-Header.html`): `DOCK_AT_TOP` is live CSS,
+// 12px under the back bar or the returned header, moving on the header's own slide. Same look, gutters and ✕.
 
-import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
 import { dockPlace, type DockPlace } from "../../../lib/about/dock-place";
 import type { ScreenLabel } from "../../../lib/about/pins";
@@ -70,16 +71,15 @@ export function topEdgeNow(): number {
   return edge;
 }
 
-/** The top safe-area inset in pixels now: a hidden probe one `env(safe-area-inset-top)` tall, measured and removed
- *  (0 without a notch, or where the page does not extend under it). */
-export function safeTopNow(): number {
-  const probe = document.createElement("div");
-  probe.style.cssText = "position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none;height:env(safe-area-inset-top,0px)";
-  document.body.appendChild(probe);
-  const h = probe.getBoundingClientRect().height;
-  probe.remove();
-  return h;
-}
+/**
+ * The top dock's place (Small items 4 item 3): the higher of 12px under the notch's inset, 12px under the back bar and
+ * the returned header (`--about-back-h` is the back bar's height while it shows, `--header-offset` the room a returned
+ * header takes), and 12px under the floor a header still in the page set at the tap (`--about-dock-floor`). Its `top`
+ * moves on the header's own slide (`--header-ms`, `--header-ease`: 200ms back, 160ms away); reduced motion jumps. At
+ * the foot `top` is `auto`, which never animates. Every class spelled whole so Tailwind sees it.
+ */
+export const DOCK_AT_TOP =
+  "data-[about-dock-at=top]:top-[max(env(safe-area-inset-top,0px)_+_12px,var(--header-offset,0px)_+_var(--about-back-h,0px)_+_12px,var(--about-dock-floor,0px)_+_12px)] data-[about-dock-at=top]:bottom-auto transition-[top] duration-[var(--header-ms,200ms)] ease-[var(--header-ease,var(--motion-ease-out))] motion-reduce:transition-none";
 
 export function PinDock({
   label, onClose, region,
@@ -91,13 +91,18 @@ export function PinDock({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState<DockPlace>({ at: "foot" });
-  // Once, on the tap that mounted this dock, before it paints: measured at the foot, its shipped place.
+  // Once, on the tap that mounted this dock, before it paints: measured at the foot, its shipped place, then at the
+  // top as its CSS places it now (from `auto`, so nothing animates), and put back for React to settle.
   const read = useRef(region);
   useLayoutEffect(() => {
-    const dock = ref.current?.getBoundingClientRect();
+    const el = ref.current;
+    const foot = el?.getBoundingClientRect();
     const lit = read.current()?.getBoundingClientRect();
-    if (!dock || !lit) return;
-    const next = dockPlace({ region: lit, foot: dock, topEdge: topEdgeNow(), safeTop: safeTopNow() });
+    if (!el || !foot || !lit || lit.bottom <= foot.top) return;
+    el.setAttribute("data-about-dock-at", "top");
+    const top = el.getBoundingClientRect().top;
+    el.setAttribute("data-about-dock-at", "foot");
+    const next = dockPlace({ region: lit, foot, top, topEdge: topEdgeNow() });
     if (next.at === "top") setPlace(next);
   }, []);
   return (
@@ -105,8 +110,8 @@ export function PinDock({
       ref={ref}
       data-about-dock={label.key}
       data-about-dock-at={place.at}
-      style={place.at === "top" ? { top: place.top, bottom: "auto" } : undefined}
-      className="fixed bottom-[calc(var(--tabbar-h)+12px)] left-[12px] right-[12px] z-[34] flex max-h-[40dvh] items-start gap-[12px] rounded-[12px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_55%,var(--border-strong))] bg-[color:var(--elevated)] py-[12px] pl-[14px] pr-[12px] text-[14px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_-12px_36px_rgb(0_0_0/0.45)] md:hidden"
+      style={place.at === "top" && place.floor !== null ? ({ "--about-dock-floor": `${place.floor}px` } as CSSProperties) : undefined}
+      className={`${DOCK_AT_TOP} fixed bottom-[calc(var(--tabbar-h)+12px)] left-[12px] right-[12px] z-[34] flex max-h-[40dvh] items-start gap-[12px] rounded-[12px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_55%,var(--border-strong))] bg-[color:var(--elevated)] py-[12px] pl-[14px] pr-[12px] text-[14px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_-12px_36px_rgb(0_0_0/0.45)] md:hidden`}
     >
       <span
         aria-hidden

@@ -36,6 +36,9 @@
    - The top dock's `top` is `calc(var(--header-offset, 0px) + var(--about-back-h, 0px) + 12px)`, on the header's 200 ms in / 160 ms out slide.
    - The top-or-foot choice is still made once, on the tap.
    - The foot dock and desktop are unchanged.
+   - Built with Small items 3's items 2 and 6 (branch `about-tryit-scroll`); its engineering audit is in
+     `design/design_handoff_the99_small_items_3/READINESS.md`, "Small items 4 item 3, folded in", including the one
+     case the board does not draw (a header still in the page sets a floor).
 
 ## Files
 

@@ -59,8 +59,10 @@ export function AreaPage({
   return (
     <div
       className={`flex flex-col pb-[30px] md:px-[30px] md:pb-[64px] ${
-        // The back bar's height, so a section brought into view starts under it, not behind it.
-        back ? "[--about-back-h:47px] md:[--about-back-h:51px]" : ""
+        // The back bar's height while it shows, so a section brought into view starts under it, not behind it, and
+        // the phone's top dock sits under it (Small items 4 item 3). Keyed on the bar itself: it goes once the live
+        // address drops its `from`, and the room goes with it.
+        back ? "has-[[data-about-back]]:[--about-back-h:47px] md:has-[[data-about-back]]:[--about-back-h:51px]" : ""
       }`}
     >
       {back && <BackBar from={back.from} screen={back.screen} />}
@@ -100,8 +102,9 @@ export function AreaPage({
                   id={s.id}
                   aria-labelledby={`${s.id}-name`}
                   // Under the back bar a section is brought in with its top rule tucked under the bar's own (Ways-In:
-                  // the section's head sits right under the bar, one rule between them); with no bar, 16px clear.
-                  className={`flex ${back ? "scroll-mt-[calc(var(--about-back-h)-1px)]" : "scroll-mt-[16px]"} flex-col gap-[16px] px-[16px] pb-[30px] md:gap-[20px] md:px-0 md:pb-[40px] ${
+                  // the section's head sits right under the bar, one rule between them); with no bar, 16px clear (17px less the
+                  // rule, once the bar has gone).
+                  className={`flex ${back ? "scroll-mt-[calc(var(--about-back-h,17px)-1px)]" : "scroll-mt-[16px]"} flex-col gap-[16px] px-[16px] pb-[30px] md:gap-[20px] md:px-0 md:pb-[40px] ${
                     i === 0 ? "mt-[18px] border-t border-t-[color:var(--border)] pt-[26px] md:pt-[34px]" : "pt-[30px]"
                   }`}
                 >
