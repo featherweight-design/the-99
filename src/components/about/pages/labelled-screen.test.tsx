@@ -1,7 +1,10 @@
 import { fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScreenModel } from "../../../lib/about/pins";
-import { LabelledScreen } from "./labelled-screen";
+import { HALO_REACH, haloBox, LabelledScreen } from "./labelled-screen";
+
+const { reveal } = vi.hoisted(() => ({ reveal: vi.fn() }));
+vi.mock("../../../lib/ui/reveal", () => ({ reveal }));
 
 // The labelled screen (About visual PR 3, Task 3.2; calls 0, 1 and 8): each width in its own tree behind `md`, no pins
 // while a capture loads, and a press on a label or its pin lights the region, the pin and the line together.
@@ -34,6 +37,7 @@ beforeEach(() => {
   });
 });
 afterEach(() => {
+  reveal.mockClear();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -76,7 +80,7 @@ describe("LabelledScreen", () => {
     expect(line.getAttribute("aria-pressed")).toBe("true");
     const halo = phone.querySelector<HTMLElement>("[data-about-halo]")!;
     expect(halo.getAttribute("data-about-halo")).toBe("a/s/two");
-    expect(halo.style.left).toBe("11%");
+    expect(parseFloat(halo.style.left)).toBeCloseTo(0.11 * 388, 1);
     expect(phone.querySelector("[data-about-pin='a/s/two']")!.hasAttribute("data-lit")).toBe(true);
     expect(phone.querySelector("[data-about-pin='a/s/one']")!.hasAttribute("data-lit")).toBe(false);
     fireEvent.click(line);
@@ -90,6 +94,32 @@ describe("LabelledScreen", () => {
     fireEvent.click(desk.querySelector("[data-about-pin='a/s/one']")!);
     expect(desk.querySelector("[data-about-label='a/s/one'] button")!.getAttribute("aria-pressed")).toBe("true");
     expect(desk.querySelector("[data-about-halo]")!.getAttribute("data-about-halo")).toBe("a/s/one");
+  });
+
+  it("a pressed pin brings its own width's line into view, as little as it takes; a label press and an unlight do not", () => {
+    const { container } = draw();
+    const phone = container.querySelector<HTMLElement>("[data-about-width='phone']")!;
+    fireEvent.load(phone.querySelector("img")!);
+    fireEvent.click(phone.querySelector("[data-about-pin='a/s/two']")!);
+    expect(reveal).toHaveBeenCalledTimes(1);
+    expect(reveal).toHaveBeenCalledWith(phone.querySelector("[data-about-label='a/s/two']"), "nearest");
+    fireEvent.click(phone.querySelector("[data-about-pin='a/s/two']")!);
+    fireEvent.click(phone.querySelector("[data-about-label='a/s/one'] button")!);
+    expect(reveal).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("haloBox", () => {
+  it("keeps a region on the picture's edge far enough inside that its ring is not cut off", () => {
+    const b = haloBox([0, 0.9, 1, 0.1], 400, 800);
+    expect(b.left).toBe(HALO_REACH);
+    expect(b.left + b.width).toBe(400 - HALO_REACH);
+    expect(b.top).toBe(720);
+    expect(b.top + b.height).toBe(800 - HALO_REACH);
+  });
+
+  it("leaves a region clear of the edges as measured", () => {
+    expect(haloBox([0.25, 0.25, 0.5, 0.25], 400, 800)).toEqual({ left: 100, top: 200, width: 200, height: 200 });
   });
 });
 

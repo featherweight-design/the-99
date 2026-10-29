@@ -8,6 +8,8 @@
 //
 // Phone: each capture full width with its labels under it. Desktop: each capture 700 wide with its labels beside it.
 // Pressing a label (or its pin) lights its region with `REGION_HALO` (the Ways-In board's ring and 0.34 dim), its pin and its line.
+// A pin press also brings its line into view, as little as it takes: on a phone the list sits under a capture taller
+// than the screen, so a lit pin's words were out of sight (Hugh, 2026-10-29).
 // While a capture loads its frame holds the capture's size with a quiet skeleton and no pins; the labels read without it.
 
 "use client";
@@ -15,11 +17,25 @@
 import { useEffect, useRef, useState } from "react";
 import type { PageWidth } from "../../../lib/about/page-shots";
 import { pinsAt, type ScreenLabel, type ScreenModel, type ScreenShot } from "../../../lib/about/pins";
+import { reveal } from "../../../lib/ui/reveal";
 import { LandingCard, LandingShowMe, NewTag, useLabelLanding, useLandingRequest } from "../../discovery/label-landing";
 
 // The Ways-In board dims the screen around a lit region at 0.34; the Tools tab card keeps its own halo.
 const REGION_HALO =
   "0 0 0 2px color-mix(in oklab, var(--accent) 75%, transparent), 0 0 0 6px color-mix(in oklab, var(--accent) 20%, transparent), 0 0 0 2000px color-mix(in oklab, var(--bg) 34%, transparent)";
+
+// How far `REGION_HALO`'s ring reaches past its region (the 6px spread). A region on the picture's edge is drawn this far
+// inside it, or the frame's `overflow-hidden` cuts its ring off (Hugh, 2026-10-29).
+export const HALO_REACH = 6;
+
+/** A lit region's box in the picture's CSS pixels, kept `HALO_REACH` inside a `w` by `h` picture so its ring shows. */
+export function haloBox(box: readonly [number, number, number, number], w: number, h: number) {
+  const left = Math.min(Math.max(box[0] * w, HALO_REACH), w - HALO_REACH);
+  const top = Math.min(Math.max(box[1] * h, HALO_REACH), h - HALO_REACH);
+  const right = Math.max(Math.min((box[0] + box[2]) * w, w - HALO_REACH), left);
+  const bottom = Math.max(Math.min((box[1] + box[3]) * h, h - HALO_REACH), top);
+  return { left, top, width: right - left, height: bottom - top };
+}
 
 const PIN_SHADOW = "0 0 0 2px var(--bg), 0 3px 10px rgb(0 0 0 / 0.55)";
 const PIN_SHADOW_LIT =
@@ -35,7 +51,7 @@ function Picture({
   shot: ScreenShot;
   width: PageWidth;
   lit: string | null;
-  onPress: (key: string) => void;
+  onPress: (key: string, fromPin?: boolean) => void;
 }) {
   const img = useRef<HTMLImageElement>(null);
   const frame = useRef<HTMLDivElement>(null);
@@ -102,18 +118,12 @@ function Picture({
           ))}
         </div>
       )}
-      {loaded && litPin && (
+      {loaded && litPin && rendered && (
         <span
           aria-hidden
           data-about-halo={litPin.key}
           className="pointer-events-none absolute z-[2] rounded-[8px]"
-          style={{
-            left: `${litPin.box[0] * 100}%`,
-            top: `${litPin.box[1] * 100}%`,
-            width: `${litPin.box[2] * 100}%`,
-            height: `${litPin.box[3] * 100}%`,
-            boxShadow: REGION_HALO,
-          }}
+          style={{ ...haloBox(litPin.box, rendered.w, rendered.h), boxShadow: REGION_HALO }}
         />
       )}
       {loaded &&
@@ -126,7 +136,7 @@ function Picture({
             aria-hidden
             data-about-pin={p.key}
             data-lit={p.key === lit ? "" : undefined}
-            onClick={() => onPress(p.key)}
+            onClick={() => onPress(p.key, true)}
             className="absolute z-[3] -ml-[12px] -mt-[12px] h-[24px] w-[24px] cursor-pointer rounded-full border-0 bg-[color:var(--accent)] p-0 text-center font-mono text-[12px] font-semibold leading-[24px] text-[color:var(--bg)]"
             style={{ left: `${p.x}px`, top: `${p.y}px`, boxShadow: p.key === lit ? PIN_SHADOW_LIT : PIN_SHADOW }}
           >
@@ -207,11 +217,18 @@ function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
     setFrom(request);
     if (landed !== null) setLit(landed);
   }
-  const press = (key: string) => setLit((cur) => (cur === key ? null : key));
+  const root = useRef<HTMLDivElement>(null);
+  const press = (key: string, fromPin = false) => {
+    const on = lit !== key;
+    setLit(on ? key : null);
+    // Its line, in this width's own tree (the other width draws the same keys, hidden).
+    if (on && fromPin) reveal(root.current?.querySelector(`[data-about-label="${CSS.escape(key)}"]`), "nearest");
+  };
   const unpinned = model.labels.filter((l) => l.shot === null);
   const desk = width === "desktop";
   return (
     <div
+      ref={root}
       data-about-width={width}
       className={desk ? "hidden flex-col gap-[20px] md:flex" : "flex flex-col gap-[16px] md:hidden"}
     >
