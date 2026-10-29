@@ -15,7 +15,7 @@ Two of Hugh's seven points were engineering defects and ship in the PR that carr
   the screen. A pin press now also scrolls its line into view, as little as it takes (`reveal`, `nearest`, a jump
   under reduced motion).
 - **Some highlight boxes were cut off.** A region on the capture's edge drew its ring outside the frame, which clips
-  it. The lit box now sits 6px inside the frame, so the whole ring shows. If Hugh meant a region measured too tight
+  it. The lit box now sits 8px inside the frame, so the whole ring shows. If Hugh meant a region measured too tight
   around its control instead, name the label and engineering re-measures it.
 
 ## What Design owes (five calls)

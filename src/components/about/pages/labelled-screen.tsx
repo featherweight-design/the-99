@@ -24,9 +24,11 @@ import { LandingCard, LandingShowMe, NewTag, useLabelLanding, useLandingRequest 
 const REGION_HALO =
   "0 0 0 2px color-mix(in oklab, var(--accent) 75%, transparent), 0 0 0 6px color-mix(in oklab, var(--accent) 20%, transparent), 0 0 0 2000px color-mix(in oklab, var(--bg) 34%, transparent)";
 
-// How far `REGION_HALO`'s ring reaches past its region (the 6px spread). A region on the picture's edge is drawn this far
-// inside it, or the frame's `overflow-hidden` cuts its ring off (Hugh, 2026-10-29).
-export const HALO_REACH = 6;
+// How far inside the picture a lit region is kept, or the frame's `overflow-hidden` cuts its ring off (Hugh, 2026-10-29).
+// The ring reaches 6px past the region, but in a corner it must also clear the frame's rounding: the ring's outer arc
+// (the halo's 8px radius plus the 6px spread) stays inside the phone frame's 19px inner radius from an inset of 7.5px,
+// and inside the desktop frame's 11px from 5.2px, so 8 clears both, edge and corner.
+export const HALO_REACH = 8;
 
 /** A lit region's box in the picture's CSS pixels, kept `HALO_REACH` inside a `w` by `h` picture so its ring shows. */
 export function haloBox(box: readonly [number, number, number, number], w: number, h: number) {
