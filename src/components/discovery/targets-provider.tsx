@@ -51,6 +51,8 @@ const TargetsContext = createContext<Ctx | null>(null);
 
 /** While a landing waits, how often it looks again for a target that is registered but not yet shown. */
 const LOOK_AGAIN_MS = 200;
+/** The attributes whose change can show a registered control (`isDrawn`), watched while a landing waits. */
+const SHOWN_BY = ["hidden", "class", "style"];
 
 /** The first of an id's controls in the document that is drawn (`isDrawn`): one under `hidden` is passed over until it
  *  shows, and so is the copy of a control a stylesheet hides at this width. */
@@ -189,11 +191,17 @@ export function TargetsProvider({ children, navLocked = null }: { children: Reac
         const now = resolve(id);
         if (now !== null) return done(now);
         let timer = 0;
-        // A registration wakes the wait at once; the look-again catches a registered control that shows later.
+        // A registration wakes the wait at once, and so does the DOM change that shows a registered control (its panel's
+        // `hidden` lifted, a class or style that drew it): the observer reads it in the same task, so the landing scrolls
+        // as soon as the control can be seen, never a look-again later. The look-again stays behind it for a change no
+        // mutation reports (a stylesheet arriving, the viewport crossing a breakpoint).
         const look = window.setInterval(() => check(), LOOK_AGAIN_MS);
+        const shown = typeof MutationObserver === "function" ? new MutationObserver(() => check()) : null;
+        shown?.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: SHOWN_BY });
         const finish = (el: HTMLElement | null) => {
           window.clearTimeout(timer);
           window.clearInterval(look);
+          shown?.disconnect();
           waiters.current.delete(check);
           signal?.removeEventListener("abort", abort);
           done(el);

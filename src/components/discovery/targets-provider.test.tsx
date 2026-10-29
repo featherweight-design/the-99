@@ -258,9 +258,64 @@ describe("TargetsProvider", () => {
     );
     expect(api!.haloTarget("suggested-changes")).toBe(false);
     const found = api!.whenTarget("suggested-changes", 5000);
+    let got: HTMLElement | null | undefined;
+    void found.then((el) => (got = el));
     act(() => screen.getByRole("button", { name: "show" }).click());
-    act(() => vi.advanceTimersByTime(200));
+    // The DOM change that lifts `hidden` wakes the wait itself: no timer moves, no look-again is waited out.
+    await act(async () => {});
+    expect(got).toBe(screen.getByRole("button", { name: "Tile" }));
+  });
+
+  it("stops watching the page once a wait ends: found, timed out, or aborted, so nothing is left running", async () => {
+    const observe = vi.spyOn(MutationObserver.prototype, "observe");
+    const disconnect = vi.spyOn(MutationObserver.prototype, "disconnect");
+    function Gated() {
+      const [shown, setShown] = useState(false);
+      return (
+        <>
+          <div hidden={!shown}>
+            <Control id="suggested-changes" name="Tile" />
+          </div>
+          <button type="button" onClick={() => setShown(true)}>
+            show
+          </button>
+        </>
+      );
+    }
+    render(
+      <TargetsProvider>
+        <Grab />
+        <Gated />
+      </TargetsProvider>,
+    );
+    const live = () => observe.mock.calls.length - disconnect.mock.calls.length;
+    const before = live();
+
+    // Never drawn within its wait: it gives up at the limit and lets the page go.
+    const never = api!.whenTarget("matchups", 5000);
+    expect(live()).toBe(before + 1);
+    act(() => vi.advanceTimersByTime(4999));
+    expect(live()).toBe(before + 1);
+    act(() => vi.advanceTimersByTime(1));
+    await expect(never).resolves.toBeNull();
+    expect(live()).toBe(before);
+
+    // The reader leaves (the landing's abort): the same.
+    const abort = new AbortController();
+    const left = api!.whenTarget("matchups", Infinity, abort.signal);
+    expect(live()).toBe(before + 1);
+    abort.abort();
+    await expect(left).resolves.toBeNull();
+    expect(live()).toBe(before);
+
+    // Found: the same, and the timer it held is gone with it.
+    const found = api!.whenTarget("suggested-changes", 5000);
+    act(() => screen.getByRole("button", { name: "show" }).click());
     await expect(found).resolves.toBe(screen.getByRole("button", { name: "Tile" }));
+    expect(live()).toBe(before);
+    expect(vi.getTimerCount()).toBe(0);
+    observe.mockRestore();
+    disconnect.mockRestore();
   });
 
   it("takes every halo off when the provider leaves", () => {
