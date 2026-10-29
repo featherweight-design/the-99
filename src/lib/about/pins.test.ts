@@ -43,6 +43,9 @@ function bracketRule(pins: readonly PlacedPin[], f: { w: number; h: number }, wh
     expect(k.r, where).toBeLessThanOrEqual(f.w - BRACKET_EDGE);
     expect(k.b, where).toBeLessThanOrEqual(f.h - BRACKET_EDGE);
     expect(k.arm, where).toBeLessThanOrEqual(BRACKET_ARM);
+    // Review round 1: a target at the edge slides its bracket in, never cuts it below the least size.
+    expect(k.r - k.l, where).toBeGreaterThanOrEqual(BRACKET_MIN - 0.1);
+    expect(k.b - k.t, where).toBeGreaterThanOrEqual(BRACKET_MIN - 0.1);
   }
 }
 

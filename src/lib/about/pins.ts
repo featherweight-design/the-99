@@ -48,16 +48,26 @@ const round = (v: number) => Math.round(v * 10) / 10;
 /** The row a region's pin is level with: its top plus half its height (the half capped at `PIN_GAP / 2`), held inside. */
 const rowOf = (box: Box, h: number) => clamp(box.y + Math.min(box.h, PIN_GAP) / 2, R, h - R);
 
+/**
+ * One axis of a bracket: centred on the region, `BRACKET_PAD` out and at least `BRACKET_MIN` long, cut to sit
+ * `BRACKET_EDGE` inside the frame. A cut that leaves it under `BRACKET_MIN` slides it back in to that length instead,
+ * so a small target at the edge keeps its least size (review round 1).
+ */
+function spanOf(start: number, size: number, frame: number): [number, number] {
+  const mid = start + size / 2;
+  const half = Math.max(size / 2 + BRACKET_PAD, BRACKET_MIN / 2);
+  const lo = clamp(mid - half, BRACKET_EDGE, frame - BRACKET_EDGE);
+  const hi = clamp(mid + half, BRACKET_EDGE, frame - BRACKET_EDGE);
+  const least = Math.min(BRACKET_MIN, Math.max(frame - 2 * BRACKET_EDGE, 0));
+  if (hi - lo >= least) return [lo, hi];
+  const from = clamp(mid - least / 2, BRACKET_EDGE, frame - BRACKET_EDGE - least);
+  return [from, from + least];
+}
+
 /** A region's corner brackets: centred on it, `BRACKET_PAD` out, at least `BRACKET_MIN` square, held `BRACKET_EDGE` inside. */
 export function bracketOf(box: Box, w: number, h: number): Bracket {
-  const cx = box.x + box.w / 2;
-  const cy = box.y + box.h / 2;
-  const hw = Math.max(box.w / 2 + BRACKET_PAD, BRACKET_MIN / 2);
-  const hh = Math.max(box.h / 2 + BRACKET_PAD, BRACKET_MIN / 2);
-  const l = clamp(cx - hw, BRACKET_EDGE, w - BRACKET_EDGE);
-  const t = clamp(cy - hh, BRACKET_EDGE, h - BRACKET_EDGE);
-  const r = clamp(cx + hw, BRACKET_EDGE, w - BRACKET_EDGE);
-  const b = clamp(cy + hh, BRACKET_EDGE, h - BRACKET_EDGE);
+  const [l, r] = spanOf(box.x, box.w, w);
+  const [t, b] = spanOf(box.y, box.h, h);
   return { l: round(l), t: round(t), r: round(r), b: round(b), arm: round(Math.min(BRACKET_ARM, (r - l) / 2, (b - t) / 2)) };
 }
 

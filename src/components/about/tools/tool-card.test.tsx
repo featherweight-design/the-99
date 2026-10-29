@@ -99,6 +99,9 @@ describe("ToolCard: one press per card", () => {
       "Show it above ↑",
       "Try it on Kinnan→",
     ]);
+    // Review round 1: a coarse pointer gets a real 44px row, never a hit drawn past the line over the inert body.
+    expect(where.className).toContain("pointer-coarse:min-h-[44px]");
+    expect(where.className).not.toContain("after:content-");
   });
 
   it("frames the picture apart from the words, and the button sits at the card's foot from md", () => {

@@ -16,7 +16,6 @@ import { PendingReporter } from "../../shell/pending-reporter";
 import { showcaseCopy } from "../../../lib/copy/discovery";
 import type { Shot } from "../../../lib/about/shots";
 import type { ToolCardModel } from "../../../lib/discovery/showcase";
-import { TOUCH_HIT } from "../../ui/touch-hit";
 
 /** The tool card's halo on its picture: an accent ring with the rest of the picture dimmed. About's labelled screen lights
  *  a pressed label's region with the same look (`labelled-screen.tsx`). */
@@ -57,10 +56,11 @@ function Picture({ shot, name }: { shot: Shot | null; name: string }) {
   );
 }
 
-// TOUCH_HIT: a coarse pointer reaches 44px round the 12px line (`.where`).
-const WHERE = `${TOUCH_HIT} self-start font-mono text-[12px] leading-[1.5] text-[color:var(--fg-muted)] underline decoration-[color:var(--border-strong)] underline-offset-[3px] hover:text-[color:var(--fg)]`;
+// `.where`. A coarse pointer gets a real 44px row, not a hit drawn past the line: one reaching 13px up covered the
+// body's last words, which are inert (review round 1).
+const WHERE = `pointer-coarse:flex pointer-coarse:min-h-[44px] pointer-coarse:items-center self-start font-mono text-[12px] leading-[1.5] text-[color:var(--fg-muted)] underline decoration-[color:var(--border-strong)] underline-offset-[3px] hover:text-[color:var(--fg)]`;
 const MONO_LINE = "font-mono text-[12px] leading-[1.5] text-[color:var(--fg-muted)]";
-// `relative` so the button paints over the Where line's coarse-pointer hit box above it. `mt-auto` from md puts it at
+// `mt-auto` from md puts it at
 // the stretched card's foot (`.drow .ntc .btn`).
 const BUTTON =
   "relative mt-[4px] flex min-h-[44px] items-center justify-center gap-[8px] rounded-[10px] px-[12px] text-center no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:mt-auto";
