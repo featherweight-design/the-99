@@ -119,6 +119,8 @@ export type RunV2Args = {
   onLine?: (side: V2Side, line: V2Line) => void | Promise<void>;
   /** A list is in: its last call ended (or was skipped). */
   onListIn?: (side: V2Side) => void | Promise<void>;
+  /** The cut call is about to ask for `ask` cuts: the figure the wait's "asked for" states (plan PR 7, follow-up c). */
+  onCutAsk?: (ask: number) => void | Promise<void>;
 };
 
 export async function runV2(args: RunV2Args): Promise<V2Report> {
@@ -264,6 +266,7 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
   /** The cut call, asked `ask`, shown `comingIn`; true when it ended well. */
   async function cutCall(ask: number, comingIn: string[]): Promise<boolean> {
     caps.cut = ask;
+    await args.onCutAsk?.(ask);
     const r = await run("cuts", "cut", { list: "cuts", n, ask, aim: args.aim, comingIn });
     if (r === null) return false;
     if (!r.ok) cutsFailed = { errorClass: r.errorClass! };

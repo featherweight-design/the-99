@@ -158,6 +158,8 @@ export const suggestedChangesV2Copy = {
     // You asked's quieter line (Results boards: "3 in, 3 out · keep 2 · Core · no cap · any set · any card").
     askedCount: (n: number) => `${n} in, ${n} out`,
     askedKeep: (b: number, name: string) => `keep ${b} · ${name}`,
+    // Keep on a deck read as a range, as the intake offered it ("Keep at 1 or 2 · Exhibition or Core").
+    askedKeepRange: (low: number, high: number, face: string) => `keep ${low} or ${high} · ${face}`,
     askedCap: (dollars: string) => `most ${dollars} a card`,
     askedNoCap: "no cap",
     askedSets: (sets: string) => `from ${sets}`,

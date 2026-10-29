@@ -40,6 +40,14 @@ describe("v2Outcome", () => {
     });
   });
 
+  it("keeps the cut call's ask, and stores none for a run whose cut call never ran", () => {
+    const calls = [{ stage: "additions" as const, ask: 15, ok: true, ms: 1, lines: 15, kept: 6, malformed: 0 },
+      { stage: "cuts" as const, ask: 15, ok: true, ms: 1, lines: 15, kept: 9, malformed: 0 },
+      { stage: "cutsRefill" as const, ask: 2, ok: true, ms: 1, lines: 2, kept: 2, malformed: 0 }];
+    expect(v2Outcome(report({ calls }), start, 200).validationReport.v2!.cutAsk).toBe(15);
+    expect(v2Outcome(report({ calls: calls.slice(0, 1) }), start, 200).validationReport.v2!.cutAsk).toBeUndefined();
+  });
+
   it("names the restriction that bound a short list, and keeps the charge", () => {
     const r = v2Outcome(report({ additions: list(3, 5, ["overCap", "overCap", "offSet"]), charge: { outcome: "spent" } }), start, 200);
     expect(r.validationReport.v2!.shortReason).toEqual({ add: "overCap", cut: null });

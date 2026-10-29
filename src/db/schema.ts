@@ -2931,6 +2931,8 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   /** The bracket choice beside the request (Hugh, §12 Q7; the handoff's Keep / Down / Up), and the bracket it aims at. */
   bracketChoice: text("bracket_choice"),
   bracketTarget: smallint("bracket_target"),
+  /** Keep on a deck read as a range: the range's bottom (`BracketAim.low`), so You asked can say "keep 1 or 2". Null otherwise. */
+  bracketLow: smallint("bracket_low"),
 }, (t) => [
   check("deck_suggestion_runs_requested_count_check", sql`${t.requestedCount} is null or ${t.requestedCount} between 1 and 20`),
   check("deck_suggestion_runs_request_text_check", sql`${t.requestText} is null or char_length(${t.requestText}) <= 500`),
@@ -2938,6 +2940,11 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
     "deck_suggestion_runs_bracket_check",
     // Both or neither, written out: a CHECK that evaluates to NULL passes, so `in` and `between` alone would let one half in.
     sql`(${t.bracketChoice} is null and ${t.bracketTarget} is null) or (${t.bracketChoice} is not null and ${t.bracketTarget} is not null and ${t.bracketChoice} in ('keep', 'down', 'up') and ${t.bracketTarget} between 1 and 5)`,
+  ),
+  check(
+    "deck_suggestion_runs_bracket_low_check",
+    // Spelled out for the same NULL reason: only a Keep, and never above its top.
+    sql`${t.bracketLow} is null or (${t.bracketChoice} is not null and ${t.bracketTarget} is not null and ${t.bracketChoice} = 'keep' and ${t.bracketLow} between 1 and ${t.bracketTarget})`,
   ),
   check("deck_suggestion_runs_tool_check", sql`${t.tool} in ('suggested_changes', 'proposed_cuts')`),
   check(

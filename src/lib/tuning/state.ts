@@ -177,7 +177,8 @@ export type V2Ask = {
   runId: string;
   requestedCount: number;
   request: string | null;
-  bracket: { choice: "keep" | "down" | "up"; target: number } | null;
+  /** `low`: Keep on a deck read as a range, the range's bottom. */
+  bracket: { choice: "keep" | "down" | "up"; target: number; low?: number } | null;
   restrictions: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean } | null;
 };
 
@@ -192,4 +193,6 @@ export type TuningLive = {
   newestPriceAsOf: Date | null;
   /** What the player asked this run, for the wait's You asked. Absent from a read made before PR 6. */
   ask?: V2Ask;
+  /** What the cut call asked for, once it has started (`V2RunReport.cutAsk`). */
+  cutAsk?: number;
 };

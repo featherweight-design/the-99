@@ -126,6 +126,7 @@ export async function startRun(
           requestText: opts.v2.requestText,
           bracketChoice: opts.v2.bracket?.choice ?? null,
           bracketTarget: opts.v2.bracket?.target ?? null,
+          bracketLow: opts.v2.bracket?.low ?? null,
           validationReport: opts.v2.report,
         } : {}),
       }).returning({ id: deckSuggestionRuns.id });
@@ -291,6 +292,13 @@ export async function markV2Progress(runId: string, key: "in" | "refilling", sid
   const path = `{v2,${key},${side}}`;
   await db.update(deckSuggestionRuns)
     .set({ validationReport: sql`jsonb_set(${deckSuggestionRuns.validationReport}, ${path}::text[], ${value ? "true" : "false"}::jsonb, true)` })
+    .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")));
+}
+
+/** A v2 run's cut ask (`V2RunReport.cutAsk`), written into its pending report when the cut call starts. */
+export async function markV2CutAsk(runId: string, ask: number): Promise<void> {
+  await db.update(deckSuggestionRuns)
+    .set({ validationReport: sql`jsonb_set(${deckSuggestionRuns.validationReport}, '{v2,cutAsk}'::text[], to_jsonb(${ask}::int), true)` })
     .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")));
 }
 

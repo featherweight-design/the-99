@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ValidationReport } from "../validate";
 import { v2Line } from "./results-fixture";
-import { bracketOutcome, groupLines, groupsAt, pickCap, shortFacts, shortOfAsk, tally } from "./results";
+import { bracketOutcome, cutAskOf, groupLines, groupsAt, pickCap, shortFacts, shortOfAsk, tally } from "./results";
 
 const adds = (k: number) => Array.from({ length: k }, (_, i) => v2Line(`a${i}`, "add"));
 const cuts = (k: number) => Array.from({ length: k }, (_, i) => v2Line(`c${i}`, "cut"));
@@ -73,6 +73,27 @@ describe("bracketOutcome", () => {
   it("says nothing with no reading", () => {
     expect(bracketOutcome([], null, [])).toBeNull();
   });
+  it("lets the whole set's own permits settle a set the flags cannot", () => {
+    const gc = (id: string) => v2Line(id, "add", { bracketAfter: null });
+    const keep = { choice: "keep" as const, target: 3 };
+    const two = [gc("g1"), gc("g2"), ...cuts(2)];
+    expect(bracketOutcome([3], keep, two, [3])).toEqual({ kind: "stays", bracket: 3 });
+    // Two Game Changers together over a bracket-3 deck's allowance: Keep claims nothing rather than "stays".
+    expect(bracketOutcome([3], keep, two, [4])).toBeNull();
+    expect(bracketOutcome([2], up, [gc("a"), gc("b"), ...cuts(2)], [3])).toEqual({ kind: "reached", from: 2, to: 3 });
+    expect(bracketOutcome([2], up, [gc("a"), gc("b"), ...cuts(2)], [2])).toEqual({ kind: "missed", from: 2, aim: up });
+    const down = { choice: "down" as const, target: 1 };
+    expect(bracketOutcome([2], down, [...adds(2), ...cuts(2)], [1, 2])).toEqual({ kind: "reached", from: 2, to: 1 });
+    // One line a side: the flags still decide, whatever a stale set read says.
+    expect(bracketOutcome([2], up, adds(1), [3])).toEqual({ kind: "missed", from: 2, aim: up });
+  });
+});
+
+describe("cutAskOf", () => {
+  it("states the cut call's stored ask, else the ask of a cut call beside the refill", () => {
+    expect(cutAskOf(10, 6)).toBe(6);
+    expect(cutAskOf(10, undefined)).toBe(15);
+  });
 });
 
 describe("groupLines", () => {
@@ -140,6 +161,10 @@ describe("shortOfAsk", () => {
   it("says which list came up short of what it asked for, and why", () => {
     const r = report({ target: { add: 10, cut: 10 } }, { drops: [{ side: "cut", position: 0, rule: "bracketAim" }] });
     expect(shortOfAsk(10, [...adds(15), ...cuts(12)], r)).toEqual({ side: "cut", short: 3, asked: 15, reason: "bracketAim" });
+  });
+  it("measures the cuts against the cut call's real ask when the run stored it", () => {
+    // The cut call asked 15 beside an additions refill that ended at 6: the cuts are 3 short of 15, not over a derived 9.
+    expect(shortOfAsk(10, [...adds(6), ...cuts(12)], report({ cutAsk: 15 }))).toEqual({ side: "cut", short: 3, asked: 15, reason: null });
   });
   it("is null when both lists met their ask", () => {
     expect(shortOfAsk(10, [...adds(15), ...cuts(15)], report({}))).toBeNull();

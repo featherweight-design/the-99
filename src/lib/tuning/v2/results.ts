@@ -49,24 +49,42 @@ export function tally(picked: readonly LineItem[]): Tally {
  * Single-line flags settle the set only while it holds at most one line a side: an addition can only raise the bracket
  * and a cut only lower it, so a pair's bracket lies between its two lines' own. Past that, lines add up in ways no single
  * flag shows (two Game Changers, each inside a bracket-3 deck's allowance alone, over it together), and the client has no
- * classifier for the whole set: no outcome is claimed (null). Nor is a reach claimed when the pair's other line moves the
- * bracket too.
+ * classifier for the whole set: the bar asks the server for the set's own permits (`readSetPermits`) and passes them as
+ * `setPermits`, which then decide. Without them no outcome is claimed (null), never a false one. Nor is a reach claimed from
+ * the lines alone when the pair's other line moves the bracket too.
  */
 export type BracketOutcome =
   | { kind: "stays"; bracket: number }
   | { kind: "reached"; from: number; to: number }
   | { kind: "missed"; from: number; aim: BracketAim };
 
-export function bracketOutcome(permits: readonly number[], aim: V2Ask["bracket"], picked: readonly LineItem[]): BracketOutcome | null {
+export function bracketOutcome(
+  permits: readonly number[], aim: V2Ask["bracket"], picked: readonly LineItem[], setPermits?: readonly number[] | null,
+): BracketOutcome | null {
   if (permits.length === 0) return null;
   const from = Math.min(...permits);
-  if (picked.filter((l) => l.side === "add").length > 1 || picked.filter((l) => l.side === "cut").length > 1) return null;
+  if (picked.filter((l) => l.side === "add").length > 1 || picked.filter((l) => l.side === "cut").length > 1) {
+    return setPermits ? outcomeOfSet(from, aim, setPermits) : null;
+  }
   if (!aim || aim.choice === "keep") return { kind: "stays", bracket: from };
   const reaches = (l: LineItem) => aim.choice === "up"
     ? reachesAim(aim, l.side, l.bracketAfter)
     : l.bracketAfter !== null && l.bracketAfter.length > 0 && Math.min(...l.bracketAfter) <= aim.target;
   if (!picked.some(reaches)) return { kind: "missed", from, aim };
   return picked.filter((l) => l.bracketAfter !== null).length === 1 ? { kind: "reached", from, to: aim.target } : null;
+}
+
+/**
+ * The outcome from the whole set's own permits. Keep, or no aim: stays while the set leaves the lowest bracket where it was
+ * (else no claim). Up: reached when the set permits the target. Down: reached when the set's lowest bracket is the target
+ * or under it. Pure.
+ */
+export function outcomeOfSet(from: number, aim: V2Ask["bracket"], setPermits: readonly number[]): BracketOutcome | null {
+  if (setPermits.length === 0) return null;
+  const to = Math.min(...setPermits);
+  if (!aim || aim.choice === "keep") return to === from ? { kind: "stays", bracket: from } : null;
+  const reached = aim.choice === "up" ? setPermits.includes(aim.target) : to <= aim.target;
+  return reached ? { kind: "reached", from, to: aim.target } : { kind: "missed", from, aim };
 }
 
 export type Grouping = "type" | "role";
@@ -138,6 +156,15 @@ export function shortFacts(n: number, lines: readonly LineItem[], report: Valida
 }
 
 /**
+ * What the cuts list was asked for: the cut call's stored ask, else (a run from before it was stored, or a cut call not yet
+ * started) ceil(1.5N), the ask whenever the additions call kept any line. Only a run whose additions call kept none asked
+ * less (ceil(1.5K), §5.1a), and the stored ask is what states that one.
+ */
+export function cutAskOf(n: number, stored: number | undefined): number {
+  return stored ?? askFor(n);
+}
+
+/**
  * The wait's last word on a run that ended with a list under what it asked for but not under N (Wait E: "Cuts came up 3
  * short of 15"): the side, by how many, and why (the restriction with the most drops on that side, else none).
  */
@@ -147,7 +174,7 @@ export function shortOfAsk(n: number, lines: readonly LineItem[], report: Valida
   const cuts = lines.length - adds;
   const v2 = report?.v2;
   const askAdd = askFor(v2?.target?.add ?? n);
-  const askCut = askFor(v2?.target?.cut ?? Math.min(n, adds));
+  const askCut = cutAskOf(n, v2?.cutAsk);
   const side = cuts < askCut ? "cut" : adds < askAdd ? "add" : null;
   if (side === null || (side === "cut" && cuts === 0)) return null;
   const asked = side === "add" ? askAdd : askCut;

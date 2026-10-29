@@ -1,0 +1,2 @@
+ALTER TABLE "deck_suggestion_runs" ADD COLUMN "bracket_low" smallint;--> statement-breakpoint
+ALTER TABLE "deck_suggestion_runs" ADD CONSTRAINT "deck_suggestion_runs_bracket_low_check" CHECK ("deck_suggestion_runs"."bracket_low" is null or ("deck_suggestion_runs"."bracket_choice" is not null and "deck_suggestion_runs"."bracket_target" is not null and "deck_suggestion_runs"."bracket_choice" = 'keep' and "deck_suggestion_runs"."bracket_low" between 1 and "deck_suggestion_runs"."bracket_target"));

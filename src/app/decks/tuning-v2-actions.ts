@@ -6,6 +6,7 @@ import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { suggestedChangesV2Enabled } from "../../lib/tuning/flag";
 import { applyPicks, setPicked, undoSet, type ApplySetRefusal } from "../../lib/tuning/v2/apply-set";
+import { readSetPermits } from "../../lib/tuning/v2/set-bracket";
 import { isUuid } from "../../lib/uuid";
 
 /**
@@ -52,4 +53,14 @@ export async function pickSuggestion(itemId: string, picked: boolean): Promise<{
   const reader = await v2Reader();
   if (!reader || !isUuid(itemId) || typeof picked !== "boolean") return { ok: false };
   return { ok: (await setPicked(itemId, reader.userId, picked)) !== null };
+}
+
+/** The brackets the deck would permit with the picked set applied (`readSetPermits`): free, read-only, revalidates nothing. */
+export async function readSuggestionSetBracket(runId: string, addIds: unknown, cutIds: unknown): Promise<{ permits: number[] } | null> {
+  const reader = await v2Reader();
+  const adds = ids(addIds);
+  const cuts = ids(cutIds);
+  if (!reader || !isUuid(runId) || !adds || !cuts || adds.length + cuts.length === 0) return null;
+  const permits = await readSetPermits({ runId, addIds: adds, cutIds: cuts, ...reader });
+  return permits ? { permits } : null;
 }
