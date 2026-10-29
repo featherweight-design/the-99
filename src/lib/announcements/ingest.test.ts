@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  DECKLIST_FLOOR, feedKindOf, isGone, overdue, planFetches, runAnnouncementsIngest, USER_AGENT,
-  type AnnouncementRecord, type CatalogCard, type DecklistRecord, type IngestAlert, type IngestStore, type KnownPost,
+  catalogLookup, DECKLIST_FLOOR, decklistRecord, feedKindOf, isGone, overdue, parsedDeckOf, planFetches, REMATCH_UTC_HOUR,
+  rematchDecklists, runAnnouncementsIngest, USER_AGENT, type AnnouncementRecord, type CatalogCard, type DecklistRecord, type IngestAlert, type IngestStore, type KnownPost,
 } from "./ingest";
 import { SITEMAP_URL } from "./sitemap";
 import { fixture, postUrl } from "./__fixtures__/load";
@@ -31,9 +31,11 @@ function starTrekCatalog(): CatalogCard[] {
   }));
 }
 
-function memoryStore(catalog: CatalogCard[] = starTrekCatalog()) {
+function memoryStore(initial: CatalogCard[] = starTrekCatalog()) {
+  let catalog = initial;
   const rows = new Map<string, { post: AnnouncementRecord; decklists: DecklistRecord[]; firstSeenAt: string }>();
   let catalogReads = 0;
+  let saveMatchCalls = 0;
   let clock = "2026-10-29T12:00:00.000Z";
   const store: IngestStore = {
     async readKnown(): Promise<KnownPost[]> {
@@ -51,8 +53,21 @@ function memoryStore(catalog: CatalogCard[] = starTrekCatalog()) {
         firstSeenAt: before?.firstSeenAt ?? clock,
       });
     },
+    async readUnmatched() {
+      return [...rows.entries()].flatMap(([id, r]) => r.decklists.filter((d) => d.unmatched.length > 0).map((d) => ({ ...d, announcementId: id })));
+    },
+    async saveMatches(lists) {
+      saveMatchCalls++;
+      for (const { announcementId, ...d } of lists) {
+        const row = rows.get(announcementId)!;
+        row.decklists = row.decklists.map((x) => (x.position === d.position ? d : x));
+      }
+    },
   };
-  return { store, rows, catalogReads: () => catalogReads, setClock: (t: string) => (clock = t) };
+  return {
+    store, rows, catalogReads: () => catalogReads, saveMatchCalls: () => saveMatchCalls,
+    setClock: (t: string) => (clock = t), setCatalog: (c: CatalogCard[]) => (catalog = c),
+  };
 }
 
 function web(map: Record<string, { status: number; text: string }>) {
@@ -93,7 +108,7 @@ describe("runAnnouncementsIngest", () => {
     const site = web(pages());
     const { report, alerts, sleeps } = await run({ store: mem.store, site });
 
-    expect(report).toEqual({ posts: 3, due: 3, saved: 3, failed: 0, deferred: 0, alerts: 0 });
+    expect(report).toEqual({ posts: 3, due: 3, saved: 3, failed: 0, deferred: 0, rematched: 0, alerts: 0 });
     expect(alerts).toEqual([]); // Star Trek is short a list, but only a day old
     expect(site.calls.map((c) => c.url)).toEqual([SITEMAP_URL, ...[...SLUGS].reverse().map(postUrl)]); // newest lastmod first
     expect(new Set(site.calls.map((c) => c.ua))).toEqual(new Set([USER_AGENT]));
@@ -255,5 +270,68 @@ describe("feedKindOf", () => {
     expect(feedKindOf("other")).toBe("wizards-news");
     expect(feedKindOf("secret-lair")).toBe("secret-lair");
     expect(feedKindOf("commander-decklists")).toBe("commander-decklists");
+  });
+});
+
+describe("the re-match pass", () => {
+  const PICARD = "Jean-Luc Picard, Luminary";
+  const JANEWAY = "Captain Janeway, Endgame";
+  /** The catalog before Star Trek's legends reached it. */
+  const early = () => starTrekCatalog().filter((c) => c.name !== PICARD && c.name !== JANEWAY);
+  const TREK_ID = "6AMDy9tWTDw5CheGr12ZpF";
+  const fleet = (mem: ReturnType<typeof memoryStore>) => mem.rows.get(TREK_ID)!.decklists[0];
+
+  it("fills in names the catalog gained, the partner decision included, with no fetch, once a day", async () => {
+    const mem = memoryStore(early());
+    await run({ store: mem.store, site: web(pages()) });
+    const before = fleet(mem);
+    expect(before).toMatchObject({ commanderName: PICARD, commanderCardId: null, partnerName: null, partnerRole: null, commanderCandidate: JANEWAY });
+    expect(before.unmatched).toEqual([PICARD, JANEWAY, "Spot, Felis catus"]);
+
+    mem.setCatalog(starTrekCatalog());
+    // Not the re-match hour and nothing fetched: the catalog is not read.
+    const quiet = await run({ store: mem.store, site: web(pages()), now: "2026-10-30T12:00:00.000Z" });
+    expect(quiet.report.rematched).toBeNull();
+    expect(mem.catalogReads()).toBe(1);
+
+    const hour = `2026-10-31T${String(REMATCH_UTC_HOUR).padStart(2, "0")}:23:00.000Z`;
+    const site = web(pages());
+    const { report } = await run({ store: mem.store, site, now: hour });
+    expect(site.calls.map((c) => c.url)).toEqual([SITEMAP_URL]);
+    expect(report).toMatchObject({ due: 0, saved: 0, rematched: 1 });
+    const after = fleet(mem);
+    expect(after.commanderCardId).not.toBeNull();
+    expect(after).toMatchObject({ partnerName: JANEWAY, partnerRole: "alternate", unmatched: ["Spot, Felis catus"] });
+    expect(after.partnerCardId).not.toBeNull();
+    expect(after.cards.find((c) => c.name === PICARD)!.cardId).toBe(after.commanderCardId);
+    // the post row is untouched
+    expect(mem.rows.get(TREK_ID)!.post.lastmod).toBe("2026-10-20T00:00:00.000Z");
+
+    // Spot is still missing, but nothing changed: no write.
+    const again = await run({ store: mem.store, site: web(pages()), now: hour.replace("10-31", "11-01") });
+    expect(again.report.rematched).toBe(0);
+    expect(mem.saveMatchCalls()).toBe(1);
+  });
+
+  it("never reads the catalog on the re-match hour when every list is matched", async () => {
+    const mem = memoryStore(starTrekCatalog().concat({ oracleId: "00000000-0000-4000-8000-999999999999", name: "Spot, Felis catus", typeLine: "Creature", oracleText: "" }));
+    await run({ store: mem.store, site: web(pages()) });
+    const reads = mem.catalogReads();
+    const { report } = await run({ store: mem.store, site: web(pages()), now: `2026-10-30T${String(REMATCH_UTC_HOUR).padStart(2, "0")}:23:00.000Z` });
+    expect(report.rematched).toBe(0);
+    expect(mem.catalogReads()).toBe(reads);
+  });
+
+  it("re-derives a stored list exactly as the parse did, a legacy header's partner included", () => {
+    const full = catalogLookup(starTrekCatalog());
+    const [deck] = trekDecks();
+    const stored = decklistRecord(deck, 0, full);
+    expect(rematchDecklists([{ ...stored, announcementId: "a" }], full)).toEqual([]);
+
+    const legacy = { ...stored, commanderCandidate: null, partnerName: "Captain Janeway, Endgame", partnerRole: "co-commander" as const, partnerCardId: null };
+    expect(parsedDeckOf(legacy).commanders).toEqual([PICARD, JANEWAY]);
+    const [redone] = rematchDecklists([{ ...legacy, announcementId: "a" }], full);
+    expect(redone).toMatchObject({ announcementId: "a", partnerName: JANEWAY, partnerRole: "co-commander", commanderCandidate: null });
+    expect(redone.partnerCardId).not.toBeNull();
   });
 });

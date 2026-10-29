@@ -11,6 +11,10 @@
  *   (608 posts, ~2.5s a page) fills over several runs.
  * - `baseline` is true for a post published before the ingest's first run (the earliest `first_seen_at`, or this
  *   run's start on an empty table): the back catalogue, however many runs it takes to read, never reads as new.
+ * - The re-match pass (`rematchDecklists`): a list announced before its set reaches the catalog is stored with those
+ *   names unmatched. Its post's `lastmod` never moves for that, so no fetch would fill them in: the pass re-derives every
+ *   stored list with an unmatched name from what is stored (no fetch) against today's catalog, the commander's partner
+ *   decision included, and writes back only the lists that changed.
  */
 import type { AnnouncementFeedKind } from "../feed/kinds";
 import { classifyAnnouncement, type AnnouncementKind } from "./classify";
@@ -72,6 +76,8 @@ export type DecklistRecord = {
   partnerCardId: string | null;
   partnerName: string | null;
   partnerRole: "co-commander" | "alternate" | null;
+  /** The parser's second-line candidate (`ParsedDeck.commanderCandidate`), kept so a re-match can decide the partner again. */
+  commanderCandidate: string | null;
   cardCount: number;
   cards: { name: string; count: number; cardId: string | null }[];
   unmatched: string[];
@@ -79,12 +85,19 @@ export type DecklistRecord = {
 
 export type CatalogCard = CommanderFacts & { oracleId: string };
 
+/** A stored list, with its post's row id: what the re-match pass reads and writes back. */
+export type StoredDecklist = DecklistRecord & { announcementId: string };
+
 export type IngestStore = {
   readKnown(): Promise<KnownPost[]>;
   /** Read once per run, and only when a fetched post carries deck lists. */
   readCatalog(): Promise<CatalogCard[]>;
   /** Upserts the post on its Contentful id (keeping `first_seen_at` and `baseline`) and replaces its deck lists. */
   save(post: AnnouncementRecord, decklists: DecklistRecord[]): Promise<void>;
+  /** Every stored list with at least one unmatched name. */
+  readUnmatched(): Promise<StoredDecklist[]>;
+  /** Rewrites these lists' matches in place (the post row is untouched). */
+  saveMatches(decklists: StoredDecklist[]): Promise<void>;
 };
 
 export type IngestAlert =
@@ -105,7 +118,19 @@ export type IngestDeps = {
   budgetMs?: number;
 };
 
-export type IngestReport = { posts: number; due: number; saved: number; failed: number; deferred: number; alerts: number };
+export type IngestReport = {
+  posts: number; due: number; saved: number; failed: number; deferred: number;
+  /** Stored lists the re-match pass changed (null when the pass did not run). */
+  rematched: number | null;
+  alerts: number;
+};
+
+/**
+ * The UTC hour the re-match pass runs even when nothing else read the catalog: once a day, after the 09:00 catalog
+ * refresh and its copy to production. The catalog read is ~7 MB (35,572 cards, measured 2026-10-29), so not hourly; a run
+ * that already read it for a fetched post re-matches for free.
+ */
+export const REMATCH_UTC_HOUR = 11;
 
 /** The sitemap entries due a fetch: new to the store, or edited since. Newest `lastmod` first, so new posts lead. */
 export function planFetches(entries: readonly SitemapEntry[], known: readonly KnownPost[]): SitemapEntry[] {
@@ -158,7 +183,7 @@ export function catalogLookup(catalog: readonly CatalogCard[]): CatalogLookup {
 }
 
 /** One parsed list as stored: every line kept, its card id where the catalog has it, the misses listed. */
-export function decklistRecord(deck: ParsedDeck, position: number, lookup: CatalogLookup): DecklistRecord {
+export function decklistRecord(deck: Omit<ParsedDeck, "format">, position: number, lookup: CatalogLookup): DecklistRecord {
   const id = (name: string) => matchCardName(name, lookup.index);
   const cards = deck.cards.map((c) => ({ name: c.name, count: c.count, cardId: id(c.name) }));
   const unmatched = [...new Set(cards.filter((c) => c.cardId === null).map((c) => c.name))];
@@ -190,10 +215,41 @@ export function decklistRecord(deck: ParsedDeck, position: number, lookup: Catal
     partnerCardId: partnerName ? id(partnerName) : null,
     partnerName,
     partnerRole,
+    commanderCandidate: deck.commanderCandidate,
     cardCount: deck.cardCount,
     cards,
     unmatched,
   };
+}
+
+/**
+ * A stored list as the parser gave it, for `decklistRecord` to derive again. A partner with no candidate came from a
+ * legacy header that named both (`decklistRecord`'s first arm), so it is a confirmed commander; otherwise the
+ * candidate is the second line, decided afresh against the catalog.
+ */
+export function parsedDeckOf(stored: DecklistRecord): Omit<ParsedDeck, "format"> {
+  const commanders = stored.commanderName ? [stored.commanderName] : [];
+  if (stored.commanderName && stored.partnerName && stored.commanderCandidate === null) commanders.push(stored.partnerName);
+  return {
+    title: stored.title,
+    cards: stored.cards.map(({ name, count }) => ({ name, count })),
+    cardCount: stored.cardCount,
+    commanders,
+    commanderCandidate: stored.commanderCandidate,
+  };
+}
+
+const sameMatches = (a: DecklistRecord, b: DecklistRecord): boolean =>
+  a.commanderCardId === b.commanderCardId && a.partnerCardId === b.partnerCardId && a.partnerName === b.partnerName &&
+  a.partnerRole === b.partnerRole && a.unmatched.join("\n") === b.unmatched.join("\n") &&
+  a.cards.every((c, i) => c.cardId === b.cards[i]?.cardId);
+
+/** The stored lists whose matches today's catalog changes, re-derived (pure). */
+export function rematchDecklists(stored: readonly StoredDecklist[], lookup: CatalogLookup): StoredDecklist[] {
+  return stored.flatMap((d) => {
+    const next = decklistRecord(parsedDeckOf(d), d.position, lookup);
+    return sameMatches(d, next) ? [] : [{ ...next, announcementId: d.announcementId }];
+  });
 }
 
 export function announcementRecord(
@@ -238,7 +294,7 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
   const entries = sitemap?.status === 200 ? announcementPosts(sitemap.text) : [];
   if (entries.length === 0) {
     alert({ kind: "sitemap-unreadable", status: sitemap?.status ?? null });
-    return report({ posts: 0, due: 0, saved: 0, failed: 0, deferred: 0 });
+    return report({ posts: 0, due: 0, saved: 0, failed: 0, deferred: 0, rematched: null });
   }
 
   const known = await store.readKnown();
@@ -280,6 +336,19 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
     latest.set(entry.url, { ...record, firstSeenAt: latest.get(entry.url)?.firstSeenAt ?? started.toISOString() });
   }
 
+  // DB only, after the fetches: the lists just saved were matched against this same catalog, so they come back unchanged.
+  let rematched: number | null = null;
+  if (lookup || started.getUTCHours() === REMATCH_UTC_HOUR) {
+    const unmatched = await store.readUnmatched();
+    rematched = 0;
+    if (unmatched.length > 0) {
+      lookup ??= catalogLookup(await store.readCatalog());
+      const changed = rematchDecklists(unmatched, lookup);
+      if (changed.length > 0) await store.saveMatches(changed);
+      rematched = changed.length;
+    }
+  }
+
   const at = now();
   for (const post of latest.values()) {
     // `overdue` already requires a status other than ok; restated so the alert's type narrows.
@@ -287,5 +356,5 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
       alert({ kind: "decklists-missing", url: post.url, title: post.title, status: post.parseStatus });
     }
   }
-  return report({ posts: entries.length, due: due.length, saved, failed, deferred: due.length - fetched });
+  return report({ posts: entries.length, due: due.length, saved, failed, deferred: due.length - fetched, rematched });
 }
