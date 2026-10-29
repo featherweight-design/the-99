@@ -15,19 +15,24 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { pushOutbox, pushSubscriptions, userPrefs } from "../../db/schema";
 import { catalogBranch, type CatalogGate } from "../feed/read";
-import { CATALOG_KINDS, type CatalogKind } from "../feed/kinds";
+import { CATALOG_KINDS, DEFAULT_ON_KINDS, type CatalogKind, type FeedKind } from "../feed/kinds";
 import { catalogBatchKey, catalogPushKinds, parseCatalogKey } from "./catalog-rule";
 import { pushKindEnabledAt } from "./kind-gate";
 
 type Q = Pick<typeof db, "execute">;
 
-/** The readers to look at: a device and a catalog kind's push ticked (switches are judged per reader after). */
-export function catalogReadersQuery(): SQL {
-  const ticked = sql.join(CATALOG_KINDS.map((k) => sql`(cup.push_kinds ->> ${k}::text) is not null`), sql` or `);
+/**
+ * The readers to look at: a device, and a catalog kind's push on (`pushKindEnabledAt`: stamped, or default on and not
+ * declined). Switches are judged per reader after. The prefs row is LEFT joined, so a reader who never chose (no row)
+ * still hears a default-on kind; for a kind that is not default on, a missing row reads as off, as before. `defaultOn`
+ * is the default-on set, a parameter only so a test can render the arm no catalog kind takes yet.
+ */
+export function catalogReadersQuery(kinds: readonly CatalogKind[] = CATALOG_KINDS, defaultOn: readonly FeedKind[] = DEFAULT_ON_KINDS): SQL {
+  const on = sql.join(kinds.map((k) => sql`${pushKindEnabledAt(sql`cup`, sql`${k}::text`, defaultOn)} is not null`), sql` or `);
   return sql`select distinct cps.user_id as user_id
     from ${pushSubscriptions} cps
-    join ${userPrefs} cup on cup.user_id = cps.user_id
-    where ${ticked}`;
+    left join ${userPrefs} cup on cup.user_id = cps.user_id
+    where ${on}`;
 }
 
 /** Newer than the kind's push stamp, inside the stale window and not after `now`. */

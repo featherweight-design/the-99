@@ -27,6 +27,9 @@ describe("contentSecurityPolicy", () => {
     expect(directive("img-src")).toContain("https://cards.scryfall.io");
     expect(directive("img-src")).toContain("https://svgs.scryfall.io");
   });
+  it("allows the Announcements hero images, drawn from Wizards' own image host (Contentful)", () => {
+    expect(directive("img-src").split(" ")).toContain("https://images.ctfassets.net");
+  });
   it("allows Clerk's script and API on the key's own host, and nothing wider", () => {
     expect(directive("script-src")).toContain("https://fine-owl-1.clerk.accounts.dev");
     expect(directive("connect-src")).toContain("https://fine-owl-1.clerk.accounts.dev");

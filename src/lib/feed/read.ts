@@ -38,8 +38,9 @@ export type FeedCursor = "feed_seen_at" | "friends_seen_at";
 
 /**
  * What a catalog branch is filtered by, beyond the arrival rules every reader shares: `moment` is the item's time (the
- * later of the stamp and the release day), `prefs` the reader's `user_prefs` row (JOINED, so a reader with no row reads
- * nothing of these kinds), `id` the set's code or the precon's file name.
+ * later of the stamp and the release day), `prefs` the reader's `user_prefs` row (LEFT joined: a reader with no row
+ * reads every column null, so the gate decides, and a stamp-only gate reads nothing for them), `id` the set's code or the
+ * precon's file name.
  */
 export type CatalogGate = (at: { moment: SQL; prefs: SQL; id: SQL }) => SQL;
 
@@ -62,7 +63,7 @@ export function catalogBranch(kind: CatalogKind, viewerId: string, now: Date, ga
         '{}'::jsonb as data
       from ${sets} s
       join ${catalogFirstSeen} sf on sf.kind = 'set' and sf.key = s.code
-      join ${userPrefs} sup on sup.user_id = ${viewerId}
+      left join ${userPrefs} sup on sup.user_id = ${viewerId}
       where sf.baseline = false and s.digital = false
         and s.set_type = any(${sql.param([...RELEASE_SET_TYPES])}::text[])
         and s.released_at <= ${today}::date
@@ -77,7 +78,7 @@ export function catalogBranch(kind: CatalogKind, viewerId: string, now: Date, ga
       '{}'::jsonb as data
     from ${precons} p
     join ${catalogFirstSeen} pf on pf.kind = 'precon' and pf.key = p.file_name
-    join ${userPrefs} pup on pup.user_id = ${viewerId}
+    left join ${userPrefs} pup on pup.user_id = ${viewerId}
     where pf.baseline = false and p.twin_of is null
       and p.release_date <= ${today}::date
       and not exists (select 1 from ${feedDismissals} pfd where pfd.user_id = ${viewerId} and pfd.key = 'precon:' || p.file_name)
@@ -85,9 +86,9 @@ export function catalogBranch(kind: CatalogKind, viewerId: string, now: Date, ga
 }
 
 /**
- * The union of every branch for these kinds, or null when none is left. Each catalog branch joins the reader's own
- * prefs row, so a reader with no row reads nothing of those; the stored branch LEFT JOINS it, so a default-on kind
- * reaches a reader with no row (`kindEnabledAt`, spare requests G4).
+ * The union of every branch for these kinds, or null when none is left. Every branch LEFT JOINS the reader's own prefs
+ * row. The catalog branches' feed gate is the kind's stamp alone, so a reader with no row reads nothing of those; the
+ * stored branch's is `kindEnabledAt`, so a default-on kind reaches a reader with no row (spare requests G4).
  */
 export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Date): SQL | null {
   const branches: SQL[] = [];

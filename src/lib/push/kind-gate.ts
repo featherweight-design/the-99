@@ -6,12 +6,12 @@
  */
 import { sql, type SQL } from "drizzle-orm";
 
-import { DEFAULT_ON_KINDS } from "../feed/kinds";
+import { DEFAULT_ON_KINDS, type FeedKind } from "../feed/kinds";
 import { pushSubscriptions } from "../../db/schema";
 
-export function pushKindEnabledAt(prefs: SQL, kind: SQL): SQL {
+export function pushKindEnabledAt(prefs: SQL, kind: SQL, defaultOn: readonly FeedKind[] = DEFAULT_ON_KINDS): SQL {
   return sql`coalesce((${prefs}.push_kinds ->> ${kind})::timestamptz,
-    case when ${kind} = any(${sql.param([...DEFAULT_ON_KINDS])}::text[])
+    case when ${kind} = any(${sql.param([...defaultOn])}::text[])
       and not (${kind} = any(coalesce(${prefs}.push_kinds_declined, '{}'::text[])))
       then '-infinity'::timestamptz end)`;
 }

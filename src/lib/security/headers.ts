@@ -49,7 +49,7 @@ export function contentSecurityPolicy(
     "default-src": ["'self'"],
     "script-src": ["'self'", "'unsafe-inline'", ...clerk, "https://challenges.cloudflare.com", ...posthog],
     "style-src": ["'self'", "'unsafe-inline'"],
-    "img-src": ["'self'", "data:", "blob:", "https://cards.scryfall.io", "https://svgs.scryfall.io", "https://img.clerk.com"],
+    "img-src": ["'self'", "data:", "blob:", "https://cards.scryfall.io", "https://svgs.scryfall.io", "https://img.clerk.com", "https://images.ctfassets.net"],
     "font-src": ["'self'", "data:"],
     "connect-src": ["'self'", ...clerk, "https://clerk-telemetry.com", ...sentry, ...posthog],
     "frame-src": ["https://challenges.cloudflare.com"],
