@@ -9,7 +9,7 @@
 // dock over the tab bar on the phone (create-picker's dock), whose measured height the form
 // reserves under itself. No motion anywhere (STATES invariant).
 
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
 import { useTarget } from "../discovery/targets-provider";
 
 import { PRIMARY } from "../ui/button";
@@ -64,6 +64,9 @@ const TAG_LIST_MIN = 96;
 
 const BRACKETS: readonly Bracket[] = [1, 2, 3, 4, 5];
 
+/** True while a read is in flight: every Field below sets itself `inert` (small items 3, item 5). */
+const LockedContext = createContext(false);
+
 export function IntakeForm({
   themes,
   sets = [],
@@ -89,6 +92,7 @@ export function IntakeForm({
   // The desktop press keeps the width it had when pressed while it reads, so the credit line beside
   // it does not move when its words get shorter. The phone's press is full width and needs none.
   const deskPressRef = useRef<HTMLButtonElement>(null);
+  const phonePressRef = useRef<HTMLButtonElement>(null);
   // What was pressed, for as long as it is in flight: the box's width, and whether the press was
   // paid. The box stays editable while a read loads, so the live `paid` can change under a request
   // that is still reading the text it was sent with.
@@ -205,6 +209,12 @@ export function IntakeForm({
   const submit = () => {
     if (submitting || inFlightRef.current) return;
     inFlightRef.current = true;
+    // A press by Enter from a field: the lock makes the fields inert, which would drop focus to the page
+    // body, so it goes to the press (a click on the press already leaves it there).
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.closest("form") && active.getAttribute("type") !== "submit") {
+      (wide ? deskPressRef : phonePressRef).current?.focus();
+    }
     setSent({ width: deskPressRef.current?.getBoundingClientRect().width ?? null, paid });
     const query = submitQuery({
       ...initial,
@@ -277,6 +287,10 @@ export function IntakeForm({
   return (
     <form
       noValidate
+      // Locked from the press until the read lands or a refusal returns the form (small items 3, item 5).
+      // The fields are `inert` (Field, below); the drawn look is one block in globals.css keyed on this attribute.
+      aria-busy={submitting || undefined}
+      data-intake-locked={submitting || undefined}
       onSubmit={(e) => {
         e.preventDefault();
         submit();
@@ -284,6 +298,7 @@ export function IntakeForm({
       className="pb-[var(--dock-reserve)] md:pb-0"
       style={{ "--dock-reserve": `${dockHeight + 12}px` } as CSSProperties}
     >
+      <LockedContext.Provider value={submitting}>
       <div className="flex flex-col gap-[20px] p-[18px] md:gap-[22px] md:w-[680px] md:max-w-full md:mx-auto md:p-[24px_26px] md:rounded-[12px] md:border md:border-solid md:border-[color:var(--border)] md:bg-[color:var(--surface-rail)]">
         <div ref={chooseTarget} className="rounded-[9px]">
           <Field label={copy.intake.colors} caption={colorsCaption}>
@@ -323,7 +338,7 @@ export function IntakeForm({
           htmlFor={budgetId}
           caption={pool === "own" ? copy.intake.budgetCaptionOwn : copy.intake.budgetCaption}
         >
-          <div className={`flex items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${AFFIX_FOCUS}`}>
+          <div data-lock-edge="" className={`flex items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${AFFIX_FOCUS}`}>
             <span aria-hidden className="font-mono text-[14px] text-[color:var(--fg-faint)]">$</span>
             <input
               id={budgetId}
@@ -364,6 +379,7 @@ export function IntakeForm({
               <InfoTip id={`${wordsId}-info`} lines={copy.intake.extra.tagHelp.lines} label={copy.intake.extra.tagHelp.infoAria} className="self-center" />
               <button
                 type="button"
+                data-lock-hide=""
                 aria-label={copy.intake.extra.tagHelp.insertAria}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={picker.insertTag}
@@ -405,6 +421,7 @@ export function IntakeForm({
           {line && <p id={lineDeskId} className="m-0 max-w-[380px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]"><CreditsText text={line} /></p>}
         </div>
       </div>
+      </LockedContext.Provider>
 
       <div
         ref={dockRef}
@@ -413,7 +430,7 @@ export function IntakeForm({
         data-foot-bar=""
         className="md:hidden fixed bottom-[var(--tabbar-h)] left-0 right-0 z-20 p-[10px_16px_12px] border-0 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)]"
       >
-        <button {...pressProps} aria-label={pressPaid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
+        <button {...pressProps} ref={phonePressRef} aria-label={pressPaid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
           {press}
         </button>
         {phoneLine && <p id={linePhoneId} className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]"><CreditsText text={phoneLine.rest} /></p>}
@@ -454,8 +471,9 @@ function Field({
   children: ReactNode;
 }) {
   const labelClass = "font-mono text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]";
+  const locked = useContext(LockedContext);
   return (
-    <div className="flex flex-col gap-[9px]">
+    <div inert={locked} className="flex flex-col gap-[9px]">
       <div className={aside ? `${tipAnchor ? "relative " : ""}flex items-center gap-[10px] min-h-[28px]` : "contents"}>
         {htmlFor ? (
           <label htmlFor={htmlFor} className={tag ? `${labelClass} inline-flex items-baseline gap-[8px]` : labelClass}>
