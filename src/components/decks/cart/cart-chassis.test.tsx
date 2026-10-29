@@ -190,6 +190,15 @@ describe("the cart's chassis (v2 PR 8)", () => {
     expect(new URLSearchParams(live()).get("q")).toHaveLength(80);
   });
 
+  it("draws Filters as the shared 44px box, with no hit overlay (Small items 4 item 1)", () => {
+    render(<CartView cart={cart()} provenance={provenance} />);
+    const trigger = screen.getByRole("button", { name: "Filter cards" });
+    expect(trigger.className).toContain("h-[44px]");
+    expect(trigger.className).toContain("rounded-[10px]");
+    expect(trigger.className).toContain("bg-[color:var(--surface-sunken)]");
+    expect(trigger.className).not.toContain("after:");
+  });
+
   it("cuts a long search for the chip's eye and speaks it whole", () => {
     render(<CartView cart={cart()} provenance={provenance} />);
     const term = "a".repeat(60);

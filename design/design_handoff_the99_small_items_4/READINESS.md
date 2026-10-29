@@ -41,3 +41,17 @@
 
 - Open `Main.dc.html` for the calls, or open a board directly: `Filters`, `Other-Decks`, `Dock-Header`. Each needs `support.js` and `art/` beside it.
 - `scratch-gen/` regenerates the boards. It is reference material, never shipped code.
+
+## Engineering audit (item 1)
+
+**Built.** One shared component, `FiltersBoxTrigger` (`src/components/ui/filters-box-trigger.tsx`), now draws the Filters box on the Commanders rack, Collection and the cart: 44px tall, 10px radius, `--surface-sunken`, a 1px `--border-strong` edge (accent with a filter on), 13px label, the 18px count badge. The box is 44 itself, so the `after:` hit overlay is gone. The rack's private trigger was moved into it unchanged. Collection's exported `FiltersTrigger` (which the cart reuses) is now a thin wrapper that passes Collection's label and its `triggerAria(active)` accessible name, so the cart's and Collection's names are unchanged. No new strings.
+
+**Sort.** Collection's compact Sort drops `compactTriggerHeightPx={36}` and takes the panel's own compact 44 (`min-h-[44px]`). It stays the labelled pill. The prop stays on `FilterPanel` (its own test still covers it) with no caller.
+
+**Head 108 to 116** (8 + 50 + 6 + 44 + 7 + 1), in `filter-bar.tsx`: the `scrollPaddingTop` literal (`"108px"` to `"116px"`), its comment, the head arithmetic comment, the `< 900px` form note, the row B note and the `50px` well note. The 900-999 one-row form stays 66. The cart's pinned block is unchanged (its row was already 44). `scripts/probe-collection-head.mjs` now expects 116 (head height, `scroll-padding-top`, the focused-search recheck). `docs/probes.md` quotes no head height, so it is untouched.
+
+**Files.** `src/components/ui/filters-box-trigger.tsx` (new, plus `.test.tsx`), `src/components/collection/filter-bar.tsx`, `src/components/commanders/rack/filter-rack.tsx`, `src/components/decks/cart/cart-chassis.test.tsx`, `scripts/probe-collection-head.mjs`.
+
+**Verified.** Unit tests: the shared box is `h-[44px]`, `rounded-[10px]`, with no `after:` class, with and without a badge; Collection's and the cart's triggers render it. Typecheck, lint, the targeted vitest dirs, `check:tokens`, `check:border-collision`, `check:shared` and `check:collection-routes`: see the commit message / run log. **Not run:** `probe:collection-head` (needs a running app and a browser), so the 116 is arithmetic, not a measured box. It should be run before merge.
+
+**Not drawn by the design.** The Filters box's hover/focus state and the badge's two-digit width on Collection (the badge is 18px min-width and grows). The count (`ResultLine`) in row B keeps its own height; it was never a 36px control.

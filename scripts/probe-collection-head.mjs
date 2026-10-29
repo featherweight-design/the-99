@@ -1,6 +1,6 @@
 // probe:collection-head — the collection surfaces pinned head (R1 + addendum R2) below
-// 1000px. What only a layout engine answers: the head's two fixed heights (108 below 900,
-// 66 from 900 to 999 — 6px over the brief's provisional 102/60, the shared `ViewToggle`
+// 1000px. What only a layout engine answers: the head's two fixed heights (116 below 900,
+// 66 from 900 to 999 — the shared `ViewToggle`
 // well's own real compact height; see `filter-bar.tsx`), that it never changes height or
 // animates on scroll (H1/H2), that the
 // chip shelf lives below it rather than inside it (decision 2 for this route, call 2), that
@@ -89,8 +89,8 @@ async function run() {
       const headBox = await head.boundingBox();
       fail(
         `${width}px · head height`,
-        headBox && near(headBox.height, oneRow ? 66 : 108, 2),
-        `${headBox?.height}px against ${oneRow ? 66 : 108}`,
+        headBox && near(headBox.height, oneRow ? 66 : 116, 2),
+        `${headBox?.height}px against ${oneRow ? 66 : 116}`,
       );
 
       // E9 — a tile reached by keyboard must not land under the pinned head: the root's
@@ -98,8 +98,8 @@ async function run() {
       const scrollPaddingTop = await page.evaluate(() => document.documentElement.style.scrollPaddingTop);
       fail(
         `${width}px · scroll-padding-top matches the head height`,
-        scrollPaddingTop === `${oneRow ? 66 : 108}px`,
-        `${scrollPaddingTop} against ${oneRow ? 66 : 108}px`,
+        scrollPaddingTop === `${oneRow ? 66 : 116}px`,
+        `${scrollPaddingTop} against ${oneRow ? 66 : 116}px`,
       );
 
       // H2 — scrolled: the head stays pinned at the viewport top with the SAME height.
@@ -207,8 +207,8 @@ async function run() {
       const headBoxFocused = await head.boundingBox();
       fail(
         `${width}px · head height unchanged on search focus`,
-        headBoxFocused && near(headBoxFocused.height, oneRow ? 66 : 108, 2),
-        `${headBoxFocused?.height}px against ${oneRow ? 66 : 108}`,
+        headBoxFocused && near(headBoxFocused.height, oneRow ? 66 : 116, 2),
+        `${headBoxFocused?.height}px against ${oneRow ? 66 : 116}`,
       );
       // Shift+Tab from Filters must reach the well without it staying hidden under it.
       await search.blur();
