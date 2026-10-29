@@ -940,7 +940,8 @@ describe("the Friend filter (v2 PR 9)", () => {
 
   describe("a purchase under the filter", () => {
     const buyProps = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true };
-    async function buyJaceAndReread(initialFriend: string) {
+    async function buyJaceAndReread(initialFriend: string, wideView = false) {
+      if (wideView) wide();
       bought.loadPrintingChoices.mockResolvedValue([{
         scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
         collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
@@ -970,6 +971,35 @@ describe("the Friend filter (v2 PR 9)", () => {
       expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Max` })).toBeTruthy();
       expect(held()).toHaveLength(1);
       expect(list().getAllByRole("listitem")).toHaveLength(1);
+    });
+
+    // Jace is owned by no one here, so under Max's filter the held slot is a `None` card and the only one drawn.
+    it("counts the held slot in Owned's desktop panel, so None stays offered while the slot shows", async () => {
+      await buyJaceAndReread("p-Max", true);
+      expect(held()).toHaveLength(1);
+      fireEvent.click(screen.getByRole("button", { name: /^Owned options, Any, collapsed$/ }));
+      expect(screen.getAllByRole("option").map((o) => o.getAttribute("aria-label"))).toEqual(["Any, 1 card", "You own some, no cards", "None, 1 card"]);
+      expect(screen.getByRole("option", { name: "None, 1 card" }).getAttribute("aria-disabled")).toBeNull();
+      // The result line counts the slot the list draws, against the selected cards and the slot.
+      expect(resultLine()).toBe(copy.result.filtered(1, 4));
+    });
+
+    it("counts the held slot in the phone sheet's figure and its Show press, through an Owned pick", async () => {
+      await buyJaceAndReread("p-Max");
+      fireEvent.click(screen.getByRole("button", { name: "Filter cards, 1 on" }));
+      const sheet = screen.getByRole("dialog", { name: "Filters" });
+      expect(within(sheet).getByText(copy.filters.sheetMatch(1, 4))).toBeTruthy();
+      fireEvent.click(within(sheet).getByRole("radio", { name: copy.filters.ownedNone }));
+      expect(within(sheet).getByText(copy.filters.sheetMatch(1, 4))).toBeTruthy();
+      expect(within(sheet).getByRole("button", { name: copy.filters.show(1) })).toBeTruthy();
+      expect(held()).toHaveLength(1);
+    });
+
+    it("counts the held slot in no match's way out: dropping the search gives the lines and the slot", async () => {
+      await buyJaceAndReread("");
+      fireEvent.change(screen.getByRole("searchbox", { name: copy.filters.search }), { target: { value: "zzz" } });
+      expect(screen.getByText(copy.noMatch.body("zzz", 4))).toBeTruthy();
+      expect(resultLine()).toBe(copy.result.filtered(0, 4));
     });
 
     it("keeps both friends of a two-friend filter, and the bought card's held slot", async () => {

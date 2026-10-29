@@ -317,15 +317,19 @@ function CartBody({
       || a.friend.displayName.localeCompare(b.friend.displayName, "en-US", { sensitivity: "base" }));
     return { kind: "friends", any, friends: list };
   }, [spares, selectedRead, selectedLines, searched, keepOwned, holdersOf, heldLines, query]);
+  // Every figure counts what the list draws: the lines, and the held slots the same search and filters leave
+  // (`useWithHeld`'s rule). `heldOf` is the selected slots before them, which the denominators count.
+  const heldSearched = useMemo(() => heldLines.filter((h) => matchesQuery(h.name, query)), [heldLines, query]);
+  const heldShown = useMemo(() => (filtering ? heldSearched.filter(keep) : heldSearched), [heldSearched, keep, filtering]);
   // The lines each Owned value would leave, the search and the Friend filter applied (the desktop panel's counts).
   const ownedCounts = useMemo(() => {
-    const pre = searched.filter((l) => friendKeeps(friendOn, holdersOf(l.oracleId)));
+    const pre = [...searched, ...heldSearched].filter((l) => friendKeeps(friendOn, holdersOf(l.oracleId)));
     const some = pre.filter((l) => l.owned > 0).length;
     return { any: pre.length, some, none: pre.length - some };
-  }, [searched, friendOn, holdersOf]);
+  }, [searched, heldSearched, friendOn, holdersOf]);
   const cartFilters: CartFilters = {
     friend, onFriend: (code) => chooseFriend(toggleFriend(friend, code)), offer, friendLive: friendOn !== null || friend === null,
-    onFriendOff: () => chooseFriend(null), owned, onOwned: chooseOwned, ownedCounts, shown: lines.length, of: selectedLines.length, onClearAll: clearAll,
+    onFriendOff: () => chooseFriend(null), owned, onOwned: chooseOwned, ownedCounts, shown: lines.length + heldShown.length, of: selectedLines.length + heldLines.length, onClearAll: clearAll,
   };
   // Desktop is one screen tall (Hugh, 2026-10-11), so the list scrolls in its own box and the sort, the
   // decks and the checkout stay on screen; the phone's page scrolls as one (2026-10-13) and ignores the
@@ -509,6 +513,7 @@ function CartBody({
                   view={view}
                   lines={lines}
                   of={selectedLines.length}
+                  heldOf={heldLines.length}
                   read={readIds}
                   selected={selected}
                   query={query}
@@ -567,7 +572,8 @@ function CartBody({
                   <CardOrFriendList
                     view={view}
                     lines={lines}
-                    of={selectedLines.length}
+                    // No match's "Drop it and you get N" counts what the list would draw: the lines and held slots.
+                    of={selectedLines.length + heldLines.length}
                     read={readIds}
                     selected={selected}
                     query={query}
@@ -650,11 +656,13 @@ function friendBody(b: ByFriend | null, hasFriends: boolean): "panels" | "readin
  * set for the view DRAWN, since By friend draws as By card with spare requests off (and only then).
  */
 function CartChassisRow({
-  view, lines, of, read, selected, query, onQuery, sorts, onSort, deckGroups, sparesRead, hasFriends, filters, filtering,
+  view, lines, of, heldOf, read, selected, query, onQuery, sorts, onSort, deckGroups, sparesRead, hasFriends, filters, filtering,
 }: {
   view: CartViewMode;
   lines: SelectedLine[];
   of: number;
+  /** The selected held slots (bought this visit, gone from the read): By card draws them, so its figures count them. */
+  heldOf: number;
   read: ReadonlySet<string>;
   selected: ReadonlySet<string>;
   query: string;
@@ -693,10 +701,11 @@ function CartChassisRow({
       const groups = (byFriend?.groups ?? []).filter((g) => namedKeeps(filters.friendLive ? filters.friend : null, g.friend.publicId));
       return copy.result.byFriend(groups.length, groups.reduce((n, g) => n + g.spares, 0));
     }
-    if (query.trim() || filtering) return copy.result.filtered(lines.length, of);
+    // By card counts the rows it draws, held slots included (`drawn`), against the selected cards and slots.
+    if (query.trim() || filtering) return copy.result.filtered(drawn.lines.length, of + heldOf);
     // A failed read has no clause to give (R2 A): nothing may say how many cards have a spare.
     const withSpare = spares && !failed ? lines.filter((l) => (spares.byCard.get(l.oracleId)?.length ?? 0) > 0).length : 0;
-    return withSpare > 0 ? copy.result.byCard(lines.length, withSpare) : copy.result.byCardNoSpare(lines.length);
+    return withSpare > 0 ? copy.result.byCard(drawn.lines.length, withSpare) : copy.result.byCardNoSpare(drawn.lines.length);
   })();
   return (
     <CartChassis
