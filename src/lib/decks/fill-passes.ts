@@ -200,8 +200,8 @@ export function fillPassesQuery(deckId: string, userId: string) {
     .orderBy(asc(fillPasses.createdAt), asc(fillPasses.ordinal));
 }
 
-/** The ledger's lines for one deck, oldest first, passes with no live cards
-    already dropped. Reads only — nothing in this feature writes to a pass after
+/** The ledger's lines for one deck, oldest first; a pass with nothing still here
+    stays, as a quiet line. Reads only — nothing in this feature writes to a pass after
     it is created.
 
     OWNER-SCOPED IN ITS OWN SQL: the first read joins `decks` on the reader, so a

@@ -111,7 +111,7 @@ interface ProvenanceLedgerProps {
   /** The deck's live auto copies — the header's figure. Not a sum of the lines:
       a deck predating the ledger has auto rows and no passes to sum. */
   total: number;
-  /** Oldest first, passes with no live cards already dropped. */
+  /** Oldest first. A pass with nothing still here stays, as a quiet line. */
   passes: FillPassSummary[];
   /** The deck's body size — 99, or 98 for a pair. An undo announces the size
       the deck settled back to, which is stated against this. */

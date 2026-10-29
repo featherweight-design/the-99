@@ -236,8 +236,8 @@ interface BuilderShellProps {
    *  a different fact from the collection running out and takes a different
    *  sentence. Defaults false: an absent flag is not a claim. */
   candidatesAllNegative?: boolean;
-  /** One summary per fill pass, oldest first, passes with no live cards already
-      dropped. Empty on a deck built before the ledger existed — which the
+  /** One summary per fill pass, oldest first; a pass with nothing still here stays
+      as a quiet line. Empty on a deck built before the ledger existed — which the
       ledger states rather than hides. */
   fillPasses?: FillPassSummary[];
   /** Every game logged against this deck, newest first. */

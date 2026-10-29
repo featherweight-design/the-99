@@ -1053,9 +1053,10 @@ export async function undoFillPass(
       members,
       deckCards: rows,
     }).find((s) => s.id === passId);
-    // No live cards: already undone, swept, or kept out from under it. Nothing
+    // No live cards: already undone, swept, or kept out from under it (the ledger
+    // keeps such a pass as a quiet line, so `summary` can exist with none). Nothing
     // to remove, and the deck is the size the read found it.
-    if (!summary) {
+    if (!summary || summary.liveCards.length === 0) {
       return { removed: 0, built: rows.reduce((n, r) => n + r.quantity, 0) };
     }
 
