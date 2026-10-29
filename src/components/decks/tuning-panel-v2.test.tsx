@@ -120,6 +120,13 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     expect(d.run.mock.calls[0][1]).toEqual({ requestedCount: 3, bracket: { choice: "keep", target: 2 }, runId: expect.any(String) });
   });
 
+  it("sends Keep over a range with the range's bottom as `low`", async () => {
+    const d = deps();
+    await draw(d, v2At(), [1, 2]);
+    await act(async () => { fireEvent.click(send()); });
+    expect(d.run.mock.calls[0][1]).toEqual({ requestedCount: 3, bracket: { choice: "keep", target: 2, low: 1 }, runId: expect.any(String) });
+  });
+
   it("asks once on a same request, and Run it again sends it confirmed", async () => {
     const same = { ok: false, confirm: "same_request", runId: "11111111-1111-4111-8111-111111111111", at: at.toISOString() };
     const d = deps((opts) => ((opts as { confirmed?: boolean }).confirmed ? { ok: true } : same));

@@ -88,7 +88,11 @@ export function appendSentence(request: string, sentence: string, room: number):
 }
 
 /** The Bracket card's head, choices and what the press sends for each (README item 2; plan H3). */
-export type BracketOption = { choice: BracketChoice; target: Bracket; label: string; note: string; mark: Bracket };
+export type BracketOption = {
+  choice: BracketChoice; target: Bracket; label: string; note: string; mark: Bracket;
+  /** Keep on a range only: the range's bottom, sent as the wire's `low`. */
+  low?: Bracket;
+};
 export type BracketCard = { now: string; options: BracketOption[] };
 /** A Bracket card choice held by identity (null is Keep), so a new reading cannot move it to a different target. */
 export type BracketPick = { choice: BracketChoice; target: Bracket } | null;
@@ -108,8 +112,9 @@ const UP_MAX = 4;
  * lower bracket from 1, Up to each higher one to 4. A deck read as a RANGE (`[1,2]`, `[4,5]`, the only two `permitsFor`
  * returns) offers Down below its lower member and Up above its upper one, and Keep's wire target is the UPPER member
  * (ruled by d9, 2026-10-28: "Keep" means don't pass the bracket the deck already reaches, and the top of a range is that
- * bracket). The run's `aimDrops` reads one target and keeps only a line whose outcome still permits it, so a line that
- * settles the deck lower in the range is left out too. Null when there is no reading to aim from.
+ * bracket). Keep on a range also carries the range's bottom as `low`, and the run's `aimDrops` keeps a line whose outcome
+ * permits any bracket in [low, target], so a line that settles the deck lower in the range stays. Null when there is no
+ * reading to aim from.
  */
 export function bracketCard(permits: readonly Bracket[]): BracketCard | null {
   if (permits.length === 0) return null;
@@ -119,7 +124,7 @@ export function bracketCard(permits: readonly Bracket[]): BracketCard | null {
   const range = low !== high;
   const face = range ? `${BRACKET_NAMES[low]} or ${BRACKET_NAMES[high]}` : BRACKET_NAMES[low];
   const options: BracketOption[] = [{
-    choice: "keep", target: high, mark: low,
+    choice: "keep", target: high, mark: low, ...(range ? { low } : {}),
     label: range ? b.keepRange(low, high, face) : b.keep(low, face),
     note: range ? b.noteKeepRange(low, high, face) : b.noteKeep(low, face),
   }];
