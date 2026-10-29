@@ -185,7 +185,7 @@ export const commandersCopy = {
         kind === "sets" ? "set filter" : "color"
       } and you get ${rows === 1 ? "one row" : `${rows} rows`} back.`,
     bodyMode: (q: string, control: string) =>
-      `Two commanders match "${q}", but ${control} rules both out.`,
+      `Two commanders match “${q}”, but ${control} rules both out.`,
     bodyNoSingleFix: "No single filter is doing this. Several are overlapping.",
     fixDrop: (control: string) => `Drop ${control}`,
     fixMode: "Switch to Any of these",
@@ -204,7 +204,7 @@ export const commandersCopy = {
     // be owned and points at Discover — which is exactly false here: the reader
     // owns it, and a deck they built is holding it.
     searchBody: (q: string) =>
-      `Your commanders matching "${q}" are all sleeved into decks you’ve built.`,
+      `Your commanders matching “${q}” are all sleeved into decks you’ve built.`,
     fix: "All my cards",
   },
 
@@ -214,7 +214,7 @@ export const commandersCopy = {
   emptySearch: {
     heading: "No commander by that name",
     body: (q: string, total: number) =>
-      `Nothing in your commanders matches "${q}". This lane lists the ${n(
+      `Nothing in your commanders matches “${q}”. This lane lists the ${n(
         total,
       )} you own. If you don’t own it yet, it’s on Discover instead.`,
     clearSearch: "Clear search",
@@ -268,7 +268,7 @@ export const discoverCopy = {
   empty: {
     heading: "No commander by that name",
     body: (q: string, total: number) =>
-      `Nothing here matches "${q}". This lane lists the ${n(
+      `Nothing here matches “${q}”. This lane lists the ${n(
         total,
       )} commanders you don’t own. If you already own it, it’s on your commanders instead.`,
     clearSearch: "Clear search",
