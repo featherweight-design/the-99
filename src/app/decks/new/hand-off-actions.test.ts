@@ -49,6 +49,18 @@ beforeEach(() => {
   ];
 });
 
+describe("handOffBracketReach's sets", () => {
+  it("hands the trial the sets asked, so the preview fills as the create does", async () => {
+    await handOffBracketReach(COMMANDER, { ...asked, sets: ["blb", "mh3"] }, []);
+    expect(m.trial.mock.calls[0][2]).toMatchObject({ sets: ["blb", "mh3"] });
+  });
+
+  it("hands none when none were asked", async () => {
+    await handOffBracketReach(COMMANDER, asked, []);
+    expect(m.trial.mock.calls[0][2]).not.toHaveProperty("sets");
+  });
+});
+
 describe("handOffBracketReach's picks", () => {
   it("hands the trial the legal picks the create would place, dropping the rest", async () => {
     await handOffBracketReach(COMMANDER, asked, [GC, OFF_COLOR, "not-a-uuid"]);

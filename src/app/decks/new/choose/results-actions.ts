@@ -9,7 +9,8 @@ import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { loadResultsPage, type ResultsPage } from "../../../../lib/intake/rows";
 import { loadTheRead } from "../../../../lib/intake/run-store";
-import { isCandidate } from "../../../../lib/intake/search";
+import { handOffSets } from "../../../../lib/intake/hand-off";
+import { isCandidate, loadIntakeCatalog } from "../../../../lib/intake/search";
 import { trialFill, type TrialFigures } from "../../../../lib/intake/trial";
 import { isUuid } from "../../../../lib/uuid";
 
@@ -94,6 +95,14 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
     bracket: p.bracket,
     // No card: the results rank by none any more (F1), so the figures count none.
     cardOracleId: null,
+    // The sets the create fills toward (picked plus those the words name, `handOffSets`), so each
+    // row's figures predict the deck its press builds (review round 1). A failed catalog read is the
+    // picked sets alone, as at the create.
+    sets: handOffSets(
+      p.sets,
+      p.words,
+      p.words.trim() === "" ? null : await loadIntakeCatalog().then((c) => c.index).catch(() => null),
+    ),
   };
   const out: Record<string, TrialFigures | null> = {};
   const queue = [...ids];

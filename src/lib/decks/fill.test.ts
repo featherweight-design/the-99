@@ -1389,3 +1389,89 @@ describe('"Any cards" (Help me choose): ownership alone no longer wins a role sl
     expect(ids(planFill([buy, owned], { ...ANY, synergyRank, slots: 1 }))).toEqual(["buy"]);
   });
 });
+
+// THE ASKED SETS (Help me choose): inside the ownership tier a card printed in them comes first,
+// inclusion order kept within each group. Owned still beats unowned outright.
+describe("the asked sets rank owned cards first within the ownership tier", () => {
+  const ids = (p: ReturnType<typeof planFill>) => p.rows.map((r) => r.oracleId);
+  const inSet = (id: string, pct: number | null, owned = true) => ({ ...ramp(id, pct, owned), inPreferredSets: owned });
+
+  it("puts an in-set owned card ahead of a better-played non-set owned card", () => {
+    const plan = planFill([ramp("staple", 80), inSet("bloom", 12)], { ...FLAT, slots: 1 });
+    expect(ids(plan)).toEqual(["bloom"]);
+  });
+
+  it("does the same when neither card has an inclusion figure", () => {
+    const plan = planFill([ramp("a-plain", null), inSet("z-bloom", null)], { ...FLAT, slots: 1 });
+    expect(ids(plan)).toEqual(["z-bloom"]);
+  });
+
+  it("keeps inclusion order inside each group", () => {
+    const plan = planFill([ramp("p90", 90), inSet("s10", 10), ramp("p50", 50), inSet("s40", 40)], { ...FLAT, slots: 4 });
+    expect(ids(plan)).toEqual(["s40", "s10", "p90", "p50"]);
+  });
+
+  it("never lets an unowned card beat an owned one, in-set or not", () => {
+    const plan = planFill([ramp("bought", 99, false), ramp("mine", 1), inSet("bloom", 1)], { ...FLAT, slots: 2 });
+    expect(ids(plan)).toEqual(["bloom", "mine"]);
+  });
+
+  it("feels it under own-only, which skips the synergy ranking", () => {
+    const plan = planFill([ramp("staple", 80), inSet("bloom", 12)], { ...FLAT, pool: "sleeveable", slots: 1 });
+    expect(ids(plan)).toEqual(["bloom"]);
+  });
+
+  it("leads the residual's synergy order with the in-set owned cards", () => {
+    const mk = (id: string, set: boolean) => c({
+      oracleId: id, name: id, typeLine: "Creature", oracleText: "Menace", inclusionPct: 30, ...(set ? { inPreferredSets: true } : {}),
+    });
+    const synergyRank = new Map([["plain", 2], ["bloom", 1]]);
+    expect(ids(planFill([mk("plain", false), mk("bloom", true)], { ...FLAT, synergyRank, slots: 1 }))).toEqual(["bloom"]);
+    expect(ids(planFill([mk("plain", false), mk("bloom", false)], { ...FLAT, synergyRank, slots: 1 }))).toEqual(["plain"]);
+  });
+
+  it("orders the reach's candidates the same way", () => {
+    expect(reachCandidates([ramp("staple", 80), inSet("bloom", 12)]).map((x) => x.oracleId)).toEqual(["bloom", "staple"]);
+  });
+
+  describe('under "Any cards"', () => {
+    const ANY = { ...FLAT, anyCards: true } as const;
+
+    it("ranks an in-set card inside the played-owned tier first", () => {
+      const plan = planFill([ramp("staple", 80), inSet("bloom", 12)], { ...ANY, slots: 1 });
+      expect(ids(plan)).toEqual(["bloom"]);
+    });
+
+    it("leads the residual's played-owned group with the in-set cards, synergy within each", () => {
+      const mk = (id: string, set: boolean) => c({
+        oracleId: id, name: id, typeLine: "Creature", oracleText: "Menace", inclusionPct: 30, ...(set ? { inPreferredSets: true } : {}),
+      });
+      const synergyRank = new Map([["plain", 2], ["bloom", 1]]);
+      expect(ids(planFill([mk("plain", false), mk("bloom", true)], { ...ANY, synergyRank, slots: 1 }))).toEqual(["bloom"]);
+      expect(ids(planFill([mk("plain", false), mk("bloom", false)], { ...ANY, synergyRank, slots: 1 }))).toEqual(["plain"]);
+    });
+
+    it("does not lift an owned card under the play floor over a card to buy", () => {
+      const plan = planFill([inSet("ponder", 7), ramp("bought", 40, false)], { ...ANY, slots: 1 });
+      expect(ids(plan)).toEqual(["bought"]);
+    });
+  });
+
+  it("leads the synergy residual with an in-set owned card, ahead of an unowned one", () => {
+    const mk = (id: string, owned: boolean, set: boolean) => c({
+      oracleId: id, name: id, typeLine: "Creature", oracleText: "Menace", inclusionPct: 30,
+      owned, ownedQuantity: owned ? 1 : 0, ...(set ? { inPreferredSets: true } : {}),
+    });
+    const synergyRank = new Map([["bought", 5], ["bloom", 1]]);
+    expect(ids(planFill([mk("bought", false, false), mk("bloom", true, true)], { ...FLAT, synergyRank, slots: 1 }))).toEqual(["bloom"]);
+    expect(ids(planFill([mk("bought", false, false), mk("bloom", true, false)], { ...FLAT, synergyRank, slots: 1 }))).toEqual(["bought"]);
+  });
+
+  it("is the order of today when no card carries the mark", () => {
+    const pool = [ramp("p90", 90), ramp("p10", 10), ramp("none", null), ramp("bought", 95, false), ramp("p50", 50)];
+    // `false` on every card is the same as no mark at all.
+    const marked = pool.map((x) => ({ ...x, inPreferredSets: false }));
+    expect(ids(planFill(marked, { ...FLAT, slots: 5 }))).toEqual(ids(planFill(pool, { ...FLAT, slots: 5 })));
+    expect(ids(planFill(pool, { ...FLAT, slots: 5 }))).toEqual(["p90", "p50", "p10", "none", "bought"]);
+  });
+});

@@ -23,6 +23,12 @@ vi.mock("../../../../db", () => ({ db: { execute: stub.execute } }));
 vi.mock("../../../../lib/intake/trial", () => ({ trialFill: stub.trial }));
 vi.mock("../../../../lib/intake/rows", () => ({ loadResultsPage: stub.page }));
 vi.mock("../../../../lib/intake/run-store", () => ({ loadTheRead: stub.read }));
+// The words' set chips come from the intake catalog; a failed read leaves the picked sets alone.
+const catalog = vi.hoisted(() => ({ load: vi.fn(async () => { throw new Error("no catalog"); }) }));
+vi.mock("../../../../lib/intake/search", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../../lib/intake/search")>()),
+  loadIntakeCatalog: catalog.load,
+}));
 
 import { moreRows, trialFillRows } from "./results-actions";
 
@@ -77,6 +83,22 @@ describe("trialFillRows", () => {
     stub.execute.mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] });
     await trialFillRows([LEGAL], `?a=${CARD}`);
     expect(stub.trial.mock.calls[0][2]).toMatchObject({ cardOracleId: null });
+  });
+
+  // Review rounds 1 and 2: the row's figures predict the deck its press builds, which fills toward the sets.
+  it("hands the trial the picked sets plus the sets the words name", async () => {
+    const { buildPhraseIndex } = await import("../../../../lib/intake/match");
+    catalog.load.mockResolvedValueOnce({ themes: [], index: buildPhraseIndex([], [], [{ code: "blb", name: "Bloomburrow" }]) } as never);
+    stub.execute.mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] });
+    await trialFillRows([LEGAL], "?p=PIP&w=mostly%20Bloomburrow");
+    expect(stub.trial.mock.calls[0][2]).toMatchObject({ sets: ["pip", "blb"] });
+  });
+
+  it("hands the trial the picked sets alone when the catalog read fails", async () => {
+    stub.execute.mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] });
+    await trialFillRows([LEGAL], "?p=pip&w=mostly%20Bloomburrow");
+    expect(catalog.load).toHaveBeenCalled();
+    expect(stub.trial.mock.calls[0][2]).toMatchObject({ sets: ["pip"] });
   });
 
   it("refuses more than a slice, a non-uuid, or an oversized query before any read", async () => {

@@ -11,10 +11,11 @@ import { bracketReachEnabled } from "../../../lib/intake/bracket-reach-flag";
 import { hasListableRun } from "../../../lib/intake/history-read";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
-import { MAX_SETS, MAX_THEMES } from "../../../lib/intake/answers";
-import { handOffFrom, pastFrom, resultsHref } from "../../../lib/intake/hand-off";
+import { MAX_THEMES } from "../../../lib/intake/answers";
+import { handOffFrom, handOffSets, pastFrom, resultsHref } from "../../../lib/intake/hand-off";
 import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-load";
 import { serializeChooseParams } from "../../../lib/intake/params";
+import { loadIntakeCatalog } from "../../../lib/intake/search";
 import { choosePath } from "../../../lib/commanders/place-paths";
 import { commandersPlaceEnabled } from "../../../lib/commanders/place-flag";
 
@@ -42,6 +43,15 @@ export default async function NewDeckPage({
       // the feature off there is no results screen to go back to, so the page is today's.
       const asked = helpMeChoose ? handOffFrom(searchParamsOf(raw)) : null;
       const answers = asked ? await loadHandOffAnswers(userId, commander.oracleId, asked, env) : null;
+      // The sets the create (and the Bracket row's trial) fill toward: the picked ones plus any
+      // the typed words name. A failed catalog read is the picked sets alone.
+      const fillSets = asked && answers
+        ? handOffSets(
+          answers.sets.map((s) => s.code),
+          asked.words,
+          asked.words.trim() === "" ? null : await loadIntakeCatalog().then((c) => c.index).catch(() => null),
+        )
+        : [];
       const handOff = asked && answers ? {
         answers,
         create: {
@@ -49,8 +59,9 @@ export default async function NewDeckPage({
           // block still lists every theme the player asked for.
           themes: answers.themes.slice(0, MAX_THEMES).map((t) => t.label),
           themeJoin: answers.themeJoin,
-          // The first eight, as the themes are: they write the brief alone, bounded at that.
-          sets: answers.sets.slice(0, MAX_SETS).map((s) => s.code),
+          // The picked sets and those the words name, at most eight (`handOffSets`): they word the
+          // brief and rank the owned cards the fill takes first.
+          sets: fillSets,
           pool: answers.pool,
           // A card whose read failed is still the answer: `createDeck` checks it against the catalog.
           cardOracleId: answers.card?.oracleId ?? (answers.cardUnread ? asked.card : null),

@@ -25,6 +25,10 @@ export type DeckAnswers = {
   /** The stored budget was raised to pay for that set (`decks.answer_budget_raised`, G1): a retry
    *  caps the fill at the set alone, as the create did. */
   budgetRaised?: boolean;
+  /** Set codes (lower case) the player asked for. The fill ranks the OWNED cards printed in them
+   *  ahead of the other owned cards (`inPreferredSets`); never an exclusion, never a gate input.
+   *  Absent or empty: today's order. Not stored, so a retry fills without them. */
+  sets?: readonly string[];
 };
 
 /**
