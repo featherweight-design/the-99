@@ -4,7 +4,7 @@
   "rows": [
     {
       "id": "settings-first-visit",
-      "label": "/settings, first visit in this width: the About sheet over it",
+      "label": "/settings, first visit in this width (the About sheet once covered it; the sheet retired in About visual PR 6b)",
       "view": "src/components/settings/news-section.tsx",
       "steps": [{ "goto": "/settings", "settle": 2000 }]
     },

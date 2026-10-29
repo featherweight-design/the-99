@@ -13,8 +13,8 @@
  *   or a parent of one (the Analysis tab gates the Overview; Swap tools gates Find a deck's read).
  *   The Switches list marks it; the confirm fires on the capabilities a write raises, not on this tag.
  *   `flags.test.ts` holds the tag to exactly that.
- * - `plumbing`: infrastructure, or a surface no friend tries on its own (the About sheet and How it
- *   works, by Design's answer to the brief's open question 2). App-wide only: an account or group
+ * - `plumbing`: infrastructure, or a surface no friend tries on its own (How it works, by Design's
+ *   answer to the brief's open question 2). App-wide only: an account or group
  *   override of one is ignored by the resolver, so no reader runs on different plumbing.
  *
  * `needs`: the parent a compound switch's flag function also checks (`tuningEnabled` asks
@@ -26,7 +26,6 @@
 export type SwitchKind = "feature" | "model" | "plumbing";
 
 export const SWITCHES = [
-  { name: "ABOUT_SHEET_ENABLED", kind: "plumbing" },
   { name: "ADDED_COPY_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "ALL_DECKS_CART_ENABLED", kind: "feature" },
   { name: "ANALYSIS_TAB_ENABLED", kind: "model" },

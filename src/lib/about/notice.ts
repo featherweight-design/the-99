@@ -1,97 +1,119 @@
-// About's notice as a line on Home's banner (plan `2026-10-15-about-on-the-banner.md`, PR A; handoff
-// `design/design_handoff_the99_upcoming_precons/`, `R2 - Home-About`, STATES A1–A3). It replaces the one-time sheet
-// with `ABOUT_SHEET_ENABLED` on: the switch now means "About's notice is a line on Home".
+// About's line on Home's banner (About visual build, plan `2026-10-27-about-visual.md`, PR 6b; handoff
+// `design/design_handoff_the99_about_visual/`, call 7 and the Ways-In board's Banner frames). The one-time sheet and the
+// gate's redirect retired with this PR: the banner is the only place a launch is announced.
 //
-// ONE RULE, the sheet's (`sheetDecision`): a first-run reader (`isFirstRun`) is introduced to the page, a reader
-// behind is named what they have not seen (`unseenEntries`), and a current reader is told nothing. Two differences,
-// both Hugh's (2026-10-14): the How it works appendix is never named (Q3), and a browser whose `about_sheet` cookie
-// is current already showed the sheet for these entries and is not told again on Home.
+// ONE RULE, the pages' own (`unseenUnits`): a first-run reader (`isFirstRun`) is pointed at the `/about` index, a
+// reader behind is named each label or rule they have not been told about, and a current reader is told nothing. Each
+// launch line names its page ("New on Decks:"), says the unit's own words, carries a crop of its label's region from
+// the capture at the reader's width (call 0), and its Show me lands on the label lit and marked New (PR 5).
 //
-// Pure. The seen state rides in Home's cached payload (`user_prefs` carries the stamp trigger, so a write retires
-// it); the cookie is per browser and is read per request, outside it, and the page combines the two.
+// Pure. The seen state rides in Home's cached payload (`user_prefs` carries the stamp trigger, so a write retires it);
+// the reader's switches and theme are applied per request, outside it.
 
-import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
-import { displayedId, isFirstRun, switchedIds, unseenEntries, type SeenState } from "./visible";
+import { ABOUT_VERSION } from "../copy/about";
+import { ABOUT_AREAS, ABOUT_PAGE_STRINGS, ABOUT_RULES, ABOUT_SECTIONS, type AboutArea, type AboutLabel, type AboutRuleId } from "../copy/about-pages";
+import { LIT_PARAM } from "../discovery/page-tools";
+import type { AboutLaunch, AboutLine, BannerCrop } from "./banner-line";
+import { pageShotFor, type PageWidth } from "./page-shots";
+import { everyAnnouncement, unseenUnits, type UnseenUnit, type VisibleSection } from "./pages-visible";
+import { isFirstRun, type SeenState } from "./visible";
 
-export type AboutNotice =
-  | { kind: "firstRun" }
-  | { kind: "behind"; entries: AboutEntry[] };
+export type { AboutLaunch, AboutLine, BannerCrop } from "./banner-line";
 
-/**
- * The notice Home draws, or null. `visible` is the reader's own visible entries (`visibleEntries` of their resolved
- * switches), which never include the appendix, and `sheetCookieCurrent` is `sheetCookieIsCurrent` of this browser's
- * `about_sheet` cookie.
- */
-export function aboutNotice(
-  seen: SeenState,
-  visible: readonly AboutEntry[],
-  sheetCookieCurrent: boolean,
-): AboutNotice | null {
-  if (sheetCookieCurrent) return null;
-  if (isFirstRun(seen)) return { kind: "firstRun" };
-  const entries = unseenEntries(visible, seen);
-  return entries.length === 0 ? null : { kind: "behind", entries };
+const baseKey = (key: string) => key.split("@")[0];
+
+function rawUnit(key: string): AboutLabel | (typeof ABOUT_RULES)[AboutRuleId] | null {
+  if (key.startsWith("rule/")) return ABOUT_RULES[key.slice("rule/".length) as AboutRuleId] ?? null;
+  const [area, section, id] = key.split("/");
+  return ABOUT_SECTIONS.find((s) => s.area === area && s.id === section)?.labels.find((l) => l.id === id) ?? null;
 }
 
-/**
- * What the browser is handed: the titles it draws, and `ids`, what its ✕ claims and what a `/about` visit in the
- * same document acknowledges. Behind, the unseen entries; first run, every visible entry (the line stands for the
- * whole page, and the ✕ writes what a visit writes). Each id names the FORM drawn (`displayedId`): an entry drawn
- * in its variant by its variant id, so a line drawn before a switch chose the variant claims the base form only.
- */
-export type AboutLine =
-  | { kind: "firstRun"; ids: string[] }
-  | { kind: "behind"; titles: string[]; ids: string[] };
-
-export function aboutLine(notice: AboutNotice | null, visible: readonly AboutEntry[]): AboutLine | null {
-  if (!notice) return null;
-  if (notice.kind === "firstRun") return { kind: "firstRun", ids: visible.map(displayedId) };
-  return { kind: "behind", titles: notice.entries.map((e) => e.title), ids: notice.entries.map(displayedId) };
+/** The words a launch says: a whole unit as drawn, or for a switched sentence told on its own, that sentence alone. */
+function launchText(u: UnseenUnit, visible: readonly VisibleSection[]): string {
+  const key = baseKey(u.key);
+  const drawn = visible.flatMap((s) => [...s.labels, ...s.rules]).find((x) => x.key === key);
+  if (!drawn) return "";
+  const sw = u.key.slice(key.length + 1);
+  if (sw) {
+    const sentences = Object.entries(rawUnit(key)?.sentences ?? {}).flatMap(([text, on]) =>
+      on && (Array.isArray(on) ? on : [on]).includes(sw as never) ? [text.trim()] : [],
+    );
+    if (sentences.length > 0) return sentences.join(" ");
+  }
+  return `${drawn.lead ?? ""}${drawn.text}`.trim();
 }
 
-/** No notice names more ids than the catalog holds; a longer claim is not one a page drew. */
+/** The label's region on the first of its section's captures at `width` that measured it, in the reader's theme. */
+function cropAt(u: UnseenUnit, visible: readonly VisibleSection[], theme: string, width: PageWidth): BannerCrop | null {
+  const key = baseKey(u.key);
+  const section = visible.find((s) => s.area === u.area && s.id === u.section);
+  const label = section?.labels.find((l) => l.key === key);
+  if (!section || !label) return null;
+  const region = (rawUnit(key) as AboutLabel | null)?.region ?? key;
+  for (const capture of section.captures[width]) {
+    const shot = pageShotFor(theme, width, capture);
+    if (shot && Object.hasOwn(shot.regions, region)) return { src: shot.src, w: shot.w, h: shot.h, box: shot.regions[region] };
+  }
+  return null;
+}
+
+/** Show me's address for any announced unit: its page, the unit lit, scrolled to its section (`showMeHref`'s shape). */
+export function launchHref(u: Pick<UnseenUnit, "key" | "area" | "section">): string {
+  return `/about/${u.area}?${new URLSearchParams({ [LIT_PARAM]: baseKey(u.key) }).toString()}#${u.section}`;
+}
+
+const pageName = (area: AboutArea) => ABOUT_AREAS.find((a) => a.id === area)?.name ?? area;
+
+/**
+ * About's line on Home, or null. `visible` is `visibleSections` of the reader's resolved switches (env and
+ * `flag_overrides`, `requestSwitchEnv`), so a unit switched off for the reader never reaches the banner (Review Focus 2).
+ */
+export function aboutLine(seen: SeenState, visible: readonly VisibleSection[], theme: string): AboutLine | null {
+  if (isFirstRun(seen)) return { kind: "firstRun", ids: everyAnnouncement(visible).map((u) => u.key) };
+  const unseen = unseenUnits(visible, seen);
+  if (unseen.length === 0) return null;
+  const launches = unseen.map((u): AboutLaunch => ({
+    key: u.key,
+    lead: ABOUT_PAGE_STRINGS.bannerLead(pageName(u.area)),
+    text: launchText(u, visible),
+    href: launchHref(u),
+    phone: cropAt(u, visible, theme, "phone"),
+    desktop: cropAt(u, visible, theme, "desktop"),
+  }));
+  return { kind: "launches", launches, ids: launches.map((l) => l.key) };
+}
+
+/** No line names more keys than the pages hold; a longer claim is not one a page drew. */
 const MAX_CLAIMED = 200;
 
 /**
- * What the banner's ✕ writes for About (Q2: ✕ counts as seen), re-decided on the server: `claimed` is what the
- * page drew, sent back by the browser and so not trusted. The reader's notice is read again (cookie aside: a ✕
- * only exists where the line was drawn), and only the claimed ids it still names, in the form it now draws them
- * (`displayedId`, an exact match), are written. So a client can
- * drop an id but never add one, and an entry switched on after the page rendered is not marked seen unread.
+ * What the banner's ✕ writes for About (✕ counts as seen), re-decided on the server: `claimed` is what the page drew,
+ * sent back by the browser and so not trusted. The reader's announcements are read again, and only the claimed ones
+ * still announced are written, each by its `UnseenUnit.ack` (a unit's key and its drawn sentences' keys), so a client
+ * can drop a key but never add one, and a unit switched on after the page rendered is not marked seen unread.
  *
- * The version floor is `ABOUT_VERSION`, as a visit writes, when every unswitched entry the notice names now was
- * claimed. When one was not (a deploy added it after the render, or the client dropped it), the floor rises only to
- * the newest claimed unswitched entry and never to an unclaimed one's, so every unclaimed one stays new. The ids are the claimed switched entries and the
- * variant ids of claimed entries drawn in a variant; any other entry is seen by the floor alone. Null when there is nothing to write.
+ * The floor rises to `ABOUT_VERSION` when every announcement now standing was claimed. When one was not (a deploy added
+ * it after the render, or the client dropped it), it rises only to just under the oldest unclaimed one's `since`, never
+ * past the reader's own, so that one stays new. A first-run reader's ✕ writes the baseline a first visit writes
+ * (`afterVisit`) for what they claimed. Null when there is nothing to write.
  */
 export function aboutDismissal(
   claimed: unknown,
   seen: SeenState,
-  visible: readonly AboutEntry[],
+  visible: readonly VisibleSection[],
   version: number = ABOUT_VERSION,
-): { version: number; ids: string[] } | null {
+): SeenState | null {
   if (!Array.isArray(claimed)) return null;
-  const notice = aboutNotice(seen, visible, false);
-  if (!notice) return null;
-  const named = new Set(claimed.slice(0, MAX_CLAIMED).filter((id): id is string => typeof id === "string"));
-  const current = notice.kind === "firstRun" ? [...visible] : notice.entries;
-  // EXACT match on the form drawn: a claim of an entry's base form does not answer it once it is drawn in its
-  // variant (a switch flipped after the render), so the variant is never marked seen unread.
-  const valid = current.filter((e) => named.has(displayedId(e)));
+  const named = new Set(claimed.slice(0, MAX_CLAIMED).filter((k): k is string => typeof k === "string"));
+  const current = isFirstRun(seen) ? everyAnnouncement(visible) : unseenUnits(visible, seen);
+  const valid = current.filter((u) => named.has(u.key));
   if (valid.length === 0) return null;
-  const unswitched = current.filter((e) => !e.switch);
-  const unclaimed = unswitched.filter((e) => !named.has(displayedId(e)));
-  // Below every unclaimed entry, so none is marked seen by the floor; a claimed entry above that stays new too,
-  // which is the safe side.
+  const since = new Map(visible.flatMap((s) => [...s.labels, ...s.rules]).map((u) => [u.key, u.since]));
+  const unclaimed = current.filter((u) => !named.has(u.key));
   const floor = unclaimed.length === 0
     ? version
-    : Math.min(
-        Math.max(0, ...valid.filter((e) => !e.switch).map((e) => e.since)),
-        Math.min(...unclaimed.map((e) => e.since)) - 1,
-      );
-  // What a visit writes for the claimed entries (`switchedIds`): a switched entry's id, and an entry drawn in its
-  // variant by its variant id, the one `isSeen` checks for it. The floor alone never sees a variant.
-  const ids = switchedIds(valid);
-  if (ids.length === 0 && floor <= seen.version) return null;
-  return { version: floor, ids };
+    : Math.max(seen.version, Math.min(...unclaimed.map((u) => since.get(baseKey(u.key)) ?? 0)) - 1);
+  const ids = [...new Set(valid.flatMap((u) => u.ack))];
+  if (floor <= seen.version && ids.every((id) => seen.ids.includes(id))) return null;
+  return { version: Math.max(floor, seen.version), ids };
 }

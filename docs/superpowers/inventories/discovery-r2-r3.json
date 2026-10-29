@@ -386,7 +386,7 @@
         "phone",
         "desktop"
       ],
-      "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:tour (server with FIRST_RUN_TOUR_ENABLED=true and ABOUT_SHEET_ENABLED=true): tour-<step>-<width>.png for steps 1 to 6 and tour-whatsNew-fallback-<width>.png",
+      "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:tour (server with FIRST_RUN_TOUR_ENABLED=true): tour-<step>-<width>.png for steps 1 to 6 and tour-whatsNew-fallback-<width>.png",
       "why": "the tour draws only on a first-run Home, and this sheet signs in as the audit account, which holds cards and decks and never sees one"
     },
     {
@@ -396,7 +396,7 @@
         "phone",
         "desktop"
       ],
-      "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:tour (server with FIRST_RUN_TOUR_ENABLED=true and ABOUT_SHEET_ENABLED=true): tour-again-open-<step>-<width>.png on the dashboard account (nav unlocked) and tour-again-locked-<step>-<width>.png on the decks-only one",
+      "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:tour (server with FIRST_RUN_TOUR_ENABLED=true): tour-again-open-<step>-<width>.png on the dashboard account (nav unlocked) and tour-again-locked-<step>-<width>.png on the decks-only one",
       "why": "its locked captions need a decks-only account, which the sheet's audit account is not, and its stops and the menu row sit on the shell's own controls, which the sheet's verbs never reach (they reach page content only). The sheet photographs About's press as `tour-again-about`"
     }
   ],

@@ -1,5 +1,4 @@
 import { shellUserId } from "./shell-session";
-import { headers } from "next/headers";
 import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
@@ -7,9 +6,6 @@ import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
 import { perfRead } from "../../lib/perf/timing";
 import { readChip } from "../../lib/payments/chip";
 import type { ThemeKey } from "../../lib/theme/themes";
-import { SHEET_ON_HEADER } from "../../lib/about/gate";
-import { readSheetState } from "../../lib/about/sheet-state";
-import { AboutSheet } from "./about-sheet";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
 import { FanContentNotice } from "./fan-content-notice";
 import { isAdmin } from "../../lib/admin/access";
@@ -83,16 +79,6 @@ export default async function Shell({
     locked && noCollectionEntryEnabled(env)
       ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) }
       : null;
-  // The proxy's decision about the one-time About sheet, carried on a request
-  // header it sets on document loads only. Read on every render and handed down
-  // even when it says nothing, because the sheet latches the state it MOUNTED
-  // with: a later re-render of this layout (router.refresh, a revalidating
-  // action) arrives without the header and must not unmount an unread sheet.
-  // Off since About moved to Home's banner (plan `2026-10-15-about-on-the-banner.md`, PR A): the proxy
-  // strips both headers from every request and no longer sets `SHEET_ON_HEADER`, so this is always null
-  // and the sheet never mounts. PR B deletes the path.
-  const requestHeaders = await headers();
-  const sheet = requestHeaders.get(SHEET_ON_HEADER) === "1" ? readSheetState(requestHeaders) : null;
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
   // The Friends row, from the same resolved switches (Social R1): only the boolean reaches the client.
   const door = {
@@ -181,15 +167,13 @@ export default async function Shell({
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} badges={badges} />
         {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a
             `contentinfo` landmark) sits above it and clears the bar and the sheets by the same figure (launch epic A1). */}
-        <div className="flex min-w-0 flex-1 flex-col pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0">
+        <div className="flex min-w-0 flex-1 flex-col pb-[var(--tabbar-h)] md:pb-0">
           <MobileHeader theme={theme} {...door} friendsMoment={friendsMoment} />
           {/* The bottom padding on mobile leaves room for the fixed tab bar, which
               is held to exactly --tabbar-h so this reservation is not an estimate. */}
           {/* `flex flex-col` continues the stretch chain the rail already starts,
               so a route child can claim the leftover height with flex-1 instead
               of guessing at the header/tab-bar offsets in a calc(). */}
-          {/* `--about-sheet-h` is set by the About sheet while it is open on a
-              phone, so the foot of the page scrolls clear of it (R6 §N5). */}
           {/* `min-h` makes the page at least one screen tall (the viewport less the phone header and the tab bar, or the
               window from `md`), so the notice always starts at or below the fold: present on every page, never in the
               way (R2). `--header-h` is the measured phone header, 0 on desktop where `md:` ignores it. */}
@@ -207,8 +191,6 @@ export default async function Shell({
           commandersPlace={door.commandersPlace}
           badges={badges}
         />
-        {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
-        {sheet && <AboutSheet state={sheet} />}
         {pushOn && <AppBadge badges={badges} />}
       </div>
       </HelpRoot>

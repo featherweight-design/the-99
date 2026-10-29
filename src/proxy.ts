@@ -1,18 +1,6 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import {
-  ABOUT_COOKIE,
-  gateApplies,
-  gateDecision,
-  gateHandles,
-  SHEET_HEADER,
-  SHEET_ON_HEADER,
-  sheetCookieValue,
-} from "./lib/about/gate";
-import { aboutSheetEnabled } from "./lib/about/flag";
-import { ABOUT_VERSION } from "./lib/copy/about";
-import { aboutSeen } from "./lib/about/read";
-import { isFirstRun, unseenEntries, visibleEntries, type SeenState } from "./lib/about/visible";
+import { isNavigation } from "./lib/navigation-request";
 import { resolveSwitchEnv, switchSnapshotState } from "./lib/switches/snapshot";
 import { SWITCHES_HEADER } from "./lib/switches/request";
 import { switchBits } from "./lib/switches/resolve";
@@ -57,12 +45,10 @@ export default clerkMiddleware(async (auth, req) => {
     const home = new URL("/", req.url);
     return userId ? NextResponse.redirect(home) : redirectToSignIn({ returnBackUrl: home.toString() });
   }
-  // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader
-  // uses constantly — it renders the dashboard, and it is where Clerk lands
-  // them after sign-in. Returning early on the whole matcher therefore left the
-  // most likely arrival in the app ungated, which is the one place the About
-  // page most needs to appear. So: protect what is not public, read the session
-  // on what is, and let the gate below judge both.
+  // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader uses constantly: it renders the
+  // dashboard. So: protect what is not public, and read the session on what is, so a signed-in reader's switches
+  // travel with every request either way. (The About gate that once redirected from here retired with About visual
+  // PR 6b: Home's banner carries launches now.)
   // `[perf] proxy` with PERF_TIMING=1: what the proxy costs before any page runs, logged under the
   // request's own id. `memo` is how the switch overrides were answered: `hit` from the settled
   // per-instance memo, `pending` by waiting on another request's read, `miss` by a read of its own.
@@ -73,20 +59,14 @@ export default clerkMiddleware(async (auth, req) => {
   const t1 = timing ? performance.now() : 0;
   const memo = timing && userId ? switchSnapshotState() : null;
   const t2 = timing ? performance.now() : 0;
-  // The reader's own switches (brief, locked rule 9): an account an override switches on sees that
-  // feature's entry, and the legacy cookie below is keyed on what THEY see.
+  // The reader's own switches (brief, locked rule 9): an account an override switches on sees that feature.
   const env = userId ? await resolveSwitchEnv(userId) : process.env;
   if (timing && userId) {
     console.log(`[perf] proxy auth=${Math.round(t1 - t0)} switches=${Math.round(performance.now() - t2)} memo=${memo}`);
   }
-  // Both sheet headers are stripped from every request, so no client can summon the sheet: the shell mounts it
-  // on `SHEET_ON_HEADER` alone, and since About moved to Home's banner this proxy sets neither (PR B deletes
-  // the sheet).
   const headers = new Headers(req.headers);
-  headers.delete(SHEET_HEADER);
-  headers.delete(SHEET_ON_HEADER);
-  // The reader's resolved switches travel with the request, so `/about` and its actions decide from
-  // this same snapshot (`requestSwitchEnv`) and never from a second memo of their own.
+  // The reader's resolved switches travel with the request, so every page and action decides from this same snapshot
+  // (`requestSwitchEnv`) and never from a second memo of its own. Stripped first, so no client can supply them.
   headers.delete(SWITCHES_HEADER);
   if (userId) headers.set(SWITCHES_HEADER, switchBits(env));
   const pass = () => NextResponse.next({ request: { headers } });
@@ -96,87 +76,17 @@ export default clerkMiddleware(async (auth, req) => {
   // link the pointer passes over cannot race the page's own load with a second secret.
   const withClaimCookie = (response: NextResponse): NextResponse => {
     const token = path.startsWith("/join/") ? path.slice("/join/".length) : "";
-    if (gateHandles(req.method, req.headers) && isQrToken(token) && !req.cookies.get(CLAIM_COOKIE)) {
+    if (isNavigation(req.method, req.headers) && isQrToken(token) && !req.cookies.get(CLAIM_COOKIE)) {
       response.cookies.set(CLAIM_COOKIE, mintClaimSecret(), claimCookieOptions(token));
     }
     return response;
   };
-  // `/about` itself, as a navigation, in either mode: the page draws and acknowledges the entries
-  // THIS request's switches show, which another instance's memo may not have agreed with when it
-  // redirected here and set the legacy cookie. So that cookie is re-keyed to what this page is
-  // drawn: an entry it did not draw stops matching, and the gate asks again once the instances
-  // agree, rather than the cookie suppressing that entry for good. In sheet mode too, so a cookie
-  // the legacy gate left is still corrected if the reader returns to it.
-  // Any navigation the gate would handle (a document load or a client transition, never a
-  // prefetch), since a reader sent here by a redirect arrives either way.
-  const rekeyLegacy = (response: NextResponse): NextResponse => {
-    if (userId && path === "/about" && gateHandles(req.method, req.headers)) {
-      response.cookies.set(ABOUT_COOKIE, sheetCookieValue(userId, visibleEntries(env)), {
-        ...COOKIE_OPTIONS,
-        secure: req.nextUrl.protocol === "https:",
-      });
-    }
-    return response;
-  };
-  // About on the banner (plan 2026-10-15, PR A): with the switch on, About's notice is a line on Home's banner,
-  // decided by the page. So the proxy no longer decides a sheet, sets neither sheet header (the shell never mounts
-  // the sheet) and no longer writes the `about_sheet` cookie; Home reads that cookie, never writes it, to keep a
-  // browser that already showed the sheet for these entries from being told again. It never redirects either.
-  if (userId && aboutSheetEnabled(env)) return rekeyLegacy(pass());
-  if (!userId) return withClaimCookie(pass());
-
-  if (path === "/about" && gateHandles(req.method, req.headers)) return rekeyLegacy(pass());
-  if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return pass();
-
-  // The cookie is the fast path and the reason this costs nothing on a normal
-  // navigation: one database read per browser per version per account. It is keyed to the
-  // switched entries this reader is drawn (as the sheet's is), so flipping a switch retires it
-  // and the gate decides again; a bare `<user>.<version>` could not tell a new entry from none.
-  const visible = visibleEntries(env);
-  const cookie = sheetCookieValue(userId, visible);
-  if (req.cookies.get(ABOUT_COOKIE)?.value === cookie) return pass();
-
-  // A failed read must not lock the reader out of the app. The page is a
-  // reference; the app is the point.
-  let seen: SeenState;
-  try {
-    seen = await aboutSeen(userId);
-  } catch {
-    return pass();
-  }
-
-  // Sent only when there is something to be told, by the same rule the sheet uses: a brand-new
-  // account, or an entry this deployment draws that this reader has not seen. A bump that added
-  // entries only behind switches that are off sends nobody to a page with nothing new, and an
-  // entry switched on later is still new however far the version floor has caught up.
-  const behind = isFirstRun(seen) || unseenEntries(visible, seen).length > 0;
-  const decision = gateDecision({
-    userId,
-    pathname: path,
-    search: req.nextUrl.search,
-    seen: behind ? 0 : ABOUT_VERSION,
-  });
-  const response =
-    decision.kind === "redirect"
-      ? NextResponse.redirect(new URL(decision.to, req.url))
-      : pass();
-
-  response.cookies.set(ABOUT_COOKIE, cookie, {
-    ...COOKIE_OPTIONS,
-    secure: req.nextUrl.protocol === "https:",
-  });
-  return response;
+  // Only a signed-out browser is handed a claim secret: a member has nothing to claim.
+  return userId ? pass() : withClaimCookie(pass());
 });
 
 /** The one in-app address of Clerk's hosted sign-in; `src/components/public/links.ts` names the same path. */
 const SIGN_IN_PATH = "/sign-in";
-
-const COOKIE_OPTIONS = {
-  path: "/",
-  httpOnly: true,
-  sameSite: "lax",
-  maxAge: 60 * 60 * 24 * 365,
-} as const;
 
 export const config = {
   // The public pages' addresses may carry a dot in their name part (`/card/sol.ring-<id>`), which the first pattern

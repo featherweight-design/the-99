@@ -1,7 +1,5 @@
-// Shell's half of the About sheet: whether it mounts the sheet, and with what.
-// The sheet's own rules are about-sheet.test.tsx's; what only this can answer is
-// that the mount does not depend on the header being present, because the
-// sheet's latch only works if the element survives a re-render that carries none.
+// The shell: what it mounts around every page (the locked tab bar's height, the Friends badge, the menus' doors).
+// The one-time About sheet it once mounted retired with About visual PR 6b.
 
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -37,9 +35,6 @@ const feed = vi.hoisted(() => ({ unseenFriendsCount: vi.fn(async (..._a: unknown
 vi.mock("../../lib/feed/read", () => ({ unseenFriendsCount: feed.unseenFriendsCount }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: feed.noticeTradeMatches }));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: feed.after }));
-vi.mock("./about-sheet", () => ({
-  AboutSheet: ({ state }: { state: { kind: string } }) => <div data-testid="about-sheet">{state.kind}</div>,
-}));
 
 const Shell = (await import("./shell")).default;
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
@@ -65,50 +60,16 @@ beforeEach(() => {
   requestHeaders = new Headers();
 });
 afterEach(() => {
-  delete process.env.ABOUT_SHEET_ENABLED;
   uniqueCards = 5;
   signedInUser = "user_1";
 });
 
-describe("Shell and the About sheet", () => {
-  it("mounts nothing with the switch off, whatever the header says", async () => {
-    requestHeaders = new Headers({ "x-about-sheet": "0" });
-    await renderShell();
-    expect(screen.queryByTestId("about-sheet")).toBeNull();
-  });
-
-  it("hands the sheet the proxy's decision with the switch on", async () => {
+describe("Shell and the retired About sheet (About visual PR 6b)", () => {
+  it("mounts no sheet, whatever a request's headers say", async () => {
     requestHeaders = new Headers({ "x-about-sheet-on": "1", "x-about-sheet": "0" });
     await renderShell();
-    expect(screen.getByTestId("about-sheet").textContent).toBe("firstRun");
-  });
-
-  it("follows the proxy's decision for this reader, whatever this bundle's environment says", async () => {
-    // The proxy resolved the sheet on for this reader (an override), and says so.
-    requestHeaders = new Headers({ "x-about-sheet-on": "1", "x-about-sheet": "0" });
-    await renderShell();
-    expect(screen.getByTestId("about-sheet").textContent).toBe("firstRun");
-  });
-
-  it("ignores a sheet header the proxy did not mark on, though the environment has the switch on", async () => {
-    process.env.ABOUT_SHEET_ENABLED = "true";
-    requestHeaders = new Headers({ "x-about-sheet": "0" });
-    await renderShell();
-    expect(screen.queryByTestId("about-sheet")).toBeNull();
-  });
-
-  it("still mounts it with no header, so a re-render cannot unmount an open sheet", async () => {
-    requestHeaders = new Headers({ "x-about-sheet-on": "1" });
-    await renderShell();
-    expect(screen.getByTestId("about-sheet").textContent).toBe("none");
-  });
-
-  it("puts it after the page, last in tab order", async () => {
-    requestHeaders = new Headers({ "x-about-sheet-on": "1" });
-    await renderShell();
-    const main = screen.getByText("page").closest("main")!;
-    const sheet = screen.getByTestId("about-sheet");
-    expect(main.compareDocumentPosition(sheet) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(document.querySelector("[data-about-sheet]")).toBeNull();
+    expect(screen.queryByRole("region", { name: /^(New in About|About The\s99)$/ })).toBeNull();
   });
 });
 
@@ -123,7 +84,7 @@ describe("Shell and the locked tab bar height", () => {
     expect(wrapper.style.getPropertyValue("--tabbar-h")).toBe("88px");
     // The reserve is on the column <main> sits in (the Fan Content notice, a sibling of <main>, sits above it), not on <main>.
     expect(main.className).not.toContain("pb-[calc(var(--tabbar-h)");
-    expect(main.parentElement!.className).toContain("pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))]");
+    expect(main.parentElement!.className).toContain("pb-[var(--tabbar-h)]");
     // Outside the pending provider, whose loading overlay renders beside the shell rather than
     // inside it: that overlay has to read the same 88px or its foot sits under the bar.
     expect(wrapper.className).toBe("contents");

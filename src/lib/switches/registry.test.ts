@@ -39,8 +39,8 @@ describe("the switch registry", () => {
 
   // LABEL_ROLE_COUNTS is a scoring basis no reader sees as a feature (admin PR 6d-2): a per-account
   // override of it would add nothing and score one reader's stored set by a basis another's does not use.
-  // RATE_LIMIT counts requests (payments scope PR S), and NAV_STALL_LOG reports stuck loaders; no reader sees a difference. The About sheet and
-  // How it works are app-wide only by Design's answer to the brief's open question 2 (admin PR 8a).
+  // RATE_LIMIT counts requests (payments scope PR S), and NAV_STALL_LOG reports stuck loaders; no reader sees a difference.
+  // How it works is app-wide only by Design’s answer to the brief’s open question 2 (admin PR 8a).
   // ANALYSIS_TAB spends: it gates every Overview press (READINESS audit finding 2), and SWAP_TOOLS
   // gates Find a deck's read the same way.
   // PUBLIC_PAGES is the public card and commander pages (launch epic F3): a stranger has no account, so only the
@@ -48,7 +48,7 @@ describe("the switch registry", () => {
   // SCAN_LAB is the card-scan spike's measuring page (staging only, never linked).
   it("keeps plumbing app-wide only, and marks the switches that spend model calls", () => {
     expect(SWITCH_NAMES.filter((n) => switchKind(n) === "plumbing")).toEqual([
-      "ABOUT_SHEET_ENABLED", "HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED",
+      "HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED",
       "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED",
     ]);
     expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(

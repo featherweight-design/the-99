@@ -9,7 +9,9 @@ const redirect = vi.fn((to: string) => {
 });
 
 vi.mock("../../lib/auth", () => ({ requireUserId }));
-vi.mock("../../lib/about/read", () => ({ markAboutSeen, markAboutVisited }));
+// The reader's seen state as it stands, for a page visit to decide its write from.
+const stored = vi.hoisted(() => ({ seen: { version: 16, ids: [] as string[] } }));
+vi.mock("../../lib/about/read", () => ({ markAboutSeen, markAboutVisited, aboutSeen: async () => stored.seen }));
 vi.mock("next/navigation", () => ({ redirect }));
 // The reader's switches as the proxy resolved them for this request.
 const resolved = vi.hoisted(() => ({ env: {} as Record<string, string> }));
@@ -26,19 +28,9 @@ vi.mock("../../lib/about/visible", async (importOriginal) => {
   };
 });
 
-const { dismissAbout, recordAboutVisit } = await import("./actions");
+const { recordAboutPageVisit, recordAboutVisit } = await import("./actions");
 const { ABOUT_VERSION } = await import("../../lib/copy/about");
-
-/** The dismiss RETURNS where the reader goes; the page navigates there itself. */
-async function dismiss(next?: string, shown: string[] = []): Promise<string> {
-  const form = new FormData();
-  if (next !== undefined) form.set("next", next);
-  for (const id of shown) form.append("shown", id);
-  const to = await dismissAbout(form);
-  // It never redirects: a server redirect would give the page nothing to report as pending.
-  expect(redirect).not.toHaveBeenCalled();
-  return to;
-}
+const { seenKeysOf, visibleSections } = await import("../../lib/about/pages-visible");
 
 beforeEach(() => {
   requireUserId.mockClear();
@@ -47,62 +39,45 @@ beforeEach(() => {
   redirect.mockClear();
 });
 
-describe("dismissAbout", () => {
-  it("authenticates, records the current version, and returns the reader", async () => {
-    const to = await dismiss("/decks?sort=name");
-    expect(requireUserId).toHaveBeenCalledOnce();
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, expect.any(Array));
-    expect(to).toBe("/decks?sort=name");
+describe("recordAboutPageVisit (About visual PR 6b)", () => {
+  beforeEach(() => {
+    stored.seen = { version: 9, ids: ["kept"] };
+    resolved.env = {};
   });
 
-  it("records the switched entries the page showed too, so the legacy gate asks once", async () => {
-    extraEntries.push({ id: "switched-a", switch: "NEVER_CUT_ENABLED" });
-    try {
-      await dismiss("/decks", ["switched-a"]);
-      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["switched-a"]);
-    } finally {
-      extraEntries.length = 0;
-    }
+  it("writes that page's keys alone, keeping the reader's floor, and returns them", async () => {
+    const written = await recordAboutPageVisit("decks");
+    const keys = seenKeysOf(visibleSections(envViewWith({})), "decks");
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", 9, expect.any(Array));
+    const ids = (markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2];
+    expect(new Set(ids)).toEqual(new Set(["kept", ...keys]));
+    expect(ids.some((k) => k.startsWith("friends/") || k.startsWith("home/"))).toBe(false);
+    expect(written).toEqual(ids);
+    expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("records an entry the reader's own override shows them, which the gate counts as unseen", async () => {
-    resolved.env = { DECK_NOTES_ENABLED: "true" };
-    try {
-      await dismiss("/decks", ["notes"]);
-      expect(requestSwitchEnv).toHaveBeenCalledWith("user_1");
-      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["notes"]);
-    } finally {
-      resolved.env = {};
-    }
+  it("decides the keys from the reader's own resolved switches", async () => {
+    resolved.env = { NEVER_CUT_ENABLED: "true" };
+    await recordAboutPageVisit("decks");
+    expect(requestSwitchEnv).toHaveBeenCalledWith("user_1");
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain("decks/your-deck/lock");
+    markAboutVisited.mockClear();
+    resolved.env = {};
+    await recordAboutPageVisit("decks");
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).not.toContain("decks/your-deck/lock");
   });
 
-  it("does not mark seen an entry switched on after the page rendered", async () => {
-    resolved.env = { DECK_NOTES_ENABLED: "true" };
-    try {
-      await dismiss("/decks", []);
-      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
-    } finally {
-      resolved.env = {};
-    }
+  it("takes a first-run reader's first visit as their whole baseline: the floor and every page's keys", async () => {
+    stored.seen = { version: 0, ids: [] };
+    await recordAboutPageVisit("home");
+    const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
+    expect(version).toBe(ABOUT_VERSION);
+    expect(ids).toEqual(expect.arrayContaining(seenKeysOf(visibleSections(envViewWith({})), "friends")));
   });
 
-  it("refuses an id the reader's switches do not draw: a caller can drop one, never add one", async () => {
-    await dismiss("/decks", ["notes", "made-up"]);
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
-  });
-
-  it("validates `next` HERE, because this is what decides the destination", async () => {
-    // The page validates it too, but the field is a hidden input in a form the
-    // reader's browser owns — the page's copy of the value proves nothing about
-    // what arrives.
-    expect(await dismiss("//evil.example")).toBe("/");
-    expect(await dismiss("https://evil.example/decks")).toBe("/");
-    expect(await dismiss()).toBe("/");
-  });
-
-  it("records the acknowledgement even when the destination is refused", async () => {
-    await dismiss("//evil.example");
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, expect.any(Array));
+  it("writes nothing for a page that is not one of the six", async () => {
+    for (const bad of ["nowhere", "__proto__", 3, null]) expect(await recordAboutPageVisit(bad)).toEqual([]);
+    expect(markAboutVisited).not.toHaveBeenCalled();
   });
 });
 

@@ -179,6 +179,12 @@ export function unseenUnits(visible: readonly VisibleSection[], seen: SeenState)
   });
 }
 
+/** Every unit the reader is drawn, each as a whole announcement carrying its sentences: what a first-run reader's
+ *  line stands for, and what its ✕ and first visit take as their baseline. */
+export function everyAnnouncement(visible: readonly VisibleSection[]): UnseenUnit[] {
+  return unitsOf(visible).map((u) => ({ key: u.key, area: u.area, section: u.section, ack: unitKeys(u) }));
+}
+
 /** Every announce key of one page's units, which a visit to that page records. A visit never raises the floor, and
  *  never writes another page's keys: a visit to Decks must not mark a new unit on Friends seen. */
 export function seenKeysOf(visible: readonly VisibleSection[], area: AboutArea): string[] {

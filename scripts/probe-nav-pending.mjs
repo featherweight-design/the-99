@@ -16,12 +16,7 @@
 //      a slow press still escalates, and no mark is painted.
 //   6. The account menu's About row, whose press unmounts the link: the menu reports the
 //      navigation, so a slow press still escalates.
-//   7. The About dismiss (`Got it`) on /about?next=/commanders: the action returns the destination
-//      and the page navigates there itself, so a slow arrival escalates. It asserts THAT it
-//      escalates, not WHEN: its clock also holds the action's round trip, so a lower bound would
-//      pass on a build with no 400ms gate. Checks 1 and 2 prove the gate. Needs a server with
-//      ABOUT_SHEET_ENABLED off, the only mode that offers the dismiss; on one with it on, the
-//      check fails and says so, and the rest of the run carries on.
+//   7. (Retired with the About gate in About visual PR 6b: its dismiss, `Got it`, no longer exists.)
 //   8. A row link's track, on a commander row (/commanders) and a set row (/collection/sets): the
 //      track paints inside the pressed row at 120ms or later. A screenshot cannot hold it, since
 //      the window between 120ms and the 400ms screen is too short to shoot reliably.
@@ -41,9 +36,7 @@ import os from "node:os";
 import path from "node:path";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { neon } from "@neondatabase/serverless";
-import { readFileSync } from "node:fs";
-import { captureAboutSeen, clearAboutSheet, markEveryEntrySeen, restoreAboutSeen } from "./lib/about-clear.mjs";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -315,38 +308,6 @@ async function run(browser, state, width, userId) {
     );
     await throttle(false);
     await page.close();
-  }
-
-  // 7. The About dismiss (`Got it`), offered to a reader SENT to /about while behind: the action
-  //    returns the destination and the page navigates there itself, so a slow arrival at a route
-  //    that is not kept escalates to its screen. The account is set one version behind with no
-  //    entry seen, the state the gate sends a reader in from, and marked seen again afterwards.
-  {
-    const sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL);
-    const version = JSON.parse(readFileSync(new URL("../src/lib/copy/about.version.json", import.meta.url), "utf8")).version;
-    await sql`update user_prefs set about_version_seen = ${version - 1}, about_seen_ids = ${[]}::text[] where user_id = ${userId}`;
-    try {
-      const { page, throttle } = await slowPage(context);
-      await page.goto(`${BASE}/about?tab=reference&next=${encodeURIComponent("/commanders")}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-      const dismiss = page.getByRole("button", { name: /^Got it/ }).filter({ visible: true }).first();
-      const offered = await dismiss.waitFor({ state: "visible", timeout: 60_000 }).then(() => true, () => false);
-      if (!offered) {
-        report(false, "the About dismiss escalates to its destination's screen", "no Got it on /about: is ABOUT_SHEET_ENABLED on for this server?");
-      } else {
-        await page.waitForFunction(() => window.next?.router, null, { timeout: 120_000 });
-        await throttle(true);
-        await page.evaluate(() => window.__navArm());
-        await dismiss.click();
-        await page.waitForURL((u) => u.pathname === "/commanders", { timeout: 120_000 });
-        const nav = await page.evaluate(() => window.__nav);
-        // No lower bound: this clock includes the action's round trip (see the header).
-        report(nav.overlay != null, "the About dismiss escalates to its destination's screen", nav.overlay == null ? "never" : `screen at ${Math.round(nav.overlay)}ms from the press`);
-        await throttle(false);
-      }
-      await page.close();
-    } finally {
-      await markEveryEntrySeen(userId);
-    }
   }
 
   await context.close();

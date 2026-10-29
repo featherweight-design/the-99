@@ -2,45 +2,46 @@
 
 import { requireUserId } from "../../lib/auth";
 import { ABOUT_VERSION } from "../../lib/copy/about";
-import { safeNext } from "../../lib/about/gate";
-import { markAboutVisited } from "../../lib/about/read";
+import { ABOUT_AREA_IDS, type AboutArea } from "../../lib/copy/about-pages";
+import { afterVisit, visibleSections } from "../../lib/about/pages-visible";
+import { aboutSeen, markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 
 /**
- * The dismiss. Records the acknowledgement against the account and returns
- * where the reader was going, which `DismissForm` then navigates to through the
- * navigation-pending provider: a `redirect()` here gives the page nothing to
- * report until the new page has already committed.
+ * A visit to one of About's six pages (About visual PR 6b), recorded when the page is ACTUALLY OPEN: called from
+ * `RecordPageVisit`'s effect after the page has mounted, never during render, so a prefetch records nothing.
  *
- * `next` arrives from a hidden field on the form, which came from the URL the
- * gate built, so it is attacker-controlled twice over — `safeNext` is applied
- * HERE rather than trusted from the page, because this is the function that
- * decides the destination.
+ * Decided here, never taken from the browser: the page named, the reader's own switches (`requestSwitchEnv`, env and
+ * `flag_overrides`) and their seen state as it stands now. A returning reader gains that page's announce keys and
+ * keeps their floor (`afterVisit`: a visit to Decks never marks Friends' new units seen); a first-run reader's first
+ * visit takes everything they are drawn, on every page, as their baseline. Merged as every About write is
+ * (`markAboutVisited`: a union, the floor by `greatest`). Returns the keys written, which the page acknowledges in this
+ * document so Back to Home does not draw them again.
  *
- * No `revalidatePath`: nothing cached renders the acknowledged version. The
- * gate reads the row directly, and the page is rendered per request.
+ * No revalidation: the page has already drawn its New marks from the pre-visit state, and re-rendering it inside this
+ * reply would take them away while the reader is reading.
  */
-export async function dismissAbout(formData: FormData): Promise<string> {
+export async function recordAboutPageVisit(area: unknown): Promise<string[]> {
   const userId = await requireUserId();
-  // The version AND the switched entries the page showed, as a visit does: the legacy gate
-  // redirects on an unseen switched entry, so acknowledging only the version would send the same
-  // reader back from another browser.
-  await markAboutVisited(userId, ABOUT_VERSION, await acknowledged(userId, formData.getAll("shown")));
-  return safeNext(formData.get("next")?.toString());
+  if (typeof area !== "string" || !(ABOUT_AREA_IDS as readonly string[]).includes(area)) return [];
+  const env = await requestSwitchEnv(userId);
+  const seen = await aboutSeen(userId);
+  const after = afterVisit(visibleSections(env), area as AboutArea, seen);
+  await markAboutVisited(userId, after.version, after.ids);
+  return [...after.ids];
 }
 
 /** No page draws more than this many switched entries and appendix ids; anything longer is not one. */
 const MAX_SHOWN = 200;
 
 /**
- * The switched ids a visit or a dismiss records: the ones the page SHOWED (sent back by the page,
- * so an entry an override turned on after it rendered is not marked seen unread), and of those only
- * the ones this reader's switches still draw now (decided here from the proxy's resolution, so a
- * caller can drop an id but never add one). The appendix by its id, while its switch is on (plan
- * 2026-09-28, PR C).
+ * The switched ids the Reference's visit records (`?tab=reference`, kept for old bookmarks until PR 7b): the ones the
+ * page SHOWED (sent back by the page, so an entry an override turned on after it rendered is not marked seen unread),
+ * and of those only the ones this reader's switches still draw now (decided here from the proxy's resolution, so a
+ * caller can drop an id but never add one). The appendix by its id, while its switch is on.
  */
 async function acknowledged(userId: string, shown: readonly unknown[]): Promise<string[]> {
   const env = await requestSwitchEnv(userId);
@@ -50,15 +51,12 @@ async function acknowledged(userId: string, shown: readonly unknown[]): Promise<
 }
 
 /**
- * About R6: the visit, recorded when `/about` is ACTUALLY OPEN (audit E2).
+ * About R6: a visit to the Reference (`/about?tab=reference`), recorded when it is ACTUALLY OPEN (audit E2). Kept until
+ * PR 7b retires the Reference, so a reader who reads it there is not told those entries again: the floor and the
+ * switched entries it drew, as it has always written.
  *
- * Called from `RecordVisit`'s effect after the page has mounted in a browser,
- * never during render: `/about` is a `<Link>` in the account menu, and a write
- * at render would record a prefetch the reader never opened. The page has
- * already built its index from the pre-visit `seen`, so this changes nothing
- * on screen, which is why it neither redirects nor revalidates. A revalidation
- * would re-render the route inside this action's reply and take the index away
- * while the reader is reading it.
+ * Called from `RecordVisit`'s effect after the page has mounted in a browser, never during render: a write at render
+ * would record a prefetch the reader never opened. It neither redirects nor revalidates.
  */
 export async function recordAboutVisit(shown: readonly string[]) {
   const userId = await requireUserId();

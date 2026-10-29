@@ -1,13 +1,11 @@
 // /about — the index of About's six pages (About visual build, plan `2026-10-27-about-visual.md`, PR 6a; handoff call 3,
 // board Ways-In "Index"), and `?tab=tools` with it now the Tools tab has retired. The Reference still draws at
-// `?tab=reference` (discovery R2·6b), and for a reader the legacy gate sent (`?next=`), until PR 6b and 7b retire them;
-// no link the app builds names it (`legacyHref`). Auth-gated like every other route: the app is invite-only, so there
+// `?tab=reference` (discovery R2·6b) for old bookmarks until PR 7b retires it; no link the app builds names it
+// (`legacyHref`). The legacy gate's `?next=` and its Got it retired with the gate (PR 6b): any `next` is ignored. Auth-gated like every other route: the app is invite-only, so there
 // is no public version of this page.
 
 import { requireUserId } from "../../lib/auth";
 import { aboutSeen } from "../../lib/about/read";
-import { aboutSheetEnabled } from "../../lib/about/flag";
-import { safeNext } from "../../lib/about/gate";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { referenceScreens } from "../../lib/about/reference";
 import { displayedId, switchedIds, unseenEntries, visibleEntries } from "../../lib/about/visible";
@@ -31,22 +29,8 @@ import { ABOUT_AREAS, ABOUT_PAGE_STRINGS } from "../../lib/copy/about-pages";
 import { ReferenceTab } from "../../components/about/reference/reference-tab";
 import { HowItWorks } from "../../components/about/how-it-works";
 import { RecordVisit } from "../../components/about/record-visit";
-import { GateDismiss } from "../../components/about/gate-dismiss";
 import { LegalLinks } from "../../components/legal/legal-links";
 import { ThemeRefresh } from "../../components/about/pages/theme-refresh";
-
-/**
- * A repeated query key arrives as an array — `/about?next=/decks&next=/collection`
- * is a URL anyone can write. Typed as `string` it read as one, and `safeNext`
- * would have called `startsWith` on an array and thrown during render: a
- * crafted link crashing the page whose whole job is being reachable.
- *
- * An array is refused rather than reduced to its first value. Two destinations
- * is not a destination, and picking one would be guessing at which.
- */
-function soleNext(value: string | string[] | undefined): string | undefined {
-  return typeof value === "string" ? value : undefined;
-}
 
 /** The index's six tiles: each page's first capture at each width, and its count of what this reader is drawn. */
 function indexTiles(env: NodeJS.ProcessEnv, theme: string): IndexTile[] {
@@ -72,7 +56,7 @@ function indexTiles(env: NodeJS.ProcessEnv, theme: string): IndexTile[] {
 export default async function AboutRoute({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string | string[]; tab?: string | string[] }>;
+  searchParams: Promise<{ tab?: string | string[] }>;
 }) {
   const perf = perfRoute("/about");
   const [userId, params] = await Promise.all([requireUserId(), searchParams]);
@@ -81,20 +65,12 @@ export default async function AboutRoute({
   const visible = visibleEntries(env);
   const seen = await aboutSeen(userId);
 
-  // "New" is the one rule the banner and the gate read (`unseenEntries`): nothing for a first-run reader, whose
-  // banner line introduces the page instead.
+  // The Reference's own "New" (`unseenEntries`): nothing for a first-run reader, whose banner line introduces About.
   const unseen = new Set(unseenEntries(visible, { version: seen.version, ids: seen.ids }).map((e) => e.id));
   const behind = seen.version < ABOUT_VERSION || unseen.size > 0;
 
-  const sheetMode = aboutSheetEnabled(env);
-  // Sent here by the legacy gate (`?next=`, only with the sheet switch off) rather than come to look: owed a way back.
-  const destination = safeNext(soleNext(params.next));
-  const redirected = typeof params.next === "string" && params.next.length > 0;
-  const offerDismiss = !sheetMode && behind && redirected;
-
-  // The gate sends a reader because something is new, and what's new is drawn in the Reference. Anyone else gets the
-  // index, `?tab=tools` included.
-  if (!offerDismiss && aboutTabOf(params.tab) !== "reference") {
+  // Everyone but an old Reference bookmark gets the index, `?tab=tools` included.
+  if (aboutTabOf(params.tab) !== "reference") {
     const theme = await resolveTheme();
     return (
       <div className="flex flex-col pb-[30px] md:pb-[64px]">
@@ -122,8 +98,8 @@ export default async function AboutRoute({
   const whatsNew = screens.flatMap((s) => s.entries).filter((e) => unseen.has(e.id)).map((e) => ({ id: e.id, title: e.title }));
 
   const howItWorks = howItWorksEnabled(env);
-  // What this render shows, by id, for the visit and the dismiss to acknowledge: nothing they did not draw, so an
-  // entry switched on between this render and the write is still new afterwards.
+  // What this render shows, by id, for the visit to acknowledge: nothing it did not draw, so an entry switched on
+  // between this render and the write is still new afterwards.
   const shown = [...switchedIds(visible), ...(howItWorks ? [HOW_IT_WORKS_ID] : [])];
 
   // The boards' `main` (ReferencePhone `24px 0 104px`; the Desk boards `40px 56px 64px`). The phone's 104px includes
@@ -144,19 +120,16 @@ export default async function AboutRoute({
           />
         }
       />
-      {/* The visit is recorded when what's new is drawn, the Reference (R2 gap 10). As shipped, only with the sheet
-          switch on; with it off the gate's dismiss records it. The appendix is recorded by the same visit, so a reader
+      {/* The visit is recorded when what's new is drawn, the Reference (R2 gap 10), until PR 7b retires it: a reader
+          who reads it here is not told those entries again. The appendix is recorded by the same visit, so a reader
           current on every entry who has not seen it still owes the write. */}
-      {sheetMode && (
-        <RecordVisit
-          behind={behind || (howItWorks && !seen.ids.includes(HOW_IT_WORKS_ID))}
-          shown={shown}
-          drawn={visible.map(displayedId)}
-        />
-      )}
-      {/* Launch A2: the same quiet line /credits and /sign-up carry, ahead of the notice (Design confirmed the placement, touch-sizes addendum item 2). */}
+      <RecordVisit
+        behind={behind || (howItWorks && !seen.ids.includes(HOW_IT_WORKS_ID))}
+        shown={shown}
+        drawn={visible.map(displayedId)}
+      />
+      {/* Launch A2: the same quiet line /credits and /sign-up carry. */}
       <LegalLinks className="mt-[32px] px-[16px] md:px-0" />
-      {offerDismiss && <GateDismiss destination={destination} shown={shown} />}
     </div>
   );
 }

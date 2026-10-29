@@ -160,7 +160,7 @@
     },
     {
       "id": "home",
-      "label": "/ Home (no About banner line: ABOUT_SHEET_ENABLED is off in this switch set)",
+      "label": "/ Home (no About banner line: the reader is current on About)",
       "view": "src/components/home/arrivals-banner.tsx",
       "steps": [
         {

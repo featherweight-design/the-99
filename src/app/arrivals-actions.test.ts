@@ -70,45 +70,39 @@ describe("dismissArrivals", () => {
   });
 });
 
-// About's half (About on the banner, Q2): ✕ writes About's seen, re-decided against the reader's notice now.
-describe("dismissArrivals, About's line", () => {
-  const ABOUT_ON = { ABOUT_SHEET_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", NEVER_CUT_ENABLED: "true" };
+// About's half (About visual PR 6b): ✕ writes each launch's ack and raises the floor, re-decided against the reader's
+// announcements now, from their own resolved switches.
+describe("dismissArrivals, About's lines", () => {
+  const LOCK = "decks/your-deck/lock";
 
-  it("writes the drawn ids the reader's notice still names, as a visit writes them", async () => {
-    stub.env = ABOUT_ON;
-    await dismissArrivals([], ["change-commander"]);
+  it("writes a launch the reader is still told, by its ack, with the floor", async () => {
+    stub.env = { NEVER_CUT_ENABLED: "true" };
+    about.seen = { version: ABOUT_VERSION, ids: ["x"] };
+    await dismissArrivals([], [LOCK]);
     expect(about.read).toHaveBeenCalledWith("user_1");
-    expect(about.mark).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["change-commander"]);
+    const [, version, ids] = about.mark.mock.calls[0] as unknown as [string, number, string[]];
+    expect(ids).toContain(LOCK);
+    expect(version).toBeLessThanOrEqual(ABOUT_VERSION);
     // No arrival keys claimed: the arrival read is not made.
     expect(stub.lines).not.toHaveBeenCalled();
   });
 
-  it("never writes an id the page did not draw, nor one no longer new", async () => {
-    stub.env = ABOUT_ON;
-    about.seen = { version: ABOUT_VERSION, ids: ["locked-cards"] };
-    // `locked-cards` is already met; `notes` is behind a switch that is off; neither is written.
-    await dismissArrivals([], ["change-commander", "locked-cards", "notes", "how-it-works"]);
-    expect(about.mark).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["change-commander"]);
-  });
-
-  it("writes nothing when the reader is already current", async () => {
-    stub.env = ABOUT_ON;
-    about.seen = { version: ABOUT_VERSION, ids: ["change-commander", "locked-cards"] };
-    await dismissArrivals([], ["change-commander"]);
+  it("never writes a key the page did not draw, one no longer new, or one switched off for the reader", async () => {
+    stub.env = {};
+    about.seen = { version: ABOUT_VERSION, ids: ["x"] };
+    await dismissArrivals([], [LOCK, "made/up/key"]);
+    expect(about.mark).not.toHaveBeenCalled();
+    stub.env = { NEVER_CUT_ENABLED: "true" };
+    about.seen = { version: ABOUT_VERSION, ids: ["x", LOCK] };
+    await dismissArrivals([], [LOCK]);
     expect(about.mark).not.toHaveBeenCalled();
   });
 
   it("takes both halves in one press", async () => {
-    stub.env = { ...stub.env, ...ABOUT_ON };
-    await dismissArrivals(["trc"], ["locked-cards"]);
+    stub.env = { ...stub.env, NEVER_CUT_ENABLED: "true" };
+    about.seen = { version: ABOUT_VERSION, ids: ["x"] };
+    await dismissArrivals(["trc"], [LOCK]);
     expect(stub.mark).toHaveBeenCalledWith("user_1", ["trc"]);
-    expect(about.mark).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["locked-cards"]);
-  });
-
-  it("reads and writes nothing for About with its switch off", async () => {
-    stub.env = { CHANGE_COMMANDER_ENABLED: "true" };
-    await dismissArrivals([], ["change-commander"]);
-    expect(about.read).not.toHaveBeenCalled();
-    expect(about.mark).not.toHaveBeenCalled();
+    expect(about.mark).toHaveBeenCalled();
   });
 });

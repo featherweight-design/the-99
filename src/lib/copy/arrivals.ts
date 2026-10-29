@@ -4,8 +4,9 @@
 //
 // No model calls: every word is fixed copy over a set name or a count from the catalog.
 //
-// About's line (About on the banner, plan `2026-10-15-about-on-the-banner.md`; `R2 - Home-About`, A1–A3) reuses the
-// sheet's heading and Show me (`aboutSheetCopy`), so the two never word one notice two ways.
+// About's line (About on the banner, plan `2026-10-15-about-on-the-banner.md`; `R2 - Home-About`, A3) keeps the retired
+// sheet's first-run heading and Show me (`aboutSheetCopy`). A launch's own lead ("New on Decks:") is the About pages'
+// `bannerLead`, worded on the server (`lib/about/notice.ts`) so the pages' copy stays off Home's bundle.
 
 import { aboutSheetCopy } from "./about";
 
@@ -24,24 +25,13 @@ export const arrivalsCopy = {
   listed: (decks: number) => `: ${plural(decks, "decklist", "decklists")} listed.`,
   /** Two or more arrivals: the count heading. */
   heading: (count: number) => `${n(count)} new in Commander precons`,
-  /** Past the cap (`sheetTitles`): four lines show in full, more than four show three and this. */
+  /** Past the cap (`bannerCap`): four lines show in full, more than four show three and this. */
   more: (count: number) => `and ${n(count)} more`,
   /** The link for one set announced. */
   seeOne: "See it in Precons",
   /** The link for decklists, or for several arrivals. */
   seeMany: "See them in Precons",
-  /** About behind (A1, A2): the lead, drawn in `--fg`. The sheet's heading, with its colon. */
-  aboutLead: (count: number) => `${aboutSheetCopy.heading(count)}:`,
-  /**
-   * After the lead: the titles under `sheetTitles`' cap, the last joined by `and`, and `N more` past the cap.
-   * `shown` is how many titles to name.
-   */
-  aboutRest: (titles: readonly string[], shown: number, more: number) => {
-    const items = [...titles.slice(0, shown), ...(more > 0 ? [`${n(more)} more`] : [])];
-    if (items.length <= 1) return ` ${items.join("")}.`;
-    return ` ${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}.`;
-  },
-  /** About first run (A3): the lead, the sheet's first-run heading with its colon. */
+  /** About first run (A3): the lead, the retired sheet's first-run heading with its colon. */
   aboutFirstRunLead: `${aboutSheetCopy.firstRunHeading}:`,
   /** After the first-run lead. Launch-end batch (copy-review, 2026-10-21): About is no longer one page, so it is not said. */
   aboutFirstRunRest: " every tool, mark and figure in the app, and where to find it.",

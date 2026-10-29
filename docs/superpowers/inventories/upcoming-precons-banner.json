@@ -16,7 +16,7 @@
     },
     {
       "id": "h4",
-      "label": "/ with several arrivals: the count heading, the lines capped as the About sheet's, one link and one ✕ (H4)",
+      "label": "/ with several arrivals: the count heading, the lines capped as shipped (`bannerCap`), one link and one ✕ (H4)",
       "view": "src/components/home/arrivals-banner.tsx",
       "steps": [
         {
@@ -28,7 +28,7 @@
     },
     {
       "id": "h5",
-      "label": "/ with the banner in the page and the About sheet up beside it, neither yielding (H5)",
+      "label": "/ with the banner in the page and About's lines in the same band, About first (H5; the About sheet it once sat beside retired in About visual PR 6b)",
       "view": "src/components/home/arrivals-banner.tsx",
       "steps": [
         {

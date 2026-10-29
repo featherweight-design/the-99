@@ -96,7 +96,7 @@ import os from "node:os";
 import path from "node:path";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { markEveryEntrySeen, sheetCookie } from "./lib/about-clear.mjs";
+import { markEveryEntrySeen } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 import { NAV_PROBE, PRESS_PROBE, TAB_PROBE } from "./lib/press-probe.mjs";
 import {
@@ -256,7 +256,6 @@ async function signIn(browser) {
     return window.Clerk.user.id;
   }, EMAIL);
   await markEveryEntrySeen(userId);
-  await context.addCookies([sheetCookie(userId, page.url())]);
   // The session carries over; the Clerk testing route does NOT, which matters: Playwright turns the
   // HTTP cache off for a context with a route, so a "warm" load there would refetch every script.
   const state = await context.storageState();

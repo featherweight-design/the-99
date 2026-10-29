@@ -2,9 +2,6 @@ import { socialCopy } from "../copy/social";
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
-import { sheetCookieValue, sheetDecision } from "./gate";
-import { aboutNotice } from "./notice";
-import { readSheetState } from "./sheet-state";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
@@ -32,24 +29,6 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
   // The entries a switch cannot hide. With every switch off they are the whole page, and the page
   // must behave exactly as the single-version model did over them.
   const unswitched = aboutEntries.filter((e) => !e.switch);
-  // TODAY's rules, stated as the spec this model must reproduce: the proxy shows the sheet
-  // below the version, the sheet lists `since > seen`, and the cookie is `<user>.<version>`.
-  const legacy = (s: number) =>
-    s === 0
-      ? { kind: "firstRun" as const }
-      : s >= ABOUT_VERSION
-        ? { kind: "none" as const }
-        : {
-            kind: "behind" as const,
-            entries: unswitched.filter((e) => e.since > s).map((e) => ({ id: e.id, title: e.title })),
-          };
-  // Version 12 added only switched entries, so a reader at 11 with every switch off has nothing
-  // unseen: the sheet has nothing to name and does not draw.
-  const expected = (s: number) => {
-    const l = legacy(s);
-    return l.kind === "behind" && l.entries.length === 0 ? { kind: "none" as const } : l;
-  };
-
   it("ties exactly the launch entries to their switches, and the version to the rest", () => {
     expect(aboutEntries.filter((e) => e.switch).map((e) => [e.id, e.switch])).toEqual([
       ["collection-add", "COLLECTION_EDIT_ENABLED"],
@@ -113,15 +92,6 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
     // resolves it, rather than hand-duplicating the string surgery here.
     expect(visibleEntries(OFF)).toEqual(unswitched.map((e) => resolveEntry(e, OFF)));
     expect(visibleEntries(ON)).toEqual(aboutEntries.filter((e) => e.id !== "buying-credits" && e.id !== "ready-to-build").map((e) => resolveEntry(e, ON)));
-  });
-
-  it("makes the same proxy decision, sheet and cookie as before at every seen", () => {
-    for (let s = 0; s <= ABOUT_VERSION + 2; s++) {
-      const d = sheetDecision({ userId: "u", seen: seen(s), visible: visibleEntries(OFF) });
-      expect(d.cookie).toBe(`u.${ABOUT_VERSION}`);
-      const state = d.show ? readSheetState(new Headers({ "x-about-sheet": d.header })) : { kind: "none" };
-      expect(state, `seen ${s}`).toEqual(expected(s));
-    }
   });
 
   it("marks the same entries new as the version rule did", () => {
@@ -234,20 +204,10 @@ describe("an entry tied to a switch", () => {
     // Now switch A on. A version number would say the reader is current; A is still new.
     const both = visibleEntries(ON, catalog);
     expect(unseenEntries(both, afterVisit).map((e) => e.id)).toEqual(["a"]);
-    const d = sheetDecision({ userId: "u", seen: afterVisit, visible: both, version: 9 });
-    expect(d).toEqual({ show: true, header: "a", cookie: "u.9+a+b" });
-  });
-
-  it("retires the sheet cookie when a switch flips, so the proxy decides again", () => {
-    const bOnly = visibleEntries({ CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog);
-    expect(sheetCookieValue("u", visibleEntries(OFF, catalog), 9)).toBe("u.9");
-    expect(sheetCookieValue("u", bOnly, 9)).toBe("u.9+b");
-    expect(sheetCookieValue("u", visibleEntries(ON, catalog), 9)).toBe("u.9+a+b");
   });
 
   it("still introduces the page to a brand-new account rather than listing it", () => {
     expect(unseenEntries(visibleEntries(ON, catalog), seen(0))).toEqual([]);
-    expect(sheetDecision({ userId: "u", seen: seen(0), visible: visibleEntries(ON, catalog), version: 9 }).show).toBe(true);
   });
 });
 
@@ -359,8 +319,6 @@ describe("an entry's variant: `upload-choice`'s Sync form (collection sync rulin
     expect(after.ids).toEqual(expect.arrayContaining(["upload-choice", variantId("upload-choice", "COLLECTION_SYNC_ENABLED")]));
     expect(unseenEntries(visibleEntries(SYNC), after)).toEqual([]);
     expect(unseenEntries(visibleEntries(EDIT), after)).toEqual([]);
-    // The cookie names the form, so the flip makes the proxy decide again.
-    expect(sheetCookieValue("u", visibleEntries(SYNC), 9)).not.toBe(sheetCookieValue("u", visibleEntries(EDIT), 9));
   });
 
   it("keeps `post-import`'s half-line only where a sync can happen", () => {
@@ -512,8 +470,6 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     // Current: has met every entry it can see, the switched ones by id.
     const current: SeenState = { version: ABOUT_VERSION, ids: switchedIds(visible) };
     expect(unseenEntries(visible, current)).toEqual([]);
-    expect(aboutNotice(current, visible, false)).toBeNull();
-    expect(sheetDecision({ userId: "u", seen: current, visible }).show).toBe(false);
     expect(behind(visible, current)).toBe(false);
   });
 

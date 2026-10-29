@@ -23,24 +23,29 @@ export function arrivalsAcknowledged(keys: readonly string[]): boolean {
 }
 
 /**
- * The About entries a `/about` visit in this document acknowledged (About on the banner, PR A). The same problem
- * as the arrivals': the visit writes About's seen state and retires Home's cached payload on the server, but Back
- * (or a client navigation) to Home restores the payload the router holds, About's line included. `RecordVisit`
- * calls `acknowledgeAbout()` with the entries the page drew, and the banner leaves About's line out when every id
- * it claims is among them. A new document starts clear.
+ * The About keys a page visit in this document acknowledged (About visual PR 6b). The same problem as the arrivals':
+ * the visit writes About's seen state and retires Home's cached payload on the server, but Back (or a client
+ * navigation) to Home restores the payload the router holds, About's line included. `RecordPageVisit` calls
+ * `acknowledgeAbout()` with the keys its visit wrote: the banner leaves out each launch whose key is among them, and a
+ * first-run line when every id it stands for is. A new document starts clear.
  */
-// Only ever added to: a visit acknowledges once its write has LANDED (or at once, for a reader already current), so
-// nothing is ever taken back and no late failure can race a later visit's acknowledgement.
+// Only ever added to: a visit acknowledges once its write has LANDED (or at once, for a reader whose visit writes
+// nothing), so nothing is ever taken back and no late failure can race a later visit's acknowledgement.
 const aboutAcked = new Set<string>();
 
-/** A `/about` visit in this document recorded these entries. */
+/** A page visit in this document recorded these keys. */
 export function acknowledgeAbout(ids: readonly string[]): void {
   for (const id of ids) aboutAcked.add(id);
 }
 
-/** Every one of `ids` was acknowledged by a `/about` visit in this document. */
+/** Every one of `ids` was acknowledged by a page visit in this document. */
 export function aboutAcknowledged(ids: readonly string[]): boolean {
   return ids.length > 0 && ids.every((id) => aboutAcked.has(id));
+}
+
+/** One launch's key was acknowledged by a page visit in this document. */
+export function launchAcknowledged(key: string): boolean {
+  return aboutAcked.has(key);
 }
 
 /** Tests only: a fresh document. */

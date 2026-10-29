@@ -1,5 +1,7 @@
 # Design Property Table: About launch entries (PR B: Locked cards, Change commander)
 
+**About visual PR 6b (2026-10-28): the one-time sheet and `probe:about --flip` retired.** An entry's switch flipping on is now announced as a launch line on Home's banner (`pnpm probe:about-banner`, and the same walk through the real proxy in `src/proxy-flip.test.ts`). The rows below that cite the sheet (5.10) or `--flip` record how they were verified then.
+
 Sources: `README.md`, `READINESS-audit.md`, `about · launch entries.ts`, `The 99 - About · Launch Entries.dc.html` (lines 228–302, 394–411, 445–462, 466–518; §6 at 346–368). Where they conflict, the audit's rulings (L1–L3, C1–C5, G1, Q2, Q3) replace the drawn copy and specimen. A1, A3 and A4 are out of scope.
 
 ## Entry: locked-cards

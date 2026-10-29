@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AboutLine } from "../../lib/about/notice";
+import type { AboutLaunch, AboutLine } from "../../lib/about/notice";
 import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
 
 const dismiss = vi.hoisted(() => vi.fn(async () => {}));
@@ -9,7 +9,7 @@ vi.mock("../../app/arrivals-actions", () => ({ dismissArrivals: dismiss }));
 // The checklist's live step needs the app router; About's line is what these tests read.
 vi.mock("./first-run-step-one", () => ({ FirstRunStepOne: () => null }));
 
-const { ArrivalsBanner, COLLAPSE_MS, HOME_HEADING_ID, aboutHref } = await import("./arrivals-banner");
+const { ArrivalsBanner, COLLAPSE_MS, HOME_HEADING_ID } = await import("./arrivals-banner");
 const { Dashboard } = await import("./dashboard");
 const { acknowledgeAbout, acknowledgeArrivals, resetArrivalsAcknowledged } = await import("./arrivals-seen");
 const { FirstRunChecklist } = await import("./first-run");
@@ -94,7 +94,7 @@ describe("ArrivalsBanner, one arrival", () => {
 });
 
 describe("ArrivalsBanner, several arrivals (H4)", () => {
-  it("heads them with the count and caps the lines as the About sheet does", () => {
+  it("heads them with the count and caps the lines (`bannerCap`)", () => {
     render(<ArrivalsBanner data={many(5)} />);
     const r = region()!;
     expect(within(r).getByRole("heading", { name: "5 new in Commander precons" })).toBeInTheDocument();
@@ -228,116 +228,166 @@ describe("Dashboard", () => {
 });
 
 // About on the banner (plan 2026-10-15, PR A; `R2 - Home-About`, A1–A3).
-const behind = (titles: string[], ids = titles.map((t) => t.toLowerCase().replace(/\W+/g, "-"))): AboutLine => ({
-  kind: "behind",
-  titles,
-  ids,
+// A launch as the server words it (`aboutLine`): a label with its region on both captures, or a rule with none.
+const CROP = { src: "/about/pages/dark/phone/p-deck-games.webp", w: 780, h: 1688, box: [0.05, 0.3, 0.9, 0.1] as const };
+const DCROP = { src: "/about/pages/dark/desktop/d-analysis.webp", w: 2600, h: 1800, box: [0.4, 0.4, 0.2, 0.1] as const };
+const launch = (key: string, page = "Decks", text = "Matchups splits a deck’s games by who you played against.", crop = true): AboutLaunch => ({
+  key,
+  lead: `New on ${page}:`,
+  text,
+  href: `/about/${page.toLowerCase()}?lit=${encodeURIComponent(key)}#games`,
+  phone: crop ? CROP : null,
+  desktop: crop ? DCROP : null,
 });
-const FIRST: AboutLine = { kind: "firstRun", ids: ["browse", "import"] };
+const behind = (...launches: AboutLaunch[]): AboutLine => ({ kind: "launches", launches, ids: launches.map((l) => l.key) });
+const MATCHUPS = launch("decks/games/matchups");
+const SPARES = launch("shopping/list/spares", "Shopping", "Ask a friend for a spare.");
+const RULE = launch("rule/credits", "Decks", "Anything written just for you costs credits.", false);
+const FIRST: AboutLine = { kind: "firstRun", ids: ["home/home/help", "decks/games/matchups"] };
 
-describe("ArrivalsBanner, About's line", () => {
-  it("names what is new in About in one sentence, with Show me to the Reference's what's new and ✕ (A1, E14)", () => {
-    render(<ArrivalsBanner data={null} about={behind(["Commander sets on the way", "Organizing decks into folders"])} />);
+describe("ArrivalsBanner, one launch (call 7, Ways-In “Banner · one launch”)", () => {
+  it("names the page and the unit's words, with its crop in the mark's place, Show me to the label lit, and ✕", () => {
+    render(<ArrivalsBanner data={null} about={behind(MATCHUPS)} />);
     const r = region()!;
     expect(r.tagName).toBe("SECTION");
-    expect(r).toHaveTextContent("2 new in About: Commander sets on the way, and Organizing decks into folders.");
-    expect(within(r).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+    expect(r).toHaveTextContent("New on Decks: Matchups splits a deck’s games by who you played against.");
+    expect(within(r).getByRole("link", { name: "Show me" })).toHaveAttribute("href", MATCHUPS.href);
     expect(within(r).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
     expect(within(r).queryByRole("heading")).toBeNull();
+    // Both crops in the DOM, switched at md: the phone's 64x48 from the phone capture, the desktop's 56x38 from its own.
+    const crops = r.querySelectorAll<HTMLElement>("[data-about-crop]");
+    expect(crops).toHaveLength(2);
+    expect(crops[0]!.className).toContain("md:hidden");
+    expect([crops[0]!.style.width, crops[0]!.style.height]).toEqual(["64px", "48px"]);
+    expect(crops[0]!.querySelector("img")!.getAttribute("src")).toBe(CROP.src);
+    expect(crops[1]!.className).toContain("hidden md:flex");
+    expect([crops[1]!.style.width, crops[1]!.style.height]).toEqual(["56px", "38px"]);
+    expect(crops[1]!.querySelector("img")!.getAttribute("src")).toBe(DCROP.src);
   });
 
-  it("caps the titles as the sheet did: four in full, past four three and `N more`", () => {
-    const { unmount } = render(<ArrivalsBanner data={null} about={behind(["A", "B", "C", "D"])} />);
-    expect(region()).toHaveTextContent("4 new in About: A, B, C, and D.");
-    unmount();
-    render(<ArrivalsBanner data={null} about={behind(["A", "B", "C", "D", "E", "F"])} />);
-    expect(region()).toHaveTextContent("6 new in About: A, B, C, and 3 more.");
+  it("keeps the diamond mark for a rule, which has no region to crop", () => {
+    render(<ArrivalsBanner data={null} about={behind(RULE)} />);
+    expect(region()!.querySelectorAll("[data-about-crop]")).toHaveLength(0);
+    expect(region()).toHaveTextContent("New on Decks: Anything written just for you costs credits.");
   });
 
-  it("reads one title as one", () => {
-    render(<ArrivalsBanner data={null} about={behind(["Commander sets on the way"])} />);
-    expect(region()).toHaveTextContent("1 new in About: Commander sets on the way.");
-  });
-
-  it("introduces a first-run reader to the page in one line, Show me opening Tools (A3, E14)", () => {
+  it("introduces a first-run reader in one line, Show me opening the /about index (A3)", () => {
     render(<ArrivalsBanner data={null} about={FIRST} />);
     expect(region()).toHaveTextContent(/What The\s99 does: every tool, mark and figure in the app, and where to find it\./);
     expect(screen.getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+    expect(region()!.querySelectorAll("[data-about-crop]")).toHaveLength(0);
+  });
+});
+
+describe("ArrivalsBanner, two or more launches (call 7, Ways-In “Banner · two launches”)", () => {
+  it("takes the `New in the app` band, a 44x32 crop and a Show me per line, and one ✕", () => {
+    render(<ArrivalsBanner data={null} about={behind(MATCHUPS, SPARES)} />);
+    const r = region()!;
+    expect(within(r).getByRole("heading", { level: 2, name: "New in the app" })).toBeInTheDocument();
+    const items = within(r).getAllByRole("listitem");
+    expect(items.map((li) => li.textContent)).toEqual([
+      "New on Decks: Matchups splits a deck’s games by who you played against. Show me",
+      "New on Shopping: Ask a friend for a spare. Show me",
+    ]);
+    expect(within(items[1]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", SPARES.href);
+    for (const li of items) {
+      const crops = li.querySelectorAll<HTMLElement>("[data-about-crop]");
+      expect([...crops].map((c) => [c.style.width, c.style.height])).toEqual([["44px", "32px"], ["44px", "32px"]]);
+    }
+    expect(within(r).getAllByRole("button", { name: "Dismiss" })).toHaveLength(1);
   });
 
-  it("leads with About beside an arrival, under `New in the app`, each line with its own link (A2)", () => {
-    render(<ArrivalsBanner data={one(TRC, ["trc", "a2"])} about={behind(["Commander sets on the way", "Folders"])} />);
+  it("caps the lines as shipped: four in full, past four three and `and N more` to the index", () => {
+    const five = ["a", "b", "c", "d", "e"].map((k) => launch(`decks/games/${k}`));
+    const { unmount } = render(<ArrivalsBanner data={null} about={behind(...five.slice(0, 4))} />);
+    expect(screen.getAllByRole("listitem")).toHaveLength(4);
+    unmount();
+    render(<ArrivalsBanner data={null} about={behind(...five)} />);
+    const items = screen.getAllByRole("listitem");
+    expect(items).toHaveLength(4);
+    expect(items[3]).toHaveTextContent("and 2 more Show me");
+    expect(within(items[3]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+  });
+
+  it("leads with About beside an arrival, each line with its own link (A2)", () => {
+    render(<ArrivalsBanner data={one(TRC, ["trc", "a2"])} about={behind(MATCHUPS)} />);
     const r = region()!;
     expect(within(r).getByRole("heading", { level: 2, name: "New in the app" })).toBeInTheDocument();
     const items = within(r).getAllByRole("listitem");
     expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent("2 new in About: Commander sets on the way, and Folders. Show me");
-    expect(within(items[0]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+    expect(items[0]).toHaveTextContent("New on Decks: Matchups splits");
     expect(items[1]).toHaveTextContent("Star Trek Commander is announced, with 15 commanders revealed. See it in Precons");
-    expect(within(items[1]!).getByRole("link")).toHaveAttribute("href", "/decks/precons?sort=newest#announced");
-    expect(within(r).getAllByRole("button", { name: "Dismiss" })).toHaveLength(1);
     expect(r.querySelector("[aria-live], [role=alert]")).toBeNull();
   });
 
-  it("a first-run line beside an arrival still opens Tools (A2, E14)", () => {
-    render(<ArrivalsBanner data={one(TRC, ["trc", "a2-first"])} about={{ kind: "firstRun", ids: ["browse", "a2-first"] }} />);
+  it("a first-run line beside an arrival opens the index", () => {
+    render(<ArrivalsBanner data={one(TRC, ["trc", "a2-first"])} about={FIRST} />);
     const items = within(region()!).getAllByRole("listitem");
     expect(within(items[0]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
   });
 
-  it("aboutHref: the Reference at what's new for a returning reader, Tools for a new account (E14)", () => {
-    expect(aboutHref(behind(["Folders"]))).toBe("/about");
-    expect(aboutHref(FIRST)).toBe("/about");
-  });
-
   it("caps several arrivals beside About and closes them with one Precons link", () => {
-    render(<ArrivalsBanner data={many(6)} about={behind(["Folders"])} />);
+    render(<ArrivalsBanner data={many(6)} about={behind(MATCHUPS)} />);
     const items = within(region()!).getAllByRole("listitem");
-    // About, three arrivals, and `and 3 more` carrying the link.
     expect(items).toHaveLength(5);
     expect(items[4]).toHaveTextContent("and 3 more See them in Precons");
     expect(within(region()!).getAllByRole("link", { name: /Precons/ })).toHaveLength(1);
   });
+});
 
-  it("one ✕ writes both halves: the arrival keys and About's ids", () => {
+describe("ArrivalsBanner, About's ✕ and acknowledgements", () => {
+  it("one ✕ writes both halves: the arrival keys and every launch key drawn", () => {
     vi.useFakeTimers();
-    render(<ArrivalsBanner data={one(TRC, ["trc", "both"])} about={behind(["Folders"], ["folders-both"])} />);
+    render(<ArrivalsBanner data={one(TRC, ["trc", "both"])} about={behind(MATCHUPS, SPARES)} />);
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
-    expect(dismiss).toHaveBeenCalledWith(["trc", "both"], ["folders-both"]);
+    expect(dismiss).toHaveBeenCalledWith(["trc", "both"], [MATCHUPS.key, SPARES.key]);
     act(() => vi.advanceTimersByTime(COLLAPSE_MS));
     expect(region()).toBeNull();
   });
 
-  it("✕ on About alone writes its ids and no keys, and Back re-mounts it closed", () => {
+  it("✕ on About alone writes its keys and no arrival keys, and Back re-mounts it closed", () => {
     vi.useFakeTimers();
-    const about = behind(["Folders"], ["folders-back"]);
+    const about = behind(launch("decks/games/back"));
     const first = render(<ArrivalsBanner data={null} about={about} />);
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
-    expect(dismiss).toHaveBeenCalledWith([], ["folders-back"]);
+    expect(dismiss).toHaveBeenCalledWith([], ["decks/games/back"]);
     act(() => vi.advanceTimersByTime(COLLAPSE_MS));
     first.unmount();
     render(<ArrivalsBanner data={null} about={about} />);
     expect(region()).toBeNull();
   });
 
-  it("drops About's line after a /about visit in this document, and keeps the arrival", () => {
-    const about = behind(["Folders"], ["folders-visit"]);
-    acknowledgeAbout(["folders-visit", "browse"]);
-    render(<ArrivalsBanner data={one(TRC, ["trc", "visit"])} about={about} />);
-    const r = region()!;
-    expect(r).not.toHaveTextContent("new in About");
-    expect(r).toHaveTextContent("Star Trek Commander is announced");
-    expect(within(r).queryByRole("heading")).toBeNull();
+  it("✕ on a first-run line claims every unit it stands for", () => {
+    // Its own ids: a ✕ keeps its banner closed for the rest of this document.
+    const first: AboutLine = { kind: "firstRun", ids: ["home/home/help", "x-first"] };
+    render(<ArrivalsBanner data={null} about={first} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(dismiss).toHaveBeenCalledWith([], first.ids);
   });
 
-  it("draws nothing once a visit answered About and there are no arrivals", () => {
-    acknowledgeAbout(["folders-only"]);
-    render(<ArrivalsBanner data={null} about={behind(["Folders"], ["folders-only"])} />);
+  it("drops a launch a page visit in this document acknowledged, and keeps the rest", () => {
+    acknowledgeAbout([MATCHUPS.key, "decks/games/log"]);
+    render(<ArrivalsBanner data={one(TRC, ["trc", "visit"])} about={behind(MATCHUPS, SPARES)} />);
+    const r = region()!;
+    expect(r).not.toHaveTextContent("New on Decks");
+    expect(r).toHaveTextContent("New on Shopping: Ask a friend for a spare.");
+    expect(r).toHaveTextContent("Star Trek Commander is announced");
+  });
+
+  it("draws nothing once visits answered every launch and there are no arrivals", () => {
+    acknowledgeAbout([MATCHUPS.key]);
+    render(<ArrivalsBanner data={null} about={behind(MATCHUPS)} />);
+    expect(region()).toBeNull();
+  });
+
+  it("drops a first-run line once a first visit acknowledged everything it stands for", () => {
+    acknowledgeAbout(FIRST.ids);
+    render(<ArrivalsBanner data={null} about={FIRST} />);
     expect(region()).toBeNull();
   });
 
   it("is a Show me press, not an acknowledgement: a re-mount draws it again", () => {
-    const about = behind(["Folders"], ["folders-press"]);
+    const about = behind(launch("decks/games/press"));
     const first = render(<ArrivalsBanner data={null} about={about} />);
     fireEvent.click(screen.getByRole("link", { name: "Show me" }));
     expect(dismiss).not.toHaveBeenCalled();
@@ -363,27 +413,27 @@ describe("ArrivalsBanner, About's line", () => {
 });
 
 describe("About's line on both Home surfaces", () => {
-  it("Dashboard draws About alone between the header and Ready to build (A1)", () => {
-    const { container } = render(<Dashboard {...DASH} arrivals={null} about={behind(["Folders"], ["folders-dash"])} />);
+  it("Dashboard draws one launch between the header and Ready to build", () => {
+    const { container } = render(<Dashboard {...DASH} arrivals={null} about={behind(launch("decks/games/dash"))} />);
     expect(container.querySelector("header")!.nextElementSibling).toBe(container.querySelector("[data-arrivals-banner]"));
-    expect(region()).toHaveTextContent("1 new in About: Folders.");
+    expect(region()).toHaveTextContent("New on Decks: Matchups splits");
   });
 
-  it("Dashboard draws the first-run line for an account that imported before opening /about, with ✕", () => {
-    render(<Dashboard {...DASH} arrivals={null} about={{ kind: "firstRun", ids: ["browse", "dash-first"] }} />);
+  it("Dashboard draws the first-run line for an account that imported before opening About, with ✕", () => {
+    render(<Dashboard {...DASH} arrivals={null} about={{ kind: "firstRun", ids: ["home/home/help", "dash-first"] }} />);
     expect(region()).toHaveTextContent(/What The\s99 does:/);
     expect(screen.getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
   });
 
   it("the checklist draws About's line with no ✕ and no arrivals (A3)", () => {
-    render(<FirstRunChecklist about={{ kind: "firstRun", ids: ["browse", "checklist-first"] }} />);
+    render(<FirstRunChecklist about={{ kind: "firstRun", ids: ["home/home/help", "checklist-first"] }} />);
     expect(region()).toHaveTextContent(/What The\s99 does:/);
     expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
   });
 
-  it("the checklist draws an About line for a reader behind (A1, no ✕), and nothing without one", () => {
-    const { unmount } = render(<FirstRunChecklist about={behind(["Folders"], ["checklist-behind"])} />);
-    expect(region()).toHaveTextContent("1 new in About: Folders.");
+  it("the checklist draws a launch for a reader behind (no ✕), and nothing without one", () => {
+    const { unmount } = render(<FirstRunChecklist about={behind(launch("decks/games/checklist"))} />);
+    expect(region()).toHaveTextContent("New on Decks:");
     expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
     unmount();
     render(<FirstRunChecklist />);

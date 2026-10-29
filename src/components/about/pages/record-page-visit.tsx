@@ -1,0 +1,31 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { recordAboutPageVisit } from "../../../app/about/actions";
+import { acknowledgeAbout } from "../../home/arrivals-seen";
+
+/**
+ * Records a visit to one of About's pages once it is open in a browser (About visual PR 6b): an effect, so a prefetch
+ * or a server render writes nothing. Renders nothing.
+ *
+ * `owed` is the server's verdict that the visit writes something (a key of this page the reader does not hold, or a
+ * first-run baseline). When it does, the write's own answer, the keys it wrote, is acknowledged in this document once
+ * it LANDS, so Back to Home drops those launches from the banner it restores. When nothing is owed, `keys` (this page's
+ * keys, which the reader already holds) are acknowledged at once. A failed write acknowledges nothing: the banner shows
+ * the line again on a later load, the cheaper failure. The ref keeps StrictMode's double effect from writing twice.
+ */
+export function RecordPageVisit({ area, owed, keys }: { area: string; owed: boolean; keys: readonly string[] }) {
+  const sent = useRef(false);
+  useEffect(() => {
+    if (!owed) {
+      acknowledgeAbout(keys);
+      return;
+    }
+    if (sent.current) return;
+    sent.current = true;
+    recordAboutPageVisit(area).then(acknowledgeAbout, () => {
+      sent.current = false;
+    });
+  }, [area, owed, keys]);
+  return null;
+}

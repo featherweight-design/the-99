@@ -12,6 +12,8 @@ how each value was read:
 
 ## The sheet (PR 2, `shell/about-sheet.tsx`)
 
+**Retired in About visual PR 6b (2026-10-28, Hugh's ruling):** `about-sheet.tsx` is deleted and Home's banner carries every launch. The rows below record the surface as it shipped; its strings (`aboutSheetCopy`) stay until PR 7b, two of them still wording the banner's first-run line.
+
 | Property | Design | Shipped | How |
 |---|---|---|---|
 | Width, from `md` | 340px | 340px | measured, 800 and 1300 |

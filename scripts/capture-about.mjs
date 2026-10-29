@@ -12,8 +12,8 @@
 // a deck's Stats and Notes tabs, the all-decks cart and the Shopping buy tag each have their own), `HELP_PANEL_ENABLED`,
 // `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED` and `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and
 // `PAYMENTS_ENABLED` ON, so the frames show the ?, the account menu's `Take the tour` row, the pod's `Rule 0 check` row,
-// the invite count line and /credits that the launch-end entries point at (About batch, 2026-10-21), and `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to
-// `off`, so no bubble or sheet is photographed. The `settings` frame (push close-out) also needs a throwaway VAPID pair from
+// the invite count line and /credits that the launch-end entries point at (About batch, 2026-10-21), and `MOMENTS_ENABLED` set to
+// `off`, so no bubble is photographed (the About sheet retired in About visual PR 6b). The `settings` frame (push close-out) also needs a throwaway VAPID pair from
 // `pnpm push:keys` in the server's environment only, or /settings draws no push column. The fixture account has decks, so its Home is the dashboard and the
 // tour never opens on its own. A SCREEN frame missing what those switches draw is refused (`REQUIRED_ON_FRAME`; tool crops and
 // tour pictures are not checked), so a server

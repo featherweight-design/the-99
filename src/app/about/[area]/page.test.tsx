@@ -46,6 +46,8 @@ vi.mock("next/navigation", () => ({ notFound: m.notFound, usePathname: () => "/a
 
 import AboutAreaRoute from "./page";
 import { AreaPage, type AreaSection } from "../../../components/about/pages/area-page";
+import { RecordPageVisit } from "../../../components/about/pages/record-page-visit";
+import { seenKeysOf, visibleSections } from "../../../lib/about/pages-visible";
 import type { Landable } from "../../../lib/discovery/page-tools";
 
 type El = ReactElement<{
@@ -55,8 +57,14 @@ type El = ReactElement<{
   initialLit: string | null;
   back: { from: string; screen: string } | null;
 }>;
-const draw = async (area: string, query: Record<string, string | string[]> = {}) =>
-  (await AboutAreaRoute({ params: Promise.resolve({ area }), searchParams: Promise.resolve(query) })) as El;
+/** The route's two children: the page, and the visit it records once open (PR 6b). */
+const route = async (area: string, query: Record<string, string | string[]> = {}) => {
+  const el = (await AboutAreaRoute({ params: Promise.resolve({ area }), searchParams: Promise.resolve(query) })) as ReactElement<{ children: ReactElement[] }>;
+  return el.props.children;
+};
+const draw = async (area: string, query: Record<string, string | string[]> = {}) => (await route(area, query))[0] as El;
+const visitOf = async (area: string) =>
+  (await route(area))[1] as ReactElement<{ area: string; owed: boolean; keys: readonly string[] }>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -238,3 +246,26 @@ describe("/about/[area], reached by the ? (PR 6a)", () => {
     expect(el.props.back).toEqual({ from: "/settings", screen: "Settings" });
   });
 });
+
+describe("/about/[area], the visit (PR 6b)", () => {
+  it("records the visit once open, for this page's keys alone, decided from the reader's own switches", async () => {
+    const visit = await visitOf("decks");
+    expect(visit.type).toBe(RecordPageVisit);
+    expect(visit.props.area).toBe("decks");
+    expect(visit.props.keys).toEqual(seenKeysOf(visibleSections(m.env), "decks"));
+    expect(visit.props.keys.every((k) => k.startsWith("decks/") || k.startsWith("rule/"))).toBe(true);
+  });
+
+  it("owes a write while the reader lacks a key of this page, and none once they hold them all", async () => {
+    m.seen = { version: 16, ids: [] };
+    expect((await visitOf("decks")).props.owed).toBe(true);
+    m.seen = { version: 16, ids: seenKeysOf(visibleSections(m.env), "decks") };
+    expect((await visitOf("decks")).props.owed).toBe(false);
+  });
+
+  it("owes a first-run reader their baseline", async () => {
+    m.seen = { version: 0, ids: [] };
+    expect((await visitOf("home")).props.owed).toBe(true);
+  });
+});
+

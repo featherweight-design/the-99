@@ -38,7 +38,6 @@ vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: async 
 import AboutRoute from "./page";
 import { AboutTabs } from "../../components/about/tools/about-tabs";
 import { RecordVisit } from "../../components/about/record-visit";
-import { GateDismiss } from "../../components/about/gate-dismiss";
 import { LegalLinks } from "../../components/legal/legal-links";
 import { AboutIndex, type IndexTile } from "../../components/about/pages/about-index";
 import { TOOLS } from "../../lib/discovery/tools";
@@ -74,7 +73,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.seen = { version: 14, ids: [] };
   m.everyEntry = false;
-  vi.stubEnv("ABOUT_SHEET_ENABLED", "true");
   for (const s of DECK_SWITCHES) vi.stubEnv(s, "");
 });
 afterEach(() => vi.unstubAllEnvs());
@@ -211,21 +209,14 @@ describe("/about, the visit (R2 gap 10)", () => {
   });
 });
 
-describe("/about, the legacy gate's way back", () => {
-  it("with the sheet switch off, a behind reader sent with ?next= gets Got it, on the Reference", async () => {
-    vi.stubEnv("ABOUT_SHEET_ENABLED", "");
+describe("/about, the legacy gate's way in (retired, About visual PR 6b)", () => {
+  it("draws the index for a behind reader arriving with ?next=, with no Got it and no Reference", async () => {
     m.seen = { version: 1, ids: [] };
-    const page = await draw({ next: "/decks" });
-    expect(find(page, GateDismiss)!.props.destination).toBe("/decks");
-    expect(find(page, AboutTabs)).not.toBeNull();
-    expect(find(page, RecordVisit)).toBeNull();
-  });
-
-  it("draws no dismiss with the sheet switch on, with no ?next=, or with a repeated one", async () => {
-    m.seen = { version: 1, ids: [] };
-    expect(find(await draw({ next: "/decks" }), GateDismiss)).toBeNull();
-    vi.stubEnv("ABOUT_SHEET_ENABLED", "");
-    expect(find(await draw(), GateDismiss)).toBeNull();
-    expect(find(await draw({ next: ["/a", "/b"] }), GateDismiss)).toBeNull();
+    for (const next of ["/decks", ["/a", "/b"]]) {
+      const page = await draw({ next });
+      expect(find(page, AboutIndex)).not.toBeNull();
+      expect(find(page, AboutTabs)).toBeNull();
+      expect(find(page, RecordVisit)).toBeNull();
+    }
   });
 });

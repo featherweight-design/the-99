@@ -608,8 +608,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
 - `pnpm probe:tour` runs the first-run tour (discovery R3·1b) in a real browser at 1300x900 and 390x844, signed in as
   the dedicated first-run account (`onboard-probe+clerk_test@the99.app`) against a server with
-  `FIRST_RUN_TOUR_ENABLED=true` and `ABOUT_SHEET_ENABLED=true` (off, the proxy sends an account with unread About to
-  `/about` before Home). It proves every step's cutout sits on its real control (the ring's box is the control's box
+  `FIRST_RUN_TOUR_ENABLED=true` (About's sheet and the gate's redirect to `/about` retired in About visual PR 6b, so no
+  About switch is needed). It proves every step's cutout sits on its real control (the ring's box is the control's box
   plus its room, within 2px), the app is inert under the scrim and a press on a locked slot opens no note, the tour is
   spent once as step 1 appears (`tour_seen_at` written, a reload shows nothing, the date unmoved), a theme chosen at
   step 5 survives a skip, and with every About entry seen step 6 lights nothing (R3 gap 6) and Esc ends it. Last, two
@@ -654,8 +654,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
   itself: a deck's Stats and Notes tabs, the all-decks cart and the buy tag each have a switch of their own, and a frame
   missing one is not captured), `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED` and
-  `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and `PAYMENTS_ENABLED` on, and `MOMENTS_ENABLED` and
-  `ABOUT_SHEET_ENABLED` set to `off`, so the frames show the ?, the account menu's `Take the tour` row, the pod's
+  `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and `PAYMENTS_ENABLED` on, and `MOMENTS_ENABLED` set to
+  `off`, so the frames show the ?, the account menu's `Take the tour` row, the pod's
   `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no bubble or sheet. A screen frame missing what it
   must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
   the top and its header scrolled away; the tour row on `account`; the Rule 0 row and the invite count on `friends`;
@@ -1055,9 +1055,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `--elevated` reads 3.6857.
 
   **It clears the About gate before asking for any route**, by seeding `user_prefs` and calling
-  `clearAboutSheet`. Since #658 `proxy.ts` redirects a reader below `ABOUT_VERSION` to
-  `/about?next=…` (or, with `ABOUT_SHEET_ENABLED` on, draws the one-time sheet over the page), and
-  the About page's own specimen deck links then read as the account's decks — the first run of this file reported
+  `clearAboutSheet`. From #658 until About visual PR 6b `proxy.ts` redirected a reader below `ABOUT_VERSION` to
+  `/about?next=…` (or drew the one-time sheet over the page), and the About page's own specimen deck links then read as the account's decks — the first run of this file reported
   "no Analysis tab" about `/decks/about-resume-edited`, a routing problem wearing a flag
   problem's clothes. **And it reaches the surface by a PRESS**: `BuilderTabs` is client state and
   produces no address, which is how the card mark shipped broken into a view a URL sweep
@@ -1911,61 +1910,28 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   one — the later prop wins in JSX, so the build under test was the working one. It makes no
   writes; point it at `local-dev`.
 
-- `pnpm probe:about` walks the About rethink at 390, 800 and 1300 with `ABOUT_SHEET_ENABLED` on:
-  the one-time sheet draws on a document load, sits beside the rail from `md` and above the tab
-  bar below it, survives `router.refresh()`, and closes on Later (writing nothing) and on Show me;
-  opening `/about` records the visit; the what's-new index jumps, washes and focuses the entry
-  20px down, and Back returns; the contents search filters the list and leaves the page's
-  sections alone; a legacy `about_v` cookie does not hide the sheet, and a forged
-  `x-about-sheet` header summons nothing. Five mutations fail it; the counts are in its header.
-  **Expected to fail from 2026-10-15 until PR B of `2026-10-15-about-on-the-banner.md` (due on or after
-  2026-10-22).** With `ABOUT_SHEET_ENABLED` on, About's notice is a line on Home's banner (#1780) and the sheet never
-  draws, so every sheet step fails. `pnpm probe:about-banner` proves the notice meanwhile; PR B rewrites or retires this
-  probe along with the sheet's code. Its what's-new jump (check 5) and contents search (check 6) also walk the page
-  Discovery R2·7 retired (the R6 contents, the jump mark, the chapters): those steps go with that rewrite.
+- `pnpm probe:about` walks About's ways in (About visual PR 6a), at 390 and 1300, and WRITES NOTHING (`--ways-in` is
+  accepted and means the same): the index's tiles open their pages (W1); `?tab=tools` draws the index, no Tools tab
+  (W2); the ? pressed on Upload a file lands on `/about/collection#upload` with `from`, its back bar names the screen,
+  stays at the top while the page scrolls, and goes back (W3); the ? on History lights the Replace and Add rule card
+  with no New tag, `lit` stripped and `from` kept (W4); the ? on New deck lights the New deck label (W5); and the ? on
+  an About page opens the index (W6). Every check presses the control and reads the URL and the lit state. Run against
+  a server with `HELP_PANEL_ENABLED` on. Its R6 walks (the one-time sheet, the legacy `about_v` cookie, a forged
+  `x-about-sheet` header) and its `--flip` walk retired with the sheet and the gate in About visual PR 6b; the banner
+  carries every launch now, and `pnpm probe:about-banner` presses it.
 
-  It WRITES the account's `user_prefs` row — `about_version_seen` and `about_seen_ids` — HELD ON
-  DISK before the first write and restored in a `finally`, the `profile-hold.mjs` rule. "Behind"
-  clears the ids as well as lowering the version: with an entry's switch on, a stale id would
-  mark that entry seen and the sheet would never draw. Point it at
-  `local-dev`, **never production**.
-
-  **`pnpm probe:about --ways-in` walks About's ways in** (About visual PR 6a), at 390 and 1300, and WRITES NOTHING:
-  the index's tiles open their pages (W1); `?tab=tools` draws the index, no Tools tab (W2); the ? pressed on Upload a
-  file lands on `/about/collection#upload` with `from`, its back bar names the screen, stays at the top while the page
-  scrolls, and goes back (W3); the ? on History lights the Replace and Add rule card with no New tag, `lit` stripped and
-  `from` kept (W4); the ? on New deck lights the New deck label (W5); and the ? on an About page opens the index (W6).
-  Every check presses the control and reads the URL and the lit state. Run against a server with `HELP_PANEL_ENABLED`
-  on. The sheet walk and `--flip` now open the Reference at `?tab=reference`, which `/about` no longer is.
-
-  **`pnpm probe:about --flip` walks a real switch flip**, and it OWNS its server: a switch is read
-  when the server starts, so the walk starts `next dev` itself (port `PROBE_FLIP_PORT`, default
-  3297) with every switch off, restarts it with Change commander on, then with Locked cards on as
-  well, then Help me choose, then swap tools (one switch, two entries), then the Analysis tab (one switch, two entries), then with all five off. Next 16 allows one `next dev` per project, so stop any dev server in the
-  worktree first. It proves the cookie a browser held from before a flip does not hide the sheet,
-  that the sheet names only the entry just switched on, that the visit records it by id, and that a
-  later flip names only the second entry and a third only the third, while a fourth names BOTH
-  of swap tools' entries in page order and a fifth both of the Analysis tab's; it also measured all seven figures at 390 and 1300 (F5, `figureFacts`). Discovery R2·7 retired those figures, so F5 fails at both widths until PR B's rewrite. Keying the
-  sheet cookie on `<user>.<version>` alone fails it at F2 and F4. It needs migration 0066
-  (`about_seen_ids`), so point the worktree's `.env` at a migrated database.
-
-  **Every probe that clears the About gate calls `clearAboutSheet`** (`scripts/lib/about-clear.mjs`)
-  as well as writing `about_version_seen` (audit E5). Since entries follow their features'
-  switches (Hugh, 2026-09-25) the version write covers only entries WITHOUT a switch: one tied to
-  a switch is seen by its id, so a switch left on in the server a probe runs against would still
-  put a card over the page. The helper is the one place a probe marks those seen — it raises the
-  version floor (never lowering it) and adds every catalog id to `about_seen_ids`, all of them because a probe cannot read the server's switches,
-  and does not put them back, which says no more than the version write already says. A probe
-  that puts the About columns back captures them with `captureAboutSeen` before its first write
-  and restores it with `restoreAboutSeen`, which writes both columns (or deletes a row that was not
-  there). `probe:help-me-choose-doors` is the one exception, and a sound one: it snapshots the
-  WHOLE `user_prefs` row and restores it in its own transaction, which covers both. A hand-written restore of `about_version_seen` alone left the ids this helper added on the
-  fixture account, and the test fails any probe that sets the version to a stated value without the ids, as an update or an upsert. That write
-  is the guarantee. The cookie it also sets is only the proxy's fast path while no switch is on:
-  the proxy keys its cookie to the switched entries it draws, which a probe cannot know. It
-  presses Later if a card is already up. `about-clear.test.mts` sweeps every
-  probe that writes the column and fails one that does not call it, and pins the ids it reads
-  out of `about.ts` against `aboutEntries`.
+  **Every probe that clears About calls `clearAboutSheet`** (`scripts/lib/about-clear.mjs`) as well as writing
+  `about_version_seen` (audit E5): it raises the version floor (never lowering it) and adds every catalog id and
+  variant id to `about_seen_ids`, all of them because a probe cannot read the server's switches, so no launch line sits
+  on Home's banner over what a probe measures (a reader at the floor holding every switched entry id is told nothing
+  by the pages' rule either; `pages-visible.test.ts`). The name is the retired sheet's, kept for its callers; since
+  About visual PR 6b it sets no cookie and follows no gate redirect, because neither exists. It does not put the row
+  back, which says no more than the version write already says. A probe that puts the About columns back captures
+  them with `captureAboutSeen` before its first write and restores them with `restoreAboutSeen`, which writes both
+  columns (or deletes a row that was not there). `probe:help-me-choose-doors` is the one exception, and a sound one:
+  it snapshots the WHOLE `user_prefs` row and restores it in its own transaction. `about-clear.test.mts` sweeps every
+  probe that writes the column and fails one that does not call it, and pins the ids it reads out of the catalog
+  against `aboutEntries`.
   Its writes go to `.env`'s `DATABASE_URL`, the database each probe's own guard checks, and it prints the branch
   first. Point the worktree's `.env` at a scratch branch for a walk, never `.env.local`, or the dev server reads one
   database and the About write lands on another.
@@ -2703,7 +2669,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   printings action is still held in flight; the scanner never says it is adding; a failed printings read takes the card
   back off the list with the `view.removed` toast and is not taken again while it stays in view. Mutation-checked:
   drop the sheet's rollback and both widths fail. It writes nothing (the list is never saved). Needs a server with
-  `CARD_SCAN_ENABLED`, `COLLECTION_EDIT_ENABLED` and `ABOUT_SHEET_ENABLED`, at `PROBE_BASE`.
+  `CARD_SCAN_ENABLED` and `COLLECTION_EDIT_ENABLED`, at `PROBE_BASE`.
 - `pnpm probe:card-scan-match` proves card scanning's server match (plan `2026-10-16-card-scan.md` PR 1) against the
   real every-printing index: the file checks refuse a wrong model, a row off unit length and a short file; the ingest
   CLI exits 2 on a target that is not the branch it names; `publishScanIndex` replaces the rows and the meta row in one
@@ -3253,7 +3219,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   user on the DEVELOPMENT instance (its key must be `sk_test_`), all removed in its `finally` with the account's seen
   keys; the account's `user_prefs` row (its seen keys and About fields, or its absence) is read before any page and put
   back exactly, then re-read as a check. `PROBE_BASE` must be loopback with a port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true
-  UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true ABOUT_SHEET_ENABLED=true`; stop it by its own PID.
+  UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true`; stop it by its own PID.
 - `pnpm probe:welcome-strip` presses Home's welcome-credits strip (plan `2026-10-21-welcome-credits.md`, PR 2) at
   390x844 and 1300x900, through `lib/surface.mjs`: the strip is above the fold on the first-run Home and on the
   dashboard (under the page head); `Where they work` opens `Where credits work` in the shipped SocialModal, before a
@@ -3266,7 +3232,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `WELCOME_PROBE_KEEP=1` keeps the account for a contact sheet (`WELCOME_PROBE_STAGE=first-run` stops before the
   collection rows) and prints its address; `WELCOME_PROBE_CLEAN=<address>` removes a kept one. The database is the
   worktree's `.env` (local-dev or a scratch branch; production and staging refused by branch id). Needs a server on
-  `PROBE_BASE` (loopback with a port) with `ABOUT_SHEET_ENABLED PAYMENTS_ENABLED TUNING_ENABLED HELP_ME_CHOOSE_ENABLED PROPOSED_CUTS_ENABLED
+  `PROBE_BASE` (loopback with a port) with `PAYMENTS_ENABLED TUNING_ENABLED HELP_ME_CHOOSE_ENABLED PROPOSED_CUTS_ENABLED
   SWAP_TOOLS_ENABLED FIND_A_DECK_READ_ENABLED ANALYSIS_TAB_ENABLED` all `true`; stop it by its own PID.
 - `pnpm probe:deck-tile-export` proves Export from a `/decks` tile's ⋯ menu, in a browser at 1300x900 and 390x844: the
   first tile's menu, then Export, opens the deck page's own export dialog (`Export deck`) over `/decks`, its preview
@@ -3275,25 +3241,27 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the press (`readDeckExport`), never from `/decks`' cached payload. A run that finds no tile fails. Its one write is the
   About row `clearAboutSheet` sets, read before and put back in a `finally`. Point it at `local-dev` through a server you started (`PROBE_BASE`), and stop that
   server by its own PID; `PROBE_SHOTS=<dir>` keeps a screenshot per width.
-- `pnpm probe:about-banner` presses About's line on Home's banner (plan `2026-10-15-about-on-the-banner.md`, PR A; handoff
-  `design_handoff_the99_upcoming_precons`, `R2 - Home-About`, A1–A3) at 390x844 and 1300x900. On the Dashboard: A1
-  (`N new in About: {titles}.`, the sheet's cap, Show me to `/about`, ✕ 44 at 390 and 32 at 1300, one line and no
-  heading); no About sheet draws anywhere and the proxy writes no `about_sheet` cookie; `/decks` and `/collection` draw
-  no line for a reader who is behind; a CURRENT `about_sheet` cookie (keyed to the switched entries the server draws,
-  read off `/about`'s anchors) suppresses the line and is never rewritten, and a stale one does not; ✕ closes it, focuses
-  Home's `h1`, writes the version floor (polled in `user_prefs`), a reload draws none with `LIST_CACHE_ENABLED=true`,
-  and `/about` then has no what's-new index; ✕, a client navigation to `/decks` and Back draws no line; Show me lands on
-  `/about`, the visit writes seen, and Back to Home draws no line (the client acknowledgement); A2 (an arrival fixture
-  beside About: `New in the app`, About's line first, each line its own link, one ✕ writing both halves); A3 on the
-  Dashboard for an account with cards and no About history, whose ✕ writes the floor and the switched entries the server
-  draws. On the first-run checklist, a fresh Clerk test user: A3 with no ✕ and no sheet, A1 with no ✕, and nothing for a
-  current reader. The sign-in account's About state is its `user_prefs` row alone (every catalog id seen, the floor one
-  below the newest unswitched entry), read before any page and put back exactly in `finally`, then re-read as a check.
-  FIXTURES on local-dev only (production and staging refused by branch id): a `commander` set `pqbset` with a day-old
-  non-baseline `catalog_first_seen` stamp, and the temporary user (its key must be `sk_test_`), all removed in its
-  `finally` with every row the user wrote. `PROBE_BASE` must be loopback with a port. Needs a `next start` on
-  `PROBE_BASE` over the same database with `PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true
-  ABOUT_SHEET_ENABLED=true`; stop it by its own PID.
+- `pnpm probe:about-banner` presses About's launches on Home's banner (About visual plan `2026-10-27-about-visual.md`,
+  PR 6b; handoff `design_handoff_the99_about_visual`, call 7, Ways-In "Banner") at 390x844 and 1300x900. On the
+  Dashboard: one launch (`New on Decks: Lock cards …`, a crop in the mark's place, 64x48 cut from the phone capture at
+  390 and 56x38 from the desktop capture at 1300, Show me to `/about/decks?lit=…#your-deck`, ✕ 44 at 390 and 32 at
+  1300, one line and no heading); `/decks` and `/collection` draw no line and redirect nowhere for a reader who is
+  behind; ✕ closes it, focuses Home's `h1`, writes the launch's ack and raises the floor (polled in `user_prefs`), and a
+  reload draws none with `LIST_CACHE_ENABLED=true`; ✕, a client navigation to `/decks` and Back draws no line; Show me
+  lands on `/about/decks` with Lock cards marked New, the visit writes its key and keeps the floor, and Back to Home
+  draws no line (the client acknowledgement); two launches (the `New in the app` band, a line each in page order, a
+  44x32 crop on the label's line and the diamond on the rule's, a Show me each, one ✕ writing both acks); A2 (a launch
+  and an arrival fixture: `New in the app`, About's line first, each line its own link, one ✕ writing both halves); and
+  the first-run line on the Dashboard for an account with cards and no About history, Show me to the `/about` index,
+  whose ✕ writes the floor and every drawn unit's key. On the first-run checklist, a fresh Clerk test user: the
+  first-run line with no ✕, one launch with no ✕, and nothing for a current reader. The sign-in account's About state is
+  its `user_prefs` row alone ("current" is the floor, every catalog id and every unit key; one launch drops Lock
+  cards' key and `locked-cards`; two drop the lock rule's key too), read before any page and put back exactly in
+  `finally`, then re-read as a check. FIXTURES on local-dev only (production and staging refused by branch id): a
+  `commander` set `pqbset` with a day-old non-baseline `catalog_first_seen` stamp, and the temporary user (its key must
+  be `sk_test_`), all removed in its `finally` with every row the user wrote. `PROBE_BASE` must be loopback with a
+  port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true
+  UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true`; stop it by its own PID.
 
 ## probe:lock-shift
 

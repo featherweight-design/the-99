@@ -201,9 +201,9 @@ export function FirstRunChecklist({
         </p>
       </div>
 
-      {/* About's line (About on the banner, PR A; A3, or A1 for an account that read /about and then cleared its
-          collection), between the heading and the steps. No arrival lines here (H7), and no ✕: the checklist is the
-          first-run surface itself, and the line goes once About is opened. */}
+      {/* About's line (A3, or the launches for an account that read About and then cleared its collection), between
+          the heading and the steps. No arrival lines here (H7), and no ✕: the checklist is the first-run surface
+          itself, and the line goes once an About page is opened. */}
       {about && <ArrivalsBanner data={null} about={about} closable={false} gutter="checklist" />}
       {welcome}
 

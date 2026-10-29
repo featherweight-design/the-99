@@ -23,7 +23,7 @@
 // fixture, the override and the temporary user's rows are removed in a `finally`.
 //
 // The server: `next start` of a build with the worktree's `.env`, started with
-//   PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true ABOUT_SHEET_ENABLED=true
+//   PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:arrivals-banner
 import { neon } from "@neondatabase/serverless";
@@ -242,8 +242,6 @@ async function widthRun(browser, w, userId) {
   check(w.phone ? lb.top >= ub.bottom - 1 : lb.bottom <= ub.top + 1,
     `${w.name} H4: the link ${w.phone ? "last, on its own line" : "on the heading line"}`, `link ${lb.top}–${lb.bottom}, lines ${ub.top}–${ub.bottom}`);
   if (w.phone) check(Math.round(lb.height) >= 44, "390 H4: the link's line is 44px", `${lb.height}`);
-  const sheet = await page.locator("[data-about-sheet]").count();
-  console.log(`INFO  ${w.name} H5: the About sheet is ${sheet ? "up beside the banner" : "not due for this account"}`);
   const r = await ring(page, onPage(page, `${REGION} a`).first());
   check(r.width === "2px" && r.style === "solid" && r.offset === "2px" && r.color === r.accent,
     `${w.name} H8: the link's focus ring is 2px --accent at a 2px offset`, JSON.stringify(r));
