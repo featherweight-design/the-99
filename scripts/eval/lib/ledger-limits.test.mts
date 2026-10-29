@@ -26,6 +26,7 @@ describe("eval ledger limits, one source", () => {
     ["fits-read.mts", /const CAP_USD = LEDGER_LIMITS\["ledger-find-a-deck\.jsonl"\]\.hardCapUsd;/],
     ["count-mechanism.mts", /const CAP_USD = LEDGER_LIMITS\["ledger-count-mechanism\.jsonl"\]\.hardCapUsd;/],
     ["tuning-v2.mts", /const CAP_USD = LEDGER_LIMITS\["ledger-tuning-v2\.jsonl"\]\.hardCapUsd;/],
+    ["overview-stages.mts", /const LIMITS = LEDGER_LIMITS\[LEDGER_FILE\];/],
     ["cuts-plan.mts", /const LEDGER_CUTS_CAP = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.hardCapUsd;\nconst LEDGER_CUTS_ASK = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.askAtUsd;/],
     ["lib/ledger.mts", /export const HARD_CAP_USD = LEDGER_LIMITS\["ledger\.jsonl"\]\.hardCapUsd;\nexport const ASK_AT_USD = LEDGER_LIMITS\["ledger\.jsonl"\]\.askAtUsd;/],
     ["lib/ledger.mts", /export const OVERVIEW_ACCURACY_LIMITS: Limits = LEDGER_LIMITS\["ledger-overview-accuracy\.jsonl"\];/],

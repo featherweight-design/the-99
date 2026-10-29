@@ -62,6 +62,7 @@ export const CALLERS = {
   "scripts/eval/lib/request.mts": { note: "the eval request shape and reply parse: types only, sends nothing" },
   "scripts/probe-card-labels-waves.mts": { note: "a fake BatchClient for the labels probe: answers locally, sends nothing" },
   "scripts/eval/corpus.mts": { builders: ["src/lib/synopsis/prompt.ts", "src/lib/tuning/prompt.ts"] },
+  "scripts/eval/overview-stages.mts": { builders: ["src/lib/synopsis/prompt.ts"] },
   "scripts/eval/tuning.mts": { builders: ["src/lib/tuning/prompt.ts"] },
   "scripts/eval/tuning-lists.mts": { builders: ["src/lib/tuning/prompt.ts"] },
   "scripts/eval/tuning-focus.mts": { builders: ["src/lib/tuning/prompt.ts"] },
