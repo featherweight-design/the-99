@@ -71,6 +71,19 @@ describe("the form locks while it reads (small items 3, item 5)", () => {
     expect(document.activeElement).toBe(focused);
   });
 
+  it("closes an open [[ card lookup when the read starts", async () => {
+    push.mockClear();
+    const settle = slow();
+    mount();
+    const box = screen.getByLabelText(/Anything else\?/) as HTMLTextAreaElement;
+    box.focus();
+    await act(async () => { fireEvent.change(box, { target: { value: "scary [[So", selectionStart: 10 } }); });
+    await waitFor(() => expect(box.getAttribute("aria-expanded")).toBe("true"));
+    await act(async () => { fireEvent.click(press()); });
+    expect(box.getAttribute("aria-expanded")).not.toBe("true");
+    await settle();
+  });
+
   it("hides the controls with visibility, keeping their boxes in the tree", async () => {
     const css = (await import("node:fs")).readFileSync(`${process.cwd()}/src/app/globals.css`, "utf8");
     expect(css).toMatch(/\[data-intake-locked\] \[data-lock-hide\] \{ visibility: hidden; \}/);

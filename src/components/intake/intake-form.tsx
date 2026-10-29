@@ -160,7 +160,7 @@ export function IntakeForm({
   // is held to the room above it (see `listMax`): it always opens below the box.
   const wordsRef = useRef<HTMLTextAreaElement>(null);
   const picker = useCardTagPicker({
-    value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, measure: wordsLength, maxTags: READ_TAGS_MAX, field: wordsRef,
+    value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, measure: wordsLength, maxTags: READ_TAGS_MAX, field: wordsRef, disabled: submitting,
     onChange: (text, next) => setField({ text, tags: next }),
   });
   // The list is held to the room between the box and whatever ends the screen below it (the phone's fixed
