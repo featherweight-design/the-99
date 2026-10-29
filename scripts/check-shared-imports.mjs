@@ -39,9 +39,22 @@ if (!shares) {
   process.exit(0);
 }
 
-const { binding, module: sharedModule } = shares;
-if (!binding || !sharedModule) {
-  throw new Error(`${inventoryPath}: "shares" needs both "binding" and "module".`);
+// One shared control (`{ binding, module }`), or several (an array of them) when one feature's
+// views share more than one control. With several, each row names the control its photograph is
+// about in its own `binding`, and its `view` is checked against that control alone: a single
+// `view` cannot be asked to import every one of them, and a row that named none would sit outside
+// the check while it stayed green.
+const entries = Array.isArray(shares) ? shares : [shares];
+if (!entries.length) throw new Error(`${inventoryPath}: "shares" is an empty array, so this would check nothing.`);
+const byBinding = new Map();
+for (const entry of entries) {
+  if (!entry?.binding || !entry?.module) {
+    throw new Error(`${inventoryPath}: each "shares" entry needs both "binding" and "module".`);
+  }
+  if (byBinding.has(entry.binding)) {
+    throw new Error(`${inventoryPath}: "shares" names ${entry.binding} twice.`);
+  }
+  byBinding.set(entry.binding, entry);
 }
 
 // Views come off the ROWS rather than from a list beside them, so a row cannot
@@ -58,13 +71,22 @@ if (!viewless.length && !rows?.length) {
   // no check because someone believes it.
   throw new Error(`${inventoryPath}: no rows, so this would pass without checking anything.`);
 }
+const entryOf = (row) => (Array.isArray(shares) ? byBinding.get(row.binding) : entries[0]);
+if (Array.isArray(shares)) {
+  const unbound = rows.filter((row) => !byBinding.has(row.binding)).map((row) => `${row.id ?? row.label} (${row.binding ?? "none"})`);
+  if (unbound.length) {
+    throw new Error(
+      `${inventoryPath}: "shares" lists several controls, so every row names one of them in "binding". These do not: ${unbound.join(", ")}`,
+    );
+  }
+}
 
 // One view can carry several rows — a route photographed at three points in a
 // flow is one file — and reporting it three times says nothing extra.
-const views = [...new Set(rows.map((row) => row.view))];
+const pairs = [...new Map(rows.map((row) => [`${row.view}\0${entryOf(row).binding}`, { view: row.view, ...entryOf(row) }])).values()];
 const failures = [];
 
-for (const view of views) {
+for (const { view, binding, module: sharedModule } of pairs) {
   let source;
   try {
     source = await readFile(path.join(ROOT, view), "utf8");
@@ -86,12 +108,17 @@ for (const view of views) {
   }
 }
 
+const named = [...byBinding.keys()].join(", ");
 if (failures.length) {
-  console.error(`${failures.length} of ${views.length} views do not share ${binding}:\n`);
+  console.error(`${failures.length} of ${pairs.length} view and control pairs do not share ${named}:\n`);
   for (const failure of failures) console.error(`  - ${failure}`);
   console.error(
-    `\nA shared wrapper is a legitimate answer; a wrapper each is not. If these routes converge on one wrapper, point "shares.module" at that wrapper.`,
+    `\nA shared wrapper is a legitimate answer; a wrapper each is not. If these routes converge on one wrapper, point that control's "module" in "shares" at that wrapper.`,
   );
   process.exit(1);
 }
-console.log(`All ${views.length} views import and use ${binding} from ${sharedModule}.`);
+console.log(
+  entries.length === 1
+    ? `All ${pairs.length} views import and use ${entries[0].binding} from ${entries[0].module}.`
+    : `All ${pairs.length} view and control pairs import and use their control (${named}).`,
+);

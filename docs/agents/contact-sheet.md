@@ -37,6 +37,14 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   them again, because the wrapper owns the import. Pick the component first, then set `view` to
   wherever each route renders it, which may be a wrapper.
 
+  **Several shared controls: `shares` as an array, and a `binding` per row.** One feature's
+  views can share more than one control (the all-decks cart's three views share the chassis, the
+  filter sheet, the column header and the facts row). `shares` may then be an array of
+  `{ binding, module }`, and every row names the one its photograph is about in its own
+  `binding`; its `view` is checked against that control alone. A row naming no listed binding
+  fails the check rather than sitting outside it. The single-object form is unchanged.
+  `all-decks-cart-v2.json` is the first inventory in the array form (2026-10-28).
+
 - **`openAccount`** opens the account menu (the popover at 1300, the sheet at 390) and waits for its credit chip
   (`"chip": false` waits for the open menu alone; `"chipLine": true` also waits for the line under an expiring chip).
   It is the one verb that does not go through `onPage`, because the menu is shell and `onPage` scopes to `<main>`: it
