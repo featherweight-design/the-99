@@ -214,9 +214,9 @@ describe("the shipped pages, every switch on", () => {
 
 describe("pinsAt: pins placed at the capture's RENDERED size", () => {
   // The capture widths themselves (the column less the 30px gutter). Phone: a 320 window (258), 362 (300), 390 (328)
-  // and wider phones up to md. Desktop: about 395 at a 768 window (60% of the row less the gutter) and 670 from about
-  // 1180. The disc does not scale with the picture, so the gap and the clamp must hold in real pixels.
-  const WIDTHS: Record<"phone" | "desktop", number[]> = { phone: [258, 300, 328, 358, 388], desktop: [388, 670] };
+  // and wider phones up to md. Desktop: about 340 at a 768 window (60% of the content beside the rail, less the gutter)
+  // and 670 from about 1180. The disc does not scale with the picture, so the gap and the clamp must hold in real pixels.
+  const WIDTHS: Record<"phone" | "desktop", number[]> = { phone: [258, 300, 328, 358, 388], desktop: [340, 358, 388, 670] };
 
   it("keeps every shipped picture's pins in the gutter, 28px apart and inside, its brackets inside, at every width", () => {
     for (const s of visibleSections(ALL_ON)) {

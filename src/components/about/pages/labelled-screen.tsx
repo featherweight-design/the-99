@@ -6,7 +6,8 @@
 // responsive split, because a server render cannot know the reader's width. The pictures are lazy, and a browser does
 // not fetch a lazy image that is `display: none`, so a phone reader never downloads a desktop capture or the reverse.
 //
-// Phone: each capture full width with its labels under it. Desktop: each capture 700 wide with its labels beside it.
+// Phone: each capture full width with its labels under it. Desktop: each picture 700 wide (the capture 670, past its
+// 30px pin gutter) with its labels beside it.
 // Pressing a label (or its pin) lights its region with `REGION_HALO` (the Ways-In board's ring and 0.34 dim), its pin and its line.
 // While a capture loads its frame holds the capture's size with a quiet skeleton and no pins; the labels read without it.
 //

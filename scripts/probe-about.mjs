@@ -193,7 +193,7 @@ async function r4Walk(browser, width) {
   await card.locator("p").first().click();
   await page.waitForTimeout(800);
   report(L("W8 the picture and the body are no hit area"), page.url() === url, page.url());
-  report(L("W8 the card has exactly one press"), (await card.locator("[data-tool-card-press]").count()) <= 1);
+  report(L("W8 the card has exactly one press"), (await card.locator("[data-tool-card-press]").count()) === 1);
   if (desk) {
     const bottoms = await page
       .locator("[data-try-it='analysis'] [data-try-it-width='desktop'] [data-tool-card-press]")
