@@ -14,6 +14,7 @@
 
 import { pageShotFor, type PageBox, type PageWidth } from "./page-shots";
 import type { VisibleSection, VisibleUnit } from "./pages-visible";
+import { HALO_REACH } from "./halo";
 
 /** A box in the picture's own pixels: left, top, width, height. */
 export type Box = { x: number; y: number; w: number; h: number };
@@ -26,8 +27,8 @@ export const PIN_SIZE = 24;
 export const PIN_GAP = 28;
 /** The most pins one picture holds (call 1); past that a screen gets another shot. */
 export const MAX_PINS = 5;
-/** How far inside the frame a lit region's halo is held, so its ring and glow close inside the clipped edge (R4 board 2). */
-export const HALO_REACH = 8;
+// How far inside the frame a lit region's halo is held (R4 board 2): its own module, shared with the tool card's CSS clamp.
+export { HALO_REACH } from "./halo";
 /** A bracket's padding round its region, its least size, its longest arm and how far inside the capture it is held. */
 export const BRACKET_PAD = 4;
 export const BRACKET_MIN = 20;
