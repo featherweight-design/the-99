@@ -146,6 +146,8 @@ describe("promisedDeckCount", () => {
     ["The upcoming Warhammer 40,000 Commander decks", null],
     ["a ready-to-play Commander deck featuring four colors", null],
     ["four new cards in each of these decks", null],
+    // the singular never counts: one deck, however many of something else
+    ["Choose between two great Commander deck builds", null],
   ])("%s → %s", (text, n) => expect(promisedDeckCount([text])).toBe(n));
 
   it("takes the first summary that states a number", () => {
