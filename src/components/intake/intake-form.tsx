@@ -322,7 +322,7 @@ export function IntakeForm({
         </Field>
 
         <Field label={copy.intake.sets} caption={copy.intake.setsCaption}>
-          <SetsField sets={sets} value={pickedSets} onChange={setPickedSets} wide={wide} locked={submitting} />
+          <SetsField sets={sets} value={pickedSets} onChange={setPickedSets} wide={wide} />
         </Field>
 
         <Field

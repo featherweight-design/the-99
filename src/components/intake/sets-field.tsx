@@ -34,7 +34,6 @@ export function SetsField({
   value,
   onChange,
   wide,
-  locked = false,
   copy: copyOverride,
 }: {
   /** Every set that printed a commander, newest first. */
@@ -43,9 +42,6 @@ export function SetsField({
   value: readonly string[];
   onChange: (next: string[]) => void;
   wide: boolean;
-  /** The form is locked while it reads: the panel is remounted closed, so a phone sheet left open by an Enter in its
-   *  search releases its scroll lock and back handler before the trigger is hidden. */
-  locked?: boolean;
   /**
    * Overrides the trigger's label/count/sheet-title and the chip's remove aria, for a caller
    * whose box names itself differently (H35 PR 2's "Kept for this deck"). Everything else — search, groups, the panel's own aria strings — stays the shared
@@ -61,13 +57,21 @@ export function SetsField({
   const options = sets.map((s) => ({ code: s.code, label: s.name, hint: s.code.toUpperCase(), count: 0, disabled: false }));
   const nameOf = (code: string) => sets.find((s) => s.code === code)?.name ?? code.toUpperCase();
   return (
-    <div data-testid="sets-field" className="flex flex-wrap items-center gap-[6px]">
+    <div
+      data-testid="sets-field"
+      className="flex flex-wrap items-center gap-[6px]"
+      // The phone's sheet is a modal over the form. An Enter in its search with no option lit would otherwise submit the
+      // form behind it, and the lock would then hide a sheet that is still open (its scroll lock and back handler with it).
+      onKeyDown={(e) => {
+        if (!wide && e.key === "Enter" && e.target instanceof HTMLInputElement) e.preventDefault();
+      }}
+    >
       {/* The trigger is the field's "Add a set…": hidden while the form is locked, its box kept (item 5). `contents`
           adds no box of its own; the visibility it carries is inherited by the trigger. */}
       <span data-lock-hide="" className="contents">
       <FilterPanel
         // Keyed on the form, as every chassis panel is: it holds its own `open`.
-        key={`${wide ? "wide" : "compact"}${locked ? "-locked" : ""}`}
+        key={wide ? "wide" : "compact"}
         compact={!wide}
         copy={panelCopy}
         options={options}

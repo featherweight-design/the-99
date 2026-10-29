@@ -20,13 +20,19 @@ describe("the Sets field", () => {
   });
 });
 
-describe("the Sets field while the form is locked", () => {
-  it("closes an open panel when the form locks, so a phone sheet releases its modal hooks", () => {
-    const { rerender } = render(<SetsField sets={sets} value={[]} onChange={vi.fn()} wide={false} />);
+describe("the Sets field's phone sheet", () => {
+  it("keeps an Enter in its search from submitting the form behind it", () => {
+    render(<form><SetsField sets={sets} value={[]} onChange={vi.fn()} wide={false} /></form>);
     fireEvent.click(screen.getByTestId("sets-field").querySelector("button")!);
-    expect(screen.queryByRole("dialog")).not.toBeNull();
-    rerender(<SetsField sets={sets} value={[]} onChange={vi.fn()} wide={false} locked />);
-    expect(screen.queryByRole("dialog")).toBeNull();
+    const search = screen.getByRole("dialog").querySelector("input")!;
+    expect(fireEvent.keyDown(search, { key: "Enter" })).toBe(false);
+  });
+
+  it("leaves Enter alone on the desktop popover", () => {
+    render(<form><SetsField sets={sets} value={[]} onChange={vi.fn()} wide /></form>);
+    fireEvent.click(screen.getByTestId("sets-field").querySelector("button")!);
+    const search = screen.getByTestId("sets-field").querySelector("input")!;
+    expect(fireEvent.keyDown(search, { key: "Enter" })).toBe(true);
   });
 });
 
