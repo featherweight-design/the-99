@@ -113,7 +113,7 @@ if (failures.length) {
   console.error(`${failures.length} of ${pairs.length} view and control pairs do not share ${named}:\n`);
   for (const failure of failures) console.error(`  - ${failure}`);
   console.error(
-    `\nA shared wrapper is a legitimate answer; a wrapper each is not. If these routes converge on one wrapper, point "shares.module" at that wrapper.`,
+    `\nA shared wrapper is a legitimate answer; a wrapper each is not. If these routes converge on one wrapper, point that control's "module" in "shares" at that wrapper.`,
   );
   process.exit(1);
 }

@@ -4,9 +4,9 @@
 
 On that data the cart holds 7 of 20 decks missing cards, 237 lines, 248 copies and $663.94. The account has **no friends**: `local-dev` held no `friend_links` row at all, so every By friend panel draws Empty-One C on it (see Contact sheet).
 
-- **Contact sheet** (`docs/superpowers/inventories/all-decks-cart-v2.json`): 50 of 63 cells reached and looked at. The 13 that did not reach are the six By friend panel rows at both widths and the desktop Friend panel, all of which need a friend holding a spare (Open items). Seven rows exist at one width only, by design.
+- **Contact sheet** (`docs/superpowers/inventories/all-decks-cart-v2.json`): 50 of 63 cells reached and looked at. The 13 that did not reach are the six By friend panel rows at both widths and the desktop Friend panel, which need a friend holding a spare, except `reading-friend` and `none-friend`, which need only a friend (Open items). Seven rows exist at one width only, by design.
 - **Companion sheet** (`docs/superpowers/inventories/all-decks-cart-v2-no-friends.json`): 2 of 2 cells. Empty-One C at both widths: the dashed block, `No friends yet`, Go to Friends, `0 friends`.
-- **`pnpm check:shared`**: all 9 view and control pairs import and use their control. The inventory's `shares` now lists the eight controls the three views share, and each row names its own in `binding` (the check learned the array form in this PR, documented in `docs/agents/contact-sheet.md`). Its failure path was run once: pointing `facts-rest-deck`'s view at `cart-by-friend.tsx` (which draws no `CartColumns`) failed it, naming that file; removing a row's `binding` failed it, naming the row; the restored inventory passed.
+- **`pnpm check:shared`**: all 10 view and control pairs import and use their control. The inventory's `shares` now lists the nine controls the three views share, and each row names its own in `binding` (the check learned the array form in this PR, documented in `docs/agents/contact-sheet.md`). Its failure path was run once: pointing `facts-rest-deck`'s view at `cart-by-friend.tsx` (which draws no `CartColumns`) failed it, naming that file; removing a row's `binding` failed it, naming the row; the restored inventory passed.
 
 Brief: Hugh's, quoted in the handoff README §Brief (2026-10-27). Handoff: `design/design_handoff_the99_all_decks_cart_v2/` (R1b, #2308) and `addendum-r2/` (#2331). The v1 line's close-out is `docs/superpowers/close-out-all-decks-cart.md`.
 
@@ -95,7 +95,7 @@ The `all-decks-cart` entry stands (D6 deferred, no new line). Its pictures were 
   - The sheet's Clear all is the shipped "Clear all filters".
   - A friend id the read does not know is stripped from the URL.
   - Held slots count as drawn rows in By card's figures, so after a purchase the result line at rest reads one card more.
-- **No fixture reaches By friend's panels.** `local-dev` has no friendships, so the six By friend panel rows and the desktop Friend panel are unreached in this walk; their states are held by `cart-by-friend.test.tsx`. A walk of them needs an account with a friend holding a spare of a selected line (a scratch branch with a seeded friend, or the `fixtures:about` account's Alex).
+- **No fixture reaches By friend's panels.** `local-dev` has no friendships, so the six By friend panel rows and the desktop Friend panel are unreached in this walk; their states are held by `cart-by-friend.test.tsx`. A walk of them needs an account with a friend holding a spare of a selected line, or for `reading-friend` and `none-friend` only a friend (a scratch branch with a seeded friend, or the `fixtures:about` account's Alex).
 
 ## Defects seen in the contact sheet
 

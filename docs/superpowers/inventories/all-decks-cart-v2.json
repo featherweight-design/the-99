@@ -1,7 +1,7 @@
 {
   "feature": "Shopping for all decks v2 (handoff design_handoff_the99_all_decks_cart_v2; plan 2026-10-28-all-decks-cart-v2.md)",
   "clearAbout": true,
-  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. PR 6 rows: By friend's panels (By friend's column header with `Spare` on desktop, the head's `N cards \u00b7 N spares`, the row's need, spare and own facts, the Ask or its status above the tag, a folded panel, and on desktop the open header stuck to the list box top while its rows scroll); they need a friend with a spare of a selected line, and the status row a request already sent. The single-spare panel (`1 card \u00b7 1 spare`) and the spare key while the read is out are proved in `cart-by-friend.test.tsx`, since neither holds still on a live account. PR 7 rows: the reading, empty and failed states, staged by holding or answering `/api/friend-spares` (a read held 8s draws Loading A to D; an empty answer draws Empty-One B; a 500 draws addendum R2's failed read: the toast in By card and By deck, the dashed block with Try again in By friend). Empty-One C (no friends yet) needs an account with no friends, decided on the server: it is photographed by the companion inventory `all-decks-cart-v2-no-friends.json`, run on an account with none, and it and the said-once rule across view switches are proved in `cart-by-friend.test.tsx`. PR 9 rows: the Friend and Owned filters (the desktop panels, the phone Filters sheet, each filter carried across the views, a filter's no match, the Friend trigger reading and after a failed read); a named friend's filter, an unknown id dropped from `?friend` and the trigger absent with no spare are proved in `cart-by-friend.test.tsx`, since they need a known fixture friend. PR 10 (close-out): `shares` lists the eight controls the three views share, and each row names the one its photograph is about in `binding` (`pnpm check:shared`). Every By friend panel row (friend-rest, friend-stuck, friend-folded, friend-status, reading-friend, none-friend) and the desktop Friend panel need an account with a friend holding a spare of a selected line; local-dev held no `friend_links` row at all on 2026-10-28, so on it those cells draw Empty-One C instead and do not reach (the close-out records them). Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "note": "PR 8 rows: the chassis frame, search and sort in the three views that exist today. PR 4 rows: By card's row facts (the `+N` pill, an opened list, a cut lone name with `more`, a row with nothing owned); the `more` row needs a deck whose name is too wide for its cell on its own (the board's fixture is 43 characters; at 390 the need cell is about 180px). PR 5 rows: By deck's open group (its own column header with `This deck \u00b7 also` on desktop, the `DECK` line on a phone, `also` naming only the other decks, a `+N` pill and an opened list); the groups start folded, so each row opens the first. PR 6 rows: By friend's panels (By friend's column header with `Spare` on desktop, the head's `N cards \u00b7 N spares`, the row's need, spare and own facts, the Ask or its status above the tag, a folded panel, and on desktop the open header stuck to the list box top while its rows scroll); they need a friend with a spare of a selected line, and the status row a request already sent. The single-spare panel (`1 card \u00b7 1 spare`) and the spare key while the read is out are proved in `cart-by-friend.test.tsx`, since neither holds still on a live account. PR 7 rows: the reading, empty and failed states, staged by holding or answering `/api/friend-spares` (a read held 8s draws Loading A to D; an empty answer draws Empty-One B; a 500 draws addendum R2's failed read: the toast in By card and By deck, the dashed block with Try again in By friend). Empty-One C (no friends yet) needs an account with no friends, decided on the server: it is photographed by the companion inventory `all-decks-cart-v2-no-friends.json`, run on an account with none, and it and the said-once rule across view switches are proved in `cart-by-friend.test.tsx`. PR 9 rows: the Friend and Owned filters (the desktop panels, the phone Filters sheet, each filter carried across the views, a filter's no match, the Friend trigger reading and after a failed read); a named friend's filter, an unknown id dropped from `?friend` and the trigger absent with no spare are proved in `cart-by-friend.test.tsx`, since they need a known fixture friend. PR 10 (close-out): `shares` lists the nine controls the three views share, and each row names the one its photograph is about in `binding` (`pnpm check:shared`). The By friend panel rows friend-rest, friend-stuck, friend-folded and friend-status, and the desktop Friend panel, need an account with a friend holding a spare of a selected line; reading-friend and none-friend need only a friend, since they hold or empty the spares read; local-dev held no `friend_links` row at all on 2026-10-28, so on it those cells draw Empty-One C instead and do not reach (the close-out records them). Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
   "shares": [
     {
       "binding": "CartChassis",
@@ -37,6 +37,11 @@
       "binding": "EmptyState",
       "module": "src/components/ui/empty-state.tsx",
       "note": "The app's dashed empty-state block, as By friend's none, no-friends and failed blocks draw it."
+    },
+    {
+      "binding": "RowEnd",
+      "module": "src/components/social/friend-spares.tsx",
+      "note": "The Ask, or the Requested / Accepted / Declined status in its place, shared with the deck's spares sheet. By friend's panel renders it into `CartFriendLine`'s ask slot, so the status row names cart-by-friend.tsx."
     },
     {
       "binding": "SocialToast",
@@ -426,8 +431,8 @@
     {
       "id": "friend-status",
       "label": "/decks/shopping?view=friend, a row whose ask is out: Requested (or Accepted, Declined) in the Ask's place above the tag, the tag where it was",
-      "view": "src/components/decks/cart/cart-line.tsx",
-      "binding": "CartFact",
+      "view": "src/components/decks/cart/cart-by-friend.tsx",
+      "binding": "RowEnd",
       "steps": [
         {
           "goto": "/decks/shopping?view=friend",
@@ -458,7 +463,8 @@
         {
           "wait": "[data-testid=spare-skeleton]"
         }
-      ]
+      ],
+      "note": "The breathing spare cell is `SpareReading`, private to `CartFactsRow` in cart-line.tsx, so no binding can name it: `CartFact` checks the row's need and own facts, and the reading cell itself is held by `cart-by-friend.test.tsx` and this photograph."
     },
     {
       "id": "reading-friend",
