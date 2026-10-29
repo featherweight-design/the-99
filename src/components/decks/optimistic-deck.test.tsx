@@ -68,6 +68,13 @@ describe("useOptimisticDeckCards", () => {
     expect(await apply([forest], [{ add: forest }])).toBe("Forest:2");
   });
 
+  // The server's add claims the stack (it clears `auto`), and the ledger header counts auto copies,
+  // so the prediction has to drop the marker too or the header disagrees with the lines until the
+  // revalidation lands.
+  it("claims an auto stack the player adds a copy to", async () => {
+    expect(await apply([{ ...forest, quantity: 30, auto: true }], [{ add: forest }])).toBe("Forest:31");
+  });
+
   it("drops a removed card from the deck-wide list", async () => {
     expect(await apply([solRing, forest], [{ remove: "sol-ring" }])).toBe("Forest:1");
   });

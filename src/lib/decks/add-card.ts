@@ -125,7 +125,11 @@ export async function addCardToDeckFor(
     if (isBasicLand(card.typeLine)) {
       await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoUpdate({
         target: [deckCards.deckId, deckCards.oracleId],
-        set: { quantity: sql`${deckCards.quantity} + 1` },
+        // A copy the player adds to a stack claims it, as `setBasicQuantity` does: a row has one
+        // quantity and one `auto` flag, so leaving the flag set would have the ledger header count
+        // copies the pass's line (capped at what it placed) cannot, and an undo could not tell the
+        // player's copy from the pass's own.
+        set: { quantity: sql`${deckCards.quantity} + 1`, auto: false },
       });
       // The upsert always writes: either a new row or one more copy.
       await touchDeck(tx, deckId);

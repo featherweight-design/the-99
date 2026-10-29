@@ -73,6 +73,8 @@ const stub = vi.hoisted(() => {
     // writes. False is the repeat-add case: the statement runs and the clause
     // swallows it, which is what the add path's stamp branches on.
     insertConflictWrites: true,
+    // Every `onConflictDoUpdate(...)` argument, by table: what a repeat add of a basic writes.
+    conflictUpdates: [] as { table: string; arg: unknown }[],
     fillPasses: [] as { ordinal: number }[],
     // Whether getEdhrecData should reject
     edhrecError: null as Error | null,
@@ -260,7 +262,7 @@ const stub = vi.hoisted(() => {
         };
         return {
           returning: async () => returning,
-          onConflictDoUpdate: async () => {},
+          onConflictDoUpdate: async (arg: unknown) => { state.conflictUpdates.push({ table: tableName, arg }); },
           onConflictDoNothing: conflictResult,
         };
       },
@@ -605,6 +607,7 @@ beforeEach(() => {
   stub.state.deckVersions.length = 0;
   stub.state.updateCalls.length = 0;
   stub.state.insertConflictWrites = true;
+  stub.state.conflictUpdates.length = 0;
 });
 
 /** Whether the act stamped `decks.last_edited_at` — what Home's resume block
@@ -3072,5 +3075,30 @@ describe("setBasicQuantity — a basic land's count, set absolutely", () => {
     const { setBasicQuantity } = await import("./actions");
     await expect(setBasicQuantity(DECK, ISLAND, 9)).rejects.toThrow("deck not found");
     expect(cardWrites()).toHaveLength(0);
+  });
+});
+
+// A stacked basic: `deck_cards` has one `quantity` and one `auto` flag, so a copy the player adds to
+// a stack the app placed has to claim it. Left auto, the ledger header (auto copies) counts copies
+// the pass's line (capped at what it placed) does not, and an undo cannot tell the surplus from the
+// pass's own.
+describe("addCardToDeck — a copy added to a basic claims the stack", () => {
+  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  const FOREST = "11111111-1111-1111-1111-111111111111";
+  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
+  it("clears auto in the same write that increments the quantity", async () => {
+    stub.state.decks.push({ id: DECK, userId: "user_1", commanderOracleId: CMDR });
+    stub.state.cards.push(
+      { oracleId: FOREST, commanderLegal: true, colorIdentity: ["G"], typeLine: "Basic Land \u2014 Forest" },
+      { oracleId: CMDR, commanderLegal: true, colorIdentity: ["G"], typeLine: "Legendary Creature" },
+    );
+    stub.state.deckRows.push({ oracleId: FOREST, quantity: 30 });
+    const { addCardToDeck } = await import("./actions");
+    expect(await addCardToDeck(DECK, FOREST)).toEqual({ ok: true });
+    const [update] = stub.state.conflictUpdates.filter((c) => c.table === "deck_cards");
+    const set = (update.arg as { set: Record<string, unknown> }).set;
+    expect(set.auto).toBe(false);
+    expect(set.quantity).toBeDefined();
   });
 });

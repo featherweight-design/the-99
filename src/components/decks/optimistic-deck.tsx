@@ -192,7 +192,8 @@ export function useOptimisticDeckCards(
       // server won't write would show a count it never reaches.
       if (!isBasicLand(card.typeLine)) return current;
       const next = [...current];
-      next[at] = { ...next[at], quantity: next[at].quantity + card.quantity };
+      // `auto: false` mirrors the server: the added copy claims the stack.
+      next[at] = { ...next[at], quantity: next[at].quantity + card.quantity, auto: false };
       return next;
     },
   );
