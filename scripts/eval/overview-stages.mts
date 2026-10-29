@@ -21,7 +21,7 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  *   pnpm eval:overview-stages --iteration N --cap <usd> [--only id,id] [--no-repair] [--ask-approved]
  *       The paid run, REAL-TIME through the app's `callModel` at contract 12's model, effort and
  *       ceiling. N is 1, 2 or 3 (a fourth is refused). Writes under
- *       docs/superpowers/eval/runs/overview-stages-<N>/: per deck old.json, new.json, checks.json;
+ *       docs/superpowers/eval/runs/overview-stages-<N>[-<label>]/: per deck old.json, new.json, checks.json;
  *       summary.json; compare.html. A deck whose new.json exists is kept (a run resumes).
  *
  * THE DECKS: 20 precons from staging and Hugh's two production decks (`PRECONS`, `PROD_DECKS`).
@@ -38,7 +38,7 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  * `neon.branch_id` is production's and sets and asserts `default_transaction_read_only` before its
  * first query, reads with SELECT only, and hands back facts and the stored synopsis as JSON.
  *
- * THE CAP ($2, `ledger-overview-stages.jsonl`, ask at $1.50; `LEDGER_LIMITS`). Every call is checked
+ * THE CAP ($2.75 since Hugh's raise of 2026-10-29, `ledger-overview-stages.jsonl`, ask at $1.50; `LEDGER_LIMITS`). Every call is checked
  * BEFORE it is sent against its worst case (a repair is checked on its own before it is sent), recorded pending at
  * that worst case and settled at its metered cost, as `corpus.mts` does: a crash after the API billed
  * still leaves the charge counted. `--cap` is this run's own ceiling, required for a paid run.
@@ -98,6 +98,7 @@ const { values: args } = parseArgs({
     only: { type: "string" },
     cap: { type: "string" },
     "no-repair": { type: "boolean", default: false },
+    "out-label": { type: "string" },
     "ask-approved": { type: "boolean", default: false },
     "prod-prepare": { type: "string" },
     "prod-ids": { type: "string" },
@@ -183,12 +184,17 @@ const iteration = args.iteration === undefined ? 1 : Number(args.iteration);
 if (!Number.isInteger(iteration) || iteration < 1) throw new Error(`overview-stages: --iteration must be 1, 2 or 3 (got ${args.iteration})`);
 if (iteration > 3) throw new Error(`overview-stages: iteration ${iteration} refused; the test plan allows at most 3`);
 const cap = args.cap === undefined ? null : Number(args.cap);
-if (!dryRun && (cap === null || !Number.isFinite(cap) || cap <= 0)) throw new Error("overview-stages: a paid run needs --cap <usd> (this run's own ceiling, under the ledger's $2)");
+if (!dryRun && (cap === null || !Number.isFinite(cap) || cap <= 0)) throw new Error("overview-stages: a paid run needs --cap <usd> (this run's own ceiling, under the ledger's $${LIMITS.hardCapUsd})");
 const repairOn = !args["no-repair"];
 // The orchestrator answered the ask line for this run: only the hard cap still stops a call.
 const askApproved = args["ask-approved"];
 const only = args.only ? new Set(args.only.split(",").map((s) => s.trim()).filter(Boolean)) : null;
-const precons = PRECONS.filter((p) => !only || only.has(p.file));
+// An `--only` id that is neither a listed precon nor a production deck is read as a precon FILE on
+// staging (`precons.file_name`), so a named set (Hugh's five, 2026-10-29) runs without editing the list.
+const extraPrecons = only ? [...only].filter((id) => !PRECONS.some((p) => p.file === id) && !PROD_DECKS.some((d) => d.id === id)).map((file) => ({ file, why: "named with --only" })) : [];
+const precons = [...PRECONS.filter((p) => !only || only.has(p.file)), ...extraPrecons];
+const outLabel = args["out-label"];
+if (outLabel !== undefined && !/^[a-z0-9][a-z0-9-]{0,40}$/.test(outLabel)) throw new Error(`overview-stages: --out-label must be lowercase letters, digits and hyphens (got ${outLabel})`);
 let prodDecks = PROD_DECKS.filter((d) => !only || only.has(d.id));
 const notes: string[] = [];
 if (prodDecks.length > 0 && !process.env.PROD_READONLY_DATABASE_URL) {
@@ -339,7 +345,7 @@ if (dryRun) process.exit(0);
 // The paid run.
 
 const { callModel } = await import("../../src/lib/model/client");
-const outDir = new URL(`runs/overview-stages-${iteration}/`, EVAL);
+const outDir = new URL(`runs/overview-stages-${iteration}${outLabel ? `-${outLabel}` : ""}/`, EVAL);
 mkdirSync(outDir, { recursive: true });
 let runSpend = 0;
 let stopped: string | null = null;

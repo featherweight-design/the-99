@@ -16,7 +16,7 @@ describe("LEDGER_LIMITS", () => {
       "ledger-strategy-focus.jsonl": { hardCapUsd: 3, askAtUsd: 2.5 },
       "ledger-count-mechanism.jsonl": { hardCapUsd: 15, askAtUsd: null },
       "ledger-tuning-v2.jsonl": { hardCapUsd: 4, askAtUsd: null },
-      "ledger-overview-stages.jsonl": { hardCapUsd: 2, askAtUsd: 1.5 },
+      "ledger-overview-stages.jsonl": { hardCapUsd: 2.75, askAtUsd: 1.5 },
     });
   });
 
