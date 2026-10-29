@@ -4,7 +4,7 @@
 
 On that data the cart holds 7 of 20 decks missing cards, 237 lines, 248 copies and $663.94. The account has **no friends**: `local-dev` held no `friend_links` row at all, so every By friend panel draws Empty-One C on it (see Contact sheet).
 
-- **Contact sheet** (`docs/superpowers/inventories/all-decks-cart-v2.json`): 50 of 63 cells reached and looked at. The 13 that did not reach are the six By friend panel rows at both widths and the desktop Friend panel, which need a friend holding a spare, except `reading-friend` and `none-friend`, which need only a friend (Open items). Seven rows exist at one width only, by design.
+- **Contact sheet** (`docs/superpowers/inventories/all-decks-cart-v2.json`): 50 of 63 cells reached and looked at, though `filters-friend-any` and `filters-friend-carried` reach only their Owned half: the Friend filter is dropped over the failed read (Defects seen, the fixture note). The 13 that did not reach are the six By friend panel rows at both widths and the desktop Friend panel, which need a friend holding a spare, except `reading-friend` and `none-friend`, which need only a friend (Open items). Seven rows exist at one width only, by design.
 - **Companion sheet** (`docs/superpowers/inventories/all-decks-cart-v2-no-friends.json`): 2 of 2 cells. Empty-One C at both widths: the dashed block, `No friends yet`, Go to Friends, `0 friends`.
 - **`pnpm check:shared`**: all 10 view and control pairs import and use their control. The inventory's `shares` now lists the nine controls the three views share, and each row names its own in `binding` (the check learned the array form in this PR, documented in `docs/agents/contact-sheet.md`). Its failure path was run once: pointing `facts-rest-deck`'s view at `cart-by-friend.tsx` (which draws no `CartColumns`) failed it, naming that file; removing a row's `binding` failed it, naming the row; the restored inventory passed.
 
@@ -35,7 +35,7 @@ The plan classes all three as built from the other width's specimen, with no new
 |---|---|---|---|---|
 | A9: a By friend panel folded, at 390 | 1300 (By-Friend A′) | 390 | `FriendPanel`'s fold press has no breakpoint (PR 6); the phone header simply does not stick | `friend-folded` at both widths: NOT REACHED on this fixture (no friends); unit-tested in `cart-by-friend.test.tsx` |
 | A10: the no-match block, at 1300 | 390 (Controls D) | 1300 | `NoMatch` in `cart-view.tsx` has no breakpoint (PR 8, widened for filters in PR 9) | `chassis-no-match` and `filters-no-match` at 1300: ✓, the dashed block with its one fix (a search alone) or Clear all (with a filter on) |
-| A12: filtered views, By card at 390 and By friend at 1300 | the other width (Controls C1/C2) | each | the chassis's chips and result line, and the filtered rows, are one tree at both widths (PR 8, PR 9) | `chassis-searched` and `filters-friend-any` at 390: ✓; `filters-friend-carried` at 1300: drawn, but over the failed read (below), so it shows Owned None alone; the Friend half is unit-tested |
+| A12: filtered views, By card at 390 and By friend at 1300 | the other width (Controls C1/C2) | each | the chassis's chips and result line, and the filtered rows, are one tree at both widths (PR 8, PR 9) | `chassis-searched` at 390: ✓; `filters-friend-any` at 390 and `filters-friend-carried` at 1300: drawn, but over the failed read (below), so `?friend=any` is dropped and neither shows a Friend filter; the Friend half is NOT REACHED and is unit-tested in `cart-by-friend.test.tsx` |
 
 ## Route inventory
 
@@ -55,7 +55,8 @@ The plan classes all three as built from the other width's specimen, with no new
 | Friend panel (desktop) | — | ✗ |
 | Owned panel (desktop) | — | ✓ |
 | Filters sheet (phone) | ✓ | — |
-| `?friend=any`, carried to By friend, Owned in By deck, filtered no match | ✓ | ✓ |
+| Owned in By deck, filtered no match | ✓ | ✓ |
+| `?friend=any`, and carried to By friend | ✗ | ✗ |
 | Friend trigger reading and after a failed read (desktop) | — | ✓ |
 
 A ✓ is a photographed cell looked at against the board. ✗ is a cell that did not reach its surface on this fixture, with the unit test that holds the state. — is a row drawn at the other width only.
@@ -106,7 +107,7 @@ Each is reported, not fixed: none is a small regression of this line's own that 
 3. **Desktop: the list box's bottom fade erases the bottom edge of the dashed blocks** (`chassis-no-match`, `failed-friend`, the companion's Empty-One C, 1300). The v1 fade (`cart-view.tsx`, the sticky 36px gradient, #1492) is drawn whether or not the list overflows, so v2's no-match, failed and empty blocks lose their bottom dashes and fade out at the foot. It also dims the last By deck group when every group is folded.
 4. **A reader with no friends still reads friends' spares** (`reading-card`, `filters-friend-reading`, `failed-card`). While the read is out, By card shows the spare key (`friend has a spare`), the `reading friends' spares` clause and the dashed Friend `reading…` trigger; if it fails, the toast says friends' spares could not be read. The friend count is known at first paint (PR 7 uses it to put Empty-One C ahead of reading in By friend), so By card and By deck could skip all of it.
 
-Fixture artefact, not a defect: `local-dev` is 13 migrations behind `main` (`/api/health`: 174 of 187 applied, 0174 to 0186 pending), and the spares read's spare-request query fails on a missing column (`msp.commander_printing_id`, migration 0174). So every cell that did not stage the read draws the failed read: its toast, the closed spare column, and `?friend=any` dropped (`filters-friend-any`, `filters-friend-carried`).
+Fixture artefact, not a defect: `local-dev` is 13 migrations behind `main` (`/api/health`: 174 of 187 applied, 0174 to 0186 pending), and the spares read's spare-request query fails on a missing column (`msp.commander_printing_id`, migration 0174). So every cell that did not stage the read draws the failed read: its toast, the closed spare column, and `?friend=any` dropped (`filters-friend-any`, `filters-friend-carried`). The harness adds to this: `contact-sheet.mjs` keeps one page per width and unroutes a pattern only when a later step names it, so `failed-friend`'s 500 mock on `/api/friend-spares` stays in force for every later row at that width. A re-walk of the Friend filter needs the mock cleared (or the filter rows ordered before `failed-friend`), a migrated database and a friend fixture.
 
 ## Seen, not changed
 
