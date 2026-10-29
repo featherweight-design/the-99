@@ -30,7 +30,7 @@ vi.mock("../../lib/about/visible", async (importOriginal) => {
 
 const { recordAboutPageVisit, recordAboutVisit } = await import("./actions");
 const { ABOUT_VERSION } = await import("../../lib/copy/about");
-const { afterVisit, everyAnnouncement, seenKeysOf, unseenUnits, visibleSections } = await import("../../lib/about/pages-visible");
+const { afterVisit, answeredKeys, everyAnnouncement, seenKeysOf, unseenUnits, visibleSections } = await import("../../lib/about/pages-visible");
 /** What the page rendered for the visit to write, under the switches it rendered with (`afterVisit`, less what was held). */
 const rendered = (area: "decks" | "home" | "friends" | "shopping", env: Record<string, string>) => {
   const after = afterVisit(visibleSections(envViewWith(env)), area, stored.seen);
@@ -58,7 +58,8 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
     // The new keys alone: `markAboutVisited` merges them into what the reader holds.
     expect(new Set(ids)).toEqual(new Set(keys));
     expect(ids.some((k) => k.startsWith("friends/") || k.startsWith("home/"))).toBe(false);
-    expect(new Set(written)).toEqual(new Set(["kept", ...keys]));
+    const after = { version: 9, ids: ["kept", ...keys] };
+    expect(new Set(written)).toEqual(new Set([...after.ids, ...answeredKeys(visibleSections(envViewWith({})), after)]));
     expect(redirect).not.toHaveBeenCalled();
   });
 
@@ -103,6 +104,28 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
     expect(ids).not.toContain("decks/your-deck/lock");
     expect(new Set(ids)).toEqual(new Set(everyAnnouncement(visibleSections(envViewWith({}))).flatMap((u) => u.ack)));
     expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("decks/your-deck/lock");
+  });
+
+  // Review round 6: both paths answer from the state the reader is left at, so a floor or legacy id another tab wrote
+  // after Home was cached is acknowledged, and a reader past their first run never gets an empty answer.
+  it("answers a no-write visit with every key the stored state covers, not only the ids it holds", async () => {
+    stored.seen = { version: ABOUT_VERSION, ids: [] };
+    const answer = await recordAboutPageVisit("decks", []);
+    expect(markAboutVisited).not.toHaveBeenCalled();
+    const covered = answeredKeys(visibleSections(envViewWith({})), stored.seen);
+    expect(covered.length).toBeGreaterThan(0);
+    expect(answer).toEqual(expect.arrayContaining(covered));
+  });
+
+  it("answers a write with the keys the resulting state covers, legacy ids and floor included", async () => {
+    stored.seen = { version: 14, ids: ["locked-cards"] };
+    resolved.env = { NEVER_CUT_ENABLED: "true" };
+    const claim = rendered("decks", resolved.env);
+    const answer = await recordAboutPageVisit("decks", claim);
+    expect(markAboutVisited).toHaveBeenCalled();
+    const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
+    const after = { version: Math.max(14, version), ids: [...new Set([...stored.seen.ids, ...ids])] };
+    expect(answer).toEqual(expect.arrayContaining([...after.ids, ...answeredKeys(visibleSections(envViewWith(resolved.env)), after)]));
   });
 
   it("writes nothing a client adds: a key of another page, an unknown key, or a claim that is not a list", async () => {

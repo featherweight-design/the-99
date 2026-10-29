@@ -21,8 +21,10 @@ import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
  * override turned on between the render (or a prefetch) and this call was never seen, and stays new. A returning
  * reader keeps their floor (a visit to Decks never marks Friends' new units seen); a first-run reader's floor rises as
  * the ✕'s does (`claimWrite`). Merged as every About write is (`markAboutVisited`: a union, the floor by `greatest`).
- * Returns the keys the reader now holds, which the page acknowledges in this document so Back to Home does not draw
- * them again.
+ * Returns the keys the reader now holds and every launch key the resulting state answers (`answeredKeys`, so a floor or
+ * legacy id another tab wrote after Home was cached is covered too, and a reader past their first run always gets a
+ * non-empty answer that ends it), which the page acknowledges in this document so Back to Home does not draw them
+ * again. Both paths, the write and the no-write, answer from the state the reader is left at.
  *
  * No revalidation: the page has already drawn its New marks from the pre-visit state, and re-rendering it inside this
  * reply would take them away while the reader is reading.
@@ -32,10 +34,13 @@ export async function recordAboutPageVisit(area: unknown, claimed: unknown): Pro
   if (typeof area !== "string" || !(ABOUT_AREA_IDS as readonly string[]).includes(area)) return [];
   const env = await requestSwitchEnv(userId);
   const seen = await aboutSeen(userId);
-  const write = visitWrite(claimed, visibleSections(env), area as AboutArea, seen);
-  if (!write) return [...seen.ids];
-  await markAboutVisited(userId, write.version, write.ids);
-  return [...new Set([...seen.ids, ...write.ids])];
+  const visible = visibleSections(env);
+  const write = visitWrite(claimed, visible, area as AboutArea, seen);
+  if (write) await markAboutVisited(userId, write.version, write.ids);
+  const after = write
+    ? { version: Math.max(seen.version, write.version), ids: [...new Set([...seen.ids, ...write.ids])] }
+    : seen;
+  return [...new Set([...after.ids, ...answeredKeys(visible, after)])];
 }
 
 /** No page draws more than this many switched entries and appendix ids; anything longer is not one. */
