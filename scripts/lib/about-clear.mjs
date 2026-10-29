@@ -109,14 +109,15 @@ export async function clearAboutSheet(page, userId) {
  * `existed: false` when there is no row. Taken BEFORE the probe's first write to it.
  */
 export async function captureAboutSeen(userId, sql = aboutSql()) {
-  const [row] = await sql`select about_version_seen, about_seen_ids from user_prefs where user_id = ${userId}`;
+  const [row] = await sql`select about_version_seen, about_seen_ids, moments_spent from user_prefs where user_id = ${userId}`;
   return row
-    ? { userId, existed: true, version: row.about_version_seen, ids: row.about_seen_ids }
-    : { userId, existed: false, version: null, ids: null };
+    ? { userId, existed: true, version: row.about_version_seen, ids: row.about_seen_ids, spent: row.moments_spent }
+    : { userId, existed: false, version: null, ids: null, spent: null };
 }
 
 /**
- * Puts back exactly what `captureAboutSeen` read: both columns as they were, or no row at all
+ * Puts back exactly what `captureAboutSeen` read: the About columns and the moments already spent
+ * (moments are always live, so a page a run opens can spend one) as they were, or no row at all
  * when there was none.
  */
 export async function restoreAboutSeen(capture, sql = aboutSql()) {
@@ -127,7 +128,7 @@ export async function restoreAboutSeen(capture, sql = aboutSql()) {
   }
   // An upsert, not an update: a probe may delete the row part-way through a run, and the row it
   // captured has to come back either way.
-  await sql`insert into user_prefs (user_id, about_version_seen, about_seen_ids)
-      values (${capture.userId}, ${capture.version}, ${capture.ids})
-    on conflict (user_id) do update set about_version_seen = ${capture.version}, about_seen_ids = ${capture.ids}`;
+  await sql`insert into user_prefs (user_id, about_version_seen, about_seen_ids, moments_spent)
+      values (${capture.userId}, ${capture.version}, ${capture.ids}, ${capture.spent})
+    on conflict (user_id) do update set about_version_seen = ${capture.version}, about_seen_ids = ${capture.ids}, moments_spent = ${capture.spent}`;
 }
