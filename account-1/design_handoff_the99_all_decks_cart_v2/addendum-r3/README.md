@@ -24,7 +24,7 @@ The boards are plain HTML that open on their own (no `support.js`). They are dra
 4. Try again re-runs the read. The group shows the dashed **reading…** pill (`filters.friendReading`, Loading A) until the read lands, then the friend pills come back.
 5. Desktop has no sheet. The Owned panel is anchored at the top and the toast at the foot, so they never meet, and R2 stands as drawn.
 
-## 2 · Phone, cart header: field and badge at 320 to 390px
+## 2 · Phone, cart header: field and badge at 320 to 390px, and the chips row
 
 **Decision:** below 1000px (the compact chassis), the field's visible placeholder is **Search**. From 1000px it stays **Search cards**.
 
@@ -32,6 +32,7 @@ The boards are plain HTML that open on their own (no `support.js`). They are dra
 2. At 320px with a badge, the field is about 104px wide. The icon and "Search" at 14px fit in that.
 3. The field's accessible name stays `filters.search` ("Search cards") at every width. Only the visible placeholder gets shorter.
 4. A typed query shows as text with the shipped ✕. A long query ends in an ellipsis, the way typed text does today.
+5. **Chips spacing (added 2026-10-29 on Hugh's note):** in the compact form, the chips row sits 16px under the controls row instead of the chassis's shared 10px row gap. The chips to result line gap stays 10px. Desktop (the wide form) is unchanged. This lives in the shared `FilterChassis`, so it also reaches /decks, /collection and the other compact chassis pages, which keeps them consistent. If it should be cart-only, the cart passes it in instead.
 
 ## 3 · Desktop, cart list: the bottom fade
 
