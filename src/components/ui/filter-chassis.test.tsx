@@ -12,6 +12,19 @@ const base = {
 const chip = (key: string, label: string): FilterChip => ({ key, label, onRemove: () => {} });
 
 describe("FilterChassis", () => {
+  it("sits the compact chips row 16px under the controls and the result line 10px under it; the wide form keeps 10 (cart R3 §2.5)", () => {
+    const { container, rerender } = render(<FilterChassis {...base} form="compact" controls={null} chips={[]} />);
+    const frame = () => container.querySelector("[data-chassis-form]") as HTMLElement;
+    const chips = () => container.querySelector("[data-chassis-row='chips']") as HTMLElement;
+    const result = () => container.querySelector("[data-chassis-row='result']") as HTMLElement;
+    // The frame's 10px row gap, plus the chips row's own 6px above it; nothing between it and the result line.
+    expect(frame().className.split(/\s+/)).toContain("gap-[10px]");
+    expect(chips().className.split(/\s+/)).toContain("mt-[6px]");
+    expect(result().className).not.toMatch(/\bmt-/);
+    rerender(<FilterChassis {...base} form="wide" controls={null} chips={[]} />);
+    expect(chips().className).not.toMatch(/\bmt-/);
+  });
+
   it("prints No filters on at rest rather than collapsing the row", () => {
     // Decision 2. The line IS the invariant that keeps the frame a fixed height;
     // a conditionally rendered chip row is the bug this forbids.
