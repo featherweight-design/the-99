@@ -41,6 +41,40 @@ describe("RuleCard", () => {
     expect(one("prices").textContent).toContain("$54.16");
     expect(one("hidden-deck").textContent).toContain("Complete");
   });
+
+  // Small items 3, item 1: a row's name gave way to its tag in a narrow side-by-side column ("Gha…", "Sol R…").
+  it("draws every row in a column 250px wide that sits alone, with no part translucent", () => {
+    for (const id of ABOUT_RULE_IDS) {
+      const rule = visibleSections(ALL_ON).flatMap((s) => s.rules).find((r) => r.key === ruleKey(id))!;
+      const { container, unmount } = render(<RuleCard rule={{ key: rule.key, text: rule.text, diagram: rule.diagram! }} />);
+      for (const row of container.querySelectorAll('[data-diagram-part="row"]')) {
+        const column = row.parentElement as HTMLElement;
+        expect(parseFloat(column.style.width), id).toBeGreaterThanOrEqual(250);
+        // The column is the diagram's head or foot (a child of the diagram itself), or its one column.
+        const holder = column.parentElement!;
+        if (!holder.hasAttribute("data-diagram")) expect(holder.children, id).toHaveLength(1);
+      }
+      expect(container.querySelector('[class*="opacity-"]'), id).toBeNull();
+      unmount();
+    }
+  });
+
+  it("draws a set-back row's edge dashed and strikes a gone row's name, its tag kept whole", () => {
+    const rule = visibleSections(ALL_ON).flatMap((s) => s.rules).find((r) => r.key === ruleKey("replace"))!;
+    const { container } = render(<RuleCard rule={{ key: rule.key, text: rule.text, diagram: rule.diagram! }} />);
+    const gone = [...container.querySelectorAll('[data-diagram-part="row"]')].find((r) => r.textContent!.startsWith("Thrasios"))!;
+    expect(gone.querySelector(".line-through")!.textContent).toBe("Thrasios");
+    expect(gone.textContent).toContain("not in the file");
+    const one = visibleSections(ALL_ON).flatMap((s) => s.rules).find((r) => r.key === ruleKey("one-copy"))!;
+    const rows = [...render(<RuleCard rule={{ key: one.key, text: one.text, diagram: one.diagram! }} />).container
+      .querySelectorAll('[data-diagram-part="row"]')];
+    const draft = rows.find((r) => r.textContent!.startsWith("Zimone"))!;
+    expect(draft.classList.contains("border-dashed")).toBe(true);
+    // Only the set-back row is dashed: every other row keeps a solid edge.
+    const others = rows.filter((r) => r !== draft);
+    expect(others.length).toBeGreaterThan(0);
+    for (const r of others) expect(r.classList.contains("border-dashed"), r.textContent!).toBe(false);
+  });
 });
 
 describe("GoodToKnow", () => {

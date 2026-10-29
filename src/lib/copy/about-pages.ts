@@ -9,6 +9,7 @@
 // `text` on a switch of its own, matched by its exact text, as `captionLineSwitches` does for an entry.
 
 import { HISTORY_RETENTION_DAYS } from "../collection/retention";
+import { NOVELTY_FLOOR } from "../discovery/floor";
 import type { AboutLineSwitch, AboutScreen, DeckView } from "./about";
 
 /** History keeps what its retention keeps, so its sentence says how far back, as the legacy entry did. */
@@ -73,8 +74,9 @@ export type AboutDiagramPart = { switch?: AboutLineSwitch } & (
       proxy?: boolean;
       /** The row the draft changed (the decklist's bright edge). */
       edge?: boolean;
-      /** Gone from the list: struck through and dimmed. */
+      /** Gone from the list: its name struck through in the muted ink, its tag at full strength. */
       gone?: boolean;
+      /** Set back (a draft, a run that came to nothing): its edge drawn dashed. No part is ever drawn translucent. */
       dim?: boolean;
       /** The boards' small row, 22px, for a column of names. */
       compact?: boolean;
@@ -93,15 +95,26 @@ export type AboutDiagramPart = { switch?: AboutLineSwitch } & (
   | { part: "chips"; chips: readonly { text: string; never?: boolean; switch?: AboutLineSwitch }[] }
 );
 
-/** A diagram: an optional head, its columns side by side (one column is a stack), and an optional foot. */
+/**
+ * A diagram: an optional head, its columns side by side (one column is a stack), and an optional foot. A head or foot is
+ * a parts list (one centred stack) or a full column at its own width (Small items 3, item 1).
+ *
+ * A row never sits in a side-by-side column (Small items 3, item 1): every row is in a column 250px wide or more, and
+ * that column is the diagram's only one or its head or foot. Only tiles, the empty slot, medals and captions sit side by
+ * side. `about-pages.test.ts` pins it, so no row's name gives way to its tag.
+ */
 export interface AboutRuleDiagram {
   kind: AboutRuleDiagramKind;
-  head?: readonly AboutDiagramPart[];
+  head?: readonly AboutDiagramPart[] | AboutDiagramColumn;
   columns: readonly AboutDiagramColumn[];
   /** The space between columns, where the board sets one other than 10. */
   gap?: number;
-  foot?: readonly AboutDiagramPart[];
+  foot?: readonly AboutDiagramPart[] | AboutDiagramColumn;
 }
+
+/** A head or foot as the column it draws: a bare parts list is one centred stack. */
+export const diagramColumn = (x: readonly AboutDiagramPart[] | AboutDiagramColumn): AboutDiagramColumn =>
+  "parts" in x ? x : { parts: x, center: true };
 
 /** One column of a diagram: its parts stacked, at the board's width and gap, centred or flush left. */
 export interface AboutDiagramColumn {
@@ -115,7 +128,12 @@ export interface AboutSection {
   area: AboutArea;
   id: string;
   name: string;
+  /** One or two sentences on what the screen offers, drawn from its own labels, rules and tools (Small items 3, item 4). */
   sub: string;
+  /** A sentence of `sub` naming a switched feature, gated on that switch as a label's `sentences` are. Never announced:
+   *  the section's labels are. A section whose every label hangs on one switch gates all of its own sentences on it, and
+   *  carries `ABOUT_SCREEN_OFF` under the negated switch for while it is off. */
+  subSentences?: Partial<Record<string, AboutLineSwitch>>;
   screens: readonly AboutScreenRef[];
   /** The section's captures in reading order; a second shot of the same screen numbers on from the first. */
   captures: { phone: readonly string[]; desktop: readonly string[] };
@@ -155,12 +173,17 @@ export type AboutRuleId = (typeof ABOUT_RULE_IDS)[number];
 
 /** Each unit's `since` is the highest `since` of its unswitched legacy entries, or 16 (`ABOUT_VERSION` at the build) when it
  *  has none. The values are written out here; `about-pages.test.ts` re-derives every one from the entries and pins it. */
+/** A section's sub-line while the switch its screen hangs on is off: the section is still drawn (it keeps its place in the
+ *  page's count), so its sub says the screen is off rather than describing it. */
+export const ABOUT_SCREEN_OFF = " This screen isn’t on for you.";
+
 export const ABOUT_SECTIONS: readonly AboutSection[] = [
   {
     area: "home",
     id: "home",
     name: "Home",
-    sub: "Where every visit starts.",
+    sub: "Where every visit starts: your latest decks, and how far along each one is. It also picks two of your best-fit commanders to build.",
+    subSentences: { " It also picks two of your best-fit commanders to build.": "!HOME_FEED_ENABLED" },
     screens: [{ screen: "home" }],
     captures: { phone: ["p-home", "p-home-in-use"], desktop: ["d-home"] },
     labels: [
@@ -199,7 +222,13 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "home",
     id: "whats-new",
     name: "What’s new",
-    sub: "News for you, newest first, after anything waiting on you.",
+    sub: `News you choose to hear about, newest first, such as a new set or a combo you can now make. Within Today and Earlier, anything waiting on you comes first.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "News you choose to hear about, newest first, such as a new set or a combo you can now make.": "HOME_FEED_ENABLED",
+      // Only a spare request ever waits on you (`feedOrder`), and it is a kind only with spare requests on.
+      " Within Today and Earlier, anything waiting on you comes first.": ["HOME_FEED_ENABLED", "SPARE_REQUESTS_ENABLED"],
+      [ABOUT_SCREEN_OFF]: "!HOME_FEED_ENABLED",
+    },
     screens: [{ screen: "home" }],
     captures: { phone: ["p-home-feed"], desktop: ["d-home-feed"] },
     labels: [
@@ -220,7 +249,8 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "collection",
     id: "cards",
     name: "Cards",
-    sub: "Everything you own, card by card.",
+    sub: "Everything you own, card by card, and which copies your decks are holding. Add cards by name or scan them in.",
+    subSentences: { " Add cards by name or scan them in.": ["COLLECTION_EDIT_ENABLED"] },
     screens: [{ screen: "collection" }],
     captures: { phone: ["p-collection"], desktop: ["d-collection2"] },
     labels: [
@@ -275,7 +305,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "collection",
     id: "upload",
     name: "Upload a file",
-    sub: "Bring in an export from another app.",
+    sub: "Bring in an export from another app or paste a list, and look over the import before you confirm it.",
     screens: [{ screen: "upload" }],
     captures: { phone: ["p-upload"], desktop: ["d-upload"] },
     labels: [
@@ -296,7 +326,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "commanders",
     id: "for-you",
     name: "For you",
-    sub: "Commanders you own, ranked by fit.",
+    sub: "Commanders you own, ranked by how well the rest of your cards suit each one.",
     screens: [{ screen: "commanders" }],
     captures: { phone: ["p-commanders"], desktop: ["d-commanders"] },
     labels: [
@@ -338,15 +368,15 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "commanders",
     id: "discover",
     name: "Discover",
-    sub: "Commanders worth buying.",
+    sub: "Commanders worth buying: ones EDHREC tracks that you don’t own and haven’t built a deck around. Search them, or narrow them by color or set.",
     screens: [{ screen: "discover" }],
     captures: { phone: ["p-discover"], desktop: ["d-discover"] },
     labels: [
       {
         id: "order",
         region: "commanders/discover/order",
-        lead: "The order",
-        rest: " you pick changes what leads. Each order says what it ranks by.",
+        lead: "Order",
+        rest: ` sorts the list, and you pick it. Best fit ranks by how many of a commander’s popular cards you own. Something new ranks by how many of its themes your decks don’t play yet, and shows only commanders whose EDHREC card list you own at least ${Math.round(NOVELTY_FLOOR * 100)}% of. Popularity counts the decks EDHREC tracks. Name goes A to Z, and Recently released puts the newest first.`,
         switch: null,
         since: 1,
         legacy: ["discover"],
@@ -359,7 +389,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "your-decks",
     name: "Your decks",
-    sub: "Every deck, with what it needs next.",
+    sub: "Your decks, each with its status. Start one from a commander, or import a list you already play.",
     screens: [{ screen: "decks" }],
     captures: { phone: ["p-decks"], desktop: ["d-decks2"] },
     labels: [
@@ -407,7 +437,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "your-deck",
     name: "Your deck",
-    sub: "The list, and what each row is telling you.",
+    sub: "The list itself. Each row says whether you own the card and whether you’ve changed it, and your changes wait here until you commit.",
     screens: [{ screen: "deck", view: "your-deck" }],
     captures: { phone: ["p-deck-top", "p-deck-your-deck"], desktop: ["d-deck-top", "d-deck-list"] },
     labels: [
@@ -464,7 +494,12 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "analysis",
     name: "Analysis",
-    sub: "Where your deck sits, and the tools that tune it.",
+    sub: `Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "Which bracket your deck sits in, and why.": "ANALYSIS_TAB_ENABLED",
+      " Suggested changes, Proposed cuts and Mana Balance help you tune it.": ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "MANA_BALANCE_ENABLED"],
+      [ABOUT_SCREEN_OFF]: "!ANALYSIS_TAB_ENABLED",
+    },
     screens: [{ screen: "deck", view: "analysis" }],
     captures: { phone: ["p-deck-analysis", "p-deck-analysis-read", "p-analysis-tuning"], desktop: ["d-analysis", "d-analysis-tuning", "d-analysis-describe"] },
     labels: [
@@ -530,7 +565,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "versions",
     name: "Versions",
-    sub: "Every commit, kept.",
+    sub: "Every commit, kept, with its date, card count and average mana value. Open one to see what it brought in and took out.",
     screens: [{ screen: "deck", view: "versions" }],
     captures: { phone: ["p-deck-versions"], desktop: ["d-versions-precon"] },
     labels: [
@@ -560,7 +595,8 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "games",
     name: "Games",
-    sub: "What happened at the table.",
+    sub: "What happened at the table, game by game. Matchups shows how the deck does against each commander, color and friend.",
+    subSentences: { " Matchups shows how the deck does against each commander, color and friend.": "SOCIAL_GAMES_ENABLED" },
     screens: [{ screen: "deck", view: "games" }],
     captures: { phone: ["p-deck-games"], desktop: ["d-games"] },
     labels: [
@@ -593,7 +629,12 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "stats",
     name: "Stats",
-    sub: "The deck, drawn.",
+    sub: `The deck in charts. See its curve by card type, its mana colors against their sources, the jobs its cards do, what it’s worth and how its games went.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "The deck in charts.": "DECK_STATS_ENABLED",
+      " See its curve by card type, its mana colors against their sources, the jobs its cards do, what it’s worth and how its games went.": "DECK_STATS_ENABLED",
+      [ABOUT_SCREEN_OFF]: "!DECK_STATS_ENABLED",
+    },
     screens: [{ screen: "deck", view: "stats" }],
     captures: { phone: ["p-deck-stats"], desktop: ["d-stats"] },
     labels: [
@@ -614,7 +655,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "notes",
     name: "Notes",
-    sub: "The small stuff, kept with the deck.",
+    sub: `Anything you want to remember about the deck, kept with it through every commit.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "Anything you want to remember about the deck, kept with it through every commit.": "DECK_NOTES_ENABLED",
+      [ABOUT_SCREEN_OFF]: "!DECK_NOTES_ENABLED",
+    },
     screens: [{ screen: "deck", view: "notes" }],
     captures: { phone: ["p-deck-notes"], desktop: ["d-notes"] },
     labels: [
@@ -635,7 +680,8 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "shopping",
     id: "deck-shopping",
     name: "A deck’s Shopping",
-    sub: "What one deck still needs.",
+    sub: "What one deck still needs, basic lands aside, priced at Mana Pool, with one link that fills your Mana Pool cart. Cheaper stand-ins are a press away.",
+    subSentences: { " Cheaper stand-ins are a press away.": "SWAP_TOOLS_ENABLED" },
     screens: [{ screen: "deck", view: "shopping" }],
     captures: { phone: ["p-deck-shopping"], desktop: ["d-shopping"] },
     labels: [
@@ -693,7 +739,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "shopping",
     id: "all-decks",
     name: "Shopping for all decks",
-    sub: "Every deck’s missing cards in one cart.",
+    sub: `Every deck’s missing cards in one cart, basic lands aside. A big cart goes to Mana Pool in parts.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "Every deck’s missing cards in one cart, basic lands aside. A big cart goes to Mana Pool in parts.": "ALL_DECKS_CART_ENABLED",
+      [ABOUT_SCREEN_OFF]: "!ALL_DECKS_CART_ENABLED",
+    },
     screens: [],
     captures: { phone: ["p-decks"], desktop: ["d-decks2"] },
     labels: [
@@ -714,7 +764,12 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "friends",
     id: "friends",
     name: "Friends",
-    sub: "Your friends, and your pods.",
+    sub: `The people you play with, and your pods. See their spares, and pick which pods see yours.${ABOUT_SCREEN_OFF}`,
+    subSentences: {
+      "The people you play with, and your pods.": "SOCIAL_FRIENDS_ENABLED",
+      " See their spares, and pick which pods see yours.": "SOCIAL_FRIENDS_ENABLED",
+      [ABOUT_SCREEN_OFF]: "!SOCIAL_FRIENDS_ENABLED",
+    },
     screens: [{ screen: "friends" }],
     captures: { phone: ["p-friends"], desktop: ["d-friends"] },
     labels: [
@@ -829,7 +884,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     },
   },
   intent: {
-    text: "At either end of the scale, brackets come down to intent, so your cards can fit two. A Squirrel deck with no Game Changers, mass land denial, extra turns or two-card infinites passes at both Exhibition and Core. Only you know which, so you pick. Game Changers are Wizards’ own list.",
+    text: "At either end of the scale, brackets come down to intent, so your cards can fit two. A theme deck with no Game Changers, mass land denial, extra turns or two-card infinites passes at both Exhibition and Core. Only you know which, so you pick. Game Changers are Wizards’ own list.",
     switch: "ANALYSIS_TAB_ENABLED",
     since: 16,
     legacy: ["deck-analysis"],
@@ -841,7 +896,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
         { parts: [{ part: "between", glyph: "or" }] },
         { parts: [{ part: "medal", bracket: 2 }] },
       ],
-      foot: [{ part: "caption", text: "Squirrels · no Game Changers · you pick" }],
+      foot: [{ part: "caption", text: "a theme deck · no Game Changers · you pick" }],
     },
   },
   credits: {
@@ -874,20 +929,14 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["versions", "undo-removal"],
     diagram: {
       kind: "card-row",
-      gap: 6,
-      columns: [
-        { gap: 5, parts: [
-          { part: "caption", text: "Ghalta · pending" },
-          { part: "row", name: "Sol Ring", dot: "owned", edge: true, compact: true, tag: { text: "+", tone: "accent" } },
-          { part: "row", name: "Mind Stone", edge: true, compact: true, tag: { text: "cut", tone: "muted" } },
-        ] },
-        { parts: [{ part: "between", glyph: "→", label: "commit" }] },
-        { gap: 5, parts: [
-          { part: "caption", text: "Sai sees it" },
-          { part: "row", name: "Sol Ring", compact: true, tag: { text: "short", tone: "short" } },
-          { part: "caption", text: "v2 · today", muted: true },
-        ] },
-      ],
+      columns: [{ w: 250, gap: 5, parts: [
+        { part: "caption", text: "Ghalta · pending" },
+        { part: "row", name: "Sol Ring", dot: "owned", edge: true, compact: true, tag: { text: "+", tone: "accent" } },
+        { part: "row", name: "Mind Stone", edge: true, compact: true, tag: { text: "cut", tone: "muted" } },
+        { part: "between", glyph: "↓", label: "commit" },
+        { part: "caption", text: "Sai sees it · v2 · today" },
+        { part: "row", name: "Sol Ring", compact: true, tag: { text: "short", tone: "short" } },
+      ] }],
     },
   },
   "one-copy": {
@@ -897,19 +946,13 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["availability", "commitments"],
     diagram: {
       kind: "card-row",
-      gap: 12,
-      columns: [
-        { w: 96, center: true, parts: [
-          { part: "row", name: "Sol Ring", dot: "owned" },
-          { part: "caption", text: "you own ×1", muted: true },
-        ] },
-        { parts: [{ part: "between", glyph: "→" }] },
-        { w: 150, gap: 5, parts: [
-          { part: "row", name: "Ghalta", tag: { text: "held longest ✓", tone: "muted" } },
-          { part: "row", name: "Sai", tag: { text: "short 1", tone: "short" } },
-          { part: "row", name: "Zimone", dim: true, tag: { text: "short 1 · draft", tone: "short" } },
-        ] },
-      ],
+      columns: [{ w: 250, gap: 5, parts: [
+        { part: "row", name: "Sol Ring", dot: "owned", tag: { text: "you own ×1", tone: "muted" } },
+        { part: "between", glyph: "↓" },
+        { part: "row", name: "Ghalta", tag: { text: "held longest ✓", tone: "muted" } },
+        { part: "row", name: "Sai", tag: { text: "short 1", tone: "short" } },
+        { part: "row", name: "Zimone", dim: true, tag: { text: "short 1 · draft", tone: "short" } },
+      ] }],
     },
   },
   "never-decklist": {
@@ -941,29 +984,15 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["upload-choice", "upload-choice@COLLECTION_SYNC_ENABLED", "import"],
     diagram: {
       kind: "card-row",
-      columns: [
-        { w: 78, gap: 4, parts: [
-          { part: "caption", text: "Now" },
-          { part: "row", name: "Sol Ring", compact: true },
-          { part: "row", name: "Swords", compact: true },
-          { part: "row", name: "Cultivate", compact: true },
-          { part: "row", name: "Thrasios", compact: true },
-        ] },
-        { w: 78, gap: 4, parts: [
-          { part: "caption", text: "File" },
-          { part: "row", name: "Sol Ring", compact: true },
-          { part: "row", name: "Swords", compact: true },
-          { part: "row", name: "Cultivate", compact: true },
-        ] },
-        { w: 84, gap: 4, parts: [
-          { part: "caption", text: "Replace", switch: "COLLECTION_EDIT_ENABLED" },
-          { part: "caption", text: "After", switch: "!COLLECTION_EDIT_ENABLED" },
-          { part: "row", name: "Sol Ring", compact: true },
-          { part: "row", name: "Swords", compact: true },
-          { part: "row", name: "Cultivate", compact: true },
-          { part: "row", name: "Thrasios", compact: true, gone: true },
-        ] },
-      ],
+      columns: [{ w: 250, gap: 5, parts: [
+        // Replace is a choice only where the Collection can be edited; without it every upload replaces.
+        { part: "caption", text: "Your Collection, then Replace", switch: "COLLECTION_EDIT_ENABLED" },
+        { part: "caption", text: "Your Collection, then an upload", switch: "!COLLECTION_EDIT_ENABLED" },
+        { part: "row", name: "Sol Ring", compact: true, tag: { text: "in the file", tone: "muted" } },
+        { part: "row", name: "Swords", compact: true, tag: { text: "in the file", tone: "muted" } },
+        { part: "row", name: "Cultivate", compact: true, tag: { text: "in the file", tone: "muted" } },
+        { part: "row", name: "Thrasios", compact: true, gone: true, tag: { text: "not in the file", tone: "muted" } },
+      ] }],
     },
   },
   "own-it": {
@@ -973,19 +1002,16 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["shopping", "availability"],
     diagram: {
       kind: "deck-tile",
-      gap: 8,
+      gap: 12,
       columns: [
-        { center: true, parts: [
-          { part: "tile", name: "Ghalta", status: "Complete", colors: ["G"] },
-          { part: "caption", text: "has Sol Ring", muted: true },
-        ] },
-        { parts: [{ part: "between", glyph: "≠" }] },
-        { gap: 5, parts: [
-          { part: "caption", text: "Sai · Shopping" },
-          { part: "row", name: "Sol Ring", dot: "owned", compact: true, price: { state: "priced", cents: 149 } },
-          { part: "caption", text: "your copy is in Ghalta", muted: true },
-        ] },
+        { parts: [{ part: "tile", name: "Ghalta", status: "Complete", colors: ["G"] }] },
+        { parts: [{ part: "caption", text: "holds your only Sol Ring", muted: true }] },
       ],
+      foot: { w: 250, gap: 5, parts: [
+        { part: "caption", text: "Sai · Shopping" },
+        { part: "row", name: "Sol Ring", dot: "owned", price: { state: "priced", cents: 149 } },
+        { part: "caption", text: "your copy is in Ghalta", muted: true },
+      ] },
     },
   },
   prices: {
@@ -1055,17 +1081,16 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     legacy: ["friend-decks"],
     diagram: {
       kind: "deck-tile",
-      // Two 84px tiles and a 104px column fit the phone card's 290px inside only at an 8px gap (288px).
-      gap: 8,
+      gap: 12,
       columns: [
         { parts: [{ part: "tile", name: "Ghalta", status: "Complete", colors: ["G"] }] },
         { parts: [{ part: "void", text: "hidden: no tile" }] },
-        { w: 104, gap: 5, parts: [
-          { part: "caption", text: "Its cards" },
-          { part: "row", name: "Sol Ring", tag: { text: "in use", tone: "muted" } },
-          { part: "caption", text: "not spares", muted: true },
-        ] },
       ],
+      foot: { w: 250, gap: 5, parts: [
+        { part: "caption", text: "Its cards" },
+        { part: "row", name: "Sol Ring", tag: { text: "in use", tone: "muted" } },
+        { part: "caption", text: "not spares", muted: true },
+      ] },
     },
   },
   invites: {

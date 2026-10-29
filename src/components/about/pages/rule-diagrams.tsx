@@ -7,8 +7,9 @@
 // fixtures and their words are the rule's (`ABOUT_RULES[id].diagram`), already cut to the reader's switches.
 
 import type { CSSProperties } from "react";
-import type {
-  AboutDiagramColumn, AboutDiagramPart, AboutDiagramPrice, AboutDiagramTone, AboutRuleDiagram,
+import {
+  diagramColumn,
+  type AboutDiagramColumn, type AboutDiagramPart, type AboutDiagramPrice, type AboutDiagramTone, type AboutRuleDiagram,
 } from "../../../lib/copy/about-pages";
 import { BRACKET_NAMES } from "../../../lib/copy/deck-analysis";
 import { commanderGradient } from "../../../lib/cards/gradients";
@@ -33,8 +34,10 @@ function priceFact(p: AboutDiagramPrice): PriceFact | null {
   return { cents: p.cents, foilCents: null, etchedCents: null, asOf: NEWEST };
 }
 
+// A muted tag and a muted caption are set in the body ink, never the muted one: every word a diagram draws reads at
+// 4.5:1 or better in all six themes (Small items 3, item 1).
 const TONE: Record<AboutDiagramTone, string> = {
-  muted: "var(--fg-muted)",
+  muted: "var(--fg-body)",
   accent: "var(--accent-text)",
   success: "var(--success)",
   short: "var(--avail-hard-fg)",
@@ -47,7 +50,7 @@ function Part({ p }: { p: AboutDiagramPart }) {
     case "caption":
       return (
         <span
-          className={`${MONO} ${p.muted ? "text-[color:var(--fg-muted)]" : "uppercase text-[color:var(--fg-faint)]"}`}
+          className={`${MONO} ${p.muted ? "text-[color:var(--fg-body)]" : "uppercase text-[color:var(--fg-faint)]"}`}
           data-diagram-part="caption"
         >
           {p.text}
@@ -55,16 +58,22 @@ function Part({ p }: { p: AboutDiagramPart }) {
       );
     case "row": {
       const style: CSSProperties = p.edge ? { boxShadow: "inset 2px 0 0 0 var(--accent)" } : {};
+      // No part is ever translucent (Small items 3, item 1): a set-back row draws its edge dashed, and a gone row
+      // strikes its name in the muted ink while its tag keeps full strength.
       return (
         <div
           data-diagram-part="row"
-          className={`${ROW_SHELL} min-w-0 whitespace-nowrap border border-[color:var(--border)] bg-[color:var(--surface-raised)] text-[color:var(--fg)] ${
-            p.compact ? "h-[22px] px-[8px] text-[11px]" : "h-[30px] px-[10px] text-[12.5px]"
-          } ${p.gone ? "line-through opacity-55" : p.dim ? "opacity-75" : ""}`}
+          className={`${ROW_SHELL} min-w-0 whitespace-nowrap border border-[color:var(--border-dashed)] bg-[color:var(--surface-raised)] text-[color:var(--fg)] ${
+            p.compact ? "h-[22px] px-[8px] text-[11.5px]" : "h-[30px] px-[10px] text-[12.5px]"
+          } ${p.dim ? "border-dashed" : ""}`}
           style={style}
         >
           {p.dot ? <OwnershipDot owned={p.dot === "owned"} size={8} /> : null}
-          <span className="min-w-0 flex-auto overflow-hidden text-ellipsis">{p.name}</span>
+          <span
+            className={`min-w-0 flex-auto overflow-hidden text-ellipsis ${p.gone ? "text-[color:var(--fg-muted)] line-through" : ""}`}
+          >
+            {p.name}
+          </span>
           {p.proxy ? <ProxyTag variant="row" /> : null}
           {p.lock ? <LockMark /> : null}
           {p.tag ? (
@@ -104,10 +113,12 @@ function Part({ p }: { p: AboutDiagramPart }) {
     case "buy":
       return (
         <div data-diagram-part="buy" className="flex items-center gap-[10px]">
-          <span className="flex min-w-[96px] flex-none justify-center">
+          {/* The slot right-aligns its chip, so the four chips share a right edge as Shopping's buy tags do and the notes
+              start at one x (Small items 3, item 3). */}
+          <span className="flex min-w-[96px] flex-none justify-end">
             <BuyTag variant="row" price={priceFact(p.price)} newestAsOf={NEWEST} />
           </span>
-          <span className={`${MONO} text-[color:var(--fg-muted)]`}>{p.note}</span>
+          <span className={`${MONO} text-[color:var(--fg-body)]`}>{p.note}</span>
         </div>
       );
     case "medal":
@@ -186,18 +197,21 @@ function Stack({ column: { parts, w, gap = 6, center = false } }: { column: Abou
   );
 }
 
-/** One rule's diagram, centred in its card's plate (150px at least). */
+/** One rule's diagram, centred in its card's plate (150px at least). A head or foot is a centred stack of parts, or a
+ *  full column at its own width (Small items 3, item 1: the rows under a tile). */
 export function RuleDiagram({ diagram }: { diagram: AboutRuleDiagram }) {
-  const { head = [], columns, foot = [], gap = 10 } = diagram;
+  const { columns, gap = 10 } = diagram;
+  const head = diagram.head ? diagramColumn(diagram.head) : null;
+  const foot = diagram.foot ? diagramColumn(diagram.foot) : null;
   return (
     <div data-diagram={diagram.kind} className="flex max-w-full flex-col items-center gap-[10px]">
-      {head.length ? <Stack column={{ parts: head, center: true }} /> : null}
+      {head?.parts.length ? <Stack column={head} /> : null}
       <div className="flex max-w-full items-center justify-center" style={{ gap }}>
         {columns.map((c, i) => (
           <Stack key={i} column={c} />
         ))}
       </div>
-      {foot.length ? <Stack column={{ parts: foot, center: true }} /> : null}
+      {foot?.parts.length ? <Stack column={foot} /> : null}
     </div>
   );
 }

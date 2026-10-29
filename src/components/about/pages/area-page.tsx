@@ -115,7 +115,9 @@ export function AreaPage({
                     <h2 id={`${s.id}-name`} className="m-0 font-display text-[21px] font-semibold text-[color:var(--fg)] md:text-[24px]">
                       {s.name}
                     </h2>
-                    <p className="m-0 text-[13.5px] text-[color:var(--fg-muted)]">{s.sub}</p>
+                    {/* One or two sentences on what the screen offers; on desktop it wraps under the name at 68ch at most (Small
+                        items 3, item 4). */}
+                    <p className="m-0 max-w-[68ch] text-[13.5px] text-pretty text-[color:var(--fg-muted)]">{s.sub}</p>
                   </div>
                   <LabelledScreen phone={s.phone} desktop={s.desktop} />
                   <GoodToKnow sectionId={s.id} rules={s.rules} />
