@@ -120,7 +120,7 @@ export async function markBought(
           id: result.entry.id,
           // Where the copy went, and the chooser Change opens on it, both from the write's own
           // snapshot (taken under its locks), so the receipt says what the write did and the
-          // chooser opens with no second read. Only while the switch is on.
+          // chooser opens with no second read. Only while collection edit is on.
           receipt: facts && snaps && collectionEditEnabled(env)
             ? {
                 ...facts,

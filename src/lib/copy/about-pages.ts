@@ -169,7 +169,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "home/home/help",
         lead: "The ?",
         rest: " opens help for the screen you’re on.",
-        switch: "HELP_PANEL_ENABLED",
+        switch: null,
         since: 16,
         legacy: ["getting-help", "about-rebuilt"],
       },
@@ -243,9 +243,6 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         lead: "The +",
         rest: " adds cards by name. You can scan them in too.",
         switch: "COLLECTION_EDIT_ENABLED",
-        sentences: {
-          " You can scan them in too.": "CARD_SCAN_ENABLED",
-        },
         since: 16,
         legacy: ["collection-add", "card-scan", "card-search"],
       },
