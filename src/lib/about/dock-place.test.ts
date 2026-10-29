@@ -21,6 +21,18 @@ describe("dockPlace: a low region gets the dock at the top (Small items 3 item 6
     expect(dockPlace({ region: { top: 700, bottom: 730 }, foot: FOOT, topEdge: -40 })).toEqual({ at: "top", top: 12 });
   });
 
+  it("clears the notch: with no bar on screen it sits 12px under the top safe-area inset; a bar's edge below the inset wins", () => {
+    const low = { region: { top: 700, bottom: 730 }, foot: FOOT };
+    // No inset: unchanged.
+    expect(dockPlace({ ...low, topEdge: 0, safeTop: 0 })).toEqual({ at: "top", top: 12 });
+    expect(dockPlace({ ...low, topEdge: 120, safeTop: 0 })).toEqual({ at: "top", top: 132 });
+    // A 47px notch, nothing on screen.
+    expect(dockPlace({ ...low, topEdge: 0, safeTop: 47 })).toEqual({ at: "top", top: 59 });
+    expect(dockPlace({ ...low, topEdge: -40, safeTop: 47 })).toEqual({ at: "top", top: 59 });
+    // The header on screen ends at 79, below the inset.
+    expect(dockPlace({ ...low, topEdge: 79, safeTop: 47 })).toEqual({ at: "top", top: 91 });
+  });
+
   it("keeps the foot for a region so tall the top dock would cover it too", () => {
     // Top dock would span 132..232; the region runs 200..700.
     expect(dockPlace({ region: { top: 200, bottom: 700 }, foot: FOOT, topEdge: 120 })).toEqual({ at: "foot" });

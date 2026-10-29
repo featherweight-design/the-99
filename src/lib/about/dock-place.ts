@@ -7,6 +7,10 @@
 // away and no back bar stuck, the screen's own top edge). A region so tall that the top dock would cover it too keeps
 // the foot: most of it stays in view either way. Decided once, on the tap; scrolling afterwards never moves it.
 //
+// The notch: the dock never sits under the top safe-area inset. With nothing on screen it goes `DOCK_GAP` under the
+// inset (`env(safe-area-inset-top)`, measured by the caller); a bar on screen already ends below the inset, so its edge
+// wins (orchestrator ruling, 2026-10-29).
+//
 // Client-safe: pure arithmetic over on-screen boxes, in viewport pixels.
 
 /** The dock's gap to the tab bar at the foot, to the bar above it at the top, and its side gutters. */
@@ -21,6 +25,7 @@ export function dockPlace({
   region,
   foot,
   topEdge,
+  safeTop = 0,
 }: {
   /** The lit region as drawn. */
   region: Edges;
@@ -28,9 +33,11 @@ export function dockPlace({
   foot: Edges;
   /** The lowest bottom edge of what holds the top of the screen (0 when nothing does). */
   topEdge: number;
+  /** The top safe-area inset, `env(safe-area-inset-top)` in pixels (0 without a notch). */
+  safeTop?: number;
 }): DockPlace {
   if (region.bottom <= foot.top) return { at: "foot" };
-  const top = Math.max(0, topEdge) + DOCK_GAP;
+  const top = Math.max(0, topEdge, safeTop) + DOCK_GAP;
   const bottom = top + (foot.bottom - foot.top);
   // Covered in both places: the foot is its home.
   if (region.top < bottom && region.bottom > top) return { at: "foot" };

@@ -99,6 +99,7 @@ not draw are listed under Open, and neither blocks.
   - header shown at 0–79: 91.
   - A higher region kept the foot (669–758).
   - The page's scrollY did not change on any tap.
+- **Safe area (engineering decision, ruled by the orchestrator 2026-10-29; resolves Open 2).** The top dock sits 12px under `max(bar edge, env(safe-area-inset-top))`, measured on the tap by a hidden `env()` probe (`safeTopNow`) and passed to `dockPlace` as `safeTop`: 59 under a 47px inset with nothing on screen, 91 under the header at 79.
 
 ### The Try it beat (Hugh's ruling, 2026-10-29)
 

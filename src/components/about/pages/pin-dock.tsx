@@ -17,7 +17,7 @@
 //
 // A low region (Small items 3 item 6, board `Dock-Low-Region.html`): when the dock at the foot would cover the region
 // it describes, it docks at the top of the visible band instead, 12px under whatever holds the top of the screen at the
-// tap (`dockPlace`). Decided once, before the first paint of each tap's dock (the screen keys the dock on its label, so
+// tap (`dockPlace`), and never under the notch's safe-area inset. Decided once, before the first paint of each tap's dock (the screen keys the dock on its label, so
 // another tap mounts a new one and decides again); scrolling afterwards never moves it. Same look, gutters and ✕.
 
 import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -70,6 +70,17 @@ export function topEdgeNow(): number {
   return edge;
 }
 
+/** The top safe-area inset in pixels now: a hidden probe one `env(safe-area-inset-top)` tall, measured and removed
+ *  (0 without a notch, or where the page does not extend under it). */
+export function safeTopNow(): number {
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none;height:env(safe-area-inset-top,0px)";
+  document.body.appendChild(probe);
+  const h = probe.getBoundingClientRect().height;
+  probe.remove();
+  return h;
+}
+
 export function PinDock({
   label, onClose, region,
 }: {
@@ -86,7 +97,7 @@ export function PinDock({
     const dock = ref.current?.getBoundingClientRect();
     const lit = read.current()?.getBoundingClientRect();
     if (!dock || !lit) return;
-    const next = dockPlace({ region: lit, foot: dock, topEdge: topEdgeNow() });
+    const next = dockPlace({ region: lit, foot: dock, topEdge: topEdgeNow(), safeTop: safeTopNow() });
     if (next.at === "top") setPlace(next);
   }, []);
   return (
