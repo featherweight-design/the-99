@@ -57,7 +57,9 @@ export type FillCandidate = {
   /**
    * An OWNED card with a printing in one of the sets the player asked for (Help me choose's Sets
    * answer, or a set the words named). Soft: it orders owned cards within the ownership tier
-   * (`inPreferredSetsFirst`) and never admits, excludes or outranks an unowned card. Absent is false.
+   * (`inPreferredSetsFirst`) and never admits or excludes a card. The one place it outranks an
+   * unowned card is the synergy-ranked residual, where in-set owned cards lead the synergy order
+   * (`inPreferredSetsFirst || bySynergy`). Absent is false.
    */
   inPreferredSets?: boolean;
 };
