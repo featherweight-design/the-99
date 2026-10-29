@@ -6,12 +6,12 @@ import { strategyName } from "../../lib/copy/strategy-focus";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
-import { resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
+import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 import type { TuningState } from "../../lib/tuning/state";
 import { usualFor } from "../../lib/tuning/v2/intake";
 import type { Bracket } from "../../lib/profile/types";
 import { OpenHistoryProvider, OpenRunProvider, type OpenRun } from "./review-run";
-import { resetIntakeDrafts, TuningPanel, type TuningDeps, type TuningFacts, type TuningV2 } from "./tuning-panel";
+import { TuningPanel, type TuningDeps, type TuningFacts, type TuningV2 } from "./tuning-panel";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
   applySuggestion: vi.fn(), dismissSuggestion: vi.fn(),
@@ -74,7 +74,6 @@ const send = () => screen.getByRole("button", { name: sc.intake.send });
 const box = () => document.getElementById("sc-request-field") as HTMLTextAreaElement;
 
 beforeEach(() => {
-  resetIntakeDrafts();
   resetDeckVisitForTests();
   visitBaseline("d1", "suggested", { okKey: null, runId: null });
 });
@@ -264,11 +263,29 @@ describe("TuningPanel with Suggested changes v2 on", () => {
 
   it("keeps the request, count and bracket choice when the panel leaves and comes back (a drift link)", async () => {
     const d = deps();
-    const first = await draw(d, v2At());
+    const deck = "22222222-2222-4222-8222-222222222222";
+    const at99 = () => <TuningPanel deckId={deck} permits={[2]} facts={facts} onLogGame={vi.fn()} deps={d} v2={v2At()} />;
+    noteDeckRoute(`/decks/${deck}`);
+    const first = await act(async () => render(at99()));
     fireEvent.change(box(), { target: { value: "Cut the legends." } });
     first.unmount();
-    await draw(d, v2At());
+    noteDeckRoute(`/decks/${deck}/cards`);
+    await act(async () => render(at99()));
     expect(box().value).toBe("Cut the legends.");
+  });
+
+  it("starts the next visit fresh: leaving the deck drops the draft", async () => {
+    const d = deps();
+    const deck = "22222222-2222-4222-8222-222222222222";
+    const at99 = () => <TuningPanel deckId={deck} permits={[2]} facts={facts} onLogGame={vi.fn()} deps={d} v2={v2At()} />;
+    noteDeckRoute(`/decks/${deck}`);
+    const first = await act(async () => render(at99()));
+    fireEvent.change(box(), { target: { value: "Cut the legends." } });
+    first.unmount();
+    noteDeckRoute("/collection");
+    noteDeckRoute(`/decks/${deck}`);
+    await act(async () => render(at99()));
+    expect(box().value).toBe("");
   });
 
   it("drops the confirm when a restriction changes", async () => {

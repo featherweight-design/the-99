@@ -27,7 +27,7 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { countCharacters } from "../../lib/text/count-characters";
 import { axisCopy } from "../../lib/copy/game-log";
 import { formatCents } from "../../lib/decks/price";
-import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
+import { isPriorResult, isPriorRun, okKeyOf, setVisitValue, visitBaseline, visitValue, type ToolBaseline } from "../../lib/decks/visit";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
 import { gateReason } from "../../lib/tuning/gate";
@@ -116,13 +116,11 @@ export type TuningV2 = {
 /** The count a fresh intake opens on (Intake board A). */
 export const V2_DEFAULT_COUNT = 3;
 
+/** The intake's draft, kept in the deck VISIT's `sc-intake` slot (review rounds 3 and 4): the drift links (Top off on
+ *  Your deck, Proposed cuts in place) unmount the panel, and the player's request, count and bracket choice must be there
+ *  when they come back to 99 (STATES: a drift never loses the request), while leaving the deck starts the next visit
+ *  fresh. Never persisted. */
 type IntakeDraft = { count: number; request: string; bracketPick: BracketPick };
-/** The intake's draft per deck, held above the panel's mount (review round 3): the drift links (Top off on Your deck,
- *  Proposed cuts in place) unmount the panel, and the player's request, count and bracket choice must be there when they
- *  come back to 99 (STATES: a drift never loses the request). For this page visit only; never persisted. */
-const intakeDrafts = new Map<string, IntakeDraft>();
-/** Tests only: each case starts from a fresh visit. */
-export const resetIntakeDrafts = () => intakeDrafts.clear();
 
 function isSameRequest(r: DeckMutationResult | SameRequest): r is SameRequest {
   return !r.ok && "confirm" in r && r.confirm === "same_request";
@@ -264,7 +262,7 @@ export function TuningPanel({
   // Suggested changes v2's intake (UI PR 5): the count, the request (never pre-filled) and the Bracket card's choice,
   // held here and mirrored into a ref synchronously, for the reason `notesRef` is: the press awaits the limits flush
   // before it reads them, and the intake stays editable the whole time. A drift off 99 keeps every one.
-  const draft = intakeDrafts.get(deckId);
+  const draft = visitValue<IntakeDraft>(deckId, "sc-intake");
   const [count, setCount] = useState(draft?.count ?? V2_DEFAULT_COUNT);
   const [request, setRequest] = useState(draft?.request ?? "");
   // The Bracket card's choice by identity, never by position: a new reading reorders the options, and "Down to 1" must
@@ -284,7 +282,7 @@ export function TuningPanel({
   const [same, setSame] = useState<{ runId: string; at: string } | null>(null);
   function changeIntake(next: Partial<{ count: number; request: string; bracketPick: BracketPick }>) {
     intakeRef.current = { ...intakeRef.current, ...next };
-    intakeDrafts.set(deckId, intakeRef.current);
+    setVisitValue(deckId, "sc-intake", intakeRef.current);
     intakeRev.current += 1;
     if (next.count !== undefined) setCount(next.count);
     if (next.request !== undefined) setRequest(next.request);
