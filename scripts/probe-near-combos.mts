@@ -3,7 +3,7 @@
 // piece away from, where the top ones' missing pieces are, and checks the invariants: every listed
 // combo misses exactly its named piece and holds the rest, the missing piece is inside the deck's
 // identity, the list runs bucket by bucket (spare, elsewhere, priced buy, unpriced buy), the cap holds and `total`
-// covers it,. Read B, `loadCardCombos`: the card in the most variants
+// covers it. Read B, `loadCardCombos`: the card in the most variants
 // and the first deck's commander (that deck in scope), timed, checking the cap, that the card is never
 // its own piece, that fewest unowned pieces rank first, and that a piece reads in-deck exactly when the deck in scope holds it.
 //

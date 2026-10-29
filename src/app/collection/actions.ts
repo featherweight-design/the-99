@@ -248,7 +248,7 @@ export type UploadChangePreview = {
    */
   historyReaches: boolean;
   /**
-   * S14 (no-collection entry): a Replace by a player who has never uploaded, with the line's switch on: the copies
+   * S14 (no-collection entry): a Replace by a player who has never uploaded, with collection edit on: the copies
    * it would take and where they came from, for Replace's warning. Null when nothing leaves; absent otherwise.
    */
   built?: BuiltLeaving | null;
@@ -358,7 +358,7 @@ export async function previewUploadChange(
     default: throw new Error(`upload preview refused: ${result.status}`);
   }
   const s = result.sync;
-  // S14: only a Replace by a player with no upload to be "since", and only with the line's switch on.
+  // S14: only a Replace by a player with no upload to be "since", and only with collection edit on.
   const built = kind === "replace" && lastUpload === null && collectionEditEnabled(env)
     ? builtLeaving(result.rows, await readBuiltEntries(userId))
     : undefined;

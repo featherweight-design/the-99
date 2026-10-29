@@ -72,7 +72,7 @@ export default async function Shell({
   const locked = stats.uniqueCards === 0;
   // The reader's resolved switches, once for the shell: the lock's shape and the stall diagnostic both decide here.
   const env = await requestSwitchEnv(userId);
-  // The deck probe runs only while locked with the line's switch on; every other render keeps the shipped reads.
+  // The deck probe runs only while locked with collection edit on; every other render keeps the shipped reads.
   const openLock =
     locked && collectionEditEnabled(env)
       ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) }
