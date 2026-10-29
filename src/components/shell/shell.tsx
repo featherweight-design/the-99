@@ -96,7 +96,7 @@ export default async function Shell({
   const help = helpPanelEnabled(env);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
-  // The moments live for this reader and the ones already spent (discovery R1). Off, or none live, the spent set is not
+  // The moments live for this reader and the ones already spent (discovery R1). With none live the spent set is not
   // read, and the provider is handed nothing, so no anchor registers.
   const moments = liveMoments(env);
   const spentMoments = moments.length > 0 ? await perfRead("shell.momentsSpent", () => readSpentMoments(userId)) : [];
