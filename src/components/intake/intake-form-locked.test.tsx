@@ -52,6 +52,25 @@ describe("the form locks while it reads (small items 3, item 5)", () => {
     await settle();
   });
 
+  it("moves focus from a field to the press on a submit by Enter, while it reads and after a refusal", async () => {
+    push.mockClear();
+    const settle = slow();
+    mount();
+    const budget = form().querySelector<HTMLElement>('input[inputmode="decimal"], input[type="number"], input[name*="budget" i]');
+    const field = budget ?? screen.getByLabelText(/Anything else\?/);
+    field.focus();
+    expect(document.activeElement).toBe(field);
+    await act(async () => { fireEvent.submit(form()); });
+    const focused = document.activeElement as HTMLElement;
+    expect(focused).not.toBe(field);
+    expect(focused.tagName).toBe("BUTTON");
+    expect(focused.closest("[inert]")).toBeNull();
+    expect(focused.getAttribute("type")).toBe("submit");
+    await settle();
+    await waitFor(() => expect(fields()).toHaveLength(0));
+    expect(document.activeElement).toBe(focused);
+  });
+
   it("hides the controls with visibility, keeping their boxes in the tree", async () => {
     const css = (await import("node:fs")).readFileSync(`${process.cwd()}/src/app/globals.css`, "utf8");
     expect(css).toMatch(/\[data-intake-locked\] \[data-lock-hide\] \{ visibility: hidden; \}/);

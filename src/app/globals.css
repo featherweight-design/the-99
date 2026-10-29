@@ -1688,6 +1688,8 @@ html {
   border-color: var(--border);
   box-shadow: none;
 }
+/* The Theme All/Any segments draw no border of their own (`border-0`), so their unselected edge is an inset ring. */
+[data-intake-locked] [role="radio"].border-0:not([aria-checked="true"]) { box-shadow: inset 0 0 0 1px var(--border); }
 [data-intake-locked] [role="radio"][aria-checked="true"] {
   color: var(--fg-muted);
   background: transparent;
