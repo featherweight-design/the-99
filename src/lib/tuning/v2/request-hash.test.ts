@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 
 import { requestHash } from "./request-hash";
 
@@ -14,5 +15,11 @@ describe("requestHash", () => {
     for (const change of [{ count: 6 }, { text: "more card draw" }, { bracketChoice: "up" }, { bracketTarget: 4 }]) {
       expect(requestHash({ ...base, ...change })).not.toBe(h);
     }
+  });
+
+  it("differs on a range's bottom, and leaves a hash without one as it always was", () => {
+    expect(requestHash({ ...base, bracketLow: 1 })).not.toBe(requestHash(base));
+    const words = base.text.trim().replace(/\s+/g, " ");
+    expect(requestHash(base)).toBe(createHash("sha256").update(JSON.stringify([base.count, words, base.bracketChoice, base.bracketTarget])).digest("hex"));
   });
 });

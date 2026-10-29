@@ -108,6 +108,7 @@ export async function startTuningV2(args: {
 
   const hash = requestHash({
     count: wire.requestedCount, text: request, bracketChoice: wire.bracket?.choice ?? "none", bracketTarget: wire.bracket?.target ?? 0,
+    ...(wire.bracket?.low !== undefined ? { bracketLow: wire.bracket.low } : {}),
   });
   if (!wire.confirmed) {
     const last = await readLastV2Run(deckId, userId);

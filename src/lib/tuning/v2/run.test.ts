@@ -232,6 +232,13 @@ describe("startTuningV2's refusals, all before a credit is reserved", () => {
     expect(await start({ request: "more draw", wire: wire({ confirmed: true }) })).toMatchObject({ kind: "started" });
   });
 
+  it("does not call Keep over a range the same request as Keep at its top (review round 1)", async () => {
+    const top = requestHash({ count: 3, text: "", bracketChoice: "keep", bracketTarget: 5 });
+    s.last = [{ id: "run_old", fingerprint: "fp", at: new Date("2026-10-27T10:00:00Z"), requestHash: top }];
+    expect(await start({ wire: wire({ bracket: { choice: "keep", target: 5, low: 4 } }) })).toMatchObject({ kind: "started" });
+    expect(await start({ wire: wire({ bracket: { choice: "keep", target: 5 } }) })).toMatchObject({ kind: "confirm" });
+  });
+
   it("reserves v2's feature with the count, the request and the bracket choice, after reaping", async () => {
     await start({ request: "more draw", wire: wire({ bracket: { choice: "down", target: 2 } }), runId: "r" });
     expect(s.reaped).toBe(1);

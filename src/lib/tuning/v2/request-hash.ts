@@ -8,9 +8,11 @@ import { createHash } from "node:crypto";
  *
  * The words are compared as the player would read them: trimmed, inner whitespace collapsed, case kept.
  */
-export function requestHash(req: { count: number; text: string; bracketChoice: string; bracketTarget: number }): string {
+export function requestHash(req: { count: number; text: string; bracketChoice: string; bracketTarget: number; bracketLow?: number }): string {
   const words = req.text.trim().replace(/\s+/g, " ");
+  // A range's bottom (Keep only) joins the hash only when sent, so every hash stored before it existed still matches.
+  const parts = [req.count, words, req.bracketChoice, req.bracketTarget, ...(req.bracketLow !== undefined ? [req.bracketLow] : [])];
   return createHash("sha256")
-    .update(JSON.stringify([req.count, words, req.bracketChoice, req.bracketTarget]))
+    .update(JSON.stringify(parts))
     .digest("hex");
 }
