@@ -221,6 +221,29 @@ describe("BuilderShell — the pass sheet (deck messages PR 3)", () => {
     expect(screen.queryByRole("dialog", { name: /cards?$/ })).toBeNull();
   });
 
+  it("closes when the same pass stays listed with nothing still here", async () => {
+    const deck = makeDeck(2, 0);
+    const view = await mount(deck, [makePass("p1", 1, ["card-0"]), makePass("p2", 2, ["card-1"])]);
+    await show("1", "1", "2");
+    expect(sheet()).toBeInTheDocument();
+    // The last card left the pass: the ledger keeps its line, the summary stays, live is 0.
+    const spent: FillPassSummary = { ...makePass("p1", 1, []), kept: 1 };
+    await act(async () => {
+      view.rerender(
+        <BuilderShell mix={TEST_MIX}
+          deck={deck}
+          suggestions={[]}
+          degraded={false}
+          firstRun={false}
+          commanderIdentity={["B", "R", "G"]}
+          arrivedFromImport={false}
+          fillPasses={[spent, makePass("p2", 2, ["card-1"])]}
+         newestAsOf={null}/>,
+      );
+    });
+    expect(screen.queryByRole("dialog", { name: /cards?$/ })).toBeNull();
+  });
+
   it("groups the cards other drafts want under each draft, with no undo", async () => {
     const deck = makeDeck(3, 0);
     const claim = (id: string, name: string) => ({ id, name, quantity: 1, mature: false, pending: false, commander: false });

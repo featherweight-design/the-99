@@ -487,9 +487,10 @@ export function BuilderShell({
   // The pass sheet (deck messages PR 3): one pass's cards, from the ledger's `Show these N`, or the
   // cards other drafts want too, from the foot. One target at a time, for the visit.
   const [passSheet, setPassSheet] = useState<PassSheetTarget | null>(null);
-  // A pass the incoming summaries no longer list (an undo, a sweep, a keep-all) takes its sheet with
-  // it. Adjusted during render, so the stale sheet never paints.
-  if (passSheet?.kind === "pass" && !fillPasses.some((p) => p.id === passSheet.passId)) setPassSheet(null);
+  // A pass the incoming summaries no longer list, or list with nothing still here (an undo, a sweep,
+  // a keep-all: the ledger keeps such a pass as a quiet line), takes its sheet with it. Adjusted
+  // during render, so the stale sheet never paints.
+  if (passSheet?.kind === "pass" && !fillPasses.some((p) => p.id === passSheet.passId && p.live > 0)) setPassSheet(null);
 
   // Combos one piece away, the list (combos close), open for the visit.
   const nearComboCount = nearCombos?.total ?? 0;
