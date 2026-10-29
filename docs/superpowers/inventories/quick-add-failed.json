@@ -1,0 +1,81 @@
+{
+  "feature": "Small items 2, item 8: quick-add's failed search says so in the shared deck toast, with Try again, lifted 10px above the quick-add dock",
+  "note": "Run against a deck the signed-in account owns (QAF_DECK). The search is a Server Action POSTed to the deck's own URL, so the failure is forced by mocking that URL with a 500 AFTER the page has loaded; the toast is portalled to the body, outside `main`, so the rows settle rather than wait on it. The page is reused across rows, so each row unroutes its mock last.",
+  "out": "contact-sheets/quick-add-failed",
+  "clearAbout": true,
+  "shares": {
+    "binding": "ToastFrame",
+    "module": "src/components/collection/edit-toast.tsx",
+    "note": "The deck slot's toast frame, the one the got-it receipt draws. The failed-search toast renders it as-is (placement \"deck\"), never a copy of its look."
+  },
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 860
+    }
+  ],
+  "rows": [
+    {
+      "id": "failed",
+      "label": "/decks/[id]: a quick-add search that failed. The toast sits 10px above the dock; the field keeps \"sw\" and focus, no list opens",
+      "view": "src/components/decks/quick-add-failed-toast.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${QAF_DECK}",
+          "wait": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "settle": 1500
+        },
+        {
+          "mock": "**/decks/*",
+          "status": 500
+        },
+        {
+          "fill": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "text": "sw",
+          "settle": 2500
+        },
+        {
+          "unhold": "**/decks/*"
+        }
+      ]
+    },
+    {
+      "id": "recovered",
+      "label": "/decks/[id]: the same failure, then a search that lands (typing on). The toast is gone and the list opens",
+      "view": "src/components/decks/quick-add-failed-toast.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${QAF_DECK}",
+          "wait": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "settle": 1500
+        },
+        {
+          "mock": "**/decks/*",
+          "status": 500
+        },
+        {
+          "fill": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "text": "sw",
+          "settle": 2500
+        },
+        {
+          "unhold": "**/decks/*"
+        },
+        {
+          "fill": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "text": "swo",
+          "settle": 2500
+        },
+        {
+          "unhold": "**/decks/*"
+        }
+      ]
+    }
+  ]
+}
