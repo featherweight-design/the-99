@@ -17,6 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
 import { addPanelCopy } from "../../../lib/copy/decks-builder";
+import { noteAppScroll } from "../../../lib/ui/reveal";
 import { landingCardAnchor, showMeLink, useLabelLanding, type PageCard } from "../../discovery/label-landing";
 import { ToolCard } from "../tools/tool-card";
 import { TOUCH_HIT } from "../../ui/touch-hit";
@@ -41,6 +42,8 @@ export function TryIt({ sectionId, cards }: { sectionId: string; cards: readonly
     }
     if (after === "folded") {
       moreRef.current?.focus();
+      // The app's own scroll, so quick return does not read it as the reader's.
+      noteAppScroll();
       moreRef.current?.scrollIntoView?.({ block: "nearest" });
     }
   }, [open]);

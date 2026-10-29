@@ -20,7 +20,7 @@ vi.mock("next/link", () => ({
   ),
 }));
 vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
-const scroll = vi.hoisted(() => ({ reveal: vi.fn(() => () => {}) }));
+const scroll = vi.hoisted(() => ({ reveal: vi.fn(() => () => {}), noteAppScroll: vi.fn() }));
 vi.mock("../../lib/ui/reveal", () => scroll);
 
 const LIT = "decks/analysis/cuts";
