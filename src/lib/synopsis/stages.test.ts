@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
 
 import type { SynopsisFacts } from "./facts";
@@ -146,6 +148,22 @@ describe("zero turn numbers but the cast turn", () => {
     expect(turnNumbers("[[Turn to Frog]] each turn, an extra turn.")).toEqual([]);
     expect(turnNumbers("[[Sigil Captain]] turns 1/1s into 3/3s; it turns +1/+1 counters and X/X tokens.")).toEqual([]);
   });
+  it("never reads the verb turn followed by a count as a game turn", () => {
+    expect(turnNumbers("It turns two tokens into threats.")).toEqual([]);
+    expect(turnNumbers("[[Ixidron]] turns 3 creatures face up.")).toEqual([]);
+    expect(turnNumbers("Turn two creatures face up with the commander.")).toEqual([]);
+    expect(turnNumbers("Flip it and turn 3 tokens sideways.")).toEqual([]);
+  });
+  it("reads game turns after a preposition, joined by a hyphen, as a plural range, or closing a clause", () => {
+    expect(turnNumbers("Cast it on turn 3.")).toEqual([3]);
+    expect(turnNumbers("Land it around turn 4, by turn five at the latest.")).toEqual([4, 5]);
+    expect(turnNumbers("Ramp on turns 2 and 3.")).toEqual([2, 3]);
+    expect(turnNumbers("Turns 1-3 set up the board.")).toEqual([1, 3]);
+    expect(turnNumbers("Turns two to four build the engine.")).toEqual([2, 4]);
+    expect(turnNumbers("A turn-three [[Meren of Clan Nel Toth]] wins.")).toEqual([3]);
+    expect(turnNumbers("Turn 3: attack.")).toEqual([3]);
+    expect(turnNumbers("It should be out by the end of turn 6")).toEqual([6]);
+  });
   it("allows the cast turn and fails any other", () => {
     expect(checkTurnNumbers(doc(), 4).pass).toBe(true);
     const res = checkTurnNumbers(edit((r) => { r.primer.strategy[1].text = "By turn 6 the engine runs."; }), 4);
@@ -220,7 +238,7 @@ describe("total length no longer than today's", () => {
 });
 
 describe("the shape's own counts and budgets", () => {
-  it("passes three stages, a Wins by line, 2-3 tips and no alternate when the facts carry none", () => {
+  it("passes three stages, a Wins by line, exactly 2 tips and no alternate when the facts carry none", () => {
     expect(checkShape(doc(), [])).toEqual({ pass: true, offenders: [] });
   });
   it("wants the alternate line exactly when the facts carry one, naming one of them", () => {
@@ -261,14 +279,17 @@ describe("alternate commanders from an MTGJSON deck file", () => {
 });
 
 describe("the stages prompt variant", () => {
-  it("leaves the shipped contract-8 prompt byte for byte unchanged", () => {
+  // Hashed from origin/main's prompt.ts (c5c41998f) before the stages option existed, for these FACTS:
+  // any word of the shipped contract-8 prompt that moves fails this, not only a branch disagreement.
+  it("leaves the shipped contract-8 prompt byte for byte unchanged: sha256 pinned from main", () => {
+    const sha = (t: string) => createHash("sha256").update(t).digest("hex");
     const shipped = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true });
-    const again = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true });
-    expect(again).toEqual(shipped);
+    expect(sha(shipped.system)).toBe("38bc173f6696ee61d78f898647afc870332110332f4a3592bbaf7ea0b69b38df");
+    expect(sha(shipped.user)).toBe("6698fa06439b7937fb985ccb02df2508c634969320aeed05abd511420147abde");
     expect(shipped.system).not.toContain("EXACTLY 3 lines");
     expect(shipped.system).toContain("2 to 4 tips");
   });
-  it("asks for three labeled stages, Wins by, 2-3 tips, the cast turn alone and no alternate for a player's deck", () => {
+  it("asks for three labeled stages, Wins by, exactly 2 tips, the cast turn alone and no alternate for a player's deck", () => {
     const { system, user } = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [] } });
     expect(system).toContain("EXACTLY 3 lines");
     expect(system).toContain("each costing at most 5 mana");

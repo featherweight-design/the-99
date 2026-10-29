@@ -392,7 +392,7 @@ for (const [i, p] of plans.entries()) {
         content = await checkReply(first.out.value, it.facts, true);
         const failing = refusedSections(content);
         const left = SYNOPSIS_DEADLINE_MS - (Date.now() - started);
-        if (failing.length > 0 && left >= SYNOPSIS_REPAIR_MIN_MS) {
+        if (repairOn && failing.length > 0 && left >= SYNOPSIS_REPAIR_MIN_MS) {
           const rep = await ask<V8Wire>(it, "old-repair", repairPrompt(it.facts, content, failing, true, first.out.value), synopsisResponseSchemaV8Wire, left, 1, i);
           if (!rep) break;
           repairUsd = rep.usd;

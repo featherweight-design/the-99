@@ -181,16 +181,35 @@ const ORDINALS: Record<string, number> = { first: 1, second: 2, third: 3, fourth
 const NUM = `(\\d+|${Object.keys(NUMBER_WORDS).join("|")})`;
 const num = (s: string) => (/^\d+$/.test(s) ? Number(s) : NUMBER_WORDS[s.toLowerCase()]!);
 
+/** A word before "turn N" that makes it a game turn ("on turn 3", "by turn five", "around turn 4"). */
+const TURN_ANCHORS = new Set(["on", "by", "around", "until", "till", "before", "after", "from", "of", "through", "to", "than", "at", "since", "the", "a", "your", "their", "its", "each", "every", "as", "about", "near", "past", "in", "for"]);
+
 /**
- * The turn numbers a text states: "turn 3", "turns 1-3", "turns two to four", "turn-three", "by turn
- * 5", "the third turn", "T3". Read outside card marks, so a card's name never counts.
+ * The turn numbers a text states: "on turn 3", "turns 1-3", "turns two to four", "turn-three", "by
+ * turn 5", "the third turn", "T3". Read outside card marks, so a card's name never counts.
+ *
+ * THE VERB IS NOT A TURN: "it turns two tokens into threats", "turn 3 creatures face up". So "turn N"
+ * counts only where it reads as a game turn: after an anchor word (`TURN_ANCHORS`), joined by a
+ * hyphen ("turn-three"), as a plural range ("turns 1-3", "turns two to four"), or closing its clause
+ * ("Turn 3:", "...of turn 6."), i.e. not followed by a word. A count of turns ("for two turns") states
+ * no turn number and is not read.
  */
 export function turnNumbers(text: string): number[] {
   // Power/toughness ("turns 1/1s into 3/3s", "+1/+1") is a stat, never a turn.
   const prose = text.replace(/\[\[[^\[\]]+\]\]/g, " ").replace(/[+-]?(?:\d+|X)\/[+-]?(?:\d+|X)/gi, " ");
   const out: number[] = [];
-  const range = new RegExp(`\\bturns?[\\s-]*${NUM}(?:\\s*(?:-|\\u2013|to|or|and|through)\\s*${NUM})?\\b`, "gi");
-  for (const m of prose.matchAll(range)) { out.push(num(m[1])); if (m[2]) out.push(num(m[2])); }
+  const range = new RegExp(`\\bturn(s?)(\\s*-\\s*|\\s+)${NUM}(?:\\s*(?:-|\\u2013|to|or|and|through)\\s*${NUM})?\\b`, "gi");
+  for (const m of prose.matchAll(range)) {
+    const before = /([A-Za-z]+)\W*$/.exec(prose.slice(0, m.index))?.[1]?.toLowerCase();
+    const after = prose.slice(m.index + m[0].length);
+    const game = (before !== undefined && TURN_ANCHORS.has(before))
+      || (m[1] === "" && m[2].includes("-"))
+      || (m[1] === "s" && m[4] !== undefined)
+      || !/^\s*[A-Za-z]/.test(after);
+    if (!game) continue;
+    out.push(num(m[3]));
+    if (m[4]) out.push(num(m[4]));
+  }
   for (const m of prose.matchAll(new RegExp(`\\b(${Object.keys(ORDINALS).join("|")})\\s+turn\\b`, "gi"))) out.push(ORDINALS[m[1].toLowerCase()]!);
   for (const m of prose.matchAll(/\bT(\d+)\b/g)) out.push(Number(m[1]));
   return out;
