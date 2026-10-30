@@ -18,6 +18,7 @@ import { spareCopy } from "../../lib/copy/social";
 import type { FeedView } from "../../lib/feed/home";
 import type { YourRequest } from "../../lib/social/your-requests";
 import { ModalChrome } from "../decks/receipt-modal";
+import { personAttrs } from "../../lib/person-name";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useSpareToast } from "../social/spare-answer";
 import { RequestPicture, RequestText, requestText } from "../social/your-requests";
@@ -144,11 +145,13 @@ function AnswerSheet({ item, request, now, onClose, onCleared }: Open & { now: s
           <button
             type="button"
             data-testid="answer-sheet-clear"
-            aria-label={m.clearAria(request.holder.displayName, request.card.name)}
+            {...personAttrs(
+              { "aria-label": m.clearAria(request.holder.displayName, request.card.name) },
+              "col-start-2 -ml-[2px] flex min-h-[44px] cursor-pointer items-center justify-self-start border-0 bg-transparent px-[2px] font-sans text-[13px] font-medium text-[color:var(--fg-muted)] disabled:cursor-default md:mt-[4px] md:min-h-[32px]",
+            )}
             aria-busy={busy || undefined}
             disabled={busy}
             onClick={() => void clear()}
-            className="col-start-2 -ml-[2px] flex min-h-[44px] cursor-pointer items-center justify-self-start border-0 bg-transparent px-[2px] font-sans text-[13px] font-medium text-[color:var(--fg-muted)] disabled:cursor-default md:mt-[4px] md:min-h-[32px]"
           >
             {m.sheet.clear}
           </button>

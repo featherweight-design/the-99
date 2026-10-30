@@ -20,6 +20,8 @@ import { cards } from "../../db/schema";
 import { availableFeedKinds } from "../feed/flag";
 import { feedQuery, toFeedItem } from "../feed/read";
 import { feedOrder, type FeedKind } from "../feed/kinds";
+import { named } from "../person-name/mint";
+import type { ThirdPartyName } from "../person-name/brand";
 import { toCommander, type ProfileCommander } from "./commander";
 import { loadIncomingAsks, type IncomingAsk } from "./spare-requests";
 import { spareGrantDetailsQuery } from "./spares";
@@ -40,9 +42,9 @@ export type TradeMatchRow = {
   /** Newer than the reader's last `/friends` visit. */
   unseen: boolean;
   card: { oracleId: string; name: string; imageUri: string | null };
-  friend: { publicId: string; displayName: string; commander: ProfileCommander | null };
+  friend: { publicId: string; displayName: ThirdPartyName; commander: ProfileCommander | null };
   /** The pods the friend's share reaches the reader through, in name order. */
-  pods: string[];
+  pods: ThirdPartyName[];
   /** `SOCIAL_FRIENDS_ENABLED` for the reader: the link opens the card's spares sheet with Ask. */
   askable: boolean;
 };
@@ -83,8 +85,8 @@ async function loadTradeMatchRows(viewerId: string, env: NodeJS.ProcessEnv, now:
       createdAt: m.createdAt,
       unseen: m.unseen,
       card,
-      friend: { publicId: grant.publicId, displayName: grant.displayName, commander: toCommander(grant) },
-      pods: grant.pods,
+      friend: { publicId: grant.publicId, displayName: named(grant.displayName), commander: toCommander(grant) },
+      pods: grant.pods.map(named),
       askable,
     }];
   });

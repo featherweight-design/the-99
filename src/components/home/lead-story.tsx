@@ -28,6 +28,7 @@ import { feedCopy } from "../../lib/copy/feed";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { FeedPress, feedText, listsText, pressWraps, seesLists, usePostHero } from "../feed/feed-item";
 import { feedAge } from "../../lib/feed/age";
+import { PersonText } from "../../lib/person-name";
 import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
 import { CommanderThumb } from "../ui/commander-thumb";
@@ -99,9 +100,9 @@ export function LeadStory({
   const cardName = item.card?.name ?? "";
   const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend) : null;
   const text = receipt
-    ? { title: receipt.title, line: receipt.detail, press: null }
+    ? { title: receipt.title, line: <PersonText text={receipt.detail} />, press: null }
     : ask
-      ? { title: feed.title, line: spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName), press: null }
+      ? { title: feed.title, line: <PersonText text={spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} />, press: null }
       : feed;
   // The ✕ is absent while an answer is out and on the receipt, as shipped.
   const dismiss = receipt || busy ? undefined : onDismiss;
@@ -159,7 +160,7 @@ export function LeadStory({
           <small className="flex-none whitespace-nowrap text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case before:mr-[7px] before:content-['·']">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
         </p>
         <h3 id="home-lead-title" className="m-0 font-display [overflow-wrap:anywhere] text-[18px] leading-[1.25] font-bold text-[color:var(--fg)] md:text-[22px]">
-          {text.title}
+          <PersonText text={text.title} />
         </h3>
         {text.line && <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:max-w-[640px] md:text-[13.5px]">{text.line}</p>}
         {lists && <p data-lead-lists className="m-0 font-mono text-[10.5px] text-[color:var(--fg-muted)]">{lists}</p>}

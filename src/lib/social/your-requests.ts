@@ -19,6 +19,8 @@
 import { eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { feedItems, spareRequests, userPrefs } from "../../db/schema";
+import { compareNames } from "../person-name";
+import type { ThirdPartyName } from "../person-name/brand";
 import { parseDismissKey } from "./feed-dismiss";
 import { loadDeckBuyRows } from "../decks/availability-query";
 import { canAskAgain, deriveMyAsks, offerKey, openAskCards, readShownAsks, type MyAsk } from "./spare-requests";
@@ -30,7 +32,7 @@ export type YourRequest = MyAsk & {
   /** An answer the reader has not seen on `/friends` yet. */
   unseen: boolean;
   /** After a No: the other friends offering the card now, by name, most spares first. Empty otherwise. */
-  othersWithSpare: string[];
+  othersWithSpare: ThirdPartyName[];
   /** Ask again would be taken now: no open ask for the card, and no No from this friend inside the cooldown. */
   canAskAgain: boolean;
 };
@@ -73,7 +75,7 @@ export async function loadYourRequests(userId: string, env: NodeJS.ProcessEnv, n
     unseen: answerUnseen(a, seenAt),
     othersWithSpare: a.state !== "no" ? [] : spares
       .filter((s) => s.oracleId === a.oracleId && s.friend.publicId !== a.holder.publicId)
-      .sort((x, y) => y.spare - x.spare || x.friend.displayName.localeCompare(y.friend.displayName))
+      .sort((x, y) => y.spare - x.spare || compareNames(x.friend.displayName, y.friend.displayName))
       .map((s) => s.friend.displayName),
     canAskAgain: canAskAgain(a, all, now, offered.has(offerKey(a.oracleId, a.holder.publicId))),
   }));

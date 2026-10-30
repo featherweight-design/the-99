@@ -6,6 +6,7 @@
 
 import type { ProfileCommander } from "../../lib/social/commander";
 import { faceInitials } from "../../lib/social/initials";
+import { PersonInitials, type ThirdPartyName } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
 
 export type FaceSize = 64 | 40 | 36 | 32 | 30 | 26 | 24 | 22 | 16;
@@ -36,7 +37,7 @@ export function Face({
   className = "",
 }: {
   /** The person's display name: the initials while unset. */
-  name: string;
+  name: string | ThirdPartyName;
   commander: Pick<ProfileCommander, "artCropUri"> | null;
   size: FaceSize;
   className?: string;
@@ -48,7 +49,7 @@ export function Face({
       data-face={art ? "art" : "initials"}
       className={`${BOX[size]} flex flex-none items-center justify-center overflow-hidden font-mono ${size === 24 || size === 36 ? "" : "font-medium "}${size === 26 || size === 24 || size === 36 ? "bg-[color:var(--elevated)] text-[color:var(--fg-muted)]" : "[border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] text-[color:var(--fg-body)]"} ${className}`}
     >
-      {art ? <FadingImg src={art} alt="" className="block h-full w-full object-cover" /> : faceInitials(name)}
+      {art ? <FadingImg src={art} alt="" className="block h-full w-full object-cover" /> : <PersonInitials n={name} />}
     </span>
   );
 }

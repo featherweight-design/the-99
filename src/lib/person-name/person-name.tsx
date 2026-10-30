@@ -52,3 +52,17 @@ export function personAttrs<K extends string>(
   const classes = [className, marked ? NO_CAPTURE : undefined].filter(Boolean).join(" ");
   return classes ? { ...out, className: classes } : out;
 }
+
+/**
+ * `localeCompare` over names that may be someone else's: a sort reads the string here, in a file that may reveal,
+ * and never leaves one behind. Same arguments as `String.prototype.localeCompare`.
+ */
+export function compareNames(
+  a: string | ThirdPartyName,
+  b: string | ThirdPartyName,
+  locales?: Intl.LocalesArgument,
+  options?: Intl.CollatorOptions,
+): number {
+  const str = (n: string | ThirdPartyName) => (typeof n === "string" ? n : reveal(n));
+  return str(a).localeCompare(str(b), locales, options);
+}

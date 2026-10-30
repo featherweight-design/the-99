@@ -26,6 +26,8 @@ import { loadAvailability } from "../decks/availability-query";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { resolveFriend, type Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
+import { named } from "../person-name/mint";
+import type { ThirdPartyName } from "../person-name/brand";
 import { isUuid } from "./rules";
 import { isOffered, spareCount } from "./spare-rules";
 import { spareSettingsIn, type SpareSettings } from "./spare-settings";
@@ -92,12 +94,18 @@ export const CLAIM_MODELS_AT_ONCE = 4;
 
 export type SpareFriend = {
   publicId: string;
-  displayName: string;
+  /** Another reader's name: branded (PersonName plan, PR C). */
+  displayName: ThirdPartyName;
   /** The friend's face (G10), or null for initials. */
   commander: ProfileCommander | null;
   /** The pods the share reaches the viewer through, in name order: `shares with {pod}`. */
-  pods: string[];
+  pods: ThirdPartyName[];
 };
+
+/** A grant's friend as a spare row draws it: the name and the pods' names branded where they leave the read. */
+export function spareFriendOf(g: Pick<GrantDetails, "publicId" | "displayName" | "pods"> & Parameters<typeof toCommander>[0]): SpareFriend {
+  return { publicId: g.publicId, displayName: named(g.displayName), commander: toCommander(g), pods: g.pods.map(named) };
+}
 export type FriendSpare = { oracleId: string; friend: SpareFriend; spare: number };
 
 // The most cards one spares read asks about: a request past it is refused rather than cut. It lives in client-rules
@@ -159,10 +167,13 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
   // and a large pod queues behind the bound rather than taking the whole connection pool.
   const models = await claimModelsFor(viewerId, grantors.map((g) => g.userId), asked);
   const out: FriendSpare[] = [];
+  // The sort reads the name as stored, before it is branded, so a name never leaves the read as a string.
+  const rawName = new Map<string, string>();
   for (const read of models) {
     if (read === null) continue;
     const g = read.grant;
-    const friend: SpareFriend = { publicId: g.publicId, displayName: g.displayName, commander: toCommander(g), pods: g.pods };
+    const friend = spareFriendOf(g);
+    rawName.set(g.publicId, g.displayName);
     const { min, kept } = read.settings;
     for (const [oracleId, a] of read.model) {
       const spare = spareCount(a);
@@ -171,7 +182,7 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
   }
   return out.sort((x, y) =>
     (x.oracleId < y.oracleId ? -1 : x.oracleId > y.oracleId ? 1 : 0)
-    || (x.friend.displayName < y.friend.displayName ? -1 : x.friend.displayName > y.friend.displayName ? 1 : 0)
+    || ((rawName.get(x.friend.publicId) ?? "") < (rawName.get(y.friend.publicId) ?? "") ? -1 : (rawName.get(x.friend.publicId) ?? "") > (rawName.get(y.friend.publicId) ?? "") ? 1 : 0)
     || (x.friend.publicId < y.friend.publicId ? -1 : 1));
 }
 
@@ -245,11 +256,11 @@ export function sharedPodsQuery(viewerId: string, q: Reader = db) {
     .orderBy(asc(pods.name), asc(pods.id));
 }
 
-export type SharedPod = { podId: string; name: string };
+export type SharedPod = { podId: string; name: ThirdPartyName };
 
 /** The pods the viewer shares spares with, for each pod's checkbox (E5). Only pods they are still in. */
 export async function listSharedPods(viewerId: string, q: Reader = db): Promise<SharedPod[]> {
-  return sharedPodsQuery(viewerId, q);
+  return (await sharedPodsQuery(viewerId, q)).map((r) => ({ podId: r.podId, name: named(r.name) }));
 }
 
 /**
@@ -290,7 +301,9 @@ export function spareLineOrder(a: FriendSpareLine, b: FriendSpareLine): number {
 /** What one friend offers the viewer, for the friend page's Spares tab. */
 export type FriendSpareList = {
   /** The pods the share reaches the viewer through, in name order: `shared with {pod}`. */
-  pods: string[];
+  pods: ThirdPartyName[];
+  /** The friend, as a spare row draws them: the fallback until the read of every friend's lands. */
+  friend: SpareFriend;
   /** Cards on the viewer's wishlist first, then by name; by name alone while the viewer's wishlist is off. */
   lines: FriendSpareLine[];
   /** Whether the VIEWER's wishlist is read: off, no card is marked or ordered by it, and the line says nothing of it. Always true from the friend page now the wishlist's switch is retired. */
@@ -329,7 +342,8 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown, w
   }, { isolationLevel: "repeatable read" });
   if (read === null) return null;
   const ids = read.offered.map((o) => o.oracleId);
-  if (ids.length === 0) return { pods: read.grant.pods, lines: [], wishlist };
+  const shown = spareFriendOf(read.grant);
+  if (ids.length === 0) return { pods: shown.pods, friend: shown, lines: [], wishlist };
   const [info, wanted] = await Promise.all([
     db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, ids)),
     wishlist
@@ -343,5 +357,5 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown, w
     return c ? [{ oracleId: o.oracleId, name: c.name, imageUri: c.imageUri, spare: o.spare, onWishlist: onList.has(o.oracleId) }] : [];
   });
   lines.sort(spareLineOrder);
-  return { pods: read.grant.pods, lines, wishlist };
+  return { pods: shown.pods, friend: shown, lines, wishlist };
 }

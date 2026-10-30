@@ -13,6 +13,7 @@ import type { FriendSpare } from "../../lib/social/spares";
 import type { AskStateLine } from "../../lib/social/spare-requests";
 import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
 import { spareCopy } from "../../lib/copy/social";
+import { PersonName, PersonText, compareNames, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { printedFaceName } from "../../lib/collection/browse";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { InfoTip } from "../ui/info-tip";
@@ -23,7 +24,7 @@ import { useCartGotIt } from "../decks/cart/cart-got-it";
 
 /** One Ask or Ask instead from the modal: the friend, the card and the copies the row is short. */
 export type AskPress = {
-  friend: { publicId: string; displayName: string };
+  friend: { publicId: string; displayName: ThirdPartyName };
   oracleId: string;
   copies: number;
   /** The open ask Ask instead withdraws; absent for a plain Ask (or Ask again). */
@@ -57,7 +58,7 @@ export function cardMark(asks: readonly AskStateLine[]): SpareMark {
 export type RowAsk =
   | { kind: "ask" }
   | { kind: "requested"; daysLeft: number }
-  | { kind: "askInstead"; fromRequestId: string; from: string }
+  | { kind: "askInstead"; fromRequestId: string; from: ThirdPartyName }
   | { kind: "accepted" }
   | { kind: "declined" }
   | { kind: "askAgain" };
@@ -82,7 +83,7 @@ export function rowAsk(asks: readonly AskStateLine[], publicId: string): RowAsk 
  * The one sentence under the rows for the state they are in, or null (Shopping and Asker-States boards). `canBuy`: the
  * row has its buy press (mark-bought on, so a got-it provider is mounted); without it Accepted points at the collection.
  */
-export function stateLine(rows: readonly { name: string; ask: RowAsk }[], canBuy: boolean): string | null {
+export function stateLine(rows: readonly { name: ThirdPartyName; ask: RowAsk }[], canBuy: boolean): string | PersonParts | null {
   const instead = rows.find((r) => r.ask.kind === "askInstead");
   if (instead && instead.ask.kind === "askInstead") return spareCopy.request.oneAtATime(instead.ask.from);
   if (rows.some((r) => r.ask.kind === "accepted")) return canBuy ? spareCopy.request.whenYours : spareCopy.request.whenYoursNoBuy;
@@ -164,7 +165,7 @@ export function useCardSpares(oracleId: string, enabled: boolean): FriendSpare[]
 export function orderSpares(spares: readonly FriendSpare[]): FriendSpare[] {
   return [...spares].sort((a, b) =>
     b.spare - a.spare
-    || a.friend.displayName.localeCompare(b.friend.displayName, "en-US", { sensitivity: "base" })
+    || compareNames(a.friend.displayName, b.friend.displayName, "en-US", { sensitivity: "base" })
     || (a.friend.publicId < b.friend.publicId ? -1 : 1));
 }
 
@@ -209,11 +210,11 @@ export function FriendSpareSection({ spares, card, first }: { spares: readonly F
           <li key={s.friend.publicId} data-testid="friend-spare" className="flex items-center gap-[12px] py-[9px]">
             <Face name={s.friend.displayName} commander={s.friend.commander} size={30} />
             <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
-              <b className="truncate text-[15px] font-semibold text-[color:var(--fg)]">{s.friend.displayName}</b>
+              <b className="truncate text-[15px] font-semibold text-[color:var(--fg)]"><PersonName n={s.friend.displayName} /></b>
               {/* The pods wrap rather than truncate: they are why this friend can see you, and an ellipsis hid the second
                   one at 390 (bb's R2 walk). */}
               <span className="font-mono text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)] [overflow-wrap:anywhere] [text-wrap:pretty]">
-                {spareCopy.via(s.friend.pods)}
+                <PersonText text={spareCopy.via(s.friend.pods)} />
               </span>
             </span>
             <span className="inline-flex h-[22px] flex-none items-center gap-[6px] rounded-[4px] px-[7px] font-mono text-[11.5px] text-[color:var(--fact)] bg-[color-mix(in_oklab,var(--fact)_14%,transparent)]">
@@ -313,7 +314,7 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
           <li key={s.friend.publicId} data-testid="friend-spare" data-friend={s.friend.publicId} data-ask={ask.kind} className="flex min-h-[52px] items-center gap-[12px] py-[9px]">
             <Face name={s.friend.displayName} commander={s.friend.commander} size={30} />
             <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
-              <b className="truncate text-[15px] font-semibold leading-[normal] text-[color:var(--fg)]">{s.friend.displayName}</b>
+              <b className="truncate text-[15px] font-semibold leading-[normal] text-[color:var(--fg)]"><PersonName n={s.friend.displayName} /></b>
               <span data-testid="friend-spare-sub" className="truncate font-mono text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">
                 <em className="not-italic text-[color:var(--fact)]">{spareCopy.request.count(s.spare)}</em>
                 {" · "}
@@ -321,7 +322,7 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
                   ? spareCopy.request.daysLeft(ask.daysLeft)
                   : ask.kind === "askAgain"
                     ? spareCopy.request.noAnswer(SPARE_REQUEST_DAYS)
-                    : spareCopy.request.pods(s.friend.pods)}
+                    : <PersonText text={spareCopy.request.pods(s.friend.pods)} />}
               </span>
             </span>
             <RowEnd ask={ask} friend={s.friend.displayName} card={cardName} busy={busy === s.friend.publicId} locked={busy !== null}
@@ -329,7 +330,7 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
           </li>
         ))}
       </ul>
-      {line ? <p data-testid="friend-spares-line" className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{line}</p> : null}
+      {line ? <p data-testid="friend-spares-line" className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]"><PersonText text={line} /></p> : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </section>
   );
@@ -340,7 +341,7 @@ function RequestSection({ spares, card, requests, first }: { spares: readonly Fr
  * rows and the cart's By friend lines both draw it over `rowAsk`, so the two always agree.
  */
 export function RowEnd({ ask, friend, card, busy, locked, onAsk, size = "sheet" }: {
-  ask: RowAsk; friend: string; card: string; busy: boolean; locked: boolean; onAsk: () => void;
+  ask: RowAsk; friend: string | ThirdPartyName; card: string; busy: boolean; locked: boolean; onAsk: () => void;
   /** `cart` in the all-decks cart's action stack (`.act .ask`). */
   size?: keyof typeof ASK_SIZE;
 }) {
@@ -350,8 +351,8 @@ export function RowEnd({ ask, friend, card, busy, locked, onAsk, size = "sheet" 
       : ask.kind === "askAgain" ? [r.askAgain, r.askAgainAria(friend, card)]
         : [r.askInstead, r.askInsteadAria(friend, card)];
     return (
-      <button type="button" data-testid="friend-spare-ask" aria-label={aria} aria-busy={busy || undefined} disabled={locked}
-        onClick={onAsk} className={`${ASK_PRESS} ${ASK_SIZE[size]} ${ask.kind === "askInstead" ? ASK_ALT_INK : ASK_INK}`}>
+      <button type="button" data-testid="friend-spare-ask" {...personAttrs({ "aria-label": aria }, `${ASK_PRESS} ${ASK_SIZE[size]} ${ask.kind === "askInstead" ? ASK_ALT_INK : ASK_INK}`)}
+        aria-busy={busy || undefined} disabled={locked} onClick={onAsk}>
         {label}
       </button>
     );

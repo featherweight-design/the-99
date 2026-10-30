@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { answerSpareAction } from "../../app/friends/spare-actions";
 import { spareCopy } from "../../lib/copy/social";
+import { personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { SocialToast, type SocialToastState } from "./social-toast";
 
 const r = spareCopy.request;
@@ -89,7 +90,7 @@ export function useSpareAnswer(shared?: SpareToast) {
  * on the lead story). Yes is the filled press: the answer the ask hopes for. Neither confirms, since neither moves a card.
  */
 export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, size }: {
-  friend: string; card: string; daysLeft: number; busy: Answer | null; locked: boolean;
+  friend: string | ThirdPartyName; card: string; daysLeft: number; busy: Answer | null; locked: boolean;
   /** `from` is the pressed button, for `useLandFocus`. */
   onAnswer: (a: Answer, from: Element) => void;
   size: "row" | "lead";
@@ -106,12 +107,12 @@ export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, 
       ];
   return (
     <span data-testid="spare-answer" className={`flex min-w-0 flex-wrap items-center gap-[8px] ${size === "row" ? "md:justify-end" : ""}`}>
-      <button type="button" data-testid="spare-yes" aria-label={r.yesAria(friend, card)} aria-busy={busy === "yes" || undefined}
-        disabled={locked} onClick={(e) => onAnswer("yes", e.currentTarget)} className={yes}>
+      <button type="button" data-testid="spare-yes" {...personAttrs({ "aria-label": r.yesAria(friend, card) }, yes)} aria-busy={busy === "yes" || undefined}
+        disabled={locked} onClick={(e) => onAnswer("yes", e.currentTarget)}>
         {r.yes}
       </button>
-      <button type="button" data-testid="spare-no" aria-label={r.noAria(friend, card)} aria-busy={busy === "no" || undefined}
-        disabled={locked} onClick={(e) => onAnswer("no", e.currentTarget)} className={no}>
+      <button type="button" data-testid="spare-no" {...personAttrs({ "aria-label": r.noAria(friend, card) }, no)} aria-busy={busy === "no" || undefined}
+        disabled={locked} onClick={(e) => onAnswer("no", e.currentTarget)}>
         {r.no}
       </button>
       <span data-testid="spare-days" className={`whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-muted)]`}>
@@ -122,7 +123,7 @@ export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, 
 }
 
 /** The receipt's two lines, for the answer given: "You're sparing Lathliss for Peter" or "You're keeping Lathliss". */
-export function receiptText(answer: Answer, card: string, friend: string): { kind: string; title: string; detail: string } {
+export function receiptText(answer: Answer, card: string, friend: string | ThirdPartyName): { kind: string; title: string | PersonParts; detail: string | PersonParts } {
   return answer === "yes"
     ? { kind: r.receiptKind.yes, title: r.sparing(card, friend), detail: r.sparingDetail(friend, card) }
     : { kind: r.receiptKind.no, title: r.keeping(card), detail: r.keepingDetail(friend) };

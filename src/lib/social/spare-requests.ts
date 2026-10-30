@@ -29,6 +29,8 @@ import { and, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, decks, feedDismissals, feedItems, friendLinks, printings, socialProfiles, spareRequests, userPrefs } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
+import { named } from "../person-name/mint";
+import type { ThirdPartyName } from "../person-name/brand";
 import { resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
 import type { ProfileCommander } from "./commander";
@@ -305,13 +307,13 @@ export async function answerSpareRequest(
 }
 
 /** The other side of an ask: never a Clerk id. `commander` is their face, or null for initials. */
-export type OtherSide = { publicId: string; displayName: string; commander: ProfileCommander | null };
+export type OtherSide = { publicId: string; displayName: ThirdPartyName; commander: ProfileCommander | null };
 export type AskCard = { name: string; imageUri: string | null };
 
 export type IncomingAsk = {
   id: string; oracleId: string; card: AskCard; copies: number;
   /** The asker's deck the card is for, by name, or null. */
-  deckName: string | null;
+  deckName: ThirdPartyName | null;
   /** How many spare copies of the card the HOLDER offers now. */
   spare: number;
   asker: OtherSide; createdAt: Date; daysLeft: number;
@@ -382,8 +384,8 @@ export async function loadIncomingAsks(holderId: string, env: NodeJS.ProcessEnv,
     const createdAt = new Date(r.created_at);
     return [{
       id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies),
-      deckName: r.deck_name, spare, createdAt, daysLeft: daysLeft(createdAt, now),
-      asker: { publicId: r.public_id, displayName: r.display_name, commander: faceOf(r) },
+      deckName: r.deck_name === null ? null : named(r.deck_name), spare, createdAt, daysLeft: daysLeft(createdAt, now),
+      asker: { publicId: r.public_id, displayName: named(r.display_name), commander: faceOf(r) },
     }];
   });
 }
@@ -495,7 +497,7 @@ export function deriveMyAsks(
     const open = state === "open" || state === "unavailable" || state === "unneeded";
     return {
       id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies),
-      deckName: r.deck_name, deckId: r.deck_id, holder: { publicId: r.public_id, displayName: r.display_name, commander: faceOf(r) },
+      deckName: r.deck_name, deckId: r.deck_id, holder: { publicId: r.public_id, displayName: named(r.display_name), commander: faceOf(r) },
       state, daysLeft: open ? daysLeft(a.createdAt, now) : null, createdAt: a.createdAt, answeredAt: a.answeredAt,
       seenAt: r.asker_seen_at == null ? null : new Date(r.asker_seen_at),
       cleared: r.cleared === true, standalone: r.standalone === true,
@@ -538,7 +540,7 @@ export async function loadMyAsks(
 
 /** One ask as `GET /api/spare-requests` serves it to the asker (the Shopping modal and the row marks). */
 export type AskStateLine = {
-  id: string; oracleId: string; holder: { publicId: string; displayName: string }; state: AskerState;
+  id: string; oracleId: string; holder: { publicId: string; displayName: ThirdPartyName }; state: AskerState;
   daysLeft: number | null; createdAt: string; answeredAt: string | null;
 };
 
