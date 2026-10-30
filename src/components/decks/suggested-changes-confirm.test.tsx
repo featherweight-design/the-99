@@ -1,10 +1,11 @@
 // Apply's confirmation with held additions (Small items 4, item 2, the Other-Decks board): each held card coming in
 // carries Review changes' Pull, which STAGES the choice; a staged row reads `pulls from {deck}` with Undo; the foot line
 // shows only while a held card is coming in. Nothing reaches the server from here.
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import type { Availability, DeckClaim } from "../../lib/decks/availability";
 import type { LineItem } from "../../lib/tuning/state";
@@ -125,6 +126,26 @@ describe("SuggestedChangesConfirm, held additions", () => {
     expect(onStage).toHaveBeenCalledWith("a0", null);
     // The foot line stays while the held card is still coming in.
     expect(foot()).not.toBeNull();
+  });
+});
+
+describe("SuggestedChangesConfirm, a guarded holder", () => {
+  // The guard tag is aria-hidden; the row's name carries why no Pull is offered, as Review changes' row does.
+  it.each([
+    ["commander", { commander: true }, (deck: string, card: string) => review.commanderGuardA11y(deck, card)],
+    ["locked", { locked: true }, (deck: string, card: string) => lockedCardsCopy.pull.a11y(deck, card)],
+  ] as const)("describes a %s holder's row by its guard sentence, and offers no Pull", (_kind, extra, sentence) => {
+    const guarded = holder("d-guard", "HD - Guard", { ...extra, senior: true });
+    const line = v2Line("a9", "add", { cardName: "Guarded Card", availability: heldBy(guarded) });
+    draw({ adds: [line] });
+    const name = within(row("a9")!).getByRole("button", { name: /Guarded Card/, description: sentence(guarded.name, line.cardName) });
+    expect(name.getAttribute("aria-describedby")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: review.pullA11y(line.cardName, guarded.name) })).toBeNull();
+  });
+
+  it("describes nothing on a holder that can give the copy up", () => {
+    draw({ adds: [path] });
+    expect(row("a0")!.querySelector("[aria-describedby]")).toBeNull();
   });
 });
 

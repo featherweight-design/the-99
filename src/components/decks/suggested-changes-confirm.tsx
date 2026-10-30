@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { availabilityState, type DeckClaim } from "../../lib/decks/availability";
 import { pullCandidate, pullSourceChoices } from "../../lib/decks/draft-shape";
@@ -166,6 +167,12 @@ function HeldRow({ line: l, held }: { line: LineItem; held: HeldProps }) {
   const undoRef = useRef<HTMLButtonElement>(null);
   const pullSlot = useRef<HTMLSpanElement>(null);
   const chosenId = chosen?.id ?? null;
+  // A commander or locked holder draws the Pull's guard tag, which is aria-hidden: its sentence is the name's
+  // description, as on Review changes' row.
+  const guardId = useId();
+  const guard = chosen ? null : claim?.commander
+    ? review.commanderGuardA11y(claim.name, l.cardName)
+    : claim?.locked ? lockedCardsCopy.pull.a11y(claim.name, l.cardName) : null;
   useEffect(() => {
     const to = moveFocus.current;
     moveFocus.current = null;
@@ -181,7 +188,8 @@ function HeldRow({ line: l, held }: { line: LineItem; held: HeldProps }) {
       <span aria-hidden className="w-[10px] flex-none font-mono text-[13px] font-semibold" style={{ color: "var(--accent-text)" }}>+</span>
       <Thumb item={l} small />
       <span className="flex min-w-0 flex-1 flex-col gap-[2px] py-[3px]">
-        <span className="min-w-0 truncate"><Name item={l} strike={false} /></span>
+        {guard ? <span id={guardId} data-sc-held-guard="" className="sr-only">{guard}</span> : null}
+        <span className="min-w-0 truncate"><Name item={l} strike={false} describedBy={guard ? guardId : undefined} /></span>
         {sub ? (
           <span data-sc-held-sub={chosen ? "staged" : "held"} className="self-start font-mono text-[10.5px]" style={{ color: chosen ? "var(--accent)" : "var(--fg-muted)" }}>
             {sub}

@@ -322,7 +322,8 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
  * - The release is gone with the version unchanged: a discard put the card back, so the pull is undone already, as long
  *   as the card is back in the draft.
  * - Otherwise the draft row must be as the pull left it (one copy fewer, or gone at one); an edit since refuses, as
- *   `restoreSwap` does.
+ *   `restoreSwap` does. So does the card having become the deck's commander or partner since (no commit needed for
+ *   that): put back in the list, it would be in the deck twice.
  *
  * A pull that only wrote a release (the draft had cut the card already) answers to the release alone: gone is nothing
  * to give back, a later pull's is refused, its own is given back.
@@ -331,7 +332,10 @@ async function undoPull(tx: Tx, p: {
   userId: string; askingDeckId: string; oracleId: string; sourceDeckId: string; draft: PulledDraftRow; versionId?: string;
   release?: string | null; printing?: { setCode: string; collectorNumber: string } | null;
 }): Promise<{ ok: true } | { ok: false; deckName: string }> {
-  const [source] = await tx.select({ name: decks.name }).from(decks)
+  // The live commander columns too, read under the source's row lock the caller holds: a card the pull took out of the
+  // list can since have become that deck's commander or partner without a commit.
+  const [source] = await tx.select({ name: decks.name, commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+    .from(decks)
     .where(and(eq(decks.id, p.sourceDeckId), eq(decks.userId, p.userId)));
   if (!source) return { ok: true };
   const refused = { ok: false as const, deckName: source.name };
@@ -353,6 +357,8 @@ async function undoPull(tx: Tx, p: {
   const left = p.draft.quantity - 1;
   const asLeft = left === 0 ? !row : row?.quantity === left && row.auto === p.draft.auto;
   if (!asLeft) return refused;
+  // Now the deck's commander or partner: back in the list too it would sit in the deck twice.
+  if (source.commander === p.oracleId || source.partner === p.oracleId) return refused;
   await tx.insert(deckCards)
     .values({ deckId: p.sourceDeckId, oracleId: p.oracleId, quantity: p.draft.quantity, auto: p.draft.auto })
     .onConflictDoUpdate({ target: [deckCards.deckId, deckCards.oracleId], set: { quantity: p.draft.quantity, auto: p.draft.auto } });

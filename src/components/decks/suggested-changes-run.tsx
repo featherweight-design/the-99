@@ -127,6 +127,9 @@ export function SuggestedChangesRun({
   // The picker's "→ N cards" for the held additions' sources, read once the confirmation opens (as Review changes reads
   // them with its page); absent until then, and on a failed read, when the picker draws no figure.
   const [pullFigures, setPullFigures] = useState<{ key: string; map: Map<string, SourceDeckFigure> } | null>(null);
+  // Each opening of the confirmation reads the figures afresh (a source's size moves between openings); the count is
+  // part of the read's key, and an opening clears the last read's figures until its own arrives.
+  const [opened, setOpened] = useState(0);
   const [busy, setBusy] = useState<"apply" | "undo" | null>(null);
   // A key per refused Apply, so a second refusal arrives as a newer alert with its own eight seconds (small items 3, item 8).
   const [failed, setFailed] = useState<number | null>(null);
@@ -179,22 +182,23 @@ export function SuggestedChangesRun({
   const cap = pickCap(n, lines, !waiting);
   const pickedAdds = adds.filter(isPicked);
   // Every choosable source of every held addition coming in, while the confirmation is open: the picker's figures.
-  const figureKey = confirming && ownedFromOtherDecks
+  const figurePairs = confirming && ownedFromOtherDecks
     ? pickedAdds.filter((l) => heldElsewhere(l, true)).flatMap((l) => pullSourceChoices(l.availability ?? undefined)
       .filter((c) => !c.commander && !c.locked)
       .map((c) => `${c.id}:${l.cardOracleId}`)).join(",")
     : "";
+  const figureKey = figurePairs === "" ? "" : `${opened}|${figurePairs}`;
   useEffect(() => {
     const read = actions.sourceFigures;
     if (!read || figureKey === "" || pullFigures?.key === figureKey) return;
     let live = true;
-    const pairs = figureKey.split(",").map((k) => {
+    const pairs = figurePairs.split(",").map((k) => {
       const [deckId, oracleId] = k.split(":");
       return { deckId, oracleId };
     });
     read(pairs).then((entries) => { if (live) setPullFigures({ key: figureKey, map: new Map(entries) }); }, () => undefined);
     return () => { live = false; };
-  }, [figureKey, actions.sourceFigures, pullFigures?.key]);
+  }, [figureKey, figurePairs, actions.sourceFigures, pullFigures?.key]);
   const pickedCuts = cuts.filter(isPicked);
   const t = tally([...pickedAdds, ...pickedCuts]);
   // A set past one line a side: the bar's claim waits on the server's read of the whole set (follow-up b).
@@ -688,7 +692,12 @@ export function SuggestedChangesRun({
           {appliedBar ? null : (
             <button
               type="button"
-              onClick={() => { if (applyOn) setConfirming(true); }}
+              onClick={() => {
+                if (!applyOn) return;
+                setPullFigures(null);
+                setOpened((n) => n + 1);
+                setConfirming(true);
+              }}
               aria-disabled={!applyOn || undefined}
               data-sc-apply=""
               className={`h-[44px] w-full whitespace-nowrap rounded-[8px] px-[16px] text-[13px] font-semibold md:h-[36px] md:w-auto transition-colors ${applyOn

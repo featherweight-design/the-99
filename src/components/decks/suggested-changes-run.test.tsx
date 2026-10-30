@@ -294,6 +294,10 @@ describe("the results", () => {
     expect(sourceFigures).not.toHaveBeenCalled();
     await press(apply());
     expect(sourceFigures).toHaveBeenCalledWith([{ deckId: GISHATH.id, oracleId: "o-a0" }]);
+    // Closed and opened again: read again, never the first opening's figures.
+    await press(screen.getByRole("button", { name: sc.confirmClose }));
+    await press(apply());
+    expect(sourceFigures).toHaveBeenCalledTimes(2);
   });
 
   it("takes a staged pull back with Undo, and then sends none", async () => {

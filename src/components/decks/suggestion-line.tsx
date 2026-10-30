@@ -251,7 +251,8 @@ function useOpen(item: LineItem) {
 }
 
 /** `strike={false}`: a cut not yet made reads plain (Suggested changes v2's pending rows); every other caller strikes. */
-export function Name({ item, strike = true }: { item: LineItem; strike?: boolean }) {
+/** `describedBy`: text that qualifies the card in its row (the confirmation's held row: why no Pull is offered). */
+export function Name({ item, strike = true, describedBy }: { item: LineItem; strike?: boolean; describedBy?: string }) {
   const trigger = useOpen(item);
   const add = item.side === "add";
   return (
@@ -259,6 +260,7 @@ export function Name({ item, strike = true }: { item: LineItem; strike?: boolean
       type="button"
       {...trigger}
       aria-label={copy.open(item.cardName)}
+      aria-describedby={describedBy}
       className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${add ? "font-semibold text-[color:var(--fg)]" : `font-normal text-[color:var(--fg-body)]${strike ? " line-through [text-decoration-color:var(--fg-locked)]" : ""}`}`}
     >
       {item.cardName}

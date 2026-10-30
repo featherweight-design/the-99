@@ -22,6 +22,7 @@ const fx = vi.hoisted(() => ({
   lines: [] as unknown[],
   run: { status: "ok", requestedCount: 3, readVersion: 4 as number | null, spentSets: [] as string[] },
   sourceName: "HD - Gishath" as string | null,
+  sourceCommander: "o-commander" as string,
   sourceRow: null as { quantity: number; auto: boolean } | null,
   updates: [] as Record<string, unknown>[],
   inserts: [] as Record<string, unknown>[],
@@ -38,7 +39,7 @@ vi.mock("../../../db", () => {
     if (has("runId")) return [{ runId: RUN }];
     if (keys.length === 1 && has("undoSnapshot")) return (fx.lines as Line[]).filter((l) => l.applySet === SET);
     if (has("addOracleId") && has("id")) return fx.lines;
-    if (has("name")) return fx.sourceName === null ? [] : [{ name: fx.sourceName }];
+    if (has("name")) return fx.sourceName === null ? [] : [{ name: fx.sourceName, commander: fx.sourceCommander, partner: null }];
     if (has("quantity")) return fx.sourceRow ? [fx.sourceRow] : [];
     if (has("deckId")) return [{ deckId: DECK }];
     return [];
@@ -116,6 +117,7 @@ beforeEach(() => {
   fx.lines = [open("a1", "add"), open("a2", "add"), open("c1", "cut"), open("c2", "cut")];
   fx.run = { status: "ok", requestedCount: 3, readVersion: 4, spentSets: [] };
   fx.sourceName = "HD - Gishath";
+  fx.sourceCommander = "o-commander";
   fx.sourceRow = null;
   release.at = RELEASED_AT;
   release.undone = 0;
@@ -272,6 +274,18 @@ describe("undoSet with a pull", () => {
     expect(r).toMatchObject({ ok: true });
     expect(fx.inserts).toEqual([{ deckId: SOURCE, oracleId: "o-a1", quantity: 1, auto: false }]);
     expect(fx.printings).toEqual([{ deckId: SOURCE, oracleId: "o-a1", setCode: "2xm", collectorNumber: "25" }]);
+  });
+
+  // The pull took a legendary creature's last copy, and the source then made it its commander without committing:
+  // put back in the list it would be in the deck twice.
+  it("refuses, naming the deck, when the pulled card has since become the source's commander", async () => {
+    fx.lines = applied({ quantity: 1, auto: false });
+    fx.sourceCommander = "o-a1";
+    const r = await undo();
+    expect(r).toEqual({ ok: false, refusal: { kind: "pullMoved", itemId: "a1", deckName: "HD - Gishath" } });
+    expect(fx.inserts).toEqual([]);
+    expect(release.undone).toBe(0);
+    expect(fx.events.some((e) => e.startsWith("restore:"))).toBe(false);
   });
 
   it("refuses when the source's row was edited since the pull", async () => {
