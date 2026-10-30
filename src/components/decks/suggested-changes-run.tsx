@@ -870,7 +870,7 @@ function WhySideLine({ side, parts, art }: {
       <span
         aria-hidden
         className="font-mono text-[12px] font-semibold not-italic"
-        style={{ color: side === "add" ? "var(--accent)" : "var(--fg-faint)" }}
+        style={{ color: side === "add" ? "var(--accent-text)" : "var(--fg-faint)" }}
       >
         {side === "add" ? "+" : "−"}
       </span>
