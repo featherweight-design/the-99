@@ -54,6 +54,9 @@ if (process.env.OVERVIEW_V2_ENABLED === "true") {
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
+// Its player writes more than one overview inside one window, and the public default is one run a day (2026-10-30),
+// so this probe pins five for itself: read per call, so setting it here is enough.
+process.env.MODEL_DAILY_ALLOWANCE = "5";
 const USER = `probe-synopsis-${Date.now()}`;
 
 let failures = 0;
