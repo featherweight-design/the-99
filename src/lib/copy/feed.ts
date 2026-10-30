@@ -79,6 +79,10 @@ export const feedCopy = {
     showAll: (n: number) => `Show all ${n}`,
     /** Kinds on, nothing in the window: the bold lead, then the kinds that are on, by name. */
     quietLead: "Nothing new right now.",
+    /** With every kind off, after the offer's ✕ or from Settings (small items 6, item 6): why the box is empty. Drafts for
+     *  `/copy-review`. */
+    offLead: "Nothing will show here.",
+    offRest: "Every kind of news is off.",
     quietRest: (kinds: string) => `You hear about ${kinds} here.`,
     /**
      * Each kind as the quiet line names it, mid-sentence (announcements G1): its own inline form, never a lowercased
@@ -118,9 +122,9 @@ export const feedCopy = {
       openRest: "You can change it in Settings.",
       /** The press that opens the boxes in place; a ▾ follows it, unspoken. */
       pick: "Pick",
-      /** The ✕: it saves an empty choice (`feed_offer_closed_at`). "For good" is not said: with no kind on, the line
-       *  comes back next visit, the reader's only way back besides Settings. */
-      closeAria: "Hide this",
+      /** The ✕: it saves an empty choice (`feed_offer_closed_at`) and sticks, kinds on or not (small items 6, item 6).
+       *  Draft for `/copy-review`. */
+      closeAria: "Hide this for good",
       /** The boxes' save (handoff call 7, as shipped). */
       save: "Show these",
       /** The boxes' foot (handoff call 7, as shipped). */

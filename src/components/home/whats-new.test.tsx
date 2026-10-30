@@ -139,16 +139,25 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
     await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
   });
 
-  it("after its ✕ with no kind on, the quiet line's lead alone: nothing to name", async () => {
+  it("after its ✕ with no kind on, the off line and the head's way back (small items 6, item 6)", async () => {
     closeOffer.mockResolvedValue({ ok: true, changed: true });
     const { container } = render(<WhatsNew feed={allOff} now={NOW} />);
+    expect(screen.queryByRole("link", { name: /Choose what shows/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
     expect(line(container)).toBeNull();
-    expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(feedCopy.home.quietLead);
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(`${feedCopy.home.offLead} ${feedCopy.home.offRest}`);
+    expect(screen.getByRole("link", { name: /Choose what shows/ })).toHaveAttribute("href", "/settings");
     await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
   });
 
-  it("puts the line back, and takes the lead-alone quiet line away, when the ✕'s write throws", async () => {
+  it("a reader with every kind off after a choice sees the off line and the way back from the start", () => {
+    const { container } = render(<WhatsNew feed={{ chosen: true, on: [], items: [], unseen: 0, lead: null }} now={NOW} />);
+    expect(line(container)).toBeNull();
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(`${feedCopy.home.offLead} ${feedCopy.home.offRest}`);
+    expect(screen.getByRole("link", { name: /Choose what shows/ })).toBeInTheDocument();
+  });
+
+  it("puts the line back, and takes the off line away, when the ✕'s write throws", async () => {
     closeOffer.mockRejectedValue(new Error("down"));
     const { container } = render(<WhatsNew feed={allOff} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: o.closeAria }));

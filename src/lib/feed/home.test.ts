@@ -53,6 +53,17 @@ describe("loadHomeFeed", () => {
     expect((q as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
   });
 
+  it("with every kind off after a choice, answers the off box, never the offer, and reads no feed (small items 6, item 6)", async () => {
+    const env = { ...ON, SOCIAL_FRIENDS_ENABLED: "" } as NodeJS.ProcessEnv;
+    // The offer's ✕ saved an empty choice.
+    const closed = fake({}, {}, { offerClosedAt: new Date("2026-10-20T00:00:00Z") });
+    expect(await loadHomeFeed("u1", env, NOW, closed)).toEqual({ chosen: true, on: [], items: [], unseen: 0, lead: null });
+    expect((closed as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
+    // Every kind turned off in Settings.
+    const declined = fake({}, {}, { declined: ["new-set", "new-precon", "price-drop", "combo"] });
+    expect(await loadHomeFeed("u1", env, NOW, declined)).toEqual({ chosen: true, on: [], items: [], unseen: 0, lead: null });
+  });
+
   describe("the offer line (announcements call 3)", () => {
     const SPARE = ON;
     // The default-on kind already on is not offered: an unticked box there would save it off.

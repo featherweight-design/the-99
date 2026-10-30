@@ -339,7 +339,9 @@ export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: 
   const prefs = await readFeedPrefs(userId, q);
   const effective = effectiveKinds(prefs);
   const on = available.filter((k) => effective.includes(k));
-  if (on.length === 0) return { chosen: false, offer: available, on: [] };
+  // No kind on: the offer only while the reader has never chosen. A reader who closed it or turned every kind off has
+  // chosen, and is never asked again (small items 6, item 6): What's new says why the box is empty instead.
+  if (on.length === 0) return neverChose(prefs) ? { chosen: false, offer: available, on: [] } : { chosen: true, on: [], items: [], unseen: 0, lead: null };
   const items = await loadFeed(userId, env, now, q);
   // A reader who never chose is offered the kinds still off for as long as they have not chosen (announcements call 3):
   // with nothing in the window, as the offer line under the quiet line (small items 5, `Offer-Empty`); with items, as the
