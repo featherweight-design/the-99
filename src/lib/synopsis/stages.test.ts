@@ -332,6 +332,8 @@ describe("the shape's own counts and budgets", () => {
     expect(checkAlternateLine(line("Lead with [[Grave Titan]] or [[Eternal Witness]].", ["c4"]), alts, FACTS).offenders).toEqual(["the alternate line cites the ref of 1 of the 2 alternate commanders"]);
     // Without facts, the refs are not read.
     expect(checkAlternateLine(line("Lead with [[Grave Titan]] or [[Eternal Witness]].", []), alts).pass).toBe(true);
+    // Shape 2 (every = false) keeps its unchanged rule: one alternate named is enough, within 144.
+    expect(checkAlternateLine(line("Lead with [[Grave Titan]].", ["c4"]), alts, FACTS, false)).toEqual({ pass: true, offenders: [] });
     const long = (n: number) => `Lead with [[Grave Titan]] or [[Eternal Witness]]${"x".repeat(n)}.`;
     const len = (t: string) => t.replace(/\[\[|\]\]/g, "").length;
     const fits = long(194 - len(long(0)));

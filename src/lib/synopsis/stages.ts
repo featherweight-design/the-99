@@ -486,20 +486,21 @@ export function checkLength(newDoc: OverviewDoc, oldDoc: OverviewDoc): { pass: b
  * too: when it carries refs, it cites each alternate's own (at most `EVIDENCE_MAX` of them, so a box
  * with more alternates than that must cite that many).
  */
-export function checkAlternateLine(doc: Pick<OverviewDoc, "alternate">, alternates: readonly string[], facts?: Pick<SynopsisFacts, "cards" | "commanders">): CheckResult<string> {
+export function checkAlternateLine(doc: Pick<OverviewDoc, "alternate">, alternates: readonly string[], facts?: Pick<SynopsisFacts, "cards" | "commanders">, every = true): CheckResult<string> {
   const offenders: string[] = [];
   const len = (l: Line) => rendered(l.text).trim().length;
   if (alternates.length === 0 && doc.alternate.length > 0) offenders.push("an alternate line with no alternate commander in the facts");
   if (alternates.length > 0 && doc.alternate.length === 0) offenders.push("no alternate line though the facts carry one");
-  const budget = alternateBudget(alternates.length);
+  // `every` false is shape 2's unchanged rule: ONE alternate named, within a stage line's 144.
+  const budget = every ? alternateBudget(alternates.length) : STAGES_LIMITS.alternate;
   const deck = facts ? deckOf(facts) : null;
   for (const l of doc.alternate) {
     if (len(l) > budget) offenders.push(`the alternate line is ${len(l)} characters, over its ${budget}`);
     if (alternates.length === 0) continue;
     const marked = new Set(marksIn(l.text).map(normalizeName));
-    const missing = alternates.filter((a) => !marked.has(normalizeName(a)));
+    const missing = every ? alternates.filter((a) => !marked.has(normalizeName(a))) : alternates.some((a) => marked.has(normalizeName(a))) ? [] : [...alternates];
     if (missing.length > 0) offenders.push(`the alternate line does not name ${missing.length === alternates.length ? "any of the alternate commanders" : `every alternate commander (missing ${missing.join(", ")})`}`);
-    if (deck && l.refs) {
+    if (every && deck && l.refs) {
       const cited = new Set(l.refs.flatMap((r) => { const c = refCard(deck, r); return c ? [c.oracleId] : []; }));
       const wanted = alternates.flatMap((a) => { const c = deck.names.get(normalizeName(a)); return c ? [c.oracleId] : []; });
       const covered = wanted.filter((id) => cited.has(id)).length;
@@ -535,7 +536,7 @@ export function checkShape(doc: OverviewDoc, alternates: readonly string[], shap
     if (doc.keyCards.length < min || doc.keyCards.length > max) offenders.push(`${doc.keyCards.length} Key cards, not ${min} to ${max}`);
   }
   if (doc.tips.length < STAGES_LIMITS.tips.min || doc.tips.length > STAGES_LIMITS.tips.max) offenders.push(`${doc.tips.length} tips`);
-  offenders.push(...checkAlternateLine(doc, alternates, facts).offenders);
+  offenders.push(...checkAlternateLine(doc, alternates, facts, shape === 3).offenders);
   return { pass: offenders.length === 0, offenders };
 }
 
