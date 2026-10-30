@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { TargetId } from "../../lib/discovery/targets";
 import { isDrawn } from "../../lib/ui/drawn";
-import { reveal } from "../../lib/ui/reveal";
+import { reveal, type RevealOptions } from "../../lib/ui/reveal";
 
 /**
  * The one registry of halo targets (discovery R2/R3, plan `2026-10-16-discovery-r2-r3.md`, decision 2). Mounted once by
@@ -25,8 +25,9 @@ export const HALO_ATTR = "data-target-halo";
 export type Targets = {
   targetRect: (id: TargetId) => DOMRect | null;
   /** Brings the target to the middle of the view through the app's own `reveal` (eased, marked as the app's scroll,
-   *  instant under reduced motion). False when it is not drawn. */
-  scrollToTarget: (id: TargetId) => boolean;
+   *  instant under reduced motion). False when it is not drawn. `{ beat: false }` skips the motion beat: the Try it
+   *  landing's alone (Hugh's ruling 2026-10-29), since no press of the reader's precedes it. */
+  scrollToTarget: (id: TargetId, options?: RevealOptions) => boolean;
   /** Haloes the target for `ms`. False when it is not drawn. */
   haloTarget: (id: TargetId, ms?: number) => boolean;
   /** The target's element once it registers, or null when `timeoutMs` passes first (never, for `Infinity`) or `signal`
@@ -51,6 +52,8 @@ const TargetsContext = createContext<Ctx | null>(null);
 
 /** While a landing waits, how often it looks again for a target that is registered but not yet shown. */
 const LOOK_AGAIN_MS = 200;
+/** The attributes whose change can show a registered control (`isDrawn`), watched while a landing waits. */
+const SHOWN_BY = ["hidden", "class", "style"];
 
 /** The first of an id's controls in the document that is drawn (`isDrawn`): one under `hidden` is passed over until it
  *  shows, and so is the copy of a control a stylesheet hides at this width. */
@@ -155,10 +158,11 @@ export function TargetsProvider({ children, navLocked = null }: { children: Reac
   const targetRect = useCallback((id: TargetId) => resolve(id)?.getBoundingClientRect() ?? null, [resolve]);
 
   const scrollToTarget = useCallback(
-    (id: TargetId) => {
+    (id: TargetId, options?: RevealOptions) => {
       const el = resolve(id);
       if (el === null) return false;
-      reveal(el, "center");
+      if (options) reveal(el, "center", undefined, undefined, options);
+      else reveal(el, "center");
       return true;
     },
     [resolve],
@@ -189,11 +193,17 @@ export function TargetsProvider({ children, navLocked = null }: { children: Reac
         const now = resolve(id);
         if (now !== null) return done(now);
         let timer = 0;
-        // A registration wakes the wait at once; the look-again catches a registered control that shows later.
+        // A registration wakes the wait at once, and so does the DOM change that shows a registered control (its panel's
+        // `hidden` lifted, a class or style that drew it): the observer reads it in the same task, so the landing scrolls
+        // as soon as the control can be seen, never a look-again later. The look-again stays behind it for a change no
+        // mutation reports (a stylesheet arriving, the viewport crossing a breakpoint).
         const look = window.setInterval(() => check(), LOOK_AGAIN_MS);
+        const shown = typeof MutationObserver === "function" ? new MutationObserver(() => check()) : null;
+        shown?.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: SHOWN_BY });
         const finish = (el: HTMLElement | null) => {
           window.clearTimeout(timer);
           window.clearInterval(look);
+          shown?.disconnect();
           waiters.current.delete(check);
           signal?.removeEventListener("abort", abort);
           done(el);

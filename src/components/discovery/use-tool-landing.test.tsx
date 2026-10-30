@@ -89,7 +89,7 @@ describe("useToolLanding", () => {
     const el = screen.getByRole("button", { name: "Choose the last" });
     expect(el.hasAttribute(HALO_ATTR)).toBe(true);
     expect(scrolled).toHaveBeenCalledTimes(1);
-    expect(scrolled).toHaveBeenCalledWith(el, "center");
+    expect(scrolled).toHaveBeenCalledWith(el, "center", undefined, undefined, { beat: false });
     expect(screen.queryByRole("note")).toBeNull();
     expect(spendMomentAction).toHaveBeenCalledWith("top-off");
     expect(window.location.search).toBe("?tab=deck");
@@ -302,6 +302,62 @@ describe("useToolLanding", () => {
     await flush();
     expect(screen.getByRole("button", { name: "Split" }).hasAttribute(HALO_ATTR)).toBe(true);
     expect(window.location.search).toBe("");
+  });
+
+  it("scrolls the moment its target's panel shows, with no timer advanced (no fixed wait, no look-again)", async () => {
+    at("?tool=proposed-cuts");
+    // The analysis tab's shape: the body mounts behind its loader under `hidden`, so the target registers undrawn.
+    function Behind() {
+      const [shown, setShown] = useState(false);
+      return (
+        <>
+          <div hidden={!shown}>
+            <Control id="proposed-cuts" name="Cuts" />
+          </div>
+          <button type="button" onClick={() => setShown(true)}>
+            read
+          </button>
+        </>
+      );
+    }
+    mount("proposed-cuts", <Behind />);
+    await flush();
+    expect(scrolled).not.toHaveBeenCalled();
+    act(() => screen.getByRole("button", { name: "read" }).click());
+    await flush();
+    const el = screen.getByRole("button", { name: "Cuts" });
+    expect(scrolled).toHaveBeenCalledTimes(1);
+    expect(scrolled).toHaveBeenCalledWith(el, "center", undefined, undefined, { beat: false });
+    expect(el.hasAttribute(HALO_ATTR)).toBe(true);
+    expect(window.location.search).toBe("");
+  });
+
+  it("stops watching for a target that never draws, at the wait's limit or when the page is left first", async () => {
+    const observe = vi.spyOn(MutationObserver.prototype, "observe");
+    const disconnect = vi.spyOn(MutationObserver.prototype, "disconnect");
+    const live = () => observe.mock.calls.length - disconnect.mock.calls.length;
+    const before = live();
+    at("?tool=top-off");
+    mount("top-off", <Control id="matchups" name="Split" />);
+    await flush();
+    expect(live()).toBeGreaterThan(before);
+    act(() => vi.advanceTimersByTime(LANDING_WAIT_MS));
+    await flush();
+    expect(live()).toBe(before);
+    expect(scrolled).not.toHaveBeenCalled();
+    cleanup();
+
+    at("?tool=top-off");
+    const left = mount("top-off", <Control id="matchups" name="Split" />);
+    await flush();
+    expect(live()).toBeGreaterThan(before);
+    left.unmount();
+    expect(live()).toBe(before);
+    act(() => vi.advanceTimersByTime(LANDING_WAIT_MS));
+    await flush();
+    expect(scrolled).not.toHaveBeenCalled();
+    observe.mockRestore();
+    disconnect.mockRestore();
   });
 
   it("strips a target that never draws with no halo, and spends nothing", async () => {

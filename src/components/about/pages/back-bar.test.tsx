@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { UNDER_HEADER } from "../../ui/under-header";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The back bar (About visual PR 6a, call 5): drawn while the live address carries the `from` the server validated;
@@ -60,5 +61,11 @@ describe("BackBar", () => {
     expect(window.location.search).toBe("");
     expect(window.location.pathname).toBe("/about/collection");
     expect(container.querySelector("[data-about-back]")).toBeNull();
+  });
+
+  it("moves on the header's slide, as the top dock does, so the dock never sits over it mid-slide (Copilot round 3)", () => {
+    const { container } = render(<BackBar from={FROM} screen="Upload a file" />);
+    const bar = container.querySelector("[data-about-back]") as HTMLElement;
+    for (const cls of UNDER_HEADER.split(" ")) expect(bar.classList).toContain(cls);
   });
 });

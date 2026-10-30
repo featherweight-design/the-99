@@ -171,6 +171,33 @@ describe("reveal", () => {
     expect(box.scrollTop).toBe(850);
   });
 
+  // Hugh's ruling 2026-10-29: the Try it landing skips the beat, and nothing else does.
+  it("with beat: false, eases from the next frame with no beat", () => {
+    media(false);
+    const { box, el } = scene();
+    reveal(el, "start", undefined, undefined, { beat: false });
+    expect(box.scrollTop).toBe(0);
+    vi.advanceTimersByTime(16 * 2);
+    expect(box.scrollTop).toBeGreaterThan(0);
+    vi.advanceTimersByTime(MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(1000);
+  });
+
+  it("keeps the beat when no option is given: nothing moves in the frames a no-beat reveal would use", () => {
+    media(false);
+    const { box, el } = scene();
+    reveal(el, "start", undefined, undefined, {});
+    vi.advanceTimersByTime(16 * 2);
+    expect(box.scrollTop).toBe(0);
+  });
+
+  it("still jumps under reduced motion with beat: false", () => {
+    media(true);
+    const { box, el } = scene();
+    reveal(el, "center", undefined, undefined, { beat: false });
+    expect(box.scrollTop).toBe(850);
+  });
+
   it("moves the sideways row too when asked for an inline position", () => {
     media(true);
     const row = document.createElement("div");

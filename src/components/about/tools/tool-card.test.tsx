@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ToolCardModel } from "../../../lib/discovery/showcase";
 import { TOOL_DOOR, TOOL_PRESS, ToolCard } from "./tool-card";
@@ -82,6 +83,20 @@ describe("ToolCard: one press per card", () => {
       // No stretched link over the card.
       expect(c.querySelector("a.absolute, a[class*='inset-0']")).toBeNull();
     }
+  });
+
+  // Small items 3 item 2: the halo goes through haloAt's clamp, in CSS, so it holds at every card width.
+  it("draws its halo held 8px inside the picture frame, with no width or height of its own", () => {
+    // Server markup, as the page is first drawn: jsdom's style parser drops a clamp() it cannot read.
+    const html = renderToStaticMarkup(
+      <ToolCard card={model({ kind: "deck", href: "/decks/d1", deck: "Kinnan", more: 0 })} shot={SHOT as never} link={LINK} />,
+    );
+    const style = /data-tool-card-halo[^>]*style="([^"]*)"|style="([^"]*)"[^>]*data-tool-card-halo/.exec(html)?.slice(1).find(Boolean) ?? "";
+    expect(style).toContain("left:clamp(8px, 10%, calc(100% - 8px))");
+    expect(style).toContain("top:clamp(8px, 10%, calc(100% - 8px))");
+    expect(style).toContain("right:max(8px, 70%)");
+    expect(style).toContain("bottom:max(8px, 70%)");
+    expect(style).not.toMatch(/(^|;)\s*(width|height):/);
   });
 
   it("the Where line lights the tool's label (Show me's target) and sits before the button", () => {

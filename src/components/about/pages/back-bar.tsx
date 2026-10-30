@@ -14,15 +14,18 @@ import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { TOUCH_HIT } from "../../ui/touch-hit";
+import { UNDER_HEADER } from "../../ui/under-header";
 
 export function BackBar({ from, screen }: { from: string; screen: string }) {
   const live = new URLSearchParams(useLiveQuery(new URLSearchParams({ [FROM_PARAM]: from }).toString())).get(FROM_PARAM);
   if (live !== from) return null;
   const label = ABOUT_PAGE_STRINGS.back(screen);
   return (
+    // Rides the header's slide (UNDER_HEADER), as the top dock does: a bar that jumped while the dock eased would sit
+    // under the dock for the length of the slide (Copilot round 3).
     <div
       data-about-back
-      className="sticky top-[var(--header-offset,0px)] z-[4] flex items-center gap-[10px] border-b border-b-[color:var(--border)] bg-[color:var(--bg)] px-[16px] py-[8px] md:-mx-[30px] md:px-[30px] md:py-[10px]"
+      className={`sticky ${UNDER_HEADER} z-[4] flex items-center gap-[10px] border-b border-b-[color:var(--border)] bg-[color:var(--bg)] px-[16px] py-[8px] md:-mx-[30px] md:px-[30px] md:py-[10px]`}
     >
       {/* A deck's name can run to 120 characters: the pill shrinks to the bar and the label ends in an ellipsis on its one
           line, while `title` keeps the whole of it (the link's accessible name is its full text either way). */}

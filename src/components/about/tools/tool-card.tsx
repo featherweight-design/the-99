@@ -14,6 +14,7 @@
 import Link from "next/link";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { showcaseCopy } from "../../../lib/copy/discovery";
+import { haloInsets } from "../../../lib/about/halo";
 import type { Shot } from "../../../lib/about/shots";
 import type { ToolCardModel } from "../../../lib/discovery/showcase";
 
@@ -43,13 +44,8 @@ function Picture({ shot, name }: { shot: Shot | null; name: string }) {
           aria-hidden
           data-tool-card-halo
           className="pointer-events-none absolute rounded-[9px]"
-          style={{
-            left: `${shot.halo.x * 100}%`,
-            top: `${shot.halo.y * 100}%`,
-            width: `${shot.halo.w * 100}%`,
-            height: `${shot.halo.h * 100}%`,
-            boxShadow: TOOL_CARD_HALO,
-          }}
+          // Held 8px inside the frame on every side, at every card width (Small items 3 item 2): `haloAt`'s clamp in CSS.
+          style={{ ...haloInsets(shot.halo), boxShadow: TOOL_CARD_HALO }}
         />
       )}
     </div>

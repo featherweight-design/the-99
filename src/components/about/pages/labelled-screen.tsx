@@ -14,7 +14,8 @@
 // Addendum R4 (boards 1 to 3): the pins ride a 30px gutter left of the capture, never on it, each region marked by
 // corner brackets and a slid pin joined to its row by a stub in the gutter (`pinsAt`); the halo is held 8px inside the
 // clipped frame (`haloAt`), so an edge-touching region's ring closes; on a phone a pressed PIN also docks its label
-// above the tab bar (`pin-dock.tsx`). A label line never docks: it is the list the dock repeats.
+// above the tab bar, or at the top for a low region (`pin-dock.tsx`). A label line never docks: it is the list the dock
+// repeats.
 
 "use client";
 
@@ -252,6 +253,11 @@ function LabelList({
   );
 }
 
+/** The lit region's halo as drawn on this width's screen: the box the dock keeps clear. */
+function litRegion(root: HTMLElement | null, key: string): Element | null {
+  return [...(root?.querySelectorAll<HTMLElement>("[data-about-halo]") ?? [])].find((el) => el.dataset.aboutHalo === key) ?? null;
+}
+
 /** A phone screen's press state: the lit region, and the label docked for it (drawn only while it is the lit one). */
 type Press = { lit: string | null; docked: string | null };
 
@@ -319,7 +325,8 @@ function Width({ model, width }: { model: ScreenModel; width: PageWidth }) {
         </div>
       ))}
       {unpinned.length > 0 && <LabelList labels={unpinned} lit={lit} onPress={pressLine} width={width} />}
-      {dockLabel && <PinDock label={dockLabel} onClose={close} />}
+      {/* Keyed on its label: each tap mounts a dock that decides its place again (Small items 3 item 6). */}
+      {dockLabel && <PinDock key={dockLabel.key} label={dockLabel} onClose={close} region={() => litRegion(root.current, dockLabel.key)} />}
     </div>
   );
 }
