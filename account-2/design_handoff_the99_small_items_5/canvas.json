@@ -1,17 +1,58 @@
 {
- "v": 3,
- "createdOnFiles": {"v": 1, "at": "2026-10-30T04:40:00Z"},
- "title": "The 99 · Tag a card, precon art, the empty offer",
- "launch": {"view": "canvas"},
- "pages": [],
- "boards": {
-  "Main.dc.html": {"x": 0, "y": 0, "w": 1300, "h": 764, "title": "The calls"},
-  "Tag-Control.dc.html": {"x": 1380, "y": 0, "w": 1412, "h": 1690, "title": "1 · Tag a card: the control"},
-  "Tag-Places.dc.html": {"x": 2872, "y": 0, "w": 2060, "h": 4795, "title": "1 · Tag a card: the five places"},
-  "Header-Art.dc.html": {"x": 5012, "y": 0, "w": 1790, "h": 2526, "title": "2 · Precon page header art"},
-  "Offer-Empty.dc.html": {"x": 6882, "y": 0, "w": 1420, "h": 2843, "title": "3 · The offer when What’s new is empty"}
- },
- "order": ["Main.dc.html", "Tag-Control.dc.html", "Tag-Places.dc.html", "Header-Art.dc.html", "Offer-Empty.dc.html"],
- "notes": {},
- "designSystems": []
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-30T04:40:00Z"
+  },
+  "title": "The 99 \u00b7 Tag a card, precon art, the empty offer",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1300,
+      "h": 764,
+      "title": "The calls"
+    },
+    "Tag-Control.dc.html": {
+      "x": 1380,
+      "y": 0,
+      "w": 1412,
+      "h": 1690,
+      "title": "1 \u00b7 Tag a card: the control"
+    },
+    "Tag-Places.dc.html": {
+      "x": 2872,
+      "y": 0,
+      "w": 2060,
+      "h": 5365,
+      "title": "1 \u00b7 Tag a card: the six places"
+    },
+    "Header-Art.dc.html": {
+      "x": 5012,
+      "y": 0,
+      "w": 1790,
+      "h": 2526,
+      "title": "2 \u00b7 Precon page header art"
+    },
+    "Offer-Empty.dc.html": {
+      "x": 6882,
+      "y": 0,
+      "w": 1420,
+      "h": 2843,
+      "title": "3 \u00b7 The offer when What\u2019s new is empty"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Tag-Control.dc.html",
+    "Tag-Places.dc.html",
+    "Header-Art.dc.html",
+    "Offer-Empty.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
 }
