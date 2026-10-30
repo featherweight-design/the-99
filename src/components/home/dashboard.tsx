@@ -44,8 +44,8 @@ export type DashboardProps = {
   /** Null with the Home feed on: Ready to build leaves Home in direction B ("its job is For you's"), unread. */
   ready: ReadySlice<CommanderListItem> | null;
   /**
-   * The Home feed (menu and Home PR 6), read per request outside the cached payload, or null/absent with
-   * `HOME_FEED_ENABLED` off, which draws Home exactly as shipped. Present, Home is direction B: the lead story heads
+   * The Home feed (menu and Home PR 6), read per request outside the cached payload, or null when the read
+   * failed (or absent, in tests). Present, Home is direction B: the lead story heads
    * the main column, What's new follows the resume block, and Ready to build is gone.
    */
   feed?: HomeFeed | null;

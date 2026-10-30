@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
-import { availableFeedKinds, homeFeedEnabled } from "../../lib/feed/flag";
+import { availableFeedKinds } from "../../lib/feed/flag";
 import { closeFeedOffer, parseChosenKinds, setFeedKinds } from "../../lib/feed/prefs";
 import { requestSwitchEnv } from "../../lib/switches/request";
 
@@ -14,14 +14,13 @@ export type SaveFeedKindsResult = { ok: true; changed: boolean } | { ok: false; 
  * every checked kind must be offered, or nothing is written. A kind the form did not offer (its switch was off when
  * the page loaded, even if it has come on since) keeps whatever it had (`nextFeedPrefs`' scope).
  *
- * Refused while `HOME_FEED_ENABLED` is off. Writes only when the choice changes, and revalidates `/settings` only
+ * Writes only when the choice changes, and revalidates `/settings` only
  * then, as the Spares actions do: the data stamp moves Home's cache, not the router's, so a Back to a cached Settings
  * payload would otherwise seed the boxes with the old choices (review round 4).
  */
 export async function saveFeedKinds(on: unknown, offered: unknown): Promise<SaveFeedKindsResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!homeFeedEnabled(env)) return { ok: false, reason: "off" };
   const available = availableFeedKinds(env);
   const scope = parseChosenKinds(offered, available);
   const kinds = scope && parseChosenKinds(on, scope);
@@ -36,11 +35,9 @@ export type CloseFeedOfferResult = { ok: true; changed: boolean } | { ok: false;
 /**
  * What's new's offer ✕ (announcements call 3): saves an empty choice for the CALLER (`closeFeedOffer`), and the offer
  * line is gone while any kind is on (with none on, `loadHomeFeed` offers again: its only way back besides Settings). Turns no kind on or off, so Settings draws as it did and nothing is revalidated; Home's next
- * render reads the column. Refused while `HOME_FEED_ENABLED` is off.
+ * render reads the column.
  */
 export async function closeFeedOfferAction(): Promise<CloseFeedOfferResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!homeFeedEnabled(env)) return { ok: false, reason: "off" };
   return { ok: true, changed: await closeFeedOffer(userId, new Date()) };
 }

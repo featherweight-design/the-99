@@ -11,7 +11,6 @@ import { neverCutEnabled } from "../decks/never-cut-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
-import { homeFeedEnabled } from "../feed/flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
@@ -52,7 +51,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
-  HOME_FEED_ENABLED: homeFeedEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   LABEL_ROLE_COUNTS_ENABLED: labelRoleCountsEnabled,
   LABEL_SURFACES_ENABLED: labelSurfacesEnabled,

@@ -55,8 +55,8 @@ describe("each sentence follows its own switch", () => {
   const textOf = (e: Record<string, string>, key: string) =>
     units(visibleSections(env(e))).find((u) => u.key === key)?.text;
   it.each([
-    ["Ready to build leaves with the feed on", { HOME_FEED_ENABLED: "true" }, "home/home/ready", undefined, undefined],
-    ["the feed's lead names no kind a switch can hide", { HOME_FEED_ENABLED: "true" }, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
+    ["Ready to build is gone with the feed always on", {}, "home/home/ready", undefined, undefined],
+    ["the feed's lead names no kind a switch can hide", {}, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
     ["the + with scanning (it follows collection edit)", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "scan them", undefined],
     ["the place strip without Help me choose", {}, "commanders/for-you/places", "two ways", "Help me choose"],
     ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
@@ -208,7 +208,7 @@ describe("seen translation", () => {
     const section = { ...base, labels: [{ ...base.labels[0], id: "fresh", region: "home/home/fresh", rest: " a. b.", switch: null, sentences: { " b.": "PUSH_ENABLED" as const }, since: 16, legacy: [] }] };
     const off = visibleSections(OFF, [section]);
     const seen = { version: 16, ids: seenKeysOf(off, "home") };
-    const on = visibleSections(env({ PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true" }), [section]);
+    const on = visibleSections(env({ PUSH_ENABLED: "true" }), [section]);
     expect(unseenUnits(on, seen).map((u) => u.key)).toEqual([sentenceKey("home/home/fresh", "PUSH_ENABLED")]);
   });
 
@@ -328,7 +328,6 @@ describe("a section's sub-line", () => {
 
   it("describes each screen while its switch is on, and only says it is off while it is off", () => {
     const cases: [string, string, string][] = [
-      ["whats-new", "HOME_FEED_ENABLED", "News you choose"],
       ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
       ["stats", "DECK_STATS_ENABLED", "charts"],
       ["notes", "DECK_NOTES_ENABLED", "remember"],
@@ -355,9 +354,8 @@ describe("a section's sub-line", () => {
     expect(sub(noStats, "stats")).toBe(ABOUT_SCREEN_OFF.trim());
     const noEdit = env({ ...(ALL_ON as Record<string, string>), COLLECTION_EDIT_ENABLED: "off" });
     expect(sub(noEdit, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding.");
-    // Ready to build shows only while the feed is off.
+    // Ready to build is gone (the feed is always on).
     expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
-    expect(sub(env({ ...(ALL_ON as Record<string, string>), HOME_FEED_ENABLED: "off" }), "home")).toContain("best-fit commanders");
     // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too.
     expect(sub(ALL_ON, "whats-new")).toContain("Within Today and Earlier, anything waiting on you comes first.");
     expect(sub(env({ ...(ALL_ON as Record<string, string>), SPARE_REQUESTS_ENABLED: "off" }), "whats-new")).not.toContain("waiting on you");

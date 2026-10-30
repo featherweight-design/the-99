@@ -25,7 +25,7 @@ const A = `probe-as-a-${run}`; // the asker, the reader
 const H1 = `probe-as-h1-${run}`; // answers Yes
 const H2 = `probe-as-h2-${run}`; // answers No
 const ENV = {
-  ...process.env, SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true", HOME_FEED_ENABLED: "true",
+  ...process.env, SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true",
 } as NodeJS.ProcessEnv;
 
 let failed = 0;

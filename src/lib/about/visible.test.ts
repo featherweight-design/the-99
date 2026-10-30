@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -17,7 +17,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 
 // Retired switches draw always and are still seen by id (so no reader's New marks moved): with "every switch off" they
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = retiredEntries.map((e) => e.id);
 
@@ -96,7 +96,8 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
     // `credits` and `deck-analysis` carry a line gated by `TUNING_ENABLED` alone (2026-10-08),
     // on top of (or with no) entry-level switch — resolved the same way `visibleEntries` itself
     // resolves it, rather than hand-duplicating the string surgery here.
-    expect(visibleEntries(OFF)).toEqual(aboutEntries.filter((e) => !e.switch || retiredEntries.includes(e)).map((e) => resolveEntry(e, OFF)));
+    // `whats-new` (retired switch) is drawn in place of `ready-to-build`, even with every switch off.
+    expect(visibleEntries(OFF)).toEqual(aboutEntries.filter((e) => e.id !== "ready-to-build" && (!e.switch || retiredEntries.includes(e))).map((e) => resolveEntry(e, OFF)));
     expect(visibleEntries(ON)).toEqual(aboutEntries.filter((e) => e.id !== "buying-credits" && e.id !== "ready-to-build").map((e) => resolveEntry(e, ON)));
   });
 
@@ -622,7 +623,7 @@ describe("whats-new's line switches, in every state of the three switches they n
 
   it("draws clean text in all 8 combinations: no gated line left behind, no orphaned heading, no empty paragraph", () => {
     for (let mask = 0; mask < 1 << flags.length; mask++) {
-      const env = { HOME_FEED_ENABLED: "true", ...Object.fromEntries(flags.map((f, i) => [f, mask & (1 << i) ? "true" : "false"])) } as unknown as NodeJS.ProcessEnv;
+      const env = { ...Object.fromEntries(flags.map((f, i) => [f, mask & (1 << i) ? "true" : "false"])) } as unknown as NodeJS.ProcessEnv;
       const on = (f: (typeof flags)[number]) => env[f] === "true";
       const { caption } = resolveEntry(entry, env);
       const paras = blocks(caption);
@@ -698,12 +699,12 @@ describe("deck-focus without Suggested changes", () => {
 });
 
 describe("push (close-out): each line follows the kind's own availability (`feedKindAvailable`)", () => {
-  const env = (extra: Record<string, string>) => ({ HOME_FEED_ENABLED: "true", PUSH_ENABLED: "true", ...extra }) as unknown as NodeJS.ProcessEnv;
+  const env = (extra: Record<string, string>) => ({ PUSH_ENABLED: "true", ...extra }) as unknown as NodeJS.ProcessEnv;
   const push = (e: NodeJS.ProcessEnv) => visibleEntries(e).find((x) => x.id === "push");
 
-  it("draws only with PUSH_ENABLED, which needs Home's news", () => {
+  it("draws only with PUSH_ENABLED", () => {
     expect(push(env({}))).toBeDefined();
-    expect(push({ PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeUndefined();
+    expect(push({} as unknown as NodeJS.ProcessEnv)).toBeUndefined();
   });
 
   it("names a set and a precon, always", () => {
@@ -721,9 +722,9 @@ describe("push (close-out): each line follows the kind's own availability (`feed
     expect(on.keys).toHaveLength(4);
   });
 
-  it("swaps whats-new's news key with the switch", () => {
+  it("swaps whats-new's news key with push", () => {
     const key = (e: NodeJS.ProcessEnv) => visibleEntries(e).find((x) => x.id === "whats-new")!.keys[0];
-    expect(key({ HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toMatch(/^News stays in the app/);
+    expect(key({} as unknown as NodeJS.ProcessEnv)).toMatch(/^News stays in the app/);
     expect(key(env({}))).toBe("News shows on Home, and as push where you turn it on. No email, ever.");
   });
 });

@@ -716,7 +716,7 @@ export type AdminDoorProps = {
   friendsMoment?: boolean;
   /** the Commanders place (always on) for this reader: Discover leaves the bar, and with `friends` Friends takes its slot. */
   commandersPlace?: boolean;
-  /** `HOME_FEED_ENABLED` for this reader: Settings has its news section, so the menu's Settings row has somewhere to go. */
+  /** Always true now (the feed switch is retired): Settings has its news section, so the menu's Settings row has somewhere to go. */
   homeFeed?: boolean;
 };
 

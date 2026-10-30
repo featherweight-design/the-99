@@ -198,7 +198,7 @@ export type NewsSetting = { kind: FeedKind; on: boolean };
 /**
  * Settings' "Notifications" section: the kinds AVAILABLE to this reader (`availableFeedKinds`, in `FEED_KINDS`
  * order), each with whether it is on (`effectiveKinds`: a default-on kind never touched reads on). A kind that is not available is absent, never drawn disabled; its stored choice
- * is kept by the save's scope. Empty while `HOME_FEED_ENABLED` is off, and then nothing is read.
+ * is kept by the save's scope.
  */
 export async function loadNewsSettings(userId: string, env: NodeJS.ProcessEnv, q: Pick<typeof db, "select"> = db): Promise<NewsSetting[]> {
   const available = availableFeedKinds(env);

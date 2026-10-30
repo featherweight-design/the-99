@@ -30,7 +30,7 @@ const run = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const U = `probe-fw-u-${run}`; // the reader
 const F = `probe-fw-f-${run}`; // the friend
 const ENV = {
-  ...process.env, HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true",
+  ...process.env, SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true",
 } as NodeJS.ProcessEnv;
 
 let failed = 0;
@@ -168,7 +168,6 @@ async function main() {
     // ---- 2. combo
     console.log("\n2. combo");
     // The collection writes resolve the reader's switches from this process's environment (as a route does).
-    process.env.HOME_FEED_ENABLED = "true";
     const { rows: variants } = await db.execute<{ variant_id: string; produces: string[]; ids: string[] }>(sql`
       select v.variant_id, v.produces, array_agg(vc.oracle_id::text order by vc.oracle_id) as ids
       from spellbook_variants v join spellbook_variant_cards vc on vc.variant_id = v.variant_id

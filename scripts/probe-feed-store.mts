@@ -23,7 +23,7 @@ process.env.DATABASE_URL = url;
 const run = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const U = `probe-feed-u-${run}`; // the reader
 const F = `probe-feed-f-${run}`; // the friend
-const ENV = { HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ENV = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const DAY = 86_400_000;
 
 let failed = 0;
@@ -178,7 +178,6 @@ async function main() {
     }
     check("a kind not available (wishlist off) is not read",
       !(await read.loadFeed(U, { ...ENV, SOCIAL_WISHLIST_ENABLED: "" }, now)).some((i) => i.kind === "price-drop" || i.kind === "trade-match"));
-    check("the feed off reads nothing", (await read.loadFeed(U, { ...ENV, HOME_FEED_ENABLED: "" }, now)).length === 0);
 
     await shareSparesWith(F, pod.id, false);
     check("F stops sharing spares with the pod: the trade match leaves the feed",
@@ -229,8 +228,6 @@ async function main() {
     await prefs.markFriendsSeen(U, ENV, later);
     check("/friends' seen did not clear Home's count",
       (await read.unseenCount(U, ENV, later)) === 1 && (await read.unseenFriendsCount(U, ENV, later)) === 0);
-    check("markFeedSeen with nothing available writes nothing",
-      (await prefs.markFeedSeen(U, { ...ENV, HOME_FEED_ENABLED: "" }, later)) === false);
 
     // ---- 6. plans (before the purge empties the fixture)
     console.log("\n6. EXPLAIN");

@@ -24,7 +24,6 @@ import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
-import { homeFeedEnabled } from "../feed/flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 import { pushEnabled } from "../push/flag";
@@ -90,8 +89,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   PAYMENTS_ENABLED: paymentsEnabled,
   // Already reads PAYMENTS_ENABLED inside its own function.
   WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,
-  // The menu and Home line: the feed, and Commanders as one place.
-  HOME_FEED_ENABLED: homeFeedEnabled,
+  // Retired (always on): the feed. The name stays as the lines' historical identity.
+  HOME_FEED_ENABLED: () => true,
   // Retired (always on): the name stays as the lines' historical identity.
   COMMANDERS_PLACE_ENABLED: () => true,
   // Retired (always on where friends are): the name stays as the lines' historical identity. It was on exactly when
@@ -103,7 +102,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   NEAR_COMBOS_ENABLED: () => true,
   // The strategy focus ended on exactly when the Analysis tab is, where its ring mounts.
   STRATEGY_FOCUS_ENABLED: analysisTabEnabled,
-  // Push notifications (close-out): its own entry, and `whats-new`'s news key. Already needs HOME_FEED_ENABLED. The
+  // Push notifications (close-out): its own entry, and `whats-new`'s news key. The
   // switch alone, as its flag reads it: the VAPID check (`pushAvailable`) parses keys with `node:crypto`, and this module
   // is imported by `proxy.ts`.
   PUSH_ENABLED: pushEnabled,

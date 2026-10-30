@@ -79,7 +79,7 @@ describe("cachePageForUser", () => {
       await cachePageForUser("u1", "home", [], async () => ({ value: 1, store: true }), envViewWith(vars));
       return vi.mocked(cacheForUser).mock.calls[0][1].join("|");
     };
-    expect(await key({ HOME_FEED_ENABLED: "true" })).not.toBe(await key({}));
+    expect(await key({ SOCIAL_FRIENDS_ENABLED: "true" })).not.toBe(await key({}));
   });
 
   it("serves a repeat from the cache while the reader's stamp stands", async () => {

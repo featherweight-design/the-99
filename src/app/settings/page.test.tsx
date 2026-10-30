@@ -1,17 +1,14 @@
-// /settings (menu and Home PR 3 and 4): the route does not exist while BOTH SOCIAL_FRIENDS_ENABLED and HOME_FEED_ENABLED
-// are off for the reader; Notifications comes first, Spares only with Friends on; the collection list is read only
-// when a card is kept back.
+// /settings (menu and Home PR 3 and 4): Notifications comes first, Spares only with Friends on; the collection list is
+// read only when a card is kept back.
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const m = vi.hoisted(() => ({
   env: {} as Record<string, string>,
-  notFound: vi.fn(() => { throw new Error("NEXT_NOT_FOUND"); }),
   loadCollectionList: vi.fn(),
   loadKeptBack: vi.fn(),
   loadNewsSettings: vi.fn(),
   readSpareMin: vi.fn(async () => 2),
 }));
-vi.mock("next/navigation", () => ({ notFound: m.notFound }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_me" }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => m.env }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: async () => [{ podId: "p1", name: "Thursday pod" }] }));
@@ -35,19 +32,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.loadKeptBack.mockResolvedValue([]);
   m.loadCollectionList.mockResolvedValue({ cards: [], pricesFailed: false });
-  m.loadNewsSettings.mockImplementation(async (_u: string, env: Record<string, string>) =>
-    env.HOME_FEED_ENABLED === "true" ? [{ kind: "new-set", on: true }] : []);
+  m.loadNewsSettings.mockResolvedValue([{ kind: "new-set", on: true }]);
 });
 
 describe("/settings", () => {
-  it("404s with Friends and the Home feed both off for the reader", async () => {
+  it("draws the news section alone with Friends off, reading nothing for Spares", async () => {
     m.env = {};
-    await expect(SettingsPage()).rejects.toThrow("NEXT_NOT_FOUND");
-    expect(m.loadNewsSettings).not.toHaveBeenCalled();
-  });
-
-  it("draws the news section alone with only the Home feed on, reading nothing for Spares", async () => {
-    m.env = { HOME_FEED_ENABLED: "true" };
     const el = await SettingsPage();
     expect(sections(el).map((c) => c.type)).toEqual([NewsSection]);
     expect(news(el)!.props.kinds).toEqual([{ kind: "new-set", on: true }]);
@@ -56,15 +46,14 @@ describe("/settings", () => {
   });
 
   it("draws news first, then Spares, with both on", async () => {
-    m.env = { HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" };
+    m.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     const el = await SettingsPage();
     expect(sections(el).map((c) => c.type)).toEqual([NewsSection, SparesSection]);
   });
 
-  it("draws the Spares section with the reader's threshold and shared pods; news gets no kinds with the feed off", async () => {
+  it("draws the Spares section with the reader's threshold and shared pods", async () => {
     m.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     const el = await SettingsPage();
-    expect(news(el)!.props.kinds).toEqual([]);
     const section = spares(el)!;
     expect(section.props.spareMin).toBe(2);
     expect(section.props.pods).toEqual(["Thursday pod"]);

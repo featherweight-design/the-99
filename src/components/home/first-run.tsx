@@ -100,8 +100,8 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
 
 /**
  * "Choose your news" (menu and Home handoff, `.frw.new`): last in the checklist, to Settings' Notifications. No feed
- * before cards, since nothing in it would be about the reader yet; this row is where its choices start. Behind
- * `HOME_FEED_ENABLED`.
+ * before cards, since nothing in it would be about the reader yet; this row is where its choices start. Always on
+ * (`HOME_FEED_ENABLED` is retired).
  */
 function FirstRunNewsRow() {
   const n = feedCopy.firstRun;
@@ -137,7 +137,7 @@ export function FirstRunChecklist({
   news = false,
   commandersPlace = false,
 }: {
-  /** `HOME_FEED_ENABLED` for the reader: the Choose your news row, last. */
+  /** The Choose your news row, last (always on now). */
   news?: boolean;
   /** the Commanders place (always on) for the reader: the lock's page line names only the slots the bar locks. */
   commandersPlace?: boolean;

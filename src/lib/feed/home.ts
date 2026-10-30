@@ -3,8 +3,7 @@
  * Read PER REQUEST, after `cachePageForUser` and never inside it: listed in `check:list-cache`'s `PER_REQUEST_READS`,
  * so Home's cached payload carries none of it. The feed's item table moves no data stamp, so a cached feed would go stale.
  *
- * `loadHomeFeed` answers three ways:
- * - null: `HOME_FEED_ENABLED` is off for the reader (Home as shipped), and nothing is read;
+ * `loadHomeFeed` answers two ways (it no longer answers null: the feed is always on):
  * - `{ chosen: false }`: the offer with nothing in the window (small items 5, `Offer-Empty`;
  *   `ERRATUM-offer-empty.md`): every kind the reader can be offered is off (`on` empty, the offer line alone), or the
  *   reader never chose (`neverChose`) and only default-on kinds are on, with nothing in the window yet (`on` names
@@ -28,7 +27,7 @@ import { type Answer } from "../social/spare-request-rules";
 import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
 import { loadFriendSpares, type FriendSpare } from "../social/spares";
 import { noticeTradeMatches } from "../social/trade-match";
-import { availableFeedKinds, homeFeedEnabled } from "./flag";
+import { availableFeedKinds } from "./flag";
 import { spareRequestsEnabled } from "../social/flag";
 import { leadStory, type FeedKind } from "./kinds";
 import { effectiveKinds, markFeedSeen, neverChose, readFeedPrefs } from "./prefs";
@@ -327,11 +326,10 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
 }
 
 /**
- * Home's What's new for this reader, or null with the feed off. The lead story is the first unseen item by
+ * Home's What's new for this reader. The lead story is the first unseen item by
  * `LEAD_PRIORITY` (`leadStory`), and it leaves the list it heads.
  */
 export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: Date, q: Executor & Pick<typeof db, "select"> = db): Promise<HomeFeed | null> {
-  if (!homeFeedEnabled(env)) return null;
   const available = availableFeedKinds(env);
   const prefs = await readFeedPrefs(userId, q);
   const effective = effectiveKinds(prefs);
@@ -431,7 +429,6 @@ export function splitLead(views: FeedView[], on: FeedKind[]): HomeFeed {
  */
 export function homeFeedAfter(userId: string, env: NodeJS.ProcessEnv, now: Date): () => Promise<void> {
   return async () => {
-    if (!homeFeedEnabled(env)) return;
     try {
       await markFeedSeen(userId, env, now);
     } catch (error) {

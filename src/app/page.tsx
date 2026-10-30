@@ -6,17 +6,12 @@ import { perfRoute } from "../lib/perf/timing";
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { Crowned99 } from "../components/marks";
-import { receiptCountsByCommander, type ReceiptCounts } from "../lib/commanders/in-use";
+import type { ReceiptCounts } from "../lib/commanders/in-use";
 import { loadAvailability } from "../lib/decks/availability-query";
 import { listDecksWithStats } from "../lib/decks/read";
 import { loadShoppingRollup } from "../lib/decks/shopping-rollup";
 import { commitmentFigures, type Commitments } from "../lib/home/commitments";
 import { getCollectionLastUpdated, getCollectionStats } from "../lib/home/summary";
-import { getRankedList } from "../lib/recs/ranked-list";
-import { withOwnedCardArt } from "../lib/collection/owned-printings";
-import { readySlice } from "../lib/recs/ready-to-build";
-import { loadUnplayedCounts } from "../lib/recs/home-novelty";
-import { loadCollectionPool } from "../lib/recs/recommend";
 import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
 import { HomeTour } from "../components/discovery/home-tour";
@@ -33,7 +28,6 @@ import { HomeTableCard } from "../components/rule-zero/home-table-card";
 import { loadInviteCount } from "../lib/invites/read";
 import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
 import { readTourSeen, tourDue } from "../lib/discovery/tour";
-import { loadArrivalsBanner } from "../lib/precons/banner";
 import { aboutLine } from "../lib/about/notice";
 import { visibleSections } from "../lib/about/pages-visible";
 import { aboutSeen } from "../lib/about/read";
@@ -46,7 +40,6 @@ import { readFreeAllowance, readWelcomeState, welcomeSheetFor } from "../lib/pay
 import { stripFacts, type WelcomeFacts } from "../lib/payments/welcome-sheet";
 import { WelcomeStrip } from "../components/welcome/welcome-strip";
 import { after } from "next/server";
-import { homeFeedEnabled } from "../lib/feed/flag";
 import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
 import { loadTradeAsk } from "../lib/social/trade-ask";
 import { pushEnabled } from "../lib/push/flag";
@@ -218,45 +211,24 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       return { value: { firstRun: true, aboutSeen: seen, tourDue: due }, store: true };
     }
 
-    // Direction B (HOME_FEED_ENABLED): Ready to build leaves Home, so its ranked list and rotation are not read, and the
-    // arrivals banner keeps About's line alone (G6: new precons are the feed's). The switch is in the key.
-    const feedOn = homeFeedEnabled(env);
-    const [lastUpdated, ranked, shopping, unplayed, arrivals] = await Promise.all([
+    // Direction B: the feed is Home's news, so Ready to build is not on Home (no ranked list or rotation read) and the
+    // arrivals banner keeps About's line alone (G6: new precons are the feed's). `ready`, `inUse` and `arrivals` stay in
+    // the payload as null/empty for the dashboard's props.
+    const [lastUpdated, shopping] = await Promise.all([
       perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
-      feedOn ? null : perf.timed("rankedList", () => getRankedList(userId, env)),
       perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, env)),
-      // What the Ready-to-build rotation leans on (the themes each candidate plays that no deck
-      // does). Beside the ranked list, never after it: it reads nothing the list returns. Null on
-      // failure, which walks the plain shuffle.
-      feedOn ? null : perf.timed("unplayedCounts", () => loadUnplayedCounts(userId, env)),
-      // The arrivals banner (upcoming precons): read only past the first-run return above, so a first-run
-      // account neither sees it nor reads it. Null when nothing is new or when the read
-      // failed, which records a fallback so that render is served and not stored.
-      !feedOn ? perf.timed("arrivals", () => loadArrivalsBanner(userId, now)) : null,
     ]);
+    const ready = null;
+    const arrivals = null;
 
-    // The slice FIRST, then the printings — the two shown rather than every commander the
-    // player could build. `getRankedList` deliberately does not resolve art itself: this
-    // page draws two of its rows on the desktop hero and the rest never reach a screen,
-    // and the lookup is a join over `collection_items × printings × sets`.
-    const slice = ranked ? readySlice(ranked.items, { userId, now, unplayed }) : null;
-    const ready = slice ? { ...slice, shown: await perf.timed("ownedArt", () => withOwnedCardArt(userId, slice.shown)) } : null;
-
-    // One availability read between the in-use clause and the Commitments card.
+    // One availability read for the Commitments card.
     // Fail soft, the same way src/app/commanders/page.tsx does: losing
-    // availability must cost those two things, never the page.
-    let inUse = new Map<string, ReceiptCounts>();
+    // availability must cost that card, never the page.
+    const inUse = new Map<string, ReceiptCounts>();
     let commitments: Commitments | null = null;
     try {
-      // The pool is read only for the in-use clause, which only a shown Ready-to-build pair prints: with the feed on
-      // there is none, so the whole collection's scoring pool is not loaded for nothing.
-      const [collection, availability] = await Promise.all([
-        ready ? perf.timed("collectionPool", () => loadCollectionPool(userId)).then((p) => p.collection) : null,
-        // No narrowing: the whole-user vantage, as /collection already takes, under the load's env.
-        perf.timed("availability", () => loadAvailability(userId, { env })),
-      ]);
-      // The shown pair, not the whole ranked list: only a rendered hero prints the clause.
-      if (ready && collection) inUse = receiptCountsByCommander(ready.shown, collection, availability);
+      // No narrowing: the whole-user vantage, as /collection already takes, under the load's env.
+      const availability = await perf.timed("availability", () => loadAvailability(userId, { env }));
       commitments = commitmentFigures(availability.values());
     } catch {
       // Both consumers render nothing rather than a zero, which would be a claim.
@@ -266,8 +238,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
     return {
       value: { firstRun: false, aboutSeen: seen, stats, lastUpdated, ready, inUse, decks, commitments, shopping, arrivals },
-      // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
-      store: ranked ? !ranked.degraded : true,
+      store: true,
     };
   }, env);
   // The welcome-credits strip (welcome credits D2, PR 2): read per request, after the cached load and never stored,
@@ -349,13 +320,12 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const signatureStrip = ask && places.strip ? <SignatureStrip name={ask.name} /> : null;
 
   // The Home feed (menu and Home PR 6), read per request after the cached load and never stored: a new feed item moves no
-  // data stamp. Null with HOME_FEED_ENABLED off, and Home draws as shipped. A failed read draws no feed. The visit's
+  // data stamp. A failed read draws no feed. The visit's
   // writes (the seen cursor, the trade-match notice) run after the response, on first run too, since a first-run
   // Home is still a Home visit and its badge clears there.
-  const feedOn = homeFeedEnabled(env);
   let feed: HomeFeed | null = null;
   let feedFailed = false;
-  if (feedOn && !data.firstRun) {
+  if (!data.firstRun) {
     try {
       feed = await loadHomeFeed(userId, env, now);
     } catch (error) {
@@ -373,13 +343,13 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       )
     : null;
   // Not after a failed read: the cursor would clear items that were never drawn.
-  if (feedOn && !feedFailed) after(homeFeedAfter(userId, env, now));
+  if (!feedFailed) after(homeFeedAfter(userId, env, now));
   // Push (plan `2026-10-22-push.md`, PR 5): with this reader's PUSH_ENABLED on (`pushEnabled`;
   // `pushAvailable` would bring key parsing onto the cached page's path, which `list-cache-tables` refuses), a push's landing opens its card and the
   // visit closes every delivered notification (D4: opening Home closes them all), but only when the visit also marks the
   // feed seen (not after a failed read). An item written after this request began, whose push landed before the page
   // mounted, can be closed while still unseen: its row stays in the feed and on the badge until the next visit.
-  const push = pushEnabled(env) && feedOn && !feedFailed;
+  const push = pushEnabled(env) && !feedFailed;
   // This server visit's own token, outside the cached payload: a Home restored by Back runs the client again with the
   // SAME token, and closes nothing, because no fresh visit marked anything seen (`PushLanding`).
   const pushVisit = push ? randomUUID() : null;
@@ -396,7 +366,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         signature={signatureRow}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
         tour={data.tourDue}
-        news={feedOn}
+        news
         commandersPlace
       />
     );

@@ -462,7 +462,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Home opens on what’s new for you. One story leads at the top, then the decks you touched last, then the rest of What’s new:\n\n- A set that just came out\n- A precon that just came out\n- A price drop on a card on your wishlist\n- A combo you can now make with cards you own\n- A friend with a spare of a card on your wishlist\n\nNothing shows until you choose what you’d like to hear about: right on Home the first time, then in Settings, in the account menu.\n\nCommanders is one place now, with a tab for each way in:\n\n- For you: the commanders you own, ranked by fit\n- Discover: the ones worth buying\n- Help me choose: a few questions, and we pick\n\nFriends has its own spot in the bar, and a friend’s page shows their spares and decks.\n\nIn Settings, you choose how many spare copies a card needs before friends see it, and keep any card back.',
     captionLineSwitches: {
       '- A precon that just came out': 'PRECONS_ENABLED',
-      // Settings' account-menu row shows with the Commanders place on; without it Settings is reached from Home's Choose what shows.
+      // Settings' account-menu row is always drawn now: the Commanders place switch is retired.
       ', in the account menu': 'COMMANDERS_PLACE_ENABLED',
       '- A price drop on a card on your wishlist': 'SOCIAL_WISHLIST_ENABLED',
       '- A friend with a spare of a card on your wishlist': ['SOCIAL_FRIENDS_ENABLED', 'SOCIAL_WISHLIST_ENABLED'],

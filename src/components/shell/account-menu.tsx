@@ -428,7 +428,7 @@ export function AccountMenu({
   /** the Commanders place (always on) for this reader. With `friends`, Friends is in the bar: the Settings row in place of
    *  Friends, and M11 on the bar's slot rather than this button. */
   commandersPlace?: boolean;
-  /** `HOME_FEED_ENABLED` for this reader: with the Commanders place, Settings has its news section, so its row is drawn
+  /** Always true now (the feed switch is retired): with the Commanders place, Settings has its news section, so its row is drawn
    *  even with Friends off. */
   homeFeed?: boolean;
   /** The credit chip, read per request by the shell (plan E10) and re-read on every open. */
