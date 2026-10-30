@@ -43,9 +43,10 @@ let packageChanged = false;
 let graphError = "";
 let baseError = "";
 // A push to main diffs against the commit before the push (`CI_BASE_REF` is `github.event.before`). That commit is
-// all zeros for a new branch and may be unreachable after a forced push: neither names a base, so the run is full.
-if (event === "push" && (/^0+$/.test(base) || spawnSync("git", ["cat-file", "-e", `${base}^{commit}`]).status !== 0)) {
-  baseError = `${base || "empty"} is not a commit of this checkout (a new branch or a forced push)`;
+// all zeros for a new branch, and after a forced push it may be missing or a commit that is not an ancestor of HEAD (a rewind
+// would diff to nothing): none names a base, so the run is full.
+if (event === "push" && (/^0+$/.test(base) || spawnSync("git", ["merge-base", "--is-ancestor", base, "HEAD"]).status !== 0)) {
+  baseError = `${base || "empty"} is not an ancestor of this checkout (a new branch or a forced push)`;
 }
 if ((event === "pull_request" || event === "push") && !baseError) {
   if (process.env.CI_SELECT_BREAK === "1") throw new Error("deliberately broken selector (CI_SELECT_BREAK=1)");
