@@ -1,7 +1,6 @@
 import { howItWorksEnabled } from "../about/how-it-works-flag";
 import { announcementsEnabled } from "../announcements/flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
-import { changeCommanderEnabled } from "../commander-change/flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
@@ -31,7 +30,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   ANNOUNCEMENTS_ENABLED: announcementsEnabled,
-  CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   FEEDBACK_ENABLED: feedbackEnabled,
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,

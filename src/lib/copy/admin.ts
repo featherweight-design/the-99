@@ -764,7 +764,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   FEEDBACK_ENABLED: { label: "Feedback", description: "Report a problem, the check-in on Home and the Feedback tab here." },
   FLYER_TRIAL_ENABLED: { label: "Flyer trial", description: "Gates the /join/<CODE> flyer sign-ups and the Flyer codes section on /admin/invites. Off retires every code." },
   ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },
-  CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
   FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A one-credit run inside Find a deck for it." },
   HELP_ME_CHOOSE_ENABLED: { label: "Help me choose", description: "Find a commander from a few words, and Look deeper." },
   HOW_IT_WORKS_ENABLED: { label: "How it works", description: "The How it works page in About." },

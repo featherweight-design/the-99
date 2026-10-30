@@ -222,14 +222,14 @@ describe("/about, the visit (R2 gap 10)", () => {
     expect(props.answered).toEqual([]);
   });
 
-  // Collection editing, Notes, Stats, deck printings and Locked (never cut) are retired (always on), so their entries
+  // Collection editing, Notes, Stats, deck printings, Locked (never cut) and Change commander are retired (always on), so their entries
   // and those that followed them always draw: a current reader has met them too.
   it("hands a current reader's visit the unit keys their state covers", async () => {
     const collectionEdit = [
       "collection-add", "card-scan", "start-without-a-collection", "upload-choice", "upload-choice@COLLECTION_SYNC_ENABLED",
       "added-copy", "edit-copies", "remove-card", "collection-history", "shopping-got-it",
     ];
-    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", ...collectionEdit] };
+    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", ...collectionEdit] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { behind: boolean; answered: string[] };
     expect(props.behind).toBe(false);
     expect(props.answered).toContain("decks/your-deck/lock");
