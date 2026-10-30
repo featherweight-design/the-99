@@ -42,12 +42,13 @@ const BOX: Record<ThumbSize, { width: number; height: number; radius: string }> 
   result: { width: 40, height: 56, radius: "rounded-[5px]" },
   // The precon list's rows (its handoff's PreconRow): a long list of decklists, smaller again.
   list: { width: 34, height: 48, radius: "rounded-[4px]" },
-  // An open precon's header (its handoff's O1): 46/64 is 0.719 and 56/78 is 0.718. Two sizes,
-  // because the box is inline: the page draws one below md and the other from md.
+  // A friend's deck head (`friend-deck-view.tsx`), at the open precon header's former O1 sizes: 46/64 is 0.719 and 56/78
+  // is 0.718. Two sizes, because the box is inline: the page draws one below md and the other from md.
   open: { width: 46, height: 64, radius: "rounded-[6px]" },
   openWide: { width: 56, height: 78, radius: "rounded-[6px]" },
-  // An early decklist's header (announcements Early-List board, `.z-th`): 64/89 (0.719) on a phone, 84/117 (0.718) from md.
-  early: { width: 64, height: 89, radius: "rounded-[5px]" },
+  // A precon's header, open or early (Small items 5 Header-Art, which follows the announcements Early-List board's `.z-th`):
+  // 64/89 (0.719) on a phone, 84/117 (0.718) from md, radius 6 at both.
+  early: { width: 64, height: 89, radius: "rounded-[6px]" },
   earlyWide: { width: 84, height: 117, radius: "rounded-[6px]" },
   // Home's What's new row (menu and Home handoff, \`.fi .cardimg\`): 46/64 at the board's 3px, 6.5% of the width and so
   // clear of Scryfall's corner matte (3.1%).

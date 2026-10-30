@@ -206,8 +206,8 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
             <div className="flex flex-none gap-[6px]">
               {headCommanders.map((c) => (
                 <span key={c.oracleId}>
-                  <CommanderThumb imageUri={c.imageUri} colorIdentity={unknown.has(c.oracleId) ? null : c.colorIdentity} size={early ? "early" : "open"} className="md:hidden" />
-                  <CommanderThumb imageUri={c.imageUri} colorIdentity={unknown.has(c.oracleId) ? null : c.colorIdentity} size={early ? "earlyWide" : "openWide"} className="hidden md:block" />
+                  <CommanderThumb imageUri={c.imageUri} colorIdentity={unknown.has(c.oracleId) ? null : c.colorIdentity} size="early" className="md:hidden" />
+                  <CommanderThumb imageUri={c.imageUri} colorIdentity={unknown.has(c.oracleId) ? null : c.colorIdentity} size="earlyWide" className="hidden md:block" />
                 </span>
               ))}
             </div>
