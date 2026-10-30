@@ -93,8 +93,10 @@ describe("TaggedBox", () => {
     for (const c of ring) expect(cls()).not.toContain(c);
     expect(cls()).toContain("focus-within:shadow-[inset_0_0_0_1px_var(--danger)]");
     danger.unmount();
-    box({ count: 241, accent: "always" });
+    box({ count: 241, accent: "always", dashed: true });
     for (const c of ring) expect(cls()).not.toContain(c);
+    // A dashed frame over the cap goes solid on focus too, so the 2px edge is one solid red.
+    expect(cls()).toContain("focus-within:border-solid");
     expect(cls()).toContain("focus-within:shadow-[inset_0_0_0_1px_var(--danger)]");
   });
 

@@ -66,13 +66,14 @@ export function TaggedBox({
   const isOver = over ?? count > max;
   const color = isOver ? "var(--danger)" : warnAt !== undefined && count >= warnAt ? "var(--warning)" : "var(--fg-faint)";
   // The border is a class, never inline, so the focus edge can take it (an inline border outranks it).
-  // Focused, a dashed edge goes solid (Small items 6, b): dashed says "you can write here" at rest; once in, it is a box.
+  // Focused, a dashed edge goes solid whatever its color (Small items 6, b): dashed says "you can write here" at rest;
+  // once in, it is a box.
   const edge = (error ?? isOver)
     // Over the cap and focused, the red edge thickens to 2px (a 1px inset ring of the same red): one edge, one color (a).
     ? "border-[color:var(--danger)] focus-within:shadow-[inset_0_0_0_1px_var(--danger)]"
     : accent === "always"
       ? "border-[color:var(--accent)]"
-      : `border-[color:var(--border-strong)] focus-within:border-[color:var(--accent)]${dashed ? " focus-within:border-solid" : ""}`;
+      : "border-[color:var(--border-strong)] focus-within:border-[color:var(--accent)]";
   // The textarea is outline-none and an always-accent frame looks the same focused, so keyboard focus would be
   // invisible there (WCAG 2.4.7): it takes the app's standard focus ring (globals.css `:focus-visible`).
   const ring =
@@ -85,7 +86,7 @@ export function TaggedBox({
       data-framed-box=""
       // Help me choose's locked look mutes the edge through this attribute (globals.css `[data-lock-edge]`); inert elsewhere.
       data-lock-edge=""
-      className={`flex flex-col rounded-[9px] border ${dashed ? "border-dashed" : "border-solid"} ${edge} ${ring} ${fill === "sunken" ? "bg-[color:var(--surface-sunken)]" : "bg-[color:var(--surface)]"} ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className}`}
+      className={`flex flex-col rounded-[9px] border ${dashed ? "border-dashed focus-within:border-solid" : "border-solid"} ${edge} ${ring} ${fill === "sunken" ? "bg-[color:var(--surface-sunken)]" : "bg-[color:var(--surface)]"} ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className}`}
     >
       {children}
       <span
