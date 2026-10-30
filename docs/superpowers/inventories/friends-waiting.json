@@ -1,7 +1,7 @@
 {
   "feature": "/friends: Waiting on you and the Friends badge (menu and Home plan 2026-10-22, PR 7b)",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED, SOCIAL_WISHLIST_ENABLED, HOME_FEED_ENABLED and COMMANDERS_PLACE_ENABLED on, and a SCRATCH branch seeded as friend-page-tabs.json says, with the reader's trade-match kind on (user_prefs.feed_kinds). A first /friends visit notices the matches after its response; the next render draws them. The Friends slot's badge counts the unseen ones.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SOCIAL_WISHLIST_ENABLED on, and a SCRATCH branch seeded as friend-page-tabs.json says, with the reader's trade-match kind on (user_prefs.feed_kinds). A first /friends visit notices the matches after its response; the next render draws them. The Friends slot's badge counts the unseen ones.",
   "rows": [
     {
       "id": "friends-waiting",

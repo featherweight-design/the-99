@@ -195,7 +195,7 @@ describe("screenModel: numbers in reading order across the captures", () => {
 });
 
 describe("the shipped pages, every switch on", () => {
-  const envs = [ALL_ON, env({ ...(ALL_ON as Record<string, string>), HOME_FEED_ENABLED: "off" })];
+  const envs = [ALL_ON];
 
   it("every label's region is its key, so the manifest is read by the key the reader carries", () => {
     for (const s of ABOUT_SECTIONS) for (const l of s.labels) expect(l.region).toBe(regionOf({ key: `${s.area}/${s.id}/${l.id}` }));

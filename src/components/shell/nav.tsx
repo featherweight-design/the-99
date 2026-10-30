@@ -714,9 +714,9 @@ export type AdminDoorProps = {
   credits?: ChipState | null;
   /** M11 (discovery R1): a game logged and no friend yet, so the account button carries Friends after a game. */
   friendsMoment?: boolean;
-  /** `COMMANDERS_PLACE_ENABLED` for this reader: Discover leaves the bar, and with `friends` Friends takes its slot. */
+  /** the Commanders place (always on) for this reader: Discover leaves the bar, and with `friends` Friends takes its slot. */
   commandersPlace?: boolean;
-  /** `HOME_FEED_ENABLED` for this reader: Settings has its news section, so the menu's Settings row has somewhere to go. */
+  /** Always true now (the feed switch is retired): Settings has its news section, so the menu's Settings row has somewhere to go. */
   homeFeed?: boolean;
 };
 
@@ -924,7 +924,7 @@ export function TabBar({
   helpMoment?: boolean;
   /** M11's condition, resolved by the shell; drawn on the Friends slot only while Friends is in the bar. */
   friendsMoment?: boolean;
-  /** `SOCIAL_FRIENDS_ENABLED` and `COMMANDERS_PLACE_ENABLED` for this reader: the bar's shape, as the rail's. */
+  /** `SOCIAL_FRIENDS_ENABLED` and the Commanders place (always on) for this reader: the bar's shape, as the rail's. */
   friends?: boolean;
   commandersPlace?: boolean;
   badges?: NavBadges;

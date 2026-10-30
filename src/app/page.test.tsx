@@ -1,6 +1,6 @@
-// Home's arrivals banner (upcoming precons, plan PR 3): read inside the cached payload, only past the first-run
-// return, and handed to the dashboard as `arrivals`. Every other loader is
-// stubbed; what is asserted is the element the page returns and whether the banner was read.
+// Home's arrivals banner (upcoming precons, plan PR 3): no longer read (the feed carries new precons) and handed to the
+// dashboard as a null `arrivals`. Every other loader is stubbed; what is asserted is the element the page returns and
+// whether the banner was read.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Fragment, type ReactElement } from "react";
 
@@ -85,11 +85,11 @@ beforeEach(() => {
 });
 
 describe("Home's arrivals banner", () => {
-  it("hands the dashboard the banner the load read, with the switch on", async () => {
+  it("is neither read nor handed to the dashboard: new precons are the feed's", async () => {
     const page = (await HomePage()) as ReactElement<{ arrivals: unknown }>;
     expect(page.type).toBe(Dashboard);
-    expect(page.props.arrivals).toEqual(BANNER);
-    expect(stub.arrivals).toHaveBeenCalledWith("user_1", expect.any(Date));
+    expect(page.props.arrivals).toBeNull();
+    expect(stub.arrivals).not.toHaveBeenCalled();
   });
 
   it("neither reads nor draws it on the first-run checklist (H7)", async () => {
@@ -99,12 +99,6 @@ describe("Home's arrivals banner", () => {
     expect(stub.arrivals).not.toHaveBeenCalled();
   });
 
-  it("draws Home without it when the read gave nothing (empty, all seen, or failed)", async () => {
-    stub.arrivals.mockResolvedValue(null);
-    const page = (await HomePage()) as ReactElement<{ arrivals: unknown }>;
-    expect(page.type).toBe(Dashboard);
-    expect(page.props.arrivals).toBeNull();
-  });
 });
 
 describe("Home's precon pick receipt (no-collection entry S5)", () => {
@@ -275,14 +269,12 @@ describe("The tour taken again (Discovery R3·2)", () => {
 
 describe("Home's feed visit writes (menu and Home PR 6)", () => {
   it("schedules the seen write after a feed that loaded", async () => {
-    stub.env = { ...ON, HOME_FEED_ENABLED: "true" };
     stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, total: 0 });
     await HomePage();
     expect(stub.after).toHaveBeenCalledTimes(1);
   });
 
   it("schedules none when the feed could not be read: the cursor must not clear what was never drawn", async () => {
-    stub.env = { ...ON, HOME_FEED_ENABLED: "true" };
     stub.loadFeed.mockRejectedValue(new Error("catalog lookup failed"));
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     await HomePage();
@@ -290,16 +282,7 @@ describe("Home's feed visit writes (menu and Home PR 6)", () => {
     expect(stub.after).not.toHaveBeenCalled();
   });
 
-  it("schedules none with the feed off", async () => {
-    await HomePage();
-    expect(stub.after).not.toHaveBeenCalled();
-  });
-
-  it("loads the collection's scoring pool only when Ready to build is drawn, which the feed replaces", async () => {
-    await HomePage();
-    expect(stub.pool).toHaveBeenCalledTimes(1);
-    stub.pool.mockClear();
-    stub.env = { ...ON, HOME_FEED_ENABLED: "true" };
+  it("never loads the collection's scoring pool: Ready to build is not on Home, the feed replaces it", async () => {
     stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, total: 0 });
     await HomePage();
     expect(stub.pool).not.toHaveBeenCalled();
@@ -307,7 +290,7 @@ describe("Home's feed visit writes (menu and Home PR 6)", () => {
 });
 
 describe("Home with push (push PR 5)", () => {
-  const PUSH = { ...ON, HOME_FEED_ENABLED: "true", PUSH_ENABLED: "true" };
+  const PUSH = { ...ON, PUSH_ENABLED: "true" };
   const FEED = { chosen: true, items: [], lead: null, unseen: 0, on: [] };
 
   it("hands the dashboard push when the switch is on and the feed was read", async () => {
@@ -318,11 +301,9 @@ describe("Home with push (push PR 5)", () => {
     expect(page.props.pushVisit).toEqual(expect.any(String));
   });
 
-  it("hands it no push with the switch off, with the feed off, or after a failed feed read", async () => {
+  it("hands it no push with the switch off, or after a failed feed read", async () => {
     stub.loadFeed.mockResolvedValue(FEED);
     stub.env = { ...PUSH, PUSH_ENABLED: "" };
-    expect(((await HomePage()) as ReactElement<{ pushVisit?: string | null }>).props.pushVisit).toBeNull();
-    stub.env = { ...ON, PUSH_ENABLED: "true" };
     expect(((await HomePage()) as ReactElement<{ pushVisit?: string | null }>).props.pushVisit).toBeNull();
     stub.env = { ...PUSH };
     stub.loadFeed.mockRejectedValue(new Error("feed read failed"));

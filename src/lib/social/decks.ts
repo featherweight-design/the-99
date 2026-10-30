@@ -1,7 +1,7 @@
 /**
  * A friend's decks, for the friend page's Decks tab (menu and Home plan, PR 7; handoff G4), and one friend's deck,
  * read-only, for its own page (friend decks handoff, G1). On the tab a friend sees the name, the commander, the status
- * and the count of each deck: no card, no note, no folder, no bracket, no play date. With `FRIEND_DECKS_ENABLED` on
+ * and the count of each deck: no card, no note, no folder, no bracket, no play date. With `SOCIAL_FRIENDS_ENABLED` on
  * for the OWNER the tab carries each deck's id, for the press to its page, and both reads keep only the decks the
  * owner lets friends see (`friendCanSeeDeck`, `deck-visibility.ts`); off, the tab is exactly as it shipped.
  *
@@ -30,7 +30,7 @@ import { getDeckDetail, listDecksWithStats, type DeckListItem } from "../decks/r
 import { cardTypeGroup, type DeckDetailCard } from "../decks/grouping";
 import { resolveFriend } from "./access";
 import { friendCanSeeDeck, loadFriendDeckPrefs, unfinishedPill } from "./deck-visibility";
-import { friendDecksEnabled } from "./flag";
+import { socialFriendsEnabled } from "./flag";
 import { isUuid } from "./rules";
 import { readReaderDecks } from "../precons/list-read";
 import { isBasicType } from "../decks/basic-type";
@@ -52,7 +52,7 @@ type FriendDeckBase = {
 };
 
 /**
- * The read-only /decks tile, with `FRIEND_DECKS_ENABLED` on for BOTH the viewer and the owner: the deck's id for the press
+ * The read-only /decks tile, with `SOCIAL_FRIENDS_ENABLED` on for BOTH the viewer and the owner: the deck's id for the press
  * to its page, and nothing of the owner's status or money (README call 3): neither is sent. `listDecksWithStats` still
  * reads the owner's Shopping inside its status work (`canFlip`), which the filter needs; only the tab's own per-deck
  * to-buy read is skipped.
@@ -80,7 +80,7 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown, viewe
   const friendId = await resolveFriend(viewerId, publicId);
   if (friendId === null) return null;
   const env = await resolveSwitchEnv(friendId);
-  const open = viewerOpen && friendDecksEnabled(env);
+  const open = viewerOpen && socialFriendsEnabled(env);
   const [rows, buys] = await Promise.all([
     visibleDecks(friendId, env),
     // The open tile draws no money, so the tab's own to-buy read is skipped (the shared stats read still runs its own).
@@ -112,7 +112,7 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown, viewe
  * see or change them would take decks off a friend's tab unannounced.
  */
 async function visibleDecks(ownerId: string, env: NodeJS.ProcessEnv): Promise<DeckListItem[]> {
-  if (!friendDecksEnabled(env)) return listDecksWithStats(ownerId, "newest", { env, includeProxyStats: true });
+  if (!socialFriendsEnabled(env)) return listDecksWithStats(ownerId, "newest", { env, includeProxyStats: true });
   const [rows, prefs] = await Promise.all([
     listDecksWithStats(ownerId, "newest", { env, includeProxyStats: true }),
     loadFriendDeckPrefs(ownerId),
@@ -170,7 +170,7 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   const friendId = await resolveFriend(viewerId, publicId);
   if (friendId === null) return null;
   const env = await resolveSwitchEnv(friendId);
-  if (!friendDecksEnabled(env)) return null;
+  if (!socialFriendsEnabled(env)) return null;
   const row = (await visibleDecks(friendId, env)).find((d) => d.id === deckId);
   if (!row) return null;
   const detail = await getDeckDetail(deckId, friendId, Promise.resolve(null), env);

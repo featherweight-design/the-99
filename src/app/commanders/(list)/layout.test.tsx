@@ -21,14 +21,8 @@ function propsOf(node: unknown, found: Record<string, unknown>[] = []): Record<s
 }
 
 describe("the Commanders place layout", () => {
-  it("is a pass-through with the switch off", async () => {
-    env.value = {} as unknown as NodeJS.ProcessEnv;
-    const tree = await Layout({ children: <p>page</p> });
-    expect(propsOf(tree).some((p) => "counts" in p)).toBe(false);
-  });
-
   it("hands its client components nothing a server cannot serialise", async () => {
-    env.value = { COMMANDERS_PLACE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    env.value = {} as unknown as NodeJS.ProcessEnv;
     const tree = await Layout({ children: <p>page</p> });
     const all = propsOf(tree);
     expect(all.some((p) => "counts" in p)).toBe(true);

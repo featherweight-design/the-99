@@ -55,10 +55,10 @@ describe("each sentence follows its own switch", () => {
   const textOf = (e: Record<string, string>, key: string) =>
     units(visibleSections(env(e))).find((u) => u.key === key)?.text;
   it.each([
-    ["Ready to build leaves with the feed on", { HOME_FEED_ENABLED: "true" }, "home/home/ready", undefined, undefined],
-    ["the feed's lead names no kind a switch can hide", { HOME_FEED_ENABLED: "true" }, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
+    ["Ready to build is gone with the feed always on", {}, "home/home/ready", undefined, undefined],
+    ["the feed's lead names no kind a switch can hide", {}, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
     ["the + with scanning (it follows collection edit)", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "scan them", undefined],
-    ["the place strip without Help me choose", { COMMANDERS_PLACE_ENABLED: "true" }, "commanders/for-you/places", "two ways", "Help me choose"],
+    ["the place strip without Help me choose", {}, "commanders/for-you/places", "two ways", "Help me choose"],
     ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
     ["credits with Suggested changes and not Proposed cuts", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" }, "rule/credits", "Suggested changes run", "Look deeper"],
     ["credits with Proposed cuts and not Suggested changes", { ANALYSIS_TAB_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }, "rule/credits", "Look deeper", "Suggested changes"],
@@ -68,8 +68,7 @@ describe("each sentence follows its own switch", () => {
     ["a fill without Help me choose", {}, "rule/autofill", "then uses your Collection", "Help me choose"],
     ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
     ["friends see a wishlist only with the wishlist", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "spares you offer", "wishlist"],
-    ["friends see each deck's status before friend decks", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "names, status", "can open"],
-    ["friends open decks with friend decks", { SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" }, "rule/friends-see", "can open the decks", "names, status"],
+    ["friends open decks", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "can open the decks", "names, status"],
     ["bracket marks are explained with the Analysis tab off, as they are drawn", {}, "decks/your-deck/bracket-marks", "Game Changers", undefined],
   ] as const)("%s", (_name, e, key, has, lacks) => {
     const text = textOf(e as Record<string, string>, key);
@@ -93,12 +92,6 @@ describe("Show me", () => {
   it.each(TOOLS.map((t) => [t.id, t] as const))("%s has a label the reader is drawn whenever the tool is on", (_id, t) => {
     const envs = [ALL_ON, env(t.switch ? withNeeds(t.switch) : {})];
     for (const e of envs) expect(showMeLabel(t.labels, visibleSections(e)), t.id).not.toBeNull();
-  });
-
-  it("falls back to New deck for Help me choose with the Commanders place off", () => {
-    const hmc = TOOLS.find((t) => t.id === "help-me-choose")!;
-    expect(showMeLabel(hmc.labels, visibleSections(env(withNeeds("HELP_ME_CHOOSE_ENABLED"))))).toBe("decks/your-decks/new-deck");
-    expect(showMeLabel(hmc.labels, visibleSections(ALL_ON))).toBe("commanders/for-you/places");
   });
 });
 
@@ -139,15 +132,15 @@ describe("seen translation", () => {
 
   it("treats a switch on only through an app-wide override as heard, as production resolves it", () => {
     const snapshot: SwitchSnapshot = {
-      overrides: [{ switchName: "COMMANDERS_PLACE_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
+      overrides: [{ switchName: "SWAP_TOOLS_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
       groupOf: new Map(),
     };
     const reader = resolveEnv(OFF, snapshot, "u1");
     const visible = visibleSections(reader);
-    const places = units(visible).find((u) => u.key === "commanders/for-you/places");
-    expect(places).toBeDefined();
-    expect(unitSeen(places!, readerAt(16, reader))).toBe(true);
-    expect(unitSeen(places!, { version: places!.since - 1, ids: ["anything"] })).toBe(false);
+    const limit = units(visible).find((u) => u.key === "shopping/deck-shopping/limit");
+    expect(limit).toBeDefined();
+    expect(unitSeen(limit!, readerAt(16, reader))).toBe(true);
+    expect(unitSeen(limit!, { version: limit!.since - 1, ids: ["anything"] })).toBe(false);
   });
 
   it("carries a legacy variant to the sentence it became", () => {
@@ -209,7 +202,7 @@ describe("seen translation", () => {
     const section = { ...base, labels: [{ ...base.labels[0], id: "fresh", region: "home/home/fresh", rest: " a. b.", switch: null, sentences: { " b.": "PUSH_ENABLED" as const }, since: 16, legacy: [] }] };
     const off = visibleSections(OFF, [section]);
     const seen = { version: 16, ids: seenKeysOf(off, "home") };
-    const on = visibleSections(env({ PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true" }), [section]);
+    const on = visibleSections(env({ PUSH_ENABLED: "true" }), [section]);
     expect(unseenUnits(on, seen).map((u) => u.key)).toEqual([sentenceKey("home/home/fresh", "PUSH_ENABLED")]);
   });
 
@@ -313,7 +306,8 @@ describe("a section's sub-line", () => {
     for (const sec of ABOUT_SECTIONS) {
       // With every switch on, every screen is on, and no sub says otherwise.
       expect(sub(ALL_ON, sec.id), sec.id).not.toContain(ABOUT_SCREEN_OFF.trim());
-      for (const sw of switchesOfSection(sec)) {
+      // A retired switch is gone from the registry and always on: there is no off state to assert.
+      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n))) {
         const e = off(sw);
         const drawn = visibleSections(e).find((s) => s.id === sec.id)!;
         const text = sub(e, sec.id);
@@ -329,7 +323,6 @@ describe("a section's sub-line", () => {
 
   it("describes each screen while its switch is on, and only says it is off while it is off", () => {
     const cases: [string, string, string][] = [
-      ["whats-new", "HOME_FEED_ENABLED", "News you choose"],
       ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
       ["stats", "DECK_STATS_ENABLED", "charts"],
       ["notes", "DECK_NOTES_ENABLED", "remember"],
@@ -356,9 +349,8 @@ describe("a section's sub-line", () => {
     expect(sub(noStats, "stats")).toBe(ABOUT_SCREEN_OFF.trim());
     const noEdit = env({ ...(ALL_ON as Record<string, string>), COLLECTION_EDIT_ENABLED: "off" });
     expect(sub(noEdit, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding.");
-    // Ready to build shows only while the feed is off.
+    // Ready to build is gone (the feed is always on).
     expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
-    expect(sub(env({ ...(ALL_ON as Record<string, string>), HOME_FEED_ENABLED: "off" }), "home")).toContain("best-fit commanders");
     // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too.
     expect(sub(ALL_ON, "whats-new")).toContain("Within Today and Earlier, anything waiting on you comes first.");
     expect(sub(env({ ...(ALL_ON as Record<string, string>), SPARE_REQUESTS_ENABLED: "off" }), "whats-new")).not.toContain("waiting on you");

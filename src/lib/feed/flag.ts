@@ -1,16 +1,12 @@
 /**
- * `HOME_FEED_ENABLED`: Home's news feed (menu and Home, plan `2026-10-22-menu-home.md`): What's new, the lead
- * story, the badges, Settings' news section. Unset on production until the line closes. Exactly `'true'` turns it
- * on. Every caller passes the reader's resolved env (`requestSwitchEnv`).
+ * Home's news feed (menu and Home, plan `2026-10-22-menu-home.md`): What's new, the lead story, the badges, Settings'
+ * news section. Always on (the `HOME_FEED_ENABLED` switch is retired). Every caller passes the reader's resolved env
+ * (`requestSwitchEnv`).
  */
 import { announcementsEnabled } from "../announcements/flag";
 import { socialFriendsEnabled, spareRequestsEnabled } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { FEED_KINDS, type FeedKind } from "./kinds";
-
-export function homeFeedEnabled(env: NodeJS.ProcessEnv): boolean {
-  return env.HOME_FEED_ENABLED === "true";
-}
 
 /**
  * Whether a kind can be offered and read for this reader, the feed itself aside: a price drop is about the wishlist; a trade match needs friends and the wishlist; a spare request needs `SPARE_REQUESTS_ENABLED` (G5), which
@@ -37,8 +33,7 @@ export function feedKindAvailable(kind: FeedKind, env: NodeJS.ProcessEnv): boole
   }
 }
 
-/** The kinds available to this reader, in `FEED_KINDS` order; none while the feed itself is off. */
+/** The kinds available to this reader, in `FEED_KINDS` order. */
 export function availableFeedKinds(env: NodeJS.ProcessEnv): FeedKind[] {
-  if (!homeFeedEnabled(env)) return [];
   return FEED_KINDS.filter((k) => feedKindAvailable(k, env));
 }

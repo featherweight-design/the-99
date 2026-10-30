@@ -2,11 +2,11 @@
 // that came available while the page was open keeps what it had, and nothing outside the offer can be checked.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ available: [] as string[], set: vi.fn(), close: vi.fn(), revalidatePath: vi.fn(), feedOn: true }));
+const m = vi.hoisted(() => ({ available: [] as string[], set: vi.fn(), close: vi.fn(), revalidatePath: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) }));
-vi.mock("../../lib/feed/flag", () => ({ homeFeedEnabled: () => m.feedOn, availableFeedKinds: () => m.available }));
+vi.mock("../../lib/feed/flag", () => ({ availableFeedKinds: () => m.available }));
 vi.mock("../../lib/feed/prefs", async (orig) => ({ ...(await orig<typeof import("../../lib/feed/prefs")>()), setFeedKinds: m.set, closeFeedOffer: m.close }));
 
 import { closeFeedOfferAction, saveFeedKinds } from "./feed-actions";
@@ -15,7 +15,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.set.mockResolvedValue(true);
   m.close.mockResolvedValue(true);
-  m.feedOn = true;
 });
 
 describe("saveFeedKinds", () => {
@@ -52,11 +51,5 @@ describe("closeFeedOfferAction (the offer's ✕, announcements call 3)", () => {
     expect(m.close).toHaveBeenCalledWith("u1", expect.any(Date));
     expect(m.set).not.toHaveBeenCalled();
     expect(m.revalidatePath).not.toHaveBeenCalled();
-  });
-
-  it("is refused, writing nothing, while the feed is off for the caller", async () => {
-    m.feedOn = false;
-    expect(await closeFeedOfferAction()).toEqual({ ok: false, reason: "off" });
-    expect(m.close).not.toHaveBeenCalled();
   });
 });

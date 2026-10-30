@@ -347,7 +347,7 @@ export const refreshCopy = {
 } as const;
 
 /**
- * The lock's desktop page line, naming exactly the slots the bar locks: `place` is `COMMANDERS_PLACE_ENABLED` (Discover
+ * The lock's desktop page line, naming exactly the slots the bar locks: `place` is the Commanders place (always on) (Discover
  * leaves the bar), `open` is the open lock of `COLLECTION_EDIT_ENABLED` (Collection opens). The nav's own rule,
  * `lockedItems` over `barItems`, gives the same four sets.
  */

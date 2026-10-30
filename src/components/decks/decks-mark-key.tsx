@@ -18,7 +18,7 @@ import { socialCopy } from "../../lib/copy/social";
  */
 export function DecksMarkKey({ decks, friends = false }: {
   decks: readonly Pick<DeckListItem, "notice" | "hiddenFromFriends">[];
-  /** `FRIEND_DECKS_ENABLED` for the reader: the tile draws its hidden glyph only then, so the key explains it only then. */
+  /** `SOCIAL_FRIENDS_ENABLED` for the reader: the tile draws its hidden glyph only then, so the key explains it only then. */
   friends?: boolean;
 }) {
   const copy = deckNoticesCopy.mark.key;

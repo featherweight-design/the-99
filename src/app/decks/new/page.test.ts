@@ -39,7 +39,7 @@ beforeEach(() => {
 describe("/decks/new", () => {
   it("reads a result's press as a hand-off, going back to those results", async () => {
     const p = await props({ commander: COMMANDER, t: "dinosaurs", b: "150", v: "results" });
-    expect(p.handOff?.resultsHref).toBe("/decks/new/choose?t=dinosaurs&b=150&v=results");
+    expect(p.handOff?.resultsHref).toBe("/commanders/choose?t=dinosaurs&b=150&v=results");
     expect(p.handOff?.drawBlock).toBe(true);
     expect(p.handOff?.create).toEqual({ themes: ["Dinosaurs"], themeJoin: "all", sets: [], pool: "any", cardOracleId: null, budgetDollars: 150, bracket: null, bracketBuys: false });
     // No bracket asked: the Bracket row reads no reach.

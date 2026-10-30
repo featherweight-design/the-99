@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { catalogBatchKey, catalogKey, catalogPushKinds, parseCatalogKey, pushableFeedKinds } from "./catalog-rule";
 
 const env = (over: Record<string, string> = {}) =>
-  ({ PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true", ...over }) as unknown as NodeJS.ProcessEnv;
+  ({ PUSH_ENABLED: "true", ...over }) as unknown as NodeJS.ProcessEnv;
 
 describe("a catalog item's push key", () => {
   it("is the feed's own key: set:<code>, precon:<file name>", () => {
@@ -41,7 +41,7 @@ describe("a catalog batch", () => {
 });
 
 describe("the catalog kinds a reader's switches allow pushing", () => {
-  it("sets and precons, with push and Home's news on and Announcements off", () => {
+  it("sets and precons, with push on and Announcements off", () => {
     expect(catalogPushKinds(env())).toEqual(["new-set", "new-precon"]);
   });
 
@@ -49,11 +49,9 @@ describe("the catalog kinds a reader's switches allow pushing", () => {
     expect(catalogPushKinds(env({ ANNOUNCEMENTS_ENABLED: "true" }))).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news"]);
   });
 
-  it("none with push off, or Home's news off, Announcements on or not", () => {
+  it("none with push off, Announcements on or not", () => {
     expect(catalogPushKinds(env({ PUSH_ENABLED: "false" }))).toEqual([]);
-    expect(catalogPushKinds(env({ HOME_FEED_ENABLED: "false" }))).toEqual([]);
     expect(catalogPushKinds(env({ PUSH_ENABLED: "false", ANNOUNCEMENTS_ENABLED: "true" }))).toEqual([]);
-    expect(catalogPushKinds(env({ HOME_FEED_ENABLED: "false", ANNOUNCEMENTS_ENABLED: "true" }))).toEqual([]);
   });
 });
 
@@ -61,7 +59,6 @@ describe("Wizards' posts in Settings' Push column", () => {
   it("draw a push box with ANNOUNCEMENTS_ENABLED on, none with it off", () => {
     expect(pushableFeedKinds(env({ ANNOUNCEMENTS_ENABLED: "true" }))).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news", "combo"]);
     expect(pushableFeedKinds(env())).toEqual(["new-set", "new-precon", "combo"]);
-    expect(pushableFeedKinds(env({ HOME_FEED_ENABLED: "false", ANNOUNCEMENTS_ENABLED: "true" }))).toEqual([]);
   });
 
   it("key a post post:<contentful id>, under each of the three kinds", () => {

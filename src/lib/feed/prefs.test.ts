@@ -179,7 +179,7 @@ describe("the two seen cursors", () => {
     const ran: SQL[] = [];
     return { q: { execute: async (s: SQL) => { ran.push(s); return { rows: [], rowCount }; } } as never, ran };
   }
-  const all = env({ HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
+  const all = env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
 
   it("a Home visit moves feed_seen_at and never friends_seen_at", async () => {
     const { q, ran } = recorder(1);
@@ -204,10 +204,9 @@ describe("the two seen cursors", () => {
     expect(await markFeedSeen("u", all, NOW, q)).toBe(false);
   });
 
-  it("runs nothing while the feed is off, or the Friends badge's kind is unavailable", async () => {
+  it("runs nothing while the Friends badge's kind is unavailable", async () => {
     const { q, ran } = recorder(1);
-    expect(await markFeedSeen("u", env(), NOW, q)).toBe(false);
-    expect(await markFriendsSeen("u", env({ HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" }), NOW, q)).toBe(false);
+    expect(await markFriendsSeen("u", env({ SOCIAL_FRIENDS_ENABLED: "true" }), NOW, q)).toBe(false);
     expect(ran).toEqual([]);
   });
 });
@@ -221,7 +220,7 @@ describe("loadNewsSettings (Settings' news section)", () => {
 
   it("gives the available kinds in FEED_KINDS order, each with whether it is on; an unavailable kind is absent", async () => {
     const { q } = reader({ combo: EARLIER, "price-drop": EARLIER, "trade-match": EARLIER });
-    const rows = await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
+    const rows = await loadNewsSettings("u", env({ SOCIAL_WISHLIST_ENABLED: "true" }), q);
     expect(rows).toEqual([
       { kind: "new-set", on: false },
       { kind: "new-precon", on: false },
@@ -232,13 +231,13 @@ describe("loadNewsSettings (Settings' news section)", () => {
 
   it("offers trade matches only with friends and the wishlist both on, and a spare request only with its switch", async () => {
     const { q } = reader({});
-    const rows = await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
+    const rows = await loadNewsSettings("u", env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
     expect(rows.map((r) => r.kind)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "combo"]);
   });
 
   it("lists New precon with its stored choice", async () => {
     const { q } = reader({ "new-precon": EARLIER, combo: EARLIER });
-    expect(await loadNewsSettings("u", env({ HOME_FEED_ENABLED: "true" }), q)).toEqual([
+    expect(await loadNewsSettings("u", env(), q)).toEqual([
       { kind: "new-set", on: false },
       { kind: "new-precon", on: true },
       { kind: "combo", on: true },
@@ -246,17 +245,11 @@ describe("loadNewsSettings (Settings' news section)", () => {
   });
 
   it("reads a spare request ON for a reader who never chose, and off once declined (G4)", async () => {
-    const on = env({ HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+    const on = env({ SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
     const fresh = { select: () => ({ from: () => ({ where: async () => [] }) }) } as never;
     expect(await loadNewsSettings("u", on, fresh)).toContainEqual({ kind: "spare-request", on: true });
     const declined = { select: () => ({ from: () => ({ where: async () => [{ feedKinds: {}, declined: ["spare-request"] }] }) }) } as never;
     expect(await loadNewsSettings("u", on, declined)).toContainEqual({ kind: "spare-request", on: false });
-  });
-
-  it("is empty, and reads nothing, while the feed is off", async () => {
-    const { q, reads } = reader({ combo: EARLIER });
-    expect(await loadNewsSettings("u", env({ SOCIAL_WISHLIST_ENABLED: "true" }), q)).toEqual([]);
-    expect(reads()).toBe(0);
   });
 });
 

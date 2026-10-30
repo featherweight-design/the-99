@@ -16,6 +16,7 @@ vi.mock("../../lib/home/summary", () => ({
   getCollectionStats: async () => ({ uniqueCards: state.uniqueCards }),
   hasAnyDeck: (...a: unknown[]) => hasAnyDeck(...(a as [])),
 }));
+vi.mock("../../lib/feed/read", () => ({ unseenCount: async () => 0 }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => state.env }));
 const seen = vi.hoisted(() => ({ rail: undefined as unknown, tab: undefined as unknown }));
 vi.mock("./nav", () => ({

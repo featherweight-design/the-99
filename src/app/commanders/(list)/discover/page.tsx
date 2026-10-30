@@ -1,7 +1,5 @@
 import { requireUserId } from "../../../../lib/auth";
 import { perfRoute } from "../../../../lib/perf/timing";
-import { commandersPlaceEnabled } from "../../../../lib/commanders/place-flag";
-import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { getCollectionStats } from "../../../../lib/home/summary";
 import { NoCardsEmpty } from "../../../../components/commanders/no-cards-empty";
@@ -82,7 +80,7 @@ export default async function DiscoverPage({
   return (
     <section className="flex flex-col min-h-screen">
       {/* The view decodes once. */}
-      <DiscoveryView encoded={shipped} printedIn={printedIn} chooseLink={helpMeChooseEnabled(env) && !commandersPlaceEnabled(env)} basis={basis} />
+      <DiscoveryView encoded={shipped} printedIn={printedIn} basis={basis} />
     </section>
   );
 }

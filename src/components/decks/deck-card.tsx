@@ -246,7 +246,7 @@ interface DeckCardProps {
   /** Passed through to the menu's `See it among your decks` row; absent while Stats is off. */
   onAmong?: () => void;
   /**
-   * The reader's own two friend deck rules, with `FRIEND_DECKS_ENABLED` on for them; null (or absent) while it is off,
+   * The reader's own two friend deck rules, with `SOCIAL_FRIENDS_ENABLED` on for them; null (or absent) while it is off,
    * and then the tile draws neither the glyph nor the menu's Hidden from friends row.
    */
   friendPrefs?: FriendDeckPrefs | null;

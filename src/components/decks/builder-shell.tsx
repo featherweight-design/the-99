@@ -181,7 +181,7 @@ interface BuilderShellProps {
   /** The deck's shelf and the reader's shelves, for the header menu's Move. The route always reads
    *  it; the shell's tests, which draw no menu, leave it out. */
   shelf?: DeckShelf;
-  /** Hidden from friends (`FRIEND_DECKS_ENABLED` for the reader): the header menu's row and mark. Absent while off. */
+  /** Hidden from friends (`SOCIAL_FRIENDS_ENABLED` for the reader): the header menu's row and mark. Absent while off. */
   friendHide?: { hidden: boolean; prefs: FriendDeckPrefs };
   /** "Kept for this deck"'s Set picker (H35, PR 2) — every set that printed a commander. */
   printedInSets?: readonly PrintedInSet[];

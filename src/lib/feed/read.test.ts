@@ -226,19 +226,17 @@ describe("a trade match a friend kept back", () => {
   });
 });
 
-describe("the reads with the feed off", () => {
+describe("the reads", () => {
   const never = { execute: async () => { throw new Error("no statement should run"); } } as never;
 
-  it("runs no statement and answers empty", async () => {
-    expect(await loadFeed("u", env(), NOW, never)).toEqual([]);
-    expect(await unseenCount("u", env(), NOW, never)).toBe(0);
-    expect(await unseenFriendsCount("u", env({ HOME_FEED_ENABLED: "true" }), NOW, never)).toBe(0);
+  it("runs no statement for the friends count with Friends off, and answers 0", async () => {
+    expect(await unseenFriendsCount("u", env(), NOW, never)).toBe(0);
   });
 
   it("reads New precon (feed and badge), and never writes its stored choice", async () => {
     const ran: SQL[] = [];
     const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 0 }] }; } } as never;
-    const e = env({ HOME_FEED_ENABLED: "true" });
+    const e = env();
     await loadFeed("u", e, NOW, q);
     await unseenCount("u", e, NOW, q);
     expect(ran).toHaveLength(2);
@@ -255,7 +253,7 @@ describe("the reads with the feed off", () => {
       { kind: "combo", key: "item:2", created_at: "2026-10-22 00:00:00+00", code: null, name: null, file_name: null, oracle_id: null, variant_id: "1-2", friend_public_id: null, friend_name: null, data: {}, unseen: true },
     ];
     const q = { execute: async () => ({ rows }) } as never;
-    expect((await loadFeed("u", env({ HOME_FEED_ENABLED: "true" }), NOW, q)).map((i) => i.key)).toEqual(["item:2", "set:a"]);
+    expect((await loadFeed("u", env(), NOW, q)).map((i) => i.key)).toEqual(["item:2", "set:a"]);
   });
 });
 

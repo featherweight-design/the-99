@@ -1,5 +1,4 @@
-// The shell's half of the Home badge (menu and Home PR 6): Home's count is the feed's unseen items, read per request
-// only with HOME_FEED_ENABLED on, and a failed read draws no badge rather than breaking the page. Friends' count is
+// The shell's half of the Home badge (menu and Home PR 6): Home's count is the feed's unseen items, read per request, and a failed read draws no badge rather than breaking the page. Friends' count is
 // PR 7's.
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -39,15 +38,14 @@ afterEach(() => {
 });
 
 describe("Shell and the Home badge", () => {
-  it("reads no count with the feed off, and hands both bars none", async () => {
+  it("hands both bars no badge when nothing is unseen", async () => {
+    unseenCount.mockResolvedValue(0);
     await renderShell();
-    expect(unseenCount).not.toHaveBeenCalled();
     expect(seen.rail).toEqual({});
     expect(seen.tab).toEqual({});
   });
 
-  it("hands both bars the unseen count with the feed on", async () => {
-    state.env = { HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  it("hands both bars the unseen count", async () => {
     unseenCount.mockResolvedValue(3);
     await renderShell();
     expect(unseenCount).toHaveBeenCalledWith("user_1", state.env);
@@ -56,7 +54,6 @@ describe("Shell and the Home badge", () => {
   });
 
   it("draws no badge when the count cannot be read, and the page still renders", async () => {
-    state.env = { HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     unseenCount.mockRejectedValue(new Error("down"));
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     await renderShell();
@@ -66,7 +63,7 @@ describe("Shell and the Home badge", () => {
 });
 
 describe("Shell and the app icon's badge (push PR 5, G6)", () => {
-  const PUSH = { HOME_FEED_ENABLED: "true", PUSH_ENABLED: "true" };
+  const PUSH = { PUSH_ENABLED: "true" };
 
   it("hands the icon the bars' own counts with the switch on", async () => {
     state.env = { ...PUSH } as unknown as NodeJS.ProcessEnv;
@@ -76,12 +73,9 @@ describe("Shell and the app icon's badge (push PR 5, G6)", () => {
     expect(seen.icon).toBe(seen.tab);
   });
 
-  it("mounts no badge with the switch off, or with Home's feed off (push needs it)", async () => {
+  it("mounts no badge with the switch off", async () => {
     unseenCount.mockResolvedValue(3);
     state.env = { ...PUSH, PUSH_ENABLED: "" } as unknown as NodeJS.ProcessEnv;
-    await renderShell();
-    expect(seen.icon).toBeUndefined();
-    state.env = { PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     await renderShell();
     expect(seen.icon).toBeUndefined();
   });

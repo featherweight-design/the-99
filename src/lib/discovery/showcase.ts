@@ -45,7 +45,7 @@ export type CardInput = {
   deckCount: number;
   /** Whether the reader has a confirmed upload Sync can merge against. */
   hasSyncBase: boolean;
-  /** `COMMANDERS_PLACE_ENABLED` for the reader: a tool that lands on a tab of the place lands on the tab. */
+  /** the Commanders place (always on) for the reader: a tool that lands on a tab of the place lands on the tab. */
   place: boolean;
 };
 

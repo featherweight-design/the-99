@@ -74,7 +74,7 @@ import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
-import { friendDecksEnabled, ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, spareRequestsEnabled } from "../../../lib/social/flag";
+import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, spareRequestsEnabled } from "../../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
@@ -261,8 +261,8 @@ export default async function DeckBuilderPage({
   // A failed read costs the menu its Move row and nothing else.
   const foldersRead = early(perf.timed("folders", () => listFolders(userId)).catch(() => null));
   // The reader's own friend deck rules, for the header menu's Hidden from friends (friend decks README 4), behind
-  // `FRIEND_DECKS_ENABLED`. A failed read costs the menu that row and the header its mark, nothing else.
-  const friendPrefsRead = friendDecksEnabled(env)
+  // `SOCIAL_FRIENDS_ENABLED`. A failed read costs the menu that row and the header its mark, nothing else.
+  const friendPrefsRead = socialFriendsEnabled(env)
     ? early(perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)).catch(() => null))
     : null;
   // The deck's strategy and its focus, uncached: a card edit revalidates this page, and the

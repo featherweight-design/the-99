@@ -79,7 +79,6 @@ jobs:
       # The feed's price-drop notices (menu and Home G2) resolve each reader's switches on top of this environment: the
       # target's own Vercel values, held as variables on each `catalog-<target>` environment (unset means off; a kill
       # switch is the literal `off`). See `catalog-refresh.yml`.
-      HOME_FEED_ENABLED: ${{ vars.HOME_FEED_ENABLED }}
       SOCIAL_WISHLIST_ENABLED: ${{ vars.SOCIAL_WISHLIST_ENABLED }}
     steps:
       - uses: actions/checkout@v4

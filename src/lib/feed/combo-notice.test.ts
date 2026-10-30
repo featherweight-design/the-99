@@ -15,18 +15,11 @@ const q = (rows: unknown[]) => ({ execute: vi.fn().mockResolvedValue({ rows }) }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.env = { HOME_FEED_ENABLED: "true" };
+  m.env = {};
 });
 
 describe("comboWatchIn", () => {
-  it("watches nothing, and reads nothing, while the feed is off for this reader", async () => {
-    m.env = { HOME_FEED_ENABLED: "false" };
-    const tx = q([{ yes: 1 }]);
-    expect(await comboWatchIn(tx as never, "u1")).toBeNull();
-    expect(tx.execute).not.toHaveBeenCalled();
-  });
-
-  it("watches the held cards once the feed is on and the kind is chosen", async () => {
+  it("watches the held cards once the kind is chosen", async () => {
     const tx = { execute: vi.fn().mockResolvedValueOnce({ rows: [{ yes: 1 }] }).mockResolvedValueOnce({ rows: [{ oracle_id: "a" }] }) };
     expect([...(await comboWatchIn(tx as never, "u1"))!]).toEqual(["a"]);
   });

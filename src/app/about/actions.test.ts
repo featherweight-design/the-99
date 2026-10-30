@@ -154,7 +154,7 @@ describe("recordAboutVisit (R6)", () => {
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["locked-cards"]);
     expect(confirmed).toContain("locked-cards");
     expect(confirmed).toContain("decks/your-deck/lock");
-    expect(confirmed).toContain("home/home/ready");
+    expect(confirmed).toContain("home/home/in-use");
   });
 
   it("confirms no unit a switch flipped off between the render and the visit took out of the write", async () => {

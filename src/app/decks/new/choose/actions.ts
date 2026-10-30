@@ -14,7 +14,6 @@ import { after } from "next/server";
 import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { askOf, resultsTarget } from "../../../../lib/intake/submit";
 import { choosePath } from "../../../../lib/commanders/place-paths";
-import { commandersPlaceEnabled } from "../../../../lib/commanders/place-flag";
 import { beginTheRead } from "../../../../lib/intake/the-read-run";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
@@ -38,7 +37,7 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!helpMeChooseEnabled(env)) throw new Error("not found");
-  const path = choosePath(commandersPlaceEnabled(env));
+  const path = choosePath(true);
   // A bound on what a caller may send, far past any real form: 800 words percent-encoded as three
   // bytes each run to 7,200 characters, and every theme and set comes on top.
   if (typeof query !== "string" || query.length > 64_000) return { kind: "refused" };

@@ -18,6 +18,7 @@ vi.mock("../../lib/home/summary", () => ({
 }));
 vi.mock("../../lib/moments/spent", () => ({ readSpentMoments: async () => state.spent }));
 vi.mock("../../lib/social/after-game", () => ({ friendsAfterGameDue: async () => false }));
+vi.mock("../../lib/feed/read", () => ({ unseenCount: async () => 0 }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => state.env }));
 const seen = vi.hoisted(() => ({ rail: undefined as unknown, tab: undefined as unknown }));
 vi.mock("./nav", () => ({

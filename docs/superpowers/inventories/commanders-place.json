@@ -1,6 +1,6 @@
 {
   "feature": "Commanders place: For you, Discover and Help me choose on one strip (menu and Home line, plan 2026-10-22-menu-home.md, PR 1)",
-  "note": "Photographed over the audit account on a server with COMMANDERS_PLACE_ENABLED, HELP_ME_CHOOSE_ENABLED and NO_COLLECTION_ENTRY_ENABLED on. Each tab is its own row at both widths; the two retired addresses are rows too, because a redirect that never lands leaves the cell empty. The strip is the Collection place's, extracted (`shares`). The two door rows wait on an href that names the tab, so a door still pointing at the retired address fails to be reached.",
+  "note": "Photographed over the audit account on a server with HELP_ME_CHOOSE_ENABLED and NO_COLLECTION_ENTRY_ENABLED on. Each tab is its own row at both widths; the two retired addresses are rows too, because a redirect that never lands leaves the cell empty. The strip is the Collection place's, extracted (`shares`). The two door rows wait on an href that names the tab, so a door still pointing at the retired address fails to be reached.",
   "clearAbout": true,
   "shares": {
     "module": "src/components/place/place-strip.tsx",

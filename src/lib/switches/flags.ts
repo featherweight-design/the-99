@@ -3,7 +3,6 @@ import { announcementsEnabled } from "../announcements/flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
 import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
 import { changeCommanderEnabled } from "../commander-change/flag";
-import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
@@ -12,7 +11,6 @@ import { neverCutEnabled } from "../decks/never-cut-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
-import { homeFeedEnabled } from "../feed/flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
@@ -24,7 +22,7 @@ import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
-import { friendDecksEnabled, ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled } from "../social/flag";
+import { ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled } from "../social/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { feedbackEnabled } from "../feedback/flag";
 import { flyerTrialEnabled } from "../flyer/flag";
@@ -46,7 +44,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
   COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
-  COMMANDERS_PLACE_ENABLED: commandersPlaceEnabled,
   DECK_NOTES_ENABLED: deckNotesEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
@@ -54,8 +51,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
-  FRIEND_DECKS_ENABLED: friendDecksEnabled,
-  HOME_FEED_ENABLED: homeFeedEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   LABEL_ROLE_COUNTS_ENABLED: labelRoleCountsEnabled,
   LABEL_SURFACES_ENABLED: labelSurfacesEnabled,

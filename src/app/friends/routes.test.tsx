@@ -54,6 +54,7 @@ vi.mock("../../lib/invites/spend", async (orig) => ({
   pendingReceipt: m.pendingReceipt,
   spendInviteOnSignUp: m.spendInviteOnSignUp,
 }));
+vi.mock("../../lib/social/deck-visibility", () => ({ loadFriendDeckPrefs: async () => ({ seeDecks: true, seeUnfinished: false }) }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));
 // Waiting on you and its after() work have their own tests (`waiting.test.ts`, `waiting-on-you.test.tsx`).

@@ -15,7 +15,7 @@ import { loadFriendWishlist } from "./wishlist";
 
 export const friendSpareList = cache((viewerId: string, publicId: string, wishlist: boolean) => loadFriendSpareList(viewerId, publicId, wishlist));
 export const friendWishlist = cache((viewerId: string, publicId: string) => loadFriendWishlist(viewerId, publicId));
-/** `viewerOpen` is the viewer's `FRIEND_DECKS_ENABLED`: the layout and the tab pass the same, so they share one read. */
+/** `viewerOpen` is the viewer's `SOCIAL_FRIENDS_ENABLED`: the layout and the tab pass the same, so they share one read. */
 export const friendDecks = cache((viewerId: string, publicId: string, viewerOpen: boolean) => loadFriendDecks(viewerId, publicId, viewerOpen));
 
 /**

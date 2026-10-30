@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", FRIEND_DECKS_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -17,7 +17,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 
 // Retired switches draw always and are still seen by id (so no reader's New marks moved): with "every switch off" they
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = retiredEntries.map((e) => e.id);
 
@@ -96,7 +96,8 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
     // `credits` and `deck-analysis` carry a line gated by `TUNING_ENABLED` alone (2026-10-08),
     // on top of (or with no) entry-level switch — resolved the same way `visibleEntries` itself
     // resolves it, rather than hand-duplicating the string surgery here.
-    expect(visibleEntries(OFF)).toEqual(aboutEntries.filter((e) => !e.switch || retiredEntries.includes(e)).map((e) => resolveEntry(e, OFF)));
+    // `whats-new` (retired switch) is drawn in place of `ready-to-build`, even with every switch off.
+    expect(visibleEntries(OFF)).toEqual(aboutEntries.filter((e) => e.id !== "ready-to-build" && (!e.switch || retiredEntries.includes(e))).map((e) => resolveEntry(e, OFF)));
     expect(visibleEntries(ON)).toEqual(aboutEntries.filter((e) => e.id !== "buying-credits" && e.id !== "ready-to-build").map((e) => resolveEntry(e, ON)));
   });
 
@@ -363,21 +364,18 @@ describe("a negated line switch, and `import`'s two warnings (collection edit)",
   });
 });
 
-// Friend decks close-out (READINESS 7): the friends key says "never the lists" only while friend decks are off, and the
-// privacy line's default sentence once they are on.
-describe("the friends key follows FRIEND_DECKS_ENABLED", () => {
+// Friend decks close-out (READINESS 7): the friends key says the privacy line's default sentence. The switch is retired
+// (it was on exactly where Friends is), so the old "never the lists" form never draws.
+describe("the friends key says what friends see of decks", () => {
   const OLD = "Friends see your deck names, commanders and statuses, never the lists.";
   const NEW = "Friends can see your decks and their lists, except drafts and decks you’re building.";
   const entry = aboutEntries.find((e) => e.keys.includes(OLD))!;
   const keys = (on: Record<string, string>) => resolveEntry(entry, on as unknown as NodeJS.ProcessEnv).keys;
 
-  it("keeps the old sentence with the switch off and swaps it with the switch on", () => {
-    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true" })).toContain(OLD);
-    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true" })).not.toContain(NEW);
-    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" })).toContain(NEW);
-    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" })).not.toContain(OLD);
-    // FRIEND_DECKS_ENABLED needs its parent: alone it draws neither.
-    expect(keys({ FRIEND_DECKS_ENABLED: "true" })).not.toContain(NEW);
+  it("draws the new sentence wherever Friends is on, and neither without it", () => {
+    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true" })).toContain(NEW);
+    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true" })).not.toContain(OLD);
+    expect(keys({})).not.toContain(NEW);
   });
 
   it("matches the privacy line's default sentence word for word", () => {
@@ -619,13 +617,13 @@ describe("an entry drawn in another's place (`replaces`, the launch-end batch)",
 
 describe("whats-new's line switches, in every state of the three switches they name", () => {
   const entry = aboutEntries.find((e) => e.id === "whats-new")!;
-  const flags = ["COMMANDERS_PLACE_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SOCIAL_FRIENDS_ENABLED", "SOCIAL_WISHLIST_ENABLED"] as const;
+  const flags = ["HELP_ME_CHOOSE_ENABLED", "SOCIAL_FRIENDS_ENABLED", "SOCIAL_WISHLIST_ENABLED"] as const;
   // The renderer's own reading: a blank line starts a paragraph, an empty block is dropped (`EntryCaption`).
   const blocks = (caption: string) => caption.split(/\n\s*\n/).map((b) => b.trim()).filter((b) => b.length > 0);
 
-  it("draws clean text in all 16 combinations: no gated line left behind, no orphaned heading, no empty paragraph", () => {
+  it("draws clean text in all 8 combinations: no gated line left behind, no orphaned heading, no empty paragraph", () => {
     for (let mask = 0; mask < 1 << flags.length; mask++) {
-      const env = { HOME_FEED_ENABLED: "true", ...Object.fromEntries(flags.map((f, i) => [f, mask & (1 << i) ? "true" : "false"])) } as unknown as NodeJS.ProcessEnv;
+      const env = { ...Object.fromEntries(flags.map((f, i) => [f, mask & (1 << i) ? "true" : "false"])) } as unknown as NodeJS.ProcessEnv;
       const on = (f: (typeof flags)[number]) => env[f] === "true";
       const { caption } = resolveEntry(entry, env);
       const paras = blocks(caption);
@@ -633,17 +631,17 @@ describe("whats-new's line switches, in every state of the three switches they n
       // A heading that introduces a list never stands without it.
       const hasHeading = caption.includes("Commanders is one place now");
       const hasTabs = /- For you:|- Discover:|- Help me choose:/.test(caption);
-      expect(hasHeading, `mask ${mask}: the tabs heading follows the place`).toBe(on("COMMANDERS_PLACE_ENABLED"));
-      expect(hasTabs, `mask ${mask}: tab lines only with the heading`).toBe(on("COMMANDERS_PLACE_ENABLED"));
-      expect(caption.includes("- Help me choose:"), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED") && on("HELP_ME_CHOOSE_ENABLED"));
+      expect(hasHeading, `mask ${mask}: the tabs heading is always drawn (the place is retired)`).toBe(true);
+      expect(hasTabs, `mask ${mask}: tab lines only with the heading`).toBe(true);
+      expect(caption.includes("- Help me choose:"), `mask ${mask}`).toBe(on("HELP_ME_CHOOSE_ENABLED"));
       expect(caption.includes("- A precon"), `mask ${mask}`).toBe(true);
       expect(caption.includes("- A price drop"), `mask ${mask}`).toBe(on("SOCIAL_WISHLIST_ENABLED"));
       expect(caption.includes("- A friend with a spare"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED") && on("SOCIAL_WISHLIST_ENABLED"));
-      expect(caption.includes("Friends has its own spot"), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED") && on("SOCIAL_FRIENDS_ENABLED"));
+      expect(caption.includes("Friends has its own spot"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED"));
       expect(caption.includes("In Settings, you choose"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED"));
-      // Settings' account-menu row exists with the place on only; off, Settings is reached from Home's Choose what shows.
-      expect(caption.includes("then in Settings, in the account menu."), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED"));
-      expect(caption.includes("then in Settings."), `mask ${mask}`).toBe(!on("COMMANDERS_PLACE_ENABLED"));
+      // Settings' account-menu row is always drawn now that the place is retired.
+      expect(caption.includes("then in Settings, in the account menu."), `mask ${mask}`).toBe(true);
+      expect(caption.includes("then in Settings."), `mask ${mask}`).toBe(false);
     }
   });
 });
@@ -701,12 +699,12 @@ describe("deck-focus without Suggested changes", () => {
 });
 
 describe("push (close-out): each line follows the kind's own availability (`feedKindAvailable`)", () => {
-  const env = (extra: Record<string, string>) => ({ HOME_FEED_ENABLED: "true", PUSH_ENABLED: "true", ...extra }) as unknown as NodeJS.ProcessEnv;
+  const env = (extra: Record<string, string>) => ({ PUSH_ENABLED: "true", ...extra }) as unknown as NodeJS.ProcessEnv;
   const push = (e: NodeJS.ProcessEnv) => visibleEntries(e).find((x) => x.id === "push");
 
-  it("draws only with PUSH_ENABLED, which needs Home's news", () => {
+  it("draws only with PUSH_ENABLED", () => {
     expect(push(env({}))).toBeDefined();
-    expect(push({ PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeUndefined();
+    expect(push({} as unknown as NodeJS.ProcessEnv)).toBeUndefined();
   });
 
   it("names a set and a precon, always", () => {
@@ -724,24 +722,22 @@ describe("push (close-out): each line follows the kind's own availability (`feed
     expect(on.keys).toHaveLength(4);
   });
 
-  it("swaps whats-new's news key with the switch", () => {
+  it("swaps whats-new's news key with push", () => {
     const key = (e: NodeJS.ProcessEnv) => visibleEntries(e).find((x) => x.id === "whats-new")!.keys[0];
-    expect(key({ HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toMatch(/^News stays in the app/);
+    expect(key({} as unknown as NodeJS.ProcessEnv)).toMatch(/^News stays in the app/);
     expect(key(env({}))).toBe("News shows on Home, and as push where you turn it on. No email, ever.");
   });
 });
 
 describe("the friends entry under the signature card", () => {
   const friends = aboutEntries.find((e) => e.id === "friends")!;
-  const env = (decks: boolean, signature: boolean) =>
-    ({ SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: decks ? "true" : "", SIGNATURE_CARD_ENABLED: signature ? "true" : "" }) as unknown as NodeJS.ProcessEnv;
+  const env = (signature: boolean) =>
+    ({ SOCIAL_FRIENDS_ENABLED: "true", SIGNATURE_CARD_ENABLED: signature ? "true" : "" }) as unknown as NodeJS.ProcessEnv;
   it.each([
-    [false, false, "your name and your commander,", "Pick a commander and its art"],
-    [true, false, "your name, your commander and the decks", "Pick a commander and its art"],
-    [false, true, "your name and your signature card,", "Pick a signature card, any card in any printing, and its art"],
-    [true, true, "your name, your signature card and the decks", "Pick a signature card, any card in any printing, and its art"],
-  ])("draws one privacy key and one face sentence (friend decks %s, signature card %s)", (decks, signature, key, face) => {
-    const e = resolveEntry(friends, env(decks, signature));
+    [false, "your name, your commander and the decks", "Pick a commander and its art"],
+    [true, "your name, your signature card and the decks", "Pick a signature card, any card in any printing, and its art"],
+  ])("draws one privacy key and one face sentence (signature card %s)", (signature, key, face) => {
+    const e = resolveEntry(friends, env(signature));
     const privacy = e.keys.filter((k) => k.startsWith("Friends see your name"));
     expect(privacy).toHaveLength(1);
     expect(privacy[0]).toContain(key);

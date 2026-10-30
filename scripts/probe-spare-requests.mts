@@ -187,7 +187,7 @@ async function main() {
     check("... and is decided once it goes (W already has its open ask)", ((r) => !r.ok && r.reason === "asked")(await waiting));
 
     console.log("\n6. the feed and the Friends badge (plan PR 2)");
-    const FEED = { ...ENV, HOME_FEED_ENABLED: "true" } as NodeJS.ProcessEnv;
+    const FEED = { ...ENV } as NodeJS.ProcessEnv;
     await prefs.setFeedKinds(H2, ["spare-request"]);
     check("the kind is offered with the switch on", (await import("../src/lib/feed/flag")).availableFeedKinds(FEED).includes("spare-request"));
     const waitingBefore = await sr.waitingAsksCount(H2, FEED);
@@ -237,7 +237,7 @@ async function main() {
       values (${A}, ${`https://push.example.invalid/${run}`}, 'p', 'a')`);
 
     console.log("\n6a. withdraw and clear (G1)");
-    const FEEDU = { ...ENV, HOME_FEED_ENABLED: "true" } as NodeJS.ProcessEnv;
+    const FEEDU = { ...ENV } as NodeJS.ProcessEnv;
     const hasAsk = async (u: string, card: string) =>
       (await read.loadFeed(u, FEEDU)).some((i) => i.kind === "spare-request" && "oracleId" in i && i.oracleId === card);
     const halWaiting = await sr.waitingAsksCount(H1, FEEDU);

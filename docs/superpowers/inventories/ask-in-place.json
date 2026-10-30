@@ -1,7 +1,7 @@
 {
   "feature": "Ask in place: a trade match's press opens the card's spares sheet over the page, the friend first (Hugh's ruling 2026-10-27, the menu-home plan's product call 8)",
   "clearAbout": true,
-  "note": "Needs HOME_FEED_ENABLED, SOCIAL_FRIENDS_ENABLED, SOCIAL_WISHLIST_ENABLED and SPARE_REQUESTS_ENABLED on, on a SCRATCH branch seeded with a friend who shares cards on the reader's wishlist as spares with a pod the reader is in (trade matches noticed, every feed kind on). Read-only: the sheet is opened and photographed, never asked from.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED, SOCIAL_WISHLIST_ENABLED and SPARE_REQUESTS_ENABLED on, on a SCRATCH branch seeded with a friend who shares cards on the reader's wishlist as spares with a pod the reader is in (trade matches noticed, every feed kind on). Read-only: the sheet is opened and photographed, never asked from.",
   "out": "contact-sheets/ask-in-place",
   "rows": [
     {

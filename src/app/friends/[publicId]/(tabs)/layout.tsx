@@ -9,7 +9,7 @@
 
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
-import { friendDecksEnabled, socialFriendsEnabled } from "../../../../lib/social/flag";
+import { socialFriendsEnabled } from "../../../../lib/social/flag";
 import { wishlistEnabled } from "../../../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { loadFriend } from "../../../../lib/social/access";
@@ -34,7 +34,7 @@ export default async function FriendPageLayout({
     loadFriend(userId, publicId),
     friendSpareList(userId, publicId, wishlistOn),
     wishlistOn ? friendWishlist(userId, publicId) : Promise.resolve(null),
-    friendDecks(userId, publicId, friendDecksEnabled(env)),
+    friendDecks(userId, publicId, socialFriendsEnabled(env)),
   ]);
   if (!friend) notFound();
   return (

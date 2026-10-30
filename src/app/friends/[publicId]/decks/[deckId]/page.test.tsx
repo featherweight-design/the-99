@@ -1,4 +1,4 @@
-// The friend's deck route (friend decks G1): not found unless FRIEND_DECKS_ENABLED is on for the VIEWER and both the
+// The friend's deck route (friend decks G1): not found unless Friends is on for the VIEWER and both the
 // friend and the deck read (the deck's own rules are the OWNER's, in `loadFriendDeck`).
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
@@ -13,7 +13,7 @@ vi.mock("../../../../../components/social/friend-deck-view", () => ({ FriendDeck
 import FriendDeckPage from "./page";
 
 const PARAMS = { params: Promise.resolve({ publicId: "p1", deckId: "d1" }) };
-const ON = { SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" };
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -24,11 +24,9 @@ beforeEach(() => {
 });
 
 describe("FriendDeckPage", () => {
-  it("is not found with the switch or its parent off for the viewer, reading nothing", async () => {
-    for (const env of [{}, { FRIEND_DECKS_ENABLED: "true" }, { SOCIAL_FRIENDS_ENABLED: "true" }]) {
-      m.requestSwitchEnv.mockResolvedValue(env);
-      await expect(FriendDeckPage(PARAMS)).rejects.toThrow("NOT_FOUND");
-    }
+  it("is not found with Friends off for the viewer, reading nothing", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
+    await expect(FriendDeckPage(PARAMS)).rejects.toThrow("NOT_FOUND");
     expect(m.loadFriendDeck).not.toHaveBeenCalled();
   });
 

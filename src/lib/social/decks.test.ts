@@ -1,6 +1,6 @@
 // A friend's decks for the friend page's Decks tab (menu and Home PR 7, G4): the grant is the viewer's own friendship, a
 // stranger reads nothing, and what comes back is a name, a commander, a status and a count: an id only with
-// FRIEND_DECKS_ENABLED on for the owner, and never a list. And one friend's deck, read-only (friend decks G1).
+// Friends on for the owner, and never a list. And one friend's deck, read-only (friend decks G1).
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -34,7 +34,7 @@ vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: m.resolveSwitchEnv })
 
 import { loadFriendDeck, loadFriendDecks } from "./decks";
 
-const ON = { FRIEND: "env", SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" };
+const ON = { FRIEND: "env", SOCIAL_FRIENDS_ENABLED: "true" };
 const DECK = "11111111-1111-4111-8111-111111111111";
 
 const ROW = {
@@ -98,7 +98,7 @@ describe("loadFriendDecks", () => {
   });
 });
 
-describe("loadFriendDecks with FRIEND_DECKS_ENABLED on for the owner", () => {
+describe("loadFriendDecks with Friends on for the owner", () => {
   beforeEach(() => {
     m.resolveSwitchEnv.mockResolvedValue(ON);
     m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: true, seeUnfinished: false });
@@ -137,8 +137,8 @@ describe("loadFriendDecks with FRIEND_DECKS_ENABLED on for the owner", () => {
     expect(await loadFriendDecks("user_viewer", "x", true)).toEqual([]);
   });
 
-  it("with the switch off for the owner keeps every deck and reads no rules, as the tab shipped", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ FRIEND: "env", SOCIAL_FRIENDS_ENABLED: "true" });
+  it("with Friends off for the owner keeps every deck and reads no rules, as the tab shipped", async () => {
+    m.resolveSwitchEnv.mockResolvedValue({ FRIEND: "env" });
     m.listDecksWithStats.mockResolvedValue([{ ...ROW, statusPill: "Draft", hiddenFromFriends: true }]);
     expect(await loadFriendDecks("user_viewer", "x")).toHaveLength(1);
     expect(m.loadFriendDeckPrefs).not.toHaveBeenCalled();
@@ -244,8 +244,8 @@ describe("loadFriendDeck", () => {
     expect(m.listDecksWithStats).not.toHaveBeenCalled();
   });
 
-  it("is null with the switch off for the owner, whatever the viewer's switches", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
+  it("is null with Friends off for the owner, whatever the viewer's switches", async () => {
+    m.resolveSwitchEnv.mockResolvedValue({ FRIEND: "env" });
     expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
     expect(m.getDeckDetail).not.toHaveBeenCalled();
   });

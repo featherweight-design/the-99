@@ -17,19 +17,9 @@ import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, pr
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 
-const ON = { HOME_FEED_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const NOW = new Date("2026-10-22T12:00:00Z");
 const text = (q: SQL) => new PgDialect().sqlToQuery(q).sql;
-
-/** An executor that refuses every call: proves a path reads nothing. */
-const refusing = {
-  execute: () => {
-    throw new Error("read");
-  },
-  select: () => {
-    throw new Error("read");
-  },
-} as never;
 
 /**
  * An executor answering the prefs read with `kinds` (and `prefs`: the declined list, the offer's ✕ stamp) and each
@@ -54,10 +44,6 @@ const row = (o: Record<string, unknown>) => ({
 });
 
 describe("loadHomeFeed", () => {
-  it("reads nothing and answers null with HOME_FEED_ENABLED off: Home as shipped", async () => {
-    expect(await loadHomeFeed("u1", {} as NodeJS.ProcessEnv, NOW, refusing)).toBeNull();
-  });
-
   it("answers the offer alone while every kind the reader can be offered is off, reading no feed", async () => {
     const q = fake({}, {});
     const feed = await loadHomeFeed("u1", ON, NOW, q);
@@ -241,12 +227,6 @@ describe("homeFeedAfter", () => {
     marks.notice.mockReset();
   });
 
-  it("writes nothing with the feed off", async () => {
-    await homeFeedAfter("u1", {} as NodeJS.ProcessEnv, NOW)();
-    expect(marks.seen).not.toHaveBeenCalled();
-    expect(marks.notice).not.toHaveBeenCalled();
-  });
-
   it("marks the feed seen at the render's clock and notices trade matches, each failing alone", async () => {
     marks.seen.mockRejectedValue(new Error("down"));
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -360,7 +340,7 @@ describe("a Wizards post", () => {
   });
 
   it("reaches a reader who never chose, with ANNOUNCEMENTS_ENABLED on, and Wizards news never leads", async () => {
-    const env = { HOME_FEED_ENABLED: "true", ANNOUNCEMENTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const env = { ANNOUNCEMENTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     const data = { title: "Magic’s 2027 release schedule", excerpt: "Every set.", hero: null, url: URL_OK, promised: null, lists: 0 };
     const q = fake({}, { feed: [row({ kind: "wizards-news", key: "post:n1", created_at: NOW.toISOString(), name: data.title, data })] });
     const feed = await loadHomeFeed("u1", env, NOW, q);
@@ -398,7 +378,7 @@ describe("a Wizards post", () => {
   });
 
   it("offers nothing of Wizards' with ANNOUNCEMENTS_ENABLED off", async () => {
-    const feed = await loadHomeFeed("u1", { HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, NOW, fake({}, {}));
+    const feed = await loadHomeFeed("u1", {} as unknown as NodeJS.ProcessEnv, NOW, fake({}, {}));
     expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "combo"], on: [] });
   });
 });

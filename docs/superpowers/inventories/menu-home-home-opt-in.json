@@ -1,7 +1,7 @@
 {
   "feature": "Home, direction B: What's new with nothing in the window for a reader who never chose, the quiet line then the offer line (small items 5, Offer-Empty; announcements ERRATUM-offer-empty.md)",
   "clearAbout": true,
-  "note": "The second of the line's three Home inventories (see `menu-home-home.json`). Rewritten for small items 5: the inline opt-in panel (call 7) retired, so these rows draw the quiet line naming the default-on kinds with the offer line under it, then Pick pressed. The file name is kept. Account: one with cards that has never chosen (user_prefs.feed_kinds and feed_kinds_declined empty, feed_offer_closed_at null) and nothing in the feed window. No lead and no Home badge. Run on a scratch Neon branch with HOME_FEED_ENABLED on. With every kind off (no default-on kind available), the same account draws the offer line alone, with no quiet line.",
+  "note": "The second of the line's three Home inventories (see `menu-home-home.json`). Rewritten for small items 5: the inline opt-in panel (call 7) retired, so these rows draw the quiet line naming the default-on kinds with the offer line under it, then Pick pressed. The file name is kept. Account: one with cards that has never chosen (user_prefs.feed_kinds and feed_kinds_declined empty, feed_offer_closed_at null) and nothing in the feed window. No lead and no Home badge. Run on a scratch Neon branch. With every kind off (no default-on kind available), the same account draws the offer line alone, with no quiet line.",
   "rows": [
     {
       "id": "home-never-chosen-empty",

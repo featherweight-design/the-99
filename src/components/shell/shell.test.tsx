@@ -34,7 +34,7 @@ vi.mock("./nav", () => ({
 }));
 // The Friends badge (menu and Home PR 7): its count and the after() notice, read off the calls.
 const feed = vi.hoisted(() => ({ unseenFriendsCount: vi.fn(async (..._a: unknown[]) => 3), noticeTradeMatches: vi.fn(async (..._a: unknown[]) => 0), after: vi.fn((_fn: () => unknown) => {}) }));
-vi.mock("../../lib/feed/read", () => ({ unseenFriendsCount: feed.unseenFriendsCount }));
+vi.mock("../../lib/feed/read", () => ({ unseenFriendsCount: feed.unseenFriendsCount, unseenCount: async () => 0 }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: feed.noticeTradeMatches }));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: feed.after }));
 
@@ -118,7 +118,7 @@ describe("Shell and the Friends badge (menu and Home PR 7)", () => {
     feed.unseenFriendsCount.mockClear();
     feed.after.mockClear();
     feed.noticeTradeMatches.mockClear();
-    requestHeaders = as({ SOCIAL_FRIENDS_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true" });
+    requestHeaders = as({ SOCIAL_FRIENDS_ENABLED: "true" });
     await renderShell();
     expect(feed.unseenFriendsCount).toHaveBeenCalledWith("user_1", expect.anything());
     expect(navProps.some((n) => "badges" in n)).toBe(true);
@@ -129,8 +129,7 @@ describe("Shell and the Friends badge (menu and Home PR 7)", () => {
   });
 
   it.each([
-    ["Friends is off", { COMMANDERS_PLACE_ENABLED: "true" }],
-    ["Friends has no slot in the bar", { SOCIAL_FRIENDS_ENABLED: "true" }],
+    ["Friends is off", {}],
   ])("reads no count and notices nothing while %s", async (_label, env) => {
     navProps.length = 0;
     feed.unseenFriendsCount.mockClear();

@@ -1,4 +1,4 @@
-// The game log's picker reads a friend's decks by the friend's OWN rules while their FRIEND_DECKS_ENABLED is on
+// The game log's picker reads a friend's decks by the friend's OWN rules while their SOCIAL_FRIENDS_ENABLED is on
 // (friend decks PR 5, Hugh's ruling 2026-10-22), and as shipped while it is off. The SQL itself is `games.test.ts`;
 // here, which owner's rules reach the statement and what the picker is told.
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -27,7 +27,7 @@ import { listFriendDecks, listPickerFriends } from "./games";
 
 const VIEWER = "user_viewer";
 const FRIEND = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
-const ON = { SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" };
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const render = (w: SQL) => new PgDialect().sqlToQuery(w);
 
 beforeEach(() => {
@@ -47,8 +47,8 @@ describe("listFriendDecks", () => {
     expect(where.params).toContain("user_friend");
   });
 
-  it("lists as shipped while the owner's switch is off", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
+  it("lists as shipped while the owner's friends switch is off", async () => {
+    m.resolveSwitchEnv.mockResolvedValue({});
     await listFriendDecks(VIEWER, FRIEND);
     expect(render(m.wheres[0]).sql).not.toContain("hidden_from_friends");
   });
@@ -69,7 +69,7 @@ describe("listPickerFriends", () => {
       { publicId: "p-on", ownerId: "u-on", count: 4, visible: 2 },
       { publicId: "p-off", ownerId: "u-off", count: 3, visible: 0 },
     ]);
-    m.resolveSwitchEnv.mockImplementation(async (id: string) => (id === "u-on" ? ON : { SOCIAL_FRIENDS_ENABLED: "true" }));
+    m.resolveSwitchEnv.mockImplementation(async (id: string) => (id === "u-on" ? ON : {}));
     const out = await listPickerFriends(VIEWER);
     expect(out).toEqual([
       { publicId: "p-on", displayName: "Dave", commanderArt: null, deckCount: 2, withheld: true },

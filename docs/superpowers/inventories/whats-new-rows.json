@@ -1,7 +1,7 @@
 {
   "feature": "The trade-match press on Home's What's new and /friends' Waiting on you: Ask {friend} with spare requests on (d9, 2026-10-27). From desktop the time and the press share one line at the right of both rows (Hugh's ruling 2026-10-27, the menu-home plan's product call 5)",
   "clearAbout": true,
-  "note": "Needs HOME_FEED_ENABLED, SOCIAL_FRIENDS_ENABLED, SOCIAL_WISHLIST_ENABLED, SPARE_REQUESTS_ENABLED and COMMANDERS_PLACE_ENABLED on, on a SCRATCH branch seeded with a friend who shares a wishlist card as a spare with a pod the reader is in, and every feed kind on for the reader (enabled 30 days back, so new sets arrive). Visit /friends once first: it notices the trade matches after its response. Read-only: nothing is pressed.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED, SOCIAL_WISHLIST_ENABLED and SPARE_REQUESTS_ENABLED on, on a SCRATCH branch seeded with a friend who shares a wishlist card as a spare with a pod the reader is in, and every feed kind on for the reader (enabled 30 days back, so new sets arrive). Visit /friends once first: it notices the trade matches after its response. Read-only: nothing is pressed.",
   "out": "contact-sheets/whats-new-rows",
   "rows": [
     {
