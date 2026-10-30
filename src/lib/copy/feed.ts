@@ -76,7 +76,17 @@ export const feedCopy = {
      */
     offer: {
       lead: "Pick what else you want to hear about.",
-      rest: "New sets, price drops, trade matches and more.",
+      /**
+       * The kinds this reader can still pick, by their quiet names, never a kind they cannot get (wishlist or friends
+       * off): the first three, then "and more" past three. The board's "New sets, price drops, trade matches and more." is
+       * this with all of them on.
+       */
+      rest: (names: readonly string[]) => {
+        const shown = names.slice(0, 3);
+        const head = shown.length === 1 ? shown[0] : `${shown.slice(0, -1).join(", ")}${names.length > 3 ? ", " : " and "}${shown.at(-1)}`;
+        const line = names.length > 3 ? `${head} and more.` : `${head}.`;
+        return line.charAt(0).toUpperCase() + line.slice(1);
+      },
       openRest: "You can change it in Settings.",
       /** The press that opens the boxes in place; a ▾ follows it, unspoken. */
       pick: "Pick",

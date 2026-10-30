@@ -218,3 +218,8 @@ string ships as drawn.
   "Nothing new right now." alone (the shipped `quietLead`), and the offer line comes back next visit, as the opt-in did
   (ruled 2026-10-30, option a, pending Hugh and a Design note; Settings is the other way back). The ✕'s spoken label is
   "Hide this" (copy review: "for good" overclaimed for that reader).
+- **The closed line names only what the reader can pick.** The board's "New sets, price drops, trade matches and more."
+  promised kinds a reader without the wishlist or friends could not get. `offer.rest` now lists the kinds still offered,
+  by their quiet names: the first three, then "and more" (copy review, 2026-10-30).
+- **The shared Checkbox stays** (Hugh's ruling, recorded in #2408's erratum): the Offer board's 20×20 dashed box and CSS
+  check are not built; the boxes draw the shipped `Checkbox`.

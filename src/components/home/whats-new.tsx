@@ -295,7 +295,7 @@ function Offer({ offer, rule, onClosed }: { offer: FeedKind[]; rule: boolean; on
     <div data-feed-offer="closed" className={rule ? OFFER_RULE : undefined}>
       <div className="flex items-center gap-[10px] py-[6px] pr-[4px] pl-[14px]">
         <p className="m-0 min-w-0 flex-1 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
-          <b className="font-medium text-[color:var(--fg)]">{o.lead}</b> {o.rest}
+          <b className="font-medium text-[color:var(--fg)]">{o.lead}</b> {o.rest(offer.map((k) => c.quietName[k]))}
         </p>
         <button
           type="button"

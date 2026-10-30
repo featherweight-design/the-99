@@ -222,7 +222,9 @@ describe("WhatsNew, never chosen: the offer line (announcements call 3)", () => 
     const { container } = render(<WhatsNew feed={never([view(1, 2), view(2, 3)])} now={NOW} />);
     expect(line(container)?.getAttribute("data-feed-offer")).toBe("closed");
     expect(line(container)?.textContent).toContain(o.lead);
-    expect(line(container)?.textContent).toContain(o.rest);
+    // It names only the kinds this reader can pick, never one they cannot get.
+    expect(line(container)?.textContent).toContain("New sets, price drops on your wishlist and combos you can make.");
+    expect(line(container)?.textContent).not.toContain("trade matches");
     // Last in the box, under the rows.
     expect(line(container)?.parentElement?.lastElementChild).toBe(line(container));
     expect(screen.getByRole("button", { name: /Pick/ })).toHaveAttribute("aria-expanded", "false");
