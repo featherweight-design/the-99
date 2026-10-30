@@ -7,9 +7,9 @@ import { feedCopy } from "./feed";
 export type DeviceWord = "phone" | "browser" | "iPhone";
 
 export const pushSettingsCopy = {
-  /** The section head's right slot, over the push column. */
+  /** The mono column head over the push boxes (uppercase by CSS), and the foot's push clause's bold lead. */
   head: "Push",
-  /** Each kind's push box, by name (the row's text is the Home box's press). */
+  /** Each kind's push box, by name. */
   kindAria: (kind: FeedKind) => `Push: ${feedCopy.news.kinds[kind].name}`,
   device: {
     title: (word: DeviceWord) => `Push on this ${word}`,
@@ -41,10 +41,8 @@ export const pushSettingsCopy = {
     ],
     foot: "Needs iOS 16.4 or later.",
   },
-  /** The foot where push is possible (call 8); `footCant` on a device that cannot push; `feedCopy.news.foot` with push off. `push` is drawn bold. */
-  foot: { home: "Home: in the app, a count on Home and the list. ", push: "Push", rest: ": only to devices you turn on, and never 9pm to 9am. No email, ever." },
-  /** The foot on a device that cannot push (board Device-States, Can't): the push clause leaves, the Home clause stays. */
-  footCant: "Home: in the app, a count on Home and the list. No email, ever.",
+  /** The foot's push clause, after a bold `head`, while the column stands (R1b-1); it leaves with the column. */
+  foot: ": only to devices you turn on, never 9pm to 9am.",
   /** The shared toast, for a push save or a subscribe that failed. */
   failed: feedCopy.news.failed,
 } as const;

@@ -1,5 +1,6 @@
-// Settings' push column (push handoff R1 calls 1 to 4 and 8, `STATES-push.md`; plan `2026-10-22-push.md` PR 4): the
-// column only while push is available and the device can push, each device state's line and box, the browser's
+// Settings' push column (push handoff R1 calls 1 to 4 and 8, `STATES-push.md`; plan `2026-10-22-push.md` PR 4; drawn
+// in the announcements handoff's R1b-1 columns): the Push column and its head only while push is available and the
+// device can push, the device band above the column heads, each device state's line and box, the browser's
 // prompt asked only inside a push tick's press (never on mount), a kind's tick saved before the prompt, the outcomes,
 // and the silent re-subscribe on a visit.
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
@@ -66,7 +67,10 @@ async function draw(push: PushSettings | null = PUSH) {
 const deviceRow = () => document.querySelector("[data-push-device]") as HTMLElement;
 const deviceBox = () => within(deviceRow()).queryByRole("checkbox") as HTMLInputElement | null;
 const pushBox = (kind: keyof typeof C.kinds) => screen.getByRole("checkbox", { name: P.kindAria(kind) }) as HTMLInputElement;
-const homeBox = (kind: keyof typeof C.kinds) => screen.getByRole("checkbox", { name: new RegExp(`^${C.kinds[kind].name}`) }) as HTMLInputElement;
+const homeBox = (kind: keyof typeof C.kinds) => screen.getByRole("checkbox", { name: C.inAppAria(C.kinds[kind].name) }) as HTMLInputElement;
+const heads = () => [...document.querySelector("[data-column-heads]")!.children].map((h) => h.textContent);
+const foot = () => document.querySelector("section > p") as HTMLElement;
+const noPushFoot = `${C.inApp}${C.foot.home}${C.foot.email}`;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -84,28 +88,44 @@ afterEach(() => {
 });
 
 describe("push unavailable", () => {
-  it("draws the section exactly as shipped: no Push head, no device row, no push boxes, today's foot, the device never read", async () => {
+  it("draws In app alone: no Push head, no device band, no push boxes, the foot without its push clause, the device never read", async () => {
     await draw(null);
+    expect(heads()).toEqual([C.inApp]);
     expect(screen.queryByText(P.head)).toBeNull();
     expect(deviceRow()).toBeNull();
     expect(screen.getAllByRole("checkbox")).toHaveLength(KINDS.length);
-    expect(screen.getByText(C.foot)).toBeTruthy();
+    expect(foot().textContent).toBe(noPushFoot);
     expect(m.readDeviceFacts).not.toHaveBeenCalled();
   });
 });
 
 describe("the column", () => {
-  it("heads a 44px column with Push, gives each kind its own push box beside the Home box, and the foot gains its push clause", async () => {
+  it("heads two 52px columns, In app then Push, gives each kind its push box after its in-app box, and the foot gains its push clause", async () => {
     await draw();
-    expect(screen.getByRole("heading", { name: C.head }).textContent).toBe(C.head + P.head);
+    expect(screen.getByRole("heading", { name: C.head }).textContent).toBe(C.head);
+    expect(heads()).toEqual([C.inApp, P.head]);
     expect(pushBox("spare-request").checked).toBe(true);
     expect(pushBox("new-set").checked).toBe(false);
     expect(homeBox("price-drop").checked).toBe(true);
     expect(screen.getAllByRole("checkbox")).toHaveLength(KINDS.length * 2 + 1);
-    expect(screen.queryByText(C.foot)).toBeNull();
-    const foot = document.querySelector("section > p")!;
-    expect(foot.textContent).toBe(P.foot.home + P.foot.push + P.foot.rest);
-    expect(foot.querySelector("b")!.textContent).toBe(P.foot.push);
+    const row = pushBox("new-set").closest("li")!;
+    const cells = [...row.querySelectorAll("label")];
+    expect(cells.map((l) => l.querySelector("input")!.getAttribute("aria-label"))).toEqual([C.inAppAria(C.kinds["new-set"].name), P.kindAria("new-set")]);
+    for (const cell of cells) expect(cell.className).toContain("w-[52px]");
+    expect(foot().textContent).toBe(`${C.inApp}${C.foot.home} ${P.head}${P.foot}${C.foot.email}`);
+    expect(foot().textContent).toBe("In app: a count on Home and the list. Push: only to devices you turn on, never 9pm to 9am. No email, ever.");
+    expect([...foot().querySelectorAll("b")].map((b) => b.textContent)).toEqual([C.inApp, P.head]);
+  });
+
+  // R1b-1: the device row is about this device, not a kind, so it leaves the list for its own band above the heads.
+  it("draws the device in its own band above the column heads, outside the list of kinds", async () => {
+    await draw();
+    const band = deviceRow();
+    expect(band.closest("ul")).toBeNull();
+    const headRow = document.querySelector("[data-column-heads]")!;
+    expect(band.compareDocumentPosition(headRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(band.className).toContain("bg-[color:var(--surface-sunken)]");
+    expect(document.querySelectorAll("ul > li")).toHaveLength(KINDS.length);
   });
 
   it("saves the push ticks as the whole checked set, apart from Home's", async () => {
@@ -180,14 +200,14 @@ describe("the device row's states", () => {
     expect(within(deviceRow()).getByText(P.device.title("iPhone"))).toBeTruthy();
   });
 
-  it("Can't: no column at all, the Home column, and the foot without its push clause", async () => {
+  it("Can't: the Push column and its head leave, In app keeps its head, and the foot loses its push clause", async () => {
     deviceIs({ pushApi: false });
     await draw();
+    expect(heads()).toEqual([C.inApp]);
     expect(screen.queryByText(P.head)).toBeNull();
     expect(screen.queryByRole("checkbox", { name: P.kindAria("new-set") })).toBeNull();
     expect(screen.getAllByRole("checkbox")).toHaveLength(KINDS.length);
-    expect(document.querySelector("section > p")!.textContent).toBe(P.footCant);
-    expect(screen.queryByText(C.foot)).toBeNull();
+    expect(foot().textContent).toBe(noPushFoot);
   });
 });
 

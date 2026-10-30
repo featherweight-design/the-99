@@ -1,11 +1,15 @@
-// The news feed (menu and Home handoff; plan `2026-10-22-menu-home.md` PR 4). `news` is Settings' "What's new on
-// Home" section (`Settings.dc.html`), placeholder copy from the board.
+// The news feed (menu and Home handoff; plan `2026-10-22-menu-home.md` PR 4). `news` is Settings' Notifications
+// section (announcements handoff R1b-1, `R1b-Settings.dc.html`), placeholder copy from the board.
 import type { FeedKind } from "../feed/kinds";
 
 export const feedCopy = {
   news: {
     /** The mono section head, drawn uppercase by CSS. */
-    head: "What’s new on Home",
+    head: "Notifications",
+    /** The mono column head over each kind's in-app box (uppercase by CSS), and the foot's bold lead. */
+    inApp: "In app",
+    /** Each kind's in-app box, by name: the row's text no longer toggles it, so the box carries its own name. */
+    inAppAria: (name: string) => `In app: ${name}`,
     /** Each kind's checkbox: its name, bold, and the line under it. In `FEED_KINDS` order. */
     kinds: {
       "new-set": { name: "New sets", line: "When a set comes out." },
@@ -17,8 +21,11 @@ export const feedCopy = {
     } satisfies Record<FeedKind, { name: string; line: string }>,
     /** After a default-on kind's line (spare requests, board `Friend-Side`): it starts checked and stays so. */
     defaultOn: "On from the start.",
-    /** The mono foot under the checkboxes. */
-    foot: "In the app only: a count on Home and the list. No email, ever.",
+    /**
+     * The mono foot, after a bold `inApp`: `home`, then the push clause while the Push column stands
+     * (`pushSettingsCopy.foot`), then `email`.
+     */
+    foot: { home: ": a count on Home and the list.", email: " No email, ever." },
     failed: "We couldn’t save that. Try again.", // toast, role alert
   },
   /**
