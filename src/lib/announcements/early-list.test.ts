@@ -70,6 +70,11 @@ describe("resolvePostSet", () => {
     expect(resolvePostSet(["a", "b"], [p("a", "zzz"), p("b", "aaa")])).toBe("aaa");
   });
 
+  it("resolves a set of another type that holds the precons (CMM, a masters set)", () => {
+    // The read hands a non-`commander` set over once it holds precons; the vote treats it as any other.
+    expect(resolvePostSet(["a", "b"], [p("a", "cmm", "2023-08-04"), p("b", "cmm", "2023-08-04")])).toBe("cmm");
+  });
+
   it("compares codes lowercase, as `sets.code` stores them", () => {
     expect(resolvePostSet(["a"], [p("a", "FDC")])).toBe("fdc");
   });

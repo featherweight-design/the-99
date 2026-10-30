@@ -8,7 +8,7 @@
  * around the post's day. The window, not "releasing after today", keeps the answer the same after the release, so the
  * redirect still finds the release list a year on.
  */
-import { and, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { isBasicType } from "../decks/basic-type";
@@ -46,7 +46,12 @@ export type EarlyListPage = {
 
 export type EarlyListRead = { kind: "release"; fileName: string } | ({ kind: "early" } & EarlyListPage);
 
-/** The stored list and its post; apart so a test can render its SQL. */
+/**
+ * The stored list and its post; apart so a test can render its SQL. Only a Commander decklists post's lists that
+ * declare a commander: the ingest stores every parsed list (Welcome Decks, Starter Kits), and a list that does not
+ * total 100 stores no commander. Keyed on the stored name, not the card id, so a commander the catalog cannot match yet
+ * still opens.
+ */
 export function earlyListRowQuery(contentfulId: string, position: number, q: Reader = db) {
   return q
     .select({
@@ -65,10 +70,19 @@ export function earlyListRowQuery(contentfulId: string, position: number, q: Rea
     })
     .from(wizardsAnnouncementDecklists)
     .innerJoin(wizardsAnnouncements, eq(wizardsAnnouncements.id, wizardsAnnouncementDecklists.announcementId))
-    .where(and(eq(wizardsAnnouncements.contentfulId, contentfulId), eq(wizardsAnnouncementDecklists.position, position)));
+    .where(and(
+      eq(wizardsAnnouncements.contentfulId, contentfulId),
+      eq(wizardsAnnouncementDecklists.position, position),
+      eq(wizardsAnnouncements.kind, "commander-decklists"),
+      isNotNull(wizardsAnnouncementDecklists.commanderName),
+    ));
 }
 
-/** The Commander sets the post's commanders are printed in, inside the window around the post's day. */
+/**
+ * The sets the post's commanders are printed in, inside the window around the post's day: Commander sets (the Announced
+ * group's source), and any set that holds precons, since a precon's set need not be a `commander` one (Commander
+ * Masters' boxes are CMM, a `masters` set). `precons.set_code` is UPPERCASE; the subquery aliases and qualifies.
+ */
 export function commanderPrintingsQuery(commanderIds: string[], postDay: Date, q: Reader = db) {
   const from = utcDay(new Date(postDay.getTime() - SET_WINDOW_BEFORE_DAYS * DAY_MS));
   const to = utcDay(new Date(postDay.getTime() + SET_WINDOW_AFTER_DAYS * DAY_MS));
@@ -78,7 +92,7 @@ export function commanderPrintingsQuery(commanderIds: string[], postDay: Date, q
     .innerJoin(sets, eq(sets.code, printings.setCode))
     .where(and(
       inArray(printings.oracleId, commanderIds),
-      eq(sets.setType, "commander"),
+      or(eq(sets.setType, "commander"), sql`exists (select 1 from ${precons} p where lower(p.set_code) = ${sets}.code)`),
       eq(sets.digital, false),
       gte(sets.releasedAt, from),
       lte(sets.releasedAt, to),

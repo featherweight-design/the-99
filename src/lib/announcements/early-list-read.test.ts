@@ -12,13 +12,27 @@ describe("releasePreconQuery", () => {
     expect(sql).toMatch(/"twin_of" is null/);
     expect(params).toEqual(expect.arrayContaining(["fdc", "cmd-1"]));
   });
+
+  it("finds the release list in a set that is not a `commander` one", () => {
+    const { params } = releasePreconQuery("cmm", "cmd-1", db).toSQL();
+    // MTGJSON's CMM, matched lowercase: nothing in the redirect reads `sets.set_type`.
+    expect(params).toEqual(expect.arrayContaining(["cmm", "cmd-1"]));
+  });
 });
 
 describe("earlyListRowQuery", () => {
   it("reads one list by its post's Contentful id and its position", () => {
     const { sql, params } = earlyListRowQuery("abc", 2, db).toSQL();
     expect(sql).toContain('inner join "wizards_announcements" on "wizards_announcements"."id" = "wizards_announcement_decklists"."announcement_id"');
-    expect(params).toEqual(["abc", 2]);
+    expect(params).toEqual(["abc", 2, "commander-decklists"]);
+  });
+
+  it("opens only a Commander decklists post's lists that declare a commander, by its stored name", () => {
+    const { sql } = earlyListRowQuery("abc", 2, db).toSQL();
+    // A Welcome Deck (40 cards, no commander) or any other kind of post is not an early precon: notFound.
+    expect(sql).toContain('"wizards_announcements"."kind" = $');
+    expect(sql).toContain('"wizards_announcement_decklists"."commander_name" is not null');
+    expect(sql).not.toContain('"commander_card_id" is not null');
   });
 });
 
@@ -28,6 +42,11 @@ describe("commanderPrintingsQuery", () => {
     expect(sql).toContain('"sets"."set_type" = $');
     expect(sql).toContain('"sets"."digital" = $');
     expect(params).toEqual(expect.arrayContaining(["commander", false, "2026-08-30", "2027-04-27"]));
+  });
+
+  it("also takes any set that holds precons, whatever its type (Commander Masters is CMM, a masters set)", () => {
+    const { sql } = commanderPrintingsQuery(["a"], new Date("2026-10-29T15:00:00Z"), db).toSQL();
+    expect(sql).toMatch(/\("sets"\."set_type" = \$\d+ or exists \(select 1 from "precons" p where lower\(p\.set_code\) = "sets"\.code\)\)/);
   });
 });
 
