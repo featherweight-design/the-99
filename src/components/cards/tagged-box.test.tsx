@@ -80,6 +80,22 @@ describe("TaggedBox", () => {
     expect(document.querySelector("[data-framed-box]")!.className).toContain("border-[color:var(--danger)]");
   });
 
+  it("gives the standard focus ring to a frame already accent or danger, and none to the normal state", () => {
+    const ring = ["has-[:focus-visible]:outline-2", "has-[:focus-visible]:outline-offset-2", "has-[:focus-visible]:outline-[color:var(--accent)]"];
+    const cls = () => document.querySelector("[data-framed-box]")!.className;
+    const normal = box();
+    for (const c of ring) expect(cls()).not.toContain(c);
+    normal.unmount();
+    const always = box({ accent: "always" });
+    for (const c of ring) expect(cls()).toContain(c);
+    always.unmount();
+    const danger = box({ error: true });
+    for (const c of ring) expect(cls()).toContain(c);
+    danger.unmount();
+    box({ count: 241 });
+    for (const c of ring) expect(cls()).toContain(c);
+  });
+
   it("draws the danger frame past the cap on its own, and an explicit error=false or true wins", () => {
     const { rerender } = box({ count: 241, accent: "always" });
     const cls = () => document.querySelector("[data-framed-box]")!.className;

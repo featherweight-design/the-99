@@ -71,13 +71,19 @@ export function TaggedBox({
     : accent === "always"
       ? "border-[color:var(--accent)]"
       : "border-[color:var(--border-strong)] focus-within:border-[color:var(--accent)]";
+  // The textarea is outline-none and a frame already accent or danger looks the same focused, so keyboard focus
+  // would be invisible (WCAG 2.4.7): those frames take the app's standard focus ring (globals.css `:focus-visible`).
+  const ring =
+    (error ?? isOver) || accent === "always"
+      ? "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)]"
+      : "";
   return (
     <div
       ref={frameRef}
       data-framed-box=""
       // Help me choose's locked look mutes the edge through this attribute (globals.css `[data-lock-edge]`); inert elsewhere.
       data-lock-edge=""
-      className={`flex flex-col rounded-[9px] border ${dashed ? "border-dashed" : "border-solid"} ${edge} ${fill === "sunken" ? "bg-[color:var(--surface-sunken)]" : "bg-[color:var(--surface)]"} ${className}`}
+      className={`flex flex-col rounded-[9px] border ${dashed ? "border-dashed" : "border-solid"} ${edge} ${ring} ${fill === "sunken" ? "bg-[color:var(--surface-sunken)]" : "bg-[color:var(--surface)]"} ${className}`}
     >
       {children}
       <span
