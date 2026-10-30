@@ -77,6 +77,23 @@ describe("RuleCard", () => {
   });
 });
 
+// Small items 6, item 3 (About-Errata board, call a).
+describe("the pick card", () => {
+  it("draws six compact rows in one 250 column: four picked on the accent edge, two left dashed, then the apply foot", () => {
+    const rule = visibleSections(ALL_ON).flatMap((s) => s.rules).find((r) => r.key === ruleKey("pick"))!;
+    const { container } = render(<RuleCard rule={{ key: rule.key, text: rule.text, diagram: rule.diagram! }} />);
+    const rows = [...container.querySelectorAll<HTMLElement>('[data-diagram-part="row"]')];
+    expect(rows).toHaveLength(6);
+    for (const r of rows) expect(r.className, r.textContent!).toContain("h-[22px]");
+    const dashed = rows.filter((r) => r.classList.contains("border-dashed")).map((r) => r.textContent);
+    expect(dashed).toEqual(["Return of the Wildspeakerpick", "Elvish Mysticpick"]);
+    const edged = rows.filter((r) => r.style.boxShadow.includes("var(--accent)"));
+    expect(edged).toHaveLength(4);
+    expect(container.querySelector('[data-diagram-part="between"]')!.textContent).toBe("↓apply 4 changes · stays at 99");
+    expect(container.textContent).toContain("Ask for two and you get three to add and three to cut; pick two of each.");
+  });
+});
+
 describe("GoodToKnow", () => {
   it("draws no heading and nothing else for a section with no visible rules (call 8)", () => {
     const { container } = render(<GoodToKnow sectionId="notes" rules={[]} />);

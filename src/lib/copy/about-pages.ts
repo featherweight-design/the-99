@@ -156,6 +156,7 @@ export const ABOUT_RULE_IDS = [
   "autofill",
   "lock",
   "targets",
+  "pick",
   "intent",
   "credits",
   "commit",
@@ -565,7 +566,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         legacy: ["mana-balance"],
       },
     ],
-    rules: ["intent", "credits"],
+    rules: ["pick", "intent", "credits"],
     tools: ["suggested-changes", "proposed-cuts", "mana-balance"],
   },
   {
@@ -890,6 +891,30 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
       ] }] }],
     },
   },
+  // Small items 6, item 3 (About-Errata board, call a): Suggested changes v2's pick card, first in Analysis's Good to
+  // know. One 250 column of compact rows, built only from the shipped parts: Ghalta asks for two, so three are offered a
+  // side, two picked (the changed-row edge) and one left (its edge dashed). A switched unit with no legacy is new, so
+  // v2 turning on announces it. Text is a draft for /copy-review.
+  pick: {
+    text: "Suggested changes keeps the deck at 99. Ask for two and you get three to add and three to cut; pick two of each. The counts have to match before Apply, and one Undo takes the whole set back.",
+    switch: "SUGGESTED_CHANGES_V2_ENABLED",
+    since: 16,
+    legacy: [],
+    diagram: {
+      kind: "card-row",
+      columns: [{ w: 250, gap: 5, parts: [
+        { part: "caption", text: "Ghalta · add 2 of 3" },
+        { part: "row", name: "Beast Within", compact: true, edge: true, tag: { text: "picked", tone: "accent" } },
+        { part: "row", name: "Heroic Intervention", compact: true, edge: true, tag: { text: "picked", tone: "accent" } },
+        { part: "row", name: "Return of the Wildspeaker", compact: true, dim: true, tag: { text: "pick", tone: "muted" } },
+        { part: "caption", text: "cut 2 of 3" },
+        { part: "row", name: "Rampant Growth", compact: true, edge: true, tag: { text: "picked", tone: "accent" } },
+        { part: "row", name: "Kodama’s Reach", compact: true, edge: true, tag: { text: "picked", tone: "accent" } },
+        { part: "row", name: "Elvish Mystic", compact: true, dim: true, tag: { text: "pick", tone: "muted" } },
+        { part: "between", glyph: "↓", label: "apply 4 changes · stays at 99" },
+      ] }],
+    },
+  },
   intent: {
     text: "At either end of the scale, brackets come down to intent, so your cards can fit two. A theme deck with no Game Changers, mass land denial, extra turns or two-card infinites passes at both Exhibition and Core. Only you know which, so you pick. Game Changers are Wizards’ own list.",
     switch: "ANALYSIS_TAB_ENABLED",
@@ -929,7 +954,11 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
         { part: "row", name: "Suggested changes run", tag: { text: "1 credit", tone: "accent" }, switch: ["TUNING_ENABLED", "!SUGGESTED_CHANGES_V2_ENABLED"] },
         { part: "row", name: "Suggested changes run", tag: { text: "1 or 2 credits", tone: "accent" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
         { part: "row", name: "Look deeper", tag: { text: "1 credit", tone: "accent" }, switch: "PROPOSED_CUTS_ENABLED" },
-        { part: "row", name: "Came back empty-handed", dim: true, tag: { text: "credit back", tone: "success" } },
+        // Small items 6, item 3 (call b): with v2 on, the empty-handed row gives way to two dashed rows (drafts for
+        // /copy-review); with it off the shipped row stays.
+        { part: "row", name: "Came back empty-handed", dim: true, tag: { text: "credit back", tone: "success" }, switch: "!SUGGESTED_CHANGES_V2_ENABLED" },
+        { part: "row", name: "Came back short or empty", dim: true, tag: { text: "credit back", tone: "success" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
+        { part: "row", name: "Short by your price cap", dim: true, tag: { text: "1 credit", tone: "accent" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
       ] }],
     },
   },

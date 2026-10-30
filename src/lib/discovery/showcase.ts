@@ -91,9 +91,16 @@ export function showcaseGroups(input: ShowcaseInput): ShowcaseGroup[] {
   })).filter((g) => g.cards.length > 0);
 }
 
+/** A tool's copy for this reader: its line in the form its first switch that is on gives it, else the plain line. */
+export function toolCopyFor(id: ToolId, isOn: (name: SwitchName) => boolean): ToolCopy {
+  const copy: ToolCopy = showcaseCopy.tools[id];
+  const switched = Object.entries(copy.lineWhen ?? {}).find(([name]) => isOn(name as SwitchName));
+  return switched ? { ...copy, line: switched[1] } : copy;
+}
+
 /** One tool's card for this reader: its copy, cost chip, where its press goes and its note. Its switch is the caller's. */
 export function toolCardOf(t: Tool, input: CardInput): ToolCardModel {
-  const copy: ToolCopy = showcaseCopy.tools[t.id as ToolId];
+  const copy = toolCopyFor(t.id as ToolId, input.isOn);
   return {
     id: t.id as ToolId,
     copy,
