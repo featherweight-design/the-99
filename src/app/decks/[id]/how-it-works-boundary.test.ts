@@ -57,8 +57,10 @@ describe("the deck page hands DeckPageSwitches the how-it-works flag", () => {
   it("renders that wrap on both paths, never the bare shell", () => {
     const [el] = switchElements();
     expect(el.boundTo).not.toBeNull();
-    // `tooled` reads it inside SwapToolsProvider and as the fallback: two reads.
-    expect(reads(el.boundTo!)).toBe(2);
+    // `bought` reads it once, inside GotItProvider (I got it is always on: collection editing is retired), and
+    // `tooled` reads `bought` inside SwapToolsProvider and as the fallback: two reads.
+    expect(reads(el.boundTo!)).toBe(1);
+    expect(reads("bought")).toBe(2);
     // The bare shell is read once, by the wrap alone.
     expect(reads("shell")).toBe(1);
   });

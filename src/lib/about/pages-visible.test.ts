@@ -350,8 +350,10 @@ describe("a section's sub-line", () => {
     for (const sec of ABOUT_SECTIONS) {
       // With every switch on, every screen is on, and no sub says otherwise.
       expect(sub(ALL_ON, sec.id), sec.id).not.toContain(ABOUT_SCREEN_OFF.trim());
-      // A retired switch is gone from the registry and always on: there is no off state to assert.
-      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n))) {
+      // A retired switch is gone from the registry and always on: there is no off state to assert. Collection editing
+      // is retired too (always on in About) though its registry entry stays until it is deleted.
+      const retiredInRegistry = ["COLLECTION_EDIT_ENABLED"];
+      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n) && !retiredInRegistry.includes(n))) {
         const e = off(sw);
         const drawn = visibleSections(e).find((s) => s.id === sec.id)!;
         const text = sub(e, sec.id);

@@ -177,8 +177,9 @@ describe.each(PAGES)("Try it's landing on $tool's page", ({ tool, path, page, co
     expect(spendMomentAction).not.toHaveBeenCalled();
   });
 
-  // Precons, `lineup` and the wishlist have no switch left (retired), so they have no off state to strip on.
-  it.skipIf(tool === "precons" || tool === "lineup" || tool === "wishlist")("strips its own id with no halo while its switch is off for the reader", async () => {
+  // Precons, `lineup`, the wishlist and Collection Sync have no switch left (retired), so they have no off state to
+  // strip on.
+  it.skipIf(tool === "precons" || tool === "lineup" || tool === "wishlist" || tool === "collection-sync")("strips its own id with no halo while its switch is off for the reader", async () => {
     window.history.replaceState(null, "", `${path}?tool=${tool}`);
     mount(tool, page, false);
     await flush();
