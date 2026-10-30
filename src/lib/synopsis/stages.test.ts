@@ -405,12 +405,12 @@ describe("iteration 3: the deck's own land number", () => {
     const c = curveFacts(FACTS);
     expect(c).toEqual({ lands: 37, ramp: 10, nonland: 5, averageManaValue: 2.6, fivePlus: 1, twoOrLess: 3, commanderManaValue: 4, expectedLandsInSeven: 2.62 });
   });
-  it("says 2 for a low curve, 3 for a middling one, 4 for a top-heavy one, and gives the reason", () => {
+  it("says 2 for a low curve, 3 for a middling one, 4 for a top-heavy one, and gives the reason (cutoffs tuned on the real precon set)", () => {
     const low = landKeepNumber(FACTS);
     expect(low.lands).toBe(2);
     expect(low.reasons).toEqual(["low curve"]);
     expect(low.why).toContain("a low curve");
-    const mid = landKeepNumber(withCurve([2, 3, 4, 3, 3]));
+    const mid = landKeepNumber(withCurve([3, 4, 4, 4, 3]));
     expect(mid.lands).toBe(3);
     expect(mid.reasons).toEqual([]);
     expect(mid.why).toContain("a middling curve");
@@ -418,11 +418,12 @@ describe("iteration 3: the deck's own land number", () => {
     expect(heavy.lands).toBe(4);
     expect(heavy.reasons).toEqual(["top-heavy"]);
     expect(heavy.why).toContain("average 4 mana value");
-    expect(landKeepNumber({ ...withCurve([2, 3, 4, 3, 3]), commanderManaValues: [7] }).lands).toBe(4);
+    expect(landKeepNumber({ ...withCurve([3, 4, 4, 4, 3]), commanderManaValues: [7] }).lands).toBe(4);
   });
-  it("adds one at 40 lands, takes one at 32, and holds the number inside the keepable range and 2 to 4", () => {
-    expect(landKeepNumber(withCurve([2, 3, 4, 3, 3], { lands: 41, keep: { low: 2, high: 4 } })).lands).toBe(4);
-    expect(landKeepNumber(withCurve([2, 3, 4, 3, 3], { lands: 31 })).lands).toBe(2);
+  it("adds one at 41 lands, takes one at 32, and holds the number inside the keepable range and 2 to 4", () => {
+    expect(landKeepNumber(withCurve([3, 4, 4, 4, 3], { lands: 41, keep: { low: 2, high: 4 } })).lands).toBe(4);
+    expect(landKeepNumber(withCurve([3, 4, 4, 4, 3], { lands: 31 })).lands).toBe(2);
+    expect(landKeepNumber(withCurve([3, 4, 4, 4, 3], { lands: 40 })).lands).toBe(3);
     const held = landKeepNumber(withCurve([3, 4, 6, 5, 2], { lands: 41, keep: { low: 2, high: 4 } }));
     expect(held.lands).toBe(4);
     expect(held.reasons).toEqual(["top-heavy", "many lands", "held to the keepable range"]);
