@@ -289,7 +289,7 @@ export function SynopsisSections({
                 <Hand
                   label={synopsisCopy.modal.sendBack}
                   glyph="−"
-                  fixed={content.lands
+                  fixed={content.lands && !landKeep
                     ? synopsisCopy.modal.lands.sendBack(content.lands.sendBack.none, content.lands.sendBack.under, content.lands.sendBack.over)
                     : null}
                   lines={content.primer.mulligan.sendBack}

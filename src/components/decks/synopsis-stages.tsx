@@ -88,7 +88,7 @@ export function GamePlan({
     <div className="flex flex-col gap-[9px]">
       <div data-testid="synopsis-plan" className="relative flex flex-col gap-[12px] md:grid md:grid-cols-3 md:gap-[16px]">
         {/* The line the diamonds sit on: a vertical rail on a phone, one horizontal line from md. */}
-        <span aria-hidden className="absolute bottom-[8px] left-[4.5px] top-[8px] w-px bg-[var(--fg-faint)] opacity-[0.55] md:bottom-auto md:left-[4px] md:right-[calc(33.333%-10px)] md:top-[6px] md:h-px md:w-auto" />
+        <span aria-hidden className="absolute bottom-[8px] left-[4.5px] top-[8px] w-px bg-[var(--fg-faint)] opacity-[0.55] md:bottom-auto md:left-[4px] md:right-[calc(33.333%-10px)] md:top-[5px] md:h-px md:w-auto" />
         {stages.map((line, i) => {
           const lead = markedCards(line, content.cards, 1)[0];
           const image = !!lead && hasArt(art, lead.oracleId);
@@ -99,7 +99,7 @@ export function GamePlan({
               <div className={`relative min-w-0 flex-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[12px] py-[11px] md:p-[12px] ${image ? "grid grid-cols-[52px_minmax(0,1fr)] gap-[12px] md:flex md:flex-col md:gap-[10px]" : ""}`}>
                 {image ? <CardImage oracleId={lead.oracleId} name={lead.name} art={art} className="h-[72px] w-[52px] md:h-[100px] md:w-[72px]" /> : null}
                 <div className="min-w-0">
-                  <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:absolute md:left-[19px] md:top-[-23px] md:mb-0">{labels[i]}</span>
+                  <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:absolute md:left-[18px] md:top-[-24px] md:mb-0">{labels[i]}</span>
                   <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(line)}{basedOn(i, line)}</p>
                 </div>
               </div>
@@ -131,7 +131,7 @@ export function GamePlan({
 export function LandLine({ line, text, basedOn }: { line: string; text: (t: string) => React.ReactNode; basedOn: React.ReactNode }) {
   const n = landFigure(line);
   return (
-    <div data-testid="synopsis-land-line" className={n === null ? "" : "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-[14px]"}>
+    <div data-testid="synopsis-land-line" className={n === null ? "mb-[2px]" : "mb-[2px] grid grid-cols-[auto_minmax(0,1fr)] items-center gap-[14px]"}>
       {n === null ? null : (
         <span data-testid="synopsis-land-figure" className="flex h-[64px] w-[64px] flex-col items-center justify-center rounded-[10px] border border-[var(--border-strong)] bg-[var(--surface-sunken)]">
           <b className="font-display text-[26px] font-bold leading-none text-[var(--fg)]">{n}</b>
@@ -190,7 +190,7 @@ export function KeyCardGrid({
           <div key={i} data-testid="synopsis-key-card" className={`min-w-0 ${image ? "flex flex-col gap-[6px] md:grid md:grid-cols-[63px_minmax(0,1fr)] md:items-start md:gap-[11px]" : ""}`}>
             {image ? <CardImage oracleId={card.oracleId} name={k.card} art={art} className="aspect-[63/88] w-full md:h-[88px] md:w-[63px]" /> : null}
             <div className="min-w-0">
-              <b className="mb-[4px] block text-[12px] leading-[1.35] [overflow-wrap:anywhere] md:mt-[2px] md:text-[13px]">
+              <b className="mb-0 block text-[12px] leading-[1.35] [overflow-wrap:anywhere] md:mb-[4px] md:mt-[2px] md:text-[13px]">
                 {card
                   ? <CardName oracleId={card.oracleId} name={k.card} imageUri={art.get(card.oracleId)?.imageUri ?? null} />
                   : <span className="font-semibold text-[var(--fg)]">{k.card}</span>}
@@ -208,11 +208,11 @@ export function KeyCardGrid({
 export function WeaknessLine({ line, text, basedOn }: { line: string; text: (t: string) => React.ReactNode; basedOn: React.ReactNode }) {
   const sev = splitSeverity(line);
   return (
-    <p className="m-0 grid grid-cols-1 items-baseline gap-[5px] text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] md:grid-cols-[82px_minmax(0,1fr)] md:gap-[10px] md:text-[13.5px]">
+    <p className="m-0 grid grid-cols-1 items-baseline gap-[5px] text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] md:grid-cols-[82px_minmax(0,1fr)] md:gap-[10px]">
       {sev ? (
         <span
           data-testid="synopsis-severity"
-          className={`justify-self-start rounded-full border px-[8px] py-[2px] font-mono text-[10px] font-medium uppercase tracking-[0.1em] ${sev.tier === "Moderate" ? "border-[color-mix(in_oklab,var(--warning)_45%,transparent)] text-[var(--warning)]" : "border-[var(--border-strong)] text-[var(--fg-muted)]"}`}
+          className={`justify-self-start rounded-full border px-[8px] py-[2px] font-mono text-[10px] font-medium leading-[13px] uppercase tracking-[0.1em] ${sev.tier === "Moderate" ? "border-[color-mix(in_oklab,var(--warning)_45%,transparent)] text-[var(--warning)]" : "border-[var(--border-strong)] text-[var(--fg-muted)]"}`}
         >
           {sev.tier}
         </span>
