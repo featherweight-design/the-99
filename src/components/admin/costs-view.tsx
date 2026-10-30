@@ -40,12 +40,12 @@ const hrefFor = (m: MonthKey, current: MonthKey) => (m.year === current.year && 
 const pct = (part: number, whole: number) => Math.round((part / whole) * 100);
 /** A floor of a share, for a figure that is itself a floor: never rounded up past what is known. */
 const pctFloor = (part: number, whole: number) => Math.floor((part / whole) * 100);
-/** When the workspace was read: `14:05 UTC` today, `17 Oct, 14:05 UTC` on another day. */
+/** When the workspace was read: `14:05 UTC` today, `Oct 17, 14:05 UTC` on another day. */
 function readAt(asOf: string, now: Date): string {
   const at = new Date(asOf);
   const time = `${String(at.getUTCHours()).padStart(2, "0")}:${String(at.getUTCMinutes()).padStart(2, "0")} UTC`;
   if (at.toISOString().slice(0, 10) === now.toISOString().slice(0, 10)) return time;
-  return `${at.getUTCDate()} ${new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" }).format(at)}, ${time}`;
+  return `${new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" }).format(at)} ${at.getUTCDate()}, ${time}`;
 }
 
 /** Why the workspace was not read, in the page's words. */

@@ -43,7 +43,7 @@ describe("CostsView, the current month (C1)", () => {
   it("draws the month bar, the tiles and the caps against the code's constants", () => {
     draw(rows([p(6, 0.452, 10), p(3, 0.432, 13), sys(11, 0.251, 3)]));
     expect(screen.getByText("October 2026")).toBeInTheDocument();
-    expect(screen.getByText("1 to 11 Oct · UTC · day 11 of 31")).toBeInTheDocument();
+    expect(screen.getByText("Oct 1 to 11 · UTC · day 11 of 31")).toBeInTheDocument();
     expect(screen.getByText("September: $0.813 in 19 runs.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Previous month" })).toHaveAttribute("href", "/admin?month=2026-09");
     expect(screen.queryByRole("link", { name: "Next month" })).toBeNull();
@@ -240,11 +240,11 @@ describe("CostsView, other months", () => {
 
   it("draws a past month to its end, with › live and no pace (C4)", () => {
     draw(rows([p(30, 4), p(1, 0.5)]), { year: 2026, month: 8 });
-    expect(screen.getByText("1 to 30 Sep · UTC")).toBeInTheDocument();
+    expect(screen.getByText("Sep 1 to 30 · UTC")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Next month" })).toHaveAttribute("href", "/admin");
     expect(screen.queryByText("on this pace")).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
-    expect(screen.getByText("$4.50 by 30 Sep")).toBeInTheDocument();
+    expect(screen.getByText("$4.50 by Sep 30")).toBeInTheDocument();
   });
 });
 
@@ -292,7 +292,7 @@ describe("the workspace cap row", () => {
 
   it("dates a read from another day", () => {
     render(<CostsView s={costSummary(rows([p(2, 1)], billed(5)), OCT, NOW)} names={{}} month={OCT} current={OCT} now={new Date("2026-10-12T00:10:00Z")} />);
-    expect(capRow("The 99 workspace cap").row).toHaveTextContent("Read from Anthropic at 11 Oct, 14:55 UTC, about five minutes behind.");
+    expect(capRow("The 99 workspace cap").row).toHaveTextContent("Read from Anthropic at Oct 11, 14:55 UTC, about five minutes behind.");
   });
 
   it.each([

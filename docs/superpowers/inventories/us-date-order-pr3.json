@@ -1,0 +1,133 @@
+{
+  "feature": "US date order, PR 3 (admin dates): every admin slot that draws a date, at its longest realistic value",
+  "note": "Run on a scratch branch made from local-dev, against a server started with ADMIN_USER_IDS naming the audit account and ADMIN_ENV_LABEL=staging. Seeded: a model_calls row copied to 2025-12-31 18:00 UTC (local-dev already has one in 2026-09), so the Costs period line and trend stamp draw `Dec 1 to 31` / `by Dec 31` and `Sep 1 to 30` / `by Sep 30`; HELP_ME_CHOOSE_ENABLED overrides (app 2026-09-30 14:02, group 2026-09-30 23:59, account 2025-12-31 23:59) with their admin_events; the `date-probe` group (d47e0000-0000-4000-8000-000000000001) with group_created 2025-12-31 23:59 and member_added 2026-09-30 14:02; invites_set and account_revealed events on ${DATE_ACCOUNT}. fmtWhen carries no year, so `Sep 30 · 14:02` and `Dec 31 · 23:59` are its longest forms. The workspace read stamp (`Oct 17, 14:05 UTC`) needs ANTHROPIC_ADMIN_KEY and a read from another day, so it is not photographed.",
+  "rows": [
+    {
+      "id": "costs-period-sep",
+      "label": "/admin?month=2026-09: the period line `Sep 1 to 30 · UTC` (10.5px mono under the month)",
+      "view": "src/components/admin/costs-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin?month=2026-09",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "costs-trend-sep",
+      "label": "/admin?month=2026-09: the trend's top-right stamp (11px mono, nowrap) `by Sep 30`",
+      "view": "src/components/admin/costs-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin?month=2026-09",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "h2:has-text(\"Player runs, month to date\")"
+        }
+      ]
+    },
+    {
+      "id": "costs-period-dec",
+      "label": "/admin?month=2025-12: the period line `Dec 1 to 31 · UTC`",
+      "view": "src/components/admin/costs-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin?month=2025-12",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "costs-trend-dec",
+      "label": "/admin?month=2025-12: the trend's top-right stamp (11px mono, nowrap) `by Dec 31`",
+      "view": "src/components/admin/costs-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin?month=2025-12",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "h2:has-text(\"Player runs, month to date\")"
+        }
+      ]
+    },
+    {
+      "id": "costs-period-current",
+      "label": "/admin: the current month's period line `Oct 1 to 30 · UTC · day 30 of 31`",
+      "view": "src/components/admin/costs-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "costs-trend-current",
+      "label": "/admin: the trend's top-right stamp (11px mono, nowrap) `$x today · $y by Oct 31`",
+      "view": "src/components/admin/costs-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "h2:has-text(\"Player runs, month to date\")"
+        }
+      ]
+    },
+    {
+      "id": "switch-overrides",
+      "label": "/admin/switches/HELP_ME_CHOOSE_ENABLED: the app row `set by …, Sep 30 · 14:02` and the override rows' meta `… · Dec 31 · 23:59`",
+      "view": "src/components/admin/switch-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/HELP_ME_CHOOSE_ENABLED",
+          "wait": "[data-testid='switch-app']",
+          "settle": 1500,
+          "scrollTo": "[data-testid='switch-app']"
+        }
+      ]
+    },
+    {
+      "id": "switch-history",
+      "label": "/admin/switches/HELP_ME_CHOOSE_ENABLED: the history's 130px when column, `Sep 30 · 23:59` / `Dec 31 · 23:59`",
+      "view": "src/components/admin/switch-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/HELP_ME_CHOOSE_ENABLED",
+          "wait": "[data-testid='switch-history']",
+          "settle": 1500,
+          "scrollTo": "[data-testid='switch-history']"
+        }
+      ]
+    },
+    {
+      "id": "group-history",
+      "label": "/admin/groups/[id]: the group's history, `Sep 30 · 14:02` / `Dec 31 · 23:59`",
+      "view": "src/components/admin/group-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/groups/d47e0000-0000-4000-8000-000000000001",
+          "wait": "[data-testid='group-history']",
+          "settle": 1500,
+          "scrollTo": "[data-testid='group-history']"
+        }
+      ]
+    },
+    {
+      "id": "account-invites-history",
+      "label": "/admin/accounts/[id]: the invites history, `Sep 30 · 14:02` / `Dec 31 · 23:59`",
+      "view": "src/components/admin/invites-section.tsx",
+      "steps": [
+        {
+          "goto": "/admin/accounts/${DATE_ACCOUNT}",
+          "wait": "[data-testid='account-invites-history']",
+          "settle": 1500,
+          "scrollTo": "[data-testid='account-invites-history']"
+        }
+      ]
+    }
+  ]
+}

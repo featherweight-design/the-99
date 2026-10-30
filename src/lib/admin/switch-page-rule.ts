@@ -81,12 +81,12 @@ export type SwitchPage = {
 const label = (name: SwitchName) => switchCopy[name].label;
 const valueText = (v: OverrideValue | null) => (v === "on" ? adminCopy.switches.app.on : v === "off" ? adminCopy.switches.app.off : adminCopy.switches.app.notSet);
 
-/** `11 Oct · 14:02`, UTC (the history foot says so). */
+/** `Oct 11 · 14:02`, month first (US order), UTC (the history foot says so). */
 export function fmtWhen(at: Date): string {
   const day = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", timeZone: "UTC" }).formatToParts(at);
   const part = (t: string) => day.find((p) => p.type === t)?.value ?? "";
   const time = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(at);
-  return `${part("day")} ${part("month")} · ${time}`;
+  return `${part("month")} ${part("day")} · ${time}`;
 }
 
 /** Where a verdict comes from, as the switch page and the Accounts page print it. */

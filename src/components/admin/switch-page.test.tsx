@@ -54,7 +54,7 @@ describe("SwitchPageView", () => {
     expect(within(row).getByText("Mara")).toBeInTheDocument();
     expect(within(row).getByText("Off")).toBeInTheDocument();
     expect(within(row).getByText("Note: “Not yet”")).toBeInTheDocument();
-    expect(within(row).getByText("You · 11 Oct · 14:02")).toBeInTheDocument();
+    expect(within(row).getByText("You · Oct 11 · 14:02")).toBeInTheDocument();
     expect(screen.queryByRole("note")).toBeNull();
   });
 
@@ -88,7 +88,7 @@ describe("SwitchPageView", () => {
     const ev: SwitchEvent = { at: AT, actorId: "u2", kind: "override_set", scope: "app", groupId: null, userId: null, oldValue: null, newValue: "on", note: "Try it" };
     draw("TUNING_ENABLED", {}, [], [ev, { ...ev, actorId: "u1", kind: "override_cleared", oldValue: "on", newValue: null, note: null }]);
     const items = within(screen.getByTestId("switch-history")).getAllByRole("listitem");
-    expect(items.map((i) => i.textContent)).toEqual(["11 Oct · 14:02Mara set app-wide: not set → onNote: “Try it”", "11 Oct · 14:02You cleared app-wide (was on)"]);
+    expect(items.map((i) => i.textContent)).toEqual(["Oct 11 · 14:02Mara set app-wide: not set → onNote: “Try it”", "Oct 11 · 14:02You cleared app-wide (was on)"]);
   });
 
   it("warns when Clerk or the overrides could not be read", () => {

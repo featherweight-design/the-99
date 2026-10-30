@@ -124,8 +124,8 @@ describe("an account's Invites section (M2)", () => {
     });
     const reveals = s.history.filter((h) => h.reveal);
     expect(reveals.map((h) => [h.when, h.what])).toEqual([
-      ["21 Oct · 19:00", "You showed Colin’s name and email"],
-      ["15 Oct · 21:00", "Account ·min2 showed Colin’s name and email"],
+      ["Oct 21 · 19:00", "You showed Colin’s name and email"],
+      ["Oct 15 · 21:00", "Account ·min2 showed Colin’s name and email"],
     ]);
     // The other lines carry no mark.
     expect(s.history.filter((h) => !h.reveal)).toHaveLength(5);
@@ -135,11 +135,11 @@ describe("an account's Invites section (M2)", () => {
   it("merges the events, the sends and the joins newest first, says You for the viewer, and cuts at the limit", () => {
     const s = accountInvites(base);
     expect(s.history.map((h) => [h.when, h.what, h.note])).toEqual([
-      ["20 Oct · 12:00", "Colin sent an invitation: 1 waiting", null],
-      ["19 Oct · 09:00", "Peter joined on Colin’s invite", null],
-      ["17 Oct · 12:00", "deleted account joined on Colin’s invite", null],
-      ["16 Oct · 12:00", "Account ·min2 revoked a waiting invite of Colin’s", null],
-      ["14 Oct · 10:00", "You set Colin’s invites: 1 → 4", null],
+      ["Oct 20 · 12:00", "Colin sent an invitation: 1 waiting", null],
+      ["Oct 19 · 09:00", "Peter joined on Colin’s invite", null],
+      ["Oct 17 · 12:00", "deleted account joined on Colin’s invite", null],
+      ["Oct 16 · 12:00", "Account ·min2 revoked a waiting invite of Colin’s", null],
+      ["Oct 14 · 10:00", "You set Colin’s invites: 1 → 4", null],
     ]);
     expect(s.historyCut).toBe(false);
     const cut = accountInvites({ ...base, limit: 2 });
