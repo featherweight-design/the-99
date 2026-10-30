@@ -1,0 +1,18 @@
+{
+  "feature": "Flyer trial PR 6: the check-in on Home. The 'How's it going?' sheet (phone, S1 to S4 of Survey-Phone) and modal (desktop, S5 and S6 of Survey-Desktop), opened from Home about 1.5 seconds after it settles once the reader is due.",
+  "note": "Signed in, FEEDBACK_ENABLED=true for the account, on local-dev or a scratch branch. The harness CANNOT force 'due' (14 days since the first Home load AND 5 distinct UTC days; `check_in_state` is written by the action itself), so the one photographed row is the quiet case: Home with the switch on and the reader not due draws no dialog. Walked by hand after setting the account's `check_in_state` row (first_seen_at 15 days back, visit_days 5, last_visit_day yesterday, ended_at and snoozed_until null) on a scratch branch and reloading Home: S1 empty (Send dim, Takes a minute shown at 1300 only), S2/S5 answered (rating 4, Decks + Shopping, Already have, a note; Send live), S3/S6 sent (the thanks, Close), S4 failed (stop the network, press Send: the shared toast with Try again, answers kept), Not now (sheet closes; snoozed_until three days on, snoozes 1; reload shows nothing; the fourth Not now sets ended_at), the X (ended_at set, never opens again), and Send (one `check_in` row in feedback with source home, ended_at set). With FEEDBACK_ENABLED off nothing mounts and checkInDue returns false without writing.",
+  "out": "contact-sheets/flyer-checkin",
+  "rows": [
+    {
+      "id": "home-not-due",
+      "label": "/: Home with the check-in switch on and the reader not due, no dialog drawn",
+      "view": "src/components/feedback/check-in-prompt.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "settle": 3000
+        }
+      ]
+    }
+  ]
+}

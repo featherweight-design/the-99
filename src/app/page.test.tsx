@@ -56,6 +56,7 @@ const { Dashboard } = await import("../components/home/dashboard");
 const { FirstRunChecklist } = await import("../components/home/first-run");
 const { PreconPickReceipt } = await import("../components/home/precon-pick-receipt");
 const { HomeTour } = await import("../components/discovery/home-tour");
+const { CheckInPrompt } = await import("../components/feedback/check-in-prompt");
 
 // A dashboard Home always ends in the tour's mount (`?tour=1`, always on): the other tests read the page itself, so this
 // hands them the element before the mount. The tour's own tests call `RawHomePage`.
@@ -292,5 +293,19 @@ describe("Home with push (push PR 5)", () => {
     expect(on.props.children.map((c) => c.type)).toEqual([FirstRunChecklist, PushLanding]);
     stub.env = { ...PUSH, PUSH_ENABLED: "" };
     expect(((await HomePage()) as ReactElement).type).toBe(FirstRunChecklist);
+  });
+});
+
+describe("Home's check-in (flyer trial PR 6)", () => {
+  const kids = async () => {
+    const page = (await RawHomePage()) as ReactElement<{ children?: ReactElement[] }>;
+    return ([] as ReactElement[]).concat(page.props.children ?? []);
+  };
+
+  it("mounts the prompt, outside the cached payload, only while FEEDBACK_ENABLED is on for the reader", async () => {
+    stub.env = { FEEDBACK_ENABLED: "true" };
+    expect((await kids()).some((c) => c?.type === CheckInPrompt)).toBe(true);
+    stub.env = {};
+    expect((await kids()).some((c) => c?.type === CheckInPrompt)).toBe(false);
   });
 });

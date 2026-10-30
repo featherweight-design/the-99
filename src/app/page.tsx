@@ -43,6 +43,8 @@ import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
 import { loadTradeAsk } from "../lib/social/trade-ask";
 import { pushEnabled } from "../lib/push/flag";
 import { PushLanding } from "../components/push/push-landing";
+import { CheckInPrompt } from "../components/feedback/check-in-prompt";
+import { feedbackEnabled } from "../lib/feedback/flag";
 
 /**
  * What the signed-in Home draws, cached whole. First run draws none of the Dashboard. Both carry the reader's About
@@ -412,5 +414,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const page = receipt ? <><PreconPickReceipt receipt={receipt} />{dashboard}</> : dashboard;
   // The tour taken again (R3·2, plan decision 6): `/?tour=1` starts it whatever `tour_seen_at` says; the client reads and
   // strips the parameter itself.
-  return <>{page}<HomeTour due={false} mode="dashboard" precons={false} /></>;
+  // The check-in (flyer trial PR 6) asks for itself after the page settles: its due test is outside the cached payload.
+  const tour = <HomeTour due={false} mode="dashboard" precons={false} />;
+  return feedbackEnabled(env) ? <>{page}{tour}<CheckInPrompt /></> : <>{page}{tour}</>;
 }
