@@ -10,7 +10,7 @@
 // 2. WHAT THE TYPE ALLOWS. An object type is still accepted by a template, `String()`, `.toString()` and `+`, which
 //    draw a branded name as "[object Object]" and hide that it was meant to be drawn marked. Each of those over a
 //    name (or a list holding one) is a finding outside `src/lib/person-name/`, as are `as ThirdPartyName` (forging one)
-//    and reading `.$tp` (revealing without `reveal()`). `personText` is the one template a name may enter.
+//    and reading `.$tp` by access or destructuring, or naming it in an object (revealing or forging without the module). `personText` is the one template a name may enter.
 //
 // Type-aware, so it builds the TypeScript program over `src/` (about as long as `pnpm typecheck`). Tests are exempt.
 import { join, relative, sep } from "node:path";
@@ -47,6 +47,14 @@ function namesSomeone(checker, type, seen = new Set()) {
 
 /** True for a `ThirdPartyName` itself, not a union or list that merely may hold one (`as Parts` forges nothing). */
 const isBrand = (checker, type) => !type.isUnion() && checker.getPropertiesOfType(type).some((p) => String(p.escapedName).startsWith("__@thirdParty@"));
+
+/** A property name's text: an identifier, a string or numeric literal, or a computed literal (`["$tp"]`). */
+function keyText(name) {
+  if (!name) return null;
+  if (ts.isIdentifier(name) || ts.isStringLiteralLike(name) || ts.isNumericLiteral(name)) return name.text;
+  if (ts.isComputedPropertyName(name) && ts.isStringLiteralLike(name.expression)) return name.expression.text;
+  return null;
+}
 
 /** Every finding in the repository at `root`, as `{ path, line, why }`, and how many files were read. */
 export function thirdPartyNameFindings(root) {
@@ -158,6 +166,12 @@ export function thirdPartyNameFindings(root) {
         add(node, "reads .$tp (only reveal() reads a name)");
       } else if (ts.isElementAccessExpression(node) && ts.isStringLiteralLike(node.argumentExpression) && node.argumentExpression.text === "$tp" && !inBrand && !test) {
         add(node, "reads [\"$tp\"] (only reveal() reads a name)");
+      } else if (ts.isBindingElement(node) && ts.isObjectBindingPattern(node.parent) && !inBrand && !test) {
+        // `const { $tp: name } = who`, nested, in a parameter or a catch clause: a read by destructuring.
+        if (keyText(node.propertyName ?? node.name) === "$tp") add(node, "destructures $tp (only reveal() reads a name)");
+      } else if ((ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)) && !inBrand && !test) {
+        // `({ $tp: name } = who)` reads it; `{ $tp: "x" }` builds the runtime shape by hand. Either way, not here.
+        if (keyText(node.name) === "$tp") add(node, "names $tp in an object (only named() and reveal() touch it)");
       }
       ts.forEachChild(node, visit);
     };

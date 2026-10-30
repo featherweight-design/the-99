@@ -135,7 +135,32 @@ describe("thirdPartyNameFindings", () => {
       ].join("\n"),
     })).toEqual([
       "src/components/d.ts:4 asserts a ThirdPartyName (only named() mints one)",
+      "src/components/d.ts:4 names $tp in an object (only named() and reveal() touch it)",
       "src/components/d.ts:5 reads .$tp (only reveal() reads a name)",
+    ]);
+  });
+
+  it("finds $tp read by destructuring, nested, in a parameter, by assignment, and $tp named in an object", { timeout: 30_000 }, () => {
+    expect(whys({
+      "src/components/f.ts": [
+        `import { who } from "../lib/social/read";`,
+        "type Raw = { $tp: string };",
+        "export const { $tp: a } = who as unknown as Raw;",
+        `export const { ["$tp"]: b } = who as unknown as Raw;`,
+        "export const { box: { $tp: c } } = { box: who as unknown as Raw };",
+        "export const d = ({ $tp }: Raw) => $tp;",
+        "let e = \"\";",
+        "({ $tp: e } = who as unknown as Raw);",
+        `export const f = { $tp: "forged" };`,
+        "export const g = e;",
+      ].join("\n"),
+    })).toEqual([
+      "src/components/f.ts:3 destructures $tp (only reveal() reads a name)",
+      "src/components/f.ts:4 destructures $tp (only reveal() reads a name)",
+      "src/components/f.ts:5 destructures $tp (only reveal() reads a name)",
+      "src/components/f.ts:6 destructures $tp (only reveal() reads a name)",
+      "src/components/f.ts:8 names $tp in an object (only named() and reveal() touch it)",
+      "src/components/f.ts:9 names $tp in an object (only named() and reveal() touch it)",
     ]);
   });
 
