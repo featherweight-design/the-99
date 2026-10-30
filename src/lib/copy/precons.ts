@@ -151,6 +151,9 @@ export const preconsCopy = {
     releasedLead: (out: string) => `Out ${out}, but this is still Wizards’ early list:`,
     releasedTail: "you can start a deck from this precon once the release list is in.",
     readPost: "Read the post",
+    /** The own band's catalog line without "so K are listed": an early list lists those cards, in its last group. */
+    unmapped: (count: number) =>
+      `${count === 1 ? "1 card in this precon isn’t" : `${n(count)} cards in this precon aren’t`} in our catalog yet.`,
     // The open precon's notes without "each row shows the precon’s printing": the post names cards, not printings.
     listNote: "By type, A–Z within each group · press a card for its details, hover for its art",
     listNoteCard: "By type, A–Z within each group · press a card for its details",

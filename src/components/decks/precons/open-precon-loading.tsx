@@ -16,13 +16,13 @@ export function OpenPreconLoading() {
       <span role="status" className="sr-only">{preconsLoadingCopy.status}</span>
       <StallWatch />
       <header className="flex flex-col gap-[12px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] p-[12px_16px_14px] md:p-[16px_22px_18px]">
-        <Link href="/decks/precons" className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+        <Link href="/decks/precons" className="flex min-h-[24px] items-center self-start font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
           {preconsCopy.open.back}
           <PendingReporter href="/decks/precons" />
         </Link>
         <div aria-hidden className="flex flex-col gap-[12px] anim-skeleton">
           <div className="flex items-start gap-[12px]">
-            <span className="block h-[64px] w-[46px] flex-none rounded-[6px] bg-[color:var(--elevated)] md:h-[78px] md:w-[56px]" />
+            <span className="block h-[89px] w-[64px] flex-none rounded-[5px] bg-[color:var(--elevated)] md:h-[117px] md:w-[84px]" />
             <div className="flex min-w-0 flex-1 flex-col gap-[8px]">
               <span className={`${SHAPE} h-[10px] w-[120px]`} />
               <span className={`${SHAPE} h-[20px] w-[60%]`} />

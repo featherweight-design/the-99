@@ -184,7 +184,8 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
     <CardDetailProvider deckPrintingPicks={printingPicks} viewPrintings={viewPrintings}>
       <div className="pb-[96px]">
         <header className="flex flex-col gap-[12px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] p-[12px_16px_14px] md:p-[16px_22px_18px]">
-          <Link href={fromNew ? "/decks/precons?from=new" : "/decks/precons"} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+          {/* An early list's back link is the board's 24px press (`.z-bk`); the precon page's is unchanged. */}
+          <Link href={fromNew ? "/decks/precons?from=new" : "/decks/precons"} className={`font-mono text-[11px] text-[color:var(--fg-faint)] no-underline${early ? " flex min-h-[24px] items-center self-start" : ""}`}>
             {fromNew ? copy.open.backNew : copy.open.back}
             <PendingReporter href="/decks/precons" />
           </Link>
@@ -192,8 +193,8 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
             <div className="flex flex-none gap-[6px]">
               {headCommanders.map((c) => (
                 <span key={c.oracleId}>
-                  <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size="open" className="md:hidden" />
-                  <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size="openWide" className="hidden md:block" />
+                  <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size={early ? "early" : "open"} className="md:hidden" />
+                  <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size={early ? "earlyWide" : "openWide"} className="hidden md:block" />
                 </span>
               ))}
             </div>
@@ -262,7 +263,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
             {/* The edition switch already names the twin; the line stays only where no switch is drawn. */}
             {row.twinName && !precon.collector && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.twin(row.twinName)}</p>}
             {row.unmapped > 0 && (
-              <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.unmapped(row.unmapped, total)}</p>
+              <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{early ? copy.early.unmapped(row.unmapped) : copy.open.unmapped(row.unmapped, total)}</p>
             )}
             {commanders.length === 2 && (
               <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.open.pair(bodyCount, total)}</p>
