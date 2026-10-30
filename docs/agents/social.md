@@ -43,7 +43,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   entry PR C adds) reads a friend's label only to hand its copy functions a string and marks the row, the trigger and
   the label span. NOT yet marked, because they read other families (pods, PR B2; feed and push, PR D; friend decks and
   the cart's deck names, PR E; Rule 0 and the game log's saved opponents, PR F): `PodMember.displayName`, `Pod.name`,
-  `Pod.nextOwner`, `PodSeat` and `PickerPod` (plain strings, drawn by the pods pane, card, menu and seats), Home's feed
+  `Pod.nextOwner` and `PickerPod` (plain strings, drawn by the pods pane, card, menu and seats; `PodSeat` is branded in B1), Home's feed
   rows and push text (they draw a plain string, so their titles stay strings), `FilterPanel`'s live-region
   announcement, which reads a friend's option as a string, a game's saved opponent names (`friendNameThen`), and
   `redeemInviteAction`'s answer, which still carries the inviter's plain name though nothing draws it. Pods, feed and
