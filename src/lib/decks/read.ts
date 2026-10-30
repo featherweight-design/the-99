@@ -28,7 +28,7 @@ import {
 import { lockedOracleIds } from "./locks";
 import { neverCutEnabled } from "./never-cut-flag";
 import { deckPrintingsEnabled } from "./printings-flag";
-import type { PreferredPrinting } from "../collection/browse";
+import type { FoilFinish, PreferredPrinting } from "../collection/browse";
 import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
@@ -187,6 +187,8 @@ export type DeckCommander = {
    */
   printedSetCode?: string | null;
   printedCollectorNumber?: string | null;
+  /** The film every owned copy of the drawn printing shares, as a decklist row's `foil`: absent for plain, mixed or unowned. */
+  foil?: FoilFinish;
   /**
    * The player owns at least one copy of this commander, by the same test a decklist row's
    * `owned` is. Optional for the reason `proxied` is: fixtures build `DeckCommander` literals
@@ -552,6 +554,8 @@ export async function getDeckDetail(
       // Read by the export's commander line alone, which is main's (no printing) with the switch off.
       printedSetCode: deckPrintingsEnabled(env) ? (own?.setCode ?? null) : null,
       printedCollectorNumber: deckPrintingsEnabled(env) ? (own?.collectorNumber ?? null) : null,
+      // Set only when there is a film, as on a decklist row.
+      ...(row.owned && own?.foil ? { foil: own.foil } : {}),
     };
   };
   const flags = bracketFlags ?? new Map<string, CardBracketFlags>();

@@ -32,6 +32,7 @@ const card = (oracleId: string, name: string, typeLine: string, owned: boolean, 
   printedSetCode: null, printedCollectorNumber: null, layout: "normal", owned, ...extra,
 });
 const SAI = card("sai", "Sai, Master Thopterist", "Legendary Creature — Human Artificer", true, { commander: true, printedSetCode: "m19", printedCollectorNumber: "69" });
+const FOIL_SAI = { ...SAI, foil: "etched" as const };
 const DECK: FriendDeckPage = {
   id: "d1", name: "Thopter Factory", commanders: [SAI],
   cards: [
@@ -98,6 +99,11 @@ describe("FriendDeckView", () => {
     // The same picks as deck printings with no deck: card details offer the viewer no picker over the owner's printing.
     expect(providerProps.picks).toEqual({ sai: { setCode: "m19", collectorNumber: "69" }, sol: { setCode: "cmm", collectorNumber: "1" } });
     expect(document.body.textContent).not.toMatch(/\$|To buy|Complete|Draft|buy/);
+  });
+
+  it("views a foil commander in the owner's finish, as a body card", () => {
+    draw({ ...DECK, commanders: [FOIL_SAI] });
+    expect((providerProps.views as Record<string, { finish?: string }>).sai.finish).toBe("etched");
   });
 
   it("an empty deck keeps the Commander and says so, with no own band, list note or key", () => {
