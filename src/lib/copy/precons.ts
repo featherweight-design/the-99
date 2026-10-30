@@ -373,9 +373,9 @@ export const preconsCopy = {
     // the lists count, the waiting commander and the note for lists still to come.
     /** Call 5: on an early list's tile sub-line and row line 2, in `--fact`, no box. */
     earlyList: "early list",
-    /** The set's count half once Wizards posts its lists: `3 of 5 lists so far`, `All 5 lists`, `3 lists so far` (no number promised). */
+    /** The set's count half once Wizards posts its lists: `3 of 5 lists so far`, `All 5 lists` (`1 list` when one was promised), `3 lists so far` (no number promised). */
     listsSoFar: (posted: number, promised: number | null) =>
-      promised === null ? `${plural(posted, "list", "lists")} so far` : posted >= promised ? `All ${n(promised)} lists` : `${n(posted)} of ${n(promised)} lists so far`,
+      promised === null ? `${plural(posted, "list", "lists")} so far` : posted >= promised ? (promised === 1 ? plural(1, "list", "lists") : `All ${n(promised)} lists`) : `${n(posted)} of ${plural(promised, "list", "lists")} so far`,
     /** The none plate's note for promised lists not yet posted (STATES 3.2). */
     toCome: (count: number) => `${plural(count, "more list", "more lists")} to come`,
     /** A revealed commander whose list is still to come, in the rows view. */
