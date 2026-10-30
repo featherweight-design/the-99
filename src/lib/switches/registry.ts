@@ -118,16 +118,16 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * path, where the key parsing may not), so they would describe a column that is not there. Both Vercel projects carry the
  * keys (Production scope) and previews are not built, so that only happens on a local server run without them.
  * `SIGNATURE_CARD_ENABLED` held it from 2026-10-27 and left it with the `friends` entry's signature-card caption line.
- * `FLYER_TRIAL_ENABLED` and `FEEDBACK_ENABLED` hold it from 2026-10-30 while their surfaces land (flyer trial PRs 2 to 7), until
- * the line's close-out walk. Raised early, an account would see half a trial: a Report row with no form, or a /join code with no landing.
+ * `FLYER_TRIAL_ENABLED` and `FEEDBACK_ENABLED` hold it from 2026-10-30, until the first PR that ships a usable surface for each
+ * (flyer: the `/join` page, PR 3; feedback: Report a problem, PR 5). Raised early, an account would see half a trial.
  * It holds the two above; a switch that joins it carries its reason beside it.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
-  FEEDBACK_ENABLED: "the flyer trial's feedback surfaces land over PRs 5 to 7; All features waits for the close-out walk",
-  FLYER_TRIAL_ENABLED: "the flyer trial's surfaces land over PRs 2 to 4; All features waits for the close-out walk",
+  FEEDBACK_ENABLED: "no feedback surface yet; it joins All features with Report a problem (flyer trial PR 5)",
+  FLYER_TRIAL_ENABLED: "no flyer surface yet; it joins All features with the `/join` page (flyer trial PR 3)",
   // SUGGESTED_CHANGES_V2_ENABLED left on 2026-10-29 (Hugh: switches are on by default for his account), once
   // its intake, wait, results and apply had shipped; its History view and in-flight tile follow in later PRs.
 };
