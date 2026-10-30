@@ -59,7 +59,7 @@ const SYSTEM = [
   "You write a short summary of a finished set of deck changes for a Magic: The Gathering Commander player. The cards are already chosen; you only describe them.",
   PLAYER_TEXT_SYSTEM_RULE,
   "Return:",
-  `- lead: one sentence, at most ${WHY_LEAD_MAX - 10} characters, on what the whole set does for the deck, and for the player's request when there is one.`,
+  `- lead: one sentence of at most 15 words and ${WHY_LEAD_MAX - 30} characters, on what the whole set does for the deck, and for the player's request when there is one.`,
   `- add: up to ${WHY_GROUPS_MAX} groups of the cards coming in that share one job. Each group has a phrase, its cards and like.`,
   "- cut: the same, for the cards going out.",
   "A phrase follows a number the app writes, so it starts with a plural verb: \"are answers at one or two mana\", \"keep cards coming\", \"fix the mana\". At most 50 characters.",
