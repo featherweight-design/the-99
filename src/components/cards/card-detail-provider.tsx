@@ -520,10 +520,17 @@ export function CardDetailTrigger({
     ? {
         role: "button" as const,
         tabIndex: 0,
+        // As a native button: Enter presses on keydown and ignores its repeats, Space presses on keyup
+        // (a held key must not open the card again for every repeat).
         onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => {
-          if (e.key !== "Enter" && e.key !== " ") return;
-          e.preventDefault();
-          e.currentTarget.click();
+          if (e.key === " ") e.preventDefault();
+          else if (e.key === "Enter") {
+            e.preventDefault();
+            if (!e.repeat) e.currentTarget.click();
+          }
+        },
+        onKeyUp: (e: React.KeyboardEvent<HTMLElement>) => {
+          if (e.key === " ") e.currentTarget.click();
         },
       }
     : { type: "button" as const };

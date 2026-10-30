@@ -151,6 +151,27 @@ describe("the stages shape (contract 13)", () => {
     expect(screen.getAllByTestId("synopsis-based-on").map((e) => e.textContent)).toContain("Based onSol Ring");
   });
 
+  it("opens a card from the keyboard once: Enter on press (repeats ignored), Space on release", async () => {
+    const fetchCard = vi.fn(async () => null);
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <HoverPreviewProvider>
+          <SynopsisSections content={stage13()} contractVersion={13} art={art} onRetry={null} busy={false} />
+        </HoverPreviewProvider>
+      </CardDetailProvider>,
+    );
+    const name = within(screen.getAllByTestId("synopsis-stage")[0]).getAllByTestId("synopsis-card")[0].querySelector<HTMLElement>("[role=button]")!;
+    fireEvent.keyDown(name, { key: " " });
+    fireEvent.keyDown(name, { key: " ", repeat: true });
+    await waitFor(() => expect(fetchCard).not.toHaveBeenCalled());
+    fireEvent.keyUp(name, { key: " " });
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(1));
+    fireEvent.keyDown(name, { key: "Enter" });
+    fireEvent.keyDown(name, { key: "Enter", repeat: true });
+    fireEvent.keyDown(name, { key: "Enter", repeat: true });
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(2));
+  });
+
   it("draws a 12 row exactly as before: Core strategy, the fixed range, no figure, no images", () => {
     drawStages(stage13({ lands: { keep: { low: 2, high: 4 }, sendBack: { none: 0, under: 1, over: 5 } } }), 12);
     expect(screen.getByRole("heading", { name: "Core strategy" })).toBeInTheDocument();
