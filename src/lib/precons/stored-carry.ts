@@ -98,8 +98,7 @@ export async function carryStoredOnArrival(deckId: string, userId: string, env: 
     // copy cannot mark it not current or rewrite it between this decision and the write, and the content,
     // dates and change log mark all come from this revision.
     const [row] = await sourceRowQuery(tx, deck.precon!, stored.overview.contractVersion, roleBasisFromEnv(env));
-    // The fallback row's `current` flag went stale with the request hash, so the list alone decides it.
-    const src = row && row.contractVersion === fallback ? { ...row, current: true } : row;
+    const src = row;
     const plan = lockedCarry({ wantsOverview: wantsOverview && !illegal, readAt: reading.at, readingSeenSeq: reading.seenSeq, list, src: src ?? null });
     if (plan.kind === "fallback") return plan;
     const at = plan.overview?.createdAt ?? null;

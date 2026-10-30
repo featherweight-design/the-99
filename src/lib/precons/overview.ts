@@ -53,11 +53,11 @@ export function carryOverDecision(input: {
 /**
  * The stored row a reader or a carry-over works from, among a file's rows at the owner's role basis.
  * The owner's own contract wins while its row is current. Otherwise the FALLBACK contract's row stands in
- * (the pre-batch period, `synopsisPreconFallbackContract`), whatever its `current` flag says: that flag
- * went stale only because the request hash moved with the contract, and the fallback row is checked
- * against the live list by `carryOverDecision` like any other. `viaFallback` rows are handed on as
- * current so the decision is made on the list alone. With neither, the owner's own row (or none) is
- * returned and the decision gives its usual reason.
+ * (the pre-batch period, `synopsisPreconFallbackContract`), but only while ITS OWN `current` flag still
+ * holds: the contract bump does not touch that flag (build and copy re-check only the contract they write),
+ * so a 12 row rejected earlier for moved inputs stays rejected and one that was current stays current. The
+ * list is still decided by `carryOverDecision`. With neither, the owner's own row (or none) is returned
+ * and the decision gives its usual reason.
  */
 export function pickOverviewRow<R extends PreconOverviewHead>(
   rows: readonly R[],
@@ -67,7 +67,7 @@ export function pickOverviewRow<R extends PreconOverviewHead>(
   const own = rows.find((r) => r.contractVersion === contract) ?? null;
   if (own?.current) return { row: own, viaFallback: false };
   const old = fallback === null ? null : rows.find((r) => r.contractVersion === fallback) ?? null;
-  if (old) return { row: { ...old, current: true }, viaFallback: true };
+  if (old?.current) return { row: old, viaFallback: true };
   return { row: own, viaFallback: false };
 }
 

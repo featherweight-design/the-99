@@ -95,7 +95,7 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
     // ONE REVISION OF THE SOURCE ROW: re-read under a shared lock, so a build or copy cannot rewrite it
     // between the decision, the content and the check time this transaction writes from it.
     const [src] = await tx.select().from(preconSynopses).where(key).for("share");
-    const held = carryOverDecision({ analysisTab: true, row: src ? (found.viaFallback ? { ...src, current: true } : src) : null, liveFingerprint: list });
+    const held = carryOverDecision({ analysisTab: true, row: src ?? null, liveFingerprint: list });
     if (!held.attach) return { attached: false, reason: held.reason };
     // THE OVERVIEW HAS SEEN THE DATA ONLY AS OF ITS LAST CHECK, not as of this reading: a deck data
     // change published after the build or copy last verified the row's inputs (`checked_at`) is one
