@@ -42,7 +42,7 @@ export async function loadHandOffAnswers(
   userId: string,
   commanderId: string,
   p: ChooseParams,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the card chip's claim read and art. */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the card chip's claim read. */
   env: NodeJS.ProcessEnv,
 ): Promise<HandOffAnswers> {
   const [vocabulary, card, [row], printings] = await Promise.all([

@@ -1445,9 +1445,8 @@ export async function commitDeckVersion(
 ): Promise<CommitResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: "We couldn’t find that deck." };
-  // The reader's resolved switches: the printing each card showed is recorded only with their printings
-  // switch on, and the commit's bracket snapshot and the analysis pin both build the profile under them,
-  // so each finds the entry the reader's own analysis filed.
+  // The reader's resolved switches: the commit's bracket snapshot and the analysis pin both build the
+  // profile under them, so each finds the entry the reader's own analysis filed.
   const env = await requestSwitchEnv(userId);
   // A Server Action's arguments arrive over the wire, so the declared type is a
   // claim about the caller rather than a guarantee: anything at all can be posted

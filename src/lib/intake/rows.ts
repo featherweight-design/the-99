@@ -169,8 +169,7 @@ export type CardChip = {
 export async function loadCardChip(
   userId: string,
   oracleId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the card's claim read and its printing
-   *  picks (`chainArt`). */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the card's claim read. */
   env: NodeJS.ProcessEnv,
 ): Promise<CardChip | null> {
   // The search's own card read, so the chip names exactly the card the search applied: a card it
