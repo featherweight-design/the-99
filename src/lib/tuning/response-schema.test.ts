@@ -1,3 +1,5 @@
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod";
 import { describe, expect, it } from "vitest";
 
 import { lineSchemaV2, suggestedChangesV2ReplySchema, tuningResponseSchema } from "./response-schema";
@@ -49,6 +51,13 @@ describe("tuningResponseSchema", () => {
 });
 
 describe("suggestedChangesV2ReplySchema", () => {
+  it("sends the same JSON schema as the reply without its short-reason preprocess, so the cache key holds", () => {
+    const plain = z.object({
+      lines: z.array(z.object({ n: z.number().int() }).extend(lineSchemaV2.shape)).max(schemaCapFor(askFor(MAX_COUNT))),
+    });
+    expect(zodOutputFormat(suggestedChangesV2ReplySchema).schema).toEqual(zodOutputFormat(plain).schema);
+  });
+
   const v2 = { ...one, n: 1, evidence: [{ kind: "request", value: "more ramp" }] };
   it("is one list under the neutral key `lines`, the same for additions, cuts and both refills", () => {
     expect(suggestedChangesV2ReplySchema.safeParse({ lines: [v2] }).success).toBe(true);
@@ -73,6 +82,17 @@ describe("suggestedChangesV2ReplySchema", () => {
     expect(lineSchemaV2.safeParse(bare).success).toBe(true);
     const parsed = lineSchemaV2.safeParse({ ...v2, n: 99 });
     expect(parsed.success && "n" in parsed.data).toBe(false);
+  });
+
+  // The v14 eval: 6 of 22 first calls failed this parse on one line's empty `rationaleShort`, every other field valid.
+  it("rebuilds an empty or degenerate short reason from the rationale, so one bad summary never fails the reply", () => {
+    for (const short of ["", "x"]) {
+      const parsed = suggestedChangesV2ReplySchema.safeParse({ lines: [{ ...v2, rationaleShort: short }] });
+      expect(parsed.success && parsed.data.lines[0].rationaleShort).toBe(v2.rationale);
+    }
+    expect(suggestedChangesV2ReplySchema.safeParse({ lines: [{ ...v2, rationale: "" }] }).success).toBe(false);
+    // v10's whole-reply schema is unchanged.
+    expect(tuningResponseSchema.safeParse({ additions: [{ ...one, rationaleShort: "" }], cuts: [] }).success).toBe(false);
   });
 
   it("cites the run's request, not v10's notes", () => {
