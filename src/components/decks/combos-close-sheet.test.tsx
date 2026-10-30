@@ -372,7 +372,8 @@ describe("a row opens its combo inside the sheet", () => {
     const foot = shownDetail()!.querySelector<HTMLElement>('[data-combo-foot="one-away"]')!;
     const link = within(foot).getByRole("link");
     expect(link).toHaveAttribute("href", SPELLBOOK_SOURCE.variantUrl("3"));
-    expect(link.textContent).toBe(deckAnalysisCopy.provenance.source(deckAnalysisCopy.receipt.spellbook));
+    expect(link.textContent).toBe(deckAnalysisCopy.receipt.spellbook);
+    expect(link.querySelector("svg[data-link-out]")).toBeTruthy();
     expect(within(foot).getByRole("button").textContent).toBe(detail.add("Searing Touch"));
     expect(foot.textContent).not.toContain(deckAnalysisCopy.receipt.assembled);
   });

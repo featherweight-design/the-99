@@ -19,14 +19,17 @@ describe("ExternalLink", () => {
     // drops the suffix's leading space that a screen reader does read.
     expect(container.querySelector(".sr-only")!.textContent).toBe(" (opens in a new tab)");
     expect(screen.getByRole("link").textContent).toBe(
-      "Buy these at Mana Pool\u00A0\u2197 (opens in a new tab)",
+      "Buy these at Mana Pool (opens in a new tab)",
     );
   });
 
-  it("binds the arrow to the last word and hides it from assistive tech", () => {
+  it("binds the link-out icon to the last word and hides it from assistive tech", () => {
     const { container } = render(<ExternalLink href="https://manapool.com" label="Buy it" />);
-    const glyph = container.querySelector('[aria-hidden="true"]')!;
-    expect(glyph.textContent).toBe("\u00A0\u2197");
+    const icon = container.querySelector("svg[data-link-out]")!;
+    expect(icon.getAttribute("aria-hidden")).toBe("true");
+    expect(icon.parentElement!.textContent).toBe("it");
+    expect(icon.parentElement!.className).toContain("whitespace-nowrap");
+    expect(icon.getAttribute("class")).toContain("text-[color:var(--fg-muted)]");
   });
 
   it("paints the focus ring on focus-visible only", () => {

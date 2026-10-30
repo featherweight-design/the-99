@@ -291,7 +291,8 @@ describe("the plan on the page", () => {
 
   it("O2: the switch off keeps a held plan with Cancel and Update card, and no offers", () => {
     render(<CreditsView model={model({ switchOn: false, allowance: allowance({ plan: 74 }), subscription: sub(false, 20), history: [planRow] })} ret={null} />);
-    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Cancel plan", "Update card↗", "Receipt↗"]);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Cancel plan", "Update card", "Receipt"]);
+    for (const name of ["Update card", "Receipt"]) expect(screen.getByRole("button", { name }).querySelector("svg[data-link-out]")).toBeTruthy();
     expect(screen.queryByText("Get more credits")).toBeNull();
   });
 

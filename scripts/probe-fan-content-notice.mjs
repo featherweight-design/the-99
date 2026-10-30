@@ -160,7 +160,7 @@ try {
           ink: getComputedStyle(p[0]).color, expectedInk: getComputedStyle(document.documentElement).getPropertyValue("--fg-muted").trim(),
           lines: Math.round((p[0].getBoundingClientRect().height + p[1].getBoundingClientRect().height) / line),
           lastIsNotice: f === last || last.contains(f), overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-          text: [...p].map((x) => x.textContent.replace(/\s*↗/, "")),
+          text: [...p].map((x) => x.textContent), linkOut: !!f.querySelector("a svg[data-link-out]"),
         };
       });
       report(rest.top >= rest.vh - 1, `${name}: at rest it starts at or below the fold`, `top ${Math.round(rest.top)} of ${rest.vh}`);
@@ -168,6 +168,7 @@ try {
       report(rest.lastIsNotice, `${name}: last in the document`);
       report(!rest.overflowX, `${name}: no sideways scroll`);
       report(rest.text[0].startsWith("The 99 is unofficial Fan Content") && rest.text[1].startsWith("Card images and mana symbols"), `${name}: the locked passages`);
+      report(rest.linkOut, `${name}: the policy link ends in the link-out icon`);
       if (w.label === "390") report(rest.lines <= 6, `${name}: not a wall`, `${rest.lines} lines`);
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       const end = await page.evaluate(() => {

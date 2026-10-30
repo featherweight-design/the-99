@@ -20,6 +20,8 @@ beforeEach(() => vi.resetAllMocks());
 afterEach(cleanup);
 
 const buttons = () => screen.queryAllByRole("button").map((b) => b.textContent);
+/** Update card opens Stripe in a new tab, so it ends in the link-out icon. */
+const updateCardIcon = () => screen.getByRole("button", { name: "Update card" }).querySelector("svg[data-link-out]");
 
 describe("the states", () => {
   it("K1: the four fine-print lines come BEFORE the Subscribe press, and the price and the Stripe line are drawn", () => {
@@ -41,7 +43,8 @@ describe("the states", () => {
     expect(screen.getByText("Renews November 16 · $5")).toBeTruthy();
     expect(screen.getByText("74 plan credits, rolling over")).toBeTruthy();
     expect(screen.getByText("Canceling keeps your 74 plan credits until November 16, then they expire. Pack credits aren’t affected.")).toBeTruthy();
-    expect(buttons()).toEqual(["Cancel plan", "Update card↗"]);
+    expect(buttons()).toEqual(["Cancel plan", "Update card"]);
+    expect(updateCardIcon()!.getAttribute("aria-hidden")).toBe("true");
   });
 
   it("K3: Ends, the expiry restated, Keep my plan and what it does; no Cancel and no Update card", () => {
@@ -72,7 +75,7 @@ describe("the states", () => {
     expect(screen.getByText(/Your 74 plan credits still work for now/)).toBeTruthy();
     // Stripe's `unpaid` also lands here: nothing may promise a retry.
     expect(screen.queryByText(/try again/)).toBeNull();
-    expect(buttons()).toEqual(["Update card↗", "Cancel plan"]);
+    expect(buttons()).toEqual(["Update card", "Cancel plan"]);
     expect(container.querySelector("[data-plan-state=pastDue]")?.className).toContain("var(--warning)");
     expect(screen.getByRole("button", { name: /Update card/ }).className).toContain("bg-[color:var(--accent)]");
   });
@@ -97,9 +100,9 @@ describe("reduced (payments off for the reader)", () => {
     rerender(<PlanCard plan={plan("ending")} reduced onToast={vi.fn()} />);
     expect(buttons()).toEqual([]);
     rerender(<PlanCard plan={plan("active")} reduced onToast={vi.fn()} />);
-    expect(buttons()).toEqual(["Cancel plan", "Update card↗"]);
+    expect(buttons()).toEqual(["Cancel plan", "Update card"]);
     rerender(<PlanCard plan={plan("pastDue")} reduced onToast={vi.fn()} />);
-    expect(buttons()).toEqual(["Update card↗", "Cancel plan"]);
+    expect(buttons()).toEqual(["Update card", "Cancel plan"]);
   });
 
   it("is off by default", () => {
@@ -340,11 +343,12 @@ describe("K5 while cancelling", () => {
     expect(screen.queryByText(/charged again/)).toBeNull();
     expect(screen.getByText("Your payment didn’t go through")).toBeTruthy();
     expect(screen.getByText("Your 74 plan credits expire on December 4. The plan will not renew.")).toBeTruthy();
-    expect(buttons()).toEqual(["Update card↗", "Keep my plan"]);
+    expect(buttons()).toEqual(["Update card", "Keep my plan"]);
+    expect(updateCardIcon()).toBeTruthy();
   });
   it("reduced drops Keep and keeps Update card", () => {
     render(<PlanCard plan={due()} reduced onToast={vi.fn()} />);
-    expect(buttons()).toEqual(["Update card↗"]);
+    expect(buttons()).toEqual(["Update card"]);
   });
   it("a cancel pressed on a past-due plan is reached once the row says cancelling, even though the state stays past due", async () => {
     m.cancel.mockResolvedValue({ ok: true, unchanged: false });
@@ -353,6 +357,6 @@ describe("K5 while cancelling", () => {
     await screen.findByText("Updating your plan");
     view.rerender(<PlanCard plan={due()} timing={{ intervalMs: 10, maxTries: 1000 }} onToast={vi.fn()} />);
     expect(screen.queryByText("Updating your plan")).toBeNull();
-    expect(buttons()).toEqual(["Update card↗", "Keep my plan"]);
+    expect(buttons()).toEqual(["Update card", "Keep my plan"]);
   });
 });

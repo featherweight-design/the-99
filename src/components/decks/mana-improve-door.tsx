@@ -36,6 +36,7 @@ import { FailureMark } from "./tuning-history";
 import { AnsweredRow, Arrow } from "./suggestion-card";
 import { MutationError } from "./mutation-error";
 import { FadingImg } from "../ui/hydrated-art";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 export type HelpRead = (deckId: string, color: string) => Promise<ManaHelp | null>;
 export type TradeActions = {
@@ -557,7 +558,7 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
               aria-label={copy.help.buyAria(staple.name)}
               className="text-[color:var(--accent-text)] hover:text-[color:var(--accent-hover)] transition-colors"
             >
-              {copy.help.buyLink}
+              <LinkOutLabel>{copy.help.buyLink}</LinkOutLabel>
             </a>}
           </span>
         )}

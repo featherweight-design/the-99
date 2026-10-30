@@ -84,7 +84,7 @@ export const feedCopy = {
       newSet: "See the set",
       newPrecon: "Open in Precons",
       /** The card on Mana Pool, in a new tab (Hugh, 2026-10-27). Its own words, shorter than card details' link out; the
-       *  ↗ and the spoken new-tab suffix are `FeedPress`'s, as `ExternalLink` draws them. */
+       *  link-out icon and the spoken new-tab suffix are `FeedPress`'s, as `ExternalLink` draws them. */
       priceDrop: "Buy at Mana Pool",
       tradeMatch: (friend: string) => `See ${friend}’s spares`,
       /** With spare requests on, the press opens that card's spares sheet with Ask (signature card call 9). */

@@ -20,6 +20,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { NEW_TAB_SUFFIX } from "../ui/external-link";
+import { LinkOutLabel } from "../ui/link-out-icon";
 import { KICKER_AGE } from "./kicker-age";
 import { DismissButton } from "./dismiss";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "../social/trade-ask";
@@ -142,17 +143,14 @@ export function FeedPress({
       </button>
     );
   }
-  // Off the app (a price drop's card on Mana Pool): a new tab, drawn as card details' link out is (its own label), the ↗ and
+  // Off the app (a price drop's card on Mana Pool): a new tab, drawn as card details' link out is (its own label), the link-out icon and
   // the spoken new-tab suffix (`ExternalLink`'s), never a router link.
   if (item.outbound) {
     return (
       <a href={item.outbound} target="_blank" rel="noopener" data-feed-press className={`${className} ${stretch}`} aria-describedby={describedBy}>
-        {/* One inline run, so a press that wraps (the lead's button on a phone) keeps the ↗ on the label's last word,
-            bound by a no-break space as `ExternalLink` binds it, rather than standing alone as a flex item. */}
-        <span>
-          {label}
-          <span aria-hidden="true">{"\u00a0↗"}</span>
-        </span>
+        {/* One inline run, so a press that wraps (the lead's button on a phone) keeps the icon on the label's last word,
+            bound as `ExternalLink` binds it, rather than standing alone as a flex item. */}
+        <LinkOutLabel>{label}</LinkOutLabel>
         <span className="sr-only">{NEW_TAB_SUFFIX}</span>
       </a>
     );
@@ -288,7 +286,7 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
           {text.press && (
             <FeedPress
               item={item}
-              // An outbound press ends in its ↗ (`FeedPress`), not the in-app ›.
+              // An outbound press ends in its link-out icon (`FeedPress`), not the in-app ›.
               label={item.outbound ? text.press : `${text.press} ›`}
               describedBy={titleId}
               stretch="after:absolute after:inset-0 after:content-['']"

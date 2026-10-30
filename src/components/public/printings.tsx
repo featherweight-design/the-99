@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { publicPagesCopy } from "../../lib/copy/public-pages";
 import { scryfallPrintingUrl, scryfallPrintsUrl } from "./links";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 const c = publicPagesCopy.card;
 
@@ -22,7 +23,7 @@ const code = (p: Printing) => `${p.setCode.toUpperCase()} ${p.collectorNumber}`;
  * `scryfall_id`, the catalog's main printing) first; when it is there (`marked`) that chip carries ◇: the one pictured, or,
  * with no image, the catalog's main printing. When it is not, no chip is marked and no note claims one. The phone shows 8 behind
  * a 44px `Show all N`; from `md` all of them show. At the read's cap the count says `first 40` and the chips end in
- * `More on Scryfall ↗`.
+ * `More on Scryfall` and the link-out icon.
  */
 export function PublicPrintings({
   name,
@@ -82,8 +83,7 @@ export function PublicPrintings({
             data-testid="public-printings-more"
             className={`inline-flex items-center gap-[5px] h-[36px] md:h-[32px] px-[12px] rounded-[7px] border border-dashed border-[color:var(--border-dashed)] text-[12.5px] font-medium text-[color:var(--accent-hover)] no-underline ${folds ? FOLDED : ""}`}
           >
-            {c.morePrintings}
-            <span aria-hidden="true" className="text-[0.85em] text-[color:var(--fg-muted)]">↗</span>
+            <LinkOutLabel iconClassName="text-[color:var(--fg-muted)]">{c.morePrintings}</LinkOutLabel>
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
         ) : null}

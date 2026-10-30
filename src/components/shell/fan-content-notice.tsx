@@ -1,4 +1,5 @@
 import { FAN_CONTENT_POLICY_URL, passageOneParts, fanContentNotice, policyLinkAria } from "../../lib/copy/fan-content-notice";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 /**
  * The Fan Content notice (launch epic A1; design `design_handoff_the99_fan_content_notice`, approved R2). A small legal line
@@ -40,12 +41,8 @@ export function FanContentNotice({ align = "start" }: { align?: "start" | "cente
             aria-label={policyLinkAria}
             className="text-[color:var(--fg-muted)] underline decoration-[color:var(--fg-faint)] decoration-1 underline-offset-2 hover:text-[color:var(--fg)] hover:decoration-[color:var(--fg-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] visited:text-[color:var(--fg-muted)]"
           >
-            {/* The arrow stays on the same line as the last word. */}
-            {parts.link.slice(0, parts.link.lastIndexOf(" ") + 1)}
-            <span className="whitespace-nowrap">
-              {parts.link.slice(parts.link.lastIndexOf(" ") + 1)}
-              <span aria-hidden="true"> ↗</span>
-            </span>
+            {/* The icon stays on the same line as the last word. */}
+            <LinkOutLabel>{parts.link}</LinkOutLabel>
           </a>
           {parts.after}
         </p>

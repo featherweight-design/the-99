@@ -18,6 +18,7 @@ import { creditsPageCopy } from "../../lib/copy/credits-page";
 import type { ReturnRead } from "../../lib/payments/return-rule";
 import { ReceiptLink } from "./receipt-link";
 import { SupportLink } from "./support-link";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 const c = creditsPageCopy.ret;
 
@@ -97,7 +98,7 @@ export function ReturnBand({ sessionId, planRenews = null, initial, timing = BAN
             onFailed={onReceiptFailed}
             className="flex min-h-[32px] cursor-pointer items-center gap-[4px] self-start border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg)] pointer-coarse:min-h-[44px]"
           >
-            {creditsPageCopy.hist.receipt}<span aria-hidden="true" className="text-[11px]">↗</span>
+            <LinkOutLabel>{creditsPageCopy.hist.receipt}</LinkOutLabel>
           </ReceiptLink>
         </div>
       </div>

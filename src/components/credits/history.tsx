@@ -7,6 +7,7 @@ import type { HistoryItem } from "../../lib/payments/page-model";
 import { ReceiptLink } from "./receipt-link";
 import { LegalLinks } from "../legal/legal-links";
 import { SupportLink } from "./support-link";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 const c = creditsPageCopy;
 
@@ -32,7 +33,7 @@ export function History({ items, onReceiptFailed }: { items: readonly HistoryIte
                   onFailed={onReceiptFailed}
                   className="flex min-h-[44px] w-[59px] flex-none cursor-pointer items-center justify-end gap-[4px] border-0 bg-transparent p-0 text-[12.5px] font-semibold text-[color:var(--accent-text)] md:min-h-[32px] md:w-[90px]"
                 >
-                  {c.hist.receipt}<span aria-hidden="true" className="text-[11px]">↗</span>
+                  <LinkOutLabel>{c.hist.receipt}</LinkOutLabel>
                 </ReceiptLink>
               ) : null}
             </li>

@@ -21,7 +21,7 @@ describe("FanContentNotice", () => {
   it("is a footer with the two locked passages, in order, and exactly one link", () => {
     render(<FanContentNotice />);
     const footer = document.querySelector("footer")!;
-    const paragraphs = [...footer.querySelectorAll("p")].map((p) => p.textContent!.replace(/\s+↗/, ""));
+    const paragraphs = [...footer.querySelectorAll("p")].map((p) => p.textContent);
     expect(paragraphs).toEqual([fanContentNotice.passageOne, fanContentNotice.passageTwo]);
     expect(footer.querySelectorAll("a")).toHaveLength(1);
     expect(footer.querySelectorAll("button, input, [role='button']")).toHaveLength(0);
@@ -33,9 +33,9 @@ describe("FanContentNotice", () => {
     expect(link.getAttribute("href")).toBe(FAN_CONTENT_POLICY_URL);
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(link.querySelector("[aria-hidden='true']")!.textContent.trim()).toBe("↗");
-    // The visible words stay the locked ones (the arrow is decoration).
-    expect(link.textContent!.replace(/\s*↗/, "")).toBe("Fan Content Policy");
+    expect(link.querySelector("svg[data-link-out]")!.getAttribute("aria-hidden")).toBe("true");
+    // The visible words stay the locked ones (the icon is decoration).
+    expect(link.textContent).toBe("Fan Content Policy");
   });
 
   it("centers on the signed-out pages' axis and starts at the left otherwise", () => {

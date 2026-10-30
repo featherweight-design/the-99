@@ -13,6 +13,7 @@ import { colorRows, type ColorRow } from "../../lib/mana/color-rows";
 import type { BalanceColor, ColorEvidence } from "../../lib/tuning/mana-balance";
 import { colorName, neededFor, type ClientManaBalance } from "../../lib/tuning/mana-view";
 import { PIP_STYLE, SourceBar } from "./mana-color-parts";
+import { LinkOutIcon } from "../ui/link-out-icon";
 
 const capitalized = (s: string) => s[0].toUpperCase() + s.slice(1);
 const MINI = "font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--fg-locked)] md:hidden";
@@ -115,14 +116,6 @@ export function ManaEvidenceTable({ balance }: { balance: ClientManaBalance }) {
   );
 }
 
-export function LinkOut() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" className="block flex-none" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 3.5h6.5V10M12.5 3.5 4 12" />
-    </svg>
-  );
-}
-
 function ArticleLink({ label }: { label: string }) {
   return (
     <a
@@ -130,10 +123,10 @@ function ArticleLink({ label }: { label: string }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={copy.newTab(label)}
-      className="inline-flex items-center gap-[4px] whitespace-nowrap font-medium text-[color:var(--accent-text)] hover:text-[color:var(--accent-hover)] transition-colors"
+      className="whitespace-nowrap font-medium text-[color:var(--accent-text)] hover:text-[color:var(--accent-hover)] transition-colors"
     >
       {label}
-      <LinkOut />
+      <LinkOutIcon />
     </a>
   );
 }

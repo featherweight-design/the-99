@@ -19,6 +19,7 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { producesInfiniteTurns } from "../../lib/spellbook/combo-features";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 /**
  * What a receipt tile draws for a card: the name printed on the copy the player owns, and its art.
@@ -708,7 +709,7 @@ export function ComboBody({
             rel="noreferrer"
             className="inline-flex min-h-[44px] items-center font-mono text-[10.5px] text-[color:var(--accent-text)] underline decoration-[color:var(--accent-text)] underline-offset-[3px]"
           >
-            {copy.provenance.source(copy.receipt.spellbook)}
+            <LinkOutLabel>{copy.receipt.spellbook}</LinkOutLabel>
           </a>
           <div className="ml-auto flex flex-col items-end">{oneAway.action}</div>
         </div>
@@ -723,7 +724,7 @@ export function ComboBody({
           rel="noreferrer"
           className="ml-auto inline-flex min-h-[44px] items-center font-mono text-[10.5px] no-underline text-[color:var(--accent-text)]"
         >
-          <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{copy.provenance.source(copy.receipt.spellbook)}</span>
+          <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]"><LinkOutLabel>{copy.receipt.spellbook}</LinkOutLabel></span>
         </a>
       </div>
       )}

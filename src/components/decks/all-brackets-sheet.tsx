@@ -28,6 +28,7 @@ import { formatDeckDate } from "../../lib/decks/format";
 import { BracketMark } from "./bracket-mark";
 import { FindingMark } from "./finding-mark";
 import { ModalChrome } from "./receipt-modal";
+import { LinkOutLabel } from "../ui/link-out-icon";
 
 const copy = deckAnalysisCopy.bracketsSheet;
 const climbCopy = deckAnalysisCopy.climb;
@@ -164,11 +165,11 @@ function Note({
   );
 }
 
-function SourceLink({ href, children }: { href: string; children: ReactNode }) {
+function SourceLink({ href, children }: { href: string; children: string }) {
   return (
     <a href={href} target="_blank" rel="noreferrer"
       className="inline-flex min-h-[44px] items-center font-mono text-[10.5px] text-[color:var(--accent-text)] md:min-h-0">
-      <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{children}</span>
+      <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]"><LinkOutLabel>{children}</LinkOutLabel></span>
     </a>
   );
 }
@@ -192,15 +193,15 @@ export function AllBracketsSheet({ onClose }: { onClose: () => void }) {
         <div className="flex flex-none flex-col gap-[4px] border-t border-[color:var(--border)] pt-[12px]">
           <span className="text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{BRACKET_RULES_SOURCE.title}</span>
           <span className="flex flex-wrap items-center gap-x-[14px] gap-y-[6px]">
-            <SourceLink href={BRACKET_RULES_SOURCE.url}>{provenance.source(BRACKET_RULES_SOURCE.name)}</SourceLink>
+            <SourceLink href={BRACKET_RULES_SOURCE.url}>{BRACKET_RULES_SOURCE.name}</SourceLink>
             <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
               {provenance.rulesChecked(formatDeckDate(new Date(`${BRACKET_RULES_SOURCE.lastChecked}T12:00:00Z`)))}
             </span>
           </span>
           <span className="flex flex-wrap items-center gap-x-[14px]">
             <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.quotedFrom}</span>
-            <SourceLink href={BRACKETS_INTRO_SOURCE.url}>{`${copy.sourceMonth.intro} ↗`}</SourceLink>
-            <SourceLink href={BRACKETS_OCT25_SOURCE.url}>{`${copy.sourceMonth.oct25} ↗`}</SourceLink>
+            <SourceLink href={BRACKETS_INTRO_SOURCE.url}>{copy.sourceMonth.intro}</SourceLink>
+            <SourceLink href={BRACKETS_OCT25_SOURCE.url}>{copy.sourceMonth.oct25}</SourceLink>
           </span>
         </div>
       </div>
