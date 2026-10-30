@@ -268,6 +268,12 @@ describe("a Wizards post's row (announcements boards Home-Rows and Row-States)",
     some.unmount();
     const all = list(<FeedItemRow item={post({ kind: "commander-decklists" }, { lists: { n: 5, of: 5 } })} now={NOW} />);
     expect(all.container.querySelector("[data-feed-lists]")!.textContent).toBe("All 5 lists");
+    all.unmount();
+    const one = list(<FeedItemRow item={post({ kind: "commander-decklists" }, { lists: { n: 1, of: 1 } })} now={NOW} />);
+    expect(one.container.querySelector("[data-feed-lists]")!.textContent).toBe("1 list");
+    one.unmount();
+    const none = list(<FeedItemRow item={post({ kind: "commander-decklists" }, { lists: { n: 0, of: 1 } })} now={NOW} />);
+    expect(none.container.querySelector("[data-feed-lists]")!.textContent).toBe("0 of 1 list so far");
   });
 
   it("names Wizards news by its kicker and draws no lists line on it", () => {
