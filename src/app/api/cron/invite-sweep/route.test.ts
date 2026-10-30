@@ -52,6 +52,17 @@ describe("GET /api/cron/invite-sweep", () => {
     expect((await (await call("Bearer s3cret")).json()).launchList).toEqual({ due: true, deleted: 12 });
   });
 
+  it("keeps the sweeps' counts and answers 200 when only the launch-list purge fails", async () => {
+    purge.mockRejectedValueOnce(Object.assign(new Error("a@x.dev leaked"), { code: "40P01" }));
+    const err = vi.spyOn(console, "info").mockImplementation(() => {});
+    const res = await call("Bearer s3cret");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { error: true } });
+    expect(err.mock.calls.flat().join(" ")).toContain("purge failed (40P01)");
+    expect(err.mock.calls.flat().join(" ")).not.toContain("a@x.dev");
+    err.mockRestore();
+  });
+
   it("answers 500 when the sweep fails, logging no message from the error", async () => {
     sweep.mockRejectedValueOnce(Object.assign(new Error("a@x.dev leaked"), { code: "40P01" }));
     const err = vi.spyOn(console, "error").mockImplementation(() => {});

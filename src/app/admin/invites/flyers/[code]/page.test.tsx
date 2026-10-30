@@ -18,7 +18,7 @@ const render = async (code: string) => renderToStaticMarkup(await Page({ params:
 describe("the flyer print page", () => {
   beforeEach(() => {
     requireAdmin.mockReset().mockResolvedValue({ userId: "u_admin", env: "local" });
-    findFlyerCode.mockReset().mockResolvedValue({ code: "MOX4QK", label: "Mox Boston", revokedAt: null });
+    findFlyerCode.mockReset().mockResolvedValue({ code: "MZX4QK", label: "Mox Boston", revokedAt: null });
     notFound.mockClear();
     switchEnv.FLYER_TRIAL_ENABLED = "true";
     process.env.VERCEL_PROJECT_PRODUCTION_URL = "the-99.dev";
@@ -26,27 +26,29 @@ describe("the flyer print page", () => {
 
   it("gates on the admin before it reads anything", async () => {
     requireAdmin.mockRejectedValueOnce(new Error("NEXT_NOT_FOUND"));
-    await expect(render("MOX4QK")).rejects.toThrow("NEXT_NOT_FOUND");
+    await expect(render("MZX4QK")).rejects.toThrow("NEXT_NOT_FOUND");
     expect(findFlyerCode).not.toHaveBeenCalled();
   });
 
   it("draws a live code's flyer with the join address typed and encoded", async () => {
-    const html = await render("MOX4QK");
-    expect(html).toContain("data-bar=\"MOX4QK\"");
+    const html = await render("MZX4QK");
+    expect(html).toContain("data-bar=\"MZX4QK\"");
     expect(html).toContain("the-99.dev/join/");
-    expect(html).toContain("<em>MOX4QK</em>");
-    expect(html).toContain("QR code for the-99.dev/join/MOX4QK");
+    expect(html).toContain("<em>MZX4QK</em>");
+    expect(html).toContain("QR code for the-99.dev/join/MZX4QK");
     expect(html).toMatch(/<path fill="currentColor" d="M\d+ \d+h1v1h-1z/);
     expect(html).toContain("unofficial Fan Content");
+    // The footer's domain is the QR's own host, not a constant.
+    expect(html).toContain("<span>the-99.dev</span>");
   });
 
   it("is the app's 404 for an unknown, revoked or switched-off code", async () => {
     findFlyerCode.mockResolvedValueOnce(null);
     await expect(render("ZZZZZZ")).rejects.toThrow("NEXT_NOT_FOUND");
-    findFlyerCode.mockResolvedValueOnce({ code: "MOX4QK", label: "Mox", revokedAt: new Date() });
-    await expect(render("MOX4QK")).rejects.toThrow("NEXT_NOT_FOUND");
+    findFlyerCode.mockResolvedValueOnce({ code: "MZX4QK", label: "Mox", revokedAt: new Date() });
+    await expect(render("MZX4QK")).rejects.toThrow("NEXT_NOT_FOUND");
     switchEnv.FLYER_TRIAL_ENABLED = "off";
-    await expect(render("MOX4QK")).rejects.toThrow("NEXT_NOT_FOUND");
+    await expect(render("MZX4QK")).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalledTimes(3);
   });
 });

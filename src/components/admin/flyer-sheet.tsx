@@ -5,8 +5,8 @@ import { flyerTypedParts } from "../../lib/flyer/print-rule";
 /**
  * The flyer, letter size, one ink (flyer trial PR 4c; `Print.dc.html` `.fly`, `Flyer.dc.html`). Drawn at 816 x 1056 CSS px
  * (8.5 x 11 in at 96 dpi); the page scales it to fit on a screen and prints it at 1:1. The QR is drawn on the server from
- * the path `uqr` made. The paper colour is a screen preview only: in print the sheet sets none, so it lands on the
- * stock the store bought.
+ * the path `uqr` made. The sheet itself sets no background in print, so the paper is the stock the store bought; the
+ * cards keep their drawn gold fill when the browser prints background graphics.
  */
 export function FlyerSheet({ url, qr }: { url: string; qr: { size: number; d: string } }) {
   const typed = flyerTypedParts(url);
@@ -40,7 +40,7 @@ export function FlyerSheet({ url, qr }: { url: string; qr: { size: number; d: st
           <small>{flyerCopy.orType}</small>
           <b>{typed.prefix}<em>{typed.code}</em></b>
         </div>
-        <div className="fs-ft">{flyerCopy.facts.map((f) => <span key={f}>{f}</span>)}</div>
+        <div className="fs-ft">{flyerCopy.facts(new URL(url).host).map((f) => <span key={f}>{f}</span>)}</div>
         <p className="fs-fcn">{fanContentNotice.passageOne}</p>
       </div>
     </div>

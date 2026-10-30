@@ -3,11 +3,11 @@
 .flyer-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--border); }
 .flyer-bar a { font: 400 13px var(--font-plex-sans), sans-serif; color: var(--accent-text); display: inline-flex; min-height: 44px; align-items: center; }
 .flyer-bar b { font: 500 15px var(--font-plex-mono), monospace; color: var(--fg); }
-.flyer-bar .fb-code { font: 500 13px var(--font-plex-mono), monospace; color: var(--accent-text); }
+.flyer-bar .fb-code { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface-sunken); font: 400 12px var(--font-plex-mono), monospace; color: var(--fg); }
 .flyer-bar small { font: 400 11px var(--font-plex-mono), monospace; color: var(--fg-faint); flex-basis: 100%; order: 5; }
 .flyer-bar .fb-sp { flex: 1; }
-.flyer-bar button { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 14px; border-radius: 8px; font: 500 14px var(--font-plex-sans), sans-serif; cursor: pointer; }
-.flyer-bar .fb-ghost { border: 1px solid var(--border-strong); background: transparent; color: var(--fg); }
+.flyer-bar button { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 16px; border-radius: 10px; font: 500 14px var(--font-plex-sans), sans-serif; cursor: pointer; }
+.flyer-bar .fb-ghost { font-weight: 400; border: 1px solid var(--border-strong); background: transparent; color: var(--fg); }
 .flyer-bar .fb-solid { border: 0; background: var(--fg); color: var(--bg); }
 .flyer-mat { display: flex; justify-content: center; padding: 20px 16px 28px; background: #2a2622; --s: 0.42; }
 .flyer-fit { position: relative; flex: none; width: calc(816px * var(--s)); height: calc(1056px * var(--s)); }
@@ -23,7 +23,8 @@
 /* The flyer's ink and its screen-preview paper (Print.dc.html); print sets no paper (below). */
 .flyer-sheet { --ink: #1B1712; --paper: #E7B54A; width: 816px; height: 1056px; flex: none; position: relative; overflow: hidden; color: var(--ink); background: var(--paper); font-family: var(--font-plex-sans), sans-serif; }
 .flyer-sheet::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 7px); pointer-events: none; }
-.flyer-sheet h2, .flyer-sheet p { margin: 0; }
+/* :where() keeps this reset at element specificity so .fs-h1, .fs-sub and .fs-fcn margins win. */
+:where(.flyer-sheet) h2, :where(.flyer-sheet) p { margin: 0; }
 .flyer-sheet .fs-in { position: absolute; inset: 56px 60px; display: flex; flex-direction: column; }
 .fs-wm { display: flex; align-items: flex-end; gap: 10px; }
 .fs-the { font: 500 17px var(--font-plex-mono), monospace; letter-spacing: 0.42em; padding-bottom: 14px; }

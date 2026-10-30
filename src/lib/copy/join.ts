@@ -67,7 +67,8 @@ export const flyerCopy = {
   sub: "We’re looking for players to try it before it launches. Scan, sign up, tell us what you think.",
   scan: "Scan to join",
   orType: "or type",
-  facts: ["Free to try", "3 invites for your pod", "the-99.dev"],
+  /** The footer's three facts; `domain` is the host the QR and the typed address use (`siteOrigin()`), so they always agree. */
+  facts: (domain: string) => ["Free to try", "3 invites for your pod", domain],
 } as const;
 
 /**

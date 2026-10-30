@@ -29,9 +29,21 @@ export async function GET(req: NextRequest) {
     // The flyer trial's claims lapse on the same hourly run (flyer trial PR 2a).
     const flyer = await sweepFlyerClaims();
     // The launch list goes 30 days after the launch date; with no date set this does nothing (`launch-purge.ts`).
-    const launchList = await purgeLaunchList();
+    // Its own try/catch: a purge error must not discard the counts of the two sweeps that already committed.
+    let launchList: { due: boolean; deleted: number } | { error: true };
+    let purgeNote: string;
+    try {
+      const purged = await purgeLaunchList();
+      launchList = purged;
+      purgeNote = purged.due ? `purged ${purged.deleted}` : "not due";
+    } catch (purgeError) {
+      const pcode = (purgeError as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (purgeError as { code?: unknown })?.code;
+      launchList = { error: true };
+      purgeNote = `purge failed${typeof pcode === "string" && /^[0-9A-Z]{5}$/.test(pcode) ? ` (${pcode})` : ""}`;
+      captureServerError("invite-sweep-launch-purge", purgeError);
+    }
     // Counts only, never an id or an address.
-    console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}; launch list ${launchList.due ? `purged ${launchList.deleted}` : "not due"}`);
+    console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}; launch list ${purgeNote}`);
     return Response.json({ ...report, flyer, launchList });
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
