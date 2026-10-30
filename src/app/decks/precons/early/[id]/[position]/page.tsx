@@ -38,7 +38,7 @@ export default async function EarlyListPage({ params }: Props) {
     <OpenPreconView
       precon={read.precon}
       fromNew={false}
-      early={{ ...band, postUrl: isWizardsPostUrl(read.postUrl) ? read.postUrl : null, unmatched: read.unmatched }}
+      early={{ ...band, postUrl: isWizardsPostUrl(read.postUrl) ? read.postUrl : null, unmatched: read.unmatched, unknownCommanders: read.unknownCommanders }}
     />
   );
 }

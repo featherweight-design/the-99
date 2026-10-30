@@ -150,8 +150,8 @@ its `early` prop. Head with the eyebrow "Early decklist · view-only", the dashe
 (the shared `LinkOutIcon`; linked only when the stored url is https on magic.wizards.com), the own band, List or Cards,
 read-only rows with the owned dot and no SET number, and a last group "Not in our catalog yet" (G3: dashed rows, no
 dot, pips or press; they count toward M, never toward owned). No Start, Link a deck, dock, Overview or power reading.
-The shipped `EmptyCollectionBand` sits under the early band with no collection (3.7); the route's `loading.tsx` draws
-frame 7's skeleton (3.8). Each Announced set block carries `id="announced-<code>"`.
+The shipped `EmptyCollectionBand` sits under the early band with no collection (3.7). Frame 7's skeleton (3.8) is not
+built: segments own no `loading.tsx` (`route-loading.test.ts`), so the shell draws the wait, as on the open precon. Each Announced set block carries `id="announced-<code>"`.
 
 **Route (G4).** `/decks/precons/early/<contentfulId>/<position>`: the post's Contentful id and the list's position in
 it. The board's `<code>/<slug>` was an example; a list has no slug. An unknown id or position, or a position that is

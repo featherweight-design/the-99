@@ -51,6 +51,7 @@ describe("assembleEarlyList", () => {
       commanderCardId: "giada",
       commanderName: "Giada, Font of Hope",
       partnerCardId: null,
+      partnerName: null,
       partnerRole: null,
       cards: [
         { name: "Giada, Font of Hope", count: 1, cardId: "giada" },
@@ -112,6 +113,37 @@ describe("assembleEarlyList", () => {
     expect(page.unmatched.map((u) => u.name)).toEqual([
       "Seraph of the Dawnfire", "Choir of the First Light", "Seraph Swarm", "Snow-Covered Plains",
     ]);
+  });
+
+  it("keeps a commander the catalog cannot match yet in the head, by its stored name, with no art (pre-catalog)", () => {
+    const page = assembleEarlyList({
+      ...base,
+      list: {
+        ...base.list,
+        commanderCardId: null,
+        commanderName: "Tana, the Bloodsower",
+        partnerCardId: null,
+        partnerName: "Tymna the Weaver",
+        partnerRole: "co-commander",
+        cards: [
+          { name: "Tana, the Bloodsower", count: 1, cardId: null },
+          { name: "Tymna the Weaver", count: 1, cardId: null },
+          { name: "Sol Ring", count: 1, cardId: "sol" },
+        ],
+      },
+    });
+    expect(page.precon.row.commanders).toEqual([
+      { oracleId: "unmatched:Tana, the Bloodsower", name: "Tana, the Bloodsower", imageUri: null, colorIdentity: [] },
+      { oracleId: "unmatched:Tymna the Weaver", name: "Tymna the Weaver", imageUri: null, colorIdentity: [] },
+    ]);
+    expect(page.unknownCommanders).toEqual(["unmatched:Tana, the Bloodsower", "unmatched:Tymna the Weaver"]);
+    expect(page.precon.cards.some((c) => c.isCommander)).toBe(false);
+  });
+
+  it("names nothing extra when the commander matched", () => {
+    const page = assembleEarlyList(base);
+    expect(page.unknownCommanders).toEqual([]);
+    expect(page.precon.row.commanders.map((c) => c.oracleId)).toEqual(["giada"]);
   });
 
   it("makes a co-commander a commander, and leaves an alternate in the list", () => {

@@ -37,6 +37,11 @@ export type EarlyListPage = {
   releasedOn: string | null;
   /** Lines the catalog cannot match yet, by the post's words, in post order (G3). */
   unmatched: UnmatchedLine[];
+  /**
+   * The head's commanders the catalog cannot match yet, by their placeholder ids in `row.commanders`: named from the
+   * stored `commander_name` / `partner_name`, with no art and no known color identity.
+   */
+  unknownCommanders: string[];
 };
 
 export type EarlyListRead = { kind: "release"; fileName: string } | ({ kind: "early" } & EarlyListPage);
@@ -53,6 +58,7 @@ export function earlyListRowQuery(contentfulId: string, position: number, q: Rea
       commanderCardId: wizardsAnnouncementDecklists.commanderCardId,
       commanderName: wizardsAnnouncementDecklists.commanderName,
       partnerCardId: wizardsAnnouncementDecklists.partnerCardId,
+      partnerName: wizardsAnnouncementDecklists.partnerName,
       partnerRole: wizardsAnnouncementDecklists.partnerRole,
       cardCount: wizardsAnnouncementDecklists.cardCount,
       cards: wizardsAnnouncementDecklists.cards,
@@ -169,6 +175,7 @@ export function assembleEarlyList(input: {
     commanderCardId: string | null;
     commanderName: string | null;
     partnerCardId: string | null;
+    partnerName: string | null;
     partnerRole: string | null;
     cards: { name: string; count: number; cardId: string | null }[];
   };
@@ -219,7 +226,23 @@ export function assembleEarlyList(input: {
   // distinct cards with the basics left out (`summarisePrecons`), so one per distinct non-basic name; `unmapped` is
   // copies, every line's count (`planPrecons`' `unmappedCount`), basics included. An unmatched basic is still listed in
   // the unmatched group, by the post's words, as every unmatched line is.
-  const row = { ...summary, of: summary.of + new Set(unmatched.filter((u) => !isBasicName(u.name)).map((u) => u.name)).size };
+  // The head names every commander the post names: one the catalog cannot match yet keeps its stored name, with no art
+  // and an unknown identity (`unknownCommanders`), so the head never loses it or calls it colorless.
+  const stated = [
+    { id: list.commanderCardId, name: list.commanderName },
+    ...(list.partnerRole === "co-commander" ? [{ id: list.partnerCardId, name: list.partnerName }] : []),
+  ];
+  const unknownCommanders: string[] = [];
+  const named = stated.flatMap((s) => {
+    const found = s.id ? summary.commanders.find((c) => c.oracleId === s.id) : undefined;
+    if (found) return [found];
+    if (!s.name) return [];
+    const oracleId = `unmatched:${s.name}`;
+    unknownCommanders.push(oracleId);
+    return [{ oracleId, name: s.name, imageUri: null, colorIdentity: [] as string[] }];
+  });
+  const commanders = [...named, ...summary.commanders.filter((c) => !named.includes(c))];
+  const row = { ...summary, commanders, of: summary.of + new Set(unmatched.filter((u) => !isBasicName(u.name)).map((u) => u.name)).size };
 
   const releasedOn = set?.releaseDate && set.releaseDate <= input.today ? set.releaseDate : null;
   return {
@@ -237,5 +260,6 @@ export function assembleEarlyList(input: {
     postedAt: list.publishedAt,
     releasedOn,
     unmatched,
+    unknownCommanders,
   };
 }
