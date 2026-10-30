@@ -302,10 +302,10 @@ describe("runV2", () => {
     expect(r.charge).toEqual({ outcome: "refunded", why: "cutsFailed" });
   });
 
-  // M1's eight malformed attempts were all one line with an empty `rationaleShort` in an otherwise complete reply: the
-  // client's whole-reply parse failed the call, while each line had already been judged on its own.
+  // M1's eight malformed attempts were all one line with an empty `rationaleShort` in an otherwise complete reply. That line
+  // is now kept (below); a line failing on another field still fails the client's whole-reply parse, and the call stands.
   it("keeps a closed reply the whole-reply parse failed: only the bad line is lost, the cuts stand", async () => {
-    const bad = { ...line("Cut 3"), rationaleShort: "" };
+    const bad = { ...line("Cut 3"), rationale: "" };
     const text = JSON.stringify({ lines: [line("Cut 1"), line("Cut 2"), bad, line("Cut 4"), line("Cut 5")] });
     const f = fake({ additions: { cards: adds(1, 5) }, cuts: { text, fail: "malformed" } });
     const r = await runV2({ ...base, n: 3, callModel: f.callModel, now: f.now });
@@ -317,13 +317,25 @@ describe("runV2", () => {
   });
 
   it("keeps a closed additions reply the same way, and refunds it when the lost line leaves the list short", async () => {
-    const bad = { ...line("Add 2"), rationaleShort: "" };
+    const bad = { ...line("Add 2"), rationale: "" };
     const text = JSON.stringify({ lines: [line("Add 1"), bad] });
     const f = fake({ additions: { text, fail: "malformed" }, additionsRefill: { cards: [] }, cuts: { cards: cutsOf(1, 2) } });
     const r = await runV2({ ...base, n: 2, callModel: f.callModel, now: f.now });
     expect(r.calls[0]).toMatchObject({ stage: "additions", ok: true, malformed: 1 });
     expect(r.additions.kept.map((l) => l.card)).toEqual(["Add 1"]);
     expect(r.charge.outcome).toBe("refunded");
+  });
+
+  // The v14 eval: 6 of 22 first calls had one line with an empty `rationaleShort` (a refill had "x"), every other field valid.
+  it("keeps a line whose short reason is empty or degenerate, its short reason rebuilt from the rationale", async () => {
+    const text = JSON.stringify({ lines: [line("Cut 1"), { ...line("Cut 2"), rationaleShort: "" }, { ...line("Cut 3"), rationaleShort: "x" }] });
+    const f = fake({ additions: { cards: adds(1, 3) }, cuts: { text } });
+    const r = await runV2({ ...base, n: 3, callModel: f.callModel, now: f.now });
+    expect(r.cuts.kept.map((l) => l.card)).toEqual(["Cut 1", "Cut 2", "Cut 3"]);
+    expect(r.cuts.kept.map((l) => l.rationaleShort)).toEqual(["Mana hurt in 3 of 5", line("x").rationale, line("x").rationale]);
+    expect(r.calls.find((c) => c.stage === "cuts")).toMatchObject({ ok: true, malformed: 0 });
+    expect(r.cuts.refilled).toBe(false);
+    expect(r.charge).toEqual({ outcome: "spent" });
   });
 
   it("treats a reply that stopped mid-object as malformed even when the call said ok", async () => {

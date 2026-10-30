@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { ASK_PER_LIST } from "./limits";
 import { askFor, MAX_COUNT, schemaCapFor } from "./v2/count";
+import { withShortReason } from "./v2/short-reason";
 
 /**
  * The shape a model reply must have. Handed to the client as the structured-output format, so
@@ -52,9 +53,15 @@ export const lineSchemaV2 = lineSchema.extend({ evidence: z.array(citationSchema
  * structured-output format makes the model write it, and unbounded, so no value can fail the whole-reply parse. Its value is
  * never read: the engine parses each streamed line with `lineSchemaV2`, which strips `n`, so a line is never dropped for a
  * missing or wrong number, and positions come from arrival order as before.
+ *
+ * An empty or degenerate `rationaleShort` is rebuilt from the line's rationale before the check (`withShortReason`), here
+ * in the client's whole-reply parse as in the engine's line parse, so one bad phone summary neither drops its line nor
+ * marks the whole reply malformed (6 of 22 first calls in the v14 eval). A preprocess is invisible to the JSON schema
+ * sent, which still asks for `minLength: 1` (the SDK sends it as a description hint, never enforced), so the format and
+ * the prompt-cache key are unchanged.
  */
 // `n` comes FIRST: structured output writes properties in schema order, so the model commits to the number before the line.
-export const replyLineSchemaV2 = z.object({ n: z.number().int() }).extend(lineSchemaV2.shape);
+export const replyLineSchemaV2 = z.preprocess(withShortReason, z.object({ n: z.number().int() }).extend(lineSchemaV2.shape));
 
 /**
  * One list of a v2 reply, and the SAME schema for every call of a run: additions, cuts and both refills (§5.1). The

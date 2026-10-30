@@ -10,6 +10,7 @@ import { aimDrops, type BracketAim } from "./bracket-aim";
 import { chargeFor, type Charge } from "./charge";
 import { askFor, cutPlanFor, replyCeilingFor } from "./count";
 import { reasonFor, refillShortfall } from "./refill";
+import { withShortReason } from "./short-reason";
 import { lineStream } from "./stream-lines";
 import { asksWhy, buildWhyPrompt, checkWhy, WHY_EFFORT, WHY_MODEL, WHY_REPLY_TOKENS, whySchema, type V2Why } from "./why";
 
@@ -210,7 +211,8 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
   /** One line, the moment it completes: shape, the validator's rules (v2), duplicates across everything kept, the aim. */
   async function take(side: V2Side, raw: unknown, position: number, here: V2CallReport) {
     here.lines += 1;
-    const parsed = lineSchemaV2.safeParse(raw);
+    // A degenerate short reason is rebuilt from the rationale, so the line keeps its card (`withShortReason`).
+    const parsed = lineSchemaV2.safeParse(withShortReason(raw));
     if (!parsed.success) {
       here.malformed += 1;
       return;
@@ -306,9 +308,10 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     if (here.lines + end.malformed < prompt.ask) listOf(side).underProduced = true;
     if (outcome.usage) here.usage = outcome.usage;
     // The reply closed whole, but the client's whole-reply parse failed it on a constraint each line is checked for here
-    // (a line with an empty `rationaleShort`, more lines than the cap). Every line was already judged one by one, so the
-    // call stands and only those lines are lost; failing it would refund the run over one bad line. All eight malformed
-    // attempts M1 recorded were this, a single empty `rationaleShort` in an otherwise complete reply.
+    // (a line with an empty rationale, more lines than the cap). Every line was already judged one by one, so the call
+    // stands and only those lines are lost; failing it would refund the run over one bad line. All eight malformed
+    // attempts M1 recorded were a single empty `rationaleShort` in an otherwise complete reply, which no longer fails
+    // either parse: both rebuild it from the rationale (`withShortReason`).
     const judgedWhole = !outcome.ok && outcome.errorClass === "malformed" && end.complete;
     here.ok = (outcome.ok || judgedWhole) && !streamFailed && end.complete;
     // A shape-invalid line, or a call that failed or was cut off, is the model's shortfall: a short list it touched is

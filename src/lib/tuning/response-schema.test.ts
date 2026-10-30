@@ -75,6 +75,17 @@ describe("suggestedChangesV2ReplySchema", () => {
     expect(parsed.success && "n" in parsed.data).toBe(false);
   });
 
+  // The v14 eval: 6 of 22 first calls failed this parse on one line's empty `rationaleShort`, every other field valid.
+  it("rebuilds an empty or degenerate short reason from the rationale, so one bad summary never fails the reply", () => {
+    for (const short of ["", "x"]) {
+      const parsed = suggestedChangesV2ReplySchema.safeParse({ lines: [{ ...v2, rationaleShort: short }] });
+      expect(parsed.success && parsed.data.lines[0].rationaleShort).toBe(v2.rationale);
+    }
+    expect(suggestedChangesV2ReplySchema.safeParse({ lines: [{ ...v2, rationale: "" }] }).success).toBe(false);
+    // v10's whole-reply schema is unchanged.
+    expect(tuningResponseSchema.safeParse({ additions: [{ ...one, rationaleShort: "" }], cuts: [] }).success).toBe(false);
+  });
+
   it("cites the run's request, not v10's notes", () => {
     expect(suggestedChangesV2ReplySchema.safeParse({ lines: [{ ...one, n: 1, evidence: [{ kind: "notes", value: "x" }] }] }).success).toBe(false);
   });
