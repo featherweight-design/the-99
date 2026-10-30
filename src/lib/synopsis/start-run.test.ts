@@ -5,7 +5,6 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ENV_VIEW } from "@/test/env-view";
 
 import { listFingerprint } from "../profile/fingerprint";
 import type { ProfileHead } from "../profile/load";
@@ -43,7 +42,7 @@ const HEAD: ProfileHead = {
   cards: [{ oracleId: "a", quantity: 1 }, { oracleId: "b", quantity: 1 }],
 };
 const LIST = listFingerprint(HEAD);
-const start = () => startRun("deck", "user", LIST, "stub", new Date(), null, true, undefined, undefined, undefined, undefined, ENV_VIEW);
+const start = () => startRun("deck", "user", LIST, "stub", new Date(), null, true, undefined, undefined, undefined, undefined);
 
 describe("startRun: the list under the lock", () => {
   beforeEach(() => {
@@ -93,7 +92,7 @@ describe("startRun: the list under the lock", () => {
 // capped at two per deck per contract, and decided under the deck's lock. A refused free press
 // falls through to the PLAYER path, reuse check and allowance included.
 describe("startRun: the free method-change rewrite", () => {
-  const free = () => startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "free", ENV_VIEW);
+  const free = () => startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "free");
   const run = (status: string, ok: boolean) => ({ status, content: ok ? { verdicts: [{ section: "overview", status: "ok" }] } : null });
   /** deck row, stored reading, then the free-run count (the queue is read in this order). */
   const lock = (runs: ReturnType<typeof run>[]) => {
@@ -136,7 +135,7 @@ describe("startRun: the free method-change rewrite", () => {
   it("a press that already knew the tries were spent is the paid fallback, under the player's allowance", async () => {
     lock([run("done", false), run("done", false)]);
     queue.push([]);
-    const paid = await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid", ENV_VIEW);
+    const paid = await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid");
     expect(reserveModelCall.mock.calls[0][5]).toBe("player");
     expect(paid.kind).toBe("started");
   });
@@ -144,20 +143,20 @@ describe("startRun: the free method-change rewrite", () => {
   it("the paid fallback is still the player's: a spent allowance refuses it", async () => {
     lock([run("done", false), run("done", false)]);
     reserveModelCall.mockResolvedValue({ refused: "allowance" });
-    expect(await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid", ENV_VIEW)).toEqual({ kind: "allowance" });
+    expect(await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid")).toEqual({ kind: "allowance" });
   });
 
   it("the paid fallback hands back an overview a concurrent rewrite already wrote at the new contract", async () => {
     lock([run("done", false), run("done", false)]);
     queue.push([{ id: "syn-new" }], [{ id: "syn-new", content: { verdicts: [] } }]);
-    expect((await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid", ENV_VIEW)).kind).toBe("reused");
+    expect((await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid")).kind).toBe("reused");
   });
 
   it("the paid rewrite's reuse check only counts an overview already at contract 13, so an 11 or 12 row never blocks it", async () => {
     lock([run("done", false), run("done", false)]);
     queue.push([]);
     wheres.length = 0;
-    await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid", ENV_VIEW);
+    await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid");
     const dialect = new PgDialect();
     const reuse = wheres.map((w) => dialect.sqlToQuery(w as SQL)).find((q) => /"contract_version" >= \$/.test(q.sql));
     expect(reuse, "the reuse query carries a contract_version >= predicate").toBeDefined();
@@ -175,7 +174,7 @@ describe("startRun: the free method-change rewrite", () => {
     lock([run("done", true)]);
     queue.push([{ id: "syn-new", content: { verdicts: [] } }]);
     reserveModelCall.mockResolvedValue({ refused: "allowance" });
-    const retry = await startRun("deck", "user", LIST, "stub", new Date(), "syn-old", false, 0, false, 8, "free", ENV_VIEW);
+    const retry = await startRun("deck", "user", LIST, "stub", new Date(), "syn-old", false, 0, false, 8, "free");
     expect(retry.kind).toBe("reused");
     expect(reserveModelCall).not.toHaveBeenCalled();
   });
@@ -189,13 +188,10 @@ describe("startRun: the free method-change rewrite", () => {
   });
 });
 
-// Admin adoption 6d: the legality check under the lock asks the READER's resolved switches, never the
-// environment. The env is a sentinel, so the assertion never prints the process environment.
-describe("startRun: the notices switch is the reader's", () => {
-  const ON = { NOTICES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const OFF = { NOTICES_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
-  const startWith = (env: NodeJS.ProcessEnv) =>
-    startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, undefined, null, env);
+// The legality check under the lock (deck notices HANDOFF §6): an illegal deck's write is withheld
+// before anything is reserved.
+describe("startRun: the legality check under the lock", () => {
+  const startIt = () => startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, undefined, null);
 
   beforeEach(() => {
     queue.length = 0;
@@ -206,26 +202,10 @@ describe("startRun: the notices switch is the reader's", () => {
     head = HEAD;
   });
 
-  it("withholds the write when the reader's switch is on, whatever the environment says", async () => {
-    try {
-      vi.stubEnv("NOTICES_ENABLED", "false");
-      queue.push([{ commander: "cmdr", partner: null }], [{ fingerprint: LIST, profileVersion: 1, dirty: false }]);
-      expect(await startWith(ON)).toEqual({ kind: "illegal" });
-      expect(liveOffendingIds).toHaveBeenCalledOnce();
-      expect(reserveModelCall).not.toHaveBeenCalled();
-    } finally {
-      vi.unstubAllEnvs();
-    }
-  });
-
-  it("asks nothing when the reader's switch is off, whatever the environment says", async () => {
-    try {
-      vi.stubEnv("NOTICES_ENABLED", "true");
-      queue.push([{ commander: "cmdr", partner: null }], [{ fingerprint: LIST, profileVersion: 1, dirty: false }]);
-      expect(await startWith(OFF)).toEqual({ kind: "allowance" });
-      expect(liveOffendingIds).not.toHaveBeenCalled();
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  it("withholds the write when the deck holds an illegal card, and reserves nothing", async () => {
+    queue.push([{ commander: "cmdr", partner: null }], [{ fingerprint: LIST, profileVersion: 1, dirty: false }]);
+    expect(await startIt()).toEqual({ kind: "illegal" });
+    expect(liveOffendingIds).toHaveBeenCalledOnce();
+    expect(reserveModelCall).not.toHaveBeenCalled();
   });
 });

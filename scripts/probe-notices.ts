@@ -21,9 +21,6 @@
 //   - a changed-list press taking the cache again: "a press on a changed list computes fresh";
 //   - the overview's reuse ignoring the data check: "Write a new overview writes one".
 import "./lib/env.mjs";
-// The notices switch (src/lib/notices/flag.ts) gates H1 and D11; this probe proves them ON, and
-// case 13 turns it off once to prove the switch does.
-process.env.NOTICES_ENABLED = "true";
 import { Pool } from "@neondatabase/serverless";
 import { eq, sql } from "drizzle-orm";
 
@@ -268,13 +265,8 @@ async function run() {
   computes = 0; freshComputes = 0;
   await computeAndStoreProfile(deck.id, USER, deps);
   check("13 · but a press on the unchanged list recomputes past it", { computes, freshComputes }, { computes: 0, freshComputes: 1 });
-  // With the switch off, H1 is not there: a press over a new entry answers from the store (ruling 5).
+  // One more data entry on a card the deck holds, which the cases below run over.
   await plant("gameChanger", [body[7]]);
-  process.env.NOTICES_ENABLED = "false";
-  computes = 0; freshComputes = 0;
-  await computeAndStoreProfile(deck.id, USER, deps);
-  check("13 · with notices switched off, the press keeps ruling 5", freshComputes, 0);
-  process.env.NOTICES_ENABLED = "true";
   // ...and the overview written from the reading before the ban describes a deck that is no longer
   // there (D11 by H1's rule), while a ban on a card this deck does not hold moves nothing.
   check("13 · which marks the overview stale", (await overview()).stale, true);
@@ -322,9 +314,6 @@ async function run() {
   check("16 · and writes no run and records no call", await runs(), before14);
   const s14 = await overview();
   check("16 · the read says illegal, keeps the saved overview, and would spend nothing", [s14.illegal, s14.synopsis !== null, s14.wouldSpend], [true, true, false]);
-  process.env.NOTICES_ENABLED = "false";
-  check("16 · with notices switched off, the read does not say illegal", (await overview()).illegal, false);
-  process.env.NOTICES_ENABLED = "true";
   await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
   check("16 · the card leaving lifts the check", (await overview()).illegal, false);
 

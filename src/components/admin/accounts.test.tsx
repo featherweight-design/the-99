@@ -55,10 +55,10 @@ const PAGE: AccountPage = {
   switches: {
     override: [{ name: "SWAP_TOOLS_ENABLED", label: "Swap tools", on: true, source: "group friends", kill: false }],
     rule: [
-      { name: "NOTICES_ENABLED", label: "Notices", on: false, source: "env var is off", kill: true },
+      { name: "SOCIAL_FRIENDS_ENABLED", label: "Friends", on: false, source: "env var is off", kill: true },
       { name: "TUNING_ENABLED", label: "Suggested changes", on: false, source: "Analysis tab is off", kill: false },
     ],
-    envOn: ["Change commander", "Notices"],
+    envOn: ["Change commander", "Friends"],
     envOff: ["Never cut"],
     total: 6,
   },
@@ -475,7 +475,7 @@ describe("AccountPageView (A4 to A7)", () => {
     // Off reads muted, as the Switches list's pill does.
     const off = box.querySelector('[data-switch="TUNING_ENABLED"]')!;
     expect(within(off as HTMLElement).getByText("Off").className).toContain("var(--fg-muted)");
-    expect(box.querySelector('[data-env-list="on"]')).toHaveTextContent("On · 2Change commander, Notices");
+    expect(box.querySelector('[data-env-list="on"]')).toHaveTextContent("On · 2Change commander, Friends");
     expect(box.querySelector('[data-env-list="off"]')).toHaveTextContent("Off · 1Never cut");
     expect(screen.queryByText(/disagree/i)).toBeNull();
   });

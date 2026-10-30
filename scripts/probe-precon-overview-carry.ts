@@ -147,8 +147,7 @@ async function main() {
     logged.push(change.seq);
     const mv = await carryOverPreconOverview(moved, USER, ON);
     const [mvRow] = await db.select({ seenSeq: deckSynopses.seenSeq }).from(deckSynopses).where(eq(deckSynopses.deckId, moved));
-    const notices = { ...ON, NOTICES_ENABLED: "true" } as NodeJS.ProcessEnv;
-    const movedFor = mvRow ? await overviewDataMovedFor(moved, USER, mvRow.seenSeq, notices) : false;
+    const movedFor = mvRow ? await overviewDataMovedFor(moved, USER, mvRow.seenSeq) : false;
     check("a change published after the row's check reaches the data-moved rule", mv.attached && !!mvRow && mvRow.seenSeq < change.seq && movedFor, `${JSON.stringify(mv)}, seen ${mvRow?.seenSeq}, change ${change.seq}, moved ${movedFor}`);
     check("and one published before the check counts as seen", !!mvRow && mvRow.seenSeq >= prior.seq, `seen ${mvRow?.seenSeq}, prior ${prior.seq}`);
 

@@ -55,7 +55,7 @@ import {
   capToBody, isResidual, type FillRow, type FillShortfall,
 } from "../../lib/decks/fill";
 import { buildFillPlan } from "../../lib/decks/fill-plan";
-import { bracketReachEnabled } from "../../lib/intake/bracket-reach-flag";
+import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { answerColumnsFor, retryAnswersOf, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
@@ -105,9 +105,9 @@ export async function createDeck(
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   const validated = answers === null ? null : validateCreateAnswers(answers);
-  // *Hit bracket N* is the bracket reach's choice: with the switch off for this reader there was no
-  // choice to make, so the ask is dropped and the deck is built as it shipped.
-  const asked = validated && validated.bracketBuys && !bracketReachEnabled(env)
+  // *Hit bracket N* is the bracket reach's choice, made on Help me choose's hand-off: with Help me choose
+  // off for this reader there was no choice to make, so the ask is dropped and the deck is built without it.
+  const asked = validated && validated.bracketBuys && !helpMeChooseEnabled(env)
     ? { ...validated, bracketBuys: false }
     : validated;
   // Shape first: a crafted request can put any string here, and a malformed uuid

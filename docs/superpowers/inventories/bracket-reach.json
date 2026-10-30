@@ -1,6 +1,6 @@
 {
   "feature": "Help me choose bracket reach (R1b): the form heads-up (A), the rows' BRACKET segment (B), the hand-off choice (C)",
-  "note": "Needs a server with HELP_ME_CHOOSE_ENABLED=true and BRACKET_REACH_ENABLED=true. Every row is reached by URL or by the row's hand-off link; nothing presses Find commanders or Create deck. States depend on the account's collection (local-dev fixture: White exactly at bracket 4 is short with a buy).",
+  "note": "Needs a server with HELP_ME_CHOOSE_ENABLED=true. Every row is reached by URL or by the row's hand-off link; nothing presses Find commanders or Create deck. States depend on the account's collection (local-dev fixture: White exactly at bracket 4 is short with a buy).",
   "rows": [
     {
       "id": "form-k3",

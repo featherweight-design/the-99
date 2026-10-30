@@ -9,7 +9,6 @@ import { buysCopy } from "../../../lib/intake/buys-card";
 import { requireUserId } from "../../../lib/auth";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
-import { bracketReachEnabled } from "../../../lib/intake/bracket-reach-flag";
 import { validateCreateAnswers, type CreateAnswers } from "../../../lib/intake/answers";
 import { handOffTrial } from "../../../lib/intake/trial";
 import { handOffReachOf, type HandOffReach } from "../../../lib/intake/hand-off-reach";
@@ -39,7 +38,7 @@ export async function handOffBracketReach(
 ): Promise<HandOffReach | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!helpMeChooseEnabled(env) || !bracketReachEnabled(env)) throw new Error("not found");
+  if (!helpMeChooseEnabled(env)) throw new Error("not found");
   if (typeof commanderOracleId !== "string" || !isUuid(commanderOracleId)) throw new Error("commander not found");
   if (!Array.isArray(selectedOracleIds) || !selectedOracleIds.every((id) => typeof id === "string")) throw new Error("bad selection");
   const asked = validateCreateAnswers({ ...create, bracketBuys: false });

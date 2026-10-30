@@ -39,8 +39,8 @@ describe("switchRows", () => {
   });
 
   it("names the kill switch, and marks the overrides it refuses (L4)", () => {
-    const r = rows({ NOTICES_ENABLED: "off" }, [row({ switchName: "NOTICES_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(r.get("NOTICES_ENABLED")).toMatchObject({ env: "off", on: 0, state: "off", refused: true, reason: { kind: "kill" } });
+    const r = rows({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(r.get("SOCIAL_FRIENDS_ENABLED")).toMatchObject({ env: "off", on: 0, state: "off", refused: true, reason: { kind: "kill" } });
   });
 
   it("names the parent when it turns a child off for everyone (L5)", () => {
@@ -51,13 +51,13 @@ describe("switchRows", () => {
   });
 
   it("refuses an app-wide override under the kill switch, with no group or account row", () => {
-    const r = rows({ NOTICES_ENABLED: "off" }, [row({ switchName: "NOTICES_ENABLED", scope: "app", value: "on" })]);
-    expect(r.get("NOTICES_ENABLED")).toMatchObject({ app: "on", refused: true, appRefused: true, groups: 0, accounts: 0 });
+    const r = rows({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "app", value: "on" })]);
+    expect(r.get("SOCIAL_FRIENDS_ENABLED")).toMatchObject({ app: "on", refused: true, appRefused: true, groups: 0, accounts: 0 });
     // Not killed: nothing refused.
     expect(rows({}, [row({ scope: "app", value: "on" })]).get("FEEDBACK_ENABLED")).toMatchObject({ refused: false, appRefused: false });
     // Killed with only an account row: refused, but the app-wide cell has nothing to refuse.
-    const k = rows({ NOTICES_ENABLED: "off" }, [row({ switchName: "NOTICES_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(k.get("NOTICES_ENABLED")).toMatchObject({ refused: true, appRefused: false });
+    const k = rows({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(k.get("SOCIAL_FRIENDS_ENABLED")).toMatchObject({ refused: true, appRefused: false });
   });
 
   it("counts group and account rows on a plumbing switch as ignored", () => {

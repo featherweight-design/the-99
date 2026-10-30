@@ -74,7 +74,6 @@ export function IntakeForm({
   sets = [],
   initial,
   standing = null,
-  bracketReach = false,
 }: {
   themes: readonly VocabularyTheme[];
   /** Every set that printed a commander, for the Sets answer. */
@@ -82,9 +81,6 @@ export function IntakeForm({
   initial: ChooseParams;
   /** The player's credits (F7); null when the read failed, and the press then draws plain. */
   standing?: Standing | null;
-  /** `BRACKET_REACH_ENABLED` for this reader: the Bracket caption says, from 3 up, what the player's
-   *  cards in these colors would reach (board A), from one read made when the form opens. */
-  bracketReach?: boolean;
 }) {
   const [submitting, startSubmit] = useTransition();
   // Synchronous, as commit-sheet's is: `submitting` is a transition update and is not visible to a
@@ -116,15 +112,15 @@ export function IntakeForm({
   const [pool, setPool] = useState<Pool>(initial.pool);
   const [budget, setBudget] = useState(initial.budgetDollars === null ? "" : String(initial.budgetDollars));
   const [bracket, setBracket] = useState<Bracket | null>(initial.bracket);
+  // The Bracket caption says, from 3 up, what the player's cards in these colors would reach (board A).
   // ONE read when the form opens; every change of colors, pool, budget or bracket reruns the rule in
-  // the browser. A failed read leaves today's caption.
+  // the browser. A failed read leaves the plain caption.
   const [reachData, setReachData] = useState<FormReachData | null>(null);
   useEffect(() => {
-    if (!bracketReach) return;
     let live = true;
     formReachData().then((d) => { if (live) setReachData(d); }).catch(() => {});
     return () => { live = false; };
-  }, [bracketReach]);
+  }, []);
   const reachCaption = useMemo(() => {
     if (!reachData || bracket === null) return null;
     return formReachCaption({ bracket, colors, match, data: reachData });

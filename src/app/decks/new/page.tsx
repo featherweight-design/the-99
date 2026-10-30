@@ -7,7 +7,6 @@ import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
-import { bracketReachEnabled } from "../../../lib/intake/bracket-reach-flag";
 import { hasListableRun } from "../../../lib/intake/history-read";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { MAX_THEMES } from "../../../lib/intake/answers";
@@ -71,8 +70,8 @@ export default async function NewDeckPage({
         resultsHref: resultsHref(chooseAt, asked, pastFrom(searchParamsOf(raw))),
         changeHref: `${chooseAt}${serializeChooseParams({ ...asked, notUsed: [], readId: null, results: false })}`,
         drawBlock: hasAnswerRows(answers),
-        // The Bracket row reads what the deck reaches (bracket reach PR 3b) from 3 up, switch on.
-        readReach: answers.bracket !== null && answers.bracket >= 3 && bracketReachEnabled(env),
+        // The Bracket row reads what the deck reaches (bracket reach PR 3b) from 3 up.
+        readReach: answers.bracket !== null && answers.bracket >= 3,
       } : undefined;
       return (
         <CreatePreFilled

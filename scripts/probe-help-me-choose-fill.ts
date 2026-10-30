@@ -59,8 +59,8 @@ async function main() {
   const budgeted = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, env: process.env });
   const bracketed = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 2, cardOracleId: null }, env: process.env });
   const unasked = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 4, cardOracleId: null },
-    // The ceiling alone: with the reach on, a bracket-4 answer places raisers, which section 5 checks.
-    env: { ...process.env, BRACKET_REACH_ENABLED: "false" } });
+    // The ceiling alone: with Help me choose on, a bracket-4 answer places raisers, which section 5 checks.
+    env: { ...process.env, HELP_ME_CHOOSE_ENABLED: "false" } });
 
   console.log("\n1. The budget, priced independently");
   const ids = (p: typeof plain) => p.rows.map((r) => r.oracleId);
@@ -142,10 +142,10 @@ async function main() {
   check("with a build-around card the trial body is still the whole body, never one over",
     withCard.body === plain.filled, `body ${withCard.body}, plain ${plain.filled}`);
 
-  console.log("\n5. The bracket as a target (BRACKET_REACH_ENABLED), read independently");
+  console.log("\n5. The bracket as a target (behind HELP_ME_CHOOSE_ENABLED), read independently");
   // The switch is forced on and off here, so the check does not depend on the database's env.
-  const on = { ...process.env, HELP_ME_CHOOSE_ENABLED: "true", BRACKET_REACH_ENABLED: "true" };
-  const off = { ...process.env, BRACKET_REACH_ENABLED: "false" };
+  const on = { ...process.env, HELP_ME_CHOOSE_ENABLED: "true" };
+  const off = { ...process.env, HELP_ME_CHOOSE_ENABLED: "false" };
   const ask3 = { budgetCents: null, bracket: 3 as const, cardOracleId: null };
   const [reached, ceilingOnly] = await Promise.all([
     buildFillPlan(USER, commanders, new Set(), { selected: [], answers: ask3, env: on }),

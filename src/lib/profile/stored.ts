@@ -10,7 +10,6 @@ import { newestVersion, versionCards } from "../decks/versions";
 import { analyzedOracleIds, LOG_HEAD_SQL, readLogHead } from "../notices/log";
 import { listFingerprint, profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, loadDeckProfile, readProfileHead, type ProfileHead } from "./load";
-import { noticesEnabled } from "../notices/flag";
 import { readingMoved } from "../notices/read";
 import { PROFILE_VERSION } from "./version";
 import { roleBasisFromEnv } from "../decks/label-counts-flag";
@@ -52,8 +51,8 @@ export type StoredProfileDeps = {
    */
   computeFresh?: (deckId: string, userId: string) => Promise<DeckProfile | null>;
   /**
-   * The reader's resolved switches (`requestSwitchEnv`): the notices switch and the role basis a press
-   * is judged against. A probe, with no signed-in reader, passes `process.env`.
+   * The reader's resolved switches (`requestSwitchEnv`): the role basis a press is judged
+   * against. A probe, with no signed-in reader, passes `process.env`.
    */
   env: NodeJS.ProcessEnv;
 };
@@ -143,22 +142,20 @@ export function storedBasisMoved(
 
 /**
  * Whether a PRESS on a list whose reading is stored must recompute instead of answering from the
- * store (ruling 5's shortcut): the role basis moved (`storedBasisMoved`), or, behind the notices
- * switch, the change log moved under the reading (H1). Only a press; a commit's pin and a quiet
- * rebuild never recompute for either.
+ * store (ruling 5's shortcut): the role basis moved (`storedBasisMoved`), or the change log moved
+ * under the reading (H1). Only a press; a commit's pin and a quiet rebuild never recompute for either.
  */
 export async function pressMustRecompute(args: {
   isPress: boolean;
   sameAnswer: boolean;
   storedProfile: Pick<DeckProfile, "skeleton"> | null | undefined;
-  noticesOn: boolean;
   logMoved: () => Promise<boolean>;
   /** The reader's role basis (`roleBasisFromEnv(env)`). */
   basis: RoleBasis;
 }): Promise<boolean> {
   if (!args.isPress || !args.sameAnswer) return false;
   if (storedBasisMoved(args.storedProfile, args.basis)) return true;
-  return args.noticesOn ? args.logMoved() : false;
+  return args.logMoved();
 }
 
 /**
@@ -409,12 +406,10 @@ export async function computeAndStoreProfile(
     ?? (pinTo && row && row.profileVersion < PROFILE_VERSION
       ? { seenSeq: row.seenSeq, rulesVersion: row.rulesVersion, analyzedOracleIds: row.analyzedOracleIds }
       : null);
-  // Behind the notices switch (Hugh's release ruling): off, a press keeps ruling 5 unamended.
   const dataMoved = await pressMustRecompute({
     isPress,
     sameAnswer: Boolean(row && sameAnswer),
     storedProfile: row?.profile,
-    noticesOn: noticesEnabled(deps.env),
     basis: roleBasisFromEnv(deps.env),
     // Read only when nothing cheaper already said yes, and only for a row that exists.
     logMoved: () => readingMoved({

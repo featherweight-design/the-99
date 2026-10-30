@@ -25,7 +25,7 @@ import { permitsOf } from "../intake/fill-gate";
 import { bracketReach, bringsForbidden, reachOverRows, type BracketReach, type ReachFacts } from "../intake/bracket-reach";
 import type { Bracket } from "../intake/rank";
 import { buysCopy } from "../intake/buys-card";
-import { bracketReachEnabled } from "../intake/bracket-reach-flag";
+import { helpMeChooseEnabled } from "../intake/flag";
 import { loadPrices } from "../discovery/price";
 
 /**
@@ -269,9 +269,9 @@ export async function buildFillPlan(
   );
   // THE REACH'S BUYING HALF UNDER OWN-ONLY (Design R1b): *Hit bracket N* is offered there too, so the
   // reach weighs the unowned top cards the pool leaves out. They are NEVER pool candidates: only the
-  // player's explicit Hit places one (`boughtRaisers`). Read only with a bracket answer and the
-  // switch on, and degraded rather than fatal, since an own-only fill does not need them.
-  const reachOn = options.answers?.bracket != null && bracketReachEnabled(options.env);
+  // player's explicit Hit places one (`boughtRaisers`). Read only with a bracket answer and Help me
+  // choose on, and degraded rather than fatal, since an own-only fill does not need them.
+  const reachOn = options.answers?.bracket != null && helpMeChooseEnabled(options.env);
   const reachOnlyTop = sleeveableOnly && reachOn && data?.topCards
     ? dedupeSelectionFromPool(
         await unownedTopCards(commanders, data.topCards, ownedIds, new Set(commanders.map((c) => c.oracleId)))

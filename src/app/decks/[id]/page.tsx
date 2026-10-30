@@ -75,7 +75,6 @@ import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
-import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
 import { neverCutEnabled } from "../../../lib/decks/never-cut-flag";
@@ -322,7 +321,7 @@ export default async function DeckBuilderPage({
   // The header's notice tag, read WITH the page so it paints with the header rather than arriving
   // after it. A failed read draws no tag, as a deck with no notices does; the shell reads again
   // after mount in that case.
-  const showNotices = analysisTabEnabled(env) && noticesEnabled(env);
+  const showNotices = analysisTabEnabled(env);
   const initialNotices = showNotices
     ? carried.then(() => perf.timed("notices", () => loadDeckNotices(id, userId))).catch(() => null)
     : Promise.resolve(null);
@@ -756,7 +755,6 @@ export default async function DeckBuilderPage({
       manaBalanceEnabled={manaBalanceEnabled(env)}
       tuningHubEnabled={tuningHubEnabled(env)}
       suggestedChangesV2={suggestedChangesV2Enabled(env)}
-      noticesEnabled={noticesEnabled(env)}
       initialNotices={notices}
       // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips
       // the parameter, so a refresh lands on the deck alone.

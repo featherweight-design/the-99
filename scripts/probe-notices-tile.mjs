@@ -21,7 +21,6 @@
 // staging and production. Point it at local-dev.
 //
 //   PROBE_BASE=http://localhost:3210 pnpm probe:notices-tile
-//   PROBE_EXPECT_OFF=1 …   against a server with NOTICES_ENABLED off: asserts no tile draws a notice
 //   PROBE_KEEP=1 …   leaves the fixture for `docs/superpowers/inventories/deck-notices-tile.json`
 //
 // Mutations run against it are listed in the PR that added it.
@@ -108,9 +107,6 @@ const held = { cards: [], seqs: [] };
 const hold = () => writeFileSync(HOLD, JSON.stringify(held));
 /** The mark on every log entry this probe plants (`detail.probe`), which the cleanup finds by. */
 const PROBE_MARK = "notices-tile";
-/** `PROBE_EXPECT_OFF=1`: the server runs with `NOTICES_ENABLED` off, and the fixture must draw
- *  NO notice. The layout checks still run; the notice's own checks are replaced by that one. */
-const EXPECT_OFF = process.env.PROBE_EXPECT_OFF === "1";
 
 async function restoreHeld() {
   // Every entry this probe ever planted carries its MARK, so an entry whose seq never reached the
@@ -361,14 +357,6 @@ async function main() {
       const bare = at(fixture.bare);
       check(`${vp.label} · the three fixture tiles are listed`, [!!range, !!data, !!bare], [true, true, true]);
       if (!range || !data || !bare) { await context.close(); continue; }
-      if (EXPECT_OFF) {
-        // The release switch: with notices off, not one tile on the page draws a tag, the three
-        // fixture tiles included, whose state would draw one with the switch on.
-        check(`${vp.label} · notices switched off: no tile draws a notice`, tiles.filter((t) => t.mark).map((t) => t.href), []);
-        check(`${vp.label} · notices switched off: no key line`, await page.locator("main [data-decks-mark-key]").count(), 0);
-        await context.close();
-        continue;
-      }
 
       // The mark (tile marker addendum), drawn after the chip (or the pill), and named in the link.
       check(`${vp.label} · range deck: one 18px red !, after the chip`,

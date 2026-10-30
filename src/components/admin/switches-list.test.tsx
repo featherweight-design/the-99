@@ -31,7 +31,7 @@ describe("SwitchesList", () => {
     draw({});
     expect(document.querySelectorAll("[data-switch]")).toHaveLength(SWITCH_NAMES.length);
     const [features, plumbing] = screen.getAllByRole("heading", { level: 2 });
-    expect(features.textContent).toBe("Features23");
+    expect(features.textContent).toBe("Features21");
     expect(plumbing).toHaveAttribute("data-testid", "switches-plumbing-head");
     expect(plumbing.textContent).toContain("app-wide only");
     const plumbingNames = [...plumbing.parentElement!.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"));
@@ -48,14 +48,14 @@ describe("SwitchesList", () => {
 
   it("counts each chip and filters by it, keeping the heads' counts (L2)", () => {
     draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "CHANGE_COMMANDER_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(chip(/^All/).textContent).toBe("All 30");
+    expect(chip(/^All/).textContent).toBe("All 28");
     expect(chip(/^All/)).toHaveAttribute("aria-checked", "true");
     expect(chip(/^Model features/).textContent).toBe("Model features 8");
     expect(chip(/^Overridden/).textContent).toBe("Overridden 1");
     fireEvent.click(chip(/^Overridden/));
     expect(chip(/^Overridden/)).toHaveAttribute("aria-checked", "true");
     expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["CHANGE_COMMANDER_ENABLED"]);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features23");
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features21");
     // The Plumbing head hides when it has no rows (L3).
     expect(screen.queryByTestId("switches-plumbing-head")).toBeNull();
   });
@@ -86,8 +86,8 @@ describe("SwitchesList", () => {
   });
 
   it("draws a kill switch row: env off in danger, Off, killed, its overrides refused (L4)", () => {
-    draw({ NOTICES_ENABLED: "off" }, [row({ switchName: "NOTICES_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    const r = rowOf("NOTICES_ENABLED");
+    draw({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    const r = rowOf("SOCIAL_FRIENDS_ENABLED");
     const env = within(r).getAllByText("off").find((e) => e.className.includes("font-mono"))!;
     expect(env.className).toContain("var(--danger)");
     expect(within(r).getAllByText("Off").length).toBeGreaterThan(0);
@@ -140,8 +140,8 @@ describe("SwitchesList", () => {
   );
 
   it("marks a killed switch's app-wide override refused, in the cell and the meta line (L4)", () => {
-    const first = draw({ NOTICES_ENABLED: "off" }, [row({ switchName: "NOTICES_ENABLED", scope: "app", value: "on" })]);
-    const r = rowOf("NOTICES_ENABLED");
+    const first = draw({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "app", value: "on" })]);
+    const r = rowOf("SOCIAL_FRIENDS_ENABLED");
     const cell = within(r).getByText("On, refused", { selector: "span.hidden" });
     expect(cell.className).toContain("var(--danger)");
     expect(within(r).getByTestId("switch-meta").textContent).toBe("env off · app-wide on, refused · no overrides · env var is off");
