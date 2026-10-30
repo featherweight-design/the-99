@@ -857,14 +857,19 @@ const REPAIR_SECTION_OF: Record<RepetitionSection, SectionId | null> = { overvie
  * the pass left without a subject, and a card still in two sections (the LATER section is rewritten,
  * as the pass keeps the earlier one; the earlier when the later is a line no repair rewrites).
  */
+/** The post-pass's priority: the earlier section keeps a card (stages, then Key cards, then tips). */
+const PASS_ORDER: Record<RepetitionSection, number> = { overview: 0, stages: 1, keyCardJobs: 2, tips: 3, alternate: 4, winsBy: 5 };
+
 export function i3RepairTargets(c: StagesChecks): { sections: SectionId[]; reasons: string[] } {
   const sections = new Set<SectionId>();
   const reasons: string[] = [];
   for (const o of c.shape.offenders) if (/ Key cards, not /.test(o)) { sections.add("keyCards"); reasons.push(`keyCards: ${o.replace(/^shown: /, "")} once a Key card a stage already explains is dropped; name other cards`); }
   for (const t of c.dedupe?.tipsWithoutSubject ?? []) { sections.add("primer"); reasons.push(`primer: tip ${t.tip + 1} needs ${TIP_MIN_CARDS} cards no earlier section explains (it names ${t.cards.join(", ")})`); }
   for (const o of c.noCardTwice?.offenders ?? []) {
-    const later = o.sections.slice(1).flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
-    const targets = later.length > 0 ? later : o.sections.flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
+    // In the post-pass's priority (it keeps the earlier section), never the order the check listed them.
+    const ordered = [...o.sections].sort((a, b) => PASS_ORDER[a] - PASS_ORDER[b]);
+    const later = ordered.slice(1).flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
+    const targets = later.length > 0 ? later : ordered.flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
     for (const s of targets) sections.add(s);
     if (targets.length > 0) reasons.push(`${[...new Set(targets)].join(", ")}: ${o.card} is explained in ${o.sections.join(" and ")}; explain each card in one section only`);
   }
