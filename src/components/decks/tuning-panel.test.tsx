@@ -1282,6 +1282,13 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
     expect(within(frame).getByText("0 / 500")).toBeInTheDocument();
   });
 
+  it("keeps its visible label and the card-tag tip above the frame", async () => {
+    await draw(deps([fresh]));
+    const box = screen.getByLabelText("Additional notes");
+    expect(document.querySelector(`label[for="${box.id}"]`)).toHaveTextContent("Additional notes");
+    expect(document.querySelector(`button[aria-describedby="${box.id}-info"]`)).not.toBeNull();
+  });
+
   // "Additional notes" (H35, PR 4b): the typed text rides into the run it starts.
   it("sends the typed note to deps.run", async () => {
     const d = deps([fresh, results]);

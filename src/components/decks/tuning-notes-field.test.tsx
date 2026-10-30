@@ -26,14 +26,61 @@ describe("TuningNotesField", () => {
     expect(screen.getByText("15 / 500")).toBeInTheDocument();
   });
 
-  it("draws the framed foot: the tag button, its words and the counter, and keeps the draft on Escape", () => {
-    const onChange = vi.fn();
-    render(<TuningNotesField value="more removal" onChange={onChange} tagHelp="tag a card" />);
+  it("draws the framed foot in both variants: the tag button, its words and the counter", () => {
+    for (const labelRow of [true, false]) {
+      const { unmount } = render(<TuningNotesField value="more removal" onChange={vi.fn()} tagHelp="tag a card" labelRow={labelRow} />);
+      expect(screen.getByLabelText("Additional notes").closest("[data-framed-box]")).not.toBeNull();
+      expect(screen.getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
+      expect(screen.getByText("tag a card")).toBeInTheDocument();
+      expect(screen.getByText("12 / 500")).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("draws the label row and the tip only when asked", () => {
+    const { unmount } = render(<TuningNotesField value="" onChange={vi.fn()} labelRow />);
     const box = screen.getByLabelText("Additional notes");
-    expect(box.closest("[data-framed-box]")).not.toBeNull();
-    expect(screen.getByRole("button", { name: /tag/i })).toBeInTheDocument();
-    expect(screen.getByText("tag a card")).toBeInTheDocument();
-    fireEvent.keyDown(box, { key: "Escape" });
+    expect(document.querySelector(`label[for="${box.id}"]`)).not.toBeNull();
+    const tip = document.querySelector('button[aria-describedby="tuning-notes-field-info"]');
+    expect(tip).not.toBeNull();
+    expect(box).toHaveAttribute("aria-describedby", "tuning-notes-field-info");
+    unmount();
+    render(<TuningNotesField value="" onChange={vi.fn()} />);
+    const bare = screen.getByLabelText("Additional notes");
+    expect(document.querySelector(`label[for="${bare.id}"]`)).toBeNull();
+    expect(document.querySelector('button[aria-describedby="tuning-notes-field-info"]')).toBeNull();
+    expect(bare).not.toHaveAttribute("aria-describedby");
+  });
+
+  it("keeps the draft when Escape closes the open help tip", () => {
+    const onChange = vi.fn();
+    render(<TuningNotesField value="more removal" onChange={onChange} labelRow />);
+    const tip = document.querySelector('button[aria-describedby="tuning-notes-field-info"]') as HTMLElement;
+    fireEvent.pointerEnter(tip, { pointerType: "mouse" });
+    expect(tip).toHaveAttribute("aria-expanded", "true");
+    fireEvent.keyDown(screen.getByLabelText("Additional notes"), { key: "Escape" });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("clears the draft on Escape rather than committing it", () => {
+    const onChange = vi.fn();
+    render(<TuningNotesField value="more removal" onChange={onChange} labelRow />);
+    fireEvent.keyDown(screen.getByLabelText("Additional notes"), { key: "Escape" });
+    expect(onChange).toHaveBeenCalledWith("");
+  });
+
+  // Escape cancels an IME composition candidate first; it must not also clear the whole draft.
+  it("ignores Escape while an IME composition is active", () => {
+    const onChange = vi.fn();
+    render(<TuningNotesField value="more removal" onChange={onChange} labelRow />);
+    fireEvent.keyDown(screen.getByLabelText("Additional notes"), { key: "Escape", isComposing: true });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("never clears the draft on Escape without the label row", () => {
+    const onChange = vi.fn();
+    render(<TuningNotesField value="more removal" onChange={onChange} />);
+    fireEvent.keyDown(screen.getByLabelText("Additional notes"), { key: "Escape" });
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -76,11 +123,11 @@ describe("TuningNotesField", () => {
       expect(box.value).toBe(typed);
     });
 
-    it("closes the list on Escape and keeps the draft on the next Escape too", async () => {
+    it("closes the list on Escape and keeps the draft, and clears the draft on the next Escape", async () => {
       const seen = vi.fn();
       function Watched() {
         const [value, setValue] = useState("swap out ");
-        return <TuningNotesField value={value} onChange={(n) => { seen(n); setValue(n); }} />;
+        return <TuningNotesField value={value} onChange={(n) => { seen(n); setValue(n); }} labelRow />;
       }
       render(<Watched />);
       const box = screen.getByLabelText("Additional notes");
@@ -91,7 +138,7 @@ describe("TuningNotesField", () => {
       expect(screen.queryByRole("option")).toBeNull();
       expect(seen).not.toHaveBeenCalled();
       fireEvent.keyDown(box, { key: "Escape" });
-      expect(seen).not.toHaveBeenCalled();
+      expect(seen).toHaveBeenCalledWith("");
     });
   });
 });

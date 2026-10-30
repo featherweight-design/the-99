@@ -4,9 +4,11 @@
 // caller's own state and never saved anywhere — it rides into the next run's prompt (`tuning-actions.ts`'s
 // `runTuning`) and is gone once that run lands.
 //
-// One frame holds the text, with the `[[ ]]` button, its words and the counter in the frame's foot; there is no label
-// row (the step's own heading names it, and `label` is the textarea's accessible name). Escape never clears the
-// words: chips write into the box, and an Escape meant for a list must never empty a request the press would send.
+// One frame holds the text, with the `[[ ]]` button, its words and the counter in the frame's foot, the same in both
+// uses. `labelRow` adds the visible label and the "how card tags work" tip above the frame (Additional notes): that box
+// also clears its draft on Escape (nothing server-side to cancel), except while the tip is open or an IME composes. The
+// request box has no label row (the step's own heading names it; `label` is its accessible name) and Escape never
+// clears it: chips write into it, and an Escape meant for a list must never empty a request the press would send.
 //
 // It takes the Notes `[[` card tag (card-tags plan, PR 2). The panel's value is the BODY, with a tag as
 // `[[id|Name]]`; the box shows the name, and the server resolves each tag to the catalog's name before
@@ -18,6 +20,7 @@ import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
 import { useTaggedField } from "../cards/use-tagged-field";
+import { InfoTip } from "../ui/info-tip";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
 const copy = deckDescriptionCopy.notes;
@@ -39,6 +42,7 @@ export function TuningNotesField({
   label = copy.label,
   placeholder,
   tagHelp,
+  labelRow = false,
   fill = false,
   highlightTail = null,
 }: {
@@ -46,12 +50,14 @@ export function TuningNotesField({
   onChange: (next: string) => void;
   /** The textarea's id; two boxes on one page need two. */
   id?: string;
-  /** The box's accessible name; nothing draws it. */
+  /** The box's name: drawn as the label row's label when `labelRow`, else its accessible name alone. */
   label?: string;
   /** One placeholder at both widths; absent, the Additional notes pair. */
   placeholder?: string;
   /** The words beside the `[[ ]]` button inside the box's foot. */
   tagHelp?: string;
+  /** Draw the visible label and the card-tag ⓘ tip above the frame, and let Escape clear the draft (Additional notes). */
+  labelRow?: boolean;
   /** The frame fills its container's height (the box grows to the Bracket card's height on desktop). */
   fill?: boolean;
   /** Select the last `length` drawn characters for a beat, then put the caret at the end; each `nonce` once. */
@@ -99,8 +105,17 @@ export function TuningNotesField({
     }, HIGHLIGHT_MS);
     return () => clearTimeout(settle);
   }, [highlightTail, field.text]);
+  const infoId = `${id}-info`;
   return (
-    <div className={`relative flex flex-col ${fill ? "h-full" : ""}`}>
+    <div className={`relative flex flex-col ${labelRow ? "gap-[6px]" : ""} ${fill ? "h-full" : ""}`}>
+      {labelRow ? (
+        <div className="relative flex items-center gap-[8px]">
+          <label htmlFor={id} className="block font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
+            {label}
+          </label>
+          <InfoTip id={infoId} lines={copy.tagHelp.lines} label={copy.tagHelp.infoAria} className="self-center" />
+        </div>
+      ) : null}
       {/* The frame's border is a class, never inline, so the focus edge can take it (an inline border outranks it). */}
       <div
         data-framed-box=""
@@ -112,11 +127,21 @@ export function TuningNotesField({
           value={field.text}
           {...picker.fieldProps}
           onChange={(e) => picker.typed(e.target.value, e.target.selectionStart)}
-          // The picker owns its keys while it is open (Escape closes the list); nothing else is ours.
-          onKeyDown={(e) => { picker.onKeyDown(e); }}
+          aria-describedby={labelRow ? infoId : undefined}
+          onKeyDown={(e) => {
+            // The picker owns its keys while it is open (Escape closes the list); what is left is ours.
+            if (picker.onKeyDown(e)) return;
+            // Escape cancels an IME composition candidate first; it must not also clear the draft in the same keystroke.
+            if (e.nativeEvent.isComposing) return;
+            // Only the labelled box clears on Escape; the request box keeps its words.
+            if (!labelRow) return;
+            // The help tip closes on the same Escape (InfoTip listens at the document, and focus stays here), so an
+            // open tip takes it and the draft stays.
+            if (e.key === "Escape" && !document.querySelector(`button[aria-describedby="${infoId}"][aria-expanded="true"]`)) onChange("");
+          }}
           rows={3}
           placeholder={placeholder ?? (desktop ? copy.placeholder : copy.placeholderPhone)}
-          aria-label={label}
+          aria-label={labelRow ? undefined : label}
           // 16px below `md`, same iOS Safari zoom-on-focus reason as the description field.
           className={`w-full resize-none overflow-hidden bg-transparent font-sans text-[16px] leading-[1.5] outline-none [@media(pointer:fine)]:md:text-[13.5px] ${fill ? "flex-1" : ""}`}
           style={{ padding: "10px 12px 4px", color: "var(--fg)", minHeight: FRAMED_MIN_PX }}
@@ -127,7 +152,7 @@ export function TuningNotesField({
             aria-label={copy.tagHelp.insertAria}
             onMouseDown={(e) => e.preventDefault()}
             onClick={picker.insertTag}
-            className="h-[24px] cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] text-[color:var(--fg-muted)] pointer-coarse:h-[44px]"
+            className="h-[24px] cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] text-[color:var(--fg-muted)] pointer-coarse:h-auto pointer-coarse:px-[12px] pointer-coarse:py-[13px]"
           >
             {copy.tagHelp.insert}
           </button>
