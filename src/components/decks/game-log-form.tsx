@@ -597,7 +597,7 @@ export function GameLogForm({
           // The picker owns its keys while its list is open (Enter and Tab pick, Escape closes it).
           onKeyDown={(e) => { noteTags.picker.onKeyDown(e); }}
           aria-describedby={`${describedById} ${counterId}`}
-          className="block min-h-[calc(1.5em+12px)] w-full bg-transparent px-[12px] pt-[9px] pb-[3px] text-[16px] [@media(pointer:fine)]:text-[13.5px] leading-[1.5] text-fg disabled:cursor-not-allowed"
+          className="block min-h-[calc(1.5em+12px)] w-full bg-transparent outline-none px-[12px] pt-[9px] pb-[3px] text-[16px] [@media(pointer:fine)]:text-[13.5px] leading-[1.5] text-fg disabled:cursor-not-allowed"
         />
         </TaggedBox>
         {/* Floats over the page, held to the room in the window: the form sits low on the Games tab, where a list placed in the flow ends below the fold. Anchored to the frame, under its foot. Not drawn while a save is out: a pick then would change a field the save already read. */}

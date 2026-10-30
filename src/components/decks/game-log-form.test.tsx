@@ -340,14 +340,15 @@ describe("GameLogForm", () => {
       expect(counter(0)).toBeInTheDocument();
     });
 
-    // The global `:focus-visible` ring is the accessibility contract for every
-    // control in the app. The accent border is this field's own design state
-    // and the two are not alternatives — suppressing the outline to get the
-    // border leaves a keyboard user with nothing.
-    it("keeps the global focus ring", () => {
+    // The field sits inside the shared tag-a-card frame, which takes the accent edge on focus-within:
+    // that edge is the keyboard focus indicator, so the input's own outline is off (a second ring
+    // around only the text would be a rectangle inside the frame).
+    it("lets the frame carry the focus: the input has no outline of its own", () => {
       mount();
       open();
-      expect(field().className).not.toContain("outline-none");
+      expect(field().className).toContain("outline-none");
+      const frame = field().closest("[data-framed-box]") as HTMLElement;
+      expect(frame.className).toContain("focus-within:border-[color:var(--accent)]");
     });
 
     // S1 states 3 → 4. The warning has to arrive before the stop, or the first
