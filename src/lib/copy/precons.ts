@@ -365,7 +365,26 @@ export const preconsCopy = {
     names: (names: string[]) => names.join(" and "),
     /** Decklists listed while the set is still on the way: a jump to its year. */
     listed: (count: number) => `${plural(count, "decklist", "decklists")} listed ↓`,
+    /** The `new` mark (R1b-2): no box, `--accent-text`, leading the set's meta line, the row's third line and the head's count. */
     newTag: "new",
+    /** Between the mark, the meta's halves and the head's count: ` · `. */
+    sep: " · ",
+    // Drafts for /copy-review (announcements UI 5, board `Announced.dc.html`, call 5, STATES 3.1 and 3.2): the early mark,
+    // the lists count, the waiting commander and the note for lists still to come.
+    /** Call 5: on an early list's tile sub-line and row line 2, in `--fact`, no box. */
+    earlyList: "early list",
+    /** The set's count half once Wizards posts its lists: `3 of 5 lists so far`, `All 5 lists` (`1 list` when one was promised; every posted list once more than promised), `3 lists so far` (no number promised). */
+    listsSoFar: (posted: number, promised: number | null) =>
+      promised === null ? `${plural(posted, "list", "lists")} so far` : posted >= promised ? (posted === 1 ? plural(1, "list", "lists") : `All ${n(posted)} lists`) : `${n(posted)} of ${plural(promised, "list", "lists")} so far`,
+    /** The none plate's note for promised lists not yet posted (STATES 3.2). */
+    toCome: (count: number) => `${plural(count, "more list", "more lists")} to come`,
+    /** A revealed commander whose list is still to come, in the rows view. */
+    waiting: "revealed · list to come",
+    /** Rows view, line 2 once lists are posted: the lists count, then the names. */
+    listsAndNames: (lists: string, names: string) => `${lists} · ${names}`,
+    /** An early list's link, spoken: the tile clips its caption, and the commander is on the art only. */
+    earlyAria: (name: string, commanders: string[], owned: number, of: number) =>
+      `${name}, early list${commanders.length > 0 ? `, with ${commanders.join(" and ")}` : ""}. You own ${n(owned)} of ${n(of)} of its cards.`,
     /** On a precon tile's meta line, before `you own`, for 14 days from the precon's arrival. */
     tileNew: "new · ",
     /** Added to the list's result line when a filter is on and announced sets survive it. */
@@ -379,6 +398,9 @@ export const preconsCopy = {
     showAllAria: (n: number, set: string) => `Show all ${n} commanders revealed for ${set}`,
     showFewer: "Show fewer",
     showFewerAria: (set: string) => `Show fewer commanders revealed for ${set}`,
+    /** The same toggle once early lists share the grid: it unfolds lists and waiting commanders together. */
+    showAllEarlyAria: (n: number, set: string) => `Show all ${n} lists and commanders for ${set}`,
+    showFewerEarlyAria: (set: string) => `Show fewer lists and commanders for ${set}`,
   },
   /**
    * Precons I own (`/decks/precons?pick=own`, no-collection entry S2 to S7): a pick of the boxes a player owns, added

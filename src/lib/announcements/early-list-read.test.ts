@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { assembleEarlyList, commanderPrintingsQuery, earlyListRowQuery, isBasicName, loadPostListTargets, pickReleasePrecon, postListRowsQuery, releaseCandidatesQuery, toPostListRows } from "./early-list-read";
+import { assembleEarlyList, commanderPrintingsQuery, earlyListCommanderIds, earlyListRowQuery, isBasicName, loadPostListTargets, pickReleasePrecon, postListRowsQuery, releaseCandidatesQuery, toPostListRows } from "./early-list-read";
 import type { EarlyCardFacts } from "./early-list";
 
 describe("releaseCandidatesQuery", () => {
@@ -301,5 +301,19 @@ describe("assembleEarlyList", () => {
     expect(page.precon.row.setCode).toBe("");
     expect(page.precon.row.releaseDate).toBe("");
     expect(page.releasedOn).toBeNull();
+  });
+});
+
+describe("earlyListCommanderIds", () => {
+  const list = { commanderCardId: "sisko", partnerCardId: "janeway", partnerRole: "alternate" as string | null };
+
+  it("leaves an alternate commander out, so a released list keeps its waiting row (Federation Fleet's Janeway)", () => {
+    expect(earlyListCommanderIds(list)).toEqual(["sisko"]);
+  });
+
+  it("names a co-commander, and nothing the catalog did not match", () => {
+    expect(earlyListCommanderIds({ ...list, partnerRole: "co-commander" })).toEqual(["sisko", "janeway"]);
+    expect(earlyListCommanderIds({ ...list, partnerCardId: null, partnerRole: "co-commander" })).toEqual(["sisko"]);
+    expect(earlyListCommanderIds({ commanderCardId: null, partnerCardId: null, partnerRole: null })).toEqual([]);
   });
 });

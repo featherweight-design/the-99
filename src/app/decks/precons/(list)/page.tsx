@@ -21,6 +21,7 @@ import {
 } from "../../../../lib/precons/announced";
 import { loadUpcomingPayload } from "../../../../lib/precons/announced-read";
 import { visitSeenKeys } from "../../../../lib/precons/arrivals";
+import { earlySeenKeys } from "../../../../lib/announcements/early-tiles";
 import { markUpcomingSeen, utcDay } from "../../../../lib/precons/upcoming";
 import { recordSoftFailure } from "../../../../lib/cache/soft-failure";
 import { PreconListView } from "../../../../components/decks/precons/precon-list-view";
@@ -116,11 +117,11 @@ export default async function PreconsPage({
       userId,
       "precons",
       [utcDay(now)],
-      async () => {
+      async (keyEnv) => {
         const list = await loadPreconList(userId);
         let upcoming: UpcomingPayload | null = null;
         try {
-          upcoming = await loadUpcomingPayload(userId, now);
+          upcoming = await loadUpcomingPayload(userId, now, keyEnv);
         } catch (error) {
           // T9: a failed upcoming read draws the list as shipped, and is served and never stored.
           recordSoftFailure();
@@ -153,11 +154,16 @@ export default async function PreconsPage({
     // A visit acknowledges every arrival the banner could show, from the UNFILTERED reads: whatever the filters,
     // the order (Most owned hides the group) or the disclosure, and a set whose lists have landed and so left the
     // group. After the response, so the page never waits on it; the write moves the stamp only when it adds a key.
-    const keys = visitSeenKeys({
-      sets: upcoming.sets,
-      preconArrivals: upcoming.arrivals,
-      now,
-    });
+    // With them, each set's early lists at the count this visit could show (G2: `early:<code>:<count>`, apart from
+    // `lists:<code>`), so a further list lights the set again. None ride the payload with the switch off.
+    const keys = [
+      ...visitSeenKeys({
+        sets: upcoming.sets,
+        preconArrivals: upcoming.arrivals,
+        now,
+      }),
+      ...earlySeenKeys(upcoming.early ?? {}),
+    ];
     if (keys.length > 0) {
       acknowledges = keys;
       after(async () => {

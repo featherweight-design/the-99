@@ -22,7 +22,7 @@ import { HoverPreviewProvider } from "../hover-preview";
 import { useStoredView } from "../../ui/use-stored-view";
 import { PRECONS_ANNOUNCED_COOKIE } from "../../ui/view-cookie";
 import { noteAppScroll } from "../../../lib/ui/reveal";
-import { AnnouncedSet, FOCUS_RING, NEW_TAG, setIdentity, type ListedJump } from "./announced-parts";
+import { AnnouncedSet, FOCUS_RING, matchIdentity, NewMark, type ListedJump } from "./announced-parts";
 import { AnnouncedRow } from "./announced-row";
 
 const copy = preconsCopy.upcoming;
@@ -195,8 +195,11 @@ export function AnnouncedGroup({
           className={`flex min-h-[44px] w-full cursor-pointer items-center gap-[8px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] bg-transparent p-0 text-left font-display text-[17px] font-normal text-[color:var(--fg)] md:min-h-[34px] md:pb-[7px] focus-visible:rounded-[4px] ${FOCUS_RING}`}
         >
           {copy.heading}
-          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{count}</span>
-          {hasNew && <span className={NEW_TAG}>{copy.newTag}</span>}
+          {/* R1b-2: "1 set · new", the mark in the count's own line, no box. */}
+          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {count}
+            {hasNew && <NewMark lead={false} />}
+          </span>
           <Chevron kind="disclosure" open={open} className="ml-auto text-[color:var(--fg-muted)]" />
         </button>
       </h2>
@@ -230,7 +233,7 @@ export function AnnouncedGroup({
           ) : (
             <ul className="m-0 flex list-none flex-col gap-[8px] p-0 pt-[10px]">
               {matches.map((m) => (
-                <AnnouncedRow key={m.set.code} match={m} today={today} isNew={newCodes.includes(m.set.code)} identity={setIdentity(m.commanders)} />
+                <AnnouncedRow key={m.set.code} match={m} today={today} isNew={newCodes.includes(m.set.code)} identity={matchIdentity(m)} />
               ))}
             </ul>
           )}

@@ -1,0 +1,90 @@
+{
+  "feature": "Announcements UI 5: the Announced group on /decks/precons. R1b-2's unboxed `new` mark on the group head, set block and set row; posted early lists as precon tiles (rows in the rows view) with \"early list\" in --fact; the early seen key `early:<code>:<count>` (handoff design_handoff_the99_announcements: Announced, R1b-New-Mark)",
+  "clearAbout": true,
+  "note": "Run on a SCRATCH branch (no new migration), with ANNOUNCEMENTS_ENABLED on for the account (flag_overrides, scope user) except in `switch-off`. Needs an upcoming Commander set with revealed commanders (Star Trek Commander, TRC) and a Commander decklists post resolving to it: the scratch fixture is the Star Trek decklists post with 3 of 5 lists, each list's commander_card_id set to a TRC legend and its cards matched by name. Each row names its `phase`, set before that phase and again before each width (one width per run), because every visit writes seen keys. The runner does not read `phase`; run the phases one at a time with a filtered copy of this file. Phases: `unseen` = upcoming_seen_codes empty, the post at 3 lists; `unseen-rows` = the same, apart because the tiles cell's visit acknowledges the lists; `seen` = upcoming_seen_codes holding exactly what an `unseen` visit wrote (`early:trc:3`, read back after that phase), photographed on a fresh load (a second visit in one browser restores the first's scroll and loses the head); `relit` = the same keys and a fourth list posted (Kirk); `switch-off` = `unseen` with ANNOUNCEMENTS_ENABLED off for the account (allow the 30-second override memo to pass). Widths 390 and 1300, drawn tall (2400 and 1600) so the Announced group is in frame.",
+  "out": "contact-sheets/announcements-ui5",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 2400
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 1600
+    }
+  ],
+  "rows": [
+    {
+      "id": "announced-unseen-tiles",
+      "phase": "unseen",
+      "view": "src/components/decks/precons/announced-parts.tsx",
+      "label": "/decks/precons (tiles), Star Trek unseen with 3 of 5 early lists: the group opens by itself; `new` unboxed in --accent-text after the head's count and leading the set meta; each list a precon tile with \"early list\" in --fact on its sub-line, no box; the waiting commanders; \"2 more lists to come\"",
+      "steps": [
+        {
+          "goto": "/decks/precons#announced",
+          "wait": "[data-testid=announced-set]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "announced-unseen-rows",
+      "phase": "unseen-rows",
+      "view": "src/components/decks/precons/announced-row.tsx",
+      "label": "/decks/precons?view=rows, Star Trek unseen, its row pressed open: `new` leads the row's third line after the dots; line 2 counts the lists first; the lists as rows (\"early list\" in --fact), then dashed waiting rows, then the note",
+      "steps": [
+        {
+          "goto": "/decks/precons?view=rows#announced",
+          "wait": "[data-testid=announced-row]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-testid=announced-row]:has-text('Star Trek') h3 button[aria-expanded]",
+          "wait": "[data-testid=early-rows]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "announced-seen-tiles",
+      "phase": "seen",
+      "view": "src/components/decks/precons/announced-group.tsx",
+      "label": "/decks/precons#announced (tiles) after a visit: the reader holds what the `unseen` visit wrote (`early:trc:3`), so neither the head nor the set carries `new` (the hash opens the group)",
+      "steps": [
+        {
+          "goto": "/decks/precons#announced",
+          "wait": "[data-testid=announced-set]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "announced-relit-tiles",
+      "phase": "relit",
+      "view": "src/components/decks/precons/announced-parts.tsx",
+      "label": "/decks/precons (tiles), the reader holds `early:trc:3` and a fourth list is posted: `new` again on the head and the set, the group opens, four early tiles and \"1 more list to come\"",
+      "steps": [
+        {
+          "goto": "/decks/precons#announced",
+          "wait": "[data-testid=announced-set]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "announced-switch-off-tiles",
+      "phase": "switch-off",
+      "view": "src/components/decks/precons/announced-parts.tsx",
+      "label": "/decks/precons (tiles) with ANNOUNCEMENTS_ENABLED off for the reader: no early tiles, no list count, no \"to come\"; the revealed commanders as before UI 5, and no `new` (the set itself is a baseline set, so only its early lists made it new)",
+      "steps": [
+        {
+          "goto": "/decks/precons#announced",
+          "wait": "[data-testid=announced-set]",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

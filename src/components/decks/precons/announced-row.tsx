@@ -12,7 +12,7 @@ import { colorNames } from "../../../lib/copy/color-labels";
 import { WUBRG_COLOR } from "../../../lib/collection/browse";
 import { countdown, type AnnouncedMatch } from "../../../lib/precons/arrivals";
 import { CommanderThumb } from "../../ui/commander-thumb";
-import { FOCUS_RING, NEW_TAG, RevealedStrip } from "./announced-parts";
+import { EarlyRowList, FOCUS_RING, NewMark, RevealedStrip } from "./announced-parts";
 import { announcedSetAnchor } from "../../../lib/announcements/early-list";
 
 const copy = preconsCopy.upcoming;
@@ -20,23 +20,26 @@ const copy = preconsCopy.upcoming;
 /** Line 2: every name for one or two, the first and how many more past that, or none revealed yet. */
 export function namesLine(m: AnnouncedMatch): string {
   const names = m.commanders.map((c) => c.name);
-  if (names.length === 0) return copy.noneRow;
-  return names.length <= 2 ? copy.names(names) : copy.more(names[0], names.length - 1);
+  const named = names.length === 0 ? copy.noneRow : names.length <= 2 ? copy.names(names) : copy.more(names[0], names.length - 1);
+  // Once Wizards posts the set's lists, the line counts them before naming the commanders (board `Announced`, rows).
+  if (!m.early) return named;
+  const lists = copy.listsSoFar(m.early.posted, m.early.promised);
+  return names.length === 0 ? lists : copy.listsAndNames(lists, named);
 }
 
 export function AnnouncedRow({ match, today, isNew, identity }: {
   match: AnnouncedMatch;
   today: string;
   isNew: boolean;
-  /** The set's dots, from its revealed commanders. */
-  identity: string[];
+  /** The set's dots, from its revealed commanders and early lists; null when an early list's identity is unknown. */
+  identity: string[] | null;
 }) {
   const [open, setOpen] = useState(false);
   const { set, commanders } = match;
   const lead = commanders[0];
   const c = countdown(set.releasesOn, today);
   const when = c.kind === "out" ? copy.outShort : copy.until(c);
-  const canOpen = commanders.length > 0;
+  const canOpen = commanders.length > 0 || (match.early?.lists.length ?? 0) > 0;
   const regionId = `announced-row-${set.code}`;
 
   const body = (
@@ -50,7 +53,6 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
         <span className="flex items-baseline justify-between gap-[10px]">
           <span className="flex min-w-0 items-center gap-[8px]">
             <span className="truncate font-display text-[14.5px] leading-[1.3] text-[color:var(--fg)] md:text-[16px]">{set.name}</span>
-            {isNew && <span className={NEW_TAG}>{copy.newTag}</span>}
           </span>
           <span className="flex-none whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-body)] md:text-[12px]">
             {when}
@@ -59,8 +61,9 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
         </span>
         <span className="truncate font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)]">{namesLine(match)}</span>
         <span className="flex items-center gap-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          {/* Colorless commanders draw one faint dot, as a colorless card does in tiles; none revealed draws none. */}
-          {canOpen && (
+          {/* Colorless commanders draw one faint dot, as a colorless card does in tiles; none revealed draws none; an
+              unknown identity (an early list's commander the catalog cannot match yet) draws none and names no colors. */}
+          {canOpen && identity !== null && (
             <>
               <span className="sr-only">{identity.length > 0 ? colorNames(identity).join(", ") : preconsCopy.row.colorless}</span>
               <span aria-hidden className="flex gap-[3px]" data-testid="row-dots">
@@ -70,7 +73,11 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
               </span>
             </>
           )}
-          {copy.rowMeta(set.code.toUpperCase(), preconDate(set.releasesOn))}
+          {/* R1b-2: `new` leads the line's words, after the dots, no box. */}
+          <span>
+            {isNew && <NewMark />}
+            {copy.rowMeta(set.code.toUpperCase(), preconDate(set.releasesOn))}
+          </span>
         </span>
       </span>
     </>
@@ -98,7 +105,7 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
         // The rule sits inside the row's padding: from 12px and bleeding right at 390 (the strip scrolls to the
         // border), inset 15px each side at 900 (R2 Q3 `rowStrip`).
         <div id={regionId} hidden={!open} className="ml-[12px] border-x-0 border-b-0 border-t-[1px] border-dashed border-t-[color:var(--border-strong)] p-[12px_12px_12px_0] md:mx-[15px] md:p-[12px_0_14px_0]">
-          <RevealedStrip commanders={commanders} />
+          {match.early ? <EarlyRowList match={match} /> : <RevealedStrip commanders={commanders} />}
         </div>
       )}
     </li>

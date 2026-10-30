@@ -79,6 +79,13 @@ describe("SEEN_KEY", () => {
       "a'; drop table sets;--", "lists:trc'--", "trc\n", "lists:trc;lists:dsc",
     ]) expect(SEEN_KEY.test(k), JSON.stringify(k)).toBe(false);
   });
+
+  it("takes early: with a set code and a list count (announcements G2), and nothing looser", () => {
+    for (const k of ["early:trc:3", "early:40k:1", "early:fdc:12"]) expect(SEEN_KEY.test(k), k).toBe(true);
+    for (const k of ["early:trc", "early:TRC:3", "early:trc:", "early:trc:x", "early:trc:1234", "early:lists:trc:3", "lists:early:trc", "early:trc:3:4"]) {
+      expect(SEEN_KEY.test(k), k).toBe(false);
+    }
+  });
 });
 
 describe("upcomingSeenWrite", () => {

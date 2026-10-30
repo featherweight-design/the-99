@@ -2116,7 +2116,8 @@ export const userPrefs = pgTable(
     commandersAvail: text("commanders_avail"),
     /**
      * The upcoming-precons arrivals this reader has been shown (`lib/precons/upcoming.ts`): a set
-     * code (`trc`) for a set announced, `lists:trc` for its decklists listed. Keys only ever
+     * code (`trc`) for a set announced, `lists:trc` for its decklists listed, `early:trc:3` for three of its
+     * early lists shown (announcements G2; a further list adds `early:trc:4`). Keys only ever
      * accumulate: there are about fifty Commander sets in all, so it needs no pruning.
      */
     upcomingSeenCodes: text("upcoming_seen_codes").array().notNull().default(sql`'{}'::text[]`),

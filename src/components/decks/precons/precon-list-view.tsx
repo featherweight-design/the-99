@@ -168,7 +168,7 @@ export function PreconListView({
   const shown = useMemo(() => orderPrecons(filterPrecons(rows, q, colours), order), [rows, q, colours, order]);
   // The Announced group filters with the list, and Most owned hides it, as it drops the year heads (T6, T7).
   const announcedShown = useMemo(
-    () => (announced && order === "newest" ? filterAnnounced(announced.sets, announced.commanders, { q, colours }) : []),
+    () => (announced && order === "newest" ? filterAnnounced(announced.sets, announced.commanders, { q, colours }, announced.early) : []),
     [announced, order, q, colours],
   );
   const filtering = q.trim() !== "" || colours.length > 0;

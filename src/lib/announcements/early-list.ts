@@ -31,6 +31,7 @@ export function isWizardsPostUrl(url: string): boolean {
     const u = new URL(url);
     return u.protocol === "https:" && u.hostname === "magic.wizards.com";
   } catch {
+    // not a fallback: an unparseable address is simply not Wizards' page; no read failed.
     return false;
   }
 }
