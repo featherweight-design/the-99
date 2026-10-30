@@ -1381,9 +1381,10 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
     const field = screen.getByLabelText("Describe your deck");
     expect(field).not.toHaveAttribute("aria-label");
     expect((field as HTMLElement).style.minHeight).toBe("72px");
-    expect(screen.getByText("tag a card")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
-    const frame = field.closest("[data-framed-box]")!;
+    const frame = field.closest("[data-framed-box]") as HTMLElement;
+    // Scoped to the editor's own frame: the Additional notes box draws the same foot beside it.
+    expect(within(frame).getByText("tag a card")).toBeInTheDocument();
+    expect(within(frame).getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
     expect(frame.className).toContain("border-[color:var(--accent)]");
   });
 
