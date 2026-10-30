@@ -65,7 +65,7 @@ const DECK = {
   unresolvedRows: [],
 } as unknown as DeckDetail;
 
-async function mount(initialView: BuilderView, stats = false) {
+async function mount(initialView: BuilderView) {
   let view!: ReturnType<typeof render>;
   await act(async () => {
     view = render(
@@ -77,8 +77,7 @@ async function mount(initialView: BuilderView, stats = false) {
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         initialView={initialView}
-        statsEnabled={stats}
-        statsData={stats ? { commanders: [] } : null}
+        statsData={{ commanders: [] }}
        newestAsOf={null}/>,
     );
   });
@@ -97,7 +96,6 @@ describe("BuilderShell — a landing on the mounted shell (discovery R2 E11)", (
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         initialView={landingRequest === null ? "deck" : "games"}
-        statsEnabled={false}
         statsData={null}
         newestAsOf={null}
         landing={landingRequest === null ? null : { tool: "matchups", target: "matchups", moment: "matchups", lands: { kind: "deck", tab: "games" } }}
@@ -137,7 +135,6 @@ describe("BuilderShell — a Shopping landing over the Stats panel (discovery R2
           commanderIdentity={["B", "R", "G"]}
           arrivedFromImport={false}
           initialView="deck"
-          statsEnabled
           statsData={{ commanders: [] }}
           newestAsOf={null}
           landing={landingRequest === null ? null : { tool: "stand-ins", target: "stand-ins", moment: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" } }}
@@ -185,7 +182,7 @@ describe("BuilderShell — the tab it opens on", () => {
   // remounts on each) and must not survive opening another deck.
   it("keeps Stats across an in-deck tab switch, and opens a freshly opened deck on its list", async () => {
     window.localStorage.setItem("the99:deck-panel", "stats");
-    const first = await mount("deck", true);
+    const first = await mount("deck");
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
 
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
@@ -197,7 +194,7 @@ describe("BuilderShell — the tab it opens on", () => {
 
     first.unmount();
     window.localStorage.removeItem("the99:deck-panel");
-    await mount("deck", true);
+    await mount("deck");
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
   });
 });
@@ -222,7 +219,7 @@ describe("BuilderShell — the grouping it opens on", () => {
 // `?panel=` (About visual PR 6a): the ?'s "Back to {deck}" returns to Shopping, Stats or Notes, which are builder state.
 // What the builder publishes to the ? is the view it opened on, read through the same `deckViewOf` the ? reads.
 describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
-  async function opened(initialView: BuilderView, initialBody: "shopping" | "stats" | "notes" | null, on = true) {
+  async function opened(initialView: BuilderView, initialBody: "shopping" | "stats" | "notes" | null) {
     const publish = vi.fn();
     await act(async () => {
       render(
@@ -236,8 +233,7 @@ describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
             arrivedFromImport={false}
             initialView={initialView}
             initialBody={initialBody}
-            statsEnabled={on}
-            statsData={on ? { commanders: [] } : null}
+            statsData={{ commanders: [] }}
             newestAsOf={null}/>
         </BuilderScreenContext.Provider>,
       );
@@ -254,12 +250,6 @@ describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
     expect(last(await opened("deck", "notes"))).toBe("notes");
     cleanup();
     expect(last(await opened("deck", null))).toBe("your-deck");
-  });
-
-  it("opens on the list when the panel it names is switched off (Copilot round 2)", async () => {
-    expect(last(await opened("deck", "stats", false))).toBe("your-deck");
-    cleanup();
-    expect(last(await opened("deck", "shopping", false))).toBe("shopping");
   });
 
   it("publishes Consider as its own tab, reading as Your deck (Copilot round 2)", async () => {

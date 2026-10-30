@@ -119,7 +119,6 @@ function renderDecklist(
     /** Swap receipts seeded into a `SwapToolsProvider` around the list. */
     receipts?: SwapReceipt[];
     lockMode?: boolean;
-    statsEnabled?: boolean;
     statsData?: DeckStatsInput | null;
     notesData?: DeckNotesView | null;
     statsFocus?: { card: "curve" | "jobs"; n: number } | null;
@@ -208,7 +207,6 @@ function renderDecklist(
           newestAsOf={opts.newestAsOf ?? null}
           onAnnounce={opts.onAnnounce}
           lockMode={opts.lockMode}
-          statsEnabled={opts.statsEnabled}
           statsData={opts.statsData}
           notesData={opts.notesData}
           statsFocus={opts.statsFocus}
@@ -1575,20 +1573,12 @@ describe("an unowned commander heads the Shopping list", () => {
 });
 
 describe("the Stats panel", () => {
-  it("draws no Stats segment and no stats view with the switch off", () => {
-    renderDecklist([rampOwned], { filter: "all" });
-
-    expect(screen.queryByRole("tab", { name: deckStatsCopy.segment.aria })).toBeNull();
-    expect(document.querySelector("[data-deck-stats]")).toBeNull();
-  });
-
   describe("Notes", () => {
     const noteOf = (id: string, text: string) => ({ id, body: text, drawn: [{ kind: "text" as const, text }], createdAt: "2026-10-02T12:00:00.000Z", doneAt: null });
 
-    it("draws All · Shopping | Notes with Stats off, counting open notes", () => {
+    it("draws a Notes segment counting open notes", () => {
       renderDecklist([rampOwned], { filter: "all", notesData: { open: [noteOf("a", "one"), noteOf("b", "two")], done: [], readAt: 1 } });
       expect(screen.getByRole("tab", { name: "Notes, 2 open" })).toBeTruthy();
-      expect(screen.queryByRole("tab", { name: deckStatsCopy.segment.aria })).toBeNull();
     });
 
     it("says none yet at zero and draws no count", () => {
@@ -1596,8 +1586,8 @@ describe("the Stats panel", () => {
       expect(screen.getByRole("tab", { name: "Notes, none yet" })).toBeTruthy();
     });
 
-    it("sits beside Stats when its switch is on, and pressing it swaps the list for the panel", () => {
-      renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, notesData: { open: [noteOf("a", "water the plants")], done: [], readAt: 1 } });
+    it("sits beside Stats, and pressing it swaps the list for the panel", () => {
+      renderDecklist([rampOwned], { filter: "all", statsData: { commanders: [] }, notesData: { open: [noteOf("a", "water the plants")], done: [], readAt: 1 } });
       expect(screen.getByRole("tab", { name: deckStatsCopy.segment.aria })).toBeTruthy();
       fireEvent.click(screen.getByRole("tab", { name: "Notes, 1 open" }));
       expect(screen.getByText("water the plants")).toBeTruthy();
@@ -1626,14 +1616,14 @@ describe("the Stats panel", () => {
   it("opens on the list even when an earlier deck was left on Stats: the choice is not stored", () => {
     window.localStorage.setItem("the99:deck-panel", "stats");
     onTestFinished(() => window.localStorage.removeItem("the99:deck-panel"));
-    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] } });
+    renderDecklist([rampOwned], { filter: "all", statsData: { commanders: [] } });
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
   });
 
   it("ties the chosen tab to the panel it shows, a labelled tabpanel, on the list and on Stats", () => {
-    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] } });
+    renderDecklist([rampOwned], { filter: "all", statsData: { commanders: [] } });
     const panelOf = (tab: HTMLElement) => {
       const id = tab.getAttribute("aria-controls");
       expect(id).toBeTruthy();
@@ -1651,7 +1641,7 @@ describe("the Stats panel", () => {
   });
 
   it("keeps keyboard focus on the bar when arrowing into Stats and back to the list", () => {
-    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] } });
+    renderDecklist([rampOwned], { filter: "all", statsData: { commanders: [] } });
     const shopping = screen.getByRole("tab", { name: /^Shopping/ });
     shopping.focus();
     fireEvent.keyDown(shopping, { key: "ArrowRight" });
@@ -1669,7 +1659,7 @@ describe("the Stats panel", () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();
     const focused = vi.fn();
-    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, statsFocus: { card: "jobs", n: 1 }, onStatsFocused: focused });
+    renderDecklist([rampOwned], { filter: "all", statsData: { commanders: [] }, statsFocus: { card: "jobs", n: 1 }, onStatsFocused: focused });
     expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
     expect(scroll).toHaveBeenCalledTimes(1);
     // The shell is told, so it drops the request: a remount on a tab switch must not answer it again.
@@ -1683,8 +1673,8 @@ describe("the Stats panel", () => {
     expect(scroll).toHaveBeenCalledTimes(1);
   });
 
-  it("draws the segment with the switch on, and the six shells once Stats is chosen", () => {
-    renderDecklist([rampOwned], { filter: "all", statsEnabled: true });
+  it("draws the segment, and the six shells once Stats is chosen", () => {
+    renderDecklist([rampOwned], { filter: "all" });
 
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
@@ -1695,7 +1685,7 @@ describe("the Stats panel", () => {
   });
 
   it("draws the curve from the passed cards plus the commanders, so an optimistic change moves it", () => {
-    const stats = { statsEnabled: true, filter: "all" as const, statsData: { commanders: [{ cmc: 4, typeLine: "Legendary Creature", quantity: 1, manaCost: "{2}{G}{G}", colorIdentity: ["G"] }] } };
+    const stats = { filter: "all" as const, statsData: { commanders: [{ cmc: 4, typeLine: "Legendary Creature", quantity: 1, manaCost: "{2}{G}{G}", colorIdentity: ["G"] }] } };
     renderDecklist([rampOwned], stats);
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     const count = (cmc: number) => document.querySelector(`[data-curve-column="${cmc}"]`)!.querySelectorAll("[data-curve-square]").length;
@@ -1710,7 +1700,7 @@ describe("the Stats panel", () => {
   });
 
   it("draws the Results card from the games and versions the page holds, and its empty link opens Games", () => {
-    const stats = { statsEnabled: true, filter: "all" as const, statsData: { commanders: [] } };
+    const stats = { filter: "all" as const, statsData: { commanders: [] } };
     const onLogGame = vi.fn();
     renderDecklist([rampOwned], { ...stats, onLogGame });
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
@@ -1730,7 +1720,6 @@ describe("the Stats panel", () => {
 
   it("tallies the Jobs rows from the passed cards and the shipped labels, so an optimistic change moves them", () => {
     const stats = {
-      statsEnabled: true,
       filter: "all" as const,
       statsData: { commanders: [], jobs: { "sol-ring": ["ramp" as const], "rhystic-study": ["draw" as const] } },
     };
@@ -1756,7 +1745,6 @@ describe("the Stats panel", () => {
       roles: null,
     };
     const stats = {
-      statsEnabled: true,
       filter: "all" as const,
       statsData: { commanders: [{ cmc: 4, typeLine: "Legendary Artifact Creature", quantity: 1, manaCost: "{2}{G}{G}", colorIdentity: ["G"] }], average },
     };
@@ -1774,14 +1762,13 @@ describe("the Stats panel", () => {
   });
 
   it("keeps the Jobs card a shell when no labels were shipped", () => {
-    renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], jobs: null } });
+    renderDecklist([rampOwned], { filter: "all", statsData: { commanders: [], jobs: null } });
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-job-row]")).toBeNull();
   });
 
   it("draws the Colors card from the shipped land text, the commanders and the passed cards, so an optimistic change moves it", () => {
     const stats = {
-      statsEnabled: true,
       filter: "all" as const,
       statsData: {
         commanders: [{ cmc: 4, typeLine: "Legendary Creature", quantity: 1, manaCost: "{2}{G}{G}", colorIdentity: ["G", "U"] }],
@@ -1809,13 +1796,13 @@ describe("the Stats panel", () => {
   });
 
   it("keeps the Colors card a shell when no land text was shipped", () => {
-    renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], lands: null, sources: {} } });
+    renderDecklist([rampOwned], { filter: "all", statsData: { commanders: [], lands: null, sources: {} } });
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-colors-rows]")).toBeNull();
   });
 
   it("keeps the Colors card a shell when the non-land source read failed", () => {
-    renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], lands: {}, sources: null } });
+    renderDecklist([rampOwned], { filter: "all", statsData: { commanders: [], lands: {}, sources: null } });
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-colors-rows]")).toBeNull();
   });
@@ -1823,7 +1810,7 @@ describe("the Stats panel", () => {
   it("draws the Money card from the Shopping basket, so its to-buy is the pill's basket (a longer list draws a larger one)", () => {
     const NOW = new Date("2026-10-05T09:00:00.000Z");
     const p = (cents: number) => ({ cents, foilCents: null, etchedCents: null, asOf: NOW });
-    const stats = { statsEnabled: true, filter: "all" as const, newestAsOf: NOW, statsData: { commanders: [] } };
+    const stats = { filter: "all" as const, newestAsOf: NOW, statsData: { commanders: [] } };
     const own = makeCard({ oracleId: "own", name: "Own", owned: true, price: p(1000) } as never);
     const buy = makeCard({ oracleId: "buy", name: "Buy", owned: false, price: p(2500) } as never);
     const forest = makeCard({ ...basicLand, quantity: 10, price: p(5) } as never);
@@ -1847,7 +1834,7 @@ describe("the Stats panel", () => {
   it("opens Shopping from the Money card's link", () => {
     const NOW = new Date("2026-10-05T09:00:00.000Z");
     const buy = makeCard({ oracleId: "buy", name: "Buy", owned: false, price: { cents: 2500, foilCents: null, etchedCents: null, asOf: NOW } } as never);
-    renderDecklist([buy], { statsEnabled: true, filter: "all", newestAsOf: NOW, statsData: { commanders: [] } });
+    renderDecklist([buy], { filter: "all", newestAsOf: NOW, statsData: { commanders: [] } });
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     fireEvent.click(document.querySelector("[data-money-shop]")!);
     // The control returns to the list body; the filter itself is the page's to hold.
@@ -1855,7 +1842,7 @@ describe("the Stats panel", () => {
   });
 
   it("returns to the list when All is pressed from Stats", () => {
-    renderDecklist([rampOwned], { filter: "all", statsEnabled: true });
+    renderDecklist([rampOwned], { filter: "all" });
     fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     fireEvent.click(screen.getByRole("tab", { name: /^All\b/ }));
 

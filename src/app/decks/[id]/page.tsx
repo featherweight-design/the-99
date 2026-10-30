@@ -62,7 +62,6 @@ import type { JobRowsByCard } from "../../../lib/decks/job-tally";
 import { labelRoleCountsEnabled } from "../../../lib/decks/label-counts-flag";
 import { roleCounterFor } from "../../../lib/decks/label-role-counts";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
-import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
 import { readDeckNotes } from "../../../lib/decks/notes-read";
 import { loadJobRows } from "../../../lib/decks/job-rows";
 import { loadDeckMix } from "../../../lib/decks/deck-mix";
@@ -194,27 +193,19 @@ export default async function DeckBuilderPage({
   // The Jobs card's labels start the moment the detail resolves, beside every other read, and are
   // awaited only where the card is drawn.
   // One label read serves the Jobs card and the Mana colors card's non-land sources.
-  const statsLabelsRead = deckStatsEnabled(env)
-    ? early(detailRead.then((d) => (d ? perf.timed("statsLabels", () => loadStatsLabels(d.cards)) : null)))
-    : null;
-  const statsJobsRead = statsLabelsRead ? early(Promise.all([detailRead, statsLabelsRead]).then(([d, labels]) => (d ? loadJobRows(d.cards, labels) : null))) : null;
+  const statsLabelsRead = early(detailRead.then((d) => (d ? perf.timed("statsLabels", () => loadStatsLabels(d.cards)) : null)));
+  const statsJobsRead = early(Promise.all([detailRead, statsLabelsRead]).then(([d, labels]) => (d ? loadJobRows(d.cards, labels) : null)));
   // The Colors card's land supply: what each land in the deck can add, read from the catalog's text
   // the moment the detail resolves, and awaited only where the card is drawn.
-  const statsLandsRead = deckStatsEnabled(env)
-    ? early(detailRead.then((d) => (d
-        ? perf.timed("statsLands", () => loadLandMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])]))
-        : null)))
-    : null;
+  const statsLandsRead = early(detailRead.then((d) => (d
+    ? perf.timed("statsLands", () => loadLandMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])]))
+    : null)));
   // The same card's non-land sources: which cards make mana comes from the labels, the colors from the text.
-  const statsSourcesRead = statsLabelsRead
-    ? early(Promise.all([detailRead, statsLabelsRead]).then(([d, labels]) => (d
-        ? perf.timed("statsSources", () => loadSourceMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])], labels))
-        : null)))
-    : null;
+  const statsSourcesRead = early(Promise.all([detailRead, statsLabelsRead]).then(([d, labels]) => (d
+    ? perf.timed("statsSources", () => loadSourceMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])], labels))
+    : null)));
   // The Average card's basis: the commander's (or pair's, or colors') average deck, through the basis chain.
-  const statsAverageRead = deckStatsEnabled(env)
-    ? early(detailRead.then((d) => (d ? perf.timed("statsAverage", () => loadStatsAverage(d)) : null)))
-    : null;
+  const statsAverageRead = early(detailRead.then((d) => (d ? perf.timed("statsAverage", () => loadStatsAverage(d)) : null)));
   // A 60-second cached read shared by both cached payloads below, resolved once rather than
   // per entry, and chained into the suggestions rather than awaited on its own.
   const indexGenRead = early(perf.timed("indexGeneration", () => indexGeneration()));
@@ -744,23 +735,20 @@ export default async function DeckBuilderPage({
       // Nothing in the app produces such a URL now that `/decks/[id]/versions`
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
-      statsEnabled={deckStatsEnabled(env)}
       notesData={await notesRead}
-      statsData={deckStatsEnabled(env)
-        ? {
-            jobs: statsJobsRead ? await statsJobsRead : null,
-            lands: statsLandsRead ? await statsLandsRead : null,
-            sources: statsSourcesRead ? await statsSourcesRead : null,
-            average: statsAverageRead ? await statsAverageRead : null,
-            commanders: [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
-              cmc: c.cmc ?? 0,
-              typeLine: c.typeLine,
-              manaCost: c.manaCost,
-              colorIdentity: c.colorIdentity,
-              quantity: 1,
-            })),
-          }
-        : null}
+      statsData={{
+        jobs: await statsJobsRead,
+        lands: await statsLandsRead,
+        sources: await statsSourcesRead,
+        average: await statsAverageRead,
+        commanders: [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
+          cmc: c.cmc ?? 0,
+          typeLine: c.typeLine,
+          manaCost: c.manaCost,
+          colorIdentity: c.colorIdentity,
+          quantity: 1,
+        })),
+      }}
       tuningEnabled={tuned}
       strategy={strategy}
       socialGames={socialFriendsEnabled(env)}

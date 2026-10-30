@@ -1,6 +1,6 @@
 "use client";
 
-// Group Toggle — the deck toolbar: the panel switch (All · Shopping, and Stats · Notes behind their switches) and the
+// Group Toggle — the deck toolbar: the panel switch (All · Shopping, and Stats · Notes when the caller passes them) and the
 // By type / By role grouping switch, both `SegmentedSwitch`.
 // §Decklist Group Toggle (design table).
 
@@ -126,13 +126,13 @@ type GroupToggleProps = {
   /** Auto COPIES whose card is locked (T3): Clear's label counts `autoCount` less these. */
   lockedAutoCount?: number;
   /**
-   * `DECK_STATS_ENABLED`: present means the control is `All · Shopping | Stats`. Absent is today's
-   * toolbar, exactly. While `open`, the segment is the selected one and every list tool steps
+   * Present means the control is `All · Shopping | Stats` (the deck list always passes it; the empty
+   * deck's bar does not). While `open`, the segment is the selected one and every list tool steps
    * aside, because the panel below is not a list.
    */
   stats?: { open: boolean; onChange: (open: boolean) => void };
   /**
-   * Present adds a Notes segment after Stats (or after Shopping with Stats off:
+   * Present adds a Notes segment after Stats (or after Shopping where no Stats is passed:
    * `All · Shopping | Notes`). `count` is the open notes, drawn in neutral mono and absent at zero.
    * While `open`, every list tool steps aside, as for Stats.
    */
@@ -213,7 +213,7 @@ export function GroupToggle({
   const lockAvailable = onLockModeChange !== undefined && filter === "all";
   // Cluster 2 and the hairline share this gate (addendum F3, delta 1). Lock cards alone is reason
   // enough for both; with the switch off it reduces to the gate they had before.
-  // With the Stats switch on, the phone toolbar is three explicit rows (All/Shopping/Stats; Lock
+  // With a Stats or Notes segment, the phone toolbar is three explicit rows (All/Shopping/Stats; Lock
   // cards + view well; grouping + sort), built with `order` and full-width breaks instead of
   // relying on incidental wrapping. Cluster 3 turns into `contents` so its parts can be ordered
   // against the other clusters; from `md:` every `order` resets and the row reads as before.
@@ -234,8 +234,7 @@ export function GroupToggle({
           whole rather than splitting the pair across two lines. */}
       <div className="flex flex-wrap items-center gap-[7px] md:gap-[10px]">
         {/* One segmented well (handoff 2a), a tablist since it swaps what the panel shows: All and Shopping,
-            then, behind a hairline, Stats when its switch is on (DECK_STATS_ENABLED) and Notes when the
-            caller passes them. Shopping keeps its warm ink selected or not (the accent tone). Full width at
+            then, behind a hairline, Stats and Notes when the caller passes them. Shopping keeps its warm ink selected or not (the accent tone). Full width at
             phone with the segments sharing it when the toolbar takes its explicit phone rows; content width
             otherwise, and from `md:` either way. */}
           <SegmentedSwitch

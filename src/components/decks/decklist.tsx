@@ -158,8 +158,7 @@ type DecklistProps = {
    * everything in it must not be congratulated on a fill that never ran.
    */
   filled?: boolean;
-  /** `DECK_STATS_ENABLED`. Off: no Stats segment is drawn and nothing else changes. */
-  statsEnabled?: boolean;
+  /** What the Stats segment's panel needs beyond the card list. */
   statsData?: DeckStatsInput | null;
   /** The deck's notes, for the Notes segment and its panel. */
   notesData?: DeckNotesView | null;
@@ -367,7 +366,6 @@ export function Decklist({
   bodySize,
   spentSlots = EMPTY_SPENT_SLOTS,
   filled = false,
-  statsEnabled = false,
   statsData = null,
   notesData = null,
   statsFocus = null,
@@ -414,7 +412,7 @@ export function Decklist({
   // The panel's body, held for this visit to this deck (`useDeckPanel`), not remembered. Stats is a
   // third segment of the All / Shopping control, so choosing either list segment returns here.
   const [panel, choosePanel] = useDeckPanel();
-  const statsOpen = statsEnabled && panel === "stats";
+  const statsOpen = panel === "stats";
   const notesOpen = panel === "notes";
   // I got it's held slots (call 8) last until the list is read again: a switch of tab or panel, or
   // leaving the deck, clears them; the action's revalidation does not.
@@ -427,9 +425,7 @@ export function Decklist({
     choosePanel("list");
     onFilterChangeProp(f);
   };
-  const stats = statsEnabled
-    ? { open: statsOpen, onChange: (open: boolean) => choosePanel(open ? "stats" : "list") }
-    : undefined;
+  const stats = { open: statsOpen, onChange: (open: boolean) => choosePanel(open ? "stats" : "list") };
   const notes = { open: notesOpen, count: notesData?.open.length ?? 0, onChange: (open: boolean) => choosePanel(open ? "notes" : "list") };
   const view = storedView ?? "list";
   // The ledger's Stats link: open the panel, then, once it is drawn, bring the card into view.
@@ -438,7 +434,7 @@ export function Decklist({
   // (the shell drops the request through `onStatsFocused`).
   const answered = useRef(0);
   useEffect(() => {
-    if (!statsFocus || !statsEnabled || answered.current === statsFocus.n) return;
+    if (!statsFocus || answered.current === statsFocus.n) return;
     if (!statsOpen) {
       choosePanel("stats");
       return;
@@ -453,7 +449,7 @@ export function Decklist({
       target.focus({ preventScroll: true });
     }
     onStatsFocused?.();
-  }, [statsFocus, statsEnabled, statsOpen, choosePanel, onStatsFocused]);
+  }, [statsFocus, statsOpen, choosePanel, onStatsFocused]);
 
   // The marks this view actually contains, which is what the key decodes. Only
   // what the current view DRAWS — rows under `Shopping` and under `All`'s list,
