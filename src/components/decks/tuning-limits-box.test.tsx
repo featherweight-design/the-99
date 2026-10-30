@@ -21,6 +21,7 @@ function renderBox(overrides: Partial<Parameters<typeof TuningLimitsBox>[0]> = {
       onSetsChange={onSetsChange}
       ownedOnly={false}
       onOwnedOnlyChange={onOwnedOnlyChange}
+      otherDecksOffered
       otherDecks={false}
       onOtherDecksChange={onOtherDecksChange}
       {...overrides}
@@ -101,14 +102,14 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
     const { rerender } = render(
       <TuningLimitsBox
         sets={sets} capDollars={25} onCapChange={vi.fn()} onCapDraftInvalid={vi.fn()} selectedSets={[]} onSetsChange={vi.fn()}
-        ownedOnly={false} onOwnedOnlyChange={vi.fn()} otherDecks={false} onOtherDecksChange={vi.fn()}
+        ownedOnly={false} onOwnedOnlyChange={vi.fn()} otherDecksOffered otherDecks={false} onOtherDecksChange={vi.fn()}
       />,
     );
     expect(screen.getByLabelText("Most per card")).toHaveValue("25");
     rerender(
       <TuningLimitsBox
         sets={sets} capDollars={50} onCapChange={vi.fn()} onCapDraftInvalid={vi.fn()} selectedSets={[]} onSetsChange={vi.fn()}
-        ownedOnly={false} onOwnedOnlyChange={vi.fn()} otherDecks={false} onOtherDecksChange={vi.fn()}
+        ownedOnly={false} onOwnedOnlyChange={vi.fn()} otherDecksOffered otherDecks={false} onOtherDecksChange={vi.fn()}
       />,
     );
     expect(screen.getByLabelText("Most per card")).toHaveValue("50");
@@ -155,6 +156,11 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
 });
 
 describe("Include my other decks", () => {
+  it("is not offered on a v10 run, whose Apply has no pull", () => {
+    renderBox({ ownedOnly: true, otherDecksOffered: false });
+    expect(screen.queryByRole("checkbox", { name: /Include my other decks/ })).toBeNull();
+  });
+
   it("is not offered with Any card", () => {
     renderBox({ ownedOnly: false });
     expect(screen.queryByRole("checkbox", { name: /Include my other decks/ })).toBeNull();

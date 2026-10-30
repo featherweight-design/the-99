@@ -55,6 +55,7 @@ export function TuningLimitsBox({
   onSetsChange,
   ownedOnly,
   onOwnedOnlyChange,
+  otherDecksOffered,
   otherDecks,
   onOtherDecksChange,
 }: {
@@ -74,7 +75,9 @@ export function TuningLimitsBox({
   onSetsChange: (next: string[]) => void;
   ownedOnly: boolean;
   onOwnedOnlyChange: (next: boolean) => void;
-  /** Include my other decks (Small items 4, item 2): shown only while `ownedOnly` is on. */
+  /** Include my other decks (Small items 4, item 2): offered only on a v2 run (its Apply pulls the held copies), and
+   *  shown only while `ownedOnly` is on. */
+  otherDecksOffered: boolean;
   otherDecks: boolean;
   onOtherDecksChange: (next: boolean) => void;
 }) {
@@ -154,7 +157,7 @@ export function TuningLimitsBox({
       </div>
 
       {/* With Any card, cards in other decks are already offered (marked, with a buy tag), so there is no choice to make. */}
-      {ownedOnly && (
+      {otherDecksOffered && ownedOnly && (
         <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] px-[2px] pt-[4px] md:col-span-full md:min-h-0 md:items-center md:border-t md:border-solid md:border-[color:var(--border)] md:pt-[12px]">
           <Checkbox checked={otherDecks} onChange={onOtherDecksChange} className="mt-[1px]" />
           <span className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[10px]">

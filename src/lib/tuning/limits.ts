@@ -172,8 +172,8 @@ export const OWNED_SHORTLIST_MAX = 80;
 export const OWNED_OFF_INDEX_MAX = 40;
 
 /**
- * Whether an owned card's copies let an owned-only run offer it: a copy free of every other deck, or, with Also cards
- * in my other decks (`limits.otherDecks`, Small items 4 item 2), any owned copy, a held one included. `free` is the
+ * Whether an owned card's copies let an owned-only run offer it: a copy free of every other deck, or, with Include my
+ * other decks (`limits.otherDecks`, Small items 4 item 2), any owned copy, a held one included. `free` is the
  * availability read's `free` from the asking deck's vantage (`excludeDeckId`); undefined when the read has no row,
  * which no claim holds. Every owned-only reader decides it here: the three candidate tiers and the answer's `owned`.
  */

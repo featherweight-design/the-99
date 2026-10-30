@@ -1389,6 +1389,7 @@ export function TuningPanel({
           setOwnedOnly(next);
           saveLimits({ ownedOnly: next });
         }}
+        otherDecksOffered={v2 !== null}
         otherDecks={otherDecks}
         onOtherDecksChange={(next) => {
           setOtherDecks(next);
