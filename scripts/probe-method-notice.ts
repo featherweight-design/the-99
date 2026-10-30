@@ -72,7 +72,7 @@ const deps: GenerateDeps = {
   model: async (req, facts): Promise<ModelOutcome<SynopsisReply>> => {
     calls += 1;
     if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
-    return stubReply(facts, queue.shift() ?? "survived", false, !!req.v2);
+    return stubReply(facts, queue.shift() ?? "survived", false, !!req.v2, !!req.stages);
   },
   now: () => new Date(),
   profile: profileDeps,

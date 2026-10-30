@@ -658,7 +658,9 @@ async function run(
   // written under another contract is rewritten whole instead: a document never mixes two
   // contracts (plan, decision 2), so it never quotes two interaction readings either.
   let base: SynopsisRow | null = null;
-  if (retry && current && current.contractVersion === contract) {
+  // Contract 13 covers both interaction readings, so the row records which one it quoted: a retry across a
+  // label read that failed once and worked the next time rewrites the whole document.
+  if (retry && current && current.contractVersion === contract && (!stages || current.content?.interactionShared === shared)) {
     if (refusedSections(current.content).length === 0) return { kind: "nothing_to_retry" };
     base = current;
   }
@@ -721,7 +723,7 @@ async function run(
       billed = synopsisBills(modelName, effort, outcome.usage, repair.usage);
       content = await applyRepair(content, repair, failing, facts, v2, stages);
     }
-    if (stages) content = settleStages(content, facts);
+    if (stages) content = { ...settleStages(content, facts, base && refused ? refused : undefined), interactionShared: shared };
     const charge = chargeFor(content);
     const result = outcomeOf(content.verdicts);
     const written = await finishRun(

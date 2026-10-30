@@ -163,6 +163,9 @@ export type CheckedSynopsis = {
    * the fixed land range, which is acceptable; one that does draws the labels and this line in the
    * range's place. No Wins by line is stored.
    */
+  /** Contract 13 only: whether the interaction figures quoted were the benchmarks' reading (true) or the
+   *  classifier's fallback (false). The contract no longer tells the two apart, so a section retry compares it. */
+  interactionShared?: boolean;
   landKeep?: string;
   /** Contract 13: the alternate-commander line. A precon's alone; absent for a player's deck. */
   alternate?: string;

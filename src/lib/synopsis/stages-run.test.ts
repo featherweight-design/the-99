@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import type { SynopsisFacts } from "./facts";
+import { normalizeName, type SynopsisFacts } from "./facts";
 import { SYNOPSIS_CONTRACT_VERSION_STAGES } from "./limits";
 import { stagesSchemaFor, landKeepNumber, type StagesReply } from "./stages";
 import { applyStagesShape, repairNote, settleStages, stagesPromptOption, stagesRepairTargets } from "./stages-run";
 import { stubReply } from "./stub";
 import { validateSynopsisV8 } from "./validate-v8";
+import { marksIn } from "./validate";
 
 // Contract 13's pure rules (`stages-run.ts`): each is shown holding on a reply built to pass, then
 // broken one way and shown failing, so a rule that always answers clean cannot hide here.
@@ -138,6 +139,26 @@ describe("the explained-once pass on what is stored", () => {
     expect(t.sections).toContain("keyCards");
     expect(t.reasons.length).toBeGreaterThan(0);
     expect(repairNote(t.reasons)).toContain("each card is explained in one section only");
+  });
+
+  it("leaves a kept Key cards section alone when only the Primer was retried", () => {
+    const r = reply();
+    const c = applyStagesShape(checked(r), r, FACTS);
+    const settled = settleStages(c, FACTS, ["primer"]);
+    expect(settled.keyCards).toEqual(c.keyCards);
+    expect(status(settled, "keyCards")).toEqual(status(c, "keyCards"));
+  });
+
+  it("drops the evidence of a card whose mark the pass removed from a tip or a Key card job", () => {
+    const r = reply();
+    const c = applyStagesShape(checked(r), r, FACTS);
+    const settled = settleStages(c, FACTS);
+    const idsMarked = (text: string) => new Set(marksIn(text).map((m) => settled.cards[normalizeName(m)]?.oracleId));
+    (settled.primer?.tips ?? []).forEach((t, i) => {
+      const was = c.primer?.tips[i];
+      const dropped = marksIn(was?.text ?? "").map((m) => c.cards[normalizeName(m)]?.oracleId).filter((id) => id && !idsMarked(t.text).has(id));
+      for (const id of dropped) expect(settled.evidence?.tips[i]).not.toContain(id);
+    });
   });
 
   it("is idempotent, so a section retry can run it over sections it kept", () => {

@@ -101,41 +101,75 @@ export function repairNote(reasons: readonly string[]): string {
   return `These also broke the rule that each card is explained in one section only: ${reasons.join("; ")}.`;
 }
 
+/** The oracle ids of the cards whose `[[mark]]` `before` holds and `after` no longer does. */
+function droppedIds(before: string, after: string, cards: CheckedSynopsis["cards"]): Set<string> {
+  const kept = new Set(marksIn(after).map(normalizeName));
+  const out = new Set<string>();
+  for (const m of marksIn(before)) {
+    const key = normalizeName(m);
+    const id = cards[key]?.oracleId;
+    if (!kept.has(key) && id) out.add(id);
+  }
+  return out;
+}
+
 /**
  * The explained-once post-pass applied to what is stored, so a reader is shown what the harness
  * showed (`dedupeSections`): a Key card a stage already explains is dropped, and a tip or Key card
- * job loses the mark of a card an earlier section explains (its words stay). A Key cards section the
- * drop leaves under its minimum is refused (`wrong_count`), since nothing refills it. Idempotent, so
- * a section retry may run it over sections it kept.
+ * job loses the mark of a card an earlier section explains (its words stay), and the evidence that
+ * card carried with it, so "Based on" never links a card the text no longer names. A Key cards
+ * section the drop leaves under its minimum is refused (`wrong_count`), since nothing refills it.
+ * Idempotent. `scope` limits it to the sections a section retry rewrote: a section that already
+ * passed is never changed by the retry, so a new stage that names a kept Key card leaves that card
+ * as it was and the conflict is resolved inside the rewritten section alone.
  */
-export function settleStages(content: CheckedSynopsis, facts: SynopsisFacts): CheckedSynopsis {
+export function settleStages(content: CheckedSynopsis, facts: SynopsisFacts, scope?: readonly SectionId[]): CheckedSynopsis {
   const { doc } = dedupeSections(docFromChecked(content), facts);
   let out = content;
   const old = content.keyCards;
-  if (old) {
+  if (old && (!scope || scope.includes("keyCards"))) {
     const kept: { at: number; job: string }[] = [];
     old.forEach((k, at) => {
       const next = doc.keyCards[kept.length];
       if (next && next.card === k.card) kept.push({ at, job: next.job.text });
     });
     if (kept.length !== old.length || kept.some((k) => k.job !== old[k.at].job)) {
+      const ev = out.evidence;
       out = {
         ...out,
         keyCards: kept.map((k) => ({ ...old[k.at], job: k.job })),
-        ...(out.evidence ? { evidence: { ...out.evidence, keyCards: kept.map((k) => out.evidence!.keyCards[k.at] ?? []) } } : {}),
+        ...(ev ? {
+          evidence: {
+            ...ev,
+            keyCards: kept.map((k) => {
+              const ids = ev.keyCards[k.at] ?? [];
+              const gone = droppedIds(old[k.at].job, k.job, content.cards);
+              return gone.size === 0 ? ids : ids.filter((id) => !gone.has(id));
+            }),
+          },
+        } : {}),
       };
     }
     if ((out.keyCards?.length ?? 0) < SECTION_COUNTS.keyCards.min) out = refuse(out, "keyCards", "wrong_count");
   }
   const p = out.primer;
-  if (p) {
+  if (p && (!scope || scope.includes("primer"))) {
+    const gone: Set<string>[] = [];
     const tips = p.tips.map((t, i) => {
       const text = doc.tips[i]?.text ?? t.text;
+      gone[i] = droppedIds(t.text, text, content.cards);
       if (text === t.text) return t;
       const marked = new Set(marksIn(text).map(normalizeName));
       return { text, cards: t.cards.filter((c) => marked.has(normalizeName(c))) };
     });
-    if (tips.some((t, i) => t !== p.tips[i])) out = { ...out, primer: { ...p, tips } };
+    if (tips.some((t, i) => t !== p.tips[i])) {
+      const ev = out.evidence;
+      out = {
+        ...out,
+        primer: { ...p, tips },
+        ...(ev ? { evidence: { ...ev, tips: ev.tips.map((ids, i) => (gone[i]?.size ? ids.filter((id) => !gone[i].has(id)) : ids)) } } : {}),
+      };
+    }
   }
   return out;
 }
