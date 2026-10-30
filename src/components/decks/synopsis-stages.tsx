@@ -129,7 +129,7 @@ export function GamePlan({
       </div>
       {alternate ? (
         <div data-testid="synopsis-alternate" className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-[12px] rounded-[10px] border border-dashed border-[var(--border-dashed)] px-[14px] py-[12px]">
-          <span aria-hidden className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-sunken)] text-[var(--accent)]">
+          <span aria-hidden className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-sunken)] text-[var(--accent-text)]">
             <NavIcon href="/commanders" />
           </span>
           <div className="min-w-0">
