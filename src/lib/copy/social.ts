@@ -374,19 +374,19 @@ export const socialCopy = {
     cancel: "Cancel",
     // The card's meta line.
     metaOwn: (n: number) => `${members(n)} · yours`,
-    metaOther: (n: number, owner: string) => `${members(n)} · ${owner} owns it`,
+    metaOther: (n: number, owner: ThirdPartyName) => personText`${members(n)} · ${owner} owns it`,
     solo: "Just you so far. Add friends to play with.",
     you: "You",
     ownerTag: "owner",
     notFriendTag: "not a friend",
-    removeMemberAria: (name: string, pod: string) => `Remove ${name} from ${pod}`,
+    removeMemberAria: (name: ThirdPartyName, pod: string | ThirdPartyName) => personText`Remove ${name} from ${pod}`,
     addFriends: "+ Add friends",
     /** The owner's edit state (small items item 7, board `Pod-Edit`): Edit shows each seat's ✕, Done puts them away. */
     edit: "Edit",
     done: "Done",
     share: "Share my spares with this pod",
     // Add friends (dialog at desktop, sheet at phone).
-    addTitle: (pod: string) => `Add to ${pod}`,
+    addTitle: (pod: string | ThirdPartyName) => personText`Add to ${pod}`,
     addSub: "Only your friends can be added. They aren’t told.",
     addConfirm: (n: number) => (n === 0 ? "Add friends" : `Add ${friends(n)}`), // held at 0
     addAllIn: "Every friend is already in this pod.",
@@ -396,19 +396,21 @@ export const socialCopy = {
     failed: "We couldn’t change that pod. Try again.", // toast, role alert
     // The header's `…` menu (E2). Rename is the owner's alone; everyone can leave.
     save: "Save",
-    menuAria: (pod: string) => `${pod} actions`,
+    menuAria: (pod: string | ThirdPartyName) => personText`${pod} actions`,
     rename: "Rename",
     leave: "Leave pod",
     del: "Delete pod",
-    leaveHeading: (pod: string) => `Leave “${pod}”?`,
-    leaveOwnerBody: (next: string) => `It passes to ${next}, its longest-standing member. Nobody is told.`,
-    leaveMemberBody: (owner: string) => `Only ${owner} can add you back. Nobody is told.`,
+    leaveHeading: (pod: string | ThirdPartyName) => personText`Leave “${pod}”?`,
+    leaveOwnerBody: (next: ThirdPartyName) => personText`It passes to ${next}, its longest-standing member. Nobody is told.`,
+    leaveMemberBody: (owner: ThirdPartyName) => personText`Only ${owner} can add you back. Nobody is told.`,
     // The owner adds only their own friends, so a member who is not theirs (after a hand-on) needs that first (C1).
-    leaveMemberStrangerBody: (owner: string) => `Only ${owner} can add you back, once you’re friends. Nobody is told.`,
+    leaveMemberStrangerBody: (owner: ThirdPartyName) => personText`Only ${owner} can add you back, once you’re friends. Nobody is told.`,
+    /** A pod drawn with no owner seat (it cannot be, bar a redraw in flight): the line that names nobody. */
+    leaveNoOwnerBody: "Only its owner can add you back. Nobody is told.",
     leaveLastBody: "You’re its last member, so leaving deletes it.",
     leaveConfirm: "Leave pod",
     leaveLastConfirm: "Leave and delete",
-    delHeading: (pod: string) => `Delete “${pod}”?`,
+    delHeading: (pod: string | ThirdPartyName) => personText`Delete “${pod}”?`,
     delBody: "No friendship changes, and nobody is told.",
     delConfirm: "Delete pod",
   },

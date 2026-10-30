@@ -9,6 +9,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { Pod } from "../../lib/social/access";
+import { personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { socialCopy } from "../../lib/copy/social";
 import { folderCopy } from "../../lib/copy/folders";
 import { DeleteConfirm } from "../ui/delete-confirm";
@@ -18,13 +19,16 @@ const copy = socialCopy.pods;
 type Row = "rename" | "leave" | "del";
 type Mode = "menu" | "leave" | "del";
 
+/** A pod as the pane draws it: the reader's own rename shows as typed until the page redraws. */
+export type ShownPod = Omit<Pod, "name"> & { name: string | ThirdPartyName };
+
 /** What Leave says, by who is leaving (§8): the last member deletes it, an owner hands it on, a member asks back. */
-export function leaveText(pod: Pod): { body: string; confirm: string } {
+export function leaveText(pod: ShownPod): { body: string | PersonParts; confirm: string } {
   if (pod.members.length <= 1) return { body: copy.leaveLastBody, confirm: copy.leaveLastConfirm };
   if (pod.isOwner && pod.nextOwner) return { body: copy.leaveOwnerBody(pod.nextOwner.displayName), confirm: copy.leaveConfirm };
   const owner = pod.members.find((m) => m.isOwner);
-  const name = owner?.displayName ?? "";
-  return { body: owner?.isFriend ? copy.leaveMemberBody(name) : copy.leaveMemberStrangerBody(name), confirm: copy.leaveConfirm };
+  if (!owner) return { body: copy.leaveNoOwnerBody, confirm: copy.leaveConfirm };
+  return { body: owner.isFriend ? copy.leaveMemberBody(owner.displayName) : copy.leaveMemberStrangerBody(owner.displayName), confirm: copy.leaveConfirm };
 }
 
 export function PodMenu({
@@ -35,7 +39,7 @@ export function PodMenu({
   leaveHeld = false,
   triggerRef,
 }: {
-  pod: Pod;
+  pod: ShownPod;
   /** Leave is held (`aria-disabled`) until the redraw names the heir again. */
   leaveHeld?: boolean;
   onRename: () => void;
@@ -141,7 +145,6 @@ export function PodMenu({
       <button
         ref={trigger}
         type="button"
-        aria-label={copy.menuAria(pod.name)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
@@ -150,9 +153,12 @@ export function PodMenu({
           setActive(0);
           setOpen(true);
         }}
-        className={`flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[8px] border-0 p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] ${
-          open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "bg-transparent text-[color:var(--fg-muted)]"
-        }`}
+        {...personAttrs(
+          { "aria-label": copy.menuAria(pod.name) },
+          `flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[8px] border-0 p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] ${
+            open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "bg-transparent text-[color:var(--fg-muted)]"
+          }`,
+        )}
       >
         <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="5" cy="12" r="1.7" />
@@ -161,7 +167,7 @@ export function PodMenu({
         </svg>
       </button>
       {open && mode === "menu" ? (
-        <div id={panelId} role="menu" aria-label={copy.menuAria(pod.name)} className={PANEL} data-testid="pod-menu">
+        <div id={panelId} role="menu" {...personAttrs({ "aria-label": copy.menuAria(pod.name) }, PANEL)} data-testid="pod-menu">
           {rows.map((row, i) => (
             <button
               key={row}
@@ -190,7 +196,7 @@ export function PodMenu({
         </div>
       ) : null}
       {open && mode !== "menu" ? (
-        <div id={panelId} role="dialog" aria-label={heading} className={PANEL} data-testid="pod-confirm">
+        <div id={panelId} role="dialog" {...personAttrs({ "aria-label": heading }, PANEL)} data-testid="pod-confirm">
           <DeleteConfirm
             heading={heading}
             body={mode === "del" ? copy.delBody : leave.body}

@@ -298,7 +298,7 @@ export function GameSeats({
                     : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg)]")
                 }
               >
-                {pod.name}
+                <PersonName n={pod.name} />
               </button>
             ))}
           </span>

@@ -104,7 +104,7 @@ export async function resolveFriend(viewerId: string, publicId: unknown, q: Read
 
 export type PodMember = {
   publicId: string;
-  displayName: string;
+  displayName: ThirdPartyName;
   joinedAt: Date;
   isOwner: boolean;
   isYou: boolean;
@@ -115,7 +115,8 @@ export type PodMember = {
 };
 export type Pod = {
   id: string;
-  name: string;
+  /** Branded for everyone, the creator included. */
+  name: ThirdPartyName;
   isOwner: boolean;
   /** Owner first, then the viewer, then by name (G9). */
   members: PodMember[];
@@ -123,7 +124,7 @@ export type Pod = {
    * Who holds the pod if the viewer, its owner, leaves (Q5): computed here because `nextPodOwner` breaks a
    * tie by account id, which no client holds (E4). Null when the viewer is not the owner, or is alone.
    */
-  nextOwner: { publicId: string; displayName: string } | null;
+  nextOwner: { publicId: string; displayName: ThirdPartyName } | null;
 };
 
 /** The pods the viewer is a member of: membership on the viewer IS the grant to read the pod. */
@@ -194,7 +195,7 @@ export function shapePod(
   const heir = next === null ? undefined : rows.find((r) => r.userId === next);
   return {
     id: pod.id,
-    name: pod.name,
+    name: named(pod.name),
     isOwner,
     members: orderMembers(rows.map((m) => ({
       publicId: m.publicId,
@@ -204,8 +205,9 @@ export function shapePod(
       isYou: m.userId === viewerId,
       isFriend: m.userId !== viewerId && m.isFriend,
       commander: toCommander(m),
-    }))),
-    nextOwner: heir ? { publicId: heir.publicId, displayName: heir.displayName } : null,
+    // Ordered on the strings above, then branded.
+    }))).map((m) => ({ ...m, displayName: named(m.displayName) })),
+    nextOwner: heir ? { publicId: heir.publicId, displayName: named(heir.displayName) } : null,
   };
 }
 

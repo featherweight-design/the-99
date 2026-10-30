@@ -3,9 +3,9 @@
 // setup). One component, so the two surfaces cannot drift apart.
 
 import { FadingImg } from "../ui/hydrated-art";
-import { faceInitials } from "./face";
+import { PersonInitials, type ThirdPartyName } from "../../lib/person-name";
 
-export function SeatArt({ art, name, ring, children }: { art: string | null; name: string; ring: boolean; children?: React.ReactNode }) {
+export function SeatArt({ art, name, ring, children }: { art: string | null; name: string | ThirdPartyName; ring: boolean; children?: React.ReactNode }) {
   return (
     <span
       aria-hidden
@@ -22,7 +22,7 @@ export function SeatArt({ art, name, ring, children }: { art: string | null; nam
           data-testid="pod-seat-initials"
           className="flex h-full w-full items-center justify-center bg-[radial-gradient(120px_80px_at_50%_40%,color-mix(in_oklab,var(--elevated)_50%,var(--border-dashed)),var(--surface))] font-display text-[26px] font-bold text-[color:var(--fg-muted)]"
         >
-          {faceInitials(name)}
+          <PersonInitials n={name} />
         </span>
       )}
       {children}

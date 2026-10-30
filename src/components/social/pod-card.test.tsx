@@ -8,16 +8,18 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: 
 
 import { PodCard } from "./pod-card";
 import { socialCopy } from "../../lib/copy/social";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 import type { Pod, PodMember } from "../../lib/social/access";
 
 const P = socialCopy.pods;
-const member = (over: Partial<PodMember> & { displayName: string }): PodMember => ({
-  publicId: `p-${over.displayName}`, joinedAt: new Date("2026-10-01"), isOwner: false, isYou: false, isFriend: true, commander: null, ...over,
+const member = (over: Partial<Omit<PodMember, "displayName">> & { displayName: string }): PodMember => ({
+  publicId: `p-${over.displayName}`, joinedAt: new Date("2026-10-01"), isOwner: false, isYou: false, isFriend: true, commander: null, ...over, displayName: named(over.displayName),
 });
 const ME = member({ displayName: "Hugh", isYou: true, isOwner: true });
 const DAVE = member({ displayName: "Dave" });
 const PRIYA = member({ displayName: "Priya" });
-const pod = (over: Partial<Pod> = {}): Pod => ({ id: "pod-1", name: "Thursday", isOwner: true, members: [ME, DAVE, PRIYA], nextOwner: null, ...over });
+const pod = (over: Partial<Pod> = {}): Pod => ({ id: "pod-1", name: named("Thursday"), isOwner: true, members: [ME, DAVE, PRIYA], nextOwner: null, ...over });
 
 function draw(p: Pod, onRemove = vi.fn()) {
   const props = { shared: false, onRemove, onAdd: vi.fn(), onShare: vi.fn(), onRename: vi.fn(), onLeave: vi.fn(), onDelete: vi.fn() };
@@ -28,6 +30,20 @@ const removes = () => screen.queryAllByRole("button", { name: /^Remove / });
 const cardEl = () => screen.getByTestId("pod-card");
 
 afterEach(cleanup);
+
+describe("the pod card marks every name it draws (PersonName plan)", () => {
+  it("opts the pod name, each other member, the ✕ and the menu out of autocapture, and leaves yours plain", () => {
+    draw(pod());
+    fireEvent.click(screen.getByRole("button", { name: P.edit }));
+    expect(within(screen.getByTestId("pod-name")).getByText("Thursday").className).toBe("ph-no-capture");
+    const names = screen.getAllByTestId("pod-seat-name");
+    expect(names.map((n) => n.textContent)).toEqual([P.you, "Dave", "Priya"]);
+    expect(names[0].querySelector(".ph-no-capture")).toBeNull();
+    expect(names[1].querySelector(".ph-no-capture")?.textContent).toBe("Dave");
+    for (const b of removes()) expect(b.className).toContain("ph-no-capture");
+    expect(screen.getByRole("list", { name: "Thursday" }).className).toContain("ph-no-capture");
+  });
+});
 
 describe("the pod card's edit state", () => {
   it("draws no seat control at rest, and Edit only for the owner of a pod with someone else in it", () => {
@@ -45,10 +61,10 @@ describe("the pod card's edit state", () => {
   it("Edit shows every ✕ but yours, edges the card in the accent, swaps in Done and moves focus to the first ✕", () => {
     draw(pod());
     fireEvent.click(screen.getByRole("button", { name: P.edit }));
-    expect(removes().map((b) => b.getAttribute("aria-label"))).toEqual([P.removeMemberAria("Dave", "Thursday"), P.removeMemberAria("Priya", "Thursday")]);
+    expect(removes().map((b) => b.getAttribute("aria-label"))).toEqual([plain(P.removeMemberAria(named("Dave"), named("Thursday"))), plain(P.removeMemberAria(named("Priya"), named("Thursday")))]);
     expect(cardEl().className).toContain("shadow-[inset_0_0_0_1px_var(--accent)]");
     expect(screen.queryByRole("button", { name: P.edit })).toBeNull();
-    expect(screen.queryByRole("button", { name: P.menuAria("Thursday") })).toBeNull();
+    expect(screen.queryByRole("button", { name: plain(P.menuAria(named("Thursday"))) })).toBeNull();
     expect(screen.getByRole("button", { name: P.done })).toBeInTheDocument();
     expect(document.activeElement).toBe(removes()[0]);
   });
@@ -80,13 +96,13 @@ describe("the pod card's edit state", () => {
     fireEvent.click(removes()[0]);
     expect(onRemove).toHaveBeenCalledWith(DAVE);
     act(() => redraw(pod({ members: [ME, PRIYA] })));
-    expect(document.activeElement).toBe(within(cardEl()).getByRole("button", { name: P.removeMemberAria("Priya", "Thursday") }));
+    expect(document.activeElement).toBe(within(cardEl()).getByRole("button", { name: plain(P.removeMemberAria(named("Priya"), named("Thursday"))) }));
     fireEvent.click(removes()[0]);
     act(() => redraw(pod({ members: [ME] })));
     expect(removes()).toHaveLength(0);
     expect(screen.queryByRole("button", { name: P.done })).toBeNull();
     // Left alone: focus goes to the card's menu, and a friend added later does not reopen the edit state.
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: P.menuAria("Thursday") }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: plain(P.menuAria(named("Thursday"))) }));
     act(() => redraw(pod({ members: [ME, DAVE] })));
     expect(removes()).toHaveLength(0);
     expect(screen.getByRole("button", { name: P.edit })).toBeInTheDocument();
@@ -98,7 +114,7 @@ describe("the pod card's edit state", () => {
     expect(document.activeElement).toBe(removes()[0]);
     act(() => redraw(pod({ members: [ME] })));
     expect(removes()).toHaveLength(0);
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: P.menuAria("Thursday") }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: plain(P.menuAria(named("Thursday"))) }));
   });
 
   it("leaves an Escape from outside the card (a sheet portaled over the page) to that sheet", () => {
@@ -123,7 +139,7 @@ describe("the pod card's edit state", () => {
     let land!: (v: boolean) => void;
     const onLeave = vi.fn(() => new Promise<boolean>((r) => { land = r; }));
     render(<PodCard pod={pod()} shared={false} onRemove={vi.fn()} onAdd={vi.fn()} onShare={vi.fn()} onRename={vi.fn()} onLeave={onLeave} onDelete={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: P.menuAria("Thursday") }));
+    fireEvent.click(screen.getByRole("button", { name: plain(P.menuAria(named("Thursday"))) }));
     fireEvent.click(screen.getByRole("menuitem", { name: P.leave }));
     const confirm = screen.getAllByRole("button").find((b) => b.textContent === P.leave && b.getAttribute("role") !== "menuitem");
     await act(async () => { fireEvent.click(confirm!); });

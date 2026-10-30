@@ -27,11 +27,11 @@ import {
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { PodCard } from "./pod-card";
 import { PodAddFriends } from "./pod-add-friends";
-import { compareNames } from "../../lib/person-name";
+import { compareNames, type ThirdPartyName } from "../../lib/person-name";
 import { SocialToast, type SocialToastState } from "./social-toast";
 
 const copy = socialCopy.pods;
-const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "en-US", { sensitivity: "base" });
+const byName = (a: { name: string | ThirdPartyName }, b: { name: string | ThirdPartyName }) => compareNames(a.name, b.name, "en-US", { sensitivity: "base" });
 
 
 export function PodsPane({
@@ -119,7 +119,7 @@ export function PodsPane({
     }
   }
 
-  async function remove(pod: Pod, member: PodMember) {
+  async function remove(pod: Pick<Pod, "id">, member: PodMember) {
     const held = `${pod.id}:${member.publicId}`;
     setRemoved((prev) => new Set(prev).add(held));
     const back = () => setRemoved((prev) => {

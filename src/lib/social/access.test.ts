@@ -3,6 +3,7 @@
 // qualified join and viewer predicate are asserted here, and `probe:social` proves the answers.
 import { describe, expect, it } from "vitest";
 import { named } from "../person-name/mint";
+import { plain } from "../person-name/testing";
 import { friendQuery, friendsQuery, loadFriend, podMembersQuery, resolveFriend, resolveFriendQuery, shapePod, sortFriends, viewerPodsQuery } from "./access";
 
 const VIEWER = "user_viewer";
@@ -108,20 +109,26 @@ describe("shapePod", () => {
   ];
 
   it("orders the owner, then You, then by name", () => {
-    expect(shapePod(pod, rows, VIEWER).members.map((m) => m.displayName)).toEqual(["Olga", "Me", "Amy", "Zed"]);
+    expect(shapePod(pod, rows, VIEWER).members.map((m) => plain(m.displayName))).toEqual(["Olga", "Me", "Amy", "Zed"]);
   });
 
   it("says who is a friend, never the viewer", () => {
     const m = shapePod(pod, rows, VIEWER).members;
-    expect(m.map((x) => [x.displayName, x.isFriend, x.isYou])).toEqual([
+    expect(m.map((x) => [plain(x.displayName), x.isFriend, x.isYou])).toEqual([
       ["Olga", true, false], ["Me", false, true], ["Amy", false, false], ["Zed", true, false],
     ]);
   });
 
   it("carries the face the read joined, and none where it joined none", () => {
     const m = shapePod(pod, rows, VIEWER).members;
-    expect(m.find((x) => x.displayName === "Zed")?.commander).toEqual({ oracleId: "z", name: "Card z", artCropUri: "art/z" });
-    expect(m.find((x) => x.displayName === "Amy")?.commander).toBeNull();
+    expect(m.find((x) => plain(x.displayName) === "Zed")?.commander).toEqual({ oracleId: "z", name: "Card z", artCropUri: "art/z" });
+    expect(m.find((x) => plain(x.displayName) === "Amy")?.commander).toBeNull();
+  });
+
+  it("brands the pod's name and every member's name, the creator's too", () => {
+    const shaped = shapePod(pod, rows, VIEWER);
+    expect(shaped.name).toEqual(named("Table"));
+    expect(shaped.members.every((m) => typeof m.displayName === "object")).toBe(true);
   });
 
   it("names no next owner to a member", () => {
@@ -135,7 +142,7 @@ describe("shapePod", () => {
       row("u_a", "Zack", T1, true),
     ], VIEWER);
     expect(asOwner.isOwner).toBe(true);
-    expect(asOwner.nextOwner).toEqual({ publicId: "pub_u_a", displayName: "Zack" });
+    expect(asOwner.nextOwner).toEqual({ publicId: "pub_u_a", displayName: named("Zack") });
   });
 
   it("names nobody when the owner is alone", () => {

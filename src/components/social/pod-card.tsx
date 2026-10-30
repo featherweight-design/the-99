@@ -9,12 +9,13 @@
 // `pod-menu.tsx`), and Rename swaps the header for its field (§7).
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { Pod, PodMember } from "../../lib/social/access";
+import type { PodMember } from "../../lib/social/access";
+import { NO_CAPTURE, PersonName, PersonText, draftText, personAttrs, personText, type ThirdPartyName } from "../../lib/person-name";
 import { socialCopy } from "../../lib/copy/social";
 import { capName, POD_NAME_MAX } from "../../lib/social/client-rules";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { SeatArt } from "./seat-art";
-import { PodMenu } from "./pod-menu";
+import { PodMenu, type ShownPod } from "./pod-menu";
 import { Checkbox } from "../ui/checkbox";
 
 const copy = socialCopy.pods;
@@ -37,7 +38,7 @@ function Wash({ members }: { members: readonly PodMember[] }) {
 }
 
 /** A member's seat: art (or initials), the name, and a tag; the owner's ✕ over the art while editing (§3d, §3e). */
-function Seat({ member, podName, onRemove }: { member: PodMember; podName: string; onRemove: ((from: HTMLButtonElement) => void) | null }) {
+function Seat({ member, podName, onRemove }: { member: PodMember; podName: string | ThirdPartyName; onRemove: ((from: HTMLButtonElement) => void) | null }) {
   const art = member.commander?.artCropUri ?? null;
   // The owner tag wins over not-a-friend: a member is one or the other on the tile (d9, 2026-10-15).
   const tag = member.isYou ? null : member.isOwner ? copy.ownerTag : !member.isFriend ? copy.notFriendTag : null;
@@ -45,17 +46,16 @@ function Seat({ member, podName, onRemove }: { member: PodMember; podName: strin
     <li className="relative flex min-w-0 flex-col gap-[6px]" data-testid="pod-seat" data-you={member.isYou ? "" : undefined}>
       <SeatArt art={art} name={member.displayName} ring={member.isYou} />
       <span className="flex min-w-0 items-baseline gap-[6px] font-sans text-[13px] font-medium text-[color:var(--fg)]">
-        <span className="min-w-0 truncate" data-testid="pod-seat-name">{member.isYou ? copy.you : member.displayName}</span>
+        <span className="min-w-0 truncate" data-testid="pod-seat-name">{member.isYou ? copy.you : <PersonName n={member.displayName} />}</span>
         {tag ? <small className="flex-none font-mono text-[10px] font-normal text-[color:var(--fg-muted)]">{tag}</small> : null}
       </span>
       {onRemove ? (
         <button
           type="button"
-          aria-label={copy.removeMemberAria(member.displayName, podName)}
           data-pod-remove
           onClick={(e) => onRemove(e.currentTarget)}
           // 28px as drawn, with a 44px press (C-3): the pseudo-element takes the 8px around it.
-          className="absolute right-[4px] top-[4px] flex h-[28px] w-[28px] cursor-pointer items-center justify-center rounded-full border-0 bg-[color-mix(in_oklab,var(--bg)_78%,transparent)] p-0 text-[11px] text-[color:var(--fg)] after:absolute after:-inset-[8px] after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+          {...personAttrs({ "aria-label": copy.removeMemberAria(member.displayName, podName) }, "absolute right-[4px] top-[4px] flex h-[28px] w-[28px] cursor-pointer items-center justify-center rounded-full border-0 bg-[color-mix(in_oklab,var(--bg)_78%,transparent)] p-0 text-[11px] text-[color:var(--fg)] after:absolute after:-inset-[8px] after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]")}
         >
           {"✕"}
         </button>
@@ -70,7 +70,9 @@ function Seat({ member, podName, onRemove }: { member: PodMember; podName: strin
  * guard): Safari never focuses a clicked button, so its blur arrives with no relatedTarget and would commit an
  * edit Cancel meant to drop. Where a browser does move focus onto them, the relatedTarget check does the same.
  */
-function PodRename({ name, onDone }: { name: string; onDone: (next: string | null, refocus: boolean) => void }) {
+function PodRename({ name: current, onDone }: { name: string | ThirdPartyName; onDone: (next: string | null, refocus: boolean) => void }) {
+  // The field is the reader's to edit, so it starts as text and carries the opt-out class itself.
+  const name = draftText(current);
   const [value, setValue] = useState(name);
   const form = useRef<HTMLFormElement>(null);
   const done = useRef(false);
@@ -112,7 +114,7 @@ function PodRename({ name, onDone }: { name: string; onDone: (next: string | nul
           value={value}
           onChange={(e) => setValue(capName(e.target.value, POD_NAME_MAX))}
           autoComplete="off"
-          className={`h-full w-full min-w-0 px-[12px] text-[16px] text-[color:var(--fg)] [@media(pointer:fine)]:md:text-[14px] ${AFFIX_INPUT}`}
+          className={`${NO_CAPTURE} h-full w-full min-w-0 px-[12px] text-[16px] text-[color:var(--fg)] [@media(pointer:fine)]:md:text-[14px] ${AFFIX_INPUT}`}
         />
       </div>
       <div className="flex gap-[8px]">
@@ -150,7 +152,7 @@ export function PodCard({
   addRef,
   ruleZero,
 }: {
-  pod: Pod;
+  pod: ShownPod;
   shared: boolean;
   /** A write of this box is in flight: it holds until that write answers. */
   sharePending?: boolean;
@@ -259,9 +261,9 @@ export function PodCard({
         />
       ) : (
         <div className="relative flex min-h-[44px] flex-wrap items-center gap-x-[10px] md:flex-nowrap">
-          <b className="min-w-0 truncate font-sans text-[15px] font-semibold text-[color:var(--fg)]" data-testid="pod-name">{pod.name}</b>
+          <b className="min-w-0 truncate font-sans text-[15px] font-semibold text-[color:var(--fg)]" data-testid="pod-name"><PersonName n={pod.name} /></b>
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-            {pod.isOwner || !owner ? copy.metaOwn(n) : copy.metaOther(n, owner.displayName)}
+            {pod.isOwner || !owner ? copy.metaOwn(n) : <PersonText text={copy.metaOther(n, owner.displayName)} />}
           </span>
           {editing ? (
             <button
@@ -295,8 +297,10 @@ export function PodCard({
       <ul
         // An explicit list role: Safari drops a list's semantics once its marker is gone (`list-none`).
         role="list"
-        className="relative m-0 mr-[10px] mt-[8px] grid list-none grid-cols-3 gap-x-[10px] gap-y-[12px] p-0 md:mr-[12px] md:grid-cols-[repeat(5,116px)] md:gap-x-[12px] md:gap-y-[14px] min-[73.75rem]:grid-cols-[repeat(3,116px)] min-[73.75rem]:gap-y-[12px]"
-        aria-label={pod.name}
+        {...personAttrs(
+          { "aria-label": personText`${pod.name}` },
+          "relative m-0 mr-[10px] mt-[8px] grid list-none grid-cols-3 gap-x-[10px] gap-y-[12px] p-0 md:mr-[12px] md:grid-cols-[repeat(5,116px)] md:gap-x-[12px] md:gap-y-[14px] min-[73.75rem]:grid-cols-[repeat(3,116px)] min-[73.75rem]:gap-y-[12px]",
+        )}
       >
         {pod.members.map((m) => (
           <Seat key={m.publicId} member={m} podName={pod.name} onRemove={editing && !m.isYou ? (from) => removeSeat(m, from) : null} />
