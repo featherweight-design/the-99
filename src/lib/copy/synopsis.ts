@@ -121,7 +121,7 @@ export const synopsisCopy = {
     sections: { overview: "Overview", primer: "Primer", keyCards: "Key cards", weaknesses: "Weaknesses" },
     primer: { strategy: "Core strategy", mulligan: "Mulligan", tips: "Key tips" },
     /**
-     * The stages shape (contract 13; DRAFTS for /copy-review). The labels are drawn by POSITION and
+     * The stages shape (contract 13). Reviewed 2026-10-30: all five strings kept. The labels are drawn by POSITION and
      * must equal `STAGE_LABELS` (pinned in `synopsis-body.test.tsx`); the model never writes them.
      * `landsUnder` is the word under the land figure.
      */
