@@ -3,12 +3,13 @@
  * reading, in one row. The rules that judge each are `reading-rule.ts` (the reading) and
  * `carryOverDecision` (the Overview).
  */
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { decks, preconSynopses } from "../../db/schema";
 import type { RoleBasis } from "../profile/build";
 import type { CheckedSynopsis } from "../synopsis/types";
 import { readingMoved } from "../notices/read";
+import { pickOverviewRow } from "./overview";
 import { preconReadingCurrent, preconReadingOf, type PreconReading, type PreconReadingColumns } from "./reading-rule";
 
 /** What a start reads to carry a precon over: its Overview and its reading, in one row. */
@@ -33,7 +34,7 @@ export type PreconCarry = {
 export type PreconOf = string | { deckId: string; userId: string };
 
 /** The columns `readPreconCarry` selects, apart so a test can render the statement. */
-export function preconCarryQuery(of: PreconOf, contract: number, basis: RoleBasis, q: Pick<typeof db, "select"> = db) {
+export function preconCarryQuery(of: PreconOf, contract: number | readonly number[], basis: RoleBasis, q: Pick<typeof db, "select"> = db) {
   const file = typeof of === "string"
     ? eq(preconSynopses.preconFile, of)
     : sql`${preconSynopses.preconFile} = (select d.built_from_precon from ${decks} d where d.id = ${of.deckId}::uuid and d.user_id = ${of.userId})`;
@@ -45,7 +46,7 @@ export function preconCarryQuery(of: PreconOf, contract: number, basis: RoleBasi
     readingRulesVersion: preconSynopses.readingRulesVersion, readingAnalyzedOracleIds: preconSynopses.readingAnalyzedOracleIds,
     readingSeenSeq: preconSynopses.readingSeenSeq, readingAt: preconSynopses.readingAt,
   }).from(preconSynopses).where(and(
-    file, eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis),
+    file, typeof contract === "number" ? eq(preconSynopses.contractVersion, contract) : inArray(preconSynopses.contractVersion, [...contract]), eq(preconSynopses.roleBasis, basis),
   ));
 }
 
@@ -53,8 +54,16 @@ export function preconCarryQuery(of: PreconOf, contract: number, basis: RoleBasi
  * ONE QUERY: a precon's stored Overview and its stored reading at the owner's contract and role basis,
  * current or not (the caller judges each by its own rule). Null when the precon has no row there.
  */
-export async function readPreconCarry(of: PreconOf, contract: number, basis: RoleBasis, q: Pick<typeof db, "select"> = db): Promise<PreconCarry | null> {
-  const [row] = await preconCarryQuery(of, contract, basis, q);
+export async function readPreconCarry(
+  of: PreconOf,
+  contract: number,
+  basis: RoleBasis,
+  q: Pick<typeof db, "select"> = db,
+  /** The contract to fall back to while no `contract` row exists (`pickOverviewRow`): the pre-batch contract-12 row. */
+  fallback: number | null = null,
+): Promise<PreconCarry | null> {
+  const rows = await preconCarryQuery(of, fallback === null ? contract : [contract, fallback], basis, q);
+  const { row } = pickOverviewRow(rows, contract, fallback);
   if (!row) return null;
   const { listFingerprint, contractVersion, model, content, current, createdAt, checkedAt, ...reading } = row;
   return {

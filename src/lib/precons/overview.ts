@@ -51,6 +51,26 @@ export function carryOverDecision(input: {
 }
 
 /**
+ * The stored row a reader or a carry-over works from, among a file's rows at the owner's role basis.
+ * A file with a row at the owner's contract uses it, current or not (a catalog change that marked it not
+ * current is not undone by an older row). Only a file with NO such row falls back to the FALLBACK
+ * contract's row (the pre-batch period, `synopsisPreconFallbackContract`), and that row keeps its own
+ * `current` flag: the contract bump does not touch it, so one rejected earlier stays rejected (its Overview
+ * is not shown or carried, `carryOverDecision`) while its stored reading is still offered, judged on its own
+ * freshness (`reading-rule.ts`). The list is decided by `carryOverDecision` as always.
+ */
+export function pickOverviewRow<R extends PreconOverviewHead>(
+  rows: readonly R[],
+  contract: number,
+  fallback: number | null,
+): { row: R | null; viaFallback: boolean } {
+  const own = rows.find((r) => r.contractVersion === contract) ?? null;
+  if (own) return { row: own, viaFallback: false };
+  const old = fallback === null ? null : rows.find((r) => r.contractVersion === fallback) ?? null;
+  return { row: old, viaFallback: old !== null };
+}
+
+/**
  * The hash of one exact model request: what an overview's `input_hash` stores. The request is built
  * from the catalog (card text, combos, labels, the commander index), so two databases whose inputs
  * for a precon agree build the same request and hash it the same, and either moving moves it.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { listFingerprint } from "../profile/fingerprint";
-import { carryOverDecision, synopsisRequestHash } from "./overview";
+import { carryOverDecision, pickOverviewRow, synopsisRequestHash } from "./overview";
 import { preconDeckCards } from "./start";
 
 const LIST = "list-a";
@@ -16,6 +16,40 @@ describe("carryOverDecision", () => {
     expect(carryOverDecision({ analysisTab: true, row: null, liveFingerprint: LIST })).toEqual({ attach: false, reason: "none" });
     expect(carryOverDecision({ analysisTab: true, row: { ...row, current: false }, liveFingerprint: LIST })).toEqual({ attach: false, reason: "not_current" });
     expect(carryOverDecision({ analysisTab: true, row, liveFingerprint: "list-b" })).toEqual({ attach: false, reason: "list_moved" });
+  });
+});
+
+describe("pickOverviewRow (the pre-batch fallback to contract 12)", () => {
+  const v13 = { listFingerprint: LIST, contractVersion: 13, current: true };
+  const v12 = { listFingerprint: LIST, contractVersion: 12, current: true };
+
+  it("prefers a current contract-13 row over the 12 one", () => {
+    expect(pickOverviewRow([v12, v13], 13, 12)).toEqual({ row: v13, viaFallback: false });
+  });
+
+  it("draws and carries a precon with only a contract-12 row", () => {
+    const picked = pickOverviewRow([v12], 13, 12);
+    expect(picked).toEqual({ row: v12, viaFallback: true });
+    expect(carryOverDecision({ analysisTab: true, row: picked.row, liveFingerprint: LIST })).toEqual({ attach: true });
+  });
+
+  it("still refuses the 12 row for another list", () => {
+    const picked = pickOverviewRow([v12], 13, 12);
+    expect(carryOverDecision({ analysisTab: true, row: picked.row, liveFingerprint: "list-b" })).toEqual({ attach: false, reason: "list_moved" });
+  });
+
+  it("offers a 12 row already rejected for moved inputs, but its Overview is never attached", () => {
+    const rejected = { ...v12, current: false };
+    const picked = pickOverviewRow([rejected], 13, 12);
+    expect(picked).toEqual({ row: rejected, viaFallback: true });
+    expect(carryOverDecision({ analysisTab: true, row: picked.row, liveFingerprint: LIST })).toEqual({ attach: false, reason: "not_current" });
+  });
+
+  it("never falls back past a contract-13 row, current or not, and has no row without a fallback", () => {
+    const stale13 = { ...v13, current: false };
+    expect(pickOverviewRow([stale13, v12], 13, 12)).toEqual({ row: stale13, viaFallback: false });
+    expect(carryOverDecision({ analysisTab: true, row: stale13, liveFingerprint: LIST })).toEqual({ attach: false, reason: "not_current" });
+    expect(pickOverviewRow([v12], 13, null)).toEqual({ row: null, viaFallback: false });
   });
 });
 
