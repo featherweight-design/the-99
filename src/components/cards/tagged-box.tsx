@@ -75,6 +75,8 @@ export function TaggedBox({
     <div
       ref={frameRef}
       data-framed-box=""
+      // Help me choose's locked look mutes the edge through this attribute (globals.css `[data-lock-edge]`); inert elsewhere.
+      data-lock-edge=""
       className={`flex flex-col rounded-[9px] border ${dashed ? "border-dashed" : "border-solid"} ${edge} ${fill === "sunken" ? "bg-[color:var(--surface-sunken)]" : "bg-[color:var(--surface)]"} ${className}`}
     >
       {children}

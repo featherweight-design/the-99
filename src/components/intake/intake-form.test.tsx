@@ -48,7 +48,8 @@ describe("Anything else? box, board fixes", () => {
     expect(foot.querySelector("button")).not.toHaveAttribute("data-lock-hide");
     expect(within(foot).getByRole("button", { name: "Insert a card tag" })).toBeTruthy();
     expect(within(foot).getByText("tag a card")).toBeTruthy();
-    expect(frame.className).not.toContain("border-[color:var(--accent)]");
+    expect(frame).toHaveAttribute("data-lock-edge");
+    expect(frame.className.split(/\s+/)).not.toContain("border-[color:var(--accent)]");
     unmount();
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={standing} />);
     expect(screen.getByLabelText(/Anything else\?/).closest("[data-framed-box]")!.className).toContain("border-[color:var(--accent)]");
