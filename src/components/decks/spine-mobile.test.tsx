@@ -585,4 +585,18 @@ describe("SpineMobile — the description's tag-a-card box", () => {
     expect(saveDeckHeader).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Deck name")).toBeTruthy();
   });
+
+  it("a press on the counter or the foot does not blur the pair either", () => {
+    openEditor();
+    expect(fireEvent.mouseDown(counter(0))).toBe(false);
+    expect(fireEvent.mouseDown(counter(0).parentElement!)).toBe(false);
+  });
+
+  it("does not commit when focus moves from the description field to the key", () => {
+    const description = openEditor();
+    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Changed Name" } });
+    const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
+    fireEvent.blur(description, { relatedTarget: key });
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+  });
 });

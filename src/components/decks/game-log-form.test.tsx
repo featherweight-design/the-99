@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { GameLogForm } from "./game-log-form";
 import { gameLogCopy, axisCopy } from "../../lib/copy/game-log";
@@ -447,6 +447,20 @@ describe("GameLogForm", () => {
       // The combobox says so too: no open popup announced for a list that is not there.
       expect(field()).toHaveAttribute("aria-expanded", "false");
       expect(field()).not.toHaveAttribute("aria-controls");
+      release({ ok: true });
+    });
+
+    it("disables the key and dims the frame while a save is out", async () => {
+      let release!: (v: { ok: boolean }) => void;
+      logGame.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
+      mount();
+      open();
+      fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+      fireEvent.click(save());
+      await waitFor(() => expect(logGame).toHaveBeenCalled());
+      const frame = field().closest("[data-framed-box]") as HTMLElement;
+      expect(within(frame).getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria })).toBeDisabled();
+      expect(frame).toHaveClass("opacity-50");
       release({ ok: true });
     });
 

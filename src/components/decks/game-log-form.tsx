@@ -267,7 +267,7 @@ export function GameLogForm({
     setHurt([]);
     setMoved(null);
     setError(null);
-    // S1 state 8: reopening is a blank field and no counter. The form never
+    // S1 state 8: reopening is a blank field, counter back at 0 / 140. The form never
     // pre-fills from history — a note is about one game.
     setNote("");
   }
@@ -597,7 +597,7 @@ export function GameLogForm({
           // The picker owns its keys while its list is open (Enter and Tab pick, Escape closes it).
           onKeyDown={(e) => { noteTags.picker.onKeyDown(e); }}
           aria-describedby={`${describedById} ${counterId}`}
-          className="block w-full bg-transparent px-[13px] md:px-[14px] pt-[11px] md:pt-[12px] pb-[4px] text-[16px] [@media(pointer:fine)]:text-[13.5px] leading-[1.45] md:leading-normal text-fg disabled:cursor-not-allowed"
+          className="block min-h-[calc(1.5em+12px)] w-full bg-transparent px-[12px] pt-[9px] pb-[3px] text-[16px] [@media(pointer:fine)]:text-[13.5px] leading-[1.5] text-fg disabled:cursor-not-allowed"
         />
         </TaggedBox>
         {/* Floats over the page, held to the room in the window: the form sits low on the Games tab, where a list placed in the flow ends below the fold. Anchored to the frame, under its foot. Not drawn while a save is out: a pick then would change a field the save already read. */}

@@ -105,7 +105,7 @@ export function TaggedBox({
           disabled={disabled}
           {...keyProps}
           // Drawn 24 high at every pointer; under a coarse pointer only its hit box grows (the pseudo-element belongs to the button).
-          className={`relative h-[24px] shrink-0 cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] pointer-coarse:after:absolute pointer-coarse:after:-inset-x-[8px] pointer-coarse:after:-inset-y-[10px] pointer-coarse:after:content-[''] ${open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
+          className={`relative h-[24px] shrink-0 cursor-pointer disabled:cursor-not-allowed rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] pointer-coarse:after:absolute pointer-coarse:after:-inset-x-[8px] pointer-coarse:after:-inset-y-[10px] pointer-coarse:after:content-[''] ${open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
         >
           {copy.tagHelp.insert}
         </button>
