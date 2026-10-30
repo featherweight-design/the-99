@@ -4,6 +4,7 @@ import { playerText, PLAYER_TEXT_SYSTEM_RULE } from "../../model/player-text";
 import { deckDescriptionCopy } from "../../copy/deck-description";
 import { TUNING_MODEL } from "../limits";
 import { presentationFailures, type Quotable } from "../presentation";
+import { WHY_MIN_N } from "./results";
 import type { V2Line } from "./engine";
 
 /**
@@ -25,8 +26,7 @@ import type { V2Line } from "./engine";
  * ("five are answers", "3 of the cuts") is dropped too, and so is any other number, as digits or a word.
  */
 
-/** The smallest count asked for a why: 12+ changes (the handoff's N = 6). The one constant. */
-export const WHY_MIN_N = 6;
+export { WHY_MIN_N };
 export const WHY_LEAD_MAX = 120;
 export const WHY_LINE_MAX = 160;
 export const WHY_GROUPS_MAX = 3;
