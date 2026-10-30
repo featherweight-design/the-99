@@ -203,6 +203,8 @@ export function spareBeforeHeld<T>(rows: readonly T[], sameRank: (a: T, b: T) =>
  * ties the max-th (`sameRank`). Until then a card still to be read could tie the max-th, and `spareBeforeHeld` must see
  * it, or a page boundary would let held copies keep an equally ranked spare out of the tier.
  */
-export function tieClosed<T>(pool: readonly T[], max: number, sameRank: (a: T, b: T) => boolean): boolean {
+export function tieClosed<T>(pool: readonly T[], max: number, sameRank: (a: T, b: T) => boolean, heldOffered: boolean): boolean {
+  // With no held copy offered every card is a spare, so no tie can reorder and the tier stops at `max` as before.
+  if (!heldOffered) return pool.length >= max;
   return pool.length >= max && !sameRank(pool[max - 1], pool[pool.length - 1]);
 }

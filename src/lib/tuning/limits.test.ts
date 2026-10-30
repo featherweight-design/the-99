@@ -144,14 +144,18 @@ describe("spareBeforeHeld", () => {
 describe("tieClosed", () => {
   const same = (a: number, b: number) => a === b;
 
+  it("stops at max with no held copy offered, since no tie can reorder", () => {
+    expect(tieClosed([5, 3, 3], 2, same, false)).toBe(true);
+  });
+
   it("keeps reading until the tier holds max cards", () => {
-    expect(tieClosed([5, 4], 3, same)).toBe(false);
+    expect(tieClosed([5, 4], 3, same, true)).toBe(false);
   });
 
   it("keeps reading while the last card read still ties the max-th, so a spare past a page boundary is seen", () => {
-    expect(tieClosed([5, 3, 3], 2, same)).toBe(false);
-    expect(tieClosed([5, 3, 3, 2], 2, same)).toBe(true);
-    expect(tieClosed([5, 4, 3], 2, same)).toBe(true);
+    expect(tieClosed([5, 3, 3], 2, same, true)).toBe(false);
+    expect(tieClosed([5, 3, 3, 2], 2, same, true)).toBe(true);
+    expect(tieClosed([5, 4, 3], 2, same, true)).toBe(true);
   });
 });
 

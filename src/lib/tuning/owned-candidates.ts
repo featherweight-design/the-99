@@ -84,7 +84,7 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
   // cap) come back empty, and an empty list sends the run to cards to buy while the player owns fits.
   // Whether the ranked rows ran out: a short page, or an empty one, is the end of the index.
   let rowsRanOut = false;
-  for (let page = 0; page < MAX_PAGES && !tieClosed(pool, max, sameRank); page++) {
+  for (let page = 0; page < MAX_PAGES && !tieClosed(pool, max, sameRank, limits.otherDecks === true); page++) {
     const rows = await db
       .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, inclusion: sql<number | null>`max(${commanderSupportCards.inclusion})::float8` })
       .from(commanderSupportCards)
@@ -328,7 +328,7 @@ export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): 
   // As the focus candidates do: the free-copy and price tests need other tables' reads, so they run over the ranked list
   // a slice at a time until the tier is full, and a top slice claimed elsewhere never leaves it short.
   const SLICE = max * 3;
-  for (let at = 0; at < ranked.length && !tieClosed(pool, max, sameRank); at += SLICE) {
+  for (let at = 0; at < ranked.length && !tieClosed(pool, max, sameRank, args.limits.otherDecks === true); at += SLICE) {
     const slice = ranked.slice(at, at + SLICE);
     const ids = slice.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([

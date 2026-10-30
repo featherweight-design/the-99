@@ -193,7 +193,7 @@ export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader
   // The free-copy and price tests need other tables' reads, so they run over the ranked list a slice at a time until
   // the list is full: a fixed read-ahead could come back short when the top cards are claimed elsewhere or over the cap.
   const SLICE = max * 3;
-  for (let at = 0; at < onFocus.length && !tieClosed(pool, max, sameRank); at += SLICE) {
+  for (let at = 0; at < onFocus.length && !tieClosed(pool, max, sameRank, args.limits.ownedOnly && args.limits.otherDecks === true); at += SLICE) {
     const slice = onFocus.slice(at, at + SLICE);
     const ids = slice.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
