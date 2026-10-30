@@ -10,7 +10,6 @@
 // v2 (PR 6): each line is the cart's fact row in By friend's grid, the Ask over the tag; each panel folds from its
 // header, and on desktop that header sticks to the top of the list box while its rows scroll (addendum R2, B3).
 
-import { compareNames } from "../../../lib/person-name";
 import Link from "next/link";
 import { useContext, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";

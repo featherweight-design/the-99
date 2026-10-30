@@ -1,7 +1,6 @@
 // The cart's v2 rows (call 1): the card, then need, spare and own as facts, then the action stack.
 // CartCardLine is By card's, CartFriendLine By friend's (PR 6), and By deck draws CartFactsRow itself.
 
-import { compareNames } from "../../../lib/person-name";
 import type { ReactNode } from "react";
 import { compareNames } from "../../../lib/person-name";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";

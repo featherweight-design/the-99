@@ -8,7 +8,6 @@
 // (Ask, Ask instead, Ask again, or Requested, Accepted, Declined), the foot line moves behind an ⓘ on the head, and one
 // state sentence sits under the rows. Off, the section is as shipped.
 
-import { compareNames } from "../../lib/person-name";
 import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import type { FriendSpare } from "../../lib/social/spares";
 import type { AskStateLine } from "../../lib/social/spare-requests";

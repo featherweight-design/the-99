@@ -5,7 +5,6 @@
 // nothing here writes (lock 8). Every figure is a sum over the server's rows (`lib/decks/cart`), so
 // a deck's number here is its tile's number.
 
-import { compareNames } from "../../../lib/person-name";
 import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";

@@ -16,7 +16,6 @@
  * A cleared ask is read for that rule and never returned. Every read is the reader's own or goes through the friend
  * grant on the reader; nothing names a Clerk id.
  */
-import { compareNames } from "../person-name";
 import { eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { feedItems, spareRequests, userPrefs } from "../../db/schema";
