@@ -88,9 +88,18 @@ describe("a deck with notes", () => {
 
 describe("formatNoteDate", () => {
   const now = new Date(YEAR, 9, 12, 12);
-  it("names the year only outside the current one", () => {
-    expect(formatNoteDate(at(YEAR, 9, 2), now)).toBe("2 Oct");
-    expect(formatNoteDate(at(YEAR - 1, 9, 2), now)).toBe(`2 Oct ${YEAR - 1}`);
+  it("writes the month first (US), naming the year only outside the current one", () => {
+    expect(formatNoteDate(at(YEAR, 9, 2), now)).toBe("Oct 2");
+    expect(formatNoteDate(at(YEAR, 9, 30), now)).toBe("Oct 30");
+    expect(formatNoteDate(at(YEAR, 8, 2), now)).toBe("Sep 2");
+    expect(formatNoteDate(at(YEAR - 1, 9, 2), now)).toBe(`Oct 2, ${YEAR - 1}`);
+  });
+
+  it("dates the add hint month first", () => {
+    mount(view([note("a", "x")]));
+    const d = new Date();
+    const month = d.toLocaleDateString("en-US", { month: "short" });
+    expect(screen.getByText(`Enter adds · dated ${month} ${d.getDate()}`)).toBeTruthy();
   });
 });
 
@@ -112,14 +121,14 @@ describe("the list", () => {
     expect(screen.queryByText("finished")).toBeNull();
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
     expect(screen.getByText("finished")).toBeTruthy();
-    expect(screen.getAllByText("done 9 Mar").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("done Mar 9").length).toBeGreaterThan(0);
   });
 
   it("writes the year on a done note from another year", () => {
     const year = new Date().getFullYear() - 1;
     mount(view([note("a", "open one")], [note("b", "finished", { doneAt: at(year, 2, 9) })]));
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
-    expect(screen.getAllByText(`done 9 Mar ${year}`).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(`done Mar 9, ${year}`).length).toBeGreaterThan(0);
   });
 
   it("replaces the input with the cap line at 100 notes, done ones counting", () => {
@@ -454,7 +463,7 @@ describe("a row", () => {
     click(screen.getByRole("button", { name: "Edit this note" }));
     const field = screen.getByRole("combobox", { name: "Edit this note" }) as HTMLInputElement;
     expect(field.value).toBe("try [[\u2060Sol Ring]]");
-    expect(screen.getByText(/the date stays 2 Oct/)).toBeTruthy();
+    expect(screen.getByText(/the date stays Oct 2/)).toBeTruthy();
     type(field, " today");
     click(screen.getByRole("button", { name: "Save" }));
     expect(stub.editNote).toHaveBeenCalledWith(DECK, "a", `try ${formatTag(SOL, "Sol Ring")} today`);

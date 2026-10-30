@@ -6,8 +6,7 @@ import { deckNotesCopy, NOTES_PER_DECK, NOTES_SHOWN } from "../../../lib/copy/de
 import type { DeckNotesView, NotesResult } from "../../../lib/decks/notes-types";
 import { serialize, type Picked } from "../../../lib/decks/notes-field";
 import { NoteField, type DeckCardOption } from "./note-field";
-import { formatPlayed } from "../../../lib/decks/format";
-import { NoteRow } from "./note-row";
+import { formatNoteDate, NoteRow } from "./note-row";
 import { NotesMark } from "./notes-mark";
 import { Chevron } from "../../ui/chevron";
 
@@ -81,7 +80,7 @@ export function DeckNotesPanel({
     }
   };
 
-  const today = formatPlayed(new Date());
+  const today = formatNoteDate(new Date());
   const composer = atCap ? (
     <div className="rounded-[8px] border border-dashed border-[color:var(--border-strong)] px-[14px] py-[12px]">
       <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{deckNotesCopy.add.atCap}</p>

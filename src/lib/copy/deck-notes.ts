@@ -35,6 +35,9 @@ export const deckNotesCopy = {
       "A name typed without picking it from the list stays plain text.",
     ],
   },
+  /** A note's date, month first (US): `Oct 30`, or `Oct 30, 2025` outside the current year. Every note date (the row, the
+   *  add hint, the edit hint, `done …`) is written through this. */
+  date: (month: string, day: number, year?: number) => (year === undefined ? `${month} ${day}` : `${month} ${day}, ${year}`),
   add: {
     placeholder: "Add a note",
     label: "Add a note",
