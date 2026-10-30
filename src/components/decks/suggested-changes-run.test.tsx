@@ -32,7 +32,7 @@ const RUN = "11111111-1111-4111-8111-111111111111";
 const SET = "22222222-2222-4222-8222-222222222222";
 
 const ask = (n = 3, extra: Partial<V2Ask> = {}): V2Ask => ({
-  runId: RUN, requestedCount: n, request: "Cut the clunky stuff for cheaper threats.",
+  runId: RUN, requestedCount: n, units: 1, request: "Cut the clunky stuff for cheaper threats.",
   bracket: { choice: "keep", target: 2 }, restrictions: { capCents: null, sets: [], ownedOnly: false }, ...extra,
 });
 const adds = (k: number, extra: (i: number) => Partial<LineItem> = () => ({})) =>
@@ -466,6 +466,21 @@ describe("the results", () => {
       .toContain(sc.results.roleHead(6, 10));
   });
 
+  it("a short run charged 1 credit says 1 credit used, never 2", () => {
+    const report: ValidationReport = {
+      askedCount: 0, survivedCount: 0, keptCount: 0,
+      drops: Array.from({ length: 9 }, (_, i) => ({ side: "add" as const, position: i, rule: "overCap" as const })),
+      v2: {
+        requestHash: "h", restrictions: { capCents: 200, sets: [], ownedOnly: false }, in: { add: true, cut: true }, refilling: { add: false, cut: false },
+        shortReason: { add: "overCap", cut: null }, charge: { outcome: "spent" },
+      },
+    };
+    setup({ ask: ask(10, { restrictions: { capCents: 200, sets: [], ownedOnly: false } }), lines: [...adds(6), ...cuts(9)], report });
+    const short = document.querySelector("[data-sc-short]")!.textContent!;
+    expect(short).toContain(sc.short.capCredit(1));
+    expect(short).not.toContain("2 credits");
+  });
+
   it("draws a short run's count and what bound it, and every count follows the shorter list", () => {
     const report: ValidationReport = {
       askedCount: 0, survivedCount: 0, keptCount: 0,
@@ -475,9 +490,11 @@ describe("the results", () => {
         shortReason: { add: "overCap", cut: null }, charge: { outcome: "spent" },
       },
     };
-    setup({ ask: ask(20, { restrictions: { capCents: 200, sets: [], ownedOnly: false } }), lines: [...adds(14), ...cuts(21)], report });
+    setup({ ask: ask(20, { units: 2, restrictions: { capCents: 200, sets: [], ownedOnly: false } }), lines: [...adds(14), ...cuts(21)], report });
     expect(document.querySelector("[data-sc-short]")!.textContent).toContain("Found 14 additions under your $2.00 cap");
-    expect(document.querySelector("[data-sc-short]")!.textContent).toContain(sc.short.capCredit);
+    // Its unit charged 2 credits, and the receipt says so.
+    expect(document.querySelector("[data-sc-short]")!.textContent).toContain(sc.short.capCredit(2));
+    expect(document.querySelector("[data-sc-short]")!.textContent).not.toContain(sc.short.capCredit(1));
     expect(document.querySelector("[data-sc-lead]")!.textContent).toBe(sc.run.shortLead(14, 21, 14));
     expect(document.querySelector('[data-sc-chip="cut"]')!.textContent).toBe(sc.results.chosen(0, 14));
     expect(document.querySelector("[data-sc-asked]")!.textContent).toContain(sc.run.askedCap("$2.00"));
@@ -489,8 +506,34 @@ describe("the results", () => {
       v2: { requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: false }, in: { add: true, cut: true }, refilling: { add: false, cut: false } },
     };
     setup({ ask: ask(10, { request: null }), lines: [...adds(8), ...cuts(12)], report });
-    expect(document.querySelector('[data-sc-short="refunded"]')!.textContent).toContain(sc.short.refundCredit);
+    expect(document.querySelector('[data-sc-short="refunded"]')!.textContent).toContain(sc.short.refundCredit(1));
+    expect(document.querySelector('[data-sc-short="refunded"]')!.textContent).toContain(sc.short.refundBody(10, 1));
     expect(document.querySelector("[data-sc-asked]")!.textContent).toContain(sc.results.noRequest);
+  });
+
+  it("a refunded short run that was charged 2 credits says both came back", () => {
+    const report: ValidationReport = {
+      askedCount: 0, survivedCount: 0, keptCount: 0, refunded: true,
+      v2: { requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: false }, in: { add: true, cut: true }, refilling: { add: false, cut: false } },
+    };
+    setup({ ask: ask(12, { request: null, units: 2 }), lines: [...adds(9), ...cuts(14)], report });
+    const head = document.querySelector('[data-sc-short="refunded"]')!.textContent!;
+    expect(head).toContain(sc.short.refundCredit(2));
+    expect(head).toContain(sc.short.refundBody(12, 2));
+    expect(head).not.toContain(sc.short.refundCredit(1));
+  });
+
+  it("a run whose cut call failed says its 2 credits came back when it was charged 2", () => {
+    const report: ValidationReport = {
+      askedCount: 0, survivedCount: 0, keptCount: 0, refunded: true,
+      v2: {
+        requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: false }, in: { add: true, cut: true }, refilling: { add: false, cut: false },
+        cutsFailed: { errorClass: "timeout" },
+      },
+    };
+    setup({ ask: ask(12, { units: 2 }), lines: adds(5), report });
+    expect(document.body.textContent).toContain(sc.short.noCuts(2));
+    expect(document.body.textContent).not.toContain(sc.short.noCuts(1));
   });
 
   it("reads a run whose cut call failed (plan P4) with its additions and nothing to apply", () => {
@@ -851,7 +894,7 @@ describe("the design-review fixes", () => {
       v2: { requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: false }, in: { add: true, cut: true }, refilling: { add: false, cut: false } },
     };
     setup({ ask: ask(10), lines: [...adds(8), ...cuts(12)], report, credits: { left: 5, total: 5 } });
-    expect(document.querySelector('[data-sc-short="refunded"]')!.textContent).toContain(sc.short.refundCreditLeft(5, 5));
+    expect(document.querySelector('[data-sc-short="refunded"]')!.textContent).toContain(sc.short.refundCreditLeft(1, 5, 5));
   });
 });
 

@@ -404,7 +404,8 @@ export type V2RunOpts = {
 
 /** The deck and the request both match the newest ok v2 run (G4): nothing was reserved, and the player is asked once. */
 /** `refunded`: that run gave its credit back, so its reopened head says `refunded` as History does. */
-export type SameRequest = { ok: false; confirm: "same_request"; runId: string; at: string; refunded?: boolean };
+/** `units`: what the earlier run's own unit charged, for its reopen's tier. */
+export type SameRequest = { ok: false; confirm: "same_request"; runId: string; at: string; refunded?: boolean; units?: number };
 
 /** A v2 refusal that is about the run's cost, not an empty balance: it costs `costs` credits (over 10 swaps) and no
  *  single source holds them, while a one-credit run would start. Data only; `message` is the ordinary refusal. */
@@ -427,7 +428,7 @@ async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEn
   }
   const started = await startTuningV2({ deckId, userId, env, runId: requested, wire, request });
   if (started.kind === "refused") return started.costs ? { ok: false, message: started.message, costs: started.costs } : { ok: false, message: started.message };
-  if (started.kind === "confirm") return { ok: false, confirm: "same_request", runId: started.runId, at: started.at, refunded: started.refunded };
+  if (started.kind === "confirm") return { ok: false, confirm: "same_request", runId: started.runId, at: started.at, refunded: started.refunded, units: started.units };
   after(() => started.work(() => revalidateDeck(deckId)));
   return { ok: true };
 }

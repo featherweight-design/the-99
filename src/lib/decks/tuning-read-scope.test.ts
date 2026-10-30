@@ -65,7 +65,7 @@ describe("Suggested changes v2 on the panel's read (plan P1, P3)", () => {
 // asked drops "including your other decks" (found on the PR A walk).
 describe("askOf", () => {
   const row = (restrictions: Record<string, unknown>) => ({
-    id: "r1", requestedCount: 3, requestText: null, bracketChoice: null, bracketTarget: null,
+    id: "r1", requestedCount: 3, requestText: null, bracketChoice: null, bracketTarget: null, units: 1,
     validationReport: { v2: { restrictions } } as never,
   });
 

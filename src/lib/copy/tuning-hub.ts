@@ -5,6 +5,7 @@
 // words AI, model or LLM: tier 2 is "a deeper look". Engineering additions are marked.
 
 import { deckStatsCopy } from "./deck-stats";
+import { suggestedChangesV2Cost } from "./suggested-changes-v2-price";
 import { tuningHubShortcutsCopy } from "./tuning-hub-shortcuts";
 
 export const tuningHubCopy = {
@@ -19,6 +20,9 @@ export const tuningHubCopy = {
       name: "Suggested changes",
       purpose: "Up to five swaps, read from your games, your notes and the list.",
       cost: "1 credit per run",
+      /** Engineering (Hugh 2026-10-30): the cost while the reader's SUGGESTED_CHANGES_V2_ENABLED is on. A v2 run costs 1
+       *  credit for 1 to 10 changes and 2 for more than 10. Chosen where it draws: the hub's tile, the Tools card. */
+      costV2: suggestedChangesV2Cost,
       /** Engineering (plan 2026-10-11): Suggested changes reads the deck's reading, and a deck
        *  over 100 has none, so its tile is inert there and says why. */
       needsReading: "Works from the deck’s analysis, and analysis needs a full deck.",
@@ -71,7 +75,8 @@ export const tuningHubCopy = {
     regionLabel: "Runs",
     tool: { suggested: "Suggested", mana: "Mana", cuts: "Cuts" },
     /** `refunded` (Suggested changes v2, History A): the tier struck, its credit back. */
-    tier: { free: "free", credit: "1 credit", deeper: "deeper look", refunded: "refunded" },
+    /** `credit2`: a Suggested changes v2 run of more than 10 changes, which cost 2 (`unitsFor`, Hugh 2026-10-30). */
+    tier: { free: "free", credit: "1 credit", credit2: "2 credits", deeper: "deeper look", refunded: "refunded" },
     /** `short` (Suggested changes v2, History A): a list came back under the count asked. */
     outcome: { ok: "ok", short: "short", refused: "refused", failed: "failed", stopped: "stopped", running: "running" },
     more: "Show 20 more",

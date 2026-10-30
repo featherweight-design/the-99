@@ -76,7 +76,9 @@ export const suggestedChangesV2Copy = {
     readsOverview: "the overview",
     lastRun: (date: string) => `Last run ${date} · History ›`,
     same: {
-      body: (date: string) => `Same request as your ${date} run, on the same list. A new run uses a credit and will likely name many of the same cards.`,
+      // `credits` is what the new run costs: 2 for more than 10 changes (`unitsFor`, Hugh 2026-10-30).
+      body: (date: string, credits: 1 | 2) =>
+        `Same request as your ${date} run, on the same list. A new run uses ${credits === 2 ? "2 credits" : "a credit"} and will likely name many of the same cards.`,
       again: "Run it again",
       open: (date: string) => `Open ${date}’s run`,
     },
@@ -198,11 +200,13 @@ export const suggestedChangesV2Copy = {
     pickRefused: "Couldn’t save that pick. Try again.",
   },
   // The short-run head (Short-Run A/B, Wait E). `found` is the shorter list's count. Passed /copy-review 2026-10-28.
+  // Every line naming the run's credits takes `units`, what the run's own unit charged (`V2Ask.units`): 2 for a run of more
+  // than 10 changes once 2 credits applied (Hugh 2026-10-30), else 1.
   short: {
     // Short-Run A, the cap (charged): `results.shortCap` is the head.
     capBody: (asked: number, dropped: number, cap: string, n: number) =>
       `You asked for ${asked}. The run named ${dropped} more that cost over ${cap} a card, so you can apply up to ${n} of each.`,
-    capCredit: "1 credit used: your cap set the count",
+    capCredit: (units: number) => `${units === 2 ? "2 credits" : "1 credit"} used: your cap set the count`,
     capLink: "Raise the cap in a new run ›",
     // The other restrictions that can bind a list (spec §5.5), charged as the cap is.
     setHead: (found: number, side: string) => `Found ${found} ${side} in the sets you chose.`,
@@ -211,14 +215,16 @@ export const suggestedChangesV2Copy = {
     bodyBound: (asked: number, n: number) => `You asked for ${asked}. Your limits held the run short, so you can apply up to ${n} of each.`,
     // Owned only, and every owned card that fits was used: the pool ran out, not the run.
     ownedExhaustedBody: (asked: number, n: number) => `You asked for ${asked}. That’s every card you own that fits, so you can apply up to ${n} of each.`,
-    boundCredit: "1 credit used: your limits set the count",
+    boundCredit: (units: number) => `${units === 2 ? "2 credits" : "1 credit"} used: your limits set the count`,
     boundLink: "Change them in a new run ›",
     // Short-Run B, no restriction explains it (refunded).
     refundHead: (found: number, side: string) => `Found ${found} ${side}.`,
-    refundBody: (asked: number) => `You asked for ${asked}. Nothing you set explains the gap: the run fell short on its own, so the credit is back.`,
-    refundCredit: "Credit returned",
+    refundBody: (asked: number, units: number) =>
+      `You asked for ${asked}. Nothing you set explains the gap: the run fell short on its own, so ${units === 2 ? "both credits are" : "the credit is"} back.`,
+    refundCredit: (units: number) => (units === 2 ? "2 credits returned" : "Credit returned"),
     // Short-Run B with the allowance's standing: "Credit returned · 5 of 5 left".
-    refundCreditLeft: (left: number, total: number) => `Credit returned · ${left} of ${total} left`,
+    refundCreditLeft: (units: number, left: number, total: number) =>
+      `${units === 2 ? "2 credits returned" : "Credit returned"} · ${left} of ${total} left`,
     // A head's side, by the count it follows ("Found 1 addition you own.").
     additions: (n: number) => (n === 1 ? "addition" : "additions"),
     cuts: (n: number) => (n === 1 ? "cut" : "cuts"),
@@ -234,7 +240,8 @@ export const suggestedChangesV2Copy = {
     sideAdditions: "Additions",
     sideCuts: "Cuts",
     // Plan P4: the cut call failed, so the run ended with its additions and no cuts, refunded.
-    noCuts: "The cuts didn’t come through this time, so nothing here can be applied and the credit is back. Your additions stay here to read.",
+    noCuts: (units: number) =>
+      `The cuts didn’t come through this time, so nothing here can be applied and ${units === 2 ? "both credits are" : "the credit is"} back. Your additions stay here to read.`,
   },
   // Down's missed aim (the handoff words only Up's: "pick a flagged addition").
   barMissedDown: (b: number, name: string, from: number) =>

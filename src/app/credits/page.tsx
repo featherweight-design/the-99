@@ -28,6 +28,7 @@ import { listDecksWithStats } from "../../lib/decks/read";
 import { getCollectionStats } from "../../lib/home/summary";
 import { readWelcomeState, welcomeSheetFor } from "../../lib/payments/welcome-read";
 import { lotFacts } from "../../lib/payments/welcome-sheet";
+import { suggestedChangesV2Enabled } from "../../lib/tuning/flag";
 
 export const metadata: Metadata = { title: creditsPageCopy.title };
 
@@ -37,6 +38,8 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   const switchOn = paymentsEnabled(env);
+  // A Suggested changes v2 run over 10 changes uses 2 credits, so the sub follows the reader's v2 switch.
+  const suggestedV2 = suggestedChangesV2Enabled(env);
   const params = await searchParams;
 
   // The return is read FIRST, so a grant it observes was committed before the balances and history below are read and
@@ -63,18 +66,18 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
     built = buildCreditsModel({ switchOn, allowance, history, offers: packOffers(), returning, subscription, blocked });
   } catch (error) {
     console.error(`[credits] read failed${error instanceof Error ? ` (${error.name})` : ""}`);
-    return <CreditsReadFailed />;
+    return <CreditsReadFailed suggestedV2={suggestedV2} />;
   }
   if (!built.sees) {
     // A return whose read THREW is unresolved, not refused: nothing was learned about the Session, so it may well be this
     // reader's own and the retry may yet show it. The retryable read-failed state says nothing a stranger could use; a
     // read that SUCCEEDED as `none` (forged, foreign, unknown) is `ret === null` and stays a 404.
-    if (ret?.kind === "done" && ret.initial === null) return <CreditsReadFailed />;
+    if (ret?.kind === "done" && ret.initial === null) return <CreditsReadFailed suggestedV2={suggestedV2} />;
     notFound();
   }
 
   const welcome = built.model.cells.some((cell) => cell.key === "welcome") ? await readCellWelcome(userId, env, built.model.freeLimit) : null;
-  return <CreditsView model={built.model} ret={ret} welcome={welcome} />;
+  return <CreditsView model={built.model} suggestedV2={suggestedV2} ret={ret} welcome={welcome} />;
 }
 
 /**

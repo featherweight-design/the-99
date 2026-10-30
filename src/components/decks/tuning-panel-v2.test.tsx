@@ -150,7 +150,9 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     const date = localDay(at);
     const confirm = document.querySelector("[data-sc-same]") as HTMLElement;
     expect(confirm).not.toBeNull();
-    expect(confirm.textContent).toContain(sc.intake.same.body(date));
+    // The default count (3) is 10 or fewer changes: a new run uses a credit, never 2.
+    expect(confirm.textContent).toContain(sc.intake.same.body(date, 1));
+    expect(confirm.textContent).not.toContain("2 credits");
     // The confirm stands in for the action row: nothing reserved, nothing reading.
     expect(screen.queryByRole("button", { name: sc.intake.send })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: sc.intake.same.open(date) }));
@@ -353,7 +355,7 @@ describe("TuningPanel with Suggested changes v2 on", () => {
 
 describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI PR 6)", () => {
   const RUN = "33333333-3333-4333-8333-333333333333";
-  const ask = { runId: RUN, requestedCount: 3, request: "More removal.", bracket: { choice: "keep" as const, target: 2 }, restrictions: null };
+  const ask = { runId: RUN, requestedCount: 3, units: 1, request: "More removal.", bracket: { choice: "keep" as const, target: 2 }, restrictions: null };
   const lines = [...[0, 1, 2, 3, 4].map((i) => v2Line(`a${i}`, "add", { position: i })), ...[0, 1, 2, 3, 4].map((i) => v2Line(`c${i}`, "cut", { position: 10 + i }))];
   const pending = (items = lines.slice(0, 2)): TuningState => ({
     ...fresh,

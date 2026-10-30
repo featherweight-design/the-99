@@ -135,9 +135,9 @@ export function readFreeAllowance(userId: string): Promise<number> {
  */
 export function welcomeSheetFor(env: NodeJS.ProcessEnv, facts: { cards: number; decks: readonly DeckListItem[] }): WelcomeSheet | null {
   const visible = visibleEntries(env);
-  const written = writtenForYou(creditsEntryOf(visible)?.caption ?? null);
-  if (!written) return null;
   const isOn = (name: SwitchName) => SWITCH_FLAGS[name](env);
+  const written = writtenForYou(creditsEntryOf(visible)?.caption ?? null, isOn("SUGGESTED_CHANGES_V2_ENABLED"));
+  if (!written) return null;
   const tools = LIST_TOOLS.filter((id) => {
     const tool = TOOLS.find((t) => t.id === id);
     return tool !== undefined && (tool.switch === null || isOn(tool.switch));

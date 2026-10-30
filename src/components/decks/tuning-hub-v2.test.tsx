@@ -32,17 +32,21 @@ const suggested = (v2: { at: number; over: number; onTopOff?: () => void } | nul
 const cuts = (over: number): HubToolSpec => ({ tool: "cuts", panel: <h2 id="cuts-heading">Proposed cuts</h2>, over, total: 100 + over });
 
 describe("TuningHub, Suggested changes v2's tile", () => {
-  it("at 99: live, with v2's purpose line", async () => {
+  it("at 99: live, with v2's purpose line and v2's cost (2 credits over 10 changes)", async () => {
     render(<TuningHub deckId="d" drawn tools={[suggested({ at: 99, over: 0 }), cuts(0)]} />);
     await waitFor(() => expect(read).toHaveBeenCalled());
     expect(tileOf("suggested").tagName).toBe("BUTTON");
     expect(tileOf("suggested").textContent).toContain(tile.purpose);
+    expect(tileOf("suggested").textContent).toContain(tuningHubCopy.tools.suggested.costV2);
+    expect(tileOf("suggested").textContent).not.toContain(tuningHubCopy.tools.suggested.cost);
   });
 
-  it("v2 off: the shipped purpose line", async () => {
+  it("v2 off: the shipped purpose line and the shipped cost, never v2's", async () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(null), cuts(0)]} />);
     await waitFor(() => expect(read).toHaveBeenCalled());
     expect(tileOf("suggested").textContent).toContain(tuningHubCopy.tools.suggested.purpose);
+    expect(tileOf("suggested").textContent).toContain(tuningHubCopy.tools.suggested.cost);
+    expect(tileOf("suggested").textContent).not.toContain(tuningHubCopy.tools.suggested.costV2);
   });
 
   it("under 99: inert, says the count, and its one link goes to Top off on Your deck", async () => {
@@ -54,6 +58,7 @@ describe("TuningHub, Suggested changes v2's tile", () => {
     expect(t.hasAttribute("data-inert")).toBe(true);
     expect(t.textContent).toContain(tile.under(96));
     expect(t.textContent).not.toContain(tuningHubCopy.tools.suggested.cost);
+    expect(t.textContent).not.toContain(tuningHubCopy.tools.suggested.costV2);
     fireEvent.click(screen.getByRole("button", { name: tile.topOff }));
     expect(onTopOff).toHaveBeenCalledTimes(1);
     // The tool never opened.

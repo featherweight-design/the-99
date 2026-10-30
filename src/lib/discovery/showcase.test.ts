@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { aboutEntries } from "../copy/about-entries";
 import { showcaseCopy, writtenForYouCopy } from "../copy/discovery";
+import { tuningHubCopy } from "../copy/tuning-hub";
 import { creditsEntryOf, resolveEntry, visibleEntries } from "../about/visible";
 import type { SwitchName } from "../switches/registry";
 import { showcaseGroups, toolCopyFor, tryHref, writtenForYou, type ShowcaseInput } from "./showcase";
@@ -120,9 +121,20 @@ describe("showcaseGroups", () => {
     expect(card(showcaseGroups(input()), "collection-sync")!.note).toBeNull();
   });
 
-  it("carries each tool's cost chip from the registry, verbatim", () => {
-    const groups = showcaseGroups(input());
+  it("carries each tool's cost chip from the registry, verbatim, with Suggested changes v2 off", () => {
+    const groups = showcaseGroups(input({ isOn: (name) => name !== "SUGGESTED_CHANGES_V2_ENABLED" }));
     for (const t of TOOLS) expect(card(groups, t.id)!.credit).toBe(t.credit);
+    expect(card(groups, "suggested-changes")!.credit).toBe(tuningHubCopy.tools.suggested.cost);
+  });
+
+  it("Suggested changes v2 on: its chip says v2's cost (2 credits over 10 changes), every other chip unchanged", () => {
+    const groups = showcaseGroups(input());
+    expect(card(groups, "suggested-changes")!.credit).toBe(tuningHubCopy.tools.suggested.costV2);
+    expect(card(groups, "suggested-changes")!.copy.line).toBe(showcaseCopy.tools["suggested-changes"].lineWhen!.SUGGESTED_CHANGES_V2_ENABLED);
+    const off = showcaseGroups(input({ isOn: (name) => name !== "SUGGESTED_CHANGES_V2_ENABLED" }));
+    expect(card(off, "suggested-changes")!.copy.line).toBe(showcaseCopy.tools["suggested-changes"].line);
+    expect(card(off, "suggested-changes")!.copy.line).not.toMatch(/20/);
+    for (const t of TOOLS) if (t.id !== "suggested-changes") expect(card(groups, t.id)!.credit).toBe(t.credit);
   });
 });
 
@@ -150,13 +162,13 @@ describe("writtenForYou", () => {
   });
 
   it("draws all five with every switch on, and the whole free line", () => {
-    const w = writtenForYou(resolveEntry(credits, env()).caption)!;
+    const w = writtenForYou(resolveEntry(credits, env()).caption, false)!;
     expect(w.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
     expect(w.free).toBe(writtenForYouCopy.free);
   });
 
   it("follows each line's switch: the Overview with the Analysis tab, Help me choose and its History half", () => {
-    const w = writtenForYou(resolveEntry(credits, env(["ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED"])).caption)!;
+    const w = writtenForYou(resolveEntry(credits, env(["ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED"])).caption, false)!;
     expect(w.rows.map((r) => r.id)).not.toContain("overview");
     expect(w.rows.map((r) => r.id)).not.toContain("help-me-choose");
     expect(w.free).toBe(writtenForYouCopy.freeBracket);
@@ -168,13 +180,29 @@ describe("writtenForYou", () => {
     const paid = { ...env(), PAYMENTS_ENABLED: "true" } as NodeJS.ProcessEnv;
     const drawn = creditsEntryOf(visibleEntries(paid))!;
     expect(drawn.id).toBe("buying-credits");
-    const w = writtenForYou(drawn.caption)!;
+    const w = writtenForYou(drawn.caption, false)!;
     expect(w.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
     expect(w.free).toBe(writtenForYouCopy.free);
   });
 
+  it("Suggested changes v2 on: the suggested row says what v2 does and costs; off, the shipped words", () => {
+    const caption = resolveEntry(credits, env()).caption;
+    const on = writtenForYou(caption, true)!.rows.find((r) => r.id === "suggested")!;
+    expect(on.what).toBe(writtenForYouCopy.suggestedV2.what);
+    expect(on.cost).toBe(writtenForYouCopy.suggestedV2.cost);
+    expect(on.short).toBe(writtenForYouCopy.suggestedV2.short);
+    // The caption's v2 bullet (the credits entry draws it with v2 on), so the row reads the line it replaces.
+    expect(on.line).toBe("- Each “Suggested changes” run, or two for more than 10 changes");
+    const off = writtenForYou(caption, false)!.rows.find((r) => r.id === "suggested")!;
+    expect(off).toEqual(writtenForYouCopy.rows[1]);
+    expect(`${off.what} ${off.cost} ${off.short}`).not.toMatch(/\b2\b|20/);
+    // Every other row is the same either way.
+    const others = (v2: boolean) => writtenForYou(caption, v2)!.rows.filter((r) => r.id !== "suggested");
+    expect(others(true)).toEqual(others(false));
+  });
+
   it("is absent when the credits entry is not visible or no spender survives", () => {
-    expect(writtenForYou(null)).toBeNull();
-    expect(writtenForYou("Some features write something just for you.")).toBeNull();
+    expect(writtenForYou(null, false)).toBeNull();
+    expect(writtenForYou("Some features write something just for you.", true)).toBeNull();
   });
 });

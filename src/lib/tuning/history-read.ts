@@ -4,6 +4,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import type { ChipContext } from "./cuts-count";
 import { reapCutoff } from "./reaper";
+import { runChargeStatus, runUnits } from "./run-charge";
 import { pastRunMoved } from "./v2/read-list";
 import { readProfileHead } from "../profile/load";
 import {
@@ -42,6 +43,9 @@ export function runsPageQuery(tx: Pick<Tx, "select">, deckId: string, userId: st
     validationReport: deckSuggestionRuns.validationReport,
     requestedCount: deckSuggestionRuns.requestedCount,
     requestText: deckSuggestionRuns.requestText,
+    // What the run's own unit charged: History's tier says this (`suggestedTier`).
+    units: runUnits,
+    chargeStatus: runChargeStatus,
   }).from(deckSuggestionRuns)
     .where(and(
       eq(deckSuggestionRuns.deckId, deckId),
@@ -130,6 +134,7 @@ export async function readHistory(
         createdAt: r.createdAt,
         askedOver: typeof over === "number" ? over : null,
         v2: r.requestedCount !== null,
+        charge: { units: r.units, status: r.chargeStatus },
         // A v2 run's ask, for History A's quoted request and asked · found · applied.
         ...(r.requestedCount !== null ? {
           ask: {

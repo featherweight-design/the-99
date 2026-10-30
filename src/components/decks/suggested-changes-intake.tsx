@@ -19,6 +19,7 @@ import { appendSentence, removeSentence, type BracketCard, type NoticedChip } fr
 import { CountStepper } from "../ui/count-stepper";
 import { BracketMark } from "./bracket-mark";
 import { HIGHLIGHT_MS, TuningNotesField, type HighlightTail } from "./tuning-notes-field";
+import { unitsFor } from "../../lib/tuning/v2/charge";
 
 const copy = suggestedChangesV2Copy.intake;
 const REQUEST_MAX = deckDescriptionCopy.notes.maxLength;
@@ -239,14 +240,16 @@ export function DriftLine({ at, over, onTopOff, onProposedCuts }: { at: number; 
  * that asked. `Run it again` presses with `confirmed`; `Open Oct 26’s run` reopens that run read-only as History does,
  * and is drawn only where History is (the Tuning hub).
  */
-export function SameRequestConfirm({ at, onAgain, onOpen, againOff = false }: {
+export function SameRequestConfirm({ at, count, onAgain, onOpen, againOff = false }: {
   at: string; onAgain: () => void; onOpen: (() => void) | null;
+  /** The request's count: a new run of more than 10 changes costs 2 credits (`unitsFor`), and the body says so. */
+  count: number;
   /** The deck is off 99: a run would be refused, so `Run it again` is held off with Send (the drift line says why). */
   againOff?: boolean;
 }) {
   const date = localDay(new Date(at));
   const same = copy.same;
-  const [lead, rest] = leadSentence(same.body(date), ", ");
+  const [lead, rest] = leadSentence(same.body(date, unitsFor(count)), ", ");
   const head = lead.replace(/,$/, "");
   return (
     <div data-sc-same="" role="group" aria-label={head} className={`${NOTICE_BOX} gap-[10px] px-[14px] py-[12px]`} style={noticeStyle("var(--accent)")}>

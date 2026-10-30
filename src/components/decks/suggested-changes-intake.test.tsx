@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { bracketCard, noticedChips, type NoticedChip } from "../../lib/tuning/v2/intake";
 import type { Bracket } from "../../lib/profile/types";
-import { clampCount, SuggestedChangesIntake } from "./suggested-changes-intake";
+import { clampCount, SameRequestConfirm, SuggestedChangesIntake } from "./suggested-changes-intake";
 
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: async () => [] }));
 
@@ -128,5 +128,20 @@ describe("SuggestedChangesIntake", () => {
     expect(document.querySelector("[data-sc-bracket-note]")!.textContent).toBe(copy.bracket.noteUp(3, "Upgraded"));
     fireEvent.click(screen.getByRole("button", { name: /Down to 1 · Exhibition/ }));
     expect(document.querySelector("[data-sc-bracket-note]")!.textContent).toBe(copy.bracket.noteDown(1, "Exhibition"));
+  });
+});
+
+describe("SameRequestConfirm: what a new run costs (2 credits for more than 10 changes)", () => {
+  const at = "2026-10-26T15:00:00.000Z";
+  it("10 or fewer: a credit", () => {
+    const { container, unmount } = render(<SameRequestConfirm at={at} count={10} onAgain={() => {}} onOpen={null} />);
+    expect(container.textContent).toContain("A new run uses a credit");
+    expect(container.textContent).not.toContain("2 credits");
+    unmount();
+  });
+  it("more than 10: 2 credits", () => {
+    const { container, unmount } = render(<SameRequestConfirm at={at} count={11} onAgain={() => {}} onOpen={null} />);
+    expect(container.textContent).toContain("A new run uses 2 credits");
+    unmount();
   });
 });

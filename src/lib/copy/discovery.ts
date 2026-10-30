@@ -4,6 +4,7 @@
 
 import type { AboutScreen, DeckView } from './about';
 import type { SwitchName } from '../switches/registry';
+import { suggestedChangesV2Cost } from './suggested-changes-v2-price';
 
 /** Each screen's name as the Reference and the "?" print it (README-r2, "Screens: every entry's `screen`"). */
 export const SCREEN_NAMES: Record<AboutScreen, string> = {
@@ -69,6 +70,9 @@ export type ToolCopy = {
 /** Find a deck and Stats for your decks open a page, but read the reader's decks: with none, they say so. */
 const NEEDS_A_DECK = 'Needs a deck, and you have none yet.';
 const NEEDS_A_FULL_DECK = 'Needs a full deck. None of yours is full yet.';
+/** What Suggested changes does while the reader's SUGGESTED_CHANGES_V2_ENABLED is on: the Written for you row's `what`,
+ *  swapped in where the switch is decided (`showcase.ts`). v2 asks how many, up to 20. The tool card's v2 line is its `lineWhen`. */
+const SUGGESTED_V2_LINE = 'Up to 20 swaps, as many as you ask for. Your words lead, then your games, your notes and the list.';
 
 export const showcaseCopy = {
   /** A tool card's picture. */
@@ -116,6 +120,16 @@ export const writtenForYouCopy = {
     { id: 'help-me-choose', line: '- Each new “Help me choose” search where you fill in “Anything else?”', name: 'Help me choose, with “Anything else?”', where: 'New deck', what: 'Reads what you type and ranks commanders against it.', cost: '1 credit per search', short: 'per search' },
     { id: 'find-a-deck-read', line: '- Each “Which deck needs it most?” read', name: 'Which deck needs it most?', where: 'A card’s details', what: 'Takes a card through each deck’s plan and names the ones it really helps.', cost: '1 credit per read', short: 'per read' },
   ],
+  /** The `suggested` row's words while the reader's SUGGESTED_CHANGES_V2_ENABLED is on (Hugh 2026-10-30): v2 asks how many
+   *  cards to change, up to 20 (`MAX_COUNT`), and costs 1 credit for 1 to 10 changes and 2 for more than 10.
+   *  `writtenForYou` swaps them in. */
+  suggestedV2: {
+    // The credits entry's v2 bullet (`captionLineSwitches`), which takes the shipped one's place for a v2 reader.
+    line: '- Each “Suggested changes” run, or two for more than 10 changes',
+    what: SUGGESTED_V2_LINE,
+    cost: suggestedChangesV2Cost,
+    short: '1 or 2 per run',
+  },
   /** The free line, whole while the credits entry still carries its History line, else its bracket half alone. */
   historyLine: 'Opening a past “Help me choose” run from History is free.',
   free: 'Finding a deck’s bracket is free, and so is reopening a past Help me choose.',

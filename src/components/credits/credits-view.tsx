@@ -24,8 +24,10 @@ const c = creditsPageCopy;
 /** How the reader came back from Checkout: closed on Stripe's page, or finished (with the Session to follow). */
 export type ReturnProp = { kind: "cancelled" } | { kind: "done"; sessionId: string; initial: ReturnRead | null };
 
-export function CreditsView({ model, ret, timing, planTiming, welcome = null }: {
+export function CreditsView({ model, suggestedV2, ret, timing, planTiming, welcome = null }: {
   model: CreditsModel;
+  /** The reader's `suggestedChangesV2Enabled(env)`, for the sub (`CreditsHead`). */
+  suggestedV2: boolean;
   ret: ReturnProp | null;
   timing?: BandTiming;
   planTiming?: PlanTiming;
@@ -56,7 +58,7 @@ export function CreditsView({ model, ret, timing, planTiming, welcome = null }: 
 
   return (
     <div className={PAGE}>
-      <CreditsHead />
+      <CreditsHead suggestedV2={suggestedV2} />
       {ret?.kind === "cancelled" ? <CancelledBand /> : null}
       {ret?.kind === "done" ? (
         <ReturnBand
