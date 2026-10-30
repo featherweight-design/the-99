@@ -55,6 +55,15 @@ export function personAttrs<K extends string>(
 }
 
 /**
+ * The text a field the reader EDITS starts from (a pod's rename field). The field must carry `NO_CAPTURE` itself: this
+ * is the one way out of a name that is not a draw or a comparison, so it is used for an input's starting value and
+ * nowhere else.
+ */
+export function draftText(n: string | ThirdPartyName): string {
+  return typeof n === "string" ? n : reveal(n);
+}
+
+/**
  * `localeCompare` over names that may be someone else's: a sort reads the string here, in a file that may reveal,
  * and never leaves one behind. Same arguments as `String.prototype.localeCompare`.
  */

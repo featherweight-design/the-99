@@ -15,6 +15,7 @@ import { SocialModal } from "./social-modal";
 import { useFriendInvite } from "./invite-context";
 import { ACCENT_BUTTON } from "./friends-head";
 import { Checkbox } from "../ui/checkbox";
+import { PersonName, PersonText, type ThirdPartyName } from "../../lib/person-name";
 
 const copy = socialCopy.pods;
 
@@ -27,7 +28,7 @@ export function PodAddFriends({
   onClose,
   returnFocusRef,
 }: {
-  podName: string;
+  podName: string | ThirdPartyName;
   /** The viewer's friends not in the pod, in the order drawn. */
   candidates: readonly Friend[];
   /** Whether the viewer has any friend at all: no friends is its own empty. */
@@ -81,7 +82,7 @@ export function PodAddFriends({
       ) : (
         <>
           <div role="group" aria-labelledby={groupId} className="-mx-[2px] min-h-0 flex-1 overflow-y-auto px-[2px]">
-            <span id={groupId} className="sr-only">{copy.addTitle(podName)}</span>
+            <span id={groupId} className="sr-only"><PersonText text={copy.addTitle(podName)} /></span>
             {candidates.map((f) => (
               <label
                 key={f.publicId}
@@ -90,7 +91,7 @@ export function PodAddFriends({
                 <Checkbox checked={ticked.has(f.publicId)} onChange={() => toggle(f.publicId)} />
                 <Face name={f.displayName} commander={f.commander} size={40} />
                 <span className="flex min-w-0 flex-col gap-[1px]">
-                  <span className="truncate">{f.displayName}</span>
+                  <span className="truncate"><PersonName n={f.displayName} /></span>
                   {f.commander ? <span className="truncate text-[12px] text-[color:var(--fg-muted)]">{f.commander.name}</span> : null}
                 </span>
               </label>

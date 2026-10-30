@@ -29,6 +29,7 @@ import { listFriends, listPods, resolveFriend, type Reader } from "./access";
 import { commanderCard } from "./commander";
 import { socialFriendsEnabled } from "./flag";
 import { isUuid } from "./rules";
+import type { ThirdPartyName } from "../person-name/brand";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -208,7 +209,7 @@ export async function resolveFriendSeatsIn(tx: Tx, viewerId: string, asks: reado
  * the friend's deck rules apply (their switch is on), so a deck may be out of the picker: never whether one is, how many
  * or which.
  */
-export type PickerFriend = { publicId: string; displayName: string; commanderArt: string | null; deckCount: number; withheld: boolean };
+export type PickerFriend = { publicId: string; displayName: ThirdPartyName; commanderArt: string | null; deckCount: number; withheld: boolean };
 
 /**
  * One row per friend of the viewer's, through the viewer's own link rows: every deck, and the decks `pickerSeesDeck`
@@ -256,7 +257,7 @@ export async function listPickerFriends(viewerId: string): Promise<PickerFriend[
 }
 
 /** A pod the viewer is in, as a quick-seat chip: its name and how many people sit in it, the viewer included. */
-export type PickerPod = { id: string; name: string; memberCount: number };
+export type PickerPod = { id: string; name: ThirdPartyName; memberCount: number };
 
 export async function listPickerPods(viewerId: string): Promise<PickerPod[]> {
   const pods = await listPods(viewerId);
