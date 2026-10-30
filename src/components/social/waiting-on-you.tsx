@@ -13,16 +13,15 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import type { SpareRequestRow, TradeMatchRow, WaitingRow } from "../../lib/social/waiting";
 import { feedAge } from "../../lib/feed/age";
-import { feedCopy } from "../../lib/copy/feed";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { shortName } from "../../lib/cards/short-name";
+import { PersonInitials, PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { KICKER_AGE } from "../feed/kicker-age";
-import { faceInitials } from "./face";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
 
@@ -115,7 +114,7 @@ const dismissKey = (row: WaitingRow): string => (row.kind === "spare-request" ? 
 
 /** The card at card shape, 46x64, with the friend's face on its corner. */
 function Picture({ imageUri, friend, className = "" }: {
-  imageUri: string | null; friend: { displayName: string; commander: { artCropUri: string | null } | null }; className?: string;
+  imageUri: string | null; friend: { displayName: ThirdPartyName; commander: { artCropUri: string | null } | null }; className?: string;
 }) {
   return (
     <span aria-hidden className={`relative h-[64px] w-[46px] ${className}`}>
@@ -127,7 +126,7 @@ function Picture({ imageUri, friend, className = "" }: {
       <span className="absolute -bottom-[5px] -right-[6px] flex h-[24px] w-[24px] items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[9px] font-semibold text-[color:var(--fg-muted)] [border:1.5px_solid_var(--surface-inset)]">
         {friend.commander?.artCropUri
           ? <FadingImg src={friend.commander.artCropUri} alt="" className="block h-full w-full object-cover" />
-          : faceInitials(friend.displayName)}
+          : <PersonInitials n={friend.displayName} />}
       </span>
     </span>
   );
@@ -158,13 +157,13 @@ function AskRow({ row, now, busy, locked, onAnswer, onDismiss }: {
           <span className={`${KIND} text-[color:var(--accent-text)]`}>{w.kind["spare-request"]}</span>
           <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{ago(row.createdAt, now)}</small>
         </p>
-        <p className={TITLE}>{feedCopy.home.title.spareRequest(friend, ask.card.name)}</p>
-        <p className={DETAIL}>{r.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)}</p>
+        <p className={TITLE}><PersonText text={w.askTitle(friend, ask.card.name)} /></p>
+        <p className={DETAIL}><PersonText text={r.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} /></p>
       </div>
       {/* The action line (board `Dismiss-X`, `.d4n .ac`): Yes, No and the days left, then the ✕ at its end. */}
       <div className={ACTIONS}>
         <AnswerPresses friend={friend} card={ask.card.name} daysLeft={ask.daysLeft} busy={busy} locked={locked} onAnswer={onAnswer} size="row" />
-        <DismissButton title={feedCopy.home.title.spareRequest(friend, ask.card.name)} onPress={onDismiss} disabled={locked} />
+        <DismissButton title={w.askTitle(friend, ask.card.name)} onPress={onDismiss} disabled={locked} />
       </div>
     </li>
   );
@@ -191,8 +190,8 @@ function ReceiptRow({ receipt }: { receipt: Receipt }) {
           </span>
           <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{refreshCopy.home.elapsed.justNow}</small>
         </p>
-        <p className={TITLE}>{text.title}</p>
-        <p className={DETAIL}>{text.detail}</p>
+        <p className={TITLE}><PersonText text={text.title} /></p>
+        <p className={DETAIL}><PersonText text={text.detail} /></p>
       </div>
     </li>
   );
@@ -214,8 +213,8 @@ function TradeRow({ row: r, now, onDismiss }: { row: TradeMatchRow; now: Date; o
           <span className={`${KIND} text-[color:var(--fg-faint)]`}>{w.kind[r.kind]}</span>
           <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{ago(r.createdAt, now)}</small>
         </p>
-        <p className={TITLE}>{w.tradeTitle(r.friend.displayName, r.card.name)}</p>
-        <p className={DETAIL}>{w.tradeDetail(r.friend.displayName, r.pods)}</p>
+        <p className={TITLE}><PersonText text={w.tradeTitle(r.friend.displayName, r.card.name)} /></p>
+        <p className={DETAIL}><PersonText text={w.tradeDetail(r.friend.displayName, r.pods)} /></p>
       </div>
       {/* The action line, as on What's new: the link, then the ✕ at its end. */}
       <div className={ACTIONS}>
@@ -233,6 +232,7 @@ function WaitingLink({ row, className }: { row: TradeMatchRow; className: string
   const press = "flex min-h-[32px] items-center gap-[4px] text-[13px] [overflow-wrap:anywhere] md:whitespace-nowrap font-medium text-[color:var(--accent-text)] no-underline";
   // Ask in place (product call 8): the card's sheet over this page, the friend first, and Requested or Accepted once
   // asked, as the friend's tab says it.
+  const askClass = `${press} cursor-pointer border-0 bg-transparent p-0 text-left`;
   if (trade && row.askable && trade.has(row.card.oracleId)) {
     const state = trade.stateFor(row.card.oracleId, row.friend.publicId);
     return (
@@ -241,11 +241,12 @@ function WaitingLink({ row, className }: { row: TradeMatchRow; className: string
           type="button"
           data-trade-ask-press
           aria-haspopup="dialog"
-          aria-label={state ? tradeAskAria(w.askFriend(row.friend.displayName), state) : undefined}
+          {...(state
+            ? personAttrs({ "aria-label": tradeAskAria(w.askFriend(row.friend.displayName), state) }, askClass)
+            : { className: askClass })}
           onClick={(e) => trade.open(row.card.oracleId, row.friend.publicId, e.currentTarget)}
-          className={`${press} cursor-pointer border-0 bg-transparent p-0 text-left`}
         >
-          {state ? <TradeAskLabel state={state} /> : <>{w.askFriend(row.friend.displayName)}<span aria-hidden>›</span></>}
+          {state ? <TradeAskLabel state={state} /> : <><PersonText text={w.askFriend(row.friend.displayName)} /><span aria-hidden>›</span></>}
         </button>
       </span>
     );
@@ -258,7 +259,7 @@ function WaitingLink({ row, className }: { row: TradeMatchRow; className: string
         href={href}
         className={press}
       >
-        {(row.askable ? w.askFriend : w.seeSpares)(row.friend.displayName)}
+        <PersonText text={(row.askable ? w.askFriend : w.seeSpares)(row.friend.displayName)} />
         <span aria-hidden>›</span>
         <PendingReporter href={href} />
       </Link>

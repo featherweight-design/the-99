@@ -3,7 +3,28 @@
 // its field), the modals' Close and the commander picker. The friends list, the open links and the Add a friend
 // dialog arrive with PR C2, the request card with PR D (`landing`) and the pods with PR E (`pods`).
 
-import { personText, type PersonParts, type ThirdPartyName } from "../person-name/brand";
+import { joinNames, personText, type PersonParts, type ThirdPartyName } from "../person-name/brand";
+
+/** `A`, `A and B`, `A, B, and C` over names, as `Intl.ListFormat` writes it; each name stays a name. */
+const listNames = (names: readonly ThirdPartyName[]): PersonParts =>
+  new Intl.ListFormat("en-US", { type: "conjunction" })
+    .formatToParts(names.map((_, i) => String(i)))
+    .map((part) => (part.type === "element" ? names[Number(part.value)] : part.value));
+
+/**
+ * The asker's two answer titles. Home's feed and the push text name the friend as a plain string for now (family D), so
+ * a plain name still yields a string; a branded one yields parts.
+ */
+function answerCanSpare(friend: string, card: string): string;
+function answerCanSpare(friend: ThirdPartyName, card: string): PersonParts;
+function answerCanSpare(friend: string | ThirdPartyName, card: string): string | PersonParts {
+  return typeof friend === "string" ? `${friend} can spare ${card}` : personText`${friend} can spare ${card}`;
+}
+function answerKeeping(friend: string, card: string): string;
+function answerKeeping(friend: ThirdPartyName, card: string): PersonParts;
+function answerKeeping(friend: string | ThirdPartyName, card: string): string | PersonParts {
+  return typeof friend === "string" ? `${friend} is keeping ${card}` : personText`${friend} is keeping ${card}`;
+}
 
 const members = (x: number) => (x === 1 ? "Just you" : `${x} members`);
 const friends = (x: number) => (x === 1 ? "1 friend" : `${x} friends`);
@@ -110,18 +131,18 @@ export const socialCopy = {
     spares: {
       /** The line under the strip: where the share reaches the viewer, and the order. */
       /** `wishlist`: the reader's wishlist is on, so their cards come first and are marked. */
-      line: (pods: readonly string[], wishlist: boolean) =>
-        `Shared with ${pods.join(", ")}.${wishlist ? " Cards on your wishlist first." : ""}`,
+      line: (pods: readonly ThirdPartyName[], wishlist: boolean) =>
+        personText`Shared with ${joinNames(pods)}.${wishlist ? " Cards on your wishlist first." : ""}`,
       count: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
       onWishlist: "on your wishlist",
       /** Appended to the line with spare requests on (signature card call 8): a tile press opens the card's modal, with Ask. */
       pressToAsk: " Press one to ask for it.",
       /** A landing on a spare the friend no longer offers (call 9): the shared toast, and no modal. */
-      gone: (name: string, card: string) => `${name} no longer has a spare ${card}.`,
-      emptyTitle: (name: string) => `${name} has no spares to show`,
-      emptyBody: (name: string) => `When ${name} has a copy no deck of theirs is asking for, it shows here.`,
-      noneTitle: (name: string) => `${name} isn’t sharing spares with you`,
-      noneBody: (name: string) => `Spares show here when ${name} shares them with a pod you’re both in.`,
+      gone: (name: string | ThirdPartyName, card: string) => personText`${name} no longer has a spare ${card}.`,
+      emptyTitle: (name: string | ThirdPartyName) => personText`${name} has no spares to show`,
+      emptyBody: (name: string | ThirdPartyName) => personText`When ${name} has a copy no deck of theirs is asking for, it shows here.`,
+      noneTitle: (name: string | ThirdPartyName) => personText`${name} isn’t sharing spares with you`,
+      noneBody: (name: string | ThirdPartyName) => personText`Spares show here when ${name} shares them with a pod you’re both in.`,
     },
     decks: {
       line: (name: string) => `View only. ${name}’s committed decks and drafts, newest first.`,
@@ -176,12 +197,15 @@ export const socialCopy = {
     kind: { "spare-request": "Spare request", "trade-match": "Trade match" },
     /** For a screen reader, beside the unseen diamond. */
     unseen: "new",
-    tradeTitle: (friend: string, card: string) => `${friend} has a spare ${card}`,
-    tradeDetail: (friend: string, pods: readonly string[]) => `It’s on your wishlist. ${friend} shares spares with ${pods.join(", ")}.`,
+    tradeTitle: (friend: string | ThirdPartyName, card: string) => personText`${friend} has a spare ${card}`,
+    tradeDetail: (friend: string | ThirdPartyName, pods: readonly ThirdPartyName[]) =>
+      personText`It’s on your wishlist. ${friend} shares spares with ${joinNames(pods)}.`,
     /** The link to the friend's Spares tab; the board's trailing `›` is drawn apart, hidden from a screen reader. */
-    seeSpares: (friend: string) => `See ${friend}’s spares`,
+    seeSpares: (friend: string | ThirdPartyName) => personText`See ${friend}’s spares`,
     /** With spare requests on, the link opens that card's spares sheet with Ask (signature card call 9). */
-    askFriend: (friend: string) => `Ask ${friend}`,
+    askFriend: (friend: string | ThirdPartyName) => personText`Ask ${friend}`,
+    /** The row's title: the words of the feed's own `spareRequest` title, which Home's feed draws for the same ask. */
+    askTitle: (friend: string | ThirdPartyName, card: string) => personText`${friend} asks for your spare ${card}`,
   },
 
   invites: {
@@ -406,7 +430,7 @@ export const spareCopy = {
   /** Beside the head: nothing here can be taken or asked for in the app (Q3). */
   viewOnly: "view only",
   /** The pods a friend's share reaches the reader through, listed as `shares with A and B`. */
-  via: (pods: readonly string[]) => `shares with ${new Intl.ListFormat("en-US", { type: "conjunction" }).format(pods)}`,
+  via: (pods: readonly ThirdPartyName[]) => personText`shares with ${listNames(pods)}`,
   count: (n: number) => spares(n),
   foot: "A spare is a copy none of their decks uses, drafts included. Reach out to offer a trade or bargain your prized family goat, and it’s yours!",
   /** The Shopping key's item, beside the press's spare glyph, at both widths (S2). */
@@ -433,17 +457,17 @@ export const spareCopy = {
     declined: "Declined",
     /** The friend row's one sub line: the spare count, then the pods (or the ask's days, or its expiry). */
     count: (n: number) => spares(n),
-    pods: (pods: readonly string[]) => pods.join(", "),
+    pods: (pods: readonly ThirdPartyName[]) => joinNames(pods),
     daysLeft: (n: number) => (n === 1 ? "1 day left" : `${n} days left`),
     noAnswer: (days: number) => `no answer in ${days} days`,
-    askAria: (friend: string, card: string) => `Ask ${friend} for ${card}`,
-    askInsteadAria: (friend: string, card: string) => `Ask ${friend} for ${card} instead`,
-    askAgainAria: (friend: string, card: string) => `Ask ${friend} for ${card} again`,
+    askAria: (friend: string | ThirdPartyName, card: string) => personText`Ask ${friend} for ${card}`,
+    askInsteadAria: (friend: string | ThirdPartyName, card: string) => personText`Ask ${friend} for ${card} instead`,
+    askAgainAria: (friend: string | ThirdPartyName, card: string) => personText`Ask ${friend} for ${card} again`,
     /** The ⓘ beside the section head: the old foot line, cut to one tooltip (call 6). */
     tipLabel: "What a spare is",
     tip: "Copies none of their decks use. Ask, and they answer yes or no. The trade (or the goat) is between you.",
     /** The one state sentence under the rows, for the state the rows are in. */
-    oneAtATime: (from: string) => `One request at a time. Ask instead moves it from ${from}.`,
+    oneAtATime: (from: string | ThirdPartyName) => personText`One request at a time. Ask instead moves it from ${from}.`,
     whenYours: "When it’s yours, press buy on the row.",
     /** `whenYours` where the row has no buy press (`COLLECTION_EDIT_ENABLED` off): the collection takes it by hand. */
     whenYoursNoBuy: "When it’s yours, add it to your collection.",
@@ -461,19 +485,19 @@ export const spareCopy = {
      * own (`feedCopy.home.title.spareRequest`).
      */
     /** "You have 2 spare. Peter wants 1 for Dragons of Tarkir."; the deck clause only when the ask names one. */
-    incomingDetail: (spare: number, friend: string, copies: number, deck: string | null) =>
-      `You have ${spare} spare. ${friend} wants ${copies}${deck ? ` for ${deck}` : ""}.`,
+    incomingDetail: (spare: number, friend: string | ThirdPartyName, copies: number, deck: string | ThirdPartyName | null) =>
+      personText`You have ${spare} spare. ${friend} wants ${copies}${deck ? personText` for ${deck}` : ""}.`,
     yes: "Yes",
     no: "No",
-    yesAria: (friend: string, card: string) => `Yes, spare ${card} for ${friend}`,
-    noAria: (friend: string, card: string) => `No, don’t spare ${card} for ${friend}`,
+    yesAria: (friend: string | ThirdPartyName, card: string) => personText`Yes, spare ${card} for ${friend}`,
+    noAria: (friend: string | ThirdPartyName, card: string) => personText`No, don’t spare ${card} for ${friend}`,
     /** The receipt's kicker, drawn uppercase by CSS. */
     receiptKind: { yes: "Spare request · accepted", no: "Spare request · declined" },
-    sparing: (card: string, friend: string) => `You’re sparing ${card} for ${friend}`,
-    sparingDetail: (friend: string, card: string) =>
-      `${friend}’s been told. Hand ${card} over when you meet; your collection stays as it is until you change it.`,
+    sparing: (card: string, friend: string | ThirdPartyName) => personText`You’re sparing ${card} for ${friend}`,
+    sparingDetail: (friend: string | ThirdPartyName, card: string) =>
+      personText`${friend}’s been told. Hand ${card} over when you meet; your collection stays as it is until you change it.`,
     keeping: (card: string) => `You’re keeping ${card}`,
-    keepingDetail: (friend: string) => `${friend}’s been told.`,
+    keepingDetail: (friend: string | ThirdPartyName) => personText`${friend}’s been told.`,
     /**
      * The asker's side (PR 3d; board `Asker-States`, call 7): Your requests on `/friends`, in the feed's rows. The
      * kicker names the state (uppercase by CSS); No longer spare and No longer needed are copy only on the board.
@@ -489,25 +513,25 @@ export const spareCopy = {
         unavailable: "No longer spare",
         unneeded: "No longer needed",
       },
-      asked: (friend: string, card: string) => `You asked ${friend} for ${card}`,
+      asked: (friend: string | ThirdPartyName, card: string) => personText`You asked ${friend} for ${card}`,
       /** "For Thopter Works · 12 days left"; the days alone with no deck. */
       openDetail: (deck: string | null, days: string) => (deck ? `For ${deck} · ${days}` : days),
-      canSpare: (friend: string, card: string) => `${friend} can spare ${card}`,
+      canSpare: answerCanSpare,
       acceptedDetail: "The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.",
       /** `acceptedDetail` with no buy press (`COLLECTION_EDIT_ENABLED` off): the collection takes it by hand. */
       acceptedDetailNoBuy: "The handover is between you. Once it’s yours, add it to your collection.",
-      keeping: (friend: string, card: string) => `${friend} is keeping ${card}`,
+      keeping: answerKeeping,
       nobodyElse: "Nobody else you know has a spare of it.",
       /** After a No, when other friends offer the card: the first by spares, and how many more. */
-      othersHave: (first: string, more: number) =>
-        more === 0 ? `${first} has a spare too.` : `${first} and ${more} more have a spare too.`,
-      noAnswer: (friend: string, card: string) => `${friend} didn’t answer about ${card}`,
+      othersHave: (first: string | ThirdPartyName, more: number) =>
+        more === 0 ? personText`${first} has a spare too.` : personText`${first} and ${more} more have a spare too.`,
+      noAnswer: (friend: string | ThirdPartyName, card: string) => personText`${friend} didn’t answer about ${card}`,
       noAnswerDetail: (days: number, deck: string | null) => `Requested ${days} days ago${deck ? `, for ${deck}` : ""}.`,
-      noLongerSpare: (friend: string, card: string) => `${friend} no longer has a spare ${card}`,
+      noLongerSpare: (friend: string | ThirdPartyName, card: string) => personText`${friend} no longer has a spare ${card}`,
       noLongerSpareDetail: "Your request is still open. ✕ withdraws it.",
       noLongerNeededDetail: "It’s off your buy lists now. ✕ withdraws the request.",
-      withdrawAria: (friend: string, card: string) => `Withdraw your request to ${friend} for ${card}`,
-      clearAria: (friend: string, card: string) => `Clear your request to ${friend} for ${card}`,
+      withdrawAria: (friend: string | ThirdPartyName, card: string) => personText`Withdraw your request to ${friend} for ${card}`,
+      clearAria: (friend: string | ThirdPartyName, card: string) => personText`Clear your request to ${friend} for ${card}`,
       /**
        * One answered request opened over Home (small items item 3, board `Spare-Answer-Sheet`): the sheet's title, its
        * Clear (named by `clearAria`) and the foot's way to the whole list.

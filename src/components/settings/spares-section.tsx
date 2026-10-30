@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { printedNameOf } from "../../lib/collection/browse";
 import { settingsCopy } from "../../lib/copy/settings";
+import { PersonName, type ThirdPartyName } from "../../lib/person-name";
 import { SPARE_MIN_HIGH, SPARE_MIN_LOW } from "../../lib/social/spare-rules";
 import type { SpareSearchHit } from "../../lib/social/spare-settings";
 import { keepCardAction, releaseCardAction, searchSpareCardsAction, setSpareMinAction } from "../../app/settings/actions";
@@ -33,7 +34,7 @@ const SEARCH_MIN_CHARS = 2;
 
 const off = (r: { ok: boolean; reason?: string }) => !r.ok && r.reason === "off";
 
-export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods: string[]; kept: BrowseListCard[] }) {
+export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods: ThirdPartyName[]; kept: BrowseListCard[] }) {
   const router = useRouter();
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastSeq = useRef(0);
@@ -163,15 +164,16 @@ function Stepper({ value, saving, onStep }: { value: number; saving: boolean; on
 }
 
 /** Who sees them (`.who2`): the pods the reader shares with, bold, and a pointer to Friends, where each pod's switch lives. */
-function WhoSees({ pods }: { pods: string[] }) {
-  const parts = new Intl.ListFormat("en-US", { type: "conjunction" }).formatToParts(pods);
+function WhoSees({ pods }: { pods: ThirdPartyName[] }) {
+  // The list is laid out over the pods' positions, so a pod's name is only ever drawn by `PersonName`.
+  const parts = new Intl.ListFormat("en-US", { type: "conjunction" }).formatToParts(pods.map((_, i) => String(i)));
   return (
     <div className="mt-[12px] flex min-h-[44px] items-center justify-between gap-[10px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)] py-0 pl-[14px] pr-[4px] text-[13px] text-[color:var(--fg-body)]">
       <span>
         {pods.length === 0 ? c.offeredNone : (
           <>
             {c.offeredTo}{" "}
-            {parts.map((p, i) => (p.type === "element" ? <b key={i} className="font-semibold text-[color:var(--fg)]">{p.value}</b> : p.value))}
+            {parts.map((p, i) => (p.type === "element" ? <b key={i} className="font-semibold text-[color:var(--fg)]"><PersonName n={pods[Number(p.value)]} /></b> : p.value))}
             .
           </>
         )}{" "}

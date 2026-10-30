@@ -38,10 +38,11 @@ vi.mock("./spare-settings", () => ({
   },
 }));
 
+import { plain } from "../person-name/testing";
 const { loadFriendSpares } = await import("./spares");
 
 const spare = (n: number) => ({ owned: n, hard: 0, soft: 0 });
-const rows = async () => (await loadFriendSpares("user_viewer", [A, B])).map((s) => `${s.friend.displayName}:${s.oracleId === A ? "A" : "B"}:${s.spare}`);
+const rows = async () => (await loadFriendSpares("user_viewer", [A, B])).map((s) => `${plain(s.friend.displayName)}:${s.oracleId === A ? "A" : "B"}:${s.spare}`);
 
 beforeEach(() => {
   m.models.clear();

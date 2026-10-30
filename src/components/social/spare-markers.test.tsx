@@ -9,6 +9,8 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { ShoppingKey } from "../decks/shopping-key";
 import { FriendSparesProvider, OtherWaysPress, SPARES_PAGE_BATCH, fetchSpares, usePageSpares } from "./spare-markers";
 import { SwapToolsProvider, useSwapTools } from "../../lib/swaps/context";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const asOf = new Date("2026-09-20T00:00:00Z");
 const card = (oracleId: string, name: string) =>
@@ -246,7 +248,7 @@ describe("the friend line's pods", () => {
     await mount(<Press />);
     await act(async () => { fireEvent.click(screen.getByTestId("other-ways")); });
     const row = within(screen.getByRole("dialog")).getByTestId("friend-spare");
-    const pods = within(row).getByText(spareCopy.via(["Store league", "Thursday pod"]));
+    const pods = within(row).getByText(plain(spareCopy.via([named("Store league"), named("Thursday pod")])));
     // No ellipsis on the line: it wraps to a second line instead (bb's R2 walk, 390).
     expect(pods.className.split(/\s+/)).not.toContain("truncate");
     expect(pods.className).toContain("[overflow-wrap:anywhere]");

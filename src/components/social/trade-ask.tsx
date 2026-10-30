@@ -10,6 +10,7 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 import type { PriceFact } from "../../lib/decks/price";
 import type { TradeAskCard, TradeAskPayload } from "../../lib/social/trade-ask";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
+import { personText, type PersonParts } from "../../lib/person-name";
 import { rowAsk } from "./friend-spares";
 import { FriendSparesProvider, SparesSheetHost, usePageSpares } from "./spare-markers";
 import { refreshFriendsAction } from "../../app/friends/spare-actions";
@@ -109,8 +110,11 @@ function Inner({ cards, prices, children }: { cards: readonly TradeAskCard[]; pr
 }
 
 /** The asked press's name: the Ask it was, then its state, so a reader hears the friend as well as Requested. */
-export function tradeAskAria(ask: string, state: Exclude<TradeAskState, null>): string {
-  return `${ask}, ${state === "requested" ? spareCopy.request.requested : spareCopy.request.accepted}`;
+export function tradeAskAria(ask: string, state: Exclude<TradeAskState, null>): string;
+export function tradeAskAria(ask: string | PersonParts, state: Exclude<TradeAskState, null>): string | PersonParts;
+export function tradeAskAria(ask: string | PersonParts, state: Exclude<TradeAskState, null>): string | PersonParts {
+  const mark = state === "requested" ? spareCopy.request.requested : spareCopy.request.accepted;
+  return typeof ask === "string" ? `${ask}, ${mark}` : personText`${ask}, ${mark}`;
 }
 
 /**

@@ -20,14 +20,15 @@
 
 import React from "react";
 import { chassisCopy } from "../../lib/copy/filter-chassis";
+import { PersonText, personAttrs, type PersonParts } from "../../lib/person-name";
 import { ResultLine } from "./result-line";
 
 /** One removable value on the chip line. */
 export type FilterChip = {
   /** Stable across renders — the dimension and value, not the index. */
   key: string;
-  /** What the chip reads. `Status · Playing`, `3 colours`. */
-  label: string;
+  /** What the chip reads. `Status · Playing`, `3 colours`. Copy that names another reader is `PersonParts`. */
+  label: string | PersonParts;
   /**
    * CSS colours drawn as leading swatches, one per value the label collapsed.
    * A colour chip reads "3 colours" rather than splitting into three chips, so
@@ -53,7 +54,7 @@ export type FilterChip = {
    * exposes this instead — so the names are heard reading the row, not only on
    * entering the dismiss button.
    */
-  spoken?: string;
+  spoken?: string | PersonParts;
   onRemove: () => void;
 };
 
@@ -216,22 +217,24 @@ export function FilterChipPill({ chip }: { chip: FilterChip }) {
         // dismiss button to learn which two — which the row this
         // replaces never made them do.
         <>
-          <span aria-hidden="true">{chip.label}</span>
-          <span className="sr-only">{chip.spoken}</span>
+          <span aria-hidden="true"><PersonText text={chip.label} /></span>
+          <span className="sr-only"><PersonText text={chip.spoken} /></span>
         </>
       ) : (
-        chip.label
+        <PersonText text={chip.label} />
       )}
       <button
         type="button"
         onClick={chip.onRemove}
-        aria-label={chassisCopy.chips.removeAria(chip.spoken ?? chip.label)}
-        className={[
-          "relative cursor-pointer border-0 bg-transparent p-0",
-          "text-[color:var(--fg-faint)]",
-          "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-[44px]",
-          "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
-        ].join(" ")}
+        {...personAttrs(
+          { "aria-label": chassisCopy.chips.removeAria(chip.spoken ?? chip.label) },
+          [
+            "relative cursor-pointer border-0 bg-transparent p-0",
+            "text-[color:var(--fg-faint)]",
+            "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-[44px]",
+            "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+          ].join(" "),
+        )}
       >
         ×
       </button>

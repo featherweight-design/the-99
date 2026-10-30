@@ -14,7 +14,7 @@ import { colorLabel } from "./format";
 import type { OpponentCommander } from "./game-opponents";
 import type { Matchups } from "./matchups";
 import { gameMatchupsCopy } from "../copy/game-matchups";
-import { faceInitials } from "../social/initials";
+import { faceInitials } from "../names/initials";
 
 export type MatchupSplit = "commanders" | "identities" | "friends";
 

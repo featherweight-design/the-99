@@ -15,10 +15,10 @@ import { askSpareAction, closeSpareAction } from "../../app/friends/spare-action
 import { feedAge } from "../../lib/feed/age";
 import { KICKER_AGE } from "../feed/kicker-age";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
+import { PersonInitials, PersonText, personAttrs, type PersonParts } from "../../lib/person-name";
 import { expiresAt } from "../../lib/social/spare-request-rules";
 import type { YourRequest } from "../../lib/social/your-requests";
 import { FadingImg } from "../ui/hydrated-art";
-import { faceInitials } from "./face";
 import { RowEnd } from "./friend-spares";
 import { useLandFocus, useSpareToast } from "./spare-answer";
 
@@ -33,7 +33,7 @@ const isOpen = (a: YourRequest) => a.state === "open" || a.state === "unavailabl
 /** What one row says: its kicker and ink, its time, its title and its line. Pure, for the tests. */
 /** `canBuy`: Shopping rows carry the buy press (mark-bought on), so Accepted may point at it; never for a standalone
  *  ask (a friend's Spares tab), whose card may be on no deck's list. */
-export function requestText(a: YourRequest, now: Date, canBuy = true): { kind: string; ink: string; at: Date; title: string; detail: string } {
+export function requestText(a: YourRequest, now: Date, canBuy = true): { kind: string; ink: string; at: Date; title: string | PersonParts; detail: string | PersonParts } {
   const friend = a.holder.displayName;
   const card = a.card.name;
   const days = r.daysLeft(a.daysLeft ?? 0);
@@ -73,7 +73,7 @@ export function RequestPicture({ a, className = "" }: { a: YourRequest; classNam
       <span className="absolute -bottom-[5px] -right-[6px] flex h-[24px] w-[24px] items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[9px] font-semibold text-[color:var(--fg-muted)] [border:1.5px_solid_var(--surface-inset)]">
         {a.holder.commander?.artCropUri
           ? <FadingImg src={a.holder.commander.artCropUri} alt="" className="block h-full w-full object-cover" />
-          : faceInitials(a.holder.displayName)}
+          : <PersonInitials n={a.holder.displayName} />}
       </span>
     </span>
   );
@@ -97,8 +97,8 @@ export function RequestText({ a, text, now, className = "" }: { a: YourRequest; 
           {feedAge(text.at.toISOString(), now.toISOString())}
         </small>
       </p>
-      <p className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]">{text.title}</p>
-      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{text.detail}</p>
+      <p className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]"><PersonText text={text.title} /></p>
+      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]"><PersonText text={text.detail} /></p>
     </div>
   );
 }
@@ -212,11 +212,13 @@ export function YourRequests({ rows, now, canBuy = true }: { rows: readonly Your
               <button
                 type="button"
                 data-testid="your-request-close"
-                aria-label={isOpen(a) ? m.withdrawAria(a.holder.displayName, a.card.name) : m.clearAria(a.holder.displayName, a.card.name)}
+                {...personAttrs(
+                  { "aria-label": isOpen(a) ? m.withdrawAria(a.holder.displayName, a.card.name) : m.clearAria(a.holder.displayName, a.card.name) },
+                  "absolute right-[4px] top-[6px] flex h-[36px] w-[36px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg-muted)] disabled:cursor-default",
+                )}
                 aria-busy={busy === a.id || undefined}
                 disabled={busy !== null}
                 onClick={(e) => void close(a, index, e.currentTarget)}
-                className="absolute right-[4px] top-[6px] flex h-[36px] w-[36px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg-muted)] disabled:cursor-default"
               >
                 <span aria-hidden>✕</span>
               </button>

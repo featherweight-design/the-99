@@ -13,7 +13,7 @@ import { listPickerPodsAction, listPodSeatsAction } from "../../app/decks/[id]/o
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
-import { faceInitials } from "../../lib/social/initials";
+import { faceInitials } from "../../lib/names/initials";
 import type { PickerPod } from "../../lib/social/games";
 import { ArtLayer } from "../ui/art-layer";
 import { SeatPicker } from "./seat-picker";

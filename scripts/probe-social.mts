@@ -204,7 +204,7 @@ async function main() {
     check("the row carries no owned count, claim or deck", Object.keys(seenSpares[0] ?? {}).sort().join() === "friend,oracleId,spare");
     // R2 PR 2: the friend on a spare row carries a face and the pods the grant holds through, and nothing else.
     check("the friend is a public id, a name, a face and pods", Object.keys(seenSpares[0]?.friend ?? {}).sort().join() === "commander,displayName,pods,publicId");
-    check("its pods are the ones the grant reaches A through, not B's own pod", JSON.stringify(seenSpares[0]?.friend.pods) === JSON.stringify(["Game night"]),
+    check("its pods are the ones the grant reaches A through, not B's own pod", JSON.stringify(seenSpares[0]?.friend.pods) === JSON.stringify([{ $tp: "Game night" }]),
       JSON.stringify(seenSpares[0]?.friend.pods));
     check("B has no face yet, so the row draws initials", seenSpares[0]?.friend.commander === null);
     const faceModule = await import("../src/lib/social/commander");
@@ -219,7 +219,7 @@ async function main() {
     await spares.shareSparesWith(B, club.id, true);
     const twoPods = await spares.loadFriendSpares(A, [X, Y]);
     check("a share through two of A's pods is still one row", twoPods.length === 1, JSON.stringify(twoPods));
-    check("and names both pods, in name order", JSON.stringify(twoPods[0]?.friend.pods) === JSON.stringify(["Alpha club", "Game night"]),
+    check("and names both pods, in name order", JSON.stringify(twoPods[0]?.friend.pods) === JSON.stringify([{ $tp: "Alpha club" }, { $tp: "Game night" }]),
       JSON.stringify(twoPods[0]?.friend.pods));
     check("and draws B's face", twoPods[0]?.friend.commander?.oracleId === face);
     check("C, the stranger, still sees nothing", (await spares.loadFriendSpares(C, [X, Y])).length === 0);

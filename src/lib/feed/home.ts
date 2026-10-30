@@ -23,6 +23,8 @@ import { cards, collectionItems, preconCards, precons, printings, sets } from ".
 import { chainArt } from "../cards/chain-art";
 import { manapoolCardUrl } from "../manapool/links";
 import { collectionEditEnabled } from "../collection/edit-flag";
+import { compareNames } from "../person-name";
+import type { ThirdPartyName } from "../person-name/brand";
 import { type Answer } from "../social/spare-request-rules";
 import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
 import { loadFriendSpares, type FriendSpare } from "../social/spares";
@@ -128,10 +130,10 @@ export function postLists(kind: FeedKind, post: Pick<FeedPost, "lists" | "promis
 }
 
 /** An answer's line: Yes points at the buy press while Shopping has it; No names who else has a spare now. */
-export type AnswerDetail = { canBuy: boolean; others: string[] };
+export type AnswerDetail = { canBuy: boolean; others: ThirdPartyName[] };
 
 /** What the lead story's Yes and No need: the request, the holder's spare count, the copies and deck the ask names. */
-export type LeadAsk = { id: string; spare: number; copies: number; deckName: string | null; daysLeft: number };
+export type LeadAsk = { id: string; spare: number; copies: number; deckName: ThirdPartyName | null; daysLeft: number };
 
 export type HomeFeed =
   /**
@@ -394,7 +396,7 @@ export function withAnswerDetails(
     if (!v.answer) return v;
     const others = v.answer !== "no" || !v.card ? [] : spares
       .filter((s) => s.oracleId === v.card!.oracleId && s.friend.publicId !== v.friend?.publicId)
-      .sort((x, y) => y.spare - x.spare || x.friend.displayName.localeCompare(y.friend.displayName))
+      .sort((x, y) => y.spare - x.spare || compareNames(x.friend.displayName, y.friend.displayName))
       .map((s) => s.friend.displayName);
     return { ...v, answerDetail: { canBuy, others } };
   };

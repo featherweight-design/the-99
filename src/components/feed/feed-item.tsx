@@ -17,6 +17,7 @@ import { useId, useState, type ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 import { feedCopy } from "../../lib/copy/feed";
 import { spareCopy } from "../../lib/copy/social";
+import { PersonText } from "../../lib/person-name";
 import { formatCents } from "../../lib/decks/price";
 import type { FeedView } from "../../lib/feed/home";
 import type { ProfileCommander } from "../../lib/social/commander";
@@ -162,13 +163,13 @@ function PostPicture({ item, box }: { item: FeedView; box: string }) {
 }
 
 /** An answer to the reader's own ask: Your requests' own words for it (`spareCopy.request.mine`). */
-function answerText(item: FeedView, friend: string, card: string): { title: string; line: string | null } {
+function answerText(item: FeedView, friend: string, card: string): { title: string; line: ReactNode } {
   const m = spareCopy.request.mine;
   const d = item.answerDetail;
   if (item.answer === "yes") return { title: m.canSpare(friend, card), line: d ? (d.canBuy ? m.acceptedDetail : m.acceptedDetailNoBuy) : null };
   return {
     title: m.keeping(friend, card),
-    line: d ? (d.others.length === 0 ? m.nobodyElse : m.othersHave(d.others[0], d.others.length - 1)) : null,
+    line: d ? (d.others.length === 0 ? m.nobodyElse : <PersonText text={m.othersHave(d.others[0], d.others.length - 1)} />) : null,
   };
 }
 

@@ -11,6 +11,8 @@ import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { FriendSparesTab, type FriendSparesAsks } from "./friend-spares-tab";
 import { SparesSheet } from "./spare-markers";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const m = vi.hoisted(() => ({ mirrorUrl: vi.fn(), refresh: vi.fn(), ask: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh, push: vi.fn(), replace: vi.fn() }) }));
@@ -23,21 +25,22 @@ const SAI = "00000000-0000-4000-8000-0000000000c2";
 const GONE = "00000000-0000-4000-8000-0000000000c9";
 const COLIN = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Colin", commander: null };
 const SPARES: FriendSpareList = {
-  pods: ["Thursday pod"],
+  pods: [named("Thursday pod")],
+  friend: { ...COLIN, displayName: named("Colin"), pods: [named("Thursday pod")] },
   wishlist: true,
   lines: [
     { oracleId: GHALTA, name: "Ghalta, Primal Hunger", imageUri: null, spare: 1, onWishlist: true },
     { oracleId: SAI, name: "Sai, Master Thopterist", imageUri: null, spare: 2, onWishlist: false },
   ],
 };
-const friend = (name: string, publicId: string) => ({ publicId, displayName: name, commander: null, pods: ["Cube night"] });
+const friend = (name: string, publicId: string) => ({ publicId, displayName: named(name), commander: null, pods: [named("Cube night")] });
 // Ana holds more spares than Colin, so the shipped order would put her first.
 const READ = [
   { oracleId: GHALTA, friend: friend("Ana", "p-ana"), spare: 3 },
-  { oracleId: GHALTA, friend: { ...COLIN, pods: ["Thursday pod"] }, spare: 1 },
+  { oracleId: GHALTA, friend: { ...COLIN, displayName: named("Colin"), pods: [named("Thursday pod")] }, spare: 1 },
 ];
 const ask = (oracleId: string, holder: string, state: AskStateLine["state"]): AskStateLine => ({
-  id: `req-${oracleId}-${holder}`, oracleId, holder: { publicId: holder, displayName: holder }, state,
+  id: `req-${oracleId}-${holder}`, oracleId, holder: { publicId: holder, displayName: named(holder) }, state,
   daysLeft: state === "open" ? 12 : null, createdAt: "2026-10-20T00:00:00Z", answeredAt: null,
 });
 
@@ -81,7 +84,7 @@ async function mount(a: FriendSparesAsks | undefined) {
 describe("the tab, spare requests on", () => {
   it("adds the press sentence to the line", async () => {
     await mount(ON());
-    expect(screen.getByText(`${p.line(SPARES.pods, true)}${p.pressToAsk}`)).toBeTruthy();
+    expect(document.body.textContent).toContain(`${plain(p.line(SPARES.pods, true))}${p.pressToAsk}`);
   });
 
   it("opens the card's modal on a tile press: the page's friend first, the wishlist kicker, the tile ringed", async () => {
@@ -185,7 +188,7 @@ describe("the ?spare= landing", () => {
     window.history.replaceState(null, "", `/friends/x?spare=${GONE}`);
     await mount(ON({ spare: GONE, goneName: "Ghalta, Primal Hunger" }));
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByText(p.gone("Colin", "Ghalta, Primal Hunger"))).toBeTruthy();
+    expect(screen.getByText(plain(p.gone("Colin", "Ghalta, Primal Hunger")))).toBeTruthy();
     expect(m.mirrorUrl).toHaveBeenCalledTimes(1);
     expect(new URL(String(m.mirrorUrl.mock.calls[0][0])).searchParams.has("spare")).toBe(false);
   });
@@ -197,7 +200,7 @@ describe("a remount after the landing", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     cleanup();
     await mount(ON({ spare: GONE, goneName: "Ghalta, Primal Hunger" }));
-    expect(screen.queryByText(p.gone("Colin", "Ghalta, Primal Hunger"))).toBeNull();
+    expect(screen.queryByText(plain(p.gone("Colin", "Ghalta, Primal Hunger")))).toBeNull();
     expect(m.mirrorUrl).not.toHaveBeenCalled();
   });
 });
@@ -206,7 +209,7 @@ describe("the tab, spare requests off", () => {
   it("is as shipped: the line alone, a tile opens card details, no ask on the count line, ?spare= ignored", async () => {
     window.history.replaceState(null, "", `/friends/x?spare=${SAI}`);
     await mount(undefined);
-    expect(screen.getByText(p.line(SPARES.pods, true))).toBeTruthy();
+    expect(screen.getByText(plain(p.line(SPARES.pods, true)))).toBeTruthy();
     expect(screen.queryByTestId("spare-tile-press")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByTestId("spare-count")).toBeNull();

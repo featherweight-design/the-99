@@ -8,6 +8,8 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { spareCopy } from "../../lib/copy/social";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { StandInsRead } from "../../lib/swaps/gather";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const asOf = new Date("2026-09-20T00:00:00Z");
 const cardRow = (name: string) => ({ oracleId: `id-${name}`, name, typeLine: "Instant", oracleText: "", keywords: [], cmc: 2, imageUri: null });
@@ -186,8 +188,8 @@ describe("the stand-ins modal with friends' spares", () => {
     expect(section.textContent).toContain(spareCopy.section(2));
     expect(section.textContent).toContain(spareCopy.viewOnly);
     expect(within(section).getAllByTestId("friend-spare").map((r) => r.querySelector("b")?.textContent)).toEqual(["Colin", "Ana"]);
-    expect(section.textContent).toContain(spareCopy.via(["Thursday pod", "Friday pod"]));
-    expect(spareCopy.via(["Thursday pod", "Friday pod"])).toBe("shares with Thursday pod and Friday pod");
+    expect(section.textContent).toContain(plain(spareCopy.via([named("Thursday pod"), named("Friday pod")])));
+    expect(plain(spareCopy.via([named("Thursday pod"), named("Friday pod")]))).toBe("shares with Thursday pod and Friday pod");
     expect(section.textContent).toContain(spareCopy.count(2));
     expect(section.textContent).toContain(spareCopy.foot);
     // View only: nothing on a friend's row can be pressed.

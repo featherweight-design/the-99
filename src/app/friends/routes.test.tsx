@@ -165,7 +165,7 @@ describe("/friends", () => {
     expect(m.loadWaitingOnYou).toHaveBeenLastCalledWith("user_sam", ON, expect.any(Date));
     expect(m.loadYourRequests).toHaveBeenLastCalledWith("user_sam", ON, expect.any(Date));
     expect(screen.getByTestId("waiting-on-you")).toBeTruthy();
-    expect(screen.getByRole("button", { name: spareCopy.request.yesAria("Peter", card.name) })).toBeTruthy();
+    expect(screen.getByRole("button", { name: plain(spareCopy.request.yesAria("Peter", card.name)) })).toBeTruthy();
     expect(screen.queryByTestId("your-requests")).toBeNull();
     sam.unmount();
 
@@ -180,7 +180,7 @@ describe("/friends", () => {
     expect(m.loadYourRequests).toHaveBeenLastCalledWith("user_peter", ON, expect.any(Date));
     expect(screen.queryByTestId("waiting-on-you")).toBeNull();
     const mine = screen.getByTestId("your-requests");
-    expect(mine.textContent).toContain(spareCopy.request.mine.asked("Sam", card.name));
+    expect(mine.textContent).toContain(plain(spareCopy.request.mine.asked("Sam", card.name)));
     expect(mine.textContent).toContain("For Dragons of Tarkir · 13 days left");
   });
 

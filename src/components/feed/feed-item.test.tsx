@@ -6,6 +6,7 @@ vi.mock("../cards/card-detail-provider", () => ({ useCardDetailIfAny: () => ({ o
 
 import { FeedItemRow } from "./feed-item";
 import type { FeedView } from "../../lib/feed/home";
+import { named } from "../../lib/person-name/mint";
 
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (o: Partial<FeedView>): FeedView => ({
@@ -113,7 +114,7 @@ describe("FeedItemRow", () => {
 
   it("a No names who else has a spare, or nobody", () => {
     const chris = { publicId: "p4", displayName: "Chris" };
-    const { unmount } = list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { canBuy: true, others: ["Max", "Ann"] } })} now={NOW} />);
+    const { unmount } = list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { canBuy: true, others: [named("Max"), named("Ann")] } })} now={NOW} />);
     expect(screen.getByText("Chris is keeping Sai, Master Thopterist")).toBeTruthy();
     expect(screen.getByText("Max and 1 more have a spare too.")).toBeTruthy();
     unmount();

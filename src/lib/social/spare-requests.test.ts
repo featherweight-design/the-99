@@ -16,6 +16,7 @@ import {
 import { loadFriendSpares, loadOwnOffered } from "./spares";
 import { resolveFriend } from "./access";
 import { declineFloor, openFloor, shownFloor } from "./spare-request-rules";
+import { named } from "../person-name/mint";
 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const CARD = "0b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
@@ -164,8 +165,8 @@ describe("loadIncomingAsks (G3: a card the holder no longer offers leaves Waitin
     vi.mocked(loadOwnOffered).mockResolvedValueOnce(new Map([[CARD, 3]]));
     const asks = await loadIncomingAsks("h", ON, NOW);
     expect(vi.mocked(loadOwnOffered).mock.calls.at(-1)).toEqual(["h", [CARD, REQ], ON]);
-    expect(asks.map((a) => [a.id, a.spare, a.copies, a.deckName, a.daysLeft])).toEqual([["r1", 3, 2, "Dragons", 12]]);
-    expect(asks[0].asker).toEqual({ publicId: "p1", displayName: "Ann", commander: null });
+    expect(asks.map((a) => [a.id, a.spare, a.copies, a.deckName, a.daysLeft])).toEqual([["r1", 3, 2, named("Dragons"), 12]]);
+    expect(asks[0].asker).toEqual({ publicId: "p1", displayName: named("Ann"), commander: null });
   });
 
   it("the waiting count loads nothing past a zero count, and agrees with the filtered list past one", async () => {
@@ -234,7 +235,7 @@ describe("Ask instead (G1: one transaction)", () => {
       try { return await fn(tx); } catch (e) { seen.rolledBack = true; throw e; }
     }) as never);
     vi.mocked(resolveFriend).mockResolvedValueOnce("h2");
-    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: REQ, displayName: "Hope", commander: null, pods: [] }, spare: 2 }]);
+    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: REQ, displayName: named("Hope"), commander: null, pods: [] }, spare: 2 }]);
     return Object.assign(ran, { seen });
   }
   const FRIENDS = { rows: [{ user_id: "a" }, { user_id: "h2" }] };
@@ -340,10 +341,10 @@ describe("loadMyAsks", () => {
         { ...base, id: "r4", oracle_id: CARD, status: "withdrawn", created_at: "2026-10-21T12:00:00Z", answered_at: null, public_id: "p2", display_name: "Gus" },
       ],
     } as never);
-    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: "p1", displayName: "Fay", commander: null, pods: [] }, spare: 1 }]);
+    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: "p1", displayName: named("Fay"), commander: null, pods: [] }, spare: 1 }]);
     const asks = await loadMyAsks("a", ON, NOW);
     expect(asks.map((x) => [x.id, x.state, x.daysLeft])).toEqual([["r1", "open", 12], ["r2", "expired", null]]);
-    expect(asks[0].holder).toEqual({ publicId: "p1", displayName: "Fay", commander: null });
+    expect(asks[0].holder).toEqual({ publicId: "p1", displayName: named("Fay"), commander: null });
   });
 
   it("an open ask reads unavailable when the holder no longer offers the card, unneeded when the asker no longer wants it (G3)", async () => {
@@ -355,7 +356,7 @@ describe("loadMyAsks", () => {
       ],
     } as never);
     // Fay still offers CARD; Gus no longer offers OTHER.
-    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: "p1", displayName: "Fay", commander: null, pods: [] }, spare: 1 }]);
+    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: "p1", displayName: named("Fay"), commander: null, pods: [] }, spare: 1 }]);
     const asks = await loadMyAsks("a", ON, NOW, { stillNeeded: new Set([OTHER]) });
     expect(vi.mocked(loadFriendSpares).mock.calls.at(-1)).toEqual(["a", [CARD, OTHER]]);
     expect(asks.map((x) => [x.id, x.state])).toEqual([["r1", "unneeded"], ["r2", "unavailable"]]);
@@ -378,7 +379,7 @@ describe("loadAskStates (GET /api/spare-requests)", () => {
       rows: [{ ...base, id: "r3", oracle_id: CARD, status: "no", created_at: "2026-10-10T12:00:00Z", answered_at: "2026-10-11T12:00:00Z", public_id: "p2", display_name: "Gus" }],
     } as never);
     expect(await loadAskStates("a", [CARD], ON, NOW)).toEqual([{
-      id: "r3", oracleId: CARD, holder: { publicId: "p2", displayName: "Gus" }, state: "no", daysLeft: null,
+      id: "r3", oracleId: CARD, holder: { publicId: "p2", displayName: named("Gus") }, state: "no", daysLeft: null,
       createdAt: "2026-10-10T12:00:00.000Z", answeredAt: "2026-10-11T12:00:00.000Z",
     }]);
     expect(render(vi.mocked(db.execute).mock.calls.at(-1)![0] as SQL).q).toMatch(/msr\.status = 'no' and msr\.answered_at >/);

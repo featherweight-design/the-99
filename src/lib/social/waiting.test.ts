@@ -20,6 +20,7 @@ vi.mock("../feed/flag", () => ({ availableFeedKinds: m.kinds }));
 vi.mock("../feed/read", async (actual) => ({ ...(await actual<typeof import("../feed/read")>()), feedQuery: m.feedQuery }));
 
 import { loadWaitingOnYou } from "./waiting";
+import { named } from "../person-name/mint";
 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const ENV = { SOME: "env" } as unknown as NodeJS.ProcessEnv;
@@ -54,8 +55,8 @@ describe("loadWaitingOnYou", () => {
     expect(await loadWaitingOnYou("user_viewer", ENV, NOW)).toEqual([{
       key: "item:1", kind: "trade-match", createdAt: new Date(NOW.getTime() - 5 * 3_600_000), unseen: true,
       card: { oracleId: "ghalta", name: "Ghalta, Primal Hunger", imageUri: "https://cards/ghalta.jpg" },
-      friend: { publicId: "pub-colin", displayName: "Colin", commander: { oracleId: "sai", name: "Sai", artCropUri: "https://art/sai.jpg" } },
-      pods: ["Thursday pod"],
+      friend: { publicId: "pub-colin", displayName: named("Colin"), commander: { oracleId: "sai", name: "Sai", artCropUri: "https://art/sai.jpg" } },
+      pods: [named("Thursday pod")],
       askable: false,
     }]);
   });

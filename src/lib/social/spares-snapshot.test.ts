@@ -23,12 +23,13 @@ vi.mock("../decks/availability-query", () => ({
 }));
 vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: async () => ({}) }));
 
+import { named } from "../person-name/mint";
 const { loadFriendSpares } = await import("./spares");
 const CARD = "11111111-1111-4111-8111-111111111111";
 
 describe("loadFriendSpares", () => {
   it("names the pods the grant holds through in the friend's own snapshot", async () => {
     const [row] = await loadFriendSpares("user_viewer", [CARD]);
-    expect(row?.friend.pods).toEqual(["Game night"]);
+    expect(row?.friend.pods).toEqual([named("Game night")]);
   });
 });

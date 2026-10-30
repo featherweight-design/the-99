@@ -6,8 +6,9 @@
 //
 // A plain string (the reader's own name, a deck, a pod that is the reader's) is drawn plainly, so a shared component
 // takes `string | ThirdPartyName` and is marked only where it names someone else.
-import { faceInitials } from "../social/initials";
+import { faceInitials } from "../names/initials";
 import { isThirdPartyName, namesSomeone, type PersonParts, type ThirdPartyName } from "./brand";
+import { named } from "./mint";
 import { reveal } from "./reveal";
 
 /** PostHog's opt-out class (posthog-js `ph-no-capture`). */
@@ -51,4 +52,44 @@ export function personAttrs<K extends string>(
   }
   const classes = [className, marked ? NO_CAPTURE : undefined].filter(Boolean).join(" ");
   return classes ? { ...out, className: classes } : out;
+}
+
+/**
+ * `localeCompare` over names that may be someone else's: a sort reads the string here, in a file that may reveal,
+ * and never leaves one behind. Same arguments as `String.prototype.localeCompare`.
+ */
+export function compareNames(
+  a: string | ThirdPartyName,
+  b: string | ThirdPartyName,
+  locales?: Intl.LocalesArgument,
+  options?: Intl.CollatorOptions,
+): number {
+  const str = (n: string | ThirdPartyName) => (typeof n === "string" ? n : reveal(n));
+  return str(a).localeCompare(str(b), locales, options);
+}
+
+/** An identity for a list of names (an effect's dependency): compared, never drawn. */
+export function namesKey(names: ReadonlyArray<string | ThirdPartyName>): string {
+  return names.map((n) => (typeof n === "string" ? n : reveal(n))).join("\u0000");
+}
+
+/**
+ * The first `max` characters of copy that may name someone, then `…`: a name cut mid-way stays a name, so the result is
+ * still drawn by `<PersonText>`. Copy that fits comes back as it was.
+ */
+export function clipParts(parts: PersonParts, max: number): PersonParts {
+  let left = max;
+  const out: Array<string | ThirdPartyName> = [];
+  for (const part of parts) {
+    const text = typeof part === "string" ? part : reveal(part);
+    if (text.length <= left) {
+      out.push(part);
+      left -= text.length;
+      continue;
+    }
+    const cut = `${text.slice(0, left)}…`;
+    out.push(typeof part === "string" ? cut : named(cut));
+    return out;
+  }
+  return parts;
 }

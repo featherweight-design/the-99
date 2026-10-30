@@ -1,6 +1,7 @@
 // The news feed (menu and Home handoff; plan `2026-10-22-menu-home.md` PR 4). `news` is Settings' Notifications
 // section (announcements handoff R1b-1, `R1b-Settings.dc.html`), placeholder copy from the board.
 import type { FeedKind } from "../feed/kinds";
+import { personText, type PersonParts } from "../person-name/brand";
 
 export const feedCopy = {
   news: {
@@ -161,7 +162,7 @@ export const feedCopy = {
      * for good and answers nothing. Placeholders for `/copy-review`.
      */
     dismiss: {
-      aria: (title: string) => `Hide “${title}”`,
+      aria: (title: string | PersonParts) => personText`Hide “${title}”`,
       failed: "We couldn’t hide that. Try again.", // toast, role alert
     },
   },

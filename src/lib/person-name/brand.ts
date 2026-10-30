@@ -58,3 +58,8 @@ export function personText(strings: TemplateStringsArray, ...values: ReadonlyArr
   });
   return out;
 }
+
+/** Names joined by `sep` as parts: each name stays a name, so the list is drawn by `<PersonText>`. */
+export function joinNames(names: ReadonlyArray<string | ThirdPartyName>, sep = ", "): PersonParts {
+  return names.flatMap((n, i) => (i === 0 ? [n] : [sep, n]));
+}

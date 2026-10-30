@@ -7,6 +7,7 @@
 // equivalent — neither route captioned its colour control at all.
 
 import { filterCopy } from "./lanes";
+import { personText, type PersonParts } from "../person-name";
 import { manaSpriteBackground, type ManaSpriteStyle } from "../cards/mana-sprite";
 import { deckStateMarksCopy } from "./deck-state-marks";
 import { refreshCopy } from "./refresh";
@@ -24,7 +25,7 @@ export const chassisCopy = {
      */
     none: "No filters on",
     /** Named, so a reader hears which value leaves rather than a bare "Remove". */
-    removeAria: (label: string) => `Remove filter: ${label}`,
+    removeAria: (label: string | PersonParts) => personText`Remove filter: ${label}`,
     /**
      * The only control that touches every dimension. "filters" is load-bearing:
      * it deliberately does not touch the sort.

@@ -4,6 +4,8 @@
 // from another view's set (A15) is no sort at all: it reads as that view's default.
 
 import type { CartDeck, CartLine, SelectedLine } from "./cart";
+import { compareNames } from "../person-name";
+import type { ThirdPartyName } from "../person-name/brand";
 
 export type CartView = "card" | "deck" | "friend";
 
@@ -105,12 +107,12 @@ export function sortDecks<D extends Pick<CartDeck, "name" | "cents" | "pricedCop
 }
 
 /** The panel fields an order reads. */
-export type SortableGroup = { friend: { displayName: string; publicId: string }; spares: number; lines: readonly unknown[] };
+export type SortableGroup = { friend: { displayName: string | ThirdPartyName; publicId: string }; spares: number; lines: readonly unknown[] };
 
 /** By friend's panels in an order (call 5). Ties fall back to most spares, then name, then id, as the panels have always. */
 export function sortGroups<G extends SortableGroup>(groups: readonly G[], sort: FriendSort): G[] {
   const name = (a: G, b: G) =>
-    a.friend.displayName.localeCompare(b.friend.displayName, "en-US", { sensitivity: "base" })
+    compareNames(a.friend.displayName, b.friend.displayName, "en-US", { sensitivity: "base" })
     || (a.friend.publicId < b.friend.publicId ? -1 : 1);
   const bySpare = (a: G, b: G) => b.spares - a.spares || name(a, b);
   return [...groups].sort(

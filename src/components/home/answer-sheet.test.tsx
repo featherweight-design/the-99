@@ -22,6 +22,8 @@ import { feedCopy } from "../../lib/copy/feed";
 import { spareCopy } from "../../lib/copy/social";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { YourRequest } from "../../lib/social/your-requests";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const s = spareCopy.request.mine;
 const NOW = "2026-10-22T12:00:00.000Z";
@@ -35,7 +37,7 @@ const answer = (key: string, o: Partial<FeedView> = {}): FeedView => ({
 const feed = (items: FeedView[]): HomeFeed => ({ chosen: true, on: ["spare-request"], items, unseen: items.filter((i) => i.unseen).length, lead: null });
 const request = (o: Partial<YourRequest> = {}): YourRequest => ({
   id: "44444444-4444-4444-8444-444444444444", oracleId: "jace", card: { name: "Jace, Multiverse Architect", imageUri: null }, copies: 1,
-  deckName: null, deckId: null, standalone: false, holder: { publicId: "pub-colin", displayName: "Colin", commander: null },
+  deckName: null, deckId: null, standalone: false, holder: { publicId: "pub-colin", displayName: named("Colin"), commander: null },
   state: "yes", daysLeft: null, createdAt: new Date("2026-10-20T00:00:00Z"), answeredAt: new Date("2026-10-22T09:00:00Z"), seenAt: null,
   cleared: false, unseen: false, othersWithSpare: [], canAskAgain: false, ...o,
 });
@@ -60,7 +62,7 @@ describe("the answer sheet over Home", () => {
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText(s.sheet.title)).toBeInTheDocument();
     expect(within(dialog).getByText("Colin can spare Jace, Multiverse Architect")).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: s.clearAria("Colin", "Jace, Multiverse Architect") }).textContent).toBe(s.sheet.clear);
+    expect(within(dialog).getByRole("button", { name: plain(s.clearAria(named("Colin"), "Jace, Multiverse Architect")) }).textContent).toBe(s.sheet.clear);
     expect(within(dialog).getByRole("link", { name: s.sheet.all }).getAttribute("href")).toBe("/friends#your-requests");
     // No ✕ on the row and no Ask instead: the sheet's own close is the only other press.
     expect(within(screen.getByTestId("answer-sheet-row")).queryByTestId("your-request-close")).toBeNull();

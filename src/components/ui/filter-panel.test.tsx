@@ -9,6 +9,7 @@ import {
   typeChangeAnnouncement,
 } from "../collection/browser";
 import { FilterPanel, type FilterPanelOption } from "./filter-panel";
+import { named } from "../../lib/person-name/mint";
 
 // jsdom ships no matchMedia, and useIsDesktop() decides which of the popover /
 // sheet is mounted — so every test here has to declare a breakpoint.
@@ -1207,4 +1208,53 @@ describe("FilterPanel, its search", () => {
       expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
   }
+});
+
+describe("FilterPanel third-party names", () => {
+  it("masks the option row and the selected trigger themselves, not only the nested name span", () => {
+    // Both elements carry the friend's name in `title` / `aria-label`, which a nested
+    // <PersonName> cannot cover, so each needs its own `ph-no-capture`.
+    setViewport(true);
+    const { unmount } = render(
+      <FilterPanel
+        copy={collectionFilterCopy.set}
+        options={[
+          { code: "f1", label: named("Ada Lovelace"), count: 3, disabled: false },
+          { code: "f2", label: named("Grace Hopper"), count: 2, disabled: false },
+        ]}
+        selected={["f1"]}
+        searchable
+        onToggle={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: /Filter by set, Ada Lovelace, collapsed/ });
+    expect(trigger.classList.contains("ph-no-capture")).toBe(true);
+
+    fireEvent.click(trigger);
+    const row = screen.getByRole("option", { name: /Ada Lovelace/ });
+    expect(row.getAttribute("title")).toBe("Ada Lovelace");
+    expect(row.classList.contains("ph-no-capture")).toBe(true);
+    unmount();
+  });
+
+  it("masks the field-look trigger too, which holds the friend's name in its accessible name", () => {
+    setViewport(true);
+    const { unmount } = render(
+      <FilterPanel
+        copy={collectionFilterCopy.set}
+        options={[
+          { code: "f1", label: named("Ada Lovelace"), count: 3, disabled: false },
+          { code: "f2", label: named("Grace Hopper"), count: 2, disabled: false },
+        ]}
+        selected={["f1"]}
+        triggerLook="field"
+        onToggle={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: /Ada Lovelace/ });
+    expect(trigger.classList.contains("ph-no-capture")).toBe(true);
+    unmount();
+  });
 });

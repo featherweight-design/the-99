@@ -6,6 +6,7 @@
 // `priceCopy.strip.*`, `priceCopy.tag.*`.
 
 import type { FilterPanelCopy } from "./collection";
+import { joinNames, personText, type ThirdPartyName } from "../person-name/brand";
 
 const n = (x: number) => x.toLocaleString("en-US");
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
@@ -168,6 +169,8 @@ export const allDecksCartCopy = {
     anyFriend: "Any friend",
     /** The Friend trigger's words while friends' spares are being read (Loading A). */
     friendReading: "reading…",
+    /** A friend pill in the sheet: the name and the cards, as the desktop panel's option reads. */
+    friendPillAria: (name: string | ThirdPartyName, count: number) => personText`${name}, ${cards(count)}`,
     owned: "Owned",
     ownedAny: "Any",
     ownedSome: "You own some",
@@ -241,13 +244,13 @@ export const allDecksCartCopy = {
   /** By friend (spare requests PR 3c; handoff `Cart-By-Friend`): one panel per friend holding a spare of a line. */
   byFriend: {
     /** The panel head's pods line, comma-joined as the board draws it. */
-    via: (pods: readonly string[]) => `shares with ${pods.join(", ")}`,
+    via: (pods: readonly ThirdPartyName[]) => personText`shares with ${joinNames(pods)}`,
     /** The panel head's figure (PR 6): its cards, then the spares this friend holds of them, inflected (addendum R2). */
     figure: (cardsN: number, sparesN: number) => `${cards(cardsN)} · ${spares(sparesN)}`,
     /** The panel head is its fold press (call 7). */
-    foldAria: (friend: string, open: boolean) => (open ? `Fold ${friend}’s spares` : `Open ${friend}’s spares`),
+    foldAria: (friend: string | ThirdPartyName, open: boolean) => (open ? personText`Fold ${friend}’s spares` : personText`Open ${friend}’s spares`),
     /** The panel's name, for a screen reader moving by region. */
-    panelAria: (friend: string) => `Spares from ${friend}`,
+    panelAria: (friend: string | ThirdPartyName) => personText`Spares from ${friend}`,
     /** Empty-One B: the read landed and no friend has a spare of a drawn line. No press. */
     noneTitle: "No friend has a spare of these",
     noneBody: (lines: number) => `A spare is a copy none of a friend’s decks use. None of your friends has ${lines === 1 ? "this card" : `one of these ${cards(lines)}`} right now.`,

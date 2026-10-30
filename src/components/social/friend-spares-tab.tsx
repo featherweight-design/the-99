@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import type { FriendSpare, FriendSpareLine, FriendSpareList } from "../../lib/social/spares";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
+import { PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { mirrorUrl } from "../../lib/url/mirror";
 import type { PriceFact } from "../../lib/decks/price";
 import { CardDetailProvider, CardDetailTrigger, cardDetailCopy, type SiblingCard } from "../cards/card-detail-provider";
@@ -25,7 +26,7 @@ import { SocialToast, type SocialToastState } from "./social-toast";
 
 /** Spare requests on this tab (`SOCIAL_FRIENDS_ENABLED` for the reader), decided by the page; absent, the tab is as shipped. */
 export type FriendSparesAsks = {
-  friend: { publicId: string; displayName: string; commander: ProfileCommander | null };
+  friend: { publicId: string; displayName: string | ThirdPartyName; commander: ProfileCommander | null };
   /** `?spare=`'s card, a uuid, or null. */
   spare: string | null;
   /** The catalog's name for `spare` when the friend no longer offers it (the toast's card), else null. */
@@ -38,7 +39,7 @@ export type FriendSparesAsks = {
 const p = socialCopy.friendPage;
 const EAGER_TILES = 4;
 
-export function FriendSparesTab({ name, spares, asks }: { name: string; spares: FriendSpareList | null; asks?: FriendSparesAsks }) {
+export function FriendSparesTab({ name, spares, asks }: { name: string | ThirdPartyName; spares: FriendSpareList | null; asks?: FriendSparesAsks }) {
   const router = useRouter();
   // A wishlist write from a spare's details moves its mark and its place: refresh the page, as the Wishlist tab does.
   const onWishlistWrite = useCallback(() => router.refresh(), [router]);
@@ -53,7 +54,7 @@ export function FriendSparesTab({ name, spares, asks }: { name: string; spares: 
   if (asks) return <AskTab spares={spares} asks={asks} onWishlistWrite={onWishlistWrite} />;
   return (
     <>
-      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.spares.line(spares.pods, spares.wishlist)}</p>
+      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]"><PersonText text={p.spares.line(spares.pods, spares.wishlist)} /></p>
       <CardDetailProvider onWishlistWrite={onWishlistWrite}>
         {/* The board's grid: two columns on a phone, six from desktop. */}
         <ul className="m-0 mt-[12px] grid list-none grid-cols-2 gap-x-[8px] gap-y-[12px] p-0 md:grid-cols-6 md:gap-[20px]">
@@ -119,14 +120,14 @@ function AskTab({ spares, asks, onWishlistWrite }: {
   // What the page already knows of a card's spares (this friend's), drawn until the read of every friend's lands.
   const fallback = useCallback((id: string): FriendSpare[] => {
     const line = byId.get(id);
-    return line ? [{ oracleId: id, friend: { ...friend, pods: spares.pods }, spare: line.spare }] : [];
-  }, [byId, friend, spares.pods]);
+    return line ? [{ oracleId: id, friend: spares.friend, spare: line.spare }] : [];
+  }, [byId, spares.friend]);
   const kickerFor = useCallback((id: string) => (byId.get(id)?.onWishlist ? p.spares.onWishlist : null), [byId]);
   const tiles = useRef(new Map<string, HTMLButtonElement>());
   return (
     <>
       <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">
-        {p.spares.line(spares.pods, spares.wishlist)}{p.spares.pressToAsk}
+        <PersonText text={p.spares.line(spares.pods, spares.wishlist)} />{p.spares.pressToAsk}
       </p>
       <CardDetailProvider onWishlistWrite={onWishlistWrite}>
         <FriendSparesProvider oracleIds={ids} newestAsOf={asks.newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false}>
@@ -262,11 +263,11 @@ function SpareLanding({ asks, find }: {
   return <SocialToast toast={toast} onDone={() => setToast(null)} />;
 }
 
-function Empty({ title, body }: { title: string; body: string }) {
+function Empty({ title, body }: { title: string | PersonParts; body: string | PersonParts }) {
   return (
     <div className="mt-[16px] flex flex-col gap-[6px] rounded-[12px] px-[20px] py-[22px] [border:1px_dashed_var(--border-dashed)] md:mt-[18px] md:px-[32px] md:py-[30px]">
-      <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[19px]">{title}</p>
-      <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{body}</p>
+      <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[19px]"><PersonText text={title} /></p>
+      <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]"><PersonText text={body} /></p>
     </div>
   );
 }

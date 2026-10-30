@@ -148,7 +148,7 @@ async function main() {
     check("Hope (kind turned off) is not told", (await feedOf(H2)).length === 0);
     check("Hope answers Yes", second.ok && (await sr.answerSpareRequest(H2, second.id, "yes", ENV)).ok);
     mine = await sr.loadMyAsks(A, ENV);
-    check("Ann's list: Hope yes, Hal no", JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])) === JSON.stringify([["Hope", "yes"], ["Hal", "no"]]), JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])));
+    check("Ann's list: Hope yes, Hal no", JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])) === JSON.stringify([[{ $tp: "Hope" }, "yes"], [{ $tp: "Hal" }, "no"]]), JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])));
 
     console.log("\n4. expiry");
     const z = await sr.askForSpare(A, h1.publicId, Z, ENV);
@@ -338,7 +338,7 @@ async function main() {
     check("... copies capped at Hope's spare count (2), the deck stored", s1Row?.copies === 2 && s1Row.deck_id === annDeck, JSON.stringify(s1Row));
     const hopeSees = (await sr.loadIncomingAsks(H2, FEEDU)).find((i) => s1.ok && i.id === s1.id);
     check("... Hope's row draws the card, 2 copies, Ann's deck name, her own spare count, Ann's face",
-      hopeSees?.copies === 2 && hopeSees.deckName === "Probe dragons" && hopeSees.spare === 2 && hopeSees.card.name.length > 0
+      hopeSees?.copies === 2 && JSON.stringify(hopeSees.deckName).includes("Probe dragons") && hopeSees.spare === 2 && hopeSees.card.name.length > 0
       && hopeSees.asker.publicId === a.publicId && "commander" in hopeSees.asker && hopeSees.daysLeft === 14, JSON.stringify(hopeSees));
     check("Ann withdraws it", s1.ok && (await sr.closeSpareRequest(A, s1.id, FEEDU)).ok);
     const s2 = await sr.askForSpare(A, h2.publicId, S, FEEDU, new Date(), { copies: "lots", deckId: hopeDeck });

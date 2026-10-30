@@ -8,6 +8,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import { dismissFeedItemAction } from "../../app/feed-dismiss-actions";
 import { feedCopy } from "../../lib/copy/feed";
+import { personAttrs, type PersonParts } from "../../lib/person-name";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 
 const d = feedCopy.home.dismiss;
@@ -28,7 +29,8 @@ export function ringFocus(el: HTMLElement): void {
 }
 
 export function DismissButton({ title, onPress, disabled = false, className = "", label, margin = "ml-auto mr-[-10px] md:mr-[-6px]" }: {
-  title: string; onPress: (from: HTMLElement) => void; disabled?: boolean;
+  /** A row that names someone else carries `PersonParts`: the ✕'s name is marked with it. */
+  title: string | PersonParts; onPress: (from: HTMLElement) => void; disabled?: boolean;
   /** The lead's phone nudge (`.d4n.ph .ld .la .x4`, margin-top −2px). */
   className?: string;
   /** The accessible name in full, in place of "Hide “title”": the offer's ✕ (announcements call 3) hides no item. */
@@ -42,10 +44,12 @@ export function DismissButton({ title, onPress, disabled = false, className = ""
     <button
       type="button"
       data-feed-dismiss
-      aria-label={label ?? d.aria(title)}
+      {...personAttrs(
+        { "aria-label": label ?? d.aria(title) },
+        `z-[1] ${margin} flex h-[44px] w-[44px] flex-none cursor-pointer md:h-[32px] md:w-[32px] items-center justify-center rounded-[8px] border-0 bg-transparent p-0 text-[13px] focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--accent)] data-[ring]:outline-2 data-[ring]:outline-solid data-[ring]:outline-transparent data-[ring]:shadow-[0_0_0_2px_var(--accent)] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`,
+      )}
       disabled={disabled}
       onClick={(e) => onPress(e.currentTarget)}
-      className={`z-[1] ${margin} flex h-[44px] w-[44px] flex-none cursor-pointer md:h-[32px] md:w-[32px] items-center justify-center rounded-[8px] border-0 bg-transparent p-0 text-[13px] focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--accent)] data-[ring]:outline-2 data-[ring]:outline-solid data-[ring]:outline-transparent data-[ring]:shadow-[0_0_0_2px_var(--accent)] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
     >
       <span aria-hidden>✕</span>
     </button>

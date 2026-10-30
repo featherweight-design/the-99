@@ -11,6 +11,8 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { ShoppingKey } from "../decks/shopping-key";
 import { FriendSparesProvider, mergeRead, OtherWaysPress } from "./spare-markers";
 import { cardMark, rowAsk, SpareRequestsContext, stateLine } from "./friend-spares";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const actions = vi.hoisted(() => ({ askSpareAction: vi.fn(), askInsteadAction: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => actions);
@@ -29,7 +31,7 @@ const JACE = card("11111111-1111-4111-8111-111111111111", "Jace", 2);
 const friend = (name: string, pods = ["Thursday pod"]) => ({ publicId: `p-${name}`, displayName: name, commander: null, pods });
 const spare = (name: string, n: number, pods?: string[]) => ({ oracleId: JACE.oracleId, friend: friend(name, pods), spare: n });
 const ask = (name: string, state: AskStateLine["state"], extra: Partial<AskStateLine> = {}): AskStateLine => ({
-  id: `req-${name}-${state}`, oracleId: JACE.oracleId, holder: { publicId: `p-${name}`, displayName: name }, state,
+  id: `req-${name}-${state}`, oracleId: JACE.oracleId, holder: { publicId: `p-${name}`, displayName: named(name) }, state,
   daysLeft: state === "open" ? 12 : null, createdAt: "2026-10-18T00:00:00Z", answeredAt: null, ...extra,
 });
 
@@ -80,7 +82,7 @@ describe("the friend row's right element", () => {
     const d = await openModal();
     const row = rowOf(d, "Chris");
     expect(within(row).getByTestId("friend-spare-ask").textContent).toBe(r.ask);
-    expect(within(row).getByTestId("friend-spare-ask").getAttribute("aria-label")).toBe(r.askAria("Chris", "Jace"));
+    expect(within(row).getByTestId("friend-spare-ask").getAttribute("aria-label")).toBe(plain(r.askAria("Chris", "Jace")));
     expect(within(row).getByTestId("friend-spare-sub").textContent).toBe("1 spare · Thursday pod, Cube night");
     expect(d.queryByTestId("friend-spares-line")).toBeNull();
   });
@@ -94,7 +96,7 @@ describe("the friend row's right element", () => {
     expect(within(colin).getByTestId("friend-spare-sub").textContent).toBe("2 spares · 12 days left");
     expect(within(colin).queryByRole("button")).toBeNull();
     expect(within(rowOf(d, "Max")).getByTestId("friend-spare-ask").textContent).toBe(r.askInstead);
-    expect(d.getByTestId("friend-spares-line").textContent).toBe(r.oneAtATime("Colin"));
+    expect(d.getByTestId("friend-spares-line").textContent).toBe(plain(r.oneAtATime("Colin")));
   });
 
   it("reads Accepted after a yes, with its state line", async () => {
@@ -355,7 +357,7 @@ describe("the rules the rows draw from", () => {
 
   it("rowAsk: an open ask the holder no longer offers still blocks the card, so the others read Ask instead", () => {
     const asks = [ask("Colin", "unavailable", { daysLeft: 3 })];
-    expect(rowAsk(asks, "p-Max")).toEqual({ kind: "askInstead", fromRequestId: "req-Colin-unavailable", from: "Colin" });
+    expect(rowAsk(asks, "p-Max")).toEqual({ kind: "askInstead", fromRequestId: "req-Colin-unavailable", from: named("Colin") });
     expect(cardMark(asks)).toBe("requested");
   });
 
@@ -365,6 +367,6 @@ describe("the rules the rows draw from", () => {
   });
 
   it("stateLine: says nothing while a decline leaves others to ask", () => {
-    expect(stateLine([{ name: "Chris", ask: { kind: "declined" } }, { name: "Max", ask: { kind: "ask" } }], true)).toBeNull();
+    expect(stateLine([{ name: named("Chris"), ask: { kind: "declined" } }, { name: named("Max"), ask: { kind: "ask" } }], true)).toBeNull();
   });
 });
