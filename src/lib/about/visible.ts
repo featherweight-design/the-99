@@ -12,7 +12,6 @@ import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
-import { deckStatsEnabled } from "../decks/stats-flag";
 import {
   socialFriendsEnabled,
 } from "../social/flag";
@@ -47,7 +46,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   TUNING_ENABLED: tuningEnabled,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
-  DECK_STATS_ENABLED: deckStatsEnabled,
+  // Retired (always on): Stats. The name stays as the entry's and the section's historical identity.
+  DECK_STATS_ENABLED: () => true,
   // Retired (always on): collection editing. The name stays as the entries', variants' and sentences' historical identity.
   COLLECTION_EDIT_ENABLED: () => true,
   // Sync is the upload choice's third card. Its switch is retired, and so is its parent's, collection editing: the name

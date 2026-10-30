@@ -1643,13 +1643,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks',
     opens: 'opens a deck’s Your deck tab, on Stats',
     width: 'plate',
-    // 2026-10-10 (Deck stats PR 9, `design_handoff_the99_deck_stats_view/ABOUT-entry.md`): follows
-    // DECK_STATS_ENABLED, so turning the Stats view on is what announces it. The handoff's last
+    // 2026-10-10 (Deck stats PR 9, `design_handoff_the99_deck_stats_view/ABOUT-entry.md`): followed
+    // DECK_STATS_ENABLED, so turning the Stats view on is what announced it. The switch is retired (always on);
+    // the name stays the entry's identity, so no reader's New mark moves. The handoff's last
     // caption sentence ("Where Analysis has a finding about a figure, a link takes you to it.") is
     // dropped: PR 8 (finding links) was not built, since no Analysis finding concerns a Stats figure.
     // Revive the sentence only if evidence benchmarks give Analysis such findings and the links ship.
-    // NO BUMP (the handoff's own caveat: "drop the bump or ship the switch on"): the switch is off on
-    // production, and a bump there would redirect every account to /about with nothing new to show
+    // NO BUMP (the handoff's own caveat: "drop the bump or ship the switch on"): the switch was off on
+    // production then, and a bump there would have redirected every account to /about with nothing new to show
     // (`proxy.ts` decides on the version before it knows which entries the switches hide). So the
     // entry is `since: 11`, the current version, announced by its switch like `deck-analysis`.
     switch: 'DECK_STATS_ENABLED',

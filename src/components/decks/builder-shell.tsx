@@ -276,11 +276,9 @@ interface BuilderShellProps {
   /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab. Off is
    *  today's layout, exactly. */
   analysisEnabled?: boolean;
-  /** `DECK_STATS_ENABLED`, read on the server. Off: the list control draws no Stats segment. */
-  statsEnabled?: boolean;
   notesData?: DeckNotesView | null;
   /** What the Stats panel needs beyond the card list: the commander row(s), which count toward the
-   *  curve. The figures themselves are derived on the client from the optimistic list. Null when off. */
+   *  curve. The figures themselves are derived on the client from the optimistic list. */
   statsData?: DeckStatsInput | null;
   /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
    *  Notices sheet can open. Off, nothing of the notices is read or drawn. */
@@ -380,7 +378,6 @@ export function BuilderShell({
   initialView = "deck",
   initialBody = null,
   analysisEnabled = false,
-  statsEnabled = false,
   notesData = null,
   statsData = null,
   noticesEnabled = false,
@@ -404,13 +401,9 @@ export function BuilderShell({
   // The table's log prefill (Rule 0 PR 8), held here because the Games panel remounts on every tab change.
   const [offeredPrefill, spendPrefill] = useHeldPrefill(gamePrefill);
   // UI state. A landing on Cheaper stand-ins or Friends' spares opens on Shopping, where their press is.
-  // `?panel=` (the ?'s way back) opens Your deck on the body the ? was pressed on, on the deck tab only, and only on a
-  // panel this reader is drawn: Stats behind a switch that is off opens on the list, so the ? and the phone
-  // dock read the list too. Shopping and Notes have no switch.
-  const body =
-    initialView !== "deck" || (initialBody === "stats" && !statsEnabled)
-      ? null
-      : initialBody;
+  // `?panel=` (the ?'s way back) opens Your deck on the body the ? was pressed on, on the deck tab only. Shopping,
+  // Stats and Notes have no switch, so every panel is drawn.
+  const body = initialView !== "deck" ? null : initialBody;
   const [filter, setFilter] = useState<"all" | "shopping">(
     (landing?.lands.kind === "deck" && landing.lands.view === "shopping") || body === "shopping" ? "shopping" : "all",
   );
@@ -2031,7 +2024,7 @@ export function BuilderShell({
                   }}
                   art={findingArt}
                   ledgerAvailability={ledgerAvailability}
-                  onStats={statsEnabled ? openStatsAt : undefined}
+                  onStats={openStatsAt}
                   overview={
                     synopsis.view.kind === "ready" ? (
                       <SynopsisOverview
@@ -2301,7 +2294,6 @@ export function BuilderShell({
               <LockCardsProvider value={lockCards}>
               <DeckPanelContext.Provider value={deckPanel}>
               <Decklist
-              statsEnabled={statsEnabled}
               notesData={notesData}
               statsData={statsData}
               statsFocus={statsFocus}

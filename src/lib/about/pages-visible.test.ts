@@ -28,9 +28,10 @@ describe("visibleSections", () => {
     const off = visibleSections(OFF);
     const lock = off.find((s) => s.id === "your-deck")!;
     expect(lock.labels.map((l) => l.key)).not.toContain("decks/your-deck/lock");
-    expect(off.find((s) => s.id === "stats")!.labels).toEqual([]);
-    // DECK_NOTES_ENABLED is retired (always on): its label draws whatever the env.
+    expect(off.find((s) => s.id === "all-decks")!.labels).toEqual([]);
+    // DECK_NOTES_ENABLED and DECK_STATS_ENABLED are retired (always on): their labels draw whatever the env.
     expect(off.find((s) => s.id === "notes")!.labels.map((l) => l.key)).toEqual(["decks/notes/note"]);
+    expect(off.find((s) => s.id === "stats")!.labels.map((l) => l.key)).toEqual(["decks/stats/curve"]);
     expect(off.map((s) => s.id)).toEqual(ABOUT_SECTIONS.map((s) => s.id));
   });
 
@@ -405,7 +406,6 @@ describe("a section's sub-line", () => {
   it("describes each screen while its switch is on, and only says it is off while it is off", () => {
     const cases: [string, string, string][] = [
       ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
-      ["stats", "DECK_STATS_ENABLED", "charts"],
       ["all-decks", "ALL_DECKS_CART_ENABLED", "one cart"],
       ["friends", "SOCIAL_FRIENDS_ENABLED", "pods"],
     ];
@@ -424,9 +424,11 @@ describe("a section's sub-line", () => {
   });
 
   it("cuts a sentence naming a switched feature while that switch is off, and keeps the rest (Small items 3, item 4)", () => {
-    expect(sub(ALL_ON, "stats")).toContain("curve by card type");
-    const noStats = env({ ...(ALL_ON as Record<string, string>), DECK_STATS_ENABLED: "off" });
-    expect(sub(noStats, "stats")).toBe(ABOUT_SCREEN_OFF.trim());
+    expect(sub(ALL_ON, "all-decks")).toContain("one cart");
+    const noCart = env({ ...(ALL_ON as Record<string, string>), ALL_DECKS_CART_ENABLED: "off" });
+    expect(sub(noCart, "all-decks")).toBe(ABOUT_SCREEN_OFF.trim());
+    // Stats is retired (always on): its sentences always draw.
+    expect(sub(OFF, "stats")).toContain("curve by card type");
     // Collection editing is retired: its sentence always draws.
     expect(sub(OFF, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding. Add cards by name or scan them in.");
     // Ready to build is gone (the feed is always on).

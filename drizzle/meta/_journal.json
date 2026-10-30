@@ -1457,6 +1457,13 @@
       "when": 1793393926546,
       "tag": "0207_flyer_admin_events",
       "breakpoints": true
+    },
+    {
+      "idx": 208,
+      "version": "7",
+      "when": 1793395159581,
+      "tag": "0208_retire_deck_stats_switch",
+      "breakpoints": true
     }
   ]
 }
