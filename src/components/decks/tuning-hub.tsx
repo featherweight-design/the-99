@@ -122,7 +122,9 @@ function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number, hasCuts 
     const run = runStatus(last, words,
       (r) => (r.total === 0 ? copy.outcome.nothing : copy.outcome.applied(r.accepted, r.total)), now);
     // In flight, v2's tile is the accent edge, the dot and the clock, with no cost beside them (Wait A, the landing).
-    const cost = v2 && run.running ? "" : t.cost;
+    // `v2` is present exactly while the reader's SUGGESTED_CHANGES_V2_ENABLED is on (`builder-shell.tsx`), and a v2 run
+    // over 10 changes costs 2 credits, so its cost line says so.
+    const cost = v2 ? (run.running ? "" : t.costV2) : t.cost;
     return { tool: "suggested", purpose: v2 ? suggestedChangesV2Copy.tile.purpose : t.purpose, cost, ...run, offer: false, inert: false };
   }
   if (spec.tool === "mana") {

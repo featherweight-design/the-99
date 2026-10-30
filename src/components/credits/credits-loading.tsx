@@ -13,7 +13,8 @@ export function CreditsLoading() {
     <div data-loading-screen className={PAGE}>
       <span role="status" className="sr-only">{creditsLoadingCopy.status}</span>
       <StallWatch />
-      <CreditsHead />
+      {/* No switch is read before this draws, so the sub is the one true for every reader. */}
+      <CreditsHead suggestedV2={null} />
       <div className="anim-skeleton flex flex-col gap-[22px] md:gap-[26px]" aria-hidden="true">
         <div className="flex flex-col gap-[12px]">
           <span className={`${BLOCK} h-[40px] w-[140px] rounded-[8px]`} />

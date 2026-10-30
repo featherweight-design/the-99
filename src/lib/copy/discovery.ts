@@ -116,6 +116,10 @@ export const writtenForYouCopy = {
     { id: 'help-me-choose', line: '- Each new “Help me choose” search where you fill in “Anything else?”', name: 'Help me choose, with “Anything else?”', where: 'New deck', what: 'Reads what you type and ranks commanders against it.', cost: '1 credit per search', short: 'per search' },
     { id: 'find-a-deck-read', line: '- Each “Which deck needs it most?” read', name: 'Which deck needs it most?', where: 'A card’s details', what: 'Takes a card through each deck’s plan and names the ones it really helps.', cost: '1 credit per read', short: 'per read' },
   ],
+  /** The `suggested` row's words while the reader's SUGGESTED_CHANGES_V2_ENABLED is on (Hugh 2026-10-30): v2 asks how many
+   *  cards to change, up to 20 (`MAX_COUNT`), and costs 1 credit for 1 to 10 changes and 2 for more than 10.
+   *  `writtenForYou` swaps them in. */
+  suggestedV2: { what: 'Up to 20 swaps, as many as you ask for. Your words lead, then your games, your notes and the list.', cost: '1 credit, 2 over 10 changes', short: '1 or 2 per run' },
   /** The free line, whole while the credits entry still carries its History line, else its bracket half alone. */
   historyLine: 'Opening a past “Help me choose” run from History is free.',
   free: 'Finding a deck’s bracket is free, and so is reopening a past Help me choose.',

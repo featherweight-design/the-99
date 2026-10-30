@@ -19,6 +19,9 @@ export const tuningHubCopy = {
       name: "Suggested changes",
       purpose: "Up to five swaps, read from your games, your notes and the list.",
       cost: "1 credit per run",
+      /** Engineering (Hugh 2026-10-30): the cost while the reader's SUGGESTED_CHANGES_V2_ENABLED is on. A v2 run costs 1
+       *  credit for 1 to 10 changes and 2 for more than 10. Chosen where it draws: the hub's tile, the Tools card. */
+      costV2: "1 credit, 2 over 10 changes",
       /** Engineering (plan 2026-10-11): Suggested changes reads the deck's reading, and a deck
        *  over 100 has none, so its tile is inert there and says why. */
       needsReading: "Works from the deck’s analysis, and analysis needs a full deck.",

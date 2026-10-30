@@ -46,6 +46,10 @@ const creditWord = (n: number) => `${n} plan ${n === 1 ? "credit" : "credits"}`;
 export const creditsPageCopy = {
   title: "Credits",
   sub: "1 credit is 1 run of any tool",
+  /** The sub while the reader's SUGGESTED_CHANGES_V2_ENABLED is on (Hugh 2026-10-30): a v2 run over 10 changes uses 2, so
+   *  "any tool" is no longer true. Also the loading screen's, which is drawn before any switch is read: it is true for
+   *  every reader and names no 2-credit price. Short enough to keep the phone's one line. */
+  subV2: "Most runs use 1 credit",
   /** The phrase after the sub, drawn as the shared link (`CreditsText`). */
   subLink: creditsCopy.link,
   /** C1: browsing costs nothing; only what is written for the reader uses a credit. FINAL (Hugh with the copywriter). */

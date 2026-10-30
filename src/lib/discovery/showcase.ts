@@ -1,5 +1,6 @@
 import { atPlace } from "../commanders/place-paths";
 import { showcaseCopy, writtenForYouCopy, type ToolCopy } from "../copy/discovery";
+import { tuningHubCopy } from "../copy/tuning-hub";
 import type { SwitchName } from "../switches/registry";
 import type { DeckToolId, ToolFit } from "./fits";
 import { TOOL_PARAM, TOOLS, type Tool, type ToolGroup, type ToolId } from "./tools";
@@ -104,24 +105,35 @@ export function toolCardOf(t: Tool, input: CardInput): ToolCardModel {
   return {
     id: t.id as ToolId,
     copy,
-    credit: t.credit,
+    credit: creditOf(t, input),
     entry: t.entry,
     state: stateOf(t, copy, input),
     note: t.id === "collection-sync" && !input.hasSyncBase ? showcaseCopy.syncNoBase : null,
   };
 }
 
-export type WrittenRow = (typeof writtenForYouCopy.rows)[number];
+/** The cost chip: the registry's, but Suggested changes' says what v2 costs while the reader's v2 switch is on (Hugh
+ *  2026-10-30: 2 credits over 10 changes). */
+function creditOf(t: Tool, input: CardInput): string | null {
+  if (t.id === "suggested-changes" && input.isOn("SUGGESTED_CHANGES_V2_ENABLED")) return tuningHubCopy.tools.suggested.costV2;
+  return t.credit;
+}
+
+/** A Written for you row. Widened from the copy's literals, so the `suggested` row can carry `suggestedV2`'s words. */
+export type WrittenRow = { [K in keyof (typeof writtenForYouCopy.rows)[number]]: K extends "id" ? (typeof writtenForYouCopy.rows)[number]["id"] : string };
 
 /**
  * Written for you (R2b): the credits entry's spenders, each drawn only while its line survives in the RESOLVED caption,
  * so every row follows the switch `captionLineSwitches` gives that line (decision 3). Null when no row survives, or
- * the credits entry is not visible.
+ * the credits entry is not visible. `suggestedV2` is the reader's `suggestedChangesV2Enabled(env)`: on, the Suggested
+ * changes row says what v2 does and costs (`writtenForYouCopy.suggestedV2`).
  */
-export function writtenForYou(resolvedCreditsCaption: string | null): { rows: WrittenRow[]; free: string } | null {
+export function writtenForYou(resolvedCreditsCaption: string | null, suggestedV2: boolean): { rows: WrittenRow[]; free: string } | null {
   if (resolvedCreditsCaption === null) return null;
   const lines = new Set(resolvedCreditsCaption.split("\n"));
-  const rows = writtenForYouCopy.rows.filter((r) => lines.has(r.line));
+  const rows: WrittenRow[] = writtenForYouCopy.rows
+    .filter((r) => lines.has(r.line))
+    .map((r) => (r.id === "suggested" && suggestedV2 ? { ...r, ...writtenForYouCopy.suggestedV2 } : r));
   if (rows.length === 0) return null;
   const free = lines.has(writtenForYouCopy.historyLine) ? writtenForYouCopy.free : writtenForYouCopy.freeBracket;
   return { rows, free };
