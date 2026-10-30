@@ -466,3 +466,62 @@ describe("a row", () => {
     await waitFor(() => expect([opener, more]).toContain(document.activeElement));
   });
 });
+
+describe("the shared tag-a-card box", () => {
+  const counter = (text: string) => screen.getByText(text);
+
+  it("draws the foot in the frame: the key, its words, then the counter", () => {
+    mount(view([]));
+    const field = screen.getByRole("combobox", { name: "Add a note" });
+    const frame = field.closest("[data-framed-box]") as HTMLElement;
+    expect(frame).toBeTruthy();
+    const foot = within(frame).getByRole("button", { name: "Insert a card tag" }).parentElement!;
+    expect(foot.textContent).toBe("[[ ]]tag a card0 / 140");
+  });
+
+  it("keeps the counter faint until 120, warns from 120", () => {
+    mount(view([]));
+    const field = screen.getByRole("combobox", { name: "Add a note" });
+    type(field, "a".repeat(119));
+    expect(counter("119 / 140").getAttribute("style")).toContain("--fg-faint");
+    type(field, "a");
+    expect(counter("120 / 140").getAttribute("style")).toContain("--warning");
+  });
+
+  it("has one 'Add a note' placeholder, with no tag hint in it", () => {
+    mount(view([]));
+    expect((screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement).placeholder).toBe("Add a note");
+  });
+
+  it("pins the ⓘ at the line's right edge, top 9, not centered", () => {
+    mount(view([]));
+    const info = screen.getByRole("button", { name: "How card tags work" });
+    expect(info.className).toContain("absolute");
+    expect(info.className).toContain("right-[11px]");
+    expect(info.className).toContain("top-[9px]");
+    expect(info.className).not.toContain("top-1/2");
+  });
+
+  it("puts only Add in the action row, top-aligned beside the frame on desktop", () => {
+    mount(view([]));
+    const add = screen.getByRole("button", { name: "Add" });
+    const actions = add.parentElement!;
+    expect(within(actions).getAllByRole("button")).toHaveLength(1);
+    expect(actions.parentElement!.className).toContain("md:items-start");
+    expect(add.className).toContain("min-w-[104px]");
+  });
+
+  it("edits in the field's own frame: Cancel and Save in the row, no accent card around it", () => {
+    mount(view([note("a", "try it")]));
+    click(screen.getByRole("button", { name: "Edit this note" }));
+    const field = screen.getByRole("combobox", { name: "Edit this note" }) as HTMLInputElement;
+    expect(field.placeholder).toBe("");
+    const li = field.closest("li")!;
+    expect(li.className).not.toContain("--accent");
+    expect(li.className).not.toContain("surface-sunken");
+    expect(li.className).toContain("border-t");
+    expect(field.closest("[data-framed-box]")).toBeTruthy();
+    const save = within(li).getByRole("button", { name: "Save" });
+    expect(within(save.parentElement!).getAllByRole("button").map((b) => b.textContent)).toEqual(["Cancel", "Save"]);
+  });
+});

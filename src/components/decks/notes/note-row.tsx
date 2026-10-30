@@ -103,7 +103,7 @@ export function NoteRow({
 
   if (editing) {
     return (
-      <li className="list-none rounded-[8px] border border-solid border-[color:var(--accent)] bg-[color:var(--surface-sunken)] p-[10px]">
+      <li className="list-none border-t border-solid border-[color:var(--border)] py-[10px]">
         <NoteField
           value={text}
           picked={picked}
