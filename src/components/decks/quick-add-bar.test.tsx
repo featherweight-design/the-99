@@ -296,7 +296,7 @@ describe("QuickAddBar — the grid and card details", () => {
     expect(addCardToDeck).not.toHaveBeenCalled();
   });
 
-  it("opens the card on a press of the name, and still adds on a press anywhere else on the row", async () => {
+  it("opens the card on a press anywhere in the name cell, and adds nothing", async () => {
     const { fetchCard } = mountWithDetail();
     await search();
 

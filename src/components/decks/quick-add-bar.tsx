@@ -630,7 +630,8 @@ function QuickAddRow({
         ownershipShort={ownershipShort}
         marks={marks}
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
-        // The first cell: the thumbnail and the name, the full row height (the phone's first target, A3).
+        // The first cell: the thumbnail and the name, the full height of the row's line (the phone's first target, A3).
+        // A card note drawn under that line is the row's, not the cell's: pressing it adds, as anywhere else on the row.
         nameCell={(cell) => (
           <span
             id={nameCellId}
