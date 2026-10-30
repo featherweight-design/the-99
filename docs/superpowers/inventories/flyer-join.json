@@ -1,0 +1,128 @@
+{
+  "feature": "Flyer trial PR 3: /join/<CODE> for a flyer code, V1 to E3 (boards Join-Phone, Join-Desktop)",
+  "note": "Signed out. Seeded rows of scratch-flyer-3-* on local-dev; FLYER_TRIAL_ENABLED=true on the server; LNCHDX's creator has an off override.",
+  "out": "contact-sheets/flyer-join",
+  "signedOut": true,
+  "cookies": [
+    {
+      "name": "flyer_claim_CDSTEP",
+      "value": "${FLYER_V2_SECRET}",
+      "path": "/join"
+    },
+    {
+      "name": "flyer_claim_PRVNXX",
+      "value": "${FLYER_V3_SECRET}",
+      "path": "/join"
+    }
+  ],
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "v1",
+      "label": "V1 valid (/join/TRYAAA)",
+      "view": "src/components/join/join-flow.tsx",
+      "steps": [
+        {
+          "goto": "/join/TRYAAA",
+          "wait": "#friend-landing-title",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "v2",
+      "label": "V2 the code (claim cookie)",
+      "view": "src/components/join/join-flow.tsx",
+      "steps": [
+        {
+          "goto": "/join/CDSTEP",
+          "wait": "#friend-landing-title",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "v3",
+      "label": "V3 proven (claim cookie)",
+      "view": "src/components/join/join-flow.tsx",
+      "steps": [
+        {
+          "goto": "/join/PRVNXX",
+          "wait": "#friend-landing-title",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "e1",
+      "label": "E1 used up (/join/FULLXX)",
+      "view": "src/components/join/join-flow.tsx",
+      "steps": [
+        {
+          "goto": "/join/FULLXX",
+          "wait": "#friend-landing-title",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "e1b",
+      "label": "E1b on the list (saved through the form)",
+      "view": "src/components/join/join-flow.tsx",
+      "steps": [
+        {
+          "goto": "/join/FULLXX",
+          "wait": "#friend-landing-title",
+          "settle": 1200
+        },
+        {
+          "fill": "input[type=email]",
+          "text": "sam@scratch-flyer-3.test"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Tell me at launch$"
+        },
+        {
+          "wait": "text=You’re on the list",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "e2",
+      "label": "E2 revoked (/join/ENDEDX)",
+      "view": "src/components/join/join-flow.tsx",
+      "steps": [
+        {
+          "goto": "/join/ENDEDX",
+          "wait": "#friend-landing-title",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "e3",
+      "label": "E3 expired, after launch (/join/LNCHDX)",
+      "view": "src/components/join/join-flow.tsx",
+      "steps": [
+        {
+          "goto": "/join/LNCHDX",
+          "wait": "#friend-landing-title",
+          "settle": 1200
+        }
+      ]
+    }
+  ]
+}

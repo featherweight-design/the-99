@@ -439,6 +439,11 @@ try {
       ...(size.userAgent ? { userAgent: size.userAgent } : {}),
     });
     if (THEME) await context.addCookies([{ name: "the99_theme", value: THEME, url: BASE }]);
+    // `"cookies": [{ "name", "value", "path" }]` on the inventory sets browser cookies before the first load, `${VAR}` expanded
+    // in the value: a signed-out surface keyed on a secret only the browser holds (the flyer claim at `/join/<CODE>`).
+    if (inventory.cookies) {
+      await context.addCookies(inventory.cookies.map((c) => ({ name: c.name, value: expand(c.value, `cookie ${c.name}`), domain: new URL(BASE).hostname, path: c.path ?? "/" })));
+    }
     const page = await context.newPage();
     // `"notificationPermission": "default"` STAGES what `Notification.permission` reads, for the one state headless Chromium
     // cannot reach (it never reports `default`). The surface is real; the browser's answer is not, and the row says so.
