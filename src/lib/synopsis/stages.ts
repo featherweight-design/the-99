@@ -445,6 +445,24 @@ export function checkLength(newDoc: OverviewDoc, oldDoc: OverviewDoc): { pass: b
 }
 
 /**
+ * The alternate line's own rules, the one implementation (the shape check above and the app's
+ * precon write, `stages-run.ts`, both read it): present exactly when the facts carry an alternate
+ * commander, at most 144 characters, and marking one of them.
+ */
+export function checkAlternateLine(doc: Pick<OverviewDoc, "alternate">, alternates: readonly string[]): CheckResult<string> {
+  const offenders: string[] = [];
+  const len = (l: Line) => rendered(l.text).trim().length;
+  if (alternates.length === 0 && doc.alternate.length > 0) offenders.push("an alternate line with no alternate commander in the facts");
+  if (alternates.length > 0 && doc.alternate.length === 0) offenders.push("no alternate line though the facts carry one");
+  for (const l of doc.alternate) {
+    if (len(l) > STAGES_LIMITS.alternate) offenders.push(`the alternate line is ${len(l)} characters`);
+    const wanted = new Set(alternates.map(normalizeName));
+    if (alternates.length > 0 && !marksIn(l.text).some((m) => wanted.has(normalizeName(m)))) offenders.push("the alternate line names none of the alternate commanders");
+  }
+  return { pass: offenders.length === 0, offenders };
+}
+
+/**
  * The shape's own counts and budgets: three stages of at most 144, Wins by (iteration 2) and the
  * alternate at most 144, exactly 2 tips, and the alternate line present exactly when the facts carry
  * an alternate commander, naming one of them. Iteration 3: no Wins by line, and exactly one land line
@@ -467,13 +485,7 @@ export function checkShape(doc: OverviewDoc, alternates: readonly string[], shap
     if (doc.keyCards.length < min || doc.keyCards.length > max) offenders.push(`${doc.keyCards.length} Key cards, not ${min} to ${max}`);
   }
   if (doc.tips.length < STAGES_LIMITS.tips.min || doc.tips.length > STAGES_LIMITS.tips.max) offenders.push(`${doc.tips.length} tips`);
-  if (alternates.length === 0 && doc.alternate.length > 0) offenders.push("an alternate line with no alternate commander in the facts");
-  if (alternates.length > 0 && doc.alternate.length === 0) offenders.push("no alternate line though the facts carry one");
-  for (const l of doc.alternate) {
-    if (len(l) > STAGES_LIMITS.alternate) offenders.push(`the alternate line is ${len(l)} characters`);
-    const wanted = new Set(alternates.map(normalizeName));
-    if (alternates.length > 0 && !marksIn(l.text).some((m) => wanted.has(normalizeName(m)))) offenders.push("the alternate line names none of the alternate commanders");
-  }
+  offenders.push(...checkAlternateLine(doc, alternates).offenders);
   return { pass: offenders.length === 0, offenders };
 }
 

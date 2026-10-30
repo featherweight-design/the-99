@@ -2922,7 +2922,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   before it) the retry reads null and its plan IS the plain build, failing three checks.
 
 - `pnpm probe:precon-overview-build` runs `db:build:precon-overviews --stub` for real on a scratch branch and reads
-  `precon_synopses` back: under `--max-usd 0` nothing is written; two precons' rows land at contract 12, current, every
+  `precon_synopses` back: under `--max-usd 0` nothing is written; two precons' rows land at contract 13, current, every
   section passed, each with the list fingerprint of the deck a start of it writes; a second run leaves them as written;
   a row whose stored hash no longer matches is rewritten, one held back by `--limit` is still marked
   not current, and so is a row for a precon whose request cannot be built. It deletes every stub row it wrote. No model call. Scratch

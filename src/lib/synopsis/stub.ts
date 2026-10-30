@@ -86,7 +86,7 @@ function asV8(facts: SynopsisFacts, r: SynopsisResponse): SynopsisResponseV8 {
  * land line states the deck's own number with a reason. A deck with too few distinct cards gets the
  * commander in their place and fails the checks, as for contract 8: `survived` means the stub tried.
  */
-function asStages(facts: SynopsisFacts, v8: SynopsisResponseV8): StagesReply {
+function asStages(facts: SynopsisFacts, v8: SynopsisResponseV8, alternates: readonly string[] = []): StagesReply {
   const commander = facts.commanders[0] ?? facts.cards[0].name;
   const others = [...new Set([
     ...facts.cards.filter((c) => !c.categories.includes("land")),
@@ -114,16 +114,18 @@ function asStages(facts: SynopsisFacts, v8: SynopsisResponseV8): StagesReply {
     },
     keyCards: refused ? [] : [4, 5, 6, 7, 8].map((i) => ({ card: pick(i), claims: [], job: "Plays its part in this deck.", evidence: [ref(pick(i))] })),
     landKeep: line(`Keep ${landKeepNumber(facts).lands} lands: the curve is middling.`),
+    // A precon's box alternates: the schema requires the line exactly when the box has some.
+    ...(alternates.length > 0 ? { alternate: line(`Lead with [[${alternates[0]}]] instead and the plan shifts.`, alternates[0]) } : {}),
   };
 }
 
 export function stubReply(facts: SynopsisFacts, mode: StubMode, repair?: boolean, v2?: false): ModelOutcome<SynopsisResponse>;
-export function stubReply(facts: SynopsisFacts, mode: StubMode, repair: boolean | undefined, v2: boolean, stages?: boolean): ModelOutcome<SynopsisReply>;
-export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false, v2 = false, stages = false): ModelOutcome<SynopsisReply> {
+export function stubReply(facts: SynopsisFacts, mode: StubMode, repair: boolean | undefined, v2: boolean, stages?: boolean, alternates?: readonly string[]): ModelOutcome<SynopsisReply>;
+export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false, v2 = false, stages = false, alternates: readonly string[] = []): ModelOutcome<SynopsisReply> {
   const out = stubReplyV7(facts, mode, repair);
   if (!v2 || !out.ok) return out;
   const v8 = asV8(facts, out.value);
-  return { ...out, value: stages ? asStages(facts, v8) : v8 };
+  return { ...out, value: stages ? asStages(facts, v8, alternates) : v8 };
 }
 
 function stubReplyV7(facts: SynopsisFacts, mode: StubMode, repair = false): ModelOutcome<SynopsisResponse> {

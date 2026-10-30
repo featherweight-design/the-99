@@ -42,7 +42,7 @@ async function main() {
   const { readAllowance } = await import("../src/lib/model/allowance");
   const { freeRunsFor } = await import("../src/lib/synopsis/method-notice");
   const { readShownSynopsis } = await import("../src/lib/synopsis/generate");
-  const { SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } = await import("../src/lib/synopsis/limits");
+  const { SYNOPSIS_CONTRACT_VERSION_STAGES } = await import("../src/lib/synopsis/limits");
   const { callRowsQuery, dayRowsQuery } = await import("../src/lib/admin/costs");
 
   const { rows: [branch] } = await db.execute<{ id: string | null }>(sql`select current_setting('neon.branch_id', true) as id`);
@@ -74,7 +74,7 @@ async function main() {
       deckId,
       userId: USER,
       fingerprint: listFingerprint(prepared),
-      contractVersion: SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS,
+      contractVersion: SYNOPSIS_CONTRACT_VERSION_STAGES,
       model: "probe",
       modelCallId: null,
       preconFile: precon.file_name,

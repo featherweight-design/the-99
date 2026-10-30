@@ -106,6 +106,46 @@ describe("the land line", () => {
   });
 });
 
+describe("the alternate line (a precon's)", () => {
+  const ALTS = ["Spore Frog"];
+  const alt = (text: string, evidence: string[] = ["c6"]) => ({ text, evidence });
+  const withAlt = (a: { text: string; evidence: string[] } | undefined) => reply((x) => { if (a) x.alternate = a; });
+
+  it("is stored with its marked cards and evidence when the box has alternates and the line names one", () => {
+    const r = withAlt(alt("Lead with [[Spore Frog]] and the plan turns to fogging."));
+    const c = applyStagesShape(checked(r), r, FACTS, ALTS);
+    expect(c.alternate).toBe("Lead with [[Spore Frog]] and the plan turns to fogging.");
+    expect(c.evidence?.alternate).toEqual(["k"]);
+    expect(c.cards["spore frog"]).toEqual({ oracleId: "k", name: "Spore Frog" });
+    expect(c.landKeep).toBeDefined();
+  });
+
+  it("is left out when it names none of the alternates, marks a card the deck lacks, or cites a bad ref", () => {
+    const wrong = withAlt(alt("Lead with [[Viscera Seer]] instead."));
+    expect(applyStagesShape(checked(wrong), wrong, FACTS, ALTS).alternate).toBeUndefined();
+    const absent = withAlt(alt("Lead with [[Spore Frog]] or [[Sol Ring]] instead."));
+    expect(applyStagesShape(checked(absent), absent, FACTS, ALTS).alternate).toBeUndefined();
+    const badRef = withAlt(alt("Lead with [[Spore Frog]] instead.", ["c99"]));
+    expect(applyStagesShape(checked(badRef), badRef, FACTS, ALTS).alternate).toBeUndefined();
+  });
+
+  it("is never stored for a deck whose box has no alternates, whatever the reply carries", () => {
+    const r = withAlt(alt("Lead with [[Spore Frog]] instead."));
+    expect(applyStagesShape(checked(r), r, FACTS).alternate).toBeUndefined();
+    expect(applyStagesShape(checked(r), r, FACTS, []).alternate).toBeUndefined();
+  });
+
+  it("reaches the prompt option and the repair targets only for a precon", () => {
+    expect(stagesPromptOption(FACTS).alternates).toEqual([]);
+    expect(stagesPromptOption(FACTS, ALTS).alternates).toEqual(ALTS);
+    const r = withAlt(undefined);
+    const forPlayer = stagesRepairTargets(checked(r), r, FACTS);
+    const forPrecon = stagesRepairTargets(checked(r), r, FACTS, { alternates: ALTS });
+    expect(forPlayer.reasons.join(" ")).not.toMatch(/alternate/);
+    expect(forPrecon.sections).toEqual(expect.any(Array));
+  });
+});
+
 describe("the Primer's counts", () => {
   it("refuses the Primer with wrong_count unless it has three stage lines and two tips", () => {
     const four = reply((x) => { x.primer.strategy.push({ text: "Win with [[Grave Titan]].", evidence: ["c4"] }); });

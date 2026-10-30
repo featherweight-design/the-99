@@ -51,7 +51,7 @@ async function main() {
   });
 
   const files = (await source.db.select({ f: precons.fileName }).from(precons).where(sql`${precons.twinOf} is null`).orderBy(precons.fileName).limit(2)).map((r) => r.f);
-  const mine = and(eq(preconSynopses.contractVersion, 12), eq(preconSynopses.roleBasis, "classifier"), inArray(preconSynopses.preconFile, files));
+  const mine = and(eq(preconSynopses.contractVersion, 13), eq(preconSynopses.roleBasis, "classifier"), inArray(preconSynopses.preconFile, files));
   const targetRows = () => target.db.select().from(preconSynopses).where(mine);
   try {
     await source.db.delete(preconSynopses).where(mine);

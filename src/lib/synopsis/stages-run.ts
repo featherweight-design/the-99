@@ -2,7 +2,7 @@ import { readEvidence, refIndex } from "./claims";
 import { deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
 import type { StagesOption } from "./prompt";
 import {
-  checkLandKeep, dedupeSections, docFromChecked, docFromStagesReply, docShownNew, i3RepairTargets, landKeepNumber,
+  checkAlternateLine, checkLandKeep, dedupeSections, docFromChecked, docFromStagesReply, docShownNew, i3RepairTargets, landKeepNumber,
   STAGES_LIMITS, stagesChecks, type StagesReply,
 } from "./stages";
 import { SECTION_COUNTS } from "./limits";
@@ -11,7 +11,8 @@ import { marksIn } from "./validate";
 
 /**
  * Contract 13 in production: the stages shape (`stages.ts`, iteration 3 of the eval harness
- * `scripts/eval/overview-stages.mts`) for a PLAYER's deck. Everything here is pure, so the write
+ * `scripts/eval/overview-stages.mts`) for a PLAYER's deck and, with `alternates`, for a precon's
+ * (`scripts/build-precon-overviews.ts`; the alternate line is a precon's alone). Everything here is pure, so the write
  * path in `generate.ts` stays a thin caller and the rules are unit-tested without a database.
  *
  * WHICH CHECKS REFUSE, following the harness's precedent. The harness reports `allChecksPass`
@@ -34,9 +35,12 @@ import { marksIn } from "./validate";
  * No new refusal reason: `wrong_count` already has its copy.
  */
 
-/** The prompt's stages option for a player's deck: no alternates, the iteration-3 shape, the deck's own land number. */
-export function stagesPromptOption(facts: SynopsisFacts): StagesOption {
-  return { alternates: [], shape: 3, landKeep: landKeepNumber(facts) };
+/**
+ * The prompt's stages option: the iteration-3 shape and the deck's own land number. A player's deck
+ * has no alternates (the default); a precon passes its box's (`precons/alternates.ts`).
+ */
+export function stagesPromptOption(facts: SynopsisFacts, alternates: readonly string[] = []): StagesOption {
+  return { alternates, shape: 3, landKeep: landKeepNumber(facts) };
 }
 
 function refuse(content: CheckedSynopsis, section: SectionId, reason: RefusalReason): CheckedSynopsis {
@@ -56,32 +60,47 @@ function refuse(content: CheckedSynopsis, section: SectionId, reason: RefusalRea
 
 /**
  * A contract-8 check's result made a contract-13 one: the Primer's counts the stages shape needs,
- * and the land line taken from the reply when it passes its check. Run on every reply, the repair's
- * included, so a merge never holds a section the shape cannot draw.
+ * the land line taken from the reply when it passes its check, and, for a precon whose box carries
+ * `alternates`, the alternate-commander line under the same terms (`checkAlternateLine`). Run on
+ * every reply, the repair's included, so a merge never holds a section the shape cannot draw.
  */
-export function applyStagesShape(checked: CheckedSynopsis, reply: StagesReply, facts: SynopsisFacts): CheckedSynopsis {
+export function applyStagesShape(checked: CheckedSynopsis, reply: StagesReply, facts: SynopsisFacts, alternates: readonly string[] = []): CheckedSynopsis {
   let out = checked;
   const p = out.primer;
   if (p && (p.strategy.length !== STAGES_LIMITS.stages || p.tips.length < STAGES_LIMITS.tips.min || p.tips.length > STAGES_LIMITS.tips.max)) {
     out = refuse(out, "primer", "wrong_count");
   }
   const land = reply.landKeep;
-  if (!land) return out;
-  if (!checkLandKeep(docFromStagesReply(reply, 3), facts, landKeepNumber(facts)).pass) return out;
+  if (land && checkLandKeep(docFromStagesReply(reply, 3), facts, landKeepNumber(facts)).pass) {
+    out = withLine(out, land, facts, "landKeep");
+  }
+  const alt = reply.alternate;
+  if (alt && alternates.length > 0 && checkAlternateLine({ alternate: [{ text: alt.text }] }, alternates).pass) {
+    out = withLine(out, alt, facts, "alternate");
+  }
+  return out;
+}
+
+/**
+ * One reply line stored on the content (`landKeep` or `alternate`), with the cards its marks open
+ * and the oracle ids its evidence cites; `content` unchanged when a mark names a card the deck does
+ * not hold or a ref resolves to nothing, so the line is left out rather than half stored.
+ */
+function withLine(content: CheckedSynopsis, line: { text: string; evidence: string[] }, facts: SynopsisFacts, key: "landKeep" | "alternate"): CheckedSynopsis {
   const deck = deckNameIndex(facts.cards);
   const added: CheckedSynopsis["cards"] = {};
-  for (const m of marksIn(land.text)) {
+  for (const m of marksIn(line.text)) {
     const card = deck.get(normalizeName(m));
-    if (!card) return out;
+    if (!card) return content;
     added[normalizeName(m)] = { oracleId: card.oracleId, name: card.name };
   }
-  const read = readEvidence(land.evidence, refIndex(facts.cards), false);
-  if (read.reason) return out;
+  const read = readEvidence(line.evidence, refIndex(facts.cards), false);
+  if (read.reason) return content;
   return {
-    ...out,
-    landKeep: land.text.trim(),
-    cards: { ...out.cards, ...added },
-    ...(out.evidence ? { evidence: { ...out.evidence, landKeep: read.ids } } : {}),
+    ...content,
+    [key]: line.text.trim(),
+    cards: { ...content.cards, ...added },
+    ...(content.evidence ? { evidence: { ...content.evidence, [key]: read.ids } } : {}),
   };
 }
 
@@ -90,9 +109,9 @@ export function applyStagesShape(checked: CheckedSynopsis, reply: StagesReply, f
  * validator refused: the sections to rewrite and why (`i3RepairTargets`, run exactly as the harness
  * runs it, on what a reader would be shown and on the reply the checks read).
  */
-export function stagesRepairTargets(content: CheckedSynopsis, reply: StagesReply, facts: SynopsisFacts): { sections: SectionId[]; reasons: string[] } {
+export function stagesRepairTargets(content: CheckedSynopsis, reply: StagesReply, facts: SynopsisFacts, precon?: { alternates: readonly string[] }): { sections: SectionId[]; reasons: string[] } {
   const shown = dedupeSections(docShownNew(content, reply, 3), facts).doc;
-  const checks = stagesChecks({ reply, shownNew: shown, oldDoc: shown, facts, alternates: [], shape: 3, kind: "player deck", postPass: true });
+  const checks = stagesChecks({ reply, shownNew: shown, oldDoc: shown, facts, alternates: precon?.alternates ?? [], shape: 3, kind: precon ? "precon" : "player deck", postPass: true });
   return i3RepairTargets(checks);
 }
 

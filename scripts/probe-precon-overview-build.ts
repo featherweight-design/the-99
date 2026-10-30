@@ -1,6 +1,6 @@
 // The precon Overview build, run for real against a scratch branch with the synopsis stub (no
 // model is called). Each check reads `precon_synopses` back rather than trusting the build's log:
-//   THE WRITE: two precons' rows land at contract 12, with the stub's content, `current`, and the
+//   THE WRITE: two precons' rows land at contract 13, with the stub's content, `current`, and the
 //   list fingerprint of exactly the deck a start of that precon writes (`preparePreconDeck`).
 //   THE SKIP: a second run leaves them as written: their request hash still matches.
 //   THE MOVE: a row whose stored hash no longer matches its request is rewritten, not skipped, and
@@ -52,7 +52,7 @@ async function main() {
 
     build("--limit", "2");
     const rows = await db.select().from(preconSynopses).where(inArray(preconSynopses.preconFile, files));
-    check("both precons' rows are written at contract 12", rows.length === 2 && rows.every((r) => r.contractVersion === 12 && r.current && r.model === "stub"), JSON.stringify(rows.map((r) => [r.preconFile, r.contractVersion, r.current, r.model])));
+    check("both precons' rows are written at contract 13", rows.length === 2 && rows.every((r) => r.contractVersion === 13 && r.current && r.model === "stub"), JSON.stringify(rows.map((r) => [r.preconFile, r.contractVersion, r.current, r.model])));
     for (const r of rows) {
       const fp = listFingerprint(await preparePreconDeck(r.preconFile));
       check(`${r.preconFile}'s list fingerprint is the started deck's`, r.listFingerprint === fp, `${r.listFingerprint.slice(0, 12)} vs ${fp.slice(0, 12)}`);
@@ -78,8 +78,8 @@ async function main() {
       encoding: "utf8",
       env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, PRECON_OVERVIEW_ROLE_BASIS: "classifier", ANTHROPIC_API_KEY: "" },
     });
-    await db.update(preconSynopses).set({ reading: null }).where(and(eq(preconSynopses.preconFile, files[0]), eq(preconSynopses.contractVersion, 12)));
-    await db.update(preconSynopses).set({ readingProfileVersion: 0 }).where(and(eq(preconSynopses.preconFile, files[1]), eq(preconSynopses.contractVersion, 12)));
+    await db.update(preconSynopses).set({ reading: null }).where(and(eq(preconSynopses.preconFile, files[0]), eq(preconSynopses.contractVersion, 13)));
+    await db.update(preconSynopses).set({ readingProfileVersion: 0 }).where(and(eq(preconSynopses.preconFile, files[1]), eq(preconSynopses.contractVersion, 13)));
     const out = readingsOnly();
     const redone = await db.select().from(preconSynopses).where(inArray(preconSynopses.preconFile, files));
     check("--readings-only rewrites a missing reading and an older version's", redone.every((r) => preconReadingCurrent(preconReadingOf(r), { list: r.listFingerprint })) && /readings: 2 written/.test(out), out.match(/readings: .*$/m)?.[0] ?? "");
@@ -88,9 +88,9 @@ async function main() {
 
     // Both rows' inputs "move". Under --limit 1 the first is rewritten; the second is held back by the
     // limit, and must still be marked not current, never left current over inputs it does not fit.
-    await db.update(preconSynopses).set({ inputHash: "moved" }).where(and(inArray(preconSynopses.preconFile, files), eq(preconSynopses.contractVersion, 12)));
+    await db.update(preconSynopses).set({ inputHash: "moved" }).where(and(inArray(preconSynopses.preconFile, files), eq(preconSynopses.contractVersion, 13)));
     build("--limit", "1");
-    const at = async (f: string) => (await db.select().from(preconSynopses).where(and(eq(preconSynopses.preconFile, f), eq(preconSynopses.contractVersion, 12))))[0];
+    const at = async (f: string) => (await db.select().from(preconSynopses).where(and(eq(preconSynopses.preconFile, f), eq(preconSynopses.contractVersion, 13))))[0];
     const moved = await at(files[0]);
     check("a row whose inputs moved is rewritten", moved.inputHash !== "moved" && moved.current, `hash ${moved.inputHash.slice(0, 12)}, current ${moved.current}`);
     const held = await at(files[1]);
@@ -103,9 +103,9 @@ async function main() {
       try { await preparePreconDeck(f); } catch { unbuildable = f; break; }
     }
     if (unbuildable) {
-      await db.insert(preconSynopses).values({ preconFile: unbuildable, contractVersion: 12, roleBasis: "classifier", listFingerprint: "x", inputHash: "x", model: "stub", content: rows[0].content, current: true });
+      await db.insert(preconSynopses).values({ preconFile: unbuildable, contractVersion: 13, roleBasis: "classifier", listFingerprint: "x", inputHash: "x", model: "stub", content: rows[0].content, current: true });
       build("--limit", "0");
-      const gone = (await db.select().from(preconSynopses).where(and(eq(preconSynopses.preconFile, unbuildable), eq(preconSynopses.contractVersion, 12))))[0];
+      const gone = (await db.select().from(preconSynopses).where(and(eq(preconSynopses.preconFile, unbuildable), eq(preconSynopses.contractVersion, 13))))[0];
       check(`a row for a precon with no buildable request (${unbuildable}) is marked not current`, gone && !gone.current, `current ${gone?.current}`);
     } else {
       console.log("SKIP  no precon on this branch fails to build, so the unbuildable check has nothing to run on");

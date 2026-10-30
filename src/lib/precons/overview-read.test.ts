@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { overviewForList, preconOverviewKey, renderedPreconList, showsPreconOverview } from "./overview-read";
 import { listFingerprint } from "../profile/fingerprint";
-import { synopsisContractVersion } from "../synopsis/limits";
+import { synopsisPreconContractVersion } from "../synopsis/limits";
 import type { CheckedSynopsis } from "../synopsis/types";
 
 const content = { overview: "Go wide." } as CheckedSynopsis;
@@ -21,7 +21,7 @@ describe("showsPreconOverview", () => {
 describe("preconOverviewKey", () => {
   it("is the reader's own contract and role basis, the row a start would carry", () => {
     const env = { OVERVIEW_V2_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "" } as unknown as NodeJS.ProcessEnv;
-    expect(preconOverviewKey(env)).toEqual({ contract: synopsisContractVersion(true, true), basis: "classifier" });
+    expect(preconOverviewKey(env)).toEqual({ contract: synopsisPreconContractVersion(true), basis: "classifier" });
     expect(preconOverviewKey({ ...env, LABEL_ROLE_COUNTS_ENABLED: "true" } as NodeJS.ProcessEnv).basis).toBe("labels");
   });
 });

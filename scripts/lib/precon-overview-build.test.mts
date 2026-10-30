@@ -100,6 +100,28 @@ describe("runBuild", () => {
     expect(r.failed).toEqual([{ file: "a", reason: "first answer could not be handled: count_tokens 503" }]);
   });
 
+  it("sends a first answer the stages checks name (extra) to the one repair, then settles what it stores", async () => {
+    const settled: string[] = [];
+    const j = { ...job("a", 100, "ok"), extra: (_c: CheckedSynopsis, v: string) => (v === "ok" ? ["keyCards" as const] : []), settle: (c: CheckedSynopsis) => { settled.push("x"); return c; } } as Job<string>;
+    const { send, sent } = sender([j], 1);
+    const stored: string[] = [];
+    const r = await runBuild({ jobs: [j], send, capMicro: 1_000, store: async (s) => { stored.push(s.file); }, log: () => {} });
+    // The first answer passed the validator but extra names keyCards, so it is repaired once; the repair's answer is "ok" too, and extra is not asked again.
+    expect(sent).toEqual([["a"], ["a-r"]]);
+    expect(stored).toEqual(["a"]);
+    expect(settled).toEqual(["x"]);
+    expect(r.failed).toEqual([]);
+  });
+
+  it("fails a precon whose settled content has a refused section, and stores nothing for it", async () => {
+    const j = { ...job("a", 100, "ok"), settle: () => refused() } as Job<string>;
+    const { send } = sender([j], 1);
+    const stored: string[] = [];
+    const r = await runBuild({ jobs: [j], send, capMicro: 1_000, store: async (s) => { stored.push(s.file); }, log: () => {} });
+    expect(stored).toEqual([]);
+    expect(r.failed).toEqual([{ file: "a", reason: "refused: overview" }]);
+  });
+
   it("sends nothing when not one request fits", async () => {
     const jobs = [job("a", 2_000, "ok")];
     const { send, sent } = sender(jobs, 1);

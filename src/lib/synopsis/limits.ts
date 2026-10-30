@@ -42,8 +42,9 @@ export const SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS = 12;
 //    land line stating the deck's own keep number (`landKeep`, `stages.ts`). Written for a PLAYER's
 //    deck while `OVERVIEW_V2_ENABLED` is on (the interaction
 //    reading is a separate axis from the shape; 11 and 12 differed only by it). Above 12, so it
-//    never reads as older than the method. Precon Overviews, their carry-over and their readers stay
-//    at 12 (`synopsisContractVersion`) until the precon PR moves them.
+//    never reads as older than the method. Precon Overviews are written at 13 too (lane e7, PR 2:
+//    `synopsisPreconContractVersion`), with the alternate-commander line when the box carries
+//    alternates. A stored 12 row is never carried to a new deck; a deck that already holds one still reads it.
 export const SYNOPSIS_CONTRACT_VERSION_STAGES = 13;
 
 /** The contract a PLAYER deck's write is made under: 13 while the v2 method is on, else as `synopsisContractVersion`. */
@@ -51,9 +52,15 @@ export function synopsisPlayerContractVersion(v2: boolean, benchmarks = false): 
   return v2 ? SYNOPSIS_CONTRACT_VERSION_STAGES : synopsisContractVersion(false, benchmarks);
 }
 
-/** The contract a PRECON's Overview and every precon reader use: 11 while the v2 method is on, 7
- *  otherwise; 12 and 9 when the interaction figures are the benchmarks' too. A player deck's write
- *  uses `synopsisPlayerContractVersion`. */
+/** The contract a PRECON's Overview is written at and every precon reader selects: 13 while the v2
+ *  method is on, else 9 (the benchmarks' reading, nothing is built there). */
+export function synopsisPreconContractVersion(v2: boolean): number {
+  return synopsisPlayerContractVersion(v2, true);
+}
+
+/** The pre-13 contracts: 11 while the v2 method is on, 7 otherwise; 12 and 9 when the interaction
+ *  figures are the benchmarks' too. Neither a player's write nor a precon's uses it any more
+ *  (`synopsisPlayerContractVersion`, `synopsisPreconContractVersion`); the eval harness does. */
 export function synopsisContractVersion(v2: boolean, benchmarks = false): number {
   if (benchmarks) return v2 ? SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS : SYNOPSIS_CONTRACT_VERSION_BENCHMARKS;
   return v2 ? SYNOPSIS_CONTRACT_VERSION_V2 : SYNOPSIS_CONTRACT_VERSION;

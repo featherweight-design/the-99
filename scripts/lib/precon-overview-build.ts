@@ -10,9 +10,11 @@
  * replies are. The cap is clamped to `PRECON_OVERVIEW_CAP_USD`: no environment value or flag raises it.
  *
  * One repair per precon, as the app's write makes (contract B): a first answer with a refused
- * section is sent once more with the repair prompt, in a later batch under the same cap. Only an
- * Overview whose every section passed is stored; anything less is reported and left unstored, so
- * a deck never carries over a partial one.
+ * section, or one the stages checks name (`extra`, `stagesRepairTargets`), is sent once more with the
+ * repair prompt, in a later batch under the same cap. What is stored passes through `settle` first
+ * (the explained-once pass, `settleStages`), as the write's does. Only an Overview whose every
+ * section passed is stored; anything less is reported and left unstored, so a deck never carries
+ * over a partial one.
  */
 import { batchCostMicroUsd } from "../../src/lib/model/prices";
 import type { CheckedSynopsis, SectionId } from "../../src/lib/synopsis/types";
@@ -64,6 +66,10 @@ export type Job<V> = {
   repair: (content: CheckedSynopsis, failing: SectionId[], value: V) => Promise<Outgoing>;
   /** The app's own merge of a repair over the first answer (`applyRepair`). */
   merge: (first: CheckedSynopsis, value: V, failing: SectionId[]) => Promise<CheckedSynopsis>;
+  /** Contract 13: sections to send for the one repair beyond the refused ones (`stagesRepairTargets`). First answers only. */
+  extra?: (content: CheckedSynopsis, value: V) => SectionId[];
+  /** Contract 13: the explained-once pass the write applies after its checks and repair (`settleStages`). */
+  settle?: (content: CheckedSynopsis) => CheckedSynopsis;
 };
 
 export type Stored = { file: string; content: CheckedSynopsis; micro: number; usage: { input: number; output: number } };
@@ -126,18 +132,23 @@ export async function runBuild<V>(input: {
       // ONE PRECON'S TROUBLE IS ITS OWN: the batch is already paid for, so a check, a repair's token
       // count or a store that throws fails that precon and the loop goes on to store the others.
       try {
-        const content = p.first
+        let content = p.first
           ? await p.job.merge(p.first.content, reply.value, p.first.failing)
           : await p.job.check(reply.value);
+        // The repair is for the refused sections and, at contract 13, the ones the stages checks name.
+        const failing0 = p.first ? [] : [...new Set([...refused(content), ...(p.job.extra?.(content, reply.value) ?? [])])];
+        if (failing0.length > 0) {
+          next.push({ job: p.job, out: await p.job.repair(content, failing0, reply.value), first: { content, failing: failing0, micro, usage } });
+          continue;
+        }
+        if (p.job.settle) content = p.job.settle(content);
         const failing = refused(content);
         if (failing.length === 0) {
           const s = { file: p.job.file, content, micro, usage };
           await input.store(s);
           result.stored.push(s);
-        } else if (!p.first) {
-          next.push({ job: p.job, out: await p.job.repair(content, failing, reply.value), first: { content, failing, micro, usage } });
         } else {
-          result.failed.push({ file: p.job.file, reason: `refused after the repair: ${failing.join(", ")}` });
+          result.failed.push({ file: p.job.file, reason: `refused${p.first ? " after the repair" : ""}: ${failing.join(", ")}` });
         }
       } catch (e) {
         result.failed.push({ file: p.job.file, reason: `${p.first ? "repair" : "first answer"} could not be handled: ${e instanceof Error ? e.message : String(e)}` });

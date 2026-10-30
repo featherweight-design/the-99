@@ -31,7 +31,7 @@ import { holdsIllegalCard } from "../notices/read";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
 import { computeAndStoreProfile, isNewestVersion, requestProfileDeps } from "../profile/stored";
-import { synopsisContractVersion } from "../synopsis/limits";
+import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { carryOverDecision } from "./overview";
 
@@ -64,7 +64,7 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
 
   // The same withhold a press makes before an Overview (`generate.ts`'s `run`): an illegal deck's is not shown.
   if (noticesEnabled(env) && (await holdsIllegalCard(deckId, userId))) return { attached: false, reason: "illegal" };
-  const contract = synopsisContractVersion(overviewV2Enabled(env), true);
+  const contract = synopsisPreconContractVersion(overviewV2Enabled(env));
   // At the OWNER's contract AND role basis: the reading's roles reach the prompt, so an Overview built at
   // the other basis is not what this owner's Analyze would write, and none is attached.
   const key = and(eq(preconSynopses.preconFile, deck.precon), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, roleBasisFromEnv(env)));

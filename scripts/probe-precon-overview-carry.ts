@@ -27,7 +27,7 @@ requireEnv(["PROBE_DB_URL"]);
 process.env.DATABASE_URL = process.env.PROBE_DB_URL;
 
 const USER = `probe-precon-carry-${Date.now()}`;
-// The owner's switches: the Analysis tab, and contract 12 (v2 with the benchmarks), what production writes.
+// The owner's switches: the Analysis tab, and contract 13 (the stages shape), what production writes.
 // The classifier role basis, the one the build below is told: a row of the other basis would not be attached.
 const ON = { ...process.env, ANALYSIS_TAB_ENABLED: "true", OVERVIEW_V2_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "" } as NodeJS.ProcessEnv;
 const OFF = { ...ON, ANALYSIS_TAB_ENABLED: "" } as NodeJS.ProcessEnv;
@@ -57,7 +57,7 @@ async function main() {
 
   // The first plain precon the build orders by, and the second, each with a stub-written Overview.
   const files = (await db.select({ f: precons.fileName }).from(precons).where(sql`${precons.twinOf} is null`).orderBy(precons.fileName).limit(2)).map((r) => r.f);
-  const mine = and(eq(preconSynopses.contractVersion, 12), eq(preconSynopses.roleBasis, "classifier"), inArray(preconSynopses.preconFile, files));
+  const mine = and(eq(preconSynopses.contractVersion, 13), eq(preconSynopses.roleBasis, "classifier"), inArray(preconSynopses.preconFile, files));
   await db.delete(preconSynopses).where(mine);
   // The cleanup's trackers come first, so a setup or build that fails is cleaned up too.
   const made: string[] = [];
