@@ -248,6 +248,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     (from: readonly CardSearchRow[], index: number) => {
       const card = from[index];
       if (!card) return;
+      // Under a navigation's screen the results' host is inert with <main> (`COVERED_WITH_MAIN`), but the field above
+      // it is live: its ↵ (and the phone's ↓ then ↵) must not open a card the reader cannot see. Typing and Close stay.
+      if (bodyRef.current?.closest("[inert]")) return;
       setRecents(pushRecent(userId, card));
       // The card joins the recents with the signals its row already holds, so it is not drawn as not owned later.
       setRecentSignals((s) => (s ? { ...s, [card.oracleId]: { owned: card.owned, decks: card.decks, wishlist: card.wishlist } } : s));

@@ -122,6 +122,46 @@ describe("useDialogA11y trapTab", () => {
   });
 });
 
+describe("useDialogA11y under an inert ancestor", () => {
+  // A dialog inert with <main> under a navigation's screen: its keys are not its own until the screen lifts.
+  function setup() {
+    const onClose = vi.fn();
+    const cover = document.createElement("div");
+    cover.setAttribute("inert", "");
+    const el = document.createElement("div");
+    el.setAttribute("role", "dialog");
+    el.appendChild(document.createElement("button"));
+    cover.appendChild(el);
+    const rail = document.createElement("button");
+    document.body.append(rail, cover);
+    appended.push(cover, rail);
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(el);
+      useDialogA11y(ref, onClose, { lockScroll: false });
+    });
+    rail.focus();
+    return { onClose, rail };
+  }
+
+  it("lets a Tab pressed in the live shell through", () => {
+    const { rail } = setup();
+    const tab = new KeyboardEvent("keydown", { key: "Tab", cancelable: true, bubbles: true });
+    rail.dispatchEvent(tab);
+    expect(tab.defaultPrevented).toBe(false);
+    const back = new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, cancelable: true, bubbles: true });
+    rail.dispatchEvent(back);
+    expect(back.defaultPrevented).toBe(false);
+  });
+
+  it("neither swallows nor acts on Escape", () => {
+    const { onClose, rail } = setup();
+    const esc = new KeyboardEvent("keydown", { key: "Escape", cancelable: true, bubbles: true });
+    rail.dispatchEvent(esc);
+    expect(esc.defaultPrevented).toBe(false);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
 describe("useDialogA11y extraStop", () => {
   // Card details takes the ? lifted over its backdrop as one more stop after its last control (discovery R2·9).
   function setup(extra: () => HTMLElement | null) {
