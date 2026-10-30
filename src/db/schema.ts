@@ -1280,8 +1280,12 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * Version 10 is the unlabeled-card rule (labels-everywhere PR 9): a card with no fresh label now
  * falls back to the classifier for that card, where version 9 counted it toward no role. Rows
  * counted by labels under version 9 hold role counts the reader no longer produces.
+ *
+ * Version 11 widens `isCommanderCandidate` to a legendary card that is a creature off the battlefield
+ * (Grist, the Hunger Tide). Sets scored under version 10 never held such a card, so they are refused
+ * and recomputed.
  */
-export const SCORE_WRITER_CURRENT = 10;
+export const SCORE_WRITER_CURRENT = 11;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),
