@@ -199,6 +199,19 @@ describe("adding", () => {
     expect(reveal).not.toHaveBeenCalled();
   });
 
+  it("floats the open list over the page, outside the panel, so the deck page's sticky Add a card bar cannot cover it", async () => {
+    const { container } = mount(view([note("a", "x")]));
+    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    at(field, 200);
+    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    expect(await screen.findByText(/Type a card name/)).toBeTruthy();
+    const list = screen.getByRole("listbox");
+    // A portal on the body, fixed, at the picker's own z-60: above the bar's z-20 (builder-shell) and the tab bar's z-40.
+    expect(container.contains(list)).toBe(false);
+    expect(list.style.position).toBe("fixed");
+    expect(list.style.zIndex).toBe("60");
+  });
+
   it("brings the field to the middle of the visible area when the open list itself runs past the window, though the phone cap would fit", async () => {
     vi.mocked(reveal).mockClear();
     mount(view([note("a", "x")]));
