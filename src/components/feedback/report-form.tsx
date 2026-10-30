@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { sendProblemReport } from "../../app/feedback-actions";
 import { reportCopy as copy } from "../../lib/copy/report";
 import { DOING_MAX, WHAT_MAX, type ReportSource } from "../../lib/feedback/report-rule";
@@ -40,8 +40,15 @@ export function ReportForm({
   const busy = useRef(false);
   const ready = what.trim().length > 0 && what.length <= WHAT_MAX && doing.length <= DOING_MAX;
 
+  // The failed toast's Try again outlives the render that drew it, so a send reads the text and the ready check as they are NOW.
+  const latest = useRef({ what, doing, ready });
+  useEffect(() => {
+    latest.current = { what, doing, ready };
+  });
+
   async function send() {
-    if (busy.current) return;
+    if (busy.current || !latest.current.ready) return;
+    const { what, doing } = latest.current;
     busy.current = true;
     setToast(null);
     setPhase("sending");
@@ -89,7 +96,7 @@ export function ReportForm({
         titleClassName="!font-sans !font-semibold text-[15px] leading-tight md:text-[16px] md:leading-[17px]"
       >
         {phase === "sent" ? (
-          <div className="flex flex-col items-center gap-[8px] px-[24px] pb-[24px] pt-[26px] text-center md:px-[18px] md:pb-[18px]" data-testid="report-sent">
+          <div className="flex flex-col items-center gap-[8px] px-[24px] pb-[42px] pt-[42px] text-center md:px-[18px] md:pb-[36px]" data-testid="report-sent">
             <span aria-hidden className="flex h-[44px] w-[44px] items-center justify-center rounded-full border-[1.5px] border-solid border-[color:var(--success)] text-[19px] font-bold text-[color:var(--success)]">
               ✓
             </span>
@@ -100,13 +107,16 @@ export function ReportForm({
             </button>
           </div>
         ) : (
-          <form onSubmit={submit} className="flex flex-col gap-[14px] px-[16px] pb-[24px] pt-[14px] md:px-[18px] md:pb-[18px] md:pt-[16px]">
+          <form onSubmit={submit} className="flex flex-col gap-[14px] text-left px-[16px] pb-[24px] pt-[14px] md:px-[18px] md:pb-[18px] md:pt-[16px]">
             <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">{copy.intro}</p>
             <label className="flex flex-col gap-[6px]">
-              <span className="text-[13px] font-semibold text-[color:var(--fg)]">{copy.what}</span>
+              <span className="text-[13px] font-semibold leading-[normal] text-[color:var(--fg)]">{copy.what}</span>
               <textarea
                 value={what}
-                onChange={(e) => setWhat(e.target.value)}
+                onChange={(e) => {
+                  setWhat(e.target.value);
+                  setToast(null);
+                }}
                 placeholder={copy.whatPlaceholder}
                 maxLength={WHAT_MAX}
                 readOnly={phase === "sending"}
@@ -115,13 +125,16 @@ export function ReportForm({
               />
             </label>
             <label className="flex flex-col gap-[6px]">
-              <span className="text-[13px] font-semibold text-[color:var(--fg)]">
+              <span className="text-[13px] font-semibold leading-[normal] text-[color:var(--fg)]">
                 {copy.doing}
                 <small className="ml-[6px] text-[12px] font-normal text-[color:var(--fg-faint)]">{copy.optional}</small>
               </span>
               <textarea
                 value={doing}
-                onChange={(e) => setDoing(e.target.value)}
+                onChange={(e) => {
+                  setDoing(e.target.value);
+                  setToast(null);
+                }}
                 placeholder={copy.doingPlaceholder}
                 maxLength={DOING_MAX}
                 readOnly={phase === "sending"}

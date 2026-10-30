@@ -4275,7 +4275,7 @@ export const launchList = pgTable("launch_list", {
 /**
  * Feedback a player sent from inside the app: a problem report (`problem`) or a check-in (`check_in`). `answers` is
  * the form as typed; `page`, `device`, `digest` and `sentry_event_id` are the context a problem report attaches;
- * `source` is the entry it came from (`error_screen`, `about`, ...). Read in /admin by name, never by email;
+ * `source` is the entry it came from (`error` or `about`). Read in /admin by name, never by email;
  * `read_at` is when an admin first opened it. The purge deletes a player's rows with the account.
  */
 export const playerFeedback = pgTable("feedback", {

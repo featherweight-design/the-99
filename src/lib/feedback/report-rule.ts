@@ -42,7 +42,8 @@ function idOf(value: unknown): string | null {
 /** A path only: no origin, query or hash, a link token replaced, capped. A value that is not a path is nothing. */
 export function pageOf(value: unknown): string | null {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return null;
-  const path = redactLinkTokens(value.split(/[?#]/, 1)[0]).replace(/[\u0000-\u001f\u007f]/g, "");
+  // Control characters go first: one inside a token (`/join/AB\u0001CD`) would otherwise split it past the redaction.
+  const path = redactLinkTokens(value.split(/[?#]/, 1)[0].replace(/[\u0000-\u001f\u007f]/g, ""));
   return path.slice(0, PAGE_MAX) || null;
 }
 

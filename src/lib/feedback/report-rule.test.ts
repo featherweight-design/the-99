@@ -46,6 +46,11 @@ describe("pageOf", () => {
     expect(pageOf("/friend/sometoken")).not.toContain("sometoken");
   });
 
+  it("redacts a token a control character was hiding in", () => {
+    expect(pageOf("/join/AB\u0001CD")).not.toContain("ABCD");
+    expect(pageOf("/join/AB\u0001CD")).not.toMatch(/[\u0000-\u001f]/);
+  });
+
   it("caps its length", () => {
     expect(pageOf(`/${"a".repeat(500)}`)!.length).toBeLessThanOrEqual(200);
   });

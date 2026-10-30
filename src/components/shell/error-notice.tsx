@@ -36,13 +36,19 @@ export function ErrorNotice({
 }) {
   // The event id of a browser-side throw, kept for "Tell us what happened" (a server error carries a digest instead).
   const eventId = useRef<string | null>(null);
+  // Each error is captured once, however many times the effect runs (Strict Mode, a changed boundary prop).
+  const captured = useRef(new WeakSet<Error>());
   const reportable = useReportable();
   const [reporting, setReporting] = useState<{ eventId: string | null } | null>(null);
   useEffect(() => {
     logBoundaryError(boundary, error.digest);
     // A server error carries a digest and was reported where it happened (`onRequestError`); only a
     // browser-side throw is new here.
-    if (!error.digest) eventId.current = Sentry.captureException(error) ?? null;
+    if (error.digest) eventId.current = null;
+    else if (!captured.current.has(error)) {
+      captured.current.add(error);
+      eventId.current = Sentry.captureException(error) ?? null;
+    }
   }, [boundary, error]);
 
   return (
