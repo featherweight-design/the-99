@@ -830,7 +830,10 @@ export function TuningPanel({
   // `New run` opens a fresh intake. A v10 run's set, once the switch is on, is read-only (spec §10, the cutover).
   const live = v2 && !reviewing && state.run?.status === "pending" && state.live ? state.live : null;
   if (live && watchedLive !== live.runId) setWatchedLive(live.runId);
-  const v2Ask = v2 ? state.itemsAsk ?? null : null;
+  // Whether the shown run is a v2 run is the RUN's own record (its stored ask: a count), never the reader's switch. History
+  // is what happened: a stored v2 run draws with the v2 results whatever the switch says now, never v10's Add/Reject or
+  // "Apply all… the deck goes to 96" on a run whose contract keeps the deck at 99.
+  const v2Ask = state.itemsAsk ?? null;
   if (v2 && !live && watchedLive !== null && v2Ask?.runId === watchedLive && finishSaid !== watchedLive) {
     setFinishSaid(watchedLive);
     const landed = state.items.filter(isLine);
@@ -1185,7 +1188,7 @@ export function TuningPanel({
 
   const v2Lines = state.items.filter(isLine);
   const runView = live !== null || (v2Ask !== null && hasSet && !newRun);
-  if (v2 && runView) {
+  if (runView) {
     const runId = live ? live.runId : v2Ask!.runId;
     body = (
       <>
@@ -1203,8 +1206,8 @@ export function TuningPanel({
         permits={permits}
         declared={facts.declared ?? null}
         newestPriceAsOf={live ? live.newestPriceAsOf : state.newestPriceAsOf}
-        figures={{ typeCounts: v2.typeCounts ?? {}, roles: v2.noticed.roles }}
-        drift={v2.over !== 0 ? { at: v2.at, over: v2.over, onTopOff: v2.onTopOff, onProposedCuts: v2.onProposedCuts } : null}
+        figures={{ typeCounts: v2?.typeCounts ?? {}, roles: v2?.noticed.roles ?? [] }}
+        drift={v2 && v2.over !== 0 ? { at: v2.at, over: v2.over, onTopOff: v2.onTopOff, onProposedCuts: v2.onProposedCuts } : null}
         finishedHere={!live && watchedLive === runId}
         readFrom={live ? null : <ReadFrom state={state} facts={facts} />}
         actions={deps.v2 ?? SERVER.v2!}
@@ -1353,7 +1356,7 @@ export function TuningPanel({
     );
   }
   // Suggested changes v2's wait and results stand in for the intake, its action row and its foot.
-  const v2RunView = v2 !== null && runView;
+  const v2RunView = runView;
   // A failure's own note rides in the action row beside Try again, ahead of the credit line.
   if (failure?.note) note = note ? `${failure.note} · ${note}` : failure.note;
 
@@ -1459,7 +1462,7 @@ export function TuningPanel({
           in flight (STATES §3 states 1/3/8). No run-wiring yet — a press still reads whatever
           the fingerprint already covers (PR 4a wires the limits into the prompt itself); this
           box only persists what the player sets. */}
-      {reading || v2 ? null : (
+      {reading || v2 || v2RunView ? null : (
         <div className="mt-[16px] md:mt-[18px]">
           {limitsBox}
         </div>
@@ -1468,7 +1471,7 @@ export function TuningPanel({
       {/* "Additional notes" (H35, PR 3): one note per press, never saved — placed below the
           limits box, above the action row (STATES §3 states 1/3). Hidden while reading, same as
           the limits box, since its text becomes a checklist row instead. */}
-      {reading || v2 ? null : (
+      {reading || v2 || v2RunView ? null : (
         <div className="mt-[16px] md:mt-[18px]">
           {/* The foot words are the shared TAG_A_CARD_WORDS, the same as the Suggested changes request box. */}
           <TuningNotesField value={notes} onChange={changeNotes} labelRow />

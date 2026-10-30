@@ -522,6 +522,30 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     expect(document.body.textContent).not.toContain(sc.pastRun);
   });
 
+  it("with the switch off, a stored v2 run still draws the v2 results: its Apply bar, never v10's Add, Reject or the deck going off 99", async () => {
+    // History is what happened: the RUN's own ask decides the renderer, never the reader's switch. Two in and five out
+    // would read "the deck goes to 96" under v10's Apply all.
+    const uneven = [...lines.slice(0, 2), ...lines.slice(5)];
+    const reopened: TuningState = { ...finished, items: uneven, review: { runId: RUN, at, readVersion: 4 } };
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => reopened);
+    await draw(d, null, [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+    ));
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    expect(document.querySelector("[data-sc-bar]")).not.toBeNull();
+    expect(document.querySelector("[data-sc-apply]")).not.toBeNull();
+    for (const name of [deckTuningCopy.lists.add, deckTuningCopy.lists.reject, deckTuningCopy.lists.applyAll]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+    expect(document.body.textContent).not.toContain("goes to 96");
+    expect(document.body.textContent).not.toContain(sc.pastRun);
+    // Nor v10's intake under it: no Additional notes, no Kept for this deck, no v10 press.
+    expect(screen.queryByRole("button", { name: deckTuningCopy.panel.again })).toBeNull();
+    expect(screen.queryByLabelText(deckDescriptionCopy.notes.label)).toBeNull();
+    expect(screen.queryByRole("button", { name: deckTuningCopy.panel.suggest })).toBeNull();
+  });
+
   it("a run History reopened (History B): its way back and meta above the heading, its note and live picks; gone with New run", async () => {
     const reopened: TuningState = { ...finished, review: { runId: RUN, at, readVersion: 4 } };
     const d = { ...deps(), v2: v2Actions() };
