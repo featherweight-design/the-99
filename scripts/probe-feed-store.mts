@@ -166,7 +166,7 @@ async function main() {
     check("every item is unseen (never seen)", feed.every((i) => i.unseen));
     const tm = feed.find((i) => i.kind === "trade-match");
     check("the trade match names F by public id and name, never a Clerk id",
-      tm !== undefined && "friend" in tm && tm.friend?.publicId === f.publicId && tm.friend.displayName === "Fay" && !JSON.stringify(tm).includes(F));
+      tm !== undefined && "friend" in tm && tm.friend?.publicId === f.publicId && JSON.stringify(tm.friend.displayName).includes("Fay") && !JSON.stringify(tm).includes(F));
     if (ARRIVED) {
       check("the set arrival is read, the baseline row never",
         feed.some((i) => i.kind === "new-set" && i.code === ARRIVED) && !feed.some((i) => i.kind === "new-set" && i.code === BASELINE));

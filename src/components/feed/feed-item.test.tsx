@@ -43,7 +43,7 @@ describe("FeedItemRow", () => {
   });
 
   it("keeps the action line for the ✕ alone on a row with no press, and draws none with neither", () => {
-    const item = view({ kind: "spare-request", friend: { publicId: "p", displayName: "Peter" } });
+    const item = view({ kind: "spare-request", friend: { publicId: "p", displayName: named("Peter") } });
     const { container, unmount } = list(<FeedItemRow item={item} now={NOW} onDismiss={() => {}} />);
     expect(screen.queryByRole("link")).toBeNull();
     expect([...container.querySelector("[data-feed-actions]")!.children].map((c) => c.textContent)).toEqual(["✕"]);
@@ -73,19 +73,23 @@ describe("FeedItemRow", () => {
   it("puts the friend's face on a trade match's card and links to their spares", () => {
     const { container } = list(
       <FeedItemRow
-        item={view({ kind: "trade-match", card: { oracleId: "g", name: "Ghalta, Primal Hunger", image: "g.jpg", art: null, colorIdentity: ["G"] }, friend: { publicId: "p1", displayName: "Colin" }, href: "/friends/p1" })}
+        item={view({ kind: "trade-match", card: { oracleId: "g", name: "Ghalta, Primal Hunger", image: "g.jpg", art: null, colorIdentity: ["G"] }, friend: { publicId: "p1", displayName: named("Colin") }, href: "/friends/p1" })}
         now={NOW}
         face={{ artCropUri: "colin.jpg" }}
       />,
     );
-    expect(screen.getByText("Colin has a spare Ghalta, Primal Hunger")).toBeInTheDocument();
+    expect(screen.getByText("Colin has a spare Ghalta, Primal Hunger")).toHaveClass("ph-no-capture");
     expect(container.querySelector("[data-feed-face] [data-face=art]")).not.toBeNull();
-    expect(screen.getByRole("link", { name: "See Colin’s spares ›" })).toHaveAttribute("href", "/friends/p1");
+    const press = screen.getByRole("link", { name: "See Colin’s spares ›" });
+    expect(press).toHaveAttribute("href", "/friends/p1");
+    expect(press.querySelector(".ph-no-capture")?.textContent).toBe("See Colin’s spares ›");
   });
 
   it("names a trade match's press Ask {friend} when it opens the card's sheet with Ask", () => {
-    list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: "Colin" }, href: "/friends/p1/spares?spare=g", askable: true })} now={NOW} />);
-    expect(screen.getByRole("link", { name: "Ask Colin ›" })).toHaveAttribute("href", "/friends/p1/spares?spare=g");
+    list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: named("Colin") }, href: "/friends/p1/spares?spare=g", askable: true })} now={NOW} />);
+    const ask = screen.getByRole("link", { name: "Ask Colin ›" });
+    expect(ask).toHaveAttribute("href", "/friends/p1/spares?spare=g");
+    expect(ask.querySelector(".ph-no-capture")?.textContent).toBe("Ask Colin ›");
     expect(screen.queryByRole("link", { name: "See Colin’s spares ›" })).toBeNull();
   });
 
@@ -96,33 +100,33 @@ describe("FeedItemRow", () => {
   });
 
   it("gives a spare request (the later round) its accent kicker and no press", () => {
-    list(<FeedItemRow item={view({ kind: "spare-request", friend: { publicId: "p2", displayName: "Peter" } })} now={NOW} />);
+    list(<FeedItemRow item={view({ kind: "spare-request", friend: { publicId: "p2", displayName: named("Peter") } })} now={NOW} />);
     expect(screen.getByText("Spare request").className).toContain("--accent-text");
     expect(screen.queryByRole("link")).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("draws an answer to the reader's own ask as Your request: who spares it, the buy line, a press to /friends off Home, no accent", () => {
-    const colin = { publicId: "p3", displayName: "Colin" };
+    const colin = { publicId: "p3", displayName: named("Colin") };
     list(<FeedItemRow item={view({ kind: "spare-request", friend: colin, answer: "yes", href: "/friends", answerDetail: { others: [], standalone: false } })} now={NOW} />);
     expect(screen.getByText("Your request").className).not.toContain("--accent-text");
-    expect(screen.getByText("Colin can spare Sai, Master Thopterist")).toBeTruthy();
+    expect(screen.getByText("Colin can spare Sai, Master Thopterist")).toHaveClass("ph-no-capture");
     expect(screen.getByText("The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.")).toBeTruthy();
     // Outside What's new (no answer sheet to open) the press still goes to /friends, as it shipped.
     expect(screen.getByRole("link", { name: "Your request ›" }).getAttribute("href")).toBe("/friends");
   });
 
   it("a Yes to a standalone ask says nothing of Shopping's buy press", () => {
-    const colin = { publicId: "p3", displayName: "Colin" };
+    const colin = { publicId: "p3", displayName: named("Colin") };
     list(<FeedItemRow item={view({ kind: "spare-request", friend: colin, answer: "yes", href: "/friends", answerDetail: { others: [], standalone: true } })} now={NOW} />);
     expect(screen.getByText("The handover is between you. Once it’s yours, add it to your collection.")).toBeTruthy();
     expect(screen.queryByText(/press buy on it in Shopping/)).toBeNull();
   });
 
   it("a No names who else has a spare, or nobody", () => {
-    const chris = { publicId: "p4", displayName: "Chris" };
+    const chris = { publicId: "p4", displayName: named("Chris") };
     const { unmount } = list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { others: [named("Max"), named("Ann")], standalone: false } })} now={NOW} />);
-    expect(screen.getByText("Chris is keeping Sai, Master Thopterist")).toBeTruthy();
+    expect(screen.getByText("Chris is keeping Sai, Master Thopterist")).toHaveClass("ph-no-capture");
     expect(screen.getByText("Max and 1 more have a spare too.")).toBeTruthy();
     unmount();
     list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { others: [], standalone: false } })} now={NOW} />);
@@ -182,7 +186,7 @@ describe("FeedItemRow", () => {
   });
 
   it("lets a long friend name wrap inside the press instead of overflowing the row", () => {
-    list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: "W".repeat(30) }, href: "/friends/p1" })} now={NOW} />);
+    list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: named("W".repeat(30)) }, href: "/friends/p1" })} now={NOW} />);
     const press = screen.getByRole("link", { name: /spares/ });
     expect(press.className).toContain("[overflow-wrap:anywhere]");
     expect(press.className).toContain("min-w-0");

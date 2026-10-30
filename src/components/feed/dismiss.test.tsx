@@ -216,7 +216,7 @@ describe("Waiting on you", () => {
 
   it("ends each row's action line with its ✕, after the presses, with no reserve on the text column", () => {
     render(<WaitingOnYou rows={[ask, trade]} now={NOW_D} />);
-    for (const title of [plain(w.askTitle(named("Ana"), "Sol Ring")), plain(w.tradeTitle(named("Colin"), "Ghalta, Primal Hunger"))]) {
+    for (const title of [plain(feedCopy.home.title.spareRequest(named("Ana"), "Sol Ring")), plain(w.tradeTitle(named("Colin"), "Ghalta, Primal Hunger"))]) {
       expect(screen.getByText(title).parentElement!.className).not.toMatch(/pr-\[/);
     }
     const [askRow, tradeRow] = screen.getAllByTestId("waiting-row");

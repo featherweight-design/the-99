@@ -16,6 +16,7 @@ import { WaitingOnYou } from "./waiting-on-you";
 import { useState } from "react";
 import { TradeAskFrame, TradeAskProvider } from "./trade-ask";
 import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const m = vi.hoisted(() => ({ ask: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }), usePathname: () => "/" }));
@@ -23,7 +24,7 @@ vi.mock("../../app/friends/spare-actions", () => ({ askSpareAction: m.ask, askIn
 vi.mock("../../app/feed-dismiss-actions", () => ({ dismissFeedItemAction: vi.fn() }));
 
 const GHALTA = "00000000-0000-4000-8000-0000000000c1";
-const COLIN = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Colin" };
+const COLIN = { publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Colin") };
 const NOW = "2026-10-27T12:00:00.000Z";
 const CARDS = [{ oracleId: GHALTA, name: "Ghalta, Primal Hunger", imageUri: null }];
 const AS_OF = new Date("2026-10-26T00:00:00Z");
@@ -80,8 +81,9 @@ const sheet = () => screen.getByRole("dialog", { name: spareCopy.modalTitleSpare
 describe("What's new's row", () => {
   it("opens the sheet in place: the loader until the spares land, then that friend first with Ask, and no navigation", async () => {
     await act(async () => { render(inProvider(<ul><FeedItemRow item={item} now={NOW} /></ul>)); });
-    const press = screen.getByRole("button", { name: `${feedCopy.home.press.tradeMatchAsk("Colin")} ›` });
+    const press = screen.getByRole("button", { name: `${plain(feedCopy.home.press.tradeMatchAsk(named("Colin")))} ›` });
     expect(press.tagName).toBe("BUTTON");
+    expect(press.querySelector(".ph-no-capture")?.textContent).toBe("Ask Colin ›");
     expect(document.querySelector("a[href*='?spare=']")).toBeNull();
     await act(async () => { fireEvent.click(press); });
     expect(within(sheet()).getByRole("status")).toHaveTextContent(spareCopy.loadingHeading);
@@ -130,7 +132,9 @@ describe("the lead story", () => {
     const press = document.querySelector<HTMLElement>("[data-trade-ask-press]")!;
     expect(press.querySelector("[data-trade-ask=requested] i")!.className).toMatch(/bg-current/);
     // Named for the friend as well as the state (pre-open pass): the lead's button has no title to describe it.
-    expect(press).toHaveAccessibleName(`${feedCopy.home.press.tradeMatchAsk("Colin")}, ${spareCopy.request.requested}`);
+    expect(press).toHaveAccessibleName(`${plain(feedCopy.home.press.tradeMatchAsk(named("Colin")))}, ${spareCopy.request.requested}`);
+    // The accessible name carries the friend's name, so the button itself is marked.
+    expect(press).toHaveClass("ph-no-capture");
     await act(async () => { fireEvent.click(press); });
     expect(sheet()).toBeInTheDocument();
   });
@@ -181,7 +185,7 @@ describe("the frame (Copilot round 1, #2288)", () => {
     asks = [];
     await act(async () => { rerender(page("")); });
     expect(document.querySelector("[data-trade-ask=requested]")).toBeNull();
-    expect(screen.getByRole("button", { name: `${feedCopy.home.press.tradeMatchAsk("Colin")} ›` })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: `${plain(feedCopy.home.press.tradeMatchAsk(named("Colin")))} ›` })).toBeInTheDocument();
   });
 });
 

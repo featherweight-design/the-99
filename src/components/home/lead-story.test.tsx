@@ -20,7 +20,7 @@ const NOW = "2026-10-22T12:00:00.000Z";
 const LEAD: FeedView = {
   key: "item:1", kind: "spare-request", at: "2026-10-22T10:00:00.000Z", unseen: true,
   card: { oracleId: "lathliss", name: "Lathliss, Dragon Queen", image: "l.jpg", art: "l-art.jpg", colorIdentity: ["R"] },
-  friend: { publicId: "pub-peter", displayName: "Peter" }, href: null, opens: null, outbound: null, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false,
+  friend: { publicId: "pub-peter", displayName: named("Peter") }, href: null, opens: null, outbound: null, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false,
   ask: { id: "req-1", spare: 2, copies: 1, deckName: named("Dragons of Tarkir"), daysLeft: 13 },
 };
 
@@ -33,10 +33,12 @@ describe("LeadStory, a spare request", () => {
   it("draws the ask with Yes, No and the days left on the story", () => {
     render(<LeadStory item={LEAD} now={NOW} />);
     const story = screen.getByRole("region");
-    expect(within(story).getByRole("heading", { level: 3 }).textContent).toBe(feedCopy.home.title.spareRequest("Peter", "Lathliss, Dragon Queen"));
-    expect(within(story).getByText("You have 2 spare. Peter wants 1 for Dragons of Tarkir.")).toBeTruthy();
-    expect(within(story).getByRole("button", { name: plain(r.yesAria("Peter", "Lathliss, Dragon Queen")) })).toBeTruthy();
-    expect(within(story).getByRole("button", { name: plain(r.noAria("Peter", "Lathliss, Dragon Queen")) })).toBeTruthy();
+    const heading = within(story).getByRole("heading", { level: 3 });
+    expect(heading.textContent).toBe(plain(feedCopy.home.title.spareRequest(named("Peter"), "Lathliss, Dragon Queen")));
+    expect(heading.querySelector(".ph-no-capture")?.textContent).toBe(heading.textContent);
+    expect(within(story).getByText("You have 2 spare. Peter wants 1 for Dragons of Tarkir.")).toHaveClass("ph-no-capture");
+    expect(within(story).getByRole("button", { name: plain(r.yesAria(named("Peter"), "Lathliss, Dragon Queen")) })).toBeTruthy();
+    expect(within(story).getByRole("button", { name: plain(r.noAria(named("Peter"), "Lathliss, Dragon Queen")) })).toBeTruthy();
     expect(within(story).getByText("13 days left")).toBeTruthy();
   });
 
@@ -98,7 +100,7 @@ describe("focus after a slow answer", () => {
 
 describe("LeadSlot", () => {
   const NEXT: FeedView = { ...LEAD, key: "item:2", kind: "trade-match", ask: undefined, href: "/friends/pub-colin",
-    friend: { publicId: "pub-colin", displayName: "Colin" } };
+    friend: { publicId: "pub-colin", displayName: named("Colin") } };
 
   it("keeps the receipt when the redraw brings another lead, or none", async () => {
     actions.answerSpareAction.mockResolvedValue({ ok: true });
@@ -151,9 +153,11 @@ describe("LeadSlot", () => {
     expect(fixed).toEqual(expect.arrayContaining(["min-[390px]:h-[40px]", "min-[390px]:whitespace-nowrap", "md:h-[36px]", "min-h-[40px]", "[overflow-wrap:anywhere]"]));
     expect(fixed).not.toContain("whitespace-nowrap");
     cleanup();
-    const trade: FeedView = { ...LEAD, key: "item:2", kind: "trade-match", ask: undefined, href: "/friends/pub-peter", friend: { publicId: "pub-peter", displayName: "W".repeat(30) } };
+    const trade: FeedView = { ...LEAD, key: "item:2", kind: "trade-match", ask: undefined, href: "/friends/pub-peter", friend: { publicId: "pub-peter", displayName: named("W".repeat(30)) } };
     render(<LeadStory item={trade} now={NOW} />);
-    const wraps = screen.getByRole("link", { name: /spares/ }).className.split(/\s+/);
+    const wrapsPress = screen.getByRole("link", { name: /spares/ });
+    expect(wrapsPress.querySelector(".ph-no-capture")?.textContent).toContain("W".repeat(30));
+    const wraps = wrapsPress.className.split(/\s+/);
     expect(wraps).toEqual(expect.arrayContaining(["min-h-[40px]", "md:min-h-[36px]", "[overflow-wrap:anywhere]"]));
     expect(wraps).not.toContain("whitespace-nowrap");
     expect(wraps).not.toContain("min-[390px]:whitespace-nowrap");

@@ -243,7 +243,7 @@ async function main() {
     const feed = await read.loadFeed(U, ENV, new Date());
     const tm = feed.find((i) => i.kind === "trade-match");
     check("the feed reads it, naming F by public id, never the Clerk id",
-      tm !== undefined && "friend" in tm && tm.friend?.displayName === "Fay" && !JSON.stringify(tm).includes(F));
+      tm !== undefined && "friend" in tm && JSON.stringify(tm.friend?.displayName).includes("Fay") && !JSON.stringify(tm).includes(F));
     await prefs.setFeedKinds(U, ["price-drop", "combo"]);
     forgetTradeMatchFingerprints();
     check("trade-match off: nothing is read or written", (await noticeTradeMatches(U, ENV)) === 0);

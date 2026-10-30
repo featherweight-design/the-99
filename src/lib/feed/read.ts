@@ -24,7 +24,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { catalogFirstSeen, feedDismissals, precons, sets, userPrefs, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { RELEASE_SET_TYPES } from "../catalog/index-due";
-import { answerOpened, storedFeedBranch } from "../social/feed-items";
+import { answerOpened, feedFriend, storedFeedBranch, type FeedFriend } from "../social/feed-items";
 import { unseenAnswersCount } from "../social/spare-requests";
 import { answerOf, type Answer } from "../social/spare-request-rules";
 import { availableFeedKinds } from "./flag";
@@ -192,7 +192,7 @@ export type FeedItem =
       oracleId: string | null;
       variantId: string | null;
       /** The friend the item is about, by public id: never a Clerk id. */
-      friend: { publicId: string; displayName: string } | null;
+      friend: FeedFriend | null;
       data: Record<string, unknown>;
       /** A spare request's answer to the reader's OWN ask (`answerOf`), or null: an incoming ask, or another kind. */
       answer: Answer | null;
@@ -226,7 +226,7 @@ export function toFeedItem(r: FeedRow): FeedItem {
     kind: r.kind,
     oracleId: r.oracle_id,
     variantId: r.variant_id,
-    friend: r.friend_public_id ? { publicId: r.friend_public_id, displayName: r.friend_name ?? "" } : null,
+    friend: feedFriend(r.friend_public_id, r.friend_name),
     data: r.data ?? {},
     answer: r.kind === "spare-request" ? answerOf(r.data) : null,
   };

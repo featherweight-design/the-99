@@ -6,6 +6,7 @@
  * with no card count yet (none of its printings has art) still goes, without the figure. Home draws such a row with its title alone; a notification has no line to leave out.
  */
 import type { FeedView } from "../feed/home";
+import { reveal } from "../person-name/reveal";
 import type { PushItem } from "./message";
 
 export function toPushItem(view: FeedView, batch: string): PushItem | null {
@@ -24,10 +25,10 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
       return { ...base, kind: "price-drop", oracleId: card.oracleId, card: card.name, wasCents: view.drop.fromCents, nowCents: view.drop.toCents, image: card.image };
     case "trade-match":
       if (!card || !view.friend) return null;
-      return { ...base, kind: "trade-match", friend: view.friend.displayName, publicId: view.friend.publicId, oracleId: card.oracleId, card: card.name, image: card.image, askable: view.askable };
+      return { ...base, kind: "trade-match", friend: reveal(view.friend.displayName), publicId: view.friend.publicId, oracleId: card.oracleId, card: card.name, image: card.image, askable: view.askable };
     case "spare-request":
       if (!card || !view.friend) return null;
-      return { ...base, kind: "spare-request", friend: view.friend.displayName, card: card.name, image: card.image, ...(view.answer ? { answer: view.answer } : {}) };
+      return { ...base, kind: "spare-request", friend: reveal(view.friend.displayName), card: card.name, image: card.image, ...(view.answer ? { answer: view.answer } : {}) };
     case "combo":
       if (!card || !view.combo || !view.opens) return null;
       return { ...base, kind: "combo", oracleId: view.opens, a: view.combo.pieces[0], b: view.combo.pieces[1], added: view.combo.added, image: card.image };

@@ -125,7 +125,7 @@ describe("WaitingOnYou, spare requests", () => {
     const row = screen.getByTestId("waiting-row");
     expect(row.dataset.kind).toBe("spare-request");
     expect(within(row).getByText(w.kind["spare-request"])).toBeTruthy();
-    expect(within(row).getByText(feedCopy.home.title.spareRequest("Peter", "Lathliss, Dragon Queen"))).toBeTruthy();
+    expect(within(row).getByText(plain(feedCopy.home.title.spareRequest(named("Peter"), "Lathliss, Dragon Queen")))).toHaveClass("ph-no-capture");
     expect(within(row).getByText("You have 2 spare. Peter wants 1 for Dragons of Tarkir.")).toBeTruthy();
     expect(within(row).getByRole("button", { name: plain(r.yesAria("Peter", "Lathliss, Dragon Queen")) }).textContent).toBe("Yes");
     expect(within(row).getByRole("button", { name: plain(r.noAria("Peter", "Lathliss, Dragon Queen")) }).textContent).toBe("No");

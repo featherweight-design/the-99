@@ -1,7 +1,34 @@
 // The news feed (menu and Home handoff; plan `2026-10-22-menu-home.md` PR 4). `news` is Settings' Notifications
 // section (announcements handoff R1b-1, `R1b-Settings.dc.html`), placeholder copy from the board.
 import type { FeedKind } from "../feed/kinds";
-import { personText, type PersonParts } from "../person-name/brand";
+import { personText, type PersonParts, type ThirdPartyName } from "../person-name/brand";
+
+// The lines that name a friend. Push text names the friend as a plain string (`toPushItem` reveals it, the one server-side
+// reveal), so a plain name still yields a string; a branded one (Home's feed, Waiting on you) yields parts.
+function tradeMatchTitle(friend: string, card: string): string;
+function tradeMatchTitle(friend: ThirdPartyName, card: string): PersonParts;
+function tradeMatchTitle(friend: string | ThirdPartyName, card: string): string | PersonParts;
+function tradeMatchTitle(friend: string | ThirdPartyName, card: string): string | PersonParts {
+  return typeof friend === "string" ? `${friend} has a spare ${card}` : personText`${friend} has a spare ${card}`;
+}
+function spareRequestTitle(friend: string, card: string): string;
+function spareRequestTitle(friend: ThirdPartyName, card: string): PersonParts;
+function spareRequestTitle(friend: string | ThirdPartyName, card: string): string | PersonParts;
+function spareRequestTitle(friend: string | ThirdPartyName, card: string): string | PersonParts {
+  return typeof friend === "string" ? `${friend} asks for your spare ${card}` : personText`${friend} asks for your spare ${card}`;
+}
+function seeSpares(friend: string): string;
+function seeSpares(friend: ThirdPartyName): PersonParts;
+function seeSpares(friend: string | ThirdPartyName): string | PersonParts;
+function seeSpares(friend: string | ThirdPartyName): string | PersonParts {
+  return typeof friend === "string" ? `See ${friend}’s spares` : personText`See ${friend}’s spares`;
+}
+function askFriend(friend: string): string;
+function askFriend(friend: ThirdPartyName): PersonParts;
+function askFriend(friend: string | ThirdPartyName): string | PersonParts;
+function askFriend(friend: string | ThirdPartyName): string | PersonParts {
+  return typeof friend === "string" ? `Ask ${friend}` : personText`Ask ${friend}`;
+}
 
 export const feedCopy = {
   news: {
@@ -116,8 +143,9 @@ export const feedCopy = {
       newSet: (set: string) => `${set} is out`,
       newPrecon: (precon: string) => `${precon} precon is out`,
       priceDrop: (card: string) => `${card} is cheaper`,
-      tradeMatch: (friend: string, card: string) => `${friend} has a spare ${card}`,
-      spareRequest: (friend: string, card: string) => `${friend} asks for your spare ${card}`,
+      tradeMatch: tradeMatchTitle,
+      /** Also the title of the same ask on `/friends`' Waiting on you. */
+      spareRequest: spareRequestTitle,
       combo: (a: string, b: string) => `${a} + ${b}`,
     },
     /** Each kind's one line. */
@@ -142,9 +170,9 @@ export const feedCopy = {
       /** The card on Mana Pool, in a new tab (Hugh, 2026-10-27). Its own words, shorter than card details' link out; the
        *  link-out icon and the spoken new-tab suffix are `FeedPress`'s, as `ExternalLink` draws them. */
       priceDrop: "Buy at Mana Pool",
-      tradeMatch: (friend: string) => `See ${friend}’s spares`,
+      tradeMatch: seeSpares,
       /** With spare requests on, the press opens that card's spares sheet with Ask (signature card call 9). */
-      tradeMatchAsk: (friend: string) => `Ask ${friend}`,
+      tradeMatchAsk: askFriend,
       combo: "See the combo",
       /** A Secret Lair or Wizards news post, on magic.wizards.com in a new tab (the link-out icon and the spoken suffix are `FeedPress`'s). */
       readOnWizards: "Read on Wizards",

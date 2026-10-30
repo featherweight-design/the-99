@@ -2,6 +2,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
+import { named } from "../person-name/mint";
 import { FEED_KINDS } from "./kinds";
 import { catalogBranch, feedQuery, feedUnion, loadFeed, markSeenQuery, toFeedItem, toPost, unseenCount, unseenCountQuery, unseenFriendsCount } from "./read";
 
@@ -197,7 +198,7 @@ describe("toFeedItem", () => {
 
   it("names a friend by public id and display name, never more", () => {
     const item = toFeedItem({ ...row, kind: "trade-match", key: "item:1", created_at: NOW, oracle_id: "o", friend_public_id: "p_1", friend_name: "Colin" });
-    expect(item).toMatchObject({ kind: "trade-match", friend: { publicId: "p_1", displayName: "Colin" }, data: {} });
+    expect(item).toMatchObject({ kind: "trade-match", friend: { publicId: "p_1", displayName: named("Colin") }, data: {} });
     expect(JSON.stringify(item)).not.toContain("user_");
   });
 

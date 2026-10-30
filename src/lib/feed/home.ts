@@ -30,6 +30,7 @@ import { loadFriendSpares, type FriendSpare } from "../social/spares";
 import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds } from "./flag";
 import { socialFriendsEnabled } from "../social/flag";
+import type { FeedFriend } from "../social/feed-items";
 import { leadStory, type FeedKind } from "./kinds";
 import { effectiveKinds, markFeedSeen, neverChose, readFeedPrefs } from "./prefs";
 import { loadFeed, type FeedItem, type FeedPost } from "./read";
@@ -52,7 +53,7 @@ export type FeedView = {
   /** The card. A combo's row draws the ∞ mark instead; its lead draws this, the piece the write added. Null for a card the catalog no longer holds. */
   card: FeedCard | null;
   /** The friend who is the news (trade match, spare request), by public id. */
-  friend: { publicId: string; displayName: string } | null;
+  friend: FeedFriend | null;
   /**
    * Where the press goes in the app, or null when it opens a card's detail (`opens`), goes off the app (`outbound`), or has no press yet (spare request).
    * A Commander decklists post on Home carries BOTH: this, its See the lists (`withListTargets`, Announcements UI 6b),
