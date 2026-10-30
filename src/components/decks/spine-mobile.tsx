@@ -344,6 +344,9 @@ export function SpineMobile({
                   dashed
                   footPad="compact"
                   frameRef={descriptionFrameRef}
+                  // Inside `press-through` (pointer-events: none): the frame and its foot take presses back, so the
+                  // foot's preventDefault holds the field's focus instead of letting the press blur it.
+                  className="pointer-events-auto"
                 >
                 <textarea
                   ref={descriptionFieldRef}

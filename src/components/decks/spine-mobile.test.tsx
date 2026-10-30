@@ -138,6 +138,15 @@ describe("SpineMobile", () => {
 
   // Round 5: `onDone` closes the editor on success, so the announcement has to come from a
   // region that outlives the editor's unmount to ever be heard.
+  it("the description's tag frame takes pointer events back inside press-through", () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    const frame = description.closest(".pointer-events-auto");
+    expect(frame).not.toBeNull();
+    expect(frame!.closest(".press-through")).not.toBeNull();
+  });
+
   it("announces a successful description save through a status region that outlives the editor", async () => {
     renderSpine(<SpineMobile {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
