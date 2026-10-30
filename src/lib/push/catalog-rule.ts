@@ -32,7 +32,7 @@ export function pushableFeedKinds(env: NodeJS.ProcessEnv): FeedKind[] {
 /** The feed's key for a set (by code), a precon (by file name) or a Wizards post (by Contentful id). The SQL twin is `catalogBranch`'s `key` column. */
 export const catalogKey = (kind: CatalogKind, id: string): string => `${PREFIX[kind]}${id}`;
 
-/** The set code or precon file name a key of this kind names, or null when it is not a key of this kind (or names nothing). */
+/** The set code, precon file name or Wizards post (Contentful) id a key of this kind names, or null when it is not a key of this kind (or names nothing). */
 export function parseCatalogKey(kind: CatalogKind, key: string): string | null {
   const prefix = PREFIX[kind];
   if (!key.startsWith(prefix)) return null;

@@ -54,7 +54,7 @@ export const feedCopy = {
     quietRest: (kinds: string) => `You hear about ${kinds} here.`,
     /**
      * Each kind as the quiet line names it, mid-sentence (announcements G1): its own inline form, never a lowercased
-     * Settings name, which would print "secret lair". The first six are what lowercasing gave.
+     * Settings name, which would print "secret lair". The three Wizards kinds keep their capitals; every other entry is what lowercasing gave.
      */
     quietName: {
       "new-set": "new sets",
