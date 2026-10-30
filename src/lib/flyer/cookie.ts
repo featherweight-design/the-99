@@ -1,5 +1,5 @@
 /**
- * The newcomer's flyer-claim cookie: the claim secret that binds a claim to a browser, httpOnly and scoped to the code's
+ * The newcomer's flyer-claim cookie: the claim secret that binds a claim to a browser, httpOnly and scoped to the join
  * pages. No server-only imports, as the invite cookie's (`src/lib/invites/claim-cookie.ts`).
  */
 import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS } from "./rules";
