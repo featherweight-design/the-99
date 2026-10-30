@@ -132,7 +132,7 @@ export async function runProposedCuts(
   // A run abandoned by a process that is gone would otherwise answer "in flight" until someone
   // opened the panel.
   await reapCutsRuns(deckId, userId);
-  const started = await startCutsRun(userId, deckId, fingerprint, readVersion, { runId: requested, env });
+  const started = await startCutsRun(userId, deckId, fingerprint, readVersion, { runId: requested });
   if (started.kind === "ownerShare") return { ok: false, message: creditsCopy.ownerShare(new Date()) };
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
   if (started.kind === "in_flight") return { ok: false, message: deckTuningCopy.announce.started };
@@ -281,14 +281,14 @@ export async function cutProposed(itemId: string, review = false): Promise<DeckM
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await cutItem(itemId, userId, { review: review === true }, env), userId, true);
+  return settleVerdict(await cutItem(itemId, userId, { review: review === true }), userId, true);
 }
 
 export async function undoProposedCut(itemId: string, review = false): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await undoCutItem(itemId, userId, { review: review === true }, env), userId, true);
+  return settleVerdict(await undoCutItem(itemId, userId, { review: review === true }), userId, true);
 }
 
 /** Keep and Show it again change no card, so they move no fingerprint. */

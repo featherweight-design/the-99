@@ -39,15 +39,15 @@ function body(source: string, name: string): string {
 describe("the sweeps filter locked cards", () => {
   const actions = readFileSync("src/app/decks/actions.ts", "utf8");
 
-  // The EXACT gated form, never a bare count: an inverted condition (`? undefined : notLiveLocked()`)
-  // filters only while the switch is OFF, and a count of the call passes over it.
-  const GATED = /neverCutEnabled\(env\) \? notLiveLocked\(\) : undefined,\n\s*\)\)/g;
+  // The EXACT form, never a bare count: the filter as the last clause of the write's `and(...)`, so a
+  // call left somewhere else in the body does not pass for it.
+  const LAST_CLAUSE = /notLiveLocked\(\),\n\s*\)\)/g;
 
-  it("clearAutoCards puts the gated filter last in its delete's where", () => {
+  it("clearAutoCards puts the filter last in its delete's where", () => {
     const fn = body(actions, "clearAutoCards");
     expect(fn.match(/notLiveLocked\(\)/g)?.length).toBe(1);
-    expect(fn.match(GATED)?.length).toBe(1);
-    expect(fn.indexOf("tx.delete(deckCards)")).toBeLessThan(fn.search(GATED));
+    expect(fn.match(LAST_CLAUSE)?.length).toBe(1);
+    expect(fn.indexOf("tx.delete(deckCards)")).toBeLessThan(fn.search(LAST_CLAUSE));
   });
 
   // Two writes remove a pass's copies: the delete, and the decrement of a stack the player grew,
@@ -55,7 +55,7 @@ describe("the sweeps filter locked cards", () => {
   it("undoFillPass puts it in both the decrement and the delete", () => {
     const fn = body(actions, "undoFillPass");
     expect(fn.match(/notLiveLocked\(\)/g)?.length).toBe(2);
-    expect(fn.match(GATED)?.length).toBe(2);
+    expect(fn.match(LAST_CLAUSE)?.length).toBe(2);
   });
 });
 
@@ -70,7 +70,7 @@ describe("the lock's guards sit where the writes are", () => {
   // The pull's body is `pullInTx` (Small items 4, item 2), shared by `pullCardFromDeck` and Suggested changes v2's Apply.
   it("pullInTx refuses a locked source before it takes the copy", () => {
     const fn = body(pull, "pullInTx");
-    const guard = fn.search(/if \(neverCutEnabled\(env\) && \(await isLiveLocked\(tx, sourceDeckId, oracleId\)\)\) \{\n\s*return \{ ok: false, message: PULL_REFUSED_LOCKED \};/);
+    const guard = fn.search(/if \(await isLiveLocked\(tx, sourceDeckId, oracleId\)\) \{\n\s*return \{ ok: false, message: PULL_REFUSED_LOCKED \};/);
     expect(guard).toBeGreaterThan(-1);
     const firstWrite = Math.min(fn.indexOf("tx.update(deckCards)"), fn.indexOf("tx.delete(deckCards)"));
     expect(guard).toBeLessThan(firstWrite);

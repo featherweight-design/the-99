@@ -12,7 +12,7 @@ vi.mock("../../lib/commanders/avail-pref", async (importOriginal) => ({
 }));
 vi.mock("../../lib/cache/user-lists", () => ({ revalidateUserLists: vi.fn() }));
 // The excluded-matches lookup re-derives the discover pool, whose claim read takes the reader's env.
-const READER = vi.hoisted(() => ({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
+const READER = vi.hoisted(() => ({ CHANGE_COMMANDER_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
 const loadDiscoveryPool = vi.hoisted(() => vi.fn<(...a: unknown[]) => Promise<unknown>>(async () => ({ collection: [{ oracleId: "c1" }] })));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => READER }));
 vi.mock("../../lib/discovery/candidates", () => ({ loadNameMatches: async () => [] }));
@@ -27,7 +27,6 @@ const { findExcludedMatches, rememberCommandersAvail } = await import("./actions
 // reader's switches here. Identity, as a boolean.
 describe("findExcludedMatches", () => {
   it("reads the pool under the reader's resolved switches, not the environment", async () => {
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
     try {
       expect(await findExcludedMatches("korvold", { sort: "fit" })).toEqual([]);

@@ -112,7 +112,7 @@ export async function writeArrivalsReceipt(args: {
   parseErrorCount: number;
   /**
    * The reader's resolved switches (`requestSwitchEnv`), which the confirm passes: every claim read below takes
-   * it for the claim model's `locked` key and pending clause. Required since admin PR 7a: a probe outside a
+   * it for the claim model's pending clause. Required since admin PR 7a: a probe outside a
    * request passes `process.env` itself.
    */
   env: NodeJS.ProcessEnv;

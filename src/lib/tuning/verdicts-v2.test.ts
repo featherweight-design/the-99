@@ -74,7 +74,7 @@ describe("applyItem", () => {
       fx.updates = 0;
       swaps.planned = 0;
       swaps.applied = 0;
-      expect(await applyItem("item", "me", {} as NodeJS.ProcessEnv)).toBe(wrote ? "deck" : null);
+      expect(await applyItem("item", "me")).toBe(wrote ? "deck" : null);
       expect([swaps.planned, swaps.applied, fx.updates]).toEqual(wrote ? [1, 1, 1] : [0, 0, 0]);
     }
   });
@@ -89,7 +89,7 @@ describe("undoItem", () => {
     ] as const) {
       fx.run = run;
       fx.updates = 0;
-      expect(await undoItem("item", "me", {} as NodeJS.ProcessEnv)).toBe(wrote ? "deck" : null);
+      expect(await undoItem("item", "me")).toBe(wrote ? "deck" : null);
       expect(fx.updates).toBe(wrote ? 1 : 0);
     }
     fx.item = { verdict: "pending", undoSnapshot: null };

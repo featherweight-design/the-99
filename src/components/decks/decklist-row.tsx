@@ -517,7 +517,7 @@ export function DecklistRow({
   const glintForDot = foilFinish !== undefined && card.owned && !proxied && !basicRow && !readOnly;
   const availabilityWord = card.owned && !proxied ? ownedStateCopy.owned : ownedStateCopy.notOwned;
   const availabilityDescriptionId = useId();
-  // Locked (PR 4a). `null` with the switch off, and then nothing below draws a lock: the row is the
+  // Locked (PR 4a). `null` outside a deck page, and then nothing below draws a lock: the row is the
   // row it was. `locked` is the drawn answer, a press on this visit included (`useCardLocks`).
   const lockCards = useLockCards();
   const locked = lockCards !== null && card.locked === true;

@@ -88,7 +88,8 @@ describe("landableIn and landingFor", () => {
     expect(landingFor("rule/credits", land({ version: 16, ids: [] }), cards)).toMatchObject({ key: "rule/credits", section: "analysis", isNew: false });
     expect(landingFor("rule/proxy", landableIn("shopping", visible, { version: 16, ids: [] }), cards)).toMatchObject({ section: "deck-shopping" });
     expect(landingFor("rule/lock", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "your-deck" });
-    expect(landingFor("rule/lock", land({ version: 16, ids: [] }, visibleSections(without("NEVER_CUT_ENABLED"))), cards)).toBeNull();
+    expect(landingFor("rule/intent", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "analysis" });
+    expect(landingFor("rule/intent", land({ version: 16, ids: [] }, visibleSections(without("ANALYSIS_TAB_ENABLED"))), cards)).toBeNull();
   });
 
   it("marks a label the reader has not been told about New, with its tool's card", () => {

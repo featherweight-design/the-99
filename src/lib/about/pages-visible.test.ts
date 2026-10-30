@@ -26,10 +26,11 @@ function readerAt(floor: number, e = ALL_ON): SeenState {
 describe("visibleSections", () => {
   it("drops a label whose switch is off and keeps its section, never greyed", () => {
     const off = visibleSections(OFF);
-    const lock = off.find((s) => s.id === "your-deck")!;
-    expect(lock.labels.map((l) => l.key)).not.toContain("decks/your-deck/lock");
+    const shopping = off.find((s) => s.id === "deck-shopping")!;
+    expect(shopping.labels.map((l) => l.key)).not.toContain("shopping/deck-shopping/standins");
     expect(off.find((s) => s.id === "all-decks")!.labels).toEqual([]);
-    // DECK_NOTES_ENABLED and DECK_STATS_ENABLED are retired (always on): their labels draw whatever the env.
+    // NEVER_CUT_ENABLED, DECK_NOTES_ENABLED and DECK_STATS_ENABLED are retired (always on): their labels draw whatever the env.
+    expect(off.find((s) => s.id === "your-deck")!.labels.map((l) => l.key)).toContain("decks/your-deck/lock");
     expect(off.find((s) => s.id === "notes")!.labels.map((l) => l.key)).toEqual(["decks/notes/note"]);
     expect(off.find((s) => s.id === "stats")!.labels.map((l) => l.key)).toEqual(["decks/stats/curve"]);
     expect(off.map((s) => s.id)).toEqual(ABOUT_SECTIONS.map((s) => s.id));

@@ -89,8 +89,7 @@ vi.mock("../../lib/tuning/run-store", async (importOriginal) => ({
   runIsPending: async () => calls.runPending,
 }));
 vi.mock("../../lib/tuning/cuts-run-store", () => ({
-  startCutsRun: async (_u: string, _d: string, _f: string, _v: unknown, opts?: { env?: unknown }) => {
-    sawEnv("startCutsRun", opts?.env);
+  startCutsRun: async () => {
     calls.started += 1;
     return calls.startKind === "started" ? { kind: "started", runId: "run_1", callId: "call_1" } : { kind: calls.startKind };
   },
@@ -98,11 +97,11 @@ vi.mock("../../lib/tuning/cuts-run-store", () => ({
   persistCutsRun: async (...args: unknown[]) => { calls.persisted.push(args); return calls.persistResult; },
 }));
 vi.mock("../../lib/tuning/cuts-verdicts", () => ({
-  cutItem: async (_i: string, _u: string, mode?: unknown, env?: unknown) => {
-    sawEnv("cutItem", env); calls.verdictCalls.push("cut"); calls.verdictModes.push(mode); return calls.verdict;
+  cutItem: async (_i: string, _u: string, mode?: unknown) => {
+    calls.verdictCalls.push("cut"); calls.verdictModes.push(mode); return calls.verdict;
   },
-  undoCutItem: async (_i: string, _u: string, mode?: unknown, env?: unknown) => {
-    sawEnv("undoCutItem", env); calls.verdictCalls.push("undo"); calls.verdictModes.push(mode); return calls.verdict;
+  undoCutItem: async (_i: string, _u: string, mode?: unknown) => {
+    calls.verdictCalls.push("undo"); calls.verdictModes.push(mode); return calls.verdict;
   },
   setCutKept: async (_i: string, _u: string, kept: boolean) => { calls.verdictCalls.push(kept ? "keep" : "restore"); return calls.verdict; },
 }));
@@ -568,7 +567,7 @@ describe("readCutsPanel", () => {
 // Admin adoption 6c: every read and write the cuts actions reach takes the env the action resolved for the
 // reader, never the environment alone. Identity with the sentinel, so a failing diff prints nothing real.
 describe("the cuts actions hand the reader's resolved env on", () => {
-  it("to the inputs, the profile, the run start, the panel's state and both verdicts", async () => {
+  it("to the inputs, the profile and the panel's state", async () => {
     calls.inputs = inputsFor(factsFor(), { head: { declaredBracket: null, partnerOracleId: null } });
     calls.state = {
       run: null, items: [], itemsReport: { over: 6 }, lastOkFingerprint: null, lastOkAt: null, modelVersionMoved: false,
@@ -576,9 +575,7 @@ describe("the cuts actions hand the reader's resolved env on", () => {
     };
     expect(await runProposedCuts(DECK, { runId: RUN })).toEqual({ ok: true });
     await readCutsPanel(DECK);
-    await cutProposed(ITEM);
-    await undoProposedCut(ITEM);
-    const names = ["readProposedCuts", "profileOfHead", "startCutsRun", "readCutsState", "cutItem", "undoCutItem"];
+    const names = ["readProposedCuts", "profileOfHead", "readCutsState"];
     for (const name of names) {
       const seen = calls.envs[name] ?? [];
       expect(seen.length, name).toBeGreaterThan(0);

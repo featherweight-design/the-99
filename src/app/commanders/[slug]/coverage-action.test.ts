@@ -23,9 +23,9 @@ vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability }));
 vi.mock("../../../lib/collection/owned-printings", () => ({ resolveOwnedPrintings }));
 // The reader's resolved switches, a stand-in pinned by identity: the retry scores under the role
 // basis the page rendered with (admin PR 6d-2), so the env must reach the resolve and the score; and
-// the free pool's claim read decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from it (6f-1).
+// the free pool's claim read decides CHANGE_COMMANDER_ENABLED from it (6f-1).
 const RESOLVED = vi.hoisted(() => ({
-  LABEL_ROLE_COUNTS_ENABLED: "true", NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true",
+  LABEL_ROLE_COUNTS_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true",
 }) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => RESOLVED }));
 
@@ -193,7 +193,6 @@ describe("retryCoverageFigures", () => {
     scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards });
     // The environment says the opposite of the reader's switches: a free pool left to default its env
     // would run the claim model under the environment's.
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
     try {
       await retryCoverageFigures("korvold", "free", "labels");
@@ -206,7 +205,7 @@ describe("retryCoverageFigures", () => {
     // object the score is handed, so it holds the reader's switches and not the environment's.
     const handed = loadFreePool.mock.calls[0][1] as NodeJS.ProcessEnv | undefined;
     expect(handed !== undefined && handed === scoreOneCommander.mock.calls[0][4]).toBe(true);
-    expect(handed?.NEVER_CUT_ENABLED === "true" && handed?.CHANGE_COMMANDER_ENABLED === "true").toBe(true);
+    expect(handed?.CHANGE_COMMANDER_ENABLED === "true").toBe(true);
     expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", [
       { oracleId: "free-1" },
     ], RESOLVED);

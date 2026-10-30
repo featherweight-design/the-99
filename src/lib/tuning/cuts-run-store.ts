@@ -50,12 +50,12 @@ export async function startCutsRun(
   deckId: string,
   fingerprint: string,
   readVersion: number | null,
-  opts: { runId?: string; now?: Date; env: NodeJS.ProcessEnv },
+  opts: { runId?: string; now?: Date } = {},
 ): Promise<StartedCutsRun> {
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<RunHandle> => {
-      await assertSomeCardOpen(tx, deckId, opts.env);
+      await assertSomeCardOpen(tx, deckId);
       const unit = await reserveModelCall(tx, userId, "proposed_cuts", TUNING_MODEL, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(deckSuggestionRuns).values({

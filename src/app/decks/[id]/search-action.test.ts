@@ -68,7 +68,7 @@ describe("searchCards art", () => {
 });
 
 // Admin adoption 6e: the owned rows' claim read runs under the reader's resolved switches (the claim
-// model's `locked` key is NEVER_CUT_ENABLED's), never the environment alone.
+// model's pending clause is CHANGE_COMMANDER_ENABLED's), never the environment alone.
 describe("searchCards claims", () => {
   it("hands the reader's resolved env to the claim read", async () => {
     await searchCards("zom", null, false, "deck-1");

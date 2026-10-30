@@ -129,7 +129,7 @@ describe("loadCart names the decks holding owned copies (G1)", () => {
 // env, so the one handed in must be the one handed on.
 describe("loadCart threads the env it is handed", () => {
   it("hands the same env to every read it starts", async () => {
-    const ENV = { NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const ENV = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     const { loadDeckBuyRows, loadAvailability } = await import("./availability-query");
     vi.mocked(loadDeckBuyRows).mockClear();
     vi.mocked(loadAvailability).mockClear();

@@ -5,7 +5,6 @@ import { changeCommanderEnabled } from "../commander-change/flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
-import { neverCutEnabled } from "../decks/never-cut-flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { labelSurfacesEnabled, standInLabelsEnabled } from "../labels/read";
@@ -43,7 +42,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   LIST_CACHE_ENABLED: listCacheEnabled,
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
-  NEVER_CUT_ENABLED: neverCutEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PAYMENTS_ENABLED: paymentsEnabled,
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,

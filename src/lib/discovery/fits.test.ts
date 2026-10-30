@@ -169,17 +169,16 @@ describe("loadToolFits", () => {
     expect(ids((await loadToolFits("u", env, ["top-off"]))["top-off"])).toEqual(["short"]);
   });
 
-  it("never fits Cheaper stand-ins on a locked card while Never cut is on, and does with it off", async () => {
+  it("never fits Cheaper stand-ins on a locked card, and does once it is unlocked", async () => {
     stub.decks = [listed("lockd", "2026-10-02")];
     stub.rows = [{ deckId: "lockd", oracleId: "dear", quantity: 1 }];
     stub.limits = [{ id: "lockd", limit: null, commander: "x", partner: null }];
     stub.prices = new Map([["lockd:dear", { cents: 9900, foilCents: null, etchedCents: null, asOf: new Date("2026-10-16") }]]);
     stub.locked = new Map([["lockd", new Set(["dear"])]]);
-    const on = { NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    expect(ids((await loadToolFits("u", on, ["stand-ins"]))["stand-ins"])).toEqual([]);
-    stub.calls = [];
+    expect(ids((await loadToolFits("u", env, ["stand-ins"]))["stand-ins"])).toEqual([]);
+    expect(stub.calls).toContain("locks");
+    stub.locked = new Map();
     expect(ids((await loadToolFits("u", env, ["stand-ins"]))["stand-ins"])).toEqual(["lockd"]);
-    expect(stub.calls).not.toContain("locks");
   });
 
   it("never fits Friends' spares on a missing commander or partner: the Shopping list's body rows alone", async () => {

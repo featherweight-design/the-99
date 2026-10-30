@@ -15,7 +15,6 @@ import { hardDecks, pullSources } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { bucketAdds, draftDiff } from "./draft-diff";
 import { PULL_REFUSED_LOCKED, isLiveLocked, pruneOrphanLocks } from "./locks";
-import { neverCutEnabled } from "./never-cut-flag";
 import { PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedOracleIds } from "./proxies";
 import { pruneOrphanProxies } from "./prune-proxies";
 import { writePullRelease } from "./pull-release";
@@ -116,8 +115,8 @@ export async function pullInTx(tx: Tx, args: {
 
   // L2: a card the source deck has LOCKED is never pulled out of it. Under that deck's row lock,
   // taken by the caller, so a lock landing first is honoured and none can land between this and the
-  // delete. Only while `NEVER_CUT_ENABLED` is on (D3).
-  if (neverCutEnabled(env) && (await isLiveLocked(tx, sourceDeckId, oracleId))) {
+  // delete.
+  if (await isLiveLocked(tx, sourceDeckId, oracleId)) {
     return { ok: false, message: PULL_REFUSED_LOCKED };
   }
 

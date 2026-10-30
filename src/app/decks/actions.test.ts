@@ -989,13 +989,9 @@ describe("addCardToDeck — relock wakes a dormant lock, and only on request", (
       { oracleId: CARD, commanderLegal: true, colorIdentity: [], typeLine: "Artifact" },
       { oracleId: CMDR, commanderLegal: true, colorIdentity: ["G"], typeLine: "Legendary Creature" },
     );
-    ENV.NEVER_CUT_ENABLED = "true";
-  });
-  afterEach(() => {
-    delete ENV.NEVER_CUT_ENABLED;
   });
 
-  it("wakes it when asked, with the switch on", async () => {
+  it("wakes it when asked", async () => {
     const { addCardToDeck } = await import("./actions");
     expect(await addCardToDeck(DECK, CARD, { relock: true })).toEqual({ ok: true });
     expect(revived()).toBe(true);
@@ -1007,12 +1003,9 @@ describe("addCardToDeck — relock wakes a dormant lock, and only on request", (
     expect(revived()).toBe(false);
   });
 
-  it("wakes nothing with the switch off, or for anything but the literal true", async () => {
+  it("wakes nothing for anything but the literal true", async () => {
     const { addCardToDeck } = await import("./actions");
     await addCardToDeck(DECK, CARD, { relock: "true" } as never);
-    expect(revived()).toBe(false);
-    delete ENV.NEVER_CUT_ENABLED;
-    await addCardToDeck(DECK, CARD, { relock: true });
     expect(revived()).toBe(false);
   });
 });
@@ -2021,19 +2014,6 @@ describe("setCardLocked", () => {
     stub.state.decks = [OWNED_DECK];
     stub.state.revalidated.length = 0;
     stub.state.afters.length = 0;
-    ENV.NEVER_CUT_ENABLED = "true";
-  });
-  afterEach(() => {
-    delete ENV.NEVER_CUT_ENABLED;
-  });
-
-  it("refuses with the switch off, before touching the database (D3)", async () => {
-    delete ENV.NEVER_CUT_ENABLED;
-    stub.state.executeRows = [{ held: true }];
-    const result = await setCardLocked(DECK_ID, CARD_A, true);
-    stub.state.executeRows = null;
-    expect(result).toEqual({ ok: false, message: lockedCardsCopy.mode.refused });
-    expect(stub.state.executeTexts.join(" ")).not.toContain("deck_locks");
   });
 
   it("refuses a card the deck does not hold", async () => {
@@ -2384,8 +2364,8 @@ describe("pullCardFromDeck", () => {
   });
 
   // Admin adoption 6e: both claim reads, the one that names the parties and the one that decides
-  // under the locks, run the claim model under the reader's resolved switches (its `locked` key is
-  // NEVER_CUT_ENABLED's), never the environment alone. Identity, not equality: the sentinel is `{}`.
+  // under the locks, run the claim model under the reader's resolved switches (its pending clause is
+  // CHANGE_COMMANDER_ENABLED's), never the environment alone. Identity, not equality: the sentinel is `{}`.
   it("hands the reader's resolved env to both of its claim reads", async () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);

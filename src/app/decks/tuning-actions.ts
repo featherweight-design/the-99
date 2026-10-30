@@ -249,7 +249,7 @@ export async function runTuning(
   // nothing else moved. Never bypasses the other gate reasons.
   if (gate && !(gate.kind === "unchanged" && (anyway || notes !== null))) return { ok: false, message: gate.message };
 
-  const started = await startRun(userId, deckId, fingerprint, readVersion, { runId: requested, env });
+  const started = await startRun(userId, deckId, fingerprint, readVersion, { runId: requested });
   if (started.kind === "ownerShare") return { ok: false, message: creditsCopy.ownerShare(new Date()) };
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
   if (started.kind === "in_flight") return { ok: false, message: deckTuningCopy.announce.started };
@@ -467,7 +467,7 @@ async function isLine(itemId: string): Promise<boolean> {
 
 async function verdict(
   itemId: string,
-  write: (userId: string, env: NodeJS.ProcessEnv) => Promise<string | null>,
+  write: (userId: string) => Promise<string | null>,
   refused: string | { pair: string; line: string },
   claims: boolean,
 ): Promise<DeckMutationResult> {
@@ -478,7 +478,7 @@ async function verdict(
     message: typeof refused === "string" ? refused : (await isLine(itemId)) ? refused.line : refused.pair,
   });
   if (!tuningEnabled(env) || !isUuid(itemId)) return refuse();
-  const deckId = await write(userId, env);
+  const deckId = await write(userId);
   if (!deckId) return refuse();
   if (claims) revalidateClaims(deckId, userId);
   else revalidateDeck(deckId);
@@ -486,11 +486,11 @@ async function verdict(
 }
 
 export async function applySuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict(itemId, (u, env) => applyItem(itemId, u, env), { pair: deckTuningCopy.card.applyRefused, line: deckTuningCopy.lists.applyRefused }, true);
+  return verdict(itemId, (u) => applyItem(itemId, u), { pair: deckTuningCopy.card.applyRefused, line: deckTuningCopy.lists.applyRefused }, true);
 }
 
 export async function undoSuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict(itemId, (u, env) => undoItem(itemId, u, env), { pair: deckTuningCopy.card.undoRefused, line: deckTuningCopy.lists.undoRefused }, true);
+  return verdict(itemId, (u) => undoItem(itemId, u), { pair: deckTuningCopy.card.undoRefused, line: deckTuningCopy.lists.undoRefused }, true);
 }
 
 export async function dismissSuggestion(itemId: string): Promise<DeckMutationResult> {

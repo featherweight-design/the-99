@@ -127,7 +127,7 @@ describe("undoReadSwapAction", () => {
   it("undoes the reader's own swap and revalidates its deck in after()", async () => {
     vi.mocked(undoSwap).mockResolvedValueOnce(DECK);
     expect(await undoReadSwapAction(SWAP)).toEqual({ ok: true });
-    expect(undoSwap).toHaveBeenCalledWith(SWAP, "user_1", ENV);
+    expect(undoSwap).toHaveBeenCalledWith(SWAP, "user_1");
     await state.afters[0]();
     expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
   });
@@ -169,8 +169,16 @@ describe("undoReadAddAction", () => {
   });
 });
 
-// Admin adoption 6c: the Shopping sheet's swap tools hand the env they resolved for the reader to the take,
-// its undo and the stand-ins read. Identity with the sentinel, so a failing diff prints nothing real.
+describe("undoSwapAction", () => {
+  it("undoes the reader's own swap", async () => {
+    vi.mocked(undoSwap).mockResolvedValueOnce(DECK);
+    expect(await undoSwapAction("44444444-4444-4444-8444-444444444444")).toEqual({ ok: true });
+    expect(undoSwap).toHaveBeenCalledWith("44444444-4444-4444-8444-444444444444", "user_1");
+  });
+});
+
+// Admin adoption 6c: the Shopping sheet's swap tools hand the env they resolved for the reader to the take
+// and the stand-ins read. Identity with the sentinel, so a failing diff prints nothing real.
 describe("the swap tools' reads and writes take the reader's resolved env", () => {
   const CUT = "33333333-3333-4333-8333-333333333333";
   const SWAP = "44444444-4444-4444-8444-444444444444";
@@ -180,13 +188,6 @@ describe("the swap tools' reads and writes take the reader's resolved env", () =
     await takeStandInAction(DECK, CUT, CARD);
     expect(vi.mocked(takeStandIn).mock.calls[0]?.slice(0, 4)).toEqual([DECK, "user_1", CUT, CARD]);
     expect(vi.mocked(takeStandIn).mock.calls[0]?.[4] === ENV).toBe(true);
-  });
-
-  it("undoSwapAction hands it to the undo", async () => {
-    vi.mocked(undoSwap).mockResolvedValueOnce(DECK);
-    expect(await undoSwapAction(SWAP)).toEqual({ ok: true });
-    expect(vi.mocked(undoSwap).mock.calls[0]?.slice(0, 2)).toEqual([SWAP, "user_1"]);
-    expect(vi.mocked(undoSwap).mock.calls[0]?.[2] === ENV).toBe(true);
   });
 
   it("loadStandInsAction hands it to the stand-ins read", async () => {

@@ -278,7 +278,7 @@ describe("undoSet with a pull", () => {
     },
     { ...open("c1", "cut"), verdict: "accepted", applySet: SET, undoSnapshot: { cut: { quantity: 1, auto: false, proxied: false }, add: null } },
   ];
-  const undo = () => undoSet({ applySet: SET, userId: "me", env: ENV });
+  const undo = () => undoSet({ applySet: SET, userId: "me" });
 
   it("puts the source's row back and gives up the release BEFORE restoring the swaps, under one sorted lock", async () => {
     fx.lines = applied({ quantity: 1, auto: true });

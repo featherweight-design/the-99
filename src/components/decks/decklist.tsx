@@ -239,7 +239,7 @@ type DecklistProps = {
    *  moves nothing a reader can see happening. */
   onAnnounce?: (message: string) => void;
   /** The Lock cards mode (Locked, PR 4a), owned by the shell so List ↔ Card keeps it. Its
-   *  handler is absent with `NEVER_CUT_ENABLED` off, and so is every control it draws. */
+   *  handler is absent on a list that offers no locks, and so is every control it draws. */
   lockMode?: boolean;
   onLockModeChange?: (on: boolean) => void;
   /** Auto copies whose card is locked (T3), for Clear's label. */

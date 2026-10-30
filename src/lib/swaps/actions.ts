@@ -44,7 +44,7 @@ export async function undoSwapAction(swapId: string): Promise<{ ok: boolean }> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!swapToolsEnabled(env) || !isUuid(swapId)) return { ok: false };
-  const deckId = await undoSwap(swapId, userId, env);
+  const deckId = await undoSwap(swapId, userId);
   if (deckId) revalidateClaims(deckId, userId);
   return { ok: deckId !== null };
 }
@@ -123,7 +123,7 @@ export async function undoReadSwapAction(swapId: string): Promise<{ ok: boolean 
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!findADeckReadEnabled(env) || !isUuid(swapId)) return { ok: false };
-  const deckId = await undoSwap(swapId, userId, env);
+  const deckId = await undoSwap(swapId, userId);
   if (deckId) after(() => revalidateClaims(deckId, userId));
   return { ok: deckId !== null };
 }

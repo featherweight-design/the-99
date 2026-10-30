@@ -114,11 +114,10 @@ describe("the choose page", () => {
   });
 
   it("hands the results' search the reader's resolved env, not the environment", async () => {
-    // The search's claim reads decide NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from it: a dropped
-    // argument reads the environment, which has both the other way.
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    // The search's claim reads decide CHANGE_COMMANDER_ENABLED from it: a dropped
+    // argument reads the environment, which has it the other way.
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    stub.env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    stub.env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
     try {
       stub.themes.mockResolvedValue([]);
       stub.page.mockReset().mockResolvedValue({ order: "fit", tooNarrow: false, card: null, rows: [], hasMore: false, total: 0 });

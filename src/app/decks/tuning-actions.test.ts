@@ -174,8 +174,8 @@ vi.mock("../../lib/tuning/v2/run", async (importOriginal) => ({
   },
 }));
 vi.mock("../../lib/tuning/verdicts", () => ({
-  applyItem: async (_i: string, _u: string, env?: unknown) => { sawEnv("applyItem", env); calls.applied += 1; return "deck"; },
-  undoItem: async (_i: string, _u: string, env?: unknown) => { sawEnv("undoItem", env); return "deck"; },
+  applyItem: async () => { calls.applied += 1; return "deck"; },
+  undoItem: async () => "deck",
   setDismissed: async () => "deck",
 }));
 
@@ -413,13 +413,10 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
   // Admin adoption 6c: every read and write the tuning actions reach takes the env the action resolved for
   // the reader. Identity with the sentinel as a boolean, so a failing diff prints nothing real.
   it("hands the reader's resolved env to every read and write it reaches", async () => {
-    const ITEM = "44444444-4444-4444-8444-444444444444";
     await runTuning(DECK, { anyway: true });
     expect(calls.persisted).toHaveLength(1);
     await readTuningPanel(DECK);
-    await applySuggestion(ITEM);
-    await undoSuggestion(ITEM);
-    const names = ["tuningInputs", "readTuningState", "profileOfHead", "withBracketAfter", "applyItem", "undoItem"];
+    const names = ["tuningInputs", "readTuningState", "profileOfHead", "withBracketAfter"];
     for (const name of names) {
       const seen = envs.seen[name] ?? [];
       expect(seen.length, name).toBeGreaterThan(0);
@@ -427,14 +424,20 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
     }
   });
 
+  it("applies and undoes a line for the reader", async () => {
+    const ITEM = "44444444-4444-4444-8444-444444444444";
+    expect(await applySuggestion(ITEM)).toEqual({ ok: true });
+    expect(calls.applied).toBe(1);
+    expect(await undoSuggestion(ITEM)).toEqual({ ok: true });
+  });
+
   // Admin adoption 6f-1: an owned-only run reads the claim model twice, for the shortlist and for the
   // answer's free copies, and each takes the env the action resolved. The environment says the opposite
   // of the reader's switches, so a handoff that passed the environment instead of the reader's env would
-  // read NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED wrong.
+  // read CHANGE_COMMANDER_ENABLED wrong.
   it("hands an owned-only run's two claim reads the reader's resolved switches, not the environment", async () => {
     const { requestSwitchEnv } = await import("../../lib/switches/request");
-    const READER = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    const READER = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
     vi.mocked(requestSwitchEnv).mockResolvedValue(READER);
     try {
@@ -802,9 +805,7 @@ describe("ids off the wire", () => {
   it("hands the panel's run id to startRun, and refuses one that is not a uuid", async () => {
     const RUN = "22222222-2222-4222-8222-222222222222";
     await runTuning(DECK, { anyway: true, runId: RUN });
-    // The run starts under the env the action resolved for the reader, the sentinel itself.
-    expect(calls.startOpts).toEqual({ runId: RUN, env: ENV });
-    expect((calls.startOpts as { env?: unknown }).env).toBe(ENV);
+    expect(calls.startOpts).toEqual({ runId: RUN });
     for (const runId of ["not-a-uuid", 7, {}]) {
       const result = await runTuning(DECK, { anyway: true, runId } as unknown as { runId: string });
       expect(result.ok).toBe(false);

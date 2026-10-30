@@ -1,12 +1,12 @@
 // Admin PR 6f-1: a commander page in free mode reads the free pool, whose claim model decides
-// NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it is handed. `loadFreePool` requires that
+// CHANGE_COMMANDER_ENABLED from the env it is handed. `loadFreePool` requires that
 // env (admin PR 7c-2), and the page's resolved env must be the one that reaches it (and, being memoised by
 // argument, the same env the ranking above it passed, or the page pays the rollup twice). The reader's
 // env and the environment hold opposite values here; the handed env is checked by identity, as a boolean.
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
-  READER: { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv,
+  READER: { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv,
   loadFreePool: vi.fn<(...args: unknown[]) => Promise<{ oracleId: string }[]>>(async () => [{ oracleId: "card-1" }]),
   rankFree: vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({ ok: true, items: [{ oracleId: "cmd-1" }] })),
   scoreOneCommander: vi.fn<(...args: unknown[]) => Promise<null>>(async () => null),
@@ -39,7 +39,6 @@ describe("the commander page in free mode", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("reads the free pool under the reader's resolved switches, the env its ranking was handed", async () => {
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
     // The score is stubbed empty, so the page ends at its not-found; the reads before it are the subject.
     await expect(CommanderDetailPage({

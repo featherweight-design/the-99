@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { Availability, DeckClaim } from "./availability";
-import { neverCutEnabled } from "./never-cut-flag";
 import { changeCommanderEnabled } from "../commander-change/flag";
 import { deckCommanderMovedSql } from "../commander-change/pending-sql";
 
@@ -379,9 +378,8 @@ export async function loadAvailability(
      */
     unownedAsZero?: boolean;
     /**
-     * The reader's resolved switches (`requestSwitchEnv`), which decide the `locked` key and the
-     * moved-commander pending clause. Required (admin PR 7b): a script with no signed-in reader passes
-     * `process.env` itself.
+     * The reader's resolved switches (`requestSwitchEnv`), which decide the moved-commander pending
+     * clause. Required (admin PR 7b): a script with no signed-in reader passes `process.env` itself.
      */
     env: NodeJS.ProcessEnv;
   },
@@ -397,18 +395,14 @@ export async function loadAvailability(
   // placeholder so the driver serialises it as a Postgres array literal.
   const only = sql.param(opts?.oracleIds ?? null);
   // The third pull guard: the deck has LOCKED the card (Locked, L2), so Pull it never takes it. A
-  // live lock on a card still in that deck's list, the rule every lock read uses. With
-  // NEVER_CUT_ENABLED off the key is ABSENT and the query is byte-identical to the one before locks
-  // existed: /collection and /commanders read it too (availability-query.test.ts pins that).
+  // live lock on a card still in that deck's list, the rule every lock read uses.
   // Qualified on both sides: a bare `oracle_id` inside would resolve against `deck_locks` itself.
-  const lockedClaim = neverCutEnabled(env)
-    ? sql`            'locked', exists (
+  const lockedClaim = sql`            'locked', exists (
         select 1 from deck_locks lk
         join deck_cards dk on dk.deck_id = lk.deck_id and dk.oracle_id = lk.oracle_id
         where lk.deck_id = cd.deck_id and lk.oracle_id = cd.oracle_id and lk.removed_at is null
       ),
-`
-    : sql``;
+`;
   const skip = sql.param(opts?.excludeDeckId ?? null);
   const rows = await (tx ?? db).execute<Row>(sql`
     with ${claimModel(userId, env)},

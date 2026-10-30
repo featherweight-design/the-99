@@ -14,8 +14,7 @@
  * under the row, and a card's writes are SERIALISED, one in flight at a time, so the final state is
  * the final press and a late refusal can never overwrite a newer one.
  *
- * Absent (null) with `NEVER_CUT_ENABLED` off, and every surface reading null draws nothing of the
- * lock: that is how the switch reaches a row without a prop threaded through every list between.
+ * Absent (null) outside a deck page, and every surface reading null draws nothing of the lock.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -41,7 +40,7 @@ export function LockCardsProvider({ value, children }: { value: LockCards | null
   return <LockCardsContext.Provider value={value}>{children}</LockCardsContext.Provider>;
 }
 
-/** The deck page's lock state, or null when the switch is off (or outside a deck page). */
+/** The deck page's lock state, or null outside a deck page. */
 export function useLockCards(): LockCards | null {
   return useContext(LockCardsContext);
 }
@@ -55,13 +54,11 @@ const NO_ERRORS: ReadonlyMap<string, string> = new Map();
  * every override drawn over it, so the rows, the key, the counts and the climb all read ONE answer.
  */
 export function useCardLocks({
-  enabled,
   deckId,
   cards,
   serverCards,
   announce,
 }: {
-  enabled: boolean;
   deckId: string;
   cards: DeckDetailCard[];
   serverCards: DeckDetailCard[];
@@ -126,7 +123,7 @@ export function useCardLocks({
   const toggle = useCallback(
     (card: DeckDetailCard) => {
       const key = `${deckId}\u0000${card.oracleId}`;
-      if (!enabled || inFlight.current.has(key)) return;
+      if (inFlight.current.has(key)) return;
       const id = card.oracleId;
       const next = !card.locked;
       const name = printedFaceName(card);
@@ -148,8 +145,8 @@ export function useCardLocks({
         inFlight.current.delete(key);
         setWriting(new Set(inFlight.current));
         if (!result.ok) {
-          // The server refuses when the card left the deck between render and press, or the switch
-          // is off. The lock reverts rather than showing a state the deck does not hold.
+          // The server refuses when the card left the deck between render and press. The lock reverts
+          // rather than showing a state the deck does not hold.
           setOverride(forDeck, id, !next);
           if (onScreen.current === forDeck) setErrors((e) => new Map(e).set(id, result.message));
           return;
@@ -159,23 +156,23 @@ export function useCardLocks({
         announce(next ? lockedCardsCopy.mode.announceLocked(name) : lockedCardsCopy.mode.announceUnlocked(name));
       })();
     },
-    [enabled, deckId, setOverride, announce],
+    [deckId, setOverride, announce],
   );
 
   /** T6: the button carries no pressed state, so the mode says itself here. */
   const setMode = useCallback(
     (on: boolean) => {
-      if (!enabled || on === mode) return;
+      if (on === mode) return;
       setModeState(on);
       announce(on ? lockedCardsCopy.mode.announceEnter : lockedCardsCopy.mode.announceLeave);
     },
-    [enabled, mode, announce],
+    [mode, announce],
   );
 
-  const value = useMemo<LockCards | null>(
-    () => (enabled ? { mode, toggle, pending, errors } : null),
-    [enabled, mode, toggle, pending, errors],
+  const value = useMemo<LockCards>(
+    () => ({ mode, toggle, pending, errors }),
+    [mode, toggle, pending, errors],
   );
 
-  return { cards: enabled ? drawn : cards, value, mode: enabled && mode, setMode };
+  return { cards: drawn, value, mode, setMode };
 }

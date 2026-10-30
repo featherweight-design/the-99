@@ -40,7 +40,6 @@ import { loadPrices } from "./price-query";
 import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { labelRoleCountsEnabled } from "./label-counts-flag";
-import { neverCutEnabled } from "./never-cut-flag";
 import { liveLockedIds } from "./locks";
 import { analysisTabEnabled } from "./analysis-flag";
 import { parseStrategyKey } from "../strategy/focus";
@@ -63,8 +62,7 @@ export type TuningInputs = {
   /** The deck's newest version number in the same snapshot as `head`, or null for none. A run
    *  records it, and a newer version later retires the set. */
   readVersion: number | null;
-  /** The deck's live locks, read in the same snapshot as `head` (Locked, D5/D6). Empty while
-   *  `NEVER_CUT_ENABLED` is off, so the gate and the pack are what they were before locks. */
+  /** The deck's live locks, read in the same snapshot as `head` (Locked, D5/D6). */
   locked: string[];
   /** The commander's name when every other card is locked, else null (the gate's `allLocked`). */
   allLocked: string | null;
@@ -83,7 +81,7 @@ export async function tuningInputs(deckId: string, userId: string, env: NodeJS.P
     if (!head) return null;
     const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions)
       .where(eq(deckVersions.deckId, deckId));
-    const locked = neverCutEnabled(env) ? [...(await liveLockedIds(tx, deckId))] : [];
+    const locked = [...(await liveLockedIds(tx, deckId))];
     return { head, readVersion: v?.n ?? null, locked };
   }, { isolationLevel: "repeatable read" });
   if (!snapshot) return null;
@@ -434,12 +432,10 @@ async function readItems(
   v2 = false,
 ): Promise<{ items: TuningItem[]; newestPriceAsOf: Date | null }> {
   // Qualified by hand: a bare `oracle_id` inside would resolve against `deck_locks` itself.
-  const cutLocked = neverCutEnabled(env)
-    ? sql`exists (
+  const cutLocked = sql`exists (
         select 1 from deck_locks lk
         join ${deckCards} dk on dk.deck_id = lk.deck_id and dk.oracle_id = lk.oracle_id
-        where lk.deck_id = ${deckId} and lk.oracle_id = i.cut_oracle_id and lk.removed_at is null)`
-    : sql`false`;
+        where lk.deck_id = ${deckId} and lk.oracle_id = i.cut_oracle_id and lk.removed_at is null)`;
   const rows = await db.execute<{
     id: string; add_oracle_id: string | null; add_name: string | null; add_type_line: string | null;
     cut_oracle_id: string | null; cut_name: string | null; rationale: string; rationale_short: string;
@@ -467,8 +463,7 @@ async function readItems(
            exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.add_oracle_id)
              as add_in_deck,
            -- The player has LOCKED the cut (Locked, F4): the apply refuses it (planSwap), so the
-           -- row reads as no longer applying. A live lock on a card still in this deck; constant
-           -- false while NEVER_CUT_ENABLED is off (D3).
+           -- row reads as no longer applying. A live lock on a card still in this deck.
            ${cutLocked} as cut_locked,
            -- The change can still be made. A side that is absent asks nothing: a CUT line (no add)
            -- needs its cut still in the deck and not locked; an ADD line (no cut) needs its add not

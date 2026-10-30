@@ -119,7 +119,7 @@ type GroupToggleProps = {
   draftNote?: string | null;
   /**
    * The Lock cards mode (Locked, PR 4a; toolbar addendum F3). `onLockModeChange` is present only
-   * with `NEVER_CUT_ENABLED` on, and its absence is what keeps this toolbar exactly as it was.
+   * on the deck's own list, and its absence keeps the toolbar free of Lock cards.
    */
   lockMode?: boolean;
   onLockModeChange?: (on: boolean) => void;

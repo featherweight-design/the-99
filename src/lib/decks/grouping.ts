@@ -48,7 +48,7 @@ export type DeckDetailCard = {
   proxied?: boolean;
   /**
    * The player locked this card in this deck (Locked, sub-project 5.1): never offered as a cut.
-   * Optional for the reason `proxied` is; absent means unlocked. Always false with the switch off.
+   * Optional for the reason `proxied` is; absent means unlocked.
    */
   locked?: boolean;
   quantity: number;

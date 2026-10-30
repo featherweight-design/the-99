@@ -28,7 +28,7 @@ export const lockedCardsCopy = {
     announceEnter: "Lock cards is on. Each remove button is now a lock.",
     announceLeave: "Lock cards is off. The remove buttons are back.",
     /**
-     * Any refusal of a lock toggle: a bad id, a card no longer in the deck, the switch off. The
+     * Any refusal of a lock toggle: a bad id, or a card no longer in the deck. The
      * house apostrophe (audit F11(b)), not the handoff's straight one.
      */
     refused: "That may not have saved. Reload to see which cards are locked.",

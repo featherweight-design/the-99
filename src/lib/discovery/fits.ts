@@ -17,7 +17,6 @@ import { loadDeckBuyRows, type DeckBuyRow } from "../decks/availability-query";
 import { deckBodySize } from "../decks/deck-size";
 import { priceFor } from "../decks/price-query";
 import { liveLockedIdsByDeck } from "../decks/locks";
-import { neverCutEnabled } from "../decks/never-cut-flag";
 import { listDecksWithStats, type DeckListItem } from "../decks/read";
 import { readBuyRowPrices } from "../decks/shopping-rollup";
 import { byTouched } from "../decks/touched";
@@ -40,7 +39,7 @@ export type DeckFacts = {
   unresolved: number;
   /** 99, or 98 with a partner. */
   size: number;
-  /** A Shopping row (never a commander's, never a locked card's while Never cut is on) priced over the deck's own limit. */
+  /** A Shopping row (never a commander's, never a locked card's) priced over the deck's own limit. */
   overLimit: boolean;
   /** A card the deck's body still needs (never its commander or partner) that a friend shares a spare of. */
   friendSpare: boolean;
@@ -92,7 +91,7 @@ export async function loadToolFits(
     return deck !== undefined && r.oracleId !== deck.commander && r.oracleId !== deck.partner;
   });
   const [overLimit, spared] = await Promise.all([
-    asked.has("stand-ins") ? decksOverLimit(userId, body, byDeck, env) : new Set<string>(),
+    asked.has("stand-ins") ? decksOverLimit(userId, body, byDeck) : new Set<string>(),
     asked.has("friend-spares") ? decksWithSpares(userId, body) : new Set<string>(),
   ]);
   return fitsOf(deckFacts(list, { overLimit, spared, played }), tools);
@@ -133,19 +132,18 @@ function deckLimits(userId: string): Promise<DeckLimit[]> {
 }
 
 /**
- * Decks with a body buy row priced over their own limit, as the Shopping list marks them. With Never cut on, a locked
- * row has no ⇄ (the stand-ins sheet exists to cut the card), so it fits nothing.
+ * Decks with a body buy row priced over their own limit, as the Shopping list marks them. A locked row has no ⇄ (the
+ * stand-ins sheet exists to cut the card), so it fits nothing.
  */
 async function decksOverLimit(
   userId: string,
   rows: DeckBuyRow[],
   byDeck: ReadonlyMap<string, DeckLimit>,
-  env: NodeJS.ProcessEnv,
 ): Promise<Set<string>> {
   if (rows.length === 0) return new Set();
   const [read, locked] = await Promise.all([
     readBuyRowPrices(userId, rows),
-    neverCutEnabled(env) ? liveLockedIdsByDeck(db, [...new Set(rows.map((r) => r.deckId))]) : new Map<string, ReadonlySet<string>>(),
+    liveLockedIdsByDeck(db, [...new Set(rows.map((r) => r.deckId))]),
   ]);
   const out = new Set<string>();
   for (const row of rows) {

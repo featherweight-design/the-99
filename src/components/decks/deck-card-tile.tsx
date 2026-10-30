@@ -148,7 +148,7 @@ export function DeckCardTile({
   // document order and skipped entirely by a reader tabbing between controls —
   // which is how most people meet this tile. The row solves it the same way.
   const draftDescriptionId = useId();
-  // Locked (PR 4b), read exactly as `decklist-row.tsx` reads it. `null` with the switch off, and then
+  // Locked (PR 4b), read exactly as `decklist-row.tsx` reads it. `null` outside a deck page, and then
   // nothing below draws a lock: the tile is the tile it was. `locked` is the drawn answer, a press
   // on this visit included (`useCardLocks`). The card view renders under `All` only, so the mode
   // needs no Shopping test here.

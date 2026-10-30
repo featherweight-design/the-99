@@ -193,9 +193,9 @@ async function main() {
   const repeat = await applyPicks({ runId, ...pick, actionId, userId: u, env });
   check("4 · a repeat of the same press answers with the set", repeat.ok && repeat.itemIds.length, 6);
   check("4 · and writes nothing", await deckList(deckId), after);
-  check("4 · per-card undo refuses one line of the set", await undoItem(adds[0].id, u, env), null);
+  check("4 · per-card undo refuses one line of the set", await undoItem(adds[0].id, u), null);
   check("4 · and the deck keeps the whole set", await deckList(deckId), after);
-  const undone = await undoSet({ applySet: actionId, userId: u, env });
+  const undone = await undoSet({ applySet: actionId, userId: u });
   check("4 · undo the set", undone.ok && undone.itemIds.length, 6);
   check("4 · undo returns the exact list", await deckList(deckId), before);
   // In upper case, as a client might send it: the set id is matched however it is written.
@@ -218,16 +218,16 @@ async function main() {
   const withA = await deckList(deckId);
   const b = await applyPicks({ runId, addIds: [adds[3].id], cutIds: [cuts[3].id], actionId: setB, userId: u, env });
   check("6 · a second set from the same pool", [a.ok, b.ok], [true, true]);
-  await undoSet({ applySet: setB, userId: u, env });
+  await undoSet({ applySet: setB, userId: u });
   const afterB = await linesOf(runId);
   check("6 · undoing it leaves the first set applied", afterB.filter((l) => l.apply_set === setA).length, 4);
   check("6 · and its own lines open", afterB.filter((l) => [adds[3].id, cuts[3].id].includes(l.id)).map((l) => l.verdict), ["pending", "pending"]);
   check("6 · the deck is what set A left", await deckList(deckId), withA);
-  await undoSet({ applySet: setA, userId: u, env });
+  await undoSet({ applySet: setA, userId: u });
   check("6 · undoing both returns the exact list", await deckList(deckId), before);
 
   // 6b — a v2 line is never applied or dismissed alone (plan P3): one line would move the deck off 99.
-  check("6b · per-card apply refuses a v2 line", await applyItem(adds[4].id, u, env), null);
+  check("6b · per-card apply refuses a v2 line", await applyItem(adds[4].id, u), null);
   check("6b · and so does dismiss", await setDismissed(adds[4].id, u, true), null);
   check("6b · and the deck is unchanged", await deckList(deckId), before);
 
@@ -247,7 +247,7 @@ async function main() {
     insert into deck_versions (deck_id, number, commander_oracle_id)
     select d.id, coalesce((select max(v.number) from deck_versions v where v.deck_id = d.id), 0) + 1, d.commander_oracle_id
     from decks d where d.id = ${deckId}`);
-  const lateUndo = await undoSet({ applySet: setC, userId: u, env });
+  const lateUndo = await undoSet({ applySet: setC, userId: u });
   check("7b · undo after a commit is refused as stale", lateUndo.ok ? "undone" : lateUndo.refusal, { kind: "stale" });
   check("7b · and the deck keeps the set", await deckList(deckId), withC);
   const lateApply = await applyPicks({ runId, addIds: [adds[1].id], cutIds: [cuts[1].id], actionId: randomUUID(), userId: u, env });

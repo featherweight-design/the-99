@@ -170,13 +170,12 @@ describe("revertCollectionEntry", () => {
 });
 
 // Admin PR 6f-2: a revert's deck check reads claims under the reader's env. Opposite to the environment on
-// both claim-model switches, so a dropped argument would read the other way.
+// the claim model's switch, so a dropped argument would read the other way.
 describe("the reader's env", () => {
   it("reaches the write from a preview and from a revert, by identity", async () => {
     const { requestSwitchEnv } = await import("../../lib/switches/request");
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    const env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
     vi.mocked(requestSwitchEnv).mockResolvedValue(env);
     try {
       stub.entry.mockResolvedValue({ rows: [] });

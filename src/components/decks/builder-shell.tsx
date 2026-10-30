@@ -291,9 +291,6 @@ interface BuilderShellProps {
   /** The stored analysis could not be read, so `storedPermits`' null says nothing about whether
    *  the deck was ever analyzed: the tab's opening then holds as it does for an analyzed deck. */
   storedPermitsUnknown?: boolean;
-  /** `NEVER_CUT_ENABLED` (`src/lib/decks/never-cut-flag.ts`): whether the rows draw the lock and
-   *  the toolbar offers Lock cards. Off, nothing of the lock is drawn or pressable. */
-  neverCut?: boolean;
   /** `tuningEnabled(env)` (`src/lib/tuning/flag.ts`): whether this deployment draws "Suggested
    *  changes". Off, the Analysis tab still draws the bracket and the Overview — the tab mounts
    *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
@@ -381,7 +378,6 @@ export function BuilderShell({
   openNoticesOnArrival = false,
   storedPermits = null,
   storedPermitsUnknown = false,
-  neverCut = false,
   tuningEnabled = false,
   strategy = null,
   socialGames = false,
@@ -554,16 +550,15 @@ export function BuilderShell({
   // The page's live region. Declared this high because the lock state below speaks into it.
   const [announcement, setAnnouncement] = useState("");
   // Locked (PR 4a): every lock pressed on this visit, drawn over the optimistic list, so the rows,
-  // the key, the auto counts and the climb all read one answer. `lockCards` is the rows' context,
-  // null with the switch off. The MODE lives here rather than in the list, so List ↔ Card (the
-  // list's own state) keeps it, and a switch to Shopping (the shell's) can end it.
+  // the key, the auto counts and the climb all read one answer. `lockCards` is the rows' context.
+  // The MODE lives here rather than in the list, so List ↔ Card (the list's own state) keeps it,
+  // and a switch to Shopping (the shell's) can end it.
   const {
     cards,
     value: lockCards,
     mode: lockMode,
     setMode: setLockMode,
   } = useCardLocks({
-    enabled: neverCut,
     deckId: deck.id,
     cards: optimisticCards,
     serverCards: deck.cards,
@@ -1317,7 +1312,7 @@ export function BuilderShell({
   const keptCount = cards.filter((c) => !c.auto).reduce((n, c) => n + c.quantity, 0);
   // Locked (L3): a sweep leaves a locked auto card where it is, so Clear counts auto LESS these,
   // while Keep all still counts every auto card. COPIES, like `autoCount`, so the subtraction is
-  // like from like (audit T3). Zero with the switch off, where no card reads locked.
+  // like from like (audit T3).
   const lockedAutoCards = cards.filter((c) => c.auto && c.locked);
   const lockedAutoCount = lockedAutoCards.reduce((n, c) => n + c.quantity, 0);
   // The receipt's `N locked cards stayed`, fixed at the sweep that left them.
@@ -2334,7 +2329,7 @@ export function BuilderShell({
                 // and no row changes.
                 onAnnounce={setAnnouncement}
                 lockMode={lockMode && filter === "all"}
-                onLockModeChange={neverCut ? setLockMode : undefined}
+                onLockModeChange={setLockMode}
                 lockedAutoCount={lockedAutoCount}
                 sweptLockedCount={sweptLockedCount}
               />

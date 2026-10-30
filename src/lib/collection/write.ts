@@ -253,9 +253,8 @@ export type ChangeOptions = {
   inside?: (tx: Tx) => Promise<void>;
   /**
    * The reader's resolved switches (`requestSwitchEnv`), which every claim read inside the write
-   * takes: the claim model's `locked` key (NEVER_CUT_ENABLED) and its pending clause
-   * (CHANGE_COMMANDER_ENABLED). Required (admin PR 7b): a probe or a script, outside a request, passes
-   * `process.env` itself.
+   * takes: the claim model's pending clause (CHANGE_COMMANDER_ENABLED). Required (admin PR 7b): a probe or a
+   * script, outside a request, passes `process.env` itself.
    */
   env: NodeJS.ProcessEnv;
 };

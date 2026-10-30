@@ -26,7 +26,6 @@ import {
   type DeckPrinting,
 } from "./printings";
 import { lockedOracleIds } from "./locks";
-import { neverCutEnabled } from "./never-cut-flag";
 import type { FoilFinish, PreferredPrinting } from "../collection/browse";
 import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
 import { classifyRoles } from "../recs/roles";
@@ -394,8 +393,8 @@ export function deckDetailReads(deckId: string, userId: string) {
  * over the whole collection), else its own read narrowed to `ids`. Null when the deck owns nothing
  * to look up. Apart so a test can pin that a shared read stands in for the query.
  *
- * `env` is the reader's resolved switches (`requestSwitchEnv`), which decide the claim model's lock key
- * and pending clause. Required, so no caller of `getDeckDetail` reads them from the environment alone.
+ * `env` is the reader's resolved switches (`requestSwitchEnv`), which decide the claim model's pending
+ * clause. Required, so no caller of `getDeckDetail` reads them from the environment alone.
  */
 export function deckAvailabilityRead(
   userId: string,
@@ -446,10 +445,10 @@ export async function getDeckDetail(
     // same way, and a transient failure here would otherwise 500 an otherwise
     // readable deck over a mark.
     // The lock set is the same kind of decoration and degrades the same way ("empty"): a failed read
-    // draws the deck as it read before Locked existed. Nothing is read with the switch off.
+    // draws the deck as it read before Locked existed.
     Promise.all([
       proxiedOracleIds(deckId, userId),
-      neverCutEnabled(env) ? lockedOracleIds(deckId, userId) : Promise.resolve(new Set<string>()),
+      lockedOracleIds(deckId, userId),
     ]),
     reads.cards,
     reads.unresolved,

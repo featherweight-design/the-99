@@ -97,16 +97,15 @@ describe("buildFillPlan by label", () => {
 });
 
 // Admin PR 6f-1: the fill's budget gate asks the claim model which owned cards are free, and that model
-// reads NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it is handed. `loadFillGate` requires
+// reads CHANGE_COMMANDER_ENABLED from the env it is handed. `loadFillGate` requires
 // that env (admin PR 7b), and the plan's must be the one that reaches it: the reader's env and the environment
 // hold opposite values here, and the handed env is checked by identity, as a boolean.
 describe("buildFillPlan's budget gate", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("is handed the reader's resolved switches, not the environment", async () => {
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const READER = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const READER = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     await buildFillPlan("u", commanders, new Set(), {
       selected: [], env: READER, answers: { budgetCents: 5_000, bracket: null, cardOracleId: null },
     });

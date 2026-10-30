@@ -36,8 +36,8 @@ vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async ()
 vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string, env?: unknown) => (state.helpEnvs.push(env), state.helpFails ? null : { color: c, inIdentity: true, staples: state.staples, trades: state.trades }) }));
 vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: () => ({ limit: async () => state.helpRows }) }) }) } }));
 vi.mock("../../lib/tuning/mana-trade", () => ({
-  applyTrade: async (deckId: string, userId: string, trade: { cutOracleId: string; addOracleId: string }, listKey: string, env?: unknown) => {
-    state.writes.push(["apply", deckId, userId, trade.cutOracleId, trade.addOracleId, listKey, env]);
+  applyTrade: async (deckId: string, userId: string, trade: { cutOracleId: string; addOracleId: string }, listKey: string) => {
+    state.writes.push(["apply", deckId, userId, trade.cutOracleId, trade.addOracleId, listKey]);
     return state.applied;
   },
   undoTrade: async (...args: unknown[]) => { state.writes.push(["undo", ...args]); return state.undone; },
@@ -170,8 +170,7 @@ describe("applyManaTrade and undoManaTrade (the actions)", () => {
     state.applied = APPLY;
     expect(await applyManaTrade(DECK, "G", STAPLE, FOREST)).toEqual({ ok: true, applyId: APPLY });
     // The key of the list the offer was read from, for the write to check again under the deck lock.
-    expect(state.writes).toEqual([["apply", DECK, "user_1", FOREST, STAPLE, "list-fp", ENV]]);
-    expect(state.writes[0]?.[6]).toBe(ENV);
+    expect(state.writes).toEqual([["apply", DECK, "user_1", FOREST, STAPLE, "list-fp"]]);
     expect(state.revalidated).toEqual([[DECK, "user_1"]]);
   });
 
@@ -203,7 +202,7 @@ describe("applyManaTrade and undoManaTrade (the actions)", () => {
     reset();
     state.undone = DECK;
     expect(await undoManaTrade(APPLY)).toEqual({ ok: true });
-    expect(state.writes).toEqual([["undo", APPLY, "user_1", ENV]]);
+    expect(state.writes).toEqual([["undo", APPLY, "user_1"]]);
     expect(state.revalidated).toEqual([[DECK, "user_1"]]);
     expect(await undoManaTrade("nope")).toEqual({ ok: false, message: deckTuningCopy.card.undoRefused });
     state.undone = null;

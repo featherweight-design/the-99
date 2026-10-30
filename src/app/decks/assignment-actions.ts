@@ -47,7 +47,7 @@ export async function assignCopy(oracleId: string, deckId: string): Promise<Assi
 
   // The row's fresh state, read after the write: the page is about to redraw it, and a refusal
   // without it would leave the player looking at exactly the state that lost.
-  // Under the reader's resolved switches, which decide the claim model's `locked` key and pending clause.
+  // Under the reader's resolved switches, which decide the claim model's pending clause.
   const card = await loadContestedCard(oracleId, userId, { env: await requestSwitchEnv(userId) }).catch(() => null);
   if (cause) return { ok: false, cause, card };
   return { ok: true, card, ...(report.created && report.createdAt ? { createdAt: report.createdAt } : {}) };

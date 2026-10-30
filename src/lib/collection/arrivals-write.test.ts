@@ -37,8 +37,8 @@ import { writeArrivalsReceipt } from "./arrivals-write";
 
 // The reader's resolved switches, opposite to the environment on every switch the receipt reads: a
 // read that fell back to `process.env` would decide the other way, and is caught by identity below.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" };
-const OFF = { NEVER_CUT_ENABLED: "false", CHANGE_COMMANDER_ENABLED: "false" };
+const ON = { CHANGE_COMMANDER_ENABLED: "true" };
+const OFF = { CHANGE_COMMANDER_ENABLED: "false" };
 const stubEnvironment = (values: Record<string, string>) => { for (const [k, v] of Object.entries(values)) vi.stubEnv(k, v); };
 const receipt = (env: NodeJS.ProcessEnv) => writeArrivalsReceipt({
   userId: "u1", uploadId: "up1", ownedBefore: { o1: 1 }, ownedAfter: { o1: 2 }, buyBefore: [],
