@@ -145,7 +145,8 @@ export function useCardLocks({
         inFlight.current.delete(key);
         setWriting(new Set(inFlight.current));
         if (!result.ok) {
-          // The server refuses when the card left the deck between render and press. The lock reverts rather than showing a state the deck does not hold.
+          // The server refuses when the card left the deck between render and press. The lock reverts
+          // rather than showing a state the deck does not hold.
           setOverride(forDeck, id, !next);
           if (onScreen.current === forDeck) setErrors((e) => new Map(e).set(id, result.message));
           return;

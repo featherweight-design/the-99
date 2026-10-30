@@ -62,8 +62,7 @@ export type TuningInputs = {
   /** The deck's newest version number in the same snapshot as `head`, or null for none. A run
    *  records it, and a newer version later retires the set. */
   readVersion: number | null;
-  /** The deck's live locks, read in the same snapshot as `head` (Locked, D5/D6). Empty while
-   *  when nothing is locked. */
+  /** The deck's live locks, read in the same snapshot as `head` (Locked, D5/D6). */
   locked: string[];
   /** The commander's name when every other card is locked, else null (the gate's `allLocked`). */
   allLocked: string | null;

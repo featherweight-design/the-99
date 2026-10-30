@@ -446,7 +446,6 @@ export async function setCardProxied(
  *
  * Locking UPSERTS with `removed_at = null`, so a stray dormant row can never swallow a lock.
  * Unlocking deletes the row, live or dormant.
-
  */
 export async function setCardLocked(
   deckId: string,

@@ -41,8 +41,8 @@ export async function resolveAnswer(args: {
   deckId: string;
   pack: EvidencePack;
   response: TuningResponse;
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
-   *  pending clause; a probe, with no signed-in reader, passes `process.env`. */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause; a probe,
+   *  with no signed-in reader, passes `process.env`. */
   env: NodeJS.ProcessEnv;
 }) {
   const { userId, deckId, pack, response } = args;

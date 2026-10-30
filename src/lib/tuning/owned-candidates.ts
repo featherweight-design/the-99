@@ -51,8 +51,8 @@ type OwnedCandidateArgs = {
   inDeck: ReadonlySet<string>;
   limits: { capCents: number | null; sets: readonly string[]; otherDecks?: boolean };
   max?: number;
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
-   *  pending clause; a probe, with no signed-in reader, passes `process.env`. */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause; a probe,
+   *  with no signed-in reader, passes `process.env`. */
   env: NodeJS.ProcessEnv;
 };
 
