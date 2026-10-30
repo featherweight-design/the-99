@@ -1,22 +1,53 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
-import { assembleEarlyList, commanderPrintingsQuery, earlyListRowQuery, isBasicName, releasePreconQuery } from "./early-list-read";
+import { assembleEarlyList, commanderPrintingsQuery, earlyListRowQuery, isBasicName, pickReleasePrecon, releaseCandidatesQuery } from "./early-list-read";
 import type { EarlyCardFacts } from "./early-list";
 
-describe("releasePreconQuery", () => {
-  it("aliases and qualifies its correlated subquery (AGENTS.md)", () => {
-    const { sql, params } = releasePreconQuery("FDC", "cmd-1", db).toSQL();
+describe("releaseCandidatesQuery", () => {
+  it("aliases and qualifies its correlated subquery (AGENTS.md), and reads the precon's first-seen stamp", () => {
+    const { sql, params } = releaseCandidatesQuery("cmd-1", db).toSQL();
     // An unqualified `file_name = file_name` would compare the subquery's row with itself: always true, any precon.
     expect(sql).toContain('exists (select 1 from "precon_cards" pc where pc.file_name = "precons".file_name and pc.is_commander and pc.oracle_id = $');
-    expect(sql).toMatch(/lower\(("precons"\.)?"set_code"\) = \$/);
-    expect(sql).toMatch(/"twin_of" is null/);
-    expect(params).toEqual(expect.arrayContaining(["fdc", "cmd-1"]));
+    expect(sql).toContain('left join "catalog_first_seen" on ("catalog_first_seen"."kind" = $');
+    expect(sql).toContain('"catalog_first_seen"."key" = "precons"."file_name"');
+    expect(sql).toContain('"precons"."twin_of" is null');
+    // No set filter: a release list in any set, of any type or release date, is a candidate.
+    expect(sql).not.toContain('"sets"');
+    expect(params).toEqual(["precon", "cmd-1"]);
+  });
+});
+
+describe("pickReleasePrecon", () => {
+  const posted = new Date("2026-10-29T16:00:00Z");
+  const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null) =>
+    ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline });
+
+  it("matches a new deck in a long-running set by its first-seen stamp, whatever the set's release date (SLD)", () => {
+    // The post's lists resolve to no set (SLD released in 2019, outside the window), and the redirect still finds it.
+    expect(pickReleasePrecon([c("OddsAndEnds_SLD", "SLD", "2026-11-02T08:00:00Z")], posted, null)).toBe("OddsAndEnds_SLD");
   });
 
-  it("finds the release list in a set that is not a `commander` one", () => {
-    const { params } = releasePreconQuery("cmm", "cmd-1", db).toSQL();
-    // MTGJSON's CMM, matched lowercase: nothing in the redirect reads `sets.set_type`.
-    expect(params).toEqual(expect.arrayContaining(["cmm", "cmd-1"]));
+  it("never matches an older precon with the same commander, stamped before the post", () => {
+    expect(pickReleasePrecon([c("Angels_C23", "C23", "2025-03-01T00:00:00Z")], posted, null)).toBeNull();
+    // Not even in the resolved set: a stamped precon from before the post is never the release list.
+    expect(pickReleasePrecon([c("Angels_FDC_old", "FDC", "2025-03-01T00:00:00Z")], posted, "fdc")).toBeNull();
+  });
+
+  it("takes the new one when an older precon shares the commander", () => {
+    const both = [c("Angels_C23", "C23", "2025-03-01T00:00:00Z"), c("Angels_FDC", "FDC", "2026-11-12T00:00:00Z")];
+    expect(pickReleasePrecon(both, posted, "fdc")).toBe("Angels_FDC");
+  });
+
+  it("allows a few days of skew before the post", () => {
+    expect(pickReleasePrecon([c("A", "FDC", "2026-10-27T00:00:00Z")], posted, null)).toBe("A");
+    expect(pickReleasePrecon([c("A", "FDC", "2026-10-25T00:00:00Z")], posted, null)).toBeNull();
+  });
+
+  it("falls back to the resolved set for a precon with no usable stamp", () => {
+    expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, "cmm")).toBe("A_CMM");
+    expect(pickReleasePrecon([c("A_CMM", "CMM", "2020-01-01T00:00:00Z", true)], posted, "cmm")).toBe("A_CMM");
+    expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, "fdc")).toBeNull();
+    expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, null)).toBeNull();
   });
 });
 

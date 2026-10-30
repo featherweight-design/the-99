@@ -160,10 +160,11 @@ not a plain integer, is a 404.
 **Set resolver and redirect (3.4).** Read at request time, no migration. Every list in the post votes with its
 commander's printings in paper Commander sets (`sets`, type `commander`, not digital) released from 60 days before to
 180 days after the post's day; the set with the most lists wins (a tie goes to the earlier release, then the lower
-code). Once a plain-edition precon in that set lists the same commander, the early address redirects to
-`/decks/precons/<fileName>`. The window, rather than "releasing after today", keeps the redirect working after the set
-leaves Announced. "Released, still waiting" (3.5) is the resolved set's release day on or before today with no such
-precon.
+code). The early address redirects to `/decks/precons/<fileName>` once a plain-edition precon names the same
+commander and the catalog first showed it (`catalog_first_seen`) no earlier than three days before the post, in any set
+whatever its release date (a new Secret Lair deck matches; an older precon with the same commander never does). A
+precon with no usable stamp matches only in the resolved set. "Released, still waiting" (3.5) is the resolved set's
+release day on or before today with no such precon.
 
 **Switch.** `ANNOUNCEMENTS_ENABLED` (off: 404). `UPCOMING_PRECONS_ENABLED` was retired in #2399, so item 7's wording
 is superseded.

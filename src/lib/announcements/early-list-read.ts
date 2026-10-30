@@ -10,7 +10,7 @@
  */
 import { and, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, preconCards, precons, printings, sets, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
+import { catalogFirstSeen, cards, collectionItems, preconCards, precons, printings, sets, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { isBasicType } from "../decks/basic-type";
 import { summarisePrecons } from "../precons/list";
 import { BASIC_TYPES } from "../swaps/land";
@@ -100,21 +100,54 @@ export function commanderPrintingsQuery(commanderIds: string[], postDay: Date, q
 }
 
 /**
- * The release list that replaces an early one: a plain edition (not a Collector's Edition twin) in the resolved set that
- * names the same commander. `precons.set_code` is MTGJSON's, UPPERCASE; `sets.code` is lowercase. The correlated
- * subquery aliases its table and qualifies both sides (AGENTS.md).
+ * Every plain-edition precon (not a Collector's Edition twin) that names this commander, in any set, with when the
+ * catalog first showed it (`catalog_first_seen`, kind `precon`, as the arrivals read takes it); apart so a test can
+ * render its SQL. The correlated subquery aliases its table and qualifies both sides (AGENTS.md).
  */
-export function releasePreconQuery(setCode: string, commanderId: string, q: Reader = db) {
+export function releaseCandidatesQuery(commanderId: string, q: Reader = db) {
   return q
-    .select({ fileName: precons.fileName })
+    .select({
+      fileName: precons.fileName,
+      setCode: precons.setCode,
+      firstSeenAt: catalogFirstSeen.firstSeenAt,
+      baseline: catalogFirstSeen.baseline,
+    })
     .from(precons)
+    .leftJoin(catalogFirstSeen, and(eq(catalogFirstSeen.kind, "precon"), eq(catalogFirstSeen.key, precons.fileName)))
     .where(and(
-      sql`lower(${precons.setCode}) = ${setCode.toLowerCase()}`,
       isNull(precons.twinOf),
       sql`exists (select 1 from ${preconCards} pc where pc.file_name = ${precons}.file_name and pc.is_commander and pc.oracle_id = ${commanderId})`,
-    ))
-    .orderBy(precons.fileName)
-    .limit(1);
+    ));
+}
+
+/** How long before the post a precon may first show in the catalog and still be its release list (clock and ingest skew). */
+export const RELEASE_SLACK_DAYS = 3;
+
+export type ReleaseCandidate = { fileName: string; setCode: string; firstSeenAt: Date | null; baseline: boolean | null };
+
+/**
+ * The release list that replaces an early one, among the precons naming its commander (STATES 3.4):
+ *
+ * - a precon the catalog first showed on or after the post's day (less `RELEASE_SLACK_DAYS`), whatever its set and the
+ *   set's release date, so a new deck in a long-running set (Secret Lair) still matches and an older precon with the
+ *   same commander never does; the earliest such stamp wins;
+ * - failing that, a precon with no usable stamp (none, or `baseline`, as the arrivals read treats it) in the set the
+ *   post's lists resolve to (`resolvePostSet`'s window rule).
+ *
+ * A stamped precon from before the post is never the release list. Pure, for a test.
+ */
+export function pickReleasePrecon(candidates: readonly ReleaseCandidate[], postedAt: Date, setCode: string | null): string | null {
+  const floor = postedAt.getTime() - RELEASE_SLACK_DAYS * DAY_MS;
+  const byName = (a: ReleaseCandidate, b: ReleaseCandidate) => (a.fileName < b.fileName ? -1 : a.fileName > b.fileName ? 1 : 0);
+  const stamped = candidates
+    .filter((c) => c.firstSeenAt !== null && c.baseline === false && c.firstSeenAt.getTime() >= floor)
+    .sort((a, b) => a.firstSeenAt!.getTime() - b.firstSeenAt!.getTime() || byName(a, b));
+  if (stamped[0]) return stamped[0].fileName;
+  if (!setCode) return null;
+  const unstamped = candidates
+    .filter((c) => (c.firstSeenAt === null || c.baseline !== false) && c.setCode.toLowerCase() === setCode.toLowerCase())
+    .sort(byName);
+  return unstamped[0]?.fileName ?? null;
 }
 
 export async function loadEarlyList(userId: string, contentfulId: string, position: number, now = new Date()): Promise<EarlyListRead | null> {
@@ -131,9 +164,9 @@ export async function loadEarlyList(userId: string, contentfulId: string, positi
     .flatMap((r) => (r.releasedAt ? [{ oracleId: r.oracleId, setCode: r.setCode, releasedAt: r.releasedAt as string }] : []));
   const setCode = resolvePostSet(siblings.map((s) => s.commanderCardId), candidates);
 
-  if (setCode && list.commanderCardId) {
-    const [release] = await releasePreconQuery(setCode, list.commanderCardId);
-    if (release) return { kind: "release", fileName: release.fileName };
+  if (list.commanderCardId) {
+    const release = pickReleasePrecon(await releaseCandidatesQuery(list.commanderCardId), list.publishedAt, setCode);
+    if (release) return { kind: "release", fileName: release };
   }
 
   const lines = list.cards;
