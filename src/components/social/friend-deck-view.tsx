@@ -76,6 +76,10 @@ export function FriendDeckView({
       setCode: c.printedSetCode!, collectorNumber: c.printedCollectorNumber!, imageUri: c.imageUri ?? null,
       ...(c.printedBackImageUri !== undefined ? { backImageUri: c.printedBackImageUri } : {}),
       ...(c.printedScryfallId ? { scryfallId: c.printedScryfallId } : {}),
+      // The owner's finish, the tile's film: their foil animates in card details, and a printing they hold plain (or in
+      // mixed finishes) stays plain over the reader's own foil copy. The precon page's rule (#2354). A card they hold
+      // none of names no printing, so it has no entry here.
+      finish: c.foil ?? ("nonfoil" as const),
     }]),
   );
   const head = deck.commanders[0];

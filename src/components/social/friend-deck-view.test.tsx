@@ -35,7 +35,7 @@ const SAI = card("sai", "Sai, Master Thopterist", "Legendary Creature — Human 
 const DECK: FriendDeckPage = {
   id: "d1", name: "Thopter Factory", commanders: [SAI],
   cards: [
-    card("sol", "Sol Ring", "Artifact", true, { printedSetCode: "cmm", printedCollectorNumber: "1", printedScryfallId: "sf-sol", printedBackImageUri: null }),
+    card("sol", "Sol Ring", "Artifact", true, { printedSetCode: "cmm", printedCollectorNumber: "1", printedScryfallId: "sf-sol", printedBackImageUri: null, foil: "foil" }),
     card("ws", "Whirler Rogue", "Creature — Human Rogue", false),
     card("isl", "Island", "Basic Land — Island", false, { quantity: 27 }),
   ],
@@ -91,8 +91,9 @@ describe("FriendDeckView", () => {
   it("views the owner's printing in card details, and draws nothing of the owner's money or plans", () => {
     draw();
     expect(providerProps.views).toEqual({
-      sai: { setCode: "m19", collectorNumber: "69", imageUri: "https://img/sai.jpg" },
-      sol: { setCode: "cmm", collectorNumber: "1", imageUri: "https://img/sol.jpg", backImageUri: null, scryfallId: "sf-sol" },
+      // The owner's finish, never the reader's: their foil Sol Ring draws foil, their plain Sai draws plain.
+      sai: { setCode: "m19", collectorNumber: "69", imageUri: "https://img/sai.jpg", finish: "nonfoil" },
+      sol: { setCode: "cmm", collectorNumber: "1", imageUri: "https://img/sol.jpg", backImageUri: null, scryfallId: "sf-sol", finish: "foil" },
     });
     // The same picks as deck printings with no deck: card details offer the viewer no picker over the owner's printing.
     expect(providerProps.picks).toEqual({ sai: { setCode: "m19", collectorNumber: "69" }, sol: { setCode: "cmm", collectorNumber: "1" } });
