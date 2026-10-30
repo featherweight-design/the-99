@@ -1,7 +1,7 @@
 {
   "feature": "Social R2 PR 5: card details' Wishlist section (boards R3 D1, D2, DP1, DP2)",
   "clearAbout": true,
-  "note": "Needs SOCIAL_WISHLIST_ENABLED=true on the server and a signed-in account that owns cards. The sheet WRITES NOTHING: the on-list rows open a card the account has already wishlisted, named by R2_LISTED_CARD (a card name; wishlist it once by hand, or with the app, before the run), and the not-listed rows open the first card of /collection, which must not be that card. Each row opens its card in details; the phone sheet opens at half height with the details column hidden, so the phone rows press All details first and the desktop rows have no such control. The section's sibling order inside a deck (after the receipt, before the deck's own box) and D3 (from a deck's Shopping view, drawn at desktop only) are held by card-detail-wishlist.test.tsx: the section is the same box wherever the card was opened.",
+  "note": "Needs a signed-in account that owns cards. The sheet WRITES NOTHING: the on-list rows open a card the account has already wishlisted, named by R2_LISTED_CARD (a card name; wishlist it once by hand, or with the app, before the run), and the not-listed rows open the first card of /collection, which must not be that card. Each row opens its card in details; the phone sheet opens at half height with the details column hidden, so the phone rows press All details first and the desktop rows have no such control. The section's sibling order inside a deck (after the receipt, before the deck's own box) and D3 (from a deck's Shopping view, drawn at desktop only) are held by card-detail-wishlist.test.tsx: the section is the same box wherever the card was opened.",
   "out": "contact-sheets/social-r2-details",
   "rows": [
     {

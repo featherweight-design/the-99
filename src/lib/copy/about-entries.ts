@@ -419,8 +419,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 12,
   },
   // The Social line, entry 2 (Social R2's last PR; addendum `design_handoff_the99_about/addendum-social-line`, approved
-  // 2026-10-15): last in chapter 01, as the Wishlist tab follows History. It follows `SOCIAL_WISHLIST_ENABLED`, which
-  // stands alone, so `since: 14` and no bump; the friends paragraph and key line need `SOCIAL_FRIENDS_ENABLED` too.
+  // 2026-10-15): last in chapter 01, as the Wishlist tab follows History. It followed `SOCIAL_WISHLIST_ENABLED` (retired
+  // since, always on; the name stays its identity), which stood alone, so `since: 14` and no bump; the friends paragraph and key line need `SOCIAL_FRIENDS_ENABLED` too.
   // The specimen is the Wishlist tab's own tile (E1, `wishlist/wishlist-tile.tsx`).
   {
     id: 'wishlist',

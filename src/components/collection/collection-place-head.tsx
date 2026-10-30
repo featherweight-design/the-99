@@ -62,8 +62,8 @@ const TABS: { place: CollectionPlace; href: string; label: string }[] = [
  * Which tabs the strip draws. Sets is ABSENT, not disabled, on an empty collection, as the
  * `By set` pill was. The one exception is the route the reader is on: no page is missing
  * from its own strip (E10), so an empty collection that lands on /collection/sets still
- * sees Sets, lit. Proxies is never gated. Wishlist (Social R2) follows `SOCIAL_WISHLIST_ENABLED` alone: a wishlist is
- * wanted cards, so it works on an empty collection.
+ * sees Sets, lit. Proxies is never gated. Wishlist (Social R2) is always drawn by the layout (its switch is retired): a
+ * wishlist is wanted cards, so it works on an empty collection.
  */
 export function visibleTabs(
   current: CollectionPlace,
@@ -123,7 +123,7 @@ export function CollectionPlaceHead({
   preconPick?: boolean;
   /** Collection edit on for the reader (card scanning ends in its add), read by the layout: the Add cards sheet's Scan press (card-scan PR 3). */
   scan?: boolean;
-  /** `SOCIAL_WISHLIST_ENABLED` for the reader, read by the layout: the Wishlist tab, fifth. */
+  /** The Wishlist tab, fifth: always true from the layout (its switch is retired). */
   wishlistEnabled?: boolean;
 }) {
   const pathname = usePathname();

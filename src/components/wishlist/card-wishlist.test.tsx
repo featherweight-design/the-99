@@ -159,7 +159,7 @@ describe("on the list", () => {
   });
 
   it("a failed Remove says so and the line stands", async () => {
-    remove.mockResolvedValue({ ok: false, reason: "off" });
+    remove.mockResolvedValue({ ok: false, reason: "invalid" });
     mount(2, 1);
     fireEvent.click(screen.getByRole("button", { name: c.remove }));
     expect(await screen.findByRole("alert")).toHaveTextContent(c.failedSet);

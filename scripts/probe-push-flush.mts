@@ -65,8 +65,8 @@ async function main() {
     sent.push({ endpoint: t.endpoint, payload: JSON.parse(payload) });
     return { ok: true as const };
   };
-  const on = { PUSH_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const off = { PUSH_ENABLED: "false", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const on = { PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const off = { PUSH_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
   const stamp = "2026-01-01T00:00:00.000Z";
   // NY is UTC-4 in October: 12:00 local = 16:00Z; 23:00 local = 03:00Z next day; 09:05 local = 13:05Z.
   const DAY = new Date("2026-10-22T16:00:00.000Z");

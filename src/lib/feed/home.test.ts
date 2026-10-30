@@ -17,7 +17,7 @@ import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, pr
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const NOW = new Date("2026-10-22T12:00:00Z");
 const text = (q: SQL) => new PgDialect().sqlToQuery(q).sql;
 
@@ -347,7 +347,7 @@ describe("a Wizards post", () => {
     const feed = await loadHomeFeed("u1", env, NOW, q);
     expect(feed).toMatchObject({ chosen: true, on: ["secret-lair", "commander-decklists", "wizards-news"], lead: null, unseen: 1 });
     // The post does not end the offer (announcements call 3): the kinds still off ride under it.
-    expect(feed?.chosen && feed.offer).toEqual(["new-set", "new-precon", "combo"]);
+    expect(feed?.chosen && feed.offer).toEqual(["new-set", "new-precon", "price-drop", "combo"]);
     expect(feed?.chosen && feed.items.map((i) => [i.kind, i.outbound])).toEqual([["wizards-news", "/out/wizards/n1"]]);
   });
 
@@ -380,7 +380,7 @@ describe("a Wizards post", () => {
 
   it("offers nothing of Wizards' with ANNOUNCEMENTS_ENABLED off", async () => {
     const feed = await loadHomeFeed("u1", {} as unknown as NodeJS.ProcessEnv, NOW, fake({}, {}));
-    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "combo"], on: [] });
+    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "combo"], on: [] });
   });
 });
 

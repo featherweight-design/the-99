@@ -293,7 +293,7 @@ export type FriendSpareList = {
   pods: string[];
   /** Cards on the viewer's wishlist first, then by name; by name alone while the viewer's wishlist is off. */
   lines: FriendSpareLine[];
-  /** `SOCIAL_WISHLIST_ENABLED` for the VIEWER: off, no card is marked or ordered by their wishlist, and the line says nothing of it. */
+  /** Whether the VIEWER's wishlist is read: off, no card is marked or ordered by it, and the line says nothing of it. Always true from the friend page now the wishlist's switch is retired. */
   wishlist: boolean;
 };
 
@@ -305,7 +305,7 @@ export type FriendSpareList = {
  * The grant is read INSIDE the repeatable-read transaction that reads the friend's claim model, as `claimModelsFor`
  * does, so the authorization and the rows are one snapshot, and the friend's own threshold and keeps filter the
  * result through `isOffered`, the one place a spare is decided offered (Settings' Spares, G3). Run under the
- * FRIEND's resolved switches; `wishlist` is the VIEWER's `SOCIAL_WISHLIST_ENABLED`, and off, their wishlist is not read.
+ * FRIEND's resolved switches; `wishlist` says whether the VIEWER's wishlist is read (always, from the friend page, since its switch retired).
  */
 export async function loadFriendSpareList(viewerId: string, publicId: unknown, wishlist: boolean): Promise<FriendSpareList | null> {
   const friend = await resolveFriend(viewerId, publicId);

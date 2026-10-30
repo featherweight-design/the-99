@@ -20,7 +20,7 @@ export const MOMENTS = [
   { id: "stand-ins", m: "M5", tool: "SWAP_TOOLS_ENABLED" },
   { id: "friend-spares", m: "M6", tool: "SOCIAL_FRIENDS_ENABLED" },
   { id: "find-a-deck", m: "M8", tool: "SWAP_TOOLS_ENABLED" },
-  { id: "wishlist", m: "M9", tool: "SOCIAL_WISHLIST_ENABLED" },
+  { id: "wishlist", m: "M9", tool: null },
   { id: "collection-sync", m: "M15", tool: "COLLECTION_SYNC_ENABLED" },
   { id: "lineup", m: "M13", tool: null },
   { id: "matchups", m: "M10", tool: "SOCIAL_FRIENDS_ENABLED" },

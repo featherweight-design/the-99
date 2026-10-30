@@ -1,7 +1,7 @@
 {
   "feature": "Friends on Home (Social R3 addendum, design/design_handoff_the99_social_r3/addendum-friends-home)",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED=true on the server (SOCIAL_WISHLIST_ENABLED too, for the faces' own pages). Home is photographed whole at both widths, so the section's PLACEMENT is visible as well as the section: on the phone it is drawn ONCE, above the resume block, and moved by CSS order (readiness gap 3); from 1180px it sits in the right column under Commitments. The friend count, the seats and the open-link line show whatever the signed-in account holds. Every count and link state (no friends, one, seven, a link open, two open, under a day, an expired link) is pinned in friends-section.test.tsx. The last rows press Add a friend, which WRITES one invite link for the account (single-use, expiring in 7 days), and photograph the shipped dialog it opens.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true on the server. Home is photographed whole at both widths, so the section's PLACEMENT is visible as well as the section: on the phone it is drawn ONCE, above the resume block, and moved by CSS order (readiness gap 3); from 1180px it sits in the right column under Commitments. The friend count, the seats and the open-link line show whatever the signed-in account holds. Every count and link state (no friends, one, seven, a link open, two open, under a day, an expired link) is pinned in friends-section.test.tsx. The last rows press Add a friend, which WRITES one invite link for the account (single-use, expiring in 7 days), and photograph the shipped dialog it opens.",
   "out": "contact-sheets/social-r3-friends-home",
   "rows": [
     {

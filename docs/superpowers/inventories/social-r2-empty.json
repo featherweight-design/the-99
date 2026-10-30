@@ -1,7 +1,7 @@
 {
   "feature": "Social R2 PR 4: the Wishlist tab's empty state (W1, WP1). Its own inventory because every row of social-r2.json runs on one account holding wishlist lines.",
   "clearAbout": true,
-  "note": "Needs SOCIAL_WISHLIST_ENABLED on and an account with NO wishlist lines: run it before seeding any, or on an account that never had one.",
+  "note": "Needs an account with NO wishlist lines: run it before seeding any, or on an account that never had one.",
   "out": "contact-sheets/social-r2-empty",
   "rows": [
     {

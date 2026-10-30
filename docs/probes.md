@@ -2561,7 +2561,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   icon). Find a deck needs `SWAP_TOOLS_ENABLED` and `FIND_A_DECK_READ_ENABLED` on the server too. It writes nothing but
   the browser's own recent cards. `PROBE_SHOT` names a file for a screenshot when it stops.
 - `pnpm probe:card-search-followups` proves card search's three staging follow-ups at 390 and at 1300, against a server
-  started with `SOCIAL_WISHLIST_ENABLED` and `COLLECTION_EDIT_ENABLED` true (`PROBE_BASE`;
+  started with `COLLECTION_EDIT_ENABLED` true (`PROBE_BASE`;
   `PROBE_QUERY`, default `sol`). It presses Close (or a press outside, on the desktop), Escape and Back with a query
   typed and checks each opens empty; it adds a card to the wishlist from card details opened from the search, on
   Collection › Wishlist, and counts the tiles behind before, after and after Remove; and it samples every animation

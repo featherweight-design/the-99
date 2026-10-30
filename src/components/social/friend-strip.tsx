@@ -1,7 +1,7 @@
 "use client";
 // The strip under a friend's head: Spares, Wishlist, Decks (menu and Home PR 7), the Collection place's own `PlaceStrip`
 // with each tab's figure after its label. Mounted once by the page group's layout, so a tab press swaps the page below
-// and never remounts it. A tab whose switch is off is absent (the Wishlist tab, with `SOCIAL_WISHLIST_ENABLED`).
+// and never remounts it. A tab with no figure is absent (every tab follows Friends alone now the wishlist's switch is retired).
 
 import { usePathname } from "next/navigation";
 import { socialCopy } from "../../lib/copy/social";

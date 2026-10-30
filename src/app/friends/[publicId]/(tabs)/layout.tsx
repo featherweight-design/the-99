@@ -3,14 +3,13 @@
 //
 // The page exists only while `SOCIAL_FRIENDS_ENABLED` is on for this reader, and only for a current friend: a
 // stranger, a former friend, the reader's own id or a malformed one is the app's normal not-found page (decision 10).
-// Each tab has its own gate on top: Spares and Decks follow Friends alone, Wishlist follows `SOCIAL_WISHLIST_ENABLED`.
+// Each tab has its own gate on top: every tab follows Friends alone (the wishlist's own switch is retired).
 // The layout reads each drawn tab's figure for the strip through the request-cached reads the tab's own page shares,
 // so no read runs twice.
 
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { socialFriendsEnabled } from "../../../../lib/social/flag";
-import { wishlistEnabled } from "../../../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { loadFriend } from "../../../../lib/social/access";
 import { friendDecks, friendSpareList, friendWishlist } from "../../../../lib/social/friend-page-data";
@@ -29,11 +28,10 @@ export default async function FriendPageLayout({
   if (!socialFriendsEnabled(env)) notFound();
   const { publicId } = await params;
   const now = new Date();
-  const wishlistOn = wishlistEnabled(env);
   const [friend, spares, wishlist, decks] = await Promise.all([
     loadFriend(userId, publicId),
-    friendSpareList(userId, publicId, wishlistOn),
-    wishlistOn ? friendWishlist(userId, publicId) : Promise.resolve(null),
+    friendSpareList(userId, publicId, true),
+    friendWishlist(userId, publicId),
     friendDecks(userId, publicId, socialFriendsEnabled(env)),
   ]);
   if (!friend) notFound();

@@ -361,7 +361,7 @@ describe("resolveDiagram", () => {
   const rule = (e: NodeJS.ProcessEnv, id: string) => visibleSections(e).flatMap((s) => s.rules).find((r) => r.key === ruleKey(id as never))!;
 
   it("drops a part, a chip and an emptied column whose switch is off, as a sentence is cut", () => {
-    const off = env({ ...(ALL_ON as Record<string, string>), SOCIAL_WISHLIST_ENABLED: "off" });
+    const off = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
     const names = (d: ReturnType<typeof resolveDiagram>) =>
       parts(d).flatMap((p) => (p.part === "row" ? [p.name] : p.part === "caption" ? [p.text] : p.part === "chips" ? p.chips.map((c) => c.text) : []));
     // A retired switch's parts draw whatever the env says (the tokens switch is gone).
@@ -370,10 +370,12 @@ describe("resolveDiagram", () => {
     // A full-column foot keeps its column, its switched parts cut from it.
     const hidden = rule(ALL_ON, "hidden-deck").diagram!.foot;
     expect(hidden && "parts" in hidden ? hidden.w : null).toBe(250);
-    expect(names(rule(ALL_ON, "friends-see").diagram!)).toContain("Wishlist");
-    expect(names(rule(off, "friends-see").diagram!)).not.toContain("Wishlist");
+    expect(names(rule(ALL_ON, "credits").diagram!)).toContain("Look deeper");
+    expect(names(rule(off, "credits").diagram!)).not.toContain("Look deeper");
+    // The wishlist's switch is retired: its chip draws whatever the env says.
+    expect(names(rule(env({ ...(ALL_ON as Record<string, string>), SOCIAL_WISHLIST_ENABLED: "off" }), "friends-see").diagram!)).toContain("Wishlist");
     const emptied = resolveDiagram(
-      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "SOCIAL_WISHLIST_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "PROPOSED_CUTS_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
       off,
     );
     expect(emptied.columns).toHaveLength(1);

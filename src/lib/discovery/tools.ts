@@ -56,7 +56,7 @@ export const TOOLS = [
   { id: "friend-spares", group: "buy", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friend-spares", labels: ["shopping/deck-shopping/spare"], target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
   // Use what you own
   { id: "find-a-deck", group: "own", switch: "SWAP_TOOLS_ENABLED", entry: "fits-your-decks", labels: ["collection/cards/taken"], target: "find-a-deck", lands: { kind: "route", href: "/collection?avail=free" }, credit: null, needsDeck: true },
-  { id: "wishlist", group: "own", switch: "SOCIAL_WISHLIST_ENABLED", entry: "wishlist", labels: ["collection/cards/tabs"], target: "wishlist", lands: { kind: "route", href: "/collection/wishlist" }, credit: null, needsDeck: false },
+  { id: "wishlist", group: "own", switch: null, entry: "wishlist", labels: ["collection/cards/tabs"], target: "wishlist", lands: { kind: "route", href: "/collection/wishlist" }, credit: null, needsDeck: false },
   { id: "collection-sync", group: "own", switch: "COLLECTION_SYNC_ENABLED", entry: "upload-choice", labels: ["collection/upload/drop"], target: "collection-sync", lands: { kind: "route", href: "/collection/replace" }, credit: null, needsDeck: false },
   // Play
   { id: "matchups", group: "play", switch: "SOCIAL_FRIENDS_ENABLED", entry: "opponents", labels: ["decks/games/matchups"], target: "matchups", lands: { kind: "deck", tab: "games" }, credit: null, needsDeck: true },

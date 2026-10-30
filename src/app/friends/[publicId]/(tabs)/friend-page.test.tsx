@@ -1,5 +1,5 @@
 // A friend's page (Social R2 P2, P3; G9, decision 10; menu and Home PR 7): not found unless the friends switch is on for
-// the reader and the id is a current friend (the Wishlist tab alone follows the wishlist switch); the head with the
+// the reader and the id is a current friend (the Wishlist tab too: its own switch is retired); the head with the
 // row's … menu; the wishlist as tiles
 // reading `wants N`, never an owned count; the empty state; and a removal from here leaves for `/friends`.
 import { renderToString } from "react-dom/server";
@@ -57,7 +57,7 @@ import { FriendWishlist } from "../../../../components/social/friend-wishlist";
 import { socialCopy } from "../../../../lib/copy/social";
 
 const p = socialCopy.friendPage;
-const BOTH = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" };
+const BOTH = { SOCIAL_FRIENDS_ENABLED: "true" };
 const COLIN = {
   publicId: "00000000-0000-4000-8000-000000000002", displayName: "Colin", since: new Date("2026-10-02T12:00:00Z"),
   commander: { oracleId: "00000000-0000-4000-8000-0000000000aa", name: "Sai, Master Thopterist", artCropUri: null },
@@ -140,13 +140,12 @@ describe("a friend's page group", () => {
     expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
   });
 
-  it("leaves the Wishlist tab out, and never reads it, while its switch is off", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
+  it("draws the Wishlist tab with friends on alone: the retired wishlist switch is never read", async () => {
+    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "off" });
     m.loadFriendWishlist.mockClear();
     const html = renderToString(await FriendPageLayout({ children: null, params: params() }));
-    expect(html).not.toContain("/wishlist");
-    expect(m.loadFriendWishlist).not.toHaveBeenCalled();
-    await expect(FriendWishlistPage({ params: params() })).rejects.toThrow("NOT_FOUND");
+    expect(html).toContain(`href="/friends/${COLIN.publicId}/wishlist"`);
+    expect(m.loadFriendWishlist).toHaveBeenCalledWith("user_viewer", COLIN.publicId);
   });
 
   it("marks the tab the path names", async () => {
@@ -177,16 +176,14 @@ describe("a friend's page group", () => {
     expect(html.match(/data-testid="spare-name"[^>]*>Ghalta, Primal Hunger</g)).toHaveLength(1);
   });
 
-  // The reader's own wishlist switch, never the friend's: off, the loader reads no wishlist and the line says nothing of it.
-  it("reads the spares without the reader's wishlist, and says nothing of it, while the reader's wishlist switch is off", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
-    m.loadFriendSpareList.mockClear().mockResolvedValue({ pods: ["Thursday pod"], lines: [{ ...SPARE, onWishlist: false }], wishlist: false });
-    const html = renderToString(await FriendSparesPage({ params: params() }));
-    expect(m.loadFriendSpareList).toHaveBeenCalledWith("user_viewer", COLIN.publicId, false);
-    expect(html).toContain(p.spares.line(["Thursday pod"], false));
-    expect(html).not.toContain("on your wishlist");
+  // The reader's wishlist always rides the spares read now its switch is retired, whatever the old variable says.
+  it("reads the spares with the reader's wishlist, the retired wishlist switch never read", async () => {
+    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "off" });
+    m.loadFriendSpareList.mockClear();
+    await FriendSparesPage({ params: params() });
     renderToString(await FriendPageLayout({ children: null, params: params() }));
-    expect(m.loadFriendSpareList).not.toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
+    expect(m.loadFriendSpareList).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
+    expect(m.loadFriendSpareList).not.toHaveBeenCalledWith("user_viewer", COLIN.publicId, false);
   });
 
   it("says a friend who shares nothing with the reader is not sharing, and an empty share is empty", async () => {

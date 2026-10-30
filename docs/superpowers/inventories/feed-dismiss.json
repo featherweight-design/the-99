@@ -1,7 +1,7 @@
 {
   "feature": "The ✕ on What's new (Home's rows and lead story) and Waiting on you (/friends), Hugh's ruling 2026-10-27 (the menu-home plan's product call 6)",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED and SOCIAL_WISHLIST_ENABLED on, on a SCRATCH branch seeded with a friend who shares a wishlist card as a spare with a pod the reader is in (a trade match), an open ask from that friend for one of the reader's offered spares (Home's lead and a Waiting row), and every feed kind on for the reader. Read-only: no ✕ is pressed.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED on, on a SCRATCH branch seeded with a friend who shares a wishlist card as a spare with a pod the reader is in (a trade match), an open ask from that friend for one of the reader's offered spares (Home's lead and a Waiting row), and every feed kind on for the reader. Read-only: no ✕ is pressed.",
   "out": "contact-sheets/feed-dismiss",
   "rows": [
     {
