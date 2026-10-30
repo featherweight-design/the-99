@@ -25,6 +25,7 @@ const KEPT: Record<string, string> = {
   "admin_events.actor_id": "the admin who made the change",
   "admin_settings.updated_by": "the admin who changed a setting",
   "flag_groups.created_by": "the admin who made the group",
+  "flyer_codes.created_by": "the admin who made the code",
   "flag_group_members.added_by": "the admin who added a member",
   "flag_overrides.updated_by": "the admin who set the override",
   "account_tombstones.clerk_id": "the deleted account's raw id, written by recordDeletion before the purge and held for a day for the sweep's re-purge, then set null",
