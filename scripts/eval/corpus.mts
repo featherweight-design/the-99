@@ -94,6 +94,12 @@ if (command === "gate") {
     const pinned = cases.find((c) => c.id === r.id)?.deck.listFingerprint;
     if (r.listFingerprint && pinned && r.listFingerprint !== pinned) throw new Error(`eval:corpus gate: ${r.id} was answered for list ${r.listFingerprint.slice(0, 8)}, the corpus pins ${pinned.slice(0, 8)}`);
   }
+  // One arm is one facts contract (a v2 sample read under fallback 11 and one under 12 are different arms),
+  // across every file it combines. Between the arms they may differ: a v1-versus-v2 method comparison does.
+  for (const [name, arm] of [["a", ra0], ["b", rb0]] as const) {
+    const seen = new Set(arm.flat().map((r) => r.factsContract ?? "unrecorded"));
+    if (seen.size > 1) throw new Error(`eval:corpus gate: arm ${name} combines rows read under facts contracts ${[...seen].join(", ")}; split them into separate arms`);
+  }
   const n = Math.min(ra.length, rb.length);
   const both = (x: AnswerRow[], y: AnswerRow[]) => x.filter((r) => y.some((q) => q.id === r.id));
   const sa = Array.from({ length: n }, (_, i) => both(ra[i]!, rb[i]!));

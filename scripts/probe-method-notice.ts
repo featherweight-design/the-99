@@ -31,7 +31,12 @@ import { computeAndStoreProfile, type StoredProfileDeps } from "../src/lib/profi
 import type { ModelOutcome } from "../src/lib/model/client";
 import { readAllowance } from "../src/lib/model/allowance";
 import { retrySynopsisFor, writeSynopsisFor, type GenerateDeps } from "../src/lib/synopsis/generate";
-import { SYNOPSIS_CONTRACT_VERSION_V2 } from "../src/lib/synopsis/limits";
+import { SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "../src/lib/synopsis/limits";
+// The shared benchmark reading is always attempted: a v2 write is stamped 12, or 11 on a label-read fallback.
+const V2_CONTRACTS = [SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS];
+const isV2 = (n: number | undefined) => n !== undefined && V2_CONTRACTS.includes(n);
+// The contract each seeded old-way overview was written under (9, or 7 on a fallback), by deck id.
+const oldContract = new Map<string, number>();
 import { readSynopsisState } from "../src/lib/synopsis/read";
 import type { SynopsisReply } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
@@ -100,6 +105,8 @@ async function oldDeck(name: string, offset: number): Promise<string> {
   await computeAndStoreProfile(id, USER, profileDeps);
   const first = await writeSynopsisFor(id, USER, deps, process.env);
   if (first.kind !== "written" || first.outcome !== "survived") throw new Error(`the contract-7 write failed: ${JSON.stringify(first)}`);
+  const [stamped] = await rows<{ contract_version: number }>(sql`select contract_version from deck_synopses where deck_id = ${id}::uuid order by created_at desc limit 1`);
+  oldContract.set(id, stamped.contract_version);
   // The player's credit for it is long spent: age it out of the window so the allowance starts whole.
   await db.execute(sql`update model_calls set created_at = now() - interval '25 hours'
     where id in (select model_call_id from deck_synopses where deck_id = ${id}::uuid)`);
@@ -183,7 +190,7 @@ async function scenarios() {
   calls = 0;
   await failFree(deck, 1);
   check("a failed free try calls the model once", calls, 1);
-  check("…is written as a system call", (await origins(deck)).slice(-1), [{ origin: "system", status: "refunded", contract_version: SYNOPSIS_CONTRACT_VERSION_V2 }]);
+  check("…is written as a system call", (await origins(deck)).slice(-1).map((r) => ({ ...r, contract_version: isV2(r.contract_version) })), [{ origin: "system", status: "refunded", contract_version: true }]);
   check("…and touches no credit", await allowanceUsed(), before);
   s = await state(deck);
   check("…leaving one try, carried by the notice", [s.methodNotice, s.lastFree, s.lastFailed], [{ attemptsLeft: 1 }, true, true]);
@@ -218,18 +225,18 @@ async function scenarios() {
   calls = 0;
   const free = await writeSynopsisFor(ok, USER, deps, process.env);
   check("a free rewrite over an overview the list already has is WRITTEN, not reused", [free.kind, calls], ["written", 1]);
-  check("…is a system call, spent", (await origins(ok)).slice(-1), [{ origin: "system", status: "spent", contract_version: SYNOPSIS_CONTRACT_VERSION_V2 }]);
+  check("…is a system call, spent", (await origins(ok)).slice(-1).map((r) => ({ ...r, contract_version: isV2(r.contract_version) })), [{ origin: "system", status: "spent", contract_version: true }]);
   check("…costs the player no credit", await allowanceUsed(), used0);
   s = await state(ok);
-  check("…and the shown overview is the new method's: no notice", [s.methodNotice, s.synopsis?.contractVersion], [null, SYNOPSIS_CONTRACT_VERSION_V2]);
+  check("…and the shown overview is the new method's: no notice", [s.methodNotice, isV2(s.synopsis?.contractVersion)], [null, true]);
   calls = 0;
   check("a second press reuses it, calling no model", [(await writeSynopsisFor(ok, USER, deps, process.env)).kind, calls], ["reused", 0]);
 
   // 7 · A REVERT: the free run's overview belongs to another list now, so the shown row is the old
-  // contract-7 one again, and the free rewrite already produced an overview: no second one.
-  await db.execute(sql`update deck_synopses set fingerprint = 'another-list' where deck_id = ${ok}::uuid and contract_version = ${SYNOPSIS_CONTRACT_VERSION_V2}`);
+  // (7 or 9) one again, and the free rewrite already produced an overview: no second one.
+  await db.execute(sql`update deck_synopses set fingerprint = 'another-list' where deck_id = ${ok}::uuid and contract_version in (${SYNOPSIS_CONTRACT_VERSION_V2}, ${SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS})`);
   s = await state(ok);
-  check("a revert to the old overview offers no second free rewrite", [s.synopsis?.contractVersion, s.methodNotice], [7, null]);
+  check("a revert to the old overview offers no second free rewrite", [s.synopsis?.contractVersion, s.methodNotice], [oldContract.get(ok), null]);
 
   // 8 · A SECTION RETRY over an eligible overview is the free write too (rule 1).
   const retryDeck = await oldDeck("probe method notice 3", 2);
