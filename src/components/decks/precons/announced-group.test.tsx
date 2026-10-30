@@ -813,6 +813,32 @@ describe("Announced: the new mark and early lists", () => {
         expect(within(el).getByText("White")).toHaveClass("sr-only");
       });
     }
+
+    // The set row's dots combine its revealed commanders and its early lists: one unknown list makes the whole unknown.
+    const drawSetRow = (m: AnnouncedMatch) => {
+      render(<G matches={[m]} today="2026-10-14" newCodes={[]} opensByItself view="rows" listed={{}} />);
+      return screen.getByTestId("announced-row");
+    };
+    const meta = (row: HTMLElement) => within(row).getByText(/FDC/).parentElement as HTMLElement;
+
+    it("rows: a set whose only early list is unknown draws no set dots and never says Colorless", () => {
+      const row = drawSetRow({ ...fdc, commanders: [], early: { ...fdc.early!, lists: [unknown], listed: [] } });
+      expect(within(row).queryByTestId("row-dots")).toBeNull();
+      expect(within(meta(row)).queryByText("Colorless")).toBeNull();
+    });
+
+    it("rows: a set with revealed commanders and a partly matched list draws no partial identity", () => {
+      const row = drawSetRow({ ...fdc, early: { ...fdc.early!, lists: [partial] } });
+      expect(within(row).queryByTestId("row-dots")).toBeNull();
+      expect(within(meta(row)).queryByText("White")).toBeNull();
+      expect(within(meta(row)).queryByText("White, Green")).toBeNull();
+    });
+
+    it("rows: a set whose early lists are all known still draws the combined dots", () => {
+      const row = drawSetRow(fdc);
+      expect(within(row).getByTestId("row-dots").children).toHaveLength(2);
+      expect(within(meta(row)).getByText("White, Green")).toHaveClass("sr-only");
+    });
   });
 
   it("draws no early tile for a set the payload carries no lists for (the switch off)", () => {

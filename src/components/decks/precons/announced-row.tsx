@@ -31,8 +31,8 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
   match: AnnouncedMatch;
   today: string;
   isNew: boolean;
-  /** The set's dots, from its revealed commanders. */
-  identity: string[];
+  /** The set's dots, from its revealed commanders and early lists; null when an early list's identity is unknown. */
+  identity: string[] | null;
 }) {
   const [open, setOpen] = useState(false);
   const { set, commanders } = match;
@@ -61,8 +61,9 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
         </span>
         <span className="truncate font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)]">{namesLine(match)}</span>
         <span className="flex items-center gap-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          {/* Colorless commanders draw one faint dot, as a colorless card does in tiles; none revealed draws none. */}
-          {canOpen && (
+          {/* Colorless commanders draw one faint dot, as a colorless card does in tiles; none revealed draws none; an
+              unknown identity (an early list's commander the catalog cannot match yet) draws none and names no colors. */}
+          {canOpen && identity !== null && (
             <>
               <span className="sr-only">{identity.length > 0 ? colorNames(identity).join(", ") : preconsCopy.row.colorless}</span>
               <span aria-hidden className="flex gap-[3px]" data-testid="row-dots">

@@ -59,9 +59,13 @@ export function setIdentity(commanders: readonly RevealedCommander[]): string[] 
   return ["W", "U", "B", "R", "G"].filter((c) => commanders.some((x) => x.colorIdentity.includes(c)));
 }
 
-/** A set row's dots: its revealed commanders' and its posted early lists' identities, in WUBRG order. */
-export function matchIdentity(m: AnnouncedMatch): string[] {
+/**
+ * A set row's dots: its revealed commanders' and its posted early lists' identities, in WUBRG order. Null (unknown: no
+ * dots, no colors named) when any early list's identity is unknown, since its known colors are not its whole identity.
+ */
+export function matchIdentity(m: AnnouncedMatch): string[] | null {
   const lists = m.early?.lists ?? [];
+  if (lists.some((l) => !l.identityKnown)) return null;
   return ["W", "U", "B", "R", "G"].filter((c) => m.commanders.some((x) => x.colorIdentity.includes(c)) || lists.some((l) => l.identity.includes(c)));
 }
 

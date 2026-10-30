@@ -257,8 +257,8 @@ link, the lead's filled button).
 
 ### Engineering audit: UI 5 (Announced)
 
-2026-10-29, against origin/main after UI 6a (#2412); UI 6b (the set rows' `#announced-<code>` ids and hash-open) is
-not on main yet. Behind `ANNOUNCEMENTS_ENABLED` per reader: the precons page's cached load decides it from the key's
+2026-10-29, against origin/main after UI 6a (#2412); UI 6b (the set rows' `#announced-<code>` ids and hash-open) has
+since merged as #2422. Behind `ANNOUNCEMENTS_ENABLED` per reader: the precons page's cached load decides it from the key's
 env, and with it off no early list or early seen key is read. No migration: `upcoming_seen_codes` has no CHECK
 constraint, only the `SEEN_KEY` pattern in code, which now admits the third form.
 
