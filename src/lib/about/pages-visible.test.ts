@@ -374,7 +374,6 @@ describe("a section's sub-line", () => {
     const cases: [string, string, string][] = [
       ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
       ["stats", "DECK_STATS_ENABLED", "charts"],
-      ["notes", "DECK_NOTES_ENABLED", "remember"],
       ["all-decks", "ALL_DECKS_CART_ENABLED", "one cart"],
       ["friends", "SOCIAL_FRIENDS_ENABLED", "pods"],
     ];

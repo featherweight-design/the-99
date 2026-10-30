@@ -63,7 +63,6 @@ import { labelRoleCountsEnabled } from "../../../lib/decks/label-counts-flag";
 import { roleCounterFor } from "../../../lib/decks/label-role-counts";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
-import { deckNotesEnabled } from "../../../lib/decks/notes-flag";
 import { readDeckNotes } from "../../../lib/decks/notes-read";
 import { loadJobRows } from "../../../lib/decks/job-rows";
 import { loadDeckMix } from "../../../lib/decks/deck-mix";
@@ -250,10 +249,8 @@ export default async function DeckBuilderPage({
     ))));
   // The move-card picker lists every other deck by name, as it always has.
   // The notes read is its own, uncached read, outside the two cached ones above (a write revalidates the
-  // route, and nothing cached holds a note). Behind its own switch: off reads nothing.
-  const notesRead = deckNotesEnabled(env)
-    ? early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null }, env)) : null)))
-    : null;
+  // route, and nothing cached holds a note).
+  const notesRead = early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null }, env)) : null)));
   const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name", { env })));
   // The reader's shelves, for the header menu's Move (the deck's own shelf rides on its list row).
   // A failed read costs the menu its Move row and nothing else.
@@ -748,8 +745,7 @@ export default async function DeckBuilderPage({
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
       statsEnabled={deckStatsEnabled(env)}
-      notesEnabled={deckNotesEnabled(env)}
-      notesData={notesRead ? await notesRead : null}
+      notesData={await notesRead}
       statsData={deckStatsEnabled(env)
         ? {
             jobs: statsJobsRead ? await statsJobsRead : null,

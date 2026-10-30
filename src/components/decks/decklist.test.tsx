@@ -121,7 +121,6 @@ function renderDecklist(
     lockMode?: boolean;
     statsEnabled?: boolean;
     statsData?: DeckStatsInput | null;
-    notesEnabled?: boolean;
     notesData?: DeckNotesView | null;
     statsFocus?: { card: "curve" | "jobs"; n: number } | null;
     onStatsFocused?: () => void;
@@ -211,7 +210,6 @@ function renderDecklist(
           lockMode={opts.lockMode}
           statsEnabled={opts.statsEnabled}
           statsData={opts.statsData}
-          notesEnabled={opts.notesEnabled}
           notesData={opts.notesData}
           statsFocus={opts.statsFocus}
           onStatsFocused={opts.onStatsFocused}
@@ -1584,27 +1582,22 @@ describe("the Stats panel", () => {
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
   });
 
-  describe("Notes (DECK_NOTES_ENABLED)", () => {
+  describe("Notes", () => {
     const noteOf = (id: string, text: string) => ({ id, body: text, drawn: [{ kind: "text" as const, text }], createdAt: "2026-10-02T12:00:00.000Z", doneAt: null });
 
-    it("draws no Notes segment with the switch off, and the toolbar is the old one", () => {
-      renderDecklist([rampOwned], { filter: "all" });
-      expect(screen.queryByRole("tab", { name: /^Notes/ })).toBeNull();
-    });
-
     it("draws All · Shopping | Notes with Stats off, counting open notes", () => {
-      renderDecklist([rampOwned], { filter: "all", notesEnabled: true, notesData: { open: [noteOf("a", "one"), noteOf("b", "two")], done: [], readAt: 1 } });
+      renderDecklist([rampOwned], { filter: "all", notesData: { open: [noteOf("a", "one"), noteOf("b", "two")], done: [], readAt: 1 } });
       expect(screen.getByRole("tab", { name: "Notes, 2 open" })).toBeTruthy();
       expect(screen.queryByRole("tab", { name: deckStatsCopy.segment.aria })).toBeNull();
     });
 
     it("says none yet at zero and draws no count", () => {
-      renderDecklist([rampOwned], { filter: "all", notesEnabled: true, notesData: { open: [], done: [], readAt: 1 } });
+      renderDecklist([rampOwned], { filter: "all", notesData: { open: [], done: [], readAt: 1 } });
       expect(screen.getByRole("tab", { name: "Notes, none yet" })).toBeTruthy();
     });
 
-    it("sits beside Stats when both switches are on, and pressing it swaps the list for the panel", () => {
-      renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, notesEnabled: true, notesData: { open: [noteOf("a", "water the plants")], done: [], readAt: 1 } });
+    it("sits beside Stats when its switch is on, and pressing it swaps the list for the panel", () => {
+      renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, notesData: { open: [noteOf("a", "water the plants")], done: [], readAt: 1 } });
       expect(screen.getByRole("tab", { name: deckStatsCopy.segment.aria })).toBeTruthy();
       fireEvent.click(screen.getByRole("tab", { name: "Notes, 1 open" }));
       expect(screen.getByText("water the plants")).toBeTruthy();
@@ -1620,7 +1613,7 @@ describe("the Stats panel", () => {
     vi.stubGlobal("fetch", fetchMock);
     onTestFinished(() => { vi.unstubAllGlobals(); });
     await act(async () => {
-      renderDecklist([rampOwned, rampUnowned], { filter: "all", socialFriends: true, notesEnabled: true, notesData: { open: [], done: [], readAt: 1 } });
+      renderDecklist([rampOwned, rampUnowned], { filter: "all", socialFriends: true, notesData: { open: [], done: [], readAt: 1 } });
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const bar = screen.getByRole("tablist");

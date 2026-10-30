@@ -13,7 +13,6 @@ import { helpMeChooseEnabled } from "../intake/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
-import { deckNotesEnabled } from "../decks/notes-flag";
 import {
   socialFriendsEnabled,
 } from "../social/flag";
@@ -69,7 +68,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Retired (always on): Precons, and the Announced group and banner that lived under it.
   PRECONS_ENABLED: () => true,
   UPCOMING_PRECONS_ENABLED: () => true,
-  DECK_NOTES_ENABLED: deckNotesEnabled,
+  // Retired (always on): Notes. The name stays as the entry's and the section's historical identity.
+  DECK_NOTES_ENABLED: () => true,
   // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
   TUNING_HUB_ENABLED: tuningHubEnabled,
   LINEUP_ENABLED: () => true,

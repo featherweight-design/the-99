@@ -1,5 +1,5 @@
 // The notes actions' wire contract. `probe:deck-notes-actions` proves the QUERIES against a real Postgres;
-// this proves what the action layer owns: the flag, the runtime shape checks (an action is a public
+// this proves what the action layer owns: the runtime shape checks (an action is a public
 // endpoint), honest tags, the refusals, and that a write revalidates the deck's surfaces.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -48,9 +48,8 @@ vi.mock("../../lib/decks/notes-store", () => ({
   searchNoteCards: async () => [],
 }));
 
-const { addNote, editNote, setNoteDone, deleteNote, searchNoteCards } = await import("./notes-actions");
+const { addNote, editNote, setNoteDone, deleteNote } = await import("./notes-actions");
 
-const on = () => vi.stubEnv("DECK_NOTES_ENABLED", "true");
 beforeEach(() => {
   vi.unstubAllEnvs();
   stub.paths = [];
@@ -62,21 +61,7 @@ beforeEach(() => {
   stub.readThrows = false;
 });
 
-describe("with the switch off", () => {
-  it("answers every action with a refusal and touches nothing", async () => {
-    expect((await addNote(DECK, "a")).ok).toBe(false);
-    expect((await editNote(DECK, NOTE, "a")).ok).toBe(false);
-    expect((await setNoteDone(DECK, NOTE, true)).ok).toBe(false);
-    expect((await deleteNote(DECK, NOTE)).ok).toBe(false);
-    expect(await searchNoteCards("sol")).toBeNull();
-    expect(stub.calls).toEqual([]);
-    expect(stub.paths).toEqual([]);
-  });
-});
-
 describe("addNote", () => {
-  beforeEach(on);
-
   it("stores one folded line and revalidates the deck's surfaces", async () => {
     expect(await addNote(DECK, "  try\n a second   sweeper ")).toMatchObject({ ok: true });
     expect(stub.calls[0]).toEqual({ fn: "insertNote", args: [DECK, "user-1", "try a second sweeper"] });
@@ -129,8 +114,6 @@ describe("addNote", () => {
 });
 
 describe("the other writes", () => {
-  beforeEach(on);
-
   it("edit, done and delete write through the store and revalidate", async () => {
     expect(await editNote(DECK, NOTE, "changed")).toMatchObject({ ok: true });
     expect(await setNoteDone(DECK, NOTE, true)).toMatchObject({ ok: true });

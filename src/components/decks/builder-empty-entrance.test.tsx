@@ -86,7 +86,6 @@ describe("empty builder", () => {
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         newestAsOf={null}
-        notesEnabled
         notesData={{
           open: [{ id: "n1", body: "swap the mana rock", drawn: [{ kind: "text", text: "swap the mana rock" }], createdAt: "2026-10-02T12:00:00.000Z", doneAt: null }],
           done: [], readAt: 1,

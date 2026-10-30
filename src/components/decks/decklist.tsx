@@ -161,8 +161,7 @@ type DecklistProps = {
   /** `DECK_STATS_ENABLED`. Off: no Stats segment is drawn and nothing else changes. */
   statsEnabled?: boolean;
   statsData?: DeckStatsInput | null;
-  /** `DECK_NOTES_ENABLED`. Off: no Notes segment is drawn and nothing else changes. `notesData` is the deck's notes. */
-  notesEnabled?: boolean;
+  /** The deck's notes, for the Notes segment and its panel. */
   notesData?: DeckNotesView | null;
   /**
    * A request to open Deck stats at one card, from the benchmark ledger's Stats link (audit build
@@ -370,7 +369,6 @@ export function Decklist({
   filled = false,
   statsEnabled = false,
   statsData = null,
-  notesEnabled = false,
   notesData = null,
   statsFocus = null,
   onStatsFocused,
@@ -417,7 +415,7 @@ export function Decklist({
   // third segment of the All / Shopping control, so choosing either list segment returns here.
   const [panel, choosePanel] = useDeckPanel();
   const statsOpen = statsEnabled && panel === "stats";
-  const notesOpen = notesEnabled && panel === "notes";
+  const notesOpen = panel === "notes";
   // I got it's held slots (call 8) last until the list is read again: a switch of tab or panel, or
   // leaving the deck, clears them; the action's revalidation does not.
   const gotIt = useGotIt();
@@ -432,9 +430,7 @@ export function Decklist({
   const stats = statsEnabled
     ? { open: statsOpen, onChange: (open: boolean) => choosePanel(open ? "stats" : "list") }
     : undefined;
-  const notes = notesEnabled
-    ? { open: notesOpen, count: notesData?.open.length ?? 0, onChange: (open: boolean) => choosePanel(open ? "notes" : "list") }
-    : undefined;
+  const notes = { open: notesOpen, count: notesData?.open.length ?? 0, onChange: (open: boolean) => choosePanel(open ? "notes" : "list") };
   const view = storedView ?? "list";
   // The ledger's Stats link: open the panel, then, once it is drawn, bring the card into view.
   // Each request is answered once, here and in the shell, so closing Stats afterwards is never undone

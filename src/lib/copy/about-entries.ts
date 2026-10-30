@@ -1695,8 +1695,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks',
     opens: 'opens a deck’s Your deck tab, on Notes',
     width: 'plate',
-    // 2026-10-12 (Deck notes PR 3, `design_handoff_the99_deck_notes/about-notes.ts`): follows
-    // DECK_NOTES_ENABLED, so turning Notes on is what announces it. NO BUMP, as `deck-stats`: a
+    // 2026-10-12 (Deck notes PR 3, `design_handoff_the99_deck_notes/about-notes.ts`): followed
+    // DECK_NOTES_ENABLED, so turning Notes on is what announced it. The switch is retired (always on);
+    // the name stays the entry's identity, so no reader's New mark moves. NO BUMP, as `deck-stats`: a
     // switched entry is seen by its id, and `since` is the current version. It sits after Stats,
     // because Notes sits beside Stats in Your deck. Copy through /prose-pass.
     switch: 'DECK_NOTES_ENABLED',

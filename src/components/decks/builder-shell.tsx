@@ -278,8 +278,6 @@ interface BuilderShellProps {
   analysisEnabled?: boolean;
   /** `DECK_STATS_ENABLED`, read on the server. Off: the list control draws no Stats segment. */
   statsEnabled?: boolean;
-  /** `DECK_NOTES_ENABLED`, read on the server. Off: the list control draws no Notes segment. */
-  notesEnabled?: boolean;
   notesData?: DeckNotesView | null;
   /** What the Stats panel needs beyond the card list: the commander row(s), which count toward the
    *  curve. The figures themselves are derived on the client from the optimistic list. Null when off. */
@@ -383,7 +381,6 @@ export function BuilderShell({
   initialBody = null,
   analysisEnabled = false,
   statsEnabled = false,
-  notesEnabled = false,
   notesData = null,
   statsData = null,
   noticesEnabled = false,
@@ -408,10 +405,10 @@ export function BuilderShell({
   const [offeredPrefill, spendPrefill] = useHeldPrefill(gamePrefill);
   // UI state. A landing on Cheaper stand-ins or Friends' spares opens on Shopping, where their press is.
   // `?panel=` (the ?'s way back) opens Your deck on the body the ? was pressed on, on the deck tab only, and only on a
-  // panel this reader is drawn: Stats or Notes behind a switch that is off opens on the list, so the ? and the phone
-  // dock read the list too. Shopping has no switch.
+  // panel this reader is drawn: Stats behind a switch that is off opens on the list, so the ? and the phone
+  // dock read the list too. Shopping and Notes have no switch.
   const body =
-    initialView !== "deck" || (initialBody === "stats" && !statsEnabled) || (initialBody === "notes" && !notesEnabled)
+    initialView !== "deck" || (initialBody === "stats" && !statsEnabled)
       ? null
       : initialBody;
   const [filter, setFilter] = useState<"all" | "shopping">(
@@ -2144,7 +2141,6 @@ export function BuilderShell({
             {isEmpty ? (
               <DeckPanelContext.Provider value={deckPanel}>
               <EmptyDeckNotes
-                enabled={notesEnabled}
                 deckId={deck.id}
                 notes={notesData}
                 deckCards={[deck.commander, ...(deck.partner ? [deck.partner] : [])].map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, imageUri: c.imageUri ?? null }))}
@@ -2306,7 +2302,6 @@ export function BuilderShell({
               <DeckPanelContext.Provider value={deckPanel}>
               <Decklist
               statsEnabled={statsEnabled}
-              notesEnabled={notesEnabled}
               notesData={notesData}
               statsData={statsData}
               statsFocus={statsFocus}
