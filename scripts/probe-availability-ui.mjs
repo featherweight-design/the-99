@@ -171,7 +171,7 @@ for (const { label, width, height } of VIEWPORTS) {
     await page.waitForTimeout(1400);
     await sweep(page, `search rows · '${term}'`);
     const optionAria = await page.evaluate(() =>
-      [...document.querySelectorAll("[role='option']")]
+      [...document.querySelectorAll("[role='option'], [data-testid='quick-add-dock'] [role='row']")]
         .slice(0, 5)
         .map((n) => n.getAttribute("aria-label")),
     );

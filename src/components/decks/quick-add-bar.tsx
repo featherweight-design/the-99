@@ -637,10 +637,6 @@ function QuickAddRow({
         border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
       }}
     >
-      {/* Both cells' description: the active descendant is a cell, and its action alone would not say which card. */}
-      <span id={rowId} hidden>
-        {summary}
-      </span>
       <CardSearchRowBody
         result={result}
         query={query}
@@ -742,6 +738,12 @@ function QuickAddRow({
           </span>
         }
       />
+
+      {/* Both cells' description: the active descendant is a cell, and its action alone would not say which card.
+          Between the row's line and its note, so the line stays the first child and the note the last (both measured). */}
+      <span id={rowId} hidden>
+        {summary}
+      </span>
 
       {/* Below the row's line, inside its box — §C's host matrix for this row, and NOT indented.
           The matrix gives the name-column indent to the TOP-OFF row alone and says "atom
