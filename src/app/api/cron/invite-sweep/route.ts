@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
+import { purgeLaunchList } from "../../../../lib/flyer/launch-purge";
 import { sweepFlyerClaims } from "../../../../lib/flyer/sweep";
 import { sweepInvites } from "../../../../lib/invites/sweep";
 import { captureServerError } from "../../../../lib/sentry/capture";
@@ -14,7 +15,8 @@ export const dynamic = "force-dynamic";
  * Public in `src/proxy.ts` (`/api/cron(.*)`); what authorizes it is `CRON_SECRET`, which Vercel sends as a bearer
  * token on every cron call, the account sweep's rule. Until that secret is set it answers 503 and does nothing; a
  * call without it is refused with 401 before anything runs. It reads no feature switch: a lapsed reservation is
- * returned whatever the switches say.
+ * returned whatever the switches say. It also purges the launch list once the launch date plus 30 days has passed
+ * (`FLYER_LAUNCH_DATE`; unset, nothing is deleted).
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -26,9 +28,23 @@ export async function GET(req: NextRequest) {
     const report = await sweepInvites();
     // The flyer trial's claims lapse on the same hourly run (flyer trial PR 2a).
     const flyer = await sweepFlyerClaims();
+    // The launch list goes 30 days after the launch date; with no date set this does nothing (`launch-purge.ts`).
+    // Its own try/catch: a purge error must not discard the counts of the two sweeps that already committed.
+    let launchList: { due: boolean; deleted: number } | { error: true };
+    let purgeNote: string;
+    try {
+      const purged = await purgeLaunchList();
+      launchList = purged;
+      purgeNote = purged.due ? `purged ${purged.deleted}` : "not due";
+    } catch (purgeError) {
+      const pcode = (purgeError as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (purgeError as { code?: unknown })?.code;
+      launchList = { error: true };
+      purgeNote = `purge failed${typeof pcode === "string" && /^[0-9A-Z]{5}$/.test(pcode) ? ` (${pcode})` : ""}`;
+      captureServerError("invite-sweep-launch-purge", purgeError);
+    }
     // Counts only, never an id or an address.
-    console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}`);
-    return Response.json({ ...report, flyer });
+    console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}; launch list ${purgeNote}`);
+    return Response.json({ ...report, flyer, launchList });
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[invite-sweep] sweep failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);

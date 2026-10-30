@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const sweep = vi.hoisted(() => vi.fn());
 const flyerSweep = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/invites/sweep", () => ({ sweepInvites: sweep }));
+const purge = vi.hoisted(() => vi.fn());
+vi.mock("../../../../lib/flyer/launch-purge", () => ({ purgeLaunchList: purge }));
 vi.mock("../../../../lib/flyer/sweep", () => ({ sweepFlyerClaims: flyerSweep }));
 const { GET } = await import("./route");
 
@@ -13,6 +15,7 @@ describe("GET /api/cron/invite-sweep", () => {
   beforeEach(() => {
     sweep.mockReset().mockResolvedValue({ returned: 2, revoked: 1, reconciled: 0, kept: 0 });
     flyerSweep.mockReset().mockResolvedValue({ released: 3, kept: 1 });
+    purge.mockReset().mockResolvedValue({ due: false, deleted: 0 });
     process.env.CRON_SECRET = "s3cret";
   });
   afterEach(() => {
@@ -38,10 +41,26 @@ describe("GET /api/cron/invite-sweep", () => {
     try {
       const res = await call("Bearer s3cret");
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 } });
+      expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 } });
     } finally {
       delete process.env.SOCIAL_FRIENDS_ENABLED;
     }
+  });
+
+  it("answers the launch-list purge's report beside the others", async () => {
+    purge.mockResolvedValueOnce({ due: true, deleted: 12 });
+    expect((await (await call("Bearer s3cret")).json()).launchList).toEqual({ due: true, deleted: 12 });
+  });
+
+  it("keeps the sweeps' counts and answers 200 when only the launch-list purge fails", async () => {
+    purge.mockRejectedValueOnce(Object.assign(new Error("a@x.dev leaked"), { code: "40P01" }));
+    const err = vi.spyOn(console, "info").mockImplementation(() => {});
+    const res = await call("Bearer s3cret");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { error: true } });
+    expect(err.mock.calls.flat().join(" ")).toContain("purge failed (40P01)");
+    expect(err.mock.calls.flat().join(" ")).not.toContain("a@x.dev");
+    err.mockRestore();
   });
 
   it("answers 500 when the sweep fails, logging no message from the error", async () => {
@@ -63,6 +82,7 @@ describe("GET /api/cron/invite-sweep", () => {
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ paused: "staging" });
       expect(sweep).not.toHaveBeenCalled();
+      expect(purge).not.toHaveBeenCalled();
       process.env.STAGING_CRONS = "run";
       await call("Bearer s3cret");
       expect(sweep).toHaveBeenCalledTimes(1);

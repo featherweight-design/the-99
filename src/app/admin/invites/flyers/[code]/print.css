@@ -1,0 +1,65 @@
+/* The print page (flyer trial PR 4c; board Print.dc.html .pv / .fly). The sheet is letter size (816 x 1056 CSS px), one ink. */
+.flyer-print-page { display: flex; flex-direction: column; min-width: 0; }
+.flyer-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.flyer-bar a { font: 400 13px var(--font-plex-sans), sans-serif; color: var(--accent-text); display: inline-flex; min-height: 44px; align-items: center; }
+.flyer-bar b { font: 500 15px var(--font-plex-mono), monospace; color: var(--fg); }
+.flyer-bar .fb-code { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface-sunken); font: 400 12px var(--font-plex-mono), monospace; color: var(--fg); }
+.flyer-bar small { font: 400 11px var(--font-plex-mono), monospace; color: var(--fg-faint); flex-basis: 100%; order: 5; }
+.flyer-bar .fb-sp { flex: 1; }
+.flyer-bar button { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 16px; border-radius: 10px; font: 500 14px var(--font-plex-sans), sans-serif; cursor: pointer; }
+.flyer-bar .fb-ghost { font-weight: 400; border: 1px solid var(--border-strong); background: transparent; color: var(--fg); }
+.flyer-bar .fb-solid { border: 0; background: var(--fg); color: var(--bg); }
+.flyer-mat { display: flex; justify-content: center; padding: 20px 16px 28px; background: #2a2622; --s: 0.42; }
+.flyer-fit { position: relative; flex: none; width: calc(816px * var(--s)); height: calc(1056px * var(--s)); }
+.flyer-fit .flyer-sheet { position: absolute; left: 0; top: 0; transform: scale(var(--s)); transform-origin: top left; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55); }
+@media (min-width: 768px) {
+  .flyer-bar { height: 60px; padding: 0 20px; flex-wrap: nowrap; }
+  .flyer-bar a { min-height: 0; }
+  .flyer-bar small { flex-basis: auto; order: 0; }
+  .flyer-bar button { height: 32px; font-size: 12.5px; }
+  .flyer-mat { padding: 34px 0 40px; --s: 0.75; }
+}
+
+/* The flyer's ink and its screen-preview paper (Print.dc.html); print sets no paper (below). */
+.flyer-sheet { --ink: #1B1712; --paper: #E7B54A; width: 816px; height: 1056px; flex: none; position: relative; overflow: hidden; color: var(--ink); background: var(--paper); font-family: var(--font-plex-sans), sans-serif; }
+.flyer-sheet::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 7px); pointer-events: none; }
+/* :where() keeps this reset at element specificity so .fs-h1, .fs-sub and .fs-fcn margins win. */
+:where(.flyer-sheet) h2, :where(.flyer-sheet) p { margin: 0; }
+.flyer-sheet .fs-in { position: absolute; inset: 56px 60px; display: flex; flex-direction: column; }
+.fs-wm { display: flex; align-items: flex-end; gap: 10px; }
+.fs-the { font: 500 17px var(--font-plex-mono), monospace; letter-spacing: 0.42em; padding-bottom: 14px; }
+.fs-mk { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.fs-cr { display: flex; align-items: center; gap: 9px; transform: translateX(-3px); }
+.fs-cr i { display: block; width: 15px; height: 15px; background: var(--ink); transform: rotate(45deg); }
+.fs-cr i:nth-child(2) { width: 20px; height: 20px; }
+.fs-nn { font: 900 104px/80px var(--font-cinzel), serif; letter-spacing: 0; }
+.fs-kk { font: 500 13px var(--font-plex-mono), monospace; letter-spacing: 0.3em; text-transform: uppercase; margin-top: 36px; }
+.fs-h1 { margin: 14px 0 0; font: 800 50px/1.08 var(--font-cinzel), serif; letter-spacing: 0.005em; max-width: 660px; text-wrap: balance; }
+.fs-sub { margin-top: 14px; font: 400 20px/1.4 var(--font-plex-sans), sans-serif; max-width: 640px; text-wrap: pretty; }
+.fs-mid { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+.fs-fan { position: relative; width: 520px; height: 440px; zoom: 0.8; }
+.fs-c { position: absolute; left: 50%; top: 22px; width: 262px; height: 366px; margin-left: -131px; border: 3px solid var(--ink); border-radius: 16px; background: var(--paper); }
+.fs-l { transform: rotate(-13deg) translate(-96px, 26px); }
+.fs-r { transform: rotate(11deg) translate(94px, 22px); }
+.fs-l::after, .fs-r::after { content: ""; position: absolute; inset: 10px; border: 1.5px dashed var(--ink); border-radius: 9px; opacity: 0.55; }
+.fs-f { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 18px 16px; }
+.fs-ql { font: 600 12px var(--font-plex-mono), monospace; letter-spacing: 0.32em; }
+.fs-f svg { display: block; }
+.fs-dm { display: flex; gap: 6px; margin-top: auto; }
+.fs-dm i { width: 7px; height: 7px; background: var(--ink); transform: rotate(45deg); }
+.fs-url { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 6px; }
+.fs-url small { font: 500 12.5px var(--font-plex-mono), monospace; letter-spacing: 0.3em; text-transform: uppercase; }
+.fs-url b { font: 600 38px var(--font-plex-mono), monospace; letter-spacing: 0.01em; }
+.fs-url b em { font-style: normal; border-bottom: 3px solid var(--ink); }
+.fs-ft { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 26px; padding-top: 14px; border-top: 2px solid var(--ink); font: 500 12px var(--font-plex-mono), monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.fs-fcn { margin-top: 12px; font: 400 8.5px/1.45 var(--font-plex-sans), sans-serif; opacity: 0.85; }
+
+@media print {
+  @page { size: letter; margin: 0; }
+  html, body { height: 1056px !important; max-height: 1056px !important; overflow: hidden !important; background: none !important; }
+  body * { visibility: hidden !important; }
+  .flyer-sheet, .flyer-sheet * { visibility: visible !important; }
+  .flyer-bar { display: none !important; }
+  .flyer-sheet { position: fixed !important; left: 0; top: 0; transform: none !important; box-shadow: none; background: none; }
+  .flyer-sheet::before { display: none; }
+}
