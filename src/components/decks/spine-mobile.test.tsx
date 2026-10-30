@@ -155,6 +155,17 @@ describe("SpineMobile", () => {
     expect(description.className).not.toContain("outline-none");
   });
 
+  it("the header description grows with its words from the moment the editor opens (Tag-Places d)", () => {
+    const tall = vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get").mockReturnValue(80);
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const field = screen.getByLabelText(deckDescriptionCopy.description.fieldAria) as HTMLTextAreaElement;
+    // Opened on the words it already had: the mount alone must size it.
+    expect(field.style.height).toBe("80px");
+    expect(field.className.split(/\s+/)).toContain("overflow-hidden");
+    tall.mockRestore();
+  });
+
   it("announces a successful description save through a status region that outlives the editor", async () => {
     renderSpine(<SpineMobile {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));

@@ -9,6 +9,12 @@ function Box({ text }: { text: string }) {
   return <textarea ref={ref} value={text} readOnly aria-label="box" />;
 }
 
+function Editor({ text, open }: { text: string; open: boolean }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useAutoGrow(ref, text, open);
+  return open ? <textarea ref={ref} value={text} readOnly aria-label="box" /> : null;
+}
+
 const realObserver = globalThis.ResizeObserver;
 afterEach(() => { globalThis.ResizeObserver = realObserver; vi.restoreAllMocks(); });
 
@@ -26,6 +32,13 @@ describe("useAutoGrow", () => {
   it("writes no height where layout reports none (jsdom), so the CSS floor holds", () => {
     const { getByLabelText } = render(<Box text="words" />);
     expect((getByLabelText("box") as HTMLTextAreaElement).style.height).toBe("auto");
+  });
+
+  it("sizes a field that mounts later on the same words (an editor opened in place)", () => {
+    vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get").mockReturnValue(80);
+    const { getByLabelText, rerender } = render(<Editor text="same words" open={false} />);
+    rerender(<Editor text="same words" open />);
+    expect((getByLabelText("box") as HTMLTextAreaElement).style.height).toBe("80px");
   });
 
   it("re-measures on a resize of the field, and disconnects on unmount", () => {

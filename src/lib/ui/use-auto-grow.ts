@@ -7,11 +7,14 @@ import { useEffect, type RefObject } from "react";
  * `scrollHeight` whenever `text` changes, and again when the field's box changes size (a rotation, a resize, a late
  * font), or the height goes stale and clips. A CSS `min-height` still floors it. jsdom reports a 0 `scrollHeight`, so
  * the height is never written there and the field keeps its CSS size.
+ *
+ * `mounted` is for a field drawn only in one state (an editor opened in place): the effect must run again when the
+ * field mounts, which the words alone may not mark (an editor that opens on the words it already had).
  */
-export function useAutoGrow(ref: RefObject<HTMLTextAreaElement | null>, text: string): void {
+export function useAutoGrow(ref: RefObject<HTMLTextAreaElement | null>, text: string, mounted = true): void {
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!mounted || !el) return;
     const grow = () => {
       el.style.height = "auto";
       if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight}px`;
@@ -24,5 +27,5 @@ export function useAutoGrow(ref: RefObject<HTMLTextAreaElement | null>, text: st
     const observer = new ResizeObserver(grow);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [ref, text]);
+  }, [ref, text, mounted]);
 }

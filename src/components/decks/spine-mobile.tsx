@@ -41,6 +41,7 @@ const F18_MARKS = "hidden @max-[344px]:contents";
 import { useDeckHeaderEdit } from "./use-deck-header-edit";
 import { CardTagList } from "../cards/card-tag-picker";
 import { TaggedBox } from "../cards/tagged-box";
+import { useAutoGrow } from "../../lib/ui/use-auto-grow";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
@@ -105,6 +106,8 @@ export function SpineMobile({
     value: rename.description, onChange: rename.setDescription, search: searchDescriptionCards,
     max: deckDescriptionCopy.description.maxLength, maxTags: NOTES_TAGS_MAX, field: descriptionFieldRef, disabled: rename.isPending,
   });
+  // The header description grows with its words (Tag-Places d): two rows is a floor, never a ceiling.
+  useAutoGrow(descriptionFieldRef, descriptionTags.field.text, renaming);
 
   // §C8/§C10 — one row, drawn in the band at rest and below the divider while
   // editing, where the field needs the band's whole width. Its ink differs with
@@ -365,7 +368,7 @@ export function SpineMobile({
                   aria-label={deckDescriptionCopy.description.fieldAria}
                   // 16px, not 13.5: iOS Safari zooms the viewport on focusing an input under 16px
                   // (pre-open review) — the retired single-field editor used 16px on a phone too.
-                  className="w-full resize-none bg-transparent text-left font-sans"
+                  className="w-full resize-none overflow-hidden bg-transparent text-left font-sans"
                   style={{
                     boxSizing: "border-box",
                     padding: "8px 12px 2px",
