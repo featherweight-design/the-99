@@ -93,7 +93,7 @@ export type DashboardProps = {
   /**
    * Decks and no cards (no-collection entry S12): the kicker counts the decks, the
    * header's one action is `Add your cards` (Update collection and New deck both need cards), the lock's page line
-   * shows on desktop as it does on first run. Ready to build is absent at zero cards either way. Off: as shipped.
+   * shows on desktop as it does on first run. Ready to build is absent at zero cards.
    */
   noCards?: boolean;
   /**
