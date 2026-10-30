@@ -106,7 +106,7 @@ describe("colorLabel", () => {
 
 describe("formatShortDeckDate", () => {
   it("prints the seniority stamp's shape, with no year", () => {
-    expect(formatShortDeckDate(new Date("2026-08-02T12:00:00Z"))).toBe("2 Aug");
+    expect(formatShortDeckDate(new Date("2026-08-02T12:00:00Z"))).toBe("Aug 2");
   });
 
   // The whole reason this formatter exists rather than a bare toLocaleDateString: the stamp is
@@ -115,40 +115,40 @@ describe("formatShortDeckDate", () => {
   // committed on the 2nd as the 1st, which is a wrong answer to the only question the stamp
   // is asked.
   it("reads the UTC day, not the runtime's", () => {
-    expect(formatShortDeckDate(new Date("2026-08-02T00:30:00Z"))).toBe("2 Aug");
-    expect(formatShortDeckDate(new Date("2026-08-02T23:30:00Z"))).toBe("2 Aug");
+    expect(formatShortDeckDate(new Date("2026-08-02T00:30:00Z"))).toBe("Aug 2");
+    expect(formatShortDeckDate(new Date("2026-08-02T23:30:00Z"))).toBe("Aug 2");
   });
 
   // en-GB writes `Sept` where every other date in this app writes `Sep`. Two decks stamped by
   // two formatters would then disagree in a column whose only job is to be compared.
   it("abbreviates September as the rest of the app does", () => {
-    expect(formatShortDeckDate(new Date("2026-09-09T12:00:00Z"))).toBe("9 Sep");
+    expect(formatShortDeckDate(new Date("2026-09-09T12:00:00Z"))).toBe("Sep 9");
   });
 
   it("agrees with the long form on the day and the month", () => {
     const d = new Date("2025-12-31T23:59:59Z");
-    expect(formatDeckDate(d)).toBe("31 Dec 2025");
-    expect(formatShortDeckDate(d)).toBe("31 Dec");
+    expect(formatDeckDate(d)).toBe("Dec 31, 2025");
+    expect(formatShortDeckDate(d)).toBe("Dec 31");
   });
 });
 
 describe("formatDeckDate", () => {
   it("prints the version line's shape, year always carried", () => {
-    expect(formatDeckDate(new Date("2026-09-01T12:00:00Z"))).toBe("1 Sep 2026");
+    expect(formatDeckDate(new Date("2026-09-01T12:00:00Z"))).toBe("Sep 1, 2026");
   });
 
   // The reason the formatter reads UTC throughout rather than the runtime's
   // zone: this instant is 1 September in UTC and 31 August in the Americas, and
   // a version stamped by the database must render as one date everywhere.
   it("reads the UTC day, not the runtime's", () => {
-    expect(formatDeckDate(new Date("2026-09-01T00:30:00Z"))).toBe("1 Sep 2026");
-    expect(formatDeckDate(new Date("2026-09-01T23:30:00Z"))).toBe("1 Sep 2026");
+    expect(formatDeckDate(new Date("2026-09-01T00:30:00Z"))).toBe("Sep 1, 2026");
+    expect(formatDeckDate(new Date("2026-09-01T23:30:00Z"))).toBe("Sep 1, 2026");
   });
 
   // A year boundary is where a mixed-zone formatter is wrong by a whole year,
   // not a day — the failure the always-carried year exists to make visible.
   it("keeps day, month and year on the same side of a year boundary", () => {
-    expect(formatDeckDate(new Date("2026-01-01T00:00:00Z"))).toBe("1 Jan 2026");
-    expect(formatDeckDate(new Date("2025-12-31T23:59:59Z"))).toBe("31 Dec 2025");
+    expect(formatDeckDate(new Date("2026-01-01T00:00:00Z"))).toBe("Jan 1, 2026");
+    expect(formatDeckDate(new Date("2025-12-31T23:59:59Z"))).toBe("Dec 31, 2025");
   });
 });

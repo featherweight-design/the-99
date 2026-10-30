@@ -61,7 +61,7 @@ describe("How we make these decisions", () => {
     draw();
     const hrefs = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual([BRACKET_RULES_SOURCE.url, SPELLBOOK_SOURCE.url]);
-    expect(screen.getByText(copy.provenance.rulesChecked("22 Sep 2026"))).toBeTruthy();
+    expect(screen.getByText(copy.provenance.rulesChecked("Sep 22, 2026"))).toBeTruthy();
   });
 
   // About's "How the app reaches its answers" (Hugh, 2026-09-28): the tags appear here too, behind

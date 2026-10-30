@@ -59,7 +59,7 @@ describe("the Notices body", () => {
     expect(screen.getByText("Not legal in Commander")).toBeTruthy();
     expect(screen.getByText("Not legal in Commander.")).toBeTruthy();
     expect(screen.getByText("Bracket rules")).toBeTruthy();
-    expect(screen.getAllByText("21 Sep")).toHaveLength(3);
+    expect(screen.getAllByText("Sep 21")).toHaveLength(3);
   });
 
   it("names both commanders on an outside-colors line, and a combo's result", () => {

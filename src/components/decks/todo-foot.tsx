@@ -5,7 +5,7 @@
 // fixed order, version · proxies · provenance ▾ · other drafts ▾. Plain facts are text. Provenance
 // is a disclosure that opens INSIDE the card, under the line, for the visit only (state, never
 // stored); other drafts opens the pass sheet's other-drafts form (deck messages PR 3). With nothing to do the foot stands alone as the quiet strip
-// (R1's "v3 · committed 2 Oct 2026"), drawn by `TodoCard` around it.
+// (R1's "v3 · committed Oct 2, 2026"), drawn by `TodoCard` around it.
 //
 // The version segment is where a commit or a discard lands focus, which `PendingBanner` did before
 // the foot replaced it.

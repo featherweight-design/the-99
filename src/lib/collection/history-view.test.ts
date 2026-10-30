@@ -26,7 +26,7 @@ describe("groupByDay", () => {
       ],
       NOW,
     );
-    expect(g.map((x) => x.label)).toEqual(["Today · 9 Oct", "Yesterday · 8 Oct", "3 Oct"]);
+    expect(g.map((x) => x.label)).toEqual(["Today · Oct 9", "Yesterday · Oct 8", "Oct 3"]);
     expect(g[0].entries.map((e) => e.id)).toEqual(["a", "b"]);
   });
 
@@ -44,7 +44,7 @@ describe("groupByDay", () => {
   });
 
   it("reads a late-evening UTC entry on its UTC day, not the reader's", () => {
-    expect(groupByDay([entry({ createdAt: new Date("2026-10-09T23:59:00Z") })], NOW)[0].label).toBe("Today · 9 Oct");
+    expect(groupByDay([entry({ createdAt: new Date("2026-10-09T23:59:00Z") })], NOW)[0].label).toBe("Today · Oct 9");
     expect(timeLabel(new Date("2026-10-09T09:05:00Z"))).toBe("09:05");
   });
 });
@@ -82,7 +82,7 @@ describe("entryTitle", () => {
     const undone = entry({ id: "u", kind: "upload_replace", uploadFilename: "x.csv" });
     const byId = new Map([["u", undone]]);
     expect(entryTitle(entry({ kind: "revert", revertsId: "u", revertsVisible: true }), byId, reach)).toBe("Reverted “x.csv”");
-    expect(entryTitle(entry({ kind: "revert", revertsId: "gone", revertsVisible: false }), none, reach)).toBe("Reverted a change from before 1 Oct");
+    expect(entryTitle(entry({ kind: "revert", revertsId: "gone", revertsVisible: false }), none, reach)).toBe("Reverted a change from before Oct 1");
     expect(entryTitle(entry({ kind: "revert", revertsId: "old", revertsVisible: true }), none, reach)).toBe("Reverted an earlier change");
   });
 });

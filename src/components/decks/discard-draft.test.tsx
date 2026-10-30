@@ -20,9 +20,9 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const copy = deckVersioningCopy.discard;
 
-/** v2 behind the draft, committed 1 Sep — the version every sentence names. */
+/** v2 behind the draft, committed Sep 1 — the version every sentence names. */
 const VERSION = { ...COMMITTED.version!, number: 2 };
-const DATE = "1 Sep 2026";
+const DATE = "Sep 1, 2026";
 /** The version's own size, which is why it is a prop: the draft's changes say
  *  nothing about how many cards the list behind them holds. */
 const VERSION_CARDS = 99;

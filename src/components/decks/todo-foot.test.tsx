@@ -17,7 +17,7 @@ const { ProvenanceLedger } = await import("./provenance-line");
 const { undoFillPass } = await import("../../app/decks/actions");
 
 const copy = deckVersioningCopy.todoCard;
-const VERSION = deckVersioningCopy.pending.versionLine(2, "1 Sep 2026");
+const VERSION = deckVersioningCopy.pending.versionLine(2, "Sep 1, 2026");
 const QUIET: TodoFacts = { firstRun: false, filled: true, cards: 60, unresolved: 0 };
 const FULL: TodoFootFacts = {
   version: { number: 2, committedAt: new Date("2026-09-01T00:00:00Z") },

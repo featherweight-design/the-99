@@ -212,7 +212,7 @@ const claimModel = (userId: string) => sql`
       -- distinguishable from here on. bool_or above answers a different question and
       -- is kept because every existing reader asks that one.
       sum(case when ac.is_commander then ac.quantity else 0 end)::int as commander_copies,
-      -- The version this claim states, for the chooser's v7 · 2 Aug stamp. Null
+      -- The version this claim states, for the chooser's v7 · Aug 2 stamp. Null
       -- for a brew. One newest_version row per deck, so grouping on it cannot fan
       -- the aggregate out.
       nv.number as version_number,

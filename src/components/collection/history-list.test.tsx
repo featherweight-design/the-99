@@ -41,8 +41,8 @@ function draw(entries: HistoryListEntry[], over: Partial<React.ComponentProps<ty
       nextBefore={null}
       nowMs={NOW}
       reachesBack={new Date("2026-10-01T00:00:00Z")}
-      reachesBackLabel="1 Oct"
-      shipLabel="1 Oct"
+      reachesBackLabel="Oct 1"
+      shipLabel="Oct 1"
       {...over}
     />,
   );
@@ -56,20 +56,20 @@ beforeEach(() => {
 describe("HistoryList", () => {
   it("draws the day, the kind tag, the title, the figure and the time, and always ends in the foot", () => {
     draw([entry({}), entry({ id: "e2", kind: "upload_replace", uploadFilename: "manabox-oct.csv", copiesUp: 64, copiesDown: 150, rowCount: 412, createdAt: new Date("2026-10-08T21:10:00Z") })]);
-    expect(screen.getByRole("heading", { name: "Today · 9 Oct" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Yesterday · 8 Oct" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Today · Oct 9" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Yesterday · Oct 8" })).toBeTruthy();
     expect(screen.getByText("Added in the app")).toBeTruthy();
     expect(screen.getByText("+2 copies across 1 card")).toBeTruthy();
     expect(screen.getByText("+64 · −150 copies across 412 cards")).toBeTruthy();
     expect(screen.getByText("manabox-oct.csv", { exact: false })).toBeTruthy();
     expect(screen.getByText("14:02")).toBeTruthy();
-    expect(screen.getByText(/Changes from before 1 Oct have aged out/)).toBeTruthy();
+    expect(screen.getByText(/Changes from before Oct 1 have aged out/)).toBeTruthy();
   });
 
   it("draws the empty state dated from the ship date, with the foot under it", () => {
-    draw([], { shipLabel: "9 Oct" });
+    draw([], { shipLabel: "Oct 9" });
     expect(screen.getByText("Nothing’s changed yet")).toBeTruthy();
-    expect(screen.getByText(/Uploads and edits since 9 Oct show up here/)).toBeTruthy();
+    expect(screen.getByText(/Uploads and edits since Oct 9 show up here/)).toBeTruthy();
     expect(screen.getByText(/History keeps 90 days/)).toBeTruthy();
   });
 
@@ -308,7 +308,7 @@ describe("HistoryList", () => {
 
   it("names a revert whose original has aged out, and draws no link to it", () => {
     draw([entry({ id: "rv", kind: "revert", revertsId: "old", revertsVisible: false, firstName: null })]);
-    expect(screen.getByText("Reverted a change from before 1 Oct")).toBeTruthy();
+    expect(screen.getByText("Reverted a change from before Oct 1")).toBeTruthy();
     expect(screen.getByText("That change has aged out of history.")).toBeTruthy();
   });
 

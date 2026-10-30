@@ -56,7 +56,7 @@ describe("GameHistoryRow", () => {
   // Pod size first, then the date — the pod is what changes how a game read.
   it("puts the pod size before the date in the meta slot", () => {
     mount();
-    expect(screen.getByText(gameLogCopy.history.meta("4", "1 Sep"))).toBeInTheDocument();
+    expect(screen.getByText(gameLogCopy.history.meta("4", "Sep 1"))).toBeInTheDocument();
   });
 
   // §Surfaces 5 — the stamp answers "which list was on the table", which is the

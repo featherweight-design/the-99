@@ -27,7 +27,7 @@ describe("DeckStatsView results card", () => {
     draw(six, [v(3, 30), v(2, 1), v(1, 10)]);
     expect(screen.getByRole("figure", { name: "Results, 6 games" })).toBeInTheDocument();
     expect(card().querySelector("[data-results-record]")).toHaveTextContent("4–1–1");
-    expect(card()).toHaveTextContent("6 games, 1 Aug to 28 Aug");
+    expect(card()).toHaveTextContent("6 games, Aug 1 to Aug 28");
   });
 
   it("draws every game oldest first, underlines the last five and states them", () => {
@@ -41,7 +41,7 @@ describe("DeckStatsView results card", () => {
   it("gives each bead a spoken result and date, and keeps the letter out of the reading order", () => {
     draw(six, []);
     const first = card().querySelector("[data-results-beads] li")!;
-    expect(first.querySelector(".sr-only")).toHaveTextContent("win, 1 Aug");
+    expect(first.querySelector(".sr-only")).toHaveTextContent("win, Aug 1");
     expect(first.querySelector("[data-result-bead]")).toHaveAttribute("aria-hidden", "true");
   });
 
@@ -53,7 +53,7 @@ describe("DeckStatsView results card", () => {
 
   it("states one game's span as a single date", () => {
     draw([g("win", 28, 1)], [v(1, 10)]);
-    expect(screen.getByRole("figure", { name: "Results, 1 game" })).toHaveTextContent("1 game, 28 Aug");
+    expect(screen.getByRole("figure", { name: "Results, 1 game" })).toHaveTextContent("1 game, Aug 28");
   });
 
   it("lists versions current first, no games yet without a record, Version not recorded last", () => {
@@ -61,7 +61,7 @@ describe("DeckStatsView results card", () => {
     const rows = [...card().querySelectorAll("[data-result-version]")];
     expect(rows.map((r) => r.getAttribute("data-result-version"))).toEqual(["3", "2", "1", "unrecorded"]);
     expect(rows[0]).toHaveTextContent("v3");
-    expect(rows[0]).toHaveTextContent("current · 30 Aug");
+    expect(rows[0]).toHaveTextContent("current · Aug 30");
     expect(rows[0]).toHaveTextContent("no games yet");
     expect(rows[0]).not.toHaveTextContent("0–0–0");
     expect(rows[1]).toHaveTextContent("2–0–1");

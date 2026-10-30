@@ -24,7 +24,7 @@ const ENTRY = [row("Sol Ring", 1, 3), row("Arcane Signet", null, 1)];
 const matches = { rows: [row("Sol Ring", 3, 1), row("Arcane Signet", 1, null)], entryRows: ENTRY, differs: false, decks: [], expected: { a: 1 } };
 
 function open(onClose = vi.fn(), onReverted = vi.fn()) {
-  render(<RevertConfirm entryId="e1" title="Sol Ring and 1 more" when="9 Oct, 14:02" onClose={onClose} onReverted={onReverted} />);
+  render(<RevertConfirm entryId="e1" title="Sol Ring and 1 more" when="Oct 9, 14:02" onClose={onClose} onReverted={onReverted} />);
   return { onClose, onReverted };
 }
 
@@ -64,7 +64,7 @@ describe("revertLines", () => {
 describe("RevertConfirm for a Sync (call 7, G3)", () => {
   it("is titled `Revert this sync?` and says the token changes it made stay", async () => {
     preview.mockResolvedValue({ ...matches, syncTokens: 114 });
-    render(<RevertConfirm entryId="e1" title="vault.csv" titleShape="sync" when="9 Oct, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
+    render(<RevertConfirm entryId="e1" title="vault.csv" titleShape="sync" when="Oct 9, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
     expect(screen.getByRole("dialog", { name: "Revert this sync?" })).toBeTruthy();
     expect(await screen.findByText("The 114 token changes it made stay.")).toBeTruthy();
     expect(screen.queryByText(/vault\.csv/)).toBeNull();
@@ -72,7 +72,7 @@ describe("RevertConfirm for a Sync (call 7, G3)", () => {
 
   it("keeps the partial revert's shipped lede and reasons for a Sync, with the tokens line under them (Y3)", async () => {
     preview.mockResolvedValue({ ...matches, rows: [row("Sol Ring", 5, 3)], differs: true, syncTokens: 1 });
-    render(<RevertConfirm entryId="e1" title="vault.csv" titleShape="sync" when="9 Oct, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
+    render(<RevertConfirm entryId="e1" title="vault.csv" titleShape="sync" when="Oct 9, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
     expect(await screen.findByText("The 1 token change it made stays.")).toBeTruthy();
     expect(screen.getByText(/Some of these cards have changed since/)).toBeTruthy();
     expect(screen.getByText("Changed since")).toBeTruthy();
@@ -81,7 +81,7 @@ describe("RevertConfirm for a Sync (call 7, G3)", () => {
 
   it("draws neither for a Replace", async () => {
     preview.mockResolvedValue(matches);
-    render(<RevertConfirm entryId="e1" title="box.csv" when="9 Oct, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
+    render(<RevertConfirm entryId="e1" title="box.csv" when="Oct 9, 14:02" onClose={vi.fn()} onReverted={vi.fn()} />);
     expect(screen.getByRole("dialog", { name: "Revert “box.csv”?" })).toBeTruthy();
     await screen.findByText("Sol Ring");
     expect(screen.queryByText(/token changes? it made/)).toBeNull();
@@ -106,7 +106,7 @@ describe("RevertConfirm", () => {
     open();
     expect(screen.getByRole("status").textContent).toMatch(/Checking what this would change/);
     expect(screen.getByRole("button", { name: "Revert" })).toBeDisabled();
-    expect(await screen.findByText("From 9 Oct, 14:02. Reverting this changes 3 copies.")).toBeTruthy();
+    expect(await screen.findByText("From Oct 9, 14:02. Reverting this changes 3 copies.")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Revert “Sol Ring and 1 more”?" })).toBeTruthy();
     expect(screen.getByText("Arcane Signet")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Revert" })).toBeEnabled();
@@ -226,7 +226,7 @@ describe("RevertConfirm", () => {
     today.after = { quantity: 2, scryfallId: "p1", condition: null };
     preview.mockResolvedValue({ ...matches, entryRows: [entry], rows: [today] });
     open();
-    expect(await screen.findByText("From 9 Oct, 14:02. Reverting this restores the printing or condition of 1 card.")).toBeTruthy();
+    expect(await screen.findByText("From Oct 9, 14:02. Reverting this restores the printing or condition of 1 card.")).toBeTruthy();
   });
 
   it("says the answer changed when the first confirm is answered with decks the preview did not name", async () => {

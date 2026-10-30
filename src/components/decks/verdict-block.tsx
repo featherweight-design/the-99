@@ -311,7 +311,7 @@ export function analyzedLine(at: Date, now: Date, fresh: boolean, versionNumber:
 }
 
 /**
- * `2 minutes ago` under an hour, then the deck page's own short date, `18 Sep` (en-US and UTC, as
+ * `2 minutes ago` under an hour, then the deck page's own short date, `Sep 18` (en-US and UTC, as
  * every deck date here is: readiness finding 14). Drawn once per render; a reading left open for an
  * hour keeps the minutes it was drawn with, which is the cost of not ticking.
  */
