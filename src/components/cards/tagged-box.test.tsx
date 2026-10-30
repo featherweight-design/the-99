@@ -116,10 +116,9 @@ describe("TaggedBox", () => {
     expect(cls()).not.toContain("border-[color:var(--danger)]");
   });
 
-  it("keeps the field's focus on a press of the foot's padding or counter, and spreads footProps on the foot", () => {
-    box({ footProps: { "data-lock-hide": "" } });
+  it("keeps the field's focus on a press of the foot's padding or counter", () => {
+    box();
     const foot = screen.getByText("0 / 240").parentElement!;
-    expect(foot).toHaveAttribute("data-lock-hide");
     expect(fireEvent.mouseDown(foot)).toBe(false);
     expect(fireEvent.mouseDown(screen.getByText("0 / 240"))).toBe(false);
   });
