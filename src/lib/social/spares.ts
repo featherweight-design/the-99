@@ -26,9 +26,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { resolveFriend, type Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
-import { named } from "../person-name/mint";
-import type { ThirdPartyName } from "../person-name/brand";
-import { isUuid } from "./rules";
+import { named } from "../person-name/mint";import { isUuid } from "./rules";
 import { isOffered, spareCount } from "./spare-rules";
 import { spareSettingsIn, type SpareSettings } from "./spare-settings";
 
@@ -91,6 +89,8 @@ export { spareCount };
 
 /** How many friends' claim models one read runs at once. */
 export const CLAIM_MODELS_AT_ONCE = 4;
+
+import type { ThirdPartyName } from "../person-name/brand";
 
 export type SpareFriend = {
   publicId: string;

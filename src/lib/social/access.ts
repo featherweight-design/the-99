@@ -14,10 +14,13 @@ import { db } from "../../db";
 import { friendLinks, podMembers, pods, socialProfiles } from "../../db/schema";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { isUuid, nextPodOwner } from "./rules";
+import { named } from "../person-name/mint";
+import type { ThirdPartyName } from "../person-name/brand";
 
 export type Reader = Pick<typeof db, "select" | "selectDistinct">;
 
-export type Friend = { publicId: string; displayName: string; since: Date; commander: ProfileCommander | null };
+/** `displayName` is branded: another reader's name never leaves this layer as a string (PersonName plan, PR B). */
+export type Friend = { publicId: string; displayName: ThirdPartyName; since: Date; commander: ProfileCommander | null };
 
 /**
  * The viewer's friends, by the viewer's own link rows. A friend with no profile row is not drawn (an
@@ -58,10 +61,11 @@ function friendRows(q: Reader) {
 
 type FriendRow = Awaited<ReturnType<typeof friendsQuery>>[number];
 const toFriend = (r: FriendRow): Friend =>
-  ({ publicId: r.publicId, displayName: r.displayName, since: r.since, commander: toCommander(r) });
+  ({ publicId: r.publicId, displayName: named(r.displayName), since: r.since, commander: toCommander(r) });
 
 export async function listFriends(viewerId: string, q: Reader = db): Promise<Friend[]> {
-  return sortFriends((await friendsQuery(viewerId, q)).map(toFriend));
+  // Sorted on the rows, while the name is still a string: a branded name is never compared.
+  return sortFriends(await friendsQuery(viewerId, q)).map(toFriend);
 }
 
 /** The viewer's friend with this public id, or null: not a friend, no profile, or not an id at all. */
@@ -100,7 +104,7 @@ export async function resolveFriend(viewerId: string, publicId: unknown, q: Read
 
 export type PodMember = {
   publicId: string;
-  displayName: string;
+  displayName: ThirdPartyName;
   joinedAt: Date;
   isOwner: boolean;
   isYou: boolean;
@@ -111,7 +115,8 @@ export type PodMember = {
 };
 export type Pod = {
   id: string;
-  name: string;
+  /** Branded for everyone, the creator included. */
+  name: ThirdPartyName;
   isOwner: boolean;
   /** Owner first, then the viewer, then by name (G9). */
   members: PodMember[];
@@ -119,7 +124,7 @@ export type Pod = {
    * Who holds the pod if the viewer, its owner, leaves (Q5): computed here because `nextPodOwner` breaks a
    * tie by account id, which no client holds (E4). Null when the viewer is not the owner, or is alone.
    */
-  nextOwner: { publicId: string; displayName: string } | null;
+  nextOwner: { publicId: string; displayName: ThirdPartyName } | null;
 };
 
 /** The pods the viewer is a member of: membership on the viewer IS the grant to read the pod. */
@@ -190,7 +195,7 @@ export function shapePod(
   const heir = next === null ? undefined : rows.find((r) => r.userId === next);
   return {
     id: pod.id,
-    name: pod.name,
+    name: named(pod.name),
     isOwner,
     members: orderMembers(rows.map((m) => ({
       publicId: m.publicId,
@@ -200,8 +205,9 @@ export function shapePod(
       isYou: m.userId === viewerId,
       isFriend: m.userId !== viewerId && m.isFriend,
       commander: toCommander(m),
-    }))),
-    nextOwner: heir ? { publicId: heir.publicId, displayName: heir.displayName } : null,
+    // Ordered on the strings above, then branded.
+    }))).map((m) => ({ ...m, displayName: named(m.displayName) })),
+    nextOwner: heir ? { publicId: heir.publicId, displayName: named(heir.displayName) } : null,
   };
 }
 

@@ -19,7 +19,7 @@
 import Link from "next/link";
 import { useCallback, useRef } from "react";
 import { socialCopy } from "../../lib/copy/social";
-import { PersonText, personAttrs } from "../../lib/person-name";
+import { PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { underADay } from "../../lib/social/when";
 import type { InviteCount } from "../../lib/invites/rules";
@@ -30,7 +30,7 @@ import { useAddFriend, type FriendLink } from "../social/use-add-friend";
 const c = socialCopy.checklist;
 
 export type FirstRunFriendsProps = {
-  friends: { publicId: string; displayName: string; commander: ProfileCommander | null }[];
+  friends: { publicId: string; displayName: string | ThirdPartyName; commander: ProfileCommander | null }[];
   links: FriendLink[];
   /** The render's one clock, from the server. */
   now: string;

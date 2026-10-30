@@ -16,6 +16,7 @@ import { folderCopy } from "../../lib/copy/folders";
 import { sinceDay } from "../../lib/social/when";
 import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { PersonName, personAttrs, type PersonParts } from "../../lib/person-name";
 import { Face } from "./face";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useMomentHold } from "../../lib/moments/hold";
@@ -108,14 +109,16 @@ function FriendRow({
           // The whole row is the link: its box is stretched over the row, and the … sits above it.
           <Link
             href={`/friends/${friend.publicId}`}
-            aria-label={f.openAria(friend.displayName)}
-            className="truncate text-[15px] font-medium text-[color:var(--fg)] no-underline outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:rounded-[8px] focus-visible:after:[outline:2px_solid_var(--accent)] md:text-[14.5px]"
+            {...personAttrs(
+              { "aria-label": f.openAria(friend.displayName) },
+              "truncate text-[15px] font-medium text-[color:var(--fg)] no-underline outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:rounded-[8px] focus-visible:after:[outline:2px_solid_var(--accent)] md:text-[14.5px]",
+            )}
           >
-            {friend.displayName}
+            <PersonName n={friend.displayName} />
             <PendingReporter href={`/friends/${friend.publicId}`} />
           </Link>
         ) : (
-          <span className="truncate text-[15px] font-medium md:text-[14.5px] text-[color:var(--fg)]">{friend.displayName}</span>
+          <span className="truncate text-[15px] font-medium md:text-[14.5px] text-[color:var(--fg)]"><PersonName n={friend.displayName} /></span>
         )}
         {friend.commander ? <span className="truncate text-[12px] text-[color:var(--fg-muted)]">{friend.commander.name}</span> : null}
       </div>
@@ -173,9 +176,11 @@ export function FriendMenu({
           type="button"
           aria-haspopup="dialog"
           aria-expanded={menu !== "closed"}
-          aria-label={f.menuAria(friend.displayName)}
           onClick={() => setMenu((m) => (m === "closed" ? "menu" : "closed"))}
-          className={`flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[8px] border-0 p-0 ${menu !== "closed" ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "bg-transparent text-[color:var(--fg-muted)]"}`}
+          {...personAttrs(
+            { "aria-label": f.menuAria(friend.displayName) },
+            `flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[8px] border-0 p-0 ${menu !== "closed" ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "bg-transparent text-[color:var(--fg-muted)]"}`,
+          )}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <circle cx="5" cy="12" r="1.7" />
@@ -211,7 +216,7 @@ export function FriendMenu({
   );
 }
 
-function MenuPanel({ label, onDismiss, children }: { label: string; onDismiss: () => void; children: React.ReactNode }) {
+function MenuPanel({ label, onDismiss, children }: { label: string | PersonParts; onDismiss: () => void; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   // A popover with no backdrop: Escape and focus are the dialog hook's, the page keeps its scroll.
   useDialogA11y(ref, onDismiss, { lockScroll: false });
@@ -222,10 +227,12 @@ function MenuPanel({ label, onDismiss, children }: { label: string; onDismiss: (
       ref={ref}
       role="dialog"
       aria-modal="true"
-      aria-label={label}
       tabIndex={-1}
       style={{ width: DELETE_CONFIRM_WIDTH }}
-      className="absolute right-0 top-[calc(100%+4px)] z-30 overflow-hidden rounded-[10px] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] [border:1px_solid_var(--border-strong)]"
+      {...personAttrs(
+        { "aria-label": label },
+        "absolute right-0 top-[calc(100%+4px)] z-30 overflow-hidden rounded-[10px] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] [border:1px_solid_var(--border-strong)]",
+      )}
     >
       {children}
     </div>

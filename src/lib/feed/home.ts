@@ -16,6 +16,7 @@
  * `homeFeedAfter` is the visit's two writes, for `after()`: `markFeedSeen` (writes only while an unseen item exists)
  * and `noticeTradeMatches` (idempotent). Neither runs during the render, and neither reaches the cached path.
  */
+import { compareNames } from "../person-name";
 import { sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
