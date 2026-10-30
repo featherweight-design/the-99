@@ -571,6 +571,23 @@ describe("push", () => {
     expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/friends`);
   });
 
+  it("a tap on a landing that leaves the app (/out/) opens ONE window and navigates none: a redirect off-origin resolves navigate() to null", async () => {
+    const w = win();
+    w.navigate.mockResolvedValue(null);
+    windows = [w];
+    await click({ route: "/out/wizards/abc123", keys: ["post:abc123"] });
+    expect(w.navigate).not.toHaveBeenCalled();
+    expect(openWindow).toHaveBeenCalledOnce();
+    expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/out/wizards/abc123`);
+    // Only the path's own prefix: a route merely containing "out" still navigates the open window.
+    openWindow.mockClear();
+    const v = win();
+    windows = [v];
+    await click({ route: "/decks/outlaws" });
+    expect(v.navigate).toHaveBeenCalledWith(`${ORIGIN}/decks/outlaws`);
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
   it("opens a window when navigation resolves to null: the window went away between the lookup and the tap", async () => {
     const w = win();
     w.navigate.mockResolvedValue(null);

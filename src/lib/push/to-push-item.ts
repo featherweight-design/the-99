@@ -1,7 +1,8 @@
 /**
  * A feed view as a push item (`message.ts`): the same facts Home draws, in the shape a notification is built from.
  * Pure. Null when the view lacks what its notification needs (a card the catalog no longer holds, a missing price pair, a
- * friend who is gone, or a precon with no count of its cards): that push is dropped, never sent half-worded. A new set
+ * friend who is gone, a precon with no count of its cards, or a Wizards post with no press): that push is dropped, never
+ * sent half-worded. A new set
  * with no card count yet (none of its printings has art) still goes, without the figure. Home draws such a row with its title alone; a notification has no line to leave out.
  */
 import type { FeedView } from "../feed/home";
@@ -33,7 +34,9 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
     case "secret-lair":
     case "commander-decklists":
     case "wizards-news":
-      // Not pushed until Announcements UI 3b (`PUSH_CATALOG_KINDS`): nothing queues one, so nothing reaches here.
-      return null;
+      // The post's press is Home's (`outbound`: the out route, only for an https post on magic.wizards.com). No press, no
+      // push: a notification that lands nowhere is never sent.
+      if (!view.post || !view.outbound) return null;
+      return { ...base, kind: view.kind, title: view.post.title, excerpt: view.post.summary, image: view.post.hero, href: view.outbound };
   }
 }

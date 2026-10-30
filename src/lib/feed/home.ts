@@ -29,6 +29,7 @@ import { spareRequestsEnabled } from "../social/flag";
 import { leadStory, type FeedKind } from "./kinds";
 import { effectiveKinds, markFeedSeen, readFeedPrefs } from "./prefs";
 import { loadFeed, type FeedItem, type FeedPost } from "./read";
+import { wizardsOutRoute } from "../push/wizards-out";
 
 type Executor = Pick<typeof db, "execute">;
 
@@ -53,7 +54,8 @@ export type FeedView = {
   /**
    * An address OFF the app the press opens in a new tab: a price drop's card on Mana Pool, by the card details link's
    * own builder (`manapoolCardUrl`; Hugh's ruling 2026-10-27, the menu-home plan's product call 7, over the boards'
-   * "Open the card"), or a Wizards post on magic.wizards.com (`wizardsPostUrl`). Null on every other item.
+   * "Open the card"), or a Wizards post on magic.wizards.com (`wizardsPostUrl`), through the app's own redirect
+   * `/out/wizards/<contentful id>` (`wizardsOutRoute`, Announcements UI 3b). Null on every other item.
    */
   outbound: string | null;
   /** A Wizards post (Secret Lair, Commander decklists, Wizards news): what its row and its lead draw. Null or absent on every other item. */
@@ -240,7 +242,9 @@ export function toViews(
       return {
         ...base,
         card: null,
-        outbound: wizardsPostUrl(p.url),
+        // Through the app's own out route (Announcements UI 3b), which checks the host again at the press; the host rule
+        // here decides only whether the row has a press at all.
+        outbound: wizardsPostUrl(p.url) ? wizardsOutRoute(item.kind, item.key) : null,
         post: { title: p.title, summary: p.excerpt, hero: p.hero, lists: postLists(item.kind, p) },
       };
     }

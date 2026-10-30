@@ -1,12 +1,13 @@
 /**
  * The catalog kinds' push rules (plan `2026-10-22-push.md`, D2 as amended; PR 3c). Pure: no database.
  *
- * A new set or precon has no per-reader row (`catalog_first_seen`), so the cron flush queues its outbox rows itself
- * (`catalog.ts`). The row's `item_key` is the FEED's own key for the item (`set:<code>`, `precon:<file name>`, built by
+ * A new set, precon or Wizards post has no per-reader row (`catalog_first_seen`, `wizards_announcements`), so the cron flush
+ * queues its outbox rows itself (`catalog.ts`). The row's `item_key` is the FEED's own key for the item (`set:<code>`,
+ * `precon:<file name>`, `post:<contentful id>`, built by
  * `catalogBranch` in `lib/feed/read.ts`), so a push names exactly what Home lists and the landing's keys match Home's.
  */
 import { availableFeedKinds } from "../feed/flag";
-import { isAnnouncementKind, type CatalogKind, type FeedKind } from "../feed/kinds";
+import { CATALOG_KINDS, type CatalogKind, type FeedKind } from "../feed/kinds";
 import { pushEnabled } from "./flag";
 
 const PREFIX: Record<CatalogKind, string> = {
@@ -18,15 +19,14 @@ const PREFIX: Record<CatalogKind, string> = {
 };
 
 /**
- * The catalog kinds that push today. Wizards' posts are read on Home but not yet pushed: their message and the landing
- * that leaves the app for the post come in Announcements UI 3b, which lifts this filter. Until then nothing queues them,
- * and Settings offers no push box for them (`pushableFeedKinds`).
+ * The catalog kinds that push: every one. Wizards' posts push since Announcements UI 3b, their landing leaving the app for
+ * the post through `/out/wizards/<contentful id>` (`app/out/wizards/[id]/route.ts`), which checks the host again.
  */
-export const PUSH_CATALOG_KINDS = ["new-set", "new-precon"] as const satisfies readonly CatalogKind[];
+export const PUSH_CATALOG_KINDS = CATALOG_KINDS;
 
-/** The kinds a reader may tick under Push in Settings: the available kinds, less Wizards' posts until UI 3b. */
+/** The kinds a reader may tick under Push in Settings: every kind available to them. */
 export function pushableFeedKinds(env: NodeJS.ProcessEnv): FeedKind[] {
-  return availableFeedKinds(env).filter((k) => !isAnnouncementKind(k));
+  return availableFeedKinds(env);
 }
 
 /** The feed's key for a set (by code), a precon (by file name) or a Wizards post (by Contentful id). The SQL twin is `catalogBranch`'s `key` column. */
@@ -46,7 +46,7 @@ export function parseCatalogKey(kind: CatalogKind, key: string): string | null {
  */
 export const catalogBatchKey = (kind: CatalogKind, now: Date): string => `${kind}:${now.toISOString().slice(0, 10)}`;
 
-/** The catalog kinds this reader's switches allow pushing: push on, and the kind available to them (a precon needs Precons). */
+/** The catalog kinds this reader's switches allow pushing: push on, and the kind available to them (a precon needs Precons, a Wizards post Announcements). */
 export function catalogPushKinds(env: NodeJS.ProcessEnv): CatalogKind[] {
   if (!pushEnabled(env)) return [];
   const available = availableFeedKinds(env);

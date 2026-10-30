@@ -4,6 +4,7 @@
 // formatted (`formatCents`); this module formats nothing but counts.
 import { feedCopy } from "./feed";
 import { spareCopy } from "./social";
+import type { AnnouncementFeedKind } from "../feed/kinds";
 
 const t = feedCopy.home.title;
 
@@ -27,6 +28,8 @@ export const pushCopy = {
       no: { title: spareCopy.request.mine.keeping, body: "Your requests are in Friends." },
     },
     combo: { title: "You can make a combo", body: (a: string, b: string, added: string) => `${a} + ${b}. ${feedCopy.home.line.combo(added)}` },
+    /** A Wizards post (Announcements UI 3b): its own title, and its summary, or where a tap goes when it has none. */
+    post: { title: (title: string) => title, body: (excerpt: string | null) => excerpt ?? "Read it on Wizards." },
   },
   /** Several of one kind from one job, or what waited the night, as one notification. */
   many: {
@@ -36,6 +39,8 @@ export const pushCopy = {
     tradeMatchOne: { title: (friend: string, n: number) => `${friend} has ${n} spares you want`, body: feedCopy.home.line.tradeMatch },
     tradeMatchMany: { title: (n: number) => `${n} spares you want`, body: (friends: string) => `From ${friends}.` },
     combo: { title: (n: number) => `You can make ${n} new combos`, body: "From the cards you just added." },
+    /** Several Wizards posts of one kind: the kind by its kicker, then the posts' titles. */
+    post: { title: (kind: AnnouncementFeedKind, n: number) => `${feedCopy.home.kicker[kind]}: ${n} new posts`, body: (titles: string) => `${titles}.` },
   },
   /** `Jace, Dina and 1 more`: the first two names, then the rest by count. No full stop; a body adds its own. */
   names: (names: readonly string[]): string => {

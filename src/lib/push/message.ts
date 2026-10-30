@@ -12,6 +12,7 @@
  */
 import { formatCents } from "../decks/price";
 import { pushCopy } from "../copy/push";
+import type { AnnouncementFeedKind } from "../feed/kinds";
 
 export type PushItem =
   | { kind: "new-set"; key: string; batch: string; name: string; cards: number | null; href: string }
@@ -19,7 +20,9 @@ export type PushItem =
   | { kind: "price-drop"; key: string; batch: string; oracleId: string; card: string; wasCents: number; nowCents: number; image: string | null }
   | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; oracleId: string; card: string; image: string | null; askable: boolean }
   | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; image: string | null; answer?: "yes" | "no" }
-  | { kind: "combo"; key: string; batch: string; oracleId: string; a: string; b: string; added: string; image: string | null };
+  | { kind: "combo"; key: string; batch: string; oracleId: string; a: string; b: string; added: string; image: string | null }
+  /** A Wizards post (Announcements UI 3b): `href` is its out route (`/out/wizards/<contentful id>`), `image` its hero. */
+  | { kind: AnnouncementFeedKind; key: string; batch: string; title: string; excerpt: string | null; image: string | null; href: string };
 
 export type PushMessage = {
   title: string;
@@ -100,8 +103,19 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
       if (n === 1) return home("combo", keys, c.one.combo.title, c.one.combo.body(first.a, first.b, first.added), { openCard: first.oracleId, openCombo: true, image: first.image });
       return home("combo", keys, c.many.combo.title(n), c.many.combo.body);
     }
+    case "secret-lair":
+    case "commander-decklists":
+    case "wizards-news": {
+      // One post opens the post (handoff call 4) through its out route; several of a kind land on Home, where each is a row.
+      const posts = group as (typeof first)[];
+      if (n === 1) return home(first.kind, keys, c.one.post.title(first.title), c.one.post.body(first.excerpt), { route: first.href, image: httpsOnly(first.image) });
+      return home(first.kind, keys, c.many.post.title(first.kind, n), c.many.post.body(c.names(posts.map((p) => p.title))));
+    }
   }
 }
+
+/** An image the device may fetch: https only (the worker refuses anything else too). */
+const httpsOnly = (url: string | null): string | null => (url && url.startsWith("https://") ? url : null);
 
 /** A friend's page, on the Spares tab (the route's default); with `spare`, that card's modal opens on landing (call 9). */
 export const friendRoute = (publicId: string, spare?: string): string =>

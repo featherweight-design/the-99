@@ -59,4 +59,16 @@ describe("a feed view as a push item", () => {
     expect(toPushItem(view({ kind: "new-set", name: null, setSize: 286, href: "/collection/sets/dsk" }), "b")).toBeNull();
     expect(toPushItem(view({ kind: "new-precon", name: "Death Toll", owned: null, href: "/decks/precons/X" }), "b")).toBeNull();
   });
+  it("a Wizards post: its title, summary, hero and out route (Announcements UI 3b)", () => {
+    const post = { title: "Secret Lair x Jaws", summary: "A drop of five.", hero: "https://images.ctfassets.net/h.jpg", lists: null };
+    expect(toPushItem(view({ kind: "secret-lair", key: "post:abc", card: null, post, outbound: "/out/wizards/abc" }), "b")).toEqual({
+      kind: "secret-lair", key: "post:abc", batch: "b", title: "Secret Lair x Jaws", excerpt: "A drop of five.", image: "https://images.ctfassets.net/h.jpg", href: "/out/wizards/abc",
+    });
+    expect(toPushItem(view({ kind: "wizards-news", key: "post:n", card: null, post: { ...post, summary: null, hero: null }, outbound: "/out/wizards/n" }), "b")).toMatchObject({ excerpt: null, image: null });
+  });
+  it("a Wizards post with no press (an address off magic.wizards.com) is dropped, never sent landing nowhere", () => {
+    const post = { title: "T", summary: null, hero: null, lists: null };
+    expect(toPushItem(view({ kind: "commander-decklists", key: "post:x", card: null, post, outbound: null }), "b")).toBeNull();
+    expect(toPushItem(view({ kind: "commander-decklists", key: "post:x", card: null, post: null, outbound: "/out/wizards/x" }), "b")).toBeNull();
+  });
 });
