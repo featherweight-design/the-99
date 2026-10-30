@@ -10,7 +10,9 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import type { DeckClaim } from "../../lib/decks/availability";
+import { pullSourceChoices } from "../../lib/decks/draft-shape";
 import type { CardTypeGroup } from "../../lib/decks/grouping";
+import type { SourceDeckFigure } from "../../lib/decks/read";
 import { formatCents } from "../../lib/decks/price";
 import type { MixRole } from "../../lib/decks/mix";
 import type { Bracket } from "../../lib/profile/types";
@@ -41,6 +43,8 @@ export type SuggestionSetActions = {
   pick: (itemId: string, picked: boolean) => Promise<{ ok: boolean }>;
   /** The brackets the deck would permit with these picks applied, for a set the lines' own flags cannot settle. */
   setBracket?: (runId: string, addIds: string[], cutIds: string[]) => Promise<{ permits: number[] } | null>;
+  /** The source picker's "→ N cards" per `${deckId}:${oracleId}` (`loadSourceDeckFigures`), for the confirmation's Pull. */
+  sourceFigures?: (pairs: { deckId: string; oracleId: string }[]) => Promise<[string, SourceDeckFigure][]>;
 };
 
 /** How long the picks rest before the bar asks the server for the set's bracket (a profile build per ask). */
@@ -120,6 +124,9 @@ export function SuggestedChangesRun({
   // Held across closing the confirmation, and sent only for an addition still picked.
   const [staged, setStaged] = useState<ReadonlyMap<string, DeckClaim>>(() => new Map());
   const ownedFromOtherDecks = ask?.restrictions?.ownedOnly === true && ask.restrictions.otherDecks === true;
+  // The picker's "→ N cards" for the held additions' sources, read once the confirmation opens (as Review changes reads
+  // them with its page); absent until then, and on a failed read, when the picker draws no figure.
+  const [pullFigures, setPullFigures] = useState<{ key: string; map: Map<string, SourceDeckFigure> } | null>(null);
   const [busy, setBusy] = useState<"apply" | "undo" | null>(null);
   // A key per refused Apply, so a second refusal arrives as a newer alert with its own eight seconds (small items 3, item 8).
   const [failed, setFailed] = useState<number | null>(null);
@@ -171,6 +178,23 @@ export function SuggestedChangesRun({
   const cuts = lines.filter((l) => l.side === "cut");
   const cap = pickCap(n, lines, !waiting);
   const pickedAdds = adds.filter(isPicked);
+  // Every choosable source of every held addition coming in, while the confirmation is open: the picker's figures.
+  const figureKey = confirming && ownedFromOtherDecks
+    ? pickedAdds.filter((l) => heldElsewhere(l, true)).flatMap((l) => pullSourceChoices(l.availability ?? undefined)
+      .filter((c) => !c.commander && !c.locked)
+      .map((c) => `${c.id}:${l.cardOracleId}`)).join(",")
+    : "";
+  useEffect(() => {
+    const read = actions.sourceFigures;
+    if (!read || figureKey === "" || pullFigures?.key === figureKey) return;
+    let live = true;
+    const pairs = figureKey.split(",").map((k) => {
+      const [deckId, oracleId] = k.split(":");
+      return { deckId, oracleId };
+    });
+    read(pairs).then((entries) => { if (live) setPullFigures({ key: figureKey, map: new Map(entries) }); }, () => undefined);
+    return () => { live = false; };
+  }, [figureKey, actions.sourceFigures, pullFigures?.key]);
   const pickedCuts = cuts.filter(isPicked);
   const t = tally([...pickedAdds, ...pickedCuts]);
   // A set past one line a side: the bar's claim waits on the server's read of the whole set (follow-up b).
@@ -687,6 +711,7 @@ export function SuggestedChangesRun({
           onClose={() => setConfirming(false)}
           deckId={deckId}
           ownedFromOtherDecks={ownedFromOtherDecks}
+          sourceFigures={pullFigures && pullFigures.key === figureKey ? pullFigures.map : undefined}
           staged={staged}
           onStage={(id, claim) => setStaged((m) => {
             const next = new Map(m);

@@ -2,6 +2,7 @@
 
 import { requireUserId } from "../../lib/auth";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { loadSourceDeckFigures, type SourceDeckFigure } from "../../lib/decks/read";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
@@ -62,6 +63,27 @@ export async function undoSuggestionSet(applySet: string): Promise<ApplySetActio
   revalidateClaims(r.deckId, reader.userId);
   for (const id of r.sourceDeckIds ?? []) revalidateClaims(id, reader.userId);
   return { ok: true, itemIds: r.itemIds };
+}
+
+/** At most every held addition's every source: twenty additions a side, a handful of decks each. */
+const MAX_FIGURE_PAIRS = 200;
+
+/**
+ * The source picker's "→ N cards" for Apply's confirmation (Small items 4, item 2): `loadSourceDeckFigures`, as Review
+ * changes reads it, for `{ deckId, oracleId }` pairs the confirmation names. Read-only and scoped to the reader's decks;
+ * entries rather than a Map so the answer crosses the wire as plain data. Empty on any malformed ask.
+ */
+export async function readPullSourceFigures(pairs: unknown): Promise<[string, SourceDeckFigure][]> {
+  const reader = await v2Reader();
+  if (!reader || !Array.isArray(pairs) || pairs.length > MAX_FIGURE_PAIRS) return [];
+  const asked: { deckId: string; oracleId: string }[] = [];
+  for (const p of pairs) {
+    if (typeof p !== "object" || p === null) return [];
+    const { deckId, oracleId } = p as Record<string, unknown>;
+    if (!isUuid(deckId) || !isUuid(oracleId)) return [];
+    asked.push({ deckId: deckId as string, oracleId: oracleId as string });
+  }
+  return [...(await loadSourceDeckFigures(asked, reader.userId).catch(() => new Map<string, SourceDeckFigure>()))];
 }
 
 /** Free, and revalidates nothing: the deck is unchanged, and a pick moves no figure any page draws. */

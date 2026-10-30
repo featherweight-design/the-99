@@ -64,14 +64,22 @@ describe("the sweeps filter locked cards", () => {
 // actually asks them, in the right place and the right way.
 describe("the lock's guards sit where the writes are", () => {
   const actions = readFileSync("src/app/decks/actions.ts", "utf8");
+  const pull = readFileSync("src/lib/decks/pull.ts", "utf8");
   const update = readFileSync("src/app/decks/update-actions.ts", "utf8");
 
-  it("pullCardFromDeck refuses a locked source before it takes the copy", () => {
-    const fn = body(actions, "pullCardFromDeck");
+  // The pull's body is `pullInTx` (Small items 4, item 2), shared by `pullCardFromDeck` and Suggested changes v2's Apply.
+  it("pullInTx refuses a locked source before it takes the copy", () => {
+    const fn = body(pull, "pullInTx");
     const guard = fn.search(/if \(neverCutEnabled\(env\) && \(await isLiveLocked\(tx, sourceDeckId, oracleId\)\)\) \{\n\s*return \{ ok: false, message: PULL_REFUSED_LOCKED \};/);
     expect(guard).toBeGreaterThan(-1);
     const firstWrite = Math.min(fn.indexOf("tx.update(deckCards)"), fn.indexOf("tx.delete(deckCards)"));
     expect(guard).toBeLessThan(firstWrite);
+  });
+
+  it("pullCardFromDeck runs that guarded body, under its locks", () => {
+    const fn = body(actions, "pullCardFromDeck");
+    expect(fn.indexOf("await lockDecksInOrder(tx, lockIds)")).toBeGreaterThan(-1);
+    expect(fn.indexOf("pullInTx(tx,")).toBeGreaterThan(fn.indexOf("await lockDecksInOrder(tx, lockIds)"));
   });
 
   // The review starts locked cards KEPT, so a failed read must fail the preview: the display read's

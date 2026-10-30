@@ -25,6 +25,7 @@ const fx = vi.hoisted(() => ({
   sourceRow: null as { quantity: number; auto: boolean } | null,
   updates: [] as Record<string, unknown>[],
   inserts: [] as Record<string, unknown>[],
+  printings: [] as Record<string, unknown>[],
 }));
 
 vi.mock("../../../db", () => {
@@ -55,9 +56,12 @@ vi.mock("../../../db", () => {
       return { rows: [] };
     },
     update: () => ({ set: (values: Record<string, unknown>) => ({ where: async () => { fx.updates.push(values); } }) }),
-    insert: () => ({
+    insert: (table: unknown) => ({
       values: (values: Record<string, unknown>) => ({
         onConflictDoUpdate: async () => { fx.inserts.push(values); fx.events.push("restorePulledRow"); },
+        onConflictDoNothing: async () => {
+          if ((table as Record<symbol, string>)[Symbol.for("drizzle:Name")] === "deck_printings") fx.printings.push(values);
+        },
       }),
     }),
   };
@@ -71,9 +75,11 @@ const pull = vi.hoisted(() => ({
 }));
 vi.mock("../../decks/pull", () => pull);
 
-const release = vi.hoisted(() => ({ copies: 1, undone: 0 }));
+/** The release row under the pull's key: `at` is its `createdAt`, null when there is none. */
+const RELEASED_AT = "2026-10-30T12:00:00.000Z";
+const release = vi.hoisted(() => ({ at: "2026-10-30T12:00:00.000Z" as string | null, undone: 0 }));
 vi.mock("../../decks/pull-release", () => ({
-  readPullReleaseCopies: vi.fn(async () => release.copies),
+  readPullRelease: vi.fn(async () => (release.at === null ? null : { copies: 1, createdAt: new Date(release.at) })),
   undoPullRelease: vi.fn(async () => { release.undone += 1; fx.events.push("undoRelease"); return true; }),
 }));
 
@@ -106,16 +112,17 @@ beforeEach(() => {
   fx.events = [];
   fx.updates = [];
   fx.inserts = [];
+  fx.printings = [];
   fx.lines = [open("a1", "add"), open("a2", "add"), open("c1", "cut"), open("c2", "cut")];
   fx.run = { status: "ok", requestedCount: 3, readVersion: 4, spentSets: [] };
   fx.sourceName = "HD - Gishath";
   fx.sourceRow = null;
-  release.copies = 1;
+  release.at = RELEASED_AT;
   release.undone = 0;
   versions.newest = "v1";
   pull.pullInTx.mockImplementation(async (_tx: unknown, a: { oracleId: string }) => {
     fx.events.push(`pull:${a.oracleId}`);
-    return { ok: true, draft: { quantity: 1, auto: false }, versionId: "v1" };
+    return { ok: true, draft: { quantity: 1, auto: false }, versionId: "v1", release: RELEASED_AT, printing: null };
   });
 });
 
@@ -174,7 +181,9 @@ describe("applyPicks with staged pulls", () => {
     await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
     const recorded = fx.updates.find((u) => (u.undoSnapshot as ApplySnapshot | undefined)?.pull);
     expect(recorded).toEqual({
-      undoSnapshot: { cut: null, add: { quantity: 0, auto: false }, pull: { sourceDeckId: SOURCE, draft: { quantity: 1, auto: false }, versionId: "v1" } },
+      undoSnapshot: { cut: null, add: { quantity: 0, auto: false }, pull: {
+        sourceDeckId: SOURCE, draft: { quantity: 1, auto: false }, versionId: "v1", release: RELEASED_AT, printing: null,
+      } },
     });
   });
 
@@ -199,8 +208,13 @@ describe("applyPicks with staged pulls", () => {
 });
 
 describe("undoSet with a pull", () => {
-  const applied = (draft: { quantity: number; auto: boolean } | null): Line[] => [
-    { ...open("a1", "add"), verdict: "accepted", applySet: SET, undoSnapshot: { cut: null, add: { quantity: 0, auto: false }, pull: { sourceDeckId: SOURCE, draft, versionId: "v1" } } },
+  const applied = (
+    draft: { quantity: number; auto: boolean } | null, printing: { setCode: string; collectorNumber: string } | null = null,
+  ): Line[] => [
+    {
+      ...open("a1", "add"), verdict: "accepted", applySet: SET,
+      undoSnapshot: { cut: null, add: { quantity: 0, auto: false }, pull: { sourceDeckId: SOURCE, draft, versionId: "v1", release: RELEASED_AT, printing } },
+    },
     { ...open("c1", "cut"), verdict: "accepted", applySet: SET, undoSnapshot: { cut: { quantity: 1, auto: false, proxied: false }, add: null } },
   ];
   const undo = () => undoSet({ applySet: SET, userId: "me", env: ENV });
@@ -219,7 +233,7 @@ describe("undoSet with a pull", () => {
 
   it("refuses the whole undo, naming the deck, when the source committed since (its release is gone, the card with it)", async () => {
     fx.lines = applied({ quantity: 1, auto: false });
-    release.copies = 0;
+    release.at = null;
     versions.newest = "v2";
     const r = await undo();
     expect(r).toEqual({ ok: false, refusal: { kind: "pullMoved", itemId: "a1", deckName: "HD - Gishath" } });
@@ -231,7 +245,7 @@ describe("undoSet with a pull", () => {
   // at 1. A surviving row is not a discard; the newer version says the removal is that deck's list now.
   it("refuses, naming the deck, when the source committed with the pulled row still in it", async () => {
     fx.lines = applied({ quantity: 2, auto: false });
-    release.copies = 0;
+    release.at = null;
     fx.sourceRow = { quantity: 1, auto: false };
     versions.newest = "v2";
     const r = await undo();
@@ -239,6 +253,25 @@ describe("undoSet with a pull", () => {
     expect(fx.inserts).toEqual([]);
     expect(release.undone).toBe(0);
     expect(fx.events.some((e) => e.startsWith("restore:"))).toBe(false);
+  });
+
+  // A commit or discard cleared this pull's release, and a LATER pull of the same card for the same deck wrote a new
+  // one under the same key: giving that back would undo the later pull. It is told by the release's createdAt.
+  it("refuses when the release under the pull's key is a later pull's, not this one's", async () => {
+    fx.lines = applied({ quantity: 1, auto: false });
+    release.at = "2026-10-30T13:00:00.000Z";
+    const r = await undo();
+    expect(r).toMatchObject({ ok: false, refusal: { kind: "pullMoved", deckName: "HD - Gishath" } });
+    expect(release.undone).toBe(0);
+    expect(fx.inserts).toEqual([]);
+  });
+
+  it("puts back the printing pick the last copy's prune dropped, with the card", async () => {
+    fx.lines = applied({ quantity: 1, auto: false }, { setCode: "2xm", collectorNumber: "25" });
+    const r = await undo();
+    expect(r).toMatchObject({ ok: true });
+    expect(fx.inserts).toEqual([{ deckId: SOURCE, oracleId: "o-a1", quantity: 1, auto: false }]);
+    expect(fx.printings).toEqual([{ deckId: SOURCE, oracleId: "o-a1", setCode: "2xm", collectorNumber: "25" }]);
   });
 
   it("refuses when the source's row was edited since the pull", async () => {
@@ -252,7 +285,7 @@ describe("undoSet with a pull", () => {
 
   it("takes a discarded source as already undone: no commit since, the card is back in its draft, nothing more written", async () => {
     fx.lines = applied({ quantity: 2, auto: false });
-    release.copies = 0;
+    release.at = null;
     fx.sourceRow = { quantity: 2, auto: false };
     const r = await undo();
     expect(r).toMatchObject({ ok: true });

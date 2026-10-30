@@ -100,9 +100,11 @@ export type PullControlProps = {
    *  source is handed back and no server action runs; the caller sends it with its own write. The guards and the picker
    *  are unchanged. Absent, a press pulls at once, as on Review changes. */
   onChoose?: (claim: DeckClaim) => void;
+  /** Held while the caller's own write is in flight (Apply's confirmation applying): no press, and an open list closes. */
+  disabled?: boolean;
 };
 
-export function PullControl({ deckId, card, claims, defaultId, sourceFigures, onPulled, onChoose }: PullControlProps) {
+export function PullControl({ deckId, card, claims, defaultId, sourceFigures, onPulled, onChoose, disabled = false }: PullControlProps) {
   // "Only sources that can be chosen count" (design call 5): a locked or
   // commander row is drawn for display, but it is never one more tap, so it
   // does not turn a single-source row into a two-or-more one.
@@ -139,7 +141,7 @@ export function PullControl({ deckId, card, claims, defaultId, sourceFigures, on
     // precedence over locked, `pullCandidate`'s own order) this row has instead.
     const claim = choosable[0] ?? claims.find((c) => c.commander) ?? claims.find((c) => c.locked) ?? null;
     if (!claim) return null;
-    return <SinglePull deckId={deckId} card={card} claim={claim} onPulled={onPulled} onChoose={onChoose} />;
+    return <SinglePull deckId={deckId} card={card} claim={claim} onPulled={onPulled} onChoose={onChoose} disabled={disabled} />;
   }
 
   return (
@@ -152,6 +154,7 @@ export function PullControl({ deckId, card, claims, defaultId, sourceFigures, on
       sourceFigures={sourceFigures}
       onPulled={onPulled}
       onChoose={onChoose}
+      disabled={disabled}
     />
   );
 }
@@ -163,12 +166,14 @@ function SinglePull({
   claim,
   onPulled,
   onChoose,
+  disabled = false,
 }: {
   deckId: string;
   card: { oracleId: string; name: string };
   claim: DeckClaim;
   onPulled: () => void;
   onChoose?: (claim: DeckClaim) => void;
+  disabled?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -231,8 +236,9 @@ function SinglePull({
           // Named, because the visible two words repeat down the column: out of
           // context they say nothing about which card leaves which deck.
           aria-label={copy.pullA11y(card.name, claim.name)}
-          disabled={pending}
+          disabled={pending || disabled}
           onClick={() => {
+            if (disabled) return;
             setError(null);
             if (onChoose) {
               // Staged, not pulled: this control unmounts as the row redraws as the choice, and the caller moves focus
@@ -307,6 +313,7 @@ function SourcePicker({
   onPulled,
   onResolved,
   onChoose,
+  disabled = false,
 }: {
   deckId: string;
   card: { oracleId: string; name: string };
@@ -318,8 +325,12 @@ function SourcePicker({
   /** A successful pull, never a refusal — lets the parent's sticky list gate (round-4 finding)
    *  re-evaluate from the current claims rather than staying open forever. */
   onResolved: () => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  // The caller's write began with the list open: it closes, as a pull in flight would hold it, so nothing is chosen
+  // under a write that has already been sent. Adjusted during render, React's pattern for state that follows a prop.
+  if (disabled && open) setOpen(false);
   const [selectedId, setSelectedId] = useState(defaultId);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -392,7 +403,7 @@ function SourcePicker({
   const chosen = claims.find((c) => c.id === selectedId) ?? null;
 
   function confirm() {
-    if (!chosen || pending) return;
+    if (!chosen || pending || disabled) return;
     setError(null);
     if (onChoose) {
       // Staged, not pulled: the list closes on the choice and the caller sends it with its own write. The trigger
@@ -463,9 +474,9 @@ function SourcePicker({
         // Design state 8 extends to the trigger itself — found by Copilot's round-2 review: an
         // enabled trigger still visible above the popover could be pressed mid-pull, toggling
         // `open` closed and silently dropping a refusal the reader never saw.
-        disabled={pending}
+        disabled={pending || disabled}
         onClick={() => {
-          if (pending) return;
+          if (pending || disabled) return;
           if (!open) place();
           setOpen((o) => !o);
           setSelectedId(defaultId);

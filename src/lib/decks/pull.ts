@@ -10,7 +10,7 @@
 import { and, eq, gt, sql } from "drizzle-orm";
 
 import type { db } from "../../db";
-import { deckCards, decks } from "../../db/schema";
+import { deckCards, deckPrintings, decks } from "../../db/schema";
 import { hardDecks, pullSources } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { bucketAdds, draftDiff } from "./draft-diff";
@@ -31,7 +31,13 @@ export type PulledDraftRow = { quantity: number; auto: boolean } | null;
 export type PullInTxResult =
   /** `versionId`: the source's newest version when the pull was made. Its commit since (a newer one) is how an undo tells
    *  a commit, which made the removal that deck's list, from a discard, which put the card back. */
-  | { ok: true; draft: PulledDraftRow; versionId: string }
+  | {
+      ok: true; draft: PulledDraftRow; versionId: string;
+      /** The release row's `createdAt` as this pull left it (ISO), null when the write did not say. */
+      release: string | null;
+      /** The source's printing pick for the card when this pull took its last copy (the prune drops it), else null. */
+      printing: { setCode: string; collectorNumber: string } | null;
+    }
   /** `covered`: the asking deck already has the copies it needs (a copy came free since the page was drawn), so there is
    *  nothing to take out of anybody's box. A caller pulling as part of a larger write may treat it as done. */
   | { ok: false; message: string; covered?: boolean };
@@ -232,6 +238,14 @@ export async function pullInTx(tx: Tx, args: {
   // Relentless Rats keeps three. Delete only when the decrement would hit 0.
   // Skipped for a card the draft has ALREADY cut: its version is the only thing still claiming
   // the copy, and the release below is the whole pull.
+  // The source's printing pick, read before a last copy's delete prunes it, so an undo can put it back.
+  let printing: { setCode: string; collectorNumber: string } | null = null;
+  if (row && row.quantity <= 1) {
+    const [pick] = await tx.select({ setCode: deckPrintings.setCode, collectorNumber: deckPrintings.collectorNumber })
+      .from(deckPrintings)
+      .where(and(eq(deckPrintings.deckId, sourceDeckId), eq(deckPrintings.oracleId, oracleId)));
+    if (typeof pick?.setCode === "string") printing = { setCode: pick.setCode, collectorNumber: pick.collectorNumber ?? "" };
+  }
   if (inDraft) {
     const decremented = await tx.update(deckCards)
       .set({ quantity: sql`${deckCards.quantity} - 1` })
@@ -251,6 +265,12 @@ export async function pullInTx(tx: Tx, args: {
     await touchDeck(tx, sourceDeckId);
   }
   // The copy leaves the source's committed claim, which is what frees it for the asking deck.
-  await writePullRelease(tx, { userId, sourceDeckId, oracleId, askingDeckId });
-  return { ok: true, draft: row ? { quantity: row.quantity, auto: row.auto === true } : null, versionId: version.id };
+  const releasedAt = await writePullRelease(tx, { userId, sourceDeckId, oracleId, askingDeckId });
+  return {
+    ok: true,
+    draft: row ? { quantity: row.quantity, auto: row.auto === true } : null,
+    versionId: version.id,
+    release: releasedAt instanceof Date ? releasedAt.toISOString() : null,
+    printing,
+  };
 }

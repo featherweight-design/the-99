@@ -37,23 +37,25 @@ const atreus = v2Line("a1", "add", { cardName: "Atreus, Impulsive Son", availabi
 const spare = v2Line("a2", "add", { cardName: "Spare Card", availability: null });
 const cut = v2Line("c0", "cut");
 
-function draw(over: { adds?: LineItem[]; otherDecks?: boolean; staged?: Map<string, DeckClaim>; onStage?: () => void } = {}) {
+type Over = { adds?: LineItem[]; otherDecks?: boolean; staged?: Map<string, DeckClaim>; onStage?: () => void; busy?: boolean };
+function draw(over: Over = {}) {
   const onStage = vi.fn(over.onStage);
-  const view = render(
+  const ui = (o: Over) => (
     <SuggestedChangesConfirm
-      adds={over.adds ?? [path, atreus, spare]}
+      adds={o.adds ?? [path, atreus, spare]}
       cuts={[cut, cut, cut].map((c, i) => ({ ...c, id: `c${i}` }))}
       bracket=""
-      busy={false}
+      busy={o.busy ?? false}
       onApply={vi.fn()}
       onClose={vi.fn()}
       deckId="d-half-shell"
-      ownedFromOtherDecks={over.otherDecks ?? true}
-      staged={over.staged ?? new Map()}
+      ownedFromOtherDecks={o.otherDecks ?? true}
+      staged={o.staged ?? new Map()}
       onStage={onStage}
-    />,
+    />
   );
-  return { onStage, view };
+  const view = render(ui(over));
+  return { onStage, view, rerender: (o: Over) => view.rerender(ui({ ...over, ...o })) };
 }
 const row = (id: string) => document.querySelector(`[data-sc-held="${id}"]`) as HTMLElement | null;
 const sub = (id: string) => row(id)?.querySelector("[data-sc-held-sub]") as HTMLElement | null;
@@ -123,5 +125,34 @@ describe("SuggestedChangesConfirm, held additions", () => {
     expect(onStage).toHaveBeenCalledWith("a0", null);
     // The foot line stays while the held card is still coming in.
     expect(foot()).not.toBeNull();
+  });
+});
+
+describe("SuggestedChangesConfirm while Apply is in flight", () => {
+  it("holds Pull it, Pull it ▾ and Undo until Apply settles", async () => {
+    const { onStage } = draw({ busy: true, staged: new Map([["a1", KRATOS]]) });
+    const pullIt = screen.getByRole("button", { name: review.pullA11y(path.cardName, GISHATH.name) }) as HTMLButtonElement;
+    const undo = screen.getByRole("button", { name: sc.confirm.unstageA11y(atreus.cardName, KRATOS.name) }) as HTMLButtonElement;
+    expect(pullIt.disabled).toBe(true);
+    expect(undo.disabled).toBe(true);
+    await act(async () => {
+      fireEvent.click(pullIt);
+      fireEvent.click(undo);
+    });
+    expect(onStage).not.toHaveBeenCalled();
+  });
+
+  it("closes a picker left open when Apply starts, and holds its trigger", async () => {
+    const { rerender } = draw();
+    const trigger = () => screen.getByRole("button", { name: review.pullManyA11y(atreus.cardName, 2) }) as HTMLButtonElement;
+    await act(async () => {
+      fireEvent.click(trigger());
+    });
+    expect(screen.getByRole("radiogroup")).toBeTruthy();
+    await act(async () => {
+      rerender({ busy: true });
+    });
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(trigger().disabled).toBe(true);
   });
 });

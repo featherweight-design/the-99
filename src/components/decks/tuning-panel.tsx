@@ -35,7 +35,9 @@ import { isLine, type PairItem, type TuningState } from "../../lib/tuning/state"
 import type { RefusalDetail } from "../../lib/tuning/validate";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 import { AWAIT_RUN_POLL_MS, awaitRunSettled } from "./await-run";
-import { applySuggestionSet, pickSuggestion, readSuggestionSetBracket, undoSuggestionSet } from "../../app/decks/tuning-v2-actions";
+import {
+  applySuggestionSet, pickSuggestion, readPullSourceFigures, readSuggestionSetBracket, undoSuggestionSet,
+} from "../../app/decks/tuning-v2-actions";
 import type { CardTypeGroup } from "../../lib/decks/grouping";
 import { SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
 import { AnalysisBanner } from "./analysis-banner";
@@ -141,7 +143,10 @@ const SERVER: TuningDeps = {
   read: readTuningPanel,
   run: runTuning,
   card: { apply: applySuggestion, undo: undoSuggestion, reject: dismissSuggestion, restore: restoreSuggestion },
-  v2: { apply: applySuggestionSet, undo: undoSuggestionSet, pick: pickSuggestion, setBracket: readSuggestionSetBracket },
+  v2: {
+    apply: applySuggestionSet, undo: undoSuggestionSet, pick: pickSuggestion, setBracket: readSuggestionSetBracket,
+    sourceFigures: readPullSourceFigures,
+  },
 };
 
 /** What the page already knows about the evidence, for the copy and the unchecked manifest. */

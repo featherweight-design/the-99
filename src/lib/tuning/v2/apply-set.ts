@@ -1,9 +1,9 @@
 import { and, eq, inArray, isNotNull, isNull, max, ne, sql } from "drizzle-orm";
 
 import { db } from "../../../db";
-import { deckCards, deckSuggestionItems, deckSuggestionRuns, decks, deckVersions, type ApplySnapshot } from "../../../db/schema";
+import { deckCards, deckPrintings, deckSuggestionItems, deckSuggestionRuns, decks, deckVersions, type ApplySnapshot } from "../../../db/schema";
 import { lockDecksInOrder, pullClaimants, pullInTx, type PulledDraftRow } from "../../decks/pull";
-import { readPullReleaseCopies, undoPullRelease } from "../../decks/pull-release";
+import { readPullRelease, undoPullRelease } from "../../decks/pull-release";
 import { touchDeck } from "../../decks/touch";
 import { newestVersion } from "../../decks/versions";
 import { isUuid } from "../../uuid";
@@ -222,7 +222,15 @@ export async function applyPicks(args: {
           throw new Refused({ kind: "pull", itemId: p.itemId, message: pulled.message });
         }
         await tx.update(deckSuggestionItems)
-          .set({ undoSnapshot: { ...snapshot, pull: { sourceDeckId: p.sourceDeckId, draft: pulled.draft, versionId: pulled.versionId } } })
+          .set({
+            undoSnapshot: {
+              ...snapshot,
+              pull: {
+                sourceDeckId: p.sourceDeckId, draft: pulled.draft, versionId: pulled.versionId,
+                release: pulled.release, printing: pulled.printing,
+              },
+            },
+          })
           .where(eq(deckSuggestionItems.id, line.id));
         pulledFrom.push(p.sourceDeckId);
       }
@@ -301,45 +309,59 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
 }
 
 /**
- * One staged pull taken back (Undo all): the source's draft row as the pull found it, and the release given up. Under the
- * source's row lock, which the caller holds.
+ * One staged pull taken back (Undo all): the source's draft row as the pull found it (with its printing pick), and the
+ * release given up. Under the source's row lock, which the caller holds. Refused (naming the deck) whenever the source
+ * has moved on so the pull cannot be put back as it was:
  *
  * - The source deck is gone: the copy went with it, so there is nothing to give back.
- * - Its release is gone (the source's commit or discard cleared it). Which one is told by the source's newest version,
- *   never by its draft row: a row can survive a commit (a pull that took 2 to 1 commits at 1). A newer version than
- *   the one the pull saw is a commit, which made the removal that deck's list, so putting the card back would edit a
- *   list the player committed: it refuses. The same version with the card back in the draft is a discard, so the pull
- *   is undone already. A pull that only wrote a release (the draft had cut the card already) has nothing left to give
- *   back either way.
+ * - The pull edited the source's draft, and the source's newest version is not the one the pull saw: it COMMITTED
+ *   since, whatever its release or its row now say (a row can survive a commit: a pull that took 2 to 1 commits at 1),
+ *   and putting the card back would edit a list the player committed. Refused.
+ * - The release row is not the one this pull wrote (a later pull under the same key wrote it, after a commit or discard
+ *   cleared ours): giving it back would undo that later pull. Refused.
+ * - The release is gone with the version unchanged: a discard put the card back, so the pull is undone already, as long
+ *   as the card is back in the draft.
  * - Otherwise the draft row must be as the pull left it (one copy fewer, or gone at one); an edit since refuses, as
  *   `restoreSwap` does.
+ *
+ * A pull that only wrote a release (the draft had cut the card already) answers to the release alone: gone is nothing
+ * to give back, a later pull's is refused, its own is given back.
  */
 async function undoPull(tx: Tx, p: {
   userId: string; askingDeckId: string; oracleId: string; sourceDeckId: string; draft: PulledDraftRow; versionId?: string;
+  release?: string | null; printing?: { setCode: string; collectorNumber: string } | null;
 }): Promise<{ ok: true } | { ok: false; deckName: string }> {
   const [source] = await tx.select({ name: decks.name }).from(decks)
     .where(and(eq(decks.id, p.sourceDeckId), eq(decks.userId, p.userId)));
   if (!source) return { ok: true };
+  const refused = { ok: false as const, deckName: source.name };
+  if (p.draft !== null) {
+    const version = await newestVersion(p.sourceDeckId, tx);
+    if (p.versionId === undefined || version?.id !== p.versionId) return refused;
+  }
   const key = { sourceDeckId: p.sourceDeckId, oracleId: p.oracleId, askingDeckId: p.askingDeckId };
-  const copies = await readPullReleaseCopies(tx, key);
+  const release = await readPullRelease(tx, key);
   const rowOf = and(eq(deckCards.deckId, p.sourceDeckId), eq(deckCards.oracleId, p.oracleId));
   const [row] = await tx.select({ quantity: deckCards.quantity, auto: deckCards.auto }).from(deckCards).where(rowOf).for("update");
-  if (copies === 0) {
-    if (p.draft === null) return { ok: true };
-    const version = await newestVersion(p.sourceDeckId, tx);
-    const discarded = p.versionId !== undefined && version?.id === p.versionId && row !== undefined;
-    return discarded ? { ok: true } : { ok: false, deckName: source.name };
-  }
+  if (!release) return p.draft === null || row ? { ok: true } : refused;
+  const ours = p.release != null && release.createdAt.getTime() === new Date(p.release).getTime();
+  if (!ours) return refused;
   if (p.draft === null) {
     await undoPullRelease(tx, key);
     return { ok: true };
   }
   const left = p.draft.quantity - 1;
   const asLeft = left === 0 ? !row : row?.quantity === left && row.auto === p.draft.auto;
-  if (!asLeft) return { ok: false, deckName: source.name };
+  if (!asLeft) return refused;
   await tx.insert(deckCards)
     .values({ deckId: p.sourceDeckId, oracleId: p.oracleId, quantity: p.draft.quantity, auto: p.draft.auto })
     .onConflictDoUpdate({ target: [deckCards.deckId, deckCards.oracleId], set: { quantity: p.draft.quantity, auto: p.draft.auto } });
+  // The printing pick the last copy's prune dropped, back with the card.
+  if (p.printing) {
+    await tx.insert(deckPrintings)
+      .values({ deckId: p.sourceDeckId, oracleId: p.oracleId, setCode: p.printing.setCode, collectorNumber: p.printing.collectorNumber })
+      .onConflictDoNothing();
+  }
   await undoPullRelease(tx, key);
   // The source's list changed back, so it reads as edited.
   await touchDeck(tx, p.sourceDeckId);

@@ -3002,6 +3002,11 @@ export type ApplySnapshot = {
     sourceDeckId: string; draft: { quantity: number; auto: boolean } | null;
     /** The source's newest version when the pull was made: a newer one at undo means the source committed since. */
     versionId?: string;
+    /** The release row's `createdAt` as the pull left it (ISO): a different one at undo is a later pull's release under
+     *  the same key, which this undo must not give back. */
+    release?: string | null;
+    /** The source's printing pick for the card, when the pull took its last copy and the prune dropped the pick. */
+    printing?: { setCode: string; collectorNumber: string } | null;
   };
 };
 

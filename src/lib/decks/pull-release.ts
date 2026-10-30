@@ -47,18 +47,22 @@ export function pullReleaseInsertValues(
   return { ...release, copies: 1, createdAt: sql`clock_timestamp()` };
 }
 
+/** Returns the row's `createdAt` as this write left it: the release's identity for an undo (Suggested changes v2's
+ *  Undo all), which must not give back a release a later pull wrote under the same key. */
 export async function writePullRelease(
   tx: Tx,
   release: { userId: string; sourceDeckId: string; oracleId: string; askingDeckId: string },
-): Promise<void> {
-  await tx
+): Promise<Date | null> {
+  const [row] = await tx
     .insert(pullReleases)
     .values(pullReleaseInsertValues(release))
     .onConflictDoUpdate({
       target: [pullReleases.sourceDeckId, pullReleases.oracleId, pullReleases.askingDeckId],
       // A pull for a DIFFERENT deck is its own row, so every asker is told when this is undone.
       set: PULL_RELEASE_UPSERT_SET,
-    });
+    })
+    .returning({ createdAt: pullReleases.createdAt });
+  return row?.createdAt ?? null;
 }
 
 type ReleaseKey = { sourceDeckId: string; oracleId: string; askingDeckId: string };
@@ -69,11 +73,12 @@ const releaseRow = (k: ReleaseKey) => and(
   eq(pullReleases.askingDeckId, k.askingDeckId),
 );
 
-/** The copies one release row holds, locked `for update`; 0 when there is no row (the source's commit or discard
- *  cleared it). */
-export async function readPullReleaseCopies(tx: Tx, key: ReleaseKey): Promise<number> {
-  const [row] = await tx.select({ copies: pullReleases.copies }).from(pullReleases).where(releaseRow(key)).for("update");
-  return row?.copies ?? 0;
+/** One release row, locked `for update`: its copies and when it was last written; null when there is no row (the
+ *  source's commit or discard cleared it). */
+export async function readPullRelease(tx: Tx, key: ReleaseKey): Promise<{ copies: number; createdAt: Date } | null> {
+  const [row] = await tx.select({ copies: pullReleases.copies, createdAt: pullReleases.createdAt })
+    .from(pullReleases).where(releaseRow(key)).for("update");
+  return row ?? null;
 }
 
 /**

@@ -6,6 +6,7 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { availabilityState, type DeckClaim } from "../../lib/decks/availability";
 import { pullCandidate, pullSourceChoices } from "../../lib/decks/draft-shape";
+import type { SourceDeckFigure } from "../../lib/decks/read";
 import type { LineItem } from "../../lib/tuning/state";
 import { PullControl } from "./pull-control";
 import { ModalChrome } from "./receipt-modal";
@@ -39,8 +40,11 @@ function pullOffer(l: LineItem) {
  * bottom fade. ✕ is the only way out with nothing changed: no second cancel.
  */
 export function SuggestedChangesConfirm({
-  adds, cuts, bracket, busy, onApply, onClose, deckId = "", ownedFromOtherDecks = false, staged = new Map(), onStage,
+  adds, cuts, bracket, busy, onApply, onClose, deckId = "", ownedFromOtherDecks = false, staged = new Map(), onStage, sourceFigures,
 }: {
+  /** The picker's "→ N cards" per source, keyed `${deckId}:${oracleId}` (`loadSourceDeckFigures`), as Review changes
+   *  passes it. Absent draws no figure. */
+  sourceFigures?: Map<string, SourceDeckFigure>;
   /** The deck the set applies to: Review changes' Pull takes it, though a staged pull never sends it from here. */
   deckId?: string;
   /** The run offered copies held in other decks: each held addition carries Review changes' Pull, which STAGES. */
@@ -94,7 +98,7 @@ export function SuggestedChangesConfirm({
             label={copy.confirm.comingIn(adds.length)}
             sign="+"
             lines={adds}
-            held={{ deckId, ownedFromOtherDecks, staged, onStage }}
+            held={{ deckId, ownedFromOtherDecks, staged, onStage, sourceFigures, busy }}
           />
           <Side label={copy.confirm.goingOut(cuts.length)} sign="−" lines={cuts} />
         </div>
@@ -114,6 +118,9 @@ type HeldProps = {
   ownedFromOtherDecks: boolean;
   staged: ReadonlyMap<string, DeckClaim>;
   onStage?: (itemId: string, claim: DeckClaim | null) => void;
+  sourceFigures?: Map<string, SourceDeckFigure>;
+  /** Apply is in flight: Pull it, the picker and Undo hold until it settles. */
+  busy: boolean;
 };
 
 function Side({ label, sign, lines, held }: { label: string; sign: "+" | "−"; lines: readonly LineItem[]; held?: HeldProps }) {
@@ -142,6 +149,7 @@ function Side({ label, sign, lines, held }: { label: string; sign: "+" | "−"; 
 const UNSTAGE_BUTTON =
   "ml-auto inline-flex flex-none items-center justify-center min-h-[44px] md:min-h-[34px] px-[16px] md:px-[11px] "
   + "rounded-[7px] font-sans font-medium text-[12.5px] md:text-[12px] bg-transparent cursor-pointer "
+  + "disabled:opacity-50 disabled:cursor-default "
   + "[border:1px_solid_var(--border-strong)] text-[color:var(--fg-muted)]";
 
 /**
@@ -186,7 +194,9 @@ function HeldRow({ line: l, held }: { line: LineItem; held: HeldProps }) {
           type="button"
           className={UNSTAGE_BUTTON}
           aria-label={copy.confirm.unstageA11y(l.cardName, chosen.name)}
+          disabled={held.busy}
           onClick={() => {
+            if (held.busy) return;
             moveFocus.current = "pull";
             held.onStage?.(l.id, null);
           }}
@@ -200,6 +210,8 @@ function HeldRow({ line: l, held }: { line: LineItem; held: HeldProps }) {
             card={{ oracleId: l.cardOracleId, name: l.cardName }}
             claims={claims}
             defaultId={(choosable[0] ?? claim).id}
+            sourceFigures={held.sourceFigures}
+            disabled={held.busy}
             onPulled={() => undefined}
             onChoose={(c) => {
               moveFocus.current = "undo";

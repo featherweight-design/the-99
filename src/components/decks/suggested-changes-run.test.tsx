@@ -281,6 +281,21 @@ describe("the results", () => {
     expect(document.activeElement).toBe(screen.getByRole("button", { name: manyName }));
   });
 
+  it("reads the picker's source figures for the held additions once the confirmation opens", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    const sourceFigures = vi.fn(async () => [[`${GISHATH.id}:o-a0`, { built: 99, inDraft: true }]] as [string, { built: number; inDraft: boolean }][]);
+    const t = setup({
+      ask: ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } }),
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    t.actions.sourceFigures = sourceFigures;
+    t.rerender({});
+    expect(sourceFigures).not.toHaveBeenCalled();
+    await press(apply());
+    expect(sourceFigures).toHaveBeenCalledWith([{ deckId: GISHATH.id, oracleId: "o-a0" }]);
+  });
+
   it("takes a staged pull back with Undo, and then sends none", async () => {
     const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
     const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
