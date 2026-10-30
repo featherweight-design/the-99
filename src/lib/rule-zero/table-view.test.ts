@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { TABLES, VIEWER_DECK_ID } from "./table-fixtures";
+import { TABLES, VIEWER_DECK_ID } from "../social/rule-zero-fixtures";
 import { drawTable, logGameHref, logPrefillTable, middleBrackets, type SeatDraw } from "./table-view";
+import { plain } from "../person-name/testing";
 
-const byName = (seats: SeatDraw[], name: string) => seats.find((s) => s.seat.displayName === name)!;
+const byName = (seats: SeatDraw[], name: string) => seats.find((s) => plain(s.seat.displayName) === name)!;
 const flagOf = (s: SeatDraw) => (s.read?.flag ? (s.read.flag.split ? "split" : s.read.flag.dir) : null);
 
 describe("drawTable", () => {

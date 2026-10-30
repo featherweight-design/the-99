@@ -7,6 +7,7 @@
  * (`markSeen`). Before their first draw there is nothing to have looked at, so nothing is changed. The viewer's own
  * seat never carries the dot: its changes are their own, which the swap draws as `changed just now` (PR 7).
  */
+import type { ThirdPartyName } from "../person-name/brand";
 import { ruleZeroCopy } from "../copy/rule-zero";
 import type { TableSeat, TableView } from "../social/rule-zero-table";
 
@@ -24,7 +25,7 @@ export function ownChanged(seat: Pick<TableSeat, "you" | "deck">, swappedTo: str
 }
 
 /** `Since you looked`'s sentences, in seat order: each changed seat that now holds a deck, and what it holds. */
-export function sinceYouLooked(view: Pick<TableView, "seats" | "seenAt">): { name: string; deck: string }[] {
+export function sinceYouLooked(view: Pick<TableView, "seats" | "seenAt">): { name: string | ThirdPartyName; deck: string | ThirdPartyName }[] {
   return view.seats.flatMap((s) => (seatChanged(s, view.seenAt) && s.deck ? [{ name: s.displayName, deck: s.deck.name }] : []));
 }
 

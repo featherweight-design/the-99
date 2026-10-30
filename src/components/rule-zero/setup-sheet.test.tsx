@@ -4,23 +4,25 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 import type { SetupMember } from "../../lib/social/rule-zero";
 import { SetupSheet, type SetupData } from "./setup-sheet";
 
 const c = ruleZeroCopy.setup;
 afterEach(cleanup);
 
-const deck = (deckId: string, name: string) => ({ deckId, name, commanderName: `${name} commander`, artCropUri: null });
+const deck = (deckId: string, name: string, own = false) => ({ deckId, name: own ? name : named(name), commanderName: `${name} commander`, artCropUri: null });
 const member = (publicId: string, displayName: string, kind: SetupMember["kind"], decks = [] as ReturnType<typeof deck>[], over: Partial<SetupMember> = {}): SetupMember => ({
-  publicId, displayName, commander: null, kind, isOwner: false, decks, start: decks[0]?.deckId ?? null, ...over,
+  publicId, displayName: kind === "you" ? displayName : named(displayName), commander: null, kind, isOwner: false, decks, start: decks[0]?.deckId ?? null, ...over,
 });
 
-const YOU = member("p-you", "Hugh", "you", [deck("d-y1", "Ghalta Stompy"), deck("d-y2", "Other")]);
+const YOU = member("p-you", "Hugh", "you", [deck("d-y1", "Ghalta Stompy", true), deck("d-y2", "Other", true)]);
 const COLIN = member("p-colin", "Colin", "hasDecks", [deck("d-c1", "Zimone Combo")], { isOwner: true });
 const PETER = member("p-peter", "Peter", "hasDecks", [deck("d-p1", "Giada Angels"), deck("d-p2", "Miku Tokens")], { start: null });
 const MAX = member("p-max", "Max", "picksOwn");
 const CHRIS = member("p-chris", "Chris", "noDecks");
-const SETUP: SetupData = { podId: "pod", podName: "Thursday night", owner: "Colin", members: [YOU, COLIN, PETER, MAX, CHRIS] };
+const SETUP: SetupData = { podId: "pod", podName: named("Thursday night"), owner: named("Colin"), members: [YOU, COLIN, PETER, MAX, CHRIS] };
 
 function open(over: Partial<Parameters<typeof SetupSheet>[0]> = {}) {
   const onSave = vi.fn(async () => ({ ok: true as const, tableId: "t" }));
@@ -34,7 +36,11 @@ describe("who's playing (U1, U2, V1)", () => {
   it("draws every member as a checkbox tile, You already in and held, Chris dimmed with no decks", () => {
     open();
     expect(screen.getByRole("dialog", { name: c.whoTitle })).toBeTruthy();
-    expect(screen.getByText(c.whoSub("Thursday night"))).toBeTruthy();
+    expect(screen.getByText(plain(c.whoSub(named("Thursday night"))))).toBeTruthy();
+    // Another reader's names are drawn marked, on the element holding each; the viewer's own is not.
+    expect(screen.getByText(plain(c.whoSub(named("Thursday night")))).className).toContain("ph-no-capture");
+    expect(tile(/^Colin/).querySelector(".ph-no-capture")?.textContent).toBe("Colin");
+    expect(tile(/^You/).querySelector(".ph-no-capture")).toBeNull();
     const you = tile(/^You/);
     expect(you.getAttribute("aria-checked")).toBe("true");
     expect(you.getAttribute("aria-disabled")).toBe("true");
@@ -83,7 +89,8 @@ describe("who's playing (U1, U2, V1)", () => {
     open({ onInvite });
     fireEvent.click(screen.getByText(c.inviteTitle));
     expect(onInvite).toHaveBeenCalled();
-    expect(screen.getByText(c.inviteBody("Colin"))).toBeTruthy();
+    expect(screen.getByText(plain(c.inviteBody(named("Colin"))))).toBeTruthy();
+    expect(screen.getByText(plain(c.inviteBody(named("Colin")))).className).toContain("ph-no-capture");
   });
 });
 
@@ -98,11 +105,12 @@ describe("a deck for each seat (U3, U4, V2, V3)", () => {
   it("rows each seat in order, a non-friend with no control and no decks listed", () => {
     toDecks();
     expect(screen.getByRole("dialog", { name: c.decksTitle })).toBeTruthy();
-    const max = screen.getByText(c.notFriendRow("Max")).closest("button")!;
+    const max = screen.getByText(plain(c.notFriendRow(named("Max")))).closest("button")!;
     expect(max.getAttribute("aria-disabled")).toBe("true");
     expect(within(max).getByText(c.notFriendSub)).toBeTruthy();
+    expect(within(max).getByText(plain(c.notFriendRow(named("Max")))).className).toContain("ph-no-capture");
     const peter = screen.getByText(c.pick).closest("button")!;
-    expect(within(peter).getByText(c.leaveIt("Peter"))).toBeTruthy();
+    expect(within(peter).getByText(plain(c.leaveIt(named("Peter"))))).toBeTruthy();
     expect(screen.getByText("Ghalta Stompy")).toBeTruthy();
     expect(screen.getByText("Zimone Combo")).toBeTruthy();
   });
@@ -110,11 +118,12 @@ describe("a deck for each seat (U3, U4, V2, V3)", () => {
   it("opens a friend's decks by name and commander, and a pick returns to the seats", () => {
     toDecks();
     fireEvent.click(screen.getByText(c.pick).closest("button")!);
-    const list = screen.getByRole("list", { name: c.friendDecksList("Peter") });
+    const list = screen.getByRole("list", { name: plain(c.friendDecksList(named("Peter"))) });
+    expect(list.className).toContain("ph-no-capture");
     expect(within(list).getAllByRole("button").map((o) => o.textContent)).toEqual([
       "Giada AngelsGiada Angels commander",
       "Miku TokensMiku Tokens commander",
-      `?${c.leaveItRow("Peter")}${c.leaveItSub}`,
+      `?${plain(c.leaveItRow(named("Peter")))}${c.leaveItSub}`,
     ]);
     expect(screen.getByText(c.friendDecksFoot)).toBeTruthy();
     fireEvent.click(within(list).getByText("Miku Tokens"));
@@ -165,7 +174,7 @@ describe("Seats: the setter reopens setup with the seats kept", () => {
     ...SETUP,
     tableId: "t",
     seated: [
-      { publicId: "p-max", deck: { name: "Gisa Zombies", commanderName: "Gisa", artCropUri: null } },
+      { publicId: "p-max", deck: { name: named("Gisa Zombies"), commanderName: "Gisa", artCropUri: null } },
       { publicId: "p-you", deck: { name: "Ghalta Stompy", commanderName: "Ghalta", artCropUri: null } },
     ],
   };

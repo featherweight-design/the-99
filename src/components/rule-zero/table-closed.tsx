@@ -3,6 +3,7 @@
 // are already gone by the time this draws, since every read filters `expires_at > now()`.
 
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+import { PersonText, type ThirdPartyName } from "../../lib/person-name";
 import { Face } from "../social/face";
 import { BackLink } from "./back-link";
 import { GhostButton } from "../ui/button";
@@ -18,11 +19,11 @@ export function TableClosed({
   setBy,
   faces,
 }: {
-  podName: string;
+  podName: ThirdPartyName;
   /** The setter's display name, or null when the viewer set it. */
-  setBy: string | null;
+  setBy: ThirdPartyName | null;
   /** The seated players, drawn greyed: their names (for initials) and their decks' art. */
-  faces: readonly { name: string; artCropUri: string | null }[];
+  faces: readonly { name: string | ThirdPartyName; artCropUri: string | null }[];
 }) {
   return (
     // The phone keeps its `‹ Friends` row (L4); desktop draws the card alone, centered in the page (H3).
@@ -47,7 +48,7 @@ export function TableClosed({
         </div>
         <h1 className="m-0 font-display text-[22px] font-bold">{copy.title}</h1>
         <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-muted)] [text-wrap:pretty]">
-          {copy.body(podName, setBy ?? "you")}
+          <PersonText text={copy.body(podName, setBy ?? "you")} />
         </p>
         <GhostButton href="/friends" className="inline-flex min-h-[44px] items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
           {copy.back}

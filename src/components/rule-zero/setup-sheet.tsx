@@ -10,14 +10,14 @@
 // shows it with no control; only a new seat takes a pick.
 
 import { useMemo, useRef, useState } from "react";
-import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+import { ruleZeroCopy, type Said } from "../../lib/copy/rule-zero";
+import { PersonInitials, PersonName, PersonText, personAttrs } from "../../lib/person-name";
 import { socialCopy } from "../../lib/copy/social";
 import { SEATS_MAX, SEATS_MIN } from "../../lib/social/client-rules";
 import type { PodSetup, SeatedNow, SetupDeck, SetupMember } from "../../lib/social/rule-zero";
 import type { SetupOutcome } from "../../app/friends/table/setup-actions";
 import { SocialModal } from "../social/social-modal";
 import { SeatArt } from "../social/seat-art";
-import { faceInitials } from "../social/face";
 import { FadingImg } from "../ui/hydrated-art";
 
 const copy = ruleZeroCopy.setup;
@@ -110,7 +110,7 @@ export function SetupSheet({
         screen={`friend-${m.publicId}`}
         width={640}
       >
-        <ul aria-label={m.kind === "you" ? copy.yourDecksTitle : copy.friendDecksList(name)} className="m-0 flex list-none flex-col gap-[2px] p-0 pt-[12px] md:pt-[16px]">
+        <ul {...personAttrs({ "aria-label": m.kind === "you" ? copy.yourDecksTitle : copy.friendDecksList(name) }, "m-0 flex list-none flex-col gap-[2px] p-0 pt-[12px] md:pt-[16px]")}>
           {m.decks.map((d) => (
             <li key={d.deckId}>
               <button
@@ -224,7 +224,7 @@ export function SetupSheet({
             <span>
               <b className="font-semibold text-[color:var(--fg)]">{copy.inviteTitle}</b>
               <br />
-              {setup.owner === null ? copy.inviteBodyOwner : copy.inviteBody(setup.owner)}
+              <PersonText text={setup.owner === null ? copy.inviteBodyOwner : copy.inviteBody(setup.owner)} />
             </span>
           </button>
         ) : null}
@@ -271,7 +271,7 @@ function MemberTile({ member, on, off, noDecks, onToggle }: { member: SetupMembe
         )}
       </SeatArt>
       <span className="flex min-w-0 items-baseline gap-[5px] font-sans text-[13px] font-medium">
-        <span className="min-w-0 truncate">{member.kind === "you" ? pods.you : member.displayName}</span>
+        <span className="min-w-0 truncate"><PersonName n={member.kind === "you" ? pods.you : member.displayName} /></span>
         {tag ? <small className="flex-none whitespace-nowrap font-mono text-[10px] font-normal text-[color:var(--fg-muted)]">{tag}</small> : null}
       </span>
       <span className="truncate whitespace-nowrap font-mono text-[10px] text-[color:var(--fg-faint)]">{sub}</span>
@@ -308,12 +308,12 @@ function SeatRow({ member, kept, pick, onOpen }: { member: SetupMember; kept: Se
         </span>
       ) : (
         <span aria-hidden className={`${ROW_ART} ${INITIALS} text-[18px]`}>
-          {faceInitials(member.displayName)}
+          <PersonInitials n={member.displayName} />
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <span className="flex items-baseline font-sans text-[12px] font-medium text-[color:var(--fg-muted)]">
-          {name}
+          <PersonName n={name} />
           {notFriend ? <small className="ml-[6px] font-mono text-[10px] font-normal">{pods.notFriendTag}</small> : null}
         </span>
         <b
@@ -325,9 +325,9 @@ function SeatRow({ member, kept, pick, onOpen }: { member: SetupMember; kept: Se
                 : "text-[14px] font-medium text-[color:var(--fg-body)]"
           }`}
         >
-          {line.name}
+          <PersonText text={line.name} />
         </b>
-        <span className="truncate whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-faint)]">{line.sub}</span>
+        <span className="truncate whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-faint)]"><PersonText text={line.sub} /></span>
       </span>
       <span aria-hidden className="flex w-[32px] flex-none items-center justify-center text-[color:var(--fg-faint)]">
         {control ? (
@@ -348,10 +348,10 @@ function DeckArt({ deck }: { deck: SetupDeck }) {
   );
 }
 
-function DeckText({ name, sub, gap }: { name: string; sub: string; gap: number }) {
+function DeckText({ name, sub, gap }: { name: Said; sub: string; gap: number }) {
   return (
     <span className="flex min-w-0 flex-col" style={{ gap }}>
-      <b className="truncate whitespace-nowrap font-sans text-[14px] font-semibold">{name}</b>
+      <b className="truncate whitespace-nowrap font-sans text-[14px] font-semibold"><PersonText text={name} /></b>
       <span className="truncate whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>
     </span>
   );

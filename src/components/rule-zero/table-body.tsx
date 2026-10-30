@@ -9,6 +9,7 @@
 // deck id the page holds (decision 5).
 
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+import { PersonName, PersonText } from "../../lib/person-name";
 import { drawTable, logGameHref, type TableView } from "../../lib/rule-zero/table-view";
 import { closesWhen } from "../../lib/social/when";
 import { GhostButton } from "../ui/button";
@@ -52,8 +53,8 @@ export function TableBody({
           <BackLink className="col-start-1 mb-[6px] hidden gap-[6px] text-[13px] xl:flex" />
           <h1 className="col-start-1 m-0 font-display text-[24px] font-bold leading-[1.2] xl:text-[30px]">{copy.title}</h1>
           <p className="col-start-1 m-0 mt-[6px] font-mono text-[11.5px] leading-[1.55] text-[color:var(--fg-faint)] xl:text-[12px] xl:leading-normal">
-            <b className="font-medium text-[color:var(--fg-body)]">{view.podName}</b>
-            {copy.metaSetBy(view.setByYou ? null : view.setBy, view.seats.length)}
+            <b className="font-medium text-[color:var(--fg-body)]"><PersonName n={view.podName} /></b>
+            <PersonText text={copy.metaSetBy(view.setByYou ? null : view.setBy, view.seats.length)} />
             <span className="hidden xl:inline"> · </span>
             <br className="xl:hidden" />
             {copy.metaOpen(closes)}

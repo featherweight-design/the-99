@@ -123,7 +123,9 @@ export function TableLive({
         setArrived(true);
       }
       setSwappedTo(undoTo === null ? deckId : null);
-      const name = out.view.seats.find((x) => x.you)?.deck?.name ?? null;
+      // The viewer's own deck, so a plain string; nothing here is another reader's.
+      const own = out.view.seats.find((x) => x.you)?.deck?.name ?? null;
+      const name = typeof own === "string" ? own : null;
       // An Undo answers with no toast of its own: it put back what the reader had.
       if (undoTo === null && name !== null) {
         setToast({ id: ++toastId.current, text: swapCopy.toast(name), retry: { label: swapCopy.undo, run: () => void seat(before, { deckId: before }) } });

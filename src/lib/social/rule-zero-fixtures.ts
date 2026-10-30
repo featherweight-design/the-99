@@ -1,14 +1,16 @@
 /**
  * The Rule 0 boards' tables as `TableView`s (handoff fixtures: Colin's pod Thursday night, with you, Colin the
  * owner, Peter, and Max, Colin's friend and not yours), one per state T1 to T10. For the page's tests and its
- * contact sheet; the decks are the boards' own. No seat but the viewer's carries a deck id, as the loader's does not.
+ * contact sheet; the decks are the boards' own. Lives in `social/` because it mints names, as the loader there does: every
+ * seat but the viewer's carries a branded name and deck name. No seat but the viewer's carries a deck id, as the loader's does not.
  */
 import { declarationAsk } from "../bracket/declaration-ask";
 import { FINDING_ORDER, type FindingId } from "../bracket/findings";
 import type { Bracket, BracketLean, CardRef, ComboRef } from "../bracket/types";
 import { verdictSubLine } from "../bracket/verdict-head";
-import { driversFor, inRead, seatState, seatValue, tableRead, type DriverVerdict, type SeatDeck } from "./rules";
-import type { TableSeat, TableView } from "./table-view";
+import { named } from "../person-name/mint";
+import { driversFor, inRead, seatState, seatValue, tableRead, type DriverVerdict, type SeatDeck } from "../rule-zero/rules";
+import type { TableSeat, TableView } from "../rule-zero/table-view";
 
 /** A fixture seat's reading before the loader reduces it: the verdict `driversFor` takes, its declaration, its counts. */
 type SeatReading = DriverVerdict & { declared: Bracket | null; counts: Record<FindingId, number> };
@@ -77,7 +79,7 @@ const AT = new Date("2026-10-16T21:40:00Z");
 
 const seat = (n: number, displayName: string, d: TableSeatDeck | null, o: Partial<TableSeatView> = {}): TableSeatView => ({
   seat: n,
-  displayName,
+  displayName: o.you ? displayName : named(displayName),
   publicId: `pub-${displayName.toLowerCase()}`,
   you: false,
   podOwner: false,
@@ -132,7 +134,7 @@ const table = (input: TableSeatView[], o: Partial<TableView> = {}): TableView =>
       ...s,
       deck: d && {
         deckId: s.you ? VIEWER_DECK_ID : null,
-        name: d.deckName,
+        name: s.you ? d.deckName : named(d.deckName),
         commander: { name: d.commanderName, artCropUri: d.artCropUri },
         partner: null,
         cards: d.built + (100 - d.size),
@@ -154,9 +156,9 @@ const table = (input: TableSeatView[], o: Partial<TableView> = {}): TableView =>
   });
   return {
     tableId: "table-1",
-    podName: "Thursday night",
+    podName: named("Thursday night"),
     closesAt: new Date("2026-10-17T21:40:00Z"),
-    setBy: "Colin",
+    setBy: named("Colin"),
     setByYou: false,
     viewerDeckId: input.find((s) => s.you)?.deck ? VIEWER_DECK_ID : null,
     revision: AT,
@@ -174,7 +176,7 @@ export const TABLES = {
   T2: table([you(), colin(zimone()), peter(ashling()), max(gisa())]),
   T3: table([you(), colin(sai()), peter(giada()), max(gisa())]),
   T4: table([you(), colin(zimone()), peter(giada()), max(gisa())]),
-  T5: table([you(), colin(zimone())], { setBy: "Hugh", setByYou: true }),
+  T5: table([you(), colin(zimone())], { setBy: named("Hugh"), setByYou: true }),
   T6: table([you(), colin(zimone([4, 5], 4)), peter(miku()), max(gisa())]),
   T7: table([you(), colin(zimone([4, 5], 1)), peter(ashling()), max(gisa())]),
   T8: table([
@@ -185,7 +187,7 @@ export const TABLES = {
     max({ ...gisa(), built: 100 }),
   ]),
   T9: table([you(), colin(sai()), peter(deck("Ashling Elementals", "Ashling, the Limitless", null)), max(gisa())]),
-  T10: table([you(), peter({ ...giada(), built: 86 }), max(null)], { setBy: "Hugh", setByYou: true }),
+  T10: table([you(), peter({ ...giada(), built: 86 }), max(null)], { setBy: named("Hugh"), setByYou: true }),
   /** Two undeclared Exhibition-or-Core ranges beside two Upgradeds: the middle is 2.25, so both ranges' faces sit at Core. */
   twoRanges: table([you(sai()), colin(miku()), peter(miku()), max(gisa())]),
   /** No flag, and the read seats do not all read the same: an undeclared Exhibition or Core beside two Cores. */

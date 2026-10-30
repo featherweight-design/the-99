@@ -31,7 +31,8 @@ export function PersonInitials({ n }: { n: string | ThirdPartyName }) {
  * Copy that may name someone (`personText`). One text node: in a marked span when it names a third party, plain
  * otherwise, so a sentence reads, wraps and is found by its text exactly as the plain string was.
  */
-export function PersonText({ text }: { text: string | PersonParts }) {
+export function PersonText({ text: given }: { text: string | PersonParts | ThirdPartyName }) {
+  const text: string | PersonParts = isThirdPartyName(given) ? [given] : given;
   return namesSomeone(text) ? <span className={NO_CAPTURE}>{textOf(text)}</span> : <>{textOf(text)}</>;
 }
 
@@ -115,4 +116,16 @@ export function clipParts(parts: PersonParts, max: number): PersonParts {
     return out;
   }
   return parts;
+}
+
+/**
+ * Copy that opens a sentence, with its first letter capitalized: a name that opens it stays a name (and stays marked),
+ * its first letter read here, in a file that may reveal.
+ */
+export function upperFirst(text: string | ThirdPartyName | PersonParts): PersonParts {
+  const parts: PersonParts = typeof text === "string" ? [text] : isThirdPartyName(text) ? [text] : (text as PersonParts);
+  const [first, ...rest] = parts;
+  if (first === undefined) return parts;
+  const cap = (t: string) => `${t.charAt(0).toUpperCase()}${t.slice(1)}`;
+  return [typeof first === "string" ? cap(first) : named(cap(reveal(first))), ...rest];
 }

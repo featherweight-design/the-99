@@ -5,7 +5,9 @@
 // (`loadHomeTables`), never from Home's cached payload.
 
 import Link from "next/link";
+import { Fragment } from "react";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+import { isThirdPartyName, PersonName, type PersonParts } from "../../lib/person-name";
 import type { OpenTable } from "../../lib/social/rule-zero";
 import { closesWhen } from "../../lib/social/when";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -24,10 +26,12 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
   // split on it, so the bold lands on the slot whatever the deck is called.
   const setter = table.setterName;
   const sentence = (d: string) => table.setByYou || setter === null ? copy.homeBodyOwn(d, n, closes) : copy.homeBody(setter, d, n, closes);
-  const body = deck === null
+  const body: string | PersonParts | null = deck === null
     ? table.setByYou ? copy.homeBodyWaitingOwn(n, closes) : copy.homeBodyWaiting(setter, n, closes)
     : null;
-  const [before, after] = deck === null ? ["", ""] : sentence(SLOT).split(SLOT);
+  const parts: string | PersonParts = deck === null ? [] : sentence(SLOT);
+  const said = body ?? parts;
+  const drawn: PersonParts = typeof said === "string" ? [said] : said;
   const art = table.seats.flatMap((s) => (s.commander?.artCropUri ? [s.commander.artCropUri] : []));
   return (
     <section
@@ -44,7 +48,7 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
         </div>
       ) : null}
       <span className="relative font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)]">{copy.homeKicker}</span>
-      <h3 className="relative m-0 font-display text-[18px] font-bold text-[color:var(--fg)]">{table.podName}</h3>
+      <h3 className="relative m-0 font-display text-[18px] font-bold text-[color:var(--fg)]"><PersonName n={table.podName} /></h3>
       <div className="relative flex flex-wrap gap-[6px]">
         {table.seats.map((s, i) => (
           <Face
@@ -57,13 +61,17 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
         ))}
       </div>
       <p className="relative m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
-        {body ?? (
-          <>
-            {before}
-            <b className="text-[color:var(--fg)]">{deck}</b>
-            {after}
-          </>
-        )}
+        {drawn.map((part, i) => {
+          if (isThirdPartyName(part)) return <PersonName key={i} n={part} />;
+          const [before, ...after] = part.split(SLOT);
+          return after.length === 0 ? <Fragment key={i}>{part}</Fragment> : (
+            <Fragment key={i}>
+              {before}
+              <b className="text-[color:var(--fg)]">{deck}</b>
+              {after.join("")}
+            </Fragment>
+          );
+        })}
       </p>
       <Link href={`/friends/table/${table.tableId}`} className={`${ACCENT_BUTTON} relative w-full no-underline`}>
         {copy.homeOpen}

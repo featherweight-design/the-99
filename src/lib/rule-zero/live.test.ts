@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { named } from "../person-name/mint";
+import { plain } from "../person-name/testing";
 import type { TableView } from "../social/rule-zero-table";
 import { changedLine, reviveTableView, seatChanged, sinceYouLooked } from "./live";
 
 const T = (iso: string) => new Date(`2026-10-17T${iso}Z`);
 const seat = (displayName: string, changedAt: Date, opts: { you?: boolean; deck?: string | null } = {}) =>
-  ({ displayName, changedAt, you: opts.you ?? false, deck: opts.deck === null ? null : { name: opts.deck ?? `${displayName}'s deck` } }) as unknown as TableView["seats"][number];
+  ({ displayName: opts.you ? displayName : named(displayName), changedAt, you: opts.you ?? false, deck: opts.deck === null ? null : { name: opts.you ? (opts.deck ?? `${displayName}'s deck`) : named(opts.deck ?? `${displayName}'s deck`) } }) as unknown as TableView["seats"][number];
 
 describe("seatChanged", () => {
   it("marks a seat changed after the snapshot the viewer last drew", () => {
@@ -31,7 +33,7 @@ describe("sinceYouLooked", () => {
         seat("Ana", T("21:41:50"), { deck: "Atraxa" }),
       ],
     };
-    expect(sinceYouLooked(view)).toEqual([{ name: "Colin", deck: "Sai Thopters" }, { name: "Ana", deck: "Atraxa" }]);
+    expect(sinceYouLooked(view).map((s) => ({ name: plain(s.name), deck: plain(s.deck) }))).toEqual([{ name: "Colin", deck: "Sai Thopters" }, { name: "Ana", deck: "Atraxa" }]);
   });
 });
 

@@ -9,10 +9,12 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh }) })
 vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen }));
 vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn() }));
 
-import { TABLES } from "../../lib/rule-zero/table-fixtures";
+import { TABLES } from "../../lib/social/rule-zero-fixtures";
 import type { TableView } from "../../lib/rule-zero/table-view";
 import { TableBody } from "./table-body";
 import { POLL_MS, TableLive } from "./table-live";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const base = TABLES.T1;
 const AT = base.revision;
@@ -22,7 +24,7 @@ const swapped = (view: TableView, seenAt: Date | null): TableView => ({
   ...view,
   seenAt,
   revision: later(60_000),
-  seats: view.seats.map((s) => (s.displayName === "Colin" ? { ...s, changedAt: later(60_000) } : s)),
+  seats: view.seats.map((s) => (plain(s.displayName) === "Colin" ? { ...s, changedAt: later(60_000) } : s)),
 });
 const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "Your seat" : `${name}’s seat` });
 const readCard = () => screen.getByTestId("read-card");
@@ -34,7 +36,7 @@ describe("the changed dot and Since you looked (S5, W5)", () => {
     expect(within(seatOf("Colin")).getByTestId("changed")).toHaveTextContent("changed 1 min ago");
     expect(within(seatOf("Peter")).queryByTestId("changed")).toBeNull();
     expect(within(seatOf("You")).queryByTestId("changed")).toBeNull();
-    const deck = view.seats.find((s) => s.displayName === "Colin")!.deck!.name;
+    const deck = plain(view.seats.find((s) => plain(s.displayName) === "Colin")!.deck!.name);
     expect(within(readCard()).getByTestId("since")).toHaveTextContent(`Since you looked Colin swapped to ${deck}.`);
     expect(within(readCard()).getByText(deck).tagName).toBe("B");
   });
@@ -101,7 +103,7 @@ describe("TableLive", () => {
     const { rerender } = render(<TableLive initial={base} gamesEnabled now={AT} />);
     await settle();
     expect(seatOf("Colin")).toBeTruthy();
-    const reseated = { ...base, seats: base.seats.filter((s) => s.displayName !== "Colin") };
+    const reseated = { ...base, seats: base.seats.filter((s) => plain(s.displayName) !== "Colin") };
     rerender(<TableLive initial={reseated} gamesEnabled now={AT} />);
     expect(screen.queryByRole("article", { name: "Colin’s seat" })).toBeNull();
   });
@@ -152,7 +154,7 @@ describe("TableLive", () => {
     fetchMock.mockResolvedValueOnce(open(base));
     render(<TableLive initial={base} gamesEnabled now={AT} />);
     await settle();
-    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { podName: "Thursday night", setBy: "Colin", faces: [] } }));
+    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { podName: named("Thursday night"), setBy: named("Colin"), faces: [] } }));
     await settle(POLL_MS);
     expect(screen.getByTestId("table-closed")).toBeInTheDocument();
     expect(screen.queryByTestId("table-body")).toBeNull();

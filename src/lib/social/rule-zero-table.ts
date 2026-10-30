@@ -15,6 +15,8 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, deckGames, deckProfiles, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
+import { named } from "../person-name/mint";
+import type { ThirdPartyName } from "../person-name/brand";
 import { declarationAsk, type DeclarationAsk } from "../bracket/declaration-ask";
 import { findings, type FindingId } from "../bracket/findings";
 import { slotDeck } from "../bracket/slot";
@@ -47,7 +49,8 @@ export type SeatReading = {
 
 export type TableSeat = {
   seat: number;
-  displayName: string;
+  /** Another player's name is branded; the viewer's own seat (`you`) stays plain. */
+  displayName: string | ThirdPartyName;
   /** Only when the viewer and this player are friends. */
   publicId: string | null;
   you: boolean;
@@ -58,7 +61,8 @@ export type TableSeat = {
   deck: {
     /** The viewer's OWN deck id only (Change deck, the suggestion); null on every other seat. */
     deckId: string | null;
-    name: string;
+    /** The seat player's deck name: branded on every seat but the viewer's own. */
+    name: string | ThirdPartyName;
     commander: { name: string; artCropUri: string | null };
     partner: { name: string; artCropUri: string | null } | null;
     /** The whole deck, commanders in, so `87 of 100`. */
@@ -75,11 +79,11 @@ export type TableSeat = {
 
 export type TableView = {
   tableId: string;
-  podName: string;
+  podName: ThirdPartyName;
   closesAt: Date;
   setByYou: boolean;
   /** The setter's display name, or null when they no longer have a profile. */
-  setBy: string | null;
+  setBy: ThirdPartyName | null;
   /** The viewer's own seated deck, or null while their seat waits. */
   viewerDeckId: string | null;
   /** The latest `changed_at` among the seats drawn: what `markSeen` is handed back. */
@@ -319,7 +323,7 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
     for (const r of rows) {
       const base = {
         seat: r.seat,
-        displayName: r.displayName,
+        displayName: r.userId === viewerId ? r.displayName : named(r.displayName),
         publicId: r.friend !== null ? r.publicId : null,
         you: r.userId === viewerId,
         podOwner: r.userId === table.podOwner,
@@ -337,7 +341,7 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
         ...base,
         deck: {
           deckId: r.userId === viewerId ? r.deckId : null,
-          name: r.deckName,
+          name: r.userId === viewerId ? r.deckName : named(r.deckName),
           commander: { name: r.commanderName, artCropUri: r.commanderArt },
           partner: r.partnerName !== null ? { name: r.partnerName, artCropUri: r.partnerArt } : null,
           cards: legality.built + (100 - legality.size),
@@ -366,10 +370,10 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
       : [];
     return {
       tableId,
-      podName: table.podName,
+      podName: named(table.podName),
       closesAt: table.closesAt,
       setByYou: table.setBy === viewerId,
-      setBy: table.setByName,
+      setBy: table.setByName === null ? null : named(table.setByName),
       viewerDeckId: mine?.deck?.deckId ?? null,
       revision,
       seenAt: seen ? new Date(seen.seen_at) : null,
@@ -458,7 +462,7 @@ function readUnderLock(viewerId: string, tableId: string, seat: number, ownerDep
 }
 
 /** What the expired page (L4, H3) draws: the pod, who set the table (null when the viewer did), and the seated faces. */
-export type ClosedTable = { podName: string; setBy: string | null; faces: { name: string; artCropUri: string | null }[] };
+export type ClosedTable = { podName: ThirdPartyName; setBy: ThirdPartyName | null; faces: { name: string | ThirdPartyName; artCropUri: string | null }[] };
 
 /**
  * The viewer's own table after its night ended, or null: not found, still open, not seated, or no longer in the pod.
@@ -472,9 +476,9 @@ export async function loadClosedTable(viewerId: string, tableId: unknown): Promi
     if (!table) return null;
     const rows = await readSeats(viewerId, tableId, tx);
     return {
-      podName: table.podName,
-      setBy: table.setBy === viewerId ? null : table.setByName,
-      faces: rows.map((r) => ({ name: r.displayName, artCropUri: r.commanderArt })),
+      podName: named(table.podName),
+      setBy: table.setBy === viewerId || table.setByName === null ? null : named(table.setByName),
+      faces: rows.map((r) => ({ name: r.userId === viewerId ? r.displayName : named(r.displayName), artCropUri: r.commanderArt })),
     };
   }, { isolationLevel: "repeatable read" });
 }
