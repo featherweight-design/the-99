@@ -14,10 +14,21 @@ kit.CSS += r"""
 .fq.off p{color:var(--fg-body)}
 .vlab{font:500 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint);padding:0 0 2px}
 .seq{display:flex;gap:36px;align-items:flex-start}
+.ofr.stk{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:6px;padding:10px 4px 6px 14px}
+.ofr.stk p{grid-column:1;grid-row:1;padding-top:2px}
+.ofr.stk .x4{grid-column:2;grid-row:1/3;margin:-10px -6px 0 0;align-self:start}
+.dk .ofr.stk .x4{margin:-6px -2px 0 0}
+.ofr.stk .pk{grid-column:1;grid-row:2;justify-self:start;margin-left:-6px}
 .arrowc{align-self:center;font:400 22px 'IBM Plex Sans';color:var(--fg-faint)}
 """
 
 OFFER_ALONE = A.offer().replace('class="ofr chg"', 'class="ofr alone"', 1)
+def offer_stk(alone=False, chg=True):
+    return (f'<div class="ofr stk{" alone" if alone else ""}{" chg" if chg else ""}"><p><b>Pick what else you want to hear about.</b> New sets, price drops, trade matches and more.</p>'
+            f'{A.X}<span class="pk">Pick ▾</span></div>')
+
+
+QUIET_NAMES = A.quiet("Secret Lair drops, Commander decklists, Wizards news and friends asking for your spares")
 QUIET_LEAD = '<div class="fq"><p><b>Nothing new right now.</b></p></div>'
 OFF_LINE = '<div class="fq off chg"><p><b>Nothing will show here.</b> Every kind of news is off.</p></div>'
 
@@ -70,4 +81,28 @@ def board_off():
     return doc("Every kind off", body, 390 * 3 + 36 * 4 + 40 + 420 + 112)
 
 
-BOARDS = [("Every-Kind-Off", board_off, "6 · What’s new with every kind off")]
+def board_stack():
+    rows = [A.irow("price"), A.irow("match")]
+    t_rows = ph(A.feed(rows, n=2, foot=A.offer().replace('class="ofr chg"', 'class="ofr"', 1), choose=False))
+    p_rows = ph(A.feed(rows, n=2, foot=offer_stk(), choose=False))
+    p_quiet = ph(A.feed([], foot=QUIET_NAMES + offer_stk(), choose=False))
+    p_alone = ph(A.feed([], foot=offer_stk(alone=True), choose=False))
+    d_rows = dk(A.feed(rows, n=2, foot=offer_stk(), choose=False), h=640)
+    body = (board_head("item 6b · Home › What’s new · the offer line, stacked · 390 and 1300",
+                       "Pick under the words, ✕ in the corner",
+                       "Your note: Pick ▾ and ✕ side by side read as two buttons for one thing. <b>Drawn: the words, then Pick ▾ on its own line under them; the ✕ moves to the top right corner</b>, "
+                       "where the opened offer already puts it (Pick pressed: ✕ top right over the boxes), so the line and its opened form now share one ✕ position. "
+                       "Same in every place the offer stands: under rows, under the quiet line, alone. Rows keep their shipped action line (press, then ✕), since there the ✕ belongs to one row. "
+                       "Engineering: <code>Offer</code>’s closed form becomes a two-column grid (words + Pick ▾ left, the shipped <code>DismissButton</code> right, top-aligned, 44 on a phone / 32 from md). "
+                       "Amends the announcements Offer board and small items 5’s Offer-Empty.", tag="R1b")
+            + '<div class="seq">'
+            + frame("<b>Today</b> · 390 · under rows", t_rows, "Pick ▾ and ✕ side by side at the line’s end.")
+            + frame("<b>Drawn</b> · 390 · under rows", p_rows, "Pick ▾ starts its own line under the words; ✕ in the corner.")
+            + frame("<b>Drawn</b> · 390 · under the quiet line", p_quiet)
+            + frame("<b>Drawn</b> · 390 · alone (nothing on yet)", p_alone)
+            + '</div>'
+            + frames(frame("<b>Drawn</b> · 1300 · under rows", d_rows, "On desktop the same two lines; the ✕ at 32.")))
+    return doc("Offer stacked", body, 390 * 4 + 36 * 3 + 112)
+
+
+BOARDS = [("Offer-Stacked", board_stack, "6b · The offer line, stacked"), ("Every-Kind-Off", board_off, "6 · What’s new with every kind off")]

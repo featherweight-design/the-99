@@ -21,7 +21,7 @@
       "x": 1380,
       "y": 0,
       "w": 1712,
-      "h": 2439,
+      "h": 2480,
       "title": "1 · Overview: the Backup line"
     },
     "Notes-Confirm.dc.html": {
@@ -58,6 +58,13 @@
       "w": 1886,
       "h": 2331,
       "title": "6 · What’s new with every kind off"
+    },
+    "Offer-Stacked.dc.html": {
+      "x": 11838,
+      "y": 0,
+      "w": 1780,
+      "h": 1996,
+      "title": "6b · The offer line, stacked"
     }
   },
   "order": [
@@ -67,7 +74,8 @@
     "About-Errata.dc.html",
     "Critical.dc.html",
     "Tag-States.dc.html",
-    "Every-Kind-Off.dc.html"
+    "Every-Kind-Off.dc.html",
+    "Offer-Stacked.dc.html"
   ],
   "notes": {},
   "designSystems": []

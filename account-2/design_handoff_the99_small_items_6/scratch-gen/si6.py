@@ -54,8 +54,10 @@ OV_EXTRA = r"""
 .bk .lb i{width:10px;height:10px;transform:rotate(45deg);border:1.5px solid var(--fg-faint);display:block;flex:none;box-sizing:border-box}
 .bk p{font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
 .shx .bk{margin-left:22px}
+.tl3 .lb{position:relative;z-index:1;width:max-content;background:var(--surface-raised);padding-right:8px}
+.tl3 .lb.fixr{outline:1.5px dashed rgba(207,135,69,.75);outline-offset:3px;border-radius:4px}
 .gpw{display:flex;flex-direction:column;gap:12px}
-.ghost{opacity:.4}
+.gh6{opacity:.4}
 /* ---------- item 4: the Critical chip ---------- */
 .sev.crit{color:#E07A65;border-color:color-mix(in oklab,#C6533F 60%,transparent)}
 .wk2 p.plain{grid-template-columns:1fr}
@@ -83,7 +85,7 @@ def gplan(phone, backup=True, alt=False, ghost_stages=False):
     # vis.plan returns '<div class="osub"><h4>Game plan</h4>{g}</div>'
     inner = g[len('<div class="osub"><h4>Game plan</h4>'):-len('</div>')]
     if ghost_stages:
-        inner = inner.replace('class="tl3 new2"', 'class="tl3 ghost"', 1).replace('class="rl new2"', 'class="rl ghost"', 1)
+        inner = inner.replace('class="tl3 new2"', 'class="tl3 gh6"', 1).replace('class="rl new2"', 'class="rl gh6"', 1)
     else:
         inner = inner.replace(' new2"', '"', 1)
     extra = (backup_box() if backup else "") + (vis.alt_box().replace("alt2 new2", "alt2") if alt else "")
@@ -124,6 +126,8 @@ def board_backup():
     calls = tbl([
         ("1", "Where", "Under Close, before Alternate commander. Desktop: one full-width card under the three-card timeline. Phone: one card under the rail, indented to the stage cards."),
         ("2", "How it reads", "Label <b>Backup</b> in the stage label style with a <b>hollow</b> diamond (Close keeps the accent one); card image 52×72 at both widths; 13px body. Solid edge, sunken fill, as a stage card; the alternate stays dashed."),
+        ("2b", "The line stops at each label (R1b)", "Your note: the timeline’s line ran through <i>Early</i> and <i>Mid</i>. Each label now sits on the modal’s fill (<code>--surface-raised</code>) with 8px after it, as the diamond already does with its 4px ring, so the line runs only between one label’s end and the next diamond. "
+               "Shipped #2432 draws the same line through its labels (<code>synopsis-stages.tsx</code>: the label is absolute at the diamond’s right, the line under it), so this is an erratum to the shipped modal too: give the label <code>bg-[var(--surface-raised)] pr-[8px] relative z-[1]</code>."),
         ("3", "Fixture", "HD - Half Shell (cards we hold images for). The line is written for this drawing: “When fliers wall the ground team, Lathliss, Dragon Queen and her Dragons win in the air instead.”"),
     ])
     body = (head("item 1 · Overview › Game plan · the Backup line", "Backup goes under Close",
