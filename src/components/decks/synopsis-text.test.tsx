@@ -61,4 +61,30 @@ describe("SynopsisText", () => {
     act(() => void vi.advanceTimersByTime(1000));
     expect(screen.queryByTestId("hover-preview")).toBeNull();
   });
+
+  it("closes the raised preview when the name is activated from the keyboard, Enter and Space", () => {
+    for (const press of [
+      (el: HTMLElement) => fireEvent.keyDown(el, { key: "Enter" }),
+      (el: HTMLElement) => { fireEvent.keyDown(el, { key: " " }); fireEvent.keyUp(el, { key: " " }); },
+    ]) {
+      const { unmount } = draw("Open with [[Sol Ring]] early.");
+      fireEvent.mouseEnter(screen.getByTestId("synopsis-card"));
+      act(() => void vi.advanceTimersByTime(240));
+      expect(screen.getByTestId("hover-preview").className).toContain("z-[60]");
+      press(screen.getByRole("button", { name: /Sol Ring/ }));
+      act(() => void vi.advanceTimersByTime(1000));
+      expect(screen.queryByTestId("hover-preview")).toBeNull();
+      unmount();
+    }
+  });
+
+  it("draws the name as an inline span that wraps with the sentence, underline cloned per fragment", () => {
+    draw("Open with [[Sol Ring]] early.");
+    const name = screen.getByRole("button", { name: /Sol Ring/ });
+    expect(name.tagName).toBe("SPAN");
+    expect(name.className).toContain("inline");
+    expect(name.className).toContain("box-decoration-clone");
+    expect(name.className).toContain("dotted");
+    expect(name.tabIndex).toBe(0);
+  });
 });
