@@ -6,13 +6,18 @@ on:
     types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
+  # The whole suite, nightly, on main: a push to main selects like a pull request, so this is the net under a
+  # selection miss. 09:17 UTC is off the hour, clear of the 09:00 catalog refresh and the jobs that chain on it.
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 # A push to a PR supersedes the run before it, so cancel that one instead of queueing eight more jobs
 # behind it (measured: median queue 4s but p90 345s with several lanes pushing). Main never cancels:
-# every merge commit keeps its own full run (the group is keyed on the sha, because a group holds
+# every merge commit keeps its own run (the group is keyed on the sha, because a group holds
 # only one pending run and would otherwise drop a middle push). The gate reads check-runs for the head sha only, so a
 # cancelled run on an older sha is never judged.
 concurrency:
@@ -23,7 +28,8 @@ jobs:
   # Which tests this PR needs (plan: boards/plan-ci-affected-tests-2026-10-12.md). `vitest related`
   # alone skips the guards that READ the tree instead of importing it (23 of the last 25 merged PRs),
   # so the selection is related UNION every fs-reading test, or the FULL suite when a global file moves,
-  # when vitest cannot read the import graph, under the `ci:full` label, and on every push to main.
+  # when vitest cannot read the import graph, under the `ci:full` label, on the nightly schedule and on a dispatch.
+  # A push to main selects like a pull request, over the commits it added.
   # A failure here fails `checks`, so a broken selector can never read as a pass.
   select:
     runs-on: ubuntu-latest
@@ -51,7 +57,7 @@ jobs:
       - name: Select tests
         id: select
         env:
-          CI_BASE_REF: origin/${{ github.base_ref || 'main' }}
+          CI_BASE_REF: ${{ github.event_name == 'push' && github.event.before || format('origin/{0}', github.base_ref || 'main') }}
           CI_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') && '1' || '' }}
         run: node scripts/ci-select.mjs
 

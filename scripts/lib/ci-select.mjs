@@ -63,13 +63,17 @@ export function shardsFor(count) {
 
 // `event`: the GitHub event name. `changed`: paths in the PR. `packageChanged`: result of
 // packageDepsChanged. `related`: test files vitest selected from the import graph. `always`: from
-// alwaysSet. `allTests`: every test file. `forceFull`: the ci:full label.
+// alwaysSet. `allTests`: every test file. `forceFull`: the ci:full label. `baseError`: a push with no usable
+// before-commit (a new branch, a forced push).
 /**
  * @param {{ event?: string, changed: string[], packageChanged?: boolean, related?: string[],
- *   always?: string[], allTests?: string[], forceFull?: boolean, graphError?: string }} input
+ *   always?: string[], allTests?: string[], forceFull?: boolean, graphError?: string, baseError?: string }} input
  */
-export function decide({ event, changed, packageChanged = false, related = [], always = [], allTests = [], forceFull = false, graphError = "" }) {
-  if (event !== "pull_request") return { mode: "full", reason: `event is ${event || "unknown"}, not a pull request`, files: allTests };
+export function decide({ event, changed, packageChanged = false, related = [], always = [], allTests = [], forceFull = false, graphError = "", baseError = "" }) {
+  // A push to main selects like a pull request, over the commits the push added. The nightly run (`schedule`), a
+  // dispatch and any other event run everything: that is the net under a selection miss.
+  if (event !== "pull_request" && event !== "push") return { mode: "full", reason: `event is ${event || "unknown"}, not a pull request or a push`, files: allTests };
+  if (baseError) return { mode: "full", reason: `no base to diff against: ${baseError}`, files: allTests };
   if (forceFull) return { mode: "full", reason: "ci:full label", files: allTests };
   // vitest could not read the import graph: a changed file does not transform (a syntax error), which
   // calibration showed for a half-deleted source file and for invalid JSON. Nothing can be said about what it
