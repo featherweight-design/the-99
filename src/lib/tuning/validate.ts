@@ -7,6 +7,7 @@ import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from 
 import { axisLabel } from "./prompt";
 import { escapeRegExp, quotesPlayerText } from "./quote-match";
 import type { TuningLine } from "./response-schema";
+import type { V2Why } from "./v2/why";
 
 /**
  * What the model is NOT trusted about. Pure and client-safe: the catalog lookup is injected as
@@ -160,6 +161,9 @@ export type V2RunReport = {
   charge?: { outcome: "spent" } | { outcome: "refunded"; why: string };
   /** Settled with its saved lines when it did not finish: the reaper, or a failed line save (plan P4). */
   interrupted?: true;
+  /** Why these cards (`v2/why.ts`): written once both lists are final, on a run of N >= `WHY_MIN_N` whose cuts came in and
+   *  whose lead passed its checks. Absent on every other run, and on every run from before it. */
+  why?: V2Why;
 };
 
 export type RefusalDetail =
@@ -222,6 +226,16 @@ export function sizeLists(kept: readonly ValidatedSuggestion[], max: number): Va
   return [...adds, ...cuts].map((k, position) => ({ ...k, position }));
 }
 
+/** Everything the player wrote that a run's text may quote, as `validateSuggestions` reads it (see its comment there).
+ *  Also the why's own check (`v2/why.ts`). */
+export function quotableOf(pack: Pick<EvidencePack, "play" | "intent" | "notes" | "year">): Quotable[] {
+  return [
+    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, pack.year) }])),
+    ...(pack.intent === null ? [] : [{ text: playerTextBody(pack.intent), date: null }]),
+    ...(pack.notes === null ? [] : [{ text: playerTextBody(pack.notes), date: null }]),
+  ];
+}
+
 export function validateSuggestions(args: {
   /** A v10 reply, or a v2 reply's lists (either contract's lines). */
   response: { additions: readonly TuningLine[]; cuts: readonly TuningLine[] };
@@ -242,12 +256,7 @@ export function validateSuggestions(args: {
   // run is shown to the model with its brackets stripped; comparing against the unstripped
   // original would fail a faithful quote and drop a good suggestion for a mismatch that never
   // reached the model.
-  const year = pack.year;
-  const quotable: Quotable[] = [
-    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, year) }])),
-    ...(pack.intent === null ? [] : [{ text: playerTextBody(pack.intent), date: null }]),
-    ...(pack.notes === null ? [] : [{ text: playerTextBody(pack.notes), date: null }]),
-  ];
+  const quotable = quotableOf(pack);
   const [primary, partner] = pack.commanders;
   const deck = {
     commanderOracleId: primary?.oracleId ?? "",

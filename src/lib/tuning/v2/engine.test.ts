@@ -431,3 +431,49 @@ describe("runV2", () => {
     expect(r.additions.kept[0].evidence).toEqual([{ kind: "request", value: "more ramp" }]);
   });
 });
+
+describe("runV2: why these cards", () => {
+  const why = {
+    lead: "More mana for the deck.",
+    add: [{ phrase: "fix the mana", cards: ["Add 1", "Add 2", "Add 3"], like: "Add 2" }],
+    cut: [{ phrase: "are slow", cards: ["Cut 1", "Cut 2"] }],
+  };
+
+  it("at N >= 6, asks once both lists are final, at its own model and effort, and stores the checked why", async () => {
+    const f = fake({ additions: { cards: adds(1, 9) }, cuts: { cards: cutsOf(1, 9) }, why: { text: JSON.stringify(why) } });
+    const r = await runV2({ ...base, n: 6, callModel: f.callModel, now: f.now });
+    const last = f.requests.at(-1)!;
+    expect(last).toMatchObject({ stage: "why", effort: "low", model: "claude-sonnet-5-5" });
+    expect(f.events.indexOf("start why")).toBeGreaterThan(f.events.lastIndexOf("end cuts"));
+    // The call is shown the kept rows with their short reasons.
+    expect(last.user).toContain("- Add 1: Mana hurt in 3 of 5");
+    expect(last.user).toContain("- Cut 1: Mana hurt in 3 of 5");
+    expect(r.why).toEqual({
+      lead: "More mana for the deck.",
+      add: [{ text: "Three fix the mana, like " }, { card: "Add 2", oracleId: "Add 2" }, { text: "." }],
+      cut: [{ text: "Two are slow, like " }, { card: "Cut 1", oracleId: "Cut 1" }, { text: "." }],
+    });
+    expect(r.calls.at(-1)).toMatchObject({ stage: "why", ok: true });
+  });
+
+  it("is not asked below N = 6, or when the cuts failed", async () => {
+    const f = fake({ additions: { cards: adds(1, 8) }, cuts: { cards: cutsOf(1, 8) }, why: { text: JSON.stringify(why) } });
+    expect((await runV2({ ...base, n: 5, callModel: f.callModel, now: f.now })).why).toBeNull();
+    expect(f.requests.map((q) => q.stage)).not.toContain("why");
+    const g = fake({ additions: { cards: adds(1, 9) }, cuts: { fail: "timeout" }, why: { text: JSON.stringify(why) } });
+    expect((await runV2({ ...base, n: 6, callModel: g.callModel, now: g.now })).why).toBeNull();
+    expect(g.requests.map((q) => q.stage)).not.toContain("why");
+  });
+
+  it("a failed or unparsable why call leaves the lists and the charge as they were", async () => {
+    for (const s of [{ fail: "timeout" as const, text: JSON.stringify(why) }, { text: "{\"lead\": " }]) {
+      const f = fake({ additions: { cards: adds(1, 9) }, cuts: { cards: cutsOf(1, 9) }, why: s });
+      const r = await runV2({ ...base, n: 6, callModel: f.callModel, now: f.now });
+      expect(r.why).toBeNull();
+      expect(r.charge).toEqual({ outcome: "spent" });
+      // The engine keeps the whole valid pool (ceil(1.5N) = 9 at N = 6), never trims it to N.
+      expect(r.additions.kept).toHaveLength(9);
+      expect(r.calls.at(-1)).toMatchObject({ stage: "why", ok: false });
+    }
+  });
+});

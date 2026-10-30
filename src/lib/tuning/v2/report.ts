@@ -51,6 +51,8 @@ export function v2Outcome(report: V2Report, start: ValidationReport, capCents: n
     cutsFailed: report.cutsFailed,
     budgetReached: report.budgetReached,
     charge,
+    // Why these cards: the engine checked it against both final lists (`checkWhy` in `v2/why.ts`); a run with none stores none.
+    ...(report.why ? { why: report.why } : {}),
   };
   return {
     outcome: empty ? { status: "failed", errorClass: "ungrounded" } : { status: "ok" },

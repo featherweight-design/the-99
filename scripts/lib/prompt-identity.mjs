@@ -22,6 +22,7 @@ import ts from "typescript";
 export const BUILDERS = [
   { file: "src/lib/tuning/prompt.ts", fns: ["buildPrompt", "buildPromptV2"] },
   { file: "src/lib/tuning/cuts-prompt.ts", fns: ["buildCutsPrompt"] },
+  { file: "src/lib/tuning/v2/why.ts", fns: ["buildWhyPrompt"] },
   { file: "src/lib/swaps/fits-read.ts", fns: ["buildFitsReadPrompt"] },
   { file: "src/lib/intake/the-read.ts", fns: ["shortlistRequest", "judgeRequest"] },
   { file: "src/lib/intake/the-read-run.ts", fns: ["shortlistPrefix"] },
@@ -44,7 +45,7 @@ export const CALLERS = {
   "src/lib/model/client.ts": { note: "the one client: sends what its caller built" },
   "src/app/decks/tuning-actions.ts": { builders: ["src/lib/tuning/prompt.ts"] },
   "src/app/decks/cuts-actions.ts": { builders: ["src/lib/tuning/cuts-prompt.ts"] },
-  "src/lib/tuning/v2/engine.ts": { builders: ["src/lib/tuning/prompt.ts"], note: "sends through the callModel its caller injects" },
+  "src/lib/tuning/v2/engine.ts": { builders: ["src/lib/tuning/prompt.ts", "src/lib/tuning/v2/why.ts"], note: "sends through the callModel its caller injects" },
   "src/lib/tuning/v2/run.ts": { builders: ["src/lib/tuning/prompt.ts"], note: "streams what runV2 built through streamModel" },
   "src/lib/swaps/fits-read-run.ts": { builders: ["src/lib/swaps/fits-read.ts"] },
   "src/lib/intake/the-read-run.ts": { builders: ["src/lib/intake/the-read.ts", "src/lib/intake/the-read-run.ts"] },

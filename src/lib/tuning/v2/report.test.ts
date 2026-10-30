@@ -16,7 +16,7 @@ const start = v2StartReport({ requestHash: "h", restrictions: { capCents: 200, s
 const report = (over: Partial<V2Report>): V2Report => ({
   additions: list(5, 5), cuts: { ...list(5, 5), skipped: false },
   calls: [{ stage: "additions", ask: 8, ok: true, ms: 1, lines: 8, kept: 5, malformed: 0 }, { stage: "cuts", ask: 8, ok: true, ms: 1, lines: 8, kept: 5, malformed: 0 }],
-  callCount: 2, cutsFailed: null, budgetReached: false, strippedCites: 0, charge: { outcome: "spent" }, ...over,
+  callCount: 2, cutsFailed: null, budgetReached: false, strippedCites: 0, charge: { outcome: "spent" }, why: null, ...over,
 });
 
 describe("v2StartReport", () => {
@@ -67,6 +67,16 @@ describe("v2Outcome", () => {
     expect(r.outcome).toEqual({ status: "ok" });
     expect(r.settleAs).toBe("refunded");
     expect(r.validationReport).toMatchObject({ refunded: true, v2: { cutsFailed: { errorClass: "timeout" } } });
+  });
+
+  it("stores the engine's why on the v2 report, and a run with none stores none (as every older run reads)", () => {
+    const why = { lead: "More ramp.", add: [{ text: "Two make mana, like " }, { card: "Sol Ring", oracleId: "sol" }, { text: "." }], cut: null };
+    const r = v2Outcome(report({ why }), start, 200);
+    expect(r.validationReport.v2!.why).toEqual(why);
+    // The report is stored as jsonb: it round-trips through JSON unchanged.
+    expect(JSON.parse(JSON.stringify(r.validationReport)).v2.why).toEqual(why);
+    expect(v2Outcome(report({ why: null }), start, 200).validationReport.v2).not.toHaveProperty("why");
+    expect(v2Outcome(report({}), start, 200).validationReport.v2).not.toHaveProperty("why");
   });
 
   it("an empty run fails ungrounded, refunded, with the refusal sentence's detail", () => {
