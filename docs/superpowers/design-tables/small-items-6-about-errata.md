@@ -54,7 +54,7 @@ Conventions:
 
 | Surface | Switch off | Switch on |
 |---|---|---|
-| Pick card | not drawn; Good to know opens on the intent card | drawn first, announced as new |
+| Pick card | not drawn; Good to know opens on the intent card | drawn first; not told as New (legacy `suggested-changes`, About ruling 6) |
 | Credits row 4 | `Came back empty-handed` · credit back, dashed (shipped) | `Came back short or empty` · credit back, dashed |
 | Credits row 5 | not drawn | `Short by your price cap` · 1 credit, dashed |
 | Try it line | `Up to five swaps, read from your games, your notes and the list.` | `Say what to change. Pick from more cards to add and to cut than you need.` |
