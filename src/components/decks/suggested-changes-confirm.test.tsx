@@ -75,6 +75,22 @@ describe("heldElsewhere", () => {
     expect(heldElsewhere({ ...path, availability: { ...path.availability!, free: 1 } }, true)).toBe(false);
     expect(heldElsewhere({ ...cut, availability: path.availability }, true)).toBe(false);
   });
+
+  // A brew asks for a copy while a spare still sits in the box: "soft", not held. A pull would take nothing the deck
+  // needs, and Apply would skip it as covered, so no Pull is offered and no foot line drawn.
+  it("is not a soft claim with a spare copy free", () => {
+    const soft = { owned: 2, hard: 0, soft: 1, free: 1, claims: [holder("d-brew", "HD - Brew", { mature: false, senior: false })] } as unknown as Availability;
+    const line = v2Line("a5", "add", { cardName: "Soft Card", availability: soft });
+    expect(heldElsewhere(line, true)).toBe(false);
+    draw({ adds: [line] });
+    expect(row("a5")).toBeNull();
+    expect(foot()).toBeNull();
+  });
+
+  it("is a hard claim with none free, and an over-claimed card", () => {
+    expect(heldElsewhere({ ...path, availability: { ...path.availability!, free: 0 } }, true)).toBe(true);
+    expect(heldElsewhere(path, true)).toBe(true);
+  });
 });
 
 describe("SuggestedChangesConfirm, held additions", () => {

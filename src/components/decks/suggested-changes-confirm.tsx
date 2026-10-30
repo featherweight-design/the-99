@@ -18,12 +18,16 @@ const review = deckVersioningCopy.review;
 
 /**
  * An addition whose owned copies are all held in the player's other decks (Small items 4, item 2): a run that offered
- * them (`ownedFromOtherDecks`) marks the line none free (`addMarkOf`), and the confirmation asks which deck it leaves.
- * The same test the line's marker draws on.
+ * them (`ownedFromOtherDecks`), and the confirmation asks which deck it leaves.
+ *
+ * `hard` and `over` only, never "not free": `soft` is a copy a brew asks for while a spare still sits in the box
+ * (owned 2, free 1), so a pull would take nothing the deck needs and Apply would skip it as covered. The one test the
+ * row, the foot line, the staged pulls Apply sends and the picker's figures all read, so they cannot disagree.
  */
 export function heldElsewhere(l: LineItem, ownedFromOtherDecks: boolean): boolean {
-  return ownedFromOtherDecks && l.side === "add" && l.owned && l.availability !== null
-    && availabilityState(l.availability, { selfExcluded: l.inDeck }) !== "free";
+  if (!ownedFromOtherDecks || l.side !== "add" || !l.owned || l.availability === null) return false;
+  const state = availabilityState(l.availability, { selfExcluded: l.inDeck });
+  return state === "hard" || state === "over";
 }
 
 /** A held addition's Pull: the claim Review changes would offer and its full picker list (`review-changes.tsx`). */
