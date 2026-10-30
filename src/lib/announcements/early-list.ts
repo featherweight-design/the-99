@@ -98,7 +98,11 @@ export function splitEarlyLines(lines: readonly AnnouncedDeckCard[], facts: Read
   return { matched, unmatched };
 }
 
-/** Where the precons list lands on one set's own precons: the list's search, which matches a precon's set code (`filterPrecons`). */
+/**
+ * The precons list searched by a set's code. The list has no set filter; its search (`filterPrecons`) is a substring
+ * match over a precon's name, twin name, set code and commanders, so it finds the set's precons and can also find
+ * another precon whose name contains the code.
+ */
 export function preconsOfSetHref(code: string): string {
   return `/decks/precons?q=${encodeURIComponent(code.toUpperCase())}`;
 }
@@ -116,19 +120,24 @@ export type PostListRow = {
   /** The list declares a commander (`commander_name`): only such a list opens an early page, so only it qualifies the post. */
   named: boolean;
   /** The Commander sets its commander is printed in, inside the post's window (`commanderPrintingsQuery`'s rule). */
-  sets: { code: string; releasedAt: string; hasPrecons: boolean }[];
+  sets: PostSetFacts[];
 };
+
+/** A candidate set's facts: its `set_type`, its release day, whether `precons` holds it. */
+export type PostSetFacts = { code: string; setType: string; releasedAt: string; hasPrecons: boolean };
 
 /**
  * Where a Commander decklists post's See the lists goes (Announcements UI 6b), by the set its lists resolve to
- * (`resolvePostSet`): once that set is out and its release lists are in the catalog, its precons on the list
- * (`preconsOfSetHref`); before that, its block in the Announced group (`announcedSetAnchor`); a set that cannot be told,
- * the Announced group itself. Pure, for a test.
+ * (`resolvePostSet`): once that set is out and its release lists are in the catalog, the list searched by its code
+ * (`preconsOfSetHref`); else, while the Announced group draws it (`drawn`, the group's own rule, `drawnInAnnounced`),
+ * its block there (`announcedSetAnchor`); otherwise, and for a set that cannot be told, the Announced group itself.
+ * Pure, for a test.
  */
-export function seeListsHref(set: { code: string; releasedAt: string; hasPrecons: boolean } | null, today: string): string {
+export function seeListsHref(set: PostSetFacts | null, today: string, drawn: (set: PostSetFacts) => boolean): string {
   if (!set) return ANNOUNCED_GROUP_HREF;
   if (set.hasPrecons && set.releasedAt <= today) return preconsOfSetHref(set.code);
-  return `/decks/precons#${announcedSetAnchor(set.code)}`;
+  if (drawn(set)) return `/decks/precons#${announcedSetAnchor(set.code)}`;
+  return ANNOUNCED_GROUP_HREF;
 }
 
 /**
@@ -136,13 +145,13 @@ export function seeListsHref(set: { code: string; releasedAt: string; hasPrecons
  * that declares a commander has one (a post with none draws Read the post alone). Every list votes on the set, as the
  * early page's read votes (`loadEarlyList`). Pure, for a test.
  */
-export function postListTargets(rows: readonly PostListRow[], today: string): Map<string, string> {
+export function postListTargets(rows: readonly PostListRow[], today: string, drawn: (set: PostSetFacts) => boolean): Map<string, string> {
   const byPost = new Map<string, PostListRow[]>();
   for (const r of rows) byPost.set(r.contentfulId, [...(byPost.get(r.contentfulId) ?? []), r]);
   const out = new Map<string, string>();
   for (const [id, lists] of byPost) {
     if (!lists.some((l) => l.named)) continue;
-    const facts = new Map<string, { code: string; releasedAt: string; hasPrecons: boolean }>();
+    const facts = new Map<string, PostSetFacts>();
     const candidates: CommanderPrinting[] = [];
     for (const l of lists) {
       if (!l.commanderId) continue;
@@ -153,7 +162,7 @@ export function postListTargets(rows: readonly PostListRow[], today: string): Ma
       }
     }
     const code = resolvePostSet(lists.map((l) => l.commanderId), candidates);
-    out.set(id, seeListsHref(code ? facts.get(code) ?? null : null, today));
+    out.set(id, seeListsHref(code ? facts.get(code) ?? null : null, today, drawn));
   }
   return out;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { announcedSetAnchor, earlyListHref, isWizardsPostUrl, parseListPosition, postListTargets, preconsOfSetHref, resolvePostSet, seeListsHref, splitEarlyLines, type EarlyCardFacts, type PostListRow } from "./early-list";
+import { announcedSetAnchor, earlyListHref, isWizardsPostUrl, parseListPosition, postListTargets, preconsOfSetHref, resolvePostSet, seeListsHref, splitEarlyLines, type EarlyCardFacts, type PostListRow, type PostSetFacts } from "./early-list";
 
 describe("earlyListHref", () => {
   it("is the early route with the post's id and the list's position", () => {
@@ -107,23 +107,27 @@ describe("splitEarlyLines", () => {
 
 describe("seeListsHref (Home's See the lists, Announcements UI 6b)", () => {
   const TODAY = "2026-11-20";
+  const set = (o: Partial<PostSetFacts> = {}): PostSetFacts => ({ code: "fdc", setType: "commander", releasedAt: "2026-12-04", hasPrecons: false, ...o });
+  const drawn = () => true;
+  const hidden = () => false;
 
-  it("lands on the set's precons once it is out and its release lists are in", () => {
-    expect(seeListsHref({ code: "fdc", releasedAt: "2026-11-13", hasPrecons: true }, TODAY)).toBe("/decks/precons?q=FDC");
-    expect(seeListsHref({ code: "fdc", releasedAt: TODAY, hasPrecons: true }, TODAY)).toBe("/decks/precons?q=FDC");
+  it("searches the list by the set's code once it is out and its release lists are in, whatever Announced draws", () => {
+    expect(seeListsHref(set({ releasedAt: "2026-11-13", hasPrecons: true }), TODAY, hidden)).toBe("/decks/precons?q=FDC");
+    expect(seeListsHref(set({ releasedAt: TODAY, hasPrecons: true }), TODAY, hidden)).toBe("/decks/precons?q=FDC");
   });
 
-  it("lands on the set's Announced block before it is out, or while the release lists are not in", () => {
-    expect(seeListsHref({ code: "fdc", releasedAt: "2026-12-04", hasPrecons: true }, TODAY)).toBe("/decks/precons#announced-fdc");
-    expect(seeListsHref({ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }, TODAY)).toBe("/decks/precons#announced-fdc");
-    expect(seeListsHref({ code: "FDC", releasedAt: "2026-12-04", hasPrecons: false }, TODAY)).toBe("/decks/precons#announced-fdc");
+  it("lands on the set's Announced block while the group draws it", () => {
+    expect(seeListsHref(set(), TODAY, drawn)).toBe("/decks/precons#announced-fdc");
+    expect(seeListsHref(set({ hasPrecons: true }), TODAY, drawn)).toBe("/decks/precons#announced-fdc");
+    expect(seeListsHref(set({ code: "FDC" }), TODAY, drawn)).toBe("/decks/precons#announced-fdc");
   });
 
-  it("lands on the Announced group when the set cannot be told", () => {
-    expect(seeListsHref(null, TODAY)).toBe("/decks/precons#announced");
+  it("lands on the Announced group when the group does not draw the set, or the set cannot be told", () => {
+    expect(seeListsHref(set(), TODAY, hidden)).toBe("/decks/precons#announced");
+    expect(seeListsHref(null, TODAY, drawn)).toBe("/decks/precons#announced");
   });
 
-  it("searches the list by the set's code, as the list's own search matches it", () => {
+  it("searches the list by the set's code", () => {
     expect(preconsOfSetHref("cmm")).toBe("/decks/precons?q=CMM");
   });
 });
@@ -131,11 +135,12 @@ describe("seeListsHref (Home's See the lists, Announcements UI 6b)", () => {
 describe("postListTargets", () => {
   const TODAY = "2026-11-20";
   const list = (contentfulId: string, commanderId: string | null, sets: PostListRow["sets"], named = true): PostListRow => ({ contentfulId, commanderId, named, sets });
-  const fdc = { code: "fdc", releasedAt: "2026-12-04", hasPrecons: false };
-  const cmm = { code: "cmm", releasedAt: "2026-11-13", hasPrecons: true };
+  const fdc: PostSetFacts = { code: "fdc", setType: "commander", releasedAt: "2026-12-04", hasPrecons: false };
+  const cmm: PostSetFacts = { code: "cmm", setType: "masters", releasedAt: "2026-11-13", hasPrecons: true };
+  const drawn = (s: PostSetFacts) => s.setType === "commander";
 
   it("gives a post an address only when a list declares a commander", () => {
-    const out = postListTargets([list("p1", "a", [fdc], false), list("p2", "b", [fdc])], TODAY);
+    const out = postListTargets([list("p1", "a", [fdc], false), list("p2", "b", [fdc])], TODAY, drawn);
     expect(out.has("p1")).toBe(false);
     expect(out.get("p2")).toBe("/decks/precons#announced-fdc");
   });
@@ -144,13 +149,19 @@ describe("postListTargets", () => {
     const out = postListTargets([
       list("p1", "a", [fdc, cmm]), list("p1", "b", [cmm]), list("p1", null, [], false),
       list("p2", "c", [fdc]),
-    ], TODAY);
+    ], TODAY, drawn);
     // p1: CMM has two votes to FDC's one, and is out with its precons in.
     expect(out.get("p1")).toBe("/decks/precons?q=CMM");
     expect(out.get("p2")).toBe("/decks/precons#announced-fdc");
   });
 
+  it("asks the group's rule with the resolved set's own facts", () => {
+    const asked: PostSetFacts[] = [];
+    postListTargets([list("p1", "a", [fdc])], TODAY, (s) => { asked.push(s); return false; });
+    expect(asked).toEqual([fdc]);
+  });
+
   it("falls back to the Announced group when no list's commander is printed in a candidate set", () => {
-    expect(postListTargets([list("p1", null, []), list("p1", "a", [])], TODAY).get("p1")).toBe("/decks/precons#announced");
+    expect(postListTargets([list("p1", null, []), list("p1", "a", [])], TODAY, drawn).get("p1")).toBe("/decks/precons#announced");
   });
 });

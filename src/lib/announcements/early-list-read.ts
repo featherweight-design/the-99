@@ -15,7 +15,7 @@ import { isBasicType } from "../decks/basic-type";
 import { summarisePrecons } from "../precons/list";
 import { BASIC_TYPES } from "../swaps/land";
 import type { OpenPrecon, OpenPreconCard } from "../precons/open-read";
-import { utcDay } from "../precons/upcoming";
+import { drawnInAnnounced, utcDay } from "../precons/upcoming";
 import { postListTargets, resolvePostSet, splitEarlyLines, type EarlyCardFacts, type PostListRow, type UnmatchedLine } from "./early-list";
 
 type Reader = Pick<typeof db, "select" | "selectDistinct">;
@@ -131,7 +131,7 @@ export function postListRowsQuery(contentfulIds: readonly string[]) {
   return sql`select pwa.contentful_id as contentful_id, pwd.commander_card_id as commander_id,
       (pwd.commander_name is not null) as named,
       coalesce((select jsonb_agg(distinct jsonb_build_object(
-          'code', pss.code, 'releasedAt', pss.released_at,
+          'code', pss.code, 'setType', pss.set_type, 'releasedAt', pss.released_at,
           'hasPrecons', exists (select 1 from ${precons} psp where lower(psp.set_code) = pss.code)))
         from ${printings} psr
         join ${sets} pss on pss.code = psr.set_code
@@ -155,8 +155,8 @@ export function toPostListRows(rows: readonly PostListSqlRow[]): PostListRow[] {
     named: r.named === true,
     sets: (Array.isArray(r.sets) ? r.sets : []).flatMap((x: unknown) => {
       const o = (x ?? {}) as Record<string, unknown>;
-      return typeof o.code === "string" && typeof o.releasedAt === "string"
-        ? [{ code: o.code, releasedAt: o.releasedAt, hasPrecons: o.hasPrecons === true }]
+      return typeof o.code === "string" && typeof o.setType === "string" && typeof o.releasedAt === "string"
+        ? [{ code: o.code, setType: o.setType, releasedAt: o.releasedAt, hasPrecons: o.hasPrecons === true }]
         : [];
     }),
   }));
@@ -166,7 +166,7 @@ export function toPostListRows(rows: readonly PostListSqlRow[]): PostListRow[] {
 export async function loadPostListTargets(contentfulIds: readonly string[], now: Date, q: Pick<typeof db, "execute"> = db): Promise<Map<string, string>> {
   if (contentfulIds.length === 0) return new Map();
   const { rows } = await q.execute<PostListSqlRow>(postListRowsQuery(contentfulIds));
-  return postListTargets(toPostListRows(rows as PostListSqlRow[]), utcDay(now));
+  return postListTargets(toPostListRows(rows as PostListSqlRow[]), utcDay(now), (set) => drawnInAnnounced(set, now));
 }
 
 /** How long before the post a precon may first show in the catalog and still be its release list (clock and ingest skew). */

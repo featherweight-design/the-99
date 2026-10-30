@@ -56,6 +56,21 @@ export const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 
 const DAY_MS = 86_400_000;
 
+/** The one `sets.set_type` the Announced group draws. */
+export const ANNOUNCED_SET_TYPE = "commander";
+
+/**
+ * Whether the Announced group draws this paper set (`upcomingSetsQuery`'s rule, in code): a Commander set releasing after
+ * today, or one released in the last `RELEASED_GRACE_DAYS` that no precon lists yet. Home's See the lists links a set's
+ * block (`#announced-<code>`) only when it holds (Announcements UI 6b).
+ */
+export function drawnInAnnounced(set: { setType: string; releasedAt: string; hasPrecons: boolean }, now: Date): boolean {
+  if (set.setType !== ANNOUNCED_SET_TYPE) return false;
+  const today = utcDay(now);
+  if (set.releasedAt > today) return true;
+  return set.releasedAt > utcDay(new Date(now.getTime() - RELEASED_GRACE_DAYS * DAY_MS)) && !set.hasPrecons;
+}
+
 /** The read, apart so a test can render its SQL. */
 export function upcomingSetsQuery(userId: string, now: Date, q: Reader = db) {
   const parent = alias(sets, "parent");
@@ -80,7 +95,7 @@ export function upcomingSetsQuery(userId: string, now: Date, q: Reader = db) {
     .leftJoin(catalogFirstSeen, and(eq(catalogFirstSeen.kind, "set"), eq(catalogFirstSeen.key, sets.code)))
     .leftJoin(userPrefs, eq(userPrefs.userId, userId))
     .where(and(
-      eq(sets.setType, "commander"),
+      eq(sets.setType, ANNOUNCED_SET_TYPE),
       eq(sets.digital, false),
       or(gt(sets.releasedAt, today), and(lte(sets.releasedAt, today), gt(sets.releasedAt, graceFloor), unlisted)),
     ))

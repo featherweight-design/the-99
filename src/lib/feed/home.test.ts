@@ -380,7 +380,7 @@ describe("a Wizards post", () => {
         row({ kind: "secret-lair", key: "post:s1", created_at: NOW.toISOString(), name: "JAWS", data: { ...data, lists: 0 }, unseen: false }),
       ],
       lists: [
-        { contentful_id: "d1", commander_id: "a", named: true, sets: [{ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }] },
+        { contentful_id: "d1", commander_id: "a", named: true, sets: [{ code: "fdc", setType: "commander", releasedAt: "2026-11-13", hasPrecons: false }] },
         // d2's only list declares no commander: no early page, so no See the lists.
         { contentful_id: "d2", commander_id: null, named: false, sets: [] },
       ],

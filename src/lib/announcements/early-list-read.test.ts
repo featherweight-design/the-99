@@ -118,6 +118,10 @@ describe("postListRowsQuery (Home's See the lists, Announcements UI 6b)", () => 
     expect(params).toEqual(expect.arrayContaining([60, 180]));
   });
 
+  it("carries each set's type, for the Announced group's own rule", () => {
+    expect(text().sql).toContain("'setType', pss.set_type");
+  });
+
   it("names whether each list declares a commander", () => {
     expect(text().sql).toContain("(pwd.commander_name is not null) as named");
   });
@@ -126,10 +130,10 @@ describe("postListRowsQuery (Home's See the lists, Announcements UI 6b)", () => 
 describe("toPostListRows", () => {
   it("reads the jsonb sets defensively", () => {
     expect(toPostListRows([
-      { contentful_id: "p1", commander_id: "a", named: true, sets: [{ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }, { code: 3 }, null] },
+      { contentful_id: "p1", commander_id: "a", named: true, sets: [{ code: "fdc", setType: "commander", releasedAt: "2026-11-13", hasPrecons: false }, { code: 3 }, { code: "x", releasedAt: "2026-11-13" }, null] },
       { contentful_id: "p1", commander_id: null, named: false, sets: null },
     ])).toEqual([
-      { contentfulId: "p1", commanderId: "a", named: true, sets: [{ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }] },
+      { contentfulId: "p1", commanderId: "a", named: true, sets: [{ code: "fdc", setType: "commander", releasedAt: "2026-11-13", hasPrecons: false }] },
       { contentfulId: "p1", commanderId: null, named: false, sets: [] },
     ]);
   });
@@ -146,13 +150,22 @@ describe("loadPostListTargets", () => {
     const execute = async () => {
       calls += 1;
       return { rows: [
-        { contentful_id: "p1", commander_id: "a", named: true, sets: [{ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }] },
+        { contentful_id: "p1", commander_id: "a", named: true, sets: [{ code: "fdc", setType: "commander", releasedAt: "2026-11-13", hasPrecons: false }] },
         { contentful_id: "p2", commander_id: "b", named: true, sets: [] },
+        // Released more than RELEASED_GRACE_DAYS ago with no precon: Announced has dropped it, so no block to land on.
+        { contentful_id: "p3", commander_id: "c", named: true, sets: [{ code: "old", setType: "commander", releasedAt: "2026-09-01", hasPrecons: false }] },
+        // A set that holds precons but is not a Commander set, still on the way: Announced never draws it.
+        { contentful_id: "p4", commander_id: "d", named: true, sets: [{ code: "cmx", setType: "masters", releasedAt: "2027-01-08", hasPrecons: true }] },
       ] };
     };
-    const out = await loadPostListTargets(["p1", "p2"], new Date("2026-10-29T12:00:00Z"), { execute } as never);
+    const out = await loadPostListTargets(["p1", "p2", "p3", "p4"], new Date("2026-10-29T12:00:00Z"), { execute } as never);
     expect(calls).toBe(1);
-    expect(out).toEqual(new Map([["p1", "/decks/precons#announced-fdc"], ["p2", "/decks/precons#announced"]]));
+    expect(out).toEqual(new Map([
+      ["p1", "/decks/precons#announced-fdc"],
+      ["p2", "/decks/precons#announced"],
+      ["p3", "/decks/precons#announced"],
+      ["p4", "/decks/precons#announced"],
+    ]));
   });
 });
 

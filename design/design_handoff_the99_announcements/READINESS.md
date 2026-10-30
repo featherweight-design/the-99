@@ -235,10 +235,13 @@ Secret Lair, Wizards news and a decklists post with no list declaring a commande
 **Target.** Read per request on Home, in ONE statement for every decklists post on the page (`postListRowsQuery`), by
 the early page's own set rule (`resolvePostSet`, same window and set types):
 - the resolved set is released (on or before today, UTC) and `precons` holds it: `/decks/precons?q=<CODE>`. The list
-  has no set filter or set anchor; its search matches a precon's set code (`filterPrecons`), so the set's precons are
-  what it lands on, with the code as its removable search chip;
-- otherwise, the set's Announced block: `/decks/precons#announced-<code>`;
-- no set resolves: `/decks/precons#announced`.
+  has no set filter or set anchor, so this searches by the set code, with the code as the removable search chip. The
+  search (`filterPrecons`) is a substring match over name, twin name, set code and commanders, so it can also match
+  other precons whose names contain the code;
+- otherwise, while the Announced group draws the set (`drawnInAnnounced`, the group's own rule: a Commander set
+  releasing later, or released within `RELEASED_GRACE_DAYS` with no precon yet), its block:
+  `/decks/precons#announced-<code>`;
+- otherwise, or when no set resolves: `/decks/precons#announced`.
 
 **Anchors.** The Announced group opens on `#announced-<code>` as on `#announced`, over a stored close, and scrolls to
 that set's block once open (the server draws the group closed, so the browser's own jump found no height). The rows
