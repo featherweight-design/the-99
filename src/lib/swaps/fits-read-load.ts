@@ -5,7 +5,7 @@ import { liveLockedIdsByDeck } from "../decks/locks";
 import { readLabels } from "../labels/read";
 import type { Job } from "../labels/types";
 import { readShownSynopses } from "../synopsis/generate";
-import { SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "../synopsis/limits";
+import { SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "../synopsis/limits";
 import { deckNameIndex, normalizeName } from "../synopsis/facts";
 import type { CheckedSynopsis } from "../synopsis/types";
 import { loadFits, type FitsRead } from "./fits";
@@ -26,7 +26,7 @@ import { fitsReadCandidates, type CandidateFacts, type FitsDeckBlock, type FitsR
  */
 
 /** The v2 Overview contracts. */
-export const V2_CONTRACTS: readonly number[] = [SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS];
+export const V2_CONTRACTS: readonly number[] = [SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, SYNOPSIS_CONTRACT_VERSION_STAGES];
 
 /** How many leading themes a deck with no plan is shown with. */
 const DECK_THEMES = 6;

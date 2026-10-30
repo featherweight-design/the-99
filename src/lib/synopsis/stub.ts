@@ -2,6 +2,7 @@ import type { ModelOutcome } from "../model/client";
 import type { SynopsisFacts } from "./facts";
 import { refOf } from "./claims";
 import type { SynopsisReply, SynopsisResponse, SynopsisResponseV8 } from "./response-schema";
+import { landKeepNumber, type StagesReply } from "./stages";
 import { ASSESSMENT_TOPICS } from "./types";
 
 /**
@@ -78,11 +79,51 @@ function asV8(facts: SynopsisFacts, r: SynopsisResponse): SynopsisResponseV8 {
   };
 }
 
+/**
+ * Contract 13's form of a stub reply (`stages`): the same content as `asV8`, rebuilt so it passes the
+ * stages checks on any deck that has the cards for it. Each section names its own cards (a card is
+ * explained once), the commander appears in the overview, Early and the first tip only, and the
+ * land line states the deck's own number with a reason. A deck with too few distinct cards gets the
+ * commander in their place and fails the checks, as for contract 8: `survived` means the stub tried.
+ */
+function asStages(facts: SynopsisFacts, v8: SynopsisResponseV8): StagesReply {
+  const commander = facts.commanders[0] ?? facts.cards[0].name;
+  const others = [...new Set([
+    ...facts.cards.filter((c) => !c.categories.includes("land")),
+    ...facts.cards.filter((c) => c.categories.includes("land")),
+  ].filter((c) => !c.universalStaple).map((c) => c.name).filter((n) => n !== commander))];
+  const pick = (i: number) => others[i] ?? commander;
+  const ref = (name: string) => refOf(Math.max(0, facts.cards.findIndex((c) => c.name === name)));
+  const line = (text: string, ...names: string[]) => ({ text, evidence: names.map(ref) });
+  // The partial and refused modes keep the contract-8 stub's broken sections.
+  const refused = v8.keyCards.length === 0;
+  return {
+    ...v8,
+    overview: v8.overview.includes("Not A Card") ? v8.overview : `[[${commander}]] leads this deck.`,
+    primer: {
+      strategy: refused ? [] : [
+        line(`Build your mana with [[${commander}]] in the first turns.`, commander),
+        line(`Put [[${pick(0)}]] on the table.`, pick(0)),
+        line("Close the game once the table is open.", pick(0)),
+      ],
+      mulligan: v8.primer.mulligan,
+      tips: [
+        line(`Cast [[${pick(1)}]] after [[${commander}]] is out.`, pick(1), commander),
+        line(`Hold [[${pick(2)}]] until [[${pick(3)}]] is ready.`, pick(2), pick(3)),
+      ],
+    },
+    keyCards: refused ? [] : [4, 5, 6, 7, 8].map((i) => ({ card: pick(i), claims: [], job: "Plays its part in this deck.", evidence: [ref(pick(i))] })),
+    landKeep: line(`Keep ${landKeepNumber(facts).lands} lands: the curve is middling.`),
+  };
+}
+
 export function stubReply(facts: SynopsisFacts, mode: StubMode, repair?: boolean, v2?: false): ModelOutcome<SynopsisResponse>;
-export function stubReply(facts: SynopsisFacts, mode: StubMode, repair: boolean | undefined, v2: boolean): ModelOutcome<SynopsisReply>;
-export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false, v2 = false): ModelOutcome<SynopsisReply> {
+export function stubReply(facts: SynopsisFacts, mode: StubMode, repair: boolean | undefined, v2: boolean, stages?: boolean): ModelOutcome<SynopsisReply>;
+export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false, v2 = false, stages = false): ModelOutcome<SynopsisReply> {
   const out = stubReplyV7(facts, mode, repair);
-  return v2 && out.ok ? { ...out, value: asV8(facts, out.value) } : out;
+  if (!v2 || !out.ok) return out;
+  const v8 = asV8(facts, out.value);
+  return { ...out, value: stages ? asStages(facts, v8) : v8 };
 }
 
 function stubReplyV7(facts: SynopsisFacts, mode: StubMode, repair = false): ModelOutcome<SynopsisResponse> {

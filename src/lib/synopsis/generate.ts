@@ -15,12 +15,14 @@ import { readProfileHead } from "../profile/load";
 import { readStoredReading, requestProfileDeps, sameList, type StoredProfileDeps } from "../profile/stored";
 import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisPlayerContractVersion } from "./limits";
 import { FREE_ATTEMPTS, freeRunAvailable, freeRunsFor, methodNoticeOf } from "./method-notice";
 import { SYNOPSIS_EFFORT, SYNOPSIS_EFFORT_V7, SYNOPSIS_MODEL, SYNOPSIS_MODEL_V7 } from "./model";
 import { buildSynopsisPrompt, isRepair } from "./prompt";
 import { reapSynopses } from "./reaper";
 import { synopsisResponseSchema, synopsisResponseSchemaV8Wire, type SynopsisReply, type SynopsisReplyV8Wire, type SynopsisResponse } from "./response-schema";
+import { applyStagesShape, repairNote, settleStages, stagesPromptOption, stagesRepairTargets } from "./stages-run";
+import { stagesSchemaFor, type StagesReply } from "./stages";
 import { STUB_MODEL, stubDelay, stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionId, SectionVerdict, SynopsisOutcome } from "./types";
 import { marksIn, validateSynopsis } from "./validate";
@@ -86,7 +88,7 @@ export type WriteResult =
   | { kind: "illegal" };
 
 /** `deadlineMs` is what is left of the write's one budget: the repair gets only the remainder. */
-export type ModelCall = (req: { system: string; user: string; deadlineMs: number; v2?: boolean }, facts: SynopsisFacts) =>
+export type ModelCall = (req: { system: string; user: string; deadlineMs: number; v2?: boolean; /** Contract 13: the stages shape and its reply schema. */ stages?: boolean }, facts: SynopsisFacts) =>
   Promise<ModelOutcome<SynopsisReply>>;
 
 export type GenerateDeps = {
@@ -118,13 +120,17 @@ export function defaultDeps(): GenerateDeps {
     modelName: live ? synopsisCallSettings(false).model : STUB_MODEL,
     modelNameV2: live ? synopsisCallSettings(true).model : STUB_MODEL,
     model: live
-      // Contract 8 (the v2 method) asks for a bigger reply and constrains it to its own schema.
-      ? (req): Promise<ModelOutcome<SynopsisReply>> => req.v2
+      // Contract 8 (the v2 method) asks for a bigger reply and constrains it to its own schema;
+      // contract 13 adds the land line to it (`stagesSchemaFor(3)`: a player's deck has no alternates).
+      // Same model, effort and 16,000-token ceiling: the extra field is about 60 tokens.
+      ? (req): Promise<ModelOutcome<SynopsisReply>> => req.stages
+        ? callModel({ ...synopsisCallSettings(true), system: req.system, user: req.user, schema: stagesSchemaFor(3, []), deadlineMs: req.deadlineMs })
+        : req.v2
         ? callModel({ ...synopsisCallSettings(true), system: req.system, user: req.user, schema: synopsisResponseSchemaV8Wire, deadlineMs: req.deadlineMs })
         : callModel({ ...synopsisCallSettings(false), system: req.system, user: req.user, schema: synopsisResponseSchema, deadlineMs: req.deadlineMs })
       : async (req, facts) => {
         await stubDelay();
-        return stubReply(facts, stubMode(), isRepair(req.user), !!req.v2);
+        return stubReply(facts, stubMode(), isRepair(req.user), !!req.v2, !!req.stages);
       },
     now: () => new Date(),
   };
@@ -203,6 +209,11 @@ export function mergeRetry(
     lands: fresh.lands ?? stored.lands,
     cards: { ...stored.cards, ...fresh.cards },
   };
+  // Contract 13: the land line is no section, so the stored one stands (the first answer's); a
+  // fresh one fills it only when the stored row had none (it failed its check).
+  const landKeep = stored.landKeep ?? fresh.landKeep;
+  if (landKeep !== undefined) content.landKeep = landKeep;
+  if (stored.alternate !== undefined) content.alternate = stored.alternate;
   // Contract 8: the evidence follows its section, and the checklist follows the Weaknesses it chose
   // them from. A stored answer with neither (contract 7) stays without.
   if (stored.evidence && fresh.evidence) {
@@ -217,6 +228,9 @@ export function mergeRetry(
       keyCards: take("keyCards") ? f.keyCards : e.keyCards,
       weaknesses: take("weaknesses") ? f.weaknesses : e.weaknesses,
     };
+    const landIds = stored.landKeep !== undefined ? e.landKeep : f.landKeep;
+    if (landKeep !== undefined && landIds) content.evidence.landKeep = landIds;
+    if (e.alternate) content.evidence.alternate = e.alternate;
   }
   const assessment = take("weaknesses") ? fresh.assessment : stored.assessment;
   if (assessment) content.assessment = assessment;
@@ -355,18 +369,21 @@ async function sharedInteraction(
 }
 
 /** Check a reply under the contract it was written for: the one validator the write, the repair and the eval harness all call. */
-export async function checkReply(value: SynopsisReply, facts: SynopsisFacts, v2: boolean): Promise<CheckedSynopsis> {
+export async function checkReply(value: SynopsisReply, facts: SynopsisFacts, v2: boolean, stages = false): Promise<CheckedSynopsis> {
   if (!v2) {
     const reply = value as SynopsisResponse;
     return validateSynopsis(reply, facts, await catalogFor(reply, facts));
   }
   const reply = normalizeV8(value as SynopsisReplyV8Wire);
-  return validateSynopsisV8(reply, facts, await catalogFor({ weaknesses: weaknessLines(reply) }, facts));
+  const checked = validateSynopsisV8(reply, facts, await catalogFor({ weaknesses: weaknessLines(reply) }, facts));
+  // Contract 13: the contract-8 part above, then the stages shape's counts and the land line.
+  return stages ? applyStagesShape(checked, value as StagesReply, facts) : checked;
 }
 
 /** The one repair call's prompt: the facts, the passing sections to return unchanged, each refused section's reason. Shared by the write and the eval harness. */
-export function repairPrompt(facts: SynopsisFacts, content: CheckedSynopsis, failing: SectionId[], v2: boolean, first?: SynopsisReply) {
-  return buildSynopsisPrompt(facts, { keep: content, refused: failing, first }, { v2, contract8: v2 });
+export function repairPrompt(facts: SynopsisFacts, content: CheckedSynopsis, failing: SectionId[], v2: boolean, first?: SynopsisReply, stages?: { reasons: readonly string[] }) {
+  const built = buildSynopsisPrompt(facts, { keep: content, refused: failing, first }, { v2, contract8: v2, ...(stages ? { stages: stagesPromptOption(facts) } : {}) });
+  return stages && stages.reasons.length > 0 ? { ...built, user: `${built.user}\n${repairNote(stages.reasons)}` } : built;
 }
 
 /**
@@ -381,9 +398,10 @@ export async function applyRepair(
   failing: SectionId[],
   facts: SynopsisFacts,
   v2: boolean,
+  stages = false,
 ): Promise<CheckedSynopsis> {
   if (!repair.ok) return first;
-  return mergeRetry(first, await checkReply(repair.value, facts, v2), failing).content;
+  return mergeRetry(first, await checkReply(repair.value, facts, v2, stages), failing).content;
 }
 
 /** The catalog cards Weaknesses names that the deck does not hold. Exported for the eval harness,
@@ -630,9 +648,11 @@ async function run(
   }
 
   // The contract is the one the facts were really built under: a failed label read falls back to
-  // the classifier's figures and is stamped 7 or 11, not 9 or 12.
+  // the classifier's figures and is stamped 7 or 11, not 9 or 12; a player's deck with the method on is 13.
   const { facts, shared } = await factsWithSource(reading.profile, v2);
-  const contract = synopsisContractVersion(v2, shared);
+  const contract = synopsisPlayerContractVersion(v2, shared);
+  // Contract 13 (the stages shape): the prompt, schema, checks and repair below all follow it.
+  const stages = contract === SYNOPSIS_CONTRACT_VERSION_STAGES;
 
   // A section retry works only on the synopsis for this very list, under this very contract. One
   // written under another contract is rewritten whole instead: a document never mixes two
@@ -643,7 +663,7 @@ async function run(
     base = current;
   }
   const refused = base ? refusedSections(base.content) : null;
-  const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2, contract8: v2 });
+  const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2, contract8: v2, ...(stages ? { stages: stagesPromptOption(facts) } : {}) });
 
   // The model this write runs on, which is what its run and its bill record.
   const modelName = v2 ? deps.modelNameV2 ?? deps.modelName : deps.modelName;
@@ -667,7 +687,7 @@ async function run(
   const remaining = () => SYNOPSIS_DEADLINE_MS - (deps.now().getTime() - startedAt);
   const call = async (req: { system: string; user: string }): Promise<ModelOutcome<SynopsisReply>> => {
     try {
-      return await deps.model({ ...req, deadlineMs: remaining(), v2 }, facts);
+      return await deps.model({ ...req, deadlineMs: remaining(), v2, stages }, facts);
     } catch (error) {
       console.error("synopsis model call threw", error);
       return { ok: false, errorClass: "upstream_busy" };
@@ -683,21 +703,25 @@ async function run(
     }
 
     let usage: ModelUsage | undefined = outcome.usage;
-    let content = await checkReply(outcome.value, facts, v2);
+    let content = await checkReply(outcome.value, facts, v2, stages);
+    // Contract 13: the sections the explained-once pass and its checks leave for the repair, beyond
+    // the ones the validator refused (`stages-run.ts` says which checks gate and which advise).
+    const extra = stages && !base ? stagesRepairTargets(content, outcome.value as StagesReply, facts) : { sections: [] as SectionId[], reasons: [] as string[] };
     if (base && refused) {
       content = mergeRetry(base.content, content, refused).content;
-    } else if (refusedSections(content).length > 0 && remaining() >= SYNOPSIS_REPAIR_MIN_MS) {
+    } else if ((refusedSections(content).length > 0 || extra.sections.length > 0) && remaining() >= SYNOPSIS_REPAIR_MIN_MS) {
       // CONTRACT B: ONE repair, before the player sees anything. It is the section-retry prompt:
       // the facts, the first answer's passing sections to return unchanged, and each refused
       // section's reason. Checked by the same rules, and merged so every passing section stays
       // byte for byte. A refused section the repair fails again stays refused, now with the
       // repair's own reason and counts, which is what a later Try again is asked to fix.
-      const failing = refusedSections(content);
-      const repair = await call(repairPrompt(facts, content, failing, v2, outcome.value));
+      const failing = [...new Set([...refusedSections(content), ...extra.sections])];
+      const repair = await call(repairPrompt(facts, content, failing, v2, outcome.value, stages ? { reasons: extra.reasons } : undefined));
       usage = sumUsage(usage, repair.usage);
       billed = synopsisBills(modelName, effort, outcome.usage, repair.usage);
-      content = await applyRepair(content, repair, failing, facts, v2);
+      content = await applyRepair(content, repair, failing, facts, v2, stages);
     }
+    if (stages) content = settleStages(content, facts);
     const charge = chargeFor(content);
     const result = outcomeOf(content.verdicts);
     const written = await finishRun(

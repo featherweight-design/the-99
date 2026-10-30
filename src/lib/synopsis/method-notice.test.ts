@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { FREE_ATTEMPTS, freeRunAvailable, freeRunsFor, methodNoticeOf } from "./method-notice";
-import { SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "./limits";
 
 const old = { contractVersion: 7 };
 const none = { attempts: 0, succeeded: false };
@@ -24,6 +24,11 @@ describe("methodNoticeOf", () => {
 
   // 2026-10-11: plans first and Sonnet 5.5 are a new method (contract 11), so an overview written
   // under contract 8, or 10 with the benchmarks, is an old one and is offered the free rewrite.
+  it("treats a contract-13 row (the stages shape) as the current method", () => {
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_STAGES }, runs: none })).toBeNull();
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_STAGES, overviewOk: false }, runs: { attempts: 1, succeeded: false } })).toEqual({ attemptsLeft: 1 });
+  });
+
   it("treats a contract-12 row (the method with the benchmarks) as the current method", () => {
     // A partial free run at 12 (Overview refused) leaves the second try; a passing one ends it.
     expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, overviewOk: false }, runs: { attempts: 1, succeeded: false } })).toEqual({ attemptsLeft: 1 });
@@ -86,7 +91,7 @@ describe("freeRunsFor", () => {
     // counting 11 alone let a failing one retry free without end.
     expect(sql).toContain('"deck_synopses"."contract_version" in ($');
     expect(sql).toContain('"model_calls"."origin" = $');
-    expect(params).toEqual(["deck-1", SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, "system"]);
+    expect(params).toEqual(["deck-1", SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, SYNOPSIS_CONTRACT_VERSION_STAGES, "system"]);
   });
 
   it("counts a failed, a refused and a pending run as attempts, and succeeds only on a shown overview", async () => {

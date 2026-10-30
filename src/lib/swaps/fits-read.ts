@@ -67,7 +67,7 @@ export type ReadCardFacts = {
 };
 export type ReadTextCard = ReadCardFacts & { oracleText: string };
 
-/** Where a deck's plan text came from: a v2 Overview (contracts 11, 12), an older one, or none. */
+/** Where a deck's plan text came from: a v2 Overview (contracts 11, 12, 13), an older one, or none. */
 export type PlanSource = "v2" | "older" | "none";
 
 /** One of the player's decks, independent of the card asked about: the cached layout's block. */

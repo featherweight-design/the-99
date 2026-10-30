@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import type { db } from "../../db";
 import { deckSynopses, modelCalls } from "../../db/schema";
-import { SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "./limits";
 
 /**
  * The method-changed notice and the free rewrite (plan `2026-10-10-overview-accuracy.md` §7.4;
@@ -66,9 +66,10 @@ export async function freeRunsFor(q: Pick<typeof db, "select">, deckId: string):
     .innerJoin(modelCalls, eq(modelCalls.id, deckSynopses.modelCallId))
     .where(and(
       eq(deckSynopses.deckId, deckId),
-      // BOTH current-method contracts: a free rewrite with the benchmarks on is written at 12, and
-      // counting 11 alone let a failing one retry free without end.
-      inArray(deckSynopses.contractVersion, [SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS]),
+      // EVERY current-method contract: a free rewrite with the benchmarks on was written at 12, and
+      // counting 11 alone let a failing one retry free without end. A player deck's rewrite is now
+      // written at 13 (the stages shape); 11 and 12 stay counted for the free runs already made.
+      inArray(deckSynopses.contractVersion, [SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, SYNOPSIS_CONTRACT_VERSION_STAGES]),
       eq(modelCalls.origin, "system"),
     ));
   return {

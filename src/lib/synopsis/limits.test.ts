@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   SYNOPSIS_CONTRACT_VERSION,
+  SYNOPSIS_CONTRACT_VERSION_STAGES,
   SYNOPSIS_CONTRACT_VERSION_V2,
   synopsisContractVersion,
+  synopsisPlayerContractVersion,
   SYNOPSIS_ANSWER_TOKENS_WORST_CASE,
   SYNOPSIS_MAX_TOKENS,
   SYNOPSIS_MAX_TOKENS_V8,
@@ -37,5 +39,17 @@ describe("the contract version", () => {
     expect(new Set([false, true].flatMap((v2) => [false, true].map((b) => synopsisContractVersion(v2, b)))).size).toBe(4);
     expect(SYNOPSIS_CONTRACT_VERSION).toBe(7);
     expect(SYNOPSIS_CONTRACT_VERSION_V2).toBe(11);
+  });
+});
+
+describe("a player deck's contract", () => {
+  it("is 13 while the v2 method is on, and the precon contract is untouched", () => {
+    expect(SYNOPSIS_CONTRACT_VERSION_STAGES).toBe(13);
+    expect(synopsisPlayerContractVersion(true)).toBe(13);
+    expect(synopsisPlayerContractVersion(true, true)).toBe(13);
+    expect(synopsisPlayerContractVersion(false)).toBe(SYNOPSIS_CONTRACT_VERSION);
+    expect(synopsisPlayerContractVersion(false, true)).toBe(synopsisContractVersion(false, true));
+    // Precons, their carry-over and their readers still look up 12.
+    expect(synopsisContractVersion(true, true)).toBe(12);
   });
 });

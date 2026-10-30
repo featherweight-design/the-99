@@ -31,9 +31,9 @@ import { computeAndStoreProfile, type StoredProfileDeps } from "../src/lib/profi
 import type { ModelOutcome } from "../src/lib/model/client";
 import { readAllowance } from "../src/lib/model/allowance";
 import { retrySynopsisFor, writeSynopsisFor, type GenerateDeps } from "../src/lib/synopsis/generate";
-import { SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "../src/lib/synopsis/limits";
-// The shared benchmark reading is always attempted: a v2 write is stamped 12, or 11 on a label-read fallback.
-const V2_CONTRACTS = [SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS];
+import { SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "../src/lib/synopsis/limits";
+// A v2 write is stamped 13 (the stages shape); 11 and 12 are the earlier method rows a revert may leave.
+const V2_CONTRACTS = [SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, SYNOPSIS_CONTRACT_VERSION_STAGES];
 const isV2 = (n: number | undefined) => n !== undefined && V2_CONTRACTS.includes(n);
 // The contract each seeded old-way overview was written under (9, or 7 on a fallback), by deck id.
 const oldContract = new Map<string, number>();
@@ -234,7 +234,7 @@ async function scenarios() {
 
   // 7 · A REVERT: the free run's overview belongs to another list now, so the shown row is the old
   // (7 or 9) one again, and the free rewrite already produced an overview: no second one.
-  await db.execute(sql`update deck_synopses set fingerprint = 'another-list' where deck_id = ${ok}::uuid and contract_version in (${SYNOPSIS_CONTRACT_VERSION_V2}, ${SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS})`);
+  await db.execute(sql`update deck_synopses set fingerprint = 'another-list' where deck_id = ${ok}::uuid and contract_version in (${SYNOPSIS_CONTRACT_VERSION_V2}, ${SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS}, ${SYNOPSIS_CONTRACT_VERSION_STAGES})`);
   s = await state(ok);
   check("a revert to the old overview offers no second free rewrite", [s.synopsis?.contractVersion, s.methodNotice], [oldContract.get(ok), null]);
 

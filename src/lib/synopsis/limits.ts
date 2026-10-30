@@ -37,8 +37,23 @@ export const SYNOPSIS_CONTRACT_VERSION_BENCHMARKS = 9;
 //    benchmarks row never reads as older than the method and shows the notice for ever.
 export const SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS = 12;
 
-/** The contract a write is made under: 11 while the v2 method is on, 7 otherwise; 12 and 9 when
- *  the interaction figures are the benchmarks' too. */
+// 13: the stages shape (lane e7, PR 1a-1, plan 2026-10-29): the Core strategy is three stage lines
+//    (Early, Mid, Close, labeled by position and never stored), no Wins by line, two tips, and a
+//    land line stating the deck's own keep number (`landKeep`, `stages.ts`). Written for a PLAYER's
+//    deck while `OVERVIEW_V2_ENABLED` is on (the interaction
+//    reading is a separate axis from the shape; 11 and 12 differed only by it). Above 12, so it
+//    never reads as older than the method. Precon Overviews, their carry-over and their readers stay
+//    at 12 (`synopsisContractVersion`) until the precon PR moves them.
+export const SYNOPSIS_CONTRACT_VERSION_STAGES = 13;
+
+/** The contract a PLAYER deck's write is made under: 13 while the v2 method is on, else as `synopsisContractVersion`. */
+export function synopsisPlayerContractVersion(v2: boolean, benchmarks = false): number {
+  return v2 ? SYNOPSIS_CONTRACT_VERSION_STAGES : synopsisContractVersion(false, benchmarks);
+}
+
+/** The contract a PRECON's Overview and every precon reader use: 11 while the v2 method is on, 7
+ *  otherwise; 12 and 9 when the interaction figures are the benchmarks' too. A player deck's write
+ *  uses `synopsisPlayerContractVersion`. */
 export function synopsisContractVersion(v2: boolean, benchmarks = false): number {
   if (benchmarks) return v2 ? SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS : SYNOPSIS_CONTRACT_VERSION_BENCHMARKS;
   return v2 ? SYNOPSIS_CONTRACT_VERSION_V2 : SYNOPSIS_CONTRACT_VERSION;
