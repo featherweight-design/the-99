@@ -36,7 +36,7 @@ export async function sweepFlyerClaims(deps: { now?: Date; clerk?: ClerkInvites 
       if (!(got.rows[0] as { ok: boolean }).ok) return null;
       // Read under the lock: a hand-over that finished first has stored its ticket id, which this run then revokes.
       const [cur] = await tx.select({ email: flyerClaims.email, clerkInvitationId: flyerClaims.clerkInvitationId, state: flyerClaims.state, holdsUntil: flyerClaims.holdsUntil })
-        .from(flyerClaims).where(eq(flyerClaims.id, row.id));
+        .from(flyerClaims).where(eq(flyerClaims.id, row.id)).for("update");
       if (!cur) return 0;
       const lapsedNow = (["open", "proven"].includes(cur.state) && cur.holdsUntil.getTime() <= now.getTime()) || (cur.state === "released" && cur.clerkInvitationId !== null);
       if (!lapsedNow) return 0;
