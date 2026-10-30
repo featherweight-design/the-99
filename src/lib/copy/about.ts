@@ -114,6 +114,8 @@ export type AboutSwitch =
   | 'ANALYSIS_TAB_ENABLED'
   | 'HOW_IT_WORKS_ENABLED'
   | 'TUNING_ENABLED'
+  // Suggested changes v2 (handoff design_handoff_the99_suggested_changes_v2): its label's and the credits rule's sentences.
+  | 'SUGGESTED_CHANGES_V2_ENABLED'
   | 'DECK_STATS_ENABLED'
   | 'COLLECTION_EDIT_ENABLED'
   | 'COLLECTION_SYNC_ENABLED'

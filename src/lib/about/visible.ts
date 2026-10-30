@@ -11,7 +11,7 @@ import { howItWorksEnabled } from "./how-it-works-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
-import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
+import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
@@ -49,6 +49,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   TUNING_ENABLED: tuningEnabled,
+  SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
   // Already reads COLLECTION_EDIT_ENABLED: Sync is the upload choice's third card.

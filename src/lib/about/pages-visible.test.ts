@@ -82,6 +82,47 @@ describe("each sentence follows its own switch", () => {
   });
 });
 
+describe("Suggested changes v2 follows its own switch, and its parents'", () => {
+  const V1 = "offers up to five cards to add and five to cut";
+  const V2 = "asks how many cards to change and what you’re after";
+  const OTHER_DECKS = "Include my other decks also offers cards your other decks hold";
+  const REFUND = "A Suggested changes run that comes back short gives its credit back too";
+  const textOf = (e: Record<string, string>, key: string) =>
+    units(visibleSections(env(e))).find((u) => u.key === key)?.text;
+  const PARENTS = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" };
+
+  it("draws v1's label and no refund sentence with v2 off and both parents on", () => {
+    const label = textOf(PARENTS, "decks/analysis/suggested")!;
+    expect(label).toContain(V1);
+    expect(label).not.toContain(V2);
+    expect(label).not.toContain(OTHER_DECKS);
+    const credits = textOf(PARENTS, "rule/credits")!;
+    expect(credits).toContain("So does each Suggested changes run.");
+    expect(credits).not.toContain(REFUND);
+  });
+
+  it("draws v2's label and the refund sentence with v2 and both parents on", () => {
+    const on = { ...PARENTS, SUGGESTED_CHANGES_V2_ENABLED: "true" };
+    const label = textOf(on, "decks/analysis/suggested")!;
+    expect(label).toContain(V2);
+    expect(label).toContain(OTHER_DECKS);
+    expect(label).not.toContain(V1);
+    expect(textOf(on, "rule/credits")).toContain(REFUND);
+  });
+
+  it.each([
+    ["Suggested changes off", { ANALYSIS_TAB_ENABLED: "true" }],
+    ["the Analysis tab off", { TUNING_ENABLED: "true" }],
+  ] as const)("drops the label and the refund sentence with v2 on and %s", (_name, parents) => {
+    const e = { ...parents, SUGGESTED_CHANGES_V2_ENABLED: "true" };
+    // The label rides TUNING_ENABLED, which needs the Analysis tab; v2 needs both, so neither form is drawn.
+    expect(textOf(e, "decks/analysis/suggested")).toBeUndefined();
+    const credits = textOf(e, "rule/credits")!;
+    expect(credits).not.toContain(REFUND);
+    expect(credits).not.toContain("Suggested changes");
+  });
+});
+
 describe("Show me", () => {
   /** A switch with every parent it needs, and nothing else on. */
   const withNeeds = (name: string): Record<string, string> => {
@@ -219,6 +260,9 @@ describe("seen translation", () => {
     const floorSeen = new Set([
       "decks/games/log@TUNING_ENABLED", // log-a-game: "reads your games the next time it runs"
       "rule/credits@ANALYSIS_TAB_ENABLED", "rule/credits@TUNING_ENABLED", "rule/credits@PROPOSED_CUTS_ENABLED", // credits
+      // Suggested changes v2's rewrite of a unit the reader already met: no legacy entry carries its switch, so the floor
+      // answers and the rewrite is not told as New (About ruling 6: a label is announced only at Hugh's discretion).
+      "decks/analysis/suggested@SUGGESTED_CHANGES_V2_ENABLED", "rule/credits@SUGGESTED_CHANGES_V2_ENABLED",
     ]);
     const switchOf = new Map(aboutEntries.map((e) => [e.id, e.switch ?? null]));
     const units2 = [
