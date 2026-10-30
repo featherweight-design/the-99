@@ -36,7 +36,7 @@ import { liveOffendingIds } from "../notices/read";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { PROFILE_VERSION } from "../profile/version";
 import { isNewestVersion } from "../profile/stored";
-import { synopsisPreconContractVersion } from "../synopsis/limits";
+import { synopsisPreconContractVersion, synopsisPreconFallbackContract } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { carryOverDecision } from "./overview";
 import { preconReadingFresh, readPreconCarry } from "./reading";
@@ -57,10 +57,13 @@ export async function carryStoredOnArrival(deckId: string, userId: string, env: 
   // (`arrivalDeckQuery`), so they are one snapshot: the write below re-reads the stamp under the lock, and any
   // edit after this read moves it. Round trips are the cost here (measured: 9 came to ~380ms at the median
   // from a laptop), so every independent read shares one.
-  const contract = synopsisPreconContractVersion(overviewV2Enabled(env));
+  const v2 = overviewV2Enabled(env);
+  const contract = synopsisPreconContractVersion(v2);
+  // Until the contract-13 batch exists a precon's contract-12 row stands in (`pickOverviewRow`), reading and all.
+  const fallback = synopsisPreconFallbackContract(v2);
   const [[deck], stored] = await Promise.all([
     arrivalDeckQuery(deckId, userId),
-    readPreconCarry({ deckId, userId }, contract, roleBasisFromEnv(env)),
+    readPreconCarry({ deckId, userId }, contract, roleBasisFromEnv(env), db, fallback),
   ]);
   if (!deck?.precon || deck.hasReading) return { kind: "nothing" };
   const head = { commanderOracleId: deck.commanderOracleId, partnerOracleId: deck.partnerOracleId, cards: deck.cards };
@@ -94,7 +97,9 @@ export async function carryStoredOnArrival(deckId: string, userId: string, env: 
     // ONE REVISION OF THE SOURCE ROW, under a shared lock, as the computing carry-over takes it: a build or
     // copy cannot mark it not current or rewrite it between this decision and the write, and the content,
     // dates and change log mark all come from this revision.
-    const [src] = await sourceRowQuery(tx, deck.precon!, contract, roleBasisFromEnv(env));
+    const [row] = await sourceRowQuery(tx, deck.precon!, stored.overview.contractVersion, roleBasisFromEnv(env));
+    // The fallback row's `current` flag went stale with the request hash, so the list alone decides it.
+    const src = row && row.contractVersion === fallback ? { ...row, current: true } : row;
     const plan = lockedCarry({ wantsOverview: wantsOverview && !illegal, readAt: reading.at, readingSeenSeq: reading.seenSeq, list, src: src ?? null });
     if (plan.kind === "fallback") return plan;
     const at = plan.overview?.createdAt ?? null;
