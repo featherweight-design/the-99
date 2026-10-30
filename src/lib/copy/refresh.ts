@@ -270,8 +270,6 @@ export const refreshCopy = {
     lockedItemAria: (label: string) => `${label}, locked`,
     // The lock's own words (design table first-run-locked-nav.md).
     lock: {
-      // Desktop only, under the first-run H1; the phone's bracket carries it.
-      pageLine: 'Collection, Commanders, Discover and Decks open once your cards are in.',
       // `others` is the other three locked labels, joined by `nameList` ("A, B and C").
       note: (label: string, others: string) =>
         `${label} opens once your cards are in. So do ${others}.`,
@@ -281,12 +279,11 @@ export const refreshCopy = {
       tabBracketShort: 'Open with cards',
       railLabel: 'Locked',
       goToStep1: 'Go to step 1',
-      // With Collection open at zero cards (no-collection entry, call 6): the page
-      // line names the three slots still locked.
+      // Desktop only, under the first-run H1; the phone's bracket carries it. Collection is open at zero cards
+      // (no-collection entry, call 6), so the page line names the three slots still locked.
       pageLineOpen: 'Commanders, Discover and Decks open once your cards are in.',
       // With the Commanders place on, Discover is not in the bar, so the line names only the slots the lock holds
-      // there (menu and Home audit, erratum 1): Collection too, or only Commanders and Decks with the lock open.
-      pageLinePlace: 'Collection, Commanders and Decks open once your cards are in.',
+      // there (menu and Home audit, erratum 1): only Commanders and Decks.
       pageLineOpenPlace: 'Commanders and Decks open once your cards are in.',
       // Outside first run there is no step 1, so the note's button names where the cards go (to /collection).
       addYourCards: 'Add your cards',
@@ -347,12 +344,11 @@ export const refreshCopy = {
 } as const;
 
 /**
- * The lock's desktop page line, naming exactly the slots the bar locks: `place` is the Commanders place (always on) (Discover
- * leaves the bar), `open` is the open lock at zero cards (Collection opens). The nav's own rule,
- * `lockedItems` over `barItems`, gives the same four sets.
+ * The lock's desktop page line, naming exactly the slots the bar locks at zero cards (Collection is open): `place` is
+ * the Commanders place (always on) (Discover leaves the bar). The nav's own rule, `lockedItems` over `barItems`, gives
+ * the same two sets.
  */
-export function lockPageLine(place: boolean, open: boolean): string {
+export function lockPageLine(place: boolean): string {
   const l = refreshCopy.firstRun.lock;
-  if (place) return open ? l.pageLineOpenPlace : l.pageLinePlace;
-  return open ? l.pageLineOpen : l.pageLine;
+  return place ? l.pageLineOpenPlace : l.pageLineOpen;
 }

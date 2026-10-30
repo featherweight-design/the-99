@@ -128,16 +128,11 @@ describe("Home's precon pick receipt (no-collection entry S5)", () => {
 
 describe("Home's ways in at zero cards (no-collection entry S1, S12)", () => {
   const visit = async () =>
-    (await HomePage({ searchParams: Promise.resolve({}) })) as ReactElement<{
-      ways?: { precons: boolean } | null;
-      noCards?: boolean;
-    }>;
+    (await HomePage({ searchParams: Promise.resolve({}) })) as ReactElement<{ noCards?: boolean }>;
 
-  it("hands first run the ways group, with Precons I own", async () => {
+  it("hands an account with no cards and no decks first run, whose step 1 draws the ways group", async () => {
     stub.uniqueCards = 0;
-    const page = await visit();
-    expect(page.type).toBe(FirstRunChecklist);
-    expect(page.props.ways).toEqual({ precons: true });
+    expect((await visit()).type).toBe(FirstRunChecklist);
   });
 
   it("marks the dashboard as having no cards when the account has decks and none", async () => {

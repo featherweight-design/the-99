@@ -93,7 +93,7 @@ describe("WaysGroup", () => {
 
 describe("Step 1 with the ways group (S1)", () => {
   it("moves Add cards by hand out of the button row into the group, under the upload's two buttons", () => {
-    render(<FirstRunChecklist addByHand ways={{ precons: true }} />);
+    render(<FirstRunChecklist />);
     const paste = screen.getByRole("button", { name: "Paste a list" });
     // The row is the upload's alone: Upload a CSV (the one fill), then Paste a list.
     expect(paste.nextElementSibling).toBeNull();
@@ -108,7 +108,7 @@ describe("Step 1 with the ways group (S1)", () => {
   });
 
   it("opens the shipped Add cards sheet from the group, and settles only after a save", () => {
-    render(<FirstRunChecklist addByHand ways={{ precons: true }} />);
+    render(<FirstRunChecklist />);
     fireEvent.click(within(group()).getByRole("button", { name: /Add cards by hand/ }));
     expect(screen.getByRole("dialog")).toBeTruthy();
     act(() => sheet!.onSaved!(1));
@@ -117,23 +117,17 @@ describe("Step 1 with the ways group (S1)", () => {
   });
 
   it("names three locked slots in the page line, and the phone body no longer names the add", () => {
-    render(<FirstRunChecklist addByHand ways={{ precons: true }} />);
+    render(<FirstRunChecklist />);
     expect(screen.getByText("Commanders, Discover and Decks open once your cards are in.")).toBeInTheDocument();
     expect(screen.queryByText(/or add cards by hand/)).toBeNull();
   });
 
   it("leaves the group out while the paste panel is open", () => {
-    render(<FirstRunChecklist addByHand ways={{ precons: true }} />);
+    render(<FirstRunChecklist />);
     fireEvent.click(screen.getByRole("button", { name: "Paste a list" }));
     expect(screen.queryByRole("group", { name: "No file? Start another way" })).toBeNull();
   });
 
-  it("with the switch off, step 1 is as shipped: the button row's Add cards by hand and four names", () => {
-    render(<FirstRunChecklist addByHand />);
-    expect(screen.queryByRole("group", { name: "No file? Start another way" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Paste a list" }).nextElementSibling).toHaveTextContent("Add cards by hand");
-    expect(screen.getByText("Collection, Commanders, Discover and Decks open once your cards are in.")).toBeInTheDocument();
-  });
 });
 
 describe("The empty Collection with the ways group (S13)", () => {

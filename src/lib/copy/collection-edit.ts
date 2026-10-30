@@ -31,10 +31,6 @@ export const collectionEditCopy = {
     addTitle: "Add cards",
     addSub: "Search by name and add them one by one",
   },
-  firstRun: {
-    addByHand: "Add cards by hand",
-    bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or add cards by hand.",
-  },
   // The "ways" group (no-collection entry S1, S13, S15): one quiet group under the upload, on first run's step 1 and
   // on the empty Collection. Strings are the handoff's `ways` block. The phone
   // draws each row's label alone; the desktop columns carry a sub-line, the full form on step 1 and the short form
@@ -47,7 +43,7 @@ export const collectionEditCopy = {
     importDeck: "Import a deck",
     importDeckSub: "Paste a list you play.",
     importDeckSubShort: "Paste a list you play.",
-    /** Step 1's third row: `firstRun.addByHand`, moved out of the button row into the group. */
+    /** Step 1's third row: Add cards by hand, out of the button row and into the group. */
     addByHand: "Add cards by hand",
     /** The empty Collection's third row: the empty state's own word (`empty.addTitle`). */
     addCards: "Add cards",

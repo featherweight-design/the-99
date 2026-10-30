@@ -222,7 +222,7 @@ export function Dashboard(props: DashboardProps) {
           className="m-0 mt-[12px] hidden items-center gap-[8px] px-[26px] text-[12.5px] text-[color:var(--fg-muted)] md:flex"
         >
           <Lock size="lg" ink="var(--fg-locked)" className="flex-none" />
-          {lockPageLine(props.commandersPlace === true, true)}
+          {lockPageLine(props.commandersPlace === true)}
         </p>
       )}
 

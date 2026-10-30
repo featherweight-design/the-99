@@ -203,8 +203,16 @@ describe("withAnswerDetails", () => {
       [spare("p_colin", "Colin", 9), spare("p_ann", "Ann", 1), spare("p_max", "Max", 3), spare("p_zed", "Zed", 5, "other")],
     );
     if (!out.chosen) throw new Error("chosen");
-    expect(out.items[0].answerDetail).toEqual({ others: [] });
-    expect(out.items[1].answerDetail).toEqual({ others: ["Max", "Ann"] });
+    expect(out.items[0].answerDetail).toEqual({ others: [], standalone: false });
+    expect(out.items[1].answerDetail).toEqual({ others: ["Max", "Ann"], standalone: false });
+  });
+  it("marks the answer to a standalone ask by its key, and only that one", () => {
+    const out = withAnswerDetails(
+      feed(view({ key: "y", kind: "spare-request", card, friend: colin, answer: "yes" }), view({ key: "y2", kind: "spare-request", card, friend: colin, answer: "yes" })),
+      [], new Set(["y"]),
+    );
+    if (!out.chosen) throw new Error("chosen");
+    expect(out.items.map((i) => i.answerDetail?.standalone)).toEqual([true, false]);
   });
   it("leaves every other item as it was", () => {
     const plain = view({ key: "s", kind: "new-set" });

@@ -355,11 +355,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   if (data.firstRun) {
     const firstRun = (
       <FirstRunChecklist
-        addByHand
         about={about}
         welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="first-run" afterAbout={about !== null} />}
-        ways={{ precons: true }}
-        scan
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
         signature={signatureRow}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}

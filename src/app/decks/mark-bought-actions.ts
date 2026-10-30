@@ -34,8 +34,8 @@ export type MarkBoughtOutcome =
   | { stale: (CollectionItemIdentity & { quantity: number })[] }
   /** The catalog no longer holds the card. */
   | { missingCard: string[] }
-  /** Either switch off, a card this deck does not hold, or a printing or finish that does not exist. */
-  | { refused: "off" | "notInDeck" | "notAPrinting" };
+  /** A card this deck does not hold, or a printing or finish that does not exist. */
+  | { refused: "notInDeck" | "notAPrinting" };
 
 /**
  * I got it: records `quantity` copies of one printing, bought off `deckId`'s Shopping list, into
@@ -163,7 +163,7 @@ export type MarkBoughtForDecksOutcome =
   | { stale: (CollectionItemIdentity & { quantity: number })[]; need: number }
   | { missingCard: string[] }
   /**
-   * Either switch off; a deck that no longer holds the card (the line is read again, audit G2); a
+   * The all-decks cart off; a deck that no longer holds the card (the line is read again, audit G2); a
    * printing or finish that does not exist; or the chooser's pick refused, by its reason, with
    * nothing written.
    */

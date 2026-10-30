@@ -84,7 +84,7 @@ describe("answerQuery", () => {
   });
   it("only while the holder still holds the friendship, read on the row's own two ids", () => {
     expect(q).toMatch(/exists \(select 1 from "friend_links" afl where afl\.user_id = asr\.holder_user_id and afl\.friend_user_id = asr\.asker_user_id for share\)/);
-    expect(q).toMatch(/returning asr\.id, asr\.asker_user_id, asr\.oracle_id$/);
+    expect(q).toMatch(/returning asr\.id, asr\.asker_user_id, asr\.oracle_id, asr\.standalone$/);
   });
 });
 
@@ -118,6 +118,11 @@ describe("answerSpareRequest tells the asker", () => {
     const { recordFeedItem } = await run([ROW]);
     await answerSpareRequest("h", REQ, "no", ON, NOW);
     expect(vi.mocked(recordFeedItem).mock.calls[0][1].data).toEqual({ answer: "no" });
+  });
+  it("the answer to a standalone ask is marked standalone, so Home's Yes line leaves out the buy press", async () => {
+    const { recordFeedItem } = await run([{ ...ROW, standalone: true }]);
+    await answerSpareRequest("h", REQ, "yes", ON, NOW);
+    expect(vi.mocked(recordFeedItem).mock.calls[0][1].data).toEqual({ answer: "yes", standalone: true });
   });
   it("a request that is not the holder's tells nobody, and takes no lock", async () => {
     const { tx, recordFeedItem } = await run([]);

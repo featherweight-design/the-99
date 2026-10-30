@@ -428,6 +428,16 @@ describe("resolveDiagram", () => {
     expect(emptied.columns).toHaveLength(1);
   });
 
+  it("keeps a negated part only while its live switch is off", () => {
+    const off = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
+    const negated = (e: NodeJS.ProcessEnv) => resolveDiagram(
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "!PROPOSED_CUTS_ENABLED" }, { part: "row", name: "b", switch: "PROPOSED_CUTS_ENABLED" }] }] },
+      e,
+    ).columns.flatMap((c) => c.parts).flatMap((p) => (p.part === "row" ? [p.name] : []));
+    expect(negated(off)).toEqual(["a"]);
+    expect(negated(ALL_ON)).toEqual(["b"]);
+  });
+
   it("never draws a negated part of a retired switch", () => {
     const captions = (e: NodeJS.ProcessEnv) => parts(rule(e, "replace").diagram!).flatMap((p) => (p.part === "caption" ? [p.text] : []));
     for (const e of [OFF, ALL_ON]) {

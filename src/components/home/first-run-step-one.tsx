@@ -13,30 +13,17 @@
 import { useRef, useState } from "react";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { AddCardsSheet } from "../collection/add-cards-sheet";
-import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { ReplaceFlow } from "../collection/replace-flow";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { WaysGroup } from "../collection/ways-group";
 import { useTarget } from "../discovery/targets-provider";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
-export function FirstRunStepOne({
-  fan,
-  addByHand = false,
-  ways = null,
-  scan = false,
-}: {
-  fan: React.ReactNode;
-  /** Collection edit on for the reader (card scanning ends in its add): the Add cards sheet's Scan press. */
-  scan?: boolean;
-  addByHand?: boolean;
-  /**
-   * The no-collection entry's ways group under the upload (S1), or null for the shipped card. With it, `Add cards by
-   * hand` leaves the button row for the group, so the buttons say "your file" and the group says "no file".
-   * `precons` is always true now (S15).
-   */
-  ways?: { precons: boolean } | null;
-}) {
+/**
+ * The no-collection entry's ways group sits under the upload (S1): `Add cards by hand` lives in the group rather than
+ * the button row, so the buttons say "your file" and the group says "no file". Precons I own is always offered (S15).
+ */
+export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
   const c = refreshCopy.firstRun;
   const [adding, setAdding] = useState(false);
   const saved = useRef(false);
@@ -96,9 +83,8 @@ export function FirstRunStepOne({
             short variant rather than a second copy of the subtree. While a
             review is open the phone's gives way to the REVIEWING line. */}
         <p className={`m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] sm:text-[13px] ${reviewing ? "hidden md:block" : ""}`}>
-          {/* The short body names Add cards by hand only while it is a button beside the upload; with the
-              ways group it is the group's to name. */}
-          <span className="sm:hidden">{addByHand && !ways ? collectionEditCopy.firstRun.bodyShort : c.step1BodyShort}</span>
+          {/* The short body leaves Add cards by hand to the ways group, which names it. */}
+          <span className="sm:hidden">{c.step1BodyShort}</span>
           <span className="hidden sm:inline">{c.step1Body}</span>
         </p>
         {/* ReplaceFlow rather than UploadEntry: preview and confirm are its
@@ -116,14 +102,9 @@ export function FirstRunStepOne({
             currentCardCount={0}
             entry="buttons"
             embedded
-            history={addByHand}
+            history
             onReviewing={setReviewing}
-            onAddByHand={addByHand && !ways ? openAdd : undefined}
-            ways={
-              ways
-                ? (pending) => <WaysGroup surface="step1" precons={ways.precons} onAddCards={openAdd} disabled={pending} />
-                : undefined
-            }
+            ways={(pending) => <WaysGroup surface="step1" precons onAddCards={openAdd} disabled={pending} />}
           />
         </div>
       </div>
@@ -133,7 +114,7 @@ export function FirstRunStepOne({
           mode="add"
           returnFocusRef={trigger}
           totalCards={0}
-          scan={scan}
+          scan
           // The first save turns Home from first run into the dashboard, which would unmount the
           // sheet and its saved state; the refresh waits for the close.
           onSaved={() => {
