@@ -722,6 +722,7 @@ export const adminMaskCopy = {
 export const switchCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
   ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },
+  ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },
   BRACKET_REACH_ENABLED: { label: "Bracket reach", description: "Help me choose places owned cards that reach the bracket asked for." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
   COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Mark bought, Collection sync and No-collection entry need it." },

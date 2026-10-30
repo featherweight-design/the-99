@@ -21,6 +21,23 @@ export const STORED_KINDS = ["price-drop", "trade-match", "spare-request", "comb
 export type StoredKind = (typeof STORED_KINDS)[number];
 
 /**
+ * The Announcements kinds (handoff `design_handoff_the99_announcements`): Wizards' own posts, one row per post in
+ * `wizards_announcements` (its `kind` column holds exactly these keys) and nothing per account, so they are CATALOG
+ * family, read at read time like `new-set`. `wizards-news` is the classifier's "Other".
+ *
+ * NOT YET in `FEED_KINDS`, `CATALOG_KINDS` or `DEFAULT_ON_KINDS`: those sets ARE the reader surface (Settings draws a
+ * checkbox per available `FEED_KINDS` entry, Home reads `effectiveKinds`, and every `Record<FeedKind, ...>` copy table and
+ * `catalogBranch` would need the kind), so joining them waits for the UI PRs that draw them. They will join all three
+ * (catalog family, default on). Until then only the push outbox's constraint (`PUSH_OUTBOX_KINDS`) and the stored table
+ * name them.
+ */
+export const ANNOUNCEMENT_KINDS = ["secret-lair", "commander-decklists", "wizards-news"] as const;
+export type AnnouncementFeedKind = (typeof ANNOUNCEMENT_KINDS)[number];
+
+/** Every kind a `push_outbox` row may carry (its `push_outbox_kind_check`): the feed's kinds and the announcements'. */
+export const PUSH_OUTBOX_KINDS = [...FEED_KINDS, ...ANNOUNCEMENT_KINDS] as const;
+
+/**
  * The kinds ON for a reader who never chose (spare requests G4): "a friend wants your spare" waits on the reader's
  * answer, so it is heard of by default. A default-on kind is on while it is stamped in `feed_kinds` or absent from both
  * `feed_kinds` and `feed_kinds_declined`; turned off, it moves to `feed_kinds_declined`. Every other kind starts off.

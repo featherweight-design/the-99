@@ -1,4 +1,5 @@
 import { howItWorksEnabled } from "../about/how-it-works-flag";
+import { announcementsEnabled } from "../announcements/flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
 import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
 import { changeCommanderEnabled } from "../commander-change/flag";
@@ -43,6 +44,7 @@ import type { SwitchName } from "./registry";
 export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) => boolean>> = {
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
+  ANNOUNCEMENTS_ENABLED: announcementsEnabled,
   BRACKET_REACH_ENABLED: bracketReachEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,

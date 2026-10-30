@@ -16,7 +16,7 @@ import type { CutCite } from "../lib/tuning/cuts-schema";
 import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
 import { ALL_FEATURES, SWITCH_NAMES } from "../lib/switches/registry";
-import { STORED_KINDS } from "../lib/feed/kinds";
+import { ANNOUNCEMENT_KINDS, PUSH_OUTBOX_KINDS, STORED_KINDS } from "../lib/feed/kinds";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -3948,7 +3948,7 @@ export const pushOutbox = pgTable("push_outbox", {
 }, (t) => [
   uniqueIndex("push_outbox_item_idx").on(t.userId, t.kind, t.itemKey),
   index("push_outbox_due_idx").on(t.userId, t.createdAt).where(sql`${t.sentAt} is null`),
-  check("push_outbox_kind_check", sql`${t.kind} in ('new-set', 'new-precon', 'price-drop', 'trade-match', 'spare-request', 'combo')`),
+  check("push_outbox_kind_check", sql`${t.kind} in (${sql.raw(PUSH_OUTBOX_KINDS.map((k) => `'${k}'`).join(", "))})`),
 ]);
 
 /**
@@ -4167,4 +4167,72 @@ export const inviteEdges = pgTable("invite_edges", {
   check("invite_edges_kind_check", sql`${t.kind} in ('email', 'qr')`),
   uniqueIndex("invite_edges_invitee_idx").on(t.inviteeUserId).where(sql`${t.inviteeUserId} is not null`),
   index("invite_edges_inviter_idx").on(t.inviterUserId).where(sql`${t.inviterUserId} is not null`),
+]);
+
+/**
+ * Posts in the magic.wizards.com Announcements category (`src/lib/announcements/`), one row per post, keyed on its
+ * Contentful entry id (a slug can change; the id does not). Catalog family: no per-account rows. `lastmod` is the
+ * sitemap's value as last fetched, compared as text: a change means "fetch again", never "posted then". `baseline`
+ * marks a post published before the ingest's first run (the earliest stored `first_seen_at`), whichever run
+ * saves it, so nothing downstream treats the back catalogue as new. `parse_status` is
+ * `ok`, or for a Commander decklists post `empty` (no lists yet) or `incomplete` (fewer than `promised_decks`).
+ */
+export const wizardsAnnouncements = pgTable("wizards_announcements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contentfulId: text("contentful_id").notNull().unique(),
+  url: text("url").notNull(),
+  slug: text("slug"),
+  title: text("title").notNull(),
+  excerpt: text("excerpt"),
+  heroImageUrl: text("hero_image_url"),
+  publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+  kind: text("kind").notNull(),
+  lastmod: text("lastmod"),
+  firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  lastFetchedAt: timestamp("last_fetched_at", { withTimezone: true }).notNull(),
+  promisedDecks: integer("promised_decks"),
+  parseStatus: text("parse_status").notNull(),
+  baseline: boolean("baseline").notNull().default(false),
+}, (t) => [
+  check("wizards_announcements_kind_check", sql`${t.kind} in (${sql.raw(ANNOUNCEMENT_KINDS.map((k) => `'${k}'`).join(", "))})`),
+  check("wizards_announcements_parse_status_check", sql`${t.parseStatus} in ('ok', 'empty', 'incomplete')`),
+  check("wizards_announcements_promised_check", sql`${t.promisedDecks} is null or ${t.promisedDecks} > 0`),
+  index("wizards_announcements_url_idx").on(t.url),
+  index("wizards_announcements_published_idx").on(t.publishedAt),
+]);
+
+/** One stored card line of an announced deck list: the post's name and count, and the catalog card when one matched. */
+export type AnnouncedDeckCard = { name: string; count: number; cardId: string | null };
+
+/**
+ * The deck lists in a `wizards_announcements` post, in post order, replaced whole on each re-read. The commander is a
+ * list's first line (`decklists.ts`); `partner_*` is its second line when that card is a commander too:
+ * `co-commander` when the two can legally pair, `alternate` otherwise. `unmatched` holds the names the catalog could
+ * not resolve, as the post wrote them: reported, never dropped from `cards`.
+ */
+export const wizardsAnnouncementDecklists = pgTable("wizards_announcement_decklists", {
+  announcementId: uuid("announcement_id").notNull(),
+  position: integer("position").notNull(),
+  title: text("title"),
+  commanderCardId: uuid("commander_card_id"),
+  commanderName: text("commander_name"),
+  partnerCardId: uuid("partner_card_id"),
+  partnerName: text("partner_name"),
+  partnerRole: text("partner_role"),
+  /** The list's second line when the parser offered it as a possible partner: kept so a re-match decides it again. */
+  commanderCandidate: text("commander_candidate"),
+  cardCount: integer("card_count").notNull(),
+  cards: jsonb("cards").$type<AnnouncedDeckCard[]>().notNull(),
+  unmatched: text("unmatched").array().notNull().default(sql`'{}'::text[]`),
+}, (t) => [
+  primaryKey({ columns: [t.announcementId, t.position] }),
+  // Named: the generated names run past Postgres's 63 bytes.
+  foreignKey({ name: "wizards_announcement_decklists_post_fk", columns: [t.announcementId], foreignColumns: [wizardsAnnouncements.id] })
+    .onDelete("cascade"),
+  foreignKey({ name: "wizards_announcement_decklists_commander_fk", columns: [t.commanderCardId], foreignColumns: [cards.oracleId] })
+    .onDelete("set null"),
+  foreignKey({ name: "wizards_announcement_decklists_partner_fk", columns: [t.partnerCardId], foreignColumns: [cards.oracleId] })
+    .onDelete("set null"),
+  check("wizards_announcement_decklists_partner_role_check", sql`(${t.partnerRole} is null and ${t.partnerName} is null) or (${t.partnerRole} in ('co-commander', 'alternate') and ${t.partnerName} is not null)`),
+  check("wizards_announcement_decklists_position_check", sql`${t.position} >= 0`),
 ]);
