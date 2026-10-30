@@ -185,6 +185,19 @@ describe("isCommanderCandidate", () => {
   });
 });
 
+describe("isCommanderCandidate: creature off the battlefield", () => {
+  const grist = { layout: "normal", manaCost: "{1}{B}{G}", typeLine: "Legendary Planeswalker — Grist", oracleText: "As long as Grist, the Hunger Tide isn't on the battlefield, it's a 1/1 Insect creature in addition to its other types.\n+1: Create a 1/1 black and green Insect creature token." };
+  it("lets Grist, the Hunger Tide lead a deck", () => {
+    expect(isCommanderCandidate(grist)).toBe(true);
+  });
+  it("does not make a plain legendary planeswalker a candidate", () => {
+    expect(isCommanderCandidate({ ...grist, typeLine: "Legendary Planeswalker — Jace", oracleText: "+1: Draw a card." })).toBe(false);
+  });
+  it("keeps a meld result out even when its text would qualify", () => {
+    expect(isCommanderCandidate({ ...grist, layout: "meld", manaCost: null })).toBe(false);
+  });
+});
+
 describe("scoreCommander", () => {
   const commander = card({
     name: "Golgari Guy",

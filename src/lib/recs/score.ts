@@ -286,6 +286,10 @@ export function isCommanderCandidate(card: Pick<PoolCard, "typeLine" | "oracleTe
     // the whole signal, and a card that never turns into a creature at all
     // (Weatherlight, Heart of Kiran) is just as eligible.
     if (/\b(?:vehicle|spacecraft)\b/i.test(typeLine)) return true;
+    // A legendary card that is a creature everywhere but the battlefield (Grist, the Hunger Tide, a
+    // Legendary Planeswalker) is a legendary creature in the command zone, so it may lead a deck. The
+    // same rule as `isCommanderEligible` in announcements/pairing.ts.
+    if (/isn't on the battlefield, it's an? [^.]*\bcreature\b/i.test(frontFaceOracle(card.oracleText))) return true;
   }
   return /can be your commander/i.test(frontFaceOracle(card.oracleText));
 }
