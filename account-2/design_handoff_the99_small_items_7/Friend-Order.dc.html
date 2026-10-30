@@ -1399,6 +1399,52 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .slab{position:absolute;z-index:60;font:600 9.5px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:4px;padding:2px 6px}
 .pin{position:absolute;z-index:61;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#14110E;font:700 11px/22px 'IBM Plex Mono';text-align:center;box-shadow:0 0 0 3px rgba(13,11,9,.85)}
 
+
+/* ---------- si7 addendum: dates ---------- */
+.d7{background:var(--bg);border:1px solid var(--border-strong);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.d7 .hd{font:500 9.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);padding-bottom:4px}
+.g7{display:flex;align-items:center;gap:14px;min-height:52px;border-radius:9px;padding:8px 12px 8px 14px;background:var(--surface);border:1px solid var(--border)}
+.g7 .r{flex:none;width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono';color:var(--fg-body)}
+.g7 .r.w{border-color:var(--success);color:var(--success)}
+.g7 .m{flex:none;font:11px 'IBM Plex Mono';color:var(--fg-faint);font-variant-numeric:tabular-nums}
+.g7 .m.was{outline:1.5px dashed var(--warning);outline-offset:3px}
+.g7 .v{flex:none;width:44px;font:10.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.g7 .k{flex:1;min-width:0;display:flex;gap:6px;flex-wrap:wrap}
+.g7 .k span{border-radius:99px;padding:4px 11px 4px 8px;font:10.5px 'IBM Plex Mono';background:var(--elevated);color:var(--fg-body)}
+.g7 .x{flex:none;width:30px;height:30px;border-radius:7px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font:13px 'IBM Plex Mono';color:var(--fg-locked)}
+.bd7{display:flex;flex-wrap:wrap;gap:6px}
+.bd7 li{list-style:none;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bd7 b{width:30px;height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;font:600 11.5px 'IBM Plex Mono';background:var(--surface-inset);color:var(--fg-body);border:1px solid var(--border-strong)}
+.bd7 b.w{background:color-mix(in oklab,var(--success) 22%,transparent);border-color:var(--success);color:var(--success)}
+.bd7 small{font:9.5px 'IBM Plex Mono';color:var(--fg-muted);white-space:nowrap}
+.bd7.was small{outline:1px dashed var(--warning)}
+.bd7 ol,.bd7{margin:0;padding:0}
+.sp7{font:10.5px 'IBM Plex Mono';color:var(--fg-muted);display:flex;justify-content:space-between}
+.tip7{position:relative;align-self:flex-start;margin-top:-2px;margin-left:72px;background:var(--elevated);border:1px solid var(--border-strong);border-radius:6px;padding:4px 8px;font:10.5px 'IBM Plex Mono';color:var(--fg)}
+.ft7{font:11px/1.7 'IBM Plex Mono';color:var(--fg-muted);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.ft7 .sg{white-space:nowrap}
+.ft7 .dot{color:var(--fg-faint)}
+.ft7 .dang{outline:1.5px dashed var(--warning);outline-offset:1px}
+.ft7 u{color:var(--accent-text);text-decoration:none}
+/* crash + standalone report */
+.cr7{display:flex;justify-content:center;padding:22px 0 0}
+.cr7 .wm7{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cr7 .wm7 em{font-style:normal;font-size:9px;letter-spacing:3px;color:var(--accent-text)}
+.cr7 .wm7 b{font:700 26px/1 'Cinzel',serif;color:var(--fg)}
+.rp7{flex:1;display:flex;flex-direction:column;padding:18px 16px}
+.dk .rp7{align-items:center;padding:40px}
+.rp7 .in7{width:100%;max-width:520px}
+.rp7 .bk7{font:500 13px 'IBM Plex Sans';color:var(--accent-text);min-height:44px;display:flex;align-items:center}
+.rp7 h1{margin:4px 0 12px;font:700 22px 'Cinzel',serif;color:var(--fg)}
+.code7{margin-top:10px;font:11px 'IBM Plex Mono';color:var(--fg-faint)}
+
+/* ---------- si7: sign in / sign up ---------- */
+.s7err{margin-top:8px;font-size:13px;line-height:1.45;color:var(--danger);text-align:left}
+.jfld.s7bad{border-color:var(--danger);color:var(--fg)}
+.jcode.s7bad span{border-color:var(--danger)}
+.s7legal{display:flex;justify-content:center;gap:16px;margin-top:14px;font:11.5px 'IBM Plex Mono';color:var(--fg-muted)}
+.s7legal a{color:var(--fg-muted);text-decoration:underline;text-underline-offset:3px}
+.jform .s7hint{margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--fg-muted)}
 /* ---------- si7: launch list card with the launch date ---------- */
 .s7lc .s7top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;min-height:56px;padding:10px 10px 10px 16px}
 .s7lc .s7top b{display:block;font:600 14px 'IBM Plex Sans';color:var(--fg)}

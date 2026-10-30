@@ -10,6 +10,52 @@ import kit, fly as F, fdk as FD
 from kit import frame, frames, doc
 
 kit.CSS += r"""
+
+/* ---------- si7 addendum: dates ---------- */
+.d7{background:var(--bg);border:1px solid var(--border-strong);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.d7 .hd{font:500 9.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);padding-bottom:4px}
+.g7{display:flex;align-items:center;gap:14px;min-height:52px;border-radius:9px;padding:8px 12px 8px 14px;background:var(--surface);border:1px solid var(--border)}
+.g7 .r{flex:none;width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono';color:var(--fg-body)}
+.g7 .r.w{border-color:var(--success);color:var(--success)}
+.g7 .m{flex:none;font:11px 'IBM Plex Mono';color:var(--fg-faint);font-variant-numeric:tabular-nums}
+.g7 .m.was{outline:1.5px dashed var(--warning);outline-offset:3px}
+.g7 .v{flex:none;width:44px;font:10.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.g7 .k{flex:1;min-width:0;display:flex;gap:6px;flex-wrap:wrap}
+.g7 .k span{border-radius:99px;padding:4px 11px 4px 8px;font:10.5px 'IBM Plex Mono';background:var(--elevated);color:var(--fg-body)}
+.g7 .x{flex:none;width:30px;height:30px;border-radius:7px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font:13px 'IBM Plex Mono';color:var(--fg-locked)}
+.bd7{display:flex;flex-wrap:wrap;gap:6px}
+.bd7 li{list-style:none;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bd7 b{width:30px;height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;font:600 11.5px 'IBM Plex Mono';background:var(--surface-inset);color:var(--fg-body);border:1px solid var(--border-strong)}
+.bd7 b.w{background:color-mix(in oklab,var(--success) 22%,transparent);border-color:var(--success);color:var(--success)}
+.bd7 small{font:9.5px 'IBM Plex Mono';color:var(--fg-muted);white-space:nowrap}
+.bd7.was small{outline:1px dashed var(--warning)}
+.bd7 ol,.bd7{margin:0;padding:0}
+.sp7{font:10.5px 'IBM Plex Mono';color:var(--fg-muted);display:flex;justify-content:space-between}
+.tip7{position:relative;align-self:flex-start;margin-top:-2px;margin-left:72px;background:var(--elevated);border:1px solid var(--border-strong);border-radius:6px;padding:4px 8px;font:10.5px 'IBM Plex Mono';color:var(--fg)}
+.ft7{font:11px/1.7 'IBM Plex Mono';color:var(--fg-muted);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.ft7 .sg{white-space:nowrap}
+.ft7 .dot{color:var(--fg-faint)}
+.ft7 .dang{outline:1.5px dashed var(--warning);outline-offset:1px}
+.ft7 u{color:var(--accent-text);text-decoration:none}
+/* crash + standalone report */
+.cr7{display:flex;justify-content:center;padding:22px 0 0}
+.cr7 .wm7{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cr7 .wm7 em{font-style:normal;font-size:9px;letter-spacing:3px;color:var(--accent-text)}
+.cr7 .wm7 b{font:700 26px/1 'Cinzel',serif;color:var(--fg)}
+.rp7{flex:1;display:flex;flex-direction:column;padding:18px 16px}
+.dk .rp7{align-items:center;padding:40px}
+.rp7 .in7{width:100%;max-width:520px}
+.rp7 .bk7{font:500 13px 'IBM Plex Sans';color:var(--accent-text);min-height:44px;display:flex;align-items:center}
+.rp7 h1{margin:4px 0 12px;font:700 22px 'Cinzel',serif;color:var(--fg)}
+.code7{margin-top:10px;font:11px 'IBM Plex Mono';color:var(--fg-faint)}
+
+/* ---------- si7: sign in / sign up ---------- */
+.s7err{margin-top:8px;font-size:13px;line-height:1.45;color:var(--danger);text-align:left}
+.jfld.s7bad{border-color:var(--danger);color:var(--fg)}
+.jcode.s7bad span{border-color:var(--danger)}
+.s7legal{display:flex;justify-content:center;gap:16px;margin-top:14px;font:11.5px 'IBM Plex Mono';color:var(--fg-muted)}
+.s7legal a{color:var(--fg-muted);text-decoration:underline;text-underline-offset:3px}
+.jform .s7hint{margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--fg-muted)}
 /* ---------- si7: launch list card with the launch date ---------- */
 .s7lc .s7top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;min-height:56px;padding:10px 10px 10px 16px}
 .s7lc .s7top b{display:block;font:600 14px 'IBM Plex Sans';color:var(--fg)}
@@ -131,45 +177,46 @@ def board(name, title, width):
     return deco
 
 
-KICK = "Small items 7 · R1 · account 2 · 2026-10-30"
+KICK = "Small items 7 · R2 · account 2 · 2026-10-30"
 
 
 # ---------------------------------------------------------------- Main
 @board("Main", "Small items 7 · the calls", 1612)
 def main():
-    h = bh(KICK, "The flyer admin’s missing parts",
-           "Five parts of the Flyer codes section on /admin/invites that the flyer trial boards left undrawn, each at 390 and 1300, "
-           "drawn over the approved Admin boards (flyer trial 4, 5, 6). Everything else on /admin/invites builds now from those boards. "
-           "Plus the two errata, recorded; the friend page is redrawn in its shipped order.")
-    calls = note("Design’s calls", "<ol>"
-                 "<li><b>Launch date</b> is a second row on the launch list card: label, a date field (the shipped admin field, 38 / 44 tall), "
-                 "one help line. Blank is a real value. <b>Save</b> shows only while the field differs from what’s saved; once saved, the row says "
-                 "<i>Saved</i> and offers <b>Clear</b>, which saves a blank. A refused save is the shipped admin line <i>Didn’t save. Nothing changed.</i> (board 1).</li>"
-                 "<li><b>No codes</b> is the admin’s muted empty line inside the section’s card, with New flyer code where it always is. The launch "
-                 "list card stays (its date can be set before the first code); with no emails it has no Download CSV. The tree has no flyer node (board 2).</li>"
-                 "<li><b>Revoke failing</b> keeps the dialog open with an inline alert above the buttons, as admin dialogs do (setting-dialog, model-confirm), "
-                 "not the player toast: the person is mid-decision in a dialog. Two lines: refused, and lost touch (board 3).</li>"
-                 "<li><b>CSV</b>: <code>email, store, code, added_at</code>, oldest first, one row per address; filename "
-                 "<code>the-99-launch-list-2026-11-02.csv</code> (the day it’s downloaded, UTC) (board 4).</li>"
-                 "<li><b>Print, revoked</b>: the page still opens from an old link or Back, but the bar loses Print and Download QR, says when it was "
-                 "revoked, and the flyer shows dimmed for reference. Printing anyway prints nothing (board 5).</li></ol>")
+    h = bh(KICK, "Undrawn states, two errata, and an addendum",
+           "The parts the shipped handoffs left undrawn across the flyer admin, Suggested changes v2, the cart, the tuning hub, sign-in and About, "
+           "then the addendum (Suggested changes v2 at turn-on, month-first dates, Report a problem). Each is drawn at 390 and 1300 on its board, "
+           "over the shipped screens. Everything else builds from the existing boards. Strings marked draft go through /copy-review. "
+           "Approved by Hugh 2026-10-30.")
+    calls = note("The calls", "<ol>"
+                 "<li><b>Flyer admin</b> (board 1). Launch date: a second row on the launch list card, blank allowed, Save only while changed, Saved + Clear. "
+                 "No codes: the admin’s muted empty line; the launch list card stays. Revoke failing: an inline alert in the dialog, refused vs lost touch. "
+                 "CSV: <code>email, store, code, added_at</code>, oldest first, <code>the-99-launch-list-YYYY-MM-DD.csv</code>. Print, revoked: no Print or QR, flyer dimmed.</li>"
+                 "<li><b>2-credit cue</b> (SC-Cost). Past 10 the stepper gets a <b>2 credits</b> tag; the cost line names source and count; with only the free run the press goes off "
+                 "with <b>Change to 10</b> and <b>Get more credits</b>. The tile tag reads “1 credit · 2 above 10”.</li>"
+                 "<li><b>Cart, two toasts</b> (Cart-Toasts). Neither wins: on a phone a failed ask stacks 10px above the receipt, which keeps the floor (it holds Undo). "
+                 "At most one of each; when the receipt goes, the alert drops to its own place. Desktop unchanged (the slots never meet).</li>"
+                 "<li><b>Proposed cuts, short</b> (Cuts-Short). The held height stays (no jump). Recommended B: an “Other tools” tile row fills the space under the notice. C, plain, is the fallback.</li>"
+                 "<li><b>Sign in and sign up</b> (Sign-In). In the newcomer frame, on /join’s email-and-code flow, no password. Sign-in: email, code, in; a proven email with no account is offered one. "
+                 "Sign-up: email, code, first name, Home; Terms and Privacy under the form.</li>"
+                 "<li><b>About, the cart entry</b> (About-Cart). The entry captures the cart (<code>p-cart</code>, <code>d-cart</code>) with five pins; Shop all decks becomes the way-in sentence; ? on the cart lands here.</li></ol>")
+    add = note("Addendum", "<ol>"
+               "<li><b>The left line beside the 2-credit cue</b>: it keeps counting credits, never runs; above 10 it adds what the run leaves (“5 of 5 free left, 3 after this run”). SC-Cost E.</li>"
+               "<li><b>A saved v2 run with v2 off</b>: confirmed as built. It opens read-only like an old run in History: no Apply, Undo or pick, no extra line explaining why.</li>"
+               "<li><b>Results’ sticky list head</b>: confirmed as built, opaque on <code>--surface-sunken</code>, as History’s (#2491). The board’s missing fill was an omission.</li>"
+               "<li><b>About at v2 turn-on</b>: one entry, not two (it is one tool). The Suggested changes label takes <code>variantOn: SUGGESTED_CHANGES_V2_ENABLED</code>, so turning v2 on marks it New for everyone. "
+               "The credits row “1 or 2 credits” is confirmed. Try it shots regenerate at turn-on, as planned.</li>"
+               "<li><b>Game history’s 132 slot</b> widens to 156 on desktop (Dates). The year stays off in the current year, on otherwise.</li>"
+               "<li><b>Stats beads</b>: no date under a bead. The row is dated once, under its first and last bead; a bead’s date shows on hover or focus and to a screen reader.</li>"
+               "<li><b>The phone deck foot</b>: each segment carries its leading “·” and never breaks inside, so no dot dangles.</li>"
+               "<li><b>Crash screen and /report</b> (Report-Crash). Wordmark over the shipped error notice; <b>Report a problem</b> goes to a standalone /report with the shipped form and the error code.</li>"
+               "<li><b>What’s new, closed offer on the phone</b>: confirmed as shipped in #2476 (Pick layered above the ✕, positions unchanged).</li></ol>")
     errata = note("Errata, recorded", "<ol>"
-                  "<li><b>(a) Friend page order</b> (#2444): the strip reads <b>Decks, Wishlist, Spares</b> and the page opens on Decks "
-                  "(<code>/friends/[publicId]</code>). Redrawn on board 6; earlier friend page boards (social R1/R2, menu and Home, friend decks, "
-                  "spare requests, signature card, push) now read in this order, Decks first. <code>ERRATUM-friend-order.md</code>.</li>"
-                  "<li><b>(b) Suggested changes v2</b> (#2452): “Why these cards” is written by its own small call once both lists are final, "
-                  "not inside the cuts call. No visual change; the boards hold. <code>ERRATUM-why-these-cards.md</code>.</li></ol>")
-    gaps = note("For engineering", "<ol>"
-                "<li><b>Launch date</b> is the setting PR 4 adds: a nullable date. These boards draw only the field; what reads it is PR 4’s, unchanged here.</li>"
-                "<li><b>Revoke</b> takes Hugh’s <code>invites:</code> lock (per #2435). A refusal leaves the row as it was; a lost reply refreshes the list under the dialog.</li>"
-                "<li><b>CSV</b>: RFC 4180, UTF-8, header row always; a cell starting with <code>= + - @</code> gets a leading <code>'</code>. "
-                "<code>store</code> and <code>code</code> are blank for an address left on a code nobody made.</li>"
-                "<li><b>Print</b> for a revoked code: no Print or Download QR; <code>@media print</code> hides the flyer.</li></ol>")
-    qs = note("For Hugh", "<ol>"
-              "<li><b>What the launch date drives.</b> The brief and PR 1 name the setting but not its reader, so these boards draw the field only. "
-              "If it should show somewhere (the launch email, the /join ended states), say where and it gets its own small board.</li>"
-              "<li><b>Revoke failure in the dialog, not a toast.</b> Recommended, to match the admin’s other dialogs; the flyer handoff’s toast rule stays for player screens.</li></ol>")
-    return h + f'<div class="notes">{calls}{errata}{gaps}{qs}</div>'
+                  "<li><b>(a) Friend page order</b> (#2444): Decks, Wishlist, Spares, opening on Decks. Redrawn on Friend-Order. <code>ERRATUM-friend-order.md</code>.</li>"
+                  "<li><b>(b) Suggested changes v2</b> (#2452): “Why these cards” is its own small call once both lists are final, with no visual change (<code>ERRATUM-why-these-cards.md</code>).</li></ol>"
+                  "<h4 style=\"margin-top:12px\">Open, not blocking</h4><ol><li>What reads the flyer launch date (the launch email, /join’s ended states)? Drawn as the field only.</li>"
+                  "<li>Sign-in methods beyond the email code (Google, passkeys) are a Clerk setting; if any are turned on they need their own small board.</li></ol>")
+    return h + f'<div class="notes">{calls}{add}{errata}</div>'
 
 
 # ---------------------------------------------------------------- 1 Launch date
@@ -308,6 +355,170 @@ def friend_order():
            "Earlier boards that drew Spares first now read in this order.")
     return h + frames(frame(lab("F1", "phone"), kit.phone(friend_decks(False), active="Friends")),
                       frame(lab("F2", "desktop"), kit.desk(friend_decks(True), active="Friends")))
+
+
+# ---------------------------------------------------------------- 5 Sign in, sign up
+def s7card(kind):
+    if kind == "in":
+        return F.card_back("Welcome back")
+    return F.card_face(rules="Build Commander decks from the cards you already own.").replace("From a flyer", "The 99")
+
+
+LEGAL = '<div class="s7legal"><a>Terms</a><a>Privacy</a></div>'
+
+
+def auth_state(st):
+    email_fld = '<span class="jfld on">sam@example.com</span>'
+    code_form = lambda bad=False: ('<div class="jform"><div class="jcode' + (' s7bad' if bad else '') + '">'
+                                   + "".join(f"<span>{d}</span>" for d in ("480261" if bad else "4802")) + ('' if bad else '<span class="e">·</span>' * 2) + '</div>'
+                                   + ('<p class="s7err" role="alert">That code isn’t right. Check the email and try again.</p>' if bad else '')
+                                   + '<span class="jbtn"' + ('' if bad else ' style="opacity:.6"') + '>Confirm</span>'
+                                   '<div class="jlinks"><span class="cool">Send a new code in 0:41</span><span>Use a different email</span></div></div>')
+    code_body = 'We sent a 6-digit code to <em>sam@example.com</em>. It works for 10 minutes.'
+    if st == "in":
+        form = f'<div class="jform"><label>Your email</label>{email_fld}<span class="jbtn">Send code</span></div>'
+        return s7card("in") + F.jcol("Sign in to The 99", "Type your email. We’ll send it a code, and the code signs you in.", form,
+                                     ) + '<p class="jquiet">New to The 99? <a>Make an account</a></p>'
+    if st == "in-code":
+        return s7card("in") + F.jcol("Check your email", code_body, code_form())
+    if st == "in-bad":
+        return s7card("in") + F.jcol("Check your email", code_body, code_form(True))
+    if st == "in-none":
+        form = ('<div class="jform"><span class="jbtn">Make an account with this email</span>'
+                '<div class="jlinks"><span>Use a different email</span></div></div>')
+        return s7card("in") + F.jcol("No account for that email", '<em>sam@example.com</em> isn’t on The 99 yet. The code proved it’s yours, so you can make one now.', form)
+    if st == "up":
+        form = f'<div class="jform"><label>Your email</label>{email_fld}<span class="jbtn">Send code</span></div>'
+        return (s7card("up") + F.jcol("Make your account", "Type your own email. We’ll send it a code to check it’s yours, then you’ll make your account.", form,
+                                      "You start with 15 welcome credits and 3 invites for your friends.")
+                + LEGAL + '<p class="jquiet">Already on The 99? <a>Sign in</a></p>')
+    if st == "up-name":
+        form = ('<div class="jform"><label>Your first name</label><span class="jfld on">Sam</span>'
+                '<p class="s7hint">Friends see it on your signature card. Change it any time in Settings.</p>'
+                '<span class="jbtn">Make my account</span></div>')
+        return s7card("up").replace('<div class="cc tilt">', '<div class="cc tilt" style="position:relative">', 1).replace(
+            '</div>', '</div>', 1) + F.jcol("That’s your email", "Now the name your friends will know you by.", form) + LEGAL
+    if st == "up-have":
+        form = '<div class="jform"><span class="jbtn">Sign in</span><div class="jlinks"><span>Use a different email</span></div></div>'
+        return s7card("in") + F.jcol("You already have an account", '<em>sam@example.com</em> is already on The 99. The code proved it’s yours, so Sign in goes straight in.', form)
+    raise ValueError(st)
+
+
+def auth_phone(st):
+    return kit.phone(f'<div class="jn">{auth_state(st)}</div>', h=844, hdr=False, tabs=False)
+
+
+def auth_desk(st, h=780):
+    return f'<div class="dk" style="width:1300px;height:{h}px"><div class="main"><div class="jn">{auth_state(st)}</div></div></div>'
+
+
+@board("Sign-In", "5 · Sign in and sign up in the app’s own frame", 3100)
+def sign_in():
+    h = bh("5 · /sign-in, /sign-up · replaces Clerk’s hosted pages at public launch", "Sign in and sign up, in the app’s own frame",
+           "Drawn in the frame the newcomer pages already use (/join, the invite-only /sign-up): the card, one column, the brass button, "
+           "the quiet line under it. Both run on the code flow /join ships: email, a 6-digit code, then in. No password. "
+           "Sign-in lands on the page that sent the reader there, or Home; sign-up lands on Home with the welcome strip.")
+    row1 = frames(frame(lab("S1", "sign in · 390"), auth_phone("in"), "From the signed-out landing’s <b>Sign in</b>, or any page that needs it."),
+                  frame(lab("S2", "the code · 390"), auth_phone("in-code"), "The /join code step as shipped: Confirm wakes at six digits; the resend cools for a minute."),
+                  frame(lab("S3", "a wrong code · 390"), auth_phone("in-bad"), "The shipped <code>codeWrong</code> line under the boxes. An expired code says <code>codeExpired</code> there instead."),
+                  frame(lab("S4", "no account · 390"), auth_phone("in-none"), "Proven, but nobody has that email: offer to make the account then, without a second code."),
+                  frame(lab("S5", "sign in · 1300"), auth_desk("in")))
+    row2 = frames(frame(lab("U1", "sign up · 390"), auth_phone("up"), "The invite-only /sign-up becomes this at launch. Terms and Privacy sit under the form, as on every sign-in surface."),
+                  frame(lab("U2", "the code"), '<div style="width:390px;font-size:13.5px;line-height:1.55;color:var(--fg-muted)">Same as S2 and S3.</div>'),
+                  frame(lab("U3", "your name · 390"), auth_phone("up-name"), "Clerk’s first name, the one the app already reads for the profile. The only extra step."),
+                  frame(lab("U4", "already have one · 390"), auth_phone("up-have"), "The email is already on The 99. The code proved it, so one press signs in."),
+                  frame(lab("U5", "sign up · 1300"), auth_desk("up")))
+    return h + row1 + row2
+
+
+# ---------------------------------------------------------------- Addendum A: dates
+def grow(meta, was=False, w=None, ph=False):
+    st = f' style="width:{w}px"' if w else ""
+    k = '<span>Ramp early</span><span>Mana screw</span>'
+    if ph:
+        return (f'<div class="g7" style="flex-wrap:wrap;min-height:64px"><span class="r w">W</span><span class="m{" was" if was else ""}">{meta}</span>'
+                f'<span class="v">v3</span><span class="x" style="margin-left:auto;width:44px;height:44px">✕</span><div class="k" style="flex-basis:100%">{k}</div></div>')
+    return (f'<div class="g7"><span class="r w">W</span><span class="m{" was" if was else ""}"{st}>{meta}</span><span class="v">v3</span>'
+            f'<div class="k">{k}</div><span class="x">✕</span></div>')
+
+
+def glog(rows, width, ph=False):
+    return f'<div class="d7" style="width:{width}px"><span class="hd">Games · 14 logged</span>{rows}</div>'
+
+
+DATES = [("Jan 4", "W"), ("Dec 31, 2025", "W"), ("Dec 20, 2025", "L")]
+
+
+def beads(was, ph):
+    data = [("W", "Oct 2"), ("L", "Oct 9"), ("W", "Oct 16"), ("L", "Oct 23"), ("W", "Nov 6"), ("W", "Dec 31")]
+    n = 6
+    if was:
+        li = "".join(f'<li><b class="{"w" if r == "W" else ""}">{r}</b><small>{d}{", 2025" if i > 3 else ""}</small></li>' for i, (r, d) in enumerate(data[:n]))
+        return f'<div class="d7" style="width:{358 if ph else 560}px"><span class="hd">Every game</span><ol class="bd7 was" style="gap:6px">{li}</ol></div>'
+    li = "".join(f'<li><b class="{"w" if r == "W" else ""}">{r}</b></li>' for r, d in data[:n])
+    return (f'<div class="d7" style="width:{358 if ph else 560}px"><span class="hd">Every game</span><ol class="bd7">{li}</ol>'
+            '<div class="sp7" style="width:' + str(6 * 36 - 6) + 'px"><span>Oct 2, 2025</span><span>Dec 31, 2025</span></div>'
+            + ('' if ph else '<span class="tip7">L · Oct 9, 2025</span>') + '</div>')
+
+
+def foot(was):
+    if was:
+        return ('<div class="ft7" style="width:358px">v3 · committed Dec 31, 2025 <span class="dang">·</span><br>2 proxies · <u>from the precon ▾</u></div>')
+    return ('<div class="ft7" style="width:358px"><span class="sg">v3 · committed Dec 31, 2025</span> '
+            '<span class="sg"><span class="dot">·</span>&nbsp;2 proxies</span> <span class="sg"><span class="dot">·</span>&nbsp;<u>from the precon ▾</u></span></div>')
+
+
+@board("Dates", "A5–A7 · Month-first dates in the three fixed slots", 2400)
+def dates():
+    h = bh("Addendum · 5, 6, 7 · game-history-row, deck-stats-results, todo-foot", "Month-first dates keep their year, and the slots make room",
+           "With dates month first (“Dec 31, 2025”), three fixed slots overflow. The year stays wherever it shows today, because a date from another year "
+           "is ambiguous without it; the current year is still dropped where the log already drops it. Each slot is drawn as it overflows now, then the call.")
+    cur = [("Jan 4", True), ("Dec 31, 2025", False), ("Dec 20, 2025", False)]
+    now_dk = glog("".join(grow(f"4-player · {d}", was=not c, w=132) for d, c in cur), 900)
+    new_dk = glog("".join(grow(f"4-player · {d}", w=156) for d, c in cur), 900)
+    new_ph = glog("".join(grow(f"4-player · {d}", ph=True) for d, c in cur), 390)
+    a = frames(frame(lab("5", "now · 1300 · game history, the 132 slot"), now_dk, "“4-player · Dec 31, 2025” wraps to two lines in 132px (dashed)."),
+               frame(lab("5", "call · 1300 · the slot is 156"), new_dk, "156 holds the longest meta, “4-player · Dec 31, 2025”, at 11px mono on one line. The version stamp and the marks keep one vertical."),
+               frame(lab("5", "call · 390"), new_ph, "Phone is unchanged: the meta sizes to its text on line one, the marks wrap to line two."))
+    b = frames(frame(lab("6", "now · 390 · beads with a date each"), beads(True, True), "A date under each 30px bead is wider than the bead: the beads spread and neighbouring dates run together."),
+               frame(lab("6", "call · 390"), beads(False, True), "No date under a bead. The row is dated once, under its ends: the first game and the last. Each bead keeps its date for a screen reader, as shipped."),
+               frame(lab("6", "call · 1300"), beads(False, False), "On desktop a bead’s date shows on hover or focus (the shipped tooltip), result first."))
+    c = frames(frame(lab("7", "now · 390 · deck foot"), foot(True), "The line wraps after the “·”, which dangles at the end of line one."),
+               frame(lab("7", "call · 390"), foot(False), "Each segment keeps its own leading “·” and never breaks inside, so a wrap starts the next line with “· 2 proxies”. Desktop has room on one line and is unchanged."))
+    return h + a + b + c
+
+
+# ---------------------------------------------------------------- Addendum B: crash screen and standalone report
+def crash(desk):
+    body = ('<div class="cr7"><span class="wm7"><em>◆ ◆ ◆</em><b>99</b></span></div>'
+            + F.error_screen(desk).replace("Tell us what happened", "Report a problem")
+            + '<p class="code7" style="text-align:center;padding-bottom:24px">error 7f3a91c2</p>')
+    if desk:
+        return f'<div class="dk" style="width:1300px;height:720px"><div class="main" style="display:flex;flex-direction:column">{body}</div></div>'
+    return kit.phone(f'<div style="display:flex;flex-direction:column;min-height:100%">{body}</div>', h=844, hdr=False, tabs=False)
+
+
+def report_page(desk, state="empty"):
+    inner = ('<div class="cr7"><span class="wm7"><em>◆ ◆ ◆</em><b>99</b></span></div><div class="rp7"><div class="in7">'
+             '<span class="bk7">‹ Back home</span><h1>Report a problem</h1>' + F.report_form(state, False)
+             + ('<p class="code7">Sent with error 7f3a91c2</p>' if state != "sent" else "") + '</div></div>')
+    if desk:
+        return f'<div class="dk" style="width:1300px;height:820px"><div class="main" style="display:flex;flex-direction:column">{inner}</div></div>'
+    return kit.phone(inner, h=844, hdr=False, tabs=False)
+
+
+@board("Report-Crash", "A8 · The crash screen and a standalone report page", 2600)
+def report_crash():
+    h = bh("Addendum · 8 · global-error, /report", "When the whole app falls over, Report a problem still works",
+           "The crash screen draws without the app shell (the shell is what failed), so it can’t open the in-app sheet. It shows the shipped error notice "
+           "under the wordmark, and its link goes to <b>/report</b>: the same form on a page of its own, which also works signed out. "
+           "The error code rides along in the link and is sent with the report.")
+    a = frames(frame(lab("C1", "crash · 390"), crash(False), "The shipped ErrorNotice (Try again, Back home), with the wordmark in place of the shell. The link reads <b>Report a problem</b>, as the About index does."),
+               frame(lab("C2", "crash · 1300"), crash(True)))
+    b = frames(frame(lab("R1", "/report · 390"), report_page(False), "The shipped form, whole, in the newcomer frame. ‹ Back home leaves without sending."),
+               frame(lab("R2", "sent · 390"), report_page(False, "sent"), "The shipped sent state; Close becomes the way home."),
+               frame(lab("R3", "/report · 1300"), report_page(True, "typed")))
+    return h + a + b
 
 
 BOARDS = [(n, (lambda n=n: doc(W[n][1], W[n][0](), W[n][2])), W[n][1]) for n in W]
