@@ -196,10 +196,10 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
         )}
         <div className={`flex flex-none items-center justify-between bg-[color:var(--elevated)] font-display font-semibold text-[color:var(--fg)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] ${compact ? "h-[28px] rounded-[6px] px-[12px] text-[15px]" : "h-[26px] rounded-[6px] px-[10px] text-[12.5px]"}`}>
           <span>{face.type}</span>
-          <i className="text-[11px] not-italic text-[color:var(--accent-text)]">◆</i>
+          <i className={`not-italic text-[color:var(--accent-text)] ${crown && compact ? "text-[12px]" : "text-[11px]"}`}>◆</i>
         </div>
         <p id={rulesId} className={`m-0 min-h-0 flex-1 overflow-hidden [overflow-wrap:anywhere] rounded-[6px] bg-[color:var(--surface-sunken)] font-sans text-[color:var(--fg-body)] ${compact ? "px-[12px] py-[10px] text-[14px] leading-[1.4]" : "px-[11px] py-[9px] text-[12px] leading-[1.45]"}`}><PersonText text={face.rules} /></p>
-        <div className={`flex flex-none justify-between px-[4px] font-mono uppercase text-[color:var(--fg-faint)] ${compact ? "text-[12px] tracking-[.15em]" : "text-[9.5px] tracking-[.04em]"}`}>
+        <div className={`flex flex-none justify-between px-[4px] font-mono uppercase text-[color:var(--fg-faint)] ${compact ? (crown ? "text-[12px] tracking-[.12em]" : "text-[12px] tracking-[.15em]") : "text-[9.5px] tracking-[.04em]"}`}>
           <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{crown ? crown.credit : face.commander ? copy.credit(face.commander.name) : signature ? copy.noSignature : copy.noCommander}</span>
           <span className="flex-none pl-[8px]">{crown ? crown.mark : copy.mark}</span>
         </div>
