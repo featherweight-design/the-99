@@ -2,6 +2,7 @@
 // grant to a pod, the friend's own membership of it, and the viewer's. Only the emitted SQL can show all
 // four are there; `probe:social` proves the answers.
 import { describe, expect, it } from "vitest";
+import { named } from "../person-name/mint";
 import { listSharedPods, sharedPodsQuery, spareCount, spareGrantDetailsQuery, spareGrantorsQuery, spareLineOrder } from "./spares";
 
 const VIEWER = "user_viewer";
@@ -67,7 +68,7 @@ describe("listSharedPods (E5)", () => {
     for (const m of ["from", "innerJoin", "where", "orderBy"]) chain[m] = () => { calls.push(m); return chain; };
     chain.then = (resolve: (v: unknown) => void) => resolve(rows);
     const reader = { select: () => chain, selectDistinct: () => chain } as never;
-    await expect(listSharedPods(VIEWER, reader)).resolves.toEqual(rows);
+    await expect(listSharedPods(VIEWER, reader)).resolves.toEqual([{ podId: "p1", name: named("Table") }]);
     expect(calls).toEqual(["from", "innerJoin", "innerJoin", "where", "orderBy"]);
   });
 });

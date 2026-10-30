@@ -84,7 +84,7 @@ async function mount(a: FriendSparesAsks | undefined) {
 describe("the tab, spare requests on", () => {
   it("adds the press sentence to the line", async () => {
     await mount(ON());
-    expect(screen.getByText(`${p.line(SPARES.pods, true)}${p.pressToAsk}`)).toBeTruthy();
+    expect(document.body.textContent).toContain(`${plain(p.line(SPARES.pods, true))}${p.pressToAsk}`);
   });
 
   it("opens the card's modal on a tile press: the page's friend first, the wishlist kicker, the tile ringed", async () => {

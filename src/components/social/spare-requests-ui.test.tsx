@@ -357,7 +357,7 @@ describe("the rules the rows draw from", () => {
 
   it("rowAsk: an open ask the holder no longer offers still blocks the card, so the others read Ask instead", () => {
     const asks = [ask("Colin", "unavailable", { daysLeft: 3 })];
-    expect(rowAsk(asks, "p-Max")).toEqual({ kind: "askInstead", fromRequestId: "req-Colin-unavailable", from: "Colin" });
+    expect(rowAsk(asks, "p-Max")).toEqual({ kind: "askInstead", fromRequestId: "req-Colin-unavailable", from: named("Colin") });
     expect(cardMark(asks)).toBe("requested");
   });
 

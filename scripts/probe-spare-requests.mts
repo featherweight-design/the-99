@@ -148,7 +148,7 @@ async function main() {
     check("Hope (kind turned off) is not told", (await feedOf(H2)).length === 0);
     check("Hope answers Yes", second.ok && (await sr.answerSpareRequest(H2, second.id, "yes", ENV)).ok);
     mine = await sr.loadMyAsks(A, ENV);
-    check("Ann's list: Hope yes, Hal no", JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])) === JSON.stringify([["Hope", "yes"], ["Hal", "no"]]), JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])));
+    check("Ann's list: Hope yes, Hal no", JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])) === JSON.stringify([[{ $tp: "Hope" }, "yes"], [{ $tp: "Hal" }, "no"]]), JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])));
 
     console.log("\n4. expiry");
     const z = await sr.askForSpare(A, h1.publicId, Z, ENV);

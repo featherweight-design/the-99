@@ -925,7 +925,8 @@ describe("the Friend filter (v2 PR 9)", () => {
     const label = remove.parentElement?.querySelector("[aria-hidden='true']:not([class*='fg-muted'])")?.textContent ?? "";
     expect(label.length).toBeLessThanOrEqual(25);
     expect(label.endsWith("…")).toBe(true);
-    expect(within(chipsRow()).getByText(`${copy.filters.chipFriend} ${whole}`, { selector: ".sr-only" })).toBeTruthy();
+    const spoken = [...chipsRow().querySelectorAll(".sr-only")].map((e) => e.textContent);
+    expect(spoken).toContain(`${copy.filters.chipFriend} ${whole}`);
   });
 
   it("disables a friend pill with none of the drawn cards, as the desktop panel's unavailable rows", async () => {

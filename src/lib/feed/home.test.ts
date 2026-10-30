@@ -270,7 +270,7 @@ describe("a spare request leading Home (spare requests PR 3d)", () => {
 
   it("attaches the lead's own ask, by card and asker", () => {
     const out = withLeadAsk(feedOf(lead), [incoming({ id: "other", oracleId: "c2" }), incoming({ id: "x", asker: { publicId: "p2", displayName: named("Ann"), commander: null } }), incoming()]);
-    expect(out.chosen && out.lead?.ask).toEqual({ id: "req-1", spare: 2, copies: 1, deckName: "Dragons", daysLeft: 13 });
+    expect(out.chosen && out.lead?.ask).toEqual({ id: "req-1", spare: 2, copies: 1, deckName: named("Dragons"), daysLeft: 13 });
   });
 
   it("leaves the lead a line when its ask is gone or no longer offered (not among the incoming asks)", () => {

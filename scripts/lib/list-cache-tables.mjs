@@ -525,10 +525,11 @@ export function socialKeyProblems(
 ) {
   const out = [];
   for (const page of pages) {
-    // The switch reads an env var and no rows, and `page-cache.ts` itself keys on it.
+    // The switch reads an env var and no rows, and `page-cache.ts` itself keys on it. `initials.ts` is a pure string
+    // function, reached through `person-name.tsx` by any page that draws a name; it reads no friend.
     const social = filesOf(page)
       .map((f) => f.split("\\").join("/"))
-      .filter((f) => f.includes("src/lib/social/") && !f.endsWith("src/lib/social/flag.ts"));
+      .filter((f) => f.includes("src/lib/social/") && !f.endsWith("src/lib/social/flag.ts") && !f.endsWith("src/lib/social/initials.ts"));
     if (social.length === 0) continue;
     // EVERY key on the page: reachability is page-level, so it cannot say which call's loader reads a friend.
     const keys = cacheKeysOf(source(page));
