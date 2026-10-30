@@ -15,6 +15,7 @@ const h = vi.hoisted(() => ({
   marked: [] as string[][],
   cookies: {} as Record<string, string>,
   listOpts: [] as unknown[],
+  early: undefined as Record<string, unknown> | undefined,
 }));
 
 vi.mock("next/headers", () => ({
@@ -53,6 +54,7 @@ vi.mock("../../../../lib/precons/announced-read", () => ({
       commanders: {},
       // A set whose lists have landed has left the group (E1); its lists line is still the banner's to clear.
       arrivals: [{ fileName: "TRC_A", name: "A", setCode: "trc", setName: "Star Trek Commander", releasesOn: "2026-11-13", arrivedAt: recent, listsSeen: h.allSeen }],
+      ...(h.early ? { early: h.early } : {}),
     };
   },
 }));
@@ -80,7 +82,7 @@ const runAfters = async () => { for (const fn of h.afters.splice(0)) await fn();
 describe("/decks/precons, upcoming precons", () => {
   beforeEach(() => {
     h.env = {};
-    h.afters = []; h.keys = []; h.stored = []; h.marked = []; h.upcomingFails = false; h.cookies = {}; h.listFails = false; h.allSeen = false;
+    h.afters = []; h.keys = []; h.stored = []; h.marked = []; h.upcomingFails = false; h.cookies = {}; h.listFails = false; h.allSeen = false; h.early = undefined;
   });
 
   it("caches the payload on the UTC day and hands the view the group and the new tiles", async () => {
@@ -105,6 +107,43 @@ describe("/decks/precons, upcoming precons", () => {
     await visit({ q: "zzzz", colour: "W", sort: "owned" });
     await runAfters();
     expect(h.marked).toEqual([["trc", "lists:trc", "mdc"]]);
+  });
+
+  // G2: each set's early lists are acknowledged at the count the set has posted (its drawn tiles and the lists that
+  // gave way to their release list), from the UNFILTERED payload, so a filter hiding a tile never lowers the count.
+  const earlyTile = (n: number, colors: string[]) => ({
+    href: `/decks/precons/early/x${n}`, name: `List ${n}`, commanders: [], identity: colors, identityKnown: true, owned: 0, of: 100,
+  });
+  const EARLY = {
+    mdc: { lists: [earlyTile(0, ["W"]), earlyTile(1, ["U"])], promised: 5, releasedLists: 1 },
+    // A set whose lists have all given way has no early lists to show, and writes no early key.
+    trc: { lists: [], promised: 4, releasedLists: 4 },
+  };
+
+  it("writes each set's early lists seen at their posted count, and tells the view the same keys", async () => {
+    h.early = EARLY;
+    const el = await visit();
+    await runAfters();
+    expect(h.marked).toEqual([["trc", "lists:trc", "mdc", "early:mdc:3"]]);
+    expect(el.props.acknowledgesArrivals).toEqual(h.marked[0]);
+  });
+
+  it("writes the early key at the unfiltered count whatever the filters and the order", async () => {
+    h.early = EARLY;
+    // A color filter no early tile matches, a search, and Most owned (which hides the group) all leave the key whole.
+    const el = await visit({ q: "zzzz", colour: "B", sort: "owned" });
+    await runAfters();
+    expect(h.marked).toEqual([["trc", "lists:trc", "mdc", "early:mdc:3"]]);
+    expect(el.props.acknowledgesArrivals).toEqual(h.marked[0]);
+  });
+
+  it("still writes a set's early key when its other arrivals are already seen", async () => {
+    h.early = EARLY;
+    h.allSeen = true;
+    const el = await visit({ colour: "W" });
+    await runAfters();
+    expect(h.marked).toEqual([["early:mdc:3"]]);
+    expect(el.props.acknowledgesArrivals).toEqual(["early:mdc:3"]);
   });
 
   it("draws the list as shipped, stores nothing and writes nothing when the upcoming read fails (T9)", async () => {
