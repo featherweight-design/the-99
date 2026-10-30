@@ -41,7 +41,7 @@ describe("the tool registry", () => {
     const names = new Set<string>(SWITCHES.map((s) => s.name));
     for (const t of TOOLS) if (t.switch !== null) expect(names.has(t.switch)).toBe(true);
     expect(TOOLS.find((t) => t.id === "collection-sync")?.switch).toBe("COLLECTION_SYNC_ENABLED");
-    expect(TOOLS.filter((t) => t.switch === null).map((t) => t.id)).toEqual(["precons", "top-off", "lineup"]);
+    expect(TOOLS.filter((t) => t.switch === null).map((t) => t.id)).toEqual(["precons", "top-off", "wishlist", "lineup"]);
   });
 
   it("opens an About entry that exists for every tool", () => {
@@ -97,7 +97,7 @@ describe("toolLanding", () => {
     expect(toolLanding(undefined, allOn)).toBeNull();
     expect(toolLanding("tour:banner", allOn)).toBeNull();
     expect(toolLanding("stand-ins", offFor("SWAP_TOOLS_ENABLED"))).toBeNull();
-    expect(toolLanding("matchups", offFor("SOCIAL_GAMES_ENABLED"))).toBeNull();
+    expect(toolLanding("matchups", offFor("SOCIAL_FRIENDS_ENABLED"))).toBeNull();
     expect(isToolId("nope")).toBe(false);
   });
 });

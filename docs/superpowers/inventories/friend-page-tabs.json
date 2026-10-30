@@ -1,7 +1,7 @@
 {
   "feature": "A friend's page: Spares, Wishlist and Decks on one strip (menu and Home plan 2026-10-22, PR 7)",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED and SOCIAL_WISHLIST_ENABLED on, and a SCRATCH branch seeded with scripts/seed-r2-friend-fixture.mts (COLIN_PUBLIC_ID, PETER_PUBLIC_ID) plus a pod with Colin sharing spares and three of Colin's decks. Colin shares six cards (two spare, two on the viewer's wishlist); Peter shares nothing. The strip is the Collection place's own (`shares`).",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED on, and a SCRATCH branch seeded with scripts/seed-r2-friend-fixture.mts (COLIN_PUBLIC_ID, PETER_PUBLIC_ID) plus a pod with Colin sharing spares and three of Colin's decks. Colin shares six cards (two spare, two on the viewer's wishlist); Peter shares nothing. The strip is the Collection place's own (`shares`).",
   "shares": {
     "module": "src/components/place/place-strip.tsx",
     "binding": "PlaceStrip",

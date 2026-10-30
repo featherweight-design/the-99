@@ -7,7 +7,7 @@
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { howItWorksEnabled } from "../../../../lib/about/how-it-works-flag";
-import { socialFriendsEnabled, socialGamesEnabled } from "../../../../lib/social/flag";
+import { socialFriendsEnabled } from "../../../../lib/social/flag";
 import { loadClosedTable, loadTable } from "../../../../lib/social/rule-zero-table";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { DeckPageSwitches } from "../../../../components/decks/deck-page-switches";
@@ -26,7 +26,7 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
       <DeckPageSwitches howItWorks={howItWorksEnabled(env)}>
         {/* Same stretch chain as the closed branch below, so a table that closes in place centers its card as a refresh would. */}
         <div className="flex w-full flex-1 flex-col">
-          <TableLive initial={view} gamesEnabled={socialGamesEnabled(env)} now={new Date()} />
+          <TableLive initial={view} gamesEnabled={socialFriendsEnabled(env)} now={new Date()} />
         </div>
       </DeckPageSwitches>
     );

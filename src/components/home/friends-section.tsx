@@ -31,11 +31,11 @@ export type FriendsSectionProps = {
   links: { token: string; createdAt: Date; expiresAt: Date }[];
   /** The render's one clock, from the server. */
   now: string;
-  /** SOCIAL_GAMES_ENABLED: the no-friends line names seating friends in a game only while it is on (G5). */
+  /** SOCIAL_FRIENDS_ENABLED (opponents follow friends since their own switch retired): the no-friends line names seating friends in a game only while it is on (G5). */
   games: boolean;
   /** A face opens the friend's own page, which needs the friends switch alone (menu and Home PR 7); false opens /friends. */
   friendPages: boolean;
-  /** SOCIAL_INVITES_ENABLED, with the reader's invite count: Add a friend opens /friends' chooser (addendum G4).
+  /** SOCIAL_FRIENDS_ENABLED (invites follow friends), with the reader's invite count: Add a friend opens /friends' chooser (addendum G4).
    *  Null with invites off, or with a count that could not be read: Add a friend makes a link, as shipped. */
   invites?: InviteCount | null;
   /** The dashboard's `order` classes for the phone placement. */

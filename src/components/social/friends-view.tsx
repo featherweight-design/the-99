@@ -109,7 +109,7 @@ export function FriendsView({
   /** Each friend row links to the friend's page (R2 P1), which needs the friends switch alone (menu and Home PR 7). */
   friendPages?: boolean;
   maxLinks: number;
-  /** The reader's invite count, with `SOCIAL_INVITES_ENABLED` on for them; null when it is off. */
+  /** The reader's invite count, with `SOCIAL_FRIENDS_ENABLED` on for them (invites follow friends); null when it is off. */
   invites?: InviteCount | null;
   /** Arrived as `?invite=new`: Add a friend opens on Invite someone new (with invites on). */
   openInviteNew?: boolean;

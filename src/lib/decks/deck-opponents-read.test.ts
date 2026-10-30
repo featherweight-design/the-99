@@ -8,7 +8,7 @@ vi.mock("../cards/opening-printing", () => ({ loadOpeningArt: (ids: readonly str
 
 vi.mock("./catalog-art", () => ({ loadCatalogArt: async (ids: readonly string[]) => new Map(ids.filter((i) => i === "c").map((i) => [i, "catalog.jpg"])) }));
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const game = (id: string): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-10-01"), versionNumber: null, note: null, worked: [], hurt: [],
 });
@@ -18,7 +18,7 @@ const seat: GameOpponent = {
 };
 
 describe("loadDeckOpponents", () => {
-  it("reads nothing and answers null while the switch is off, or when its parent is", async () => {
+  it("reads nothing and answers null while friends are off, whatever the retired opponents switch says", async () => {
     const read = vi.fn();
     expect(await loadDeckOpponents("d", "u", [game("g1")], {} as NodeJS.ProcessEnv, read)).toBeNull();
     expect(await loadDeckOpponents("d", "u", [game("g1")], { SOCIAL_GAMES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, read)).toBeNull();

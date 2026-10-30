@@ -34,13 +34,13 @@ describe("GET /api/cron/invite-sweep", () => {
   });
 
   it("sweeps on the cron's bearer token, reads no switch, and answers its counts", async () => {
-    process.env.SOCIAL_INVITES_ENABLED = "off";
+    process.env.SOCIAL_FRIENDS_ENABLED = "off";
     try {
       const res = await call("Bearer s3cret");
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 } });
     } finally {
-      delete process.env.SOCIAL_INVITES_ENABLED;
+      delete process.env.SOCIAL_FRIENDS_ENABLED;
     }
   });
 

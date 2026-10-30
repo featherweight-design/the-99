@@ -11,7 +11,7 @@ import { after } from "next/server";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
-import { socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
+import { socialFriendsEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadInviteCount } from "../../lib/invites/read";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -62,10 +62,10 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // receipt is then drawn once from the edge, whichever of the two ran first.
   const reservationId = reservationIdFrom(user?.publicMetadata);
   if (reservationId !== null) await spendInviteOnSignUp(userId, reservationId, user?.firstName);
-  // The invite count (invites PR 4), read beside the rest; null with invites off, so the head draws as shipped.
+  // The invite count (invites PR 4), read beside the rest; null with friends off (invites follow friends), so the head draws as shipped.
   // A count that cannot be read (a database the invites migration has not reached) draws the page as shipped,
   // never an error: the count is an extra, and Add a friend's link path works without it.
-  const invitesRead = socialInvitesEnabled(env)
+  const invitesRead = socialFriendsEnabled(env)
     ? perf.timed("inviteCount", () => loadInviteCount(userId, now)).catch((error: unknown) => {
         console.warn("[invites] count unreadable; drawing /friends without it", error instanceof Error ? error.message : "");
         return null;

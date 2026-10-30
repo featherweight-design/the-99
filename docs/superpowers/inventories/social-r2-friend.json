@@ -1,7 +1,7 @@
 {
   "feature": "Social R2 PR 6: a friend's page, /friends/[publicId], and the › on friend rows (P1-P3, PP1-PP3)",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED=true and SOCIAL_WISHLIST_ENABLED=true, and a SCRATCH branch seeded with scripts/seed-r2-friend-fixture.mts, which prints COLIN_PUBLIC_ID, PETER_PUBLIC_ID and MAX_PUBLIC_ID. Colin has a face and five wanted cards (a sixth his collection reaches must not show), Peter a face and an empty wishlist, Max no face and two cards. Writes nothing.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true, and a SCRATCH branch seeded with scripts/seed-r2-friend-fixture.mts, which prints COLIN_PUBLIC_ID, PETER_PUBLIC_ID and MAX_PUBLIC_ID. Colin has a face and five wanted cards (a sixth his collection reaches must not show), Peter a face and an empty wishlist, Max no face and two cards. Writes nothing.",
   "rows": [
     {
       "id": "friend-rows-linked",

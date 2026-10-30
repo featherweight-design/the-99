@@ -16,7 +16,6 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
-import { wishlistEnabled } from "../../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
 import { formatLastUpdated } from "../../../lib/collection/browse";
@@ -48,7 +47,7 @@ export default async function CollectionListLayout({
   const lastUpdatedLabel = lastUpdated ? formatLastUpdated(lastUpdated) : null;
   return (
     <>
-      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={editEnabled} historyHasEntries={historyHasEntries} preconPick={preconPick} scan={editEnabled} wishlistEnabled={wishlistEnabled(env)} />
+      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={editEnabled} historyHasEntries={historyHasEntries} preconPick={preconPick} scan={editEnabled} wishlistEnabled />
       <CollectionContentScope>{children}</CollectionContentScope>
     </>
   );

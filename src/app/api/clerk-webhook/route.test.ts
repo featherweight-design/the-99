@@ -181,12 +181,12 @@ describe("POST /api/clerk-webhook", () => {
 
     it("reads no feature switch: an invitation already accepted is honored", async () => {
       verify.mockResolvedValue(created({ inviteReservation: RES }));
-      process.env.SOCIAL_INVITES_ENABLED = "off";
+      process.env.SOCIAL_FRIENDS_ENABLED = "off";
       try {
         expect((await POST(req())).status).toBe(200);
         expect(spend).toHaveBeenCalledTimes(1);
       } finally {
-        delete process.env.SOCIAL_INVITES_ENABLED;
+        delete process.env.SOCIAL_FRIENDS_ENABLED;
       }
     });
   });

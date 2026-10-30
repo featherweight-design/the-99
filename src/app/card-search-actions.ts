@@ -9,23 +9,20 @@ import {
   type CardSearchRow,
   type CardSignals,
 } from "../lib/card-search/search";
-import { requestSwitchEnv } from "../lib/switches/request";
 import { isUuid } from "../lib/uuid";
-import { wishlistEnabled } from "../lib/wishlist/flag";
 
 /**
  * Card search's two reads (plan `2026-10-16-card-search.md`, PR A). Both are signed in and read only the reader's own rows
- * (lock 8). The bookmark is drawn only while the wishlist is on for the reader.
+ * (lock 8). The bookmark is drawn for every reader (the wishlist's switch is retired).
  */
 
 /** Up to 20 cards whose name matches, best first, each with the reader's signals. */
 export async function searchAllCardsAction(query: unknown): Promise<CardSearchRow[]> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   if (typeof query !== "string") return [];
   const hits = await searchAllCards(query);
   if (hits.length === 0) return [];
-  const signals = await loadCardSignals(userId, hits.map((h) => h.oracleId), { wishlist: wishlistEnabled(env) });
+  const signals = await loadCardSignals(userId, hits.map((h) => h.oracleId), { wishlist: true });
   return withSignals(hits, signals);
 }
 
@@ -36,10 +33,9 @@ export async function searchAllCardsAction(query: unknown): Promise<CardSearchRo
  */
 export async function cardSignalsAction(oracleIds: unknown): Promise<Record<string, CardSignals>> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   if (!Array.isArray(oracleIds)) return {};
   const ids = oracleIds.filter((id): id is string => typeof id === "string" && isUuid(id)).slice(0, SIGNALS_LIMIT);
   if (ids.length === 0) return {};
-  const signals = await loadCardSignals(userId, ids, { wishlist: wishlistEnabled(env) });
+  const signals = await loadCardSignals(userId, ids, { wishlist: true });
   return Object.fromEntries(signals);
 }

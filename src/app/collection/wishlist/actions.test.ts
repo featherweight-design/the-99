@@ -1,11 +1,10 @@
-// The wishlist's actions (Social R2 PR 3): each decides the switch for the READER and refuses as `off` without
-// writing, and each maps its library result to an outcome the screen draws, so a refusal never reads as done.
-// A component test mocks these away, so a write that skipped the gate or a mapping would pass everywhere else.
+// The wishlist's actions (Social R2 PR 3): each takes the reader from the session (the wishlist's switch is retired),
+// and each maps its library result to an outcome the screen draws, so a refusal never reads as done.
+// A component test mocks these away, so a write that skipped a mapping would pass everywhere else.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
   revalidatePath: vi.fn(),
   after: vi.fn(),
   wantOneMore: vi.fn(),
@@ -16,7 +15,6 @@ const m = vi.hoisted(() => ({
   loadWishlist: vi.fn(),
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("next/server", () => ({ after: m.after }));
 vi.mock("../../../lib/wishlist/wishlist", () => ({
@@ -28,19 +26,17 @@ vi.mock("../../../lib/wishlist/collected", () => ({ dismissCollected: m.dismissC
 
 import * as actions from "./actions";
 
-const ON = { SOCIAL_WISHLIST_ENABLED: "true" };
 const CARD = "11111111-1111-4111-8111-111111111111";
 const AT = "2026-10-15T12:34:56.789Z";
 
 beforeEach(() => {
   vi.resetAllMocks();
   m.requireUserId.mockResolvedValue("user_1");
-  m.requestSwitchEnv.mockResolvedValue(ON);
   m.after.mockImplementation((fn: () => void) => fn());
 });
 
-describe("the switch", () => {
-  // Every action, called with arguments that would write if the gate were missing.
+describe("the reader", () => {
+  // Every action, called with arguments that would write.
   const calls: [string, () => Promise<unknown>][] = [
     ["addToWishlistAction", () => actions.addToWishlistAction(CARD)],
     ["setWishlistWantAction", () => actions.setWishlistWantAction(CARD, 3)],
@@ -52,16 +48,6 @@ describe("the switch", () => {
   it("covers every exported action", () => {
     const exported = Object.entries(actions).filter(([, v]) => typeof v === "function").map(([k]) => k).sort();
     expect(calls.map(([name]) => name).sort()).toEqual(exported);
-  });
-
-  it.each(calls)("%s refuses as off and writes nothing while it is off for the reader", async (_n, call) => {
-    m.requestSwitchEnv.mockResolvedValue({});
-    expect(await call()).toEqual({ ok: false, reason: "off" });
-    expect(m.requestSwitchEnv).toHaveBeenCalledWith("user_1");
-    for (const [key, fn] of Object.entries(m)) {
-      if (["requireUserId", "requestSwitchEnv"].includes(key)) continue;
-      expect(fn, key).not.toHaveBeenCalled();
-    }
   });
 
   it("refuses a signed-out caller before anything else", async () => {

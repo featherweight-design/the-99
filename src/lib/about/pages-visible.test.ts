@@ -67,7 +67,8 @@ describe("each sentence follows its own switch", () => {
     ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", "I have one", undefined],
     ["a fill without Help me choose", {}, "rule/autofill", "then uses your Collection", "Help me choose"],
     ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
-    ["friends see a wishlist only with the wishlist", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "spares you offer", "wishlist"],
+    ["friends see the wishlist with friends on (its own switch is retired)", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "Your wishlist is theirs to read too", undefined],
+    ["friends see nothing with friends off", {}, "rule/friends-see", undefined, undefined],
     ["friends open decks", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "can open the decks", "names, status"],
     ["bracket marks are explained with the Analysis tab off, as they are drawn", {}, "decks/your-deck/bracket-marks", "Game Changers", undefined],
   ] as const)("%s", (_name, e, key, has, lacks) => {
@@ -188,7 +189,7 @@ describe("seen translation", () => {
     const replace = editOnly.flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
     expect(replace.text.startsWith("With Replace")).toBe(true);
     const help = editOnly.flatMap((s) => s.labels).find((l) => l.key === "collection/cards/tabs")!;
-    expect(help.text).toBe(" are your Collection’s tabs. History lists your changes from the last 90 days.");
+    expect(help.text).toBe(" are your Collection’s tabs. History lists your changes from the last 90 days. Wishlist holds the cards you’re after.");
   });
 
   it("never lets the floor answer for a unit whose every source was switched", () => {
@@ -361,7 +362,7 @@ describe("resolveDiagram", () => {
   const rule = (e: NodeJS.ProcessEnv, id: string) => visibleSections(e).flatMap((s) => s.rules).find((r) => r.key === ruleKey(id as never))!;
 
   it("drops a part, a chip and an emptied column whose switch is off, as a sentence is cut", () => {
-    const off = env({ ...(ALL_ON as Record<string, string>), SOCIAL_WISHLIST_ENABLED: "off" });
+    const off = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
     const names = (d: ReturnType<typeof resolveDiagram>) =>
       parts(d).flatMap((p) => (p.part === "row" ? [p.name] : p.part === "caption" ? [p.text] : p.part === "chips" ? p.chips.map((c) => c.text) : []));
     // A retired switch's parts draw whatever the env says (the tokens switch is gone).
@@ -370,10 +371,12 @@ describe("resolveDiagram", () => {
     // A full-column foot keeps its column, its switched parts cut from it.
     const hidden = rule(ALL_ON, "hidden-deck").diagram!.foot;
     expect(hidden && "parts" in hidden ? hidden.w : null).toBe(250);
-    expect(names(rule(ALL_ON, "friends-see").diagram!)).toContain("Wishlist");
-    expect(names(rule(off, "friends-see").diagram!)).not.toContain("Wishlist");
+    expect(names(rule(ALL_ON, "credits").diagram!)).toContain("Look deeper");
+    expect(names(rule(off, "credits").diagram!)).not.toContain("Look deeper");
+    // The wishlist's switch is retired: its chip draws whatever the env says.
+    expect(names(rule(env({ ...(ALL_ON as Record<string, string>), SOCIAL_WISHLIST_ENABLED: "off" }), "friends-see").diagram!)).toContain("Wishlist");
     const emptied = resolveDiagram(
-      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "SOCIAL_WISHLIST_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "PROPOSED_CUTS_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
       off,
     );
     expect(emptied.columns).toHaveLength(1);

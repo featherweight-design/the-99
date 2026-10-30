@@ -1,7 +1,7 @@
 {
   "feature": "Social R3 PR 4: the Games tab's Matchups section (by commander, colors, friend) and the History vs line",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED=true and SOCIAL_GAMES_ENABLED=true on the server and GAMES_DECK, a deck of the signed-in account with games that carry opponents (local-dev: two games, one with a friend seat that won and a labeled anyone seat, one with a friend seat and a bare commander). Reads only.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true on the server and GAMES_DECK, a deck of the signed-in account with games that carry opponents (local-dev: two games, one with a friend seat that won and a labeled anyone seat, one with a friend seat and a bare commander). Reads only.",
   "rows": [
     {
       "id": "matchups-commander",

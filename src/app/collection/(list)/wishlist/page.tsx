@@ -1,14 +1,11 @@
 // /collection/wishlist — cards wanted outside any deck (Social R2 PR 4, boards W1–W5 and WP1–WP5).
 //
-// The fifth tab of the place strip, behind `SOCIAL_WISHLIST_ENABLED`: with the switch off the route does not exist,
-// and the tab is never drawn. The page reads the reader's own lines as tiles, the one-time collected strip's notices
+// The fifth tab of the place strip, always drawn (its switch, `SOCIAL_WISHLIST_ENABLED`, is retired). The page reads the reader's own lines as tiles, the one-time collected strip's notices
 // and, with friends on, whether the reader has a friend (the meta line's `Your friends can see this list`); the view
 // owns the search and every write.
 
-import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
-import { wishlistEnabled } from "../../../../lib/wishlist/flag";
 import { loadWishlistTiles } from "../../../../lib/wishlist/wishlist";
 import { loadCollectedNotices } from "../../../../lib/wishlist/collected";
 import { socialFriendsEnabled } from "../../../../lib/social/flag";
@@ -19,10 +16,9 @@ import { TOOL_PARAM } from "../../../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../../../components/discovery/tool-landing-mount";
 
 export default async function CollectionWishlistPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  // The reader first: the switch is theirs (`requestSwitchEnv`).
+  // The reader first: friends and the landing are decided from their switches (`requestSwitchEnv`).
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!wishlistEnabled(env)) notFound();
   // Try it's landing (discovery R2·3): `?tool=wishlist` haloes the search; anything else is stripped.
   const { landing, request } = pageLanding((await searchParams)[TOOL_PARAM], env, "wishlist");
   const [{ tiles }, notices, hasFriend] = await Promise.all([

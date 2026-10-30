@@ -308,7 +308,7 @@ interface BuilderShellProps {
   tuningEnabled?: boolean;
   /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null with the Analysis tab off. */
   strategy?: StrategyRead | null;
-  /** `socialGamesEnabled(env)` for this reader: the game log draws its "Across the table" row. */
+  /** `socialFriendsEnabled(env)` for this reader (opponents follow friends): the game log draws its "Across the table" row. */
   socialGames?: boolean;
   /** A Rule 0 table's seats for the game log to open with (plan §PR 8), read per request by the page. */
   gamePrefill?: TablePrefill | null;

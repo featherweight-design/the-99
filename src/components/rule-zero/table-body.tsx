@@ -28,7 +28,7 @@ export function TableBody({
   swappedTo = null,
 }: {
   view: TableView;
-  /** `socialGamesEnabled(env)` for the reader. */
+  /** `socialFriendsEnabled(env)` for the reader (opponents follow friends). */
   gamesEnabled: boolean;
   /** The server's clock at the draw: the close time is `today` or `tomorrow` against it. */
   now: Date;

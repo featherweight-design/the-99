@@ -2,7 +2,7 @@
 // Add a friend, off /friends: the interactive half Home's Friends section (PR #1974) and the first-run checklist's
 // Friends row (Discovery R3·3) share. One definition of what the press does, so the two never drift:
 //
-// - With SOCIAL_INVITES_ENABLED and an invite count, Add a friend opens /friends' chooser (addendum G4); otherwise it
+// - With SOCIAL_FRIENDS_ENABLED (invites follow friends) and an invite count, Add a friend opens /friends' chooser (addendum G4); otherwise it
 //   makes a link and opens the shipped `AddFriendDialog`, through `Making a link…`, with the ten-link hold and its toast.
 // - Show opens the dialog on a link already open.
 // - The reader's links are watched as /friends watches them (`useInviteWatch`): a link redeemed redraws the page, and
@@ -37,7 +37,7 @@ export type AddFriendInput = {
   links: FriendLink[];
   /** The render's one clock, from the server. */
   now: string;
-  /** SOCIAL_INVITES_ENABLED with the reader's invite count: Add a friend opens the chooser. Null: it makes a link. */
+  /** SOCIAL_FRIENDS_ENABLED (invites follow friends) with the reader's invite count: Add a friend opens the chooser. Null: it makes a link. */
   invites: InviteCount | null;
 };
 

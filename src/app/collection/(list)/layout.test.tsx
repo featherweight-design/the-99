@@ -45,13 +45,8 @@ describe("the collection layout: the sheet's precon row (S18)", () => {
 describe("the collection layout: the Wishlist tab (Social R2)", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("is drawn with the reader's SOCIAL_WISHLIST_ENABLED on", async () => {
-    vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "true");
-    expect((await head()).props.wishlistEnabled).toBe(true);
-  });
-
-  it("is not drawn with it off", async () => {
+  it("is always drawn: the retired SOCIAL_WISHLIST_ENABLED is never read", async () => {
     vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "");
-    expect((await head()).props.wishlistEnabled).toBe(false);
+    expect((await head()).props.wishlistEnabled).toBe(true);
   });
 });

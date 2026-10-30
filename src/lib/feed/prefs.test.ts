@@ -179,7 +179,7 @@ describe("the two seen cursors", () => {
     const ran: SQL[] = [];
     return { q: { execute: async (s: SQL) => { ran.push(s); return { rows: [], rowCount }; } } as never, ran };
   }
-  const all = env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
+  const all = env({ SOCIAL_FRIENDS_ENABLED: "true" });
 
   it("a Home visit moves feed_seen_at and never friends_seen_at", async () => {
     const { q, ran } = recorder(1);
@@ -221,7 +221,7 @@ describe("loadNewsSettings (Settings' news section)", () => {
 
   it("gives the available kinds in FEED_KINDS order, each with whether it is on; an unavailable kind is absent", async () => {
     const { q } = reader({ combo: EARLIER, "price-drop": EARLIER, "trade-match": EARLIER });
-    const rows = await loadNewsSettings("u", env({ SOCIAL_WISHLIST_ENABLED: "true" }), q);
+    const rows = await loadNewsSettings("u", env(), q);
     expect(rows).toEqual([
       { kind: "new-set", on: false },
       { kind: "new-precon", on: false },
@@ -230,9 +230,9 @@ describe("loadNewsSettings (Settings' news section)", () => {
     ]);
   });
 
-  it("offers trade matches only with friends and the wishlist both on, and a spare request with friends", async () => {
+  it("offers trade matches only with friends on, and a spare request with friends", async () => {
     const { q } = reader({});
-    const rows = await loadNewsSettings("u", env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }), q);
+    const rows = await loadNewsSettings("u", env({ SOCIAL_FRIENDS_ENABLED: "true" }), q);
     expect(rows.map((r) => r.kind)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"]);
   });
 
@@ -241,6 +241,7 @@ describe("loadNewsSettings (Settings' news section)", () => {
     expect(await loadNewsSettings("u", env(), q)).toEqual([
       { kind: "new-set", on: false },
       { kind: "new-precon", on: true },
+      { kind: "price-drop", on: false },
       { kind: "combo", on: true },
     ]);
   });

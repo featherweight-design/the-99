@@ -66,7 +66,7 @@ const tiles = async (query: Record<string, string | string[]> = {}) => find(awai
 
 const DECK_SWITCHES = [
   "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED", "MANA_BALANCE_ENABLED", "SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED",
-  "SOCIAL_GAMES_ENABLED", "ANALYSIS_TAB_ENABLED",
+  "ANALYSIS_TAB_ENABLED",
 ];
 
 beforeEach(() => {
@@ -126,12 +126,10 @@ describe("/about, the index (call 3)", () => {
 
   it("counts the screens and the rules the reader is drawn (visibleSections)", async () => {
     vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "");
-    vi.stubEnv("SOCIAL_INVITES_ENABLED", "");
     const off = Object.fromEntries((await tiles()).map((x) => [x.area, x.count]));
     expect(off.home).toBe("2 screens");
     expect(off.friends).toBe("1 screen");
     vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
-    vi.stubEnv("SOCIAL_INVITES_ENABLED", "true");
     const on = Object.fromEntries((await tiles()).map((x) => [x.area, x.count]));
     expect(on.friends).toBe("1 screen · 3 good to know");
   });
@@ -223,7 +221,7 @@ describe("/about, the visit (R2 gap 10)", () => {
 
   it("hands a current reader's visit the unit keys their state covers", async () => {
     vi.stubEnv("NEVER_CUT_ENABLED", "true");
-    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane"] };
+    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist"] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { behind: boolean; answered: string[] };
     expect(props.behind).toBe(false);
     expect(props.answered).toContain("decks/your-deck/lock");

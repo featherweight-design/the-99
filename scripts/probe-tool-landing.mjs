@@ -30,7 +30,7 @@
 //
 // The server: `next start` of a build with the worktree's `.env`, started with the deck tools' switches on
 // (`TUNING_ENABLED`, `PROPOSED_CUTS_ENABLED`, `MANA_BALANCE_ENABLED`, `SWAP_TOOLS_ENABLED`, `SOCIAL_FRIENDS_ENABLED`,
-// `SOCIAL_GAMES_ENABLED`, `ANALYSIS_TAB_ENABLED`), then again with them off.
+// `ANALYSIS_TAB_ENABLED`), then again with them off.
 //
 // THE PAGES (R2·3): each tool with a page of its own, landed by its `?tool=` on that page: the halo on the tool's own
 // control (Help me choose's first answer, the Precons and Wishlist searches, Collection Sync's drop zone, the Tiles ·
@@ -38,7 +38,7 @@
 // parameter goes at once and the next card details opened halo `Find a deck for it` once, so the probe presses a card
 // open. A control the page does not draw even without `?tool=` (the eligibility preflight) is a SKIP, never a PASS.
 // With `PROBE_SWITCHES=off` (the server started with the page tools' switches off too: `HELP_ME_CHOOSE_ENABLED`,
-// `SOCIAL_WISHLIST_ENABLED`, `COLLECTION_SYNC_ENABLED`), every page landing
+// `COLLECTION_SYNC_ENABLED`), every page landing
 // must draw no halo and write nothing: the route is gone (its not-found page), or the parameter is stripped.
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:tool-landing
@@ -301,8 +301,9 @@ async function pageDrawsWithoutLanding(page, tool) {
 
 async function walkPages(page, w, userId) {
   for (const tool of PAGE_TOOLS) {
-    // Precons and Lineup have no switch any more: they land the same in both modes, so the off-mode walk leaves them out.
-    if (SWITCHES_OFF && (tool.id === "precons" || tool.id === "lineup")) continue;
+    // Precons, Lineup and the Wishlist have no switch any more: they land the same in both modes, so the off-mode walk
+    // leaves them out.
+    if (SWITCHES_OFF && (tool.id === "precons" || tool.id === "lineup" || tool.id === "wishlist")) continue;
     await unspend(userId, tool.id);
     const label = `${w.name} page ${tool.id}`;
     const noteName = tool.name === null ? null : `${tool.name}, a tip`;

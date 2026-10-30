@@ -22,7 +22,7 @@ vi.mock("../../lib/rate/observe", () => ({ observeHit: m.observeHit }));
 import { claimInviteAction, confirmCodeAction, handOverAction } from "./actions";
 
 const TOKEN = "A".repeat(43);
-const ON = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true" };
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const ENDED = { ok: false, reason: "ended" };
 
 beforeEach(() => {
@@ -38,7 +38,7 @@ beforeEach(() => {
 
 describe("the sender's switch decides", () => {
   it("reads an off switch, an unknown token and a non-string as an ended invite, touching nothing", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
+    m.resolveSwitchEnv.mockResolvedValue({ SOCIAL_INVITES_ENABLED: "true" });
     expect(await claimInviteAction(TOKEN, "a@x.dev")).toEqual(ENDED);
     expect(await confirmCodeAction(TOKEN, "123456")).toEqual(ENDED);
     expect(await handOverAction(TOKEN)).toEqual(ENDED);

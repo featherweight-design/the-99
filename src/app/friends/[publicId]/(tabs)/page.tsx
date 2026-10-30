@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { socialFriendsEnabled } from "../../../../lib/social/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
-import { wishlistEnabled } from "../../../../lib/wishlist/flag";
 import { loadFriend } from "../../../../lib/social/access";
 import { isUuid } from "../../../../lib/social/rules";
 import { catalogCardName, friendSpareList } from "../../../../lib/social/friend-page-data";
@@ -26,7 +25,7 @@ export default async function FriendSparesPage({
   const env = await requestSwitchEnv(userId);
   if (!socialFriendsEnabled(env)) notFound();
   const { publicId } = await params;
-  const [friend, spares] = await Promise.all([loadFriend(userId, publicId), friendSpareList(userId, publicId, wishlistEnabled(env))]);
+  const [friend, spares] = await Promise.all([loadFriend(userId, publicId), friendSpareList(userId, publicId, true)]);
   if (!friend) notFound();
   const raw = (await searchParams)?.spare;
   // Lowercased: the catalog's ids are, and both lookups below compare as strings.

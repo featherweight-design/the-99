@@ -23,7 +23,7 @@ process.env.DATABASE_URL = url;
 const run = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const U = `probe-feed-u-${run}`; // the reader
 const F = `probe-feed-f-${run}`; // the friend
-const ENV = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ENV = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const DAY = 86_400_000;
 
 let failed = 0;
@@ -176,8 +176,8 @@ async function main() {
       check("an arrival stamped before new-set's enabledAt is not read",
         !(await read.loadFeed(U, ENV, now)).some((i) => i.kind === "new-set"));
     }
-    check("a kind not available (wishlist off) is not read",
-      !(await read.loadFeed(U, { ...ENV, SOCIAL_WISHLIST_ENABLED: "" }, now)).some((i) => i.kind === "price-drop" || i.kind === "trade-match"));
+    check("a kind not available (friends off) is not read",
+      !(await read.loadFeed(U, { ...ENV, SOCIAL_FRIENDS_ENABLED: "" }, now)).some((i) => i.kind === "trade-match"));
 
     await shareSparesWith(F, pod.id, false);
     check("F stops sharing spares with the pod: the trade match leaves the feed",

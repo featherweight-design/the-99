@@ -30,7 +30,7 @@ const run = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const U = `probe-fw-u-${run}`; // the reader
 const F = `probe-fw-f-${run}`; // the friend
 const ENV = {
-  ...process.env, SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true",
+  ...process.env, SOCIAL_FRIENDS_ENABLED: "true",
 } as NodeJS.ProcessEnv;
 
 let failed = 0;
@@ -148,8 +148,6 @@ async function main() {
     check("price-drop off: a fallen line is not told", !(await items(U, "price-drop")).some((d) => d.oracle_id === P3));
     check("... nor marked noticed", (await line(U, P3))?.noticed === null);
     await prefs.setFeedKinds(U, ["price-drop", "trade-match", "combo"]);
-    await noticePriceDrops({ ...ENV, SOCIAL_WISHLIST_ENABLED: "off" });
-    check("the wishlist switched off for the reader: not told", !(await items(U, "price-drop")).some((d) => d.oracle_id === P3));
     // An item dated before the kind was last turned on is one the reader would never see: not written, not stamped.
     await noticePriceDrops(ENV, () => new Date(Date.now() - 3_600_000));
     check("an item dated before the kind came back on is not written", !(await items(U, "price-drop")).some((d) => d.oracle_id === P3));

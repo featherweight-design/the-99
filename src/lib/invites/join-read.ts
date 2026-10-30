@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { readInviteSender, type InviteSender } from "../social/friends";
-import { socialInvitesEnabled } from "../social/flag";
+import { socialFriendsEnabled } from "../social/flag";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { CODE_MAX_TRIES, codeState, isQrToken, resendWaitMs } from "./rules";
 import { secretHash } from "./tokens";
@@ -51,8 +51,8 @@ export async function readJoin(token: string, secret: string | null, now: Date =
   if (!isQrToken(token)) return ENDED;
   const [row] = await db.select().from(inviteReservations).where(eq(inviteReservations.qrTokenHash, secretHash(token)));
   if (!row) return ENDED;
-  // The sender's own switch, as the actions decide it; off reads as an ended invite.
-  if (!socialInvitesEnabled(await resolveSwitchEnv(row.userId))) return ENDED;
+  // The sender's friends switch (invites follow friends), as the actions decide it; off reads as an ended invite.
+  if (!socialFriendsEnabled(await resolveSwitchEnv(row.userId))) return ENDED;
   const step = joinStep(row, secret, now);
   if (step.kind === "ended") return ENDED;
   // An expired QR names nobody (N11), so the sender is not read for it.

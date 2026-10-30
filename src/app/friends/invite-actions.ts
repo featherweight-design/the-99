@@ -1,7 +1,7 @@
 "use server";
 
 // The sender's two ways to invite someone new (plan `2026-10-16-invites.md`, PR 2; dark until PR 4 draws them). Each
-// action takes the reader from the session and decides `SOCIAL_INVITES_ENABLED` for THAT reader, refusing as `off`
+// action takes the reader from the session and decides `SOCIAL_FRIENDS_ENABLED` for THAT reader (invites follow friends since their own switch retired), refusing as `off`
 // while it is off; the library functions do not check the switch.
 
 import { headers } from "next/headers";
@@ -14,7 +14,7 @@ import { joinPath } from "../../lib/invites/rules";
 import { inviteSecret } from "../../lib/invites/tokens";
 import { observeHit } from "../../lib/rate/observe";
 import { originFrom } from "../../lib/social/client-rules";
-import { socialInvitesEnabled } from "../../lib/social/flag";
+import { socialFriendsEnabled } from "../../lib/social/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 
 type Off = { ok: false; reason: "off" };
@@ -22,7 +22,7 @@ const OFF: Off = { ok: false, reason: "off" };
 
 async function inviteReader(): Promise<string | null> {
   const userId = await requireUserId();
-  return socialInvitesEnabled(await requestSwitchEnv(userId)) ? userId : null;
+  return socialFriendsEnabled(await requestSwitchEnv(userId)) ? userId : null;
 }
 
 export type SendEmailInviteOutcome = { ok: true } | Off | { ok: false; reason: "invalid" | "out" | "failed" };

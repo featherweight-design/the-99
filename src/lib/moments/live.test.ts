@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { liveMoments } from "./live";
 
 describe("liveMoments", () => {
-  it("is each moment whose tool is on, and the four with no tool", () => {
+  it("is each moment whose tool is on, and the five with no tool", () => {
     const live = liveMoments({} as unknown as NodeJS.ProcessEnv);
-    expect(live).toEqual(["precons", "top-off", "card-assignments", "lineup"]);
+    expect(live).toEqual(["precons", "top-off", "card-assignments", "wishlist", "lineup"]);
   });
 
-  it("follows a tool's parent, as the screen does: Matchups needs friends as well as games", () => {
+  it("follows friends for Matchups, as the screen does: the retired opponents switch alone raises nothing", () => {
     const env = { SOCIAL_GAMES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     expect(liveMoments(env)).not.toContain("matchups");
-    expect(liveMoments({ ...env, SOCIAL_FRIENDS_ENABLED: "true" })).toContain("matchups");
+    expect(liveMoments({ SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toContain("matchups");
   });
 });

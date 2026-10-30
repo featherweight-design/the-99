@@ -16,9 +16,8 @@ import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
 import {
-  socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled,
+  socialFriendsEnabled,
 } from "../social/flag";
-import { wishlistEnabled } from "../wishlist/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
@@ -78,14 +77,15 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
   // Starting without a collection ended on exactly when collection edit is.
   NO_COLLECTION_ENTRY_ENABLED: collectionEditEnabled,
-  // The Social line: `SOCIAL_GAMES_ENABLED` already needs `SOCIAL_FRIENDS_ENABLED` inside its own function.
+  // The Social line. Opponents' switch is retired: its name stays the lines' historical identity and follows its
+  // parent, `SOCIAL_FRIENDS_ENABLED`, which it needed. The wishlist's is retired too (always on): it stood alone.
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
-  SOCIAL_GAMES_ENABLED: socialGamesEnabled,
-  SOCIAL_WISHLIST_ENABLED: wishlistEnabled,
-  // The launch-end batch. Invites already need SOCIAL_FRIENDS_ENABLED, and scanning COLLECTION_EDIT_ENABLED, inside
-  // their own functions. Rule 0's switch is retired: its name stays the entry's historical identity and follows its parent.
+  SOCIAL_GAMES_ENABLED: socialFriendsEnabled,
+  SOCIAL_WISHLIST_ENABLED: () => true,
+  // The launch-end batch. Scanning already needs COLLECTION_EDIT_ENABLED inside its own function. Rule 0's and invites'
+  // switches are retired: each name stays the entry's historical identity and follows its parent, SOCIAL_FRIENDS_ENABLED.
   RULE_ZERO_ENABLED: socialFriendsEnabled,
-  SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
+  SOCIAL_INVITES_ENABLED: socialFriendsEnabled,
   PAYMENTS_ENABLED: paymentsEnabled,
   // Already reads PAYMENTS_ENABLED inside its own function.
   WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,

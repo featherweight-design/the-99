@@ -7,7 +7,7 @@
 //
 //   PROBE_BASE=http://localhost:3472 pnpm probe:card-search-followups
 //
-// Needs a server started with SOCIAL_WISHLIST_ENABLED and COLLECTION_EDIT_ENABLED set to true.
+// Needs a server started with COLLECTION_EDIT_ENABLED set to true.
 // Leg 2 writes one wishlist line for the audit account and removes it again; point it at local-dev, never staging.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

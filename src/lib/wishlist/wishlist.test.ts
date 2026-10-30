@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cleanQuantity, wantFloor, wishlistLinesQuery } from "./wishlist";
 import { friendWishlistQuery } from "../social/wishlist";
-import { wishlistEnabled } from "./flag";
 
 describe("cleanQuantity", () => {
   it("takes a whole number from 1 to 99, as a number or a form string", () => {
@@ -67,16 +66,5 @@ describe("friendWishlistQuery", () => {
 
   it("joins the card from the catalog", () => {
     expect(sql).toContain(`inner join "cards" on "cards"."oracle_id" = "wishlist_items"."oracle_id"`);
-  });
-});
-
-describe("wishlistEnabled", () => {
-  it("is on only for exactly 'true'", () => {
-    const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
-    expect([
-      wishlistEnabled(env({ SOCIAL_WISHLIST_ENABLED: "true" })),
-      wishlistEnabled(env({ SOCIAL_WISHLIST_ENABLED: "1" })),
-      wishlistEnabled(env({})),
-    ]).toEqual([true, false, false]);
   });
 });

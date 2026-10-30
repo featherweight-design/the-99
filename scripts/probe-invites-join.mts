@@ -5,8 +5,8 @@
 // The contact sheet cannot photograph these routes: it signs in, and a signed-in reader is sent Home. So this
 // seeds one sender and one reservation per state (its own per-run ids), opens each link with no session and
 // photographs it into `contact-sheets/invites-join/`. A claim's browser is stood in for by setting the claim cookie
-// to a secret whose hash the row holds. Needs a server on the SAME database with SOCIAL_FRIENDS_ENABLED and
-// SOCIAL_INVITES_ENABLED true and no INVITE_CODE_SECRET (so Send code answers `unconfigured`, which is R14's toast).
+// to a secret whose hash the row holds. Needs a server on the SAME database with SOCIAL_FRIENDS_ENABLED
+// true (invites follow it) and no INVITE_CODE_SECRET (so Send code answers `unconfigured`, which is R14's toast).
 // With INVITE_CODE_SECRET set in BOTH this process and the server (64 hex), the states that need a working code check
 // also run (mail stays unconfigured, so R14 still answers): N4 (a wrong code) and N9 (the proven address already has an account, read from
 // Clerk, so E2E_AUDIT_USER_EMAIL must be a real user on the server's Clerk instance). N2 (sending, the action held

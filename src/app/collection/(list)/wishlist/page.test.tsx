@@ -47,14 +47,7 @@ const view = async (query: Record<string, string> = {}) => {
 const props = async () => (await view()).props;
 
 describe("/collection/wishlist", () => {
-  it("does not exist with the reader's switch off, and reads nothing", async () => {
-    vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "");
-    await expect(page()).rejects.toThrow("NEXT_NOT_FOUND");
-    expect(m.loadWishlistTiles).not.toHaveBeenCalled();
-  });
-
   it("hands the view plain props, with dates as ISO strings", async () => {
-    vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "true");
     vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
     expect(await props()).toEqual({
       tiles: [{ oracleId: CARD, name: "Sol Ring", imageUri: "https://img", want: 2, have: 1, addedAt: AT }],
@@ -64,7 +57,6 @@ describe("/collection/wishlist", () => {
   });
 
   it("says no friend without one, and never reads friends with friends off", async () => {
-    vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "true");
     vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
     m.listFriends.mockResolvedValue([]);
     expect((await props()).hasFriend).toBe(false);

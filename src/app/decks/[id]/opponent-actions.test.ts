@@ -16,7 +16,7 @@ vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv }));
 
 import { listFriendDecksAction, listPodSeatsAction, searchOpponentCommandersAction } from "./opponent-actions";
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true" };
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -47,7 +47,7 @@ describe("the opponent picker's actions", () => {
     expect(listPodSeats).not.toHaveBeenCalled();
   });
 
-  it("do not raise a child switch past its parent", async () => {
+  it("follow friends alone: the retired opponents switch opens nothing on its own", async () => {
     requestSwitchEnv.mockResolvedValue({ SOCIAL_GAMES_ENABLED: "true" });
     expect(await listFriendDecksAction("f")).toEqual([]);
     expect(listFriendDecks).not.toHaveBeenCalled();
