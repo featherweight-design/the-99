@@ -162,9 +162,9 @@ function withClient(run: (posthog: PostHog) => void): void {
   });
 }
 
-/** Ties later events to the Clerk user, with their first name as the person's `name`, or none. Never an email. */
-export function identifyReader(userId: string, name: string | null | undefined): void {
-  withClient((posthog) => (name ? posthog.identify(userId, { name }) : posthog.identify(userId)));
+/** Ties later events to the Clerk user by account id alone. No name, no email: the id is all PostHog gets. */
+export function identifyReader(userId: string): void {
+  withClient((posthog) => posthog.identify(userId));
 }
 
 /**
