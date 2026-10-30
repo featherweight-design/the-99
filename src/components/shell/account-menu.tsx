@@ -76,7 +76,7 @@ type MenuItemsProps = {
   friends: boolean;
   /** Leaves for /friends, as `onAbout` leaves for /about. */
   onFriends: () => void;
-  /** Friends is in the bar (`COMMANDERS_PLACE_ENABLED` with `friends`): Settings takes the Friends row's place. */
+  /** Friends is in the bar (the Commanders place (always on) with `friends`): Settings takes the Friends row's place. */
   settings: boolean;
   /** Leaves for /settings, as `onAbout` leaves for /about. */
   onSettings: () => void;
@@ -425,7 +425,7 @@ export function AccountMenu({
   adminEnv?: string;
   /** `SOCIAL_FRIENDS_ENABLED` for this reader, resolved by the shell; only the boolean reaches the client. */
   friends?: boolean;
-  /** `COMMANDERS_PLACE_ENABLED` for this reader. With `friends`, Friends is in the bar: the Settings row in place of
+  /** the Commanders place (always on) for this reader. With `friends`, Friends is in the bar: the Settings row in place of
    *  Friends, and M11 on the bar's slot rather than this button. */
   commandersPlace?: boolean;
   /** `HOME_FEED_ENABLED` for this reader: with the Commanders place, Settings has its news section, so its row is drawn

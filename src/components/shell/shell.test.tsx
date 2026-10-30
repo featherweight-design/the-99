@@ -118,7 +118,7 @@ describe("Shell and the Friends badge (menu and Home PR 7)", () => {
     feed.unseenFriendsCount.mockClear();
     feed.after.mockClear();
     feed.noticeTradeMatches.mockClear();
-    requestHeaders = as({ SOCIAL_FRIENDS_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true" });
+    requestHeaders = as({ SOCIAL_FRIENDS_ENABLED: "true" });
     await renderShell();
     expect(feed.unseenFriendsCount).toHaveBeenCalledWith("user_1", expect.anything());
     expect(navProps.some((n) => "badges" in n)).toBe(true);
@@ -129,8 +129,7 @@ describe("Shell and the Friends badge (menu and Home PR 7)", () => {
   });
 
   it.each([
-    ["Friends is off", { COMMANDERS_PLACE_ENABLED: "true" }],
-    ["Friends has no slot in the bar", { SOCIAL_FRIENDS_ENABLED: "true" }],
+    ["Friends is off", {}],
   ])("reads no count and notices nothing while %s", async (_label, env) => {
     navProps.length = 0;
     feed.unseenFriendsCount.mockClear();

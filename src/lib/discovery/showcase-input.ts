@@ -1,7 +1,6 @@
 import { count, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { decks } from "../../db/schema";
-import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { hasSyncAnchor } from "../collection/sync-base";
 import { SWITCH_FLAGS } from "../switches/flags";
 import type { Perf } from "../perf/timing";
@@ -46,5 +45,5 @@ export async function loadCardInput(
     deckCount(userId),
     isOn("COLLECTION_SYNC_ENABLED") ? hasSyncAnchor(userId) : false,
   ]);
-  return { isOn, fits, deckCount: decksHeld, hasSyncBase: syncAnchored, place: commandersPlaceEnabled(env) };
+  return { isOn, fits, deckCount: decksHeld, hasSyncBase: syncAnchored, place: true };
 }

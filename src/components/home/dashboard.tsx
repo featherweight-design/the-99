@@ -49,7 +49,7 @@ export type DashboardProps = {
    * the main column, What's new follows the resume block, and Ready to build is gone.
    */
   feed?: HomeFeed | null;
-  /** `COMMANDERS_PLACE_ENABLED` for this reader: the lock's page line names only the slots the bar locks. */
+  /** the Commanders place (always on) for this reader: the lock's page line names only the slots the bar locks. */
   commandersPlace?: boolean;
   /**
    * PUSH_ENABLED is on for this reader and the feed was read (push PR 5): a push's landing opens its card here, through the

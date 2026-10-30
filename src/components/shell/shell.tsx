@@ -15,7 +15,6 @@ import { navStallLogEnabled } from "../../lib/nav-stall/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { PlacePathsProvider } from "../commanders/place-paths";
 import { socialFriendsEnabled } from "../../lib/social/flag";
-import { commandersPlaceEnabled } from "../../lib/commanders/place-flag";
 import { homeFeedEnabled } from "../../lib/feed/flag";
 import { unseenFriendsCount } from "../../lib/feed/read";
 import { waitingAsksCount } from "../../lib/social/spare-requests";
@@ -84,8 +83,8 @@ export default async function Shell({
     friends: socialFriendsEnabled(env),
     // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10).
     credits: await perfRead("shell.creditChip", () => readChip(userId, env)),
-    // The Commanders place: Discover leaves the bar, and with `friends` Friends takes its slot and Settings its row.
-    commandersPlace: commandersPlaceEnabled(env),
+    // The Commanders place (always on): Discover leaves the bar, and with `friends` Friends takes its slot and Settings its row.
+    commandersPlace: true,
     // Settings' news section: with the Commanders place, the menu's Settings row is drawn for it even with Friends off.
     homeFeed: homeFeedEnabled(env),
   };
@@ -109,7 +108,7 @@ export default async function Shell({
   // reader. An absent count draws no badge. Home's is one statement over the feed's union, read only with
   // HOME_FEED_ENABLED on; a failed read draws no badge rather than breaking every page. Friends' is the unseen trade
   // matches (product call 2) and unseen answers to the reader's spare requests, cleared by a /friends visit, plus the
-  // spare requests waiting on the reader's answer, cleared only by answering (plan `2026-10-22-spare-requests.md`), and read only while Friends has its slot in the bar. A trade
+  // spare requests waiting on the reader's answer, cleared only by answering (plan `2026-10-22-spare-requests.md`), and read only while Friends is on (it then has its slot in the bar). A trade
   // match is noticed after the response (`noticeTradeMatches`, after() only), so one that appears is counted on the next
   // render.
   const badges: NavBadges = {};
@@ -120,7 +119,7 @@ export default async function Shell({
     });
     if (homeUnseen > 0) badges.home = homeUnseen;
   }
-  if (door.friends && door.commandersPlace) {
+  if (door.friends) {
     // Taken BEFORE the read, so an answer that lands during it is never taken off a count that may not hold it.
     badges.friendsAt = new Date().toISOString();
     const [seenHalf, waiting] = await Promise.all([
@@ -146,7 +145,7 @@ export default async function Shell({
     // loading overlay, which renders beside the shell rather than inside it. Unlocked it is the
     // global 74px from globals.css.
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
-    <PlacePathsProvider place={commandersPlaceEnabled(env)}>
+    <PlacePathsProvider place>
     <NavigationPendingProvider stall={stall}>
       {/* The halo targets (discovery R2), on whatever the switches say: every moment's control registers here. */}
       {/* `navLocked`: the shell's own lock, which the tour taken again (R3·2) reads for its captions. */}

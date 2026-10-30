@@ -28,7 +28,6 @@ import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseHistoryCopy as historyCopy } from "../../../../lib/copy/help-me-choose-history";
 import { loadChooseHistory, loadPastRead } from "../../../../lib/intake/history-read";
 import { choosePath } from "../../../../lib/commanders/place-paths";
-import { commandersPlaceEnabled } from "../../../../lib/commanders/place-flag";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { answersOf, parseLiveParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
@@ -78,8 +77,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const env = await requestSwitchEnv(userId);
   if (!helpMeChooseEnabled(env)) notFound();
   // On the Commanders place the strip is the way out, so the form draws no "back to New deck" link.
-  const placeOn = commandersPlaceEnabled(env);
-  const chooseAt = choosePath(placeOn);
+  const chooseAt = choosePath(true);
   const rawQuery = await searchParams;
   const sp = toSearchParams(rawQuery);
   const p = parseLiveParams(sp);
@@ -116,7 +114,6 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
         <div className="md:mx-auto md:w-full md:max-w-[1100px] lg:flex lg:items-start lg:justify-center lg:gap-[40px]">
           <div className={`min-w-0 md:w-[680px] md:max-w-full md:shrink ${historyView ? "hidden lg:block" : ""}`}>
             <ChooseHeader
-              back={placeOn ? undefined : { href: "/decks/new", label: copy.intake.back }}
               title={copy.intake.title}
               sub={copy.intake.sub}
               subPhone={copy.intake.subPhone}

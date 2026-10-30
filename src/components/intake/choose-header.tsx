@@ -23,7 +23,7 @@ export function ChooseHeader({
   titleId,
   meta,
 }: {
-  /** The way back. Absent on the Commanders place (`COMMANDERS_PLACE_ENABLED`): the strip is the way out, and the tab is where New deck's door lands. */
+  /** The way back. Absent on the Commanders place (the Commanders place (always on)): the strip is the way out, and the tab is where New deck's door lands. */
   back?: { href: string; label: string };
   title: string;
   sub: string;

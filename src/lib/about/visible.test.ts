@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -17,7 +17,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 
 // Retired switches draw always and are still seen by id (so no reader's New marks moved): with "every switch off" they
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = retiredEntries.map((e) => e.id);
 
@@ -616,11 +616,11 @@ describe("an entry drawn in another's place (`replaces`, the launch-end batch)",
 
 describe("whats-new's line switches, in every state of the three switches they name", () => {
   const entry = aboutEntries.find((e) => e.id === "whats-new")!;
-  const flags = ["COMMANDERS_PLACE_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SOCIAL_FRIENDS_ENABLED", "SOCIAL_WISHLIST_ENABLED"] as const;
+  const flags = ["HELP_ME_CHOOSE_ENABLED", "SOCIAL_FRIENDS_ENABLED", "SOCIAL_WISHLIST_ENABLED"] as const;
   // The renderer's own reading: a blank line starts a paragraph, an empty block is dropped (`EntryCaption`).
   const blocks = (caption: string) => caption.split(/\n\s*\n/).map((b) => b.trim()).filter((b) => b.length > 0);
 
-  it("draws clean text in all 16 combinations: no gated line left behind, no orphaned heading, no empty paragraph", () => {
+  it("draws clean text in all 8 combinations: no gated line left behind, no orphaned heading, no empty paragraph", () => {
     for (let mask = 0; mask < 1 << flags.length; mask++) {
       const env = { HOME_FEED_ENABLED: "true", ...Object.fromEntries(flags.map((f, i) => [f, mask & (1 << i) ? "true" : "false"])) } as unknown as NodeJS.ProcessEnv;
       const on = (f: (typeof flags)[number]) => env[f] === "true";
@@ -630,17 +630,17 @@ describe("whats-new's line switches, in every state of the three switches they n
       // A heading that introduces a list never stands without it.
       const hasHeading = caption.includes("Commanders is one place now");
       const hasTabs = /- For you:|- Discover:|- Help me choose:/.test(caption);
-      expect(hasHeading, `mask ${mask}: the tabs heading follows the place`).toBe(on("COMMANDERS_PLACE_ENABLED"));
-      expect(hasTabs, `mask ${mask}: tab lines only with the heading`).toBe(on("COMMANDERS_PLACE_ENABLED"));
-      expect(caption.includes("- Help me choose:"), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED") && on("HELP_ME_CHOOSE_ENABLED"));
+      expect(hasHeading, `mask ${mask}: the tabs heading is always drawn (the place is retired)`).toBe(true);
+      expect(hasTabs, `mask ${mask}: tab lines only with the heading`).toBe(true);
+      expect(caption.includes("- Help me choose:"), `mask ${mask}`).toBe(on("HELP_ME_CHOOSE_ENABLED"));
       expect(caption.includes("- A precon"), `mask ${mask}`).toBe(true);
       expect(caption.includes("- A price drop"), `mask ${mask}`).toBe(on("SOCIAL_WISHLIST_ENABLED"));
       expect(caption.includes("- A friend with a spare"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED") && on("SOCIAL_WISHLIST_ENABLED"));
-      expect(caption.includes("Friends has its own spot"), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED") && on("SOCIAL_FRIENDS_ENABLED"));
+      expect(caption.includes("Friends has its own spot"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED"));
       expect(caption.includes("In Settings, you choose"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED"));
-      // Settings' account-menu row exists with the place on only; off, Settings is reached from Home's Choose what shows.
-      expect(caption.includes("then in Settings, in the account menu."), `mask ${mask}`).toBe(on("COMMANDERS_PLACE_ENABLED"));
-      expect(caption.includes("then in Settings."), `mask ${mask}`).toBe(!on("COMMANDERS_PLACE_ENABLED"));
+      // Settings' account-menu row is always drawn now that the place is retired.
+      expect(caption.includes("then in Settings, in the account menu."), `mask ${mask}`).toBe(true);
+      expect(caption.includes("then in Settings."), `mask ${mask}`).toBe(false);
     }
   });
 });

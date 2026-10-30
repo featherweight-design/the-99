@@ -139,7 +139,7 @@ export function FirstRunChecklist({
 }: {
   /** `HOME_FEED_ENABLED` for the reader: the Choose your news row, last. */
   news?: boolean;
-  /** `COMMANDERS_PLACE_ENABLED` for the reader: the lock's page line names only the slots the bar locks. */
+  /** the Commanders place (always on) for the reader: the lock's page line names only the slots the bar locks. */
   commandersPlace?: boolean;
   addByHand?: boolean;
   /** `tourDue`: the first-run tour runs over this page once (discovery R3·1b). */

@@ -58,7 +58,7 @@ describe("each sentence follows its own switch", () => {
     ["Ready to build leaves with the feed on", { HOME_FEED_ENABLED: "true" }, "home/home/ready", undefined, undefined],
     ["the feed's lead names no kind a switch can hide", { HOME_FEED_ENABLED: "true" }, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
     ["the + with scanning (it follows collection edit)", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "scan them", undefined],
-    ["the place strip without Help me choose", { COMMANDERS_PLACE_ENABLED: "true" }, "commanders/for-you/places", "two ways", "Help me choose"],
+    ["the place strip without Help me choose", {}, "commanders/for-you/places", "two ways", "Help me choose"],
     ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
     ["credits with Suggested changes and not Proposed cuts", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" }, "rule/credits", "Suggested changes run", "Look deeper"],
     ["credits with Proposed cuts and not Suggested changes", { ANALYSIS_TAB_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }, "rule/credits", "Look deeper", "Suggested changes"],
@@ -138,15 +138,15 @@ describe("seen translation", () => {
 
   it("treats a switch on only through an app-wide override as heard, as production resolves it", () => {
     const snapshot: SwitchSnapshot = {
-      overrides: [{ switchName: "COMMANDERS_PLACE_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
+      overrides: [{ switchName: "SWAP_TOOLS_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
       groupOf: new Map(),
     };
     const reader = resolveEnv(OFF, snapshot, "u1");
     const visible = visibleSections(reader);
-    const places = units(visible).find((u) => u.key === "commanders/for-you/places");
-    expect(places).toBeDefined();
-    expect(unitSeen(places!, readerAt(16, reader))).toBe(true);
-    expect(unitSeen(places!, { version: places!.since - 1, ids: ["anything"] })).toBe(false);
+    const limit = units(visible).find((u) => u.key === "shopping/deck-shopping/limit");
+    expect(limit).toBeDefined();
+    expect(unitSeen(limit!, readerAt(16, reader))).toBe(true);
+    expect(unitSeen(limit!, { version: limit!.since - 1, ids: ["anything"] })).toBe(false);
   });
 
   it("carries a legacy variant to the sentence it became", () => {

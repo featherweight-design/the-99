@@ -33,7 +33,6 @@ export const SWITCHES = [
   { name: "CHANGE_COMMANDER_ENABLED", kind: "feature" },
   { name: "COLLECTION_EDIT_ENABLED", kind: "feature" },
   { name: "COLLECTION_SYNC_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
-  { name: "COMMANDERS_PLACE_ENABLED", kind: "feature" },
   { name: "DECK_NOTES_ENABLED", kind: "feature" },
   { name: "DECK_PRINTINGS_ENABLED", kind: "feature" },
   { name: "DECK_STATS_ENABLED", kind: "feature" },
@@ -106,8 +105,7 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * feature a reader tries), so it needs no entry here.
  *
  * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config. It held
- * `COMMANDERS_PLACE_ENABLED` and `HOME_FEED_ENABLED` on 2026-10-22 while their surfaces landed (menu and Home), until
- * Home drew the feed. It held `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests'
+ * `HOME_FEED_ENABLED` on 2026-10-22 while its surface landed (menu and Home), until Home drew the feed. It held `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests'
  * close-out (the asks and answers drawn, its About lines shipped). `NEAR_COMBOS_ENABLED` held it from 2026-10-22 and left it with its
  * About entry (`combos-one-away`) once the deck page and card details drew it.
  * `STRATEGY_FOCUS_ENABLED` left it on 2026-10-22 with Suggested changes aiming at the focus and its About entry (`deck-focus`).

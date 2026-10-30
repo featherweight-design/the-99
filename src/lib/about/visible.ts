@@ -25,7 +25,6 @@ import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { homeFeedEnabled } from "../feed/flag";
-import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 import { pushEnabled } from "../push/flag";
@@ -93,7 +92,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,
   // The menu and Home line: the feed, and Commanders as one place.
   HOME_FEED_ENABLED: homeFeedEnabled,
-  COMMANDERS_PLACE_ENABLED: commandersPlaceEnabled,
+  // Retired (always on): the name stays as the lines' historical identity.
+  COMMANDERS_PLACE_ENABLED: () => true,
   // Retired (always on where friends are): the name stays as the lines' historical identity. It was on exactly when
   // SOCIAL_FRIENDS_ENABLED is, which it needed.
   FRIEND_DECKS_ENABLED: socialFriendsEnabled,

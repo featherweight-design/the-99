@@ -7,8 +7,6 @@ import { requestSwitchEnv } from "../../../lib/switches/request";
 import { redirect } from "next/navigation";
 import { NoCardsEmpty } from "../../../components/commanders/no-cards-empty";
 import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
-import { commandersPlaceEnabled } from "../../../lib/commanders/place-flag";
-import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { commandersCopy } from "../../../lib/copy/commanders";
 import { CommandersView } from "../../../components/commanders/commanders-view";
 import { PageHeader } from "../../../components/commanders/page-header";
@@ -32,8 +30,8 @@ export default async function CommandersPage({
   // still names the other lane must land there rather than be answered here with
   // the wrong list.
   // It cannot loop: a target is only returned while `scope` is present, and the
-  // target never carries it — one redirect and the parameter is gone for good. Temporary, never a 308: the target follows the reader's Commanders place switch, and a browser that cached a permanent one would keep the destination after the switch went off.
-  const target = scopeRedirectTarget(searchParamsToQuery(sp), commandersPlaceEnabled(await requestSwitchEnv(userId)));
+  // target never carries it — one redirect and the parameter is gone for good. Temporary, never a 308.
+  const target = scopeRedirectTarget(searchParamsToQuery(sp), true);
   if (target) redirect(target);
   const stats = await perf.timed("stats", () => getCollectionStats(userId));
 
@@ -221,7 +219,6 @@ export default async function CommandersPage({
         availOk={availOk}
         printedIn={printedIn}
         savedAvail={savedAvail}
-        helpMeChoose={helpMeChooseEnabled(env) && !commandersPlaceEnabled(env)}
       />
     </section>
   );

@@ -48,12 +48,6 @@ describe("pageTools", () => {
     expect(placed(without("SOCIAL_GAMES_ENABLED")).has("decks/games")).toBe(false);
   });
 
-  it("falls back to a later label: Help me choose with the Commanders place off sits under New deck", () => {
-    const got = placed(without("COMMANDERS_PLACE_ENABLED"));
-    expect(got.has("commanders/for-you")).toBe(false);
-    expect(got.get("decks/your-decks")).toEqual(["lineup", "precons", "help-me-choose"]);
-  });
-
   it("aims each card's Show me at its label: the label's page, lit, at its section", () => {
     for (const cards of pageTools(visibleSections(ALL_ON), input(ALL_ON)).values()) {
       for (const c of cards) {

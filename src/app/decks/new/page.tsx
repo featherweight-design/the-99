@@ -16,7 +16,6 @@ import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-
 import { serializeChooseParams } from "../../../lib/intake/params";
 import { loadIntakeCatalog } from "../../../lib/intake/search";
 import { choosePath } from "../../../lib/commanders/place-paths";
-import { commandersPlaceEnabled } from "../../../lib/commanders/place-flag";
 
 export default async function NewDeckPage({
   searchParams,
@@ -30,7 +29,7 @@ export default async function NewDeckPage({
   const commanderParam = typeof raw.commander === "string" ? raw.commander : undefined;
   const select = raw.select;
   const helpMeChoose = helpMeChooseEnabled(env);
-  const chooseAt = choosePath(commandersPlaceEnabled(env));
+  const chooseAt = choosePath(true);
 
   // Pre-filled door: validate the ?commander= param server-side, and draw the copy the
   // reader owns. Both live in `loadPreFilledCommander` so they can be tested — a route

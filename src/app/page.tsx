@@ -49,7 +49,6 @@ import { after } from "next/server";
 import { homeFeedEnabled } from "../lib/feed/flag";
 import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
 import { loadTradeAsk } from "../lib/social/trade-ask";
-import { commandersPlaceEnabled } from "../lib/commanders/place-flag";
 import { pushEnabled } from "../lib/push/flag";
 import { PushLanding } from "../components/push/push-landing";
 
@@ -398,7 +397,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
         tour={data.tourDue}
         news={feedOn}
-        commandersPlace={commandersPlaceEnabled(env)}
+        commandersPlace
       />
     );
     // No feed provider on a first run, so a landing opens nothing here; it still strips the address and closes what was
@@ -439,7 +438,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       feed={feed}
       tradeAsk={tradeAsk}
       pushVisit={pushVisit}
-      commandersPlace={commandersPlaceEnabled(env)}
+      commandersPlace
       tables={homeTables}
       friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: true, invites }}
       // One clock for the whole page, read on the server, so every relative
