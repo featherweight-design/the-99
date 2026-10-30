@@ -51,7 +51,7 @@ export function CardDetailFlowTrigger({
     if (disabled || e.target !== e.currentTarget) return;
     if (e.key === "Enter") {
       e.preventDefault();
-      if (!e.repeat) openFrom(e.currentTarget);
+      if (!e.repeat) e.currentTarget.click();
     } else if (e.key === " ") {
       e.preventDefault();
       if (!e.repeat) armed.current = true;
@@ -62,7 +62,7 @@ export function CardDetailFlowTrigger({
     e.preventDefault();
     if (!armed.current) return;
     armed.current = false;
-    openFrom(e.currentTarget);
+    e.currentTarget.click();
   };
 
   return (
