@@ -940,6 +940,13 @@ describe("saveDeckLimits (H35 PR 2, \"Kept for this deck\")", () => {
     expect(calls.headerUpdates[0].set).toMatchObject({ tuningCapCents: null, tuningSets: [], tuningOwnedOnly: false });
   });
 
+  it("saves Also cards in my other decks alone (Small items 4, item 2)", async () => {
+    const result = await saveDeckLimits(DECK, { otherDecks: true });
+    expect(result.ok).toBe(true);
+    expect(calls.headerUpdates[0].set).toMatchObject({ tuningOtherDecks: true });
+    expect(calls.headerUpdates[0].set).not.toHaveProperty("tuningOwnedOnly");
+  });
+
   it("dedupes sets, case-insensitively", async () => {
     await saveDeckLimits(DECK, { capDollars: null, sets: ["mh3", "MH3", "lci"], ownedOnly: false });
     expect(calls.headerUpdates[0].set).toMatchObject({ tuningSets: ["mh3", "lci"] });
@@ -957,7 +964,7 @@ describe("saveDeckLimits (H35 PR 2, \"Kept for this deck\")", () => {
     for (const fields of [
       null, "not an object", { capDollars: "25", sets: [], ownedOnly: false },
       { capDollars: null, sets: "mh3", ownedOnly: false }, { capDollars: null, sets: [1], ownedOnly: false },
-      { capDollars: null, sets: [], ownedOnly: "yes" },
+      { capDollars: null, sets: [], ownedOnly: "yes" }, { otherDecks: "yes" },
     ] as const) {
       const result = await saveDeckLimits(DECK, fields as never);
       expect(result.ok).toBe(false);
