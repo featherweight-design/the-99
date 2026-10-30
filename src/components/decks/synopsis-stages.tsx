@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import { normalizeName } from "../../lib/synopsis/facts";
@@ -24,16 +24,25 @@ import { CardName } from "./synopsis-text";
 
 const IMG = "block flex-none rounded-[4.5%/3.2%] object-cover shadow-[0_3px_10px_rgba(0,0,0,0.5)]";
 
-/** A full card image that opens the card. Draws nothing without art, or when the art fails to load. */
+/**
+ * A full card image that opens the card. Draws nothing without art, or when the art fails to load;
+ * `onFail` tells the caller, whose layout then drops the image column (`useArtFailures`).
+ *
+ * `className` sizes the image; `triggerClassName` and `triggerStyle` place the BUTTON, so a caller
+ * that positions or tilts the card moves the focusable control itself and the image stays in flow,
+ * giving the button its card's bounds (the fanned tip cards).
+ */
 export function CardImage({
-  oracleId, name, art, className, style,
+  oracleId, name, art, className, style, triggerClassName = "", triggerStyle, onFail,
 }: {
   oracleId: string;
   name: string;
   art: FindingArt;
-  /** Size and placement, by the caller. */
   className: string;
   style?: React.CSSProperties;
+  triggerClassName?: string;
+  triggerStyle?: React.CSSProperties;
+  onFail?: (oracleId: string) => void;
 }) {
   const imageUri = art.get(oracleId)?.imageUri ?? null;
   const [broken, setBroken] = useState(false);
@@ -42,16 +51,25 @@ export function CardImage({
   return (
     // As `CardName`: a press closes the hover box, which would otherwise sit above the card sheet.
     <span {...preview} onClickCapture={preview.onMouseLeave} className="block flex-none" data-testid="synopsis-card-image">
-      <CardDetailTrigger oracleId={oracleId} name={name} imageUri={imageUri} className="block">
+      <CardDetailTrigger oracleId={oracleId} name={name} imageUri={imageUri} className={`block ${triggerClassName}`} style={triggerStyle}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUri} alt="" onError={() => setBroken(true)} className={`${IMG} ${className}`} style={style} />
+        <img src={imageUri} alt="" onError={() => { setBroken(true); onFail?.(oracleId); }} className={`${IMG} ${className}`} style={style} />
       </CardDetailTrigger>
     </span>
   );
 }
 
-/** Whether a card has art to draw, so a layout can drop the image column rather than leave a hole. */
-const hasArt = (art: FindingArt, oracleId: string) => !!art.get(oracleId)?.imageUri;
+/**
+ * Which cards' art failed to load, held by the layout that sizes a column for the image. A card
+ * has art when the map holds a URL for it and that URL has not failed, so the layout switches to
+ * its no-art form instead of leaving the text in a column built for an image.
+ */
+function useArtFailures(art: FindingArt) {
+  const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
+  const onFail = useCallback((id: string) => setFailed((prev) => (prev.has(id) ? prev : new Set(prev).add(id))), []);
+  const has = (id: string) => !!art.get(id)?.imageUri && !failed.has(id);
+  return { has, onFail };
+}
 
 type Draw = {
   content: CheckedSynopsis;
@@ -66,11 +84,12 @@ type Draw = {
  */
 export function OverviewWithCommander({ content, art, text, commanderId }: Draw & { commanderId: string | null }) {
   const name = (commanderId && art.get(commanderId)?.name) || (commanderId ? Object.values(content.cards).find((c) => c.oracleId === commanderId)?.name : "") || "Commander";
-  const show = !!commanderId && hasArt(art, commanderId);
+  const { has, onFail } = useArtFailures(art);
+  const show = !!commanderId && has(commanderId);
   return (
     <div className={show ? "grid grid-cols-[72px_minmax(0,1fr)] items-start gap-[14px] md:grid-cols-[96px_minmax(0,1fr)] md:gap-[18px]" : ""} data-testid="synopsis-overview-head">
       {show ? (
-        <CardImage oracleId={commanderId} name={name} art={art} className="mt-[4px] h-[100px] w-[72px] -rotate-3 md:h-[134px] md:w-[96px]" />
+        <CardImage oracleId={commanderId} name={name} art={art} onFail={onFail} className="mt-[4px] h-[100px] w-[72px] -rotate-3 md:h-[134px] md:w-[96px]" />
       ) : null}
       <p className="text-[13.5px] leading-[1.65] md:text-[14.5px] md:leading-[1.7] text-[var(--fg-body)] [text-wrap:pretty]">{text(content.overview ?? "")}</p>
     </div>
@@ -82,6 +101,7 @@ export function GamePlan({
   content, art, text, basedOn, alternateBasedOn,
 }: Draw & { basedOn: (index: number, line: string) => React.ReactNode; alternateBasedOn: React.ReactNode }) {
   const stages = content.primer?.strategy ?? [];
+  const { has, onFail } = useArtFailures(art);
   const labels = synopsisCopy.modal.plan.stages;
   const alternate = content.alternate;
   return (
@@ -91,13 +111,13 @@ export function GamePlan({
         <span aria-hidden className="absolute bottom-[8px] left-[4.5px] top-[8px] w-px bg-[var(--fg-faint)] opacity-[0.55] md:bottom-auto md:left-[4px] md:right-[calc(33.333%-10px)] md:top-[5px] md:h-px md:w-auto" />
         {stages.map((line, i) => {
           const lead = markedCards(line, content.cards, 1)[0];
-          const image = !!lead && hasArt(art, lead.oracleId);
+          const image = !!lead && has(lead.oracleId);
           const last = i === stages.length - 1;
           return (
             <div key={i} data-testid="synopsis-stage" className="relative pl-[22px] md:flex md:flex-col md:pl-0 md:pt-[23px]">
               <i aria-hidden className={`absolute left-0 top-[4px] block h-[10px] w-[10px] rotate-45 shadow-[0_0_0_4px_var(--surface-raised)] md:top-[1.5px] ${last ? "bg-[var(--accent)]" : "bg-[var(--fg-faint)]"}`} />
               <div className={`relative min-w-0 flex-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[12px] py-[11px] md:p-[12px] ${image ? "grid grid-cols-[52px_minmax(0,1fr)] gap-[12px] md:flex md:flex-col md:gap-[10px]" : ""}`}>
-                {image ? <CardImage oracleId={lead.oracleId} name={lead.name} art={art} className="h-[72px] w-[52px] md:h-[100px] md:w-[72px]" /> : null}
+                {image ? <CardImage oracleId={lead.oracleId} name={lead.name} art={art} onFail={onFail} className="h-[72px] w-[52px] md:h-[100px] md:w-[72px]" /> : null}
                 <div className="min-w-0">
                   <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:absolute md:left-[18px] md:top-[-24px] md:mb-0">{labels[i]}</span>
                   <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(line)}{basedOn(i, line)}</p>
@@ -148,10 +168,11 @@ export function TipCards({
   content, art, text, basedOn,
 }: Draw & { basedOn: (index: number, line: string) => React.ReactNode }) {
   const tips = content.primer?.tips ?? [];
+  const { has, onFail } = useArtFailures(art);
   return (
     <div className="grid grid-cols-1 gap-[12px] md:grid-cols-2">
       {tips.map((tip, i) => {
-        const fan = markedCards(tip.text, content.cards).filter((c) => hasArt(art, c.oracleId)).slice(0, 2);
+        const fan = markedCards(tip.text, content.cards).filter((c) => has(c.oracleId)).slice(0, 2);
         return (
           <div key={i} data-testid="synopsis-tip" className={`grid items-center gap-[12px] rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] p-[12px] ${fan.length ? "grid-cols-[78px_minmax(0,1fr)]" : ""}`}>
             {fan.length ? (
@@ -162,8 +183,11 @@ export function TipCards({
                     oracleId={c.oracleId}
                     name={c.name}
                     art={art}
-                    className="h-[72px] w-[52px]"
-                    style={{ position: "absolute", top: 6, left: j === 0 ? 0 : 24, transform: `rotate(${j === 0 ? -7 : 6}deg)` }}
+                    onFail={onFail}
+                    // The button is what is placed and tilted; the image fills it in normal flow.
+                    className="h-full w-full"
+                    triggerClassName="h-[72px] w-[52px]"
+                    triggerStyle={{ position: "absolute", top: 6, left: j === 0 ? 0 : 24, transform: `rotate(${j === 0 ? -7 : 6}deg)` }}
                   />
                 ))}
               </div>
@@ -180,15 +204,16 @@ export function TipCards({
 export function KeyCardGrid({
   content, art, text, basedOn,
 }: Draw & { basedOn: (index: number, line: string, except?: string) => React.ReactNode }) {
+  const { has, onFail } = useArtFailures(art);
   return (
     <div className="grid grid-cols-3 gap-x-[10px] gap-y-[12px] md:gap-[14px]">
       {(content.keyCards ?? []).map((k, i) => {
         // The key card's own name is resolved by the contract like any mark, under the same key.
         const card = content.cards[normalizeName(k.card)];
-        const image = !!card && hasArt(art, card.oracleId);
+        const image = !!card && has(card.oracleId);
         return (
           <div key={i} data-testid="synopsis-key-card" className={`min-w-0 ${image ? "flex flex-col gap-[6px] md:grid md:grid-cols-[63px_minmax(0,1fr)] md:items-start md:gap-[11px]" : ""}`}>
-            {image ? <CardImage oracleId={card.oracleId} name={k.card} art={art} className="aspect-[63/88] w-full md:h-[88px] md:w-[63px]" /> : null}
+            {image ? <CardImage oracleId={card.oracleId} name={k.card} art={art} onFail={onFail} className="aspect-[63/88] w-full md:h-[88px] md:w-[63px]" /> : null}
             <div className="min-w-0">
               <b className="mb-0 block text-[12px] leading-[1.35] [overflow-wrap:anywhere] md:mb-[4px] md:mt-[2px] md:text-[13px]">
                 {card

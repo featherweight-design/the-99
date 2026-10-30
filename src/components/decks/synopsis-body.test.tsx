@@ -258,4 +258,47 @@ describe("the stages shape (contract 13)", () => {
     );
     expect(within(screen.getAllByTestId("synopsis-overview-head")[1]).queryAllByTestId("synopsis-card-image")).toHaveLength(0);
   });
+
+  it("drops the image column when art fails to load, so text does not sit in a column built for it", () => {
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <HoverPreviewProvider>
+          <SynopsisSections content={stage13()} contractVersion={13} commanderId="craterhoof" art={art} onRetry={null} busy={false} />
+        </HoverPreviewProvider>
+      </CardDetailProvider>,
+    );
+    const head = screen.getByTestId("synopsis-overview-head");
+    expect(head.className).toContain("grid-cols-[72px");
+    fireEvent.error(within(head).getByTestId("synopsis-card-image").querySelector("img")!);
+    expect(head.className).not.toContain("grid-cols");
+    // A stage whose lead image fails: its card leaves the image grid.
+    const stage = screen.getAllByTestId("synopsis-stage")[0];
+    const card = stage.querySelector(".grid-cols-\\[52px_minmax\\(0\\,1fr\\)\\]");
+    expect(card).not.toBeNull();
+    fireEvent.error(within(stage).getByTestId("synopsis-card-image").querySelector("img")!);
+    expect(stage.querySelector(".grid-cols-\\[52px_minmax\\(0\\,1fr\\)\\]")).toBeNull();
+    // A key card whose image fails: its row leaves the 63px image column.
+    const key = screen.getAllByTestId("synopsis-key-card")[0];
+    expect(key.className).toContain("md:grid-cols-[63px");
+    fireEvent.error(within(key).getByTestId("synopsis-card-image").querySelector("img")!);
+    expect(key.className).not.toContain("md:grid-cols-[63px");
+  });
+
+  it("places and tilts each fanned tip card on its button, leaving the image in flow", () => {
+    drawStages(stage13(), 13);
+    const tip = screen.getAllByTestId("synopsis-tip")[0];
+    const buttons = within(tip).getAllByTestId("synopsis-card-image").map((w) => w.querySelector("button")!);
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0].style.position).toBe("absolute");
+    expect(buttons[0].style.transform).toBe("rotate(-7deg)");
+    expect(buttons[1].style.transform).toBe("rotate(6deg)");
+    expect(buttons[1].style.left).toBe("24px");
+    expect(buttons[0].className).toContain("h-[72px]");
+    expect(buttons[0].className).toContain("w-[52px]");
+    for (const b of buttons) {
+      const img = b.querySelector("img")!;
+      expect(img.style.position).toBe("");
+      expect(img.style.transform).toBe("");
+    }
+  });
 });
