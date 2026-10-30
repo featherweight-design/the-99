@@ -239,7 +239,7 @@ export async function runTuning(
   const { head, games, intent, declared, fingerprint, readVersion, locked, allLocked, focus } = inputs;
   // Include my other decks is v2's (Small items 4 item 2): its held copies are pulled at v2's Apply, which a v10 run has
   // no step for, so a v10 run reads the limits without it, as it did before the choice existed.
-  const limits = { ...inputs.limits, otherDecks: false };
+  const limits = { capCents: inputs.limits.capCents, sets: inputs.limits.sets, ownedOnly: inputs.limits.ownedOnly };
 
   // `allLocked` is a gate reason, so this refusal lands BEFORE `startRun` reserves a credit: the
   // panel's "No credit is used." is true of the server, not only of a disabled button.
