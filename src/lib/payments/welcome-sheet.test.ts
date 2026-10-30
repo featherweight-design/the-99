@@ -75,6 +75,20 @@ describe("welcomeSheetFor", () => {
     expect(s.rows.map((r) => r.id)).toEqual(["overview", "look-deeper", "help-me-choose", "find-a-deck-read"]);
   });
 
+  it("follows SUGGESTED_CHANGES_V2_ENABLED: on, the Suggested changes row says v2's cost; off, the shipped one", () => {
+    const row = (env: NodeJS.ProcessEnv) => welcomeSheetFor(env, { cards: 0, decks: [] })!.rows.find((r) => r.id === "suggested")!;
+    const on = row({ ...ON, SUGGESTED_CHANGES_V2_ENABLED: "true" });
+    expect(on.short).toBe(writtenForYouCopy.suggestedV2.short);
+    expect(on.cost).toBe(writtenForYouCopy.suggestedV2.cost);
+    const off = row(ON);
+    expect(off.short).toBe(writtenForYouCopy.rows[1].short);
+    expect(off.cost).toBe(writtenForYouCopy.rows[1].cost);
+    expect(`${off.short} ${off.cost}`).not.toMatch(/\b2\b/);
+    // The kill switch beats it: TUNING off takes v2 with it (the row itself goes).
+    expect(welcomeSheetFor({ ...ON, TUNING_ENABLED: "off", SUGGESTED_CHANGES_V2_ENABLED: "true" }, { cards: 0, decks: [] })!.rows.map((r) => r.id))
+      .not.toContain("suggested");
+  });
+
   it("is null with every row's switch off, so no Where they work is drawn", () => {
     expect(welcomeSheetFor({} as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })).toBeNull();
   });

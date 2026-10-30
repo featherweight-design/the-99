@@ -44,6 +44,16 @@ describe("the page", () => {
     expect(screen.getByRole("button", { name: /Receipt/ })).toBeTruthy();
   });
 
+  it("the sub follows the reader's Suggested changes v2 switch (a v2 run over 10 changes uses 2 credits)", () => {
+    render(<CreditsView suggestedV2 model={model()} ret={null} />);
+    expect(screen.getByText(/^Most runs use 1 credit/)).toBeTruthy();
+    expect(screen.queryByText(/any tool/)).toBeNull();
+    cleanup();
+    render(<CreditsView suggestedV2={false} model={model()} ret={null} />);
+    expect(screen.getByText(/^1 credit is 1 run of any tool/)).toBeTruthy();
+    expect(screen.queryByText(/Most runs use 1 credit/)).toBeNull();
+  });
+
   it("D1: a welcome lot sits second, and does not inherit the packs' \"never expire\" subtitle", () => {
     render(<CreditsView suggestedV2={false} model={model({ allowance: allowance({ welcome: 15, pack: 40 }) })} ret={null} />);
     const cells = screen.getAllByRole("listitem").filter((li) => li.hasAttribute("data-cell"));

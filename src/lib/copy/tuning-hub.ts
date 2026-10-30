@@ -74,7 +74,8 @@ export const tuningHubCopy = {
     regionLabel: "Runs",
     tool: { suggested: "Suggested", mana: "Mana", cuts: "Cuts" },
     /** `refunded` (Suggested changes v2, History A): the tier struck, its credit back. */
-    tier: { free: "free", credit: "1 credit", deeper: "deeper look", refunded: "refunded" },
+    /** `credit2`: a Suggested changes v2 run of more than 10 changes, which cost 2 (`unitsFor`, Hugh 2026-10-30). */
+    tier: { free: "free", credit: "1 credit", credit2: "2 credits", deeper: "deeper look", refunded: "refunded" },
     /** `short` (Suggested changes v2, History A): a list came back under the count asked. */
     outcome: { ok: "ok", short: "short", refused: "refused", failed: "failed", stopped: "stopped", running: "running" },
     more: "Show 20 more",

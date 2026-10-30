@@ -69,6 +69,9 @@ export type ToolCopy = {
 /** Find a deck and Stats for your decks open a page, but read the reader's decks: with none, they say so. */
 const NEEDS_A_DECK = 'Needs a deck, and you have none yet.';
 const NEEDS_A_FULL_DECK = 'Needs a full deck. None of yours is full yet.';
+/** What Suggested changes does while the reader's SUGGESTED_CHANGES_V2_ENABLED is on: the Written for you row's `what`,
+ *  swapped in where the switch is decided (`showcase.ts`). v2 asks how many, up to 20. The tool card's v2 line is its `lineWhen`. */
+const SUGGESTED_V2_LINE = 'Up to 20 swaps, as many as you ask for. Your words lead, then your games, your notes and the list.';
 
 export const showcaseCopy = {
   /** A tool card's picture. */
@@ -119,7 +122,7 @@ export const writtenForYouCopy = {
   /** The `suggested` row's words while the reader's SUGGESTED_CHANGES_V2_ENABLED is on (Hugh 2026-10-30): v2 asks how many
    *  cards to change, up to 20 (`MAX_COUNT`), and costs 1 credit for 1 to 10 changes and 2 for more than 10.
    *  `writtenForYou` swaps them in. */
-  suggestedV2: { what: 'Up to 20 swaps, as many as you ask for. Your words lead, then your games, your notes and the list.', cost: '1 credit, 2 over 10 changes', short: '1 or 2 per run' },
+  suggestedV2: { what: SUGGESTED_V2_LINE, cost: '1 credit, 2 over 10 changes', short: '1 or 2 per run' },
   /** The free line, whole while the credits entry still carries its History line, else its bracket half alone. */
   historyLine: 'Opening a past “Help me choose” run from History is free.',
   free: 'Finding a deck’s bracket is free, and so is reopening a past Help me choose.',

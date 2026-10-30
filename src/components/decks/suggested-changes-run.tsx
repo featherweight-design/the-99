@@ -32,6 +32,7 @@ import { SuggestedChangesConfirm } from "./suggested-changes-confirm";
 import { DriftLine, leadSentence, LINK, NOTICE_BOX, noticeStyle } from "./suggested-changes-intake";
 import { SuggestedChangesPickLine } from "./suggested-changes-pick-line";
 import { historyDay } from "./tuning-history";
+import { unitsFor } from "../../lib/tuning/v2/charge";
 import { DeckRefusalToast } from "./token-refusal-toast";
 
 const sc = suggestedChangesV2Copy;
@@ -951,14 +952,15 @@ function ShortHead({ facts, n, ask, credits, onNewRun }: {
     if (facts.reason === "overCap" && capCents !== null) {
       head = `${sc.results.shortCap(facts.found, formatCents(capCents))}.`;
       body = s.capBody(n, facts.dropped, formatCents(capCents), facts.found);
-      credit = s.capCredit;
+      // A run of more than 10 changes cost 2 credits (`unitsFor`, from the count asked for).
+      credit = unitsFor(n) === 2 ? s.capCredits2 : s.capCredit;
       link = s.capLink;
     } else {
       head = facts.reason === "offSet" ? s.setHead(facts.found, word)
         : facts.reason === "notOwned" ? s.ownedHead(facts.found, word)
           : s.aimHead(facts.found, word);
       body = facts.exhausted ? s.ownedExhaustedBody(n, facts.found) : s.bodyBound(n, facts.found);
-      credit = s.boundCredit;
+      credit = unitsFor(n) === 2 ? s.boundCredits2 : s.boundCredit;
       link = s.boundLink;
     }
   }

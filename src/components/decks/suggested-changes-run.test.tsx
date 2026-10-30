@@ -466,6 +466,21 @@ describe("the results", () => {
       .toContain(sc.results.roleHead(6, 10));
   });
 
+  it("a short run of 10 or fewer changes says 1 credit used, never 2", () => {
+    const report: ValidationReport = {
+      askedCount: 0, survivedCount: 0, keptCount: 0,
+      drops: Array.from({ length: 9 }, (_, i) => ({ side: "add" as const, position: i, rule: "overCap" as const })),
+      v2: {
+        requestHash: "h", restrictions: { capCents: 200, sets: [], ownedOnly: false }, in: { add: true, cut: true }, refilling: { add: false, cut: false },
+        shortReason: { add: "overCap", cut: null }, charge: { outcome: "spent" },
+      },
+    };
+    setup({ ask: ask(10, { restrictions: { capCents: 200, sets: [], ownedOnly: false } }), lines: [...adds(6), ...cuts(9)], report });
+    const short = document.querySelector("[data-sc-short]")!.textContent!;
+    expect(short).toContain(sc.short.capCredit);
+    expect(short).not.toContain(sc.short.capCredits2);
+  });
+
   it("draws a short run's count and what bound it, and every count follows the shorter list", () => {
     const report: ValidationReport = {
       askedCount: 0, survivedCount: 0, keptCount: 0,
@@ -477,7 +492,9 @@ describe("the results", () => {
     };
     setup({ ask: ask(20, { restrictions: { capCents: 200, sets: [], ownedOnly: false } }), lines: [...adds(14), ...cuts(21)], report });
     expect(document.querySelector("[data-sc-short]")!.textContent).toContain("Found 14 additions under your $2.00 cap");
-    expect(document.querySelector("[data-sc-short]")!.textContent).toContain(sc.short.capCredit);
+    // 20 asked is more than 10 changes: the run cost 2 credits, and the receipt says so.
+    expect(document.querySelector("[data-sc-short]")!.textContent).toContain(sc.short.capCredits2);
+    expect(document.querySelector("[data-sc-short]")!.textContent).not.toContain(sc.short.capCredit);
     expect(document.querySelector("[data-sc-lead]")!.textContent).toBe(sc.run.shortLead(14, 21, 14));
     expect(document.querySelector('[data-sc-chip="cut"]')!.textContent).toBe(sc.results.chosen(0, 14));
     expect(document.querySelector("[data-sc-asked]")!.textContent).toContain(sc.run.askedCap("$2.00"));

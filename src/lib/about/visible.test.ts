@@ -660,6 +660,17 @@ describe("deck-focus without Suggested changes", () => {
     expect(on.caption).toContain("“Suggested changes” aims at it");
     expect(on.keys).toContain("“Suggested changes” uses a credit, as it always has.");
   });
+
+  it("with Suggested changes v2 on, the credit key says 2 over 10 changes instead; off, it never says two", () => {
+    const V1 = "“Suggested changes” uses a credit, as it always has.";
+    const V2 = "“Suggested changes” uses a credit, or two for more than 10 changes.";
+    const v2 = entry({ ...ring, TUNING_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!;
+    expect(v2.keys).toContain(V2);
+    expect(v2.keys).not.toContain(V1);
+    const v1 = entry({ ...ring, TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!;
+    expect(v1.keys).toContain(V1);
+    expect(v1.keys).not.toContain(V2);
+  });
 });
 
 describe("push (close-out): each line follows the kind's own availability (`feedKindAvailable`)", () => {

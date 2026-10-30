@@ -1622,12 +1622,15 @@ export const aboutEntries: readonly AboutEntry[] = [
     captionLineSwitches: {
       'With a focus picked, “Suggested changes” aims at it: most of its additions count toward the focus, and each shows the count it moves. Add one and its arc grows.': 'TUNING_ENABLED',
     },
+    // A Suggested changes v2 run of more than 10 changes costs 2 (Hugh 2026-10-30): exactly one of the two credit keys draws.
     keySwitches: {
-      '“Suggested changes” uses a credit, as it always has.': 'TUNING_ENABLED',
+      '“Suggested changes” uses a credit, as it always has.': ['TUNING_ENABLED', '!SUGGESTED_CHANGES_V2_ENABLED'],
+      '“Suggested changes” uses a credit, or two for more than 10 changes.': 'SUGGESTED_CHANGES_V2_ENABLED',
     },
     keys: [
       'The ring and the focus are free.',
       '“Suggested changes” uses a credit, as it always has.',
+      '“Suggested changes” uses a credit, or two for more than 10 changes.',
       '“Keep it balanced” clears the focus.',
       'Lands aren’t counted, so a landfall deck reads its payoffs, not its lands.',
     ],

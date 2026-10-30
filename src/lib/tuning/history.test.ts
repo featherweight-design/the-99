@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   afterKey, decodeCursor, encodeCursor, historyPress, mergePage, RUN_TOOL_OF, parseHistoryId, pastCutChips, pastVerdict, runOutcome,
-  shapeCount, shapeRun, v2RunFacts, type HistoryRow, type RunRecord,
+  shapeCount, shapeRun, suggestedTier, v2RunFacts, type HistoryRow, type RunRecord,
 } from "./history";
 import { REAPER_CUTOFF_MS } from "./limits";
 
@@ -72,6 +72,16 @@ describe("a Suggested changes v2 run (History A)", () => {
     expect(shapeRun(run({ v2: true, ask: ask({ count: 10 }), items: items({ adds: 15, cuts: 8 }) }), now).outcome).toBe("short");
     expect(shapeRun(run({ v2: true, ask: ask({ cutsFailed: true }), items: items({ adds: 5, cuts: 0 }) }), now).outcome).toBe("short");
     expect(shapeRun(run({ v2: true, ask: ask({ count: 3 }), items: items({ adds: 3, cuts: 3 }) }), now).outcome).toBe("ok");
+  });
+
+  it("says 2 credits for a v2 run of more than 10 changes, 1 for 10 or fewer and for v10, refunded either way", () => {
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 10 }) }), now).tier).toBe("credit");
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 11 }) }), now).tier).toBe("credit2");
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 20 }), status: "pending", createdAt: ago(5000) }), now).tier).toBe("credit2");
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 20, refunded: true }), items: items({ adds: 8, cuts: 15 }) }), now).tier).toBe("refunded");
+    expect(shapeRun(run(), now).tier).toBe("credit");
+    expect(suggestedTier(null, false)).toBe("credit");
+    expect(suggestedTier(12, true)).toBe("refunded");
   });
 
   it("strikes the tier of a finished run that gave its credit back, never of one still running or failed", () => {

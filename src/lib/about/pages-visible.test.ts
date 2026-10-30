@@ -102,6 +102,7 @@ describe("Suggested changes v2 follows its own switch, and its parents'", () => 
     expect(label).toContain(V1);
     expect(label).not.toContain(V2);
     expect(label).not.toContain(OTHER_DECKS);
+    expect(label).not.toMatch(/\btwo\b|\b2\b/);
     const credits = textOf(PARENTS, "rule/credits")!;
     expect(credits).toContain("So does each Suggested changes run.");
     expect(credits).not.toContain(TWO);
@@ -114,6 +115,8 @@ describe("Suggested changes v2 follows its own switch, and its parents'", () => 
     expect(label).toContain(V2);
     expect(label).toContain(OTHER_DECKS);
     expect(label).not.toContain(V1);
+    // A v2 run of more than 10 changes costs 2 credits (Hugh 2026-10-30).
+    expect(label).toContain("Each run uses a credit, or two for more than 10 changes.");
     const credits = textOf(on, "rule/credits")!;
     expect(credits).toContain(REFUND);
     expect(credits).toContain(TWO);

@@ -130,6 +130,10 @@ describe("showcaseGroups", () => {
   it("Suggested changes v2 on: its chip says v2's cost (2 credits over 10 changes), every other chip unchanged", () => {
     const groups = showcaseGroups(input());
     expect(card(groups, "suggested-changes")!.credit).toBe(tuningHubCopy.tools.suggested.costV2);
+    expect(card(groups, "suggested-changes")!.copy.line).toBe(showcaseCopy.tools["suggested-changes"].lineWhen!.SUGGESTED_CHANGES_V2_ENABLED);
+    const off = showcaseGroups(input({ isOn: (name) => name !== "SUGGESTED_CHANGES_V2_ENABLED" }));
+    expect(card(off, "suggested-changes")!.copy.line).toBe(showcaseCopy.tools["suggested-changes"].line);
+    expect(card(off, "suggested-changes")!.copy.line).not.toMatch(/20/);
     for (const t of TOOLS) if (t.id !== "suggested-changes") expect(card(groups, t.id)!.credit).toBe(t.credit);
   });
 });

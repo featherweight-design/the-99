@@ -150,7 +150,9 @@ describe("TuningPanel with Suggested changes v2 on", () => {
     const date = localDay(at);
     const confirm = document.querySelector("[data-sc-same]") as HTMLElement;
     expect(confirm).not.toBeNull();
-    expect(confirm.textContent).toContain(sc.intake.same.body(date));
+    // The default count (3) is 10 or fewer changes: a new run uses a credit, never 2.
+    expect(confirm.textContent).toContain(sc.intake.same.body(date, 1));
+    expect(confirm.textContent).not.toContain("2 credits");
     // The confirm stands in for the action row: nothing reserved, nothing reading.
     expect(screen.queryByRole("button", { name: sc.intake.send })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: sc.intake.same.open(date) }));

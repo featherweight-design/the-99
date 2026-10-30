@@ -76,7 +76,9 @@ export const suggestedChangesV2Copy = {
     readsOverview: "the overview",
     lastRun: (date: string) => `Last run ${date} · History ›`,
     same: {
-      body: (date: string) => `Same request as your ${date} run, on the same list. A new run uses a credit and will likely name many of the same cards.`,
+      // `credits` is what the new run costs: 2 for more than 10 changes (`unitsFor`, Hugh 2026-10-30).
+      body: (date: string, credits: 1 | 2) =>
+        `Same request as your ${date} run, on the same list. A new run uses ${credits === 2 ? "2 credits" : "a credit"} and will likely name many of the same cards.`,
       again: "Run it again",
       open: (date: string) => `Open ${date}’s run`,
     },
@@ -203,6 +205,8 @@ export const suggestedChangesV2Copy = {
     capBody: (asked: number, dropped: number, cap: string, n: number) =>
       `You asked for ${asked}. The run named ${dropped} more that cost over ${cap} a card, so you can apply up to ${n} of each.`,
     capCredit: "1 credit used: your cap set the count",
+    // A run of more than 10 changes cost 2 (`unitsFor`, Hugh 2026-10-30).
+    capCredits2: "2 credits used: your cap set the count",
     capLink: "Raise the cap in a new run ›",
     // The other restrictions that can bind a list (spec §5.5), charged as the cap is.
     setHead: (found: number, side: string) => `Found ${found} ${side} in the sets you chose.`,
@@ -212,6 +216,7 @@ export const suggestedChangesV2Copy = {
     // Owned only, and every owned card that fits was used: the pool ran out, not the run.
     ownedExhaustedBody: (asked: number, n: number) => `You asked for ${asked}. That’s every card you own that fits, so you can apply up to ${n} of each.`,
     boundCredit: "1 credit used: your limits set the count",
+    boundCredits2: "2 credits used: your limits set the count",
     boundLink: "Change them in a new run ›",
     // Short-Run B, no restriction explains it (refunded).
     refundHead: (found: number, side: string) => `Found ${found} ${side}.`,

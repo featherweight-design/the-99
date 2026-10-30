@@ -51,6 +51,8 @@ import { bracketCard, noticedChips, pickIndex, usualFor, type BracketPick, type 
 import { useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { historyDay } from "./tuning-history";
+import { suggestedTier } from "../../lib/tuning/history";
+import { unitsFor } from "../../lib/tuning/v2/charge";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
 import { SuggestionLists } from "./suggestion-lists";
@@ -297,7 +299,8 @@ export function TuningPanel({
   // Moves on every intake edit, so a "same request" answer to a press made before the edit is dropped (review round 1).
   const intakeRev = useRef(0);
   // The last press answered "Same request as your Oct 26 run" (G4): nothing was reserved, and the action row asks.
-  const [same, setSame] = useState<{ runId: string; at: string; refunded?: boolean } | null>(null);
+  // `count`: the request's count, the same as the earlier run's (the request hash carries it), so its cost (`unitsFor`).
+  const [same, setSame] = useState<{ runId: string; at: string; refunded?: boolean; count: number } | null>(null);
   // Suggested changes v2's results stand in for the intake until `New run` (UI PR 6); a press goes back to the results.
   const [newRun, setNewRun] = useState(false);
   // A run History opens (or leaves) is drawn, whatever an earlier `New run` left open.
@@ -953,8 +956,8 @@ export function TuningPanel({
       if (isSameRequest(answer)) {
         // The player edited the intake while the press was out: the answer names a request no longer on screen.
         if (intakeRev.current !== rev) return;
-        setSame({ runId: answer.runId, at: answer.at, refunded: answer.refunded === true });
-        setAnnounced(v2Copy.intake.same.body(localDay(new Date(answer.at))));
+        setSame({ runId: answer.runId, at: answer.at, refunded: answer.refunded === true, count: v2Opts.requestedCount });
+        setAnnounced(v2Copy.intake.same.body(localDay(new Date(answer.at)), unitsFor(v2Opts.requestedCount)));
         return;
       }
       setSame(null);
@@ -1498,11 +1501,12 @@ export function TuningPanel({
       {v2RunView ? null : !reading && v2 && same ? (
         <SameRequestConfirm
           at={same.at}
+          count={same.count}
           // Off 99 (or with no credit) a run would be refused: held off with Send, the confirm kept so its question
           // stands when the deck is back at 99.
           onAgain={() => { if (!sendOff) void pressV2(true); }}
           againOff={sendOff}
-          onOpen={openRun ? () => openRun("suggested", same.runId, same.at, same.refunded ? "refunded" : "credit") : null}
+          onOpen={openRun ? () => openRun("suggested", same.runId, same.at, suggestedTier(same.count, same.refunded === true)) : null}
         />
       ) : (
       <div
