@@ -71,3 +71,8 @@ option taken. Nothing below blocks the build; each open item has a drawn default
   clause, then bold Push and its clause while the column stands, then "No email, ever." The retired keys
   (`feedCopy.news.foot` as a string, `pushSettingsCopy.footCant`) had no other reader.
 - No switch: the rework is layout only and ships unswitched, as item 4 implies (it names none).
+
+Ruled 2026-10-30 (Hugh, through the orchestrator): the rework ships with the app's shared toast and shared `Checkbox`,
+unchanged. The board's failed-save toast (danger dot, close ✕, its own radius, gap, padding and shadow) and its checkbox
+`line-height: 1` differ from those shared components; whether that look should apply app-wide is a Design note, not
+this PR.
