@@ -758,7 +758,6 @@ export default async function DeckBuilderPage({
       // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips
       // the parameter, so a refresh lands on the deck alone.
       openNoticesOnArrival={showNotices && readNoticesArrival(query[NOTICES_PARAM])}
-      // Locked (PR 4a): off, no lock control, mark or key entry draws, and the page is main's.
       storedPermits={storedBracket}
       storedPermitsUnknown={storedRead === undefined}
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
