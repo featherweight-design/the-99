@@ -13,6 +13,7 @@
  * - a seat that arrived from a Rule 0 table (plan §PR 8) is sent as its NUMBER alone, and the server reads who sat
  *   there (decision 5); any edit but a winner mark turns it into an ordinary seat, which leaves the table path.
  */
+import type { ThirdPartyName } from "../person-name/brand";
 import type { TablePrefill } from "../social/rule-zero-log";
 import type { OpponentInput } from "./game-opponents";
 import type { OpponentCommanderHit } from "./opponent-commanders";
@@ -21,7 +22,7 @@ import type { OpponentCommanderHit } from "./opponent-commanders";
 export type SeatCommander = Pick<OpponentCommanderHit, "oracleId" | "name" | "imageUri">;
 
 /** A friend at a seat: their `publicId` is what is sent, and their name is what the seat is called. */
-export type SeatFriend = { publicId: string; name: string };
+export type SeatFriend = { publicId: string; name: string | ThirdPartyName };
 
 export type Seat = {
   /** A client key, stable while the seat lives and meaningless after: never sent. */
@@ -74,7 +75,7 @@ export const seatedFriends = (seats: readonly Seat[], except: string | null): Se
 export const POD_SIZE_MIN = 2;
 export const POD_SIZE_MAX = 8;
 
-export type PodFill = { podSize: number; add: SeatFriend[]; unseated: string[] };
+export type PodFill = { podSize: number; add: SeatFriend[]; unseated: Array<string | ThirdPartyName> };
 
 /**
  * One press of a Seat a pod chip (plan note 2). The pod's member count (the player included) is the pod size, held

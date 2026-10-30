@@ -1,6 +1,7 @@
 // A friend's deck, read-only (friend decks handoff, board 1 and States): the precon page's anatomy over the owner's list,
 // with the viewer's ownership, the back link to the friend's decks, the owner's printing for card details, and none of
 // the owner's money or plans.
+import { named } from "../../lib/person-name/mint";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FriendDeckCard, FriendDeckPage } from "../../lib/social/decks";
@@ -43,7 +44,7 @@ const DECK: FriendDeckPage = {
   colorIdentity: ["U"], artCropUri: null, built: 29, bodySize: 99,
   shares: [{ deckId: "v1", deckName: "Thopter Works", shared: 38, sameCommanders: true }],
 };
-const FRIEND = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Colin", commander: null };
+const FRIEND = { publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Colin"), commander: null };
 const draw = (deck: FriendDeckPage = DECK) => render(<FriendDeckView deck={deck} friend={FRIEND} />);
 
 afterEach(cleanup);

@@ -4,6 +4,8 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FriendsList } from "./friends-list";
 import { socialCopy } from "../../lib/copy/social";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 vi.mock("next/link", () => ({
@@ -11,7 +13,7 @@ vi.mock("next/link", () => ({
 }));
 
 const f = socialCopy.friends;
-const COLIN = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Colin", since: new Date("2026-10-02T12:00:00Z"), commander: null };
+const COLIN = { publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Colin"), since: new Date("2026-10-02T12:00:00Z"), commander: null };
 const draw = (linkable?: boolean) => render(
   <FriendsList friends={[COLIN]} now={new Date("2026-10-15T12:00:00Z")} timeZone="UTC" fresh={null} removing={null} onRemove={vi.fn()} linkable={linkable} />,
 );
@@ -21,10 +23,14 @@ describe("FriendsList rows", () => {
   it("link to the friend's page with a › before the … menu while the wishlist is on", () => {
     draw(true);
     const row = screen.getByRole("listitem");
-    const link = within(row).getByRole("link", { name: f.openAria("Colin") });
+    const link = within(row).getByRole("link", { name: plain(f.openAria(named("Colin"))) });
     expect(link.getAttribute("href")).toBe(`/friends/${COLIN.publicId}`);
-    const menu = within(row).getByRole("button", { name: f.menuAria("Colin") });
+    // The name is another reader's: the link, its name and the menu button all carry the PostHog opt-out.
+    expect(link.className).toContain("ph-no-capture");
+    expect(within(link).getByText("Colin").className).toBe("ph-no-capture");
+    const menu = within(row).getByRole("button", { name: plain(f.menuAria(named("Colin"))) });
     expect(link.contains(menu)).toBe(false);
+    expect(menu.className).toContain("ph-no-capture");
     const chevron = within(row).getByText("›");
     expect(chevron.compareDocumentPosition(menu) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(row).getByText(f.since("Oct 2")).className).toContain("hidden md:inline");
@@ -32,7 +38,7 @@ describe("FriendsList rows", () => {
 
   it("raises an open … menu above the rows after it", async () => {
     draw(true);
-    const button = screen.getByRole("button", { name: f.menuAria("Colin") });
+    const button = screen.getByRole("button", { name: plain(f.menuAria(named("Colin"))) });
     const wrapper = button.parentElement as HTMLElement;
     expect(wrapper.style.zIndex).toBe("");
     fireEvent.click(button);
@@ -45,6 +51,6 @@ describe("FriendsList rows", () => {
     expect(within(row).queryByRole("link")).toBeNull();
     expect(within(row).queryByText("›")).toBeNull();
     expect(within(row).getByText(f.since("Oct 2")).className).not.toContain("hidden");
-    expect(within(row).getByRole("button", { name: f.menuAria("Colin") })).toBeTruthy();
+    expect(within(row).getByRole("button", { name: plain(f.menuAria(named("Colin"))) })).toBeTruthy();
   });
 });

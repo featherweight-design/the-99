@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { named } from "../../lib/person-name/mint";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 const actions = vi.hoisted(() => ({ createInviteAction: vi.fn() }));
@@ -31,7 +32,7 @@ const { FirstRunChecklist } = await import("./first-run");
 
 const NOW = "2026-10-16T12:00:00.000Z";
 const inDays = (d: number) => new Date(Date.parse(NOW) + d * 86_400_000);
-const friend = (name: string) => ({ publicId: `pub-${name}`, displayName: name, commander: null });
+const friend = (name: string) => ({ publicId: `pub-${name}`, displayName: named(name), commander: null });
 const link = (expiresAt: Date, token = "t1") => ({ token, createdAt: new Date(NOW), expiresAt });
 const props = (over: Partial<FirstRunFriendsProps> = {}): FirstRunFriendsProps => ({ friends: [], links: [], now: NOW, invites: null, ...over });
 const c = socialCopy.checklist;

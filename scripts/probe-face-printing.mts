@@ -85,7 +85,7 @@ async function main() {
     check("a second Skip writes nothing", !(await prompt.skipFacePrompt(B)));
 
     // 2. Art with no pick: the card's own.
-    const seen = async () => (await friends.loadFriendsAndLinks(B)).friends.find((f) => f.displayName === "Alice")?.commander ?? null;
+    const seen = async () => (await friends.loadFriendsAndLinks(B)).friends.find((f) => JSON.stringify(f.displayName) === JSON.stringify({ $tp: "Alice" }))?.commander ?? null;
     check("with no printing chosen the face draws the card's own art", (await seen())?.artCropUri === land.art, String((await seen())?.artCropUri));
 
     // 3. A printing of that card.

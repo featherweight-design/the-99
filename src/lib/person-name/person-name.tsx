@@ -68,6 +68,12 @@ export function compareNames(
   return str(a).localeCompare(str(b), locales, options);
 }
 
+/** Whether a name contains `query` (a typed filter), case-insensitively: read here, never left behind as a string. */
+export function nameIncludes(n: string | ThirdPartyName, query: string, locale = "en-US"): boolean {
+  const str = typeof n === "string" ? n : reveal(n);
+  return str.toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale));
+}
+
 /** An identity for a list of names (an effect's dependency): compared, never drawn. */
 export function namesKey(names: ReadonlyArray<string | ThirdPartyName>): string {
   return names.map((n) => (typeof n === "string" ? n : reveal(n))).join("\u0000");

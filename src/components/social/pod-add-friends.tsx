@@ -15,6 +15,7 @@ import { SocialModal } from "./social-modal";
 import { useFriendInvite } from "./invite-context";
 import { ACCENT_BUTTON } from "./friends-head";
 import { Checkbox } from "../ui/checkbox";
+import { PersonName } from "../../lib/person-name";
 
 const copy = socialCopy.pods;
 
@@ -90,7 +91,7 @@ export function PodAddFriends({
                 <Checkbox checked={ticked.has(f.publicId)} onChange={() => toggle(f.publicId)} />
                 <Face name={f.displayName} commander={f.commander} size={40} />
                 <span className="flex min-w-0 flex-col gap-[1px]">
-                  <span className="truncate">{f.displayName}</span>
+                  <span className="truncate"><PersonName n={f.displayName} /></span>
                   {f.commander ? <span className="truncate text-[12px] text-[color:var(--fg-muted)]">{f.commander.name}</span> : null}
                 </span>
               </label>

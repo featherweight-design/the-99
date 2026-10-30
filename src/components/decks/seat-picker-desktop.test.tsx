@@ -3,10 +3,13 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
+import type { ThirdPartyName } from "../../lib/person-name";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 import { SeatPicker } from "./seat-picker";
 
 vi.mock("../ui/use-is-desktop", () => ({ useIsDesktop: () => true }));
-const friends = vi.hoisted(() => ({ list: [] as { publicId: string; displayName: string; commanderArt: string | null; deckCount: number; withheld?: boolean }[] }));
+const friends = vi.hoisted(() => ({ list: [] as { publicId: string; displayName: ThirdPartyName; commanderArt: string | null; deckCount: number; withheld?: boolean }[] }));
 vi.mock("../../app/decks/[id]/opponent-actions", () => ({
   searchOpponentCommandersAction: async () => [],
   listPickerFriendsAction: async () => friends.list,
@@ -65,7 +68,7 @@ describe("SeatPicker at desktop width", () => {
   });
 
   it("keeps the friend's header outside the scroll body and the foot inside it, on a friend's decks", async () => {
-    friends.list = [{ publicId: "p1", displayName: "Rowan", commanderArt: null, deckCount: 0 }];
+    friends.list = [{ publicId: "p1", displayName: named("Rowan"), commanderArt: null, deckCount: 0 }];
     const anchor = document.createElement("button");
     document.body.appendChild(anchor);
     render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={() => {}} seated={new Set()} openAt={{ publicId: "p1", name: "Rowan" }} />);
@@ -73,14 +76,30 @@ describe("SeatPicker at desktop width", () => {
     const back = await screen.findByRole("button", { name: gameSeatsCopy.picker.back, hidden: true });
     const body = bodyOf(dialog);
     expect(body.contains(back)).toBe(false);
-    const foot = await screen.findByText(gameSeatsCopy.picker.footNoDecks("Rowan"));
+    const foot = await screen.findByText(plain(gameSeatsCopy.picker.footNoDecks(named("Rowan"))));
+    // The friend's name is another reader's: the foot that carries it opts out of autocapture on its own span.
+    expect(foot.className).toBe("ph-no-capture");
     expect(body.contains(foot)).toBe(true);
     expect(body.contains(dialog.querySelector("ul"))).toBe(true);
     anchor.remove();
   });
 
+  it("marks a friend's name on the list row and in the header, each on the element that holds it", async () => {
+    friends.list = [{ publicId: "p1", displayName: named("Rowan"), commanderArt: null, deckCount: 2 }];
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    const { unmount } = render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={() => {}} seated={new Set()} />);
+    const row = (await screen.findByText("Rowan", { selector: ".ph-no-capture" })).closest("button")!;
+    expect(row.textContent).toContain("RO");
+    unmount();
+    render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={() => {}} seated={new Set()} openAt={{ publicId: "p1", name: named("Rowan") }} />);
+    const heading = await screen.findByRole("heading", { level: 3, name: plain(gameSeatsCopy.picker.theirDecks(named("Rowan"))), hidden: true });
+    expect(heading.querySelector(".ph-no-capture")?.textContent).toBe(plain(gameSeatsCopy.picker.theirDecks(named("Rowan"))));
+    anchor.remove();
+  });
+
   it("gives the three rows under a friend's decks the dashed slot: ?, the search glyph, the friend's initials", async () => {
-    friends.list = [{ publicId: "p1", displayName: "Peter Quill", commanderArt: null, deckCount: 0, withheld: true }];
+    friends.list = [{ publicId: "p1", displayName: named("Peter Quill"), commanderArt: null, deckCount: 0, withheld: true }];
     const anchor = document.createElement("button");
     document.body.appendChild(anchor);
     render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={() => {}} seated={new Set()} openAt={{ publicId: "p1", name: "Peter Quill" }} />);

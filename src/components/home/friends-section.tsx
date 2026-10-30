@@ -14,6 +14,7 @@
 
 import Link from "next/link";
 import { socialCopy } from "../../lib/copy/social";
+import { PersonName, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { madeWhen, underADay } from "../../lib/social/when";
 import type { ProfileCommander } from "../../lib/social/commander";
 import type { InviteCount } from "../../lib/invites/rules";
@@ -27,7 +28,7 @@ export const SEATS = 5;
 
 export type FriendsSectionProps = {
   you: { displayName: string; commander: ProfileCommander | null } | null;
-  friends: { publicId: string; displayName: string; commander: ProfileCommander | null }[];
+  friends: { publicId: string; displayName: ThirdPartyName; commander: ProfileCommander | null }[];
   links: { token: string; createdAt: Date; expiresAt: Date }[];
   /** The render's one clock, from the server. */
   now: string;
@@ -89,13 +90,15 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, i
           <li key={f.publicId} className="flex w-[56px] flex-none flex-col items-center min-[1180px]:w-[52px]">
             <Link
               href={faceHref(f.publicId)}
-              aria-label={socialCopy.friends.openAria(f.displayName)}
-              className="flex min-h-[64px] w-full flex-col items-center gap-[6px] no-underline min-[1180px]:min-h-0"
+              {...personAttrs(
+                { "aria-label": socialCopy.friends.openAria(f.displayName) },
+                "flex min-h-[64px] w-full flex-col items-center gap-[6px] no-underline min-[1180px]:min-h-0",
+              )}
             >
               <PendingReporter href={faceHref(f.publicId)} />
               <Face name={f.displayName} commander={f.commander} size={40} />
               <span aria-hidden className="max-w-[50px] overflow-hidden text-ellipsis whitespace-nowrap text-[11.5px] text-[color:var(--fg-body)] min-[1180px]:max-w-[46px]">
-                {f.displayName}
+                <PersonName n={f.displayName} />
               </span>
             </Link>
           </li>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { PersonText, type PersonParts } from "../../lib/person-name";
 
 /**
  * The delete confirm pane: a heading naming the thing, the sentence saying what goes and what does
@@ -25,8 +26,9 @@ export function DeleteConfirm({
   onConfirm,
   phoneTall = false,
 }: {
-  heading: string;
-  body: string;
+  /** `PersonParts` when it names another reader (a friend): drawn marked. */
+  heading: string | PersonParts;
+  body: string | PersonParts;
   cancelLabel: string;
   confirmLabel: string;
   /** Drawn on the confirm while the action is in flight; the confirm label when omitted. */
@@ -59,12 +61,12 @@ export function DeleteConfirm({
           against an unbroken run, and the pane can hang inside a clipped box (the deck tile's art
           band). Two lines name anything a player can tell apart; three clipped the heading of a pane that exists to say WHICH thing is going. */}
       <p className="m-0 line-clamp-2 shrink-0 px-[12px] pt-[12px] font-display text-[14px] font-semibold break-words text-[color:var(--fg)]">
-        {heading}
+        <PersonText text={heading} />
       </p>
       <div data-delete-confirm-body className="min-h-0 overflow-y-auto px-[12px] pt-[10px] pb-[12px]">
       <div className="flex flex-col gap-[10px]">
       {/* `[overflow-wrap:anywhere]`: a body can name a person, and a name may be one unbroken run. */}
-      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{body}</p>
+      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]"><PersonText text={body} /></p>
       {error && (
         <p role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
           {error}

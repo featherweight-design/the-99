@@ -16,6 +16,7 @@ vi.mock("../push/push-landing", () => ({ PushLanding: () => <i data-push-landing
 import { Dashboard } from "./dashboard";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { CommanderListItem } from "../../lib/recs/recommend";
+import { named } from "../../lib/person-name/mint";
 
 const NOW = "2026-10-22T12:00:00.000Z";
 const READY = {
@@ -33,7 +34,7 @@ const BASE = {
   shopping: { byDeck: new Map(), total: { copies: 18, cents: 9480, pricedCopies: 18 } },
   friends: {
     you: { displayName: "Hugh", commander: null },
-    friends: [{ publicId: "p1", displayName: "Colin", commander: { oracleId: "x", name: "X", artCropUri: "colin.jpg" } }],
+    friends: [{ publicId: "p1", displayName: named("Colin"), commander: { oracleId: "x", name: "X", artCropUri: "colin.jpg" } }],
     links: [],
     games: false,
     friendPages: true,

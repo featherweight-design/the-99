@@ -4,6 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
+import { named } from "../person-name/mint";
 
 const m = vi.hoisted(() => ({
   resolveFriend: vi.fn(),
@@ -61,7 +62,7 @@ describe("listFriendDecks", () => {
 });
 
 describe("listPickerFriends", () => {
-  const friend = (publicId: string, displayName: string) => ({ publicId, displayName, since: new Date(), commander: null });
+  const friend = (publicId: string, displayName: string) => ({ publicId, displayName: named(displayName), since: new Date(), commander: null });
 
   it("tells the picker each friend's visible count and whether their rules apply, by that friend's switch", async () => {
     m.listFriends.mockResolvedValue([friend("p-on", "Dave"), friend("p-off", "Jo"), friend("p-none", "Lee")]);
@@ -72,9 +73,9 @@ describe("listPickerFriends", () => {
     m.resolveSwitchEnv.mockImplementation(async (id: string) => (id === "u-on" ? ON : {}));
     const out = await listPickerFriends(VIEWER);
     expect(out).toEqual([
-      { publicId: "p-on", displayName: "Dave", commanderArt: null, deckCount: 2, withheld: true },
-      { publicId: "p-off", displayName: "Jo", commanderArt: null, deckCount: 3, withheld: false },
-      { publicId: "p-none", displayName: "Lee", commanderArt: null, deckCount: 0, withheld: false },
+      { publicId: "p-on", displayName: named("Dave"), commanderArt: null, deckCount: 2, withheld: true },
+      { publicId: "p-off", displayName: named("Jo"), commanderArt: null, deckCount: 3, withheld: false },
+      { publicId: "p-none", displayName: named("Lee"), commanderArt: null, deckCount: 0, withheld: false },
     ]);
     // The owner's account id is for the switch, never for the client.
     expect(JSON.stringify(out)).not.toMatch(/u-on|u-off/);

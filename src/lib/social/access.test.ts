@@ -2,6 +2,7 @@
 // statement. Only the emitted SQL can show that (the `built.test.ts` precedent), so each read's
 // qualified join and viewer predicate are asserted here, and `probe:social` proves the answers.
 import { describe, expect, it } from "vitest";
+import { named } from "../person-name/mint";
 import { friendQuery, friendsQuery, loadFriend, podMembersQuery, resolveFriend, resolveFriendQuery, shapePod, sortFriends, viewerPodsQuery } from "./access";
 
 const VIEWER = "user_viewer";
@@ -38,7 +39,7 @@ describe("access reads", () => {
     chain.then = (resolve: (v: unknown) => void) => resolve([row]);
     const reader = { select: () => chain } as never;
     await expect(loadFriend(VIEWER, row.publicId, reader)).resolves.toEqual({
-      publicId: row.publicId, displayName: "Bob", since,
+      publicId: row.publicId, displayName: named("Bob"), since,
       commander: { oracleId: row.commanderOracleId, name: "Kilo", artCropUri: "art.jpg" },
     });
     chain.then = (resolve: (v: unknown) => void) => resolve([]);
