@@ -1455,7 +1455,8 @@ export function TuningPanel({
           the limits box, since its text becomes a checklist row instead. */}
       {reading || v2 ? null : (
         <div className="mt-[16px] md:mt-[18px]">
-          <TuningNotesField value={notes} onChange={changeNotes} />
+          {/* The foot words are deliberately shared with the Suggested changes request box (suggestedChangesV2Copy.intake.request.tagHelp). */}
+          <TuningNotesField value={notes} onChange={changeNotes} tagHelp={suggestedChangesV2Copy.intake.request.tagHelp} labelRow />
         </div>
       )}
 

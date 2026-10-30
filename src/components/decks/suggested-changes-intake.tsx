@@ -120,7 +120,6 @@ export function SuggestedChangesIntake({
                 label={copy.request.title}
                 placeholder={copy.request.placeholder}
                 tagHelp={copy.request.tagHelp}
-                framed
                 fill
                 highlightTail={tail}
               />

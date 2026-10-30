@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveDeckLimits } from "../../app/decks/tuning-actions";
@@ -1270,6 +1270,30 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
   it("mounts the field above the action row, hidden while reading", async () => {
     await draw(deps([fresh]));
     expect(screen.getByLabelText("Additional notes")).toBeInTheDocument();
+  });
+
+  // Hugh, 2026-10-29: the box takes Suggested changes' framed foot (the `[[ ]]` button, "tag a card", the counter).
+  it("draws the framed foot Suggested changes uses: the tag button, its words and the counter", async () => {
+    await draw(deps([fresh]));
+    const frame = screen.getByLabelText("Additional notes").closest("[data-framed-box]") as HTMLElement;
+    expect(frame).not.toBeNull();
+    expect(within(frame).getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
+    expect(within(frame).getByText("tag a card")).toBeInTheDocument();
+    expect(within(frame).getByText("0 / 500")).toBeInTheDocument();
+  });
+
+  it("keeps its visible label and the card-tag tip above the frame", async () => {
+    await draw(deps([fresh]));
+    const box = screen.getByLabelText("Additional notes");
+    expect(document.querySelector(`label[for="${box.id}"]`)).toHaveTextContent("Additional notes");
+    const tip = document.querySelector(`button[aria-describedby="${box.id}-info"]`);
+    expect(tip).not.toBeNull();
+    expect(box).toHaveAttribute("aria-describedby", `${box.id}-info`);
+    const frame = document.querySelector("[data-framed-box]");
+    const label = document.querySelector(`label[for="${box.id}"]`);
+    expect(frame).not.toBeNull();
+    expect(label!.compareDocumentPosition(frame!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(tip!.compareDocumentPosition(frame!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   // "Additional notes" (H35, PR 4b): the typed text rides into the run it starts.
