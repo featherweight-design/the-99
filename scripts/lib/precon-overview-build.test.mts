@@ -127,6 +127,16 @@ describe("runBuild", () => {
     expect(r.failed).toEqual([]);
   });
 
+  it("stores the first answer when its advisory-only repair comes back with a refused section", async () => {
+    // job("a", ..., "ok", "refused"): the first answer passes, the repair answers "refused" (the merge reads it as refused).
+    const j = { ...job("a", 100, "ok", "refused"), extra: (_c: CheckedSynopsis, v: string) => (v === "ok" ? ["overview" as const] : []), settle: (c: CheckedSynopsis) => c } as Job<string>;
+    const { send } = sender([j], 40);
+    const stored: string[] = [];
+    const r = await runBuild({ jobs: [j], send, capMicro: 1_000, store: async (s) => { stored.push(s.file); }, log: () => {} });
+    expect(stored).toEqual(["a"]);
+    expect(r.failed).toEqual([]);
+  });
+
   it("stores the first answer when its advisory-only repair cannot be prepared", async () => {
     const j = { ...job("a", 100, "ok"), extra: () => ["keyCards" as const], settle: (c: CheckedSynopsis) => c, repair: async () => { throw new Error("count_tokens 503"); } } as Job<string>;
     const { send } = sender([j], 1);
