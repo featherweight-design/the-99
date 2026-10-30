@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ASK_PER_LIST } from "./limits";
+import { askFor, MAX_COUNT, schemaCapFor } from "./v2/count";
 
 /**
  * The shape a model reply must have. Handed to the client as the structured-output format, so
@@ -34,10 +35,8 @@ export const tuningResponseSchema = z.object({
 export type TuningResponse = z.infer<typeof tuningResponseSchema>;
 
 /**
- * Suggested changes v2's reply shape (spec 2026-10-27 §5.2, §5.3). The ask scales with the player's count, so the
- * schema is built per run: each list's cap is LOOSE, twice the ask (`schemaCapFor`), because a strict cap rejected the
- * whole reply for one card too many (6 of 20 misses in the count-mechanism eval). The app keeps the first ask-many valid
- * lines. The run's typed words are the REQUEST in v2, cited as `request`; the v10 schema above keeps `notes` unchanged.
+ * Suggested changes v2's reply shape (spec 2026-10-27 §5.2, §5.3). The run's typed words are the REQUEST in v2, cited
+ * as `request`; the v10 schema above keeps `notes` unchanged.
  */
 export const citationSchemaV2 = z.object({
   kind: z.enum(["games", "note", "decklist", "intent", "mix", "request", "focus"]),
@@ -46,10 +45,21 @@ export const citationSchemaV2 = z.object({
 
 export const lineSchemaV2 = lineSchema.extend({ evidence: z.array(citationSchemaV2).min(1).max(4) });
 
-/** One list of a v2 reply: the two-call flow asks for additions and cuts in separate calls (§5.1). */
-export function suggestedChangesV2Schema<L extends "additions" | "cuts">(cap: number, list: L) {
-  return z.object({ [list]: z.array(lineSchemaV2).max(cap) } as { [K in L]: z.ZodArray<typeof lineSchemaV2> });
-}
+/**
+ * One list of a v2 reply, and the SAME schema for every call of a run: additions, cuts and both refills (§5.1). The
+ * structured-output format is part of Anthropic's prompt-cache key, so a schema that varied by call (a per-list key, a
+ * per-ask cap) meant the cut call and the refills never read the prefix the additions call cached (measured: 4,713 cached
+ * tokens read with the same schema, none with the cut call's). So the key is neutral, `lines` (the step's text says
+ * whether they are cards to add or to cut; the side comes from the stage, never the key), and the cap is fixed at the
+ * largest any call asks: twice N=20's ask (`schemaCapFor(askFor(MAX_COUNT))`, 60). The cap stays LOOSE because a strict
+ * one rejected the whole reply for one card too many (6 of 20 misses in the count-mechanism eval); the engine keeps the
+ * first ask-many valid lines of each call (`caps`, `overAsk`).
+ */
+export const suggestedChangesV2ReplySchema = z.object({
+  lines: z.array(lineSchemaV2).max(schemaCapFor(askFor(MAX_COUNT))),
+});
+
+export type SuggestedChangesV2Reply = z.infer<typeof suggestedChangesV2ReplySchema>;
 /** One card the model named, to add or to cut: either contract's line (v2 cites `request` where v10 cites `notes`). */
 export type TuningLine = Omit<z.infer<typeof lineSchema>, "evidence"> & {
   evidence: (z.infer<typeof citationSchema> | z.infer<typeof citationSchemaV2>)[];

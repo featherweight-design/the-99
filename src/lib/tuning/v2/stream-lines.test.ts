@@ -7,7 +7,7 @@ const lines = [
   { card: "Brainstorm", rationale: "Back\\slash \\\" and } and ] in text", rationaleShort: "Draw", evidence: [{ kind: "mix", value: "draw 4 of 10" }] },
   { card: "Swords to Plowshares", rationale: "Unicode — dash, {nested: [braces]}", rationaleShort: "Removal", evidence: [] },
 ];
-const reply = JSON.stringify({ additions: lines }, null, 1);
+const reply = JSON.stringify({ lines }, null, 1);
 
 /** Feeds `text` cut at the given positions, returning every line in arrival order with the delta index it arrived on. */
 function feed(text: string, cuts: number[]) {
@@ -50,13 +50,13 @@ describe("lineStream", () => {
 
   it("reports a reply stopped inside a string incomplete", () => {
     const s = lineStream();
-    s.push('{"cuts":[]');
+    s.push('{"lines":[]');
     s.push(', "x": "open');
     expect(s.end().complete).toBe(false);
   });
 
   it("counts a line that does not parse and still hands back the lines around it", () => {
-    const bad = `{"cuts":[${JSON.stringify(lines[0])},{"card": tru},${JSON.stringify(lines[2])}]}`;
+    const bad = `{"lines":[${JSON.stringify(lines[0])},{"card": tru},${JSON.stringify(lines[2])}]}`;
     const { got, end } = feed(bad, [7, 40]);
     expect(got.map((g) => g.line)).toEqual([lines[0], lines[2]]);
     expect(end).toEqual({ complete: true, malformed: 1 });
@@ -64,13 +64,13 @@ describe("lineStream", () => {
 
   it("trusts nothing after an unbalanced close", () => {
     const s = lineStream();
-    expect(s.push(`{"cuts":[}${JSON.stringify(lines[0])}]}`)).toEqual([]);
+    expect(s.push(`{"lines":[}${JSON.stringify(lines[0])}]}`)).toEqual([]);
     expect(s.end().complete).toBe(false);
   });
 
   it("hands back nothing for an empty list, which is a complete reply", () => {
-    expect(feed('{"additions": []}', [3]).got).toEqual([]);
-    expect(feed('{"additions": []}', [3]).end).toEqual({ complete: true, malformed: 0 });
+    expect(feed('{"lines": []}', [3]).got).toEqual([]);
+    expect(feed('{"lines": []}', [3]).end).toEqual({ complete: true, malformed: 0 });
   });
 
   it("does not take an object nested inside a line as a line of its own", () => {

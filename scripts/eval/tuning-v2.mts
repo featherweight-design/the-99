@@ -229,7 +229,7 @@ function score() {
   if (!existsSync(ROWS)) return log(`no rows at ${ROWS}; nothing to score`);
   const rows = readFileSync(ROWS, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Row);
   type Line = { card: string; rationale: string; rationaleShort: string; evidence: { kind: string; value: string }[] };
-  const cutLines = rows.flatMap((r) => r.calls.filter((c) => c.stage.startsWith("cuts") && c.raw).flatMap((c) => ((c.raw as { cuts: Line[] }).cuts ?? []).map((line) => ({ r, line }))));
+  const cutLines = rows.flatMap((r) => r.calls.filter((c) => c.stage.startsWith("cuts") && c.raw).flatMap((c) => ((c.raw as { lines?: Line[]; cuts?: Line[] }).lines ?? (c.raw as { cuts?: Line[] }).cuts ?? []).map((line) => ({ r, line }))));
   const claims = ({ r, line }: { r: Row; line: Line }, allowStronger: boolean) =>
     [line.rationale, line.rationaleShort, ...line.evidence.map((e) => e.value)]
       .some((t) => presentationFailures(t, r.quotables ?? [], { allowStronger }).broken.includes("noResultClaim"));

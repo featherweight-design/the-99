@@ -4,11 +4,11 @@ import type { ModelErrorClass, ModelUsage } from "../../model/client";
 import type { EvidencePack } from "../evidence";
 import { buildPromptV2, type PromptV2Stage } from "../prompt";
 import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "../limits";
-import { lineSchemaV2, suggestedChangesV2Schema } from "../response-schema";
+import { lineSchemaV2, suggestedChangesV2ReplySchema } from "../response-schema";
 import { quotableOf, validateSuggestions, type Drop, type ResolvedCard, type ValidatedSuggestion } from "../validate";
 import { aimDrops, type BracketAim } from "./bracket-aim";
 import { chargeFor, type Charge } from "./charge";
-import { askFor, cutPlanFor, replyCeilingFor, schemaCapFor } from "./count";
+import { askFor, cutPlanFor, replyCeilingFor } from "./count";
 import { reasonFor, refillShortfall } from "./refill";
 import { lineStream } from "./stream-lines";
 import { asksWhy, buildWhyPrompt, checkWhy, WHY_EFFORT, WHY_MODEL, WHY_REPLY_TOKENS, whySchema, type V2Why } from "./why";
@@ -269,7 +269,8 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     const t = now();
     const call = args.callModel({
       stage, ask: prompt.ask, system, cachedUser, user,
-      schema: suggestedChangesV2Schema(schemaCapFor(prompt.ask), prompt.list),
+      // One schema for all four calls: it is part of the prompt-cache key (`suggestedChangesV2ReplySchema`).
+      schema: suggestedChangesV2ReplySchema,
       maxTokens: replyCeilingFor(prompt.ask),
       deadlineMs,
       stream: true,

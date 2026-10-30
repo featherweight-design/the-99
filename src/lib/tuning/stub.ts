@@ -72,7 +72,7 @@ export function stagedStubOutcome(
     const deltas = (async function* () {
       try {
         if (!refill) await sleep(delay);
-        yield `{"${list}":[`;
+        yield `{"lines":[`;
         for (let i = 0; i < cards.length; i++) {
           if (i > 0) await sleep(Math.round(delay / 5));
           yield `${i > 0 ? "," : ""}${line(cards[i])}`;

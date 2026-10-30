@@ -40,12 +40,12 @@ describe("the staged v2 stub (plan PR 3)", () => {
     const slept: number[] = [];
     const stub = stagedStubOutcome({ TUNING_V2_STUB_DELAY_MS: "1000" }, names, async (ms) => { slept.push(ms); })!;
     const adds = stub({ stage: "additions", ask: 2 });
-    expect(JSON.parse(await drain(adds.deltas)).additions.map((l: { card: string }) => l.card)).toEqual(["Mind Stone", "Arcane Signet"]);
+    expect(JSON.parse(await drain(adds.deltas)).lines.map((l: { card: string }) => l.card)).toEqual(["Mind Stone", "Arcane Signet"]);
     expect(await adds.outcome).toEqual({ ok: true });
     expect(slept).toEqual([1000, 200]);
-    expect(JSON.parse(await drain(stub({ stage: "cuts", ask: 5 }).deltas)).cuts.map((l: { card: string }) => l.card)).toEqual(["Island", "Forest"]);
+    expect(JSON.parse(await drain(stub({ stage: "cuts", ask: 5 }).deltas)).lines.map((l: { card: string }) => l.card)).toEqual(["Island", "Forest"]);
     slept.length = 0;
-    expect(JSON.parse(await drain(stub({ stage: "additionsRefill", ask: 3 }).deltas))).toEqual({ additions: [] });
+    expect(JSON.parse(await drain(stub({ stage: "additionsRefill", ask: 3 }).deltas))).toEqual({ lines: [] });
     expect(slept).toEqual([]);
   });
 
