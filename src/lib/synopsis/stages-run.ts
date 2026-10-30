@@ -130,6 +130,12 @@ export function stagesRepairTargets(content: CheckedSynopsis, reply: StagesReply
     if (!targets.sections.includes("overview")) targets.sections.push("overview");
     targets.reasons.push(`alternate: the alternate line was missing or did not name every alternate commander (${alternates.join("; ")}); the reply MUST include "alternate" naming each one as [[Name]] with its ref`);
   }
+  // A backup the model wrote but the app dropped (no [[Name]] mark, too long, or a turn) has no section either: same route (a precon's only; a player's deck is not repaired for a missing backup).
+  const written = backupText(reply);
+  if (precon && written && content.backup === undefined) {
+    if (!targets.sections.includes("overview")) targets.sections.push("overview");
+    targets.reasons.push(`backup: the backup line was dropped (it must mark at least one decklist card as [[Name]], stay within ${STAGES_LIMITS.stage} characters and state no turn); the reply's plans.backups[0] must be rewritten to fit`);
+  }
   return targets;
 }
 
