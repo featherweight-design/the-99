@@ -206,7 +206,7 @@ string ships as drawn.
   exactly as one who never chose.
 - **The ✕'s marker.** An empty choice through `nextFeedPrefs` writes nothing, so the ✕ stamps its own column:
   `closeFeedOfferAction` stamps the caller's row (`closeFeedOffer`, an upsert guarded on the column being null, so a
-  repeat moves no stamp trigger). **Migration 0198** (`drizzle/0198_user_prefs_feed_offer_closed.sql`; 0197 is held by #2413) adds the nullable
+  repeat moves no stamp trigger). **Migration 0198** (`drizzle/0198_user_prefs_feed_offer_closed.sql`) adds the nullable
   `user_prefs.feed_offer_closed_at timestamptz`.
 - **The empty window (small items 5, Offer-Empty; ERRATUM-offer-empty.md).** A never-chosen reader with nothing in the
   window sees the quiet line and, under it, the same offer line; with no kinds on, the offer line alone. `OptIn` and
