@@ -80,7 +80,7 @@ describe("TaggedBox", () => {
     expect(document.querySelector("[data-framed-box]")!.className).toContain("border-[color:var(--danger)]");
   });
 
-  it("gives the standard focus ring to a frame already accent or danger, and none to the normal state", () => {
+  it("gives the standard focus ring only to an always-accent frame; over the cap, focus thickens the red edge instead (Small items 6, a)", () => {
     const ring = ["has-[:focus-visible]:outline-2", "has-[:focus-visible]:outline-offset-2", "has-[:focus-visible]:outline-[color:var(--accent)]"];
     const cls = () => document.querySelector("[data-framed-box]")!.className;
     const normal = box();
@@ -90,10 +90,14 @@ describe("TaggedBox", () => {
     for (const c of ring) expect(cls()).toContain(c);
     always.unmount();
     const danger = box({ error: true });
-    for (const c of ring) expect(cls()).toContain(c);
+    for (const c of ring) expect(cls()).not.toContain(c);
+    expect(cls()).toContain("focus-within:shadow-[inset_0_0_0_1px_var(--danger)]");
     danger.unmount();
-    box({ count: 241 });
-    for (const c of ring) expect(cls()).toContain(c);
+    box({ count: 241, accent: "always", dashed: true });
+    for (const c of ring) expect(cls()).not.toContain(c);
+    // A dashed frame over the cap goes solid on focus too, so the 2px edge is one solid red.
+    expect(cls()).toContain("focus-within:border-solid");
+    expect(cls()).toContain("focus-within:shadow-[inset_0_0_0_1px_var(--danger)]");
   });
 
   it("a dashed frame takes the accent edge on focus like every other place (Tag-Control 1); the foot takes pointer events", () => {
@@ -101,6 +105,8 @@ describe("TaggedBox", () => {
     const frame = document.querySelector("[data-framed-box]")!;
     expect(frame.className).toContain("border-dashed");
     expect(frame.className).toContain("focus-within:border-[color:var(--accent)]");
+    // Focused, it goes solid (Small items 6, b).
+    expect(frame.className).toContain("focus-within:border-solid");
     expect(frame.className).not.toContain("has-[:focus-visible]");
     expect(screen.getByText("0 / 240").parentElement!.className).toContain("pointer-events-auto");
   });
@@ -123,10 +129,18 @@ describe("TaggedBox", () => {
     expect(fireEvent.mouseDown(screen.getByText("0 / 240"))).toBe(false);
   });
 
-  it("spreads keyProps on the key and keeps the field's focus on a press", () => {
+  it("disables the key alone with keyDisabled, drawing it in the locked ink (Small items 6, e and f)", () => {
+    box({ keyDisabled: true });
+    expect(key()).toBeDisabled();
+    expect(key().className).toContain("disabled:text-[color:var(--fg-locked)]");
+    expect(key().className).toContain("disabled:border-[color:var(--border)]");
+    expect(screen.getByText("0 / 240")).toBeInTheDocument();
+    expect(document.querySelector("[data-framed-box]")!.className).not.toContain("opacity-50");
+  });
+
+  it("keeps the field's focus on a press of the key", () => {
     const onInsert = vi.fn();
-    box({ onInsert, keyProps: { "data-lock-hide": "" } });
-    expect(key()).toHaveAttribute("data-lock-hide");
+    box({ onInsert });
     expect(fireEvent.mouseDown(key())).toBe(false); // default prevented
     fireEvent.click(key());
     expect(onInsert).toHaveBeenCalledOnce();
