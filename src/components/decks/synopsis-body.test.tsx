@@ -256,6 +256,15 @@ describe("the stages shape (contract 13)", () => {
     await waitFor(() => expect(fetchCard).toHaveBeenCalled());
   });
 
+  it("draws a Critical chip in the danger edge and puts Critical lines first", () => {
+    drawStages(stage13({ weaknesses: ["Minor: Few ways to draw.", "Moderate: Folds to a board wipe.", "Critical: One wipe undoes the plan."] }), 13);
+    const chips = screen.getAllByTestId("synopsis-severity");
+    expect(chips.map((c) => c.textContent)).toEqual(["Critical", "Moderate", "Minor"]);
+    expect(chips[0].className).toContain("--danger");
+    expect(chips[0].className).toContain("--critical-fg");
+    expect(screen.queryByText(/Critical:/)).toBeNull();
+  });
+
   it("splits a leading Moderate or Minor off a weakness as a chip", () => {
     drawStages(stage13(), 13);
     const chips = screen.getAllByTestId("synopsis-severity");

@@ -45,8 +45,18 @@ export function landFigure(line: string): number | null {
   return found.length === 1 ? found[0] : null;
 }
 
-/** A weakness line's leading severity ("Moderate: ...", "Minor: ..."), split off to become a chip. */
-export function splitSeverity(line: string): { tier: "Moderate" | "Minor"; rest: string } | null {
-  const m = /^(Moderate|Minor):\s*(\S[\s\S]*)$/.exec(line);
-  return m ? { tier: m[1] as "Moderate" | "Minor", rest: m[2] } : null;
+export type SeverityWord = "Critical" | "Moderate" | "Minor";
+
+/** A weakness line's leading severity ("Critical: ...", "Moderate: ...", "Minor: ..."), split off to become a chip. */
+export function splitSeverity(line: string): { tier: SeverityWord; rest: string } | null {
+  const m = /^(Critical|Moderate|Minor):\s*(\S[\s\S]*)$/.exec(line);
+  return m ? { tier: m[1] as SeverityWord, rest: m[2] } : null;
+}
+
+const SEVERITY_ORDER: Record<SeverityWord, number> = { Critical: 0, Moderate: 1, Minor: 2 };
+
+/** Weakness lines with Critical first, then Moderate, then Minor; the model's order holds within a tier, and an unmarked line keeps its place after the marked ones. */
+export function bySeverity(lines: readonly string[]): string[] {
+  const rank = (l: string) => { const s = splitSeverity(l); return s ? SEVERITY_ORDER[s.tier] : 3; };
+  return lines.map((l, i) => ({ l, i, r: rank(l) })).sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.l);
 }

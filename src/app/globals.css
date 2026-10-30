@@ -104,6 +104,8 @@
   --bracket-4: #E6D08A;
   --bracket-5: #FBEFC6;
   --danger: #C6533F;
+  /* The Critical severity chip's ink (small items 6): --danger is too dark as 10px text, so it draws only that chip's edge. */
+  --critical-fg: #E07A65;
 
   /* Card availability (5). The first two are aliases and must stay aliases —
      flattened to hexes they stop re-resolving per theme. */
@@ -174,6 +176,8 @@
   --bracket-4: #E6D08A;
   --bracket-5: #FBEFC6;
   --danger: #C6533F;
+  /* The Critical severity chip's ink (small items 6): --danger is too dark as 10px text, so it draws only that chip's edge. */
+  --critical-fg: #E07A65;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
   --avail-hard-fg: #DF8AA7;
@@ -276,6 +280,8 @@
   --bracket-4: #E6D08A;
   --bracket-5: #FBEFC6;
   --danger: #C6533F;
+  /* The Critical severity chip's ink (small items 6): --danger is too dark as 10px text, so it draws only that chip's edge. */
+  --critical-fg: #E07A65;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
   --avail-hard-fg: #ABCB5B;
@@ -342,6 +348,8 @@
   --bracket-4: #E6D08A;
   --bracket-5: #FBEFC6;
   --danger: #C6533F;
+  /* The Critical severity chip's ink (small items 6): --danger is too dark as 10px text, so it draws only that chip's edge. */
+  --critical-fg: #E07A65;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
   --avail-hard-fg: #77A9A0;
@@ -410,6 +418,8 @@
   --bracket-4: #E6D08A;
   --bracket-5: #FBEFC6;
   --danger: #C6533F;
+  /* The Critical severity chip's ink (small items 6): --danger is too dark as 10px text, so it draws only that chip's edge. */
+  --critical-fg: #E07A65;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
   --avail-hard-fg: #B795EA;
@@ -476,6 +486,8 @@
   --bracket-4: #E6D08A;
   --bracket-5: #FBEFC6;
   --danger: #C6533F;
+  /* The Critical severity chip's ink (small items 6): --danger is too dark as 10px text, so it draws only that chip's edge. */
+  --critical-fg: #E07A65;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
   --avail-hard-fg: #80ABEF;

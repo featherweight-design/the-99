@@ -12,7 +12,7 @@ import { ModalChrome, type FindingArt } from "./receipt-modal";
 import { RefusedSlot } from "./synopsis-controls";
 import { CardName, SynopsisText } from "./synopsis-text";
 import { GamePlan, KeyCardGrid, LandLine, OverviewWithCommander, TipCards, WeaknessLine } from "./synopsis-stages";
-import { usesStagesShape } from "../../lib/synopsis/stages-view";
+import { bySeverity, usesStagesShape } from "../../lib/synopsis/stages-view";
 import { formatDeckDate } from "../../lib/decks/format";
 import { analyzedWhen } from "./verdict-block";
 import { CreditsText } from "../ui/credits-text";
@@ -343,7 +343,7 @@ export function SynopsisSections({
       <Section id="weaknesses">
         {content.weaknesses && stages ? (
           <div className="flex flex-col gap-[10px]">
-            {content.weaknesses.map((w, i) => (
+            {bySeverity(content.weaknesses).map((w, i) => (
               <WeaknessLine key={i} line={w} text={text} />
             ))}
           </div>

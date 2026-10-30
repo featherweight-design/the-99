@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { checkedSynopsis } from "../../components/decks/__fixtures__/synopsis";
-import { landFigure, markedCards, splitSeverity, usesStagesShape } from "./stages-view";
+import { bySeverity, landFigure, markedCards, splitSeverity, usesStagesShape } from "./stages-view";
 
 describe("landFigure", () => {
   it("reads the one number the line states", () => {
@@ -20,12 +20,20 @@ describe("landFigure", () => {
 });
 
 describe("splitSeverity", () => {
-  it("splits Moderate and Minor, and nothing else", () => {
+  it("splits Critical, Moderate and Minor, and nothing else", () => {
+    expect(splitSeverity("Critical: Loses to a loop.")).toEqual({ tier: "Critical", rest: "Loses to a loop." });
     expect(splitSeverity("Moderate: A wipe resets it.")).toEqual({ tier: "Moderate", rest: "A wipe resets it." });
     expect(splitSeverity("Minor: Few draws.")).toEqual({ tier: "Minor", rest: "Few draws." });
-    expect(splitSeverity("Critical: Loses to a loop.")).toBeNull();
+    expect(splitSeverity("Severe: Loses to a loop.")).toBeNull();
     expect(splitSeverity("Folds to a wipe.")).toBeNull();
     expect(splitSeverity("Moderate:")).toBeNull();
+  });
+});
+
+describe("bySeverity", () => {
+  it("puts Critical first, then Moderate, then Minor, keeping the model's order within a tier", () => {
+    expect(bySeverity(["Minor: a", "Moderate: b", "Critical: c", "Moderate: d", "Plain e", "Critical: f"]))
+      .toEqual(["Critical: c", "Critical: f", "Moderate: b", "Moderate: d", "Minor: a", "Plain e"]);
   });
 });
 
