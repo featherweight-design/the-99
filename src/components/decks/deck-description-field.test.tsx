@@ -33,6 +33,14 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
     expect(frame().className).toContain("border-[color:var(--danger)]");
   });
 
+  it("grows with its words past the two-row floor (Tag-Places a)", () => {
+    const tall = vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get").mockReturnValue(86);
+    render(<DeckDescriptionField value={"A deck built to flip the commander into his transformed state, by utilizing fire, water, earth, and air bending."} onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+    expect(screen.getByRole("combobox").style.height).toBe("86px");
+    expect(screen.getByRole("combobox").className.split(/\s+/)).toContain("overflow-hidden");
+    tall.mockRestore();
+  });
+
   // Round 5: an `aria-label` here used to override the visible `<label htmlFor>` with
   // different words ("Deck description" vs. "Describe your deck"), so a voice-control user
   // reading the label on screen could not target the field by it.

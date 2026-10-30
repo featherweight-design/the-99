@@ -5,6 +5,7 @@ import { countCharacters } from "../../lib/text/count-characters";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { plainText } from "../../lib/decks/notes-body";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
+import { useAutoGrow } from "../../lib/ui/use-auto-grow";
 import { CardTagList } from "../cards/card-tag-picker";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
@@ -43,6 +44,8 @@ export function DeckDescriptionField({
   const ref = useRef<HTMLTextAreaElement>(null);
   const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));
+  // The box grows with its words (Tag-Places a): two rows was a floor, never a ceiling.
+  useAutoGrow(ref, field.text);
   return (
     <div className="mt-[14px] flex flex-col gap-[6px] md:mt-[16px]">
       <TagHelpRow htmlFor="deck-description-field" label={copy.label} infoId="deck-description-field-info" help={deckDescriptionCopy.notes.tagHelp} />
@@ -66,7 +69,7 @@ export function DeckDescriptionField({
             // this field is shared at both widths (pre-open review) — `md:text-[13.5px]` is the
             // desktop size the retired single-field editor used. The frame's accent edge (focus-within)
             // is the focus mark here, so the field draws no outline of its own.
-            className="w-full resize-none bg-transparent font-sans text-[16px] leading-[1.5] outline-none [@media(pointer:fine)]:md:text-[13.5px]"
+            className="w-full resize-none overflow-hidden bg-transparent font-sans text-[16px] leading-[1.5] outline-none [@media(pointer:fine)]:md:text-[13.5px]"
             style={{ padding: "10px 12px 4px", color: "var(--fg)", minHeight: 72 }}
           />
         </TaggedBox>
