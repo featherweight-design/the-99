@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { liveMoments } from "./live";
 
 describe("liveMoments", () => {
-  it("is each moment whose tool is on, and the three with no tool", () => {
-    const live = liveMoments({ LINEUP_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
+  it("is each moment whose tool is on, and the four with no tool", () => {
+    const live = liveMoments({} as unknown as NodeJS.ProcessEnv);
     expect(live).toEqual(["precons", "top-off", "card-assignments", "lineup"]);
   });
 

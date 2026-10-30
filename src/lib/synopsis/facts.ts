@@ -155,7 +155,7 @@ export function buildSynopsisFacts(
   anySize: { combos: ComboFact[]; nearCombos: NearComboFact[] } | null = null,
   /** `cards.keywords` by oracle id (v2); absent leaves every card's `keywords` unset. */
   keywords: ReadonlyMap<string, readonly string[]> | null = null,
-  /** The benchmarks' interaction reading, when the switch is on; null keeps the classifier's. */
+  /** The benchmarks' interaction reading; null (a failed label read) keeps the classifier's. */
   interaction: InteractionCounts | null = null,
 ): SynopsisFacts {
   const cats = categoriesOf(profile);

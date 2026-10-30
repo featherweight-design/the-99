@@ -53,9 +53,9 @@ describe("the deck page's landing remount", () => {
 
   it("renders the wrap, never the stack bare", () => {
     expect(elements("LandingKeyed")[0].boundTo).toBe("landed");
-    // `page` is read once, by the wrap alone; `landed` is what the page returns, on both paths.
+    // `page` is read once, by the wrap alone; `landed` is what the page returns, wrapped in the tokens provider.
     expect(reads("page")).toBe(1);
-    expect(reads("landed")).toBe(2);
+    expect(reads("landed")).toBe(1);
   });
 });
 

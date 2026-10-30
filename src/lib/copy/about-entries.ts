@@ -696,7 +696,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   // Evidence benchmarks (plan `2026-10-10-evidence-benchmarks.md` PR 5, handoff
   // `addendum_evidence_benchmarks` §4a): the copy lives in `deck-benchmarks.ts` beside the block's,
-  // after its /copy-review pass. It follows DECK_BENCHMARKS_ENABLED (audit rule 8), so the page
+  // after its /copy-review pass. It follows the Analysis tab (audit rule 8), so the page
   // never describes a block nobody can see. `since: 13` is the evidence line's ONE bump. The
   // specimen is the block's phone layout (`layout="rows"`, E1) with no openers; the figure carries
   // no numerals yet, so the key draws unnumbered (`marksPending`).
@@ -1663,8 +1663,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     marksPending: true,
     since: 11,
   },
-  // Stats on /decks (handoff `design_handoff_the99_lineup`, R2, `about · lineup.ts`): follows LINEUP_ENABLED,
-  // so turning Stats on is what announces it, by id. No bump: `since` is the version current at merge, the
+  // Stats on /decks (handoff `design_handoff_the99_lineup`, R2, `about · lineup.ts`): it kept LINEUP_ENABLED as its
+  // historical identity (the switch is retired), by which it was announced. No bump: `since` is the version current at merge, the
   // deck-stats precedent. Caption through /prose-pass (2026-10-12); the title to /copy-review.
   {
     id: 'decks-stats',

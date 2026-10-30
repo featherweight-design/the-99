@@ -27,62 +27,59 @@ const profile = {
 } as never;
 
 describe("factsFor combo wiring", () => {
-  beforeEach(() => loadComboFacts.mockReset());
+  beforeEach(() => {
+    loadComboFacts.mockReset();
+    readLabels.mockReset();
+    readLabels.mockResolvedValue(new Map());
+  });
 
   it("puts the any-size read's lists on the facts when v2 is on", async () => {
     const combo = { pieces: ["A", "B", "C"], produces: ["Infinite mana"], usesCommander: false, manaNeeded: 0 };
     const near = { have: "D", missing: "E", produces: ["Win the game"] };
     loadComboFacts.mockResolvedValueOnce({ combos: [combo], nearCombos: [near] });
-    const facts = await factsFor(profile, true, undefined, ENV_VIEW);
+    const facts = await factsFor(profile, true, ENV_VIEW);
     expect(facts.combos).toEqual([combo]);
     expect(facts.nearCombos).toEqual([near]);
   });
 
   it("keeps the profile's two-card list, and no near combos, when the read fails", async () => {
     loadComboFacts.mockResolvedValueOnce(null);
-    const facts = await factsFor(profile, true, undefined, ENV_VIEW);
+    const facts = await factsFor(profile, true, ENV_VIEW);
     expect(facts.combos?.map((c) => c.pieces)).toEqual([["Walking Ballista", "Heliod"]]);
     expect(facts.nearCombos).toEqual([]);
   });
 
   it("does not run the read when v2 is off", async () => {
-    const facts = await factsFor(profile, false, undefined, ENV_VIEW);
+    const facts = await factsFor(profile, false, ENV_VIEW);
     expect(loadComboFacts).not.toHaveBeenCalled();
     expect(facts.combos?.length).toBe(1);
   });
 });
 
-describe("factsFor interaction, behind DECK_BENCHMARKS_ENABLED", () => {
+describe("factsFor interaction", () => {
   const counter = { space: "role", kind: "counterspell", restrictedTo: null, affects: "opponents", trigger: "none", recurrence: "oneShot", threshold: null, modal: false, to: null, method: null };
   beforeEach(() => readLabels.mockReset());
 
-  it("quotes the benchmarks' reading when on: a counterspell is interaction", async () => {
+  it("quotes the benchmarks' reading: a counterspell is interaction", async () => {
     readLabels.mockResolvedValueOnce(new Map([["id-Heliod", [counter]]]));
-    const facts = await factsFor(profile, false, true, ENV_VIEW);
+    const facts = await factsFor(profile, false, ENV_VIEW);
     expect(facts.stats?.interaction).toMatchObject({ total: 1, cheap: 1 });
-  });
-
-  it("reads no labels and keeps the classifier's figures when off", async () => {
-    const facts = await factsFor(profile, false, false, ENV_VIEW);
-    expect(readLabels).not.toHaveBeenCalled();
-    expect(facts.stats?.interaction.total).toBe(0);
   });
 
   it("keeps the classifier's figures when the label read fails, never a text-only reading", async () => {
     // Heliod's text reads as a counterspell, so a reading built from text alone would count 1.
     cardRows.mockResolvedValueOnce([{ oracleId: "id-Heliod", oracleText: "Counter target spell.", keywords: [] }]);
     readLabels.mockResolvedValueOnce(new Map());
-    expect((await factsFor(profile, false, true, ENV_VIEW)).stats?.interaction.total).toBe(1);
+    expect((await factsFor(profile, false, ENV_VIEW)).stats?.interaction.total).toBe(1);
     cardRows.mockResolvedValueOnce([{ oracleId: "id-Heliod", oracleText: "Counter target spell.", keywords: [] }]);
     readLabels.mockRejectedValueOnce(new Error("down"));
-    expect((await factsFor(profile, false, true, ENV_VIEW)).stats?.interaction.total).toBe(0);
+    expect((await factsFor(profile, false, ENV_VIEW)).stats?.interaction.total).toBe(0);
   });
 
   it("says which reading the figures are, so a write stamps the contract it really used", async () => {
     readLabels.mockResolvedValueOnce(new Map());
-    expect((await factsWithSource(profile, false, true)).shared).toBe(true);
+    expect((await factsWithSource(profile, false)).shared).toBe(true);
     readLabels.mockRejectedValueOnce(new Error("down"));
-    expect((await factsWithSource(profile, false, true)).shared).toBe(false);
-    expect((await factsWithSource(profile, false, false)).shared).toBe(false);
+    expect((await factsWithSource(profile, false)).shared).toBe(false);
   });
 });

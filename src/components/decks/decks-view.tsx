@@ -133,8 +133,8 @@ export type DecksViewProps = {
    */
   now: string;
   /**
-   * Stats on /decks (`LINEUP_ENABLED`, read on the server), or null with the switch off: then there is no
-   * `Tiles · Stats` switch, no Stats read, and `?view` is ignored. `data` is the Stats payload, read only when
+   * Stats on /decks, read on the server; null (a surface that mounts the list without Stats, as the tests do) draws no
+   * `Tiles · Stats` switch and makes no Stats read. `data` is the Stats payload, read only when
    * the page was asked for Stats; `view` is the view the server drew; `foldServer` the fold memory's cookie.
    */
   lineup?: { data: LineupData | null; view: DecksViewName; foldServer: string | null } | null;

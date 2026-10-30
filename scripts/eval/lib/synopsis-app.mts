@@ -20,11 +20,12 @@ export async function openSynopsis() {
   const db = await connectStaging();
   const { sql } = await import("drizzle-orm");
   const { loadProfileHead, loadDeckProfileFromHead } = await import("../../../src/lib/profile/load");
-  const { factsFor, catalogFor, outcomeOf } = await import("../../../src/lib/synopsis/generate");
+  const { factsWithSource, catalogFor, outcomeOf } = await import("../../../src/lib/synopsis/generate");
   const { buildSynopsisPrompt } = await import("../../../src/lib/synopsis/prompt");
   const { synopsisResponseSchema } = await import("../../../src/lib/synopsis/response-schema");
   const { validateSynopsis } = await import("../../../src/lib/synopsis/validate");
-  const { SYNOPSIS_MAX_TOKENS, SYNOPSIS_CONTRACT_VERSION } = await import("../../../src/lib/synopsis/limits");
+  const { SYNOPSIS_MAX_TOKENS, synopsisContractVersion } = await import("../../../src/lib/synopsis/limits");
+  const { overviewV2Enabled } = await import("../../../src/lib/synopsis/overview-v2");
   const { SYNOPSIS_MODEL_V7 } = await import("../../../src/lib/synopsis/model");
   type SynopsisFacts = import("../../../src/lib/synopsis/facts").SynopsisFacts;
   type SynopsisResponse = import("../../../src/lib/synopsis/response-schema").SynopsisResponse;
@@ -36,12 +37,17 @@ export async function openSynopsis() {
   if (users.length !== 1) throw new Error(`eval: expected one staging account, found ${users.length}`);
   const userId = users[0];
 
+  // The contract the facts were really read under: the shared benchmark reading, or the classifier fallback when its
+  // label read failed. Set by `prepare`; a run whose decks disagree is refused rather than recorded as one contract.
+  const read = new Set<boolean>();
   async function prepare(ids: readonly string[], variant: SynopsisVariant) {
     const out: { deckId: string; facts: SynopsisFacts; system: string; user: string }[] = [];
     for (const deckId of ids) {
       const head = await loadProfileHead(deckId, userId);
       if (!head) throw new Error(`eval: deck ${deckId} not readable`);
-      const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), undefined, undefined, process.env);
+      const { facts, shared } = await factsWithSource(await loadDeckProfileFromHead(head, process.env), overviewV2Enabled(process.env));
+      read.add(shared);
+      if (read.size > 1) throw new Error("eval: the facts came from the benchmarks for some decks and the classifier fallback for others (a label read failed); rerun");
       const { facts: shown, messages } = applySynopsisVariant(variant, facts, (f) => buildSynopsisPrompt(f));
       out.push({ deckId, facts: shown, ...messages });
     }
@@ -95,6 +101,7 @@ export async function openSynopsis() {
     schema: synopsisResponseSchema,
     maxTokens: SYNOPSIS_MAX_TOKENS,
     model: SYNOPSIS_MODEL_V7,
-    contractVersion: SYNOPSIS_CONTRACT_VERSION,
+    /** Read after `prepare`: the contract of the facts source it actually used (7 before any deck is read). */
+    get contractVersion() { return synopsisContractVersion(overviewV2Enabled(process.env), read.has(true)); },
   };
 }

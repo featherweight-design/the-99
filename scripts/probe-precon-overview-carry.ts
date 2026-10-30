@@ -29,7 +29,7 @@ process.env.DATABASE_URL = process.env.PROBE_DB_URL;
 const USER = `probe-precon-carry-${Date.now()}`;
 // The owner's switches: the Analysis tab, and contract 12 (v2 with the benchmarks), what production writes.
 // The classifier role basis, the one the build below is told: a row of the other basis would not be attached.
-const ON = { ...process.env, ANALYSIS_TAB_ENABLED: "true", OVERVIEW_V2_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "" } as NodeJS.ProcessEnv;
+const ON = { ...process.env, ANALYSIS_TAB_ENABLED: "true", OVERVIEW_V2_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "" } as NodeJS.ProcessEnv;
 const OFF = { ...ON, ANALYSIS_TAB_ENABLED: "" } as NodeJS.ProcessEnv;
 
 let failures = 0;

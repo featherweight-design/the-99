@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { tokenPrintings, tokens } from "../../db/schema";
 import type { BrowseCard } from "../collection/browse";
-import { deckTokensEnabled } from "../decks/tokens-flag";
 import { heldGroups, loadHeldTokenPrintings, type HeldTokenPrinting } from "./deck-printings";
 import { manapoolAddDeckUrl } from "../manapool/links";
 import { loadTokenPrices, type TokenPriceFact } from "./price";
@@ -21,7 +20,7 @@ import { tokenManapoolLine } from "./price-line";
  * Reached from `loadCardDetail`, which asks it only for an id the card catalog does not hold, so the
  * press, the prefetch and every re-read take one path.
  */
-export async function loadTokenDetail(oracleId: string, userId: string, env: NodeJS.ProcessEnv): Promise<BrowseCard | null> {
+export async function loadTokenDetail(oracleId: string, userId: string): Promise<BrowseCard | null> {
   // No schema probe first: every open and every prefetch would pay it as extra round trips ahead
   // of the read. A database the token migration has not reached throws on the read itself, which
   // the catches below turn into no token (and, for the price table alone, no price).
@@ -54,16 +53,13 @@ export async function loadTokenDetail(oracleId: string, userId: string, env: Nod
           console.error("[tokens] token detail price failed", err instanceof Error ? err.message : err);
           return { prices: new Map<string, TokenPriceFact>(), newestAsOf: null };
         }),
-      // The printings the player holds, which a deck's picker chooses between (token printings TP2), behind the
-      // deck tokens switch. A failed read costs the list, never the token: the sheet shows the catalog's one.
-      deckTokensEnabled(env)
-        ? loadHeldTokenPrintings(userId, [oracleId])
-          .then((m) => m.get(oracleId) ?? [])
-          .catch((err: unknown) => {
-            console.error("[tokens] token detail holdings failed", err instanceof Error ? err.message : err);
-            return [] as HeldTokenPrinting[];
-          })
-        : Promise.resolve([] as HeldTokenPrinting[]),
+      // The printings the player holds, which a deck's picker chooses between (token printings TP2). A failed read costs the list, never the token: the sheet shows the catalog's one.
+      loadHeldTokenPrintings(userId, [oracleId])
+        .then((m) => m.get(oracleId) ?? [])
+        .catch((err: unknown) => {
+          console.error("[tokens] token detail holdings failed", err instanceof Error ? err.message : err);
+          return [] as HeldTokenPrinting[];
+        }),
     ]);
     return assembleTokenDetail(token, printings, priced.prices.get(oracleId) ?? null, priced.newestAsOf, held);
   } catch (err) {

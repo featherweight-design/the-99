@@ -20,12 +20,9 @@ import {
 } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
-import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
-import { deckTokensEnabled } from "../decks/tokens-flag";
-import { lineupEnabled } from "../decks/lineup-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { homeFeedEnabled } from "../feed/flag";
 import { commandersPlaceEnabled } from "../commanders/place-flag";
@@ -60,13 +57,13 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Already reads COLLECTION_EDIT_ENABLED: Sync is the upload choice's third card.
   COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
-  // The block lives on the Analysis tab, so the entry needs the tab too, as tuning's does: it
+  // The block lives on the Analysis tab, so the entry needs the tab, as tuning's does: it
   // would otherwise describe a tab that is off.
-  DECK_BENCHMARKS_ENABLED: (env) => deckBenchmarksEnabled(env) && analysisTabEnabled(env),
+  DECK_BENCHMARKS_ENABLED: analysisTabEnabled,
   // On only with COLLECTION_EDIT_ENABLED as well: the feature's own flag already says so.
   SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
-  DECK_TOKENS_ENABLED: deckTokensEnabled,
+  DECK_TOKENS_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
@@ -76,7 +73,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   DECK_NOTES_ENABLED: deckNotesEnabled,
   // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
   TUNING_HUB_ENABLED: tuningHubEnabled,
-  LINEUP_ENABLED: lineupEnabled,
+  LINEUP_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: Look deeper lives in the tab's Tuning hub.
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   // Already reads SWAP_TOOLS_ENABLED: the read lives in Find a deck for it.

@@ -27,7 +27,7 @@ const isFold = (value: string): value is "open" | "closed" => value === "open" |
 /**
  * The tokens this deck's cards make, at the foot of Your deck. They are not the deck: the header says so
  * once, and nothing here moves a count, a price total or the deck's status. Draws nothing outside a
- * provider (the switch is off), for a deck that makes no token, and nothing at all before the catalog has
+ * provider, for a deck that makes no token, and nothing at all before the catalog has
  * links, so a deck page without the feature is exactly the page it was. The heading folds the group, and
  * the tokens are tiles in the deck's Card view and rows in its List view.
  */

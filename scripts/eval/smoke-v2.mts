@@ -55,7 +55,7 @@ for (const needle of needles) {
   if (!d) { console.log(`no deck matches ${needle}`); continue; }
   const head = await loadProfileHead(d.id, d.user_id);
   if (!head) continue;
-  const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), !v1, undefined, process.env);
+  const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), !v1, process.env);
   const prompt = buildSynopsisPrompt(facts, undefined, { v2: !v1 });
   const approxIn = Math.ceil((prompt.system.length + prompt.user.length) / 3.5);
   const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, SYNOPSIS_MAX_TOKENS, { batch: false });

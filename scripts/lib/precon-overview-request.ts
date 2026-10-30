@@ -74,7 +74,7 @@ export async function buildPreconRequest(file: string, basis: RoleBasis): Promis
   let profile: DeckProfile;
   try {
     profile = await loadDeckProfileFromHead(head, envAtBasis(process.env, basis));
-    built = await factsWithSource(profile, true, true);
+    built = await factsWithSource(profile, true);
   } catch (e) {
     return { ok: false, file, why: `the reading could not be built: ${e instanceof Error ? e.message : String(e)}` };
   }

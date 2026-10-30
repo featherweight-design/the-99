@@ -20,7 +20,7 @@ export type Reading = {
   fresh: boolean;
   /** The version the reading is pinned to, for `analyzed with version n`. */
   versionNumber: number | null;
-  /** Its evidence benchmarks, or null (switch off, or the read failed). Held with the reading. */
+  /** Its evidence benchmarks, or null (the read failed). Held with the reading. */
   benchmarks?: BenchmarksWire | null;
 };
 

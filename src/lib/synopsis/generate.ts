@@ -2,7 +2,6 @@ import { overviewV2Enabled } from "./overview-v2";
 import { loadComboFacts } from "./combo-facts";
 import { factCounts, interaction } from "../benchmarks/interaction";
 import { benchmarkInput } from "../benchmarks/load";
-import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import { readLabels } from "../labels/read";
 import type { InteractionCounts } from "./facts-extra";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
@@ -314,13 +313,10 @@ export async function factsFor(
   profile: Parameters<typeof buildSynopsisFacts>[0],
   /** Read the combos of any size, assembled or one card short (one query). Off unless the v2 method is on. */
   v2: boolean | undefined,
-  /** Quote the evidence benchmarks' interaction reading (plan PR 1b), so the Overview and the
-   *  Analysis tab's grade agree. Off with the switch: the facts are exactly the classifier's. */
-  benchmarks: boolean | undefined,
-  /** The switches either flag left out is read from; the eval harness, outside a request, passes `process.env`. */
+  /** The env the v2 flag, when left out, is read from; the eval harness, outside a request, passes `process.env`. */
   env: NodeJS.ProcessEnv,
 ): Promise<SynopsisFacts> {
-  return (await factsWithSource(profile, v2 ?? overviewV2Enabled(env), benchmarks ?? deckBenchmarksEnabled(env))).facts;
+  return (await factsWithSource(profile, v2 ?? overviewV2Enabled(env))).facts;
 }
 
 /** `factsFor`, saying whether the interaction figures are the benchmarks' (`shared`) or the
@@ -328,7 +324,6 @@ export async function factsFor(
 export async function factsWithSource(
   profile: Parameters<typeof buildSynopsisFacts>[0],
   v2: boolean,
-  benchmarks: boolean,
 ): Promise<{ facts: SynopsisFacts; shared: boolean }> {
   const ids = profile.cards.map((c) => c.oracleId);
   const texts = ids.length === 0 ? [] : await db
@@ -336,7 +331,7 @@ export async function factsWithSource(
     .from(cards)
     .where(inArray(cards.oracleId, ids));
   const anySize = v2 ? await loadComboFacts(profile) : null;
-  const shared = benchmarks ? await sharedInteraction(profile, texts) : null;
+  const shared = await sharedInteraction(profile, texts);
   const facts = buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples(), anySize,
     v2 ? new Map(texts.map((t) => [t.oracleId, t.keywords])) : null,
     shared);
@@ -616,7 +611,6 @@ async function run(
   if (noticesEnabled(env) && (await holdsIllegalCard(deckId, userId))) return { kind: "illegal" };
   // Read once: a write is made wholly under one contract, whatever the switch does mid-flight.
   const v2 = overviewV2Enabled(env);
-  const benchmarks = deckBenchmarksEnabled(env);
   const reading = await freshReading(deckId, userId, deps.profile ?? requestProfileDeps(env));
   if (!reading) return { kind: "no_reading" };
   const current = await readShownSynopsis(deckId, userId, reading.list);
@@ -635,9 +629,9 @@ async function run(
     return { kind: "reused", synopsis: current };
   }
 
-  // The contract is the one the facts were really built under: with the switch on, a failed label
-  // read falls back to the classifier's figures and is stamped 7 or 8, not 9 or 10.
-  const { facts, shared } = await factsWithSource(reading.profile, v2, benchmarks);
+  // The contract is the one the facts were really built under: a failed label read falls back to
+  // the classifier's figures and is stamped 7 or 11, not 9 or 12.
+  const { facts, shared } = await factsWithSource(reading.profile, v2);
   const contract = synopsisContractVersion(v2, shared);
 
   // A section retry works only on the synopsis for this very list, under this very contract. One

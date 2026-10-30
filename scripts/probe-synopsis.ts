@@ -39,7 +39,7 @@ import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
 import type { SynopsisFacts } from "../src/lib/synopsis/facts";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
 import { isRepair } from "../src/lib/synopsis/prompt";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REAPER_CUTOFF_MS, SYNOPSIS_REPAIR_MIN_MS } from "../src/lib/synopsis/limits";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_BENCHMARKS, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REAPER_CUTOFF_MS, SYNOPSIS_REPAIR_MIN_MS } from "../src/lib/synopsis/limits";
 // No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
@@ -478,7 +478,9 @@ async function run() {
   const [wholeRow] = await rows<{ retry_of: string | null; contract_version: number }>(sql`
     select retry_of, contract_version from deck_synopses where deck_id = ${deck.id}::uuid order by created_at desc limit 1`);
   check("a retry over an older contract rewrites the whole synopsis under the current one",
-    [whole.kind, wholeRow.retry_of, wholeRow.contract_version], ["written", null, SYNOPSIS_CONTRACT_VERSION]);
+    // 9 when the benchmarks' shared reading was used (always attempted now), 7 on a label-read fallback.
+    [whole.kind, wholeRow.retry_of, [SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_BENCHMARKS].includes(wholeRow.contract_version)],
+    ["written", null, true]);
 
   // 10b · UNIVERSAL STAPLES (Hugh, 2026-09-24). The set is read from `format_staples`, and it is
   // checked here against an independent query of the same rule; `factsFor` flags a staple the deck

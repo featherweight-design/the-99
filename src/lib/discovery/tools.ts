@@ -60,7 +60,7 @@ export const TOOLS = [
   { id: "collection-sync", group: "own", switch: "COLLECTION_SYNC_ENABLED", entry: "upload-choice", labels: ["collection/upload/drop"], target: "collection-sync", lands: { kind: "route", href: "/collection/replace" }, credit: null, needsDeck: false },
   // Play
   { id: "matchups", group: "play", switch: "SOCIAL_GAMES_ENABLED", entry: "opponents", labels: ["decks/games/matchups"], target: "matchups", lands: { kind: "deck", tab: "games" }, credit: null, needsDeck: true },
-  { id: "lineup", group: "play", switch: "LINEUP_ENABLED", entry: "decks-stats", labels: ["decks/your-decks/decks-stats"], target: "lineup", lands: { kind: "route", href: "/decks?view=stats" }, credit: null, needsDeck: true },
+  { id: "lineup", group: "play", switch: null, entry: "decks-stats", labels: ["decks/your-decks/decks-stats"], target: "lineup", lands: { kind: "route", href: "/decks?view=stats" }, credit: null, needsDeck: true },
   { id: "friends", group: "play", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friends", labels: ["friends/friends/add"], target: "friends", lands: { kind: "route", href: "/friends" }, credit: null, needsDeck: false },
 ] as const satisfies readonly Tool[];
 

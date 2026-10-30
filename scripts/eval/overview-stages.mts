@@ -221,7 +221,7 @@ if (args["prod-prepare"]) {
     if (!head) { prepared.push({ id: d.id, label: d.label, name, missing: "no such deck for this owner", stored: null, storedNote: "" }); continue; }
     const list = listFingerprint(head);
     const profile = await loadDeckProfileFromHead(head, envAtBasis(process.env, BASIS));
-    const built = await factsWithSource(profile, true, true);
+    const built = await factsWithSource(profile, true);
     const rows = (await db.execute(sql`
       select content, contract_version, created_at, model, fingerprint = ${list} as same_list
       from deck_synopses

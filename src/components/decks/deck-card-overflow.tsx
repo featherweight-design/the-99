@@ -52,7 +52,7 @@ interface DeckCardOverflowProps {
   placement: "tile" | "header";
   /** The Move row and its mode, with the list view that owns them. Absent, the row is too. */
   move?: DeckMove;
-  /** Stats with this deck chosen (`LINEUP_ENABLED`): absent while the switch is off, and the row with it. */
+  /** Stats with this deck chosen: absent when the list has no Stats, and the row with it. */
   onAmong?: () => void;
   /** Hidden from friends (`FRIEND_DECKS_ENABLED` for the reader): absent while the switch is off, and the row with it. */
   friends?: DeckFriendsHide;

@@ -29,9 +29,9 @@ export const SYNOPSIS_CONTRACT_VERSION = 7;
 //    so every overview at 8 gets the "method changed" notice and its free rewrite.
 export const SYNOPSIS_CONTRACT_VERSION_V2 = 11;
 // 9 and 10: contracts 7 and 8 with the interaction figures read from the evidence benchmarks'
-//    shared reading (plan 2026-10-10-evidence-benchmarks.md, PR 1b). Written only while
-//    `DECK_BENCHMARKS_ENABLED` is on. A section retry across the switch rewrites the whole
-//    document, so one Overview never quotes both readings.
+//    shared reading (plan 2026-10-10-evidence-benchmarks.md, PR 1b). Written whenever the
+//    shared reading was used; a failed label read falls back to 7 or 11. A section retry across
+//    the two rewrites the whole document, so one Overview never quotes both readings.
 export const SYNOPSIS_CONTRACT_VERSION_BENCHMARKS = 9;
 // 12: contract 11 with the benchmarks' interaction figures, as 10 was to 8. Above 11, so a
 //    benchmarks row never reads as older than the method and shows the notice for ever.
