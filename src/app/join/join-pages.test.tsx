@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { inviteOnlyCopy, joinCopy } from "../../lib/copy/join";
+import { flyerJoinCopy, inviteOnlyCopy, joinCopy } from "../../lib/copy/join";
 
 const m = vi.hoisted(() => ({
   auth: vi.fn(),
   redirect: vi.fn((to: string) => { throw new Error(`redirect:${to}`); }),
   readJoin: vi.fn(),
+  readFlyerJoin: vi.fn(),
   cookie: vi.fn(),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: m.auth }));
@@ -14,6 +15,8 @@ vi.mock("@clerk/nextjs", () => ({ SignInButton: ({ children }: { children: React
 vi.mock("next/navigation", () => ({ redirect: m.redirect }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: m.cookie }) }));
 vi.mock("../../lib/invites/join-read", () => ({ readJoin: m.readJoin }));
+vi.mock("../../lib/flyer/join-read", () => ({ readFlyerJoin: m.readFlyerJoin }));
+vi.mock("./flyer-actions", () => ({ startFlyerClaimAction: vi.fn(), confirmFlyerCodeAction: vi.fn(), handOverFlyerAction: vi.fn(), saveLaunchListAction: vi.fn() }));
 vi.mock("./actions", () => ({ claimInviteAction: vi.fn(), confirmCodeAction: vi.fn(), handOverAction: vi.fn() }));
 vi.mock("../../components/ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../../components/ui/art-layer", () => ({ ArtLayer: () => null }));
@@ -52,6 +55,42 @@ describe("/join/[token]", () => {
     expect(h1.className).toContain("mt-[28px]");
     expect(h1.className).toContain("text-[22px]");
     expect(h1.className).not.toContain("md:");
+  });
+});
+
+describe("/join/[code] for a flyer code", () => {
+  it("redirects a lower-case code to its upper-case form before reading anything: the cookie path is case-sensitive", async () => {
+    m.auth.mockResolvedValue({ userId: null });
+    await expect(JoinPage({ params: Promise.resolve({ token: "mox4qk" }) })).rejects.toThrow("redirect:/join/MOX4QK");
+    expect(m.readFlyerJoin).not.toHaveBeenCalled();
+    expect(m.readJoin).not.toHaveBeenCalled();
+  });
+
+  it("reads the code against this code's own claim cookie, and never reads an invite", async () => {
+    m.auth.mockResolvedValue({ userId: null });
+    m.cookie.mockImplementation((name: string) => (name === "flyer_claim_MOX4QK" ? { value: "secret" } : undefined));
+    m.readFlyerJoin.mockResolvedValue({ kind: "email" });
+    render(await JoinPage({ params: Promise.resolve({ token: "MOX4QK" }) }));
+    expect(m.readFlyerJoin).toHaveBeenCalledWith("MOX4QK", "secret");
+    expect(m.readJoin).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: flyerJoinCopy.title })).toBeTruthy();
+  });
+
+  it("sends a signed-in reader Home for a code too", async () => {
+    m.auth.mockResolvedValue({ userId: "u" });
+    await expect(JoinPage({ params: Promise.resolve({ token: "MOX4QK" }) })).rejects.toThrow("redirect:/");
+    expect(m.readFlyerJoin).not.toHaveBeenCalled();
+  });
+
+  it("is the join frame on a phone and the desktop wash, 72px down, from md", async () => {
+    m.auth.mockResolvedValue({ userId: null });
+    m.cookie.mockReturnValue(undefined);
+    m.readFlyerJoin.mockResolvedValue({ kind: "email" });
+    const { container } = render(await JoinPage({ params: Promise.resolve({ token: "MOX4QK" }) }));
+    const main = container.querySelector("main")!;
+    expect(main.className).toContain("pt-[44px]");
+    expect(main.className).toContain("md:pt-[72px]");
+    expect(main.className).toContain("at_50%_8%");
   });
 });
 

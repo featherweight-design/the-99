@@ -12,6 +12,14 @@ import { Emphasis } from "./emphasis";
 export const NEWCOMER_MAIN =
   "flex min-h-dvh flex-col items-center bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_18%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] pb-[24px] pt-[44px] text-center";
 
+/**
+ * The flyer's landing frame (boards `Join-Phone` and `Join-Desktop`): the join frame, and from `md` the desktop frame's wash
+ * (1000×520 at 50% 8%, the accent at 10%) with the column 72px under the top.
+ */
+export const FLYER_MAIN =
+  NEWCOMER_MAIN +
+  " md:pt-[72px] md:bg-[radial-gradient(1000px_520px_at_50%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]";
+
 /** The invite-only page's frame (I1, I2): 56px under the top on a phone, the fan beside the column from `md`, under
  * the desktop frame's own wash (1000×520 at 50% 8%, the accent at 10%; pr5 table, Shared ground). */
 export const INVITE_MAIN =
@@ -47,6 +55,7 @@ export function NewcomerColumn({
   actions,
   fine,
   landing,
+  balance = false,
 }: {
   variant: "join" | "invite";
   /** Shown from `md` up only (the invite-only page); the join steps draw none. */
@@ -56,6 +65,8 @@ export function NewcomerColumn({
   actions: ReactNode;
   fine?: string | PersonParts;
   landing?: "wait" | "go";
+  /** The flyer's pages: headings balanced and copy wrapped pretty, so no line ends on a lone word (README, "No lone last words"). */
+  balance?: boolean;
 }) {
   // Everything under the card lands with it: the heading, the body, the actions and the fine print.
   const land = landing === "go" ? "friend-land-in" : landing === "wait" ? "friend-land-wait" : "";
@@ -67,16 +78,16 @@ export function NewcomerColumn({
       {kicker && (
         <p className="m-0 mb-[10px] font-mono text-[11px] font-medium leading-[normal] uppercase tracking-[.2em] text-[color:var(--accent-text)] max-md:hidden">{kicker}</p>
       )}
-      <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display font-bold text-[color:var(--fg)] outline-none ${H1[variant]} ${land}`}>
+      <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display font-bold text-[color:var(--fg)] outline-none ${H1[variant]} ${land} ${balance ? "[text-wrap:balance]" : ""}`}>
         <PersonText text={title} />
       </h1>
       {body && (
-        <p className={`m-0 font-sans text-[color:var(--fg-body)] ${BODY[variant]} ${land}`}>
+        <p className={`m-0 font-sans text-[color:var(--fg-body)] ${BODY[variant]} ${land} ${balance ? "[text-wrap:pretty]" : ""}`}>
           <Emphasis parts={body} />
         </p>
       )}
       <div className={`flex w-full flex-col ${land}`}>{actions}</div>
-      {fine && <p className={`m-0 font-mono text-[color:var(--fg-faint)] ${FINE[variant]} ${land}`}><PersonText text={fine} /></p>}
+      {fine && <p className={`m-0 font-mono text-[color:var(--fg-faint)] ${FINE[variant]} ${land} ${balance ? "[text-wrap:pretty]" : ""}`}><PersonText text={fine} /></p>}
     </section>
   );
 }
