@@ -126,19 +126,18 @@ export function britishSpelling(text: string): boolean {
 const COUNT = `\\d+|${words.counts.join("|")}`;
 /** A phrase that opens on a count, where the app's word goes. */
 const OPENS_ON_COUNT = new RegExp(`^(?:${COUNT})\\b`, "i");
-/** Every number in the text, with the word after it. */
-const ANY_COUNT = new RegExp(`\\b(?:${COUNT})\\b(?:[\\s-]+([a-z]+))?`, "gi");
 /** What a number may measure: what the cards DO ("at one or two mana", "three colors", "two turns"), never how many
- *  cards there are. An allowlist, because the ways to count cards are open ("Seven fix the mana", "six lands",
- *  "three additions"), and a count the app did not write is checked against nothing. */
-const MEASURES = new Set([
-  "mana", "color", "colors", "life", "damage", "turn", "turns", "player", "players", "opponent", "opponents",
-  "counter", "counters", "power", "toughness", "or", "to", "and",
-]);
-/** Whether the text writes a number that counts something other than what the cards do. */
+ *  cards there are. A connector ("one or two", "two to four") counts only when the number it leads to is measured. */
+const MEASURE = "mana|colors?|life|damage|turns?|players?|opponents?|counters?|power|toughness";
+const MEASURED = new RegExp(`\\b(?:${COUNT})(?:\\s+(?:or|to)\\s+(?:${COUNT}))?[\\s-]+(?:${MEASURE})\\b`, "gi");
+/** Power and toughness, or a counter, written as numbers ("1/1 tokens", "+1/+1 counters"). */
+const STATS = /[+-]?\d+\/[+-]?\d+/g;
+const ANY_COUNT = new RegExp(`\\b(?:${COUNT})\\b`, "i");
+/** Whether the text writes a number that counts something other than what the cards do. An allowlist, because the
+ *  ways to count cards are open ("Seven fix the mana", "six lands", "Cut six to lower the curve"), and a count the app
+ *  did not write is checked against nothing. */
 function writesCount(text: string): boolean {
-  for (const m of text.matchAll(ANY_COUNT)) if (!MEASURES.has((m[1] ?? "").toLowerCase())) return true;
-  return false;
+  return ANY_COUNT.test(text.replace(STATS, " ").replace(MEASURED, " "));
 }
 
 /** Text the player will read, or null when it fails: empty, British spelling, an em-dash (the copy rule), or a

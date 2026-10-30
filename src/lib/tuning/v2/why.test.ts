@@ -121,6 +121,14 @@ describe("checkWhy's counts (PR #2452 round 1)", () => {
     expect(checkPhrase("come down two turns earlier", [])).toBe("come down two turns earlier");
   });
 
+  it("keeps power and toughness, and a connector only when its number is measured (round 4)", () => {
+    expect(checkPhrase("make 1/1 tokens", [])).toBe("make 1/1 tokens");
+    expect(checkPhrase("add +1/+1 counters", [])).toBe("add +1/+1 counters");
+    expect(checkPhrase("are six or more mana sources", [])).toBeNull();
+    expect(checkWhy(reply({ lead: "Cut six to lower the curve." }), adds, cuts)).toBeNull();
+    expect(checkPhrase("cost two to four mana", [])).toBe("cost two to four mana");
+  });
+
   it("writes a group of up to thirty kept rows, the most a side keeps at N = 20", () => {
     const many = Array.from({ length: 30 }, (_, i) => row(`Card ${i + 1}`));
     const r = checkWhy(reply({ add: [{ phrase: "are answers", cards: many.map((l) => l.card) }] }), many, cuts);
