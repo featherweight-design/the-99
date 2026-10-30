@@ -155,7 +155,7 @@ export function docFromStagesReply(reply: StagesReply, shape: StagesShape = 2): 
     stages: reply.primer.strategy.map(l),
     winsBy: shape === 3 ? [] : [{ text: reply.plans.primary }],
     alternate: reply.alternate ? [l(reply.alternate)] : [],
-    backup: shape === 3 && reply.plans.backups[0]?.trim() ? [{ text: reply.plans.backups[0], refs: [] }] : [],
+    backup: shape === 3 && backupText(reply) ? [{ text: backupText(reply), refs: [] }] : [],
     landKeep: shape === 3 && reply.landKeep ? [l(reply.landKeep)] : [],
     keep: reply.primer.mulligan.keep.map(l),
     sendBack: reply.primer.mulligan.sendBack.map(l),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { FactCard } from "./facts";
-import { backupText, checkBackupLine, checkCastReach, checkTipLead, type OverviewDoc, type StagesReply } from "./stages";
+import { allChecksPass, backupText, checkBackupLine, checkCastReach, checkTipLead, i3RepairTargets, type OverviewDoc, type StagesChecks, type StagesReply } from "./stages";
 
 const card = (name: string, manaValue: number, categories: FactCard["categories"] = []): FactCard => ({ oracleId: name, name, typeLine: "Artifact", quantity: 1, categories, oracleText: null, manaValue });
 const facts = { commanders: ["Daretti"], cards: [card("Daretti", 4, ["commander"]), card("Palladium Myr", 3, ["ramp"]), card("Mind Stone", 2, ["ramp"]), card("Sol Ring", 1, ["ramp"]), card("Shock", 1)] };
@@ -46,5 +46,17 @@ describe("the Backup line", () => {
     expect(checkBackupLine("[[Shock]] wins by turn 5.")).toBe(false);
     expect(checkBackupLine("x".repeat(400))).toBe(false);
     expect(checkBackupLine("")).toBe(false);
+  });
+});
+
+describe("the new checks reach the repair and the gate", () => {
+  const base = { cardsInList: { pass: true, offenders: [] }, turnNumbers: { pass: true, offenders: [] }, explainedOnce: { pass: true, passExceptCommanders: true, offenders: [] }, stageFit: { pass: true, offenders: [], max: 4 }, stagesNameCards: { pass: true, offenders: [] }, length: { pass: true }, shape: { pass: true, offenders: [] } } as unknown as StagesChecks;
+  it("a failed cast reach or tip lead sends the primer to the one repair and fails the gate", () => {
+    const reach = { ...base, castReach: { pass: false, offenders: [{ where: "stages[0]", card: "Palladium Myr", manaValue: 3, turn: 3 }] } } as StagesChecks;
+    expect(i3RepairTargets(reach).sections).toContain("primer");
+    expect(allChecksPass(reach, false)).toBe(false);
+    const lead = { ...base, tipLead: { pass: false, offenders: ["the first tip is a trick though a later one is plan-level"] } } as StagesChecks;
+    expect(i3RepairTargets(lead).sections).toContain("primer");
+    expect(allChecksPass(lead, false)).toBe(false);
   });
 });
