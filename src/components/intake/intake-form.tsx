@@ -36,6 +36,7 @@ import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { CreditsText, GetMoreLink, splitGetMore } from "../ui/credits-text";
 import { InfoTip } from "../ui/info-tip";
 import { CardTagList, useCardTagPicker } from "../cards/card-tag-picker";
+import { TaggedBox } from "../cards/tagged-box";
 import { searchTagCards } from "../../app/cards/tag-actions";
 import { serialize, toField } from "../../lib/decks/notes-field";
 import { useDockClearance } from "../shell/dock-clearance";
@@ -159,6 +160,14 @@ export function IntakeForm({
   // The box takes the Notes `[[` card tag. On a phone the fixed dock covers the foot of the page, so the list
   // is held to the room above it (see `listMax`): it always opens below the box.
   const wordsRef = useRef<HTMLTextAreaElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  // Grows with its content (no resize handle: the board draws none). jsdom reports a 0 scrollHeight, so this is a no-op there.
+  useEffect(() => {
+    const el = wordsRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight}px`;
+  }, [words]);
   const picker = useCardTagPicker({
     value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, measure: wordsLength, maxTags: READ_TAGS_MAX, field: wordsRef, disabled: submitting,
     onChange: (text, next) => setField({ text, tags: next }),
@@ -172,7 +181,7 @@ export function IntakeForm({
   useEffect(() => {
     if (!picker.open) return;
     const place = () => {
-      const el = wordsRef.current;
+      const el = frameRef.current ?? wordsRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
       const dock = dockRef.current;
@@ -191,9 +200,9 @@ export function IntakeForm({
     window.visualViewport?.addEventListener("resize", place);
     window.visualViewport?.addEventListener("scroll", place);
     window.addEventListener("scroll", place, { passive: true });
-    // Dragging the box's resize handle, or the dock changing height, emits no scroll or resize event.
+    // The box growing with its words, or the dock changing height, emits no scroll or resize event.
     const watch = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
-    if (wordsRef.current) watch?.observe(wordsRef.current);
+    if (frameRef.current ?? wordsRef.current) watch?.observe((frameRef.current ?? wordsRef.current)!);
     if (dockRef.current) watch?.observe(dockRef.current);
     return () => { watch?.disconnect(); clearTimeout(settled); window.visualViewport?.removeEventListener("resize", place); window.visualViewport?.removeEventListener("scroll", place); window.removeEventListener("scroll", place); };
   }, [picker.open]);
@@ -370,44 +379,36 @@ export function IntakeForm({
           htmlFor={wordsId}
           caption={caption}
           captionTone={written && closed !== null ? "muted" : "faint"}
-          // Counted as the picker caps it (a tag counts as its name), so the count and the box stop together.
-          count={written ? copy.intake.extra.count(picker.count, READ_WORDS_MAX_CHARS) : null}
           tipAnchor
           after={phoneLine?.more ? <GetMoreLink className="md:hidden" /> : undefined}
-          aside={
-            <>
-              <InfoTip id={`${wordsId}-info`} lines={copy.intake.extra.tagHelp.lines} label={copy.intake.extra.tagHelp.infoAria} className="self-center" />
-              <button
-                type="button"
-                data-lock-hide=""
-                aria-label={copy.intake.extra.tagHelp.insertAria}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={picker.insertTag}
-                className="ml-auto h-[28px] cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] text-[color:var(--fg-muted)]"
-              >
-                {copy.intake.extra.tagHelp.insert}
-              </button>
-            </>
-          }
+          aside={<InfoTip id={`${wordsId}-info`} lines={copy.intake.extra.tagHelp.lines} label={copy.intake.extra.tagHelp.infoAria} className="self-center" />}
         >
           <div className="relative">
-            <textarea
-              ref={wordsRef}
-              id={wordsId}
-              value={words}
-              placeholder={copy.intake.extra.placeholder}
-              aria-describedby={`${wordsId}-info`}
-              {...picker.fieldProps}
-              onChange={(e) => picker.typed(e.target.value, e.target.selectionStart)}
-              onKeyDown={(e) => { picker.onKeyDown(e); }}
-              className={[
-                "block w-full resize-y min-h-[96px] md:min-h-[84px] p-[12px_13px] md:p-[12px_14px] rounded-[9px] border border-solid",
-                "bg-[color:var(--surface-sunken)] text-[16px] [@media(pointer:fine)]:md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)] outline-none",
-                // Accent while the words will be read: a credit free, or a standing that could not be
-                // read (the press then draws plain, and the submit decides).
-                written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
-              ].join(" ")}
-            />
+            {/* The count is the picker's (a tag counts as its name), so the count and the box stop together. Accent while the
+                words will be read: a credit free, or a standing that could not be read (the press then draws plain, and the
+                submit decides). */}
+            <TaggedBox
+              onInsert={picker.insertTag}
+              open={picker.open}
+              count={picker.count}
+              max={READ_WORDS_MAX_CHARS}
+              fill="sunken"
+              accent={written && closed === null ? "always" : "focus"}
+              keyProps={{ "data-lock-hide": "" }}
+              frameRef={frameRef}
+            >
+              <textarea
+                ref={wordsRef}
+                id={wordsId}
+                value={words}
+                placeholder={copy.intake.extra.placeholder}
+                aria-describedby={`${wordsId}-info`}
+                {...picker.fieldProps}
+                onChange={(e) => picker.typed(e.target.value, e.target.selectionStart)}
+                onKeyDown={(e) => { picker.onKeyDown(e); }}
+                className="block w-full resize-none overflow-hidden min-h-[96px] md:min-h-[84px] bg-transparent p-[12px_14px_4px] text-[16px] [@media(pointer:fine)]:md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)] outline-none"
+              />
+            </TaggedBox>
             {picker.open && <CardTagList {...picker.list} maxHeightPx={(picker.open ? listMax : null) ?? undefined} />}
           </div>
         </Field>
@@ -447,7 +448,6 @@ function Field({
   caption,
   captionTone = "faint",
   tag,
-  count = null,
   aside,
   tipAnchor = false,
   after,
@@ -457,8 +457,6 @@ function Field({
   /** Beside the label: *optional* on the paid field. */
   tag?: string;
   captionTone?: "faint" | "muted";
-  /** At the caption's right: the box's character count, while it has text. */
-  count?: string | null;
   /** Drawn at the label's right, on its line: the Theme field's join. */
   aside?: ReactNode;
   /** The aside holds an ⓘ: its tooltip anchors to this row, so the row is positioned. */
@@ -486,12 +484,9 @@ function Field({
         {aside}
       </div>
       {children}
-      <div className={count ? "flex items-start justify-between gap-[12px]" : "contents"}>
-        <p className={`m-0 text-[12px] leading-[1.5] ${captionTone === "muted" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-faint)]"}`}>
-          {caption}
-        </p>
-        {count && <span className="shrink-0 font-mono text-[10px] text-[color:var(--fg-faint)]">{count}</span>}
-      </div>
+      <p className={`m-0 text-[12px] leading-[1.5] ${captionTone === "muted" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-faint)]"}`}>
+        {caption}
+      </p>
       {after}
     </div>
   );
