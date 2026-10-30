@@ -5,7 +5,7 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import type { LineItem } from "../../lib/tuning/state";
 import type { CardActions } from "./suggestion-card";
-import { SuggestionLine } from "./suggestion-line";
+import { addMarkOf, SuggestionLine } from "./suggestion-line";
 
 const open = vi.fn();
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open }), useCardIntent: () => ({}) }));
@@ -141,6 +141,15 @@ describe("SuggestionLine", () => {
     expect(screen.getAllByText("buy").length).toBeGreaterThan(0);
     unmount();
     draw({ ...cut, owned: true, ownedQuantity: 1, availability: contested });
+    expect(screen.queryAllByText("buy")).toHaveLength(0);
+  });
+
+  // Small items 4 item 2: a run that offered copies held in other decks marks a held add and never tags it to buy.
+  it("marks a held add without a buy tag when the run offered cards from other decks", () => {
+    const claim = { id: "d2", name: "Other", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const contested = { owned: 1, hard: 1, soft: 0, free: 0, claims: [claim] };
+    render(<>{addMarkOf({ ...add, availability: contested }, null, { ownedFromOtherDecks: true })}</>);
+    expect(screen.getAllByText(/none free/).length).toBeGreaterThan(0);
     expect(screen.queryAllByText("buy")).toHaveLength(0);
   });
 

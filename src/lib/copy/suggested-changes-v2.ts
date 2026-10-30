@@ -165,6 +165,8 @@ export const suggestedChangesV2Copy = {
     askedSets: (sets: string) => `from ${sets}`,
     askedAnySet: "any set",
     askedOwned: "cards you own",
+    // Bold after `askedOwned` when the run also offered copies held in other decks (Small items 4, item 2).
+    askedOtherDecks: "and in my other decks",
     askedAnyCard: "any card",
     // The phone halves' accessible name (the board draws only the two segments).
     halves: "Additions or cuts",

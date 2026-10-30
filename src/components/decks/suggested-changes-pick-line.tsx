@@ -22,8 +22,11 @@ const cardCopy = deckTuningCopy.card;
  * `new` mark, for a beat after the line lands.
  */
 export function SuggestedChangesPickLine({
-  item, permits, newestPriceAsOf, picked, off, onToggle, fresh = false, aim, readOnly = false,
+  item, permits, newestPriceAsOf, picked, off, onToggle, fresh = false, aim, readOnly = false, ownedFromOtherDecks = false,
 }: {
+  /** The run offered copies held in the player's other decks (Small items 4, item 2): a held addition is marked, never
+   *  tagged to buy, since the player asked for cards they own. */
+  ownedFromOtherDecks?: boolean;
   /** A run the deck has moved past (a commit since, or a History view of it): no Pick, and an open line reads
    *  `Not picked` (History C). */
   readOnly?: boolean;
@@ -38,7 +41,7 @@ export function SuggestedChangesPickLine({
 }) {
   const isAdd = item.side === "add";
   const applied = item.verdict === "accepted";
-  const addMark = addMarkOf(item, newestPriceAsOf);
+  const addMark = addMarkOf(item, newestPriceAsOf, { ownedFromOtherDecks });
   const shift = bracketShift(permits, item.bracketAfter);
   const asked = aim !== null && reachesAim(aim, item.side, item.bracketAfter);
   const on = picked && !applied;

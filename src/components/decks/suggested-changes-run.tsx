@@ -291,6 +291,7 @@ export function SuggestedChangesRun({
           picked={isPicked(l)}
           off={readOnly || !l.applies || (side === "add" ? pickedAdds : pickedCuts).length >= cap}
           onToggle={() => void toggle(l)}
+          ownedFromOtherDecks={ask?.restrictions?.ownedOnly === true && ask.restrictions.otherDecks === true}
           fresh={fresh.has(l.id)}
           aim={ask?.bracket ?? null}
           readOnly={readOnly}
@@ -694,10 +695,12 @@ function YouAsked({ ask }: { ask: V2Ask }) {
     ));
   }
   if (ask.restrictions) {
-    const { capCents, sets, ownedOnly } = ask.restrictions;
+    const { capCents, sets, ownedOnly, otherDecks } = ask.restrictions;
     parts.push(capCents === null ? r.askedNoCap : r.askedCap(formatCents(capCents)));
     parts.push(sets.length === 0 ? r.askedAnySet : r.askedSets(sets.map((s) => s.toUpperCase()).join(", ")));
-    parts.push(ownedOnly ? r.askedOwned : r.askedAnyCard);
+    parts.push(!ownedOnly ? r.askedAnyCard : !otherDecks ? r.askedOwned : (
+      <span key="owned">{r.askedOwned}, <b className="font-medium" style={{ color: "var(--fg-muted)" }}>{r.askedOtherDecks}</b></span>
+    ));
   }
   return (
     <div data-sc-asked="" className="flex flex-col gap-[6px] rounded-[10px] px-[14px] py-[12px]" style={{ background: "var(--surface-rail)", border: "1px solid var(--border)" }}>
