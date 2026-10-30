@@ -4,6 +4,7 @@
 // old SearchPane got wrong: a filter that hides results without saying so, and
 // an in-deck row that looks actionable.
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
+import { useEffect, useState, type ReactNode } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
@@ -23,7 +24,7 @@ vi.mock("../../app/collection/actions", () => ({
 }));
 
 const { QuickAddBar } = await import("./quick-add-bar");
-const { CardDetailProvider, cardDetailCopy, warmCardModal } = await import("../cards/card-detail-provider");
+const { CardDetailProvider, cardDetailCopy, useCardDetail, warmCardModal } = await import("../cards/card-detail-provider");
 // The modal is loaded on demand; loaded here, a press draws it in the same tick.
 await warmCardModal();
 const { addPanelCopy } = await import("../../lib/copy/decks-builder");
@@ -158,13 +159,20 @@ describe("QuickAddBar — the grid and card details", () => {
       printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
     }) as BrowseCard;
 
-  function mountWithDetail(props: Partial<React.ComponentProps<typeof QuickAddBar>> = {}) {
-    const fetchCard = vi.fn(async (id: string) => {
-      const hit = [rhystic, sram, steam].find((r) => r.oracleId === id);
-      return hit ? browse(hit) : null;
-    });
+  function mountWithDetail(
+    props: Partial<React.ComponentProps<typeof QuickAddBar>> = {},
+    {
+      read = async (id: string) => {
+        const hit = [rhystic, sram, steam].find((r) => r.oracleId === id);
+        return hit ? browse(hit) : null;
+      },
+      beside = null,
+    }: { read?: (id: string) => Promise<BrowseCard | null>; beside?: ReactNode } = {},
+  ) {
+    const fetchCard = vi.fn(read);
     render(
       <CardDetailProvider fetchCard={fetchCard}>
+        {beside}
         <QuickAddBar
           deckId="deck-1"
           commanderIdentity={["U"]}
@@ -344,6 +352,105 @@ describe("QuickAddBar — the grid and card details", () => {
     expect(field()).toHaveValue("stu");
     expect(screen.getByRole("grid")).toBeInTheDocument();
     expect(rows()).toHaveLength(3);
+  });
+
+  // A sheet opened over the card (its combo, Find a deck's picker, a door's) lifts the card into the
+  // provider's held slot, so neither the open nor the pending id is set while the sheet is up. Drawn here
+  // as the provider's own tests draw one, through `registerSheet(..., overCard)`.
+  function SheetOverCard() {
+    const { registerSheet } = useCardDetail();
+    const [up, setUp] = useState(false);
+    useEffect(() => (up ? registerSheet("The combo", undefined, true) : undefined), [up, registerSheet]);
+    return (
+      <>
+        <button type="button" onClick={() => setUp(true)}>raise the sheet</button>
+        {up ? (
+          <div data-testid="sheet-over-card">
+            <button type="button" onClick={() => setUp(false)}>Back to the card</button>
+          </div>
+        ) : null}
+      </>
+    );
+  }
+
+  it("keeps the query and the list through a press inside a sheet opened over the card", async () => {
+    mountWithDetail({}, { beside: <SheetOverCard /> });
+    await search();
+    key("ArrowRight");
+    await act(async () => {
+      key("Enter");
+    });
+    await screen.findByRole("dialog");
+    await act(async () => {
+      fireEvent.click(screen.getByText("raise the sheet"));
+    });
+    // The card is held under the sheet now: no dialog of its own on top.
+    expect(screen.getByTestId("sheet-over-card")).toBeInTheDocument();
+
+    const back = within(screen.getByTestId("sheet-over-card")).getByRole("button", { name: "Back to the card" });
+    fireEvent.pointerDown(back);
+    await act(async () => {
+      fireEvent.click(back);
+    });
+
+    expect(field()).toHaveValue("stu");
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+    expect(rows()).toHaveLength(3);
+    // And the card the sheet was opened over is back.
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName(rhystic.name);
+  });
+
+  // A cache miss: the card's read is in flight, nothing is drawn yet, and focus is still in the field.
+  function mountPending() {
+    let land: (c: BrowseCard | null) => void = () => {};
+    const { fetchCard } = mountWithDetail({}, { read: () => new Promise<BrowseCard | null>((r) => { land = r; }) });
+    return { fetchCard, land: (c: BrowseCard | null) => land(c) };
+  }
+
+  it("cancels a card still loading on Escape, keeping the query and the list", async () => {
+    const { fetchCard, land } = mountPending();
+    await search();
+    key("ArrowRight");
+    await act(async () => {
+      key("Enter");
+    });
+    expect(fetchCard).toHaveBeenCalledWith(rhystic.oracleId, undefined);
+
+    await act(async () => {
+      key("Escape");
+    });
+    expect(field()).toHaveValue("stu");
+    expect(rows()).toHaveLength(3);
+
+    // The read lands after the Escape: the open it was for is gone, so nothing is drawn.
+    await act(async () => {
+      land(browse(rhystic));
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(field()).toHaveValue("stu");
+    // And the next Escape is the field's own again: it clears the query.
+    await act(async () => {
+      key("Escape");
+    });
+    expect(field()).toHaveValue("");
+  });
+
+  it("keeps the query on a press outside the bar while a card is still loading", async () => {
+    const { land } = mountPending();
+    await search();
+    key("ArrowRight");
+    await act(async () => {
+      key("Enter");
+    });
+
+    fireEvent.pointerDown(document.body);
+    expect(field()).toHaveValue("stu");
+    expect(rows()).toHaveLength(3);
+
+    await act(async () => {
+      land(browse(rhystic));
+    });
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName(rhystic.name);
   });
 
   it("opens an in-deck row's card, though its Add stays inert", async () => {

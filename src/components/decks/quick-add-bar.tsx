@@ -24,7 +24,7 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { colorLabel } from "../../lib/decks/format";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { SearchField } from "../ui/text-field";
-import { useSearchDismiss } from "../../lib/ui/search-dismiss";
+import { escapeDismisses, useSearchDismiss } from "../../lib/ui/search-dismiss";
 import { markerAria } from "../ui/availability-marker";
 import { comboClauseSpoken } from "../cards/combo-clause";
 import { CardSearchRowBody } from "./card-search-row";
@@ -117,9 +117,11 @@ export function QuickAddBar({
   // provider (the About figure's test), and there the name is not a control and the cell stays on Add.
   const detail = useCardDetailIfAny();
   // Escape, or a press outside the bar and its results, clears the query, which closes the list
-  // with it (one rule for every pick-from-a-list field, `useSearchDismiss`). Not while a card's detail is up:
-  // a press inside it (its ✕ above all) is outside the bar, and closing it returns to the query and list kept.
-  const detailUp = detail !== null && (detail.openOracleId !== null || detail.pendingOracleId !== null);
+  // with it (one rule for every pick-from-a-list field, `useSearchDismiss`). Not for the whole card detail
+  // session: a press inside it (its ✕, or a sheet opened over the card, where the card is held and neither id
+  // is set) is outside the bar, and closing it returns to the query and list kept. Escape while the card is
+  // still loading is `handleKeyDown`'s: focus is still in the field, and it cancels the open instead.
+  const detailUp = detail?.sessionActive ?? false;
   const { ref: rootRef, onEscape, insideProps } = useSearchDismiss<HTMLDivElement>(
     query.length > 0 && !detailUp,
     () => setQuery(""),
@@ -215,6 +217,10 @@ export function QuickAddBar({
       if (!active) return;
       if (column === "name") openDetails(active);
       else if (!inDeck(active)) addRef.current?.(active);
+    } else if (detail && escapeDismisses(e, detail.pendingOracleId !== null, detail.close)) {
+      // The card's read is in flight and nothing is drawn yet: Escape abandons that open, and the query
+      // and list stay, as a close of the card would leave them.
+      return;
     } else onEscape(e);
   }
 
