@@ -80,7 +80,7 @@ describe("GET /out/wizards/[id]", () => {
   });
 
   it("looks up nothing for an id that is not a Contentful id's shape", async () => {
-    for (const id of ["", "a/b", "a b", "x".repeat(65), "../x"]) {
+    for (const id of ["", "a/b", "a b", "x".repeat(65), "../x", "x.png"]) {
       expect((await get(id)).headers.get("location"), id).toBe(`${ORIGIN}/`);
     }
     expect(stub.lookedUp).toHaveLength(0);

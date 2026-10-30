@@ -97,7 +97,7 @@ export const config = {
   // images are files deeper under that path (`/about/pages/`, `/about/shots/`), which the proxy must not run on.
   matcher: [
     "/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)", "/card/(.*)", "/commander/(.*)",
-    "/decks/(.*)", "/collection/(.*)", "/commanders/(.*)", "/friends/(.*)", "/friend/(.*)", "/join/(.*)", "/admin/(.*)",
+    "/decks/(.*)", "/collection/(.*)", "/commanders/(.*)", "/friends/(.*)", "/friend/(.*)", "/join/(.*)", "/admin/(.*)", "/out/(.*)",
     "/about/:area",
   ],
 };

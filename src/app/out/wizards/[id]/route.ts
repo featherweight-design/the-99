@@ -32,11 +32,12 @@ const go = (to: string | URL) => NextResponse.redirect(to, { status: 307, header
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const home = new URL("/", req.url);
+  // The id's shape first: nothing else is read for an address that cannot be a post.
+  const { id } = await params;
+  if (!ID.test(id)) return go(home);
   const { userId } = await auth();
   if (!userId) return go(home);
   if (!announcementsEnabled(await requestSwitchEnv(userId))) return go(home);
-  const { id } = await params;
-  if (!ID.test(id)) return go(home);
   const [post] = await db.select({ url: wizardsAnnouncements.url }).from(wizardsAnnouncements).where(eq(wizardsAnnouncements.contentfulId, id)).limit(1);
   const out = post ? wizardsPostUrl(post.url) : null;
   return go(out ?? home);
