@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { adminCopy } from "../copy/admin";
+import { flyerHoldRow } from "../flyer/rules";
 import {
   accountInvites,
   invitedBy,
@@ -55,6 +56,20 @@ describe("who invited an account", () => {
     expect(phoneInviteMeta(rows.get("u_hugh")!)).toEqual({ figure: "5", after: " invites", by: "founder" });
     expect(phoneInviteMeta(rows.get("u_colin")!)).toEqual({ figure: "2", after: " · 1 waiting", by: "by Hugh" });
     expect(phoneInviteMeta(rows.get("u_peter")!)).toEqual({ figure: "0", after: " invites", by: "by deleted account" });
+  });
+
+  it("counts a claim holding on a flyer code as one of its creator's invites waiting", () => {
+    const rows = rowInvites({
+      ids: ["u_hugh"],
+      balances: new Map([["u_hugh", 5]]),
+      open: [],
+      flyer: [{ ...flyerHoldRow(day(21)), userId: "u_hugh" }, { ...flyerHoldRow(day(19)), userId: "u_hugh" }],
+      edges,
+      accounts,
+      now,
+    });
+    // One live hold; the lapsed one holds nothing.
+    expect(rows.get("u_hugh")).toMatchObject({ left: 4, waiting: 1 });
   });
 });
 

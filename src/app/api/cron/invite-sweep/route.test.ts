@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sweep = vi.hoisted(() => vi.fn());
+const flyerSweep = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/invites/sweep", () => ({ sweepInvites: sweep }));
+vi.mock("../../../../lib/flyer/sweep", () => ({ sweepFlyerClaims: flyerSweep }));
 const { GET } = await import("./route");
 
 const call = (auth?: string) => GET(new Request("https://x/api/cron/invite-sweep", { headers: auth ? { authorization: auth } : {} }) as never);
@@ -10,6 +12,7 @@ describe("GET /api/cron/invite-sweep", () => {
   const saved = process.env.CRON_SECRET;
   beforeEach(() => {
     sweep.mockReset().mockResolvedValue({ returned: 2, revoked: 1, reconciled: 0, kept: 0 });
+    flyerSweep.mockReset().mockResolvedValue({ released: 3, kept: 1 });
     process.env.CRON_SECRET = "s3cret";
   });
   afterEach(() => {
@@ -35,7 +38,7 @@ describe("GET /api/cron/invite-sweep", () => {
     try {
       const res = await call("Bearer s3cret");
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0 });
+      expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 } });
     } finally {
       delete process.env.SOCIAL_INVITES_ENABLED;
     }

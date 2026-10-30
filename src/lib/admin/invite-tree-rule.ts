@@ -3,7 +3,7 @@ import { holdsInvite } from "../invites/rules";
 import type { Account } from "./accounts";
 import { maskEmail, unlistedAccount } from "./mask";
 import { initials, matchesAccount } from "./account-page-rule";
-import { countFor, fmtDay, type Edge, type ReservationRow } from "./invites-rule";
+import { countFor, fmtDay, type Edge, type OpenRow, type ReservationRow } from "./invites-rule";
 import { accountName } from "./names";
 
 /**
@@ -37,6 +37,8 @@ export function buildInviteTree(input: {
   ownerId: string | null;
   balances: ReadonlyMap<string, number>;
   open: readonly ReservationRow[];
+  /** Claims holding on flyer codes: each holds one of its code creator's invites, so `left` nets them; never drawn as rows. */
+  flyer?: readonly OpenRow[];
   edges: readonly Edge[];
   now: Date;
 }): InviteTree {
@@ -50,6 +52,8 @@ export function buildInviteTree(input: {
 
   const openOf = new Map<string, ReservationRow[]>();
   for (const r of input.open) openOf.set(r.userId, [...(openOf.get(r.userId) ?? []), r]);
+  const flyerOf = new Map<string, OpenRow[]>();
+  for (const r of input.flyer ?? []) flyerOf.set(r.userId, [...(flyerOf.get(r.userId) ?? []), r]);
   const madeBy = new Map<string | null, Edge[]>();
   for (const e of input.edges) madeBy.set(e.inviter, [...(madeBy.get(e.inviter) ?? []), e]);
   const byJoin = (a: Edge, b: Edge) => a.joinedAt.getTime() - b.joinedAt.getTime() || (rank.get(a.invitee ?? "") ?? 0) - (rank.get(b.invitee ?? "") ?? 0);
@@ -77,7 +81,7 @@ export function buildInviteTree(input: {
       initials: id === input.ownerId ? null : initials(a),
       owner: id === input.ownerId,
       joined: joined ? fmtDay(joined) : null,
-      left: countFor(input.balances.get(id), open, input.now).left,
+      left: countFor(input.balances.get(id), [...open, ...(flyerOf.get(id) ?? [])], input.now).left,
       invited: (madeBy.get(id) ?? []).length,
       children: [
         ...childrenOf(id),
