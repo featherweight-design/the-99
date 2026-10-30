@@ -14,8 +14,8 @@
 // only) sits in its own sunken band above the column heads, its box at the band's right over the Push column. The
 // browser's prompt is asked ONLY inside a push tick's press while permission is `default`, never on load; a visit with
 // permission granted and a live subscription re-saves it silently (G1). On a device that cannot push, the band says so
-// and the column, its head and the foot's push clause leave; In app keeps its head, and the band pads its right 12px
-// as its left (no cell holds that side). Without `push` there is no band.
+// and the column, its head and the foot's push clause leave; In app keeps its head. The band's right padding is 0 at
+// every state, as the board's `.dv` draws it (its can't line included). Without `push` there is no band.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -332,7 +332,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
         <div
           data-push-device={device?.state ?? "reading"}
           aria-busy={device === null || undefined}
-          className={`mt-[10px] flex items-start gap-[12px] rounded-[10px] bg-[color:var(--surface-sunken)] py-[10px] pl-[12px] [border:1px_solid_var(--border)]${column ? "" : " pr-[12px]"}`}
+          className="mt-[10px] flex items-start gap-[12px] rounded-[10px] bg-[color:var(--surface-sunken)] py-[10px] pl-[12px] [border:1px_solid_var(--border)]"
         >
           <div className={`flex min-w-0 flex-1 items-start gap-[12px]${device ? "" : " invisible"}`}>
             <span className="mt-[1px] flex h-[18px] w-[18px] flex-none items-center justify-center text-[color:var(--fg-muted)]">

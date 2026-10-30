@@ -200,15 +200,6 @@ describe("the device row's states", () => {
     expect(within(deviceRow()).getByText(P.device.title("iPhone"))).toBeTruthy();
   });
 
-  // With no cell on the band's right, its line would run to the border: the band pads its right as its left.
-  it("Can't: the band pads its right 12px, as its left, since no box holds that side", async () => {
-    deviceIs({ pushApi: false });
-    await draw();
-    const classes = deviceRow().className.split(/\s+/);
-    expect(classes).toEqual(expect.arrayContaining(["pl-[12px]", "pr-[12px]"]));
-    expect(deviceRow().querySelector("label")).toBeNull();
-  });
-
   it("a band with its box pads no right of its own: the 52px cell is that side", async () => {
     await draw();
     expect(deviceRow().className.split(/\s+/)).not.toContain("pr-[12px]");
