@@ -12,15 +12,18 @@ const m = vi.hoisted(() => ({
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_me" }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => m.env }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: async () => [{ podId: "p1", name: "Thursday pod" }] }));
+vi.mock("../../lib/social/deck-visibility", () => ({ loadFriendDeckPrefs: async () => ({ seeDecks: true, seeUnfinished: false }) }));
 vi.mock("../../lib/social/spare-settings", () => ({ readSpareMin: m.readSpareMin, loadKeptBack: m.loadKeptBack }));
 vi.mock("../../lib/collection/payload", () => ({ loadCollectionList: m.loadCollectionList }));
 vi.mock("../../lib/feed/prefs", () => ({ loadNewsSettings: m.loadNewsSettings }));
 vi.mock("../../components/settings/spares-section", () => ({ SparesSection: () => null }));
+vi.mock("../../components/settings/friend-decks-section", () => ({ FriendDecksSection: () => null }));
 vi.mock("../../components/settings/news-section", () => ({ NewsSection: () => null }));
 
 import SettingsPage from "./page";
 import { NewsSection } from "../../components/settings/news-section";
 import { SparesSection } from "../../components/settings/spares-section";
+import { FriendDecksSection } from "../../components/settings/friend-decks-section";
 
 type El = { type: unknown; props: Record<string, unknown> };
 // The view's children, false/null (a section not mounted) left out.
@@ -45,10 +48,10 @@ describe("/settings", () => {
     expect(m.loadKeptBack).not.toHaveBeenCalled();
   });
 
-  it("draws news first, then Spares, with both on", async () => {
+  it("draws news first, then Spares, then Your decks, with Friends on", async () => {
     m.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     const el = await SettingsPage();
-    expect(sections(el).map((c) => c.type)).toEqual([NewsSection, SparesSection]);
+    expect(sections(el).map((c) => c.type)).toEqual([NewsSection, SparesSection, FriendDecksSection]);
   });
 
   it("draws the Spares section with the reader's threshold and shared pods", async () => {
