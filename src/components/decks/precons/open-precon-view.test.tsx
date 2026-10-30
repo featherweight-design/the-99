@@ -340,9 +340,9 @@ describe("OpenPreconView edition switch", () => {
       collector: { ...base.collector, cards: base.collector.cards.map((c) => (c.isCommander ? { ...c, imageUri: "ce-art" } : c)) },
     };
     render(<OpenPreconView precon={p} fromNew={false} />);
-    expect(screen.getByTestId("thumb-open").dataset.src).toBe("plain-art");
+    expect(screen.getByTestId("thumb-early").dataset.src).toBe("plain-art");
     fireEvent.click(screen.getByRole("radio", { name: "Collector’s Edition" }));
-    expect(screen.getByTestId("thumb-open").dataset.src).toBe("ce-art");
+    expect(screen.getByTestId("thumb-early").dataset.src).toBe("ce-art");
   });
 
   it("hands Start the chosen edition's own box and its own added date", () => {
