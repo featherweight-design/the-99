@@ -43,16 +43,16 @@ describe("dailyLimitFor", () => {
     ({ execute: async () => ({ rows: allowances.map((allowance) => ({ user_id: "user_owner", allowance })).concat(allowances.map((allowance) => ({ user_id: "user_friend", allowance }))) }) }) as never;
   const none = groups();
 
-  it("changes nobody's limit while MODEL_DAILY_ALLOWANCE is unset and no group sets one", async () => {
+  it("gives the default to a player in no group while MODEL_DAILY_ALLOWANCE is unset; the owner keeps their own", async () => {
     delete process.env.MODEL_DAILY_ALLOWANCE;
     process.env.MODEL_OWNER_USER_ID = "user_owner";
     delete process.env.MODEL_OWNER_DAILY_ALLOWANCE;
     expect([MODEL_OWNER_DAILY_ALLOWANCE, MODEL_DEFAULT_DAILY_ALLOWANCE]).toEqual([10, 1]);
     expect(await dailyLimitFor(none, "user_owner")).toBe(10);
-    expect(await dailyLimitFor(none, "user_friend")).toBe(5);
+    expect(await dailyLimitFor(none, "user_friend")).toBe(1);
     process.env.MODEL_OWNER_DAILY_ALLOWANCE = "100";
     expect(await dailyLimitFor(none, "user_owner")).toBe(100);
-    expect(await dailyLimitFor(none, "user_friend")).toBe(5);
+    expect(await dailyLimitFor(none, "user_friend")).toBe(1);
   });
 
   it("gives a group's allowance to its member, owner included, over the default", async () => {
@@ -72,13 +72,13 @@ describe("dailyLimitFor", () => {
 
   it("ignores a garbage default or override, and an override with no owner", async () => {
     process.env.MODEL_DAILY_ALLOWANCE = "0";
-    expect(await dailyLimitFor(none, "user_friend")).toBe(5);
+    expect(await dailyLimitFor(none, "user_friend")).toBe(1);
     process.env.MODEL_OWNER_USER_ID = "user_owner";
     process.env.MODEL_OWNER_DAILY_ALLOWANCE = "lots";
     expect(await dailyLimitFor(none, "user_owner")).toBe(10);
     delete process.env.MODEL_OWNER_USER_ID;
     process.env.MODEL_OWNER_DAILY_ALLOWANCE = "100";
-    expect(await dailyLimitFor(none, "user_owner")).toBe(5);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(1);
   });
 
   it("reads only groups that set an allowance, so a group without one names none", () => {
@@ -98,15 +98,15 @@ describe("dailyLimitFor", () => {
     const execute = vi.fn(async () => ({ rows: [{ user_id: "u1", allowance: 3 }] }));
     const limits = await dailyLimitsFor({ execute } as never, ["u1", "u2"]);
     expect(execute).toHaveBeenCalledOnce();
-    expect([limits.get("u1"), limits.get("u2")]).toEqual([3, 5]);
+    expect([limits.get("u1"), limits.get("u2")]).toEqual([3, 1]);
   });
 
   it("fails closed: unset or empty, no account is the owner", async () => {
     delete process.env.MODEL_DAILY_ALLOWANCE;
     delete process.env.MODEL_OWNER_USER_ID;
-    expect(await dailyLimitFor(none, "user_owner")).toBe(5);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(1);
     process.env.MODEL_OWNER_USER_ID = "   ";
-    expect(await dailyLimitFor(none, "   ")).toBe(5);
+    expect(await dailyLimitFor(none, "   ")).toBe(1);
   });
 });
 

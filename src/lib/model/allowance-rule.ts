@@ -15,7 +15,7 @@
  * Model runs per player per rolling 24 hours, across every feature, shared by tuning and the
  * synopsis.
  *
- * Owner 10, friends 5 (3 until 2026-10-09, when Hugh raised it): Hugh, via the orchestrator, 2026-09-24. It replaced a flat five (2026-09-23)
+ * Owner 10, everyone else on the default (`MODEL_DEFAULT_DAILY_ALLOWANCE`, 1 since 2026-10-30; friends 5 through their group) (3 until 2026-10-09, when Hugh raised it): Hugh, via the orchestrator, 2026-09-24. It replaced a flat five (2026-09-23)
  * when an app-wide spend cap arrived (removed 2026-10-17; the Anthropic workspace limits bound the
  * month's dollars now), so the per-player number only has to share the budget fairly, and the owner — who tests every
  * change — gets more presses than anyone on the default. Which account is the owner is `MODEL_OWNER_USER_ID`,
@@ -63,8 +63,8 @@ export function defaultDailyAllowanceFrom(raw: string | undefined): number {
  * 2. The owner's own limit (`MODEL_OWNER_DAILY_ALLOWANCE`), while the owner is in no group that sets
  *    one, so the default can drop without dropping the owner.
  * 3. The app-wide default (`defaultDailyAllowanceFrom`).
- * With no group allowance set anywhere and `MODEL_DAILY_ALLOWANCE` unset, this is exactly the limit
- * before groups carried one. Pure.
+ * With no group allowance set anywhere and `MODEL_DAILY_ALLOWANCE` unset, a non-owner gets
+ * `MODEL_DEFAULT_DAILY_ALLOWANCE` (one since 2026-10-30; five before). Pure.
  */
 export function dailyLimit(input: { groupAllowances: readonly number[]; owner: boolean; ownerRaw: string | undefined; defaultRaw: string | undefined }): number {
   // The column is checked 1 to 1000; anything else read here is not an allowance.
