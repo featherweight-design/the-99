@@ -46,6 +46,16 @@ export const citationSchemaV2 = z.object({
 export const lineSchemaV2 = lineSchema.extend({ evidence: z.array(citationSchemaV2).min(1).max(4) });
 
 /**
+ * A v2 reply's line as the model is asked to write it: `lineSchemaV2` plus `n`, its 1-based number (prompt v14). A counting
+ * aid only. The cut call sometimes closed its array early, far under the token cap (4 of 30 asked, at 446 output tokens), and
+ * numbering each line keeps the count in front of the model ("Number the lines 1 to {ask}"). It is REQUIRED here so the
+ * structured-output format makes the model write it, and unbounded, so no value can fail the whole-reply parse. Its value is
+ * never read: the engine parses each streamed line with `lineSchemaV2`, which strips `n`, so a line is never dropped for a
+ * missing or wrong number, and positions come from arrival order as before.
+ */
+export const replyLineSchemaV2 = lineSchemaV2.extend({ n: z.number().int() });
+
+/**
  * One list of a v2 reply, and the SAME schema for every call of a run: additions, cuts and both refills (§5.1). The
  * structured-output format is part of Anthropic's prompt-cache key, so a schema that varied by call (a per-list key, a
  * per-ask cap) meant the cut call and the refills never read the prefix the additions call cached (measured: 4,713 cached
@@ -56,7 +66,7 @@ export const lineSchemaV2 = lineSchema.extend({ evidence: z.array(citationSchema
  * first ask-many valid lines of each call (`caps`, `overAsk`).
  */
 export const suggestedChangesV2ReplySchema = z.object({
-  lines: z.array(lineSchemaV2).max(schemaCapFor(askFor(MAX_COUNT))),
+  lines: z.array(replyLineSchemaV2).max(schemaCapFor(askFor(MAX_COUNT))),
 });
 
 export type SuggestedChangesV2Reply = z.infer<typeof suggestedChangesV2ReplySchema>;

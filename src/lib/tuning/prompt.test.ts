@@ -523,7 +523,24 @@ describe("buildPromptV2", () => {
   it("asks a refill for exactly the shortfall, naming what stands and what fell", () => {
     const { user } = buildPromptV2(pack, { ...stage, ask: 2, list: "additions", refill: { kept: ["Cultivate"], rejected: [{ card: "Bolt", reason: "it is outside the commander's colors" }] } });
     expect(user).toContain("Propose exactly 2 cards to add");
-    expect(user).toContain("Kept, additions: Cultivate.\nRejected, and why:\n- Bolt: it is outside the commander's colors\nPropose exactly 2 more additions, following every rule above. Name none of the cards listed here.");
+    expect(user).toContain("Kept, additions: Cultivate.\nRejected, and why:\n- Bolt: it is outside the commander's colors\nPropose exactly 2 more additions, following every rule above. Name none of the cards listed here. Number the lines 1 to 2; stop only after line 2.");
+  });
+
+  // Prompt v14: a reply had closed its list early (a cut call asked 30 stopped at 4), so every ask numbers its lines.
+  it("asks every call to number its lines to the ask, once, in the call's own tail and never the cached prefix", () => {
+    const sentence = (ask: number) => `Number the lines 1 to ${ask}; stop only after line ${ask}.`;
+    const [adds, cuts, addRefill, cutRefill] = fourCalls(pack);
+    expect(adds.user).toContain(`Propose exactly 6 cards to add; the cuts are chosen in a separate step. ${sentence(6)}`);
+    expect(cuts.user).toContain(`Propose exactly 6 cards to cut; the additions were chosen in an earlier step. ${sentence(6)}`);
+    expect(addRefill.user.endsWith(`Name none of the cards listed here. ${sentence(2)}`)).toBe(true);
+    expect(cutRefill.user.endsWith(`Name none of the cards listed here. ${sentence(2)}`)).toBe(true);
+    for (const c of [adds, cuts, addRefill, cutRefill]) {
+      expect(c.user.split("Number the lines").length).toBe(2);
+      expect(c.system).not.toContain("Number the lines");
+      expect(c.cachedUser).not.toContain("Number the lines");
+    }
+    expect(cuts.system).toBe(adds.system);
+    expect(cuts.cachedUser).toBe(adds.cachedUser);
   });
 
   it("lets a v2 cut say stronger or more focused, as its validator does, and keeps the rule on additions and v10 (round 5)", () => {

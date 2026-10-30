@@ -135,10 +135,22 @@ const STEP_HEADING = "This step:";
 const STEP_RULES_LINE = "This step's rules. A suggestion that breaks any of these is discarded before the player sees it, as with the rules above:";
 const INDEPENDENT = "Each card stands alone: never pair an addition with a cut, and never refer to a card in the other list.";
 
+/**
+ * The count line (prompt v14): a reply sometimes closed its list early, far under its token cap (a cut call asked 30 stopped
+ * at 4), so every ask has the model number its lines (`replyLineSchemaV2`'s `n`) and names the last one, once per call: on
+ * the size line of a first ask, after the refill's own ask on a refill. Said in this call's own tail (`user`), never the
+ * cached prefix, because the number differs by call.
+ */
+export function numberLinesV2(ask: number): string {
+  return `Number the lines 1 to ${ask}; stop only after line ${ask}.`;
+}
+
 function sizeLineV2(stage: PromptV2Stage): string {
+  // A refill says it once, after its own "Propose exactly N more" at the end (`refillBlockV2`).
+  const count = stage.refill ? "" : ` ${numberLinesV2(stage.ask)}`;
   return stage.list === "additions"
-    ? `Propose exactly ${stage.ask} cards to add; the cuts are chosen in a separate step. ${INDEPENDENT}`
-    : `Propose exactly ${stage.ask} cards to cut; the additions were chosen in an earlier step. ${INDEPENDENT}`;
+    ? `Propose exactly ${stage.ask} cards to add; the cuts are chosen in a separate step.${count} ${INDEPENDENT}`
+    : `Propose exactly ${stage.ask} cards to cut; the additions were chosen in an earlier step.${count} ${INDEPENDENT}`;
 }
 
 function aimLineV2(stage: PromptV2Stage): string {
@@ -186,7 +198,7 @@ function refillBlockV2(stage: PromptV2Stage): string {
     "Your first answer was checked against the rules.",
     `Kept, ${noun}: ${refill.kept.join("; ") || "none"}.`,
     ...(refill.rejected.length > 0 ? ["Rejected, and why:", ...refill.rejected.map((r) => `- ${r.card}: ${r.reason}`)] : []),
-    `Propose exactly ${stage.ask} more ${noun}, following every rule above. Name none of the cards listed here.`,
+    `Propose exactly ${stage.ask} more ${noun}, following every rule above. Name none of the cards listed here. ${numberLinesV2(stage.ask)}`,
   ].join("\n");
 }
 

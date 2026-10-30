@@ -10,7 +10,7 @@ describe("PROMPT_VERSION", () => {
 });
 
 describe("PROMPT_VERSION_V2", () => {
-  it("is 13: every call of a run shares one cached prefix, and each call's own lines come after it", () => {
-    expect(PROMPT_VERSION_V2).toBe(13);
+  it("is 14: every ask numbers its lines, after the cached prefix every call of a run shares", () => {
+    expect(PROMPT_VERSION_V2).toBe(14);
   });
 });

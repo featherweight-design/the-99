@@ -50,4 +50,7 @@ export const PROMPT_VERSION = 10;
 // the deck's evidence, sent as a cached block; what a call says and another does not (its size, aim and bracket lines, the
 // cut's narrowed result-claim rule, the additions' owned lists and the rule that names them, "Coming in", the refill) moves
 // after it, under "This step". The owned-only rule in the shared part is the listless sentence for every call.
-export const PROMPT_VERSION_V2 = 13;
+// 14 (2026-10-30, numbered lines): every ask (additions, cuts, both refills) adds "Number the lines 1 to {ask}; stop only
+// after line {ask}." after "This step", and the one reply schema gains each line's `n`. A reply had closed its list early, far
+// under its token cap (a cut call asked 30 stopped at 4); the number is a counting aid, never read. The cached prefix is unchanged.
+export const PROMPT_VERSION_V2 = 14;

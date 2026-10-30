@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { suggestedChangesV2ReplySchema, tuningResponseSchema } from "./response-schema";
+import { lineSchemaV2, suggestedChangesV2ReplySchema, tuningResponseSchema } from "./response-schema";
 import { askFor, MAX_COUNT, schemaCapFor } from "./v2/count";
 
 const one = {
@@ -49,7 +49,7 @@ describe("tuningResponseSchema", () => {
 });
 
 describe("suggestedChangesV2ReplySchema", () => {
-  const v2 = { ...one, evidence: [{ kind: "request", value: "more ramp" }] };
+  const v2 = { ...one, n: 1, evidence: [{ kind: "request", value: "more ramp" }] };
   it("is one list under the neutral key `lines`, the same for additions, cuts and both refills", () => {
     expect(suggestedChangesV2ReplySchema.safeParse({ lines: [v2] }).success).toBe(true);
     expect(suggestedChangesV2ReplySchema.safeParse({ lines: [] }).success).toBe(true);
@@ -64,7 +64,18 @@ describe("suggestedChangesV2ReplySchema", () => {
     expect(suggestedChangesV2ReplySchema.safeParse({ lines: Array(cap + 1).fill(v2) }).success).toBe(false);
   });
 
+  it("asks each line for its number `n` (prompt v14), any integer, and the line parse ignores it", () => {
+    expect(suggestedChangesV2ReplySchema.safeParse({ lines: [{ ...v2, n: 7 }] }).success).toBe(true);
+    expect(suggestedChangesV2ReplySchema.safeParse({ lines: [{ ...v2, n: 0 }] }).success).toBe(true);
+    const { n: _n, ...bare } = v2;
+    expect(suggestedChangesV2ReplySchema.safeParse({ lines: [bare] }).success).toBe(false);
+    // The engine parses each streamed line with `lineSchemaV2`: a missing or wrong number never drops a line.
+    expect(lineSchemaV2.safeParse(bare).success).toBe(true);
+    const parsed = lineSchemaV2.safeParse({ ...v2, n: 99 });
+    expect(parsed.success && "n" in parsed.data).toBe(false);
+  });
+
   it("cites the run's request, not v10's notes", () => {
-    expect(suggestedChangesV2ReplySchema.safeParse({ lines: [{ ...one, evidence: [{ kind: "notes", value: "x" }] }] }).success).toBe(false);
+    expect(suggestedChangesV2ReplySchema.safeParse({ lines: [{ ...one, n: 1, evidence: [{ kind: "notes", value: "x" }] }] }).success).toBe(false);
   });
 });
