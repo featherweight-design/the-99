@@ -92,6 +92,7 @@ describe("checkPhrase", () => {
     expect(checkPhrase("five are answers", [])).toBeNull();
     expect(checkPhrase("are 3 of the cuts", [])).toBeNull();
     expect(checkPhrase("fix your colours", [])).toBeNull();
+    expect(checkPhrase("are answers \u2014 cheap ones", [])).toBeNull();
     expect(checkPhrase("will win more games", [])).toBeNull();
     expect(checkPhrase("are answers at one or two mana.", [])).toBe("are answers at one or two mana");
   });

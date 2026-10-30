@@ -21,7 +21,7 @@ import type { V2Line } from "./engine";
  *
  * The lead and every phrase are player-visible model text, so they pass `presentationFailures` as a rationale does (no
  * game result, no bracket, no misquote; a cut's phrase may say "stronger", as a cut's rationale may), and US spelling
- * (`britishSpelling`): a failed lead drops the why, a failed phrase its group. A phrase that writes a count of its own
+ * (`britishSpelling`) with no em-dash: a failed lead drops the why, a failed phrase its group. A phrase that writes a count of its own
  * ("five are answers", "3 of the cuts") is dropped too; a number inside what the cards DO ("answers at one or two mana")
  * is the phrase's meaning and stays.
  */
@@ -71,6 +71,7 @@ const SYSTEM = [
   "- Never name a bracket. Never quote the player.",
   "- Name only cards in the lists below.",
   "- US English spelling: color, favor, defense, optimize.",
+  "- No em-dashes: use a comma or a period.",
 ].join("\n");
 
 /** The why call's prompt: the commander, the player's request when there is one, and both final lists with each row's
@@ -125,10 +126,11 @@ const COUNT = `\\d+|${words.counts.join("|")}`;
 /** A count the model wrote: one that opens the phrase, where the app's word goes, or one counting cards. */
 const WROTE_COUNT = new RegExp(`^(?:${COUNT})\\b|\\b(?:${COUNT})\\s+(?:of|cards?|more|others?|are|is)\\b`, "i");
 
-/** Text the player will read, or null when it fails: empty, British spelling, or a rationale's checks. */
+/** Text the player will read, or null when it fails: empty, British spelling, an em-dash (the copy rule), or a
+ *  rationale's checks. */
 function checkText(raw: unknown, quotable: readonly Quotable[], claims: { allowStronger?: boolean }): string | null {
   const text = clean(raw);
-  if (text === "" || britishSpelling(text)) return null;
+  if (text === "" || britishSpelling(text) || text.includes("\u2014")) return null;
   const r = presentationFailures(text, quotable, claims);
   return r.broken.length > 0 ? null : r.text;
 }
