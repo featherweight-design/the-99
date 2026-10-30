@@ -122,7 +122,7 @@ export VERCEL_TOKEN=...
 
 # The SHA to deploy, read from the remote rather than typed — a stale local main
 # silently deploys the wrong commit, which is the failure this whole step avoids.
-SHA=$(git ls-remote https://github.com/HartiganHM/the-99 refs/heads/main | cut -f1)
+SHA=$(git ls-remote https://github.com/featherweight-design/the-99 refs/heads/main | cut -f1)
 
 curl -sS -X POST \
   "https://api.vercel.com/v13/deployments?teamId=team_tBEQct4aCLPw5a8jbqRJbuPZ" \
