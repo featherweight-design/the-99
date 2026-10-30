@@ -1182,10 +1182,9 @@ export async function listDecksWithStats(
      * it. Unset, every row's `bracket` is null, which is what a deck nobody has analyzed draws.
      */
     includeBracket?: boolean;
-    /** The reader's resolved switches (`requestSwitchEnv`), for the deck-state marks, the commander
-     *  art and the claim model's seniority read. Required (admin PR 7b): a names-only caller still
-     *  reaches the claim read through `canFlip`, and a script with no signed-in reader passes
-     *  `process.env` itself. */
+    /** The reader's resolved switches (`requestSwitchEnv`), for the `inUseElsewhere` claim read's
+     *  `locked` key. Required (admin PR 7b): a script with no signed-in reader passes `process.env`
+     *  itself. */
     env: NodeJS.ProcessEnv;
     /**
      * Read each deck's notice (`noticeSummarySql`). Its own option rather than riding on

@@ -5,8 +5,7 @@
 // unit tested as a TypeScript function and rendered as SQL, and neither says the four places that
 // decide "pending" actually agree about a real row. Only a database can: `loadDraftState`, the deck
 // list's pending count, the claim read's `pending` flag, and the commit and discard that end the
-// draft. Each is read twice, with CHANGE_COMMANDER_ENABLED on and off, because OFF must read
-// exactly as the app did before a commander could move.
+// draft.
 //
 // WHAT IT CANNOT REACH. The pull action and `discardDeckDraft` call `requireUserId()`, so the pull
 // guard is read from the code; the discard is exercised through `restoreDraftFromVersion`, the
@@ -46,11 +45,6 @@ const check = (label: string, actual: unknown, expected: unknown) => {
   const ok = JSON.stringify(actual) === JSON.stringify(expected);
   if (!ok) failures += 1;
   console.log(`${ok ? "PASS" : "FAIL"}  ${label}: got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`);
-};
-
-const setFlag = (on: boolean) => {
-  if (on) process.env.CHANGE_COMMANDER_ENABLED = "true";
-  else delete process.env.CHANGE_COMMANDER_ENABLED;
 };
 
 /** Ordered legends and cards, so a failing run names the same fixture the next one will. */
@@ -116,42 +110,28 @@ async function main() {
     };
   };
 
-  // ── Clean: nothing moved, on or off ─────────────────────────────────────
-  for (const on of [false, true]) {
-    setFlag(on);
-    const r = await readAll();
-    const tag = on ? "on" : "off";
-    check(`clean (${tag}): no commander move`, r.moved, null);
-    check(`clean (${tag}): no change`, r.changes, 0);
-    check(`clean (${tag}): the list reads 0`, r.listed, 0);
-    check(`clean (${tag}): the claim is not pending`, r.claimPending, false);
-  }
+  // ── Clean: nothing moved ────────────────────────────────────────────────
+  const clean = await readAll();
+  check("clean: no commander move", clean.moved, null);
+  check("clean: no change", clean.changes, 0);
+  check("clean: the list reads 0", clean.listed, 0);
+  check("clean: the claim is not pending", clean.claimPending, false);
 
   // ── The swap: only the live column moves, exactly as the write will ───────
   await fixture.execute(sql`update decks set commander_oracle_id = ${b}::uuid where id = ${deckId}::uuid`);
 
-  setFlag(true);
-  const on = await readAll();
-  check("swapped (on): the draft names the move", on.moved, {
+  const swapped = await readAll();
+  check("swapped: the draft names the move", swapped.moved, {
     from: { commanderOracleId: a, partnerOracleId: null },
     to: { commanderOracleId: b, partnerOracleId: null },
   });
-  check("swapped (on): one change", on.changes, 1);
-  check("swapped (on): both commanders are named", on.namesBoth, true);
-  check("swapped (on): the departing commander's copy is released", on.released, 1);
-  check("swapped (on): the list's pending count agrees", on.listed, 1);
-  check("swapped (on): the deck's claims read pending", on.claimPending, true);
-
-  // OFF reads exactly as before commanders could move: nothing pending, anywhere.
-  setFlag(false);
-  const off = await readAll();
-  check("swapped (off): no commander move", off.moved, null);
-  check("swapped (off): no change", off.changes, 0);
-  check("swapped (off): the list reads 0", off.listed, 0);
-  check("swapped (off): the claim is not pending", off.claimPending, false);
+  check("swapped: one change", swapped.changes, 1);
+  check("swapped: both commanders are named", swapped.namesBoth, true);
+  check("swapped: the departing commander's copy is released", swapped.released, 1);
+  check("swapped: the list's pending count agrees", swapped.listed, 1);
+  check("swapped: the deck's claims read pending", swapped.claimPending, true);
 
   // ── Discard puts the version's commander back ─────────────────────────────
-  setFlag(true);
   check("discard restores", await restoreDraftFromVersion(deckId, v1.id), "restored");
   check("discard: the live commander is the version's again", await liveCommander(deckId), { c: a, p: null });
   const discarded = await readAll();
