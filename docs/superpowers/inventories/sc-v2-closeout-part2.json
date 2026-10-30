@@ -1,0 +1,691 @@
+{
+  "feature": "Suggested changes v2 close-out, part 2: the Analysis tab's Suggested changes screens at 390 and 1300, v2 on",
+  "note": "Against `next dev` with SUGGESTED_CHANGES_V2_ENABLED, TUNING_ENABLED, ANALYSIS_TAB_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED, PAYMENTS_ENABLED, WELCOME_CREDITS_ENABLED and ABOUT_SHEET_ENABLED 'true', TUNING_V2_STUB_DELAY_MS=20000 (the staged stub, slow enough that the in-flight run is still streaming for both widths' wait rows), a dummy ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL empty. Seeded on a scratch branch of local-dev with no model call: SCV2_HIST_DECK (HD - Elves) carries part 1's runs plus an N=6 run started from the intake just before the walk (so History nth=0 is the run in flight); SCV2_RESULTS_DECK (HD Tune - Blood Rites) an N=20 run (nth 0) and an N=10 run (nth 1, 3 + 3 picked) from the stub, padded by SQL to 30 and 15 lines a side with seeded stand-in reasons and a seeded Why these cards; SCV2_APPLIED_DECK (HD - Brago) its N=11 run with 3 + 3 applied through the confirmation; SCV2_UNDER_DECK (HD - Goblins, analyzed at 99 then cut to 96) and SCV2_OVER_DECK (HD - Kratos, analyzed then built to 102).",
+  "rows": [
+    {
+      "id": "wait-tile",
+      "label": "Wait A's tile: an N=6 run in flight (staged stub, slow lines), `choosing … · m:ss` and the dot, no cost",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "wait": "[data-tool-tile='suggested'] [data-tile-dot]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "wait-open",
+      "label": "Wait A/B: the run opened mid-stream: clock and counts, rows arriving, Still finding more, Why these cards held, Apply off",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='suggested']",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-run='wait']",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-sc-run]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "intake-fresh",
+      "label": "Intake A: fresh (N = 3, empty box, chips, Bracket on Keep, Kept for this deck, Suggest changes, credit line)",
+      "view": "src/components/decks/suggested-changes-intake.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_APPLIED_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='suggested']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-sc-intake]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-sc-intake]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "intake-filled",
+      "label": "Intake B: N = 10, a chip tapped, Bracket changed",
+      "view": "src/components/decks/suggested-changes-intake.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_APPLIED_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='suggested']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-sc-intake]",
+          "settle": 900
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-noticed] button",
+          "settle": 1200
+        },
+        {
+          "click": "[data-sc-bracket-choice][aria-pressed=false] >> nth=0",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-sc-intake]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "not-at-99-under",
+      "label": "Not-At-99 A: a read deck at 96, the tile inert, `Top off on Your deck →`",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_UNDER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "wait": "[data-tool-tile='suggested'][data-inert]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "not-at-99-over",
+      "label": "Not-At-99 B: a read deck at 102, the tile inert, `Proposed cuts →`",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_OVER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "wait": "[data-tool-tile='suggested'][data-inert]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "results-3",
+      "label": "Results-3: N = 3, 5 a side, flat, nothing picked, Why these cards",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-run='results']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-run]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "results-10",
+      "label": "Results-10: N = 10, 15 a side, grouped By type, 3 + 3 picked (Apply 6 changes), Why these cards filled",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_RESULTS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-run='results']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-run]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "results-10-role",
+      "label": "Results-10 C: the same run grouped By role",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_RESULTS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-run='results']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-run]",
+          "settle": 500
+        },
+        {
+          "click": "text=By role",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-sc-run]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "results-20",
+      "label": "Results-20: N = 20, 30 a side, nothing picked, Why these cards filled",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_RESULTS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=0",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-run='results']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-run]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "results-20-lists",
+      "label": "Results-20 scrolled into the lists (the list heads and groups)",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_RESULTS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=0",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-run='results']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-side]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "short-cap",
+      "label": "Short-Run A: an N = 11 run charged by a $2.00 cap",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=2",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-short]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-short]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "short-refunded",
+      "label": "Short-Run B: an N = 10 run short on its own, refunded",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=5",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-short]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-short]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "apply-confirm",
+      "label": "Apply A: 3 + 3 picked, Apply 6 changes pressed: the confirmation (modal 560 / sheet)",
+      "view": "src/components/decks/suggested-changes-confirm.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_RESULTS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-run='results']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-run]",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-sc-apply]",
+          "settle": 400
+        },
+        {
+          "click": "[data-sc-apply]",
+          "settle": 900
+        },
+        {
+          "waitDialog": "Apply 3 in, 3 out",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "applied",
+      "label": "Apply B: a set applied (✓ Added / ✓ Cut, back at 99, Undo all 6)",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_APPLIED_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=0",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-bar-done]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-bar]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "history-list",
+      "label": "History A: the run list with a run in flight, tiers and outcome pills",
+      "view": "src/components/decks/tuning-history.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-history]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "history-open",
+      "label": "History B: an opened run beside You asked (meta, note, rows)",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_RESULTS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=0",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-past]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-past-meta]",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}

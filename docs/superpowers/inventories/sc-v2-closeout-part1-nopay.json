@@ -1,0 +1,22 @@
+{
+  "feature": "Suggested changes v2 close-out, part 1 (payments off): About's credits entry, drawn only while PAYMENTS_ENABLED is off (buying-credits replaces it)",
+  "note": "Same server as sc-v2-closeout-part1.json with PAYMENTS_ENABLED and WELCOME_CREDITS_ENABLED unset; run with SUGGESTED_CHANGES_V2_ENABLED on and again unset.",
+  "rows": [
+    {
+      "id": "about-entry-credits",
+      "label": "About Reference, the credits entry opened (payments off): the caption's Suggested changes bullet (v2 `…run, or two for more than 10 changes`)",
+      "view": "src/lib/copy/about-entries.ts",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#credits",
+          "wait": "[data-entry-open='credits']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-entry-open='credits']",
+          "settle": 400
+        }
+      ]
+    }
+  ]
+}
