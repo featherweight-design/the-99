@@ -28,6 +28,7 @@ export function TaggedBox({
   keyProps,
   footProps,
   footPad = "default",
+  disabled = false,
   frameRef,
   className = "",
 }: {
@@ -58,6 +59,8 @@ export function TaggedBox({
   footProps?: Record<string, string>;
   /** `compact`: the dashed header description's 2 10 7 foot. */
   footPad?: "default" | "compact";
+  /** The field is out of play (a save in flight): the frame dims and the key is disabled. */
+  disabled?: boolean;
   /** The frame element, for a list anchored to it. */
   frameRef?: Ref<HTMLDivElement>;
   /** Layout classes for the frame (e.g. `flex-1` in a stretching column). */
@@ -83,7 +86,7 @@ export function TaggedBox({
       data-framed-box=""
       // Help me choose's locked look mutes the edge through this attribute (globals.css `[data-lock-edge]`); inert elsewhere.
       data-lock-edge=""
-      className={`flex flex-col rounded-[9px] border ${dashed ? "border-dashed" : "border-solid"} ${edge} ${ring} ${fill === "sunken" ? "bg-[color:var(--surface-sunken)]" : "bg-[color:var(--surface)]"} ${className}`}
+      className={`flex flex-col rounded-[9px] border ${dashed ? "border-dashed" : "border-solid"} ${edge} ${ring} ${fill === "sunken" ? "bg-[color:var(--surface-sunken)]" : "bg-[color:var(--surface)]"} ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className}`}
     >
       {children}
       <span
@@ -99,6 +102,7 @@ export function TaggedBox({
           // The key must not take the field's focus: a press must not blur a box that saves on blur.
           onMouseDown={(e) => e.preventDefault()}
           onClick={onInsert}
+          disabled={disabled}
           {...keyProps}
           // Drawn 24 high at every pointer; under a coarse pointer only its hit box grows (the pseudo-element belongs to the button).
           className={`relative h-[24px] shrink-0 cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] pointer-coarse:after:absolute pointer-coarse:after:-inset-x-[8px] pointer-coarse:after:-inset-y-[10px] pointer-coarse:after:content-[''] ${open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}

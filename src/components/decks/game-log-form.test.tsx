@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { GameLogForm } from "./game-log-form";
 import { gameLogCopy, axisCopy } from "../../lib/copy/game-log";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 
 const logGame = vi.fn<(deckId: string, input: unknown) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
@@ -299,12 +300,24 @@ describe("GameLogForm", () => {
         deckTuningCopy.note.counter(String(n), String(deckTuningCopy.note.maxLength)),
       );
 
-    // S1 state 1. A counter on an untouched field is a cap nobody asked about.
-    it("hides the counter until the field is touched", () => {
+    // Tag-Places d2: the counter is the frame's foot and is always drawn, beside the `[[ ]]` key and its words.
+    it("draws 0 / 140 at rest, in the frame's foot with the key", () => {
       mount();
       open();
       expect(field()).toBeInTheDocument();
-      expect(counter(0)).toBeNull();
+      expect(counter(0)).toBeInTheDocument();
+      const foot = counter(0)!.parentElement!;
+      expect(foot).toHaveTextContent(deckDescriptionCopy.notes.tagHelp.insert);
+      expect(foot).toHaveTextContent("tag a card");
+      expect(foot.closest("[data-framed-box]")).toContainElement(field());
+    });
+
+    it("describes the field by its gloss and the counter", () => {
+      mount();
+      open();
+      const ids = field().getAttribute("aria-describedby")!.split(" ");
+      expect(ids).toHaveLength(2);
+      expect(document.getElementById(ids[1])).toBe(counter(0));
     });
 
     // S1 state 2.
@@ -343,9 +356,9 @@ describe("GameLogForm", () => {
       mount();
       open();
       fireEvent.change(field(), { target: { value: "x".repeat(deckTuningCopy.note.warnAt - 1) } });
-      expect(counter(deckTuningCopy.note.warnAt - 1)).not.toHaveClass("text-warning");
+      expect(counter(deckTuningCopy.note.warnAt - 1)).toHaveStyle({ color: "var(--fg-faint)" });
       fireEvent.change(field(), { target: { value: "x".repeat(deckTuningCopy.note.warnAt) } });
-      expect(counter(deckTuningCopy.note.warnAt)).toHaveClass("text-warning");
+      expect(counter(deckTuningCopy.note.warnAt)).toHaveStyle({ color: "var(--warning)" });
     });
 
     // S1 state 5. A hard stop and no error: a cap you cannot exceed does not
@@ -454,7 +467,7 @@ describe("GameLogForm", () => {
     });
 
     // S1 state 8. A note is about one game, so the next game starts blank —
-    // and the counter goes with it.
+    // and the counter is back at 0 / 140.
     it("reopens blank after a save", async () => {
       mount();
       open();
@@ -465,7 +478,7 @@ describe("GameLogForm", () => {
 
       open();
       expect(field()).toHaveValue("");
-      expect(counter(0)).toBeNull();
+      expect(counter(0)).toBeInTheDocument();
     });
 
     // The line above the buttons said "marks are optional". There are two
