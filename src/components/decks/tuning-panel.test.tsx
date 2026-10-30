@@ -9,7 +9,7 @@ import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 import type { LineItem, TuningItem, TuningState } from "../../lib/tuning/state";
-import { manifestRows, readSteps, runSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
+import { manifestRows, readSteps, runReads, runSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
 import { ReviewRunProvider } from "./review-run";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
@@ -1998,5 +1998,32 @@ describe("the strategy focus in Suggested changes", () => {
       rerender(<TuningPanel deckId="d1" permits={[3]} facts={at(2)} onLogGame={vi.fn()} deps={d} />);
     });
     await waitFor(() => expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(before + 1));
+  });
+});
+
+// The read-from line names what the shown run read. A v2 run's own Apply moves the list and marks the result stale, so the
+// line reads the run's own record (its restrictions, `hadDescription`), not the live deck, or it dropped "your
+// description · your limits" the moment the set went in.
+describe("runReads", () => {
+  const limits = { capCents: 200, sets: [], ownedOnly: false };
+  const v2Report = (extra: Record<string, unknown> = {}) => ({
+    askedCount: 0, survivedCount: 0, keptCount: 0, ...extra,
+    v2: { requestHash: "h", restrictions: limits, in: { add: true, cut: true }, refilling: { add: false, cut: false } },
+  });
+  it("keeps a v2 run's description and limits over a stale result", () => {
+    expect(runReads({ stale: true, itemsValidationReport: v2Report({ hadDescription: true }) }, { intent: "Go wide", limits }))
+      .toEqual({ description: true, limits: true });
+  });
+  it("says only what the run itself read, whatever the deck holds now", () => {
+    const none = { capCents: null, sets: [], ownedOnly: false };
+    expect(runReads(
+      { stale: false, itemsValidationReport: { ...v2Report({ hadDescription: false }), v2: { ...v2Report().v2, restrictions: none } } },
+      { intent: "Go wide", limits },
+    )).toEqual({ description: false, limits: false });
+  });
+  it("falls back to the live deck over a fresh result only, with no record of its own", () => {
+    const own = { askedCount: 0, survivedCount: 0, keptCount: 0 };
+    expect(runReads({ stale: false, itemsValidationReport: own }, { intent: "Go wide", limits })).toEqual({ description: true, limits: true });
+    expect(runReads({ stale: true, itemsValidationReport: own }, { intent: "Go wide", limits })).toEqual({ description: false, limits: false });
   });
 });

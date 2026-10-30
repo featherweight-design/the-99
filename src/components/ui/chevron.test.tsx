@@ -49,7 +49,8 @@ describe("the shared motion tokens", () => {
     expect(css).toMatch(/--default-transition-duration:\s*var\(--motion-quick\)/);
     expect(css).toMatch(/--default-transition-timing-function:\s*var\(--motion-ease\)/);
   });
-  it("animates .anim-gentle-in on those tokens, in that order, holding through the delay", () => {
-    expect(css).toMatch(/\.anim-gentle-in \{ animation: gentle-in var\(--motion-duration\) var\(--motion-ease\) var\(--motion-delay\) both; \}/);
+  it("animates .anim-gentle-in on those tokens, in that order, holding through the delay and nothing after", () => {
+    // `backwards`: a forward fill would keep a transform on the box and trap every fixed overlay inside it.
+    expect(css).toMatch(/\.anim-gentle-in \{ animation: gentle-in var\(--motion-duration\) var\(--motion-ease\) var\(--motion-delay\) backwards; \}/);
   });
 });

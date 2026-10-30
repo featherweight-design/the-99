@@ -74,6 +74,17 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+// Portalled out of the panel that opens it: drawn in place, a transformed ancestor (the Tuning hub's tool panel) placed its
+// fixed frame, the Pull's popover and the source sheet against that panel rather than the window.
+describe("the confirmation's frame", () => {
+  it("renders outside the tree that mounts it, under document.body", () => {
+    const { view } = draw();
+    const dialog = screen.getByRole("dialog");
+    expect(document.body.contains(dialog)).toBe(true);
+    expect(view.container.contains(dialog)).toBe(false);
+  });
+});
+
 describe("heldInOtherDecks", () => {
   it("is an owned addition with no copy free, and only on a run that offered copies from other decks", () => {
     expect(heldInOtherDecks(path, true)).toBe(true);

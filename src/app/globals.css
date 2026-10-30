@@ -1131,7 +1131,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   }
 }
 @keyframes ai-sweep { to { --ai-sweep-angle: 360deg; } }
-.anim-gentle-in { animation: gentle-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+/* `backwards`, not `both`: the first frame holds through the delay, and the end state is the box's own (opacity 1, no
+   transform), so nothing need be held after. Held with `both`, the finished animation kept a transform on the box, which
+   makes it the containing block of every `fixed` descendant: the Tuning hub's tool panel arrives on this class, and
+   Apply's confirmation, its Pull popover and its source sheet were placed against the panel, not the window. */
+.anim-gentle-in { animation: gentle-in var(--motion-duration) var(--motion-ease) var(--motion-delay) backwards; }
 /* A surface that has mounted but whose content has not landed yet holds transparent, so its
    arrival plays when the content does rather than on an empty box (the Tuning hub's tools, which
    draw nothing until their first read lands; `useArrival`). Only where motion is welcome: with

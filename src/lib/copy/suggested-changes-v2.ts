@@ -122,7 +122,7 @@ export const suggestedChangesV2Copy = {
     roleHead: (have: number, target: number) => `you have ${have} of ${target}`,
     withPicks: (n: number) => `${n} with your picks`,
     flagAsked: "the bracket you asked for",
-    shortCap: (found: number, cap: string) => `Found ${found} additions under your ${cap} cap`,
+    shortCap: (found: number, cap: string) => `Found ${found} ${found === 1 ? "addition" : "additions"} under your ${cap} cap`,
   },
   bar: {
     none: (n: number) => `Pick up to ${n} of each. The two counts must match, so the deck stays at 99.`,
@@ -190,7 +190,8 @@ export const suggestedChangesV2Copy = {
     // The bar with nothing picked (Results-3 A: the quiet count alone).
     nonePicked: "0 in · 0 out",
     // The lead once a set is applied (Results-3 D).
-    appliedLead: (n: number, rest: number) => `Applied ${n} in, ${n} out. The deck is back at 99. The other ${rest} stay here.`,
+    appliedLead: (n: number, rest: number) => `Applied ${n} in, ${n} out. The deck is back at 99.${
+      rest === 0 ? "" : rest === 1 ? " The other one stays here." : ` The other ${rest} stay here.`}`,
     // The lead when a list came back under N (Short-Run: "14 to add and 21 to cut. Pick up to 14 of each.").
     shortLead: (a: number, c: number, n: number) => `${a} to add and ${c} to cut. Pick up to ${n} of each.`,
     // A pick refused (the line was taken, or the run retired): the row rolls back and says so.
@@ -206,7 +207,7 @@ export const suggestedChangesV2Copy = {
     // The other restrictions that can bind a list (spec §5.5), charged as the cap is.
     setHead: (found: number, side: string) => `Found ${found} ${side} in the sets you chose.`,
     ownedHead: (found: number, side: string) => `Found ${found} ${side} you own.`,
-    aimHead: (found: number, side: string) => `Found ${found} ${side} that fit the bracket you chose.`,
+    aimHead: (found: number, side: string) => `Found ${found} ${side} that ${found === 1 ? "fits" : "fit"} the bracket you chose.`,
     bodyBound: (asked: number, n: number) => `You asked for ${asked}. Your limits held the run short, so you can apply up to ${n} of each.`,
     // Owned only, and every owned card that fits was used: the pool ran out, not the run.
     ownedExhaustedBody: (asked: number, n: number) => `You asked for ${asked}. That’s every card you own that fits, so you can apply up to ${n} of each.`,
@@ -218,8 +219,9 @@ export const suggestedChangesV2Copy = {
     refundCredit: "Credit returned",
     // Short-Run B with the allowance's standing: "Credit returned · 5 of 5 left".
     refundCreditLeft: (left: number, total: number) => `Credit returned · ${left} of ${total} left`,
-    additions: "additions",
-    cuts: "cuts",
+    // A head's side, by the count it follows ("Found 1 addition you own.").
+    additions: (n: number) => (n === 1 ? "addition" : "additions"),
+    cuts: (n: number) => (n === 1 ? "cut" : "cuts"),
     // Wait E's reason, after "Cuts came up 3 short of 15: ".
     reasons: {
       overCap: "the rest cost over your cap",

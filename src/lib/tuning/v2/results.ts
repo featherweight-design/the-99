@@ -60,18 +60,44 @@ export type BracketOutcome =
 
 export function bracketOutcome(
   permits: readonly number[], aim: V2Ask["bracket"], picked: readonly LineItem[], setPermits?: readonly number[] | null,
+  declared: number | null = null,
 ): BracketOutcome | null {
   if (permits.length === 0) return null;
-  const from = Math.min(...permits);
+  const low = Math.min(...permits);
   if (picked.filter((l) => l.side === "add").length > 1 || picked.filter((l) => l.side === "cut").length > 1) {
-    return setPermits ? outcomeOfSet(from, aim, setPermits) : null;
+    const set = setPermits ? outcomeOfSet(low, aim, setPermits) : null;
+    return set ? named(set, declared, permits, setPermits!) : null;
   }
-  if (!aim || aim.choice === "keep") return { kind: "stays", bracket: from };
+  // What the deck permits after the picks, as far as the lines' own figures say: a line with no figure leaves the
+  // bracket where it was, so only the figured ones narrow it. A stay or a miss names the declaration only while every
+  // one of them still permits it; a reach names it as where the deck came from, whatever the picks do.
+  const after = picked.flatMap((l) => (l.bracketAfter === null ? [] : [l.bracketAfter]));
+  const from = shownBracket(declared, permits, low);
+  const held = shownBracket(declared, permits.filter((b) => after.every((a) => a.includes(b))), low);
+  if (!aim || aim.choice === "keep") return { kind: "stays", bracket: held };
   const reaches = (l: LineItem) => aim.choice === "up"
     ? reachesAim(aim, l.side, l.bracketAfter)
     : l.bracketAfter !== null && l.bracketAfter.length > 0 && Math.min(...l.bracketAfter) <= aim.target;
-  if (!picked.some(reaches)) return { kind: "missed", from, aim };
+  if (!picked.some(reaches)) return { kind: "missed", from: held, aim };
   return picked.filter((l) => l.bracketAfter !== null).length === 1 ? { kind: "reached", from, to: aim.target } : null;
+}
+
+/**
+ * The bracket an outcome names for the deck: the one the player declared while `holding` holds it (a deck read as a
+ * range, `[1,2]`, declared Core reads "stays 2 · Core", never the range's floor), else `fallback`, the bracket the
+ * outcome's own rules computed. Only the figure drawn moves. Pure.
+ */
+function shownBracket(declared: number | null, holding: readonly number[], fallback: number): number {
+  return declared !== null && holding.includes(declared) ? declared : fallback;
+}
+
+/** A set's outcome named by `shownBracket`. A stay and a miss both read "bracket stays …", so each names the declaration
+ *  only while the set's own permits still hold it; a reach names it as the deck's starting point. Pure. */
+function named(o: BracketOutcome, declared: number | null, permits: readonly number[], setPermits: readonly number[]): BracketOutcome {
+  const kept = permits.filter((b) => setPermits.includes(b));
+  if (o.kind === "stays") return { kind: "stays", bracket: shownBracket(declared, kept, o.bracket) };
+  if (o.kind === "missed") return { ...o, from: shownBracket(declared, kept, o.from) };
+  return { ...o, from: shownBracket(declared, permits, o.from) };
 }
 
 /**
