@@ -16,6 +16,7 @@
    - The key: 24px drawn, 44px hit box on a coarse pointer by padding (amends the shipped framed box), lit while a tag is open.
    - Counter always drawn; each box keeps its cap and warn mark.
    - `TagHelpRow`'s button and the intake header's 28px button go; ⓘ tips stay where they are.
+   - Tuning panel Additional notes (PR #2414): keep the label row (*Additional notes* + ⓘ) over the framed box; the textarea stays named by the label and described by the tip.
    - Deck notes: the action row is Add (+ Cancel in edit) only; the deck notes R4 key and the shipped counter/key in the row go.
 2. **Precon page header art.** The open precon head uses 64×89 below `md` and 84×117 from `md` (`CommanderThumb` sizes), radius 6.
 3. **Empty What's new.** Never chosen and nothing in the window: `Quiet` (shipped copy) + the offer line; `OptIn` retires. The offer line is the same component the rows state uses.

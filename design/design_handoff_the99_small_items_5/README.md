@@ -13,7 +13,7 @@ Sources read: main @4c7ef47; `src/components/decks/{tuning-notes-field,deck-desc
 |---|---|
 | `Main.dc.html` | The calls |
 | `Tag-Control.dc.html` | 1 · Tag a card: the control, its states and anatomy |
-| `Tag-Places.dc.html` | 1 · Tag a card: the five places (a–d) |
+| `Tag-Places.dc.html` | 1 · Tag a card: the six places (a, a2, b–d) |
 | `Header-Art.dc.html` | 2 · Precon page header art |
 | `Offer-Empty.dc.html` | 3 · The offer when What's new is empty |
 
@@ -33,6 +33,7 @@ Sources read: main @4c7ef47; `src/components/decks/{tuning-notes-field,deck-desc
 ### The places
 
 - **(a) Deck description fields.** `DeckDescriptionField` (Analysis, empty state) and `DescribingInPlace` (Suggested changes): the key leaves the label row; the counter leaves the help line, which keeps its words. Blur still saves the empty state's field; the in-place editor keeps Save and Cancel.
+- **(a2) Suggested changes, Additional notes** (amends PR #2414). The box keeps its label row, *Additional notes* and ⓘ, over the framed box: a placeholder is not a name. The textarea stays named by the visible label (`htmlFor`) and described by the tip. The row loses only its key; the counter under the box moves into the foot. Esc still clears the draft.
 - **(b) Help me choose, Anything else?** The 28px key leaves the `Field` header (ⓘ and *optional* stay). The counter, today under the box only once there are words, moves into the foot and always shows. The box stays sunken and turns accent while its words will be read.
 - **(c) Deck notes. The foot row wins**, over both the shipped action row (counter, 44×40 key, Cancel, Add) and the deck notes handoff's R4 key (40×40 beside Add). The action row holds only **Add** (and **Cancel** in edit). Placeholder becomes *Add a note* at both widths (draft): the foot already says how to tag. See `design_handoff_the99_deck_notes/ERRATUM-tag-control.md`.
 - **(d) Deck page description and the game-log note.** The header's dashed description box (spine-desktop/mobile) gains the foot, with the 240 counter (new here). The game-log note's counter (today in its label row, drawn only after focus) moves into the foot and always shows; the label row keeps *Note* and its hint.

@@ -436,6 +436,11 @@ def d_log(ph=False, today=False, text="", lit=False):
             '<div class="bts"><span class="s">Save game</span><span class="x">Cancel</span></div></div>')
 
 
+def e_notes(ph=False, text=""):
+    return (f'<div class="fld"><div class="lr"><label>Additional notes</label>{INFO}</div>'
+            f'<div class="chg">{box(text, ph=ph, n=len(text), mx=500, focus=bool(text), caret=bool(text), placeholder=("Anything for this run? e.g. more removal" if ph else "Anything for this run? e.g. more removal, swap out Sol Ring, nothing over $5"))}</div></div>')
+
+
 def board_places():
     shot = f'<div class="shot" style="width:640px;height:270px"><img src="{img("cap-describe")}" alt="" style="width:1300px;margin:-80px 0 0 -420px"></div>'
     a = (sec("a · The deck description fields",
@@ -446,6 +451,14 @@ def board_places():
              + frames(frame("<b>Today</b> · 1300, Hugh’s capture", shot, "The key in the label row, the counter at the end of the help line."),
                       frame("<b>390</b> · describing in place", ph_frame(a_place(True), "Analysis tab · Tuning · Suggested changes", nav=False)),
                       frame("<b>1300</b> · describing in place", dk_frame(a_place(), "Analysis tab · Tuning · Suggested changes", w=760)), gap=36)))
+    e = (sec("a2 · Suggested changes: Additional notes (PR #2414)",
+             "<b>The label and its ⓘ stay</b>, in the shipped label row (mono caps <i>Additional notes</i>, then the tip with its three lines), over the framed box. "
+             "The Intake board drew no label because step 2’s heading names that box; Additional notes has no heading, and a placeholder is not a name: it leaves as soon as the player types. "
+             "The textarea is named by the visible label (<code>htmlFor</code>) and described by the tip, as shipped before the frame. "
+             "The row loses only its <b>[[ ]]</b>; the counter under the box goes, now in the foot. Esc still clears the draft (the tip takes it first when open).",
+             frames(frame("<b>390</b> · empty", ph_frame(e_notes(True), "Analysis tab · Tuning · Suggested changes")),
+                    frame("<b>390</b> · written", ph_frame(e_notes(True, "More removal, and keep Swords to Plowshares"), "Analysis tab · Tuning · Suggested changes")),
+                    frame("<b>1300</b> · empty", dk_frame(e_notes(False), "Analysis tab · Tuning · Suggested changes", w=820)), gap=36)))
     b = (sec("b · Help me choose: Anything else?",
              "The 28px <b>[[ ]]</b> leaves the field header (the ⓘ and <i>optional</i> stay). The counter, today drawn under the box only once there are words, moves into the foot and always shows. "
              "The box stays sunken and turns accent while its words will be read, as shipped.",
@@ -476,7 +489,7 @@ def board_places():
                       frame("<b>1300</b> · game-log note", dk_frame(d_log(False), "Games · Log a game", w=860)), gap=36)))
     body = (head("item 1 · the five places", "Every box that tags a card, drawn to match",
                  "Fixture: HD - Avatar Aang. Each surface is the shipped page with only the box changed; the dashed orange outline marks the box.")
-            + a + b + c + d)
+            + a + e + b + c + d)
     return doc("Tag places", body, 2060)
 
 
