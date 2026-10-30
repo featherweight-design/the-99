@@ -1,7 +1,7 @@
 /**
- * Product analytics: usage basics in PostHog. Pageviews (client-side navigations included) and pageleaves, keyed
- * to the Clerk user once signed in. Clicks are paused (no autocapture) until third-party names are marked at the
- * source. No session replay, and never what a reader types: posthog-js does not record input values.
+ * Product analytics: usage basics in PostHog. Pageviews (client-side navigations included), pageleaves and clicks
+ * (autocapture), keyed to the Clerk user once signed in. Another reader's name is a `ThirdPartyName`, drawn on an
+ * element marked `ph-no-capture` (src/lib/person-name/), which drops the click. No session replay, and never what a reader types: posthog-js does not record input values.
  *
  * DORMANT unless BOTH gates pass: `NEXT_PUBLIC_POSTHOG_KEY` is set, and the page is served from the production
  * hostname. Local, preview and staging builds have no key; the hostname gate is the second line, because staging
@@ -95,10 +95,10 @@ export function redactCapture(event: CaptureResult | null): CaptureResult | null
 export function posthogOptions(apiHost: string): Partial<PostHogConfig> {
   return {
     api_host: apiHost,
-    // Clicks are PAUSED: a click event carries the element's text and attributes, which can be another reader's
-    // name (a friend's row, an admin row). Autocapture resumes once third-party names are marked at the source
-    // (the later PersonName line of work).
-    autocapture: false,
+    // Clicks and the elements clicked. A click event carries the element's text and attributes, so another reader's
+    // name is drawn only by PersonName, PersonText and personAttrs, which mark it `ph-no-capture`; `check:third-party-names`
+    // holds that (docs/agents/social.md).
+    autocapture: true,
     mask_all_text: false,
     mask_all_element_attributes: false,
     // A pageview on load and on every App Router navigation, which moves the URL through the History API.

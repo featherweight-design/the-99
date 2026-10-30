@@ -313,7 +313,8 @@ export async function friendPublicId(viewerId: string, friendUserId: string): Pr
 }
 
 export type RedeemResult =
-  | { ok: true; friend: { publicId: string; displayName: string }; alreadyFriends: boolean }
+  // The inviter's name is not carried: the receipt is resolved by `publicId` and reads the name itself (branded).
+  | { ok: true; friend: { publicId: string }; alreadyFriends: boolean }
   | { ok: false; reason: "notFound" | "ended" | "self" };
 
 /**
@@ -332,7 +333,7 @@ export async function redeemInvite(viewerId: string, token: string, now = new Da
     if (invite.inviterUserId === viewerId) return { ok: false as const, reason: "self" as const };
     if (inviteState(invite, now) !== "open") return { ok: false as const, reason: "ended" as const };
     const [inviter] = await tx
-      .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName })
+      .select({ publicId: socialProfiles.publicId })
       .from(socialProfiles)
       .where(eq(socialProfiles.userId, invite.inviterUserId));
     // An inviter whose profile is gone (a purged account) has nobody to befriend.

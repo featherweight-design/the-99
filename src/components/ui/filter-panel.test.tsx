@@ -1,4 +1,4 @@
-import { cleanup, render, screen, fireEvent, within } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import type { BrowseFilters } from "../../lib/collection/browse";
@@ -1255,6 +1255,55 @@ describe("FilterPanel third-party names", () => {
     );
     const trigger = screen.getByRole("button", { name: /Ada Lovelace/ });
     expect(trigger.classList.contains("ph-no-capture")).toBe(true);
+    unmount();
+  });
+
+  const friendOptions = [
+    { code: "f1", label: named("Ada Lovelace"), count: 3, disabled: false },
+    { code: "f2", label: named("Grace Hopper"), count: 2, disabled: false },
+  ];
+  const renderFriends = (onAnnounce = vi.fn()) =>
+    render(<FilterPanel copy={collectionFilterCopy.set} options={friendOptions} selected={[]} onToggle={vi.fn()} onClear={vi.fn()} onAnnounce={onAnnounce} />);
+
+  it("announces a friend's option in an always-present, marked live region and never hands the name to onAnnounce", async () => {
+    setViewport(true);
+    const onAnnounce = vi.fn();
+    const { unmount } = renderFriends(onAnnounce);
+    // Mounted before anything is announced, and empty: a region added together with its text is not read out.
+    expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowDown" });
+    await waitFor(() => expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toContain("Ada Lovelace"));
+    expect((document.querySelector("[data-person-live]") as HTMLElement).firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
+    expect(onAnnounce).not.toHaveBeenCalled();
+    // The row itself is marked, so a press on its padding drops the event too.
+    expect(screen.getByRole("option", { name: /Ada Lovelace/ }).classList.contains("ph-no-capture")).toBe(true);
+    unmount();
+  });
+
+  it("puts the live region inside the phone sheet, which is aria-modal and makes the rest inert", async () => {
+    setViewport(false);
+    const { unmount } = renderFriends();
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    const dialog = screen.getByRole("dialog");
+    expect(Array.from(document.querySelectorAll("[data-person-live]"))).toHaveLength(1);
+    expect(dialog.contains((document.querySelector("[data-person-live]") as HTMLElement))).toBe(true);
+    fireEvent.keyDown(dialog, { key: "ArrowDown" });
+    await waitFor(() => expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toContain("Ada Lovelace"));
+    expect((document.querySelector("[data-person-live]") as HTMLElement).firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
+    unmount();
+  });
+
+  it("announces the same words twice in a row: the region is emptied between them", async () => {
+    setViewport(true);
+    const { unmount } = renderFriends();
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "ArrowDown" });
+    await waitFor(() => expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toContain("Ada Lovelace"));
+    fireEvent.keyDown(dialog, { key: "ArrowUp" });
+    expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toBe("");
+    await waitFor(() => expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toContain("Ada Lovelace"));
     unmount();
   });
 });

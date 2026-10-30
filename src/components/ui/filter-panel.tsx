@@ -38,7 +38,7 @@ import { escapeDismisses } from "../../lib/ui/search-dismiss";
 import { useIsDesktop } from "./use-is-desktop";
 import { Chevron } from "./chevron";
 import { noteAppScroll } from "../../lib/ui/reveal";
-import { NO_CAPTURE, PersonName, isThirdPartyName, type ThirdPartyName } from "../../lib/person-name";
+import { NO_CAPTURE, PersonName, PersonText, isThirdPartyName, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { reveal } from "../../lib/person-name/reveal";
 
 export type FilterPanelOption = {
@@ -73,7 +73,13 @@ export type FilterPanelOption = {
  * An option whose name may be another reader's (the cart's Friend filter): every element holding the name is marked,
  * and the panel reads it only to hand the copy functions a string.
  */
-export type FilterPanelPersonOption = Omit<FilterPanelOption, "label"> & { label: string | ThirdPartyName };
+/**
+ * An option is EITHER plain (a set, a color, "Anyone") OR a person's: a person's label is a `ThirdPartyName` and nothing
+ * else, so a friend's name is never a bare string here. A person's option is drawn marked and announced marked.
+ */
+export type FilterPanelPersonOption =
+  | (Omit<FilterPanelOption, "label"> & { label: string })
+  | (Omit<FilterPanelOption, "label"> & { label: ThirdPartyName });
 
 /** Desktop option-row minimum height, when the caller does not ask for a taller one. */
 const DESKTOP_ROW_MIN = 40;
@@ -274,6 +280,12 @@ export function FilterPanel({
     !portalSheet ? node : sheetHost ? createPortal(node, sheetHost) : null;
   const [query, setQuery] = useState("");
   const [activeCode, setActiveCode] = useState<string | null>(null);
+  // A friend's option is announced here, drawn marked, and never handed to `onAnnounce`, whose callers keep a string.
+  const [personAnnouncement, setPersonAnnouncement] = useState<PersonParts | null>(null);
+  const personTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (personTimer.current) clearTimeout(personTimer.current);
+  }, []);
   // Selection as it stood when the panel opened. Grouping is computed once, on
   // open, and NOT recomputed while it is open — re-sorting on every toggle would
   // move rows under the pointer mid-interaction.
@@ -544,7 +556,7 @@ export function FilterPanel({
           : Math.max(i < 0 ? 0 : i - 1, 0);
       const option = visible[next];
       setActiveCode(option.code);
-      onAnnounce?.(optionAria(option, selected.includes(option.code)));
+      announceOption(option, selected.includes(option.code));
       return;
     }
     // Space toggles only while a row is active; with no active row the caret is
@@ -557,7 +569,7 @@ export function FilterPanel({
         if (!first) return;
         e.preventDefault();
         setActiveCode(first.code);
-        onAnnounce?.(optionAria(first, selected.includes(first.code)));
+        announceOption(first, selected.includes(first.code));
         return;
       }
       if (!activeCode) return;
@@ -603,6 +615,25 @@ export function FilterPanel({
     dragStartY.current = null;
     setDragY(0);
     if (travelled >= DRAG_DISMISS_PX) close({ preventScroll: true });
+  }
+
+  /** A string option goes to `onAnnounce`; a friend's goes to the panel's own marked live region. */
+  function announceOption(option: FilterPanelPersonOption, isSelected: boolean) {
+    if (!isThirdPartyName(option.label)) {
+      onAnnounce?.(optionAria(option, isSelected));
+      return;
+    }
+    // The copy function takes a string, so it is fed a placeholder and the sentence is cut around it.
+    const mark = "\u0001";
+    const sentence = option.disabled
+      ? copy.optionAriaUnavailable(option.hint ? `${mark} (${option.hint})` : mark)
+      : copy.optionAria(option.hint ? `${mark} (${option.hint})` : mark, option.count, isSelected);
+    const [before, after = ""] = sentence.split(mark);
+    // Emptied first, so the same words twice in a row (Home, End, the same row) are a change a screen reader announces.
+    setPersonAnnouncement(null);
+    if (personTimer.current) clearTimeout(personTimer.current);
+    const parts: PersonParts = [before, option.label, after];
+    personTimer.current = setTimeout(() => setPersonAnnouncement(parts), 60);
   }
 
   function optionAria(option: FilterPanelPersonOption, isSelected: boolean): string {
@@ -1030,8 +1061,19 @@ export function FilterPanel({
             ? `${copy.panelAriaLabel}, ${oneName}, collapsed`
             : copy.triggerAriaWithSelection(selected.length);
 
+  // A friend's option is announced here, drawn marked. `role="log"` is a polite live region without a status role or an
+  // aria-live attribute, so the screens that look the page's own status line up by either keep finding only theirs.
+  const liveRegion = (
+    <span className="sr-only" role="log" data-person-live="">
+      {personAnnouncement && <PersonText text={personAnnouncement} />}
+    </span>
+  );
+
   return (
     <div className={triggerLook === "field" ? "relative w-full" : "relative"}>
+      {/* Always mounted (a region added with its text is not announced). On the phone the open sheet is aria-modal and
+          holds its own copy, since everything outside it is inert. */}
+      {!(open && !isDesktop) && liveRegion}
       <button
         ref={triggerRef}
         type="button"
@@ -1212,6 +1254,7 @@ export function FilterPanel({
                   ✕
                 </button>
               </div>
+              {liveRegion}
               {renderBody()}
             </div>
           </>)

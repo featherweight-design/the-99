@@ -169,4 +169,52 @@ describe("thirdPartyNameFindings", () => {
       "src/components/e.test.ts": `import { named } from "../lib/person-name/mint";\nimport { plain } from "../lib/person-name/testing";\nexport const x = \`\${named("A")}\` + plain(named("B"));\n`,
     })).toEqual([]);
   });
+
+  describe("the read layer: a projected name column is minted", () => {
+    const TABLES = `const socialProfiles = { displayName: "col", publicId: "col" };\nconst pods = { name: "col" };\nconst decks = { name: "col" };\ndeclare const asc: (c: string) => string;\n`;
+
+    it("finds socialProfiles.displayName, pods.name and decks.name projected with nothing that mints", { timeout: 30_000 }, () => {
+      expect(whys({
+        "src/lib/social/unminted.ts": TABLES + [
+          "export const loadFriends = () => ({ displayName: socialProfiles.displayName, publicId: socialProfiles.publicId });",
+          "export const loadPods = () => ({ name: pods.name });",
+          "export const loadDecks = () => ({ name: decks.name });",
+        ].join("\n"),
+      })).toEqual([
+        expect.stringContaining("src/lib/social/unminted.ts:5 projects socialProfiles.displayName in loadFriends"),
+        expect.stringContaining("src/lib/social/unminted.ts:6 projects pods.name in loadPods"),
+        expect.stringContaining("src/lib/social/unminted.ts:7 projects decks.name in loadDecks"),
+      ]);
+    });
+
+    it("passes a projection minted in its own function, or by the shaper its loader calls", { timeout: 30_000 }, () => {
+      expect(whys({
+        "src/lib/social/minted.ts": TABLES + [
+          `import { named } from "../person-name/mint";`,
+          "export const own = () => ({ name: named(pods.name) });",
+          "export const rowsQuery = () => ({ displayName: socialProfiles.displayName });",
+          "const shape = (r: { displayName: string }) => ({ displayName: named(r.displayName) });",
+          "export const load = () => shape(rowsQuery());",
+        ].join("\n"),
+      })).toEqual([]);
+    });
+
+    it("finds a projection when the file's only mint is of something else", { timeout: 30_000 }, () => {
+      expect(whys({
+        "src/lib/social/elsewhere.ts": TABLES + [
+          `import { named } from "../person-name/mint";`,
+          "export const loadFriends = () => ({ displayName: socialProfiles.displayName });",
+          `export const unrelated = () => named("fixed");`,
+          "export const other = (r: { title: string }) => named(r.title);",
+        ].join("\n"),
+      })).toEqual([expect.stringContaining("src/lib/social/elsewhere.ts:6 projects socialProfiles.displayName in loadFriends")]);
+    });
+
+    it("lets an ordering or a filter read the column, and ignores the same read outside src/lib/social", { timeout: 30_000 }, () => {
+      expect(whys({
+        "src/lib/social/ordered.ts": TABLES + "export const order = () => [asc(socialProfiles.displayName), asc(pods.name)];\n",
+        "src/lib/other/raw.ts": TABLES + "export const raw = () => ({ displayName: socialProfiles.displayName });\n",
+      })).toEqual([]);
+    });
+  });
 });
