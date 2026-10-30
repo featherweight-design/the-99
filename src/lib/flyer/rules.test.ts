@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { FLYER_ALPHABET, FLYER_CODE_LENGTH, flyerOpenness, holdsPlace, parseFlyerCode, type FlyerClaimRow } from "./rules";
+import { inviteCount, type HoldingRow } from "../invites/rules";
+import { FLYER_ALPHABET, flyerHoldRow, FLYER_CODE_LENGTH, flyerOpenness, holdsPlace, parseFlyerCode, type FlyerClaimRow } from "./rules";
 
 const now = new Date("2026-10-30T12:00:00Z");
 const later = new Date(now.getTime() + 60_000);
@@ -9,7 +10,7 @@ const code = { capacity: 3, revokedAt: null };
 
 describe("parseFlyerCode", () => {
   it("accepts a code in either case and trims it", () => {
-    expect(parseFlyerCode(" mox4qk ")).toBe("MOX4QK");
+    expect(parseFlyerCode(" mpx4qk ")).toBe("MPX4QK");
   });
   it("refuses the characters the alphabet leaves out", () => {
     for (const bad of ["MOX0QK", "MOXOQK", "MOX1QK", "MOXIQK"]) expect(parseFlyerCode(bad)).toBeNull();
@@ -38,20 +39,37 @@ describe("holdsPlace", () => {
 
 describe("flyerOpenness", () => {
   it("is open with the places left", () => {
-    expect(flyerOpenness(code, [live("spent"), live("open")], 5, 1, now)).toEqual({ open: true, places: 1 });
+    expect(flyerOpenness(code, [live("spent"), live("open")], 5, now)).toEqual({ open: true, places: 1 });
   });
   it("reads revoked before anything else", () => {
-    expect(flyerOpenness({ ...code, revokedAt: earlier }, [], 0, 0, now)).toEqual({ open: false, closed: "revoked" });
+    expect(flyerOpenness({ ...code, revokedAt: earlier }, [], 0, now)).toEqual({ open: false, closed: "revoked" });
   });
   it("is full when spent and holding claims fill the capacity, but not when a hold ran out", () => {
     const full = [live("spent"), live("spent"), live("proven")];
-    expect(flyerOpenness(code, full, 9, 0, now)).toEqual({ open: false, closed: "full" });
+    expect(flyerOpenness(code, full, 9, now)).toEqual({ open: false, closed: "full" });
     const lapsed = [live("spent"), live("spent"), { state: "open" as const, holdsUntil: earlier }];
-    expect(flyerOpenness(code, lapsed, 9, 0, now)).toEqual({ open: true, places: 1 });
+    expect(flyerOpenness(code, lapsed, 9, now)).toEqual({ open: true, places: 1 });
   });
-  it("reads used up when Hugh has no invite free past every claim holding", () => {
-    expect(flyerOpenness(code, [], 1, 1, now)).toEqual({ open: false, closed: "hugh" });
-    expect(flyerOpenness(code, [], 0, 0, now)).toEqual({ open: false, closed: "hugh" });
-    expect(flyerOpenness(code, [], 2, 1, now)).toEqual({ open: true, places: 3 });
+  it("reads used up when Hugh has no invite left", () => {
+    expect(flyerOpenness(code, [], 0, now)).toEqual({ open: false, closed: "hugh" });
+    expect(flyerOpenness(code, [], 1, now)).toEqual({ open: true, places: 3 });
+  });
+});
+
+describe("a flyer hold in the invite count", () => {
+  const reserved: HoldingRow = { kind: "email", state: "reserved", qrExpiresAt: null, holdsUntil: later };
+
+  it("takes the last invite, so an existing writer reading the count finds none left", () => {
+    const count = inviteCount(1, [flyerHoldRow(later)], now);
+    expect(count).toMatchObject({ left: 0, waiting: 1, out: true });
+  });
+
+  it("with one invite already out, a second holder at the limit is refused", () => {
+    expect(inviteCount(2, [reserved, flyerHoldRow(later)], now).left).toBe(0);
+    expect(inviteCount(2, [reserved], now).left).toBe(1);
+  });
+
+  it("stops counting once its ten minutes run out", () => {
+    expect(inviteCount(1, [flyerHoldRow(earlier)], now).left).toBe(1);
   });
 });

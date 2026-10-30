@@ -5,9 +5,10 @@
  * (`draft-state-snapshot.test.ts`). Every write reads the same way, inside its own transaction under the sender's
  * lock (`readCountIn`), so the gate and the count line share one definition.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, gt, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { inviteBalances, inviteReservations } from "../../db/schema";
+import { flyerClaims, flyerCodes, inviteBalances, inviteReservations } from "../../db/schema";
+import { flyerHoldRow } from "../flyer/rules";
 import { holdingCount, inviteCount, type HoldingRow, type InviteCount } from "./rules";
 
 /** The states that can hold an invite; `inviteCount` decides from their clocks whether each still does. */
@@ -32,6 +33,12 @@ export async function readCountIn(
     })
     .from(inviteReservations)
     .where(and(eq(inviteReservations.userId, viewerId), inArray(inviteReservations.state, [...OPEN_STATES])))) as HoldingRow[];
+  // A flyer claim holds one of the code creator's invites while it is open or proven (flyer trial), so every writer
+  // that reads this count sees it as waiting: the same lock, the same stock.
+  const flyer = await tx.select({ holdsUntil: flyerClaims.holdsUntil }).from(flyerClaims)
+    .innerJoin(flyerCodes, eq(flyerCodes.id, flyerClaims.codeId))
+    .where(and(eq(flyerCodes.createdBy, viewerId), inArray(flyerClaims.state, ["open", "proven"]), gt(flyerClaims.holdsUntil, now)));
+  rows.push(...flyer.map((c) => flyerHoldRow(c.holdsUntil)));
   const held = balance[0]?.held ?? 0;
   return { held, holding: holdingCount(rows, now), count: inviteCount(held, rows, now) };
 }

@@ -4,7 +4,7 @@
  * still holds: its address and its Clerk invitation. A claim whose invitation could not be ended is left as it is
  * for the next run, so a ticket never outlives its hold unrevoked. SERVER-ONLY.
  */
-import { and, eq, inArray, lte } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerClaims } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "../invites/clerk";
@@ -19,7 +19,13 @@ export async function sweepFlyerClaims(deps: { now?: Date; clerk?: ClerkInvites 
   const clerk = deps.clerk ?? clerkInvites;
   const lapsed = await db.select({ id: flyerClaims.id, email: flyerClaims.email, clerkInvitationId: flyerClaims.clerkInvitationId })
     .from(flyerClaims)
-    .where(and(inArray(flyerClaims.state, ["open", "proven"]), lte(flyerClaims.holdsUntil, now)))
+    .where(or(
+      and(inArray(flyerClaims.state, ["open", "proven"]), lte(flyerClaims.holdsUntil, now)),
+      // A released claim whose late ticket could not be revoked at the time keeps its id for this retry.
+      and(eq(flyerClaims.state, "released"), isNotNull(flyerClaims.clerkInvitationId)),
+    ))
+    // Random, as the invite sweep's: claims that keep failing cleanup cannot keep the batch from the rest.
+    .orderBy(sql`random()`)
     .limit(FLYER_SWEEP_BATCH);
   const report: FlyerSweepReport = { released: 0, kept: 0 };
   for (const row of lapsed) {
@@ -38,7 +44,10 @@ export async function sweepFlyerClaims(deps: { now?: Date; clerk?: ClerkInvites 
     // Under the same condition it was read by: a claim proven or spent while Clerk was asked is not released.
     const done = await db.update(flyerClaims)
       .set({ state: "released", email: null, clerkInvitationId: null, codeHmac: null, codeExpiresAt: null, resolvedAt: now })
-      .where(and(inArray(flyerClaims.state, ["open", "proven"]), lte(flyerClaims.holdsUntil, now), eq(flyerClaims.id, row.id)))
+      .where(and(
+        eq(flyerClaims.id, row.id),
+        or(and(inArray(flyerClaims.state, ["open", "proven"]), lte(flyerClaims.holdsUntil, now)), eq(flyerClaims.state, "released")),
+      ))
       .returning({ id: flyerClaims.id });
     report.released += done.length;
   }

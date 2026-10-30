@@ -25,6 +25,14 @@ export function parseFlyerCode(raw: string): string | null {
   return CODE_SHAPE.test(code) ? code : null;
 }
 
+/**
+ * How a holding claim reads in the invite count: one of the code creator's invites waiting until `holdsUntil`, so every
+ * writer that counts his invites (`readCountIn`, under the same `invites:` lock) sees it taken.
+ */
+export function flyerHoldRow(holdsUntil: Date) {
+  return { kind: "email", state: "reserved", qrExpiresAt: null, holdsUntil } as const;
+}
+
 export type FlyerClaimState = "open" | "proven" | "spent" | "released";
 
 /** The columns of a claim the count reads. */
@@ -42,14 +50,13 @@ export type FlyerClosed = "revoked" | "full" | "hugh";
 
 /**
  * Whether a code can take one more person: not revoked, a place free past the claims holding, and one of Hugh's
- * invites free past the claims holding on EVERY code (`hughHolding` counts them all, since they spend the same
- * stock). `hughLeft` is his invites left as the invite count reads them.
+ * invites free. `hughLeft` is his invites left as the invite count reads them, which already nets every claim holding
+ * on all his codes (`readCountIn`), since they spend the same stock.
  */
 export function flyerOpenness(
   code: FlyerCodeRow,
   claims: readonly FlyerClaimRow[],
   hughLeft: number,
-  hughHolding: number,
   now: Date,
 ): { open: true; places: number } | { open: false; closed: FlyerClosed } {
   if (code.revokedAt !== null) return { open: false, closed: "revoked" };
@@ -57,6 +64,6 @@ export function flyerOpenness(
   const holding = claims.filter((c) => holdsPlace(c, now)).length;
   const places = code.capacity - spent - holding;
   if (places <= 0) return { open: false, closed: "full" };
-  if (hughLeft - hughHolding <= 0) return { open: false, closed: "hugh" };
+  if (hughLeft <= 0) return { open: false, closed: "hugh" };
   return { open: true, places };
 }

@@ -6,7 +6,7 @@
  * Every write that decides a place or spends Hugh's stock takes his `invites:` lock, the one his own invites take.
  * The Clerk invitation carries this claim's id in `inviteReservation` metadata, so the sign-up webhook finds it.
  */
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerClaims, flyerCodes } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "../invites/clerk";
@@ -124,10 +124,8 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
     const claims = await tx.select({ state: flyerClaims.state, holdsUntil: flyerClaims.holdsUntil }).from(flyerClaims)
       .where(eq(flyerClaims.codeId, code.id));
     const { count } = await readCountIn(tx, code.createdBy, now);
-    const [holding] = await tx.select({ n: sql<number>`count(*)::int` }).from(flyerClaims)
-      .innerJoin(flyerCodes, eq(flyerCodes.id, flyerClaims.codeId))
-      .where(and(eq(flyerCodes.createdBy, code.createdBy), inArray(flyerClaims.state, ["open", "proven"]), gt(flyerClaims.holdsUntil, now)));
-    const openness = flyerOpenness(code, claims as FlyerClaimRow[], count.left, holding.n, now);
+    // `count.left` already nets the claims holding on every one of Hugh's codes (`readCountIn`).
+    const openness = flyerOpenness(code, claims as FlyerClaimRow[], count.left, now);
     if (!openness.open) return { ok: false as const, reason: "closed" as const, closed: openness.closed };
     const claimSecret = newClaimSecret();
     const [made] = await tx.insert(flyerClaims).values({
@@ -226,22 +224,33 @@ export async function handOverFlyer(codeRaw: string, presented: string | null, d
   if (!row || row.state !== "proven" || row.email === null || !live(row, now) || !cookieMatches(row, presented)) return ENDED;
   const email = row.email;
   try {
-    if (await clerk.hasAccount(email)) {
-      await db.update(flyerClaims).set({ state: "released", email: null, resolvedAt: now }).where(and(eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven")));
-      return { ok: false, reason: "account" };
-    }
+    // Whatever ticket this claim made earlier is ended first, so no branch below leaves one behind (the sweep skips a
+    // released claim): a failure keeps the claim as it is.
     if (row.clerkInvitationId !== null && !(await clerk.revoke(row.clerkInvitationId))) return { ok: false, reason: "failed" };
     if (!(await clerk.revokeFor(email, row.id))) return { ok: false, reason: "failed" };
+    if (await clerk.hasAccount(email)) {
+      await db.update(flyerClaims).set({ state: "released", email: null, clerkInvitationId: null, resolvedAt: now }).where(and(eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven")));
+      return { ok: false, reason: "account" };
+    }
     const made = await clerk.create({ emailAddress: email, reservationId: row.id, notify: false, ignoreExisting: true });
     if (!made.ok || made.url === null) {
       if (!made.ok && made.reason === "indeterminate") await clerk.revokeFor(email, row.id);
       return { ok: false, reason: "failed" };
     }
     const stored = await db.update(flyerClaims).set({ clerkInvitationId: made.id })
-      .where(and(eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven"), gt(flyerClaims.holdsUntil, new Date())))
+      .where(and(
+        eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven"), gt(flyerClaims.holdsUntil, new Date()),
+        // …and under the invitation id as it was READ: a second hand-over that finished while Clerk was asked has
+        // moved it, so this one loses and revokes what it made, and only one ticket is ever stored.
+        sql`${flyerClaims.clerkInvitationId} is not distinct from ${row.clerkInvitationId}`,
+      ))
       .returning({ id: flyerClaims.id });
     if (stored.length === 0) {
-      if (!(await clerk.revoke(made.id))) console.warn("[flyer] hand-over: late invitation not revoked");
+      if (!(await clerk.revoke(made.id))) {
+        // Kept on the claim, whatever its state, so the sweep retries the revoke until it holds.
+        await db.update(flyerClaims).set({ clerkInvitationId: made.id }).where(eq(flyerClaims.id, row.id));
+        console.warn("[flyer] hand-over: late invitation not revoked; kept for the sweep");
+      }
       return ENDED;
     }
     return { ok: true, url: made.url };
