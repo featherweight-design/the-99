@@ -50,6 +50,7 @@ export function CardName({ oracleId, name, imageUri }: { oracleId: string; name:
       <CardDetailTrigger
         oracleId={oracleId}
         name={name}
+        flow
         className="inline p-0 text-left font-semibold text-[var(--fg)] [border-bottom:1px_dotted_var(--accent)] cursor-pointer"
       >
         {name}

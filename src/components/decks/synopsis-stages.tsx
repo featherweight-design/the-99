@@ -107,8 +107,8 @@ export function GamePlan({
   return (
     <div className="flex flex-col gap-[9px]">
       <div data-testid="synopsis-plan" className="relative flex flex-col gap-[12px] md:grid md:grid-cols-3 md:gap-[16px]">
-        {/* The line the diamonds sit on: a vertical rail on a phone, one horizontal line from md. */}
-        <span aria-hidden className="absolute bottom-[8px] left-[4.5px] top-[8px] w-px bg-[var(--fg-faint)] opacity-[0.55] md:bottom-auto md:left-[4px] md:right-[calc(33.333%-10px)] md:top-[5px] md:h-px md:w-auto" />
+        {/* The line the diamonds sit on: a vertical rail on a phone. From md each stage draws its own segment after its label, to the next diamond. */}
+        <span aria-hidden className="absolute bottom-[8px] left-[4.5px] top-[8px] w-px bg-[var(--fg-faint)] opacity-[0.55] md:hidden" />
         {stages.map((line, i) => {
           const lead = markedCards(line, content.cards, 1)[0];
           const image = !!lead && has(lead.oracleId);
@@ -119,7 +119,10 @@ export function GamePlan({
               <div className={`relative min-w-0 flex-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[12px] py-[11px] md:p-[12px] ${image ? "grid grid-cols-[52px_minmax(0,1fr)] gap-[12px] md:flex md:flex-col md:gap-[10px]" : ""}`}>
                 {image ? <CardImage oracleId={lead.oracleId} name={lead.name} art={art} onFail={onFail} className="h-[72px] w-[52px] md:h-[100px] md:w-[72px]" /> : null}
                 <div className="min-w-0">
-                  <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:absolute md:left-[12px] md:top-[-24px] md:mb-0 md:bg-[var(--surface-raised)] md:px-[6px]">{labels[i]}</span>
+                  <div className="md:absolute md:left-[18px] md:right-[-14px] md:top-[-24px] md:flex md:items-center md:gap-[8px]">
+                    <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:mb-0">{labels[i]}</span>
+                    {last ? null : <span aria-hidden className="hidden h-px min-w-0 flex-1 bg-[var(--fg-faint)] opacity-[0.55] md:block" />}
+                  </div>
                   <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(line)}{basedOn(i, line)}</p>
                 </div>
               </div>
