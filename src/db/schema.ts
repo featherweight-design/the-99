@@ -4255,7 +4255,7 @@ export const launchList = pgTable("launch_list", {
  * `source` is the entry it came from (`error_screen`, `about`, ...). Read in /admin by name, never by email;
  * `read_at` is when an admin first opened it. The purge deletes a player's rows with the account.
  */
-export const feedback = pgTable("feedback", {
+export const playerFeedback = pgTable("feedback", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
   kind: text("kind").notNull(),
