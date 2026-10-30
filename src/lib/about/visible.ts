@@ -20,7 +20,6 @@ import {
 } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
-import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
@@ -60,9 +59,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Already reads COLLECTION_EDIT_ENABLED: Sync is the upload choice's third card.
   COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
-  // The block lives on the Analysis tab, so the entry needs the tab too, as tuning's does: it
+  // The block lives on the Analysis tab, so the entry needs the tab, as tuning's does: it
   // would otherwise describe a tab that is off.
-  DECK_BENCHMARKS_ENABLED: (env) => deckBenchmarksEnabled(env) && analysisTabEnabled(env),
+  DECK_BENCHMARKS_ENABLED: analysisTabEnabled,
   // On only with COLLECTION_EDIT_ENABLED as well: the feature's own flag already says so.
   SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,

@@ -6,7 +6,6 @@ import { changeCommanderEnabled } from "../commander-change/flag";
 import { commandersPlaceEnabled } from "../commanders/place-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
-import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
@@ -48,7 +47,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
   COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
   COMMANDERS_PLACE_ENABLED: commandersPlaceEnabled,
-  DECK_BENCHMARKS_ENABLED: deckBenchmarksEnabled,
   DECK_NOTES_ENABLED: deckNotesEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
   DECK_STATS_ENABLED: deckStatsEnabled,

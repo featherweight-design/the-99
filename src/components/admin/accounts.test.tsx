@@ -55,7 +55,7 @@ const PAGE: AccountPage = {
   switches: {
     override: [{ name: "SWAP_TOOLS_ENABLED", label: "Swap tools", on: true, source: "group friends", kill: false }],
     rule: [
-      { name: "DECK_BENCHMARKS_ENABLED", label: "Deck benchmarks", on: false, source: "env var is off", kill: true },
+      { name: "NOTICES_ENABLED", label: "Notices", on: false, source: "env var is off", kill: true },
       { name: "TUNING_ENABLED", label: "Suggested changes", on: false, source: "Analysis tab is off", kill: false },
     ],
     envOn: ["Collection edit", "Notices"],

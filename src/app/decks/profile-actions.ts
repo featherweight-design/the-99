@@ -7,7 +7,6 @@ import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
-import { deckBenchmarksEnabled } from "../../lib/decks/benchmarks-flag";
 import { readingBenchmarks } from "../../lib/benchmarks/reading";
 import type { BenchmarksWire } from "../../lib/benchmarks/wire";
 import { computeAndStoreProfile, readStoredReading, requestProfileDeps } from "../../lib/profile/stored";
@@ -23,7 +22,7 @@ export type ProfileFetch =
       fresh: boolean;
       /** The version this reading is pinned to, for `analyzed with version n`. */
       versionNumber: number | null;
-      /** The reading's evidence benchmarks, graded from its own list; null when the switch is off or a
+      /** The reading's evidence benchmarks, graded from its own list; null when a
        *  read failed. Belongs to the reading, so a held one carries its own. */
       benchmarks: BenchmarksWire | null;
     }
@@ -95,7 +94,7 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   });
 
   const { profile, analyzedAt, fresh, versionNumber } = result.reading;
-  return { ok: true, profile, analyzedAt: analyzedAt.toISOString(), fresh, versionNumber, benchmarks: await readingBenchmarks(profile, userId, deckBenchmarksEnabled(env)) };
+  return { ok: true, profile, analyzedAt: analyzedAt.toISOString(), fresh, versionNumber, benchmarks: await readingBenchmarks(profile, userId) };
 }
 
 export type StoredProfileFetch =
@@ -127,7 +126,7 @@ export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProf
         analyzedAt: stored.analyzedAt.toISOString(),
         fresh: stored.fresh,
         versionNumber: stored.versionNumber,
-        benchmarks: await readingBenchmarks(stored.profile, userId, deckBenchmarksEnabled(env)),
+        benchmarks: await readingBenchmarks(stored.profile, userId),
       }
     : { ok: false, reason: "none" };
 }

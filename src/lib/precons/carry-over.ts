@@ -25,7 +25,6 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { deckDataChanges, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, preconSynopses } from "../../db/schema";
 import { analysisTabEnabled } from "../decks/analysis-flag";
-import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { noticesEnabled } from "../notices/flag";
 import { holdsIllegalCard } from "../notices/read";
@@ -65,7 +64,7 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
 
   // The same withhold a press makes before an Overview (`generate.ts`'s `run`): an illegal deck's is not shown.
   if (noticesEnabled(env) && (await holdsIllegalCard(deckId, userId))) return { attached: false, reason: "illegal" };
-  const contract = synopsisContractVersion(overviewV2Enabled(env), deckBenchmarksEnabled(env));
+  const contract = synopsisContractVersion(overviewV2Enabled(env), true);
   // At the OWNER's contract AND role basis: the reading's roles reach the prompt, so an Overview built at
   // the other basis is not what this owner's Analyze would write, and none is attached.
   const key = and(eq(preconSynopses.preconFile, deck.precon), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, roleBasisFromEnv(env)));

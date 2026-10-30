@@ -20,7 +20,7 @@ describe("showsPreconOverview", () => {
 
 describe("preconOverviewKey", () => {
   it("is the reader's own contract and role basis, the row a start would carry", () => {
-    const env = { OVERVIEW_V2_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "" } as unknown as NodeJS.ProcessEnv;
+    const env = { OVERVIEW_V2_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "" } as unknown as NodeJS.ProcessEnv;
     expect(preconOverviewKey(env)).toEqual({ contract: synopsisContractVersion(true, true), basis: "classifier" });
     expect(preconOverviewKey({ ...env, LABEL_ROLE_COUNTS_ENABLED: "true" } as NodeJS.ProcessEnv).basis).toBe("labels");
   });

@@ -41,7 +41,7 @@ export async function openSynopsis() {
     for (const deckId of ids) {
       const head = await loadProfileHead(deckId, userId);
       if (!head) throw new Error(`eval: deck ${deckId} not readable`);
-      const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), undefined, undefined, process.env);
+      const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), undefined, process.env);
       const { facts: shown, messages } = applySynopsisVariant(variant, facts, (f) => buildSynopsisPrompt(f));
       out.push({ deckId, facts: shown, ...messages });
     }

@@ -25,27 +25,22 @@ const input = () => ({ cards: [card("Sol Ring", { manaValue: 1, jobs: [job({ kin
 describe("readingBenchmarks", () => {
   beforeEach(() => { load.mockReset(); store.clear(); keys.length = 0; labelRead.mockReset(); labelRead.mockResolvedValue([{ millis: "1000" }]); });
 
-  it("reads nothing with the switch off", async () => {
-    expect(await readingBenchmarks(profile, "u", false)).toBeNull();
-    expect(load).not.toHaveBeenCalled();
-  });
-
   it("is null when the read fails, so the reading draws as before", async () => {
     load.mockResolvedValueOnce(null);
-    expect(await readingBenchmarks(profile, "u", true)).toBeNull();
+    expect(await readingBenchmarks(profile, "u")).toBeNull();
     // ...and the failure is not stored: the next open reads again.
     load.mockResolvedValueOnce(input());
-    expect(await readingBenchmarks(profile, "u", true)).not.toBeNull();
+    expect(await readingBenchmarks(profile, "u")).not.toBeNull();
     expect(load).toHaveBeenCalledTimes(2);
   });
 
   it("serves a repeat open from the cache, and reads again when a label moves", async () => {
     load.mockResolvedValue(input());
-    await readingBenchmarks(profile, "u", true);
-    await readingBenchmarks(profile, "u", true);
+    await readingBenchmarks(profile, "u");
+    await readingBenchmarks(profile, "u");
     expect(load).toHaveBeenCalledTimes(1);
     labelRead.mockResolvedValue([{ millis: "2000" }]);
-    await readingBenchmarks(profile, "u", true);
+    await readingBenchmarks(profile, "u");
     expect(load).toHaveBeenCalledTimes(2);
     expect(keys[0][0]).toBe("deck-benchmarks");
     expect(keys[2][2]).toBe("2000");
@@ -53,22 +48,22 @@ describe("readingBenchmarks", () => {
 
   it("keys on the list: a different count is a different entry", async () => {
     load.mockResolvedValue(input());
-    await readingBenchmarks(profile, "u", true);
-    await readingBenchmarks({ cards: [{ oracleId: "a", quantity: 2 }], commanderOracleIds: ["c"] } as never, "u", true);
+    await readingBenchmarks(profile, "u");
+    await readingBenchmarks({ cards: [{ oracleId: "a", quantity: 2 }], commanderOracleIds: ["c"] } as never, "u");
     expect(load).toHaveBeenCalledTimes(2);
   });
 
   it("runs uncached when the key's read fails, rather than keying wrongly", async () => {
     labelRead.mockRejectedValue(new Error("down"));
     load.mockResolvedValue(input());
-    expect(await readingBenchmarks(profile, "u", true)).not.toBeNull();
+    expect(await readingBenchmarks(profile, "u")).not.toBeNull();
     expect(keys).toEqual([]);
   });
 
   it("sends steps and ledger cards, never a card's jobs or rules text", async () => {
     const cmd = card("Selvala", { commander: true, manaValue: 3, typeLine: "Legendary Creature", jobs: [job({ kind: "ramp" })], oracleText: "secret text" });
     load.mockResolvedValueOnce({ cards: [cmd, card("Sol Ring", { manaValue: 1, jobs: [job({ kind: "ramp" })] }), land("Forest", { quantity: 97 })], lines: [], castRamp: 1 });
-    const wire = await readingBenchmarks(profile, "u", true);
+    const wire = await readingBenchmarks(profile, "u");
     expect(wire?.velocity.commanderName).toBe("Selvala");
     expect(wire?.velocity.step).toBeGreaterThanOrEqual(1);
     expect(wire?.win).toBeNull();

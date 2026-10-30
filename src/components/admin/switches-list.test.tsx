@@ -86,8 +86,8 @@ describe("SwitchesList", () => {
   });
 
   it("draws a kill switch row: env off in danger, Off, killed, its overrides refused (L4)", () => {
-    draw({ DECK_BENCHMARKS_ENABLED: "off" }, [row({ switchName: "DECK_BENCHMARKS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    const r = rowOf("DECK_BENCHMARKS_ENABLED");
+    draw({ NOTICES_ENABLED: "off" }, [row({ switchName: "NOTICES_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    const r = rowOf("NOTICES_ENABLED");
     const env = within(r).getAllByText("off").find((e) => e.className.includes("font-mono"))!;
     expect(env.className).toContain("var(--danger)");
     expect(within(r).getAllByText("Off").length).toBeGreaterThan(0);
@@ -140,8 +140,8 @@ describe("SwitchesList", () => {
   );
 
   it("marks a killed switch's app-wide override refused, in the cell and the meta line (L4)", () => {
-    const first = draw({ DECK_BENCHMARKS_ENABLED: "off" }, [row({ switchName: "DECK_BENCHMARKS_ENABLED", scope: "app", value: "on" })]);
-    const r = rowOf("DECK_BENCHMARKS_ENABLED");
+    const first = draw({ NOTICES_ENABLED: "off" }, [row({ switchName: "NOTICES_ENABLED", scope: "app", value: "on" })]);
+    const r = rowOf("NOTICES_ENABLED");
     const cell = within(r).getByText("On, refused", { selector: "span.hidden" });
     expect(cell.className).toContain("var(--danger)");
     expect(within(r).getByTestId("switch-meta").textContent).toBe("env off · app-wide on, refused · no overrides · env var is off");

@@ -181,7 +181,7 @@ if (command === "run") {
       writeFileSync(file, `${JSON.stringify(doc, null, 2)}\n`);
       console.log(`${c.id}: pinned ${live.slice(0, 8)}`);
     }
-    const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), v2, undefined, process.env);
+    const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), v2, process.env);
     const prompt = buildSynopsisPrompt(facts, undefined, { v2, contract8: v8 });
     const maxTokens = arm.maxTokens;
     const stops: { what: string; stopReason: string | null; outputTokens: number }[] = [];

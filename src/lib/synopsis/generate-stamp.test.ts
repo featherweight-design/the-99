@@ -84,9 +84,8 @@ const deps = {
 };
 
 /** Runs one write and returns the contract the pending row was stamped with. */
-async function stampedRow(opts: { v2: boolean; benchmarks: boolean; labelsFail?: boolean }) {
+async function stampedRow(opts: { v2: boolean; labelsFail?: boolean }) {
   vi.stubEnv("OVERVIEW_V2_ENABLED", opts.v2 ? "true" : "false");
-  vi.stubEnv("DECK_BENCHMARKS_ENABLED", opts.benchmarks ? "true" : "false");
   state.labels = opts.labelsFail ? async () => { throw new Error("down"); } : async () => new Map();
   state.topSelects = [
     [{ list: "list-1", at: analyzedAt, dirty: false, seenSeq: 0 }], // freshReading's profile row
@@ -111,17 +110,15 @@ describe("the contract a write stamps on its run", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it.each([
-    [false, false, 7],
-    [true, false, 11],
-    [false, true, 9],
-    [true, true, 12],
-  ])("v2=%s benchmarks=%s stamps %i", async (v2, benchmarks, contract) => {
-    expect(await stampedContract({ v2, benchmarks })).toBe(contract);
+    [false, 9],
+    [true, 12],
+  ])("v2=%s stamps %i", async (v2, contract) => {
+    expect(await stampedContract({ v2 })).toBe(contract);
   });
 
   it("stamps 7 or 11, never 9 or 12, when the label read fails and the figures fall back", async () => {
-    expect(await stampedContract({ v2: false, benchmarks: true, labelsFail: true })).toBe(7);
-    expect(await stampedContract({ v2: true, benchmarks: true, labelsFail: true })).toBe(11);
+    expect(await stampedContract({ v2: false, labelsFail: true })).toBe(7);
+    expect(await stampedContract({ v2: true, labelsFail: true })).toBe(11);
   });
 });
 
@@ -141,7 +138,7 @@ describe("the model each contract runs on", () => {
   });
 
   it("records the contract's own model on the run", async () => {
-    expect((await stampedRow({ v2: false, benchmarks: false })).model).toBe("model-v7");
-    expect((await stampedRow({ v2: true, benchmarks: false })).model).toBe("model-v2");
+    expect((await stampedRow({ v2: false })).model).toBe("model-v7");
+    expect((await stampedRow({ v2: true })).model).toBe("model-v2");
   });
 });

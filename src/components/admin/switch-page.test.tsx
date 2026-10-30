@@ -59,8 +59,8 @@ describe("SwitchPageView", () => {
   });
 
   it("draws the kill banner and refuses the rows under it (F5)", () => {
-    draw("DECK_BENCHMARKS_ENABLED", { DECK_BENCHMARKS_ENABLED: "off" }, [ov({ scope: "user", userId: "u2" })]);
-    expect(screen.getByTestId("switch-banner-kill").textContent).toContain("DECK_BENCHMARKS_ENABLED=off refuses every override.");
+    draw("NOTICES_ENABLED", { NOTICES_ENABLED: "off" }, [ov({ scope: "user", userId: "u2" })]);
+    expect(screen.getByTestId("switch-banner-kill").textContent).toContain("NOTICES_ENABLED=off refuses every override.");
     expect(document.querySelector('[data-rung="account"]')?.textContent).toContain("refused");
     expect(document.querySelector('[data-override="u2"]')?.textContent).toContain("refused, env var is off");
   });

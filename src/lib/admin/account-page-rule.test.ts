@@ -147,7 +147,7 @@ describe("switchGroups (A4, A5)", () => {
     ],
     groupOf: new Map([[MARA.id, G]]),
   };
-  const env = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
+  const env = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", NOTICES_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
 
   it("sorts every switch into exactly one group, with the source each verdict names", () => {
     const g = switchGroups(explainAccount(env, snapshot, MARA.id), (id) => (id === G ? "friends" : id));

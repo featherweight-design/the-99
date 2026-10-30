@@ -696,7 +696,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   // Evidence benchmarks (plan `2026-10-10-evidence-benchmarks.md` PR 5, handoff
   // `addendum_evidence_benchmarks` §4a): the copy lives in `deck-benchmarks.ts` beside the block's,
-  // after its /copy-review pass. It follows DECK_BENCHMARKS_ENABLED (audit rule 8), so the page
+  // after its /copy-review pass. It follows the Analysis tab (audit rule 8), so the page
   // never describes a block nobody can see. `since: 13` is the evidence line's ONE bump. The
   // specimen is the block's phone layout (`layout="rows"`, E1) with no openers; the figure carries
   // no numerals yet, so the key draws unnumbered (`marksPending`).

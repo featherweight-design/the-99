@@ -548,7 +548,7 @@ describe("AnalysisPanel", () => {
       expect(within(block as HTMLElement).getByText(deckBenchmarksCopy.caption)).toBeInTheDocument();
     });
 
-    it("draws nothing with the switch off (no benchmarks on the reading)", () => {
+    it("draws nothing when the reading carries no benchmarks", () => {
       const { container } = draw({ kind: "ready", ...reading(), benchmarks: null });
       expect(container.querySelector("[data-benchmarks]")).toBeNull();
     });

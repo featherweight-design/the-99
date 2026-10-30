@@ -28,7 +28,7 @@ for (const file of process.argv.slice(2)) {
     const owner = (await db.execute(sql`select user_id from decks where id = ${c.deck.deckId}`)).rows[0] as { user_id: string } | undefined;
     const head = owner && await loadProfileHead(c.deck.deckId, owner.user_id);
     if (!head) continue;
-    const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), true, undefined, process.env);
+    const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), true, process.env);
     const byId = new Map(facts.cards.map((f) => [f.oracleId, f]));
     const deck = new Map([...deckNameIndex(facts.cards)].map(([k, v]) => [k, byId.get(v.oracleId)!]));
     if ((row.reply as { assessment?: unknown }).assessment) throw new Error(`${row.id}: a contract-8 answer holds no tip card names; run validateSynopsisV8 on it instead`);

@@ -305,7 +305,7 @@ function Verdict({
   locked: ReadonlySet<string>;
   declaration?: DeclarationControl;
   overview?: ReactNode;
-  /** The reading's evidence benchmarks (null with the switch off, or when their read failed). */
+  /** The reading's evidence benchmarks (null when their read failed). */
   benchmarks: BenchmarksWire | null;
   ledgerAvailability?: LedgerAvailability;
   onStats?: (card: StatsCard) => void;
