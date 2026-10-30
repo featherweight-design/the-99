@@ -18,12 +18,16 @@
  * Owner 10, friends 5 (3 until 2026-10-09, when Hugh raised it): Hugh, via the orchestrator, 2026-09-24. It replaced a flat five (2026-09-23)
  * when an app-wide spend cap arrived (removed 2026-10-17; the Anthropic workspace limits bound the
  * month's dollars now), so the per-player number only has to share the budget fairly, and the owner — who tests every
- * change — gets more presses than a friend. Which account is the owner is `MODEL_OWNER_USER_ID`,
+ * change — gets more presses than anyone on the default. Which account is the owner is `MODEL_OWNER_USER_ID`,
  * read once in `allowance.ts` (`dailyLimitFor`). Since 2026-10-13 a group's allowance and the
  * app-wide default (`MODEL_DAILY_ALLOWANCE`) come first; `dailyLimit` below holds the order.
  */
 export const MODEL_OWNER_DAILY_ALLOWANCE = 10;
-export const MODEL_FRIEND_DAILY_ALLOWANCE = 5;
+/**
+ * The public default: a player in no group that sets an allowance, with `MODEL_DAILY_ALLOWANCE` unset. One run a day
+ * (Hugh, 2026-10-30; it was five, named for friends). Friends get theirs through their group's allowance, never this.
+ */
+export const MODEL_DEFAULT_DAILY_ALLOWANCE = 1;
 
 /**
  * The owner's daily limit, from `MODEL_OWNER_DAILY_ALLOWANCE` when it is set to a positive whole
@@ -45,10 +49,10 @@ function positiveWholeOr(raw: string | undefined, fallback: number): number {
 
 /**
  * The app-wide default for a player in no group that sets an allowance: `MODEL_DAILY_ALLOWANCE` when it
- * is a positive whole number, otherwise the friend's five, so leaving it unset changes nobody's limit.
+ * is a positive whole number, otherwise `MODEL_DEFAULT_DAILY_ALLOWANCE`.
  */
 export function defaultDailyAllowanceFrom(raw: string | undefined): number {
-  return positiveWholeOr(raw, MODEL_FRIEND_DAILY_ALLOWANCE);
+  return positiveWholeOr(raw, MODEL_DEFAULT_DAILY_ALLOWANCE);
 }
 
 /**
@@ -239,7 +243,7 @@ function expiresAt(row: LedgerRow): number {
 export function allowanceFrom(
   rows: readonly LedgerRow[],
   now: Date,
-  limit: number = MODEL_FRIEND_DAILY_ALLOWANCE,
+  limit: number = MODEL_DEFAULT_DAILY_ALLOWANCE,
 ): Allowance {
   const expiries = rows
     .filter((r) => counts(r, now))

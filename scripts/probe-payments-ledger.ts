@@ -52,7 +52,7 @@ import { sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import { readAllowance, reserveModelCall, settleModelCall } from "../src/lib/model/allowance";
-import { MODEL_FRIEND_DAILY_ALLOWANCE, RESERVATION_TTL_MS, hasCredit, heldCredits } from "../src/lib/model/allowance-rule";
+import { MODEL_DEFAULT_DAILY_ALLOWANCE, RESERVATION_TTL_MS, hasCredit, heldCredits } from "../src/lib/model/allowance-rule";
 import { closedBy, toStanding } from "../src/lib/intake/standing";
 import { synopsisStatus } from "../src/lib/synopsis/read";
 import { purgeAccount } from "../src/lib/account/purge";
@@ -96,7 +96,7 @@ const fundedBy = async (r: Got): Promise<string | null> => {
 
 /** The free allowance used up, by seeding spent rows that name no lot. */
 async function spendAllowance(userId: string) {
-  for (let i = 0; i < MODEL_FRIEND_DAILY_ALLOWANCE; i++) {
+  for (let i = 0; i < MODEL_DEFAULT_DAILY_ALLOWANCE; i++) {
     await fixture.execute(sql`insert into model_calls (user_id, feature, status, model) values (${userId}, 'tuning', 'spent', ${TUNING_MODEL})`);
   }
 }
@@ -241,7 +241,7 @@ async function run() {
   {
     const u = newUser();
     const pack = await grant(u, "pack", 10);
-    for (let i = 0; i < MODEL_FRIEND_DAILY_ALLOWANCE; i++) {
+    for (let i = 0; i < MODEL_DEFAULT_DAILY_ALLOWANCE; i++) {
       await fixture.execute(sql`insert into model_calls (user_id, feature, status, model, credit_grant_id)
         values (${u}, 'tuning', 'spent', ${TUNING_MODEL}, ${pack}::uuid)`);
     }
@@ -321,7 +321,7 @@ async function run() {
     check("n · a group of 3 funds three paid runs and refuses the fourth", funded, [pack, pack, pack, "refused"]);
     const at = await readAllowance(u);
     check("n · readAllowance names the group's limit", [at.paidUsedToday, at.paidLimit, at.paidBackAt instanceof Date], [3, 3, true]);
-    check("n · a group setting only a paid limit leaves daily credits at the default", at.limit, MODEL_FRIEND_DAILY_ALLOWANCE);
+    check("n · a group setting only a paid limit leaves daily credits at the default", at.limit, MODEL_DEFAULT_DAILY_ALLOWANCE);
     await fixture.execute(sql`update flag_groups set paid_daily_limit = 2 where id = ${three}::uuid`);
     const lowered = await readAllowance(u);
     check("n · lowered below today's count, it stays shut with a time back", [lowered.paidUsedToday, lowered.paidLimit, hasCredit(lowered), lowered.paidBackAt instanceof Date], [3, 2, false, true]);

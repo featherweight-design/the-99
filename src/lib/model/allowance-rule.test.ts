@@ -4,7 +4,7 @@ import {
   paidLimit,
   PAID_DAILY_LIMIT,
   ALLOWANCE_WINDOW_MS,
-  MODEL_FRIEND_DAILY_ALLOWANCE,
+  MODEL_DEFAULT_DAILY_ALLOWANCE,
   MODEL_OWNER_DAILY_ALLOWANCE,
   RESERVATION_TTL_MS,
   allowanceFrom,
@@ -36,14 +36,22 @@ describe("allowanceFrom", () => {
   });
 
   it("names no reopening time while units remain", () => {
-    const rows = Array.from({ length: MODEL_FRIEND_DAILY_ALLOWANCE - 1 }, (_, i) => spent(hoursAgo(i + 1)));
-    expect(allowanceFrom(rows, now)).toEqual({
-      used: MODEL_FRIEND_DAILY_ALLOWANCE - 1,
-      limit: MODEL_FRIEND_DAILY_ALLOWANCE,
+    // A limit of several (a group's), so units can be spent and still remain: the default is one.
+    const limit = 5;
+    const rows = Array.from({ length: limit - 1 }, (_, i) => spent(hoursAgo(i + 1)));
+    expect(allowanceFrom(rows, now, limit)).toEqual({
+      used: limit - 1,
+      limit,
       reopensAt: null,
       // The credit line names the next one while credits remain: the oldest unit's expiry.
-      nextAt: new Date(hoursAgo(MODEL_FRIEND_DAILY_ALLOWANCE - 1).getTime() + ALLOWANCE_WINDOW_MS),
+      nextAt: new Date(hoursAgo(limit - 1).getTime() + ALLOWANCE_WINDOW_MS),
     });
+  });
+
+  it("defaults to one run a day for a player on the public default", () => {
+    expect(MODEL_DEFAULT_DAILY_ALLOWANCE).toBe(1);
+    expect(allowanceFrom([], now).limit).toBe(1);
+    expect(allowanceFrom([spent(hoursAgo(1))], now).used).toBe(1);
   });
 
   it("names no next time when nothing counts", () => {
@@ -57,9 +65,9 @@ describe("allowanceFrom", () => {
 
   it("reopens when the oldest counted call leaves the window", () => {
     // Given out of order on purpose: the reopening time is the OLDEST, not the first listed.
-    const rows = Array.from({ length: MODEL_FRIEND_DAILY_ALLOWANCE }, (_, i) => spent(hoursAgo(20 - i))).reverse();
+    const rows = Array.from({ length: MODEL_DEFAULT_DAILY_ALLOWANCE }, (_, i) => spent(hoursAgo(20 - i))).reverse();
     const a = allowanceFrom(rows, now);
-    expect(a.used).toBe(MODEL_FRIEND_DAILY_ALLOWANCE);
+    expect(a.used).toBe(MODEL_DEFAULT_DAILY_ALLOWANCE);
     expect(a.reopensAt).toEqual(new Date(hoursAgo(20).getTime() + ALLOWANCE_WINDOW_MS));
   });
 
