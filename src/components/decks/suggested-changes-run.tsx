@@ -874,7 +874,8 @@ function WhySideLine({ side, parts, art }: {
       </span>
       <span>
         {parts === null ? sc.whyBox.heldSide : parts.map((part, i) => ("card" in part ? (
-          <CardName key={i} oracleId={part.oracleId} name={part.card} imageUri={art.get(part.oracleId) ?? null} />
+          // The link is 13px against the line's 12.5 (Why-These `.cn`).
+          <span key={i} className="text-[13px]"><CardName oracleId={part.oracleId} name={part.card} imageUri={art.get(part.oracleId) ?? null} /></span>
         ) : <Fragment key={i}>{part.text}</Fragment>))}
       </span>
     </p>
