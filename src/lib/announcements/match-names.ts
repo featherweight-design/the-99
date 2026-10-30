@@ -48,11 +48,25 @@ export function buildNameIndex<Id>(entries: Iterable<readonly [string, Id]>): Ma
   return full;
 }
 
+/** A printing tag (`Sol Ring (Villains)`) or an art-variant tag (`Dandân art 2`), as a post may write either. */
+const NAME_TAGS = [/\s*\([^()]*\)$/, /\s+art\s+\d+$/];
+
+/** A post's card name with its printing or art-variant tag dropped (`Island (Villains)` is `Island`). */
+export function untaggedName(name: string): string {
+  // Until nothing changes, so a doubly tagged `Island (Villains) art 2` comes back as `Island` too.
+  let bare = name.trim();
+  for (let prev = ""; prev !== bare; ) {
+    prev = bare;
+    for (const tag of NAME_TAGS) bare = bare.replace(tag, "") || bare;
+  }
+  return bare;
+}
+
 export function matchCardName<Id>(name: string, index: ReadonlyMap<string, Id>): Id | null {
   const key = nameKey(name);
   const tries = [key, key.split(" // ")[0]];
-  // A printing tag (`Sol Ring (Villains)`) or an art-variant tag (`Dandân art 2`), tried only after the whole name.
-  for (const tag of [/\s*\([^()]*\)$/, /\s+art\s+\d+$/]) {
+  // A printing tag or an art-variant tag (`NAME_TAGS`), tried only after the whole name.
+  for (const tag of NAME_TAGS) {
     const bare = key.replace(tag, "");
     if (bare !== key && bare) tries.push(bare, bare.split(" // ")[0]);
   }

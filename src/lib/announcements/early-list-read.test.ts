@@ -14,49 +14,119 @@ describe("releaseCandidatesQuery", () => {
     expect(sql).toContain('"precons"."twin_of" is null');
     // No set filter: a release list in any set, of any type or release date, is a candidate.
     expect(sql).not.toContain('"sets"');
+    // The candidate's cards, for the overlap: aliased and qualified, never `file_name = file_name`.
+    expect(sql).toContain('(select array_agg(pe.oracle_id::text) from "precon_cards" pe where pe.file_name = "precons".file_name)');
     expect(params).toEqual(["precon", "cmd-1"]);
   });
 });
 
 describe("pickReleasePrecon", () => {
   const posted = new Date("2026-10-29T16:00:00Z");
-  const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null) =>
-    ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline });
+  // Every candidate below lists the early list's cards unless a test says otherwise: these cases are about stamps and sets.
+  // As real data reads: the commander's line is always matched, every candidate lists it, and the list holds basics too.
+  const IDS = Array.from({ length: 10 }, (_, i) => `card-${i}`);
+  const CMD = { name: "Lyra Dawnbringer", cardId: "cmd-1" };
+  const ISLAND = { name: "Island", cardId: "island" };
+  const lines = (ids: readonly (string | null)[]) => [CMD, ...ids.map((cardId, i) => ({ name: `Card ${i}`, cardId })), ISLAND];
+  const listed = { title: "Calling All Angels", commanderCardId: "cmd-1", partnerCardId: null, partnerRole: null, cards: lines(IDS) };
+  const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null, cardIds: readonly string[] = IDS, name = fileName) =>
+    ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline, name, cardIds: ["cmd-1", "island", ...cardIds] });
 
   it("matches a new deck in a long-running set by its first-seen stamp, whatever the set's release date (SLD)", () => {
     // The post's lists resolve to no set (SLD released in 2019, outside the window), and the redirect still finds it.
-    expect(pickReleasePrecon([c("OddsAndEnds_SLD", "SLD", "2026-11-02T08:00:00Z")], posted, null)).toBe("OddsAndEnds_SLD");
+    expect(pickReleasePrecon([c("OddsAndEnds_SLD", "SLD", "2026-11-02T08:00:00Z")], posted, null, listed)).toBe("OddsAndEnds_SLD");
   });
 
   it("never matches an older precon with the same commander, stamped before the post", () => {
-    expect(pickReleasePrecon([c("Angels_C23", "C23", "2025-03-01T00:00:00Z")], posted, null)).toBeNull();
+    expect(pickReleasePrecon([c("Angels_C23", "C23", "2025-03-01T00:00:00Z")], posted, null, listed)).toBeNull();
     // Not even in the resolved set: a stamped precon from before the post is never the release list.
-    expect(pickReleasePrecon([c("Angels_FDC_old", "FDC", "2025-03-01T00:00:00Z")], posted, "fdc")).toBeNull();
+    expect(pickReleasePrecon([c("Angels_FDC_old", "FDC", "2025-03-01T00:00:00Z")], posted, "fdc", listed)).toBeNull();
   });
 
   it("takes the new one when an older precon shares the commander", () => {
     const both = [c("Angels_C23", "C23", "2025-03-01T00:00:00Z"), c("Angels_FDC", "FDC", "2026-11-12T00:00:00Z")];
-    expect(pickReleasePrecon(both, posted, "fdc")).toBe("Angels_FDC");
+    expect(pickReleasePrecon(both, posted, "fdc", listed)).toBe("Angels_FDC");
   });
 
   it("allows a few days of skew before the post", () => {
-    expect(pickReleasePrecon([c("A", "FDC", "2026-10-27T00:00:00Z")], posted, null)).toBe("A");
-    expect(pickReleasePrecon([c("A", "FDC", "2026-10-25T00:00:00Z")], posted, null)).toBeNull();
+    expect(pickReleasePrecon([c("A", "FDC", "2026-10-27T00:00:00Z")], posted, null, listed)).toBe("A");
+    expect(pickReleasePrecon([c("A", "FDC", "2026-10-25T00:00:00Z")], posted, null, listed)).toBeNull();
   });
 
   it("falls back to the resolved set for a precon with no usable stamp", () => {
-    expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, "cmm")).toBe("A_CMM");
-    expect(pickReleasePrecon([c("A_CMM", "CMM", "2020-01-01T00:00:00Z", true)], posted, "cmm")).toBe("A_CMM");
-    expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, "fdc")).toBeNull();
-    expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, null)).toBeNull();
+    expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, "cmm", listed)).toBe("A_CMM");
+    expect(pickReleasePrecon([c("A_CMM", "CMM", "2020-01-01T00:00:00Z", true)], posted, "cmm", listed)).toBe("A_CMM");
+    expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, "fdc", listed)).toBeNull();
+    expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, null, listed)).toBeNull();
   });
 
   it("prefers the resolved set's release over a later product elsewhere sharing the commander", () => {
     const resolved = c("Angels_FDC", "FDC", "2020-01-01T00:00:00Z", true);
     const later = c("Angels_SLD", "SLD", "2026-12-01T00:00:00Z");
-    expect(pickReleasePrecon([later, resolved], posted, "fdc")).toBe("Angels_FDC");
+    expect(pickReleasePrecon([later, resolved], posted, "fdc", listed)).toBe("Angels_FDC");
     // With no release in the resolved set yet, the later stamped product is the only match.
-    expect(pickReleasePrecon([later], posted, "fdc")).toBe("Angels_SLD");
+    expect(pickReleasePrecon([later], posted, "fdc", listed)).toBe("Angels_SLD");
+  });
+
+  it("never lands on another product that shares only the commander, in another set or the resolved one", () => {
+    // A staple-heavy deck elsewhere: the commander and two cards in ten, stamped after the post.
+    const other = c("Angels_SLD", "SLD", "2026-11-02T08:00:00Z", false, ["card-0", "card-1"]);
+    expect(pickReleasePrecon([other], posted, null, listed)).toBeNull();
+    expect(pickReleasePrecon([{ ...other, setCode: "FDC" }], posted, "fdc", listed)).toBeNull();
+  });
+
+  it("takes a precon sharing RELEASE_OVERLAP of the list's matched cards, and not one card fewer", () => {
+    expect(pickReleasePrecon([c("A", "SLD", "2026-11-02T08:00:00Z", false, IDS.slice(0, 8))], posted, null, listed)).toBe("A");
+    expect(pickReleasePrecon([c("A", "SLD", "2026-11-02T08:00:00Z", false, IDS.slice(0, 7))], posted, null, listed)).toBeNull();
+  });
+
+  it("counts an alternate second line among the list's own cards, and leaves out a co-commander", () => {
+    // Ten own cards and a second line. As an alternate it is an eleventh own card; as a co-commander it is left out.
+    const second = { name: "Second", cardId: "second" };
+    const list = (partnerRole: string) => ({ ...listed, partnerCardId: "second", partnerRole, cards: [CMD, second, ...lines(IDS).slice(1)] });
+    // The second line and eight of the ten: 9 of 11 as an alternate (passes), 8 of 10 as a co-commander (passes);
+    // without the second line and with eight: 8 of 11 as an alternate (fails), 8 of 10 as a co-commander (passes).
+    const withSecond = c("A", "SLD", "2026-11-02T08:00:00Z", false, ["second", ...IDS.slice(0, 8)]);
+    const without = c("A", "SLD", "2026-11-02T08:00:00Z", false, IDS.slice(0, 8));
+    expect(pickReleasePrecon([withSecond], posted, null, list("alternate"))).toBe("A");
+    expect(pickReleasePrecon([without], posted, null, list("alternate"))).toBeNull();
+    expect(pickReleasePrecon([without], posted, null, list("co-commander"))).toBe("A");
+  });
+
+  it("takes no overlap evidence from fewer than RELEASE_OVERLAP_MIN_CARDS own matched cards", () => {
+    // One matched own card that the candidate lists would be 1 of 1; below the floor it is no evidence.
+    const sparse = { ...listed, cards: [CMD, { name: "Sol Ring", cardId: "card-0" }, ...IDS.slice(1).map(() => ({ name: "Unknown", cardId: null }))] };
+    expect(pickReleasePrecon([c("Other", "SLD", "2026-11-02T08:00:00Z", false, ["card-0"])], posted, null, sparse)).toBeNull();
+  });
+
+  it("drops an in-set precon with no evidence for an evidenced one elsewhere", () => {
+    const inSet = c("Other_FDC", "FDC", "2026-11-02T08:00:00Z", false, []);
+    const elsewhere = c("Angels_SLD", "SLD", "2026-11-03T08:00:00Z");
+    expect(pickReleasePrecon([inSet, elsewhere], posted, "fdc", listed)).toBe("Angels_SLD");
+  });
+
+  it("leaves a basic out of the evidence even when the post tags its printing or art", () => {
+    // Every other line unmatched: a tagged Island the catalog matched must not make any precon holding Island a 1/1 match.
+    const tagged = { ...listed, cards: [CMD, ...IDS.map(() => ({ name: "Unknown", cardId: null })), { name: "Island (Villains)", cardId: "island" }, { name: "Island art 2", cardId: "island" }, { name: "Island (Villains) art 2", cardId: "island" }] };
+    expect(pickReleasePrecon([c("Other", "SLD", "2026-11-02T08:00:00Z", false, [])], posted, null, tagged)).toBeNull();
+  });
+
+  it("carries a list the catalog cannot card-match yet on its deck name alone, through the Secret Lair wrapping", () => {
+    // The commander is matched (it always is where this runs), the rest not yet: commander and basics alone are no evidence.
+    const unmatched = { ...listed, title: "Secret Lair Commander Deck: Odds and Ends", cards: lines(IDS.map(() => null)) };
+    const release = c("OddsAndEnds_SLD", "SLD", "2026-11-02T08:00:00Z", false, IDS, "Odds and Ends");
+    expect(pickReleasePrecon([release], posted, null, unmatched)).toBe("OddsAndEnds_SLD");
+    expect(pickReleasePrecon([{ ...release, name: "Goblin Storm" }], posted, null, unmatched)).toBeNull();
+    expect(pickReleasePrecon([c("Win_SLD", "SLD", "2026-11-02T08:00:00Z", false, [], "20 Ways to Win")], posted, null,
+      { ...listed, title: "20 Ways to Win Commander Deck", cards: lines([]) })).toBe("Win_SLD");
+  });
+
+  it("prefers the name match, then the larger overlap, over the earlier stamp", () => {
+    const early = c("Early", "SLD", "2026-11-01T00:00:00Z", false, IDS.slice(0, 9));
+    const named = c("Named", "SLD", "2026-11-05T00:00:00Z", false, IDS.slice(0, 8), "Calling All Angels");
+    const fuller = c("Fuller", "SLD", "2026-11-03T00:00:00Z", false, IDS);
+    expect(pickReleasePrecon([early, named, fuller], posted, null, listed)).toBe("Named");
+    expect(pickReleasePrecon([early, fuller], posted, null, listed)).toBe("Fuller");
   });
 });
 
