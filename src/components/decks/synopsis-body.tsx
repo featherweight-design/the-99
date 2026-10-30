@@ -4,13 +4,15 @@ import { useId } from "react";
 
 import { preconsCopy } from "../../lib/copy/precons";
 import { synopsisCopy } from "../../lib/copy/synopsis";
-import { basedOnIds, type EvidenceKind } from "../../lib/synopsis/based-on";
+import { basedOnIds, flatBasedOnIds, type EvidenceKind } from "../../lib/synopsis/based-on";
 import { normalizeName } from "../../lib/synopsis/facts";
 import type { SynopsisRow } from "../../lib/synopsis/generate";
 import type { CheckedSynopsis, SectionId, SectionVerdict } from "../../lib/synopsis/types";
 import { ModalChrome, type FindingArt } from "./receipt-modal";
 import { RefusedSlot } from "./synopsis-controls";
 import { CardName, SynopsisText } from "./synopsis-text";
+import { GamePlan, KeyCardGrid, LandLine, OverviewWithCommander, TipCards, WeaknessLine } from "./synopsis-stages";
+import { usesStagesShape } from "../../lib/synopsis/stages-view";
 import { formatDeckDate } from "../../lib/decks/format";
 import { analyzedWhen } from "./verdict-block";
 import { CreditsText } from "../ui/credits-text";
@@ -29,6 +31,7 @@ export function SynopsisModal({
   synopsis,
   stale,
   deckName,
+  commanderId,
   art,
   evidenceNames,
   busy,
@@ -41,6 +44,8 @@ export function SynopsisModal({
   synopsis: SynopsisRow;
   stale: boolean;
   deckName: string;
+  /** The deck's commander, for the stages shape's commander image. */
+  commanderId?: string | null;
   art: FindingArt;
   evidenceNames: Record<string, string>;
   busy: boolean;
@@ -94,7 +99,7 @@ export function SynopsisModal({
             ) : null}
           </div>
         ) : null}
-        <SynopsisSections content={synopsis.content} art={art} evidenceNames={evidenceNames} onRetry={onRetry} busy={busy} note={retryNote} spent={spent} />
+        <SynopsisSections content={synopsis.content} contractVersion={synopsis.contractVersion} commanderId={commanderId} art={art} evidenceNames={evidenceNames} onRetry={onRetry} busy={busy} note={retryNote} spent={spent} />
       </div>
     </ModalChrome>
   );
@@ -109,6 +114,8 @@ export function VersionSynopsisModal({
   versionNumber,
   committedAt,
   content,
+  contractVersion,
+  commanderId,
   art,
   evidenceNames,
   onClose,
@@ -116,6 +123,10 @@ export function VersionSynopsisModal({
   versionNumber: number;
   committedAt: Date;
   content: CheckedSynopsis;
+  /** The contract the row was written at, which picks the stages shape (13 and later). */
+  contractVersion?: number;
+  /** The commander, for the stages shape's commander image. */
+  commanderId?: string | null;
   art: FindingArt;
   evidenceNames: Record<string, string>;
   onClose: () => void;
@@ -135,7 +146,7 @@ export function VersionSynopsisModal({
         <p data-testid="synopsis-version-record" className="m-0 border-b border-b-[color:var(--border)] border-[var(--border)] pb-[14px] text-[12.5px] leading-[1.55] text-[var(--fg-muted)]">
           {synopsisCopy.version.record(versionNumber)}
         </p>
-        <SynopsisSections content={content} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
+        <SynopsisSections content={content} contractVersion={contractVersion} commanderId={commanderId} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
       </div>
     </ModalChrome>
   );
@@ -150,12 +161,18 @@ export function VersionSynopsisModal({
 export function PreconSynopsisModal({
   preconName,
   content,
+  contractVersion,
+  commanderId,
   art,
   evidenceNames,
   onClose,
 }: {
   preconName: string;
   content: CheckedSynopsis;
+  /** The contract the row was written at, which picks the stages shape (13 and later). */
+  contractVersion?: number;
+  /** The commander, for the stages shape's commander image. */
+  commanderId?: string | null;
   art: FindingArt;
   evidenceNames: Record<string, string>;
   onClose: () => void;
@@ -172,7 +189,7 @@ export function PreconSynopsisModal({
     >
       <div className="flex flex-col gap-[18px] px-[16px] pt-[16px] pb-[28px] md:gap-[20px] md:px-[22px] md:pt-[20px] md:pb-[26px]">
         <span className="md:hidden font-mono text-[11px] text-[var(--fg-faint)]" data-testid="synopsis-aside">{aside}</span>
-        <SynopsisSections content={content} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
+        <SynopsisSections content={content} contractVersion={contractVersion} commanderId={commanderId} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
       </div>
     </ModalChrome>
   );
@@ -181,6 +198,8 @@ export function PreconSynopsisModal({
 /** The four sections, shared by the draft's modal and a version's (PR 5). */
 export function SynopsisSections({
   content,
+  contractVersion,
+  commanderId = null,
   art,
   evidenceNames = {},
   onRetry,
@@ -189,6 +208,13 @@ export function SynopsisSections({
   spent = false,
 }: {
   content: CheckedSynopsis;
+  /**
+   * The contract the row was written at. 13 and later draws the stages shape (Game plan, the land
+   * figure, card images); anything older, or unknown, draws exactly the shape every older row has.
+   */
+  contractVersion?: number | null;
+  /** The commander's oracle id (the first of a pair): the stages shape draws its image beside the Overview paragraph. */
+  commanderId?: string | null;
   art: FindingArt;
   /** The names of the cards the claims cite, by oracle id. Empty draws no "Based on" line. */
   evidenceNames?: Record<string, string>;
@@ -216,11 +242,20 @@ export function SynopsisSections({
     <BasedOn ids={basedOnIds(content, kind, index, line, except)} names={evidenceNames} art={art} />
   );
   const body = "text-[13px] leading-[1.6] md:text-[13.5px] text-[var(--fg-body)]";
+  // Contract 13 and later, holding what the shape needs (three stages, two tips): the stages shape.
+  // Anything else draws the shape every older row has, unchanged.
+  const stages = usesStagesShape(contractVersion, content);
+  const landKeep = stages ? content.landKeep : undefined;
+  const flatBasedOn = (kind: "landKeep" | "alternate", line: string) => (
+    <BasedOn ids={flatBasedOnIds(content, kind, line)} names={evidenceNames} art={art} />
+  );
 
   return (
     <>
       <Section id="overview" first>
-        {content.overview
+        {content.overview && stages
+          ? <OverviewWithCommander content={content} art={art} text={text} commanderId={commanderId} />
+          : content.overview
           ? <p className="text-[13.5px] leading-[1.65] md:text-[14.5px] md:leading-[1.7] text-[var(--fg-body)] [text-wrap:pretty]">{text(content.overview)}</p>
           : refused(verdict("overview"))}
       </Section>
@@ -228,7 +263,8 @@ export function SynopsisSections({
       <Section id="primer">
         {content.primer ? (
           <div className="flex flex-col gap-[18px]">
-            <Sub title={synopsisCopy.modal.primer.strategy}>
+            <Sub title={stages ? synopsisCopy.modal.plan.title : synopsisCopy.modal.primer.strategy}>
+              {stages ? <GamePlan content={content} art={art} text={text} basedOn={(i, line) => basedOn("strategy", i, line)} alternateBasedOn={content.alternate ? flatBasedOn("alternate", content.alternate) : null} /> : (
               <ol className="flex list-none flex-col gap-[8px] p-0 m-0">
                 {content.primer.strategy.map((step, i) => (
                   <li key={i} className="grid grid-cols-[22px_minmax(0,1fr)] items-baseline">
@@ -237,13 +273,15 @@ export function SynopsisSections({
                   </li>
                 ))}
               </ol>
+              )}
             </Sub>
             <Sub title={synopsisCopy.modal.primer.mulligan}>
+              {landKeep ? <LandLine line={landKeep} text={text} basedOn={flatBasedOn("landKeep", landKeep)} /> : null}
               <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[12px]">
                 <Hand
                   label={synopsisCopy.modal.keep}
                   glyph="+"
-                  fixed={content.lands ? synopsisCopy.modal.lands.keep(content.lands.keep.low, content.lands.keep.high) : null}
+                  fixed={content.lands && !landKeep ? synopsisCopy.modal.lands.keep(content.lands.keep.low, content.lands.keep.high) : null}
                   lines={content.primer.mulligan.keep}
                   render={text}
                   basedOn={(i, line) => basedOn("keep", i, line)}
@@ -251,7 +289,7 @@ export function SynopsisSections({
                 <Hand
                   label={synopsisCopy.modal.sendBack}
                   glyph="−"
-                  fixed={content.lands
+                  fixed={content.lands && !landKeep
                     ? synopsisCopy.modal.lands.sendBack(content.lands.sendBack.none, content.lands.sendBack.under, content.lands.sendBack.over)
                     : null}
                   lines={content.primer.mulligan.sendBack}
@@ -261,6 +299,7 @@ export function SynopsisSections({
               </div>
             </Sub>
             <Sub title={synopsisCopy.modal.primer.tips}>
+              {stages ? <TipCards content={content} art={art} text={text} basedOn={(i, line) => basedOn("tips", i, line)} /> : (
               <div className="flex flex-col gap-[10px]">
                 {content.primer.tips.map((tip, i) => (
                   <div key={i} className={`border-l border-[var(--border-strong)] pl-[12px] ${body}`}>
@@ -269,13 +308,16 @@ export function SynopsisSections({
                   </div>
                 ))}
               </div>
+              )}
             </Sub>
           </div>
         ) : refused(verdict("primer"))}
       </Section>
 
       <Section id="keyCards">
-        {content.keyCards ? (
+        {content.keyCards && stages ? (
+          <KeyCardGrid content={content} art={art} text={text} basedOn={(i, line, except) => basedOn("keyCards", i, line, except)} />
+        ) : content.keyCards ? (
           <div className="overflow-hidden rounded-[10px] border border-[var(--border)]">
             {content.keyCards.map((k, i) => {
               // The key card's own name is resolved by the contract like any mark, under the same key.
@@ -299,7 +341,13 @@ export function SynopsisSections({
       </Section>
 
       <Section id="weaknesses">
-        {content.weaknesses ? (
+        {content.weaknesses && stages ? (
+          <div className="flex flex-col gap-[10px]">
+            {content.weaknesses.map((w, i) => (
+              <WeaknessLine key={i} line={w} text={text} basedOn={basedOn("weaknesses", i, w)} />
+            ))}
+          </div>
+        ) : content.weaknesses ? (
           <div className="flex flex-col gap-[10px]">
             {content.weaknesses.map((w, i) => (
               <p key={i} className={`m-0 grid grid-cols-[14px_minmax(0,1fr)] items-baseline ${body}`}>

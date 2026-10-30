@@ -288,6 +288,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
             <PreconOverview
               overview={overview}
               preconName={row.name}
+              commanderId={row.commanders[0]?.oracleId ?? null}
               listArt={new Map(cards.map((c) => [c.oracleId, { name: c.name, imageUri: c.imageUri }]))}
             />
           ) : null}

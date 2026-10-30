@@ -446,7 +446,7 @@ describe("the precon's Overview", () => {
     weaknesses: ["Soft to a board wipe."],
     cards: { "sol ring": { oracleId: "Sol Ring", name: "Sol Ring" } },
   };
-  const overview = { content, art: {}, evidenceNames: {}, listFingerprint: "list" };
+  const overview = { content, art: {}, evidenceNames: {}, contractVersion: 9, listFingerprint: "list" };
 
   it("sits under You own and above the list note, with its label, aside, paragraph and entry", () => {
     render(<OpenPreconView precon={precon()} fromNew={false} overview={overview} />);

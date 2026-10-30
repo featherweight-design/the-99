@@ -30,6 +30,12 @@ export function basedOnIds(content: CheckedSynopsis, kind: EvidenceKind, index: 
   return [...new Set(ids)].filter((id) => id !== except && !named.has(id));
 }
 
+/** As `basedOnIds`, for the two contract-13 lines whose evidence is one flat list (the land line and the alternate). */
+export function flatBasedOnIds(content: CheckedSynopsis, kind: "landKeep" | "alternate", line: string): string[] {
+  const named = namedIds(content, line);
+  return [...new Set(content.evidence?.[kind] ?? [])].filter((id) => !named.has(id));
+}
+
 /** Every card any claim of the overview cites, for the read that names them. */
 export function allEvidenceIds(content: CheckedSynopsis): string[] {
   const e = content.evidence;

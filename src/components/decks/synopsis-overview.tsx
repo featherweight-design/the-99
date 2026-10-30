@@ -51,6 +51,7 @@ export function SynopsisOverview({
   pressed = false,
   announceReady = true,
   deckName,
+  commanderId = null,
   art,
   readingFresh,
   settled,
@@ -69,6 +70,8 @@ export function SynopsisOverview({
    *  behind the loader, where the fade would play only once the tab is shown. */
   announceReady?: boolean;
   deckName: string;
+  /** The deck's commander (the first of a pair), drawn beside the Overview paragraph in the stages shape. */
+  commanderId?: string | null;
   art: FindingArt;
   /** The reading beside it is current: a write control is offered only over one. */
   readingFresh: boolean;
@@ -321,6 +324,7 @@ export function SynopsisOverview({
           synopsis={synopsis}
           stale={stale}
           deckName={deckName}
+          commanderId={commanderId}
           art={named}
           evidenceNames={state.evidenceNames}
           busy={busy}

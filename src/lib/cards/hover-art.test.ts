@@ -44,6 +44,8 @@ const FEEDERS: Record<string, string> = {
   "components/decks/update-diff-row.tsx": "lib/decks/draft-state.ts",
   "components/decks/notes/note-tags.tsx": "lib/decks/notes-read.ts",
   "components/decks/synopsis-text.tsx": "lib/synopsis/read.ts",
+  // The stages shape's card images (commander, stage, tip and Key card) preview the same art the marks do.
+  "components/decks/synopsis-stages.tsx": "lib/synopsis/read.ts",
   "components/decks/version-diff.tsx": "lib/decks/versions.ts",
   "components/decks/benchmark-ledger.tsx": "lib/decks/read.ts",
   // Role Coverage's cards carry the printing the player owns (`resolveOwnedPrintings` on the commander page and on its retry).

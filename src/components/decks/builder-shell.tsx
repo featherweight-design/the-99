@@ -2041,6 +2041,7 @@ export function BuilderShell({
                         busy={synopsis.view.busy}
                         pressed={synopsis.pressed}
                         deckName={deck.name}
+                        commanderId={deck.commander.oracleId}
                         art={findingArt}
                         readingFresh={readingFresh}
                         settled={synopsis.view.current}
