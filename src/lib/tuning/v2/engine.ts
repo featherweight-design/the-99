@@ -39,6 +39,10 @@ import { lineStream } from "./stream-lines";
  * Duplicates are dropped ACROSS calls and lists (spec §5.2) by oracle id; a line past its list's ask is ignored (a reply
  * that runs over keeps its first ask-many valid lines). With a bracket choice and a `bracketAfter` reader, a line that
  * breaks Keep or Down is dropped as `bracketAim` (`aimDrops`), a restriction the player chose (`charge.ts`).
+ *
+ * An owned-only run's additions list puts the index tier (the commander's index cards and the focus candidates) before
+ * the off-index tier (`pack.ownedOffIndex`), whatever order the model answered in, and keeps the model's order inside
+ * each tier (`additionPosition`). The prompt asks it to prefer the first list, and a paid eval showed it does not always.
  */
 
 export type V2Stage = "additions" | "additionsRefill" | "cuts" | "cutsRefill";
@@ -81,6 +85,23 @@ export type V2CallReport = {
   /** Line objects that did not parse, or failed the line's shape. */
   malformed: number;
 };
+
+/** Where an off-index addition's positions start: past any list's ask (`askFor(20)` is 30), so every index-tier line
+ *  sorts first by `position`, the order every reader of a run's lines takes (`tuning-read.ts`, `apply-set.ts`). */
+export const OFF_INDEX_POSITION_BASE = 1000;
+
+/**
+ * A kept line's `position` and its index in `kept`: an index-tier line counts the index-tier lines before it, an
+ * off-index line `OFF_INDEX_POSITION_BASE` plus the off-index lines before it. A stable partition by tier: every
+ * index-tier line before every off-index one, each tier in the order its lines were kept. Lines are saved the moment
+ * they are kept, so the order is settled here, by the key, rather than by moving lines already written.
+ */
+export function additionPosition(kept: readonly Pick<V2Line, "position">[], offIndex: boolean): { position: number; at: number } {
+  const tier = kept.filter((l) => (l.position >= OFF_INDEX_POSITION_BASE) === offIndex).length;
+  const position = (offIndex ? OFF_INDEX_POSITION_BASE : 0) + tier;
+  const after = kept.findIndex((l) => l.position > position);
+  return { position, at: after < 0 ? kept.length : after };
+}
 
 export type V2List = {
   kept: V2Line[];
@@ -170,6 +191,8 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
   };
   const listOf = (side: V2Side) => (side === "add" ? additions : cuts);
   const caps: Record<V2Side, number> = { add: askFor(n), cut: 0 };
+  // The owned pool's second tier, by id; empty for every run but an owned-only one that found such cards.
+  const offIndexIds = new Set((pack.ownedOffIndex ?? []).map((c) => c.oracleId));
 
   /** One line, the moment it completes: shape, the validator's rules (v2), duplicates across everything kept, the aim. */
   async function take(side: V2Side, raw: unknown, position: number, here: V2CallReport) {
@@ -210,8 +233,11 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
       return;
     }
     used.add(id);
-    const kept: V2Line = { ...v, bracketAfter: after, position: list.kept.length, card: line.card };
-    list.kept.push(kept);
+    const placed = side === "add"
+      ? additionPosition(list.kept, v.addOracleId !== null && offIndexIds.has(v.addOracleId))
+      : { position: list.kept.length, at: list.kept.length };
+    const kept: V2Line = { ...v, bracketAfter: after, position: placed.position, card: line.card };
+    list.kept.splice(placed.at, 0, kept);
     here.kept += 1;
     await args.onLine?.(side, kept);
   }

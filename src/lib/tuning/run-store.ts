@@ -251,7 +251,8 @@ export async function runIsPending(runId: string): Promise<boolean> {
 
 /**
  * One kept line of a v2 run, saved the moment it is kept (handoff H1), while the run is still `pending`: the panel's poll
- * draws it before the run ends (plan P3). `position` is the line's place in ITS list (`runV2`). False when nothing was
+ * draws it before the run ends (plan P3). `position` orders the line in ITS list (`runV2`; an off-index addition's
+ * starts at `OFF_INDEX_POSITION_BASE`, so it sorts after the index tier). False when nothing was
  * written.
  *
  * SERIALIZED ON THE RUN ROW (PR #2316 review): the insert takes the run's row lock (`lockPendingV2RunsSql`) and writes
