@@ -12,7 +12,7 @@
 export const RATES: Readonly<Record<string, { input: number; output: number }>> = {
   "claude-sonnet-5": { input: 2, output: 10 },
   "claude-sonnet-4-5": { input: 3, output: 15 },
-  // The commander prose model (`generate-commander-prose.ts`). Checked 2026-09-28 against
+  // The commander prose model (`generate-commander-prose.ts`) until 2026-10-30, when it moved to Sonnet 5.5. Checked 2026-09-28 against
   // platform.claude.com/docs/en/about-claude/pricing: $3 in, $15 out, the Sonnet 4.5 rate.
   "claude-sonnet-4-6": { input: 3, output: 15 },
   "claude-haiku-4-5": { input: 1, output: 5 },
