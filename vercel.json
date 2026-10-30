@@ -4,6 +4,7 @@
   "crons": [
     { "path": "/api/cron/account-sweep", "schedule": "*/30 * * * *" },
     { "path": "/api/cron/invite-sweep", "schedule": "17 * * * *" },
-    { "path": "/api/cron/push-flush", "schedule": "*/15 * * * *" }
+    { "path": "/api/cron/push-flush", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/announcements", "schedule": "23 * * * *" }
   ]
 }
