@@ -9,7 +9,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { accountTombstones, flagGroupMembers, flyerClaims, flyerCodes, inviteBalances, inviteEdges, inviteReservations } from "../../db/schema";
-import { lockSwitchWrites } from "../admin/rise-confirm";
+import { lockSwitchWrites } from "../switches/write-lock";
 import { tombstoneHash } from "../account/purge";
 import { welcomeInvitedIn } from "../social/friends";
 import { CODE_MAX_TRIES } from "./rules";
@@ -87,10 +87,12 @@ export async function spendInviteOnSignUp(
       .innerJoin(flyerCodes, eq(flyerCodes.id, flyerClaims.codeId))
       .where(and(eq(flyerClaims.userId, row.userId), eq(flyerClaims.state, "spent")));
     if (fromFlyer) {
+      // The lock first, then the read: a group move waits on every switch write (as a flyer sign-up's own join does), so
+      // the group read here is the serialized state and not one a concurrent admin move has since changed.
+      await lockSwitchWrites(tx);
       const [membership] = await tx.select({ groupId: flagGroupMembers.groupId }).from(flagGroupMembers)
         .where(eq(flagGroupMembers.userId, row.userId));
       if (membership) {
-        await lockSwitchWrites(tx); // as a flyer sign-up's own group join does: a group move waits on every switch write
         await tx.insert(flagGroupMembers).values({ userId: newUserId, groupId: membership.groupId, addedBy: fromFlyer.admin })
           .onConflictDoNothing();
       }

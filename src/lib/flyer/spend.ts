@@ -16,7 +16,7 @@ import { db } from "../../db";
 import { accountTombstones, flagGroupMembers, flyerClaims, flyerCodes, inviteBalances } from "../../db/schema";
 import { tombstoneHash } from "../account/purge";
 import { lockSenderIn } from "../invites/send";
-import { lockSwitchWrites } from "../admin/rise-confirm";
+import { lockSwitchWrites } from "../switches/write-lock";
 import { createProfileIn } from "../social/friends";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
