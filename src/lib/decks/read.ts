@@ -27,7 +27,6 @@ import {
 } from "./printings";
 import { lockedOracleIds } from "./locks";
 import { neverCutEnabled } from "./never-cut-flag";
-import { deckPrintingsEnabled } from "./printings-flag";
 import type { FoilFinish, PreferredPrinting } from "../collection/browse";
 import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
 import { classifyRoles } from "../recs/roles";
@@ -263,8 +262,8 @@ export type DeckDetail = {
   noteCounts: NoteCounts;
   /**
    * Deck printings: the deck's own picks the player still holds, by oracle id, in the card
-   * modal's display form. Null with `DECK_PRINTINGS_ENABLED` off, which keeps the modal's picker
-   * collection-scoped; absent reads the same (a fixture built before the field).
+   * modal's display form. Absent (a fixture built before the field) keeps the modal's picker
+   * collection-scoped.
    */
   printingPicks?: Record<string, PreferredPrinting> | null;
 };
@@ -526,7 +525,7 @@ export async function getDeckDetail(
     deckAvailabilityRead(userId, deckId, availabilityIds, sharedAvailability, env),
     // The deck's own printing picks first (deck printings), then the Collection's: one chain for
     // every surface, so the rows, the card details they open and the export name one printing.
-    resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds], env),
+    resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds]),
     readNoteFlags([...cardRows.map((r) => r.oracleId), ...commanderIds]),
   ]);
 
@@ -551,9 +550,9 @@ export async function getDeckDetail(
       // the mismatch the collection reader forbids, and taking the art without the
       // name would have introduced it here.
       printedName: own?.printedName ?? null,
-      // Read by the export's commander line alone, which is main's (no printing) with the switch off.
-      printedSetCode: deckPrintingsEnabled(env) ? (own?.setCode ?? null) : null,
-      printedCollectorNumber: deckPrintingsEnabled(env) ? (own?.collectorNumber ?? null) : null,
+      // Read by the export's commander line alone.
+      printedSetCode: own?.setCode ?? null,
+      printedCollectorNumber: own?.collectorNumber ?? null,
       // Set only when there is a film, as on a decklist row.
       ...(row.owned && own?.foil ? { foil: own.foil } : {}),
     };
@@ -614,12 +613,10 @@ export async function getDeckDetail(
       otherDecks: deck.tuningOtherDecks ?? false,
     },
     noteCounts: countNoteKinds(cardRows, commanderRows, bracketFlags),
-    printingPicks: deckPrintingsEnabled(env)
-      ? Object.fromEntries(
-          [...resolved].filter(([, p]) => p.source === "deck")
-            .map(([id, p]) => [id, { setCode: p.setCode, collectorNumber: p.collectorNumber }]),
-        )
-      : null,
+    printingPicks: Object.fromEntries(
+      [...resolved].filter(([, p]) => p.source === "deck")
+        .map(([id, p]) => [id, { setCode: p.setCode, collectorNumber: p.collectorNumber }]),
+    ),
     ...deckCounts(detailCards, unresolvedCardCount(unresolvedRows)),
   };
 }
@@ -1423,7 +1420,6 @@ export async function listDecksWithStats(
     ? await resolveCommanderPrintingsByDeck(
         userId,
         rows.map((r) => ({ deckId: r.id, commanderOracleId: r.commanderOracleId })),
-        opts.env,
       )
     : new Map<string, DeckPrinting>();
 

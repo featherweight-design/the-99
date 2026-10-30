@@ -219,7 +219,7 @@ async function main() {
   // ── A commit does not count as an edit ───────────────────────────────────
   await addCard(committed, card);
   const before = await editedAt(committed);
-  await commitVersion(committed, "first", undefined, undefined, process.env);
+  await commitVersion(committed, "first", undefined, undefined);
   check("a commit leaves last_edited_at alone", await editedAt(committed), before);
 
   // ── The figure: what the reader actually gets back ───────────────────────
@@ -248,7 +248,7 @@ async function main() {
 
   // A second commit, so `max()` is doing work rather than reading the only row.
   await addCard(committed, await pickCard(1));
-  await commitVersion(committed, "second", undefined, undefined, process.env);
+  await commitVersion(committed, "second", undefined, undefined);
   const reread = find(await listDecksWithStats(USER, "name", { includeDeckState: true, env: process.env }), committed);
   const newest = await newestVersion(committed);
   check(

@@ -263,7 +263,7 @@ async function run() {
   // 10 · RULING 2: a commit pins the reading to the version it wrote.
   const head = { commanderOracleId: legend.oracle_id, partnerOracleId: null,
     cards: body.map((c) => ({ oracleId: c.oracle_id, quantity: 1 })) };
-  const { version } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+  const { version } = await commitVersion(deck.id, null, undefined, undefined);
   // The REAL version id with the wrong list: a made-up id fails the foreign key, the pin swallows
   // that, and the row reads null whether or not the list guard ran. That version measured nothing.
   await pinAnalysisToVersion(deck.id, USER, { versionId: version.id, list: "not-this-list" }, deps);
@@ -296,7 +296,7 @@ async function run() {
   {
     await fixture.execute(sql`update deck_profiles set fingerprint = 'an-older-list', dirty = true, version_id = null
       where deck_id = ${deck.id}::uuid`);
-    const { version: changed } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+    const { version: changed } = await commitVersion(deck.id, null, undefined, undefined);
     const before = computes;
     await pinAnalysisToVersion(deck.id, USER, { versionId: changed.id, list: listFingerprint(head) }, deps);
     const after = await readStoredReading(deck.id, USER, deps);
@@ -319,7 +319,7 @@ async function run() {
     const marksOf = async () => (await rows<{ at: string; seq: number }>(sql`
       select computed_at::text as at, seen_seq::int as seq from deck_profiles where deck_id = ${deck.id}::uuid`))[0];
     const marksBefore = await marksOf();
-    const { version: bumped } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+    const { version: bumped } = await commitVersion(deck.id, null, undefined, undefined);
     const before = computes;
     await pinAnalysisToVersion(deck.id, USER, { versionId: bumped.id, list: listFingerprint(head) }, deps);
     const row = await storedRow(deck.id);
@@ -332,7 +332,7 @@ async function run() {
     // version, and the rebuild finishing after it must not put the old marks and date back.
     await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1}, version_id = null,
       computed_at = now() - interval '3 days', seen_seq = 1 where deck_id = ${deck.id}::uuid`);
-    const { version: racedCommit } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+    const { version: racedCommit } = await commitVersion(deck.id, null, undefined, undefined);
     const pressFirst: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
@@ -397,7 +397,7 @@ async function run() {
       where deck_id = ${deck.id}::uuid`);
     const beforeNewer = computes;
     const newerRead = await readStoredReading(deck.id, USER, deps);
-    const { version: newerCommit } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+    const { version: newerCommit } = await commitVersion(deck.id, null, undefined, undefined);
     await pinAnalysisToVersion(deck.id, USER, { versionId: newerCommit.id, list: listFingerprint(head) }, deps);
     const newerRow = await storedRow(deck.id);
     check("a newer deployment's row is not read, rebuilt or pinned by older code",
@@ -409,7 +409,7 @@ async function run() {
     // raw comparison with the commit's list misreads it as another list (review round 1).
     await fixture.execute(sql`update deck_profiles set profile_version = 0, version_id = null,
       fingerprint = ${profileFingerprint(legacyHeadOf())} where deck_id = ${deck.id}::uuid`);
-    const { version: legacyCommit } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+    const { version: legacyCommit } = await commitVersion(deck.id, null, undefined, undefined);
     const beforeLegacy = computes;
     await pinAnalysisToVersion(deck.id, USER, { versionId: legacyCommit.id, list: listFingerprint(head) }, deps);
     const legacyRow = await storedRow(deck.id);
@@ -419,7 +419,7 @@ async function run() {
   }
 
   // 10d · ONLY THE NEWEST VERSION IS PINNED: an older commit's `after()` pin landing last is refused.
-  const { version: v2 } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+  const { version: v2 } = await commitVersion(deck.id, null, undefined, undefined);
   await pinAnalysisToVersion(deck.id, USER, { versionId: v2.id, list: listFingerprint(head) }, deps);
   await pinAnalysisToVersion(deck.id, USER, { versionId: version.id, list: listFingerprint(head) }, deps);
   check("an older version's pin landing last does not replace the newer one", (await storedRow(deck.id))?.version_id, v2.id);
@@ -447,7 +447,7 @@ async function run() {
       generation: deps.generation,
       compute: async (id, user) => {
         const built = await loadDeckProfile(id, user, process.env);
-        v3 = (await commitVersion(deck.id, null, undefined, undefined, process.env)).version;
+        v3 = (await commitVersion(deck.id, null, undefined, undefined)).version;
         return built;
       },
       env: process.env,
@@ -470,7 +470,7 @@ async function run() {
     let waited = false;
     let pinnedOld: boolean | null = null;
     await fixture.transaction(async (tx) => {
-      await commitVersion(deck.id, null, tx as never, undefined, process.env);
+      await commitVersion(deck.id, null, tx as never, undefined);
       const pin = clearDirty(deck.id, held.fp, held.stamp, held.id, isNewestVersion(deck.id, held.id))
         .then((r) => (pinnedOld = r));
       await new Promise((r) => setTimeout(r, 1500));

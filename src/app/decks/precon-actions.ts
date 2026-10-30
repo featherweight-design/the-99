@@ -24,11 +24,10 @@ import { carryOverAfterStart } from "../../lib/precons/carry-over";
 
 export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
 
-  const deckId = await startPreconDeck(userId, fileName, name, env);
+  const deckId = await startPreconDeck(userId, fileName, name);
   revalidateClaims(deckId, userId);
   // The precon's pre-written Overview and reading are carried over by the landing this redirect makes,
   // inline in its render (`carryOnArrival`, small items 5), so the deck opens with them at once.

@@ -56,19 +56,19 @@ describe("searchCards art", () => {
 
   it("asks the chain about every result, owned or not, in the deck's context", async () => {
     await searchCards("zom", null, false, "deck-1");
-    expect(stub.chainArt).toHaveBeenCalledWith("user-1", "deck-1", ["zombify", "unowned"], ENV);
+    expect(stub.chainArt).toHaveBeenCalledWith("user-1", "deck-1", ["zombify", "unowned"]);
   });
 
   it("keeps the catalog art for every row when the chain answers nothing", async () => {
     stub.chainArt.mockResolvedValue(new Map());
     const out = await searchCards("zom", null, false);
     expect(out.map((r) => r.imageUri)).toEqual(["catalog-zombify.jpg", "catalog-unowned.jpg"]);
-    expect(stub.chainArt).toHaveBeenCalledWith("user-1", null, ["zombify", "unowned"], ENV);
+    expect(stub.chainArt).toHaveBeenCalledWith("user-1", null, ["zombify", "unowned"]);
   });
 });
 
 // Admin adoption 6e: the owned rows' claim read runs under the reader's resolved switches (the claim
-// model's `locked` key is NEVER_CUT_ENABLED's), the same env the art reads, never the environment alone.
+// model's `locked` key is NEVER_CUT_ENABLED's), never the environment alone.
 describe("searchCards claims", () => {
   it("hands the reader's resolved env to the claim read", async () => {
     await searchCards("zom", null, false, "deck-1");

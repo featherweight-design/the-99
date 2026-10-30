@@ -67,7 +67,7 @@ type ReviewChangesProps = {
    *  or a discard. A bare "Back" would make the reader remember which deck they
    *  were editing to know where the link goes. */
   deckName: string;
-  /** The deck's held printing picks (deck printings); null with the switch off. */
+  /** The deck's held printing picks (deck printings); null keeps the collection-scoped picker. */
   printingPicks?: Readonly<Record<string, PreferredPrinting>> | null;
   /** True when the reader arrived from a deck-page CTA that means "commit this",
    *  so the sheet at the foot is open on landing rather than behind a second

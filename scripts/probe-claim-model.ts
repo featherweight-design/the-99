@@ -790,7 +790,7 @@ async function assignmentWriteSection() {
     await assignCopyFor(USER_W, card, senior);
     check("a reservation exists before the commit", await rowsFor(senior), 1);
     await fixture.execute(sql`delete from deck_cards where deck_id = ${senior}`);
-    await commitVersion(senior, null, undefined, undefined, process.env);
+    await commitVersion(senior, null, undefined, undefined);
     check("and is gone after a commit without the card", await rowsFor(senior), 0);
   } finally {
     await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
@@ -1171,7 +1171,7 @@ async function pullReleaseSection() {
     // 4. COMMIT KEEPS IT. Pull again and commit the source: its new version lists no card, so the
     //    copy stays the asker's, and the release has nothing left to subtract from and is gone.
     await pull(source, asking);
-    await commitVersion(source, null, undefined, undefined, process.env);
+    await commitVersion(source, null, undefined, undefined);
     check("the source's commit is its second version", await versions(source), 2);
     check("the commit clears the release", await releases(source), 0);
     await both("after the source commits, the asker is still covered", asking, 0, 0);
@@ -1182,7 +1182,7 @@ async function pullReleaseSection() {
     await fixture.execute(sql`
       insert into deck_cards (deck_id, oracle_id, quantity) values (${source}, ${card}, 1)
     `);
-    await commitVersion(source, null, undefined, undefined, process.env);
+    await commitVersion(source, null, undefined, undefined);
     await both("when the source commits the card again, the asker is short", asking, -1, 1);
 
     // 5. TWO ASKERS, BOTH TOLD. The same card pulled from the same source for two decks is two

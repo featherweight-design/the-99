@@ -1,7 +1,6 @@
-// Deck printings, proved against a real Postgres through the real callers: that a deck's pick moves
-// the art and the printing the deck page draws (and that switching off restores the Collection's),
-// that a commit records each card's and the commander's printing (and nothing with the switch off),
-// that the version diff draws the printing a version recorded rather than today's, for an In row
+// Deck printings (always on), proved against a real Postgres through the real callers: that a deck's
+// pick moves the art and the printing the deck page draws, that a commit records each card's and the
+// commander's printing, that the version diff draws the printing a version recorded rather than today's, for an In row
 // and an Out row alike, and that deck tiles (`/decks`, Home) draw each deck's own pick of its
 // commander. The resolver's own rules are unit tested in `printings.test.ts`; only a
 // database can answer whether the deck page, the commit and the diff actually read it.
@@ -37,9 +36,6 @@ const check = (label: string, actual: unknown, expected: unknown) => {
   const ok = actual === expected;
   if (!ok) failures += 1;
   console.log(`${ok ? "PASS" : "FAIL"}  ${label} — got ${String(actual)}, expected ${String(expected)}`);
-};
-const setSwitch = (on: boolean) => {
-  process.env.DECK_PRINTINGS_ENABLED = on ? "true" : "";
 };
 
 type Printing = { scryfall_id: string; set_code: string; collector_number: string; image_uri: string };
@@ -86,18 +82,12 @@ async function main() {
     returning id
   `);
 
-  // v1: the commander alone, committed with the switch OFF. Nothing is recorded.
-  setSwitch(false);
-  const { version: v1 } = await commitVersion(deckId, "probe v1", undefined, undefined, process.env);
-  const { rows: [v1Row] } = await fixture.execute<{ commander_set_code: string | null }>(
-    sql`select commander_set_code from deck_versions where id = ${v1.id}`,
-  );
-  check("switch off: a commit records no commander printing", v1Row.commander_set_code, null);
+  // v1: the commander alone.
+  const { version: v1 } = await commitVersion(deckId, "probe v1", undefined, undefined);
 
   await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}, ${card.oracle_id}, 1)`);
 
   // The Collection's printing, before any pick, is whichever one the deck page draws now.
-  setSwitch(true);
   const shownBefore = (await getDeckDetail(deckId, USER, undefined, process.env))!.cards.find((c) => c.oracleId === card.oracle_id)!;
   const collection = [a, b].find((p) => p.set_code.toUpperCase() === shownBefore.printedSetCode && p.collector_number === shownBefore.printedCollectorNumber)!;
   const other = collection === a ? b : a;
@@ -110,13 +100,9 @@ async function main() {
   const picked = (await getDeckDetail(deckId, USER, undefined, process.env))!.cards.find((c) => c.oracleId === card.oracle_id)!;
   check("a pick moves the deck page's art", picked.imageUri, other.image_uri);
   check("a pick moves the printing export names", `${picked.printedSetCode} ${picked.printedCollectorNumber}`, `${other.set_code.toUpperCase()} ${other.collector_number}`);
-  setSwitch(false);
-  const off = (await getDeckDetail(deckId, USER, undefined, process.env))!.cards.find((c) => c.oracleId === card.oracle_id)!;
-  check("switch off: the deck page draws the Collection's printing again", off.imageUri, collection.image_uri);
 
-  // v2: the picked card, committed with the switch ON. Body and commander are recorded.
-  setSwitch(true);
-  const { version: v2 } = await commitVersion(deckId, "probe v2", undefined, undefined, process.env);
+  // v2: the picked card. Body and commander are recorded.
+  const { version: v2 } = await commitVersion(deckId, "probe v2", undefined, undefined);
   const { rows: [v2Card] } = await fixture.execute<{ set_code: string | null; collector_number: string | null }>(
     sql`select set_code, collector_number from deck_version_cards where version_id = ${v2.id} and oracle_id = ${card.oracle_id}`,
   );
@@ -131,14 +117,10 @@ async function main() {
   await fixture.execute(sql`delete from deck_printings where deck_id = ${deckId}`);
   const inDiff = await loadVersionDiff(v2.id, v1.id, USER, deckId, undefined, process.env);
   check("the diff's In row draws the printing the newer version recorded", inDiff.in.find((c) => c.oracleId === card.oracle_id)?.imageUri, other.image_uri);
-  setSwitch(false);
-  const inOff = await loadVersionDiff(v2.id, v1.id, USER, deckId, undefined, process.env);
-  check("switch off: the diff's In row draws today's printing", inOff.in.find((c) => c.oracleId === card.oracle_id)?.imageUri, collection.image_uri);
 
   // v3: the card removed. Its Out row is the OLDER version's record.
-  setSwitch(true);
   await fixture.execute(sql`delete from deck_cards where deck_id = ${deckId}`);
-  const { version: v3 } = await commitVersion(deckId, "probe v3", undefined, undefined, process.env);
+  const { version: v3 } = await commitVersion(deckId, "probe v3", undefined, undefined);
   const outDiff = await loadVersionDiff(v3.id, v2.id, USER, deckId, undefined, process.env);
   check("the diff's Out row draws the printing the older version recorded", outDiff.out.find((c) => c.oracleId === card.oracle_id)?.imageUri, other.image_uri);
 
@@ -176,12 +158,9 @@ async function main() {
   `);
   check("a tile draws its own deck's pick of its commander", await tileArt(picks), tileOther.image_uri);
   check("a tile with no pick keeps the Collection's printing", await tileArt(plain), shownTile);
-  setSwitch(false);
-  check("switch off: the picked deck's tile draws the Collection's printing", await tileArt(picks), shownTile);
 
   // PRICES: a card with two live non-foil printings at different figures. The deck's pick of the
-  // dearer one prices it; today's figure (no pick, or switch off) is the cheaper one.
-  setSwitch(true);
+  // dearer one prices it; today's figure (no pick) is the cheaper one.
   const { rows: [{ newest }] } = await fixture.execute<{ newest: string }>(sql`select max(as_of)::text as newest from printing_prices`);
   const { rows: [priced] } = await fixture.execute<{ oracle_id: string }>(sql`
     select p.oracle_id from printings p join printing_prices pp on pp.scryfall_id = p.scryfall_id
@@ -208,16 +187,14 @@ async function main() {
     insert into deck_printings (deck_id, oracle_id, set_code, collector_number)
     values (${deckId}, ${priced.oracle_id}, ${dearer.set_code}, ${dearer.collector_number})
   `);
-  const held = await readHeldPricePicks(USER, [deckId], process.env);
+  const held = await readHeldPricePicks(USER, [deckId]);
   check("a held pick is passed to the price read", held.some((p) => p.oracleId === priced.oracle_id), true);
   const pickedRead = await loadPrices([priced.oracle_id], held);
   check("a deck's in-stock pick prices its own printing", priceFor(pickedRead, deckId, priced.oracle_id)?.cents, dearer.price_cents);
   check("the same card in another deck keeps today's cheapest figure", priceFor(pickedRead, plain, priced.oracle_id)?.cents, cheapest.price_cents);
   // The player lets go of that printing: the pick is no longer held, so it is not priced.
   await fixture.execute(sql`delete from collection_items where user_id = ${USER} and oracle_id = ${priced.oracle_id}`);
-  check("a pick the player no longer holds is not passed", (await readHeldPricePicks(USER, [deckId], process.env)).some((p) => p.oracleId === priced.oracle_id), false);
-  setSwitch(false);
-  check("switch off: no picks reach the price read", (await readHeldPricePicks(USER, [deckId], process.env)).length, 0);
+  check("a pick the player no longer holds is not passed", (await readHeldPricePicks(USER, [deckId])).some((p) => p.oracleId === priced.oracle_id), false);
 }
 
 main()

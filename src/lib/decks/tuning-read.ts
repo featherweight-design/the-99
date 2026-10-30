@@ -508,7 +508,7 @@ async function readItems(
   // The hover preview draws these, and card details opens the deck's pick or the owned printing: the same
   // chain, not the catalog's arbitrary one (`chainArt`).
   const [art, jobRows] = await Promise.all([
-    chainArt(userId, deckId, rows.rows.flatMap((r) => [r.add_oracle_id, r.cut_oracle_id]), env),
+    chainArt(userId, deckId, rows.rows.flatMap((r) => [r.add_oracle_id, r.cut_oracle_id])),
     // The labels the strip counts by, read only while the strip counts by them (`LABEL_ROLE_COUNTS_ENABLED`); off, or a
     // failed read, falls back to the classifier, as the strip's does (null).
     v2 && rows.rows.length > 0 && labelRoleCountsEnabled(env)

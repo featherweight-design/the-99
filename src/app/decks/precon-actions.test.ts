@@ -49,7 +49,7 @@ vi.mock("../../lib/precons/carry-over", () => ({ carryOverAfterStart: async (dec
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { state.after.push(fn); } }));
 vi.mock("../../lib/decks/revalidate-claims", () => ({ revalidateClaims: (id: string) => state.revalidated.push(id) }));
 vi.mock("../../lib/decks/versions", () => ({
-  commitVersion: async (deckId: string, note: unknown, tx: unknown, _snapshot: unknown, _env: unknown, opts?: { first: number }) => {
+  commitVersion: async (deckId: string, note: unknown, tx: unknown, _snapshot: unknown, opts?: { first: number }) => {
     state.committed.push({ deckId, note, inTx: tx !== undefined, first: opts?.first ?? 1 });
     return { version: {}, cardCount: 0 };
   },

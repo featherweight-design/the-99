@@ -169,13 +169,12 @@ export type CardChip = {
 export async function loadCardChip(
   userId: string,
   oracleId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the card's claim read and its printing
-   *  picks (`chainArt`). */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the card's claim read. */
   env: NodeJS.ProcessEnv,
 ): Promise<CardChip | null> {
   // The search's own card read, so the chip names exactly the card the search applied: a card it
   // drops (a basic, one not commander-legal, one that no longer exists) draws no chip either.
-  const [row, prices, art] = await Promise.all([loadCardRow(userId, oracleId, env), loadPrices([oracleId]), chainArt(userId, null, [oracleId], env)]);
+  const [row, prices, art] = await Promise.all([loadCardRow(userId, oracleId, env), loadPrices([oracleId]), chainArt(userId, null, [oracleId])]);
   if (!row) return null;
   return { oracleId, name: row.name, imageUri: art.get(oracleId) ?? row.imageUri, owned: row.owned, held: row.held, price: slotFor(prices.get(oracleId)) };
 }

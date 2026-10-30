@@ -117,7 +117,7 @@ async function main() {
   // 4. Free by the TAKE's read, not the list's: a committed deck holding that Command Tower makes
   //    the same take a buy.
   const holder = await makeDeck("probe swap holder", commander.oracle_id, [[tower, 1]]);
-  await commitVersion(holder, null, undefined, undefined, process.env);
+  await commitVersion(holder, null, undefined, undefined);
   const claimed = await takeStandIn(deck, USER, plateau, tower, process.env);
   check("take: a copy a committed deck holds is not free", claimed.ok && claimed.addWasFree, false);
   if (claimed.ok) await undoSwap(claimed.swapId, USER, process.env);

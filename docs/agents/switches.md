@@ -28,7 +28,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `cachePageForUser` puts every resolved switch in its key and hands the load that same env.
   **Every flag function, and every reader under `src/` that decides a switch, REQUIRES its `env`**, so leaving it out
   does not compile: the claim model (`loadAvailability`'s `opts.env`, `loadDeckBuyRows`) and every wrapper that
-  starts it, `chainArt` (`DECK_PRINTINGS_ENABLED`), the profile store (`StoredProfileDeps.env`, built by
+  starts it, the profile store (`StoredProfileDeps.env`, built by
   `requestProfileDeps(env)`), and the role basis, notices, synopsis, discovery and About readers. A script, a probe or
   an eval has no signed-in reader and passes `process.env` itself, saying so. `loadFriendSpares` runs each friend's
   claim model under that FRIEND's switches (`resolveSwitchEnv(friend)`), and the proxy keys About's cookie on the

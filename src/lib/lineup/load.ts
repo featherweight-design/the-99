@@ -102,7 +102,7 @@ type Built = { builds: Map<string, LineupBuild> | null; asOf: Date | null; share
 async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<string>, env: NodeJS.ProcessEnv): Promise<Built> {
   if (ids.length === 0) {
     try {
-      const { collection, asOf } = await readCollection(userId, [], [], brews, env);
+      const { collection, asOf } = await readCollection(userId, [], [], brews);
       return { builds: new Map(), asOf, shared: [], lists: [], collection };
     } catch (error) {
       recordSoftFailure();
@@ -122,7 +122,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
     const priced = [...new Set(all.filter((c) => !isBasicLand(c.typeLine)).map((c) => c.oracleId))];
     const [labels, read, avail, buyRows] = await Promise.all([
       readLabels([...new Set(lists.list.filter((c) => !isLandFace(c.typeLine)).map((c) => c.oracleId))]),
-      readHeldPricePicks(userId, ids, env).then((picks) => loadPrices(priced, picks)),
+      readHeldPricePicks(userId, ids).then((picks) => loadPrices(priced, picks)),
       // The whole collection's claim model, once (lock 3, lock 4).
       loadAvailability(userId, { env }),
       // Shopping's own buy rows, so a row's to-buy count is the cart's.
@@ -136,7 +136,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
       const cs = lists.commanders.filter((c) => c.deckId === deckId);
       return { deckId, commander: cs[0].oracleId, partner: cs[1]?.oracleId ?? null };
     });
-    collection = (await readCollection(userId, [...lists.list, ...lists.commanders], heads, brews, env)).collection;
+    collection = (await readCollection(userId, [...lists.list, ...lists.commanders], heads, brews)).collection;
   } catch (error) {
     recordSoftFailure();
     console.warn("loadLineup: the build figures could not be read", error);
@@ -168,7 +168,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
   const every = [...lists.list, ...lists.commanders].filter((c) => bodied.has(c.deckId));
   const shared = sharedCards(every, availability, buys, bodied);
   // Each preview shows the printing card details opens (the owned-printing chain, at the draw), else the catalog's.
-  const art = await chainArt(userId, null, shared.map((c) => c.oracleId), env);
+  const art = await chainArt(userId, null, shared.map((c) => c.oracleId));
   return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every, collection };
 }
 

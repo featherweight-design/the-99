@@ -519,7 +519,7 @@ async function run() {
 
   // 11 · THE VERSION COPY, at commit only, onto the newest version, once.
   const committedList = list();
-  const { version: v1 } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+  const { version: v1 } = await commitVersion(deck.id, null, undefined, undefined);
   check("a pin for a list the version does not hold writes nothing",
     await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: "not-this-list" }), false);
   check("a pin for the committed list copies the synopsis", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), true);
@@ -531,7 +531,7 @@ async function run() {
     check("…with art for every card it names", named.size > 0 && [...named].every((id) => id in (copy?.art ?? {})), true);
   }
   check("…and a second pin changes nothing", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), false);
-  const { version: v2 } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+  const { version: v2 } = await commitVersion(deck.id, null, undefined, undefined);
   check("an older version is never pinned", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), false);
   check("…while the newest one is", await pinSynopsisToVersion(deck.id, USER, { versionId: v2.id, list: committedList }), true);
   check("another reader cannot read a version's copy", await readVersionSynopsis(v1.id, "someone-else", process.env), null);
@@ -545,14 +545,14 @@ async function run() {
   // A draft that is DIRTY records no synopsis, even when its list matches the synopsis's.
   await fixture.execute(sql`delete from deck_synopses where fingerprint = 'another-list' and deck_id = ${deck.id}::uuid`);
   await fixture.execute(sql`update deck_profiles set dirty = true where deck_id = ${deck.id}::uuid`);
-  const { version: vDirty } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+  const { version: vDirty } = await commitVersion(deck.id, null, undefined, undefined);
   check("a commit from a dirty draft pins no synopsis",
     await pinSynopsisToVersion(deck.id, USER, { versionId: vDirty.id, list: committedList }), false);
   await fixture.execute(sql`update deck_profiles set dirty = false where deck_id = ${deck.id}::uuid`);
   await fixture.execute(sql`insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content)
     select deck_id, user_id, 'another-list', contract_version, model, model_call_id, 'done', outcome, content
     from deck_synopses where id = ${latest.id}::uuid`);
-  const { version: v3 } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+  const { version: v3 } = await commitVersion(deck.id, null, undefined, undefined);
   check("a commit whose list only an OLDER synopsis describes pins nothing",
     await pinSynopsisToVersion(deck.id, USER, { versionId: v3.id, list: committedList }), false);
   // AT COMMIT: a run for the committed list that lands AFTER the commit, before its after() pin

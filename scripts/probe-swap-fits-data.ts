@@ -124,7 +124,7 @@ async function main() {
 
   // 3. Availability: two owned, one of them held by a committed deck.
   await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${USER}, ${x.oracle_id}::uuid, 2, 'probe')`);
-  await commitVersion(holds, null, undefined, undefined, process.env);
+  await commitVersion(holds, null, undefined, undefined);
   const owned = await loadFits(USER, x.oracle_id, process.env);
   check("availability: owned and free", [owned?.owned, owned?.free], [2, 1]);
 

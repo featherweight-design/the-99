@@ -91,7 +91,7 @@ async function main() {
       [owner, name, commander],
     );
     for (const c of cards) await pool.query("insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)", [id, c]);
-    if (commit) await commitVersion(id, null, undefined, undefined, process.env);
+    if (commit) await commitVersion(id, null, undefined, undefined);
     return id;
   };
 

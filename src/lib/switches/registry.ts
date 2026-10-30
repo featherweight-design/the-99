@@ -31,7 +31,6 @@ export const SWITCHES = [
   { name: "ANNOUNCEMENTS_ENABLED", kind: "feature" },
   { name: "BRACKET_REACH_ENABLED", kind: "feature", needs: "HELP_ME_CHOOSE_ENABLED" },
   { name: "CHANGE_COMMANDER_ENABLED", kind: "feature" },
-  { name: "DECK_PRINTINGS_ENABLED", kind: "feature" },
   { name: "FEEDBACK_ENABLED", kind: "feature" },
   { name: "FIND_A_DECK_READ_ENABLED", kind: "model", needs: "SWAP_TOOLS_ENABLED" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },

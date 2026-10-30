@@ -1315,7 +1315,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   // Deck printings (plan `2026-10-10-deck-printings.md`, written in I got it's PR 5 with its bump,
   // handoff `design_handoff_the99_deck_printings/about-entry`): after `export`, where printings come
-  // in and go out. Copy through /prose-pass.
+  // in and go out. Copy through /prose-pass. DECK_PRINTINGS_ENABLED is retired (always on); the name stays
+  // the entry's identity, so no reader's New mark moves.
   {
     id: 'deck-printings',
     screen: 'deck',

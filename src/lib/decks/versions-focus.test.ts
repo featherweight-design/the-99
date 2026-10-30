@@ -41,7 +41,7 @@ const deckRow = (strategyFocus: string | null) => ({
 describe("commitVersion copies the deck's focus into the version", () => {
   it.each([["tokens"], ["typal:Elf"], [null]])("carries %s as it stands", async (focus) => {
     const { tx, inserted } = recordingTx(deckRow(focus));
-    await expect(commitVersion("deck-1", null, tx, undefined, {} as NodeJS.ProcessEnv)).rejects.toBe(STOP);
+    await expect(commitVersion("deck-1", null, tx, undefined)).rejects.toBe(STOP);
     expect(inserted).toHaveLength(1);
     expect(inserted[0].strategyFocus).toBe(focus);
   });

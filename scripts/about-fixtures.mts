@@ -306,7 +306,7 @@ if (!fresh) throw new Error("the account owns no fourth free commander with a wh
 // dated as a deck sleeved before its five games were played: the deck made 23 days ago, the version committed 22 days
 // ago (its cards' and commander's runs start there), so each game below is credited to version 1 as `logGame` would.
 const { commitVersion } = await import("../src/lib/decks/versions");
-const { version } = await commitVersion(played, null, undefined, undefined, process.env);
+const { version } = await commitVersion(played, null, undefined, undefined);
 const DAY = 86_400_000;
 const committedAt = new Date(Date.now() - 22 * DAY);
 await sql`update decks set created_at = ${new Date(committedAt.getTime() - DAY)},

@@ -1,6 +1,5 @@
 // /decks/[id] — Builder page.
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
-import { deckPrintingsEnabled } from "../../../lib/decks/printings-flag";
 import { perfRoute } from "../../../lib/perf/timing";
 import { notFound, redirect } from "next/navigation";
 import { preload } from "react-dom";
@@ -241,7 +240,7 @@ export default async function DeckBuilderPage({
   // The move-card picker lists every other deck by name, as it always has.
   // The notes read is its own, uncached read, outside the two cached ones above (a write revalidates the
   // route, and nothing cached holds a note).
-  const notesRead = early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null }, env)) : null)));
+  const notesRead = early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null })) : null)));
   const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name", { env })));
   // The reader's shelves, for the header menu's Move (the deck's own shelf rides on its list row).
   // A failed read costs the menu its Move row and nothing else.
@@ -325,7 +324,7 @@ export default async function DeckBuilderPage({
   // after mount in that case.
   const showNotices = analysisTabEnabled(env) && noticesEnabled(env);
   const initialNotices = showNotices
-    ? carried.then(() => perf.timed("notices", () => loadDeckNotices(id, userId, env))).catch(() => null)
+    ? carried.then(() => perf.timed("notices", () => loadDeckNotices(id, userId))).catch(() => null)
     : Promise.resolve(null);
   // The swap tools read the flag once, here, and reach every surface through one provider: a row
   // that finds no provider draws nothing of them.
@@ -410,7 +409,7 @@ export default async function DeckBuilderPage({
             // catalog's one arbitrary printing per card. Read here, inside the synergy read's own slot in the wave, so it overlaps the
             // other five reads rather than following them; overlaid below at the draw, not in the cached
             // loader `/commanders/[slug]` shares.
-            const art = await perf.timed("topOffArt", () => chainArt(userId, null, read.map((c) => c.oracleId), env));
+            const art = await perf.timed("topOffArt", () => chainArt(userId, null, read.map((c) => c.oracleId)));
             return { ranked: read, ownedArt: art };
           })
         : { ranked: [], ownedArt: new Map<string, string>() },
@@ -506,7 +505,7 @@ export default async function DeckBuilderPage({
         ...suggestions.map((s) => s.oracleId),
         ...candidateCards.filter((c) => !c.owned).map((c) => c.oracleId),
       ]),
-    ], await readHeldPricePicks(userId, [id], env))).catch(() => null),
+    ], await readHeldPricePicks(userId, [id]))).catch(() => null),
     // The page's one read, started with the request (above); only `.get` is used on it.
     ownedIds.length > 0 ? availabilityRead : null,
     // BOTH POOLS IN ONE READ, which is 8b widening the read 8a scoped to the candidates.
@@ -728,7 +727,7 @@ export default async function DeckBuilderPage({
       })}
       preconOrigin={(await originRead)?.summary ?? null}
       // Deck printings: the strip's printing clauses, from the same one navigation.
-      arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled(env))}
+      arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM])}
       updateArrival={readUpdateArrival(query[UPDATED_PARAM])}
       // How a URL names the tab it opens on. Read on arrival only — the builder
       // never writes it back, so switching tabs still costs no history entry.

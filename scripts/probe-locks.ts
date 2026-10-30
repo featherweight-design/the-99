@@ -93,7 +93,7 @@ async function main() {
       insert into decks (user_id, name, commander_oracle_id)
       values (${USER}, ${`probe locks · ${label}`}, ${commander}) returning id`);
     for (const oid of [X, Y, Z]) await add(deck.id, oid);
-    const { version } = await commitVersion(deck.id, null, undefined, undefined, process.env);
+    const { version } = await commitVersion(deck.id, null, undefined, undefined);
     return { id: deck.id, versionId: version.id };
   };
 
@@ -156,7 +156,7 @@ async function main() {
       await lock(d.id, X);
       await lock(d.id, Z);
       await remove(d.id, Z);
-      await commitVersion(d.id, null, undefined, undefined, process.env);
+      await commitVersion(d.id, null, undefined, undefined);
       check("6 · a commit leaves a live lock alone", await rowOf(d.id, X), "live");
       check("6 · a commit ends a removed card's lock (the removal stayed)", await rowOf(d.id, Z), "none");
     }
@@ -259,7 +259,7 @@ async function main() {
         select oracle_id from deck_cards where deck_id = ${deckId} and auto order by oracle_id`)).rows
         .map((r) => r.oracle_id);
       check("13 · the fixture holds three auto rows", (await autoIds(d.id)).length, 3);
-      await commitVersion(d.id, null, undefined, undefined, process.env);
+      await commitVersion(d.id, null, undefined, undefined);
       check("13 · the second commit leaves no auto row", await autoIds(d.id), []);
       check("13 · and leaves the other deck's auto rows alone", (await autoIds(other.id)).length, 3);
       check("13 · every row is still in the draft", (await fixture.execute(sql`
@@ -273,7 +273,7 @@ async function main() {
       for (const oid of [X, Y, Z]) await add(brew.id, oid);
       await fixture.execute(sql`update deck_cards set auto = true where deck_id = ${brew.id}`);
       check("13 · the unversioned fixture holds three auto rows", (await autoIds(brew.id)).length, 3);
-      await commitVersion(brew.id, null, undefined, undefined, process.env);
+      await commitVersion(brew.id, null, undefined, undefined);
       check("13 · the first commit leaves no auto row", await autoIds(brew.id), []);
     }
   } finally {

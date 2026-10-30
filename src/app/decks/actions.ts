@@ -1445,9 +1445,8 @@ export async function commitDeckVersion(
 ): Promise<CommitResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: "We couldn’t find that deck." };
-  // The reader's resolved switches: the printing each card showed is recorded only with their printings
-  // switch on, and the commit's bracket snapshot and the analysis pin both build the profile under them,
-  // so each finds the entry the reader's own analysis filed.
+  // The reader's resolved switches: the commit's bracket snapshot and the analysis pin both build the
+  // profile under them, so each finds the entry the reader's own analysis filed.
   const env = await requestSwitchEnv(userId);
   // A Server Action's arguments arrive over the wire, so the declared type is a
   // claim about the caller rather than a guarantee: anything at all can be posted
@@ -1604,7 +1603,7 @@ export async function commitDeckVersion(
     // deliberate commit. Correctness of the one column the version exists to freeze is worth
     // that on the rare path that reaches it.
     const snapshot = await commitSnapshotFor(deckId, userId, env);
-    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot, env);
+    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot);
     // The list this version froze, for the pin below, read back from the VERSION'S OWN ROWS:
     // `commitVersion` snapshots `deck_cards` itself, and a card inserted after the `draft` read
     // above (a new row has nothing to lock) would be in the version and absent from `draft`.

@@ -17,7 +17,6 @@ import {
   buildDeckImport, resolveDeckListInput, type DeckImport, type ImportNote,
 } from "../../lib/decks/import";
 import { isBasicLand } from "../../lib/decks/grouping";
-import { deckPrintingsEnabled } from "../../lib/decks/printings-flag";
 import { heldKey, importPicks, type ImportPrintingPick } from "../../lib/decks/import-printings";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { deckSurfaces } from "../../lib/decks/revalidate";
@@ -316,12 +315,11 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   );
 
   // Deck printings: a line naming a printing the player holds becomes the deck's pick, in the same
-  // transaction as the deck, so a new deck never shows another printing for a moment. Off, the
-  // import is main's: no read, no picks, no clause.
+  // transaction as the deck, so a new deck never shows another printing for a moment.
   let printingPicks: ImportPrintingPick[] = [];
   let printingsKept = 0;
   let printingsNotOwned = 0;
-  const pickPrintings = deckPrintingsEnabled(env) && result.printings.length > 0;
+  const pickPrintings = result.printings.length > 0;
   const members = new Set([
     ...deckCardValues.map((c) => c.oracleId),
     commanderOracleId,

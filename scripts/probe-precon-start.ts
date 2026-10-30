@@ -37,9 +37,6 @@ const { DATABASE_URL, PROBE_DB_BRANCH } = requireEnv(["DATABASE_URL", "PROBE_DB_
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-precon-start-${Date.now()}`;
-// A script has no signed-in reader: it decides switches from the environment, saying so. The deck
-// printings switch is on here whatever the environment says, so v0 records the printing each card showed.
-const ENV = { ...process.env, DECK_PRINTINGS_ENABLED: "true" };
 let failures = 0;
 let guarded = false;
 
@@ -102,7 +99,7 @@ async function run() {
   await fixture.execute(sql`
     insert into card_art_preferences (user_id, oracle_id, set_code, collector_number)
     select ${USER}, oracle_id, 'mbc', '73' from cards where name = 'Chromatic Lantern'`);
-  const frc = await startPreconDeck(USER, "MultiverseReforged_FRC", "Probe FRC", ENV);
+  const frc = await startPreconDeck(USER, "MultiverseReforged_FRC", "Probe FRC");
   const [versions] = await rows<{ n: number; first: number; cards: number }>(sql`
     select count(*)::int n, min(number)::int first, (select coalesce(sum(vc.quantity), 0)::int from deck_version_cards vc
       join deck_versions v on v.id = vc.version_id where v.deck_id = ${frc}::uuid) cards
@@ -140,7 +137,7 @@ async function run() {
         except select oracle_id, quantity from deck_cards where deck_id = ${frc}::uuid)) d`);
   check("c · and the live list is v0's: no draft left over", drift.n, 0);
 
-  const ce = await startPreconDeck(USER, "AvengersAssembleCollectorSEdition_MSC", "Probe CE", ENV);
+  const ce = await startPreconDeck(USER, "AvengersAssembleCollectorSEdition_MSC", "Probe CE");
   const cePins = await pinsMatch(ce, "AvengersAssembleCollectorSEdition_MSC");
   check("e · a Collector's Edition start pins the Collector's Edition's printings", cePins.wrong === 0 && cePins.pins > 0, true);
   const [built] = await rows<{ built: string }>(sql`select built_from_precon built from decks where id = ${ce}::uuid`);

@@ -25,7 +25,6 @@ import {
   readDeckPrintings,
   type DeckPrinting, type RecordedPrinting,
 } from "./printings";
-import { deckPrintingsEnabled } from "./printings-flag";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { loadPrices, pricesForDeck } from "./price-query";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
@@ -138,15 +137,13 @@ export async function commitVersion(
   note: string | null,
   tx: Tx | undefined,
   snapshot: CommitSnapshot | undefined,
-  /** The committer's resolved switches (`requestSwitchEnv`). */
-  env: NodeJS.ProcessEnv,
   /** The number a FIRST commit takes: 1, or 0 for a precon start, whose list is the precon's v0. Ignored
    *  once the deck has a version, which every later commit counts on from. */
   opts: { first: 0 | 1 } = { first: 1 },
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   return tx
-    ? commitVersionIn(tx, deckId, note, snapshot, env, opts.first)
-    : db.transaction((t) => commitVersionIn(t, deckId, note, snapshot, env, opts.first));
+    ? commitVersionIn(tx, deckId, note, snapshot, opts.first)
+    : db.transaction((t) => commitVersionIn(t, deckId, note, snapshot, opts.first));
 }
 
 async function commitVersionIn(
@@ -154,7 +151,6 @@ async function commitVersionIn(
   deckId: string,
   note: string | null,
   snapshot: CommitSnapshot | undefined,
-  env: NodeJS.ProcessEnv,
   first: 0 | 1,
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   const [deck] = await tx.select().from(decks)
@@ -241,25 +237,23 @@ async function commitVersionIn(
   }).from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
 
   // THE PRINTING EACH CARD SHOWED, recorded at commit (deck printings): the deck's pick, then the
-  // Collection's, then the catalog's, the chain every deck surface draws. Off, nothing is recorded,
-  // and a null reads as today's resolver. Fail-soft: a failed read records nulls rather than
-  // failing the commit, because the version's cards are the commit and the printing is a caption.
+  // Collection's, then the catalog's, the chain every deck surface draws. Fail-soft: a failed read
+  // records nulls rather than failing the commit, because the version's cards are the commit and
+  // the printing is a caption.
   //
   // Read inside the commit's own transaction, so a deck started and committed in one
   // (`startPreconDeck`) is resolved against the printing pins it has only here until it commits. In a SAVEPOINT, so the read stays fail-soft: a failed statement would otherwise
   // abort the whole transaction, where the savepoint rolls back alone and the version records nulls.
-  const shown = deckPrintingsEnabled(env)
-    ? await tx.transaction((sp) => readDeckPrintings(
-        deck.userId,
-        deckId,
-        [...rows.map((r) => r.oracleId), deck.commanderOracleId, ...(deck.partnerOracleId ? [deck.partnerOracleId] : [])],
-        { usePicks: true },
-        sp,
-      )).then((r) => r.printings).catch(() => {
-        recordSoftFailure();
-        return new Map<string, DeckPrinting>();
-      })
-    : new Map<string, DeckPrinting>();
+  const shown = await tx.transaction((sp) => readDeckPrintings(
+    deck.userId,
+    deckId,
+    [...rows.map((r) => r.oracleId), deck.commanderOracleId, ...(deck.partnerOracleId ? [deck.partnerOracleId] : [])],
+    {},
+    sp,
+  )).then((r) => r.printings).catch(() => {
+    recordSoftFailure();
+    return new Map<string, DeckPrinting>();
+  });
   const recorded = (oracleId: string | null) => recordedColumns(shown, oracleId);
   if (shown.size > 0) {
     const commander = recorded(deck.commanderOracleId);
@@ -647,9 +641,9 @@ export async function loadVersionDiff(
     // The throwing read, not `resolveOwnedPrintings`: a failed read there answers "owns
     // nothing", which these rows would draw as a "not owned" dot and a buy tag on cards the
     // reader holds. A failure here reaches `getVersionDiff`'s caller as an unavailable diff.
-    readDeckOwnedPrintings(userId, deckId, all.map((c) => c.oracleId), env),
+    readDeckOwnedPrintings(userId, deckId, all.map((c) => c.oracleId)),
     // Pick-aware, as the deck page prices its rows (deck printings).
-    readHeldPricePicks(userId, [deckId], env)
+    readHeldPricePicks(userId, [deckId])
       .then((picks) => loadPrices(pricedIds(all), picks))
       .then((read) => ({ ...read, prices: pricesForDeck(read, deckId) })),
     // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
@@ -680,7 +674,7 @@ export async function loadVersionDiff(
     const into = r.versionId === versionId ? recordedIn : recordedOut;
     into.set(r.oracleId, { oracleId: r.oracleId, setCode: r.setCode, collectorNumber: r.collectorNumber });
   }
-  const recordedArt = deckPrintingsEnabled(env) && (recordedIn.size > 0 || recordedOut.size > 0)
+  const recordedArt = recordedIn.size > 0 || recordedOut.size > 0
     ? await readRecordedPrintingArt([...recordedIn.values(), ...recordedOut.values()]).catch(() => null)
     : null;
   const asRecorded = (recorded: Map<string, RecordedPrinting>) => (row: VersionDiffCard): VersionDiffCard => {

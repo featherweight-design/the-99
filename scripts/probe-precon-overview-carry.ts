@@ -63,7 +63,7 @@ async function main() {
   const made: string[] = [];
   const logged: number[] = [];
   const start = async (file: string) => {
-    const id = await startPreconDeck(USER, file, `probe:carry ${file}`, ON);
+    const id = await startPreconDeck(USER, file, `probe:carry ${file}`);
     made.push(id);
     return id;
   };

@@ -108,7 +108,7 @@ async function run() {
   {
     const deckId = await makeDeck("probe declared", legend.oracle_id, body.map((c) => c.oracle_id));
     await declare(deckId, 2);
-    await commitVersion(deckId, null, undefined, { declared: 2, permits: [1, 2] }, process.env);
+    await commitVersion(deckId, null, undefined, { declared: 2, permits: [1, 2] });
     const [v] = await versionRow(deckId);
     check("a permitted declaration is carried into the version", v?.declared_bracket, 2);
     check("and the version stores what its cards permitted", v?.permits, [1, 2]);
@@ -126,7 +126,7 @@ async function run() {
   {
     const deckId = await makeDeck("probe drifted", legend.oracle_id, body.map((c) => c.oracle_id));
     await declare(deckId, 5);
-    await commitVersion(deckId, null, undefined, { declared: 5, permits: [3] }, process.env);
+    await commitVersion(deckId, null, undefined, { declared: 5, permits: [3] });
     const [v] = await versionRow(deckId);
     check("a declaration outside the version's permits is not carried", v?.declared_bracket, null);
     const [live] = await rows<{ declared_bracket: number }>(sql`
@@ -139,7 +139,7 @@ async function run() {
   {
     const deckId = await makeDeck("probe nosnap", legend.oracle_id, body.map((c) => c.oracle_id));
     await declare(deckId, 3);
-    await commitVersion(deckId, null, undefined, undefined, process.env);
+    await commitVersion(deckId, null, undefined, undefined);
     const [v] = await versionRow(deckId);
     check("no snapshot records no declaration", v?.declared_bracket, null);
     check("and no permits", v?.permits, null);
@@ -148,7 +148,7 @@ async function run() {
   // 5 · The permits snapshot is SORTED at the write, so two ranges compare as arrays.
   {
     const deckId = await makeDeck("probe sorted", legend.oracle_id, body.map((c) => c.oracle_id));
-    await commitVersion(deckId, null, undefined, { declared: null, permits: [5, 4] }, process.env);
+    await commitVersion(deckId, null, undefined, { declared: null, permits: [5, 4] });
     const [v] = await versionRow(deckId);
     check("permits are stored sorted", v?.permits, [4, 5]);
   }

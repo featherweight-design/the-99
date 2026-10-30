@@ -131,7 +131,6 @@ export async function writePreconDeckIn(
   userId: string,
   name: string,
   deck: PreparedPreconDeck,
-  env: NodeJS.ProcessEnv,
   addEntryId?: string,
 ): Promise<string> {
   const deckId = await writeImportedDeck(tx, {
@@ -144,7 +143,7 @@ export async function writePreconDeckIn(
     builtFromPrecon: deck.builtFromPrecon,
   });
   if (addEntryId) await tx.update(decks).set({ preconAddEntryId: addEntryId }).where(eq(decks.id, deckId));
-  await commitVersion(deckId, null, tx, undefined, env, { first: 0 });
+  await commitVersion(deckId, null, tx, undefined, { first: 0 });
   // Each token the deck makes shows the box's own printing, through the ONE writer, which takes it only
   // while the player holds that printing, from any source: a start with the box holds it (the add's
   // `syncPreconTokens` ran earlier in this transaction); a plain start holds it only from an earlier add or
@@ -158,7 +157,7 @@ export async function writePreconDeckIn(
 }
 
 /** Writes and commits the deck `fileName` starts, for `userId`, and returns its id. */
-export async function startPreconDeck(userId: string, fileName: string, name: string, env: NodeJS.ProcessEnv): Promise<string> {
+export async function startPreconDeck(userId: string, fileName: string, name: string): Promise<string> {
   const deck = await preparePreconDeck(fileName);
-  return db.transaction((tx) => writePreconDeckIn(tx, userId, name, deck, env));
+  return db.transaction((tx) => writePreconDeckIn(tx, userId, name, deck));
 }

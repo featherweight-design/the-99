@@ -2,13 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
-// The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", async () => {
-  const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
-});
-
 const DECK = "11111111-1111-4111-8111-111111111111";
 const CARD = "22222222-2222-4222-8222-222222222222";
 
@@ -46,17 +39,9 @@ beforeEach(() => {
   state.params = [];
   state.answers = [];
   refresh.mockClear();
-  process.env.DECK_PRINTINGS_ENABLED = "true";
 });
 
 describe("setDeckPrinting", () => {
-  it("does nothing with the switch off", async () => {
-    process.env.DECK_PRINTINGS_ENABLED = "";
-    expect(await setDeckPrinting(DECK, CARD, { setCode: "KHM", collectorNumber: "31" }))
-      .toEqual({ ok: false, reason: "off" });
-    expect(state.texts).toEqual([]);
-  });
-
   it("refuses malformed wire input without touching the database", async () => {
     for (const bad of [
       [DECK, "nope", { setCode: "KHM", collectorNumber: "31" }],

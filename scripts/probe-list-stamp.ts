@@ -131,7 +131,7 @@ async function main() {
       await replaceCollection(USER, items);
       replaceMs.push(performance.now() - t);
       t = performance.now();
-      await commitVersion(deck.id, null, undefined, undefined, process.env);
+      await commitVersion(deck.id, null, undefined, undefined);
       commitMs.push(performance.now() - t);
     }
     console.log(`TIME  collection replace (${items.length} rows): median ${median(replaceMs).toFixed(0)}ms of ${replaceMs.map((x) => x.toFixed(0)).join(", ")}`);

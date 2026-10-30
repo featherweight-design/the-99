@@ -235,7 +235,7 @@ async function run() {
     "insert into decks (user_id, name, commander_oracle_id) values ($1, 'probe collection sync', $2) returning id::text", [USER, H],
   ))[0];
   await pool.query("insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)", [deck.id, C]);
-  await commitVersion(deck.id, null, undefined, undefined, ENV);
+  await commitVersion(deck.id, null, undefined, undefined);
   const F3 = [at(A, 1), at(B, 2), at(X, 2), ...cns.map((cn) => at(BULK, 2, cn))];
   const cUpload = await newUpload(F3);
   const cChange = syncChange(cUpload, F3);

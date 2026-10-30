@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
-import { ENV_VIEW } from "@/test/env-view";
 import type { BrowseCard, BrowsePrinting } from "../collection/browse";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
@@ -75,7 +74,6 @@ beforeEach(() => {
   state.cards = [];
   state.recorded = [];
   state.fail = false;
-  process.env.DECK_PRINTINGS_ENABLED = "true";
 });
 
 describe("heldPrintingFor", () => {
@@ -94,7 +92,7 @@ describe("readDeckPrintings", () => {
   it("takes the deck's pick first when it is held, and reports it held", async () => {
     state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")], { setCode: "C21", collectorNumber: "263" })];
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
-    const { printings, heldPicks } = await readDeckPrintings("u", DECK, [OWNED], { usePicks: true });
+    const { printings, heldPicks } = await readDeckPrintings("u", DECK, [OWNED]);
     expect(printings.get(OWNED)).toMatchObject({ setCode: "KHM", collectorNumber: "31", source: "deck", imageUri: "img-KHM-31" });
     expect(heldPicks.get(OWNED)).toEqual({ setCode: "khm", collectorNumber: "31" });
   });
@@ -102,7 +100,7 @@ describe("readDeckPrintings", () => {
   it("ignores a pick the player no longer holds and falls to the Collection's pick", async () => {
     state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")], { setCode: "KHM", collectorNumber: "31" })];
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "lea", collector_number: "270" }];
-    const { printings, heldPicks } = await readDeckPrintings("u", DECK, [OWNED], { usePicks: true });
+    const { printings, heldPicks } = await readDeckPrintings("u", DECK, [OWNED]);
     expect(printings.get(OWNED)).toMatchObject({ setCode: "KHM", collectorNumber: "31", source: "collection" });
     expect(heldPicks.size).toBe(0);
   });
@@ -110,25 +108,16 @@ describe("readDeckPrintings", () => {
   it("reads the foil film's finish off the printing the deck draws, never another of the card's", async () => {
     state.cards = [ownedCard([printing("C21", "263", { finishes: { foil: 2 }, hasOwnArt: true }), printing("KHM", "31", { finishes: { nonfoil: 1, foil: 1 }, hasOwnArt: true })])];
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "c21", collector_number: "263" }];
-    expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBe("foil");
+    expect((await readDeckPrintings("u", DECK, [OWNED])).printings.get(OWNED)?.foil).toBe("foil");
     // The mixed printing draws nothing (audit ruling G8).
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
-    expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBeUndefined();
+    expect((await readDeckPrintings("u", DECK, [OWNED])).printings.get(OWNED)?.foil).toBeUndefined();
   });
 
   it("draws no film when the drawn printing has no art of its own, since the tile draws a fallback picture", async () => {
     state.cards = [ownedCard([printing("C21", "263", { finishes: { foil: 1 }, hasOwnArt: false })])];
     state.picks = [];
-    expect((await readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).printings.get(OWNED)?.foil).toBeUndefined();
-  });
-
-  it("skips the deck's step entirely with picks off", async () => {
-    state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
-    state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
-    const { printings, heldPicks } = await readDeckPrintings("u", DECK, [OWNED], { usePicks: false });
-    expect(printings.get(OWNED)).toMatchObject({ setCode: "C21", source: "collection" });
-    expect(heldPicks.size).toBe(0);
-    expect(state.texts.some((t) => t.includes("from deck_printings"))).toBe(false);
+    expect((await readDeckPrintings("u", DECK, [OWNED])).printings.get(OWNED)?.foil).toBeUndefined();
   });
 
   it("resolves a card the player does not own to its oracle-level printing", async () => {
@@ -136,7 +125,7 @@ describe("readDeckPrintings", () => {
       oracle_id: UNOWNED, name: "Cultivate", set_code: "m21", collector_number: "177",
       image_uri: "img-u", art_crop_uri: "crop-u", flavor_name: null,
     }];
-    const { printings } = await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
+    const { printings } = await readDeckPrintings("u", DECK, [UNOWNED]);
     expect(printings.get(UNOWNED)).toEqual({
       quantity: 0, printedName: null, imageUri: "img-u", artCropUri: "crop-u",
       setCode: "M21", collectorNumber: "177", source: "catalog",
@@ -148,7 +137,7 @@ describe("readDeckPrintings", () => {
       oracle_id: UNOWNED, name: "Brain Freeze", set_code: null, collector_number: null,
       image_uri: "img-oracle", art_crop_uri: null, flavor_name: null,
     }];
-    const { printings } = await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
+    const { printings } = await readDeckPrintings("u", DECK, [UNOWNED]);
     expect(printings.get(UNOWNED)).toMatchObject({ setCode: "", collectorNumber: "", imageUri: "img-oracle", source: "catalog" });
   });
 
@@ -157,13 +146,13 @@ describe("readDeckPrintings", () => {
       oracle_id: UNOWNED, name: "Brain Freeze", set_code: "soa", collector_number: "78",
       image_uri: "img-sub", art_crop_uri: null, flavor_name: null, exact: false,
     }];
-    const { printings } = await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
+    const { printings } = await readDeckPrintings("u", DECK, [UNOWNED]);
     expect(printings.get(UNOWNED)?.source).toBe("catalogSubstitute");
     expect(recordedColumns(printings, UNOWNED)).toEqual({ setCode: null, collectorNumber: null });
   });
 
   it("falls back to another printing of the card when its oracle-level printing is missing", async () => {
-    await readDeckPrintings("u", DECK, [UNOWNED], { usePicks: true });
+    await readDeckPrintings("u", DECK, [UNOWNED]);
     const read = state.texts.find((t) => t.includes("from cards c"));
     expect(read).toContain("left join lateral");
     expect(read).toContain("pr.oracle_id = c.oracle_id");
@@ -174,7 +163,7 @@ describe("readDeckPrintings", () => {
 
   it("scopes the pick read to the player's decks and to current membership", async () => {
     state.cards = [ownedCard([printing("KHM", "31")])];
-    await readDeckPrintings("u", DECK, [OWNED], { usePicks: true });
+    await readDeckPrintings("u", DECK, [OWNED]);
     const read = state.texts.find((t) => t.includes("from deck_printings"));
     expect(read).toContain("d.user_id =");
     expect(read).toContain("dc.deck_id = dp.deck_id and dc.oracle_id = dp.oracle_id");
@@ -184,8 +173,8 @@ describe("readDeckPrintings", () => {
 
   it("throws on a failed read, and the soft form answers empty", async () => {
     state.fail = true;
-    await expect(readDeckPrintings("u", DECK, [OWNED], { usePicks: true })).rejects.toThrow("down");
-    const soft = await resolveDeckPrintings("u", DECK, [OWNED], { usePicks: true });
+    await expect(readDeckPrintings("u", DECK, [OWNED])).rejects.toThrow("down");
+    const soft = await resolveDeckPrintings("u", DECK, [OWNED]);
     expect(soft.printings.size).toBe(0);
     expect(soft.heldPicks.size).toBe(0);
   });
@@ -200,18 +189,16 @@ describe("resolveDeckOwnedPrintings", () => {
       oracle_id: UNOWNED, name: "Cultivate", set_code: "m21", collector_number: "177",
       image_uri: "img-u", art_crop_uri: null, flavor_name: null,
     }];
-    const owned = await resolveDeckOwnedPrintings("u", DECK, [OWNED, UNOWNED], ENV_VIEW);
+    const owned = await resolveDeckOwnedPrintings("u", DECK, [OWNED, UNOWNED]);
     expect([...owned.keys()]).toEqual([OWNED]);
     // And it never asks the catalog, whose answer it would only throw away.
     expect(state.texts.some((t) => t.includes("from cards c"))).toBe(false);
   });
 
-  it("follows the switch for the deck's step", async () => {
+  it("takes the deck's held pick", async () => {
     state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
-    expect((await resolveDeckOwnedPrintings("u", DECK, [OWNED], ENV_VIEW)).get(OWNED)?.setCode).toBe("KHM");
-    process.env.DECK_PRINTINGS_ENABLED = "";
-    expect((await resolveDeckOwnedPrintings("u", DECK, [OWNED], ENV_VIEW)).get(OWNED)?.setCode).toBe("C21");
+    expect((await resolveDeckOwnedPrintings("u", DECK, [OWNED])).get(OWNED)?.setCode).toBe("KHM");
   });
 });
 
@@ -224,20 +211,16 @@ describe("resolveCommanderPrintingsByDeck", () => {
     const byDeck = await resolveCommanderPrintingsByDeck("u", [
       { deckId: DECK, commanderOracleId: OWNED },
       { deckId: DECK_B, commanderOracleId: OWNED },
-    ], ENV_VIEW);
+    ]);
     expect(byDeck.get(DECK)).toMatchObject({ setCode: "KHM", source: "deck" });
     expect(byDeck.get(DECK_B)).toMatchObject({ setCode: "C21", source: "collection" });
   });
 
-  it("reads no picks with the switch off, and fails soft to an empty map", async () => {
-    process.env.DECK_PRINTINGS_ENABLED = "";
+  it("fails soft to an empty map", async () => {
     state.cards = [ownedCard([printing("C21", "263"), printing("KHM", "31")])];
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
-    const off = await resolveCommanderPrintingsByDeck("u", [{ deckId: DECK, commanderOracleId: OWNED }], ENV_VIEW);
-    expect(off.get(DECK)?.setCode).toBe("C21");
-    expect(state.texts.some((t) => t.includes("from deck_printings"))).toBe(false);
     state.fail = true;
-    expect((await resolveCommanderPrintingsByDeck("u", [{ deckId: DECK, commanderOracleId: OWNED }], ENV_VIEW)).size).toBe(0);
+    expect((await resolveCommanderPrintingsByDeck("u", [{ deckId: DECK, commanderOracleId: OWNED }])).size).toBe(0);
   });
 });
 
@@ -283,15 +266,9 @@ describe("readRecordedPrintingArt", () => {
 });
 
 describe("readHeldPricePicks", () => {
-  it("reads nothing with the switch off, so every figure is today's", async () => {
-    process.env.DECK_PRINTINGS_ENABLED = "";
-    expect(await readHeldPricePicks("u", [DECK], ENV_VIEW)).toEqual([]);
-    expect(state.texts).toEqual([]);
-  });
-
   it("passes only picks the player still holds, of cards still in the deck", async () => {
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
-    expect(await readHeldPricePicks("u", [DECK], ENV_VIEW)).toEqual([
+    expect(await readHeldPricePicks("u", [DECK])).toEqual([
       { deckId: DECK, oracleId: OWNED, setCode: "khm", collectorNumber: "31" },
     ]);
     const read = state.texts.find((t) => t.includes("from deck_printings"))!;
@@ -303,34 +280,13 @@ describe("readHeldPricePicks", () => {
 
   it("fails soft to no picks", async () => {
     state.fail = true;
-    expect(await readHeldPricePicks("u", [DECK], ENV_VIEW)).toEqual([]);
+    expect(await readHeldPricePicks("u", [DECK])).toEqual([]);
   });
 });
 
 describe("readModalPicks", () => {
-  it("is null with the switch off, which keeps the modal's picker as it is", async () => {
-    process.env.DECK_PRINTINGS_ENABLED = "";
-    expect(await readModalPicks("u", DECK, ENV_VIEW)).toBeNull();
-    expect(state.texts).toEqual([]);
-  });
-
   it("keys the held picks by card, in the modal's uppercase display form", async () => {
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
-    expect(await readModalPicks("u", DECK, ENV_VIEW)).toEqual({ [OWNED]: { setCode: "KHM", collectorNumber: "31" } });
-  });
-
-  // Admin PR 6b: the reader's resolved switches decide, not the environment alone. The environment has
-  // the switch off and the reader's override turns it on, so a read deciding from the environment would
-  // answer null and read nothing.
-  it("follows the reader's resolved env over the environment", async () => {
-    vi.stubEnv("DECK_PRINTINGS_ENABLED", "false");
-    try {
-      state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
-      const env = { DECK_PRINTINGS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-      expect(await readModalPicks("u", DECK, env)).toEqual({ [OWNED]: { setCode: "KHM", collectorNumber: "31" } });
-      expect(await readModalPicks("u", DECK, ENV_VIEW)).toBeNull();
-    } finally {
-      vi.unstubAllEnvs();
-    }
+    expect(await readModalPicks("u", DECK)).toEqual({ [OWNED]: { setCode: "KHM", collectorNumber: "31" } });
   });
 });

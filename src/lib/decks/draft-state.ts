@@ -294,7 +294,7 @@ async function readDraft(
   // cost track, the basics set or the row facts.
   // The version's body goes with them: a half that arrives out of the 99 keeps that card's copy.
   const commanderRows = commander
-    ? await loadCommanderRows(userId, deckId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)), env)
+    ? await loadCommanderRows(userId, deckId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)))
     : null;
   const commanderNames = new Map((commanderRows?.rows ?? []).map((r) => [r.oracleId, r.name]));
   // A commander-only draft has changes and no card row: its state is the empty
@@ -357,7 +357,7 @@ async function readDraft(
   const prices = priceAsked.length > 0
     // Pick-aware (deck printings): a changed card the deck has picked a printing of is priced as its
     // own row on the deck page prices it, so the review screen and the deck never disagree.
-    ? await loadPrices(priceAsked, await readHeldPricePicks(userId, [deckId], env))
+    ? await loadPrices(priceAsked, await readHeldPricePicks(userId, [deckId]))
         .then((read) => ({ ...read, prices: pricesForDeck(read, deckId) }))
         .catch(() => null)
     : null;
@@ -625,7 +625,7 @@ export async function loadDraftRows(deckId: string, userId: string, env: NodeJS.
   // The owned rows draw the copy the reader owns, art and printed name together. Fail-soft through
   // `resolveDeckOwnedPrintings`: a failed read keeps the oracle-level art and the oracle name. The
   // deck's own printing picks come first, so the review rows draw what the deck page does.
-  const ownedArt = await resolveDeckOwnedPrintings(userId, deckId, built.filter((r) => r.owned).map((r) => r.oracleId), env);
+  const ownedArt = await resolveDeckOwnedPrintings(userId, deckId, built.filter((r) => r.owned).map((r) => r.oracleId));
   const drawn = built.map((r) => {
     const own = ownedArt.get(r.oracleId);
     return own

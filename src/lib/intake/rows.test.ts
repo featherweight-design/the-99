@@ -78,11 +78,10 @@ describe("the reader's env", () => {
     expect(opts?.env === ENV).toBe(true);
   });
 
-  it("reaches the card's claim read and its art from loadCardChip", async () => {
+  it("reaches the card's claim read from loadCardChip", async () => {
     await loadCardChip("u", id(7), ENV);
     expect(stub.cardRow.mock.calls[0].slice(0, 2)).toEqual(["u", id(7)]);
     expect(stub.cardRow.mock.calls[0][2] === ENV).toBe(true);
-    expect((stub.chainArt.mock.calls[0] as unknown[])[3] === ENV).toBe(true);
   });
 });
 

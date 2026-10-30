@@ -25,7 +25,7 @@ import { chainArt } from "../cards/chain-art";
  */
 export async function loadCart(
   userId: string,
-  /** The reader's resolved switches (the cached page's `env`): the claim model and the printing picks. */
+  /** The reader's resolved switches (the cached page's `env`): the claim model. */
   env: NodeJS.ProcessEnv,
 ): Promise<CartPayload> {
   const [rows, [{ total }]] = await Promise.all([
@@ -39,7 +39,7 @@ export async function loadCart(
   // All four reads at once, and only the price read caught: a failure there degrades the cart to
   // its rows (T2), while a failure in any other read is the page's own error.
   const [read, deckRows, cardRows, availability, ownedArt] = await Promise.all([
-    readBuyRowPrices(userId, rows, env).catch((err): PriceRead | null => {
+    readBuyRowPrices(userId, rows).catch((err): PriceRead | null => {
       // A fallback, so a cached page never stores it: the next visit reads the prices again.
       recordSoftFailure();
       console.error("[cart] price read failed; drawing rows without figures", err);
@@ -52,7 +52,7 @@ export async function loadCart(
     // Off any decklist: who holds each owned copy, user-wide. A card owned in no copies has no row.
     loadAvailability(userId, { oracleIds, env }),
     // The printing card details opens for a line's card, so the preview shows it; the catalog's art otherwise.
-    chainArt(userId, null, oracleIds, env),
+    chainArt(userId, null, oracleIds),
   ]);
 
   const ownership = new Map<string, Ownership>();

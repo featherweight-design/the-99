@@ -20,14 +20,14 @@ describe("writePreconDeckIn's token pins", () => {
 
   it("sends each token the deck makes to the one writer, at the box's printing, and no other", async () => {
     calls.makes = new Set(["t2"]);
-    expect(await writePreconDeckIn(tx, "user_1", "Deck", deck, process.env)).toBe("deck-1");
+    expect(await writePreconDeckIn(tx, "user_1", "Deck", deck)).toBe("deck-1");
     expect(calls.writes).toEqual([{ deckId: "deck-1", userId: "user_1", tokenOracleId: "t2", tokenPrintingId: "p2" }]);
   });
 
   it("starts the deck all the same when the writer refuses a printing the player does not hold", async () => {
     calls.makes = new Set(["t1", "t2"]);
     calls.refuse = true;
-    expect(await writePreconDeckIn(tx, "user_1", "Deck", deck, process.env)).toBe("deck-1");
+    expect(await writePreconDeckIn(tx, "user_1", "Deck", deck)).toBe("deck-1");
     expect(calls.writes).toHaveLength(2);
   });
 });
@@ -88,7 +88,7 @@ describe("preparePreconDeckIn's tokens", () => {
     expect(prepared.tokens).toEqual([{ tokenOracleId: "t1", tokenPrintingId: "p2" }, { tokenOracleId: "t2", tokenPrintingId: "p5" }]);
     calls.makes = new Set(["t1", "t2"]);
     calls.writes = [];
-    await writePreconDeckIn(tx, "user_1", "Deck", prepared, process.env);
+    await writePreconDeckIn(tx, "user_1", "Deck", prepared);
     expect(calls.writes).toEqual([
       { deckId: "deck-1", userId: "user_1", tokenOracleId: "t1", tokenPrintingId: "p2" },
       { deckId: "deck-1", userId: "user_1", tokenOracleId: "t2", tokenPrintingId: "p5" },

@@ -88,8 +88,8 @@ async function run() {
     .filter((r) => r.deckId === deckId && four.has(r.oracleId)).map((r) => four.get(r.oracleId)).sort();
 
   // The older decks: committed first, so seniority favors them, and holding none of the four.
-  const thorin = await startPreconDeck(USER, "AbzanArmor_TDC", "Older A", ENV);
-  const gishath = await startPreconDeck(USER, "AvengersAssemble_MSC", "Older B", ENV);
+  const thorin = await startPreconDeck(USER, "AbzanArmor_TDC", "Older A");
+  const gishath = await startPreconDeck(USER, "AvengersAssemble_MSC", "Older B");
   check("setup · the older decks are short of all four", [await owes(thorin), await owes(gishath)], [FOUR, FOUR]);
 
   const actionId = randomUUID();
@@ -159,7 +159,7 @@ async function run() {
   check("g · an id another add already used is refused", reused.ok, false);
 
   // A plain start of the same box, now that its tokens are held: pinned as well, through the same writer.
-  const again = await startPreconDeck(USER, FILE, "Multiverse again", ENV);
+  const again = await startPreconDeck(USER, FILE, "Multiverse again");
   const [againPins] = await rows<{ n: number }>(sql`select count(*)::int n from deck_token_printings where deck_id = ${again}::uuid`);
   check("i · a plain start of a box whose tokens are held pins them too", againPins.n, want.length);
 
@@ -190,8 +190,8 @@ async function run() {
 async function heldOverlap(four: Map<string, string>) {
   const owesOf = async (deckId: string) => (await loadDeckBuyRows(HELD_USER, [deckId], undefined, ENV))
     .filter((r) => r.deckId === deckId && four.has(r.oracleId)).map((r) => four.get(r.oracleId)).sort();
-  const senior = await startPreconDeck(HELD_USER, "AbzanArmor_TDC", "Older A", ENV);
-  const junior = await startPreconDeck(HELD_USER, "AvengersAssemble_MSC", "Older B", ENV);
+  const senior = await startPreconDeck(HELD_USER, "AbzanArmor_TDC", "Older A");
+  const junior = await startPreconDeck(HELD_USER, "AvengersAssemble_MSC", "Older B");
   await applyCollectionChange(HELD_USER, {
     kind: "add", items: [...four.keys()].map((oracleId) => ({ oracleId, setCode: "", condition: null, quantity: 1 })),
   }, { id: randomUUID(), env: ENV });

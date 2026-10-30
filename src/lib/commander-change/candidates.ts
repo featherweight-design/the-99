@@ -344,7 +344,7 @@ export async function loadChangeCandidates(
       ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId, env }).catch(() => null)
       : Promise.resolve(new Map<string, Availability>()),
     // The matched cards are the deck's own, so they take the deck's printing the way the details do.
-    resolveDeckOwnedPrintings(userId, deckId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds, ...[...hits.values()].flat()])], env),
+    resolveDeckOwnedPrintings(userId, deckId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds, ...[...hits.values()].flat()])]),
   ]);
   const toBuyIds = asked.filter((id) => !owned.has(id));
   const prices = toBuyIds.length > 0
