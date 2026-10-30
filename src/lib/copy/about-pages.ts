@@ -958,7 +958,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
         // /copy-review); with it off the shipped row stays.
         { part: "row", name: "Came back empty-handed", dim: true, tag: { text: "credit back", tone: "success" }, switch: "!SUGGESTED_CHANGES_V2_ENABLED" },
         { part: "row", name: "Came back short or empty", dim: true, tag: { text: "credit back", tone: "success" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
-        { part: "row", name: "Short by your price cap", dim: true, tag: { text: "1 credit", tone: "accent" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
+        { part: "row", name: "Short by your price cap", dim: true, tag: { text: "1 or 2 credits", tone: "accent" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
       ] }],
     },
   },
