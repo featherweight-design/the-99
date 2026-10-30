@@ -15,7 +15,6 @@ import { methodNoticeOf, freeRunsFor, type MethodNotice } from "./method-notice"
 import { overviewV2Enabled } from "./overview-v2";
 import { reapSynopses } from "./reaper";
 import { overviewDataMovedFor } from "../notices/overview";
-import { noticesEnabled } from "../notices/flag";
 import { liveOffendingIds } from "../notices/read";
 import type { CheckedSynopsis, SynopsisOutcome } from "./types";
 
@@ -170,11 +169,10 @@ export async function readSynopsisState(
   // read apart, an edit landing between them pairs list A with A's overview while the deck is
   // already B, and the press note would describe a list that is no longer live. Whether that list
   // holds an illegal card is read in the same snapshot, so the warning never describes another list.
-  // Behind the notices switch: off, no note, withheld form or warning line draws.
   const { live, synopsis, illegal } = await db.transaction(async (tx) => {
     const head = await readProfileHead(tx, deckId, userId);
     const list = head ? listFingerprint(head) : null;
-    const illegal = !!head && noticesEnabled(env)
+    const illegal = !!head
       && (await liveOffendingIds(tx, deckId, [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])])).length > 0;
     return { live: list, synopsis: await readShownSynopsis(deckId, userId, list ?? undefined, tx), illegal };
   }, { isolationLevel: "repeatable read" });
@@ -190,7 +188,7 @@ export async function readSynopsisState(
 
   const status = synopsisStatus({
     reading: reading && row ? { fresh: reading.fresh, list: row.list } : null,
-    dataMoved: synopsis ? await overviewDataMovedFor(deckId, userId, synopsis.seenSeq ?? 0, env) : false,
+    dataMoved: synopsis ? await overviewDataMovedFor(deckId, userId, synopsis.seenSeq ?? 0) : false,
     synopsis,
     allowance,
     pending: newest?.status === "pending",

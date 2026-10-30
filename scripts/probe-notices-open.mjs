@@ -16,7 +16,7 @@
 //
 //   PROBE_BASE=http://localhost:3050 pnpm probe:notices-open
 //
-// Needs a server with ANALYSIS_TAB_ENABLED=true and NOTICES_ENABLED=true.
+// Needs a server with ANALYSIS_TAB_ENABLED=true.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";

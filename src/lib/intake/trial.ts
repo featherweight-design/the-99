@@ -37,7 +37,7 @@ export type TrialFigures = {
   /** Set only when the build-around card must be bought and has no live price. */
   unpricedCard: "notStocked" | "absent" | null;
   /**
-   * The bracket this deck lands in, when one of 3 or more was asked and `BRACKET_REACH_ENABLED` put
+   * The bracket this deck lands in, when one of 3 or more was asked and the fill put
    * a reach on the plan. Null otherwise. Read by `permitsOf` over the trial's OWN rows (plan review
    * 5), never `collectionPermits` alone: an "any cards" fill can buy a Game Changer the gate admits
    * and land at the target with no raiser at all. Under own-only only the rows the player can sleeve

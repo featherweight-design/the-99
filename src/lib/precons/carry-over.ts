@@ -26,7 +26,6 @@ import { db } from "../../db";
 import { deckDataChanges, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, preconSynopses } from "../../db/schema";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { roleBasisFromEnv } from "../decks/label-counts-flag";
-import { noticesEnabled } from "../notices/flag";
 import { holdsIllegalCard } from "../notices/read";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
@@ -63,7 +62,7 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
   if (reading?.kind !== "ok" || !reading.reading.fresh) return { attached: false, reason: "no_reading" };
 
   // The same withhold a press makes before an Overview (`generate.ts`'s `run`): an illegal deck's is not shown.
-  if (noticesEnabled(env) && (await holdsIllegalCard(deckId, userId))) return { attached: false, reason: "illegal" };
+  if (await holdsIllegalCard(deckId, userId)) return { attached: false, reason: "illegal" };
   const v2 = overviewV2Enabled(env);
   const contract = synopsisPreconContractVersion(v2);
   const fallback = synopsisPreconFallbackContract(v2);

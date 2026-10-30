@@ -46,16 +46,11 @@ describe("/decks/new", () => {
     expect((p.handOff as { readReach?: boolean }).readReach).toBe(false);
   });
 
-  it("reads the bracket reach from 3 up, and only with the reader's switch on", async () => {
+  it("reads the bracket reach from 3 up", async () => {
     stub.answers.mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: 3 });
-    stub.env = envViewWith({ BRACKET_REACH_ENABLED: "true" });
     const on = await props({ commander: COMMANDER, t: "dinosaurs", k: "3", v: "results" });
     expect((on.handOff as { readReach?: boolean }).readReach).toBe(true);
-    stub.env = envViewWith({ BRACKET_REACH_ENABLED: "off" });
-    const off = await props({ commander: COMMANDER, t: "dinosaurs", k: "3", v: "results" });
-    expect((off.handOff as { readReach?: boolean }).readReach).toBe(false);
     stub.answers.mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: 2 });
-    stub.env = envViewWith({ BRACKET_REACH_ENABLED: "true" });
     const low = await props({ commander: COMMANDER, t: "dinosaurs", k: "2", v: "results" });
     expect((low.handOff as { readReach?: boolean }).readReach).toBe(false);
   });

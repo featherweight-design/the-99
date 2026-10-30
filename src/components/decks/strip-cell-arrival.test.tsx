@@ -29,6 +29,8 @@ vi.mock("../../app/decks/actions", () => ({
 // The Consider panel's degraded banner re-fetches the page rather than owning
 // a retry, so the panel needs a router even in the happy path.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+// With the Analysis tab on, the header peeks at the deck's notices after mount.
+vi.mock("../../lib/notices/actions", () => ({ peekNotices: vi.fn(async () => null), openNotices: vi.fn(async () => null) }));
 
 const { BuilderShell } = await import("./builder-shell");
 

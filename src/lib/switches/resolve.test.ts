@@ -103,13 +103,13 @@ describe("All features", () => {
       all(),
       row({ switchName: "CHANGE_COMMANDER_ENABLED", scope: "user", userId: "u1", value: "off" }),
       row({ switchName: "ALL_DECKS_CART_ENABLED", scope: "group", groupId: "g1", value: "off" }),
-      row({ switchName: "NOTICES_ENABLED", scope: "app", value: "off" }),
+      row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
     const env = resolveEnv(e({ NEVER_CUT_ENABLED: "off" }), s, "u1");
     expect(env.NEVER_CUT_ENABLED).toBe("off");
     expect(env.CHANGE_COMMANDER_ENABLED).toBe("false");
     expect(env.ALL_DECKS_CART_ENABLED).toBe("true");
-    expect(env.NOTICES_ENABLED).toBe("true");
+    expect(env.SOCIAL_FRIENDS_ENABLED).toBe("true");
     expect(decide("ALL_DECKS_CART_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
   });
 

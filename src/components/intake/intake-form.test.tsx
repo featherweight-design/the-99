@@ -329,7 +329,7 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
 describe("the Bracket field's heads-up (bracket reach R1b, board A)", () => {
   it("makes one read when the form opens, and reruns in the browser as the answers change", async () => {
     formReachData.mockClear();
-    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["u"], match: "exactly" }} bracketReach />);
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["u"], match: "exactly" }} />);
     expect(await screen.findByText("3 · Upgraded. Your cards in these colors would reach it.")).toBeTruthy();
     // Bracket 4 in blue: one free Game Changer, short of four, so the commander decides the rest.
     fireEvent.click(screen.getByRole("radio", { name: "4" }));
@@ -338,18 +338,17 @@ describe("the Bracket field's heads-up (bracket reach R1b, board A)", () => {
   });
 
   it("reruns when the color match changes: under Any a blue-black commander can play the blue card", async () => {
-    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"], match: "exactly" }} bracketReach />);
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"], match: "exactly" }} />);
     expect(await screen.findByText(/a deck would be bracket 1-2\. What reaching 3 takes depends on the commander/)).toBeTruthy();
     const group = screen.getByRole("radiogroup", { name: "Color match" });
     fireEvent.click(within(group).getAllByRole("radio")[0]);
     expect(screen.getByText("3 · Upgraded. Your cards would reach it.")).toBeTruthy();
   });
 
-  it("makes no read with the switch off, and keeps today's caption", async () => {
-    formReachData.mockClear();
+  it("keeps the plain caption when the read has nothing for it", async () => {
+    formReachData.mockResolvedValueOnce(null as never);
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3 }} />);
     await act(async () => {});
-    expect(formReachData).not.toHaveBeenCalled();
     expect(screen.getByText("3 · Upgraded")).toBeTruthy();
   });
 });

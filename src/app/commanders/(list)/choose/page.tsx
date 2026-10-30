@@ -20,7 +20,6 @@ import { ChooseHeader, RESULTS_COLUMN } from "../../../../components/intake/choo
 import { ChooseHistory } from "../../../../components/intake/choose-history";
 import { HistoryLink } from "../../../../components/intake/history-link";
 import { IntakeForm } from "../../../../components/intake/intake-form";
-import { bracketReachEnabled } from "../../../../lib/intake/bracket-reach-flag";
 import { ReadAsBar } from "../../../../components/intake/read-as-bar";
 import { SearchFailed } from "../../../../components/intake/search-failed";
 import { requireUserId } from "../../../../lib/auth";
@@ -120,7 +119,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               centered
               trailing={<HistoryLink href={`${chooseAt}?v=history`} label={historyCopy.link} />}
             />
-            <IntakeForm themes={themes} sets={sets} initial={p} standing={allowance && toStanding(allowance, now)} bracketReach={bracketReachEnabled(env)} />
+            <IntakeForm themes={themes} sets={sets} initial={p} standing={allowance && toStanding(allowance, now)} />
           </div>
           <aside className="hidden lg:sticky lg:top-[24px] lg:block lg:w-[320px] lg:shrink-0 min-[1100px]:w-[380px]">
             <ChooseHistory initial={history} layout="column" />

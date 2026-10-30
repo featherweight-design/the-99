@@ -293,7 +293,7 @@ async function run() {
     holds.push(await holdProfile(sql, deckId));
     await sql`delete from deck_profiles where deck_id = ${deckId}::uuid`;
     console.log(`       (walking ${href})`);
-    // With notices on, a deck holding a card a legality notice stands for withholds a new overview
+    // A deck holding a card a legality notice stands for withholds a new overview
     // (deck notices HANDOFF §6), and every check below would measure the refusal instead. Most
     // fixture decks carry an off-identity card, so those rows are LIFTED for the run: captured into
     // the cleanup handle BEFORE the delete, and put back in the `finally`.

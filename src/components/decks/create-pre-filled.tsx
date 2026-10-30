@@ -55,7 +55,7 @@ interface CreatePreFilledProps {
     /** False when nothing but colors or words was asked: the block has no row to draw. */
     drawBlock: boolean;
     /** Read the bracket reach for the Bracket row (bracket reach PR 3b): a bracket of 3 or more was
-     *  asked and the reader's `BRACKET_REACH_ENABLED` is on. False draws today's ceiling line. */
+     *  asked. False draws the ceiling line. */
     readReach?: boolean;
   };
 }

@@ -280,9 +280,6 @@ interface BuilderShellProps {
   /** What the Stats panel needs beyond the card list: the commander row(s), which count toward the
    *  curve. The figures themselves are derived on the client from the optimistic list. */
   statsData?: DeckStatsInput | null;
-  /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
-   *  Notices sheet can open. Off, nothing of the notices is read or drawn. */
-  noticesEnabled?: boolean;
   /** The deck's notices as the page's loader read them, so the header's tag paints WITH the header
    *  rather than popping in after a client read. Null when off, unread, or the read failed. */
   initialNotices?: DeckNotices | null;
@@ -380,7 +377,6 @@ export function BuilderShell({
   analysisEnabled = false,
   notesData = null,
   statsData = null,
-  noticesEnabled = false,
   initialNotices = null,
   openNoticesOnArrival = false,
   storedPermits = null,
@@ -791,7 +787,7 @@ export function BuilderShell({
   // skipped, since that read is what the tag is drawing.
   const peekedDeck = useRef<string | null>(null);
   useEffect(() => {
-    if (!analysisEnabled || !noticesEnabled) return;
+    if (!analysisEnabled) return;
     const firstForDeck = peekedDeck.current !== deck.id;
     peekedDeck.current = deck.id;
     if (firstForDeck && initialNotices) return;
@@ -804,7 +800,7 @@ export function BuilderShell({
       setNoticesShown((shown) => (shown && n ? n : shown));
     }).catch(() => {});
     return () => { live = false; };
-  }, [analysisEnabled, noticesEnabled, deck.id, readingAt, listKey, initialNotices]);
+  }, [analysisEnabled, deck.id, readingAt, listKey, initialNotices]);
   // Which deck's sheet is open NOW (null: none), readable from the reply's continuation:
   // `openNotices` answers after the sheet draws, and a reply landing after a close, or after a move
   // to another deck, must not draw the sheet or the tag again.

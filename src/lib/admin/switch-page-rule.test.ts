@@ -99,12 +99,12 @@ describe("switchPage", () => {
   });
 
   it("refuses every override under a kill, and says so on the rungs, the rows and the banner (F5)", () => {
-    const p = page("NOTICES_ENABLED", { NOTICES_ENABLED: "off" }, [
-      ov({ name: "NOTICES_ENABLED", scope: "user", userId: "u2", value: "on", note: "Early look" }),
-      ov({ name: "NOTICES_ENABLED", scope: "app", value: "on" }),
+    const p = page("SOCIAL_FRIENDS_ENABLED", { SOCIAL_FRIENDS_ENABLED: "off" }, [
+      ov({ name: "SOCIAL_FRIENDS_ENABLED", scope: "user", userId: "u2", value: "on", note: "Early look" }),
+      ov({ name: "SOCIAL_FRIENDS_ENABLED", scope: "app", value: "on" }),
     ]);
     expect(p.banner).toMatchObject({ kind: "kill", title: "Off: the env var is off." });
-    expect(p.banner?.body).toContain("NOTICES_ENABLED=off refuses every override.");
+    expect(p.banner?.body).toContain("SOCIAL_FRIENDS_ENABLED=off refuses every override.");
     expect(rung(p, "account")).toMatchObject({ decides: "refused", deciding: false });
     expect(rung(p, "app")).toMatchObject({ decides: "refused" });
     expect(rung(p, "group")).toMatchObject({ decides: "decides for none" });

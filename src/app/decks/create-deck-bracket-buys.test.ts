@@ -67,7 +67,7 @@ vi.mock("../../db", () => {
 
 const { createDeck, fillDeck } = await import("./actions");
 
-const ON = envViewWith({ BRACKET_REACH_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true" });
+const ON = envViewWith({ HELP_ME_CHOOSE_ENABLED: "true" });
 const asked = { themes: [], cardOracleId: null, budgetDollars: 50, bracket: 3, bracketBuys: true };
 const shortPlan = (over: Record<string, unknown> = {}) => ({
   rows: [{ oracleId: "rhystic", quantity: 1, role: "draw", source: "bracket" }],
@@ -125,8 +125,8 @@ describe("createDeck: Hit bracket N", () => {
     expect(deckInsert()).toMatchObject({ answerBracketBuys: false, answerBudgetCents: 5000, answerBudgetRaised: false });
   });
 
-  it("drops the pick with the reader's switch off: nothing asked of the plan, false stored", async () => {
-    m.env = envViewWith({ BRACKET_REACH_ENABLED: "off", HELP_ME_CHOOSE_ENABLED: "true" });
+  it("drops the pick with the reader's Help me choose off: nothing asked of the plan, false stored", async () => {
+    m.env = envViewWith({ HELP_ME_CHOOSE_ENABLED: "off" });
     await run(asked);
     expect(planAnswers().bracketBuys).toBe(false);
     expect(deckInsert()).toMatchObject({ answerBracketBuys: false, answerBudgetCents: 5000 });

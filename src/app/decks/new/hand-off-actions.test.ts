@@ -14,7 +14,7 @@ const commander = { oracleId: COMMANDER, name: "Sai", colorIdentity: ["U"], mana
 
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../lib/switches/request", () => ({
-  requestSwitchEnv: async () => envViewWith({ HELP_ME_CHOOSE_ENABLED: "true", BRACKET_REACH_ENABLED: "true" }),
+  requestSwitchEnv: async () => envViewWith({ HELP_ME_CHOOSE_ENABLED: "true" }),
 }));
 vi.mock("../../../lib/intake/trial", () => ({ handOffTrial: m.trial }));
 vi.mock("../../../lib/intake/rows", () => ({ loadCardChip: vi.fn(async () => null) }));

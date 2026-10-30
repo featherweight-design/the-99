@@ -51,6 +51,12 @@ vi.mock("../model/allowance", async (orig) => ({
   ...(await orig<typeof import("../model/allowance")>()),
   reserveModelCall: async () => ({ id: "call-1" }),
 }));
+// The legality withhold (`holdsIllegalCard`, then `liveOffendingIds` under the lock): a legal deck.
+vi.mock("../notices/read", async (orig) => ({
+  ...(await orig<typeof import("../notices/read")>()),
+  holdsIllegalCard: async () => false,
+  liveOffendingIds: async () => [],
+}));
 vi.mock("../profile/load", async (orig) => ({
   ...(await orig<typeof import("../profile/load")>()),
   readProfileHead: async () => ({ head: true }),

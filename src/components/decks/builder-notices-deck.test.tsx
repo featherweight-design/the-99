@@ -82,7 +82,7 @@ function shell(deck: DeckDetail, over: { initialNotices?: DeckNotices | null; op
   return (
     <BuilderShell mix={TEST_MIX} deck={deck} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
-      analysisEnabled noticesEnabled {...over} />
+      analysisEnabled {...over} />
   );
 }
 

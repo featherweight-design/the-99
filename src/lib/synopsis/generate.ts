@@ -28,7 +28,6 @@ import type { CheckedSynopsis, SectionId, SectionVerdict, SynopsisOutcome } from
 import { marksIn, validateSynopsis } from "./validate";
 import { normalizeV8, validateSynopsisV8, weaknessLines } from "./validate-v8";
 import { overviewDataMovedFor } from "../notices/overview";
-import { noticesEnabled } from "../notices/flag";
 import { holdsIllegalCard, liveOffendingIds } from "../notices/read";
 
 /**
@@ -464,8 +463,6 @@ export async function startRun(
    * takes the PLAYER path, allowance check included.
    */
   method: "free" | "paid" | null = null,
-  /** The reader's resolved switches (`requestSwitchEnv`): the notices switch the lock re-checks. */
-  env: NodeJS.ProcessEnv,
 ): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "free_gone" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
@@ -485,8 +482,7 @@ export async function startRun(
       // THE LEGALITY CHECK, AGAIN, under the same lock (deck notices HANDOFF §6), and before the
       // list's: a card that makes the deck illegal also moves its list, and `illegal` is the answer
       // that says why. `run` checks first so a withheld write reads nothing.
-      if (noticesEnabled(env)
-        && (await liveOffendingIds(tx, deckId, [deck.commander, ...(deck.partner ? [deck.partner] : [])])).length > 0) {
+      if ((await liveOffendingIds(tx, deckId, [deck.commander, ...(deck.partner ? [deck.partner] : [])])).length > 0) {
         throw new IllegalDeckError();
       }
       // THE LIST, AGAIN. `run` read the reading before it got here, and an edit committing in
@@ -632,8 +628,7 @@ async function run(
 ): Promise<WriteResult> {
   // FIRST, before the reading, the reuse check and the reservation: a withheld overview spends
   // nothing and starts no run, a retry included.
-  // Behind the notices switch: off, the check is not there and the write runs as before.
-  if (noticesEnabled(env) && (await holdsIllegalCard(deckId, userId))) return { kind: "illegal" };
+  if (await holdsIllegalCard(deckId, userId)) return { kind: "illegal" };
   // Read once: a write is made wholly under one contract, whatever the switch does mid-flight.
   const v2 = overviewV2Enabled(env);
   const reading = await freshReading(deckId, userId, deps.profile ?? requestProfileDeps(env));
@@ -641,7 +636,7 @@ async function run(
   const current = await readShownSynopsis(deckId, userId, reading.list);
   if (retry && (!current || current.id !== retry.id || current.fingerprint !== reading.list)) return { kind: "nothing_to_retry" };
   const replacing = !retry && !!current && current.fingerprint === reading.list
-    && (await overviewDataMovedFor(deckId, userId, current.seenSeq ?? 0, env));
+    && (await overviewDataMovedFor(deckId, userId, current.seenSeq ?? 0));
   // THE METHOD-CHANGE REWRITE (free, then paid once both tries are spent), decided from eligibility and not from which button was pressed
   // (the audit's build rule 1): the notice's press, ruling D's, Re-analyze's chained write and a
   // section retry all reach here. Only with the switch on, so a deck on contract 7 reads nothing extra.
@@ -676,7 +671,7 @@ async function run(
 
   // The model this write runs on, which is what its run and its bill record.
   const modelName = v2 ? deps.modelNameV2 ?? deps.modelName : deps.modelName;
-  const started = await startRun(deckId, userId, reading.list, modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method, env);
+  const started = await startRun(deckId, userId, reading.list, modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method);
   if (started.kind !== "started") return started;
 
   // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog

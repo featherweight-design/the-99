@@ -16,7 +16,6 @@ import { getCollectionStats } from "../../lib/home/summary";
 import { cachePageForUser } from "../../lib/cache/page-cache";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { buildableCount } from "../../lib/recs/buildable";
-import { noticesEnabled } from "../../lib/notices/flag";
 import { DecksView } from "../../components/decks/decks-view";
 import { cookies } from "next/headers";
 import { readLineupCached } from "../../lib/lineup/cached";
@@ -94,7 +93,7 @@ export default async function DecksPage({
         includeCommanderArt: true,
         includeBracket,
         // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
-        includeNotice: includeBracket && noticesEnabled(env),
+        includeNotice: includeBracket,
         // The env the load is handed, which is the one the entry is keyed on.
         env,
       })),

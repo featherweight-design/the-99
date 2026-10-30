@@ -16,6 +16,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("../../lib/ui/reveal", () => ({ reveal: () => {} }));
 vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: vi.fn() }));
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: vi.fn(async () => []) }));
+vi.mock("../../app/decks/new/choose/form-reach-actions", () => ({ formReachData: vi.fn(async () => null) }));
 vi.mock("../../app/collection/actions", () => ({ previewUpload: vi.fn(), previewPaste: vi.fn() }));
 vi.mock("../../app/collection/wishlist/actions", () => ({
   addToWishlistAction: vi.fn(),

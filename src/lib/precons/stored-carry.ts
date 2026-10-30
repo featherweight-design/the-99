@@ -31,7 +31,6 @@ import { deckCards, deckDataChanges, deckProfiles, deckSynopses, deckVersionSyno
 import type { CheckedSynopsis } from "../synopsis/types";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { roleBasisFromEnv } from "../decks/label-counts-flag";
-import { noticesEnabled } from "../notices/flag";
 import { liveOffendingIds } from "../notices/read";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { PROFILE_VERSION } from "../profile/version";
@@ -79,10 +78,10 @@ export async function carryStoredOnArrival(deckId: string, userId: string, env: 
   const decision = carryOverDecision({ analysisTab: true, row: { listFingerprint: stored.overview.listFingerprint, contractVersion: stored.overview.contractVersion, current: stored.overview.current }, liveFingerprint: list });
   const wantsOverview = decision.attach && !deck.hasSynopsis;
   // Side by side: the reading's freshness (one change log read) and the legality withhold a press makes
-  // before an Overview (notices on).
+  // before an Overview.
   const [fresh, illegal] = await Promise.all([
     preconReadingFresh(reading, list),
-    wantsOverview && noticesEnabled(env) ? liveOffendingIds(db as unknown as Parameters<typeof liveOffendingIds>[0], deckId, commanders).then((ids) => ids.length > 0) : Promise.resolve(false),
+    wantsOverview ? liveOffendingIds(db as unknown as Parameters<typeof liveOffendingIds>[0], deckId, commanders).then((ids) => ids.length > 0) : Promise.resolve(false),
   ]);
   if (!fresh) return { kind: "fallback", reason: "not_fresh" };
 
