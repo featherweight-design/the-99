@@ -81,16 +81,23 @@ describe("pickReleasePrecon", () => {
   });
 
   it("counts an alternate second line among the list's own cards, and leaves out a co-commander", () => {
-    // Four own cards and a second line. As an alternate it is a fifth own card: a candidate missing it shares 4 of 5 (0.8,
-    // passes), one with it and two others 3 of 5 (fails). As a co-commander it is left out: 2 of 4 fails, 4 of 4 passes.
+    // Four own cards and a second line. As an alternate it is a fifth own card, so a candidate missing it shares 4 of 5;
+    // as a co-commander it is left out.
     const second = { name: "Second", cardId: "second" };
     const list = (partnerRole: string) => ({ ...listed, partnerCardId: "second", partnerRole, cards: [CMD, second, ...lines(IDS.slice(0, 4)).slice(1)] });
     const missing = c("A", "SLD", "2026-11-02T08:00:00Z", false, IDS.slice(0, 4));
     expect(pickReleasePrecon([missing], posted, null, list("alternate"))).toBe("A");
-    const short = c("A", "SLD", "2026-11-02T08:00:00Z", false, ["second", ...IDS.slice(0, 2)]);
-    expect(pickReleasePrecon([short], posted, null, list("alternate"))).toBeNull();
-    expect(pickReleasePrecon([short], posted, null, list("co-commander"))).toBeNull();
+    // With the second line and three of the four: 4 of 5 as an alternate (passes), 3 of 4 as a co-commander (fails).
+    const withSecond = c("A", "SLD", "2026-11-02T08:00:00Z", false, ["second", ...IDS.slice(0, 3)]);
+    expect(pickReleasePrecon([withSecond], posted, null, list("alternate"))).toBe("A");
+    expect(pickReleasePrecon([withSecond], posted, null, list("co-commander"))).toBeNull();
     expect(pickReleasePrecon([c("A", "SLD", "2026-11-02T08:00:00Z", false, ["second", ...IDS.slice(0, 4)])], posted, null, list("co-commander"))).toBe("A");
+  });
+
+  it("leaves a basic out of the evidence even when the post tags its printing or art", () => {
+    // Every other line unmatched: a tagged Island the catalog matched must not make any precon holding Island a 1/1 match.
+    const tagged = { ...listed, cards: [CMD, ...IDS.map(() => ({ name: "Unknown", cardId: null })), { name: "Island (Villains)", cardId: "island" }, { name: "Island art 2", cardId: "island" }] };
+    expect(pickReleasePrecon([c("Other", "SLD", "2026-11-02T08:00:00Z", false, [])], posted, null, tagged)).toBeNull();
   });
 
   it("carries a list the catalog cannot card-match yet on its deck name alone, through the Secret Lair wrapping", () => {

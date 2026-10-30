@@ -10,6 +10,7 @@
  */
 import { and, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../../db";
+import { untaggedName } from "./match-names";
 import { catalogFirstSeen, cards, collectionItems, preconCards, precons, printings, sets, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { isBasicType } from "../decks/basic-type";
 import { summarisePrecons } from "../precons/list";
@@ -210,7 +211,7 @@ function evidenceOf(c: ReleaseCandidate, list: ListEvidence): { named: boolean; 
   // basics, which every deck holds. Otherwise a list the catalog has matched little of clears the bar on those alone.
   // An alternate second line is not a commander, so it stays among the list's own cards (`earlyListCommanderIds`).
   const own = new Set(earlyListCommanderIds(list));
-  const ids = new Set(list.cards.flatMap((l) => (l.cardId && !own.has(l.cardId) && !isBasicName(l.name) ? [l.cardId] : [])));
+  const ids = new Set(list.cards.flatMap((l) => (l.cardId && !own.has(l.cardId) && !isBasicName(untaggedName(l.name)) ? [l.cardId] : [])));
   const listed = new Set(c.cardIds);
   let hits = 0;
   for (const id of ids) if (listed.has(id)) hits++;
