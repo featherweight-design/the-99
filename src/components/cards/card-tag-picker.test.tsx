@@ -34,6 +34,23 @@ describe("CardTagList floating under an anchor", () => {
     expect(ul.style).toMatchObject({ position: "fixed", top: "144px", left: "20px", width: "300px", maxHeight: "648px" });
   });
 
+  it("settles on the layout viewport's left and width when the visual viewport gives none, never NaN (and never re-sets forever)", () => {
+    vi.stubGlobal("innerHeight", 800);
+    vi.stubGlobal("innerWidth", 1000);
+    // A partial visual viewport, as some tests and older engines give: no offsetLeft, no width.
+    Object.defineProperty(window, "visualViewport", { configurable: true, value: { offsetTop: 10, height: 600, addEventListener() {}, removeEventListener() {} } });
+    const field = document.createElement("textarea");
+    field.getBoundingClientRect = () => ({ top: 100, bottom: 140, left: 20, right: 320, width: 300, height: 40, x: 20, y: 100, toJSON: () => ({}) });
+    document.body.appendChild(field);
+    render(
+      <CardTagList
+        id="t" listId="l" open query="sol" local={[]} activeIndex={0} remoteStatus="ok" scoped={false} pick={() => {}} anchor={{ current: field }}
+        options={[{ oracleId: "a", name: "Sol Ring", meta: "Artifact", group: "any" }]}
+      />,
+    );
+    expect(screen.getByRole("listbox").style).toMatchObject({ left: "20px", width: "300px" });
+  });
+
   it("never wider than 440px or past the window's edges", () => {
     expect(place({ top: 100, bottom: 140, left: 700, width: 600 }, { innerHeight: 800, innerWidth: 800 }).style).toMatchObject({ width: "440px", left: "352px" });
   });

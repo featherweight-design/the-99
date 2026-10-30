@@ -314,8 +314,10 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
       const visibleTop = vv ? vv.offsetTop : 0;
       const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
       // Zoomed in, the visible interval is the visual viewport's too: `offsetLeft` to `offsetLeft + width`.
-      const visibleLeft = vv ? vv.offsetLeft : 0;
-      const visibleWidth = vv ? vv.width : window.innerWidth;
+      // A missing or unreadable figure (a partial visual viewport) falls back to the layout viewport's, never NaN: a NaN
+      // place is never equal to itself, so it would be set again on every render.
+      const visibleLeft = vv && Number.isFinite(vv.offsetLeft) ? vv.offsetLeft : 0;
+      const visibleWidth = vv && Number.isFinite(vv.width) ? vv.width : window.innerWidth;
       const width = Math.min(r.width, FLOAT_MAX_WIDTH, visibleWidth - 2 * FLOAT_EDGE);
       const left = Math.max(visibleLeft + FLOAT_EDGE, Math.min(r.left, visibleLeft + visibleWidth - width - FLOAT_EDGE));
       const below = Math.floor(visibleBottom - (r.bottom + 4) - FLOAT_EDGE);
@@ -324,8 +326,10 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
         ? { position: "fixed", top: r.bottom + 4, left, width, marginTop: 0, zIndex: 60, maxHeight: Math.max(0, below) }
         // `bottom` of a fixed box is measured from the LAYOUT viewport's bottom edge.
         : { position: "fixed", top: "auto", bottom: window.innerHeight - (r.top - 4), left, width, marginTop: 0, zIndex: 60, maxHeight: Math.max(0, above) };
+      // `Object.is`, not `===`: it holds for NaN, so an unreadable figure settles instead of looping.
       const same = (prev: CSSProperties | undefined) => prev !== undefined
-        && prev.top === next.top && prev.bottom === next.bottom && prev.left === next.left && prev.width === next.width && prev.maxHeight === next.maxHeight;
+        && Object.is(prev.top, next.top) && Object.is(prev.bottom, next.bottom) && Object.is(prev.left, next.left)
+        && Object.is(prev.width, next.width) && Object.is(prev.maxHeight, next.maxHeight);
       setPlace((prev) => (same(prev) ? prev : next));
     };
     measure();
