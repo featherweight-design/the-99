@@ -92,3 +92,7 @@ Frames labelled B, C or "Today" are for comparison only.
   redirects to the release list's page.
 - **G5 Fixtures.** "Foundations Commander" (FDC, Nov 13, 2026) and its five lists are stand-ins drawn from the precon
   grid, not a real announcement.
+
+## Erratum (2026-10-30)
+
+The Settings boards draw the failed-save toast with a danger dot, a ✕ and their own radius, padding and shadow, and the checkbox with line-height 1. Neither is a new style: build both with the shipped `ToastFrame` (`src/components/collection/edit-toast.tsx`) and `Checkbox` (`src/components/ui/checkbox.tsx`), as shipped. Ruled in `design_handoff_the99_overview_stages/` (item 3).
