@@ -25,6 +25,7 @@ import { PRECON_TILES_CLASS } from "./precon-grid";
 import { SheetGroupToggle } from "../../ui/sheet-group";
 import { collapsible, firstPaintCss } from "../../../lib/precons/announced-collapse";
 import { noteAppScroll } from "../../../lib/ui/reveal";
+import { announcedSetAnchor } from "../../../lib/announcements/early-list";
 
 const copy = preconsCopy.upcoming;
 
@@ -376,7 +377,7 @@ export function AnnouncedSet({ match, today, isNew, listed, compact = false, fil
   const { set } = match;
   const code = set.code.toUpperCase();
   return (
-    <li className="flex flex-col gap-[10px] rounded-[10px] border border-dashed border-[color:var(--border-dashed)] p-[11px_12px_12px] md:p-[12px_14px_14px]" data-testid="announced-set">
+    <li id={announcedSetAnchor(set.code)} className="flex flex-col gap-[10px] rounded-[10px] border border-dashed border-[color:var(--border-dashed)] p-[11px_12px_12px] md:p-[12px_14px_14px]" data-testid="announced-set">
       <div className="flex flex-col gap-[3px]">
         <div className="flex items-center gap-[8px]">
           <h3 className="m-0 font-display text-[15px] font-normal text-[color:var(--fg)] md:text-[16px]">{set.name}</h3>

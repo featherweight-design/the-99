@@ -1,0 +1,106 @@
+import { describe, expect, it } from "vitest";
+import { db } from "../../db";
+import { assembleEarlyList, commanderPrintingsQuery, earlyListRowQuery, releasePreconQuery } from "./early-list-read";
+import type { EarlyCardFacts } from "./early-list";
+
+describe("releasePreconQuery", () => {
+  it("aliases and qualifies its correlated subquery (AGENTS.md)", () => {
+    const { sql, params } = releasePreconQuery("FDC", "cmd-1", db).toSQL();
+    // An unqualified `file_name = file_name` would compare the subquery's row with itself: always true, any precon.
+    expect(sql).toContain('exists (select 1 from "precon_cards" pc where pc.file_name = "precons".file_name and pc.is_commander and pc.oracle_id = $');
+    expect(sql).toMatch(/lower\(("precons"\.)?"set_code"\) = \$/);
+    expect(sql).toMatch(/"twin_of" is null/);
+    expect(params).toEqual(expect.arrayContaining(["fdc", "cmd-1"]));
+  });
+});
+
+describe("earlyListRowQuery", () => {
+  it("reads one list by its post's Contentful id and its position", () => {
+    const { sql, params } = earlyListRowQuery("abc", 2, db).toSQL();
+    expect(sql).toContain('inner join "wizards_announcements" on "wizards_announcements"."id" = "wizards_announcement_decklists"."announcement_id"');
+    expect(params).toEqual(["abc", 2]);
+  });
+});
+
+describe("commanderPrintingsQuery", () => {
+  it("reads only paper Commander sets in the window around the post's day", () => {
+    const { sql, params } = commanderPrintingsQuery(["a"], new Date("2026-10-29T15:00:00Z"), db).toSQL();
+    expect(sql).toContain('"sets"."set_type" = $');
+    expect(sql).toContain('"sets"."digital" = $');
+    expect(params).toEqual(expect.arrayContaining(["commander", false, "2026-08-30", "2027-04-27"]));
+  });
+});
+
+describe("assembleEarlyList", () => {
+  const facts = (oracleId: string, name: string, typeLine = "Creature — Angel"): EarlyCardFacts => ({
+    oracleId, name, typeLine, manaCost: "{W}", layout: "normal", colorIdentity: ["W"], imageUri: `img:${oracleId}`, legal: true,
+  });
+  const base = {
+    contentfulId: "post1",
+    position: 0,
+    list: {
+      postTitle: "Foundations Commander decklists",
+      url: "https://magic.wizards.com/en/news/announcements/x",
+      publishedAt: "2026-10-29T16:00:00.000Z",
+      title: "Calling All Angels",
+      commanderCardId: "giada",
+      commanderName: "Giada, Font of Hope",
+      partnerCardId: null,
+      partnerRole: null,
+      cards: [
+        { name: "Giada, Font of Hope", count: 1, cardId: "giada" },
+        { name: "Sol Ring", count: 1, cardId: "sol" },
+        { name: "Plains", count: 10, cardId: "plains" },
+        { name: "Seraph of the Dawnfire", count: 1, cardId: null },
+        { name: "Choir of the First Light", count: 1, cardId: null },
+      ],
+    },
+    facts: new Map([
+      ["giada", facts("giada", "Giada, Font of Hope", "Legendary Creature — Angel")],
+      ["sol", facts("sol", "Sol Ring", "Artifact")],
+      ["plains", facts("plains", "Plains", "Basic Land — Plains")],
+    ]),
+    owned: new Set(["sol", "plains"]),
+    hasCollection: true,
+    set: { code: "fdc", name: "Foundations Commander", releaseDate: "2026-11-13" },
+    today: "2026-10-30",
+  };
+
+  it("counts unmatched lines toward M and never toward owned (G3)", () => {
+    const page = assembleEarlyList(base);
+    // Giada and Sol Ring (the basic is not counted), plus the two unmatched names.
+    expect(page.precon.row.of).toBe(4);
+    expect(page.precon.row.owned).toBe(1);
+    expect(page.precon.row.unmapped).toBe(2);
+    expect(page.unmatched).toEqual([{ name: "Seraph of the Dawnfire", count: 1 }, { name: "Choir of the First Light", count: 1 }]);
+  });
+
+  it("names the list, its commander and its set, with no printing on any card", () => {
+    const page = assembleEarlyList(base);
+    expect(page.precon.row.name).toBe("Calling All Angels");
+    expect(page.precon.row.commanders.map((c) => c.name)).toEqual(["Giada, Font of Hope"]);
+    expect(page.precon.row.setCode).toBe("FDC");
+    expect(page.precon.setName).toBe("Foundations Commander");
+    expect(page.precon.cards.every((c) => c.printing === null)).toBe(true);
+    expect(page.precon.cards.find((c) => c.oracleId === "sol")?.owned).toBe(true);
+  });
+
+  it("makes a co-commander a commander, and leaves an alternate in the list", () => {
+    const pair = { ...base, list: { ...base.list, partnerCardId: "sol", partnerRole: "co-commander" } };
+    expect(assembleEarlyList(pair).precon.cards.filter((c) => c.isCommander).map((c) => c.oracleId)).toEqual(["giada", "sol"]);
+    const alt = { ...base, list: { ...base.list, partnerCardId: "sol", partnerRole: "alternate" } };
+    expect(assembleEarlyList(alt).precon.cards.filter((c) => c.isCommander).map((c) => c.oracleId)).toEqual(["giada"]);
+  });
+
+  it("says released only once the set's day has come (STATES 3.5)", () => {
+    expect(assembleEarlyList(base).releasedOn).toBeNull();
+    expect(assembleEarlyList({ ...base, today: "2026-11-13" }).releasedOn).toBe("2026-11-13");
+  });
+
+  it("draws a post whose set did not resolve with no set and no date", () => {
+    const page = assembleEarlyList({ ...base, set: null });
+    expect(page.precon.row.setCode).toBe("");
+    expect(page.precon.row.releaseDate).toBe("");
+    expect(page.releasedOn).toBeNull();
+  });
+});

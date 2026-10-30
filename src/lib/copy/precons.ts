@@ -138,6 +138,30 @@ export const preconsCopy = {
     /** Spoken with a card tile's name when the precon lists more than one copy. */
     copiesAria: (copies: number) => `${n(copies)} copies in this precon`,
   },
+  /**
+   * An early decklist (`/decks/precons/early/[id]/[position]`, announcements handoff STATES 3.3 to 3.6): the open
+   * precon's page, view-only, from Wizards' post until the release list replaces it. The band's lead is bold.
+   */
+  early: {
+    eyebrow: "Early decklist · view-only",
+    /** The post's day, `Oct 29`. */
+    lead: (posted: string) => `Early list, from Wizards’ post on ${posted}.`,
+    tail: "The release list replaces it when it arrives; then you can start a deck from this precon.",
+    /** STATES 3.5: the street date passed and MTGJSON has not listed the box. `Nov 13`. */
+    releasedLead: (out: string) => `Out ${out}, but this is still Wizards’ early list:`,
+    releasedTail: "you can start a deck from this precon once the release list is in.",
+    readPost: "Read the post",
+    // The open precon's notes without "each row shows the precon’s printing": the post names cards, not printings.
+    listNote: "By type, A–Z within each group · press a card for its details, hover for its art",
+    listNoteCard: "By type, A–Z within each group · press a card for its details",
+    /** G3: the post's lines the catalog cannot match, last, by the post's words. */
+    unmatched: {
+      label: "Not in our catalog yet",
+      /** The group's note, where a type group says what you own. */
+      count: (copies: number) => plural(copies, "card", "cards"),
+      note: "Named in Wizards’ post, not yet a card we can match. They fill in when the card reaches the catalog.",
+    },
+  },
   group: {
     commander: "Commander",
     commanders: "Commanders",
