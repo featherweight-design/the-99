@@ -1,0 +1,42 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-30T02:40:00Z"
+ },
+ "title": "The 99 \u00b7 Overview stages and swap summary",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1300,
+   "h": 530,
+   "title": "Overview stages and why these cards \u00b7 the calls"
+  },
+  "Overview-Stages.dc.html": {
+   "x": 1380,
+   "y": 0,
+   "w": 1712,
+   "h": 4482,
+   "title": "1 \u00b7 Overview: stages and the alternate commander"
+  },
+  "Why-These.dc.html": {
+   "x": 3172,
+   "y": 0,
+   "w": 1412,
+   "h": 6369,
+   "title": "2 \u00b7 Suggested changes: why these cards"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Overview-Stages.dc.html",
+  "Why-These.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
