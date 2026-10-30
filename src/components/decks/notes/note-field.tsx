@@ -14,7 +14,7 @@ export type { DeckCardOption };
 /** The shared one-line field: the add input and the edit input. It owns the `[[` picker and the ⓘ; the key, its words and the counter are the TaggedBox foot. */
 export function NoteField({
   value, picked, deckCards, pending, submitLabel, pendingLabel, placeholder, ariaLabel, autoFocus = false,
-  onChange, onSubmit, onCancel, cancelLabel, hint, error, disabledSubmit = false, phoneRow = true,
+  onChange, onSubmit, onCancel, cancelLabel, hint, error, disabledSubmit = false,
 }: {
   value: string;
   picked: Picked;
@@ -33,7 +33,6 @@ export function NoteField({
   hint?: string;
   error?: string | null;
   disabledSubmit?: boolean;
-  phoneRow?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   // A field that unmounts while focused (a saved edit, a switched panel) must not leave the bars hidden.
@@ -61,12 +60,13 @@ export function NoteField({
 
   const canSubmit = !pending && !disabledSubmit && value.trim().length > 0 && count <= NOTE_MAX;
   const infoId = `${picker.id}-info`;
+  const counterId = `${picker.id}-count`;
 
   return (
     <div className="flex flex-col gap-[8px]">
       {/* Phone: the frame, then the action row on its own line, right-aligned. Desktop: the frame beside Add, top-aligned
           (the frame is taller than Add, so Add sits at the line's top, not centered on the foot). */}
-      <div className={`flex ${phoneRow ? "flex-col md:flex-row md:items-start" : "flex-row items-start"} gap-[8px]`}>
+      <div className="flex flex-col gap-[8px] md:flex-row md:items-start">
         <div className="relative min-w-0 flex-1">
           <TaggedBox
             fill="sunken"
@@ -74,6 +74,7 @@ export function NoteField({
             open={open}
             count={count}
             max={NOTE_MAX}
+            counterId={counterId}
             warnAt={NOTE_WARN_AT}
             className="relative"
           >
@@ -85,7 +86,7 @@ export function NoteField({
               disabled={pending}
               placeholder={placeholder}
               aria-label={ariaLabel}
-              aria-describedby={infoId}
+              aria-describedby={`${infoId} ${counterId}`}
               {...picker.fieldProps}
               onFocus={() => { picker.fieldProps.onFocus(); document.documentElement.setAttribute("data-note-focus", ""); }}
               onBlur={() => { document.documentElement.removeAttribute("data-note-focus"); }}

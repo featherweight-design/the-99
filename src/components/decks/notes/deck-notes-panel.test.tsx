@@ -77,6 +77,13 @@ describe("a deck with notes", () => {
     mount(view([]));
     expect(screen.getByText("0 / 140")).toBeTruthy();
   });
+
+  it("takes the accent on the TaggedBox frame when the field has focus", () => {
+    mount(view([]));
+    const frame = screen.getByRole("combobox", { name: "Add a note" }).closest("[data-framed-box]") as HTMLElement;
+    expect(frame.className).toContain("focus-within:border-[color:var(--accent)]");
+    expect(frame.className).toContain("border-[color:var(--border-strong)]");
+  });
 });
 
 describe("formatNoteDate", () => {

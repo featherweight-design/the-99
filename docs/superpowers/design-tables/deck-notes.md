@@ -7,10 +7,10 @@
 | Property | Mobile | Desktop |
 |---|---|---|
 | view order | NotesMark + heading + pitch (always, as the empty state draws them; Hugh 2026-10-12) → cap line or input → open (newest first) → Show all → `Done (N)` closed | same: mark left, the rest in the right column |
-| add row | column, gap 8: field full width; then a row, `justify-content: flex-end`, gap 8: counter mono 10 (`order:-1; margin-right:auto`) · `[[ ]]` 56×48 · `Add` min-w 104 × 48 | row, gap 8: field (flex 1) · `[[ ]]` 44×40 · `Add` h 40 |
-| field | `position:relative`, pad 11 44 11 13 (room for the ⓘ) | pad 9 40 9 12 |
-| ⓘ | shipped `InfoTip`, right 13, vertically centred; `lines = deckNotesCopy.help.lines`; tooltip spans the field | right 11; tooltip 340 wide, aligned right |
-| `[[ ]]` | inserts `[[]]` at the caret, caret between, opens the picker (`help.insertAria` names it for a screen reader); lit `--elevated` / `--fg` while the caret is in an open tag | same |
+| add row | column, gap 8: the TaggedBox frame full width (the borderless input, then the foot row: `[[ ]]` key · `tag a card` · counter); then an Add-only action row, `justify-content: flex-end`, gap 8: `Add` min-w 104 × 48 | row, gap 8, top-aligned: frame (flex 1) · `Add` h 40 |
+| field | a borderless input inside the TaggedBox frame (radius 9, `--surface-sunken`, `--border-strong`, `--accent` on focus-within); min-h calc(1.5em + 12px), pad 9 12 3 (38 right, clearing the ⓘ), one line with an ellipsis | same |
+| ⓘ | shipped `InfoTip`, anchored to the frame at right 11, top 9; `lines = deckNotesCopy.help.lines`; tooltip spans the frame on a phone | same; tooltip 340 wide, aligned right |
+| `[[ ]]` | the key in the frame's foot (TaggedBox; its `aria-label` is the TaggedBox's own `tagHelp.insertAria`): inserts `[[]]` at the caret, caret between, opens the picker; lit `--elevated` / `--fg` while the caret is in an open tag | same |
 | NotesMark | two slips 64×48, back `--elevated` / 1.5px `--border-strong` at +10/+10, front accent-tinted / 1.5px `--accent`; three lines (box 6 + bar 2); no rotation | slips 100×74 at +16/+16; box 9 + bar 3 |
 | pitch | one paragraph (`deckNotesCopy.empty.body`), drawn above the input with notes or without; the tag paragraph is removed | same |
 | count and hint | the count (`n / 140`) is always drawn, at a fixed 68 wide on desktop so it never resizes the field; the `Enter adds` line is always drawn (desktop) | same |
@@ -138,11 +138,11 @@
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| field | `input type=text`, min-h 48, pad 11 13, radius 8, `--surface-sunken`, 1px `--border-strong`, focus `--accent` | min-h 40, pad 9 12 |
-| text | 14 / 1.5 | 13.5 |
+| field | `input type=text` in the TaggedBox frame: borderless, min-h calc(1.5em + 12px), pad 9 12 3 (38 right, clearing the ⓘ), `--surface-sunken`, frame radius 9, focus `--accent` | same |
+| text | 16 / 1.5 on a phone (no iOS zoom) | 13.5 at a fine pointer |
 | placeholder | `notes.add.placeholder` ("Add a note"; the foot says how to tag) `--fg-placeholder` | same |
 | add button | hairline, h 48, pad 0 16, 14 / 500; disabled `--fg-disabled` | h 40, pad 0 14, 12.5 |
-| hint | none | mono 10 `--fg-locked` `notes.add.hint` / `.hintTyping` |
+| hint | none | mono 10 `--fg-locked` `notes.add.hintTyping(today)` |
 | counter | in the frame's foot (TaggedBox), mono 11, right, always drawn; `--fg-faint`, `--warning` from 120; `n / 140` | same |
 | maxLength | 140 rendered characters (tags count as their names); enforced in the action and `deck_notes_body_length_check` on the rendered length | same |
 | enterkeyhint | `enter` | — |

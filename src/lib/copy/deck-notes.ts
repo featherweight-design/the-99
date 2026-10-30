@@ -34,8 +34,6 @@ export const deckNotesCopy = {
       "A tagged name opens that card: underlined solid if it’s in this deck, dashed if it isn’t.",
       "A name typed without picking it from the list stays plain text.",
     ],
-    insert: "[[ ]]",
-    insertAria: "Insert a card tag",
   },
   add: {
     placeholder: "Add a note",
@@ -43,7 +41,6 @@ export const deckNotesCopy = {
     add: "Add",
     adding: "Adding…",
     hintTyping: (today: string) => `Enter adds · dated ${today}`,
-    counter: (n: string, max: string) => `${n} / ${max}`,
     refused: "We couldn’t save that. Your note is unchanged.",
     atCap: `This deck holds ${NOTES_PER_DECK} notes, the most it keeps. Delete one to add another.`,
     atCapNote: "done ones count too",
