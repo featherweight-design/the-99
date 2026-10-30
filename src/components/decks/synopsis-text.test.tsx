@@ -61,4 +61,14 @@ describe("SynopsisText", () => {
     act(() => void vi.advanceTimersByTime(1000));
     expect(screen.queryByTestId("hover-preview")).toBeNull();
   });
+
+  it("draws the name as an inline span that wraps with the sentence, underline cloned per fragment", () => {
+    draw("Open with [[Sol Ring]] early.");
+    const name = screen.getByRole("button", { name: /Sol Ring/ });
+    expect(name.tagName).toBe("SPAN");
+    expect(name.className).toContain("inline");
+    expect(name.className).toContain("box-decoration-clone");
+    expect(name.className).toContain("dotted");
+    expect(name.tabIndex).toBe(0);
+  });
 });

@@ -4,7 +4,7 @@ import { Fragment } from "react";
 
 import { normalizeName } from "../../lib/synopsis/facts";
 import type { CheckedSynopsis } from "../../lib/synopsis/types";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailFlowTrigger } from "../cards/card-detail-flow-trigger";
 import { usePreviewRow } from "./hover-preview";
 import type { FindingArt } from "./receipt-modal";
 
@@ -47,13 +47,13 @@ export function CardName({ oracleId, name, imageUri }: { oracleId: string; name:
     // A press opens the card modal under the pointer, and a box raised above the sheet it was
     // hovered in would sit above that modal too: the press closes it.
     <span {...preview} onClickCapture={preview.onMouseLeave} className="inline" data-testid="synopsis-card">
-      <CardDetailTrigger
+      <CardDetailFlowTrigger
         oracleId={oracleId}
         name={name}
-        className="inline p-0 text-left font-semibold text-[var(--fg)] [border-bottom:1px_dotted_var(--accent)] cursor-pointer"
+        className="inline font-semibold text-[var(--fg)] [border-bottom:1px_dotted_var(--accent)] cursor-pointer"
       >
         {name}
-      </CardDetailTrigger>
+      </CardDetailFlowTrigger>
     </span>
   );
 }

@@ -457,6 +457,27 @@ function preloadCardArt(imageUri: string) {
   new window.Image().src = imageUri;
 }
 
+/**
+ * What every card-name trigger shares: the intent prefetch, the hover preview, the pending flag
+ * and the press itself. `openFrom` takes the control the press came from, which the modal hands
+ * focus back to on close. Shared by the native-button `CardDetailTrigger` and the text-flow
+ * `CardDetailFlowTrigger`, so the two cannot drift on what a press does.
+ */
+export function useCardTrigger({ oracleId, siblings, door = false, imageUri, preview = false }: {
+  oracleId: string;
+  siblings?: readonly Sibling[];
+  door?: boolean;
+  imageUri?: string | null;
+  preview?: boolean;
+}) {
+  const { open, pendingOracleId } = useCardDetail();
+  const intent = useCardIntent(oracleId, imageUri);
+  const hover = usePreviewRow(preview ? imageUri : null);
+  const pending = pendingOracleId === oracleId;
+  const openFrom = (opener: HTMLElement) => open(oracleId, siblings, undefined, { door, art: imageUri, opener });
+  return { intent, hover, pending, openFrom };
+}
+
 export function CardDetailTrigger({
   oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, imageUri, preview = false, children,
 }: {
@@ -506,10 +527,7 @@ export function CardDetailTrigger({
   preview?: boolean;
   children: ReactNode;
 }) {
-  const { open, pendingOracleId } = useCardDetail();
-  const intent = useCardIntent(oracleId, imageUri);
-  const hover = usePreviewRow(preview ? imageUri : null);
-  const pending = pendingOracleId === oracleId;
+  const { intent, hover, pending, openFrom } = useCardTrigger({ oracleId, siblings, door, imageUri, preview });
   return (
     <button
       type="button"
@@ -518,7 +536,7 @@ export function CardDetailTrigger({
       data-testid={testId}
       // The trigger names itself: Safari focuses no button on a click, so the dialog's own capture
       // of the focused element finds <body> there, and focus could never come back to this control.
-      onClick={(e) => open(oracleId, siblings, undefined, { door, art: imageUri, opener: e.currentTarget })}
+      onClick={(e) => openFrom(e.currentTarget)}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-describedby={describedBy}
       aria-busy={pending}
