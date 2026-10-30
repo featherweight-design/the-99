@@ -297,10 +297,11 @@ async function main() {
     // The ledger writer's entries, first: their self-references are checked at the statement's end.
     await fixture.execute(sql`delete from collection_history where user_id = ${USER}`);
     await fixture.execute(sql`delete from commander_scores where user_id = ${USER}`);
-    await fixture.execute(sql`delete from user_data_stamps where user_id = ${USER}`);
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);
     await fixture.execute(sql`delete from csv_uploads where user_id = ${USER}`);
     await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
+    // Last: the deletes above fire `user_data_touch`, which writes this row again.
+    await fixture.execute(sql`delete from user_data_stamps where user_id = ${USER}`);
     await pool.end();
   }
 
