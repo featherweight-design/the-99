@@ -59,7 +59,7 @@ describe("summarizeMatchups", () => {
   });
 
   it("splits by friend, across their decks", () => {
-    expect(m.friends.map((f) => [f.name, f.summary.count, f.beatMe])).toEqual([["Dave", 2, 1]]);
+    expect(m.friends.map((f) => [f.name, f.summary.count, f.beatMe])).toEqual([[named("Dave"), 2, 1]]);
   });
 
   it("counts one game once in a cell, however many of its seats fall there", () => {
