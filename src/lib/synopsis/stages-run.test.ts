@@ -189,6 +189,19 @@ describe("the alternate line (a precon's)", () => {
     expect(forPrecon.sections).toContain("primer");
     expect(forPrecon.reasons.join(" ")).toMatch(/alternate/);
   });
+
+  it("sends a precon whose alternate line was dropped to the one repair; a player\'s deck and a stored line are left alone", () => {
+    const r = withAlt(alt("Lead with [[Viscera Seer]] instead."));
+    const dropped = applyStagesShape(checked(r), r, FACTS, ALTS);
+    expect(dropped.alternate).toBeUndefined();
+    const t = stagesRepairTargets(dropped, r, FACTS, { alternates: ALTS });
+    expect(t.sections).toContain("overview");
+    expect(t.reasons.join(" ")).toMatch(/alternate line was missing/);
+    expect(stagesRepairTargets(dropped, r, FACTS).reasons.join(" ")).not.toMatch(/alternate line was missing/);
+    const good = withAlt(alt("Lead with [[Spore Frog]] and the plan turns to fogging."));
+    const stored = applyStagesShape(checked(good), good, FACTS, ALTS);
+    expect(stagesRepairTargets(stored, good, FACTS, { alternates: ALTS }).reasons.join(" ")).not.toMatch(/alternate line was missing/);
+  });
 });
 
 describe("the Primer's counts", () => {

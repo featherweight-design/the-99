@@ -195,6 +195,11 @@ export async function runBuild<V>(input: {
           const s = { file: p.job.file, content, micro, usage };
           await input.store(s);
           result.stored.push(s);
+        } else if (advisoryOnly(p)) {
+          // The first answer was publishable and the repair was advisory: a repaired section that comes back refused
+          // costs the precon nothing it already had, so the first answer is stored as it was.
+          input.log(`${p.job.file}: the advisory repair came back refused (${failing.join(", ")}); storing the first answer`);
+          await storeSettled(p.job, p.first!.content, micro, usage);
         } else {
           result.failed.push({ file: p.job.file, reason: `refused${p.first ? " after the repair" : ""}: ${failing.join(", ")}` });
         }

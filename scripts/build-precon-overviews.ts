@@ -25,7 +25,7 @@
 // FAILS CLOSED on its target: `PRECON_OVERVIEW_TARGET_BRANCH` is never defaulted and must equal
 // the database's `neon.branch_id`, or it exits 2 having written nothing.
 //
-//   PRECON_OVERVIEW_TARGET_BRANCH=br-… PRECON_OVERVIEW_ROLE_BASIS=labels|classifier pnpm db:build:precon-overviews [--dry-run] [--stub] [--readings-only] [--max-usd N] [--limit N]
+//   [PRECON_OVERVIEW_FORCE=File_A,File_B] PRECON_OVERVIEW_TARGET_BRANCH=br-… PRECON_OVERVIEW_ROLE_BASIS=labels|classifier pnpm db:build:precon-overviews [--dry-run] [--stub] [--readings-only] [--max-usd N] [--limit N]
 //   (locally, name the database with PRECON_OVERVIEW_DB_URL)
 //
 // THE READING TOO (small items 5, PR 6a). Every request is built from the precon's reading
@@ -55,6 +55,11 @@ const STUB = argv.includes("--stub");
 const READINGS_ONLY = argv.includes("--readings-only");
 const COLLECT = argv.includes("--collect") ? argv[argv.indexOf("--collect") + 1] : undefined;
 if (argv.includes("--collect") && !/^msgbatch_[A-Za-z0-9]+$/.test(COLLECT ?? "")) throw new Error("--collect needs a batch id (msgbatch_…)");
+// `PRECON_OVERVIEW_FORCE` (the workflow's `force` input): comma-separated precon files whose Overview is
+// rewritten even though its request hash still matches (a row stored without a line it should have). The
+// cap, the target guard and the checks apply as for any row.
+const FORCED = (process.env.PRECON_OVERVIEW_FORCE ?? "").split(",").map((f) => f.trim()).filter(Boolean);
+for (const f of FORCED) if (!/^[A-Za-z0-9_]+$/.test(f)) throw new Error(`PRECON_OVERVIEW_FORCE: ${JSON.stringify(f)} is not a precon file name`);
 const flag = (name: string): number | undefined => {
   const i = argv.indexOf(name);
   if (i < 0) return undefined;
@@ -111,6 +116,7 @@ async function main(): Promise<number> {
   const limit = flag("--limit");
 
   const files = (await db.select({ file: precons.fileName }).from(precons).where(isNull(precons.twinOf)).orderBy(precons.fileName)).map((r) => r.file);
+  for (const f of FORCED) if (!files.includes(f)) throw new Error(`PRECON_OVERVIEW_FORCE: ${f} is not a plain precon`);
   const stored = new Map((await db.select({
     file: preconSynopses.preconFile, hash: preconSynopses.inputHash, list: preconSynopses.listFingerprint, model: preconSynopses.model,
     reading: preconSynopses.reading, readingPermits: preconSynopses.readingPermits, readingList: preconSynopses.readingList,
@@ -166,14 +172,16 @@ async function main(): Promise<number> {
     if (READINGS_ONLY) continue;
     // Current only when written for this very request by the model this run writes with, so a
     // stub's row on a scratch branch never stands in for the real one.
-    if (had && had.hash === hash && had.list === list && had.model === model) {
+    if (had && had.hash === hash && had.list === list && had.model === model && !FORCED.includes(file)) {
       current += 1;
       if (!DRY) await db.update(preconSynopses).set({ current: true, checkedAt: new Date() })
         .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
       continue;
     }
     // Its inputs moved: never carried over while its replacement waits (or fails, or is deferred).
-    if (had && !DRY) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
+    // A FORCED row whose inputs did not move stays current until its replacement is stored: held or failed, it keeps the valid Overview it has.
+    const forcedOnly = FORCED.includes(file) && had?.hash === hash && had.list === list && had.model === model;
+    if (had && !DRY && !forcedOnly) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
       .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
     // `--limit` caps what is SENT, never what is checked: every precon past it is still hashed above,
     // so a row whose inputs moved is marked not current whatever the limit.
