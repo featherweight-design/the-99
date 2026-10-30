@@ -9,9 +9,9 @@
 // same constants as the deck tile and needs no deck), for the shell's top-left corner against the
 // shell's width and the art button's bottom-left corner against its width. The bar is 3.1%.
 //
-// Needs a server with PRECONS_ENABLED=true and precons seeded (pnpm db:seed:precons). Writes nothing.
+// Needs a server with precons seeded (pnpm db:seed:precons). Writes nothing.
 //
-//   PRECONS_ENABLED=true pnpm build && PRECONS_ENABLED=true node node_modules/next/dist/bin/next start -p 3612
+//   pnpm build && node node_modules/next/dist/bin/next start -p 3612
 //   PROBE_BASE=http://localhost:3612 pnpm probe:card-view-radius
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";

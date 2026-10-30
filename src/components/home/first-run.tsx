@@ -216,7 +216,7 @@ export function FirstRunChecklist({
         {signature}
         {friends && <FirstRunFriendsRow {...friends} />}
         {news && <FirstRunNewsRow />}
-        {/* The tour's precon line follows the ways group: off with it, and with PRECONS_ENABLED. */}
+        {/* The tour's precon line follows the ways group: off with it. */}
         {/* Mounted always: `/?tour=1` runs the tour again (discovery R3·2), here the first-run tour itself. */}
         <HomeTour due={tour} mode="first-run" precons={ways?.precons ?? false} />
         {/* No foot. Step 1 is the collection alone (first-run ruling 1, 2026-09-28): the

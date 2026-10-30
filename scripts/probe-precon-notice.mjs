@@ -9,13 +9,13 @@
 // It needs a precon that the shared rule suggests for a deck, and local-dev holds no precon catalog, so it
 // writes one: a fixture deck (a commander and 30 other non-basic cards) and a fixture precon with exactly
 // that list, under the account it signs in as, both deleted in a `finally`. Point it at `local-dev`, never
-// production or staging (it checks the branch). Needs PRECONS_ENABLED=true in the server's environment.
+// production or staging (it checks the branch).
 //
 // Start the server FRESH for the run and stop it after: `loadPreconCatalog` memoizes the catalog for ten minutes
 // per server, keyed on a catalog generation this fixture does not move, so a server that already read the catalog
 // never shows the fixture row, and one that reads it during the run keeps showing it after the cleanup.
 //
-//   PRECONS_ENABLED=true pnpm dev   (another shell)
+//   pnpm dev   (another shell)
 //   PROBE_BASE=http://localhost:3000 node scripts/probe-precon-notice.mjs
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

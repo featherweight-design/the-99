@@ -9,7 +9,6 @@ import { CreatePicker } from "../../../components/decks/create-picker";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { bracketReachEnabled } from "../../../lib/intake/bracket-reach-flag";
 import { hasListableRun } from "../../../lib/intake/history-read";
-import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { MAX_THEMES } from "../../../lib/intake/answers";
 import { handOffFrom, handOffSets, pastFrom, resultsHref } from "../../../lib/intake/hand-off";
@@ -101,7 +100,7 @@ export default async function NewDeckPage({
     helpMeChoose ? hasListableRun(userId).catch(() => false) : false,
   ]);
 
-  return <CreatePicker legalCommanders={legalCommanders} helpDoor={helpMeChoose} pastRuns={pastRuns} preconDoor={preconsEnabled(env)} />;
+  return <CreatePicker legalCommanders={legalCommanders} helpDoor={helpMeChoose} pastRuns={pastRuns} preconDoor />;
 }
 
 /** The page's params as the URL carried them; a repeated key keeps its first value, as `URLSearchParams.get` does. */

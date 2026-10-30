@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { catalogBatchKey, catalogKey, catalogPushKinds, parseCatalogKey } from "./catalog-rule";
 
 const env = (over: Record<string, string> = {}) =>
-  ({ PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true", ...over }) as unknown as NodeJS.ProcessEnv;
+  ({ PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true", ...over }) as unknown as NodeJS.ProcessEnv;
 
 describe("a catalog item's push key", () => {
   it("is the feed's own key: set:<code>, precon:<file name>", () => {
@@ -41,12 +41,8 @@ describe("a catalog batch", () => {
 });
 
 describe("the catalog kinds a reader's switches allow pushing", () => {
-  it("both, with push, Home's news and Precons on", () => {
+  it("both, with push and Home's news on", () => {
     expect(catalogPushKinds(env())).toEqual(["new-set", "new-precon"]);
-  });
-
-  it("no precon without Precons (its landing 404s)", () => {
-    expect(catalogPushKinds(env({ PRECONS_ENABLED: "false" }))).toEqual(["new-set"]);
   });
 
   it("none with push off, or Home's news off", () => {

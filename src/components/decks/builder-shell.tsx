@@ -200,10 +200,10 @@ interface BuilderShellProps {
   /** The import's printing counts for the strip's clauses (deck printings), or null. */
   arrivalPrintings?: ArrivalPrintings | null;
   /** An UNLINKED deck's precon link doors (precons R3): the shared rule's suggestions (K1, K15) and
-   *  the Versions foot row's picker (K5, K6). Null for a linked deck, or with precons off. */
+   *  the Versions foot row's picker (K5, K6). Null for a linked deck, or when the read fails. */
   preconLink?: { suggestions: PreconMatch[]; picker: PreconMatch[] } | null;
   /** A linked deck's v0 (precons PR 6b): drawn last in Versions, never current. Its presence also
-   *  draws the Versions tab on a linked brew (K14); the deck stays a brew. Null when unlinked or off. */
+   *  draws the Versions tab on a linked brew (K14); the deck stays a brew. Null when unlinked. */
   preconOrigin?: DeckOrigin | null;
   /** Counts from the navigation an applied update made, or null on every other
    *  arrival. Like `arrivedFromImport`, true of one trip rather than of the deck. */

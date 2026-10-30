@@ -45,7 +45,7 @@ const hub = tuningHubCopy.tools;
 export const TOOLS = [
   // Start a deck
   { id: "help-me-choose", group: "start", switch: "HELP_ME_CHOOSE_ENABLED", entry: "help-me-choose", labels: ["commanders/for-you/places", "decks/your-decks/new-deck"], target: "help-me-choose", lands: { kind: "route", href: "/decks/new/choose" }, credit: null, needsDeck: false },
-  { id: "precons", group: "start", switch: "PRECONS_ENABLED", entry: "precons", labels: ["decks/your-decks/precons"], target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
+  { id: "precons", group: "start", switch: null, entry: "precons", labels: ["decks/your-decks/precons"], target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
   // Tune it
   { id: "top-off", group: "tune", switch: null, entry: "auto-fill", labels: ["decks/your-deck/mix"], target: "top-off", lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },
   { id: "proposed-cuts", group: "tune", switch: "PROPOSED_CUTS_ENABLED", entry: "proposed-cuts", labels: ["decks/analysis/cuts"], target: "proposed-cuts", lands: { kind: "deck", tab: "analysis" }, credit: hub.cuts.cost, needsDeck: true },

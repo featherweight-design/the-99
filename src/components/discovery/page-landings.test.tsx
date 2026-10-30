@@ -177,7 +177,8 @@ describe.each(PAGES)("Try it's landing on $tool's page", ({ tool, path, page, co
     expect(spendMomentAction).not.toHaveBeenCalled();
   });
 
-  it("strips its own id with no halo while its switch is off for the reader", async () => {
+  // Precons has no switch (retired), so it has no off state to strip on.
+  it.runIf(tool !== "precons")("strips its own id with no halo while its switch is off for the reader", async () => {
     window.history.replaceState(null, "", `${path}?tool=${tool}`);
     mount(tool, page, false);
     await flush();

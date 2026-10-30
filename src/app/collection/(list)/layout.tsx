@@ -16,7 +16,6 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
-import { preconsEnabled } from "../../../lib/precons/flag";
 import { wishlistEnabled } from "../../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
@@ -35,8 +34,8 @@ export default async function CollectionListLayout({
   // The reader's resolved switches (`requestSwitchEnv`), not the environment alone.
   const env = await requestSwitchEnv(userId);
   const editEnabled = collectionEditEnabled(env);
-  // The Add cards sheet's way into Precons I own (no-collection entry S18): both switches, or the sheet is as shipped.
-  const preconPick = collectionEditEnabled(env) && preconsEnabled(env);
+  // The Add cards sheet's way into Precons I own (no-collection entry S18): the line's switch, or the sheet is as shipped.
+  const preconPick = collectionEditEnabled(env);
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     perfRead("collection.lastUpdated", () => getCollectionLastUpdated(userId)),

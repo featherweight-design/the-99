@@ -1,15 +1,13 @@
 // /decks/precons (handoff `design_handoff_the99_precons`, R2): every Commander precon, with how many
-// of its cards the reader owns. Behind `PRECONS_ENABLED`. Cached per reader on the database's
+// of its cards the reader owns. Cached per reader on the database's
 // stamp, as `/decks` is, and on the catalog generation the precon ingest moves.
 
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { requireUserId } from "../../../../lib/auth";
 import { cachePageForUser } from "../../../../lib/cache/page-cache";
 import { preconsCopy } from "../../../../lib/copy/precons";
-import { preconsEnabled } from "../../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { parsePreconParams } from "../../../../lib/precons/list";
 import {
@@ -23,7 +21,6 @@ import {
 } from "../../../../lib/precons/announced";
 import { loadUpcomingPayload } from "../../../../lib/precons/announced-read";
 import { visitSeenKeys } from "../../../../lib/precons/arrivals";
-import { upcomingPreconsEnabled } from "../../../../lib/precons/upcoming-flag";
 import { markUpcomingSeen, utcDay } from "../../../../lib/precons/upcoming";
 import { recordSoftFailure } from "../../../../lib/cache/soft-failure";
 import { PreconListView } from "../../../../components/decks/precons/precon-list-view";
@@ -53,9 +50,8 @@ export default async function PreconsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const userId = await requireUserId();
-  // The reader's resolved switches, once: the gate and the cached list's key read the same env.
+  // The reader's resolved switches, once: the cached list's key read the same env.
   const env = await requestSwitchEnv(userId);
-  if (!preconsEnabled(env)) notFound();
   const raw = await searchParams;
   // Try it's landing (discovery R2·3): `?tool=precons` haloes the list's search; anything else, or any branch without the list (the pick, the list down), is stripped.
   const { landing, request } = pageLanding(raw[TOOL_PARAM], env, "precons");
@@ -107,10 +103,8 @@ export default async function PreconsPage({
     );
   }
 
-  // Upcoming precons (plan PR 2): the Announced group, the `new ·` tags and the visit's seen write, all behind
-  // the switch. The UTC day enters the key, because the reads' windows (an upcoming set, a listed precon) are
+  // Upcoming precons (plan PR 2): the Announced group, the `new ·` tags and the visit's seen write. The UTC day enters the key, because the reads' windows (an upcoming set, a listed precon) are
   // days; the reader's seen state rides inside the payload, retired by `user_prefs`'s stamp trigger (E5).
-  const upcomingOn = upcomingPreconsEnabled(env);
   const now = new Date();
 
   // L4: an empty or unreadable list is "couldn't be read", never "there are no precons". Not stored,
@@ -121,25 +115,20 @@ export default async function PreconsPage({
     payload = await cachePageForUser(
       userId,
       "precons",
-      upcomingOn ? [utcDay(now)] : [],
+      [utcDay(now)],
       async () => {
         const list = await loadPreconList(userId);
         let upcoming: UpcomingPayload | null = null;
-        if (upcomingOn) {
-          try {
-            upcoming = await loadUpcomingPayload(userId, now);
-          } catch (error) {
-            // T9: a failed upcoming read draws the list as shipped, and is served and never stored.
-            recordSoftFailure();
-            console.error(
-              "precons: the upcoming sets could not be read",
-              error,
-            );
-          }
+        try {
+          upcoming = await loadUpcomingPayload(userId, now);
+        } catch (error) {
+          // T9: a failed upcoming read draws the list as shipped, and is served and never stored.
+          recordSoftFailure();
+          console.error("precons: the upcoming sets could not be read", error);
         }
         return {
           value: { list, upcoming },
-          store: list.rows.length > 0 && (!upcomingOn || upcoming !== null),
+          store: list.rows.length > 0 && upcoming !== null,
         };
       },
       env,
@@ -157,7 +146,7 @@ export default async function PreconsPage({
       </>
     );
   }
-  const upcoming = upcomingOn ? (payload?.upcoming ?? null) : null;
+  const upcoming = payload?.upcoming ?? null;
   // Whether this visit writes seen keys, which the view passes on to Home's banner for this document.
   let acknowledges: string[] = [];
   if (upcoming) {

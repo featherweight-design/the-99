@@ -11,7 +11,7 @@
 // The preview box is `md:block` only, so the hover checks run at 1300; the phone walk is the token paging and
 // no overflow. A tile's press is unchanged and held by the tile components' own tests, so tiles are counted and hovered here,
 // never pressed. It writes one thing: `clearAboutSheet` marks every About entry seen on the account
-// (`user_prefs`), and nothing puts that back. Nothing else is written. Needs a server with DECK_TOKENS_ENABLED and PRECONS_ENABLED on and a
+// (`user_prefs`), and nothing puts that back. Nothing else is written. Needs a server with DECK_TOKENS_ENABLED on and a
 // database holding the token catalog, the precons and a deck that makes tokens (a `pull:staging` copy on a scratch
 // branch). The precon is `PROBE_PRECON` (default CallingAllAngels_FDC); its list-row control names three of ITS cards.
 //

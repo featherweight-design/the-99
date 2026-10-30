@@ -80,12 +80,12 @@ describe("the chips and the search", () => {
     expect(matchesFilter(get("DECK_STATS_ENABLED"), "overridden")).toBe(true);
     expect(matchesFilter(get("DECK_NOTES_ENABLED"), "overridden")).toBe(false);
     expect(matchesFilter(get("DECK_NOTES_ENABLED"), "offForAnyone")).toBe(false);
-    expect(matchesFilter(get("PRECONS_ENABLED"), "offForAnyone")).toBe(true);
+    expect(matchesFilter(get("DECK_PRINTINGS_ENABLED"), "offForAnyone")).toBe(true);
     // Mixed is off for someone.
     const mixed = rows({ DECK_NOTES_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]).get("DECK_NOTES_ENABLED") as SwitchRow;
     expect(matchesFilter(mixed, "offForAnyone")).toBe(true);
     expect(matchesFilter(get("TUNING_ENABLED"), "model")).toBe(true);
-    expect(matchesFilter(get("PRECONS_ENABLED"), "model")).toBe(false);
+    expect(matchesFilter(get("DECK_PRINTINGS_ENABLED"), "model")).toBe(false);
   });
 
   it("matches the name or the variable, case-insensitively", () => {

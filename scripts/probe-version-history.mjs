@@ -746,7 +746,7 @@ try {
   // the rail draws ONE row for it: v0, carrying the precon's note, its Open and Unlink line, and no dashed
   // virtual v0 beneath it. A start made before that committed it as v1 and keeps its number, but draws no
   // virtual v0 either (`isStartVersion`). A brew linked after the fact keeps its virtual v0, drawn apart
-  // below a divider. Needs PRECONS_ENABLED on the server, which is what the deck page reads v0 under.
+  // below a divider.
   const precon = (await pool.query(
     `select p.file_name, p.name,
             (select sum(quantity)::int from precon_cards pc where pc.file_name = p.file_name and not pc.is_commander) body

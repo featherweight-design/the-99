@@ -748,7 +748,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   NOTICES_ENABLED: { label: "Notices", description: "Notices on a deck." },
   OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
   PAYMENTS_ENABLED: { label: "Buying credits", description: "Buy credit packs. Off stops new purchases; payments already made still settle." },
-  PRECONS_ENABLED: { label: "Precons", description: "Browse Commander precons and start a deck from one." },
   PROPOSED_CUTS_ENABLED: { label: "Proposed cuts", description: "Cuts proposed for a deck over 99." },
   PUBLIC_PAGES_ENABLED: { label: "Public pages", description: "The signed-out card and commander pages at /card and /commander. Off, both answer 404." },
   RATE_LIMIT_ENABLED: { label: "Request counting", description: "Counts each player’s requests and logs what a limit would refuse. Refuses nothing." },
@@ -766,6 +765,5 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SUGGESTED_CHANGES_V2_ENABLED: { label: "Suggested changes v2", description: "Pick how many changes, ask for something, and see each one as it arrives. Needs Suggested changes." },
   SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },
   TUNING_ENABLED: { label: "Suggested changes", description: "Suggested changes for a deck." },
-  UPCOMING_PRECONS_ENABLED: { label: "Upcoming precons", description: "Announced Commander sets on Precons, and a Home banner when one arrives." },
   WELCOME_CREDITS_ENABLED: { label: "Welcome credits", description: "Gives a new sign-up 15 credits that expire after 30 days. Off stops new grants; a lot already given is still spent." },
 };

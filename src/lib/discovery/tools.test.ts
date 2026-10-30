@@ -41,7 +41,7 @@ describe("the tool registry", () => {
     const names = new Set<string>(SWITCHES.map((s) => s.name));
     for (const t of TOOLS) if (t.switch !== null) expect(names.has(t.switch)).toBe(true);
     expect(TOOLS.find((t) => t.id === "collection-sync")?.switch).toBe("COLLECTION_SYNC_ENABLED");
-    expect(TOOLS.filter((t) => t.switch === null).map((t) => t.id)).toEqual(["top-off"]);
+    expect(TOOLS.filter((t) => t.switch === null).map((t) => t.id)).toEqual(["precons", "top-off"]);
   });
 
   it("opens an About entry that exists for every tool", () => {

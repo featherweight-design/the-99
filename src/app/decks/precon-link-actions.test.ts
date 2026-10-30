@@ -37,7 +37,6 @@ vi.mock("../../db", () => {
   return { db: { select, update, insert } };
 });
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/precons/flag", () => ({ preconsEnabled: () => true }));
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => state.revalidated.push(a) }));
 
 import { PgDialect } from "drizzle-orm/pg-core";

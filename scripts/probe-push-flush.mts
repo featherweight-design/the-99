@@ -280,7 +280,7 @@ async function main() {
     const P = U("p");
     await db.insert(userPrefs).values({ userId: P, pushKinds: { "new-set": stamp, "new-precon": "2026-10-22T08:30:00.000Z" } });
     await device(P, "p", "UTC");
-    const catOn = { ...on, PRECONS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const catOn = { ...on } as unknown as NodeJS.ProcessEnv;
     const catFlush = () => flushPush({ config, now: DAY, send: send as never, resolveEnv: async () => catOn });
     // The request-time kick (one reader) never runs the catalog pass: that is the cron's job.
     const kicked7 = await flushPush({ config, now: DAY, send: send as never, resolveEnv: async () => catOn, onlyUser: P });

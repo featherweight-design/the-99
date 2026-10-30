@@ -7,7 +7,7 @@
 // Text presses, never a fill or a border: the upload above stays the only fill (ruling 1, loosened). Desktop (`sm`,
 // where step 1's card goes to its row layout) draws three columns, each a 13/600 label with a faint `›` over one
 // 12px sub-line; the phone draws three hairline-separated 44px rows, label and `›` only. Precons I own is absent,
-// never disabled, with `PRECONS_ENABLED` off (S15), and the other two keep their columns.
+// never disabled, when `precons` is false (S15), and the other two keep their columns.
 
 import Link from "next/link";
 import { useId } from "react";
@@ -60,7 +60,7 @@ export function WaysGroup({
   disabled = false,
 }: {
   surface: WaysSurface;
-  /** `PRECONS_ENABLED`, resolved for this reader: Precons I own is drawn only with it (S15). */
+  /** Whether Precons I own is drawn (S15); every caller passes true. */
   precons: boolean;
   /** Opens the shipped `AddCardsSheet`; the press is handed in so the sheet returns focus to it. */
   onAddCards: (trigger: HTMLElement) => void;

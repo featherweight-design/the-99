@@ -87,7 +87,7 @@ export function stepCopy(step: Step, mode: TourMode, navLocked: boolean | null) 
 
 /**
  * Mounted on a first-run Home whose tour is due (`tourDue`), and on any Home asked for it again (`/?tour=1`, R3·2;
- * `HomeTour`). `precons`: step 1's precon line (`PRECONS_ENABLED`, with the ways group). `mode`: the checklist, or the
+ * `HomeTour`). `precons`: step 1's precon line (with the ways group). `mode`: the checklist, or the
  * real app's dashboard. `again`: asked for (`?tour=1`), so this tab's spent mark does not hold it off.
  */
 export function FirstRunTour({ precons, mode = "first-run", again = false }: { precons: boolean; mode?: TourMode; again?: boolean }) {

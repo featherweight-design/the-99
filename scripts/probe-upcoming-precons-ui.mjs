@@ -30,7 +30,7 @@
 // created it, else its `upcoming_seen_codes` restored): a visit acknowledges EVERY arrival, not only the fixtures'. It fails closed on its target: `PROBE_DB_BRANCH` must name the branch
 // `DATABASE_URL` reports, and staging and production are refused by id.
 //
-// Needs a server on PROBE_BASE with PRECONS_ENABLED=true and UPCOMING_PRECONS_ENABLED=true, on the same database:
+// Needs a server on PROBE_BASE, on the same database:
 //   PROBE_BASE=http://localhost:3655 PROBE_DB_BRANCH=br-… pnpm probe:upcoming-precons-ui
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon, neonConfig } from "@neondatabase/serverless";

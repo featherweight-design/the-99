@@ -61,8 +61,8 @@ type CreateModeProps = {
   helpDoor?: boolean;
   /** The player has a Help me choose run History would list: the door adds its link. */
   pastRuns?: boolean;
-  /** Draw the precon door after Help me choose's (or first without it). The page passes
-      `PRECONS_ENABLED`; every other caller leaves it off. */
+  /** Draw the precon door after Help me choose's (or first without it). The page passes it;
+      every other caller leaves it off. */
   preconDoor?: boolean;
 };
 

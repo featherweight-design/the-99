@@ -1,4 +1,4 @@
-// The banner's ✕: writes only keys the reader's own lines give at the press, and nothing with the switch off.
+// The banner's ✕: writes only keys the reader's own lines give at the press.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({
@@ -34,7 +34,7 @@ const LINES = [
 ];
 
 beforeEach(() => {
-  stub.env = { PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true" };
+  stub.env = {};
   stub.lines.mockReset();
   stub.lines.mockResolvedValue(LINES);
   stub.mark.mockReset();
@@ -59,13 +59,6 @@ describe("dismissArrivals", () => {
   it("writes nothing when nothing claimed is still there", async () => {
     stub.lines.mockResolvedValue([]);
     await dismissArrivals(["trc"]);
-    expect(stub.mark).not.toHaveBeenCalled();
-  });
-
-  it("reads and writes nothing with the switch off", async () => {
-    stub.env = { PRECONS_ENABLED: "true" };
-    await dismissArrivals(["trc"]);
-    expect(stub.lines).not.toHaveBeenCalled();
     expect(stub.mark).not.toHaveBeenCalled();
   });
 });

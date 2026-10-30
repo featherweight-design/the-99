@@ -106,7 +106,7 @@ describe("the cron's catalog pass", () => {
       } as never,
     };
   };
-  const on = { PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const on = { PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 
   it("queues each reader's kinds their switches allow, and none for a reader with push off", async () => {
     const { q, statements } = fakeQ(["a", "b"]);

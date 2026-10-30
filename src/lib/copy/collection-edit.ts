@@ -418,7 +418,7 @@ export const collectionEditCopy = {
     nothingYet: "Nothing on the list yet",
     uploadLead: "Have a file?",
     uploadInstead: "Upload it instead",
-    /** No-collection entry S18: the way into Precons I own, in the empty state at both widths (with `PRECONS_ENABLED`). */
+    /** No-collection entry S18: the way into Precons I own, in the empty state at both widths. */
     preconLead: "Own precon boxes?",
     preconPress: "Pick them",
     noResultsTitle: (q: string) => `No card is named “${q}”`,

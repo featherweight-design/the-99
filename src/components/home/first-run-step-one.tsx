@@ -33,7 +33,7 @@ export function FirstRunStepOne({
   /**
    * The no-collection entry's ways group under the upload (S1), or null for the shipped card. With it, `Add cards by
    * hand` leaves the button row for the group, so the buttons say "your file" and the group says "no file".
-   * `precons` is `PRECONS_ENABLED`, resolved for this reader (S15).
+   * `precons` is always true now (S15).
    */
   ways?: { precons: boolean } | null;
 }) {

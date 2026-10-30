@@ -13,17 +13,16 @@
 //   - A Precons visit marks the arrivals seen (rule 6; the page's `after()` write), so the next Home load draws no
 //     banner.
 //   - A first-run account gets no banner and nothing is marked seen (H7).
-//   - The About entry `upcoming-precons` draws with the switch on, and neither it nor the banner draws with it off.
+//   - The About entry `upcoming-precons` draws.
 //
 // FIXTURES, on local-dev only (the branch is checked): two Commander sets (`pqaset`, announced 40 days out;
 // `pqalist`, released 3 days ago), one precon listing `pqalist`, and a non-baseline `catalog_first_seen` stamp for
-// each arrival, a day old. The sign-in account's seen keys for them are reset before each state. The switch-off
-// state is an ACCOUNT override on `flag_overrides` (the server resolves it through a 30-second memo, so the probe
-// waits it out). The first-run account is a fresh Clerk test user on the DEVELOPMENT instance, deleted after. Every
-// fixture, the override and the temporary user's rows are removed in a `finally`.
+// each arrival, a day old. The sign-in account's seen keys for them are reset before each state. The first-run
+// account is a fresh Clerk test user on the DEVELOPMENT instance, deleted after. Every fixture and the temporary
+// user's rows are removed in a `finally`.
 //
 // The server: `next start` of a build with the worktree's `.env`, started with
-//   PRECONS_ENABLED=true UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true
+//   LIST_CACHE_ENABLED=true
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:arrivals-banner
 import { neon } from "@neondatabase/serverless";
@@ -54,7 +53,6 @@ const LISTED = "pqalist";
 const FILE = "probe-arrivals-banner.json";
 const KEYS = [SET, LISTED, `lists:${LISTED}`];
 const REGION = "section[aria-label='New in the app']";
-const MEMO_MS = 31_000;
 const DAY = 86_400_000;
 const day = (offset) => new Date(Date.now() + offset * DAY).toISOString().slice(0, 10);
 
@@ -322,31 +320,14 @@ async function widthRun(browser, w, userId) {
   await home(page);
   check(await region.count() === 0, `${w.name} E5: and a reload draws none`, `${await region.count()} regions`);
 
-  // The About entry, switch on.
+  // The About entry.
   await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded" });
   // The entries stream in after the page's h1: wait for the precons entry, which draws either way, so an absence
   // below is a fact about the switch and not about how far the page had arrived.
   await onPage(page, "#precons").first().waitFor({ timeout: 30_000 });
   const entry = onPage(page, "#upcoming-precons");
   const title = await entry.count() ? (await entry.first().textContent())?.includes("Commander sets on the way") : false;
-  check(title, `${w.name}: /about draws "Commander sets on the way" with the switch on`, `${await entry.count()} anchors`);
-  await context.close();
-}
-
-/** The switch off for this account: neither the banner nor the entry. */
-async function switchedOff(browser, w, userId) {
-  const context = await browser.newContext({ viewport: { width: w.width, height: w.height }, hasTouch: w.phone, isMobile: w.phone });
-  const page = await context.newPage();
-  await signIn(page, EMAIL, PASSWORD);
-  // The About sheet stays out of the way (E5); the account's prior About fields are put back in `finally`.
-  await clearAboutSheet(page, userId);
-  await home(page);
-  check(await onPage(page, REGION).count() === 0, `${w.name} H1: no banner with the switch off`, `${await onPage(page, REGION).count()} regions`);
-  await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded" });
-  // The entries stream in after the page's h1: wait for the precons entry, which draws either way, so an absence
-  // below is a fact about the switch and not about how far the page had arrived.
-  await onPage(page, "#precons").first().waitFor({ timeout: 30_000 });
-  check(await onPage(page, "#upcoming-precons").count() === 0, `${w.name}: /about draws no entry with the switch off`, `${await onPage(page, "#upcoming-precons").count()} anchors`);
+  check(title, `${w.name}: /about draws "Commander sets on the way" `, `${await entry.count()} anchors`);
   await context.close();
 }
 
@@ -366,7 +347,6 @@ async function firstRun(browser, w, email) {
 }
 
 async function cleanFixtures() {
-  await sql`delete from flag_overrides where note = 'probe:arrivals-banner'`;
   await sql`delete from catalog_first_seen where (kind = 'set' and key = ${SET}) or (kind = 'precon' and key = ${FILE})`;
   await sql`delete from precons where file_name = ${FILE}`;
   await sql`delete from sets where code in (${SET}, ${LISTED})`;
@@ -398,14 +378,6 @@ try {
   await sql`insert into precons (file_name, name, set_code, release_date) values (${FILE}, 'Probe Listed Deck', ${LISTED.toUpperCase()}, ${day(-3)})`;
 
   for (const w of WIDTHS) await widthRun(browser, w, userId);
-
-  // The switch off, by an account override; the resolver's 30-second memo is waited out.
-  await stamp({ set: true, lists: true });
-  await unsee(userId);
-  await sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by)
-            values ('UPCOMING_PRECONS_ENABLED', 'user', ${userId}, 'off', 'probe:arrivals-banner', 'probe:arrivals-banner')`;
-  await new Promise((r) => setTimeout(r, MEMO_MS));
-  for (const w of WIDTHS) await switchedOff(browser, w, userId);
 
   // First run: a fresh Clerk test user, so no existing account is emptied for it.
   const email = `arrivals-firstrun-${Date.now()}+clerk_test@the99.app`;

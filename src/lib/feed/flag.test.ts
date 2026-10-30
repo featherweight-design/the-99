@@ -20,14 +20,9 @@ describe("the kinds available to a reader", () => {
     expect(availableFeedKinds(env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }))).toEqual([]);
   });
 
-  it("offers sets and combos with the feed alone", () => {
-    expect(availableFeedKinds(feed)).toEqual(["new-set", "combo"]);
-  });
-
-  it("offers a new precon only with Precons on: its link is /decks/precons/[fileName], a 404 with Precons off", () => {
-    expect(feedKindAvailable("new-precon", env())).toBe(false);
-    expect(feedKindAvailable("new-precon", env({ PRECONS_ENABLED: "true" }))).toBe(true);
-    expect(availableFeedKinds(env({ ...feed, PRECONS_ENABLED: "true" }))).toEqual(["new-set", "new-precon", "combo"]);
+  it("offers sets, new precons and combos with the feed alone", () => {
+    expect(availableFeedKinds(feed)).toEqual(["new-set", "new-precon", "combo"]);
+    expect(feedKindAvailable("new-precon", env())).toBe(true);
   });
 
   it("needs the wishlist for a price drop, and friends AND the wishlist for a trade match", () => {
@@ -38,11 +33,11 @@ describe("the kinds available to a reader", () => {
   });
 
   it("offers a spare request only with SPARE_REQUESTS_ENABLED and friends (G5)", () => {
-    const all = env({ ...feed, PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
+    const all = env({ ...feed, SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
     expect(feedKindAvailable("spare-request", all)).toBe(false);
     expect(availableFeedKinds(all)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "combo"]);
     expect(feedKindAvailable("spare-request", env({ SPARE_REQUESTS_ENABLED: "true" }))).toBe(false);
-    const on = env({ ...feed, PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+    const on = env({ ...feed, SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
     expect(feedKindAvailable("spare-request", on)).toBe(true);
     expect(availableFeedKinds(on)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"]);
   });
