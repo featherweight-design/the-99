@@ -9,7 +9,7 @@ vi.mock("../../lib/switches/request", async () => {
 
 const state = vi.hoisted(() => ({
   selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[],
-  collectionEdit: true, addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
+  addResult: null as unknown, addCalls: [] as unknown[][], after: [] as (() => Promise<void>)[],
   invalidated: [] as string[], warmed: [] as string[], committed: [] as unknown[], carried: [] as string[],
   picking: false, picks: [] as unknown[][], pickResult: ((): unknown => ({ ok: true, entryId: "e" })) as (f: string) => unknown,
 }));
@@ -35,9 +35,6 @@ vi.mock("../../lib/precons/start-owned", () => ({
     if (state.picking) { state.picks.push(args); return state.pickResult(args[1] as string); }
     state.addCalls.push(args); return state.addResult;
   },
-}));
-vi.mock("../../lib/collection/edit-flag", () => ({
-  collectionEditEnabled: () => state.collectionEdit,
 }));
 const committed = vi.hoisted(() => ({ map: new Map<string, string>(), decks: new Map<string, string>(), asked: [] as string[][] }));
 vi.mock("../../lib/precons/added", async (importOriginal) => ({
@@ -75,7 +72,7 @@ beforeEach(() => {
   state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; state.committed = [];
   state.picking = false; state.picks = []; state.pickResult = (f) => ({ ok: true, entryId: `entry-${f}`, deckId: `deck-${f}` });
   committed.map = new Map(); committed.decks = new Map(); committed.asked = [];
-  state.collectionEdit = true; state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
+  state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
   state.carried = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
@@ -150,12 +147,6 @@ describe("startPreconOwned", () => {
   const STARTED = { ok: true, deckId: "deck-9", entryId: ENTRY };
   const flush = async () => { for (const fn of state.after) await fn(); };
 
-  it("refuses while collection editing is off, as every collection write does, writing nothing", async () => {
-    state.collectionEdit = false;
-    await expect(startPreconOwned("MultiverseReforged_FRC", "M", ACTION)).rejects.toThrow("collection editing is off");
-    expect(state.addCalls).toEqual([]);
-  });
-
   it("refuses a malformed action id or name, and answers notFound for a malformed file name, writing nothing", async () => {
     await expect(startPreconOwned("MultiverseReforged_FRC", "M", "not-a-uuid")).rejects.toThrow("bad action id");
     await expect(startPreconOwned("MultiverseReforged_FRC", "   ", ACTION)).rejects.toThrow();
@@ -220,13 +211,6 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
     expect(state.warmed).toEqual(["user_1"]);
     // No arrival follows this start, so it keeps the carry-over in its `after()`, one per deck it started.
     expect(state.carried).toEqual(["deck-Abzan", "deck-Revival_CE"]);
-  });
-
-  it("refuses with collection editing off, and writes nothing", async () => {
-    const one = [{ fileName: "Abzan", edition: "regular", file: "Abzan", actionId: ID(1) }];
-    state.collectionEdit = false;
-    await expect(addPrecons(one)).rejects.toThrow("the precon pick is off");
-    expect(state.picks).toEqual([]);
   });
 
   // A box the catalog does not hold as asked is that box's own refusal, never the press's throw: a refresh can drop a

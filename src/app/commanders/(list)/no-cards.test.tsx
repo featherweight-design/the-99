@@ -1,6 +1,5 @@
-// `/commanders` and `/discover` at zero cards (no-collection entry, Open 7): with collection editing on each
-// reads `Nothing to rank yet`, its own body and `Add your cards`, from its copy key; without it, the shipped words.
-// The button goes to /collection either way.
+// `/commanders` and `/discover` at zero cards (no-collection entry, Open 7): each reads `Nothing to rank yet`, its own
+// body and `Add your cards`, from its copy key. The button goes to /collection.
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
@@ -30,8 +29,6 @@ vi.mock("../../../components/commanders/commanders-view", () => ({ CommandersVie
 const { default: CommandersPage } = await import("./page");
 const { default: DiscoverPage } = await import("./discover/page");
 
-const ON = { COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-
 afterEach(() => {
   env.value = {} as NodeJS.ProcessEnv;
 });
@@ -40,9 +37,8 @@ async function draw(page: typeof CommandersPage) {
   render((await page({ searchParams: Promise.resolve({}) })) as ReactElement);
 }
 
-describe("the rankers at zero cards, with the no-collection entry on", () => {
+describe("the rankers at zero cards", () => {
   it("/commanders says there is nothing to rank yet and sends the player to add cards", async () => {
-    env.value = ON;
     await draw(CommandersPage);
     expect(screen.getByRole("heading", { name: "Nothing to rank yet" })).toBeInTheDocument();
     expect(
@@ -53,7 +49,6 @@ describe("the rankers at zero cards, with the no-collection entry on", () => {
   });
 
   it("/discover names what it ranks in its own body", async () => {
-    env.value = ON;
     await draw(DiscoverPage);
     expect(screen.getByRole("heading", { name: "Nothing to rank yet" })).toBeInTheDocument();
     expect(
@@ -61,22 +56,4 @@ describe("the rankers at zero cards, with the no-collection entry on", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Add your cards" })).toHaveAttribute("href", "/collection");
   });
-});
-
-describe("the rankers at zero cards, with collection editing off", () => {
-  for (const off of [{}]) {
-    for (const [name, page] of [
-      ["/commanders", CommandersPage],
-      ["/discover", DiscoverPage],
-    ] as const) {
-      it(`${name} keeps the shipped words and link under ${JSON.stringify(off)}`, async () => {
-        env.value = off as unknown as NodeJS.ProcessEnv;
-        await draw(page);
-        expect(screen.getByRole("heading", { name: "No collection yet" })).toBeInTheDocument();
-        expect(screen.getByText("Upload your cards and we’ll rank every commander you can build.")).toBeInTheDocument();
-        expect(screen.getByRole("link", { name: "Upload collection" })).toHaveAttribute("href", "/collection");
-        expect(screen.queryByText("Nothing to rank yet")).toBeNull();
-      });
-    }
-  }
 });

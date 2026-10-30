@@ -78,17 +78,10 @@ beforeEach(() => {
   state.calls = [];
   state.invalidated = 0;
   state.after = 0;
-  process.env.COLLECTION_EDIT_ENABLED = "true";
   process.env.ALL_DECKS_CART_ENABLED = "true";
 });
 
 describe("markBought", () => {
-  it("refuses with collection editing off, writing nothing", async () => {
-    process.env.COLLECTION_EDIT_ENABLED = "";
-    expect(await press()).toEqual({ refused: "off" });
-    expect(state.calls).toEqual([]);
-  });
-
   it("refuses malformed input", async () => {
     for (const over of [
       { quantity: 0 }, { quantity: 21 }, { quantity: 1.5 }, { expected: -1 }, { expected: 2_147_483_647 },
@@ -204,9 +197,6 @@ describe("markBoughtForDecks", () => {
 
   it("refuses with the cart's switch off, writing nothing", async () => {
     process.env.ALL_DECKS_CART_ENABLED = "";
-    expect(await cartPress()).toEqual({ refused: "off" });
-    process.env.ALL_DECKS_CART_ENABLED = "true";
-    process.env.COLLECTION_EDIT_ENABLED = "";
     expect(await cartPress()).toEqual({ refused: "off" });
     expect(state.calls).toEqual([]);
   });

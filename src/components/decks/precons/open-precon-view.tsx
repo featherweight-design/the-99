@@ -85,7 +85,7 @@ export function byCard(cards: OpenPreconCard[]): ByCard[] {
   return [...merged.values()];
 }
 
-export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initialEdition = "regular", overview = null, early = null }: {
+export function OpenPreconView({ precon, fromNew, edition: initialEdition = "regular", overview = null, early = null }: {
   precon: Loaded;
   /**
    * An early decklist (announcements STATES 3.3): view-only, so no Start, no Link a deck and no Overview; its dashed
@@ -99,8 +99,6 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
   /** The precon's pre-written Overview (`loadPreconOverview`); null draws no block (small items 5). */
   overview?: PreconOverviewData | null;
   fromNew: boolean;
-  /** Collection editing is on for this reader: the Start dialog offers "I own this precon". */
-  canOwn?: boolean;
   /** The edition the URL named (`?edition=collector`); Regular when the precon has no Collector's Edition. */
   edition?: PreconEdition;
 }) {
@@ -238,7 +236,6 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
               // The chosen edition's own box and its own added date (a Collector's Edition add is its own entry).
               addedOn={edition === "collector" && precon.collector ? precon.collector.addedOn : precon.addedOn}
               addFileName={edition === "collector" && precon.collector ? precon.collector.fileName : row.fileName}
-              canOwn={canOwn}
             />}
           </div>
 

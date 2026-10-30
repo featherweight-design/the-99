@@ -469,7 +469,7 @@ export const spareCopy = {
     /** The one state sentence under the rows, for the state the rows are in. */
     oneAtATime: (from: string | ThirdPartyName) => personText`One request at a time. Ask instead moves it from ${from}.`,
     whenYours: "When it’s yours, press buy on the row.",
-    /** `whenYours` where the row has no buy press (`COLLECTION_EDIT_ENABLED` off): the collection takes it by hand. */
+    /** `whenYours` where the row has no buy press (no I got it on the surface): the collection takes it by hand. */
     whenYoursNoBuy: "When it’s yours, add it to your collection.",
     nobodyElse: "Nobody else you know has a spare.",
     /** The shared toast on a failed Ask, Ask instead, Ask again, Yes, No or ✕ (G5); the row is left as it was. */
@@ -518,7 +518,7 @@ export const spareCopy = {
       openDetail: (deck: string | null, days: string) => (deck ? `For ${deck} · ${days}` : days),
       canSpare: answerCanSpare,
       acceptedDetail: "The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.",
-      /** `acceptedDetail` with no buy press (`COLLECTION_EDIT_ENABLED` off): the collection takes it by hand. */
+      /** `acceptedDetail` for a standalone ask, whose card may be on no deck's list: the collection takes it by hand. */
       acceptedDetailNoBuy: "The handover is between you. Once it’s yours, add it to your collection.",
       keeping: answerKeeping,
       nobodyElse: "Nobody else you know has a spare of it.",

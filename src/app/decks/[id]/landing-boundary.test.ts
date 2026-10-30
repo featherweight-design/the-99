@@ -48,7 +48,7 @@ describe("the deck page's landing remount", () => {
     const text = src.getFullText();
     expect(text).toMatch(/const page = changeCommanderEnabled\(env\) \?/);
     expect(text).toMatch(/const tooled = swapTools \?/);
-    expect(text).toMatch(/const bought = collectionEditEnabled\(env\) \?/);
+    expect(text).toMatch(/const bought = <GotItProvider key=\{id\} deckId=\{id\}>/);
   });
 
   it("renders the wrap, never the stack bare", () => {

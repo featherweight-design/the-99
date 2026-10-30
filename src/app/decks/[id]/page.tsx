@@ -10,7 +10,6 @@ import { comboFor, comboLookupIds, deckComboFields } from "../../../lib/combos/a
 import { dropDismissed, readDismissedSuggestions } from "../../../lib/precons/suggestion-dismissed";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
-import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { carryOnArrival } from "../../../lib/precons/arrival-carry";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
@@ -360,7 +359,7 @@ export default async function DeckBuilderPage({
     : null;
   // The ticked import's receipt (no-collection entry S10): `?added=<entry>` beside `imported=1`. The same one-time
   // claim, read only for the reader's own add written for this deck; a failed read draws the plain strip.
-  const importAddReceiptRead = collectionEditEnabled(env) && arrivedFromImport(query[IMPORTED_PARAM]) && typeof preconAddedParam === "string"
+  const importAddReceiptRead = arrivedFromImport(query[IMPORTED_PARAM]) && typeof preconAddedParam === "string"
     ? early(perf.timed("importAddReceipt", () => readImportAddReceipt(userId, preconAddedParam, id)).catch(() => null))
     : null;
   // The precon link's doors (R3): an unlinked deck's suggestion and the Versions foot row's picker,
@@ -811,9 +810,8 @@ export default async function DeckBuilderPage({
       {shell}
     </DeckPageSwitches>
   );
-  // I got it (collection editing, since its own switch is retired): the Shopping rows' tags open its confirm. Without it every row is
-  // main's (E1). Keyed per deck, so an open confirm never carries to another deck's page.
-  const bought = collectionEditEnabled(env) ? <GotItProvider key={id} deckId={id}>{switched}</GotItProvider> : switched;
+  // I got it: the Shopping rows' tags open its confirm. Keyed per deck, so an open confirm never carries to another deck's page.
+  const bought = <GotItProvider key={id} deckId={id}>{switched}</GotItProvider>;
   const tooled = swapTools ? (
     <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{bought}</SwapToolsProvider>
   ) : bought;

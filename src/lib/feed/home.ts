@@ -22,7 +22,6 @@ import { db } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
 import { manapoolCardUrl } from "../manapool/links";
-import { collectionEditEnabled } from "../collection/edit-flag";
 import { compareNames } from "../person-name";
 import type { ThirdPartyName } from "../person-name/brand";
 import { type Answer } from "../social/spare-request-rules";
@@ -129,8 +128,8 @@ export function postLists(kind: FeedKind, post: Pick<FeedPost, "lists" | "promis
   return { n: post.lists, of: Math.max(post.promised ?? post.lists, post.lists) };
 }
 
-/** An answer's line: Yes points at the buy press while Shopping has it; No names who else has a spare now. */
-export type AnswerDetail = { canBuy: boolean; others: ThirdPartyName[] };
+/** An answer's line: Yes points at the buy press in Shopping; No names who else has a spare now. */
+export type AnswerDetail = { others: ThirdPartyName[] };
 
 /** What the lead story's Yes and No need: the request, the holder's spare count, the copies and deck the ask names. */
 export type LeadAsk = { id: string; spare: number; copies: number; deckName: ThirdPartyName | null; daysLeft: number };
@@ -355,7 +354,7 @@ export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: 
   const feed = offer.length > 0 ? { ...splitLead(views, on), offer } : splitLead(views, on);
   // Only a spare request that leads is answered on Home; its ask is read only then. The ask waits on the friend's
   // side whatever the feed shows, so the match is by card and asker: one open ask per asker and card (the index).
-  const answered = await answerDetails(userId, feed, env);
+  const answered = await answerDetails(userId, feed);
   if (answered.chosen && answered.lead?.kind === "spare-request") return withLeadAsk(answered, await loadIncomingAsks(userId, env, now, q));
   return answered;
 }
@@ -378,18 +377,18 @@ export function withListTargets(views: FeedView[], targets: ReadonlyMap<string, 
  * Each answer item's line (`AnswerDetail`). Who else offers the card is read only for a No, in ONE friend-spares read
  * over those cards (the grant rule every spares surface reads), and never on a feed with no answer in it.
  */
-async function answerDetails(userId: string, feed: HomeFeed, env: NodeJS.ProcessEnv): Promise<HomeFeed> {
+async function answerDetails(userId: string, feed: HomeFeed): Promise<HomeFeed> {
   if (!feed.chosen) return feed;
   const views = [...(feed.lead ? [feed.lead] : []), ...feed.items];
   if (!views.some((v) => v.answer)) return feed;
   const noCards = [...new Set(views.flatMap((v) => (v.answer === "no" && v.card ? [v.card.oracleId] : [])))];
   const spares = noCards.length === 0 ? [] : await loadFriendSpares(userId, noCards);
-  return withAnswerDetails(feed, spares, collectionEditEnabled(env));
+  return withAnswerDetails(feed, spares);
 }
 
 /** The answers' lines, given the friends' spares of the declined cards. Pure, for the tests. */
 export function withAnswerDetails(
-  feed: HomeFeed, spares: readonly Pick<FriendSpare, "oracleId" | "spare" | "friend">[], canBuy: boolean,
+  feed: HomeFeed, spares: readonly Pick<FriendSpare, "oracleId" | "spare" | "friend">[],
 ): HomeFeed {
   if (!feed.chosen) return feed;
   const detail = (v: FeedView): FeedView => {
@@ -398,7 +397,7 @@ export function withAnswerDetails(
       .filter((s) => s.oracleId === v.card!.oracleId && s.friend.publicId !== v.friend?.publicId)
       .sort((x, y) => y.spare - x.spare || compareNames(x.friend.displayName, y.friend.displayName))
       .map((s) => s.friend.displayName);
-    return { ...v, answerDetail: { canBuy, others } };
+    return { ...v, answerDetail: { others } };
   };
   return { ...feed, lead: feed.lead && detail(feed.lead), items: feed.items.map(detail) };
 }

@@ -23,7 +23,7 @@ const redirect = () => new Promise(() => {});
 const KEY = "the99:precon-add-attempt:user_A:Multiverse_FRC";
 
 const open = (addedOn: string | null = null) => {
-  render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn={addedOn} canOwn />);
+  render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn={addedOn} />);
   fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
 };
 const own = () => screen.getByRole("checkbox", { name: /I own this precon/ });
@@ -102,18 +102,10 @@ describe("Start dialog: I own this precon", () => {
     expect(start.mock.calls[0][2]).toBe(start.mock.calls[1][2]);
   });
 
-  it("offers no box when collection editing is off for the reader", () => {
-    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn="2026-10-13T09:00:00.000Z" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
-    expect(screen.queryByRole("checkbox")).toBeNull();
-    expect(screen.queryByText(/You added this precon on /)).toBeNull();
-    expect(screen.getByText("this precon’s copies")).toBeInTheDocument();
-  });
-
 
   it("keeps a lost start's id across a reload", async () => {
     start.mockRejectedValueOnce(new Error("network")).mockImplementationOnce(redirect);
-    const first = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    const first = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
     fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     fireEvent.click(own());
     press();
@@ -122,7 +114,7 @@ describe("Start dialog: I own this precon", () => {
     expect(window.sessionStorage.getItem(KEY)).toBe(sent);
     // A reload: the page is gone, a new one mounts, and the retry carries the same id.
     first.unmount();
-    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
     fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     fireEvent.click(own());
     press();
@@ -132,7 +124,7 @@ describe("Start dialog: I own this precon", () => {
 
   it("never lends one account's unresolved id to another account signing in on the same tab", async () => {
     start.mockRejectedValueOnce(new Error("network")).mockImplementationOnce(redirect);
-    const first = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    const first = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
     fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     fireEvent.click(own());
     press();
@@ -140,7 +132,7 @@ describe("Start dialog: I own this precon", () => {
     const aId = start.mock.calls[0][2];
     first.unmount();
     account.id = "user_B";
-    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
     fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     fireEvent.click(own());
     press();
@@ -150,7 +142,7 @@ describe("Start dialog: I own this precon", () => {
 
   it("starts the chosen edition's own box, under its own id", async () => {
     start.mockRejectedValueOnce(new Error("network")).mockImplementation(redirect);
-    const view = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn addFileName="MultiverseCE_FRC" />);
+    const view = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addFileName="MultiverseCE_FRC" />);
     fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     fireEvent.click(own());
     press();
@@ -158,7 +150,7 @@ describe("Start dialog: I own this precon", () => {
     expect(start.mock.calls[0][0]).toBe("MultiverseCE_FRC");
     fireEvent.click(screen.getAllByRole("button", { name: "Cancel" })[0]);
     // The reader switches to Regular: its box is its own entry, so the start is a new action.
-    view.rerender(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn addFileName={row.fileName} />);
+    view.rerender(<StartPrecon row={row} cards={100} body={99} illegal={[]} addFileName={row.fileName} />);
     fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     fireEvent.click(own());
     press();

@@ -15,7 +15,6 @@ import { getCollectionLastUpdated, getCollectionStats } from "../lib/home/summar
 import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
 import { HomeTour } from "../components/discovery/home-tour";
-import { collectionEditEnabled } from "../lib/collection/edit-flag";
 import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
@@ -152,8 +151,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // The decks are read here rather than below because first run is "no
   // collection read AND no decks", both halves. A player who imported a deck
   // before reading a collection is not a new player, and that state is
-  // reachable by design: `/decks/import` has no collection gate, and with
-  // COLLECTION_EDIT_ENABLED step 1's ways group links to it. Showing them
+  // reachable by design: `/decks/import` has no collection gate, and step 1's
+  // ways group links to it. Showing them
   // the three steps would hide the deck they have.
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/");
@@ -274,7 +273,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       console.error("home: tonight's table could not be read", error);
     }
   }
-  const noCollectionEntry = collectionEditEnabled(env);
   // Friends on Home (Social R3 addendum, readiness gap 1): read per request, outside the cached payload, because a
   // friend's rename, a link made or revoked and a link's expiry move nothing its key carries. A failed read draws no
   // section, as a failed Commitments read draws no card. Read before the first-run return, so the checklist's Friends
@@ -357,11 +355,11 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   if (data.firstRun) {
     const firstRun = (
       <FirstRunChecklist
-        addByHand={collectionEditEnabled(env)}
+        addByHand
         about={about}
         welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="first-run" afterAbout={about !== null} />}
-        ways={noCollectionEntry ? { precons: true } : null}
-        scan={collectionEditEnabled(env)}
+        ways={{ precons: true }}
+        scan
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
         signature={signatureRow}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
@@ -376,10 +374,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   }
 
   // A precon pick's receipt (no-collection entry S5): read per request from the ledger, outside the cached payload,
-  // and only when the address claims one, with the pick's switch on (the line's). A failed read draws
-  // no strip.
+  // and only when the address claims one. A failed read draws no strip.
   let receipt: PickReceipt | null = null;
-  const claim = noCollectionEntry ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
+  const claim = (await searchParams)?.[PICK_RECEIPT_PARAM];
   if (claim !== undefined) {
     try {
       receipt = await readPickReceipt(userId, claim);
@@ -404,7 +401,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       signature={signatureStrip}
       cartEnabled={allDecksCartEnabled(env)}
       helpMeChoose={helpMeChooseEnabled(env)}
-      noCards={noCollectionEntry && data.stats.uniqueCards === 0}
+      noCards={data.stats.uniqueCards === 0}
       feed={feed}
       tradeAsk={tradeAsk}
       pushVisit={pushVisit}

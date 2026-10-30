@@ -45,10 +45,8 @@ describe("requestText", () => {
     const answeredAt = new Date(NOW.getTime() - 3_600_000);
     const t = requestText(req("a", "yes", { answeredAt }), NOW);
     expect([t.kind, plain(t.title), plain(t.detail)]).toEqual(["Accepted", "Colin can spare Jace, Multiverse Architect", m.acceptedDetail]);
-    // No buy press on the rows (mark-bought off): the line points at the collection instead.
-    expect(plain(requestText(req("a", "yes", { answeredAt }), NOW, false).detail)).toBe(m.acceptedDetailNoBuy);
     // A standalone ask (a friend's Spares tab) may be for a card on no deck's list: never pointed at Shopping.
-    expect(plain(requestText(req("a", "yes", { answeredAt, standalone: true }), NOW, true).detail)).toBe(m.acceptedDetailNoBuy);
+    expect(plain(requestText(req("a", "yes", { answeredAt, standalone: true }), NOW).detail)).toBe(m.acceptedDetailNoBuy);
     expect(t.at).toBe(answeredAt);
   });
 

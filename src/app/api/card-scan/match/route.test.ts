@@ -3,12 +3,10 @@ import { NextRequest } from "next/server";
 
 const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
-  env: { COLLECTION_EDIT_ENABLED: "true" } as Record<string, string>,
   lookup: vi.fn(),
   hit: vi.fn(),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
-vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env }));
 vi.mock("../../../../lib/card-scan/lookup", () => ({ lookupGuesses: stub.lookup }));
 vi.mock("../../../../lib/rate/observe", () => ({ observeHit: stub.hit }));
 
@@ -26,7 +24,6 @@ const GUESS = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Rin
 
 beforeEach(() => {
   stub.userId = "user_1";
-  stub.env = { COLLECTION_EDIT_ENABLED: "true" };
   stub.lookup.mockReset();
   stub.hit.mockReset();
   stub.lookup.mockResolvedValue({ kind: "ok", index: "all-20261014", answer: { guesses: [GUESS], margin: null } });
@@ -46,12 +43,6 @@ describe("POST /api/card-scan/match", () => {
   it("refuses a reader who is not signed in, before reading anything", async () => {
     stub.userId = null;
     expect((await post({ model: SCAN_MODEL, embedding: unit() })).status).toBe(401);
-    expect(stub.lookup).not.toHaveBeenCalled();
-  });
-
-  it("is not there with collection edit off", async () => {
-    stub.env = {};
-    expect((await post({ model: SCAN_MODEL, embedding: unit() })).status).toBe(404);
     expect(stub.lookup).not.toHaveBeenCalled();
   });
 

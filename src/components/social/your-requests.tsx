@@ -31,9 +31,9 @@ export const daysAgo = (createdAt: Date, now: Date): number => Math.floor((now.g
 const isOpen = (a: YourRequest) => a.state === "open" || a.state === "unavailable" || a.state === "unneeded";
 
 /** What one row says: its kicker and ink, its time, its title and its line. Pure, for the tests. */
-/** `canBuy`: Shopping rows carry the buy press (mark-bought on), so Accepted may point at it; never for a standalone
- *  ask (a friend's Spares tab), whose card may be on no deck's list. */
-export function requestText(a: YourRequest, now: Date, canBuy = true): { kind: string; ink: string; at: Date; title: string | PersonParts; detail: string | PersonParts } {
+/** Shopping rows carry the buy press, so Accepted points at it; never for a standalone ask (a friend's Spares tab),
+ *  whose card may be on no deck's list. */
+export function requestText(a: YourRequest, now: Date): { kind: string; ink: string; at: Date; title: string | PersonParts; detail: string | PersonParts } {
   const friend = a.holder.displayName;
   const card = a.card.name;
   const days = r.daysLeft(a.daysLeft ?? 0);
@@ -41,7 +41,7 @@ export function requestText(a: YourRequest, now: Date, canBuy = true): { kind: s
     case "open":
       return { kind: m.kind.open, ink: "text-[color:var(--accent-text)]", at: a.createdAt, title: m.asked(friend, card), detail: m.openDetail(a.deckName, days) };
     case "yes":
-      return { kind: m.kind.yes, ink: "text-[color:var(--success)]", at: a.answeredAt ?? a.createdAt, title: m.canSpare(friend, card), detail: canBuy && !a.standalone ? m.acceptedDetail : m.acceptedDetailNoBuy };
+      return { kind: m.kind.yes, ink: "text-[color:var(--success)]", at: a.answeredAt ?? a.createdAt, title: m.canSpare(friend, card), detail: !a.standalone ? m.acceptedDetail : m.acceptedDetailNoBuy };
     case "no":
       return {
         kind: m.kind.no, ink: "text-[color:var(--fg-faint)]", at: a.answeredAt ?? a.createdAt, title: m.keeping(friend, card),
@@ -103,7 +103,7 @@ export function RequestText({ a, text, now, className = "" }: { a: YourRequest; 
   );
 }
 
-export function YourRequests({ rows, now, canBuy = true }: { rows: readonly YourRequest[]; now: Date; canBuy?: boolean }) {
+export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now: Date }) {
   const router = useRouter();
   const root = useRef<HTMLElement | null>(null);
   const land = useLandFocus(root);
@@ -185,7 +185,7 @@ export function YourRequests({ rows, now, canBuy = true }: { rows: readonly Your
       </h2>
       <ul className="m-0 mt-[12px] flex list-none flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-0 [border:1px_solid_var(--border)]">
         {rows.map((a, index) => {
-          const text = requestText(a, now, canBuy);
+          const text = requestText(a, now);
           // Offered only when the server would take it (`canAskAgain`: no open ask for the card, no No from this friend
           // inside the cooldown, a cleared one included).
           const again = a.state === "expired" && a.canAskAgain;

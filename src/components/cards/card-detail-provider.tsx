@@ -680,8 +680,8 @@ export function CardDetailProvider({
   comboCommanderOracleIds?: readonly string[];
   /**
    * Collection edit R2 §C: the receipt draws `Edit copies`, and pressing it closes the modal and
-   * opens the Add cards sheet in edit mode for the card. Passed by `/collection` alone, and only
-   * with `COLLECTION_EDIT_ENABLED` on, so every other surface keeps a read-only receipt.
+   * opens the Add cards sheet in edit mode for the card. Passed by `/collection` alone, so every
+   * other surface keeps a read-only receipt.
    */
   collectionEdit?: boolean;
   /**

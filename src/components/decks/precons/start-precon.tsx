@@ -36,8 +36,6 @@ export type StartPreconProps = {
   dockBeside?: ReactNode;
   /** When the reader last added this precon to their collection (an unreverted entry), as ISO; null if never. */
   addedOn?: string | null;
-  /** Collection editing is on: the dialog offers "I own this precon" (the action refuses without it). */
-  canOwn?: boolean;
   /**
    * The edition the reader chose, by file: the precon's own (the default), or its Collector's Edition twin when the page's
    * edition switch chose it. The deck starts that edition's printings, and the add writes that edition's box, so
@@ -108,7 +106,7 @@ export function StartPrecon(props: StartPreconProps) {
   );
 }
 
-function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn = false, addFileName, addRef, onDismiss }: StartPreconProps & {
+function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileName, addRef, onDismiss }: StartPreconProps & {
   addRef: React.RefObject<{ id: string | null }>;
   onDismiss: () => void;
 }) {
@@ -149,7 +147,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
     startTransition(async () => {
       // The chosen edition: its box is the one added, and its printings are the ones the deck is pinned to.
       const addFile = addFileName ?? row.fileName;
-      if (own && canOwn) {
+      if (own) {
         // One action, one transaction: the box goes into the collection, the deck starts committed, and the copies are
         // reserved to it (Hugh, 2026-10-14). The id makes a retry land on the deck it made rather than adding twice.
         addRef.current.id ??= readAttempt(account, addFile) ?? crypto.randomUUID();
@@ -249,12 +247,12 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
                 />
               </label>
 
-              {canOwn && <div className="flex flex-col gap-[4px]">
+              <div className="flex flex-col gap-[4px]">
                 <OptInCheckbox checked={own} disabled={pending} onChange={(next) => { setOwn(next); setFailed(false); }}>
                   {copy.owned.label}
                 </OptInCheckbox>
                 {addedOn && <p className="m-0 pl-[28px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.owned.addedOn(preconAddedDate(addedOn))}</p>}
-              </div>}
+              </div>
 
               {already && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.already(already.deckName)}</p>}
               {illegal.length > 0 && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.illegal(illegal)}</p>}

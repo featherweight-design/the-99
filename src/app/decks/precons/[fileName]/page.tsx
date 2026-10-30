@@ -9,7 +9,6 @@ import { cachePageForUser } from "../../../../lib/cache/page-cache";
 import { preconsCopy } from "../../../../lib/copy/precons";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { loadOpenPrecon } from "../../../../lib/precons/open-read";
-import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
 import { OpenPreconView } from "../../../../components/decks/precons/open-precon-view";
 import { parseEdition } from "../../../../lib/precons/edition";
 import { loadPreconOverview, overviewForList, renderedPreconList } from "../../../../lib/precons/overview-read";
@@ -48,5 +47,5 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
   }
   // Shown only beside the list it was written for: an ingest can move the list without touching `current`.
   const overview = overviewForList(await overviewRead, renderedPreconList(precon));
-  return <OpenPreconView precon={precon} fromNew={from === "new"} canOwn={collectionEditEnabled(env)} edition={parseEdition(edition)} overview={overview} />;
+  return <OpenPreconView precon={precon} fromNew={from === "new"} edition={parseEdition(edition)} overview={overview} />;
 }

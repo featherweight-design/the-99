@@ -24,7 +24,8 @@ vi.mock("@clerk/nextjs/server", () => ({
   },
 }));
 let uniqueCards = 5;
-vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards }) }));
+// `hasAnyDeck`: the open lock reads it while locked (collection editing is retired, always on).
+vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards }), hasAnyDeck: async () => false }));
 // The props each menu's call site is handed, so the Friends row's switch can be read off them.
 const navProps = vi.hoisted(() => [] as Record<string, unknown>[]);
 vi.mock("./nav", () => ({

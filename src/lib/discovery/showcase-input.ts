@@ -43,7 +43,7 @@ export async function loadCardInput(
   const [fits, decksHeld, syncAnchored] = await Promise.all([
     perf ? perf.timed("toolFits", () => loadToolFits(userId, env, asked)) : loadToolFits(userId, env, asked),
     deckCount(userId),
-    isOn("COLLECTION_EDIT_ENABLED") ? hasSyncAnchor(userId) : false,
+    hasSyncAnchor(userId),
   ]);
   return { isOn, fits, deckCount: decksHeld, hasSyncBase: syncAnchored, place: true };
 }

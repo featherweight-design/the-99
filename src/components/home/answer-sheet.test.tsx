@@ -32,7 +32,7 @@ const answer = (key: string, o: Partial<FeedView> = {}): FeedView => ({
   key, kind: "spare-request", at: "2026-10-22T09:00:00.000Z", unseen: true,
   card: { oracleId: "jace", name: "Jace, Multiverse Architect", image: null, art: null, colorIdentity: ["U"] },
   friend: COLIN, href: "/friends", opens: null, outbound: null, name: null, setSize: null, owned: null, drop: null, combo: null,
-  answer: "yes", askable: false, answerDetail: { canBuy: true, others: [] }, ...o,
+  answer: "yes", askable: false, answerDetail: { others: [] }, ...o,
 });
 const feed = (items: FeedView[]): HomeFeed => ({ chosen: true, on: ["spare-request"], items, unseen: items.filter((i) => i.unseen).length, lead: null });
 const request = (o: Partial<YourRequest> = {}): YourRequest => ({

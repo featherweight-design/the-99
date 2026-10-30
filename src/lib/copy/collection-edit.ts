@@ -1,4 +1,4 @@
-// The copy of collection editing, behind COLLECTION_EDIT_ENABLED (collection screens plan).
+// The copy of collection editing (collection screens plan).
 // This PR carries the head's entry and the Add cards sheet; later PRs add their own blocks.
 // Strings are the handoff's `collection-edit · copy strings.ts`, adopted as drawn. Counts are
 // pinned to en-US like the place head, so a server render and a browser agree.
@@ -36,7 +36,7 @@ export const collectionEditCopy = {
     bodyShort: "Drop a CSV export from Moxfield, Archidekt, Deckbox or ManaBox, or add cards by hand.",
   },
   // The "ways" group (no-collection entry S1, S13, S15): one quiet group under the upload, on first run's step 1 and
-  // on the empty Collection, behind COLLECTION_EDIT_ENABLED. Strings are the handoff's `ways` block. The phone
+  // on the empty Collection. Strings are the handoff's `ways` block. The phone
   // draws each row's label alone; the desktop columns carry a sub-line, the full form on step 1 and the short form
   // in the empty Collection's narrower column.
   ways: {

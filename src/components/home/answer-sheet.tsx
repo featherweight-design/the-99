@@ -104,10 +104,10 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
   );
 }
 
-function AnswerSheet({ item, request, now, onClose, onCleared }: Open & { now: string; onClose: () => void; onCleared: () => void }) {
+function AnswerSheet({ request, now, onClose, onCleared }: Open & { now: string; onClose: () => void; onCleared: () => void }) {
   const toast = useSpareToast();
   const [busy, setBusy] = useState(false);
-  const text = requestText(request, new Date(now), item.answerDetail?.canBuy ?? true);
+  const text = requestText(request, new Date(now));
   async function clear() {
     if (busy) return;
     setBusy(true);

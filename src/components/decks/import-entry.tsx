@@ -88,13 +88,8 @@ function formatBytes(bytes: number): string {
  * taking more height than the viewport has. The route itself never passes it:
  * on `/decks/import` the heading names the page and the box is a real target.
  */
-export function ImportEntry({ compact = false, canOwn = false }: {
+export function ImportEntry({ compact = false }: {
   compact?: boolean;
-  /**
-   * `COLLECTION_EDIT_ENABLED`, resolved for the reader by the page (S8): the form offers `I own these cards`.
-   * Off, the form and the payload are exactly as shipped.
-   */
-  canOwn?: boolean;
 } = {}) {
   const router = useRouter();
   const nav = usePendingPush();
@@ -188,7 +183,7 @@ export function ImportEntry({ compact = false, canOwn = false }: {
     setDeckName(name);
     setFailure(null);
     lastSubmit.current = { commanderOracleId, name, partnerOracleId };
-    const sentOwn = canOwn && own;
+    const sentOwn = own;
     const actionId = sentOwn ? (actionIdRef.current ??= crypto.randomUUID()) : null;
     startTransition(async () => {
       let committed = false;
@@ -464,18 +459,16 @@ export function ImportEntry({ compact = false, canOwn = false }: {
       />
 
       {/* S8: under Deck name, above the import button. A 44px row on the phone, centred there as drawn. */}
-      {canOwn && (
-        <OptInCheckbox
-          checked={own}
-          onChange={setOwn}
-          // A press whose answer was lost may have added the cards and made the deck: its retry must keep the tick and
-          // the id that find them, so the box holds still until that press is answered or the list changes.
-          disabled={failure?.kind === "addUnsure"}
-          className="mt-[16px] min-h-[44px] items-center md:min-h-0 md:items-start"
-        >
-          {copy.entry.own}
-        </OptInCheckbox>
-      )}
+      <OptInCheckbox
+        checked={own}
+        onChange={setOwn}
+        // A press whose answer was lost may have added the cards and made the deck: its retry must keep the tick and
+        // the id that find them, so the box holds still until that press is answered or the list changes.
+        disabled={failure?.kind === "addUnsure"}
+        className="mt-[16px] min-h-[44px] items-center md:min-h-0 md:items-start"
+      >
+        {copy.entry.own}
+      </OptInCheckbox>
 
       <PrimaryButton
         // Wrapped: a bare `submit` would receive the click event as its first

@@ -165,12 +165,8 @@ describe("/about, the fits (E10)", () => {
     expect(m.loadToolFits.mock.calls[0]![2]).toEqual(["top-off"]);
   });
 
-  // Collection Sync's own switch is retired: Sync follows collection editing.
-  it("reads the sync base only with collection editing on", async () => {
-    vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
-    await tabs();
-    expect(m.hasSyncAnchor).not.toHaveBeenCalled();
-    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
+  // Collection Sync's switch and its parent's, collection editing, are retired: the sync base is always read.
+  it("reads the sync base", async () => {
     await tabs();
     expect(m.hasSyncAnchor).toHaveBeenCalledWith("u1");
   });

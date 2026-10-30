@@ -104,7 +104,7 @@ describe("FeedItemRow", () => {
 
   it("draws an answer to the reader's own ask as Your request: who spares it, the buy line, a press to /friends off Home, no accent", () => {
     const colin = { publicId: "p3", displayName: "Colin" };
-    list(<FeedItemRow item={view({ kind: "spare-request", friend: colin, answer: "yes", href: "/friends", answerDetail: { canBuy: true, others: [] } })} now={NOW} />);
+    list(<FeedItemRow item={view({ kind: "spare-request", friend: colin, answer: "yes", href: "/friends", answerDetail: { others: [] } })} now={NOW} />);
     expect(screen.getByText("Your request").className).not.toContain("--accent-text");
     expect(screen.getByText("Colin can spare Sai, Master Thopterist")).toBeTruthy();
     expect(screen.getByText("The handover is between you. Once it’s yours, press buy on it in Shopping or add it to your collection.")).toBeTruthy();
@@ -114,11 +114,11 @@ describe("FeedItemRow", () => {
 
   it("a No names who else has a spare, or nobody", () => {
     const chris = { publicId: "p4", displayName: "Chris" };
-    const { unmount } = list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { canBuy: true, others: [named("Max"), named("Ann")] } })} now={NOW} />);
+    const { unmount } = list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { others: [named("Max"), named("Ann")] } })} now={NOW} />);
     expect(screen.getByText("Chris is keeping Sai, Master Thopterist")).toBeTruthy();
     expect(screen.getByText("Max and 1 more have a spare too.")).toBeTruthy();
     unmount();
-    list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { canBuy: true, others: [] } })} now={NOW} />);
+    list(<FeedItemRow item={view({ kind: "spare-request", friend: chris, answer: "no", href: "/friends", answerDetail: { others: [] } })} now={NOW} />);
     expect(screen.getByText("Nobody else you know has a spare of it.")).toBeTruthy();
   });
 

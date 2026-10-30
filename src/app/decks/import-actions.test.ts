@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
@@ -608,27 +608,9 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
     own.readDeckOwnLines.mockReset();
     own.readDeckOwnLines.mockResolvedValue([{ oracleId: SOL_RING, setCode: "", condition: null, quantity: 1 }]);
     own.importDeckOwned.mockResolvedValue({ ok: true, deckId: OWNED_DECK, entryId: ACTION });
-    delete process.env.COLLECTION_EDIT_ENABLED;
   });
 
-  afterEach(() => {
-    delete process.env.COLLECTION_EDIT_ENABLED;
-  });
-
-  const switchOn = () => {
-    process.env.COLLECTION_EDIT_ENABLED = "true";
-  };
-
-  it("with collection editing off, ignores own and writes the deck exactly as shipped", async () => {
-    const result = await run({ own: true, actionId: ACTION });
-    expect(result).toMatchObject({ ok: true, deckId: stub.DECK_ID, unresolvedCount: 1 });
-    expect(own.readDeckOwnLines).not.toHaveBeenCalled();
-    expect(own.importDeckOwned).not.toHaveBeenCalled();
-    expect(deckInserts()).toHaveLength(1);
-  });
-
-  it("with collection editing on and own unticked, writes the deck exactly as shipped", async () => {
-    switchOn();
+  it("with own unticked, writes the deck exactly as shipped", async () => {
     const result = await run({ own: false });
     expect(result).toMatchObject({ ok: true, deckId: stub.DECK_ID });
     expect(own.importDeckOwned).not.toHaveBeenCalled();
@@ -636,7 +618,6 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
   });
 
   it("ticked, adds the body and both commanders and writes the deck only through the add", async () => {
-    switchOn();
     const result = await run({ own: true, actionId: ACTION });
     expect(result).toMatchObject({ ok: true, deckId: OWNED_DECK, unresolvedCount: 1 });
     // The plain transaction never ran: the deck is the add's to write, inside its own transaction.
@@ -653,7 +634,6 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
   });
 
   it("ticked and refused, answers addFailed and writes no deck", async () => {
-    switchOn();
     own.importDeckOwned.mockResolvedValue({ ok: false });
     const result = await run({ own: true, actionId: ACTION });
     expect(result).toMatchObject({ ok: false, reason: "addFailed" });
@@ -663,7 +643,6 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
 
   // A write that throws has rolled back, so it is the same refusal: never an exception at the caller.
   it("ticked and the write throws, answers addFailed", async () => {
-    switchOn();
     own.importDeckOwned.mockRejectedValue(new Error("deadlock"));
     const result = await run({ own: true, actionId: ACTION });
     expect(result).toMatchObject({ ok: false, reason: "addFailed" });
@@ -673,7 +652,6 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
   // With deck printings on and nothing held, the named Sol Ring LTC 284 is one the add brings in: it is the
   // deck's pick and the strip does not call it missing from the collection.
   it("with deck printings on, takes a named printing the add brings in as the pick, not as missing", async () => {
-    switchOn();
     process.env.DECK_PRINTINGS_ENABLED = "true";
     own.readDeckOwnLines.mockResolvedValue([
       { oracleId: SOL_RING, setCode: "ltc", collectorNumber: "284", scryfallId: "s1", finish: "nonfoil", condition: null, quantity: 1 },
@@ -688,7 +666,6 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
   });
 
   it("ticked, refuses a missing or malformed action id before any write", async () => {
-    switchOn();
     await expect(run({ own: true })).rejects.toThrow(/action id/);
     await expect(run({ own: true, actionId: "nope" })).rejects.toThrow(/action id/);
     expect(own.importDeckOwned).not.toHaveBeenCalled();

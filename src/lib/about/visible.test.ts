@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -17,17 +17,17 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 
 // Retired switches draw always and are still seen by id (so no reader's New marks moved): with "every switch off" they
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED"];
+// Collection editing's entries, and the names that followed it (scanning, added copy, the way in without a collection, I got
+// it), are among them. `upload-choice` draws in its Sync variant, so its variant id is met too.
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
-const retiredIds = retiredEntries.map((e) => e.id);
+const retiredIds = switchedIds(retiredEntries.map((e) => resolveEntry(e, OFF)));
 
 describe("all-decks-cart’s press line", () => {
-  it("drops the buy key while I got it is off, so the entry never promises an inert tag", () => {
-    const cartOnly = visibleEntries({ ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
-    const withBuy = visibleEntries({ ALL_DECKS_CART_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
-    expect(cartOnly.keys).toHaveLength(3);
-    expect(withBuy.keys).toHaveLength(4);
-    expect(withBuy.keys[3]).toMatch(/press “buy”/);
+  it("always carries the buy key: I got it is always on (collection editing is retired)", () => {
+    const cart = visibleEntries({ ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
+    expect(cart.keys).toHaveLength(4);
+    expect(cart.keys[3]).toMatch(/press “buy”/);
   });
 });
 
@@ -288,26 +288,22 @@ describe("every switched line names text its entry carries", () => {
   );
 });
 
-// COLLECTION_SYNC_ENABLED is retired: the variant keeps the name as its identity and follows COLLECTION_EDIT_ENABLED, so
-// the two-choice form no longer draws.
+// COLLECTION_SYNC_ENABLED and its parent COLLECTION_EDIT_ENABLED are retired: the variant keeps the name as its identity
+// and always draws, so the two-choice form no longer does.
 describe("an entry's variant: `upload-choice`'s Sync form (collection sync ruling 5, switch retired)", () => {
   const post = aboutEntries.find((e) => e.id === "post-import")!;
-  const SYNC = { COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const SYNC = {} as unknown as NodeJS.ProcessEnv;
   const SYNC_KEY = "Sync: takes the file’s changes, removals included, and keeps yours. If you both changed a card, it asks.";
   const HALF = "After a sync it also says how many of your own changes stayed.";
   const drawn = (env: NodeJS.ProcessEnv) => visibleEntries(env).find((e) => e.id === "upload-choice");
 
-  it("reads in its Sync form wherever collection editing is on, four keys, Sync's in place of the doubling line", () => {
+  it("reads in its Sync form, four keys, Sync's in place of the doubling line", () => {
     const e = drawn(SYNC)!;
     expect(e.title).toBe("Replacing, adding or syncing from a file");
     expect(e.caption).toContain("“Sync” takes what changed in the file and keeps what you changed in the app.");
     expect(e.keys).toHaveLength(4);
     expect(e.keys[2]).toBe(SYNC_KEY);
     expect(e.variantOn).toBe("COLLECTION_SYNC_ENABLED");
-  });
-
-  it("draws nothing without collection editing", () => {
-    expect(drawn({} as unknown as NodeJS.ProcessEnv)).toBeUndefined();
   });
 
   it("is announced, with no version bump, to a reader who met the two-choice form", () => {
@@ -321,38 +317,27 @@ describe("an entry's variant: `upload-choice`'s Sync form (collection sync rulin
     expect(unseenEntries(visibleEntries(SYNC), after)).toEqual([]);
   });
 
-  it("keeps `post-import`'s half-line wherever collection editing is on", () => {
-    expect(resolveEntry(post, {} as unknown as NodeJS.ProcessEnv).caption).not.toContain(HALF);
+  it("keeps `post-import`'s half-line", () => {
     expect(resolveEntry(post, SYNC).caption.endsWith(`what’s in them.\n${HALF}`)).toBe(true);
   });
 });
 
-describe("a negated line switch, and `import`'s two warnings (collection edit)", () => {
+describe("a negated line switch, and `import`'s two warnings (collection edit, retired)", () => {
   const imp = aboutEntries.find((e) => e.id === "import")!;
   const REPLACES = "Heads up: an import replaces your whole Collection, it doesn’t add to it.";
   const ASKS = "Already have a Collection here? The 99 asks whether the file replaces it or adds to it.";
-  const env = (v?: string) => (v === undefined ? {} : { COLLECTION_EDIT_ENABLED: v }) as unknown as NodeJS.ProcessEnv;
+  const env = (v?: string) => (v === undefined ? {} : { NEVER_CUT_ENABLED: v }) as unknown as NodeJS.ProcessEnv;
 
-  it("shows the replace warning alone with the switch off, exactly as before the switch existed", () => {
+  it("always draws the question, never the replace warning, leaving no blank line behind", () => {
     const resolved = resolveEntry(imp, env());
-    expect(resolved.caption).toContain(REPLACES);
-    expect(resolved.caption).not.toContain(ASKS);
-    expect(resolved.caption.endsWith(REPLACES)).toBe(true);
-  });
-
-  it("swaps it for the question with the switch on, leaving no blank line behind", () => {
-    const resolved = resolveEntry(imp, env("true"));
     expect(resolved.caption).not.toContain(REPLACES);
     expect(resolved.caption.endsWith(`\n\n${ASKS}`)).toBe(true);
   });
 
-  it("reads anything but the exact string 'true' as off", () => {
-    expect(resolveEntry(imp, env("1")).caption).toContain(REPLACES);
-  });
-
-  it("keeps a `!` key while its switch is off and drops it while on", () => {
-    const e: AboutEntry = { ...aboutEntries[0], id: "neg", since: 3, keys: ["Old", "New"], keySwitches: { Old: "!COLLECTION_EDIT_ENABLED", New: "COLLECTION_EDIT_ENABLED" } };
+  it("keeps a `!` key while its switch is off and drops it while on, reading anything but 'true' as off", () => {
+    const e: AboutEntry = { ...aboutEntries[0], id: "neg", since: 3, keys: ["Old", "New"], keySwitches: { Old: "!NEVER_CUT_ENABLED", New: "NEVER_CUT_ENABLED" } };
     expect(resolveEntry(e, env()).keys).toEqual(["Old"]);
+    expect(resolveEntry(e, env("1")).keys).toEqual(["Old"]);
     expect(resolveEntry(e, env("true")).keys).toEqual(["New"]);
   });
 });
@@ -397,10 +382,10 @@ describe("deck-benchmarks follows the Analysis tab", () => {
 describe("the collection home epic’s two entries (one bump, 14)", () => {
   const ids = (env: Record<string, string>) => visibleEntries(env as unknown as NodeJS.ProcessEnv).map((e) => e.id);
 
-  // SHOPPING_MARK_BOUGHT_ENABLED is retired: the entry follows collection editing, which the purchase writes through.
-  it("draws I got it only with collection editing, after stand-ins", () => {
-    expect(ids({})).not.toContain("shopping-got-it");
-    const on = ids({ COLLECTION_EDIT_ENABLED: "true", SWAP_TOOLS_ENABLED: "true" });
+  // SHOPPING_MARK_BOUGHT_ENABLED and its parent COLLECTION_EDIT_ENABLED are retired: the entry always draws.
+  it("always draws I got it, after stand-ins", () => {
+    expect(ids({})).toContain("shopping-got-it");
+    const on = ids({ SWAP_TOOLS_ENABLED: "true" });
     expect(on[on.indexOf("stand-ins") + 1]).toBe("shopping-got-it");
   });
 
@@ -433,7 +418,7 @@ describe("the collection home epic’s two entries (one bump, 14)", () => {
 
 describe("a way in without a collection (no-collection entry PR 6: a switched entry, no bump)", () => {
   const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
-  const LINE = { COLLECTION_EDIT_ENABLED: "true" };
+  const LINE = {};
   const drawn = (o: Record<string, string>, id: string) => visibleEntries(env(o)).find((e) => e.id === id);
   const PRECON_LINE = "Pick the precons you own and each one starts its deck, with its cards in your Collection at the box’s printings, tokens too.";
   const PRECON_KEY = "Each precon box is its own change in History, and Revert takes its cards back. Adding a box twice stacks its copies and starts a second deck.";
@@ -455,7 +440,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
   // With the switch off (production), a current reader is told nothing on any path: no Home line, no sheet,
   // and no redirect.
   it("announces nothing to a current reader who has met the entries it can see", () => {
-    const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true" }));
+    const visible = visibleEntries(env(LINE));
     // Current: has met every entry it can see, the switched ones by id.
     const current: SeenState = { version: ABOUT_VERSION, ids: switchedIds(visible) };
     expect(unseenEntries(visible, current)).toEqual([]);
@@ -465,7 +450,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
   // #1840 briefly shipped ABOUT_VERSION 15, so a reader may hold 15 as their seen version. The next bump skipped it, so
   // that reader is behind 16 by exactly the unswitched entry 16 added, and by nothing 15 claimed.
   it("reads a reader who holds the spent 15 as behind 16 by about-rebuilt alone", () => {
-    const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true" }));
+    const visible = visibleEntries(env(LINE));
     const held: SeenState = { version: 15, ids: switchedIds(visible) };
     expect(unseenEntries(visible, held).map((e) => e.id)).toEqual(["about-rebuilt"]);
     const ahead: SeenState = { version: ABOUT_VERSION + 1, ids: switchedIds(visible) };
@@ -473,8 +458,7 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     expect(behind(visible, ahead)).toBe(false);
   });
 
-  it("draws with collection editing and not without it", () => {
-    expect(drawn({}, "start-without-a-collection")).toBeUndefined();
+  it("always draws (collection editing is retired)", () => {
     expect(drawn(LINE, "start-without-a-collection")).toBeDefined();
   });
 
@@ -485,14 +469,11 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     expect(on.keys).toHaveLength(4);
   });
 
-  it("gives deck-import its fourth key and precons R3's sentence with collection editing", () => {
+  it("gives deck-import its fourth key and precons R3's sentence", () => {
     const tick = "Own the deck you’re importing? Select “I own these cards” and its cards go into your Collection too.";
     const r3 = "Own a few boxes and don’t want decks from them yet? Press Add cards in your Collection, then Pick them, and they’re added without starting anything.";
     expect(drawn(LINE, "deck-import")!.keys).toEqual(expect.arrayContaining([tick]));
     expect(drawn(LINE, "deck-import")!.keys).toHaveLength(4);
-    const shipped = drawn({}, "precons")!.caption;
-    expect(shipped).not.toContain(r3);
-    expect(shipped).toContain("go into your collection too.\n\nUpgrading");
     expect(drawn(LINE, "precons")!.caption).toContain(`go into your collection too.\n${r3}\n\nUpgrading`);
   });
 });

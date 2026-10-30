@@ -1,7 +1,7 @@
 // First run — collection unread, no decks. The three-step checklist is the
 // whole page: step 1 live, steps 2 and 3 stated and locked. The import foot
-// that once sat under them is gone (first-run ruling 1, 2026-09-28); with
-// COLLECTION_EDIT_ENABLED, step 1's ways group is how a player with no file
+// that once sat under them is gone (first-run ruling 1, 2026-09-28); step 1's
+// ways group is how a player with no file
 // reaches Precons I own, Import a deck and Add cards by hand. With
 // SOCIAL_FRIENDS_ENABLED an unnumbered Friends row sits last, under step 3.
 //
