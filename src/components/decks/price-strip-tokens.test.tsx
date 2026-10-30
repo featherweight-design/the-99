@@ -27,11 +27,11 @@ afterEach(cleanup);
 
 describe("PriceStrip with tokens joined", () => {
   it("dates the combined figure by the older of the cards' and the tokens' prices, and says when it is behind", () => {
-    const behind: ProvenanceForm = { behind: true, when: "3 September" };
+    const behind: ProvenanceForm = { behind: true, when: "September 3" };
     const { container } = render(
       <PriceStrip summary={{ totalCents: 27048, pricedCopies: 3, totalCopies: 3 }} provenance={fresh} shoppingCards={cards} tokens={tokens()} tokenProvenance={behind} />,
     );
-    expect(container.textContent).toContain("3 September");
+    expect(container.textContent).toContain("September 3");
     expect(container.textContent).not.toContain("Monday");
     expect(container.textContent).toMatch(/behind/i);
   });
@@ -71,11 +71,11 @@ describe("PriceStrip with tokens joined", () => {
   });
 
   it("dates an unpriced token-only list by the tokens' feed, not the cards'", () => {
-    const own: ProvenanceForm = { behind: true, when: "3 September" };
+    const own: ProvenanceForm = { behind: true, when: "September 3" };
     const { container } = render(
       <PriceStrip summary={{ totalCents: 0, pricedCopies: 0, totalCopies: 0 }} provenance={fresh} shoppingCards={[]} tokens={tokens({ priced: 0, cents: 0 })} tokenOwnProvenance={own} />,
     );
-    expect(container.textContent).toContain("3 September");
+    expect(container.textContent).toContain("September 3");
     expect(container.textContent).not.toContain("Monday");
   });
 
@@ -87,12 +87,12 @@ describe("PriceStrip with tokens joined", () => {
   });
 
   it("keeps the cards' date when no token in the figure is priced", () => {
-    const behind: ProvenanceForm = { behind: true, when: "3 September" };
+    const behind: ProvenanceForm = { behind: true, when: "September 3" };
     const { container } = render(
       <PriceStrip summary={{ totalCents: 27048, pricedCopies: 3, totalCopies: 3 }} provenance={fresh} shoppingCards={cards} tokens={tokens({ priced: 0, cents: 0 })} tokenProvenance={behind} />,
     );
     expect(container.textContent).toContain("Monday");
-    expect(container.textContent).not.toContain("3 September");
+    expect(container.textContent).not.toContain("September 3");
   });
 
   it("sums the deck's cards and the tokens in the one figure, and splits them beneath it", () => {
