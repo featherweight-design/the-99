@@ -26,6 +26,7 @@ import { prefersReducedMotion } from "../../lib/ui/motion";
 import { noteAppScroll } from "../../lib/ui/reveal";
 import { NoteDialog } from "../about/reference/creator-note";
 import { ARRIVE_MS } from "../moments/moments-provider";
+import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 import { ThemePicker, themeInForce } from "../shell/theme-picker";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useNavLocked, useTargets } from "./targets-provider";
@@ -201,6 +202,9 @@ function TourRun({ precons, mode, onEnd }: { precons: boolean; mode: TourMode; o
   const [host] = useState(() => {
     const el = document.createElement("div");
     el.dataset.tour = "";
+    // Home's own tour, lighting Home's controls: a Back under it starts a navigation the tour cannot see, so it goes
+    // inert with <main> under that navigation's screen (`COVERED_WITH_MAIN`).
+    el.setAttribute(COVERED_WITH_MAIN, "");
     return el;
   });
   useLayoutEffect(() => {
